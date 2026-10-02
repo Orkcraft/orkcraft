@@ -1,0 +1,805 @@
+"""The lower RTS console: War Map (orkspaces), Clan Roster (contextual garrison), Command Card."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from rich.text import Text
+from textual import events
+from textual.app import ComposeResult
+from textual.css.query import NoMatches
+from textual.containers import Horizontal, Vertical
+from textual.message import Message
+from textual.widgets import OptionList, Static
+from textual.widgets.option_list import Option
+
+from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
+
+if TYPE_CHECKING:
+    from orkcraft.app import FocusState
+    from orkcraft.realm.roster import Roster
+    from orkcraft.scroll import Orkspace, TownScroll
+
+
+def orc_key(o: Orc) -> str:
+    if o.category == RESIDENT:
+        return f"orc:resident:{o.ref}"
+    return f"orc:{o.category}:{o.building or o.ref or o.name}"
+
+
+STATUS_DISPLAY = {
+    "alert": f"{ALERT_ICON} Wait",
+    "busy": "🔨 Busy",
+    "idle": "💤 Idle",
+    "frozen": "🛑 Frozen",
+    "draft": "📝 Draft",
+}
+
+NEUTRAL_ACTIONS = [
+    ("B", "[B] 🏗️ Build Window (Mason & Artisan)"),
+    ("P", "[P] 📜 Window Presets Catalog"),
+    ("S", "[S] 🧌 Summon Orc / Warband"),
+    ("T", "[T] 🌲 Toggle Terrain (Dim / Black)"),
+    ("G", "[G] ⎇ Worktree of this Orkspace"),
+]
+
+BUILDING_ACTIONS = [
+    ("R", "[R] ➕ Recruit Orc"),
+    ("L", "[L] 📜 Building Chronicles"),
+    ("Y", "[Y] 🛤 Listen to Another Window (Road)"),
+    ("U", "[U] 🚧 Remove the Incoming Road"),
+    ("P", "[P] 📌 Pin / Unpin Window"),
+    ("M", "[M] 🗖 Window Mode (Move / Resize)"),
+    ("X", "[X] 💥 Demolish Window"),
+    ("Z", "[Z] ↶ Revert to Previous Checkpoint"),
+    ("K", "[K] 👍 Good Result (a Reference)"),
+    ("F", "[F] 👎 Bad Result — What Went Wrong?"),
+]
+
+ROAD_ACTIONS = [
+    ("H", "[H] 🔀 Handler of this Road"),
+    ("U", "[U] 🚧 Remove this Road"),
+]
+
+
+def road_card(app, key: str) -> Text:
+    """The road card of the console: source → target, event, filter, handler, carts."""
+    from orkcraft import scroll as ts
+    from orkcraft.realm import pipes
+    from orkcraft.widgets.road_layer import split_key
+
+    t = Text()
+    target_id, road_id = split_key(key)
+    scroll_obj = getattr(app, "scroll", None)
+    found = ts.find_road(scroll_obj, road_id, target_id) if scroll_obj is not None else None
+    if found is None:
+        t.append("This road no longer exists.", style="dim")
+        return t
+    target, road = found
+    src = scroll_obj.building(road.source)
+    t.append(f"{src.icon + ' ' if src and src.icon else ''}{src.title if src else road.source}", style="bold")
+    t.append("  →  ")
+    t.append(f"{target.icon + ' ' if target.icon else ''}{target.title}\n", style="bold")
+    signal = f"  ·  signal {road.label}" if road.label else ""
+    t.append(f"Event: {pipes.label(road.event)}{signal}\n")
+    flt = "; ".join(f"{k}={','.join(map(str, v)) if isinstance(v, list) else v}" for k, v in road.filter.items())
+    t.append(f"Filter: {flt or 'none'}\n", style="" if flt else "dim")
+    orc = target.garrison.handler(road.handler) if road.handler else None
+    t.append(f"Handler: {orc.avatar} {orc.name} ({orc.kind})\n" if orc else "Handler: plain\n")
+    counts: dict[str, int] = {}
+    engine = getattr(app, "roads", None)
+    for cart in getattr(engine, "carts", []):
+        if cart.target == target_id and cart.road_id == road_id:
+            counts[cart.status] = counts.get(cart.status, 0) + 1
+    order = ("sent", "delivered", "filtered", "held", "error")
+    carts = " · ".join(f"{counts[k]} {k}" for k in order if counts.get(k))
+    t.append(f"Carts: {carts or 'none yet'}\n", style="" if carts else "dim")
+    return t
+
+
+def unit_details(app, orc: Orc) -> Text:
+    """Kind, harness scheme, roads, re-run policy and the reason — and the steward's last report."""
+    from orkcraft.realm import looks
+
+    t = Text()
+    t.append(f"{'Steward' if orc.lead else 'Handler'} · {looks.KIND_LABELS.get(orc.kind, orc.kind)}")
+    scheme = looks.scheme_text(orc.harness, orc.kind)
+    if scheme.plain:
+        t.append("  ")
+        t.append(scheme)
+        t.append(f"  ({looks.scheme_long(orc.harness, orc.kind)})", style="dim")
+    t.append("\n")
+    for label in orc.roads:
+        t.append(f"◂ {label}\n", style="dim")
+    if not orc.lead and orc.run:
+        restart = "restart on new data" if orc.run.get("restart_on_new") else "finish, then rerun"
+        t.append(f"Rerun: {orc.run.get('quiet_s', 0)} s quiet · {restart}\n", style="dim")
+    if orc.why:
+        t.append(f"Why {orc.kind}: {orc.why}\n", style="italic dim")
+    if orc.lead and orc.building:
+        from orkcraft.realm import steward
+        report = steward.load_report(getattr(app, "repo_root", None), orc.building) if getattr(app, "repo_root", None) else None
+        if report:
+            t.append(f"Last watch {report.get('ts', '')[:16].replace('T', ' ')}: "
+                     f"{len(report.get('findings', []))} finding(s), {len(report.get('proposals', []))} proposal(s)\n")
+        else:
+            t.append("Not watched yet — [W] Watch now\n", style="dim")
+    return t
+
+
+def _spend_of(app, orc: Orc):
+    from orkcraft.realm import roads, steward, unit_info
+
+    repo = getattr(app, "repo_root", None)
+    snap = getattr(app, "snapshot", None)
+    if orc.category == RESIDENT and orc.building and repo is not None:
+        if orc.lead:
+            report = steward.load_report(repo, orc.building) or {}
+            cost = report.get("cost_usd")
+            spend = unit_info.Spend(usd=float(cost) if isinstance(cost, (int, float)) else None,
+                                    runs=1 if report else 0)
+        elif orc.kind in unit_info.FREE_KINDS:
+            spend = unit_info.Spend(free=True)
+        else:
+            orc_id = orc.ref.split("/", 1)[1] if "/" in orc.ref else orc.ref
+            spend = unit_info.handler_spend(roads.examples_file(repo, orc.building, orc_id))
+    else:
+        spend = unit_info.Spend()
+    term = orc.session if orc.category == RESIDENT else (orc.ref if orc.category == WORKER else "")
+    if term and snap is not None and term in snap.cost_by_terminal:
+        spend = spend.add(unit_info.Spend(usd=snap.cost_by_terminal[term]))
+    return spend
+
+
+def orc_info(app, orc: Orc) -> Text:
+    from orkcraft.realm import unit_info
+
+    t = Text()
+    st = STATUS_DISPLAY.get(orc.status, f"{orc.status_icon} {orc.status.capitalize()}")
+    t.append(f"{'★ ' if orc.lead else ''}{orc.name}", style="bold yellow" if orc.status == "alert" else "bold")
+    t.append(f"  {st}\n", style="dim")
+    b = app.building(orc.building) if orc.building else None
+    for sentence in unit_info.orc_sentences(orc, f"{b.icon} {b.title}" if b else ""):
+        t.append(sentence + "\n")
+    snap = getattr(app, "snapshot", None)
+    term = orc.session if orc.category == RESIDENT else (orc.ref if orc.category == WORKER else "")
+    live = snap.model_by_terminal.get(term, "") if snap is not None and term else ""
+    models = unit_info.models_of(orc, live)
+    if models:
+        t.append("Models: ", style="dim")
+        for i, (letter, style, label) in enumerate(models):
+            t.append(("  " if i else "") + letter, style=style)
+            t.append(f" {label}", style="dim")
+        t.append("\n")
+    if orc.category == RESIDENT and not orc.lead and orc.kind not in unit_info.FREE_KINDS:
+        if orc.session:
+            meta = getattr(getattr(app, "chat", None), "meta", {}).get(orc.session)
+            t.append(f"● deployed · {meta[1] if meta and meta[1] else orc.session}\n", style="green")
+        else:
+            t.append("not deployed — C opens a session\n", style="dim")
+    spend = _spend_of(app, orc)
+    t.append(spend.text())
+    if term and snap is not None and snap.context_by_terminal.get(term):
+        t.append(f" · {unit_info.fmt_tokens(snap.context_by_terminal[term])} in context", style="dim")
+    return t
+
+
+def building_info(app, building_id: str, roster: Roster) -> Text:
+    from orkcraft import scroll as ts
+    from orkcraft.realm import unit_info
+
+    b = app.building(building_id)
+    if b is None:
+        return Text("This building is gone.", style="dim")
+    orcs = roster.garrison(building_id)
+    spec = getattr(app, "custom_specs", {}).get(building_id) or {}
+    scroll_obj = getattr(app, "scroll", None)
+    roads_in = len(ts.incoming(scroll_obj, building_id)) if scroll_obj is not None else 0
+    roads_out = len(ts.outgoing(scroll_obj, building_id)) if scroll_obj is not None else 0
+    t = Text()
+    for sentence in unit_info.building_sentences(b.title, spec.get("summary") or b.role, orcs, roads_in, roads_out):
+        t.append(sentence + "\n")
+    letters: dict[str, tuple[str, str]] = {}
+    for o in orcs:
+        for letter, style, label in unit_info.models_of(o):
+            letters.setdefault(letter, (style, label.split(" · ")[-1]))
+    if letters:
+        t.append("Models: ", style="dim")
+        for i, (letter, (style, label)) in enumerate(letters.items()):
+            t.append(("  " if i else "") + letter, style=style)
+            t.append(f" {label}", style="dim")
+        t.append("\n")
+    total = unit_info.Spend(free=True)
+    for o in orcs:
+        total = total.add(_spend_of(app, o))
+    t.append(total.text() if orcs else "🪙 nothing spent — no orcs")
+    repo = getattr(app, "repo_root", None)
+    if repo is not None:                     # the steward's journal
+        from orkcraft.realm import feedback
+        j = feedback.journal(repo, building_id)
+        t.append(f"\n📒 week: {j['runs']} runs ({j['ok']} ✓ {j['failed']} ✗) · {j['results']} results · "
+                 f"👍 {j['likes']} 👎 {j['dislikes']}", style="dim")
+    return t
+
+
+QUICK_KEYS = ("[", "]")     # a selected building's two quick actions
+
+RESIDENT_ACTIONS = [
+    ("C", "[C] 💬 Deploy / Open Session"),
+    ("T", "[T] ⚡ Orders & Trigger"),
+    ("D", "[D] 🗑 Dismiss"),
+    ("H", "[H] 🛑 Halt"),
+    ("L", "[L] 📜 Unit Chronicles"),
+]
+
+UNIT_ACTIONS = [
+    ("C", "[C] 💬 Unit Chat / Orders"),
+    ("L", "[L] 📜 Unit Chronicles"),
+    ("T", "[T] ⚡ Triggers"),
+    ("H", "[H] 🛑 Halt Unit"),
+]
+
+
+def orkspace_has_alert(scroll_obj: TownScroll | None, ork: Orkspace, roster: Roster) -> bool:
+    if scroll_obj is None:
+        return bool(roster.alerts)
+    is_active = (ork.id == scroll_obj.active_orkspace_id)
+    for alert in roster.alerts:
+        orc = next((o for o in roster.orcs if o.alert and o.alert.id == alert.id), None)
+        if orc is not None and orc.building:
+            b_ork = scroll_obj.orkspace_of(orc.building)
+            if b_ork is not None and b_ork.id == ork.id:
+                return True
+        else:
+            if is_active:
+                return True
+    return False
+
+
+class WarMap(Vertical):
+    """Left column: shows camp/orkspace list in Neutral, card in Building/Unit."""
+
+    def compose(self) -> ComposeResult:
+        yield Static("🗺️ WAR MAP (Orkspaces)", id="warmap-title", classes="console-title")
+        yield OptionList(id="warmap-list")
+        yield Static("[F1] 🏰 Main Camp", markup=False, id="warmap-content")
+        yield Static("[F1-F8]   [N] New   [d] Del", markup=False, id="warmap-footer", classes="console-footer")
+
+    def update_content(self, focus_state: FocusState, roster: Roster, biome: str) -> None:
+        lst = self.query_one("#warmap-list", OptionList)
+        content = self.query_one("#warmap-content", Static)
+        scroll_obj = getattr(self.app, "scroll", None)
+
+        lst.display = True
+        content.display = False
+        content.update(f"[F1] 🏰 Main Camp ({biome})")
+
+        highlighted = lst.highlighted
+        lst.clear_options()
+        if scroll_obj is not None:
+            active_idx = 0
+            for i, ork in enumerate(scroll_obj.orkspaces):
+                is_active = (ork.id == scroll_obj.active_orkspace_id)
+                if is_active:
+                    active_idx = i
+                prefix = "▶ " if is_active else "  "
+                hk = f"[{ork.hotkey}] " if ork.hotkey else ""
+                mark = f" {ALERT_ICON}" if orkspace_has_alert(scroll_obj, ork, roster) else ""
+                wt_mark = getattr(self.app, "worktree_marks", {}).get(ork.id, "")
+                row_text = f"{prefix}{hk}{ork.icon} {ork.name} ({ork.biome}){' ' + wt_mark if wt_mark else ''}{mark}"
+                lst.add_option(Option(Text(row_text, style="bold" if is_active else ""), id=f"orkspace:{ork.id}"))
+            # The cursor follows the active orkspace unless the operator is browsing the list.
+            if lst.has_focus and highlighted is not None and highlighted < lst.option_count:
+                lst.highlighted = highlighted
+            else:
+                lst.highlighted = active_idx
+        else:
+            alerts_mark = f" {ALERT_ICON}" if roster.alerts else ""
+            lst.add_option(Option(Text(f"▶ [F1] 🏰 Main Camp ({biome}){alerts_mark}", style="bold"), id="orkspace:main_camp"))
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        oid = event.option_id or ""
+        if oid.startswith("orkspace:"):
+            target_id = oid.split(":", 1)[1]
+            self.app.desktop.switch_orkspace(target_id)
+        event.stop()
+
+    def on_click(self, event: events.Click) -> None:
+        if event.widget and event.widget.id == "warmap-footer":
+            self.app.action_new_orkspace()
+            event.stop()
+
+    def on_key(self, event: events.Key) -> None:
+        if event.key == "d" and self.query_one("#warmap-list", OptionList).display:
+            self.action_delete_orkspace()
+            event.stop()
+
+    def action_delete_orkspace(self) -> None:
+        """Remove the highlighted orkspace if it is empty and not the last one."""
+        from orkcraft import scroll as ts
+
+        lst = self.query_one("#warmap-list", OptionList)
+        if lst.highlighted is None or lst.highlighted >= lst.option_count:
+            return
+        oid = lst.get_option_at_index(lst.highlighted).id or ""
+        if not oid.startswith("orkspace:"):
+            return
+        app = self.app
+        target_id = oid.split(":", 1)[1]
+        was_active = app.scroll.active_orkspace_id == target_id
+        try:
+            ts.remove_orkspace(app.scroll, target_id)
+        except ValueError as e:
+            app.notify(str(e), title="War Map", severity="warning")
+            return
+        if was_active:
+            # The canvas under the operator changed: same path as a switch (neutral, refresh).
+            app.desktop.apply_orkspace(app.scroll.active_orkspace_id)
+            app.desktop.post_message(app.desktop.OrkspaceChanged(app.scroll.active_orkspace_id))
+        app.desktop.save()
+        app.refresh_roster()
+
+
+class ClanRoster(Vertical):
+    """Centre column: accordion roster in Neutral, garrison in Building, card in Unit."""
+
+    class BuildingSelected(Message):
+        def __init__(self, building_id: str) -> None:
+            super().__init__()
+            self.building_id = building_id
+
+    class OrcSelected(Message):
+        def __init__(self, key: str) -> None:
+            super().__init__()
+            self.key = key
+
+    def __init__(self, id: str | None = None, classes: str | None = None) -> None:
+        super().__init__(id=id, classes=classes)
+        self.folded_headers: set[str] = set()
+
+    def compose(self) -> ComposeResult:
+        yield Static("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
+        with Horizontal(id="roster-rate"):           # 👍 / 👎 beside the steward
+            yield Static("", id="rate-label", markup=False)
+            yield Static(" 👍 ", id="rate-like")
+            yield Static(" 👎 ", id="rate-dislike")
+        yield OptionList(id="roster-list")
+        yield Static("", markup=False, id="roster-card")
+        yield Static("[Space] Fold   [1-9] Select", markup=False, id="roster-footer", classes="console-footer")
+
+    @staticmethod
+    def _render_orc_row(o: Orc, number: int | None = None) -> Text:
+        """Name and state only: what it does, its models and spend are in the Info panel."""
+        t = Text(no_wrap=True, overflow="ellipsis")
+        t.append(f"[{number}] " if number is not None else "  • ")
+        star = "★ " if o.lead else ""
+        name_style = "bold yellow" if o.status == "alert" else "bold"
+        t.append(f"{star}{o.name}", style=name_style)
+        st = STATUS_DISPLAY.get(o.status, f"{o.status_icon} {o.status.capitalize()}")
+        st_style = "bold yellow" if o.status == "alert" else ("bold green" if o.status == "busy" else "dim")
+        t.append(f"  {st}", style=st_style)
+        return t
+
+    def update_content(self, focus_state: FocusState, roster: Roster) -> None:
+        title = self.query_one("#roster-title", Static)
+        footer = self.query_one("#roster-footer", Static)
+        lst = self.query_one("#roster-list", OptionList)
+        card = self.query_one("#roster-card", Static)
+
+        self._update_rate(focus_state)
+        if focus_state.mode == "neutral":
+            title.update("🧌 CLAN ROSTER (Garrison)")
+            footer.update("[Space] Fold   [1-9] Select")
+            card.display = False
+            lst.display = True
+
+            highlighted = lst.highlighted
+            lst.clear_options()
+
+            # Raised buildings
+            raised = [w for w in self.app.desktop.windows if not w.hidden]
+            for w in raised:
+                b = self.app.building(w.window_id)
+                if b is None:
+                    continue
+                garrison = roster.garrison(w.window_id)
+                garrison_count = len(garrison)
+                hid = f"header:building:{b.id}"
+                is_folded = hid in self.folded_headers
+                arrow = "▶" if is_folded else "▼"
+                lst.add_option(Option(Text(f"{arrow} {b.icon} {b.title} (Garrison: {garrison_count})", style="bold"), id=hid))
+                if not is_folded:
+                    for o in garrison:
+                        lst.add_option(Option(self._render_orc_row(o), id=orc_key(o)))
+
+            # Other categories
+            groups = (
+                (WORKER, "⚔️ Warband"),
+                (COUNCIL, "🏛️ Council"),
+                (BUILDER, "🔨 Builders"),
+            )
+            for cat, cat_title in groups:
+                members = [o for o in roster.orcs if o.category == cat]
+                hid = f"header:{cat}"
+                is_folded = hid in self.folded_headers
+                arrow = "▶" if is_folded else "▼"
+                lst.add_option(Option(Text(f"{arrow} {cat_title} ({len(members)})", style="bold dim"), id=hid))
+                if not is_folded:
+                    for o in members:
+                        lst.add_option(Option(self._render_orc_row(o), id=orc_key(o)))
+
+            if highlighted is not None and highlighted < lst.option_count:
+                lst.highlighted = highlighted
+
+        elif focus_state.mode in ("building", "road", "unit"):
+            # The garrison stays: a selected orc is highlighted in it, its card is in the Info panel.
+            orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None) \
+                if focus_state.mode == "unit" else None
+            b_id = focus_state.building_id or (orc.building if orc else "") or ""
+            if orc is not None and orc.category != RESIDENT:
+                members = [o for o in roster.orcs if o.category == orc.category]
+                label = {WORKER: "⚔️ Warband", COUNCIL: "🏛️ Council", BUILDER: "🔨 Builders"}.get(orc.category, "Orcs")
+            else:
+                members = roster.garrison(b_id)
+                b = self.app.building(b_id)
+                label = f"Garrison · {b.title if b else 'Building'}"
+            title.update(label)
+            footer.update("[1-9] Select   [Esc] Neutral" if focus_state.mode != "road"
+                          else "[H] Handler   [U] Remove   [Esc] Back")
+            card.display = False
+            lst.display = True
+            prev = lst.highlighted
+            lst.clear_options()
+            for idx, o in enumerate(members, 1):
+                lst.add_option(Option(self._render_orc_row(o, number=idx), id=orc_key(o)))
+            if not members:
+                lst.add_option(Option(Text("  No garrison yet — R recruits", style="dim"), disabled=True))
+            keys = [orc_key(o) for o in members]
+            if orc is not None and orc_key(orc) in keys:
+                lst.highlighted = keys.index(orc_key(orc))
+            elif prev is not None and prev < lst.option_count:
+                lst.highlighted = prev          # the 1 s refresh must not undo the operator's cursor
+
+    def _update_rate(self, focus_state: FocusState) -> None:
+        bar = self.query_one("#roster-rate", Horizontal)
+        bid = focus_state.building_id if focus_state.mode == "building" else None
+        self.rate_target = bid
+        bar.display = bool(bid)
+        if not bid:
+            return
+        from orkcraft.realm import feedback
+        repo = getattr(self.app, "repo_root", None)
+        sc = feedback.scores(repo).get(bid, {}) if repo is not None else {}
+        self.query_one("#rate-label", Static).update(
+            f"last result {sc.get('likes', 0)}👍 {sc.get('dislikes', 0)}👎 ")
+
+    def on_click(self, event: events.Click) -> None:
+        wid = getattr(event.widget, "id", "") or ""
+        bid = getattr(self, "rate_target", None)
+        if bid and wid == "rate-like":
+            event.stop()
+            self.app.like_building(bid)
+        elif bid and wid == "rate-dislike":
+            event.stop()
+            self.app.dislike_building(bid)
+
+    def toggle_fold(self, header_id: str) -> None:
+        if header_id in self.folded_headers:
+            self.folded_headers.remove(header_id)
+        else:
+            self.folded_headers.add(header_id)
+        self.update_content(self.app.focus_state, self.app.roster)
+
+    def on_key(self, event: events.Key) -> None:
+        if event.key == "space":
+            lst = self.query_one("#roster-list", OptionList)
+            if lst.has_focus and lst.highlighted is not None:
+                opt = lst.get_option_at_index(lst.highlighted)
+                oid = opt.id or ""
+                if oid.startswith("header:"):
+                    self.toggle_fold(oid)
+            if lst.has_focus:
+                # Space belongs to the roster (fold): on an orc row it must not reach the War Horn.
+                event.stop()
+                event.prevent_default()
+            return
+        elif event.key in "123456789":
+            lst = self.query_one("#roster-list", OptionList)
+            if lst.has_focus and getattr(self.app, "focus_state", None) and self.app.focus_state.mode in ("building", "unit"):
+                idx = int(event.key) - 1
+                orc_ids = [o.id for o in (lst.get_option_at_index(i) for i in range(lst.option_count))
+                           if o.id and o.id.startswith("orc:")]
+                if idx < len(orc_ids):
+                    self.post_message(self.OrcSelected(orc_ids[idx]))
+                    event.stop()
+                    return
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        oid = event.option_id or ""
+        if oid.startswith("header:building:"):
+            building_id = oid.split(":", 2)[2]
+            self.post_message(self.BuildingSelected(building_id))
+        elif oid.startswith("header:"):
+            self.toggle_fold(oid)
+        elif oid.startswith("orc:"):
+            self.post_message(self.OrcSelected(oid))
+        event.stop()
+
+
+class UnitInfo(Vertical):
+    """The Info panel: what the selected orc, building or road is, its models, its spend."""
+
+    def compose(self) -> ComposeResult:
+        yield Static("ℹ INFO", id="info-title", classes="console-title")
+        yield Static("", markup=False, id="info-body")
+
+    def update_content(self, focus_state: FocusState, roster: Roster) -> None:
+        title = self.query_one("#info-title", Static)
+        body = self.query_one("#info-body", Static)
+        if focus_state.mode == "unit":
+            orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None)
+            title.update(f"ℹ {orc.name}" if orc else "ℹ INFO")
+            body.update(orc_info(self.app, orc) if orc else Text("This orc is gone.", style="dim"))
+        elif focus_state.mode == "building":
+            b = self.app.building(focus_state.building_id or "")
+            title.update(f"ℹ {b.icon} {b.title}" if b else "ℹ INFO")
+            body.update(building_info(self.app, focus_state.building_id or "", roster))
+        elif focus_state.mode == "road":
+            title.update("ℹ 🛤 Road")
+            body.update(road_card(self.app, focus_state.road_key or ""))
+        else:
+            title.update("ℹ INFO")
+            body.update(Text("Select a building or an orc: what it does, its models and what it cost show here.",
+                             style="dim"))
+
+
+class CommandCard(Vertical):
+    """Right column: clickable actions for the current focus state."""
+
+    def compose(self) -> ComposeResult:
+        yield Static("⚒️ COMMAND CARD", id="command-title", classes="console-title")
+        yield OptionList(id="command-actions")
+        yield Static("[Esc] Deselect / Neutral Mode", markup=False, id="command-footer", classes="console-footer")
+
+    def update_content(self, focus_state: FocusState, roster: Roster) -> None:
+        actions_list = self.query_one("#command-actions", OptionList)
+        highlighted = actions_list.highlighted
+        actions_list.clear_options()
+
+        if focus_state.mode == "neutral":
+            actions = NEUTRAL_ACTIONS
+        elif focus_state.mode == "building":
+            actions = list(BUILDING_ACTIONS)
+            b_id = focus_state.building_id
+            spec = getattr(self.app, "custom_specs", {}).get(b_id) if b_id else None
+            if spec and "actions" in spec:
+                for act in spec["actions"]:
+                    actions.append((act["key"], f"[{act['key']}] {act['label']}"))
+            spec = self.app.spec_of(b_id) if hasattr(self.app, "spec_of") else spec
+            if spec:                                         # the hut's quick actions
+                from orkcraft.realm import catalog
+                quick = [(f"QA{key}", f"[{key}] {qa.glyph} {qa.label}")
+                         for key, qa in zip(QUICK_KEYS, catalog.quick_actions_of(spec))]
+                actions = quick + actions
+        elif focus_state.mode == "unit":
+            orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None)
+            if orc and orc.category == RESIDENT:
+                actions = list(RESIDENT_ACTIONS)
+                if orc.lead:
+                    actions.append(("W", "[W] 🔎 Watch now (steward)"))
+            else:
+                actions = list(UNIT_ACTIONS)
+            if orc and orc.alert:
+                actions.insert(0, ("ENTER", "[Enter] ❓ Resolve Alert"))
+        elif focus_state.mode == "road":
+            actions = ROAD_ACTIONS
+        else:
+            actions = NEUTRAL_ACTIONS
+
+        for key, label in actions:
+            actions_list.add_option(Option(Text(label), id=f"action:{key}"))
+
+        if highlighted is not None and highlighted < actions_list.option_count:
+            actions_list.highlighted = highlighted
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        oid = event.option_id or ""
+        if oid.startswith("action:"):
+            key = oid.split(":", 1)[1]
+            if key.startswith("QA"):
+                self.app.action_quick_action(QUICK_KEYS.index(key[2:]))
+            elif key == "ENTER":
+                orc = next((o for o in self.app.roster.orcs if orc_key(o) == self.app.focus_state.orc_key), None)
+                if orc and orc.alert:
+                    self.app.open_alert(orc.alert, orc.name)
+            elif (
+                getattr(self.app, "focus_state", None)
+                and self.app.focus_state.mode == "building"
+                and any(a.get("key") == key for a in getattr(self.app, "custom_specs", {}).get(self.app.focus_state.building_id, {}).get("actions", []))
+            ):
+                self.app.action_custom_action(key)
+            else:
+                self.app.action_command_card(key)
+        event.stop()
+
+
+CONSOLE_DEFAULT_PCT = 15   # of the screen height (33 → 22 → 15 %: the operator asked for more room for the town)
+CONSOLE_MIN_PCT, CONSOLE_MAX_PCT = 10, 60
+
+
+class Console(Horizontal):
+    """RTS console at the bottom of the screen (33/33/33 columns). Its height is a share of the
+    screen: drag the top edge or press alt+- / alt+=; the app keeps it in the Town Scroll."""
+
+    class Resized(Message):
+        """The operator changed the console height (end of a drag, or a key)."""
+        def __init__(self, pct: int) -> None:
+            super().__init__()
+            self.pct = pct
+
+    height_pct = CONSOLE_DEFAULT_PCT
+    _drag_start: int | None = None
+
+    def on_mount(self) -> None:
+        self.border_title = "⇕"
+
+    def set_height_pct(self, pct: int) -> int:
+        pct = max(CONSOLE_MIN_PCT, min(CONSOLE_MAX_PCT, int(pct)))
+        self.height_pct = pct
+        if self.has_class("-floating"):
+            layout = getattr(self.app, "layout_console", None)   # the town places it in cells
+            if layout is not None:
+                layout()
+        else:
+            self.styles.height = f"{pct}%"
+        return pct
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        if event.button == 1 and event.screen_y == self.region.y:   # the top edge is the grip
+            self._drag_start = event.screen_y
+            self.add_class("-dragging")
+            self.capture_mouse()
+            event.stop()
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        if self._drag_start is None:
+            return
+        # A % height is a share of the screen minus the HUD and the Footer (one row each); the
+        # console spans from the pointer row down to its current bottom (the Footer's row).
+        avail = max(self.app.size.height - 2, 1)
+        rows = self.region.bottom - event.screen_y
+        self.set_height_pct(round(rows * 100 / avail))
+        event.stop()
+
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        if self._drag_start is None:
+            return
+        self._drag_start = None
+        self.remove_class("-dragging")
+        self.release_mouse()
+        self.post_message(self.Resized(self.height_pct))
+        event.stop()
+
+    DEFAULT_CSS = """
+    Console {
+        height: 22%;
+        min-height: 6;
+        border-top: heavy $accent 45%;
+        border-title-align: center;
+        border-title-color: $accent 70%;
+        background: $background;
+    }
+    Console.-dragging {
+        border-top: heavy $warning;
+    }
+    /* Town view: a layer over the map's bottom edge, out of the layout, so the town keeps
+       the whole height. Calm (nothing selected): the War Map alone. */
+    Console.-floating {
+        position: absolute;
+        layer: overlay;
+        min-height: 3;
+    }
+    Console.-floating.-calm #clan-roster, Console.-floating.-calm #unit-info, Console.-floating.-calm #command-card {
+        display: none;
+    }
+    Console.-floating.-calm #warmap {
+        width: 100%;
+        max-width: 100%;
+    }
+    .console-col {
+        height: 100%;
+    }
+    #warmap {
+        width: 1fr;
+        min-width: 26;
+        max-width: 40;
+    }
+    #clan-roster {
+        width: 2fr;
+        border-left: vkey $accent 60%;
+    }
+    #unit-info {
+        width: 3fr;
+        border-left: vkey $accent 60%;
+    }
+    #info-body {
+        height: 1fr;
+        padding: 0 1;
+    }
+    #command-card {
+        width: 2fr;
+        border-left: vkey $accent 60%;
+    }
+    .console-title {
+        height: 1;
+        text-style: bold;
+        color: $accent;
+        padding: 0 1;
+        background: $surface;
+    }
+    .console-footer {
+        dock: bottom;
+        height: 1;
+        color: $text-muted;
+        padding: 0 1;
+        background: $surface;
+    }
+    #warmap-list {
+        height: 1fr;
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+    #warmap-content {
+        height: 1fr;
+        padding: 1 1;
+        display: none;
+    }
+    #roster-list {
+        height: 1fr;
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+    #roster-rate { height: 1; display: none; }
+    #rate-label { width: 1fr; color: $text-muted; }
+    #rate-like { width: auto; background: $success 60%; color: $text; text-style: bold; margin-right: 1; }
+    #rate-dislike { width: auto; background: $error 60%; color: $text; text-style: bold; }
+    #rate-like:hover, #rate-dislike:hover { background: $warning; }
+    #roster-card {
+        height: 1fr;
+        padding: 0 1;
+        display: none;
+    }
+    #command-actions {
+        height: 1fr;
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield WarMap(id="warmap", classes="console-col")
+        yield ClanRoster(id="clan-roster", classes="console-col")
+        yield UnitInfo(id="unit-info", classes="console-col")
+        yield CommandCard(id="command-card", classes="console-col")
+
+    def refresh_state(self, focus_state: FocusState, roster: Roster) -> None:
+        # The roster timer can fire while the app shuts down and the columns are already gone.
+        if not self.is_attached or len(self.children) < 4:
+            return
+        biome = getattr(self.app.desktop, "biome", "forest")
+        try:
+            self.query_one(WarMap).update_content(focus_state, roster, biome)
+            self.query_one(ClanRoster).update_content(focus_state, roster)
+            self.query_one(UnitInfo).update_content(focus_state, roster)
+            self.query_one(CommandCard).update_content(focus_state, roster)
+        except NoMatches:
+            # Shutdown unmounts the columns' children before the columns themselves.
+            return
+
+    def focus_roster(self) -> None:
+        if self.has_class("-calm"):        # the calm town shows the War Map only
+            self.query_one(WarMap).query_one("#warmap-list", OptionList).focus()
+            return
+        self.query_one(ClanRoster).query_one("#roster-list", OptionList).focus()

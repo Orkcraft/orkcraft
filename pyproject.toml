@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orkcraft"
+version = "0.1.0"
+description = "An RTS-style terminal harness for running many coding agents in one project"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Vadim Sidoryk" }]
+keywords = ["terminal", "tui", "agents", "claude-code", "orchestration", "textual"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "textual>=8.2",
+    "pyte>=0.8",
+    "jsonschema>=4.18",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/VadimSidoryk/orkcraft"
+Issues = "https://github.com/VadimSidoryk/orkcraft/issues"
+
+[project.scripts]
+orkcraft = "orkcraft.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["orkcraft*"]
+
+[tool.setuptools.package-data]
+orkcraft = ["schemas/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

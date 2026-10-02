@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+
+# orkcraft's own state in a project it runs in (local to a machine)
+.orkcraft/
+.orkcraft.json
+.orkcraft-demo
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

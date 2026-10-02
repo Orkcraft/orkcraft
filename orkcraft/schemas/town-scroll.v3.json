@@ -1,0 +1,895 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orkcraft.dev/schemas/town-scroll.v3.json",
+  "title": "Orkcraft Town Scroll v3",
+  "description": "Workspace state of Orkcraft (.orkcraft.json): orkspaces (canvases), buildings (windows), incoming roads, garrisons (a steward and road handlers) and budgets. Spec: T1098, design note orkcraft/docs/design/roads-and-orcs.md, decisions C1012.",
+  "type": "object",
+  "required": [
+    "version",
+    "active_orkspace_id",
+    "orkspaces",
+    "buildings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^0\\.3\\.\\d+$"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "project_name": {
+          "type": "string"
+        },
+        "tagline": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gold_session_limit_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "lumber_context_limit_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "supply_max_workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Operator-level toggles that apply to every orkspace.",
+      "additionalProperties": false,
+      "properties": {
+        "terrain_solid_black": {
+          "type": "boolean",
+          "description": "Alt+T: pure #000000 canvas instead of the biome."
+        },
+        "preview_linked": {
+          "type": "boolean",
+          "description": "Scrying Spire follows the selection in other buildings."
+        },
+        "console_height_pct": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 60,
+          "description": "Height of the bottom console, % of the screen (drag its top edge, alt+- / alt+=)."
+        },
+        "carts": {
+          "enum": [
+            "off",
+            "selected",
+            "all"
+          ],
+          "description": "Carts on roads: off, only the selected building's roads (default), all roads."
+        },
+        "roads": {
+          "enum": [
+            "off",
+            "faint"
+          ],
+          "description": "Roads with nothing selected: hidden, or faint in the gaps between windows (default)."
+        },
+        "view": {
+          "enum": [
+            "town",
+            "tiles"
+          ],
+          "description": "Town: every building a hut on the map, one expanded at a time (default). Tiles: every window open side by side (alt+v)."
+        },
+        "huts": {
+          "enum": [
+            "compact",
+            "art"
+          ],
+          "description": "Huts in the town: compact cards with three status lines (default), or an ASCII orc building over two lines (alt+a)."
+        }
+      }
+    },
+    "active_orkspace_id": {
+      "$ref": "#/$defs/id"
+    },
+    "orkspaces": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/orkspace"
+      }
+    },
+    "buildings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/building"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "orkspace": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "biome",
+        "buildings"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "hotkey": {
+          "type": "string",
+          "pattern": "^F[1-8]$"
+        },
+        "biome": {
+          "enum": [
+            "void",
+            "forest",
+            "ice"
+          ]
+        },
+        "git": {
+          "$ref": "#/$defs/git"
+        },
+        "buildings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "window_order": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "description": "Z-order of this canvas, bottom to top."
+        },
+        "active_building": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "required": [
+        "enabled"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "root",
+            "worktree"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "mode",
+          "path"
+        ]
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "on_demand",
+            "cron",
+            "webhook",
+            "event",
+            "pipe"
+          ]
+        },
+        "expression": {
+          "type": "string",
+          "description": "cron expression"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "webhook endpoint"
+        },
+        "source": {
+          "type": "string",
+          "description": "event source, e.g. forge:task_ready"
+        }
+      }
+    },
+    "orc": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "role": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "status": {
+          "enum": [
+            "idle",
+            "busy",
+            "alert",
+            "frozen",
+            "draft"
+          ]
+        },
+        "trigger": {
+          "$ref": "#/$defs/trigger"
+        },
+        "orders": {
+          "type": "string",
+          "description": "The orc's prompt / standing orders."
+        },
+        "kind": {
+          "enum": [
+            "chain",
+            "script",
+            "agent",
+            "hybrid"
+          ]
+        },
+        "harness": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/harness_step"
+          }
+        },
+        "run": {
+          "$ref": "#/$defs/run"
+        },
+        "chain": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/chain_op"
+          }
+        },
+        "script": {
+          "$ref": "#/$defs/script"
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Why this kind (the recruiter's explanation)."
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "key",
+        "label",
+        "action"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Z0-9]$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z_]+:[a-z_]+$"
+        }
+      }
+    },
+    "building": {
+      "type": "object",
+      "required": [
+        "id",
+        "preset_ref",
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "preset_ref": {
+          "type": "string",
+          "pattern": "^(core|legacy|custom):[a-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "pinned": {
+          "type": "boolean"
+        },
+        "demolished": {
+          "type": "boolean",
+          "description": "Window closed; its state and slot are kept."
+        },
+        "bounds": {
+          "$ref": "#/$defs/bounds"
+        },
+        "frac": {
+          "description": "Fractional slot (x, y, w, h in 0..1) that follows canvas resizes; null for free-floating.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hut": {
+          "description": "Town view: the hut's spot (x, y in 0..1 of the room the hut can move in); null = next free spot.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "min_size": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cols": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "chronicles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "log_file": {
+              "type": "string"
+            }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "garrison": {
+          "$ref": "#/$defs/garrison"
+        },
+        "roads": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/road"
+          },
+          "description": "Incoming roads: what this building receives, from whom, filtered at the source, and which handler works on it."
+        }
+      }
+    },
+    "garrison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "steward": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/orc"
+            }
+          ],
+          "description": "Watches how the building is used and proposes automations (the frame badge)."
+        },
+        "handlers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/orc"
+          },
+          "description": "Orcs working on this building's incoming roads (the Clan Roster)."
+        }
+      }
+    },
+    "road": {
+      "type": "object",
+      "required": [
+        "id",
+        "from",
+        "event"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "from": {
+          "$ref": "#/$defs/id",
+          "description": "Source building id."
+        },
+        "event": {
+          "anyOf": [
+            {
+              "enum": [
+                "on_selection_change",
+                "on_task_completed",
+                "on_stream"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-z]+\\.[a-z_]+$",
+              "description": "a typed event of the building catalog (T1105)"
+            }
+          ]
+        },
+        "filter": {
+          "$ref": "#/$defs/filter"
+        },
+        "handler": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/id"
+            }
+          ],
+          "description": "A handler of this building's garrison; null = a plain road (the payload is shown / copied by code)."
+        },
+        "transform": {
+          "type": "string",
+          "description": "Carried over from v2 rally points; not interpreted."
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_:.-]*$",
+          "description": "Display name of the signal (e.g. on_patch); shown on the road, not interpreted."
+        }
+      }
+    },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Applied at the source: what does not match never leaves the source building.",
+      "properties": {
+        "node_type": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "task",
+              "context",
+              "process"
+            ]
+          }
+        },
+        "node_status": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z-]{1,20}$"
+          }
+        },
+        "exclude_personal": {
+          "type": "boolean",
+          "description": "Drop personal context nodes (always on for agent handlers)."
+        },
+        "path_prefix": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "outcome": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "done",
+              "waiting",
+              "halted",
+              "unknown"
+            ]
+          }
+        },
+        "match": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Python regex searched in the payload title and value."
+        },
+        "route": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{1,32}$"
+          },
+          "description": "From a Totem: only these routes (T1107)."
+        }
+      }
+    },
+    "harness_step": {
+      "type": "object",
+      "required": [
+        "role",
+        "harness"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "run",
+            "plan",
+            "write",
+            "review"
+          ]
+        },
+        "harness": {
+          "type": "string",
+          "pattern": "^(claude|agy|pipeline:[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\\.json)$",
+          "description": "claude, agy, or pipeline:<repo-relative spec> of an agy_chain multi-agent system."
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quiet_s": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600,
+          "description": "Coalesce a burst of events: run after this many quiet seconds."
+        },
+        "restart_on_new": {
+          "type": "boolean",
+          "description": "A new event during a run interrupts and restarts it."
+        }
+      }
+    },
+    "chain_op": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "field",
+            "cmp",
+            "value"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "filter"
+            },
+            "field": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            },
+            "cmp": {
+              "enum": [
+                "eq",
+                "ne",
+                "in",
+                "contains",
+                "matches"
+              ]
+            },
+            "value": {}
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "fields"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "pick"
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z_]{1,32}$"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "field",
+            "regex",
+            "as"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "extract"
+            },
+            "field": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            },
+            "regex": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "as": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "by"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "sort"
+            },
+            "by": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            },
+            "desc": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "n"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "limit"
+            },
+            "n": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "count"
+            },
+            "as": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "by"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "group"
+            },
+            "by": {
+              "type": "string",
+              "pattern": "^[a-z_]{1,32}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "md"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "template"
+            },
+            "md": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "join"
+            },
+            "sep": {
+              "type": "string",
+              "maxLength": 20
+            }
+          }
+        }
+      ]
+    },
+    "script": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^\\.orkcraft/scripts/[a-z0-9_-]+\\.py$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the reviewed version."
+        },
+        "reviewed": {
+          "type": "boolean",
+          "description": "The operator reviewed exactly this sha256."
+        }
+      }
+    }
+  }
+}

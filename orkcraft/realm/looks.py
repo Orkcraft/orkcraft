@@ -1,0 +1,64 @@
+"""How an orc looks: the icon tells its kind, colour + letter its harness scheme.
+
+    kind_icon("chain") == "🗿"; kind_icon("agent") == "🧌"; kind_icon("hybrid") == "🗿🧌"
+    scheme_plain([{"role": "write", "harness": "agy"}, {"role": "review", "harness": "claude"}]) == "A→C"
+    scheme_text(steps)   # the same as a rich Text: Claude amber, agy cyan, pipelines magenta
+"""
+from __future__ import annotations
+
+from rich.text import Text
+
+KIND_ICONS = {"chain": "🗿", "script": "🗿", "agent": "🧌", "hybrid": "🗿🧌"}
+KIND_LABELS = {"chain": "chain", "script": "script (runs later)", "agent": "agent", "hybrid": "hybrid (script + agent)"}
+HARNESS_LETTER = {"claude": "C", "agy": "A"}
+HARNESS_STYLE = {"claude": "bold #f59e0b", "agy": "bold #22d3ee", "pipeline": "bold #e879f9"}
+LONG_SCHEME = 3          # longer schemes read as first→last·N
+
+
+def kind_icon(kind: str) -> str:
+    return KIND_ICONS.get(kind, "🧌")
+
+
+def _letter(harness: str) -> tuple[str, str]:
+    if harness.startswith("pipeline:"):
+        return "P", HARNESS_STYLE["pipeline"]
+    return HARNESS_LETTER.get(harness, "?"), HARNESS_STYLE.get(harness, "bold")
+
+
+def _steps(harness: list[dict] | None, kind: str) -> list[dict]:
+    if kind in ("chain", "script"):
+        return []
+    return list(harness or [])
+
+
+def scheme_parts(harness: list[dict] | None, kind: str = "agent") -> list[tuple[str, str]]:
+    """[(text, style)] of the scheme; empty for chains and scripts (no harness)."""
+    steps = _steps(harness, kind)
+    if not steps:
+        return []
+    letters = [_letter(str(s.get("harness", ""))) for s in steps]
+    if len(letters) > LONG_SCHEME:
+        return [letters[0], ("→", "dim"), letters[-1], (f"·{len(letters)}", "dim")]
+    out: list[tuple[str, str]] = []
+    for i, part in enumerate(letters):
+        if i:
+            out.append(("→", "dim"))
+        out.append(part)
+    return out
+
+
+def scheme_plain(harness: list[dict] | None, kind: str = "agent") -> str:
+    return "".join(t for t, _ in scheme_parts(harness, kind))
+
+
+def scheme_text(harness: list[dict] | None, kind: str = "agent") -> Text:
+    t = Text()
+    for text, style in scheme_parts(harness, kind):
+        t.append(text, style=style)
+    return t
+
+
+def scheme_long(harness: list[dict] | None, kind: str = "agent") -> str:
+    """`write: agy → review: claude` for cards."""
+    steps = _steps(harness, kind)
+    return " → ".join(f"{s.get('role', 'run')}: {s.get('harness', '?')}" for s in steps) or "—"

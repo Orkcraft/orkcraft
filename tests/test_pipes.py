@@ -1,0 +1,93 @@
+"""Rally pipes: scroll operations, capabilities and the safe payload helpers."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from orkcraft import scroll as ts
+from orkcraft.realm import pipes
+
+PRESETS = {
+    "forge": {"title": "Forge", "icon": "⚒️", "orc": "Smith", "role": "kanban", "category": "core"},
+    "loot": {"title": "Loot Chest", "icon": "📦", "orc": "Quartermaster", "role": "files", "category": "core"},
+    "scrying": {"title": "Scrying Spire", "icon": "🔮", "orc": "Shaman", "role": "preview", "category": "core"},
+    "town_hall": {"title": "War Tent", "icon": "💬", "orc": "Peon", "role": "sessions", "category": "core"},
+}
+
+
+def test_rally_points_set_replace_clear_and_refuse_loops():
+    scroll = ts.default_scroll(PRESETS)
+    rp = ts.set_rally_point(scroll, "forge", "scrying")
+    assert (rp.target_building_id, rp.pipe_mode) == ("scrying", "on_selection_change")
+    ts.set_rally_point(scroll, "forge", "loot", "on_task_completed")
+    assert scroll.rally_of("forge").target_building_id == "loot"
+    assert [r.source for r in scroll.building("scrying").roads] == []   # replaced, not added
+    assert ts.validate(scroll.to_dict()) == []
+    ts.set_rally_point(scroll, "loot", "scrying")
+    for args in (("forge", "forge"), ("forge", "nope"), ("forge", "scrying", "telepathy")):
+        try:
+            ts.set_rally_point(scroll, *args)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"accepted {args}")
+    try:
+        ts.set_rally_point(scroll, "scrying", "forge")  # forge → loot → scrying → forge
+    except ValueError as e:
+        assert "loop" in str(e)
+    else:
+        raise AssertionError("accepted a loop")
+    assert ts.clear_rally_point(scroll, "forge") is True
+    assert ts.clear_rally_point(scroll, "forge") is False
+    assert ts.validate(scroll.to_dict()) == []
+
+
+def test_validate_reports_a_loop_written_by_hand():
+    scroll = ts.default_scroll(PRESETS)
+    data = scroll.to_dict()
+    by_id = {b["id"]: b for b in data["buildings"]}
+    by_id["forge"]["roads"] = [{"id": "r", "from": "loot", "event": "on_selection_change", "handler": None}]
+    by_id["loot"]["roads"] = [{"id": "r", "from": "forge", "event": "on_selection_change", "handler": None}]
+    assert any("loop" in p for p in ts.validate(data))
+
+
+def test_modes_follow_what_targets_accept():
+    assert pipes.modes_for("forge", "scrying") == [pipes.ON_SELECTION, pipes.ON_TASK]
+    assert pipes.modes_for("loot", "scrying") == [pipes.ON_SELECTION, pipes.ON_TASK]
+    assert pipes.modes_for("forge", "loot") == [pipes.ON_TASK]       # the chest keeps reports only
+    assert pipes.modes_for("forge", "farm") == []                    # the farm receives nothing
+    assert pipes.modes_for("scrying", "loot") == [pipes.ON_TASK]
+    assert pipes.modes_for("scrying", "scrying") == []
+    assert pipes.can_receive("scrying") and not pipes.can_receive("forge")
+
+
+def test_file_payload_stays_inside_the_repository(tmp_path: Path):
+    repo = tmp_path / "repo"
+    (repo / "loot").mkdir(parents=True)
+    (repo / "loot" / "note.md").write_text("# Hi\n", encoding="utf-8")
+    (repo / "loot" / "run.py").write_text("print('x')\n", encoding="utf-8")
+    (repo / "loot" / "blob.bin").write_bytes(b"\0\1\2")
+    (repo / "loot" / "big.txt").write_bytes(b"a" * (pipes.FILE_LIMIT_BYTES + 1))
+    secret = tmp_path / "secret.env"
+    secret.write_text("TOKEN=1\n", encoding="utf-8")
+    os.symlink(secret, repo / "loot" / "link.env")
+
+    assert pipes.read_file_payload(repo, "loot/note.md") == ("📄 loot/note.md", "# Hi\n")
+    title, body = pipes.read_file_payload(repo, "loot/run.py")
+    assert body.startswith("```py\n") and "print('x')" in body
+    assert "Binary" in pipes.read_file_payload(repo, "loot/blob.bin")[1]
+    assert "too big" in pipes.read_file_payload(repo, "loot/big.txt")[1]
+    for escape in ("../secret.env", str(secret), "loot/link.env"):
+        title, body = pipes.read_file_payload(repo, escape)
+        assert title.startswith("🚫") and "TOKEN" not in body
+
+
+def test_task_report_and_loot_file(tmp_path: Path):
+    title, md = pipes.task_report("Coder", "Forge", ["", "step 1", "  ", "done ```x```"])
+    assert title == "🧌 Coder · Forge — task completed"
+    assert "step 1" in md and md.count("````") == 2
+    path = pipes.write_loot(tmp_path, "../../etc", title, md)
+    assert path.parent == tmp_path / "loot" / "pipes" and path.name.endswith("-______etc.md")
+    assert path.read_text(encoding="utf-8").startswith("# 🧌 Coder")
+    second = pipes.write_loot(tmp_path, "../../etc", title, md)
+    assert second != path

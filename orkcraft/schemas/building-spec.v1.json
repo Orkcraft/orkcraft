@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orkcraft.dev/schemas/building-spec.v1.json",
+  "title": "Orkcraft custom building spec (Mason & Artisan)",
+  "description": "A declarative building: a typed building (type, size, events, quick actions, config) or panes of whitelisted widgets bound to whitelisted data sources, plus whitelisted Command Card actions. No code, commands or paths outside the repository — orkcraft/realm/masonry.py checks what a schema cannot.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "icon",
+    "orc"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "orc": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z -]{0,23}$"
+        },
+        "role": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
+    "data": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "source"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "source": {
+            "enum": [
+              "graph_nodes",
+              "file",
+              "file_tail",
+              "directory",
+              "sessions",
+              "agents",
+              "git_log"
+            ]
+          },
+          "params": {
+            "type": "object",
+            "maxProperties": 8
+          }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "required": [
+        "direction",
+        "panes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "enum": [
+            "vertical",
+            "horizontal"
+          ]
+        },
+        "panes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "required": [
+              "widget",
+              "data"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "widget": {
+                "enum": [
+                  "list",
+                  "table",
+                  "markdown",
+                  "log",
+                  "tree",
+                  "counter"
+                ]
+              },
+              "data": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,31}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "ratio": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              },
+              "columns": {
+                "type": "array",
+                "maxItems": 5,
+                "items": {
+                  "enum": [
+                    "id",
+                    "title",
+                    "status",
+                    "priority",
+                    "assignee",
+                    "type",
+                    "deadline",
+                    "when",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mini": {
+      "description": "Town view (T1102): the collapsed hut — up to three status lines, each a template over one data entry, and the art piece from the library it wears when the operator switches the art on.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "art": {
+          "enum": [
+            "burrow",
+            "forge",
+            "watchtower",
+            "great_hall",
+            "spire",
+            "war_tent",
+            "vault",
+            "barracks",
+            "library",
+            "workshop",
+            "mill",
+            "rookery"
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": [
+              "data",
+              "template"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,31}$"
+              },
+              "template": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "where": {
+                "type": "object",
+                "maxProperties": 3,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 40
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "action"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "action": {
+            "enum": [
+              "node:open",
+              "node:chat",
+              "node:preview",
+              "building:refresh"
+            ]
+          }
+        }
+      }
+    },
+    "type": {
+      "enum": [
+        "pit",
+        "watchtower",
+        "totem",
+        "mill",
+        "fields",
+        "barracks",
+        "council",
+        "war_drum",
+        "forest",
+        "scrolls",
+        "lake",
+        "forge",
+        "loot",
+        "crag",
+        "catapult",
+        "workshop",
+        "custom"
+      ],
+      "description": "Building type (realm/catalog.py): the camp's buildings (T1107); custom = panes over data. Old ids load through catalog.ALIASES."
+    },
+    "size": {
+      "enum": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "description": "Hut size; default: the type's."
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+\\.[a-z_]+$"
+      },
+      "description": "Typed events this building sends (a subset of its type's); default: all."
+    },
+    "quick_actions": {
+      "type": "array",
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+\\.[a-z_]+$"
+      },
+      "description": "Up to two actions on the hut (from the type's)."
+    },
+    "roof": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z_]{1,24}$",
+      "description": "Roof art from the library; null = none."
+    },
+    "config": {
+      "type": "object",
+      "maxProperties": 12,
+      "description": "The type's settings (checked by realm/catalog.py)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "anyOf": [
+          {
+            "not": {
+              "required": [
+                "type"
+              ]
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "custom"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "data",
+          "layout"
+        ]
+      }
+    }
+  ]
+}

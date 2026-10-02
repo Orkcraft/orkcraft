@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# orkcraft wrapper script — runs orkcraft using its virtual environment.
+set -euo pipefail
+
+# Resolve symlinks to get true directory of this script
+TARGET="${BASH_SOURCE[0]}"
+while [ -L "$TARGET" ]; do
+  DIR="$(cd -P "$(dirname "$TARGET")" >/dev/null 2>&1 && pwd)"
+  TARGET="$(readlink "$TARGET")"
+  [[ $TARGET != /* ]] && TARGET="$DIR/$TARGET"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$TARGET")" >/dev/null 2>&1 && pwd)"
+PACKAGE_ROOT="$(cd -P "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
+
+VENV_PYTHON="$PACKAGE_ROOT/.venv/bin/python"
+
+if [ ! -x "$VENV_PYTHON" ]; then
+  echo "orkcraft: virtual environment python not found at $VENV_PYTHON" >&2
+  exit 1
+fi
+
+export PYTHONPATH="$PACKAGE_ROOT:${PYTHONPATH:-}"
+exec "$VENV_PYTHON" -m orkcraft.cli "$@"

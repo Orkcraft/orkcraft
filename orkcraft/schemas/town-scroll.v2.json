@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orkcraft.dev/schemas/town-scroll.v2.json",
+  "title": "Orkcraft Town Scroll v2",
+  "description": "Workspace state of Orkcraft (.orkcraft.json): orkspaces (canvases), buildings (windows), garrisons, rally points and budgets. Spec: T1093 / Orkcraft v0.2 §11.",
+  "type": "object",
+  "required": ["version", "active_orkspace_id", "orkspaces", "buildings"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "version": {"type": "string", "pattern": "^0\\.2\\.\\d+$"},
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "project_name": {"type": "string"},
+        "tagline": {"type": "string"},
+        "updated_at": {"type": "string"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gold_session_limit_usd": {"type": "number", "minimum": 0},
+        "lumber_context_limit_tokens": {"type": "integer", "minimum": 1},
+        "supply_max_workers": {"type": "integer", "minimum": 1, "maximum": 64}
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Operator-level toggles that apply to every orkspace.",
+      "additionalProperties": false,
+      "properties": {
+        "terrain_solid_black": {"type": "boolean", "description": "Alt+T: pure #000000 canvas instead of the biome."},
+        "preview_linked": {"type": "boolean", "description": "Scrying Spire follows the selection in other buildings."},
+        "console_height_pct": {"type": "integer", "minimum": 10, "maximum": 60, "description": "Height of the bottom console, % of the screen (drag its top edge, alt+- / alt+=)."}
+      }
+    },
+    "active_orkspace_id": {"$ref": "#/$defs/id"},
+    "orkspaces": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/orkspace"}
+    },
+    "buildings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/building"}
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "orkspace": {
+      "type": "object",
+      "required": ["id", "name", "biome", "buildings"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 40},
+        "icon": {"type": "string", "maxLength": 8},
+        "hotkey": {"type": "string", "pattern": "^F[1-8]$"},
+        "biome": {"enum": ["void", "forest", "ice"]},
+        "git": {"$ref": "#/$defs/git"},
+        "buildings": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "window_order": {
+          "type": "array", "items": {"$ref": "#/$defs/id"},
+          "description": "Z-order of this canvas, bottom to top."
+        },
+        "active_building": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]}
+      }
+    },
+    "git": {
+      "type": "object",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "mode": {"enum": ["root", "worktree"]},
+        "path": {"type": "string"},
+        "branch": {"type": "string"}
+      },
+      "if": {"properties": {"enabled": {"const": true}}},
+      "then": {"required": ["mode", "path"]}
+    },
+    "bounds": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1}
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"enum": ["on_demand", "cron", "webhook", "event", "pipe"]},
+        "expression": {"type": "string", "description": "cron expression"},
+        "endpoint": {"type": "string", "description": "webhook endpoint"},
+        "source": {"type": "string", "description": "event source, e.g. forge:task_ready"}
+      }
+    },
+    "orc": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 32},
+        "role": {"type": "string"},
+        "avatar": {"type": "string", "maxLength": 8},
+        "status": {"enum": ["idle", "busy", "alert", "frozen", "draft"]},
+        "trigger": {"$ref": "#/$defs/trigger"},
+        "orders": {"type": "string", "description": "Operator's standing orders (context) for this orc."}
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["key", "label", "action"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {"type": "string", "pattern": "^[A-Z0-9]$"},
+        "label": {"type": "string"},
+        "action": {"type": "string", "pattern": "^[a-z_]+:[a-z_]+$"}
+      }
+    },
+    "building": {
+      "type": "object",
+      "required": ["id", "preset_ref", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "preset_ref": {"type": "string", "pattern": "^(core|legacy|custom):[a-z0-9_-]+$"},
+        "title": {"type": "string", "minLength": 1},
+        "icon": {"type": "string", "maxLength": 8},
+        "pinned": {"type": "boolean"},
+        "demolished": {"type": "boolean", "description": "Window closed; its state and slot are kept."},
+        "bounds": {"$ref": "#/$defs/bounds"},
+        "frac": {
+          "description": "Fractional slot (x, y, w, h in 0..1) that follows canvas resizes; null for free-floating.",
+          "anyOf": [
+            {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}, "minItems": 4, "maxItems": 4},
+            {"type": "null"}
+          ]
+        },
+        "min_size": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"cols": {"type": "integer", "minimum": 1}, "rows": {"type": "integer", "minimum": 1}}
+        },
+        "rally_point": {
+          "anyOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["target_building_id", "pipe_mode"],
+              "additionalProperties": false,
+              "properties": {
+                "target_building_id": {"$ref": "#/$defs/id"},
+                "pipe_mode": {"enum": ["on_selection_change", "on_task_completed", "on_stream"]},
+                "transform": {"type": "string"}
+              }
+            }
+          ]
+        },
+        "chronicles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"type": "boolean"}, "log_file": {"type": "string"}}
+        },
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "garrison": {
+          "type": "object",
+          "required": ["members"],
+          "additionalProperties": false,
+          "properties": {
+            "lead_orc_id": {"$ref": "#/$defs/id"},
+            "members": {"type": "array", "items": {"$ref": "#/$defs/orc"}}
+          }
+        }
+      }
+    }
+  }
+}
