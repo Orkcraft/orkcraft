@@ -119,17 +119,14 @@ async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
         review = app.screen
         assert review.query_one("#review-title", Input).value == "Release tasks"
         assert review.query_one("#cfg-path", Input).value == "docs/release.md"
-        # change: smaller hut, only the status event, a new title
-        review.query_one("#review-size", Select).value = "S"
+        # change: only the status event, a new title; a camp building has its own silhouette, so no
+        # size or roof to pick (T1108 visuals) — the preview is that silhouette with the new name above
+        assert not review.query("#review-size") and not review.query("#review-roof")
         review.query_one("#review-events", SelectionList).deselect("tasks.created")
         review.query_one("#review-title", Input).value = "Release"
         await _settle(pilot)
         hut = review.query_one("#review-preview").children[0]
-        assert (hut.geom.w, hut.geom.h) == catalog.SIZES["S"] and "📋" in str(hut.border_title)   # narrow: icon
-        review.query_one("#review-roof", Select).value = "castle"                  # a roof from the library
-        await _settle(pilot)
-        hut = review.query_one("#review-preview").children[0]
-        assert hut.geom.h == catalog.SIZES["S"][1] + 2 and str(hut.render()).startswith("▄ ▄")
+        assert hut.sil.id == "fields" and hut.label.lines[-1] == "RELEASE" and "📋" in hut.label.head
         btn = review.query_one("#review-build")
         assert btn.region.height and btn.region.bottom <= SIZE[1]           # the button is on screen
         await pilot.click("#review-build")
@@ -138,8 +135,8 @@ async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
         w = app.desktop.get_window("release_todo")
         assert w is not None and app.focus_state.building_id == "release_todo"
     saved = json.loads(masonry.spec_file(fake_repo, "release_todo").read_text())
-    assert saved["title"] == "Release" and saved["size"] == "S" and saved["events"] == ["tasks.status_changed"]
-    assert saved["roof"] == "castle"
+    assert saved["title"] == "Release" and saved["events"] == ["tasks.status_changed"]
+    assert "roof" not in saved                                          # the camp building's own silhouette has none
     assert pipes.TYPED["release_todo"] == ("tasks.status_changed",)
 
 

@@ -90,7 +90,6 @@ KEY_GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
             ("Esc", "Back to the building"),
             ("alt+c", "🛒 Carts: off / selected building / all"),
             ("alt+v", "🏘 View: town (huts, one building open) / tiles"),
-            ("alt+a", "🛖 Huts: compact cards / with ASCII buildings"),
         ],
     ),
     (

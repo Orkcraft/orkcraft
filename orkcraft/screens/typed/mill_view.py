@@ -163,6 +163,15 @@ class MillView(TypedView):
             lines.append(("✓ " if j.ok else "✗ ") + j.started[11:16])
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """One short line: the last run, or how many steps it has."""
+        if self.running:
+            return ["milling…"]
+        if self.runs:
+            j = self.runs[0]
+            return [("✓ " if j.ok else "✗ ") + j.started[11:16]]
+        return [f"{len(self.steps)} step{'s' if len(self.steps) != 1 else ''}"] if self.steps else ["no steps"]
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "mill.run":
             return False

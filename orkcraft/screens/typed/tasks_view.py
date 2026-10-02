@@ -196,6 +196,18 @@ class TasksView(TypedView):
             lines.append(f"⚒ {doing[0].title}")
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        if self.error:
+            return [f"⚠ {self.error[:40]}"]
+        seen, lines = self._seen(), []
+        for col, tag in zip(COLUMNS, ("TODO", "PROG", "DONE")):
+            rows = [t for t in self.tasks if t.column == col]
+            lines.append(f"[{tag}] {len(rows)} task{'s' if len(rows) != 1 else ''}"
+                         + (" *" if any(t.id not in seen for t in rows) else ""))
+        doing = [t for t in self.tasks if t.column == "in_progress"]
+        lines.append(f"⚒ {doing[0].title}" if doing else "nothing in progress")
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "tasks.new":
             self.action_new()

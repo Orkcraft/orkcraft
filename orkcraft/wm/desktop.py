@@ -24,8 +24,8 @@ from orkcraft.widgets.road_layer import (ENTRY_GLYPH, EXIT_GLYPH, ROAD_SELECTED,
 from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
-from orkcraft.widgets.hut import HUT_W, Hut, hut_height
-from orkcraft.realm import huts as hut_art
+from orkcraft.widgets.hut import Hut
+from orkcraft.realm import catalog, silhouettes
 from orkcraft.widgets.terrain import Terrain
 from orkcraft.wm import roadmap
 from orkcraft.wm.window import Window
@@ -163,7 +163,6 @@ class Desktop(Container):
         self.huts: dict[str, Hut] = {}
         self.ghost: Ghost | None = None          # a building being placed
         self._ghost_done = None
-        self.hut_art = bool(scroll is not None and scroll.preferences.get("huts", "compact") == "art")
         # Rows at the bottom under the floating console: huts stay above `hut_reserve`
         # (the calm strip, constant), the open building above `open_reserve` (the current console).
         self.hut_reserve = 0
@@ -830,19 +829,6 @@ class Desktop(Container):
         width, height = self.dims
         return width, max(height - self.hut_reserve, 1)
 
-    def set_hut_art(self, on: bool) -> None:
-        """alt+a: huts as compact cards (three status lines) or with their ASCII building."""
-        if on == self.hut_art:
-            return
-        self.capture()                       # spots as fractions, so they survive the new height
-        self.hut_art = on
-        if self.scroll is not None:
-            self.scroll.preferences["huts"] = "art" if on else "compact"
-        self.sync_huts()
-        self.refresh_huts()
-        self.replan_roads()
-        self.save()
-
     def sync_huts(self) -> None:
         """One hut per shown building of this canvas, at its spot; the rest are hidden."""
         if not self.is_attached:
@@ -859,14 +845,13 @@ class Desktop(Container):
         for w in wanted:
             hut = self.huts.get(w.window_id)
             spec = self.app.spec_of(w.window_id) if hasattr(self.app, "spec_of") else None
-            size, roof, actions = hut_art.shape_for(spec)
+            sil, actions = silhouettes.of(spec, w.window_id), catalog.quick_actions_of(spec) if spec else []
             if hut is None:
-                hut = Hut(w.window_id, hut_art.art_for(w.window_id, spec), self.hut_art, size, roof, actions)
+                hut = Hut(w.window_id, sil, actions)
                 self.huts[w.window_id] = hut
                 self.mount(hut, after=self.terrain)
             hut.display = True
-            hut.set_shape(size, roof, actions)
-            hut.set_show_art(self.hut_art)
+            hut.set_silhouette(sil, actions)
             hut.set_title(w.number, w.window_title)
             hut.set_badge(w.badge)
             hut.set_class(w is self.active, "-expanded")
@@ -882,30 +867,29 @@ class Desktop(Container):
                 placed.append(hut.geom)
             else:
                 new.append((w, hut))
-        # The grid is cut for the biggest hut; a smaller one sits in the middle of its cell.
+        # New huts take their place on shelves cut for the sizes of all of them (each row spread over
+        # the width, the rows over the height); a spot that is taken falls back to the first free one.
         shown = [self.huts[w.window_id] for w in wanted]
-        cell_w = max((h.geom.w for h in shown), default=HUT_W)
-        cell_h = max((h.geom.h for h in shown), default=hut_height(self.hut_art))
-        slots = geo.hut_slots(width, height, cell_w, cell_h, len(wanted))
-        for n, (w, hut) in enumerate(new):
+        cells = geo.hut_shelves(width, height, [(h.geom.w, h.geom.h) for h in shown])
+        index = {w.window_id: i for i, w in enumerate(wanted)}
+        for w, hut in new:
             hw, hh = hut.geom.w, hut.geom.h
-            cells = [Geom(x + (cell_w - hw) // 2, y + (cell_h - hh) // 2, hw, hh) for x, y in slots]
-            spot = next((g for g in cells if not any(geo.overlaps(g, p, 1, 0) for p in placed)), None)
-            if spot is None:   # a full town: stack the rest, slightly offset
-                x, y = slots[n % len(slots)]
-                spot = geo.clamp(Geom(x + 2, y + 1, hw, hh), width, height)
+            x, y = cells[index[w.window_id]]
+            spot = Geom(x, y, hw, hh)
+            if any(geo.overlaps(spot, p, 1, 0) for p in placed):
+                spot = geo.first_free(width, height, hw, hh, placed) or geo.clamp(Geom(x + 2, y + 1, hw, hh), width, height)
             hut.place(spot)
             placed.append(spot)
 
     # -- the ghost of a building being placed ---------------------------------------
 
-    def start_ghost(self, label: str, size: tuple[int, int], roof: int, on_done) -> bool:
+    def start_ghost(self, label: str, size: tuple[int, int], on_done) -> bool:
         """Walk a ghost hut over the town; `on_done((fx, fy))` where it settles, `on_done(None)` on
         Esc. False when there is no town on screen to place it in (tiles, Minimal)."""
         if not self.town_active or self.dims[0] <= 0 or self.dims[1] <= 0 or self.ghost is not None:
             return False
         width, height = self.hut_room
-        w, h = size[0], hut_height(self.hut_art, size, roof)
+        w, h = size
         taken = [hut.geom for hut in self.huts.values() if hut.display]
         start = Geom(max((width - w) // 2, 0), max((height - h) // 2, 0), w, h)   # the middle of the town
         self.ghost = Ghost(label, start, (width, height), taken)
@@ -927,15 +911,16 @@ class Desktop(Container):
             done(geo.hut_to_frac(g.x, g.y, *self.hut_room, g.w, g.h) if g is not None else None)
 
     def refresh_huts(self) -> None:
-        """Live status lines: each building's view says what its hut shows (`mini_status`)."""
+        """Live status lines: each building's view says what its hut shows (`hut_lines`, else `mini_status`)."""
         for bid, hut in self.huts.items():
             if not hut.display:
                 continue
             w = self.get_window(bid)
             body = next(iter(w.children), None) if w is not None else None
+            lines_of = getattr(body, "hut_lines", None)
             status = getattr(body, "mini_status", None)
             try:
-                lines = status() if status is not None else []
+                lines = lines_of(hut.live_widths) if lines_of is not None else status() if status is not None else []
             except Exception:   # a status line must never take the town down
                 lines = []
             hut.set_status(lines)
@@ -1043,7 +1028,8 @@ class Desktop(Container):
         geoms = self._visible_geoms()
         roads = [(road_key(b.id, r.id), r.source, b.id) for b in self.scroll.buildings for r in b.roads
                  if b.id in geoms and r.source in geoms]
-        self.road_paths = roadmap.plan(geoms, roads, width, height) if roads else {}
+        anchors = {bid: h.body_geom for bid, h in self.huts.items() if bid in geoms} if self.town_active else None
+        self.road_paths = roadmap.plan(geoms, roads, width, height, anchors) if roads else {}
         if self.selected_road is not None and self.selected_road not in self.road_paths:
             self.selected_road = None
         self._render_roads()

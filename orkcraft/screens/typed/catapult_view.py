@@ -179,6 +179,18 @@ class CatapultView(TypedView):
             lines.append("🧪 dry run" if s.dry else f"✓ {s.status}" if s.ok else f"✗ {(s.error or str(s.status))[:30]}")
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """One short line: waiting for how many roads, or how the last shot went."""
+        load, waits = self.load, self.wait_for
+        if self.firing:
+            return ["firing…"]
+        if waits and load.missing(waits):
+            return [f"wait {len(waits) - len(load.missing(waits))}/{len(waits)}"]
+        if self.shots:
+            s = self.shots[0]
+            return ["🧪 dry" if s.dry else f"✓ {s.status}" if s.ok else f"✗ {s.status or 'err'}"]
+        return ["idle"]
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "catapult.fire":
             self.fire()

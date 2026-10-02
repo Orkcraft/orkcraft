@@ -274,6 +274,16 @@ class PoolView(TypedView):
         lines.append(("⏸ " if st.paused else "") + f"queue {len(st.queue)}")
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        st, f = self.state, self.foreman
+        busy = sum(1 for o in st.orcs if o.status == "working")
+        done = sum(1 for t in st.tasks if t.status == "done")
+        failed = sum(1 for t in st.tasks if t.status == "failed")
+        spent = sum(float((v or {}).get("cost") or 0) for v in st.stats.values())
+        state = "PAUSED" if st.paused else "BUSY" if busy else "READY"
+        return [f"active: {busy}/{f.max_orcs}", f"idle: {len(st.orcs) - busy} orcs", f"queue: {len(st.queue)} wait",
+                f"done {done} · failed {failed}", f"spent: ${spent:.2f}", f"status: {state}"]
+
     def quick_action(self, action_id: str) -> bool:
         st = self.state
         if action_id == "pool.hire":

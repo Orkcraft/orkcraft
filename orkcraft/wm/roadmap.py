@@ -98,13 +98,16 @@ def _gate_cell(g: Geom, side: str, i: int, k: int) -> Cell:
     return min(x, g.x + g.w - 2 if g.w > 2 else g.x), (g.y if side == "top" else g.y + g.h - 1)
 
 
-def gates(geoms: dict[str, Geom], roads: list[tuple[str, str, str]]) -> dict[str, tuple[Gate, Gate]]:
-    """road id → (exit gate on the source, entry gate on the target), spread along each side."""
+def gates(geoms: dict[str, Geom], roads: list[tuple[str, str, str]],
+          anchors: dict[str, Geom] | None = None) -> dict[str, tuple[Gate, Gate]]:
+    """road id → (exit gate on the source, entry gate on the target), spread along each side.
+    `anchors` (optional) is the part of a geom the gates sit on, e.g. a hut's silhouette."""
+    anchors = anchors or {}
     slots: dict[tuple[str, str], list[tuple[str, str, float]]] = {}
     for road_id, src, dst in roads:
         if src not in geoms or dst not in geoms:
             continue
-        a, b = geoms[src], geoms[dst]
+        a, b = anchors.get(src, geoms[src]), anchors.get(dst, geoms[dst])
         for bid, role, me, other in ((src, "exit", a, b), (dst, "entry", b, a)):
             side = facing_side(me, other)
             # order gates along the side by where the other end lies, so roads do not cross at the frame
@@ -114,7 +117,7 @@ def gates(geoms: dict[str, Geom], roads: list[tuple[str, str, str]]) -> dict[str
     for (bid, side), items in slots.items():
         items.sort(key=lambda t: (t[2], t[0], t[1]))
         for i, (road_id, role, _) in enumerate(items):
-            x, y = _gate_cell(geoms[bid], side, i, len(items))
+            x, y = _gate_cell(anchors.get(bid, geoms[bid]), side, i, len(items))
             out.setdefault(road_id, {})[role] = Gate(road_id, bid, role, side, x, y)
     return {rid: (g["exit"], g["entry"]) for rid, g in out.items() if "exit" in g and "entry" in g}
 
@@ -197,13 +200,14 @@ def glyphs(cells: list[Cell], exit_side: str, entry_side: str) -> list[tuple[int
     return out
 
 
-def plan(geoms: dict[str, Geom], roads: list[tuple[str, str, str]], width: int, height: int) -> dict[str, RoadPath]:
+def plan(geoms: dict[str, Geom], roads: list[tuple[str, str, str]], width: int, height: int,
+         anchors: dict[str, Geom] | None = None) -> dict[str, RoadPath]:
     """Every drawable road (both ends on this canvas): gates, path, covered cells and glyphs."""
     if width <= 0 or height <= 0:
         return {}
     under = _under(geoms, width, height)
     out = {}
-    all_gates = gates(geoms, roads)
+    all_gates = gates(geoms, roads, anchors)
     for road_id, src, dst in roads:
         if road_id not in all_gates:
             continue

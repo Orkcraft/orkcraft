@@ -141,12 +141,15 @@ class CragView(TypedView):
     # -- the hut ----------------------------------------------------------------------------------
 
     def mini_status(self) -> list[str]:
+        return self._hut_lines(22)
+
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        return self._hut_lines(max(widths[0] - 3, 6) if widths else 22)    # the frame's text width
+
+    def _hut_lines(self, w: int) -> list[str]:
         s = self.series
         if s is None:
             return ["carving…"]
-        from orkcraft.realm import catalog
-        from orkcraft.widgets.hut import PAD
-        w = max(catalog.size_of(self.spec)[0] - PAD, 6)          # the hut's inner width
         warn, crit = self._limit("warn"), self._limit("crit")
         lines = [f"{self.source} {bars.fmt(s.now)} {s.unit}".strip()]
         if self.orientation == "vertical" and s.buckets:

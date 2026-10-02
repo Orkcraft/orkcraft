@@ -123,6 +123,20 @@ class FilesView(TypedView):
             lines.append(f"🎯 {self.picked.rsplit('/', 1)[-1]}")
         return lines + top
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        if self.error:
+            return [f"⚠ {self.error[:40]}"]
+        try:
+            top = shelves.top_entries(self.root, 4)
+        except ValueError as e:
+            return [f"⚠ {e}"]
+        tree = [f" {'└──' if i == len(top) - 1 else '├──'} {name}" for i, name in enumerate(top)]
+        lines = [f"./{self.rel}".rstrip("/.") or "."] + tree
+        lines += [""] * (5 - len(lines))
+        lines.append(f"changed: {len(self.changed)} files" if self.changed else "changed: nothing")
+        lines.append(f"🎯 {self.picked.rsplit('/', 1)[-1]}" if self.picked else "")
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "files.open":
             return False

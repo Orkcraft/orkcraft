@@ -145,6 +145,17 @@ class CalendarView(TypedView):
         lines += [f"{e.day:%a} {daybook.when(e)[:5]} {e.summary}" for e in later]
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        now = self.clock()
+        cur, nxt, left = daybook.now_and_next(self.day.events, now)
+        today = [e for e in self.day.events if e.day == now.date()][:4]
+        lines = [f"[{daybook.when(e)[:5]}] {e.summary}" for e in today] or ["nothing today"]
+        lines += [""] * (5 - len(lines))
+        lines.append(f"now: {cur.summary}" if cur else f"next: {daybook.when(nxt)[:5]} {nxt.summary}" if nxt
+                     else "next: nothing more")
+        lines.append(f"left today: {left}")
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "calendar.new":
             return False

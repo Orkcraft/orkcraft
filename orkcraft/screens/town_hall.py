@@ -138,6 +138,18 @@ class TownHallView(Container):
             lines.append(limits[0])
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        app = self.app
+        repo = getattr(app, "repo_root", None)
+        lines = self.mini_status()
+        if repo is not None:
+            report = audit.load(repo)
+            lines.append(f"audit: {len(report.findings)} findings" if report else "audit: not run")
+            lines.append(f"proposals: {len(optimize.pending(repo))}")
+            wk = weekly.latest(repo)
+            lines.append(f"weekly: {wk.ts[:10]}" if wk else "weekly: not run")
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "hall.preset":               # T1108: the hut's two buttons build
             self.app.action_presets_catalog()

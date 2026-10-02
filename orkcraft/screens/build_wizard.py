@@ -21,7 +21,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, OptionList, Select, SelectionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import catalog, huts
+from orkcraft.realm import catalog, huts, silhouettes
 
 AUTO = "auto"
 
@@ -39,7 +39,7 @@ BuildWizard, BuildReview { align: center middle; }
 #review-cols { height: auto; }
 #review-form { width: 2fr; height: auto; max-height: 30; }
 #review-side { width: 1fr; height: auto; padding-left: 2; }
-#review-preview { height: 16; width: 100%; }
+#review-preview { height: 18; width: 100%; }
 #review-preview Hut { offset: 0 0; }
 #review-errors { color: $error; height: auto; }
 .cfg-row { height: 3; }
@@ -160,6 +160,7 @@ class BuildReview(ModalScreen[dict | None]):
         self.check = check          # spec -> problems (masonry.validate_spec with the taken ids)
         self.type = catalog.type_of(spec)
         self.attempts, self.cost_usd = attempts, cost_usd
+        self.fixed_shape = self.type.id in silhouettes.BY_TYPE      # a camp building has its own silhouette
 
     # -- layout ---------------------------------------------------------------------------------
 
@@ -177,9 +178,10 @@ class BuildReview(ModalScreen[dict | None]):
                     yield Input(value=s.get("icon", t.icon), id="review-icon", max_length=4)
                     yield Label("Description", classes="wizard-section")
                     yield Input(value=s.get("summary", ""), id="review-summary", max_length=200)
-                    yield Label(f"Size (the type's: {t.size})", classes="wizard-section")
-                    yield Select([(f"{k}  {w}×{h}", k) for k, (w, h) in catalog.SIZES.items()],
-                                 value=s.get("size") or t.size, allow_blank=False, id="review-size")
+                    if not self.fixed_shape:
+                        yield Label(f"Size (the type's: {t.size})", classes="wizard-section")
+                        yield Select([(f"{k}  {w}×{h}", k) for k, (w, h) in catalog.SIZES.items()],
+                                     value=s.get("size") or t.size, allow_blank=False, id="review-size")
                     if t.events:
                         yield Label("Events it sends along roads", classes="wizard-section")
                         picked = set(catalog.events_of(s))
@@ -200,9 +202,10 @@ class BuildReview(ModalScreen[dict | None]):
                             with Horizontal(classes="cfg-row"):
                                 yield Label(f"{key}{' *' if required else ''}")
                                 yield Input(value=_show(config.get(key)), placeholder=hint, id=f"cfg-{key}")
-                    yield Label("Roof", classes="wizard-section")
-                    roofs = [("none", "")] + [(name, name) for name in huts.ROOFS]
-                    yield Select(roofs, value=s.get("roof") or "", allow_blank=False, id="review-roof")
+                    if not self.fixed_shape:
+                        yield Label("Roof", classes="wizard-section")
+                        roofs = [("none", "")] + [(name, name) for name in huts.ROOFS]
+                        yield Select(roofs, value=s.get("roof") or "", allow_blank=False, id="review-roof")
                 with Vertical(id="review-side"):
                     yield Label("On the map", classes="wizard-section")
                     yield Container(id="review-preview")
@@ -226,7 +229,8 @@ class BuildReview(ModalScreen[dict | None]):
         summary = self.query_one("#review-summary", Input).value.strip()
         if summary:
             s["summary"] = summary
-        s["size"] = self.query_one("#review-size", Select).value
+        if not self.fixed_shape:
+            s["size"] = self.query_one("#review-size", Select).value
         if t.events:
             s["events"] = list(self.query_one("#review-events", SelectionList).selected)
         if t.actions:
@@ -242,10 +246,11 @@ class BuildReview(ModalScreen[dict | None]):
                 except ValueError:
                     problems.append(f"{key}: not a {typ.__name__}")
             s["config"] = config
-        roof = self.query_one("#review-roof", Select).value
-        s["roof"] = roof or None
-        if not s["roof"]:
-            s.pop("roof")
+        if not self.fixed_shape:
+            roof = self.query_one("#review-roof", Select).value
+            s["roof"] = roof or None
+            if not s["roof"]:
+                s.pop("roof")
         return s, problems
 
     def _preview(self) -> None:
@@ -261,13 +266,13 @@ class BuildReview(ModalScreen[dict | None]):
             box = self.query_one("#review-preview", Container)
         except NoMatches:               # an early change event, before the form is complete
             return
-        size, roof, actions = huts.shape_for(spec)
+        sil, actions = silhouettes.of(spec), catalog.quick_actions_of(spec)
         hut = next(iter(box.query(Hut)), None)
         if hut is None:
-            hut = Hut("preview", huts.art(self.type.art), False, size, roof, actions)
+            hut = Hut("preview", sil, actions)
             box.mount(hut)
         else:
-            hut.set_shape(size, roof, actions)
+            hut.set_silhouette(sil, actions)
         hut.set_title(1, f"{spec.get('icon', self.type.icon)} {spec.get('title', '')}")
         hut.set_status([self.type.preview, f"→ {len(catalog.events_of(spec))} events"])
         sends = ", ".join(catalog.event_label(e) or e for e in catalog.events_of(spec)) or "nothing typed"

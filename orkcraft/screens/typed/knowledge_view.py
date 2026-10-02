@@ -126,6 +126,15 @@ class KnowledgeView(TypedView):
             lines.append(f"+{len(self.bases) - 3} more")
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        if not self.bases:
+            return ["no bases yet"]
+        notes = sum(len(b.notes) for b in self.bases)
+        lines = [f"bases: {len(self.bases)}", f"notes: {notes:,}"]
+        lines += [f"{len(b.notes)} {b.path}" + (" ⚠" if b.error else "") for b in self.bases[:3]]
+        lines.append("status: " + ("ERROR" if any(b.error for b in self.bases) else "SYNCED"))
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "knowledge.add":
             return False

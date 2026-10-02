@@ -11,7 +11,7 @@ from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import buildings, huts, masonry
 from orkcraft.realm.masonry import Data, Row
-from orkcraft.widgets.hut import HUT_ART_H, HUT_H, HUT_W, Hut
+from orkcraft.widgets.hut import Hut, footprint
 from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import Geom
 
@@ -101,17 +101,7 @@ def test_mini_is_checked_with_the_spec(fake_repo: Path):
 
 # -- geometry and the scroll -------------------------------------------------------------------------
 
-@pytest.mark.parametrize("size,n", [((200, 40), 7), ((200, 40), 14), ((100, 30), 9), ((60, 20), 3)])
-def test_hut_slots_are_inside_and_apart(size, n):
-    width, height = size
-    slots = geo.hut_slots(width, height, HUT_W, HUT_H, n)
-    assert len(slots) >= min(n, len(geo.hut_slots(width, height, HUT_W, HUT_H, 999)))
-    geoms = [Geom(x, y, HUT_W, HUT_H) for x, y in slots]
-    for g in geoms:
-        assert 0 <= g.x <= width - HUT_W and 0 <= g.y <= height - HUT_H
-    for i, a in enumerate(geoms):
-        for b in geoms[i + 1:]:
-            assert not geo.overlaps(a, b), (a, b)
+HUT_W, HUT_H = 18, 12
 
 
 def test_hut_spot_survives_a_resize():
@@ -222,8 +212,8 @@ async def test_status_lines_badges_and_demolish(fake_repo: Path, town):
         await _settle(pilot)
         loot = desk.huts["loot"]
         assert all(h.status for h in desk.huts.values() if h.display), {b: h.status for b, h in desk.huts.items()}
-        assert loot.border_subtitle and "Artifacts" in str(loot.border_title)
-        assert loot.geom.h == HUT_H and "_/\\_" not in str(loot.render())      # compact: no art
+        assert loot.badge and "ARTIFACTS" in loot.label.lines[-1]
+        assert loot.sil.id == "loot" and (loot.geom.w, loot.geom.h) == footprint(loot.sil, loot.label, len(loot.actions))
 
         desk.hide(desk.get_window("loot"))
         await _settle(pilot)
@@ -283,7 +273,7 @@ async def test_hut_spots_persist(fake_repo: Path, town, isolated_layout_file: Pa
         assert app.desktop.active is None                               # a drag does not open it
         spot = hut.geom
         assert spot == before
-        frac = list(geo.hut_to_frac(spot.x, spot.y, *app.desktop.hut_room, HUT_W, HUT_H))
+        frac = list(geo.hut_to_frac(spot.x, spot.y, *app.desktop.hut_room, spot.w, spot.h))
     data = json.loads(isolated_layout_file.read_text())
     stored = next(b for b in data["buildings"] if b["id"] == "loot")["hut"]
     assert stored == frac
@@ -300,33 +290,6 @@ async def test_minimal_mode_shows_one_window_not_huts(fake_repo: Path, town):
     async with app.run_test(size=(90, 40)) as pilot:
         await _settle(pilot)
         assert app.desktop.single and not app.desktop.town_active and not _hut_geoms(app)
-
-
-@pytest.mark.asyncio
-async def test_alt_a_puts_the_art_on_the_huts(fake_repo: Path, town, isolated_layout_file: Path):
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.add_handler(app.scroll, "loot", "Scribe", kind="chain", chain=[{"op": "count"}])
-    ts.subscribe(app.scroll, "loot", "town_hall", "on_selection_change", handler="scribe")
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        desk = app.desktop
-        desk.refresh_huts()
-        chat = desk.huts["loot"]
-        assert not desk.hut_art and chat.geom.h == HUT_H and len(chat.status) <= 3
-        await pilot.press("alt+a")
-        await _settle(pilot)
-        assert desk.hut_art and chat.geom.h == HUT_ART_H and len(chat.status) <= 2
-        assert str(chat.render()).splitlines()[:huts.ART_H] == [ln.center(huts.STATUS_W).rstrip()
-                                                                 for ln in huts.art("vault")]
-        spots = list(_hut_geoms(app).values())
-        assert all(not geo.overlaps(a, b) for i, a in enumerate(spots) for b in spots[i + 1:])
-        path = desk.road_paths["loot:town_hall-selection"]                 # roads follow the taller huts
-        g = chat.geom
-        assert g.x <= path.entry.x < g.x + g.w and g.y <= path.entry.y < g.y + g.h
-        assert json.loads(isolated_layout_file.read_text())["preferences"]["huts"] == "art"
-        await pilot.press("alt+a")
-        await _settle(pilot)
-        assert not desk.hut_art and chat.geom.h == HUT_H
 
 
 # -- the calm console (T1103) ---------------------------------------------------------------------
@@ -381,13 +344,13 @@ async def test_town_hall_builds_from_a_preset_or_from_scratch_and_audits_from_f1
         spot = hall.geom
         assert [aid for _, _, aid in hall._buttons] == ["hall.preset", "hall.scratch"]   # T1108: two ways to build
         bx = next(x0 for x0, _, aid in hall._buttons if aid == "hall.preset")
-        await pilot.click(hall, offset=(2 + bx, hall.geom.h - 2))     # 📜 Preset on the hut
+        await pilot.click(hall, offset=(bx, hall.geom.h - 1))     # 📜 Preset on the hut
         await _settle(pilot)
         assert isinstance(app.screen, PresetsModal)
         await pilot.press("escape")
         await _settle(pilot)
         nx = next(x0 for x0, _, aid in hall._buttons if aid == "hall.scratch")
-        await pilot.click(hall, offset=(2 + nx, hall.geom.h - 2))     # 🛠 New on the hut
+        await pilot.click(hall, offset=(nx, hall.geom.h - 1))     # 🛠 New on the hut
         await _settle(pilot)
         from orkcraft.screens.builder_interview import BuilderChat
         assert isinstance(app.screen, BuilderChat)
@@ -430,7 +393,7 @@ async def test_a_waiting_orc_sets_its_hut_on_fire(fake_repo: Path, town):
         app.desktop.refresh_huts()
         await _settle(pilot)
         hut = app.desktop.huts["town_hall"]
-        assert hut.has_class("-alert") and "🔥" in str(hut.border_subtitle)
+        assert hut.has_class("-alert") and "🔥" in hut.label.head
         flame = hut.has_class("-flame")
         app.desktop.flicker_fires()
         assert hut.has_class("-flame") != flame                        # it flickers

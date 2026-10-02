@@ -269,6 +269,15 @@ class WatchtowerView(TypedView):
         lines += [f"{ICON.get(s.source, '·')} {s.title}" for s in self.signals[:2]]
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """Eight cells a line: port, events, state, the last signal — `prt:8080 evts:  3 stat: OK log: mail`."""
+        if not self.sources:
+            return ["no source", "yet", "", ""]
+        port = self.config.get("webhook_port")
+        last = self.signals[0].source[:4] if self.signals else "nil"
+        return [f"prt:{port}" if port else "prt:  —", f"evts:{len(self.signals):>3}",
+                f"stat:{'ERR' if self.errors else 'OK':>4}", f"log:{last:>5}"]
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "mail.refresh":
             self.refresh_data()

@@ -109,6 +109,37 @@ class LakeView(TypedView):
             lines.append(f"+{plus} −{minus}")
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """The panorama: the left pane the diff (or the first lines of what is shown), the right
+        one what it is — interleaved, row by row, as the silhouette's slots come."""
+        v = self.view
+        left_w, right_w = (widths[0], widths[1]) if len(widths) >= 14 else (28, 24)
+        if v is None:
+            left, right, last = ["nothing shown yet"], [], "open the building to look at something"
+        else:
+            if v.kind == "diff":
+                left = []
+                for l, r, c in v.rows:
+                    if c == "-":
+                        left.append(f"- {l}")
+                    elif c == "+":
+                        left.append(f"+ {r}")
+                    elif c == "~":
+                        left += [f"- {l}", f"+ {r}"]
+                plus = sum(1 for r in v.rows if r[2] in "+~")
+                minus = sum(1 for r in v.rows if r[2] in "-~")
+                right = [f"kind: diff", f"+{plus} −{minus}", f"rows: {len(v.rows)}"]
+            else:
+                left = [ln for ln in v.text.splitlines() if ln.strip()]
+                right = [f"kind: {v.kind}", f"lines: {len(v.text.splitlines())}"]
+            right.insert(0, v.title.rsplit("/", 1)[-1])
+            last = f"{v.kind} · {v.target or v.title}"
+        out: list[str] = []
+        for i in range(6):
+            out.append(left[i] if i < len(left) else "")
+            out.append(right[i] if i < len(right) else "")
+        return out + [last]
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "lake.open":
             return False

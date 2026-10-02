@@ -106,11 +106,25 @@ Every other building is built from the catalog of typed buildings (below) or by 
 
 ## Town view (default)
 
-Every building of the canvas is a **hut** on the map: a compact card with its number and title on
-the fence, the resident orc's state (bottom right, ❓ turns the fence orange) and three live
-status lines — what is in work, the next calendar event, the last test run, what arrived by road.
-Roads and carts run between the huts. `alt+a` puts an ASCII orc building on every hut (two status
-lines then); the choice is `preferences.huts` (`compact` | `art`).
+Every building of the canvas is a **hut** on the map, drawn as its own silhouette: a mill with
+sails, a watchtower under a roof, a forest of trees on a long hall, a pit with its pipe. Above it
+stand two or three lines — its number, icon and the resident orc's state (🔥 when it waits for
+orders, and the whole frame turns orange), then its name. The silhouette is the building: a frame
+with live status lines in it (the big ones start with a fixed heading of what the building is for —
+`WORKER POOL`, `MERGE ENGINE`, `TELEMETRY & TELEGRAPHS`…). Under it, up to two quick-action buttons.
+Roads and carts run between the huts.
+
+| Footprint | Buildings |
+|---|---|
+| small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
+| 🗼 Watchtower | a roof over four lines: port, events, state, last signal |
+| halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🔥 Orc Council · ⚒️ Forge · 🗑️ Scroll Dump |
+| complexes, 26 wide, 9 lines | 🥁 War Drum · 🌲 File Forest · 📦 Loot Vault · 🪨 Tally Crag (and the 🏰 Town Hall) |
+| panorama, 60 wide | 🌊 Lake of Insight: two panes, the diff and what it is |
+
+A view fills the slots with `hut_lines(widths)` (else its three `mini_status` lines); the shapes
+are in `realm/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
+spread over the width — and keep the spot you drag them to.
 
 - Click a hut or press its number → the building opens over the map. One building is open at a
   time; opening another closes the first. `esc`, a click on the map or a second click on its hut
@@ -137,12 +151,12 @@ lines then); the choice is `preferences.huts` (`compact` | `art`).
   the War Map, the roster and the HUD. The question itself (`!`, `Enter`) opens with ❓.
 - `alt+v` switches to **tiles** (every window open side by side, the table below) and back; the
   choice is `preferences.view`. Minimal mode (narrow terminal) shows one window full size.
-- Built-in buildings say what their hut shows (`mini_status()` of the view). A custom building
-  carries a `mini` block — up to three templates over its own data and the art piece it wears
-  with the art on (`realm/huts.py`: burrow, forge, watchtower, great_hall, spire, war_tent, vault,
-  barracks, library, workshop, mill, rookery). Templates read `{count}`, the first row's fields, `{last}`,
-  `{heading}`… with an optional `where` filter. Artisan writes it with the rest of the spec; masonry
-  checks it like the rest.
+- Built-in buildings say what their hut shows (`hut_lines()` / `mini_status()` of the view). A custom
+  (panes) building has a plain frame of its size (XS 10×5 · S 14×7 · M 18×9 · L 26×11) and may wear
+  a roof (gable, thatch, tiles, pagoda, dome, castle, tent, chimney, flag, snow); it carries a `mini`
+  block — up to three templates over its own data. Templates read `{count}`, the first row's fields,
+  `{last}`, `{heading}`… with an optional `where` filter. Artisan writes it with the rest of the spec;
+  masonry checks it like the rest.
 
 ## Buildings: the camp
 
@@ -150,11 +164,10 @@ A new camp starts with the **🏰 Town Hall** alone; every other building is bui
 `P` lists the 15 camp buildings by what you need, asks for this building's name, icon,
 description and settings, and lets you place it (no model call); `B` (🏗 on the Town Hall) also
 builds one **from scratch** or lets the Foreman prefill one from a description — see
-[Town Hall pipeline](#town-hall-pipeline-t1108). A building is a **type** from the catalog
-(`realm/catalog.py`) plus a spec in `.orkcraft/buildings/<id>.json`: the hut size (XS 10×5 ·
-S 14×7 · M 18×9 · L 26×11), up to two **quick actions** (buttons on the hut, `[` / `]`), the
-**events** it sends down roads, its settings and an optional **roof** (gable, thatch, tiles,
-pagoda, dome, castle, tent, chimney, flag, snow).
+[Town Hall pipeline](#town-hall-pipeline). A building is a **type** from the catalog
+(`realm/catalog.py`) plus a spec in `.orkcraft/buildings/<id>.json`: its title and icon (they stand
+above the hut), up to two **quick actions** (buttons under the hut, `[` / `]`), the **events** it
+sends down roads and its settings. Each camp type has its own silhouette (see Town view).
 
 ```
 1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🗿 Totem
@@ -332,7 +345,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 
 - **Build Flow (`B` in Neutral)**: Opens `BuildModal` to prompt Mason (data sourcing) and Artisan (panes, widgets, actions). While `builders.build(...)` runs in a background worker thread, `BuildProgress` shows progress with a spinner (`Esc` hides the modal while generation proceeds).
 - **Preview & Raise**:
-  - Artisan also writes the hut (`mini`: up to three status templates + an art piece from the library), see Town view.
+  - Artisan also writes the hut (`mini`: up to three status templates), see Town view.
   - Valid specifications display in `BuildPreview`: inspecting title, icon, resident orc, data queries, widget panes, custom actions, attempts used, and API cost.
   - Pressing `Enter` / "Raise" saves the spec to `.orkcraft/buildings/<id>.json`, registers the building in the Town Scroll (`.orkcraft.json`), mounts and focuses the new window in the active orkspace, and logs `building_raised` to the Chronicles.
   - Invalids or build errors show in `BuildFailed` with failure details and a "Try again" shortcut (retaining the prompt).

@@ -89,6 +89,11 @@ class TypedView(CustomBuildingView):
     def mini_status(self) -> list[str]:
         return [self.btype.preview]
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """What the silhouette's live slots show (`widths`: the width of each). A view with more to
+        say than `mini_status` overrides this; the default is the three short lines."""
+        return self.mini_status()
+
     def quick_action(self, action_id: str) -> bool:
         return False
 

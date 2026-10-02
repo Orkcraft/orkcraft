@@ -194,6 +194,16 @@ class GeneratorView(TypedView):
         lines += [f"* {g.path.rsplit('/', 1)[-1]}" for g in waiting[:3]]
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        if self.error:
+            return [f"⚠ {self.error[:40]}"]
+        waiting = [g for g in self.rows if not g.reviewed]
+        lines = [f"{len(waiting)} to review" if waiting else "all reviewed ✓" if self.rows else "nothing generated"]
+        lines += [f"* {g.path.rsplit('/', 1)[-1]}" for g in waiting[:4]]
+        lines += [""] * (5 - len(lines))
+        lines.append(f"stored: {len(self.stored)}")
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id != "generator.accept_all":
             return False

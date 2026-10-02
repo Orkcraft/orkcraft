@@ -228,6 +228,21 @@ class TeamView(TypedView):
             lines.append(OUTCOME.get(d.outcome, d.outcome))
         return lines
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        d = self.current
+        lines = [f"{m.role}: {m.label}" for m in self.team[:3]]
+        if len(self.team) > 3:
+            lines.append(f"+{len(self.team) - 3} more")
+        if d is None:
+            lines.append("no debate yet")
+        elif d.outcome == "asked":
+            lines.insert(0, f"🔥 {d.asking} asks")
+        elif d.outcome == "running":
+            lines += [f"round: {d.round}/{self.max_rounds}", f"spent: ${d.spent:.2f}"]
+        else:
+            lines += [f"outcome: {OUTCOME.get(d.outcome, d.outcome)}", f"rounds: {d.round}/{self.max_rounds}"]
+        return lines
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "team.start":
             d = self.current

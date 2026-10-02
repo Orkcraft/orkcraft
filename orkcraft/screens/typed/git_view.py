@@ -165,6 +165,22 @@ class GitView(TypedView):
             lines.append(" ".join(bits))
         return lines or ["no branches"]
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        snap = self.snap
+        if snap is None:
+            return ["⎇ looking…"]
+        if snap.error:
+            return [f"⚠ {snap.error[:40]}"]
+        rows = [b for b in snap.branches if b.name != snap.base]
+        prs = sum(1 for b in snap.branches if b.pr is not None)
+        last = ("merging " + self.merging + "…" if self.merging else
+                "—" if self.last_merge is None else
+                f"✓ {self.last_merge.branch}" if self.last_merge.ok else f"✗ {self.last_merge.branch}")
+        gate = "CONFIRM" if self.config.get("confirm") else "OPEN"
+        test = "set" if self.config.get("test_cmd") else "none"
+        return [f"base: {snap.base}", f"branches: {len(rows)} · PRs: {prs}", f"tests: {test}",
+                f"last: {last}", f"changes: {rows[0].change if rows and rows[0].files else '—'}", f"gate: {gate}"]
+
     # -- the merge ----------------------------------------------------------------------------
 
     @property

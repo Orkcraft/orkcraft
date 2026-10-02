@@ -1,5 +1,5 @@
-"""Huts: the collapsed view of a building — up to three status lines, and optionally an
-ASCII orc building over them (preferences.huts: compact | art).
+"""Huts: the `mini` block of a custom building, the roofs of a custom frame and the older ASCII art
+library. (What a camp building looks like on the map is in `realm/silhouettes.py`.)
 
 The town view shows every building as a hut and expands one at a time. This module is pure (no
 Textual): the art library, which art a built-in building wears, and the `mini` block of a custom
@@ -292,15 +292,3 @@ def roof(name: str | None, width: int = ROOF_W) -> tuple[str, ...]:
         return ()
     lines = r(max(width, 4)) if callable(r) else r
     return tuple(line[:width].rstrip() for line in lines)
-
-
-def shape_for(spec: dict | None):
-    """(size, roof lines, quick actions) of a building's hut. A building without a type (built-in,
-    or a custom one of old without an explicit size) keeps the hut of T1102."""
-    from orkcraft.realm import catalog
-    from orkcraft.widgets.hut import LEGACY_SIZE
-
-    typed = spec is not None and ((spec.get("type") or "custom") != "custom" or spec.get("size"))
-    size = catalog.size_of(spec) if typed else LEGACY_SIZE
-    from orkcraft.widgets.hut import PAD
-    return size, roof((spec or {}).get("roof"), size[0] - PAD), catalog.quick_actions_of(spec) if spec else []

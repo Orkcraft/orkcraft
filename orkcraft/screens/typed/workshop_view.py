@@ -254,6 +254,14 @@ class WorkshopView(TypedView):
             return ["waiting for a cart"]
         return [mini_line(self.runs[0]), f"{len(self.runs)} run{'s' if len(self.runs) != 1 else ''}"]
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        if self.running:
+            return ["running…"]
+        n = len(self.runs)
+        last = mini_line(self.runs[0]) if self.runs else "waiting for a cart"
+        timer = f"⏰ {self.config['schedule']}" if self.config.get("schedule") else f"layout: {self.ws_layout}"
+        return [last, f"{n} run{'s' if n != 1 else ''}", timer, self.script.name]
+
     def quick_action(self, action_id: str) -> bool:
         if action_id == "workshop.run":
             if self.last_cart is None:

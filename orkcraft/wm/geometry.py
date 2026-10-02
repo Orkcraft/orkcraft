@@ -96,17 +96,45 @@ HUT_GAP_X = 4                               # room for a road between neighbouri
 HUT_GAP_Y = 2
 
 
-def hut_slots(width: int, height: int, w: int, h: int, n: int = 0) -> list[tuple[int, int]]:
-    """The town grid for `n` huts: as few rows as fit, every hut centred in an equal share of the
-    canvas, so the gaps (and the roads in them) are even. At least `n` spots, row by row."""
-    cols_fit = max(1, (width + HUT_GAP_X) // (w + HUT_GAP_X))
-    rows_fit = max(1, (height + HUT_GAP_Y) // (h + HUT_GAP_Y))
-    n = max(n, 1)
-    rows = min(rows_fit, -(-n // cols_fit))
-    cols = min(cols_fit, -(-n // rows))
-    spots = [(round((c + 0.5) * width / cols - w / 2), round((r + 0.5) * height / rows - h / 2))
-             for r in range(rows) for c in range(cols)]
-    return [(min(max(x, 0), max(width - w, 0)), min(max(y, 0), max(height - h, 0))) for x, y in spots]
+def hut_shelves(width: int, height: int, sizes: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Spots for huts of different sizes, in order: rows are filled left to right (a row ends when
+    the next hut would not fit with its gap), every row is spread over the width and the rows over
+    the height, a small hut sits in the middle of its row. Parallel to `sizes`."""
+    rows: list[list[int]] = [[]]
+    used = [0]
+    for i, (w, _) in enumerate(sizes):
+        need = w + (HUT_GAP_X if rows[-1] else 0)
+        if rows[-1] and used[-1] + need > width:
+            rows.append([])
+            used.append(0)
+            need = w
+        rows[-1].append(i)
+        used[-1] += need
+    rows = [r for r in rows if r]
+    heights = [max(sizes[i][1] for i in r) for r in rows]
+    gap_y = max(height - sum(heights), 0) / max(len(rows), 1)
+    spots: list[tuple[int, int]] = [(0, 0)] * len(sizes)
+    y = gap_y / 2
+    for r, rh in zip(rows, heights):
+        gap_x = max(width - sum(sizes[i][0] for i in r), 0) / len(r)
+        x = gap_x / 2
+        for i in r:
+            w, h = sizes[i]
+            spots[i] = (min(max(round(x), 0), max(width - w, 0)),
+                        min(max(round(y + (rh - h) / 2), 0), max(height - h, 0)))
+            x += w + gap_x
+        y += rh + gap_y
+    return spots
+
+
+def first_free(width: int, height: int, w: int, h: int, taken: list[Geom], step: int = 2) -> Geom | None:
+    """The first spot (reading order) where a w×h hut fits without touching any of `taken`."""
+    for y in range(0, max(height - h, 0) + 1, step):
+        for x in range(0, max(width - w, 0) + 1, step):
+            g = Geom(x, y, w, h)
+            if not any(overlaps(g, t, 1, 0) for t in taken):
+                return g
+    return None
 
 
 def hut_to_frac(x: int, y: int, width: int, height: int, w: int, h: int) -> tuple[float, float]:

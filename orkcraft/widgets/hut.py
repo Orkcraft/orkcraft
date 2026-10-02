@@ -1,8 +1,13 @@
-"""Hut: a building collapsed on the town map — its number and title on the fence,
-the resident orc's state, an optional roof, live status lines and up to two quick-action buttons;
-with the art on, an ASCII orc building above the lines. Its size comes from the building's type.
-A click on a button runs that action; a click elsewhere expands the building; a drag moves the hut
-(the town keeps the spot)."""
+"""Hut: a building collapsed on the town map, drawn as its own silhouette (realm/silhouettes.py).
+
+Above the building stand its number, icon and the orc's state, then its name, in two or three
+lines. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
+two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
+building; a drag moves the hut (the town keeps the spot).
+
+The frame takes the colour of the biome (and turns orange when an orc waits for orders), so the
+rules for that are CSS; only the text carries styles of its own.
+"""
 from __future__ import annotations
 
 from rich.cells import cell_len
@@ -12,40 +17,27 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
+from orkcraft.realm import silhouettes
 from orkcraft.realm.orcs import ALERT_ICON
-from orkcraft.realm.huts import ART_H, ART_STATUS_LINES, STATUS_LINES, STATUS_W  # noqa: F401
+from orkcraft.realm.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
-HUT_W = STATUS_W + 4         # round fence + one cell of padding each side
-HUT_H = STATUS_LINES + 2                  # compact: fence + three lines
-HUT_ART_H = ART_H + ART_STATUS_LINES + 2  # art: fence + art + two lines
-LEGACY_SIZE = (HUT_W, HUT_H)              # buildings without a type keep the hut of T1102
-PAD = 4                                   # fence + padding, both sides
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d")   # a burning hut flickers between these
-ART_COLOR = "#b98d55"        # weathered wood: the huts match the brown roads
+HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
+NAME_STYLE, NUMBER_STYLE, BUTTON_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
+DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
 
 _BIOME_RULES = "\n".join(
-    f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; border: round {b.border}; }}\n"
-    f"    Desktop.biome-{name} Hut.-expanded {{ border: double {b.border_focus}; border-title-color: {b.border_focus}; color: {b.border_focus}; }}"
+    f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
+    f"    Desktop.biome-{name} Hut.-expanded {{ color: {b.border_focus}; text-style: bold; }}"
     for name, b in theme.BIOMES.items()
 )
 
 
-def hut_height(show_art: bool, size: tuple[int, int] = LEGACY_SIZE, roof: int = 0) -> int:
-    """Rows of a hut: its size, plus its roof, plus the art (which takes one status line's place)."""
-    return size[1] + roof + (ART_H - 1 if show_art else 0)
-
-
-def clip(text: str, width: int) -> str:
-    """Cut to `width` terminal cells, ending with … when something was cut."""
-    if cell_len(text) <= width:
-        return text
-    out = ""
-    for ch in text:
-        if cell_len(out + ch) > width - 1:
-            break
-        out += ch
-    return out + "…"
+def footprint(sil: silhouettes.Silhouette, label: silhouettes.Label, actions: int) -> tuple[int, int]:
+    """(width, height) of a hut: the label over the silhouette, its caption and the buttons under it."""
+    return (max(sil.width, label.width),
+            len(label.lines) + sil.height + (1 if sil.caption else 0) + (1 if actions else 0))
 
 
 class Hut(Widget):
@@ -53,19 +45,16 @@ class Hut(Widget):
     DEFAULT_CSS = f"""
     Hut {{
         position: absolute;
-        padding: 0 1;
-        border: round {theme.BIOMES[theme.DEFAULT_BIOME].border};
-        border-title-color: $text;
-        border-title-style: bold;
-        border-subtitle-align: right;
+        padding: 0;
+        border: none;
+        color: {theme.BIOMES[theme.DEFAULT_BIOME].border};
         background: {theme.BIOMES[theme.DEFAULT_BIOME].canvas};
     }}
 {_BIOME_RULES}
-    Hut {{ color: {ART_COLOR}; }}
-    Hut:hover {{ border-title-color: $warning; }}
-    Desktop Hut.-alert {{ border: round {FIRE[0]}; border-title-color: {FIRE[0]}; }}
-    Desktop Hut.-alert.-flame {{ border: round {FIRE[1]}; border-title-color: {FIRE[2]}; }}
-    Desktop Hut.-rally-target {{ border: double $success; border-title-color: $success; }}
+    Hut:hover {{ color: $warning; }}
+    Desktop Hut.-alert {{ color: {FIRE[0]}; }}
+    Desktop Hut.-alert.-flame {{ color: {FIRE[1]}; }}
+    Desktop Hut.-rally-target {{ color: $success; text-style: bold; }}
     """
 
     class Clicked(Message):
@@ -85,135 +74,123 @@ class Hut(Widget):
             self.hut = hut
             self.action_id = action_id
 
-    def __init__(self, building_id: str, art: tuple[str, ...], show_art: bool = False,
-                 size: tuple[int, int] = LEGACY_SIZE, roof: tuple[str, ...] = (),
+    def __init__(self, building_id: str, sil: silhouettes.Silhouette | None = None,
                  actions: list | tuple = ()) -> None:
         super().__init__(id=f"hut-{building_id}")
         self.building_id = building_id
-        self.art = art
-        self.show_art = show_art
-        self.size_wh = size
-        self.roof = tuple(roof)
+        self.sil = sil or DEFAULT_SIL
         self.actions = list(actions)          # catalog.ActionDef: id, label, glyph
-        self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the action row
-        self.geom = Geom(0, 0, size[0], hut_height(show_art, size, len(self.roof)))
+        self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the button row
+        self.number, self.title, self.badge = 0, "", ""
+        self.label = silhouettes.label(0, "", self.sil.width)
+        self.status: list[str] = []           # the live lines the view gave
+        self.geom = Geom(0, 0, *footprint(self.sil, self.label, len(self.actions)))
         self.styles.width, self.styles.height = self.geom.w, self.geom.h
-        self._lines: list[str] = []
-        self.status: list[str] = []
-        self.badge = ""
-        self._title = ""
         self._drag: tuple[int, int, Geom] | None = None
         self._dragged = False
         self.fixed = False                    # a fixed hut (the Town Hall) does not move
 
     # -- content --------------------------------------------------------------------------------
 
+    @property
+    def live_widths(self) -> list[int]:
+        """The widths of the slots live text goes to — a view may tailor its lines to them."""
+        return self.sil.live_widths
+
+    @staticmethod
+    def _badge_short(badge: str) -> str:
+        parts = badge.split()                 # `🧌 Smith+1 C 🔨 💤` → `🧌 💤`
+        return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
+
+    def _relabel(self) -> None:
+        label = silhouettes.label(self.number, self.title, self.sil.width, self._badge_short(self.badge))
+        if label != self.label:
+            self.label = label
+            self._reshape()
+        self.refresh()
+
     def set_title(self, number: int, title: str) -> None:
-        # "🔮 Scrying Spire · Diff Inspector": the art already says what kind of building it is,
-        # so a hut keeps the icon and the part after the dot.
-        if " · " in title:
-            icon, _, rest = title.partition(" ")
-            title = f"{icon} {rest.rsplit(' · ', 1)[-1]}"
-        # A narrow hut clips the words, then drops the number: "7 📋 Tasks" → "7 📋 Ta…" → "📋 Tasks" → "📋".
-        room = self.geom.w - 5          # Textual keeps the corners and pads the title; one cell spare for wide emoji
-        icon, _, words = title.partition(" ")
-        head = f"{number} {icon} "
-        if not words:
-            options = [f"{number} {title}"]
-        else:
-            options = [f"{number} {title}"]
-            if room - cell_len(head) >= 4:                   # at least "Ta…" of the name
-                options.append(clip(f"{number} {title}", room))
-            options += [f"{icon} {words}", clip(f"{icon} {words}", room) if room - cell_len(icon) >= 5 else "",
-                        f"{number} {icon}", icon]
-        text = next((o for o in options if o and cell_len(o) <= room), clip(options[-1], max(room, 1)))
-        if text != self._title:
-            self._title = text
-            self.border_title = text
+        if (number, title) != (self.number, self.title):
+            self.number, self.title = number, title
+            self._relabel()
 
     def set_badge(self, badge: str) -> None:
-        """The roster badge (`🧌 Smith+1 C 🔨 💤`) shortened to the lead's icon and state."""
+        """The roster badge, shortened to the lead's icon and state, goes on the label's first line."""
         if badge == self.badge:
             return
         self.badge = badge
-        parts = badge.split()
-        self.border_subtitle = f" {parts[0]} {parts[-1]} " if len(parts) >= 2 else ""
         self.set_class(ALERT_ICON in badge, "-alert")
-
-    @property
-    def inner_w(self) -> int:
-        return max(self.size_wh[0] - PAD, 1)
-
-    @property
-    def status_lines(self) -> int:
-        """Lines left for the status once the action row and the art have their place."""
-        rows = self.size_wh[1] - 2 - (1 if self.actions else 0) - (1 if self.show_art else 0)
-        return max(rows, 1)
+        self._relabel()
 
     def _reshape(self) -> None:
-        h = hut_height(self.show_art, self.size_wh, len(self.roof))
-        self.geom = Geom(self.geom.x, self.geom.y, self.size_wh[0], h)
-        self.styles.width, self.styles.height = self.geom.w, self.geom.h
-        self.set_status(self._lines)
-        self.refresh()
+        w, h = footprint(self.sil, self.label, len(self.actions))
+        if (w, h) != (self.geom.w, self.geom.h):
+            self.geom = Geom(self.geom.x, self.geom.y, w, h)
+            self.styles.width, self.styles.height = w, h
 
-    def set_show_art(self, on: bool) -> None:
-        if on != self.show_art:
-            self.show_art = on
+    def set_silhouette(self, sil: silhouettes.Silhouette, actions: list | tuple = ()) -> None:
+        """A new shape or set of quick actions (the spec changed, or the type's defaults)."""
+        if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
+            self.sil, self.actions = sil, list(actions)
+            self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_short(self.badge))
             self._reshape()
-
-    def set_shape(self, size: tuple[int, int], roof: tuple[str, ...] = (), actions: list | tuple = ()) -> None:
-        """A new size, roof or set of quick actions (the spec changed, or the type's defaults)."""
-        if (tuple(size), tuple(roof), [a.id for a in actions]) != (self.size_wh, self.roof, [a.id for a in self.actions]):
-            self.size_wh, self.roof, self.actions = tuple(size), tuple(roof), list(actions)
-            self._reshape()
+            self.refresh()
 
     def set_status(self, lines: list[str]) -> None:
-        self._lines = list(lines)
-        lines = [clip(" ".join(str(x).split()), self.inner_w) for x in lines[:self.status_lines]]
+        lines = [" ".join(str(x).split()) for x in lines]
         if lines != self.status:
             self.status = lines
             self.refresh()
 
-    def _action_row(self) -> Text:
+    def _action_row(self, width: int) -> Text:
         """`[+ New task] [▶ Run]` when it fits, `[+] [▶]` when it does not; remembers where each is."""
-        width = self.inner_w
         for long in (True, False):
             parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
             if cell_len(" ".join(parts)) <= width or not long:
                 break
-        row, x, self._buttons = Text(no_wrap=True, overflow="crop"), 0, []
+        total = cell_len(" ".join(parts))
+        x = max((width - total) // 2, 0)
+        row, self._buttons = Text(" " * x, no_wrap=True, overflow="crop"), []
         for a, part in zip(self.actions, parts):
             w = cell_len(part)
             self._buttons.append((x, x + w, a.id))
-            row.append(part, style="bold #f2c66d")
+            row.append(part, style=BUTTON_STYLE)
             row.append(" ")
             x += w + 1
         return row
 
     def render(self) -> Text:
+        w = self.geom.w
         text = Text(no_wrap=True, overflow="crop")
-        w = self.inner_w
-        for line in self.roof:
-            text.append(line.center(w).rstrip() + "\n", style="#9b6a3c")
-        if self.show_art:
-            for line in self.art:
-                text.append(line.center(w).rstrip() + "\n")
-        n = self.status_lines
-        for i in range(n):
-            line = self.status[i] if i < len(self.status) else ""
-            text.append(line, style="bold #e8e0c8" if i == 0 else "#a89f86")
-            if i < n - 1 or self.actions:
-                text.append("\n")
+        for i, line in enumerate(self.label.lines):
+            pad = max((w - cell_len(line)) // 2, 0)
+            text.append(" " * pad + line + "\n", style=NUMBER_STYLE if i == 0 else NAME_STYLE)
+        left = (w - self.sil.width) // 2
+        for row in self.sil.draw(self.status):
+            text.append(" " * left)
+            for piece, role in row:
+                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else None)
+            text.append("\n")
+        if self.sil.caption:
+            cap = self.sil.caption_text(self.status)
+            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=LIVE_STYLE)
         if self.actions:
-            text.append_text(self._action_row())
+            text.append_text(self._action_row(w))
+        else:
+            text.rstrip()
         return text
 
     def action_at(self, cx: int, cy: int) -> str | None:
-        """The quick action under a content cell (x, y), if any: the buttons sit on the last row."""
-        if not self.actions or cy != self.geom.h - 3:
+        """The quick action under a cell (x, y) of the hut, if any: the buttons sit on its last row."""
+        if not self.actions or cy != self.geom.h - 1:
             return None
         return next((aid for x0, x1, aid in self._buttons if x0 <= cx < x1), None)
+
+    @property
+    def body_geom(self) -> Geom:
+        """The silhouette alone, in canvas cells: roads attach here, not to the label or the buttons."""
+        g = self.geom
+        return Geom(g.x + (g.w - self.sil.width) // 2, g.y + len(self.label.lines), self.sil.width, self.sil.height)
 
     # -- place ----------------------------------------------------------------------------------
 

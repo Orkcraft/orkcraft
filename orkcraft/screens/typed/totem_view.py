@@ -122,6 +122,12 @@ class TotemView(TypedView):
 
     # -- the hut ----------------------------------------------------------------------------------
 
+    def hut_lines(self, widths: list[int]) -> list[str]:
+        """One small slot under the mouth: where the last cart went, else how many routes there are."""
+        n = len(totem.routes(self.rules_text))
+        last = self.history[0]["route"] if self.history else ""
+        return [f"→{last[:3]}" if last else f"{n} rt" if n else "—"]
+
     def mini_status(self) -> list[str]:
         routes = totem.routes(self.rules_text)
         lines = [f"routes: {', '.join(routes)}" if routes else "no rules yet"]

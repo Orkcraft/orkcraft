@@ -23,11 +23,12 @@ from textual.widgets import Footer
 from orkcraft.config import Config, find_project_root
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import audit, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, pipes, recruiter, roads, steward
+from orkcraft.realm import audit, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.realm.orcs import Alert, Trigger, WORKER, RESIDENT, Orc, garrison_badge
 from orkcraft.realm.roster import Roster, build_roster, worker_infos
+from orkcraft.widgets.hut import footprint
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview, BuildProgress
 from orkcraft.screens import builder_interview as bp_chat
 from orkcraft.screens.builder_interview import BlueprintReview, BuilderChat, BuilderInterview
@@ -129,7 +130,6 @@ class OrkcraftApp(App[int]):
         Binding("alt+t", "toggle_terrain", "Terrain", show=False),
         Binding("alt+c", "cycle_carts", "Carts", show=False),
         Binding("alt+v", "toggle_view", "Town / Tiles", show=False),
-        Binding("alt+a", "toggle_hut_art", "Hut art", show=False),
         Binding("slash", "focus_orc_chat", "Type to the orc", show=False),
         Binding("left_square_bracket", "quick_action(0)", "Quick action 1", show=False),
         Binding("right_square_bracket", "quick_action(1)", "Quick action 2", show=False),
@@ -1221,13 +1221,6 @@ class OrkcraftApp(App[int]):
             self.desktop.refresh_huts()
         self.notify("🏘 Town: click a hut or press its number to open it, esc closes it" if town
                     else "🪟 Tiles: every building open side by side", title="View")
-
-    def action_toggle_hut_art(self) -> None:
-        """alt+a: huts as compact cards (three lines) or with their ASCII orc building (two lines)."""
-        on = not self.desktop.hut_art
-        self.desktop.set_hut_art(on)
-        self.notify("🛖 Huts with their ASCII building" if on else "🗂 Compact huts: three status lines",
-                    title="Town")
 
     def action_cycle_carts(self) -> None:
         order = list(scroll.CART_MODES)
@@ -2507,8 +2500,10 @@ class OrkcraftApp(App[int]):
         """The last step of a build: its ghost walks the town — Enter or a click
         raises it there, Esc builds nothing. Without a town on screen it is raised at once.
         True when it was raised at once."""
-        size, roof, _ = huts.shape_for(spec)
         label = f"{spec.get('icon', '')} {spec.get('title', '')}".strip()
+        sil = silhouettes.of(spec)
+        size = footprint(sil, silhouettes.label(len(self.desktop.huts) + 1, label, sil.width),
+                         len(catalog.quick_actions_of(spec)))
 
         def raise_at(hut: list[float] | None) -> bool:
             if before is not None:
@@ -2524,7 +2519,7 @@ class OrkcraftApp(App[int]):
                 return
             raise_at(list(frac))
 
-        if self.desktop.start_ghost(label, size, len(roof), done):
+        if self.desktop.start_ghost(label, size, done):
             self.notify("arrows or the mouse move it · Enter or a click builds · Esc cancels",
                         title=f"👻 Place {label}")
             return False
