@@ -45,6 +45,8 @@ BIOMES: dict[str, Biome] = {
     ),
 }
 
+BIOME_ICONS = {"void": "🌑", "forest": "🌲", "ice": "🧊"}   # the War Map shows a biome by its icon
+
 DEFAULT_BIOME = "forest"
 SOLID_BLACK = "#000000"
 MAX_DENSITY = 0.12          # share of canvas cells that may carry a glyph

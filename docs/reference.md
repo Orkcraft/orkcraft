@@ -326,7 +326,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 ## Orcs: steward, handlers, Recruiter
 
 - **Looks**: the icon is the kind — 🗿 chain / script, 🧌 agent, 🗿🧌 hybrid; the letters are the
-  harness scheme — `C` Claude (amber), `A` agy (cyan), `P` a pipeline (magenta), e.g. `A→C` (agy
+  harness scheme — `C` Claude (orange), `g` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `g→C` (agy
   writes, Claude reviews); long schemes read `C→C·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
   gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
@@ -336,11 +336,11 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
   (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
   default) or later in the orc's orders; the Recruiter proposes one per step. Barracks providers
   and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
-- **Console of a selected building**: left to right the War Map (46 columns), the Info
+- **Console of a selected building**: left to right the War Map (36 columns, each orkspace's biome as an icon after its name), the Info
   panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
   is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
   listens to (source, signal → the orc or a plain road) with *➕ Listen*. The garrison lists its
-  orcs on two lines each — number, tier, name, state; then its harness. An orc with a question
+  orcs one per line — number, tier, name, its models as letters (`C` orange, `g` blue), state. An orc with a question
   shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
   seen. The Command Card keeps only the building's own commands (and hides when it has none);
   the common ones stay on their keys.

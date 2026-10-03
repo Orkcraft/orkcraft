@@ -12,6 +12,7 @@ from textual.message import Message
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
+from orkcraft import theme
 from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
 
 if TYPE_CHECKING:
@@ -324,7 +325,7 @@ class WarMap(Vertical):
 
         lst.display = True
         content.display = False
-        content.update(f"[F1] 🏰 Main Camp ({biome})")
+        content.update(f"[F1] 🏰 Main Camp {theme.BIOME_ICONS.get(biome, '')}")
 
         highlighted = lst.highlighted
         lst.clear_options()
@@ -338,7 +339,8 @@ class WarMap(Vertical):
                 hk = f"[{ork.hotkey}] " if ork.hotkey else ""
                 mark = f" {ALERT_ICON}" if orkspace_has_alert(scroll_obj, ork, roster) else ""
                 wt_mark = getattr(self.app, "worktree_marks", {}).get(ork.id, "")
-                row_text = f"{prefix}{hk}{ork.icon} {ork.name} ({ork.biome}){' ' + wt_mark if wt_mark else ''}{mark}"
+                row_text = (f"{prefix}{hk}{ork.icon} {ork.name} {theme.BIOME_ICONS.get(ork.biome, '')}"
+                            f"{' ' + wt_mark if wt_mark else ''}{mark}")
                 lst.add_option(Option(Text(row_text, style="bold" if is_active else ""), id=f"orkspace:{ork.id}"))
             # The cursor follows the active orkspace unless the operator is browsing the list.
             if lst.has_focus and highlighted is not None and highlighted < lst.option_count:
@@ -347,7 +349,8 @@ class WarMap(Vertical):
                 lst.highlighted = active_idx
         else:
             alerts_mark = f" {ALERT_ICON}" if roster.alerts else ""
-            lst.add_option(Option(Text(f"▶ [F1] 🏰 Main Camp ({biome}){alerts_mark}", style="bold"), id="orkspace:main_camp"))
+            lst.add_option(Option(Text(f"▶ [F1] 🏰 Main Camp {theme.BIOME_ICONS.get(biome, '')}{alerts_mark}", style="bold"),
+                                  id="orkspace:main_camp"))
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         oid = event.option_id or ""
@@ -421,8 +424,8 @@ class ClanRoster(Vertical):
 
     @staticmethod
     def _render_garrison_row(o: Orc, number: int, seen: set[str] | frozenset = frozenset()) -> Text:
-        """Two lines for the narrow garrison: number, ❓ when it has a question you have not
-        opened yet, tier, name and state; then its harness."""
+        """One line for the narrow garrison: number, ❓ when it has a question you have not opened
+        yet, tier, name, its models as letters (C Claude orange, g agy blue) and its state."""
         from orkcraft.realm import looks
 
         t = Text(no_wrap=True, overflow="ellipsis")
@@ -435,19 +438,14 @@ class ClanRoster(Vertical):
         t.append("★ " if o.lead else "", style=name_style)
         _append_tier(t, o)
         t.append(o.name, style="bold yellow" if asks else name_style)
+        scheme = looks.scheme_text(o.harness, o.kind)
+        if scheme.plain:
+            t.append(" ")
+            t.append(scheme)
+        elif o.kind in ("chain", "script"):
+            t.append(f" {looks.kind_icon(o.kind)}")
         if not asks:
             t.append(f" {o.status_icon}", style="dim")
-        t.append("\n   ")
-        if o.kind in ("chain", "script"):
-            t.append(f"{looks.kind_icon(o.kind)} {o.kind} · no model", style="dim")
-        elif o.harness:
-            for i, step in enumerate(o.harness):
-                if i:
-                    t.append("→", style="dim")
-                harness = str(step.get("harness", "?"))
-                t.append(harness.split(":")[0], style=looks.HARNESS_STYLE.get(harness, "dim"))
-        else:
-            t.append(o.role or "—", style="dim")
         return t
 
     @staticmethod
@@ -929,9 +927,9 @@ class Console(Horizontal):
     .console-col {
         height: 100%;
     }
-    /* War Map (46) · Info (the rest) · garrison / inventory (22) · Command Card. */
+    /* War Map (36) · Info (the rest) · garrison / inventory (22) · Command Card. */
     #warmap {
-        width: 46;
+        width: 36;
     }
     #clan-roster {
         width: 22;

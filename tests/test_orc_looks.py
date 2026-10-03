@@ -54,7 +54,7 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         assert "🧌 Chieftain+1 C" in chat.badge
         lst = app.screen.query_one("#roster-list", OptionList)
         rows = [str(lst.get_option_at_index(i).prompt) for i in range(lst.option_count)]
-        assert rows[0].startswith("[1] ★ Chieftain 💤\n   claude") and rows[1].startswith("[2] Scribe 💤\n   🗿 chain")
+        assert rows[0] == "[1] ★ Chieftain C 💤" and rows[1] == "[2] Scribe 🗿 💤"
         assert len(rows) == 2
         lst.focus()
         await pilot.press("2")                       # the 2nd orc, not the 2nd row
