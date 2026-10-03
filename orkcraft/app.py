@@ -83,7 +83,8 @@ HUT_REFRESH_S = 5.0      # status lines of the huts in the town view
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low
-WARMAP_FLOAT_W = 44      # the War Map's width when the console floats over the town
+BUILDING_CONSOLE_MIN_H = 9   # border, title, name, up to 3 lines about it, runs, roads, a spare row
+WARMAP_FLOAT_W = 46      # the War Map's width when the console floats over the town
 ROADS_TICK_S = 1.0
 TELEMETRY_REFRESH_S = 5.0
 HORN_RESET_S = 4.0
@@ -291,6 +292,7 @@ class OrkcraftApp(App[int]):
         self._orc_chat = OrcChat(id="orc-chat")
         self._orc_chat.display = False
         self._console_signature: tuple = ()
+        self.seen_alerts: set[str] = set()     # questions the operator opened from the garrison (no ❓ there)
         yield self._hud
         yield desktop
         # The console flows below the taskbar: docked at the bottom it would sit under the Footer.
@@ -477,6 +479,14 @@ class OrkcraftApp(App[int]):
     def on_clan_roster_orc_selected(self, message: ClanRoster.OrcSelected) -> None:
         orc = next((o for o in self.roster.orcs if orc_key(o) == message.key), None)
         if orc is None:
+            return
+        if (self.focus_state.mode == "building" and orc.alert is not None
+                and orc.building == self.focus_state.building_id):
+            # A question in the selected building: show it, keep the building selected, drop its ❓.
+            self.seen_alerts.add(orc.alert.id)
+            self.open_alert(orc.alert, orc.name)
+            if getattr(self, "_console", None) is not None:
+                self._console.refresh_state(self.focus_state, self.roster)
             return
         self.set_focus_state("unit", orc_key_val=message.key, building_id=orc.building)
         if orc.alert is not None:
@@ -871,6 +881,8 @@ class OrkcraftApp(App[int]):
         shown = bool(console.display)
         strip = len(self.scroll.orkspaces) + 3                     # border, title, one row each, footer
         full = max(strip, 6, round(console.height_pct * max(height - 2, 1) / 100))
+        if self.focus_state.mode == "building":
+            full = max(full, BUILDING_CONSOLE_MIN_H)    # Info's name, about, runs and roads all show
         orc = next((o for o in self.roster.orcs if orc_key(o) == self.focus_state.orc_key), None) \
             if self.focus_state.mode == "unit" else None
         chat = shown and OrcChat.supports(orc)

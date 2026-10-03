@@ -336,6 +336,14 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
   (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
   default) or later in the orc's orders; the Recruiter proposes one per step. Barracks providers
   and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
+- **Console of a selected building**: the War Map keeps 46 columns, the garrison 22, the Info
+  panel takes the rest. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
+  is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
+  listens to (source, signal → the orc or a plain road) with *➕ Listen*. The garrison lists its
+  orcs on two lines each — number, tier, name, state; then its harness. An orc with a question
+  shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
+  seen. The Command Card keeps only the building's own commands (and hides when it has none);
+  the common ones stay on their keys.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orcs, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.
