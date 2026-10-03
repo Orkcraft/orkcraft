@@ -5,7 +5,7 @@
     evolution.unseen(root)                   what the operator has not seen yet (the list after changes)
     evolution.verdict(root, change, now)     on probation: a reason to take it back, or None
 
-The daily proposal, the weekly self-audit and the stewards keep proposing as before. In 🌙 quiet
+The Building retro (daily), the Town retro (weekly) and the stewards keep proposing as before. In 🌙 quiet
 hours, at 🧭 Routine and above, the orcs apply what their level allows:
 
     🧭 Routine (2)    changes that make a building cheaper or simpler: shrink a prompt, an agent made a

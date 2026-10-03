@@ -40,7 +40,7 @@ async def test_f10_opens_system_menu_escape_closes_and_hud_click_opens(fake_repo
         await pilot.pause()
         assert isinstance(app.screen, SystemMenu)
         menu_list = app.screen.query_one("#system-menu-list", OptionList)
-        assert menu_list.option_count == 19                # + 🔍 Audit, 🧹 Clean up, 🔧 Self-improvement, 🗓 Weekly, ⚙ Settings (T1108), 🧭 Onboarding, 📜 Town Builder, 🧌/👔 Shift, 🕰 Your day, 🏛 Autonomy, 🧾 Changes
+        assert menu_list.option_count == 19                # + 🔍 Audit, 🧹 Clean up, 🔧 Building retro, 🗓 Town retro, ⚙ Settings (T1108), 🧭 Onboarding, 📜 Town Builder, 🧌/👔 Shift, 🕰 Your day, 🏛 Autonomy, 🧾 Changes
 
         # F10 while open closes it
         await pilot.press("f10")

@@ -264,7 +264,7 @@ Everything that changes the camp goes through the Town Hall and its own git:
         ▶ emulation → approve, or reject back into the talk   👻 a grey ghost in the middle follows
                                                                the mouse; a click builds, Esc cancels
 👍 K / 👎 F on a building ─► references · incidents · penalties (upstream for broken inputs)
-🔧 daily proposal · 🗓 weekly self-audit ─► apply with one click ─► checkpoint in .orkcraft/.git ─► Z reverts
+🔧 Building retro · 🗓 Town retro ─► apply with one click ─► checkpoint in .orkcraft/.git ─► Z reverts
 ```
 
 - **Checkpoints.** `.orkcraft/` is a git repository of its own (branch `camp`) that tracks only
@@ -303,15 +303,17 @@ Everything that changes the camp goes through the Town Hall and its own git:
   instructions", writers asked to push or delete), the load on you (🎨 too many events, settings,
   roads, buildings on a canvas) and housekeeping (⛏ F10 → 🧹 rotates big logs, removes the state of
   gone buildings and stale worktrees, stops webhooks of demolished buildings — never the camp's git).
-- **Self-improvement** never applies itself. Daily (`optimize_at`, 06:20) the Council looks at
-  today's top token spender that got no 👍 since its last change, or a 👎 today, reads its recent
-  runs and proposes one checked change — a
-  shorter prompt, chain ops instead of an agent, or a script instead of a steward prompt. Weekly
-  (`weekly_at`, Sunday 05:00) `claude -p --model opus` audits the whole camp; its report lists
+- **Retros** never apply themselves (design: `docs/design/retros-and-goals.md`). The daily
+  🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
+  24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
+  will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
+  change, or a 👎 today, reads its recent runs and proposes one checked change — a
+  shorter prompt, chain ops instead of an agent, or a script instead of a steward prompt. The weekly
+  🗓 **Town retro** (`weekly_at`, Sunday 05:00) has `claude -p --model opus` audit the whole camp; its report lists
   items with checkboxes — it may also remove an unused building or add a camp building — and Apply
   makes each one a `weekly(<id>)` checkpoint, saves the Town Scroll, restarts the touched daemons
   and, when buildings changed or the report asks, offers to restart orkcraft. Both: F10 →
-  Self-improvement / Weekly self-audit; F10 → ⚙ sets the models and the schedules.
+  Building retro / Town retro; F10 → ⚙ Retro settings sets the models and the schedules.
 - Settings live in `.orkcraft/council/settings.json`: `fast_llm`, `fast_model`, `optimize_at`,
   `weekly_model`, `weekly_at`. `--demo --demo-set dashboard` shows the pipeline seeded (F3 Gates
   has a Workshop; the Town Hall lists reviews, ratings, an incident, a proposal and a report).
@@ -523,7 +525,7 @@ Autonomy comes from three places:
 
 #### 🔧 Self-improvement by the orcs
 
-The daily proposal, the weekly self-audit and the stewards keep proposing as before; up to *Morning
+The Building retro, the Town retro and the stewards keep proposing as before; up to *Morning
 advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orcs
 apply what their level allows themselves (`realm/evolution.py`), one change at a time, at most 10 a
 night, never past the 🪙 budget:

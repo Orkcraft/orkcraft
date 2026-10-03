@@ -1,7 +1,7 @@
-"""🔧 A self-improvement proposal: what the Council would change, and why.
+"""🔧 A Building retro proposal: what the Council would change, and why.
 
 Apply goes through the camp's git (a checkpoint the building's Z takes back); Later keeps it waiting
-(F10 → Self-improvement); Dismiss drops it. Dismisses "apply" | "dismiss" | None (later).
+(F10 → Building retro); Dismiss drops it. Dismisses "apply" | "dismiss" | None (later).
 """
 from __future__ import annotations
 

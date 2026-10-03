@@ -85,8 +85,8 @@ ELDERS_RUNNER = None        # tests: the Elders' model call (realm/elders.py)
 RECRUIT_RUNNER = None     # tests replace the Recruiter's and the steward's Claude call
 STEWARD_RUNNER = None
 FASTPATH_RUNNER = None    # tests put a fake light model for the Council's Fast Path here
-OPTIMIZE_RUNNER = None    # … and for the self-improvement proposals
-WEEKLY_RUNNER = None      # … and for the weekly self-audit
+OPTIMIZE_RUNNER = None    # … and for the Building retro's proposals
+WEEKLY_RUNNER = None      # … and for the Town retro
 STEWARD_CHECK_S = 60.0
 
 FULL_MIN_COLS = 140     # ≥ 140: Full RTS — console + windows
@@ -2699,22 +2699,22 @@ class OrkcraftApp(App[int]):
         cand = optimize.leader(self.repo_root, None, *self._quota_reads())
         if cand is None:
             if interactive:
-                self.notify("nothing to improve: today's top spender is liked, or nothing was spent",
-                            title="🔧 Self-improvement")
+                self.notify("nothing to improve: the heaviest buildings are liked, or nothing was spent",
+                            title="🔧 Building retro")
             return False
         spec = self.custom_specs.get(cand.building)
         ps = optimize.parts(self.scroll, spec, cand.building, self.repo_root)
         if not ps:
             if interactive:
                 self.notify(f"{self._title_of(cand.building)} spends the most but has no prompt to shrink",
-                            title="🔧 Self-improvement")
+                            title="🔧 Building retro")
             return False
         cfg = (spec or {}).get("config") or {}
         mocks = workshop.load_blueprint(self.repo_root, cand.building).get("mocks") or []
         runtime = str(cfg.get("runtime") or "python")
         if interactive:
             self.notify(f"the Council looks at {self._title_of(cand.building)} ({cand.tokens} tokens today)",
-                        title="🔧 Self-improvement")
+                        title="🔧 Building retro")
 
         def _worker() -> None:
             result = optimize.propose(self.repo_root, cand, ps, OPTIMIZE_RUNNER or builders.claude_runner, runtime, mocks)
@@ -2732,8 +2732,8 @@ class OrkcraftApp(App[int]):
         optimize.save(self.repo_root, result.proposal)
         self._refresh_hall()
         if len(self.screen_stack) > 1:              # the operator is busy in a dialog: leave it waiting
-            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Self-improvement",
-                        title="🔧 Self-improvement")
+            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Building retro",
+                        title="🔧 Building retro")
             return
         self.show_proposal(result.proposal)
 
@@ -2805,7 +2805,7 @@ class OrkcraftApp(App[int]):
         self.notify(f"{self._title_of(bid)}: {p.action} applied — Z on it takes it back", title="🔧 Applied")
         return True
 
-    # -- 🗓 the weekly self-audit ------------------------------------------------------
+    # -- 🗓 the Town retro (the weekly self-audit) ------------------------------------------------------
 
     def _maybe_weekly(self, now: dt.datetime) -> None:
         if self.demo or self.gold_exhausted():
@@ -2830,7 +2830,7 @@ class OrkcraftApp(App[int]):
         snapshot, specs = copy.deepcopy(self.scroll), copy.deepcopy(self.custom_specs)
         rules = audit.run(self.repo_root, self.scroll, dict(self.custom_specs), self.snapshot.spent_usd,
                           self.scroll.budget.gold_session_limit_usd)
-        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Weekly self-audit")
+        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Town retro")
 
         def _worker() -> None:
             result = weekly.run(self.repo_root, snapshot, specs, runner, model, rules)
@@ -2840,10 +2840,10 @@ class OrkcraftApp(App[int]):
 
     def _on_weekly(self, result: weekly.Result, interactive: bool) -> None:
         if result.report is None:
-            self.notify(result.error or "no report", title="🗓 Weekly self-audit failed", severity="warning")
+            self.notify(result.error or "no report", title="🗓 Town retro failed", severity="warning")
             return
         if len(self.screen_stack) > 1:
-            self.notify("the weekly report waits — F10 → Weekly self-audit", title="🗓 Weekly self-audit")
+            self.notify("the Town retro's report waits — F10 → Town retro", title="🗓 Town retro")
             return
         self.show_weekly(result.report)
 
@@ -2923,7 +2923,7 @@ class OrkcraftApp(App[int]):
         weekly.save(self.repo_root, report)
         self._refresh_hall()
         msg = f"{len(done)} applied" + (f" · {len(failed)} not: " + " | ".join(failed[:3]) if failed else "")
-        self.notify(msg, title="🗓 Weekly self-audit", severity="warning" if failed else "information")
+        self.notify(msg, title="🗓 Town retro", severity="warning" if failed else "information")
         if restart and done and not self._hushed:
             self.push_screen(Confirm("🔄 Restart orkcraft now?", "the camp changed its buildings — a fresh start "
                                      "reloads everything (the Town Scroll is saved)"),
@@ -2936,11 +2936,11 @@ class OrkcraftApp(App[int]):
         self.exit(result="restart")
 
     def open_settings(self) -> None:
-        """F10 → ⚙: the self-improvement's models and schedules (`.orkcraft/council/settings.json`)."""
+        """F10 → ⚙: the retros' models and schedules (`.orkcraft/council/settings.json`)."""
         def done(values: dict | None) -> None:
             if values:
                 fastpath.save_settings(self.repo_root, values)
-                self.notify("saved", title="⚙ Self-improvement settings")
+                self.notify("saved", title="⚙ Retro settings")
 
         self.push_screen(SettingsModal(fastpath.settings(self.repo_root)), done)
 

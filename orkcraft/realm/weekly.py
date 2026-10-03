@@ -1,4 +1,4 @@
-"""🗓 The weekly self-audit: a heavy model looks over the whole camp once a week.
+"""🗓 The Town retro (the weekly self-audit): a heavy model looks over the whole camp once a week.
 
     when     `weekly_at` (Sunday 05:00 by default, the operator's morning window) or F10 on demand
     model    `claude -p --model <weekly_model>` (opus by default, the operator's subscription)
