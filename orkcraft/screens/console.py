@@ -498,7 +498,7 @@ class ClanRoster(Vertical):
                 if oid.startswith("header:"):
                     self.toggle_fold(oid)
             if lst.has_focus:
-                # Space belongs to the roster (fold): on an orc row it must not reach the War Horn.
+                # Space belongs to the roster (fold): on an orc row it must not reach Halt All.
                 event.stop()
                 event.prevent_default()
             return

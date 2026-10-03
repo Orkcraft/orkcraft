@@ -1,9 +1,9 @@
-"""Ambient HUD: `[ 🧌 Orkcraft v0.1 ]──[ ⚙️ Menu (F10) · 📯 READY ]   … [🪙 $— / $20.00] [🪵 — / 128k] [🥩 n/max]`.
+"""Ambient HUD: `[ 🧌 Orkcraft v0.1 ]──[ ⚙️ Menu (F10) · 🛑 READY ]   … [🪙 $— / $20.00] [🪵 — / 128k] [🥩 n/max]`.
 
 The corner follows the tools' billing (settings.py): `[⏳ claude 38%]` for subscriptions, 🪙 for an API.
 
-The menu and the War Horn share one segment: a click opens the system menu, whose first item is
-the War Horn; the segment shows the horn's state (READY / SOUNDED — n halted)."""
+The menu and Halt All share one segment: a click opens the system menu, whose first item is
+Halt; the segment shows the halt state (READY / HALTED — n stopped)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -54,7 +54,7 @@ class Resources:
 
 class Hud(Static):
     class MenuClicked(Message):
-        """Posted when the [ ⚙️ Menu (F10) · 📯 … ] segment is clicked."""
+        """Posted when the [ ⚙️ Menu (F10) · 🛑 … ] segment is clicked."""
 
     class AlertsClicked(Message):
         """Posted when the [ ❓ … awaiting orders ] segment is clicked."""
@@ -73,8 +73,8 @@ class Hud(Static):
         super().__init__("", id=id)
         self.budget = budget or Budget()
         self.resources = Resources(budget=self.budget, supply_max=self.budget.supply_max_workers)
-        self.horn = "READY"
-        self._menu_span = (0, 0)   # cells of the Menu · War Horn segment (set by update_hud)
+        self.halt = "READY"
+        self._menu_span = (0, 0)   # cells of the Menu · Halt All segment (set by update_hud)
         self._alerts_span = (0, 0)  # cells of the Awaiting Orders segment (set by update_hud)
         self.mode = "full"
 
@@ -89,8 +89,8 @@ class Hud(Static):
         self.resources.budget = budget
         self.update_hud()
 
-    def set_horn(self, state: str) -> None:
-        self.horn = state
+    def set_halt(self, state: str) -> None:
+        self.halt = state
         self.update_hud()
 
     def set_resources(self, resources: Resources) -> None:
@@ -118,10 +118,10 @@ class Hud(Static):
         left.append("]")
         left.append("──")
         narrow = self.size.width < 130
-        horn_style = "bold green" if self.horn == "READY" else "bold reverse red"
+        halt_style = "bold green" if self.halt == "READY" else "bold reverse red"
         start = cell_len(left.plain)
-        left.append("[ ⚙️ F10 · 📯 " if narrow else "[ ⚙️ Menu (F10) · 📯 ", style="bold")
-        left.append(self.horn, style=horn_style)
+        left.append("[ ⚙️ F10 · 🛑 " if narrow else "[ ⚙️ Menu (F10) · 🛑 ", style="bold")
+        left.append(self.halt, style=halt_style)
         left.append(" ]")
         self._menu_span = (start, cell_len(left.plain))
         if r.alerts:

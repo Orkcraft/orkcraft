@@ -41,7 +41,7 @@ def test_steward_is_the_resident_and_handlers_start_empty():
 def test_subscribe_a_chain_handler_to_two_roads_and_roundtrip():
     scroll = fresh()
     scribe = ts.add_handler(scroll, "scrying", "Scribe", kind="chain", chain=CHAIN, why="a template is enough")
-    assert scribe.avatar == "🗿" and scribe.harness == [] and scribe.run_policy == {"quiet_s": 0, "restart_on_new": True}
+    assert scribe.avatar == "🪧" and scribe.harness == [] and scribe.run_policy == {"quiet_s": 0, "restart_on_new": True}
     r1 = ts.subscribe(scroll, "scrying", "forge", "on_task_completed", {"outcome": ["halted"]}, handler="scribe")
     r2 = ts.subscribe(scroll, "scrying", "loot", "on_selection_change", {"path_prefix": ["loot/"]}, handler="scribe")
     assert (r1.id, r2.id) == ("forge-task", "loot-selection")
@@ -133,11 +133,11 @@ def test_kind_rules():
 def test_script_and_hybrid_handlers_start_as_drafts():
     scroll = fresh()
     tally = ts.add_handler(scroll, "forge", "Tally", kind="script", script={"path": ".orkcraft/scripts/tally.py"})
-    assert tally.status == "draft" and tally.avatar == "🗿" and tally.harness == []
+    assert tally.status == "draft" and tally.avatar == "🪧" and tally.harness == []
     scheme = [{"role": "write", "harness": "agy"}, {"role": "review", "harness": "claude"}]
     warden = ts.add_handler(scroll, "forge", "Warden", kind="hybrid", harness=scheme,
                             script={"path": ".orkcraft/scripts/warden.py", "sha256": "0" * 64, "reviewed": True})
-    assert warden.status == "idle" and warden.avatar == "🗿🧌" and warden.uses_model
+    assert warden.status == "idle" and warden.avatar == "🪧🧌" and warden.uses_model
     assert warden.run_policy == {"quiet_s": 30, "restart_on_new": True}
     studio = ts.add_handler(scroll, "forge", "Studio",
                             harness=[{"role": "run", "harness": "pipeline:product-studio/pipelines/sprint.json"}],

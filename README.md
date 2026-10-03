@@ -34,7 +34,7 @@ You need Python 3.11+ and git. Optional: `claude` and/or `agy` on your `PATH` (a
 Builder), `gh` (GitHub events in the Watchtower).
 
 Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
-`Z` revert a building · `space` or `ctrl+p` 📯 War Horn (halts every running agent).
+`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent).
 
 ## The idea
 
@@ -52,11 +52,11 @@ what to do with each cart. The cheapest thing that works wins: a plain road, the
 
 ## The camp
 
-Fifteen buildings, each with its own events and settings:
+Sixteen buildings, each with its own events and settings:
 
 | | |
 |---|---|
-| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail, GitHub, schedules, webhooks) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) |
+| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail, GitHub, schedules, webhooks) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) · 📯 Horn (a sound of your choice per incoming event) |
 | **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel git worktrees) · 🔥 Orc Council (agents that debate to a decision) · 🥁 War Drum (your calendar) |
 | **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (your notes, retrieved by budget) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
 | **Results and egress** | 📦 Loot Vault (generated files to accept or roll back) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP) |
@@ -97,7 +97,7 @@ a commit in the camp's own git, so it can be undone.
   sandbox uses an empty folder and a bare environment. Handler scripts run only after review and are
   held again if the file changes.
 - **Personal nodes** (Markdown with `subtype: personal` in its front matter) never reach a model.
-- **Budgets** — 🪙 per session, 🪵 context — stop model calls; 📯 the War Horn halts everything.
+- **Budgets** — 🪙 per session, 🪵 context — stop model calls; 🛑 Halt All stops everything.
 
 Orkcraft is alpha software that runs agents on your machine. Read what a building does before you
 let it loose, and keep the Warder on.

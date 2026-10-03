@@ -27,7 +27,7 @@ def test_scheme_parts_and_badges():
     lead = Orc("Chieftain", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
     scribe = Orc("Scribe", "digest", RESIDENT, kind="chain")
     assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 C 🔨 💤"
-    assert scribe.badge == "🗿 Scribe 🔨 💤"
+    assert scribe.badge == "🪧 Scribe 🔨 💤"
 
 
 def _scribe(app):
@@ -62,7 +62,7 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         assert app.focus_state.mode == "unit" and app.focus_state.orc_key.endswith("town_hall/scribe")
         card = str(app.screen.query_one("#info-body").render())
         assert "free chain (no model) on 📦 Artifacts · selection" in card and "Counting is enough." in card
-        assert "🗿 no model — free" in card and "🪙 free · never calls a model" in card
+        assert "🪧 no model — free" in card and "🪙 free · never calls a model" in card
 
 
 GOOD = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",
@@ -175,3 +175,10 @@ async def test_scheduled_steward_runs_in_the_background(fake_repo: Path, monkeyp
                 break
         assert steward.load_report(fake_repo, "town_hall") is not None
         assert len(calls) == 1
+
+
+def test_a_scroll_saved_with_the_old_moai_loads_with_the_signpost():
+    from orkcraft.scroll import OrcSpec
+    assert OrcSpec("a", "A", avatar="🗿", kind="chain").avatar == "🪧"
+    assert OrcSpec("b", "B", avatar="🗿🧌", kind="hybrid").avatar == "🪧🧌"
+    assert OrcSpec("c", "C").avatar == "🧌"

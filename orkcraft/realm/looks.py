@@ -1,6 +1,6 @@
 """How an orc looks: the icon tells its kind, colour + letter its harness scheme.
 
-    kind_icon("chain") == "🗿"; kind_icon("agent") == "🧌"; kind_icon("hybrid") == "🗿🧌"
+    kind_icon("chain") == "🪧"; kind_icon("agent") == "🧌"; kind_icon("hybrid") == "🪧🧌"
     scheme_plain([{"role": "write", "harness": "agy"}, {"role": "review", "harness": "claude"}]) == "A→C"
     scheme_text(steps)   # the same as a rich Text: Claude amber, agy cyan, pipelines magenta
 """
@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from rich.text import Text
 
-KIND_ICONS = {"chain": "🗿", "script": "🗿", "agent": "🧌", "hybrid": "🗿🧌"}
+KIND_ICONS = {"chain": "🪧", "script": "🪧", "agent": "🧌", "hybrid": "🪧🧌"}
+OLD_ICONS = {"🗿": "🪧", "🗿🧌": "🪧🧌"}     # a scroll saved before the 🪧 keeps loading with it
 KIND_LABELS = {"chain": "chain", "script": "script (runs later)", "agent": "agent", "hybrid": "hybrid (script + agent)"}
 HARNESS_LETTER = {"claude": "C", "agy": "A"}
 HARNESS_STYLE = {"claude": "bold #f59e0b", "agy": "bold #22d3ee", "pipeline": "bold #e879f9"}

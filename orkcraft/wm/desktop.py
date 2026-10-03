@@ -20,7 +20,7 @@ from orkcraft.scroll import TownScroll, has_outgoing
 from orkcraft import schedule, settings, theme
 from orkcraft.realm import chronicles, pipes
 from orkcraft.widgets.road_layer import (ENTRY_GLYPH, EXIT_GLYPH, ROAD_SELECTED, RoadClicked, RoadGate, RoadLabel,
-                                         RoadRun, road_key, runs)
+                                         RoadRun, exit_gate, road_key, runs)
 from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
@@ -905,9 +905,9 @@ class Desktop(Container):
             hut.set_badge(w.badge)
             hut.set_class(w is self.active, "-expanded")
             hw, hh = hut.geom.w, hut.geom.h
-            if w.window_id == TOWN_HALL:     # fixed in the bottom-right corner
+            if w.window_id == TOWN_HALL:     # fixed in the bottom-right corner, on the very bottom of the screen
                 hut.fixed = True
-                hut.place(Geom(max(width - hw, 0), max(height - hh, 0), hw, hh))
+                hut.place(Geom(max(width - hw, 0), max(self.dims[1] - hh, 0), hw, hh))
                 placed.append(hut.geom)
                 continue
             spec = self.scroll.building(w.window_id) if self.scroll is not None else None
@@ -1119,6 +1119,11 @@ class Desktop(Container):
         signal = f" ({road.label})" if road.label else ""
         return f"{who} · {src_label} → {f'{target.icon} {target.title}'.strip()}{signal}"
 
+    def _edges_at(self, y: int) -> set[int]:
+        """Where a hut or a window starts or ends on row `y` (a wide gate must not straddle one)."""
+        geoms = [h.geom for h in self.huts.values() if h.display] + [w.geom for w in self.windows if not w.hidden]
+        return {e for g in geoms if g.y <= y < g.y + g.h for e in (g.x, g.x + g.w)}
+
     def _render_roads(self) -> None:
         """Gap cells to the Terrain, gates and the selected road to the `roads` layer."""
         if not self.is_attached:
@@ -1137,7 +1142,7 @@ class Desktop(Container):
         self.terrain.set_roads(cells)
         biome = theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
         signature = (tuple(sorted((k, p.exit, p.entry, tuple(p.cells)) for k, p in self.road_paths.items())),
-                     self.selected_road, self.biome, self._handler_keys())
+                     self.selected_road, self.biome, self._handler_keys(), self.plain, self.town_active)
         if signature == self._road_signature:
             return
         self._road_signature = signature
@@ -1148,7 +1153,8 @@ class Desktop(Container):
         for key, p in self.road_paths.items():
             colour = biome.border_focus if key in handled else biome.border
             gate_style = f"bold {colour} on {biome.window_bg}"
-            pieces.append(RoadGate(key, EXIT_GLYPH[p.exit.side], p.exit.x, p.exit.y, gate_style))
+            pieces.append(exit_gate(key, p.exit.side, p.exit.x, p.exit.y, gate_style,     # ⏩: the town's immersion
+                                    self.plain or not self.town_active, self._edges_at(p.exit.y)))
             pieces.append(RoadGate(key, ENTRY_GLYPH, p.entry.x, p.entry.y, gate_style))
         p = self.road_paths.get(self.selected_road) if self.selected_road else None
         if p is not None:

@@ -141,7 +141,7 @@ async def test_quiet_hours_put_out_the_fires(fake_repo: Path, monkeypatch):
         app.desktop.apply_schedule()
         hut = app.desktop.huts[TOWN_HALL]
         hut.set_badge("🧌 Smith 🔥")
-        assert not hut.has_class("-alert") and "❓" in hut._badge_shown() and "🔥" not in hut._badge_shown()
+        assert not hut.has_class("-alert") and "❓" in " ".join(hut.label.text)       # no fire: a ❓ after the name
         app.desktop.flicker_fires()
         assert not hut.has_class("-flame")
         monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: False)

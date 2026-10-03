@@ -256,7 +256,7 @@ class ChatView(Container):
             term.write(data)
 
     def interrupt_all(self) -> int:
-        """War Horn: interrupt every running session; returns how many were halted."""
+        """Halt All: interrupt every running session; returns how many were halted."""
         return sum(t.interrupt() for t in self.terminals.values())
 
     def action_focus_list(self) -> None:

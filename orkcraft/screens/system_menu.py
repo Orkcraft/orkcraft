@@ -14,7 +14,7 @@ from textual.widgets.option_list import Option
 
 
 MENU_ITEMS: list[tuple[str, str]] = [
-    ("war_horn", "📯 Halt All Operations (War Horn)"),
+    ("halt", "🛑 Halt All Operations"),
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
     ("camp", "🧌 Camp — buildings wear their ASCII"),
@@ -121,7 +121,7 @@ KEY_GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Operations",
         [
-            ("space / ctrl+p", "📯 War Horn (halt all operations)"),
+            ("space / ctrl+p", "🛑 Halt All (stop all operations)"),
             ("alt+t", "🌲 Toggle terrain (Dim / Black)"),
             ("F10", "⚙️ System menu"),
             ("?", "⌨️ This cheat sheet"),
@@ -198,7 +198,7 @@ class SystemMenu(ModalScreen[str | None]):
     BINDINGS = [
         Binding("escape", "cancel", "Cancel"),
         Binding("f10", "cancel", "Close", priority=True),
-        Binding("1", "pick('war_horn')", show=False),
+        Binding("1", "pick('halt')", show=False),
         Binding("2", "pick('screenshot')", show=False),
         Binding("3", "pick('keys')", show=False),
         Binding("4", "pick('camp')", show=False),

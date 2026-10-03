@@ -177,10 +177,10 @@ async def test_console_sits_above_footer_and_keeps_bracket_labels(fake_repo: Pat
 
 
 @pytest.mark.asyncio
-async def test_space_on_roster_orc_row_does_not_blow_the_war_horn(fake_repo: Path):
+async def test_space_on_roster_orc_row_does_not_halt_everything(fake_repo: Path):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     blown: list[str] = []
-    app.action_war_horn = lambda source="": blown.append(source)  # type: ignore[method-assign]
+    app.action_halt = lambda source="": blown.append(source)  # type: ignore[method-assign]
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         await pilot.press("escape")

@@ -5,6 +5,7 @@ from orkcraft.screens.custom_view import CustomBuildingView
 
 
 def _views() -> dict[str, type]:
+    from orkcraft.screens.typed.horn_view import HornView
     from orkcraft.screens.typed.calendar_view import CalendarView
     from orkcraft.screens.typed.catapult_view import CatapultView
     from orkcraft.screens.typed.crag_view import CragView
@@ -21,7 +22,7 @@ def _views() -> dict[str, type]:
     from orkcraft.screens.typed.team_view import TeamView
     from orkcraft.screens.typed.totem_view import TotemView
     from orkcraft.screens.typed.workshop_view import WorkshopView
-    return {v.TYPE: v for v in (CalendarView, CatapultView, CragView, PitView, FilesView, GeneratorView, GitView,
+    return {v.TYPE: v for v in (HornView, CalendarView, CatapultView, CragView, PitView, FilesView, GeneratorView, GitView,
                                 KnowledgeView, LakeView, WatchtowerView, MillView, PoolView, TasksView, TeamView, TotemView,
                                 WorkshopView)}
 

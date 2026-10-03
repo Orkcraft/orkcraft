@@ -138,9 +138,9 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
     scroll, problems = ts.load(root / ".orkcraft.json", {})
     assert problems == [] and [o.name for o in scroll.orkspaces] == ["My Day", "Agent Yard", "Gates"]
     specs, spec_problems = masonry.load_specs(root)
-    assert spec_problems == [] and len(specs) == 17 and all(s.get("type") for s in specs)
+    assert spec_problems == [] and len(specs) == 18 and all(s.get("type") for s in specs)
     from orkcraft.realm import catalog
-    assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom"}   # the 15 camp buildings and a Workshop (T1108)
+    assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom"}   # the 16 camp buildings and a Workshop (T1108)
     branches = subprocess.run(["git", "branch", "--format=%(refname:short)"], cwd=root, capture_output=True,
                               text=True).stdout.split()
     assert sorted(branches) == ["feature/login", "fix/parser", "main"]

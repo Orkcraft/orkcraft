@@ -212,7 +212,7 @@ async def test_status_lines_badges_and_demolish(fake_repo: Path, town):
         await _settle(pilot)
         loot = desk.huts["loot"]
         assert all(h.status for h in desk.huts.values() if h.display), {b: h.status for b, h in desk.huts.items()}
-        assert loot.badge and "ARTIFACTS" in loot.label.lines[-1]
+        assert loot.badge and "Artifacts" in loot.label.head
         assert loot.sil.id == "loot" and (loot.geom.w, loot.geom.h) == footprint(loot.sil, loot.label, len(loot.actions))
 
         desk.hide(desk.get_window("loot"))
@@ -314,7 +314,8 @@ async def test_calm_town_shows_the_war_map_and_the_town_hall(fake_repo: Path, to
         assert not app.screen.query_one("#taskbar").display
         assert desk.size.height == SIZE[1] - 2                       # the town has the whole height
         spots = _hut_geoms(app)
-        assert all(g.y + g.h <= desk.size.height - desk.hut_reserve for g in spots.values())
+        assert hall.geom.y + hall.geom.h == desk.size.height          # the Town Hall stands on the very bottom
+        assert all(g.y + g.h <= desk.size.height - desk.hut_reserve for b, g in spots.items() if b != "town_hall")
 
         await pilot.press(str(desk.get_window("loot").number))        # a selection: the full console
         await _settle(pilot)
@@ -393,7 +394,7 @@ async def test_a_waiting_orc_sets_its_hut_on_fire(fake_repo: Path, town):
         app.desktop.refresh_huts()
         await _settle(pilot)
         hut = app.desktop.huts["town_hall"]
-        assert hut.has_class("-alert") and "🔥" in hut.label.head
+        assert hut.has_class("-alert") and "🔥" not in hut.label.head
         flame = hut.has_class("-flame")
         app.desktop.flicker_fires()
         assert hut.has_class("-flame") != flame                        # it flickers

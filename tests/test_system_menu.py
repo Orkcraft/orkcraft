@@ -58,7 +58,7 @@ async def test_f10_opens_system_menu_escape_closes_and_hud_click_opens(fake_repo
         # HUD segment click opens it too
         hud = app.screen.query_one("#hud", Hud)
         r = hud.region
-        await pilot.click(None, offset=(r.x + hud._menu_span[0] + 3, r.y))   # the Menu · War Horn segment
+        await pilot.click(None, offset=(r.x + hud._menu_span[0] + 3, r.y))   # the Menu · Halt All segment
         await pilot.pause()
         assert isinstance(app.screen, SystemMenu)
         await pilot.press("escape")

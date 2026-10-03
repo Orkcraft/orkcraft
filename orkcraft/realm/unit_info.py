@@ -99,7 +99,7 @@ def short_model(model: str) -> str:
 def models_of(orc: Orc, live_model: str = "") -> list[tuple[str, str, str]]:
     """(letter, style, label) per model the orc runs on; a free chain says so."""
     if orc.kind in FREE_KINDS and orc.category == RESIDENT:
-        return [("🗿", "", "no model — free")]
+        return [("🪧", "", "no model — free")]
     out = []
     for step in orc.harness or ([{"harness": "claude"}] if orc.category == RESIDENT else []):
         harness = step.get("harness", "claude")

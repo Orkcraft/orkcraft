@@ -1,7 +1,7 @@
 """Hut: a building collapsed on the town map, drawn as its own silhouette (realm/silhouettes.py).
 
-Above the building stand its number, icon and the orc's state, then its name, in two or three
-lines. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
+Above the building stand its number, its one icon and its name on one line (two when long),
+then one blank row. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
 two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
 building; a drag moves the hut (the town keeps the spot).
 
@@ -9,6 +9,8 @@ The frame takes the colour of the biome (and turns orange when an orc waits for 
 rules for that are CSS; only the text carries styles of its own.
 """
 from __future__ import annotations
+
+import re
 
 from rich.cells import cell_len
 from rich.text import Text
@@ -26,8 +28,9 @@ from orkcraft.wm.geometry import Geom
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d")   # a burning hut flickers between these
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
-NAME_STYLE, NUMBER_STYLE, BUTTON_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
+NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
+_EDGE = re.compile(r"[─~_═]+")         # the bottom edge of a frame, where the orc stands
 
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
@@ -109,7 +112,7 @@ class Hut(Widget):
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _relabel(self) -> None:
-        label = silhouettes.label(self.number, self.title, self.sil.width, self._badge_shown())
+        label = silhouettes.label(self.number, self._title_shown(), self.sil.width)
         if label != self.label:
             self.label = label
             self._reshape()
@@ -120,21 +123,20 @@ class Hut(Widget):
             self.number, self.title = number, title
             self._relabel()
 
-    def _badge_shown(self) -> str:
-        """The short badge; in quiet hours a waiting orc shows ❓ instead of a fire."""
-        short = self._badge_short(self.badge)
-        return short.replace(ALERT_ICON, QUIET_ALERT) if self.quiet else short
+    def _title_shown(self) -> str:
+        """The name; in quiet hours a waiting orc adds ❓ to it, since the fence does not burn."""
+        return f"{self.title} {QUIET_ALERT}" if self.quiet and ALERT_ICON in self.badge else self.title
 
     def set_badge(self, badge: str) -> None:
-        """The roster badge, shortened to the lead's icon and state, goes on the label's first line."""
-        if badge == self.badge:
-            return
-        self.badge = badge
-        self.set_class(ALERT_ICON in badge and not self.quiet, "-alert")
-        self._relabel()
+        """The roster badge: the hut keeps one icon, so it only shows in the fence — it burns when an orc waits.
+        In quiet hours it does not burn: a ❓ follows the name instead (schedule.py)."""
+        if badge != self.badge:
+            self.badge = badge
+            self.set_class(ALERT_ICON in badge and not self.quiet, "-alert")
+            self._relabel()
 
     def set_quiet(self, quiet: bool) -> None:
-        """🌙 Do-not-disturb: no burning fence, ❓ on the label (schedule.py)."""
+        """🌙 Do-not-disturb: no burning fence, ❓ after the name."""
         if quiet == self.quiet:
             return
         self.quiet = quiet
@@ -180,7 +182,7 @@ class Hut(Widget):
     def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:
         if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
             self.sil, self.actions = sil, list(actions)
-            self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_shown())
+            self.label = silhouettes.label(self.number, self._title_shown(), sil.width)
             self._reshape()
             self.refresh()
 
@@ -212,12 +214,16 @@ class Hut(Widget):
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
-            text.append(" " * pad + line + "\n", style=NUMBER_STYLE if i == 0 else NAME_STYLE)
+            text.append(" " * pad + line + "\n", style=NAME_STYLE)
         left = (w - self.sil.width) // 2
-        for row in self.sil.draw(self.status):
+        rows = self.sil.draw(self.status)
+        for n, row in enumerate(rows):
             text.append(" " * left)
+            if n == len(rows) - 1:
+                row = self._orc_in_frame(row)
             for piece, role in row:
-                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else None)
+                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else
+                            ORC_STYLE if role == "orc" else None)
             text.append("\n")
         if self.sil.caption:
             cap = self.sil.caption_text(self.status)
@@ -227,6 +233,25 @@ class Hut(Widget):
         else:
             text.rstrip()
         return text
+
+    def _orc_in_frame(self, row: list[tuple[str, str]]) -> list[tuple[str, str]]:
+        """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the middle of its edge, between
+        the corners (a mill's sails or a pit's chute stay where they are)."""
+        orc = self._badge_short(self.badge)
+        line = "".join(piece for piece, _ in row)
+        if not orc or any(role != "frame" for _, role in row):
+            return row
+        edge = max(_EDGE.finditer(line), key=lambda m: m.end() - m.start(), default=None)
+        if edge is None:
+            return row
+        start, room = edge.start(), edge.end() - edge.start()
+        icon, state = orc.split()
+        marks = [m for m in (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon) if cell_len(m) <= room]
+        if not marks:
+            return row
+        mark = next((m for m in marks if (room - cell_len(m)) % 2 == 0), marks[0])   # dead centre when it can be
+        at = start + (room - cell_len(mark)) // 2
+        return [(line[:at], "frame"), (mark, "orc"), (line[at + cell_len(mark):], "frame")]
 
     def action_at(self, cx: int, cy: int) -> str | None:
         """The quick action under a cell (x, y) of the hut, if any: the buttons sit on its last row."""

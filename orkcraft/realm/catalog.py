@@ -121,6 +121,17 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
         config={"steps": (list, None, False)},
         art="mill", orc="Miller"),
+    BuildingType(
+        "horn", "The Horn", "📯", "XS",
+        "sound for what comes in: every cart down its roads plays a sound — you pick which sound for which event "
+        "(built-in, the terminal bell or an audio file); mute, quiet hours, a cooldown",
+        "the last sound it played, or muted", "each incoming event with its sound; the calls that sounded",
+        events=(_e("horn.sounded", "sounded", TEXT, "a cart was announced: the sound and what came"),),
+        actions=(_a("horn.test", "Test", "🔊", "play the sound of everything else"),
+                 _a("horn.mute", "Mute", "🔇", "mute or unmute the horn")),
+        config={"sounds": (list, None, False), "default": (str, None, False), "muted": (bool, None, False),
+                "quiet": (str, None, False), "cooldown": (int, (0, 600), False)},
+        art="watchtower", orc="Hornblower"),
     # -- 2. queues and execution -----------------------------------------------------------------------
     BuildingType(
         "fields", "Task Fields", "🌾", "M",
@@ -406,6 +417,14 @@ def validate(spec: dict) -> list[str]:
             errors.append("config: cron: say `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron")
         if isinstance(config.get("github"), str) and not watch.REPO.match(config["github"]):
             errors.append("config: github must be owner/repo")
+    if tid == "horn":
+        from orkcraft.realm import horn
+        if isinstance(config.get("sounds"), list):
+            errors += [f"config: sounds: {e}" for e in horn.parse(config["sounds"])[1]]
+        if isinstance(config.get("default"), str) and not horn.sound_ok(config["default"]):
+            errors.append(f"config: default: choose {', '.join(horn.SOUNDS)} or an audio file")
+        if isinstance(config.get("quiet"), str) and not horn.quiet_ok(config["quiet"]):
+            errors.append("config: quiet: say `22:00-08:00`")
     if tid == "totem" and isinstance(config.get("rules"), list):
         from orkcraft.realm import totem
         errors += [f"config: rules: {e}" for e in totem.rules_of(config["rules"])[1]]
@@ -426,6 +445,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Know the project: files, notes, diffs", ("forest", "scrolls", "lake")),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
+    ("Hear what comes in", ("horn",)),
 )
 
 

@@ -78,7 +78,7 @@ def test_repeating_agent_is_found_and_demoted_after_replay(tmp_path: Path):
     assert scroll.building("scrying").garrison.handler("seer").kind == "agent"     # proposals only
     what = steward.apply_proposal(scroll, "scrying", p)
     seer = scroll.building("scrying").garrison.handler("seer")
-    assert what == "Seer demoted to a chain" and seer.kind == "chain" and seer.harness == [] and seer.avatar == "🗿"
+    assert what == "Seer demoted to a chain" and seer.kind == "chain" and seer.harness == [] and seer.avatar == "🪧"
     assert scroll.building("scrying").roads_of("seer")                             # keeps its roads
     assert ts.validate(scroll.to_dict()) == []
     saved = steward.load_report(tmp_path, "scrying") if steward.save_report(tmp_path, report) else None
