@@ -874,9 +874,9 @@ class Desktop(Container):
             hut.set_badge(w.badge)
             hut.set_class(w is self.active, "-expanded")
             hw, hh = hut.geom.w, hut.geom.h
-            if w.window_id == TOWN_HALL:     # fixed in the bottom-right corner
+            if w.window_id == TOWN_HALL:     # fixed in the bottom-right corner, on the very bottom of the screen
                 hut.fixed = True
-                hut.place(Geom(max(width - hw, 0), max(height - hh, 0), hw, hh))
+                hut.place(Geom(max(width - hw, 0), max(self.dims[1] - hh, 0), hw, hh))
                 placed.append(hut.geom)
                 continue
             spec = self.scroll.building(w.window_id) if self.scroll is not None else None

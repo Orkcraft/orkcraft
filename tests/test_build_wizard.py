@@ -126,7 +126,7 @@ async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
         review.query_one("#review-title", Input).value = "Release"
         await _settle(pilot)
         hut = review.query_one("#review-preview").children[0]
-        assert hut.sil.id == "fields" and hut.label.lines[-1] == "RELEASE" and "📋" in hut.label.head
+        assert hut.sil.id == "fields" and hut.label.head.endswith("Release") and "📋" in hut.label.head
         btn = review.query_one("#review-build")
         assert btn.region.height and btn.region.bottom <= SIZE[1]           # the button is on screen
         await pilot.click("#review-build")

@@ -67,13 +67,13 @@ def test_slots_headings_live_lines_and_fallbacks():
     assert "head" in roles and "frame" in roles and "live" in barracks.draw(["x"])[3][1][1]
 
 
-def test_the_label_above_wraps_into_two_or_three_lines():
-    one = sil.label(7, "🌾 Task Fields", 18, "🧌 💤")
-    assert one.lines == ("7 🌾 🧌 💤", "TASK FIELDS")
+def test_the_label_is_one_line_with_one_icon_and_two_blank_rows():
+    one = sil.label(7, "🌾 Task Fields", 18)
+    assert one.text == ("7 🌾 Task fields",) and one.lines == ("7 🌾 Task fields", "", "")
     long = sil.label(3, "🪨 A very long name that has to wrap around", 10)
-    assert len(long.lines) == 3 and long.lines[-1].endswith("…") and long.lines[0] == "3 🪨"
-    assert sil.label(1, "🔮 Scrying Spire · Diff Inspector", 18).title == ("DIFF INSPECTOR",)
-    assert sil.label(2, "Plain", 18).lines == ("2", "PLAIN")                 # no icon
+    assert len(long.text) == 2 and long.text[-1].endswith("…") and long.head.startswith("3 🪨 A very")
+    assert sil.label(1, "🔮 Scrying Spire · Diff Inspector", 18).head == "1 🔮 Diff inspector"
+    assert sil.label(2, "Plain", 18).head == "2 Plain"                      # no icon
 
 
 def test_the_hut_stands_label_over_building_buttons_under():
@@ -81,11 +81,11 @@ def test_the_hut_stands_label_over_building_buttons_under():
     hut = Hut("a", sil.of(_spec("a", "crag")), acts)
     hut.set_title(5, "🪨 Tally Crag")
     s = hut.sil
-    assert (hut.geom.w, hut.geom.h) == (s.width, 2 + s.height + 1) == footprint(s, hut.label, len(acts))
+    assert (hut.geom.w, hut.geom.h) == (s.width, 3 + s.height + 1) == footprint(s, hut.label, len(acts))
     hut.set_status(["spend 4.04 $", "TOKENS ▇▅▃"])
     lines = str(hut.render()).splitlines()
-    assert lines[0].strip() == "5 🪨" and lines[1].strip() == "TALLY CRAG"
-    assert "TELEMETRY & TELEGRAPHS" in lines[3] and "spend 4.04 $" in lines[4]
+    assert lines[0].strip() == "5 🪨 Tally crag" and lines[1].strip() == lines[2].strip() == ""     # one line, two blank rows
+    assert "TELEMETRY & TELEGRAPHS" in lines[4] and "spend 4.04 $" in lines[5]
     assert "Flip" in lines[-1] and "Next" in lines[-1]                       # wide enough: the labels
     x0, _, first = hut._buttons[0]
     assert first == "crag.flip" and hut.action_at(x0, hut.geom.h - 1) == "crag.flip"
@@ -93,7 +93,7 @@ def test_the_hut_stands_label_over_building_buttons_under():
     small = Hut("s", sil.of(_spec("s", "pit")), acts)                        # 9 wide: glyphs only
     small.set_title(1, "🕳️ The Pit")
     assert str(small.render()).splitlines()[-1].strip() == "[⇅] [⟳]"
-    assert small.geom.h == 2 + 3 + 1 + 1                                     # label, silhouette, caption, buttons
+    assert small.geom.h == 3 + 3 + 1 + 1                                     # label and gap, silhouette, caption, buttons
     shown = Hut("c", sil.of(_spec("c", "pit")))
     shown.set_status(["📄 a.txt", "3 in the pit"])
     assert str(shown.render()).splitlines()[-1].strip() == "📄 a.txt"
@@ -172,7 +172,7 @@ async def test_town_with_typed_huts_and_quick_actions(fake_repo: Path, town):
         geoms = [h.geom for h in desk.huts.values() if h.display]
         assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
         room_w, room_h = desk.hut_room
-        assert all(g.x + g.w <= room_w and g.y + g.h <= room_h for g in geoms)
+        assert all(g.x + g.w <= room_w and g.y + g.h <= room_h for g in geoms if g != desk.huts["town_hall"].geom)
         assert "TODO" in str(desk.huts["todo"].render()) and "WORKER" not in str(desk.huts["todo"].render())
 
         # a click on the button runs the action and does not open the building
@@ -219,7 +219,7 @@ async def test_a_lake_grows_with_its_content_and_stays_off_its_neighbours(fake_r
         geoms = [h.geom for h in desk.huts.values() if h.display]
         assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
         room_w, room_h = desk.hut_room
-        assert all(g.x + g.w <= room_w and g.y + g.h <= room_h for g in geoms)
+        assert all(g.x + g.w <= room_w and g.y + g.h <= room_h for g in geoms if g != desk.huts["town_hall"].geom)
         body.show(lake_logic.View("text", "short.txt", text="one\ntwo"))
         desk.refresh_huts()
         await _settle(pilot)
@@ -266,3 +266,11 @@ async def test_the_menu_switches_between_immersion_and_plain(fake_repo: Path, to
         assert not desk.plain and desk.huts["mill"].geom.w == 15
         geoms = [h.geom for h in desk.huts.values() if h.display]
         assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
+
+
+def test_emoji_in_live_lines_do_not_push_the_frame_out():
+    from rich.cells import cell_len
+    hut = Hut("h", sil.TOWN_HALL, [])
+    hut.set_status(["🛡 all quiet", "🪙 $0.00 / $5", "plain"])
+    rows = [ln for ln in str(hut.render()).splitlines() if ln.startswith("│") or ln.lstrip().startswith("│")]
+    assert rows and {cell_len(ln.strip()) for ln in rows} == {sil.TOWN_HALL.width}

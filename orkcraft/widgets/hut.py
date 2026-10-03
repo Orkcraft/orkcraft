@@ -1,7 +1,7 @@
 """Hut: a building collapsed on the town map, drawn as its own silhouette (realm/silhouettes.py).
 
-Above the building stand its number, icon and the orc's state, then its name, in two or three
-lines. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
+Above the building stand its number, its one icon and its name on one line (two when long),
+then two blank rows. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
 two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
 building; a drag moves the hut (the town keeps the spot).
 
@@ -24,7 +24,7 @@ from orkcraft.wm.geometry import Geom
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d")   # a burning hut flickers between these
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
-NAME_STYLE, NUMBER_STYLE, BUTTON_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
+NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
 
 _BIOME_RULES = "\n".join(
@@ -106,7 +106,7 @@ class Hut(Widget):
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _relabel(self) -> None:
-        label = silhouettes.label(self.number, self.title, self.sil.width, self._badge_short(self.badge))
+        label = silhouettes.label(self.number, self.title, self.sil.width)
         if label != self.label:
             self.label = label
             self._reshape()
@@ -118,12 +118,10 @@ class Hut(Widget):
             self._relabel()
 
     def set_badge(self, badge: str) -> None:
-        """The roster badge, shortened to the lead's icon and state, goes on the label's first line."""
-        if badge == self.badge:
-            return
-        self.badge = badge
-        self.set_class(ALERT_ICON in badge, "-alert")
-        self._relabel()
+        """The roster badge: the hut keeps one icon, so it only shows in the fence — it burns when an orc waits."""
+        if badge != self.badge:
+            self.badge = badge
+            self.set_class(ALERT_ICON in badge, "-alert")
 
     def _reshape(self) -> None:
         w, h = footprint(self.sil, self.label, len(self.actions))
@@ -164,7 +162,7 @@ class Hut(Widget):
     def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:
         if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
             self.sil, self.actions = sil, list(actions)
-            self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_short(self.badge))
+            self.label = silhouettes.label(self.number, self.title, sil.width)
             self._reshape()
             self.refresh()
 
@@ -196,12 +194,16 @@ class Hut(Widget):
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
-            text.append(" " * pad + line + "\n", style=NUMBER_STYLE if i == 0 else NAME_STYLE)
+            text.append(" " * pad + line + "\n", style=NAME_STYLE)
         left = (w - self.sil.width) // 2
-        for row in self.sil.draw(self.status):
+        rows = self.sil.draw(self.status)
+        for n, row in enumerate(rows):
             text.append(" " * left)
+            if n == len(rows) - 1:
+                row = self._orc_in_frame(row)
             for piece, role in row:
-                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else None)
+                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else
+                            ORC_STYLE if role == "orc" else None)
             text.append("\n")
         if self.sil.caption:
             cap = self.sil.caption_text(self.status)
@@ -211,6 +213,19 @@ class Hut(Widget):
         else:
             text.rstrip()
         return text
+
+    def _orc_in_frame(self, row: list[tuple[str, str]]) -> list[tuple[str, str]]:
+        """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the last line, in the middle."""
+        orc = self._badge_short(self.badge)
+        line = "".join(piece for piece, _ in row)
+        if not orc or any(role != "frame" for _, role in row):
+            return row
+        for mark in (f" {orc} ", f" {orc.split()[0]} "):
+            n = cell_len(mark)
+            if n + 2 <= len(line):
+                at = (len(line) - n) // 2
+                return [(line[:at], "frame"), (mark, "orc"), (line[at + n:], "frame")]
+        return row
 
     def action_at(self, cx: int, cy: int) -> str | None:
         """The quick action under a cell (x, y) of the hut, if any: the buttons sit on its last row."""

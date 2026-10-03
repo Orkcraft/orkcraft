@@ -25,10 +25,27 @@ ELLIPSIS = "…"
 
 
 def clip(text: str, width: int) -> str:
-    """Cut to `width` cells, ending with … when something was cut (box and text glyphs are one cell)."""
+    """Cut to `width` cells, ending with … when something was cut (an emoji is two cells)."""
+    from rich.cells import cell_len
     if width <= 0:
         return ""
-    return text if len(text) <= width else text[:max(width - 1, 0)] + ELLIPSIS
+    if cell_len(text) <= width:
+        return text
+    out, used = "", 0
+    for ch in text:
+        w = cell_len(ch)
+        if used + w > width - 1:
+            break
+        out, used = out + ch, used + w
+    return out + ELLIPSIS
+
+
+def _fill(text: str, width: int, center: bool = False) -> str:
+    """Pad `text` to exactly `width` cells (rich's cell width, so emoji do not push the frame out)."""
+    from rich.cells import cell_len
+    room = max(width - cell_len(text), 0)
+    left = room // 2 if center else 0
+    return " " * left + text + " " * (room - left)
 
 
 @dataclass(frozen=True)
@@ -86,7 +103,7 @@ class Silhouette:
                     pieces.append((line[at:m.start()], "frame"))
                 w = m.end() - m.start()
                 text = clip(texts[k], w - self.pad if not self.center else w)
-                text = text.center(w) if self.center else (" " * self.pad + text).ljust(w)
+                text = _fill(text, w, True) if self.center else _fill(" " * self.pad + text, w)
                 pieces.append((text, "head" if k < len(self.head) else "live"))
                 k, at = k + 1, m.end()
             if at < len(line):
@@ -295,36 +312,44 @@ def of(spec: dict | None, building_id: str | None = None) -> Silhouette:
 
 # -- the label above a building -------------------------------------------------------------------
 
-LABEL_MIN_W = 14      # a title wraps at least this wide, so a 5-cell pit still reads "THE PIT"
+LABEL_MIN_W = 14      # a title wraps at least this wide, so a 5-cell pit still reads "The pit"
 LABEL_TITLE_LINES = 2
+LABEL_GAP = 2         # blank rows between the name and the building
 
 
 @dataclass(frozen=True)
 class Label:
-    head: str                                   # `7 🌾` + the orc's badge
-    title: tuple[str, ...] = field(default_factory=tuple)
+    head: str                                   # `7 🌾 Task fields`: the number, the one icon and the name
+    title: tuple[str, ...] = field(default_factory=tuple)    # …the rest of a name that did not fit
+
+    @property
+    def text(self) -> tuple[str, ...]:
+        return (self.head, *self.title)
 
     @property
     def lines(self) -> tuple[str, ...]:
-        return (self.head, *self.title)
+        return (*self.text, *([""] * LABEL_GAP))
 
     @property
     def width(self) -> int:
         from rich.cells import cell_len
-        return max(cell_len(x) for x in self.lines)
+        return max(cell_len(x) for x in self.text)
 
 
-def label(number: int, title: str, width: int, badge: str = "") -> Label:
-    """Two or three lines: the number, the icon and the orc's state; then the name, wrapped."""
+def label(number: int, title: str, width: int) -> Label:
+    """The name above a building: `7 🌾 Task fields` on one line (first letter capital, the rest
+    small), wrapped to a second when long, then two blank rows before the building."""
     if " · " in title:                                   # "🔮 Scrying Spire · Diff Inspector": the part after the dot
         icon, _, rest = title.partition(" ")
         title = f"{icon} {rest.rsplit(' · ', 1)[-1]}"
     icon, _, words = title.partition(" ")
     if not words:
         icon, words = "", title
-    head = " ".join(x for x in (str(number), icon, badge) if x)
-    wrapped = textwrap.wrap(words.upper(), max(width, LABEL_MIN_W), break_long_words=True) or [""]
+    words = words[:1].upper() + words[1:].lower()
+    full = " ".join(x for x in (str(number), icon, words) if x)
+    room = max(width, LABEL_MIN_W) + 4
+    wrapped = textwrap.wrap(full, room, break_long_words=True) or [""]
     if len(wrapped) > LABEL_TITLE_LINES:
         wrapped = wrapped[:LABEL_TITLE_LINES]
-        wrapped[-1] = clip(wrapped[-1] + ELLIPSIS * 2, max(width, LABEL_MIN_W))
-    return Label(head, tuple(wrapped))
+        wrapped[-1] = clip(wrapped[-1] + ELLIPSIS * 2, room)
+    return Label(wrapped[0], tuple(wrapped[1:]))
