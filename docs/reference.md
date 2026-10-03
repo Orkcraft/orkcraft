@@ -465,7 +465,7 @@ changes (`orkcraft/realm/modes.py`).
 
 | | Immersion | Hidden |
 |---|---|---|
-| Buildings | ASCII silhouettes (roofs, sails, trees, waves) | only a frame with the same live rows |
+| Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
 | Agents | orcs 🧌 / 🗿 | people 🧑 |
 | A question | fire 🔥 | ❓ |
 | Waiting for an answer | the whole card flickers orange, after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | the whole card is red |

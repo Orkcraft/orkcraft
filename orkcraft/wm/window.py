@@ -17,7 +17,7 @@ from orkcraft.wm.geometry import Frac, Geom
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Window {{ background: {b.window_bg}; border: round {b.border}; }}\n"
     f"    Desktop.biome-{name} Window.-active {{ border: round {b.border_focus}; border-title-color: {b.border_focus}; }}"
-    for name, b in theme.BIOMES.items()
+    for name, b in theme.LOOKS.items()
 )
 
 

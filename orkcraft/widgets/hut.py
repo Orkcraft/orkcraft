@@ -35,7 +35,7 @@ DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
     f"    Desktop.biome-{name} Hut.-expanded {{ color: {b.border_focus}; text-style: bold; }}"
-    for name, b in theme.BIOMES.items()
+    for name, b in theme.LOOKS.items()
 )
 
 

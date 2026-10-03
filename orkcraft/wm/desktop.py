@@ -430,19 +430,27 @@ class Desktop(Container):
 
     # -- biome & terrain ---------------------------------------------------------
 
+    @property
+    def look(self) -> theme.Biome:
+        """What the canvas wears: the orkspace's biome, or the office's black and grey in the hidden mode."""
+        return theme.OFFICE if self.plain else theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
+
     def set_biome(self, name: str) -> None:
-        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME."""
+        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME. The hidden mode keeps it but
+        wears the office look (the biome comes back with immersion)."""
         if name not in theme.BIOMES:
             name = theme.DEFAULT_BIOME
         self.biome = name
-        for b in theme.BIOMES:
+        self._paint()
+
+    def _paint(self) -> None:
+        look = self.look
+        for b in theme.LOOKS:
             self.remove_class(f"biome-{b}")
-        self.add_class(f"biome-{name}")
-        biome = theme.BIOMES[name]
-        bg_color = theme.SOLID_BLACK if self.solid_black else biome.canvas
-        self.styles.background = bg_color
+        self.add_class(f"biome-{look.name}")
+        self.styles.background = theme.SOLID_BLACK if self.solid_black else look.canvas
         if hasattr(self, "terrain"):
-            self.terrain.set_biome(biome, self.solid_black)
+            self.terrain.set_biome(look, self.solid_black)
 
     def toggle_terrain(self) -> None:
         """Toggle solid black canvas on/off and save layout."""
@@ -451,11 +459,7 @@ class Desktop(Container):
             self.add_class("-solid-black")
         else:
             self.remove_class("-solid-black")
-        biome = theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
-        bg_color = theme.SOLID_BLACK if self.solid_black else biome.canvas
-        self.styles.background = bg_color
-        if hasattr(self, "terrain"):
-            self.terrain.set_biome(biome, self.solid_black)
+        self._paint()
         self.save()
 
     # -- focus & z-order ---------------------------------------------------------
@@ -811,6 +815,7 @@ class Desktop(Container):
         """Every widget draws the current mode's look (the HUD, the carts, the badges read `modes.current`)."""
         modes.set_current(self.mode)
         self.set_class(self.plain, "-hidden")
+        self._paint()
         for w in self.windows:
             w.refresh_badge()
 
@@ -1126,9 +1131,9 @@ class Desktop(Container):
                 if (x, y) not in p.covered:
                     cells[(x, y)] = (ch, "selected" if selected else "bright" if bright else "faint")
         self.terrain.set_roads(cells)
-        biome = theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
+        biome = self.look
         signature = (tuple(sorted((k, p.exit, p.entry, tuple(p.cells)) for k, p in self.road_paths.items())),
-                     self.selected_road, self.biome, self._handler_keys())
+                     self.selected_road, biome.name, self._handler_keys())
         if signature == self._road_signature:
             return
         self._road_signature = signature

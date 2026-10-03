@@ -131,3 +131,27 @@ async def test_a_scroll_with_the_old_plain_opens_hidden(fake_repo: Path, monkeyp
         app.desktop.scroll.preferences["mode"] = "plain"
         app.desktop._wear_mode()
         assert app.desktop.plain and modes.hidden()
+
+
+@pytest.mark.asyncio
+async def test_the_hidden_mode_has_no_biome_black_ground_grey_frames(fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
+    from orkcraft import theme
+    monkeypatch.setattr(ts, "DEFAULT_VIEW", "town")
+    assert masonry.save_spec(fake_repo, {"id": "mill", "title": "Mill", "icon": "🏗", "orc": {"name": "Peon"},
+                                         "type": "mill"}) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        d = app.desktop
+        biome = d.biome
+        assert d.look.name == biome and d.has_class(f"biome-{biome}")
+        d.set_mode(True)
+        await pilot.pause()
+        assert d.look is theme.OFFICE and d.has_class("biome-office") and not d.has_class(f"biome-{biome}")
+        assert d.terrain.biome is theme.OFFICE and not theme.OFFICE.glyphs
+        hut = d.huts["mill"]
+        assert hut.styles.color.hex.lower() == theme.OFFICE.border and hut.styles.background.hex == "#000000"
+        assert d.biome == biome                                   # the orkspace keeps its biome …
+        d.set_mode(False)
+        await pilot.pause()
+        assert d.look.name == biome and d.has_class(f"biome-{biome}")   # … and wears it again
