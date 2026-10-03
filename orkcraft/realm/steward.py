@@ -1,4 +1,4 @@
-"""The steward 🗿🧌: watches how a building is used and proposes how to automate it.
+"""The steward 🪧🧌: watches how a building is used and proposes how to automate it.
 
 A steward is a hybrid: this module's metrics are local code and cost nothing; a model is asked
 only when they find a reason.
@@ -361,7 +361,7 @@ def apply_proposal(scroll: ts.TownScroll, building_id: str, p: Proposal | dict) 
         if orc is None or not orc.uses_model:
             raise ValueError(f"{d.get('orc')!r} is not an agent handler of {building_id}")
         ts.update_orc(scroll, building_id, orc.id, kind="chain", chain=list(d.get("chain") or []), harness=[],
-                      avatar="🗿", why=p.why, run=None)
+                      avatar="🪧", why=p.why, run=None)
         return f"{orc.name} demoted to a chain"
     if p.type == "set_run":
         b = scroll.building(building_id)

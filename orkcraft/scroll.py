@@ -25,6 +25,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from orkcraft.realm.looks import OLD_ICONS, kind_icon
+
 SCHEMAS = Path(__file__).resolve().parent / "schemas"
 SCHEMA_PATH = SCHEMAS / "town-scroll.v3.json"
 SCHEMA_V2_PATH = SCHEMAS / "town-scroll.v2.json"
@@ -80,6 +82,9 @@ class OrcSpec:
     chain: list[dict] = field(default_factory=list)
     script: dict | None = None    # {"path", "sha256"?, "reviewed"?}
     why: str = ""                 # the recruiter's reason for this kind
+
+    def __post_init__(self) -> None:
+        self.avatar = OLD_ICONS.get(self.avatar, self.avatar)
 
     @property
     def run_policy(self) -> dict:
@@ -756,7 +761,7 @@ def add_handler(scroll: TownScroll, building_id: str, name: str, *, kind: str = 
         harness = [] if kind in ("chain", "script") else [dict(s) for s in DEFAULT_HARNESS]
     orc = OrcSpec(
         _unique_orc_id(b, name), name, role=role.strip(), orders=orders.strip(), kind=kind,
-        avatar=avatar or ("🧌" if kind == "agent" else "🗿🧌" if kind == "hybrid" else "🗿"),
+        avatar=avatar or kind_icon(kind),
         status="draft" if script is not None and not script.get("reviewed") else "idle",
         trigger=dict(trigger) if trigger else {"type": "pipe" if kind != "agent" else "on_demand"},
         harness=[dict(s) for s in harness], chain=[dict(op) for op in chain or []],

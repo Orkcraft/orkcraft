@@ -140,7 +140,7 @@ spread over the width — and keep the spot you drag them to.
 - **Garrison, Info, chat**: the garrison lists names and states only (⚙ busy, 💤 idle,
   🔥 waiting). The **Info** column next to it tells in up to three sentences what the selected
   orc, building or road does — put together from the scroll and the roster, no model call — its
-  models (C Claude, A agy, P script, 🗿 a free chain, ● the live session's model) and what it cost
+  models (C Claude, A agy, P script, 🪧 a free chain, ● the live session's model) and what it cost
   (🪙 $ and 🪵 tokens from the handler's run log, the live session's spend from telemetry; "no data
   yet" when unknown). Picking an orc keeps the garrison and lights the orc. A burning orc opens
   its question at once; any other garrison orc or live session opens its **chat**: a tall
@@ -329,7 +329,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 
 ## Orcs: steward, handlers, Recruiter
 
-- **Looks**: the icon is the kind — 🗿 chain / script, 🧌 agent, 🗿🧌 hybrid; the letters are the
+- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the letters are the
   harness scheme — `C` Claude (amber), `A` agy (cyan), `P` a pipeline (magenta), e.g. `A→C` (agy
   writes, Claude reviews); long schemes read `C→C·4`. The frame badge shows the steward.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads

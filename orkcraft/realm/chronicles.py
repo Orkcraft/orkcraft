@@ -29,7 +29,7 @@ EVENTS: dict[str, tuple[str, str]] = {
     "rally_set": ("🚩", "rally point ──► {target} ({mode})"),
     "rally_cleared": ("✂", "rally point cleared"),
     "payload_received": ("📥", "received {kind} from {source}"),
-    "handler_ran": ("🗿", "{orc} ran on {roads} road(s): {outcome}"),
+    "handler_ran": ("🪧", "{orc} ran on {roads} road(s): {outcome}"),
     "road_subscribed": ("🛤", "road from {source} ({event}) → {handler}"),
     "road_removed": ("🚧", "road from {source} ({event}) removed"),
     "road_changed": ("🔀", "road from {source}: handler → {handler}"),

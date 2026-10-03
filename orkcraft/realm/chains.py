@@ -1,4 +1,4 @@
-"""Chain handlers 🗿: a declarative pipeline of whitelisted ops over a handler's road snapshot.
+"""Chain handlers 🪧: a declarative pipeline of whitelisted ops over a handler's road snapshot.
 
 A chain is data, not code (validated by `scroll.orc_problems`): nothing here evaluates,
 imports or formats with Python attribute access. Input is a list of records — one per road

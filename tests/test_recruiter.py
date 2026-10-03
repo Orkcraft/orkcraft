@@ -43,7 +43,7 @@ def test_chain_is_accepted_and_applied(tmp_path: Path):
     assert result.orc["kind"] == "chain" and result.orc["why"].startswith("Formatting")
     assert scroll.building("scrying").garrison.handlers == []  # recruit only proposes
     orc = recruiter.apply(scroll, "scrying", result, tmp_path)
-    assert orc.id == "scribe" and orc.avatar == "🗿"
+    assert orc.id == "scribe" and orc.avatar == "🪧"
     [road] = scroll.building("scrying").roads
     assert (road.source, road.event, road.handler, road.filter) == \
         ("forge", "on_selection_change", "scribe", {"node_status": ["done"]})
