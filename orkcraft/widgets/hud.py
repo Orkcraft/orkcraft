@@ -1,5 +1,7 @@
 """Ambient HUD: `[ 🧌 Orkcraft v0.1 ]──[ ⚙️ Menu (F10) · 📯 READY ]   … [🪙 $— / $20.00] [🪵 — / 128k] [🥩 n/max]`.
 
+The corner follows the tools' billing (settings.py): `[⏳ claude 38%]` for subscriptions, 🪙 for an API.
+
 The menu and the War Horn share one segment: a click opens the system menu, whose first item is
 the War Horn; the segment shows the horn's state (READY / SOUNDED — n halted)."""
 from __future__ import annotations
@@ -37,6 +39,9 @@ class Resources:
     supply_max: int = 5
     alerts: int = 0       # ❓ orcs waiting for orders
     commit: bool = True   # §10 per-action commits
+    quota: str = ""       # ⏳ used share of the subscriptions' limits ("claude 38% · agy 71%"); "" → none
+    quota_level: str = "ok"
+    show_gold: bool = True    # False when every tool in use is a subscription (settings.py)
     budget: Budget = field(default_factory=Budget)
 
     def __post_init__(self) -> None:
@@ -135,8 +140,12 @@ class Hud(Static):
         if not narrow:
             right.append(f"⛏ commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}
-        right.append(f"[🪙 {gold_disp}]", style=levels.get(r.gold_level, ""))
-        right.append(" ")
+        if r.quota:
+            right.append(f"[⏳ {r.quota}]", style=levels.get(r.quota_level, ""))
+            right.append(" ")
+        if r.show_gold:
+            right.append(f"[🪙 {gold_disp}]", style=levels.get(r.gold_level, ""))
+            right.append(" ")
         right.append(f"[🪵 {lumber_disp}]", style=levels.get(r.lumber_level, ""))
         right.append(" ")
         supply_style = "bold red" if r.supply >= r.supply_max else ("yellow" if r.supply else "")

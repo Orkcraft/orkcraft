@@ -1683,6 +1683,27 @@ class OrkcraftApp(App[int]):
         lumber_level = telemetry.level(ctx or 0, budget.lumber_context_limit_tokens)
         return gold, gold_level, lumber, lumber_level
 
+    def _quota_text(self) -> tuple[str, str, bool]:
+        """(quota, its level, whether 🪙 shows): the HUD corner follows each tool's billing
+        (settings.py) — the used share of the tightest window for a subscription, 🪙 for an API."""
+        machine = self.desktop.machine
+        on = [t for t, c in machine.tools.items() if c.enabled]
+        subs = [t for t in on if machine.tools[t].billing == "subscription"]
+        if not subs:
+            return "", "ok", True
+        from orkcraft.screens.limits_view import LimitsView
+        limits = next((lv.limits for lv in self.query(LimitsView)), None) or []
+        parts, worst = [], 0.0
+        for t in subs:
+            left = [x.remaining for x in limits if x.provider == t and x.remaining is not None]
+            if left:
+                used = round((1 - min(left)) * 100)
+                worst = max(worst, used)
+                parts.append(f"{t} {used}%")
+            else:
+                parts.append(f"{t} —")
+        return " · ".join(parts), telemetry.level(worst, 100), len(subs) < len(on)
+
     def _active_terminal_key(self) -> str | None:
         try:
             term = self.chat.current_terminal
@@ -1737,12 +1758,17 @@ class OrkcraftApp(App[int]):
 
         if hasattr(self, "_console") and self._console is not None:
             self._console.refresh_state(self.focus_state, self.roster)
+        self.refresh_hud()
+
+    def refresh_hud(self) -> None:
         gold, gold_level, lumber, lumber_level = self._resource_texts()
+        quota, quota_level, show_gold = self._quota_text()
         self._hud.set_resources(Resources(
             budget=self.scroll.budget,
             supply=self.roster.active, supply_max=self.scroll.budget.supply_max_workers,
             alerts=len(self.roster.alerts), commit=self.config.auto_commit,
             gold=gold, gold_level=gold_level, lumber=lumber, lumber_level=lumber_level,
+            quota=quota, quota_level=quota_level, show_gold=show_gold,
         ))
 
     # -- orders (modals only on explicit request) ----------------------------------------------------
