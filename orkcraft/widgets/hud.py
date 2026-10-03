@@ -1,5 +1,8 @@
 """Ambient HUD: `[ 🧌 Orkcraft v0.1 ]──[ ⚙️ Menu (F10) · 📯 READY ]   … [🪙 $— / $20.00] [🪵 — / 128k] [🥩 n/max]`.
 
+In the hidden mode (`realm/modes.py`) the same values stand in words, without the game:
+`[ Orkcraft v0.1 ]──[ Menu (F10) · Stop: READY ]   … [Spend $— / $20.00] [Context — / 128k] [Agents n/max]`.
+
 The menu and the War Horn share one segment: a click opens the system menu, whose first item is
 the War Horn; the segment shows the horn's state (READY / SOUNDED — n halted)."""
 from __future__ import annotations
@@ -13,6 +16,7 @@ from textual.message import Message
 from textual.widgets import Static
 
 from orkcraft import __version__
+from orkcraft.realm import modes
 from orkcraft.scroll import Budget
 from orkcraft.sources.telemetry import fmt_tokens
 
@@ -106,22 +110,28 @@ class Hud(Static):
 
     def update_hud(self) -> None:
         r = self.resources
+        hidden = modes.hidden()
         left = Text()
-        left.append("[ 🧌 Orkcraft ", style="bold")
+        left.append("[ Orkcraft " if hidden else "[ 🧌 Orkcraft ", style="bold")
         left.append(f"v{'.'.join(__version__.split('.')[:2])} ", style="dim")
         left.append("]")
         left.append("──")
         narrow = self.size.width < 130
         horn_style = "bold green" if self.horn == "READY" else "bold reverse red"
         start = cell_len(left.plain)
-        left.append("[ ⚙️ F10 · 📯 " if narrow else "[ ⚙️ Menu (F10) · 📯 ", style="bold")
+        if hidden:
+            left.append("[ F10 · Stop: " if narrow else "[ Menu (F10) · Stop all: ", style="bold")
+        else:
+            left.append("[ ⚙️ F10 · 📯 " if narrow else "[ ⚙️ Menu (F10) · 📯 ", style="bold")
         left.append(self.horn, style=horn_style)
         left.append(" ]")
         self._menu_span = (start, cell_len(left.plain))
         if r.alerts:
             left.append("──")
             astart = cell_len(left.plain)
-            left.append(f"[ 🔥 {r.alerts} ]" if narrow else f"[ 🔥 {r.alerts} awaiting orders ]", style="bold yellow")
+            icon = modes.alert_icon()
+            wait = "awaiting an answer" if hidden else "awaiting orders"
+            left.append(f"[ {icon} {r.alerts} ]" if narrow else f"[ {icon} {r.alerts} {wait} ]", style="bold yellow")
             self._alerts_span = (astart, cell_len(left.plain))
         else:
             self._alerts_span = (0, 0)
@@ -133,14 +143,14 @@ class Hud(Static):
 
         right = Text()
         if not narrow:
-            right.append(f"⛏ commit {'ON' if r.commit else 'OFF'} ", style="dim")
+            right.append(f"{'' if hidden else '⛏ '}commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}
-        right.append(f"[🪙 {gold_disp}]", style=levels.get(r.gold_level, ""))
+        right.append(f"[{modes.resource('gold')} {gold_disp}]", style=levels.get(r.gold_level, ""))
         right.append(" ")
-        right.append(f"[🪵 {lumber_disp}]", style=levels.get(r.lumber_level, ""))
+        right.append(f"[{modes.resource('lumber')} {lumber_disp}]", style=levels.get(r.lumber_level, ""))
         right.append(" ")
         supply_style = "bold red" if r.supply >= r.supply_max else ("yellow" if r.supply else "")
-        right.append(f"[🥩 {r.supply}/{r.supply_max}]", style=supply_style)
+        right.append(f"[{modes.resource('supply')} {r.supply}/{r.supply_max}]", style=supply_style)
 
         gap = self.size.width - cell_len(left.plain) - cell_len(right.plain)
         line = left + Text(" " * max(gap, 1)) + right

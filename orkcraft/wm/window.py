@@ -9,6 +9,7 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
+from orkcraft.realm import modes
 from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import Frac, Geom
 
@@ -139,7 +140,7 @@ class Window(Container):
         width = (self.title_width or self.geom.w) - 7
         left_len = cell_len(left)
 
-        badge_text = f" [ {self.badge} ] " if self.badge else ""
+        badge_text = f" [ {modes.skin(self.badge)} ] " if self.badge else ""
         badge_len = cell_len(badge_text)
 
         # The rally segment shrinks before it goes: `🚩 ──► 🔮 Spire` → `🚩 ──► 🔮` → nothing
@@ -194,6 +195,11 @@ class Window(Container):
     def set_badge(self, badge: str) -> None:
         if badge != self.badge:
             self.badge = badge
+            self._update_title()
+
+    def refresh_badge(self) -> None:
+        """The mode changed: the badge is drawn in its words (🧌 or 🧑)."""
+        if self.badge:
             self._update_title()
 
     def set_pinned(self, pinned: bool) -> None:

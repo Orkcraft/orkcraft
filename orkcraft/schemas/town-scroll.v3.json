@@ -90,9 +90,10 @@
         "mode": {
           "enum": [
             "immersion",
+            "hidden",
             "plain"
           ],
-          "description": "Immersion: buildings wear their ASCII (default). Plain: buildings are just frames (F10 menu)."
+          "description": "Immersion: ASCII buildings, orcs, fire, gold and lumber (default). Hidden (office): frames, people, ❓, words (F10 menu). `plain` is the old name of hidden."
         },
         "view": {
           "enum": [

@@ -457,10 +457,20 @@ pipx install ./orkcraft        # or: python3 -m venv .venv && .venv/bin/pip inst
 cd your-project && orkcraft hooks install && orkcraft
 ```
 
-## Modes: immersion and plain
+## Modes: immersion and hidden
 
-F10 → 🎭 *Immersion* (default) or ▭ *Plain*, kept as `preferences.mode` in `.orkcraft.json`. In immersion
-every building wears its ASCII silhouette (roofs, sails, trees, waves). In plain mode a building is
-only a frame with the same live text rows; the label above and the buttons below stay. The Lake, the
-Crag and custom frames grow with their content (up to a maximum) in both modes, and a hut that changes
-size or mode keeps off its neighbours.
+F10 → 🎭 *Immersion* (default) or 🕶 *Hidden* (for the office), kept as `preferences.mode` in
+`.orkcraft.json` (`plain`, the old name, reads as hidden). The data is the same in both; only the look
+changes (`orkcraft/realm/modes.py`).
+
+| | Immersion | Hidden |
+|---|---|---|
+| Buildings | ASCII silhouettes (roofs, sails, trees, waves) | only a frame with the same live rows |
+| Agents | orcs 🧌 / 🗿 | people 🧑 |
+| A question | fire 🔥 | ❓ |
+| Waiting for an answer | the whole card flickers orange, after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | the whole card is red |
+| Roads | rocks 🪨 roll from building to building | small squares ■ |
+| HUD (top right) | 🪙 gold, 🪵 lumber, 🥩 meat | Spend, Context, Agents |
+
+The icons in the buildings' names stay in both. The Lake, the Crag and custom frames grow with their
+content (up to a maximum) in both modes, and a hut that changes size or mode keeps off its neighbours.

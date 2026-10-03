@@ -25,7 +25,7 @@ from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
 from orkcraft.widgets.hut import Hut
-from orkcraft.realm import catalog, silhouettes
+from orkcraft.realm import catalog, modes, silhouettes
 from orkcraft.widgets.terrain import Terrain
 from orkcraft.wm import roadmap
 from orkcraft.wm.window import Window
@@ -158,6 +158,7 @@ class Desktop(Container):
         self._replan_pending = False
         self._road_signature: tuple = ()
         self.traffic = Traffic(self)
+        modes.set_current(self.mode)
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
         self.huts: dict[str, Hut] = {}
@@ -352,6 +353,7 @@ class Desktop(Container):
         else:
             self.remove_class("-solid-black")
         self.set_biome(ork.biome)
+        self._wear_mode()
         self.preview_linked = bool(self.scroll.preferences.get("preview_linked", True))
 
         active = None
@@ -796,19 +798,36 @@ class Desktop(Container):
         return w.geom if w is not None and not w.hidden and self.in_view(w) else None
 
     @property
+    def mode(self) -> str:
+        """immersion (the game: ASCII, orcs, fire) or hidden (the office: frames, people, red)."""
+        return modes.normalize(self.scroll.preferences.get("mode")) if self.scroll is not None else modes.IMMERSION
+
+    @property
     def plain(self) -> bool:
-        """The plain mode: huts are only frames; else immersion, where they wear their ASCII."""
-        return self.scroll is not None and self.scroll.preferences.get("mode") == "plain"
+        """The hidden mode: huts are only frames; else immersion, where they wear their ASCII."""
+        return self.mode == modes.HIDDEN
+
+    def _wear_mode(self) -> None:
+        """Every widget draws the current mode's look (the HUD, the carts, the badges read `modes.current`)."""
+        modes.set_current(self.mode)
+        self.set_class(self.plain, "-hidden")
+        for w in self.windows:
+            w.refresh_badge()
 
     def set_mode(self, plain: bool) -> None:
         if plain == self.plain or self.scroll is None:
             return
-        self.scroll.preferences["mode"] = "plain" if plain else "immersion"
+        self.scroll.preferences["mode"] = modes.HIDDEN if plain else modes.IMMERSION
+        self._wear_mode()
         for hut in self.huts.values():
             if hut.set_plain(plain) and hut.display:
                 self._settle(hut)
         self.refresh_huts()
         self.replan_roads()
+        self.traffic.restyle()
+        hud = getattr(self.app, "_hud", None)
+        if hud is not None:
+            hud.update_hud()
         self.save()
         self.post_message(self.LayoutChanged())
 
@@ -963,13 +982,18 @@ class Desktop(Container):
                 hut.set_badge(w.badge)
                 hut.set_title(w.number, w.window_title)
 
-    def flicker_fires(self) -> None:
-        """A hut whose orc waits for orders burns: its fence flickers."""
+    def flicker_fires(self, now: float | None = None) -> None:
+        """A hut whose orc waits for orders burns: its fence flickers, turns red, then its roof burns.
+        In the hidden mode it only stands red."""
         for hut in self.huts.values():
-            if hut.display and hut.has_class("-alert"):
+            if hut.display and hut.has_class("-alert") and not self.plain:
+                hut.update_fire(now)
                 hut.toggle_class("-flame")
-            elif hut.has_class("-flame"):
-                hut.remove_class("-flame")
+                hut.refresh()
+            else:
+                hut.update_fire(now)
+                if hut.has_class("-flame"):
+                    hut.remove_class("-flame")
 
     def _rally_click(self, w: Window) -> bool:
         """Road mode: a click on a building picks it as the source."""

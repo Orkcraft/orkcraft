@@ -497,10 +497,10 @@ class OrkcraftApp(App[int]):
                 self.call_after_refresh(self._save_screenshot)
             elif action == "keys":
                 self.push_screen(KeysCheatSheet())
-            elif action in ("immersion", "plain"):
-                self.desktop.set_mode(action == "plain")
-                self.notify("🎭 immersion — buildings wear their ASCII" if action == "immersion"
-                            else "▭ plain — buildings are just frames", title="Mode")
+            elif action in ("immersion", "hidden"):
+                self.desktop.set_mode(action == "hidden")
+                self.notify("🎭 immersion — the town of orcs, fire and gold" if action == "immersion"
+                            else "hidden — frames, people and plain words", title="Mode")
             elif action == "terrain":
                 self.action_toggle_terrain()
             elif action == "save":

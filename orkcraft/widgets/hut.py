@@ -5,8 +5,10 @@ then one blank row. The silhouette is the building itself: a frame with live sta
 two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
 building; a drag moves the hut (the town keeps the spot).
 
-The frame takes the colour of the biome (and turns orange when an orc waits for orders), so the
-rules for that are CSS; only the text carries styles of its own.
+The frame takes the colour of the biome, so the rules for that are CSS; only the text carries
+styles of its own. An orc waiting for an answer sets the hut on fire (immersion, `realm/modes.py`):
+the whole card — name, frame, text, buttons and its ground — flickers orange, turns red when the
+question is left waiting, then the roof turns to 🔥 bit by bit. In the hidden mode it only turns red.
 """
 from __future__ import annotations
 
@@ -17,12 +19,14 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
-from orkcraft.realm import silhouettes
+from orkcraft.realm import modes, silhouettes
 from orkcraft.realm.orcs import ALERT_ICON
 from orkcraft.realm.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
-FIRE = ("#ff8c1a", "#e8411c", "#ffc04d")   # a burning hut flickers between these
+FIRE = ("#ff8c1a", "#e8411c", "#ffc04d", "#b31b0f")   # orange ↔ amber, then red ↔ dark red
+ALERT_RED = "#ef4444"                                   # the hidden mode: a waiting hut is only red
+FIRE_GROUND = ("#3a1c06", "#420d07", "#3d0b0b")         # the card's ground: orange, red, hidden red
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
@@ -52,8 +56,11 @@ class Hut(Widget):
     }}
 {_BIOME_RULES}
     Hut:hover {{ color: $warning; }}
-    Desktop Hut.-alert {{ color: {FIRE[0]}; }}
-    Desktop Hut.-alert.-flame {{ color: {FIRE[1]}; }}
+    Desktop Hut.-alert {{ color: {FIRE[0]}; background: {FIRE_GROUND[0]}; }}
+    Desktop Hut.-alert.-flame {{ color: {FIRE[2]}; }}
+    Desktop Hut.-alert.-burning {{ color: {FIRE[1]}; background: {FIRE_GROUND[1]}; text-style: bold; }}
+    Desktop Hut.-alert.-burning.-flame {{ color: {FIRE[3]}; }}
+    Desktop.-hidden Hut.-alert {{ color: {ALERT_RED}; background: {FIRE_GROUND[2]}; text-style: bold; }}
     Desktop Hut.-rally-target {{ color: $success; text-style: bold; }}
     """
 
@@ -81,7 +88,9 @@ class Hut(Widget):
         self.base = sil or DEFAULT_SIL         # the silhouette as its type draws it
         self.sil = self.base                  # …grown to the content, for the types that grow
         self.rows = 0
-        self.plain = False                    # the plain mode: just frames
+        self.plain = False                    # the hidden mode: just frames
+        self.alert_since: float | None = None  # when the orc started waiting for an answer
+        self.burnt = 0.0                      # share of the roof on fire
         self.actions = list(actions)          # catalog.ActionDef: id, label, glyph
         self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the button row
         self.number, self.title, self.badge = 0, "", ""
@@ -102,7 +111,7 @@ class Hut(Widget):
 
     @staticmethod
     def _badge_short(badge: str) -> str:
-        parts = badge.split()                 # `🧌 Smith+1 C 🔨 💤` → `🧌 💤`
+        parts = modes.skin(badge).split()     # `🧌 Smith+1 C 🔨 💤` → `🧌 💤` (`🧑 💤` when hidden)
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _relabel(self) -> None:
@@ -117,11 +126,30 @@ class Hut(Widget):
             self.number, self.title = number, title
             self._relabel()
 
-    def set_badge(self, badge: str) -> None:
+    def set_badge(self, badge: str, now: float | None = None) -> None:
         """The roster badge: the hut keeps one icon, so it only shows in the fence — it burns when an orc waits."""
         if badge != self.badge:
             self.badge = badge
-            self.set_class(ALERT_ICON in badge, "-alert")
+            alert = ALERT_ICON in badge
+            self.set_class(alert, "-alert")
+            if alert and self.alert_since is None:
+                self.alert_since = modes.now() if now is None else now
+            elif not alert:
+                self.alert_since = None
+            self.update_fire(now)
+            self.refresh()
+
+    def update_fire(self, now: float | None = None) -> None:
+        """How far the fire got: orange, then red, then the roof burns (immersion only)."""
+        stage, burnt = "", 0.0
+        if self.alert_since is not None and not self.plain:
+            stage, burnt = modes.fire_stage((modes.now() if now is None else now) - self.alert_since)
+        self.set_class(stage == "red", "-burning")
+        if not stage:
+            self.remove_class("-flame")
+        if burnt != self.burnt:
+            self.burnt = burnt
+            self.refresh()
 
     def _reshape(self) -> None:
         w, h = footprint(self.sil, self.label, len(self.actions))
@@ -146,8 +174,10 @@ class Hut(Widget):
         if plain == self.plain:
             return False
         self.plain = plain
+        self.update_fire()
         before = (self.geom.w, self.geom.h)
         self._apply(self._look(), self.actions)
+        self.refresh()
         return (self.geom.w, self.geom.h) != before
 
     def set_rows(self, rows: int) -> bool:
@@ -172,7 +202,7 @@ class Hut(Widget):
             self.status = lines
             self.refresh()
 
-    def _action_row(self, width: int) -> Text:
+    def _action_row(self, width: int, fire: str | None = None) -> Text:
         """`[+ New task] [▶ Run]` when it fits, `[+] [▶]` when it does not; remembers where each is."""
         for long in (True, False):
             parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
@@ -184,35 +214,62 @@ class Hut(Widget):
         for a, part in zip(self.actions, parts):
             w = cell_len(part)
             self._buttons.append((x, x + w, a.id))
-            row.append(part, style=BUTTON_STYLE)
+            row.append(part, style=fire or BUTTON_STYLE)
             row.append(" ")
             x += w + 1
         return row
 
+    @property
+    def on_fire(self) -> bool:
+        """An orc waits for an answer: the whole card takes the fire's colour (the hidden mode's red)."""
+        return self.alert_since is not None
+
+    def fire_style(self) -> str | None:
+        """The one style of every cell of a card on fire (it wins over the selection and the hover)."""
+        if not self.on_fire:
+            return None
+        if self.plain:
+            return f"bold {ALERT_RED}"
+        flame = self.has_class("-flame")
+        if self.has_class("-burning"):
+            return f"bold {FIRE[3] if flame else FIRE[1]}"
+        return FIRE[2] if flame else FIRE[0]
+
     def render(self) -> Text:
         w = self.geom.w
+        fire = self.fire_style()
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
-            text.append(" " * pad + line + "\n", style=NAME_STYLE)
+            text.append(" " * pad + line + "\n", style=fire or NAME_STYLE)
         left = (w - self.sil.width) // 2
-        rows = self.sil.draw(self.status)
+        rows = self._burning(self.sil.draw(self.status))
         for n, row in enumerate(rows):
             text.append(" " * left)
             if n == len(rows) - 1:
                 row = self._orc_in_frame(row)
             for piece, role in row:
-                text.append(piece, style=HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live" else
-                            ORC_STYLE if role == "orc" else None)
+                text.append(piece, style=fire or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
+                                                  else ORC_STYLE if role == "orc" else None))
             text.append("\n")
         if self.sil.caption:
             cap = self.sil.caption_text(self.status)
-            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=LIVE_STYLE)
+            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=fire or LIVE_STYLE)
         if self.actions:
-            text.append_text(self._action_row(w))
+            text.append_text(self._action_row(w, fire))
         else:
             text.rstrip()
         return text
+
+    def _burning(self, rows: list[list[tuple[str, str]]]) -> list[list[tuple[str, str]]]:
+        """The roof — the rows above the first line of text — with its share of 🔥."""
+        if self.burnt <= 0 or self.plain or not self.sil.slots:
+            return rows
+        top = min(y for y, _, _ in self.sil.slots)
+        if top == 0:
+            return rows
+        roof = modes.burn(["".join(piece for piece, _ in row) for row in rows[:top]], self.burnt)
+        return [[(line, "frame")] for line in roof] + rows[top:]
 
     def _orc_in_frame(self, row: list[tuple[str, str]]) -> list[tuple[str, str]]:
         """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the last line, in the middle."""

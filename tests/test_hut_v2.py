@@ -238,7 +238,7 @@ def test_plain_mode_is_only_a_frame_with_the_same_text_slots():
 
 
 @pytest.mark.asyncio
-async def test_the_menu_switches_between_immersion_and_plain(fake_repo: Path, town):
+async def test_the_menu_switches_between_immersion_and_hidden(fake_repo: Path, town):
     from orkcraft.screens.system_menu import SystemMenu
 
     for s in (_spec("todo", "fields"), _spec("mill", "mill"), _spec("view", "lake")):
@@ -253,10 +253,10 @@ async def test_the_menu_switches_between_immersion_and_plain(fake_repo: Path, to
         assert isinstance(app.screen, SystemMenu)
         ids = [app.screen.query_one("#system-menu-list").get_option_at_index(i).id
                for i in range(app.screen.query_one("#system-menu-list").option_count)]
-        assert ids[3:5] == ["immersion", "plain"]
-        await pilot.press("5")                                                    # [5] plain
+        assert ids[3:5] == ["immersion", "hidden"]
+        await pilot.press("5")                                                    # [5] hidden
         await _settle(pilot)
-        assert desk.plain and desk.scroll.preferences["mode"] == "plain"
+        assert desk.plain and desk.scroll.preferences["mode"] == "hidden"
         assert desk.huts["mill"].geom.w == 10 and desk.huts["mill"].sil.id.endswith("-plain")
         assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────┐" in str(desk.huts["todo"].render())
         geoms = [h.geom for h in desk.huts.values() if h.display]

@@ -17,8 +17,8 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("war_horn", "📯 Halt All Operations (War Horn)"),
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
-    ("immersion", "🎭 Immersion mode — buildings wear their ASCII"),
-    ("plain", "▭ Plain mode — buildings are just frames"),
+    ("immersion", "🎭 Immersion mode — ASCII town, orcs, fire, gold and lumber"),
+    ("hidden", "🕶 Hidden mode (office) — frames, people, ❓, words"),
     ("terrain", "🌲 Toggle Terrain (Dim / Black)"),
     ("save", "💾 Save Town Scroll (.orkcraft.json)"),
     ("audit", "🔍 Audit the camp (security, usability, spend)"),
@@ -198,7 +198,7 @@ class SystemMenu(ModalScreen[str | None]):
         Binding("2", "pick('screenshot')", show=False),
         Binding("3", "pick('keys')", show=False),
         Binding("4", "pick('immersion')", show=False),
-        Binding("5", "pick('plain')", show=False),
+        Binding("5", "pick('hidden')", show=False),
         Binding("6", "pick('terrain')", show=False),
         Binding("7", "pick('save')", show=False),
     ]
@@ -217,7 +217,7 @@ class SystemMenu(ModalScreen[str | None]):
         lst = self.query_one("#system-menu-list", OptionList)
         lst.clear_options()
         for i, (action_id, label) in enumerate(MENU_ITEMS, 1):
-            on = (action_id == "plain") == self.plain if action_id in ("immersion", "plain") else False
+            on = (action_id == "hidden") == self.plain if action_id in ("immersion", "hidden") else False
             lst.add_option(Option(Text(f"[{i}] {label}" + ("  ●" if on else "")), id=action_id))
         lst.focus()
 

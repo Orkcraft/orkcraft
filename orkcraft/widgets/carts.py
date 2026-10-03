@@ -1,7 +1,8 @@
 """Carts on roads and coin flashes (roads v2).
 
 A cart is a real event only — one `roads.Cart` from the engine — travelling from the exit gate
-to the entry gate along the road's cells. Its colour is the cargo's status:
+to the entry gate along the road's cells. In immersion it is a rock 🪨 (two cells), in the hidden
+mode a small square ■ (`realm/modes.py`). Its colour (the rock's ground) is the cargo's status:
 
     sent / delivered   the road's brown, arrives and vanishes
     filtered           grey: a few cells out of the source, then turns back (the filter said no)
@@ -25,6 +26,7 @@ from textual import events
 from textual.message import Message
 from textual.widgets import Static
 
+from orkcraft.realm import modes
 from orkcraft.widgets.road_layer import ROAD_SELECTED, road_key
 
 if TYPE_CHECKING:
@@ -37,9 +39,18 @@ FILTERED_CELLS = 3          # how far a filtered cart gets before turning back
 WAIT_TICKS = {"held": 2 * FPS, "error": 2 * FPS, "jam": 10 * FPS, "arrived": 2}
 COUNTER_QUIET_TICKS = 3 * FPS
 COIN_TICKS = 12
-CART_GLYPH = "■"
+CART_GLYPH = modes.SQUARE
 STYLE = {"sent": f"bold {ROAD_SELECTED}", "delivered": f"bold {ROAD_SELECTED}", "filtered": "bold #8a8a8a",
          "held": "bold #facc15", "error": "bold #ef4444"}
+# A rock keeps its own colours: the status shows as the ground under it (none on the way).
+ROCK_STYLE = {"filtered": "on #4a4a4a", "held": "on #8a6d0b", "error": "on #7f1d1d"}
+
+
+def cart_look(status: str) -> Text:
+    """The cart as the current mode draws it: 🪨 (immersion) or ■ (hidden)."""
+    if modes.hidden():
+        return Text(modes.SQUARE, style=STYLE.get(status, STYLE["sent"]))
+    return Text(modes.ROCK, style=ROCK_STYLE.get(status, ""))
 
 
 class CartClicked(Message):
@@ -54,11 +65,15 @@ class CartSprite(Static):
     """
 
     def __init__(self, cart, status: str) -> None:
-        super().__init__(Text(CART_GLYPH, style=STYLE.get(status, STYLE["sent"])), markup=False, classes="road-cart")
+        super().__init__(cart_look(status), markup=False, classes="road-cart")
         self.cart = cart
+        self.status = status
+        self.styles.width = 1 if modes.hidden() else 2
 
     def set_status(self, status: str) -> None:
-        self.update(Text(CART_GLYPH, style=STYLE.get(status, STYLE["sent"])))
+        self.status = status
+        self.styles.width = 1 if modes.hidden() else 2
+        self.update(cart_look(status))
 
     def on_click(self, event: events.Click) -> None:
         event.stop()
@@ -287,13 +302,20 @@ class Traffic:
             return
         ticks, coin = self.coins.get(building_id, (0, None))
         if coin is None:
-            coin = Coin(Text("🪙"), markup=False)
+            coin = Coin(Text(modes.coin_glyph()), markup=False)
             self.desktop.mount(coin)
         # on a hut's fence (its lines are full of status text), inside a window's top-right corner
         top = g.y if getattr(self.desktop, "town_active", False) else g.y + 1
         coin.styles.offset = (max(g.x, g.x + g.w - 4), max(0, top))
         self.coins[building_id] = (COIN_TICKS, coin)
         self.desktop.traffic_changed()
+
+    def restyle(self) -> None:
+        """The mode changed: rocks become squares, or squares rocks."""
+        for m in self.moving:
+            m.sprite.set_status(m.sprite.status)
+        for _, coin in self.coins.values():
+            coin.update(Text(modes.coin_glyph()))
 
     def clear(self) -> None:
         for m in self.moving:
