@@ -220,6 +220,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         assert isinstance(app.screen, PersonStep)                                 # no role: refused
         assert "Pick your role" in str(app.screen.query_one("#ob-who-note").render())
         await _pick(app, pilot, "ob-role", "aso_manager")
+        assert not str(app.screen.query_one("#ob-who-note").render())          # gone once a role is picked
         await _pick(app, pilot, "ob-industry", "gaming")
         await _press(app, pilot, "ob-next")
 
@@ -359,6 +360,7 @@ async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
         town = app.screen
         assert not town.query(".ob-buttons #ob-back")                            # nothing before it
+        assert "step" not in str(town.query_one(".build-title").render())       # no "step 1 of 1"
         assert town.query_one("#ob-warder", Checkbox).display                    # claude on: here
         assert str(town.query_one("#ob-next", Button).label) == "Build"
         lst = town.query_one("#ob-presets", OptionList)

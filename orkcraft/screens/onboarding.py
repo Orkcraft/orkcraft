@@ -320,6 +320,7 @@ class PersonStep(ModalScreen[dict | str | None]):
 
     def show(self) -> None:
         r = self.result()
+        self.query_one("#ob-who-note", Static).update("")          # a warning goes once something is picked
         self.query_one("#ob-role-other", Input).display = r.get("role") == intents.OTHER
         self.query_one("#ob-industry-other", Input).display = r.get("industry") == intents.OTHER
         self.query_one("#ob-mascot", Static).update("\n".join(intents.mascot(r.get("role", intents.OTHER))))
@@ -1006,7 +1007,7 @@ class Onboarding:
 
     @property
     def step(self) -> str:
-        return f"step {self.i + 1} of {len(self.steps)}"
+        return f"step {self.i + 1} of {len(self.steps)}" if len(self.steps) > 1 else ""
 
     @property
     def claude_on(self) -> bool:
