@@ -2,14 +2,14 @@
 
     LEVELS[machine.autonomy]          0 ask me · 1 morning advice · 2 routine on their own · 3 free orcs
     advises(level)                    the Elders judge the questions in quiet hours (realm/elders.py)
-    answers(level)                    …and answer them themselves (🧌 Free orcs only)
+    answers(level)                    …and answer them themselves (⛓️‍💥 Free orcs only)
     claude_snippet(level)             what to paste into Claude Code's settings for this level
     agy_note(level)                   how to start agy for this level
 
 Autonomy comes from three places:
 - **advice** (from 🌅) — in quiet hours the Elders read the questions and advise; the operator
   follows the advice with one key in the morning;
-- **the Elders' answers** (🧌 only) — in quiet hours they send their one-time yes or no themselves;
+- **the Elders' answers** (⛓️‍💥 only) — in quiet hours they send their one-time yes or no themselves;
   what the Warder's rules stop, and anything they would not advise, still waits for the operator;
 - **the agents' own permission settings** (from 🧭) — what Claude Code and agy may do without asking,
   which the operator sets with the guide below. The 🛡 Warder hook still denies the dangerous
@@ -37,7 +37,7 @@ LEVELS: tuple[Level, ...] = (
                                     "in the morning you follow it with one key."),
     Level(2, "🧭", "Routine on their own", "Agents read, edit the project and run its tests without asking "
                                           "(their own settings, below); the Elders advise on the rest."),
-    Level(3, "🧌", "Free orcs", "In quiet hours the Elders answer the routine questions themselves (a one-time "
+    Level(3, "⛓️‍💥", "Free orcs", "In quiet hours the Elders answer the routine questions themselves (a one-time "
                                "yes or no, never 'always'); the risky ones wait for you. Agents also accept "
                                "their edits and run the usual project commands; a push is still asked."),
 )

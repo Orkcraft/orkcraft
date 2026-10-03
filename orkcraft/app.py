@@ -546,7 +546,7 @@ class OrkcraftApp(App[int]):
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
-        """The Elders' advice is kept for the operator. At 🧌 Free orcs (autonomy.answers) they also
+        """The Elders' advice is kept for the operator. At ⛓️‍💥 Free orcs (autonomy.answers) they also
         answer: their key goes to the agent — only while it is still quiet and the very same question
         still waits, so an answer never lands on a question that changed meanwhile."""
         self._elders_busy = False
