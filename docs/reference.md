@@ -205,18 +205,20 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   - **`s` Scout** opens a visible browser with the building's own profile. Log in (once: the login
     stays in `.orkcraft/catapult/<id>/profile`, outside the camp's git), open the form and close the
     window. The Catapult marks every field (label, kind, options, a stable selector) and button
-    into `map.json` and writes `fill.py`.
+    into `map.json`, remembers the clicks that opened the form since the last page load (say
+    `Create event` in a single-page app — the path the scout notice shows) and writes `fill.py`.
   - **Which field gets what**: `fields` in the settings first (`Event name = title`,
     `Category = "Major update"`), then a model's mapping (`m`: one call to your Claude Code, for
     labels in another language; `mapping.json`), then plain name matching. 🧪 Dry run shows the
     plan with the values, and lists the required fields left empty and the keys nothing took.
-  - **`fill.py`** is a standalone Playwright script: the cart on stdin, the form filled, then it
+  - **`fill.py`** is a standalone Playwright script: the cart on stdin; it opens the form by its
+    address, or, when the address alone does not show it, opens the start page and repeats the
+    remembered clicks (by role and name, then text, then selector); fills the form; then it
     hands the form to you (`finish: leave`: you check it, press the button and close the window)
     or presses `submit` itself (`finish: press`, `f`). It runs by hand too (`python fill.py
     --profile … < cart.json`). Edit it freely: a script edited by hand is kept, and a rescout writes
     `fill.new.py` beside it.
-  - Fields inside iframes are not marked yet, and the scout records the form's address, not the
-    clicks that led to it. The 🔍 Audit flags a Catapult that presses a button with no schema and
+  - Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that presses a button with no schema and
     no confirmation.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds

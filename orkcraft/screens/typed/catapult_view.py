@@ -236,9 +236,10 @@ class CatapultView(TypedView):
         cw.save_map(self.state_dir, page_map)
         script = self.write_script()
         p = self.form_plan()
+        path = cw.path_text(page_map)
         self.app.notify(f"{len(page_map['fields'])} fields, {len(page_map.get('buttons') or [])} buttons; "
-                        f"{len(p.steps) if p else 0} matched → {script.name if script else 'no script'}",
-                        title="🔭 Scout")
+                        f"{len(p.steps) if p else 0} matched → {script.name if script else 'no script'}"
+                        + (f"\nreached by: {path}" if path else ""), title="🔭 Scout")
         self._render_list()
 
     def action_map_fields(self) -> None:
@@ -345,8 +346,9 @@ class CatapultView(TypedView):
         elif self.browser:
             p = self.form_plan()
             try:
+                path = cw.path_text(cw.load_map(self.state_dir) or {})
                 self.query_one("#cat-detail", Static).update(
-                    cw.describe(p) if p else "Not scouted yet: set page, press s, log in if asked, open the form "
+                    (cw.describe(p) + (f"\nreached by: {path}" if path else "")) if p else "Not scouted yet: set page, press s, log in if asked, open the form "
                                              "and close the window. The Catapult marks the fields and writes fill.py.")
             except Exception:
                 pass

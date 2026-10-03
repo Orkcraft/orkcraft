@@ -14,8 +14,7 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.realm import catalog, catapult as cp, catapult_web as cw, masonry, pipes
 from orkcraft.screens.typed.catapult_view import CatapultView
 
-FORM = """<!doctype html><title>New event</title>
-<form onsubmit="event.preventDefault(); document.title = 'saved ' +
+FORM_BODY = """<form onsubmit="event.preventDefault(); document.title = 'saved ' +
   JSON.stringify(Object.fromEntries(new FormData(this)))">
   <label for="ev-name">Event name</label><input id="ev-name" name="name" required>
   <label>Description <textarea name="description"></textarea></label>
@@ -28,6 +27,12 @@ FORM = """<!doctype html><title>New event</title>
   <input type="hidden" name="csrf" value="x">
   <button type="submit">Save draft</button>
 </form>"""
+FORM = "<!doctype html><title>New event</title>" + FORM_BODY
+HOME = '<!doctype html><title>Console</title><a href="events.html">Events</a>'
+# A single-page app: the form appears on a click, the address stays the same.
+EVENTS = ("<!doctype html><title>Events</title><button id=create>Create event</button><div id=slot></div>"
+          "<script>document.getElementById('create').onclick = () => document.getElementById('slot').innerHTML = "
+          + json.dumps(FORM_BODY) + "</script>")
 
 MAP = {"url": "https://play.example.com/events/new", "title": "New event",
        "fields": [{"kind": "text", "label": "Event name", "name": "name", "id": "ev-name", "selector": "#ev-name",
@@ -45,6 +50,8 @@ MAP = {"url": "https://play.example.com/events/new", "title": "New event",
 def site(tmp_path: Path):
     (tmp_path / "www").mkdir()
     (tmp_path / "www" / "new.html").write_text(FORM, encoding="utf-8")
+    (tmp_path / "www" / "index.html").write_text(HOME, encoding="utf-8")
+    (tmp_path / "www" / "events.html").write_text(EVENTS, encoding="utf-8")
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(tmp_path / "www"))
     handler.log_message = lambda *a: None
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -114,7 +121,9 @@ def test_form_shot_says_what_happened():
     shot = cp.form_shot("u0", {"a": 1}, res, True)
     assert shot.ok and "pressed — u" in shot.answer and "Event name" in shot.answer
     bad = cp.form_shot("u0", {}, cw.Result(False, 2, {"filled": [], "missed": ["X: no value"]}, ""), False)
-    assert not bad.ok and "missed: X: no value" in bad.answer and bad.error == "some fields were not filled"
+    assert not bad.ok and "missed: X: no value" in bad.answer and bad.error == "X: no value"
+    some = cp.form_shot("u0", {}, cw.Result(False, 2, {"filled": ["A"], "missed": ["X: no value"]}, ""), False)
+    assert some.error == "some fields were not filled"
     assert cp.form_shot("u0", {}, cw.Result(True, 0, {"pressed": False}, ""), True).error == "not pressed"
 
 
@@ -155,6 +164,43 @@ def test_scout_marks_the_form_and_fill_presses_it(site: str, tmp_path: Path):
     assert res.summary["pressed"] and len(res.summary["filled"]) == 6
     handed = cw.run_script(script, tmp_path / "profile", {"name": "x"}, press=False, headless=True, timeout=90)
     assert handed.code == 2 and not handed.summary["pressed"] and handed.summary["filled"] == ["Event name"]
+
+
+def test_the_path_to_the_form_starts_at_the_last_page_load():
+    events = [("load", 1, "https://c/login"), ("click", 2, {"role": "button", "name": "Sign in"}),
+              ("load", 3, "https://c/home"), ("click", 4, {"role": "link", "name": "Events", "selector": "a"}),
+              ("click", 5, {"role": "button", "name": "Create event"}), ("click", 9, {"name": "Save"})]
+    start, path = cw.path_to_form(events, 6, "https://c/")
+    assert start == "https://c/home" and [c["name"] for c in path] == ["Events", "Create event"]
+    assert cw.path_text({"path": path}) == "Events → Create event"
+
+
+@needs_browser
+def test_scout_remembers_the_clicks_and_fill_repeats_them(site: str, tmp_path: Path):
+    home = site.replace("new.html", "index.html")
+
+    def operator(page, tick):
+        if tick == 0:
+            page.get_by_role("link", name="Events").click()
+        elif tick == 1:
+            page.get_by_role("button", name="Create event").click()
+        elif tick == 3:
+            page.close()
+
+    page_map = cw.scout(home, tmp_path / "profile", watch=True, headless=True, driver=operator, limit_s=30)
+    assert page_map["url"].endswith("/events.html") and page_map["start"].endswith("/events.html")
+    assert page_map["path"] == [{"role": "button", "name": "Create event", "selector": "#create"}]
+    body = {"name": "Halloween", "description": "Spooky"}
+    p = cw.plan(page_map, list(cw.leaves(body)))
+    script = cw.write_script(tmp_path / "state", cw.script_text(page_map, p, "Save draft", "press"))
+    assert "'Create event'" in script.read_text(encoding="utf-8")
+    res = cw.run_script(script, tmp_path / "profile", body, press=True, headless=True, timeout=90)
+    assert res.ok, (res.err, res.out)
+    assert json.loads(res.summary["title"][len("saved "):])["name"] == "Halloween"
+    lost = dict(page_map, path=[{"role": "button", "name": "No such button", "selector": "#nope"}])
+    script = cw.write_script(tmp_path / "lost", cw.script_text(lost, p, "Save draft", "press"))
+    res = cw.run_script(script, tmp_path / "profile", body, press=True, headless=True, timeout=120)
+    assert res.code == 3 and "No such button" in res.summary["missed"][0]
 
 
 @needs_browser

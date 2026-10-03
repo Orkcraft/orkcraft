@@ -2,13 +2,15 @@
 
     scout    a visible browser opens `page` with the camp's own profile (log in once — the login
              stays in `.orkcraft/catapult/<id>/profile`, outside the camp's git); you get to the
-             form, the Catapult marks every field and button it sees; you close the window → the
-             map is saved (`map.json`)
+             form, the Catapult marks every field and button it sees and remembers the clicks that
+             led to the form since the last page load (`Events → Create event`); you close the
+             window → the map is saved (`map.json`)
     plan     the cart's keys meet the map's fields: `fields` in the settings first
              ("Event name = title"), then the model's mapping (`m`, `mapping.json`), then plain
              name matching
     script   the plan becomes `fill.py` — a standalone Playwright script that reads the cart from
-             stdin, opens the form, fills it and then either hands it to you (`finish: leave`, you
+             stdin, opens the form (when its address alone does not show it, it opens the start
+             page and repeats the clicks), fills it and then either hands it to you (`finish: leave`, you
              press the button) or presses `submit` itself (`finish: press`). A script edited by
              hand is kept (`fill.sha` knows what the Catapult wrote)
     fire     `python fill.py` with the cart on stdin; its last stdout line is the summary
@@ -37,9 +39,8 @@ FINISHES = ("leave", "press")
 FILLABLE = ("text", "textarea", "number", "email", "url", "tel", "date", "datetime-local", "time",
             "editable", "password", "search")
 
-# Run in the page: every visible field and button, with a label and a selector that survives a reload.
-SCOUT_JS = r"""
-() => {
+# Shared by the scout and the click recorder: labels, and selectors that survive a reload.
+HELPERS_JS = r"""
   const visible = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
   const clean = t => (t || '').replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -69,6 +70,10 @@ SCOUT_JS = r"""
       || (el.name && one(`${tag}[name="${CSS.escape(el.name)}"]`))
       || (el.getAttribute('aria-label') && one(`${tag}[aria-label="${CSS.escape(el.getAttribute('aria-label'))}"]`))
       || cssPath(el); };
+"""
+
+# Run in the page: every visible field and button.
+SCOUT_JS = "() => {" + HELPERS_JS + r"""
   const kindOf = el => { const tag = el.tagName.toLowerCase(), role = el.getAttribute('role') || '';
     if (tag === 'select') return 'select';
     if (tag === 'textarea') return 'textarea';
@@ -107,6 +112,27 @@ SCOUT_JS = r"""
   }
   return { url: location.href, title: document.title, fields: fields.slice(0, 200), buttons };
 }
+"""
+
+# Added to every page of a scouting window: each click on something that is not a field is told to
+# the scout (`orkcraftClick`) as the role, name and selector it can be found by again.
+CLICK_JS = "(() => {" + HELPERS_JS + r"""
+  const FIELD = 'input:not([type=submit]):not([type=button]):not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable="true"], [role=textbox], [role=option]';
+  const CLICKABLE = 'a, button, input[type=submit], input[type=button], summary, [role=button], [role=link], [role=menuitem], [role=tab], [role=treeitem], [role=checkbox], [role=radio], [role=switch]';
+  const roleOf = el => { const r = el.getAttribute('role'); if (r) return r; const tag = el.tagName.toLowerCase();
+    if (tag === 'a' && el.hasAttribute('href')) return 'link';
+    if (tag === 'button' || (tag === 'input' && ['submit', 'button'].includes(el.type))) return 'button';
+    return ''; };
+  document.addEventListener('click', e => {
+    if (!e.isTrusted && !window.__orkcraftScripted) return;
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t || t.closest('#orkcraft-scout') || t.closest(FIELD)) return;
+    const el = t.closest(CLICKABLE) || t;
+    const name = clean(el.getAttribute('aria-label') || el.innerText || el.value || el.title).slice(0, 80);
+    if (!name || typeof window.orkcraftClick !== 'function') return;
+    window.orkcraftClick({ role: roleOf(el), name, selector: selectorOf(el), url: location.href });
+  }, true);
+})();
 """
 
 # Shown in the scouting window, so the operator knows what the open browser is for.
@@ -148,11 +174,31 @@ def save_map(state_dir: Path, page_map: dict) -> None:
     (state_dir / "map.json").write_text(json.dumps(page_map, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+def _signature(snap: dict) -> tuple:
+    return tuple(sorted(f"{f.get('label')}|{f.get('selector')}" for f in snap.get("fields") or []))
+
+
+def path_to_form(events: list[tuple], form_seen: float, fallback: str) -> tuple[str, list[dict]]:
+    """From the scout's timeline — ("load", t, url) and ("click", t, info) — the page the form is
+    reached from (the last page load before the form appeared) and the clicks made on it since."""
+    start, clicks = fallback, []
+    for kind, t, data in sorted(events, key=lambda e: e[1]):
+        if t > form_seen:
+            break
+        if kind == "load":
+            start, clicks = str(data), []
+        elif kind == "click" and isinstance(data, dict):
+            clicks.append({k: str(data.get(k) or "")[:300] for k in ("role", "name", "selector")})
+    return start, clicks[-12:]
+
+
 def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
-          limit_s: float = WATCH_LIMIT_S) -> dict:
+          limit_s: float = WATCH_LIMIT_S, driver: Callable | None = None) -> dict:
     """Open `url` and mark its form. `watch`: the window stays open while the operator logs in and
-    gets to the form; the last snapshot with fields before the window closes wins. Without `watch`
-    the page is marked once, after it loads. Raises RuntimeError when nothing can be marked."""
+    gets to the form; the last snapshot with fields before the window closes wins, and the clicks
+    that led to it are kept (`start`, `path`). Without `watch` the page is marked once, after it
+    loads. `driver(page, tick)` plays the operator (tests, scripted scouting). Raises RuntimeError
+    when nothing can be marked."""
     if not url_ok(url):
         raise RuntimeError(f"page {url!r}: http or https only")
     try:
@@ -161,6 +207,8 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
         raise RuntimeError(INSTALL_HINT) from e
     profile.mkdir(parents=True, exist_ok=True)
     best: dict | None = None
+    events: list[tuple] = []
+    seen: dict[tuple, float] = {}
     with sync_playwright() as p:
         try:
             ctx = p.chromium.launch_persistent_context(str(profile), headless=headless)
@@ -169,6 +217,15 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
         try:
             if watch:
                 ctx.add_init_script(BANNER_JS)
+                ctx.add_init_script(CLICK_JS)
+                ctx.expose_binding("orkcraftClick", lambda source, info: events.append(("click", time.monotonic(), info)))
+
+                def follow(pg) -> None:
+                    pg.on("load", lambda pg: events.append(("load", time.monotonic(), pg.url)))
+
+                ctx.on("page", follow)
+                for pg in ctx.pages:
+                    follow(pg)
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.goto(url, wait_until="domcontentloaded")
             if not watch:
@@ -178,7 +235,7 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
                     pass
                 best = page.evaluate(SCOUT_JS)
             else:
-                end = time.monotonic() + limit_s
+                end, tick = time.monotonic() + limit_s, 0
                 while time.monotonic() < end and ctx.pages:
                     for pg in list(ctx.pages):
                         try:
@@ -187,6 +244,13 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
                             continue                     # navigating, or just closed
                         if snap.get("fields"):
                             best = snap
+                            seen.setdefault(_signature(snap), time.monotonic())
+                    if driver is not None and ctx.pages:
+                        try:
+                            driver(ctx.pages[-1], tick)
+                        except PwError:
+                            pass
+                    tick += 1
                     try:
                         ctx.pages[-1].wait_for_timeout(WATCH_TICK_S * 1000)
                     except (PwError, IndexError):
@@ -199,7 +263,15 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
     if not best or not best.get("fields"):
         raise RuntimeError("no form fields were seen — open the form before closing the window")
     best["at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    best["start"], best["path"] = best["url"], []
+    if watch:
+        best["start"], best["path"] = path_to_form(events, seen.get(_signature(best), time.monotonic()), url)
     return best
+
+
+def path_text(page_map: dict) -> str:
+    path = page_map.get("path") or []
+    return " → ".join(str(c.get("name") or c.get("selector")) for c in path) if path else ""
 
 
 # -- the plan -------------------------------------------------------------------------------------
@@ -425,6 +497,8 @@ import argparse, json, sys
 from playwright.sync_api import Error, sync_playwright
 
 PAGE = {page!r}
+START = {start!r}          # where the form is reached from, when PAGE alone does not show it
+PATH = {path}
 SUBMIT = {submit!r}
 STEPS = {steps}
 
@@ -447,6 +521,57 @@ def locate(page, step):
         if loc.count() == 1:
             return loc
     return page.locator(step["selector"]).first
+
+
+def settle(page):
+    try:
+        page.wait_for_load_state("networkidle", timeout=15000)
+    except Error:
+        pass
+
+
+def shows_form(page, timeout=5000):
+    if not STEPS:
+        return True
+    step = STEPS[0]
+    loc = page.locator(step["choices"][0]).first if step["kind"] == "radio" and step["choices"] else locate(page, step)
+    try:
+        loc.wait_for(state="attached", timeout=timeout)
+        return True
+    except Error:
+        return False
+
+
+def click(page, c):
+    tries = []
+    if c["role"] and c["name"]:
+        tries.append(page.get_by_role(c["role"], name=c["name"], exact=True))
+    if c["name"]:
+        tries.append(page.get_by_text(c["name"], exact=True))
+    if c["selector"]:
+        tries.append(page.locator(c["selector"]))
+    for i, loc in enumerate(tries):
+        try:
+            loc.first.click(timeout=15000 if i == 0 else 5000)
+            return
+        except Error:
+            continue
+    raise RuntimeError(f"could not click {{c['name'] or c['selector']!r}} on the way to the form")
+
+
+def reach(page):
+    """Open the form: its address, or the start page and the clicks that lead to it."""
+    page.goto(PAGE, wait_until="domcontentloaded")
+    settle(page)
+    if not PATH or shows_form(page):
+        return
+    page.goto(START, wait_until="domcontentloaded")
+    settle(page)
+    for c in PATH:
+        click(page, c)
+        settle(page)
+    if not shows_form(page, 15000):
+        raise RuntimeError("the clicks did not open the form — scout the page again")
 
 
 def put(page, step, value):
@@ -485,11 +610,13 @@ def main():
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(a.profile, headless=a.headless)
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        page.goto(PAGE, wait_until="domcontentloaded")
         try:
-            page.wait_for_load_state("networkidle", timeout=15000)
-        except Error:
-            pass
+            reach(page)
+        except Exception as e:
+            print(json.dumps({{"filled": [], "missed": [str(e).splitlines()[0][:200]], "pressed": False,
+                              "url": page.url, "title": page.title()}}, ensure_ascii=False), flush=True)
+            ctx.close()
+            sys.exit(3)
         for step in STEPS:
             value = step["literal"] if step["literal"] is not None else pick(body, step["path"])
             if value is None:
@@ -535,7 +662,10 @@ def script_text(page_map: dict, p: Plan, submit: str = "", finish: str = "leave"
     steps = "[\n" + "".join(f"    {_step_data(s)!r},\n" for s in p.steps) + "]"
     finish_text = (f"presses {submit!r}" if finish == "press" and submit
                    else "hands the form to you: press the button yourself and close the window")
-    return SCRIPT.format(url=page_map.get("url", ""), page=str(page_map.get("url", "")), submit=submit,
+    path = "[\n" + "".join(f"    {dict(role=c.get('role', ''), name=c.get('name', ''), selector=c.get('selector', ''))!r},\n"
+                            for c in page_map.get("path") or []) + "]"
+    return SCRIPT.format(url=page_map.get("url", ""), page=str(page_map.get("url", "")),
+                         start=str(page_map.get("start") or page_map.get("url", "")), path=path, submit=submit,
                          steps=steps, finish_text=finish_text)
 
 
