@@ -252,7 +252,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "(it scouts the page, writes a Playwright script, then hands the form to you or presses submit)",
         "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
         events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
-                _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed")),
+                _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
+                _e("catapult.repaired", "repaired", TEXT, "the site changed: the overseer rewrote the fill script")),
         actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
                  _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
                  _a("catapult.scout", "Scout", "🔭", "browser mode: open the page, learn its form, write the fill script")),
@@ -261,7 +262,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "token_env": (str, None, False), "confirm": (bool, None, False),
                 "mode": (str, ("api", "browser"), False), "page": (str, None, False),
                 "fields": (list, None, False), "submit": (str, None, False),
-                "finish": (str, ("leave", "press"), False)},
+                "finish": (str, ("leave", "press"), False), "repair": (bool, None, False)},
         art="workshop", orc="Loader"),
     BuildingType(
         "town_hall", "Town Hall", "🏰", "L",

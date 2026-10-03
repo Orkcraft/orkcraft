@@ -10,6 +10,9 @@ Browser mode (`mode: browser`, realm/catapult_web.py), for a site with no API: `
 a visible browser (log in, open the form, close the window) and writes `fill.py`; `m` lets a model
 map the cart's keys to the form's fields (labels in any language); a shot runs `fill.py`, which
 fills the form and hands it to you (`finish: leave`) or presses `submit` (`finish: press`, `f`).
+When the site changed and the script broke, the building's orc — its overseer — repairs the map
+from a snapshot of the page where it broke (a model call; `repair: false` turns it off), the script
+is rewritten and checked headless, and the shot is fired once more (`catapult.repaired`).
 """
 from __future__ import annotations
 
@@ -17,6 +20,7 @@ import datetime as dt
 import json
 import os
 import threading
+import time
 from pathlib import Path
 
 from rich.text import Text
@@ -26,7 +30,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import catapult as cp, catapult_web as cw
+from orkcraft.realm import catapult as cp, catapult_web as cw, roads
 from orkcraft.screens.dialogs import Confirm
 from orkcraft.screens.typed.base import TypedView
 
@@ -184,7 +188,7 @@ class CatapultView(TypedView):
         self._send_form(script, url, body)
         return True
 
-    def _send_form(self, script: Path, url: str, body) -> None:
+    def _send_form(self, script: Path, url: str, body, retried: bool = False) -> None:
         self.firing = True
         self._render_list()
         press = self.config.get("finish") == "press"
@@ -194,11 +198,76 @@ class CatapultView(TypedView):
             res = cw.run_script(script, profile, body, press, headless=bool(os.environ.get("ORKCRAFT_HEADLESS")))
             shot = cp.form_shot(url, body, res, press)
             try:
-                app.call_from_thread(self._done, shot)
+                if res.summary.get("broken") and not retried:
+                    app.call_from_thread(self._broken, shot, res.summary, body)
+                else:
+                    app.call_from_thread(self._done, shot)
             except Exception:
                 self.firing = False
 
         threading.Thread(target=work, daemon=True, name=f"catapult-form-{self.building_id}").start()
+
+    # -- the overseer -------------------------------------------------------------------------------
+
+    repair_runner = None               # tests put a fake model here
+
+    @property
+    def overseer(self) -> str:
+        orc = self.spec.get("orc")
+        return str(orc.get("name") if isinstance(orc, dict) and orc.get("name") else self.btype.orc)
+
+    def _broken(self, shot: cp.Shot, summary: dict, body) -> None:
+        """The script broke on the site (not on the cart): the overseer repairs it, then one more shot."""
+        page_map = cw.load_map(self.state_dir)
+        app = self.app
+        may = (self.config.get("repair", True) and page_map is not None and not self.simulated
+               and not getattr(app, "gold_exhausted", lambda: False)())
+        if not may:
+            self._done(shot)
+            return
+        self.firing = False
+        cp.log(self.state_dir, shot)                 # no catapult.failed yet: the overseer may fix it
+        self.refresh_data()
+        self.busy = f"🔧 {self.overseer} is repairing the script…"
+        self._render_list()
+        state, profile, orc = self.state_dir, self.profile, self.overseer
+        submit, finish = str(self.config.get("submit") or ""), str(self.config.get("finish") or "leave")
+        rules, mapping = [str(x) for x in self.config.get("fields") or []], cw.load_mapping(state)
+        keys = list(self._keys(body))
+        runner = type(self).repair_runner
+
+        def work() -> None:
+            started = time.time()
+            r = cw.repair(state, page_map, lambda m: cw.plan(m, keys, rules, mapping), submit, finish,
+                          list(summary.get("broken") or []), summary.get("page") or {}, profile, orc,
+                          runner=runner)
+            try:
+                app.call_from_thread(self._repaired, r, body, started)
+            except Exception:
+                self.busy = ""
+
+        threading.Thread(target=work, daemon=True, name=f"catapult-repair-{self.building_id}").start()
+
+    def _repaired(self, r: cw.Repair, body, started: float) -> None:
+        self.busy = ""
+        on_run = getattr(self.app, "on_handler_run", None)
+        if on_run is not None and r.attempts:
+            on_run(roads.HandlerRun(self.building_id, self.overseer.lower(), "agent", f"repair-{int(started)}",
+                                    started, time.time(), outcome="done" if r.ok else "error",
+                                    error="; ".join(r.errors)[:300], cost_usd=r.cost or None))
+        if not r.ok:
+            why = "; ".join(r.errors)[:400] or "no repair"
+            self.emit("catapult.failed", f"{self.overseer} could not repair the script: {why}", "repair failed")
+            self.app.notify(f"{self.overseer} could not repair the script: {why}", title="🔧 Repair", severity="error")
+            self._render_list()
+            return
+        if r.submit and r.submit != self.config.get("submit"):
+            self.save_config({"submit": r.submit})
+        note = r.note or "the script was rewritten"
+        self.emit("catapult.repaired", f"{self.overseer}: {note}", "repaired")
+        self.app.notify(f"{self.overseer}: {note} — firing again", title="🔧 Repaired")
+        url = self._form_url()
+        self._send_form(self.state_dir / "fill.py", url, body, retried=True)
 
     def action_scout(self) -> None:
         page = str(self.config.get("page") or "")

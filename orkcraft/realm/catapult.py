@@ -134,10 +134,13 @@ def form_shot(url: str, body, res, pressed_wanted: bool) -> Shot:
     lines = [f"filled: {', '.join(s.get('filled') or []) or 'nothing'}"]
     if s.get("missed"):
         lines.append("missed: " + "; ".join(s["missed"]))
+    if s.get("broken"):
+        lines.append("broken: " + "; ".join(s["broken"]))
     lines.append(("pressed — " if s.get("pressed") else "handed over to you — ") + str(s.get("url") or url))
     if s.get("title"):
         lines.append(f"page: {s['title']}")
-    error = "" if res.ok else (res.err or (s["missed"][0][:200] if s.get("missed") and not s.get("filled") else
+    error = "" if res.ok else (res.err or ("broken: " + s["broken"][0][:200] if s.get("broken") else
+                                           s["missed"][0][:200] if s.get("missed") and not s.get("filled") else
                                            "some fields were not filled" if s.get("missed") else f"exit {res.code}"))
     if res.ok and pressed_wanted and not s.get("pressed"):
         error = "not pressed"

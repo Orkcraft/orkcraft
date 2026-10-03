@@ -194,7 +194,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orcs, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
-| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — or, in browser mode, fills a web form; 🧪 dry run | `catapult.sent`, `catapult.failed` |
+| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — or, in browser mode, fills a web form and has its overseer repair the script when the site changes; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
@@ -218,6 +218,16 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     or presses `submit` itself (`finish: press`, `f`). It runs by hand too (`python fill.py
     --profile … < cart.json`). Edit it freely: a script edited by hand is kept, and a rescout writes
     `fill.new.py` beside it.
+  - **When the site changes** and the script breaks (a button or a field is not found, the clicks
+    no longer open the form), the script reports where it broke with a snapshot of that page
+    (its fields and buttons). The building's orc, its overseer, repairs the map from it: one call
+    to your Claude Code, at most two attempts, never in the sandbox or past the 🪙 budget. The page
+    text goes to the model as data. Only data comes back: a path on the same site, labels,
+    selectors, known field kinds. A renamed field keeps its old name, so `fields` rules still match.
+    `fill.py` is rewritten and checked headless (the form reached, every field found) before the
+    cart is filled again, once. A failed repair leaves the old map and script, and sends
+    `catapult.failed`; a good one sends `catapult.repaired` with what changed. `repair: false`
+    turns it off; a `fill.py` edited by hand is never repaired.
   - Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that presses a button with no schema and
     no confirmation.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,

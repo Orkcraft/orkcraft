@@ -1,6 +1,7 @@
 """🎯 The Catapult's browser mode: scout a form, plan the fields, write fill.py, fill and press."""
 from __future__ import annotations
 
+import asyncio
 import functools
 import http.server
 import json
@@ -200,7 +201,8 @@ def test_scout_remembers_the_clicks_and_fill_repeats_them(site: str, tmp_path: P
     lost = dict(page_map, path=[{"role": "button", "name": "No such button", "selector": "#nope"}])
     script = cw.write_script(tmp_path / "lost", cw.script_text(lost, p, "Save draft", "press"))
     res = cw.run_script(script, tmp_path / "profile", body, press=True, headless=True, timeout=120)
-    assert res.code == 3 and "No such button" in res.summary["missed"][0]
+    assert res.code == 3 and "No such button" in res.summary["broken"][0]
+    assert res.summary["page"]["url"].endswith("/events.html")       # where it broke, for the overseer
 
 
 @needs_browser
@@ -226,7 +228,7 @@ async def test_the_catapult_scouts_and_fills_in_browser_mode(site: str, fake_rep
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
         app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"title": "Halloween", "description": "Spooky"}',
                                                   "pit", "pit.text", "x"))
-        for _ in range(400):
+        for _ in range(1800):
             await pilot.pause(0.05)
             if sent:
                 break
@@ -249,3 +251,95 @@ async def test_the_demo_only_dry_runs_a_form(fake_repo: Path, tmp_path: Path):
         app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
         await pilot.pause()
         assert view.shots[0].dry and "Event name" in view.shots[0].answer and "'Halloween'" in view.shots[0].answer
+
+
+def test_a_repair_stays_on_the_site_and_keeps_old_names():
+    answer = {"note": "renamed", "start": "https://evil.example/", "path": [], "fields": {"0": {"label": "Title"}}}
+    assert cw.apply_repair(MAP, answer, "Save draft")[0] is None                  # another site: refused
+    fixed, submit, note, problems = cw.apply_repair(MAP, dict(answer, start=MAP["url"], submit="Save"), "Save draft")
+    assert not problems and submit == "Save" and note == "renamed"
+    assert fixed["fields"][0]["label"] == "Title" and fixed["fields"][0]["aka"] == ["Event name"]
+    assert MAP["fields"][0]["label"] == "Event name"                             # the old map is untouched
+    assert [s.label for s in cw.plan(fixed, ["title"], ["Event name = title"]).steps] == ["Title"]
+    assert cw.apply_repair(MAP, {"fields": {"0": {"kind": "rocket"}}}, "")[3]
+    assert cw.apply_repair(MAP, None, "")[3] == ["the answer is not one JSON object"]
+
+
+def _renamed(site_dir: Path) -> None:
+    """The site changes: the button and the field get new names, the field a new id."""
+    events = (site_dir / "events.html").read_text(encoding="utf-8")
+    events = events.replace(">Create event<", ">New event<").replace("id=create", "id=add")
+    events = events.replace("getElementById('create')", "getElementById('add')")
+    events = events.replace('for=\\"ev-name\\">Event name<', 'for=\\"ev-title\\">Title<').replace('id=\\"ev-name\\"', 'id=\\"ev-title\\"')
+    (site_dir / "events.html").write_text(events, encoding="utf-8")
+
+
+REPAIRED = {"note": "the button is now New event, the name field is Title", "path": [
+    {"role": "button", "name": "New event", "selector": "#add"}],
+    "fields": {"0": {"label": "Title", "selector": "#ev-title", "kind": "text"}}}
+
+
+@needs_browser
+def test_the_overseer_repairs_a_broken_script(site: str, tmp_path: Path):
+    events = site.replace("new.html", "events.html")
+    page_map = cw.scout(events, tmp_path / "profile", watch=True, headless=True, limit_s=30,
+                        driver=lambda page, tick: page.get_by_role("button", name="Create event").click()
+                        if tick == 0 else page.close() if tick == 2 else None)
+    state, body = tmp_path / "state", {"name": "Halloween", "description": "Spooky"}
+    rules = ["Event name = name"]
+    plan_of = lambda m: cw.plan(m, list(cw.leaves(body)), rules)        # noqa: E731
+    script = cw.write_script(state, cw.script_text(page_map, plan_of(page_map), "Save draft", "press"))
+    _renamed(tmp_path / "www")
+    res = cw.run_script(script, tmp_path / "profile", body, press=True, headless=True, timeout=120)
+    assert res.code == 3 and "Create event" in res.summary["broken"][0]
+    assert "New event" in [b["text"] for b in res.summary["page"]["buttons"]]
+    prompts, answers = [], iter([{"path": "nope"}, REPAIRED])
+    runner = lambda prompt: prompts.append(prompt) or (json.dumps(next(answers)), 0.01)   # noqa: E731
+    r = cw.repair(state, page_map, plan_of, "Save draft", "press", res.summary["broken"], res.summary["page"],
+                  tmp_path / "profile", "Loader", runner=runner)
+    assert r.ok and r.attempts == 2 and r.cost == 0.02 and "'New event'" in prompts[0]
+    assert "YOUR PREVIOUS REPAIR DID NOT WORK" in prompts[1]
+    assert cw.load_map(state)["repaired"]["by"] == "Loader"
+    res = cw.run_script(state / "fill.py", tmp_path / "profile", body, press=True, headless=True, timeout=120)
+    assert res.ok, (res.err, res.out)
+    assert json.loads(res.summary["title"][len("saved "):])["name"] == "Halloween"
+    before = (state / "fill.py").read_text(encoding="utf-8")
+    bad = cw.repair(state, cw.load_map(state), plan_of, "Save draft", "press", ["x"], {}, tmp_path / "profile",
+                    runner=lambda prompt: (json.dumps({"path": [{"name": "Nothing like it"}]}), None))
+    assert not bad.ok and bad.attempts == 2 and (state / "fill.py").read_text(encoding="utf-8") == before
+
+
+@needs_browser
+@pytest.mark.asyncio
+async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_path: Path, fake_repo: Path, monkeypatch):
+    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
+    events = site.replace("new.html", "events.html")
+    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Gruk"}, "type": "catapult",
+            "config": {"mode": "browser", "page": events, "submit": "Save draft", "finish": "press",
+                       "fields": ["Event name = title"]}}
+    assert masonry.save_spec(fake_repo, spec) == []
+    monkeypatch.setattr(CatapultView, "repair_runner", staticmethod(lambda prompt: (json.dumps(REPAIRED), 0.03)))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    for event in ("catapult.repaired", "catapult.sent", "catapult.failed"):
+        ts.subscribe(app.scroll, "town_hall", "play", event)
+    async with app.run_test(size=(200, 46)) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("play").query_one(CatapultView)
+        state = view.state_dir
+        page_map = await asyncio.to_thread(
+            cw.scout, events, view.profile, watch=True, headless=True, limit_s=30,
+            driver=lambda page, tick: page.get_by_role("button", name="Create event").click()
+            if tick == 0 else page.close() if tick == 2 else None)
+        cw.save_map(state, page_map)
+        view.write_script()
+        _renamed(tmp_path / "www")
+        sent = []
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
+        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"title": "Halloween"}', "pit", "pit.text", "x"))
+        for _ in range(1800):
+            await pilot.pause(0.1)
+            if "catapult.sent" in [p.mode for p in sent] or "catapult.failed" in [p.mode for p in sent]:
+                break
+        assert [p.mode for p in sent] == ["catapult.repaired", "catapult.sent"], [p.value for p in sent]
+        assert "Gruk: the button is now New event" in sent[0].value
+        assert view.shots[0].ok and "pressed" in view.shots[0].answer and view.shots[1].error.startswith("broken")
