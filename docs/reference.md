@@ -456,3 +456,11 @@ the CLI paths.
 pipx install ./orkcraft        # or: python3 -m venv .venv && .venv/bin/pip install -e ./orkcraft
 cd your-project && orkcraft hooks install && orkcraft
 ```
+
+## Modes: immersion and plain
+
+F10 → 🎭 *Immersion* (default) or ▭ *Plain*, kept as `preferences.mode` in `.orkcraft.json`. In immersion
+every building wears its ASCII silhouette (roofs, sails, trees, waves). In plain mode a building is
+only a frame with the same live text rows; the label above and the buttons below stay. The Lake, the
+Crag and custom frames grow with their content (up to a maximum) in both modes, and a hut that changes
+size or mode keeps off its neighbours.

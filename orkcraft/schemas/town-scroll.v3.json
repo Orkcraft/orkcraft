@@ -87,6 +87,13 @@
           ],
           "description": "Roads with nothing selected: hidden, or faint in the gaps between windows (default)."
         },
+        "mode": {
+          "enum": [
+            "immersion",
+            "plain"
+          ],
+          "description": "Immersion: buildings wear their ASCII (default). Plain: buildings are just frames (F10 menu)."
+        },
         "view": {
           "enum": [
             "town",

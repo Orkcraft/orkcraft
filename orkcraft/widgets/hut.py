@@ -81,6 +81,7 @@ class Hut(Widget):
         self.base = sil or DEFAULT_SIL         # the silhouette as its type draws it
         self.sil = self.base                  # …grown to the content, for the types that grow
         self.rows = 0
+        self.plain = False                    # the plain mode: just frames
         self.actions = list(actions)          # catalog.ActionDef: id, label, glyph
         self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the button row
         self.number, self.title, self.badge = 0, "", ""
@@ -135,7 +136,21 @@ class Hut(Widget):
         if sil != self.base:
             self.base = sil
             self.rows = 0
-        self._apply(sil if not self.rows else silhouettes.fit(sil, self.rows), actions)
+        self._apply(self._look(), actions)
+
+    def _look(self) -> silhouettes.Silhouette:
+        """The base shape, grown to its content, in the town's mode (decorated or plain)."""
+        sil = silhouettes.fit(self.base, self.rows) if self.rows else self.base
+        return silhouettes.styled(sil, self.plain)
+
+    def set_plain(self, plain: bool) -> bool:
+        """Immersion (decorated) or plain (just a frame); True when the hut changed size."""
+        if plain == self.plain:
+            return False
+        self.plain = plain
+        before = (self.geom.w, self.geom.h)
+        self._apply(self._look(), self.actions)
+        return (self.geom.w, self.geom.h) != before
 
     def set_rows(self, rows: int) -> bool:
         """The content wants `rows` text rows (a growing building only); True when the hut changed size."""
@@ -143,7 +158,7 @@ class Hut(Widget):
             return False
         self.rows = rows
         before = (self.geom.w, self.geom.h)
-        self._apply(silhouettes.fit(self.base, rows), self.actions)
+        self._apply(self._look(), self.actions)
         return (self.geom.w, self.geom.h) != before
 
     def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:

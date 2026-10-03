@@ -223,7 +223,7 @@ DEFAULT_VIEW = "town"   # town (huts, one building expanded) | tiles (every wind
 
 def _default_preferences() -> dict:
     return {"terrain_solid_black": False, "preview_linked": True, "carts": "selected", "roads": "faint",
-            "view": DEFAULT_VIEW}
+            "view": DEFAULT_VIEW, "mode": "immersion"}
 
 
 @dataclass

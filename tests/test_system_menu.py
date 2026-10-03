@@ -40,7 +40,7 @@ async def test_f10_opens_system_menu_escape_closes_and_hud_click_opens(fake_repo
         await pilot.pause()
         assert isinstance(app.screen, SystemMenu)
         menu_list = app.screen.query_one("#system-menu-list", OptionList)
-        assert menu_list.option_count == 11                # + 🔍 Audit, 🧹 Clean up, 🔧 Self-improvement, 🗓 Weekly, ⚙ Settings (T1108)
+        assert menu_list.option_count == 13                # + 🔍 Audit, 🧹 Clean up, 🔧 Self-improvement, 🗓 Weekly, ⚙ Settings (T1108)
 
         # F10 while open closes it
         await pilot.press("f10")
@@ -67,8 +67,8 @@ async def test_f10_opens_system_menu_escape_closes_and_hud_click_opens(fake_repo
 
 
 @pytest.mark.asyncio
-async def test_f10_4_toggles_terrain(fake_repo: Path):
-    """2. F10 → 4 toggles the terrain (desktop solid_black flips)."""
+async def test_f10_6_toggles_terrain(fake_repo: Path):
+    """2. F10 → 6 toggles the terrain (desktop solid_black flips)."""
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -78,13 +78,13 @@ async def test_f10_4_toggles_terrain(fake_repo: Path):
         await pilot.pause()
         assert isinstance(app.screen, SystemMenu)
 
-        await pilot.press("4")
+        await pilot.press("6")
         await pilot.pause()
         assert not isinstance(app.screen, SystemMenu)
         assert app.desktop.solid_black != initial
 
         # Toggle back
-        await pilot.press("f10", "4")
+        await pilot.press("f10", "6")
         await pilot.pause()
         assert app.desktop.solid_black == initial
 
@@ -126,7 +126,7 @@ async def test_f10_5_saves_town_scroll(fake_repo: Path, isolated_layout_file: Pa
         await pilot.pause()
         assert isinstance(app.screen, SystemMenu)
 
-        await pilot.press("5")
+        await pilot.press("7")
         await pilot.pause()
         assert not isinstance(app.screen, SystemMenu)
         assert isolated_layout_file.exists()

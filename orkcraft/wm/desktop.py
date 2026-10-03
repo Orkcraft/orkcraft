@@ -795,6 +795,23 @@ class Desktop(Container):
         w = self.get_window(building_id)
         return w.geom if w is not None and not w.hidden and self.in_view(w) else None
 
+    @property
+    def plain(self) -> bool:
+        """The plain mode: huts are only frames; else immersion, where they wear their ASCII."""
+        return self.scroll is not None and self.scroll.preferences.get("mode") == "plain"
+
+    def set_mode(self, plain: bool) -> None:
+        if plain == self.plain or self.scroll is None:
+            return
+        self.scroll.preferences["mode"] = "plain" if plain else "immersion"
+        for hut in self.huts.values():
+            if hut.set_plain(plain) and hut.display:
+                self._settle(hut)
+        self.refresh_huts()
+        self.replan_roads()
+        self.save()
+        self.post_message(self.LayoutChanged())
+
     def set_town(self, on: bool) -> None:
         if on == self.town:
             return
@@ -851,6 +868,7 @@ class Desktop(Container):
                 self.huts[w.window_id] = hut
                 self.mount(hut, after=self.terrain)
             hut.display = True
+            hut.plain = self.plain
             hut.set_silhouette(sil, actions)
             hut.set_title(w.number, w.window_title)
             hut.set_badge(w.badge)

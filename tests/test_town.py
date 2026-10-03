@@ -367,7 +367,7 @@ async def test_town_hall_builds_from_a_preset_or_from_scratch_and_audits_from_f1
 
         await pilot.press("f10")
         await _settle(pilot)
-        await pilot.press("6")                                         # 🔍 Audit the camp
+        await pilot.press("8")                                         # 🔍 Audit the camp
         await _settle(pilot)
         assert (fake_repo / ".orkcraft" / "audit" / "latest.json").exists()
         assert hall.geom == spot                                       # the hall never moves

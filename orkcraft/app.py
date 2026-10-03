@@ -497,6 +497,10 @@ class OrkcraftApp(App[int]):
                 self.call_after_refresh(self._save_screenshot)
             elif action == "keys":
                 self.push_screen(KeysCheatSheet())
+            elif action in ("immersion", "plain"):
+                self.desktop.set_mode(action == "plain")
+                self.notify("🎭 immersion — buildings wear their ASCII" if action == "immersion"
+                            else "▭ plain — buildings are just frames", title="Mode")
             elif action == "terrain":
                 self.action_toggle_terrain()
             elif action == "save":
@@ -517,7 +521,7 @@ class OrkcraftApp(App[int]):
             elif action == "quit":
                 self.action_graceful_quit()
 
-        self.push_screen(SystemMenu(), done)
+        self.push_screen(SystemMenu(self.desktop.plain), done)
 
     def _save_screenshot(self) -> None:
         now_str = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -2501,7 +2505,7 @@ class OrkcraftApp(App[int]):
         raises it there, Esc builds nothing. Without a town on screen it is raised at once.
         True when it was raised at once."""
         label = f"{spec.get('icon', '')} {spec.get('title', '')}".strip()
-        sil = silhouettes.of(spec)
+        sil = silhouettes.styled(silhouettes.of(spec), self.desktop.plain)
         size = footprint(sil, silhouettes.label(len(self.desktop.huts) + 1, label, sil.width),
                          len(catalog.quick_actions_of(spec)))
 

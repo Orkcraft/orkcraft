@@ -17,6 +17,8 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("war_horn", "📯 Halt All Operations (War Horn)"),
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
+    ("immersion", "🎭 Immersion mode — buildings wear their ASCII"),
+    ("plain", "▭ Plain mode — buildings are just frames"),
     ("terrain", "🌲 Toggle Terrain (Dim / Black)"),
     ("save", "💾 Save Town Scroll (.orkcraft.json)"),
     ("audit", "🔍 Audit the camp (security, usability, spend)"),
@@ -195,22 +197,28 @@ class SystemMenu(ModalScreen[str | None]):
         Binding("1", "pick('war_horn')", show=False),
         Binding("2", "pick('screenshot')", show=False),
         Binding("3", "pick('keys')", show=False),
-        Binding("4", "pick('terrain')", show=False),
-        Binding("5", "pick('save')", show=False),
-        Binding("6", "pick('quit')", show=False),
+        Binding("4", "pick('immersion')", show=False),
+        Binding("5", "pick('plain')", show=False),
+        Binding("6", "pick('terrain')", show=False),
+        Binding("7", "pick('save')", show=False),
     ]
+
+    def __init__(self, plain: bool = False) -> None:
+        super().__init__()
+        self.plain = plain          # which of the two modes is on (marked ●)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="system-menu-dialog"):
             yield Static("⚙️ SYSTEM & CLAN OPERATIONS", id="system-menu-title", markup=False)
             yield OptionList(id="system-menu-list")
-            yield Static("[1-6] action · [Esc] cancel", id="system-menu-footer", markup=False)
+            yield Static("[1-9] action · [Esc] cancel", id="system-menu-footer", markup=False)
 
     def on_mount(self) -> None:
         lst = self.query_one("#system-menu-list", OptionList)
         lst.clear_options()
         for i, (action_id, label) in enumerate(MENU_ITEMS, 1):
-            lst.add_option(Option(Text(f"[{i}] {label}"), id=action_id))
+            on = (action_id == "plain") == self.plain if action_id in ("immersion", "plain") else False
+            lst.add_option(Option(Text(f"[{i}] {label}" + ("  ●" if on else "")), id=action_id))
         lst.focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
@@ -218,7 +226,7 @@ class SystemMenu(ModalScreen[str | None]):
         self.dismiss(event.option_id)
 
     def on_key(self, event: events.Key) -> None:
-        if event.key in ("1", "2", "3", "4", "5", "6"):
+        if event.key in tuple("123456789"):
             idx = int(event.key) - 1
             if 0 <= idx < len(MENU_ITEMS):
                 event.stop()

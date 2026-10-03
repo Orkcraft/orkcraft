@@ -254,6 +254,8 @@ class BuildReview(ModalScreen[dict | None]):
         hut = next(iter(box.query(Hut)), None)
         if hut is None:
             hut = Hut("preview", sil, actions)
+            hut.plain = getattr(self.app.desktop, "plain", False)
+            hut.set_silhouette(sil, actions)
             box.mount(hut)
         else:
             hut.set_silhouette(sil, actions)

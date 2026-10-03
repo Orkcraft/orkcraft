@@ -224,3 +224,45 @@ async def test_a_lake_grows_with_its_content_and_stays_off_its_neighbours(fake_r
         desk.refresh_huts()
         await _settle(pilot)
         assert hut.geom.h == small                                                 # and back to the design
+
+
+def test_plain_mode_is_only_a_frame_with_the_same_text_slots():
+    for sid, full in sil.SILHOUETTES.items():
+        plain = sil.plain(full)
+        assert len(plain.slots) == len(full.slots) and plain.width <= full.width, sid
+        assert plain.lines[0] == "┌" + "─" * (plain.width - 2) + "┐", sid
+        assert plain.lines[-1] == "└" + "─" * (plain.width - 2) + "┘", sid
+        assert all(ln[0] == "│" and ln[-1] == "│" for ln in plain.lines[1:-1]), sid
+        assert not set("/\\_(@~") & set("".join(plain.lines)), sid                   # no roofs, sails or waves
+    assert sil.styled(sil.MILL, False) is sil.MILL and sil.styled(sil.MILL, True).width == 10
+
+
+@pytest.mark.asyncio
+async def test_the_menu_switches_between_immersion_and_plain(fake_repo: Path, town):
+    from orkcraft.screens.system_menu import SystemMenu
+
+    for s in (_spec("todo", "fields"), _spec("mill", "mill"), _spec("view", "lake")):
+        assert masonry.save_spec(fake_repo, s) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _settle(pilot)
+        desk = app.desktop
+        assert not desk.plain and desk.huts["mill"].geom.w == 15
+        app.action_system_menu()
+        await _settle(pilot)
+        assert isinstance(app.screen, SystemMenu)
+        ids = [app.screen.query_one("#system-menu-list").get_option_at_index(i).id
+               for i in range(app.screen.query_one("#system-menu-list").option_count)]
+        assert ids[3:5] == ["immersion", "plain"]
+        await pilot.press("5")                                                    # [5] plain
+        await _settle(pilot)
+        assert desk.plain and desk.scroll.preferences["mode"] == "plain"
+        assert desk.huts["mill"].geom.w == 10 and desk.huts["mill"].sil.id.endswith("-plain")
+        assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────┐" in str(desk.huts["todo"].render())
+        geoms = [h.geom for h in desk.huts.values() if h.display]
+        assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
+        desk.set_mode(False)
+        await _settle(pilot)
+        assert not desk.plain and desk.huts["mill"].geom.w == 15
+        geoms = [h.geom for h in desk.huts.values() if h.display]
+        assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
