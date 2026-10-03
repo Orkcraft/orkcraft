@@ -53,7 +53,7 @@ Stored:
 
 ## 2b. Step 2 — Orc autonomy
 
-A slider of four stops (`screens/autonomy.py`, `autonomy.py`): ⛓️ Ask me · 🌅 Morning advice ·
+A slider of four stops (`screens/autonomy.py`, `autonomy.py`): ⛓️ Ask me · 📜 Morning advice ·
 🧭 Routine on their own · ⛓️‍💥 Free orcs. Under it, what the level means and the guide: from Routine up,
 the Claude Code permission block to paste (*Copy Claude settings*) and how to start agy. From Morning
 advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —

@@ -7,7 +7,7 @@
     agy_note(level)                   how to start agy for this level
 
 Autonomy comes from three places:
-- **advice** (from 🌅) — in quiet hours the Elders read the questions and advise; the operator
+- **advice** (from 📜) — in quiet hours the Elders read the questions and advise; the operator
   follows the advice with one key in the morning;
 - **the Elders' answers** (⛓️‍💥 only) — in quiet hours they send their one-time yes or no themselves;
   what the Warder's rules stop, and anything they would not advise, still waits for the operator;
@@ -33,7 +33,7 @@ class Level:
 
 LEVELS: tuple[Level, ...] = (
     Level(0, "⛓️", "Ask me", "Every question waits for you; nothing is judged while you are away."),
-    Level(1, "🌅", "Morning advice", "In quiet hours the 🏛 Elders read the orcs' questions and leave advice; "
+    Level(1, "📜", "Morning advice", "In quiet hours the 🏛 Elders read the orcs' questions and leave advice; "
                                     "in the morning you follow it with one key."),
     Level(2, "🧭", "Routine on their own", "Agents read, edit the project and run its tests without asking "
                                           "(their own settings, below); the Elders advise on the rest."),
