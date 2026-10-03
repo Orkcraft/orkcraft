@@ -20,7 +20,7 @@ from orkcraft.screens.build_flow import MODAL_CSS
 def plan_text(order: str, plan: TownPlan) -> Text:
     t = Text()
     t.append("You asked: ", style="dim")
-    t.append(f"“{order.strip()[:300]}”\n\n", style="italic")
+    t.append(f"“{order.strip()[:1200]}”\n\n", style="italic")
     if plan.title:
         t.append(f"{plan.title}\n", style="bold")
     if plan.summary:

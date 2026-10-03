@@ -5,6 +5,7 @@
     s.mode                           # "camp" | "office" | "shift"
     s.quiet, s.office, s.office_days # 🌙 do-not-disturb and 👔 office hours (schedule.py)
     s.autonomy                       # 0..3: how much the orcs do on their own (autonomy.py)
+    s.profile                        # who the operator is and how their day goes (realm/intents.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, the display mode and the day's schedule:
@@ -30,6 +31,8 @@ MODES = ("camp", "office", "shift")
 LEGACY_MODES = {"immersion": "camp", "plain": "office", "hidden": "office"}   # older names of camp / office
 DEFAULT_MODE = "camp"
 MODE_TITLES = {"camp": "🧌 Camp", "office": "👔 Office", "shift": "🧌/👔 Shift"}
+PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other")
+PROFILE_LISTS = ("day", "rhythm")
 
 
 def mode_of(value: object) -> str | None:
@@ -48,11 +51,12 @@ class ToolChoice:
 class MachineSettings:
     tools: dict[str, ToolChoice] = field(default_factory=lambda: {t: ToolChoice() for t in TOOLS})
     mode: str = DEFAULT_MODE
-    onboarded: bool = False       # steps 1–2 of onboarding done on this machine
+    onboarded: bool = False       # the machine's part of onboarding is done
     quiet: Span | None = None     # 🌙 do-not-disturb hours; None = off
     office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
     autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
+    profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, rhythm, ai_tools
 
     def to_dict(self) -> dict:
         return {
@@ -63,6 +67,7 @@ class MachineSettings:
             "office": self.office.to_dict(),
             "office_days": list(self.office_days),
             "autonomy": self.autonomy,
+            "profile": self.profile,
         }
 
     @classmethod
@@ -84,7 +89,25 @@ class MachineSettings:
             s.office_days = tuple(sorted({d for d in days if isinstance(d, int) and 0 <= d <= 6}))
         level = data.get("autonomy", 1)
         s.autonomy = level if isinstance(level, int) and not isinstance(level, bool) and 0 <= level <= 3 else 1
+        s.profile = clean_profile(data.get("profile"))
         return s
+
+
+def clean_profile(raw: object) -> dict:
+    """Only the known keys, as strings and lists of strings; {} for anything else."""
+    if not isinstance(raw, dict):
+        return {}
+    out: dict = {k: str(raw[k])[:200] for k in PROFILE_TEXT if isinstance(raw.get(k), str) and raw[k].strip()}
+    for k in PROFILE_LISTS:
+        if isinstance(raw.get(k), list):
+            out[k] = [str(x)[:40] for x in raw[k] if isinstance(x, str)][:20]
+    tools_ = raw.get("ai_tools")
+    if isinstance(tools_, dict):
+        graded = {str(t)[:40]: {"skill": str(g.get("skill", "none"))[:20], "freq": str(g.get("freq", "never"))[:20]}
+                  for t, g in list(tools_.items())[:20] if isinstance(g, dict)}
+        if graded:
+            out["ai_tools"] = graded
+    return out
 
 
 def path() -> Path:

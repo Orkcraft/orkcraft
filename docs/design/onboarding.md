@@ -1,24 +1,166 @@
 # Design — onboarding
 
-Status: design notes, written 2026-10-03; stages 1–5 of §7 are implemented (presets are stubs). Builds on the quota readers
-(`orkcraft/quota/`), the two display modes (`preferences.mode`), the Warder hooks and the Town Hall.
+Status: design notes, written 2026-10-03, reworked the same day: the person comes first — how
+well they know orchestration, who they are, how their day goes, how they use AI tools — then the
+town for that role; the interview and the Town Builder when no
+ready town fits; the machine's part last. Implemented (`screens/onboarding.py`, `realm/intents.py`,
+`realm/interview.py`). Builds on the quota readers (`orkcraft/quota/`), the display modes, the
+Warder hooks, the Town Hall and the Town Builder (`realm/town_builder.py`).
 
 ## 1. When it runs
 
-Onboarding has two scopes:
-
-| Scope | Where it is kept | Steps |
+| Part | Where it is kept | Steps |
 |---|---|---|
-| **Machine** — once per machine | `~/.config/orkcraft/settings.json` (`$XDG_CONFIG_HOME` respected) | 1 Tools · 2 Mode |
-| **Project** — once per project | `.orkcraft.json` (the Town Scroll) | 3 Town · 4 Raising the town |
+| **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Orchestration · Who you are · Your day · Your AI tools |
+| **The town** — once per project | `.orkcraft.json`, `.orkcraft/`, the order `.orkcraft/town/order.json` | The town · (the interview) |
+| **The machine** — once per machine | `~/.config/orkcraft/settings.json` | Tools · Autonomy · The look and the hours |
 
-- Opening orkcraft in a project with no `.orkcraft.json` starts onboarding. If the machine settings
-  already exist, it starts at step 3.
-- F10 → **🧭 Onboarding** runs steps 1–2 again; step 3 is not offered there, since it would replace the town.
-- Every step has `Esc` / **Back**. **Skip** anywhere = empty town, defaults for everything not chosen yet.
-- `--demo` never shows onboarding.
+```
+How well do you know orchestration? ─┬─ 🤘 punk orc ─→ Tools → Autonomy → The look → an empty town
+                                     └─ 🐣 new / 🪓 some ↓   (a newcomer gets no Skip)
+Who are you? → Your day → Your AI tools → What should your first town do? ─┬─ an intent ─────┐
+                                                            ├─ an empty town ──────────────┤
+                                                            └─ none fits → Sources → Outputs │
+                                                                 → Problems → What went wrong with AI ┤
+  ┌─────────────────────────────────────────────────────────────────────────────────────────┘
+  └→ Tools (+ the Warder) → Autonomy → The look and the hours → the town is raised
+        an intent: its buildings and roads, no model · none fits: the Town Builder adapts the
+        role's templates to the answers → the plan → approved → raised
+```
 
-## 2. Step 1 — Tools
+- A project with no `.orkcraft.json` starts onboarding. A machine already onboarded skips the
+  machine's part; one that also has a profile starts at the town — and a punk orc's gets an
+  empty town with no questions (no Warder unasked).
+- F10 → **🧭 Onboarding** asks who you are, your day and the machine's part again — never the town.
+- Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
+  **Skip** anywhere = an empty town, defaults for the rest, no Warder.
+- The title counts the steps of this run: the interview adds four (“step 4 of 10”).
+- Nothing is written before the last step. `--demo` never shows onboarding.
+
+## 1b. How well do you know agent orchestration?
+
+The first question, three answers (`interview.ORCHESTRATION`); it picks the path:
+
+| Answer | Path |
+|---|---|
+| 🐣 **New to it** — chats with AI, never ran agents | everything, walked through: no Skip after this step (Back leads here) |
+| 🪓 **Some** — Claude Code, Cursor, rarely more than one agent | everything, Skip allowed |
+| 🤘 **Punk orc** — orchestrates agents already | no interview: tools, autonomy, the look, then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
+
+Stored: `profile.orchestration`. The Town Builder reads it: new to orchestration → fewer
+buildings and an accept step before anything leaves.
+
+## 2. Who are you?
+
+```
+┌ 🧭 Who are you?  ·  step 1 of 6 ──────────────────────────────────────────────────────┐
+│ Your role and where you work. Your first town starts from what people like you do.       │
+│  I work as…                       …in                              \ .--. /            │
+│  🛠 Software engineer             🎮 Gaming                          >( oO )<           │
+│  🧭 Engineering manager           💳 Fintech                           \ww/  $          │
+│  📋 Product manager               🛒 E-commerce                      .-|  |-/           │
+│  🎨 Product designer              ☁️ SaaS / B2B                      | |  |             │
+│ ▌📈 ASO manager                  ▌🎮 Gaming                          /GOBLIN\           │
+│  📣 Marketing / growth manager    …                                                      │
+│  …  🧩 Someone else [ your role, in your words ]                                         │
+│ → ASO manager in Gaming · 3 ready towns for this role, or the Builder makes one with you │
+│                                                              [ Skip ]  [ Next → ]        │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- Ten roles and “Someone else”, nine industries and “Something else” (`realm/intents.py`);
+  “else” opens a field for the operator's own words. A role is required, the industry is not.
+- The mascot follows the role's family: engineers orc · designers elf · managers knight ·
+  marketing and data goblin · founders and others skeleton.
+- Stored: `profile.role`, `role_other`, `industry`, `industry_other`.
+
+## 3. Your day
+
+```
+┌ 🧭 How does your day go?  ·  step 2 of 6 ───────────────────────────────────────────────┐
+│ What fills a typical day, and what comes back on a schedule. The town takes over the     │
+│ routine.                                                                                  │
+│  A typical day is…                            It comes back as…                           │
+│  [x] 📨 Inbox and messages                    [ ] ☀️ A daily summary or stand-up            │
+│  [ ] 🗣 Meetings and syncs                    [x] 📅 A weekly report or sync              │
+│  [x] 📈 Watching metrics and dashboards       [ ] 🚀 Releases or launches                 │
+│  [x] 💬 Users, customers, reviews             …                                            │
+│  …  [ a typical day in your words ]                                                       │
+│                                                    [ ← Back ]  [ Skip ]  [ Next → ]       │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- Multi-select (`SelectionList`): ten parts of a day, six rhythms, and a free field.
+- What it is for: an intent lists the parts of a day it takes over (`Intent.day`); those that
+  fit come first with ★. The Town Builder reads the day, the rhythm and the free text too —
+  a weekly report becomes a schedule in a Watchtower.
+- Stored: `profile.day`, `profile.rhythm`, `profile.day_other`.
+
+## 3b. Your AI tools — how well, how often
+
+Not a multi-select: each AI tool gets two grades, experience (none · basic · confident · expert)
+and use (never · monthly · weekly · daily), compact dropdowns in a table. Where they differ are
+the **growth zones** (`interview.growth`), shown live under the table:
+
+- 📈 used weekly or daily, but known little — worth learning deeper;
+- 💤 known well (confident, expert), but used monthly or never — a skill barely used.
+
+Stored: `profile.ai_tools` = {tool: {skill, freq}} (tools left at none / never are left out). The
+Town Builder gets the grades and the zones: a tool used often but known little → the town does its
+routine and shows its work, so the operator learns from it.
+
+## 4. What should your first town do?
+
+```
+┌ 🧭 What should your first town do?  ·  step 3 of 6 ─────────────────────────────────────┐
+│ For ASO manager in Gaming  ·  ★ takes over a part of your day                             │
+│ [ 🏰 Start with an empty town ]                                                           │
+│  [ 📈 ASO manager ▾ ]                                               (the mascot)          │
+│ ▌⭐ Review Desk  ★                                                                         │
+│  🔑 Keyword Tracker  ★                                                                    │
+│  🧪 Listing Lab                                                                           │
+│  ❓ None fits — tell the Builder about your work                                          │
+│  store reviews sorted, replies drafted for approval                                       │
+│  🏗 🗼 Store reviews · 🗿 Review sorter · 🏕️ Reply writers · 📦 Replies to approve · …     │
+│                                                    [ ← Back ]  [ Skip ]  [ Next → ]       │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Intents** are ready towns for a job the role does: 3 per role, 33 in all. Each is a plan in the
+  Town Builder's answer shape (buildings from the catalog, plain roads), checked by
+  `town_builder.check` in the tests, and raised with **no model call**.
+- The dropdown browses other roles' intents; the picked role is the one whose templates the
+  Builder adapts.
+- **🛡 The Warder** checkbox sits here only when the machine's part is not asked and `claude` is
+  on; otherwise it is on the Tools step.
+- **❓ None fits** adds the interview (§4b) before the machine's part.
+
+## 4b. The interview — when none fits
+
+Four pages, each a multi-select with a field for anything else; the role's common options come
+first, marked ✦ (`Role.sources`, `Role.outputs`, plus the industry's, `INDUSTRY_SOURCES`).
+
+| Page | Question | Options (some) |
+|---|---|---|
+| Sources | Where does your work come from? | Jira, Confluence, Linear, Asana, Notion, GitHub, Slack, Email, Calendar, Google Drive / Sheets, Figma, App Store Connect, Google Play Console, AppTweak / Sensor Tower, Amplitude / Mixpanel, Sentry, Zendesk, HubSpot, CSV / Excel, this repository |
+| Outputs | Where does the result go? | Jira, Confluence, Asana, Linear, Notion, Slack, Email, Google Docs / Sheets, Figma, pull requests, store listings, reports in the repository, a dashboard in Orkcraft, a webhook or any API |
+| Problems | What hurts in the way you work now? | copying between tools, reports take hours, things slip, notification noise, context switching, waiting on others, stale docs, the same routine every week, no single view |
+| AI | What went wrong with AI so far? (the tools themselves are graded in §3b) | no access to my data, copy-pasting context, forgets between sessions, makes things up, inconsistent, checking takes as long, security, cost |
+
+The answers become the **order** (`town_presets.save_order(root, prompt, role, answers)`): the
+prompt is `interview.summary` — one line per question, the operator's words included. Once the
+camp stands, the **Town Builder** plans from it with the role's intents as templates
+(`intents.templates_text`, the `ADAPT` block of the planner's prompt): start from the closest one,
+give each source a way in — **every webhook comes in through a Watchtower**, no other building
+listens for one (Jira, Linear, the stores, monitoring, support desks; mail, GitHub and schedules
+too); a Pit only for what is pasted by hand; Scroll Dump, File Forest for folders — and
+each output a way out (Catapult to the tool's API, the token in an environment variable named by
+`token_env`; Loot Vault for what is accepted first), answer each problem with a building or road,
+and avoid what went wrong with AI before (a person's accept step, rules over agents). The plan
+is checked like any other, reviewed (`screens/town_plan.py`) and raised; “Later” or a failed call
+leaves the order burning 🔥 in the Town Hall, which keeps the role and the answers for a retry.
+
+## 5. Tools
 
 ```
 ┌ Which clans will you lead? ───────────────────────────────────────────────┐
@@ -51,7 +193,10 @@ Stored:
              "agy":    { "enabled": false, "billing": "subscription" } } }
 ```
 
-## 2b. Step 2 — Orc autonomy
+- **🛡 The Warder** for this project (same as `orkcraft hooks install`, it edits `.claude/settings.json`)
+  is a checkbox here, on by default, when the run raises a town; Back keeps the tools picked.
+
+## 6. Orc autonomy
 
 A slider of four stops (`screens/autonomy.py`, `autonomy.py`): ⛓️ Ask me · 📜 Morning advice ·
 🧭 Routine on their own · ⛓️‍💥 Free orcs. Under it, what the level means in two lines — ❓ the agents'
@@ -65,7 +210,7 @@ advice in the morning (`a`, `A` for all). Only at ⛓️‍💥 Free orcs do the
 hours: their one-time yes or no goes to the agent, if the very same question still waits; what the
 rules stop or the model would not advise still waits for the operator.
 
-## 3. Step 3 — Mode and your day
+## 7. The look and the hours
 
 ```
 ┌ How should the town look? ────────────────────────────────────────────────┐
@@ -95,88 +240,33 @@ rules stop or the model would not advise still waits for the operator.
   `preferences.mode` in the Town Scroll stays an optional per-project override.
 - The same screen is F10 → 🕰 Your day, with Save and Cancel.
 
-## 4. Step 4 — Town
-
-```
-┌ Choose a town ────────────────────────────────────────────────────────────┐
-│  [ Start with an empty town ]                                              │
-│                                                                           │
-│  Domain: [ Engineering ▾ ]                          ┌──────────────┐      │
-│  ────────────────────────────────────────           │   ASCII orc  │      │
-│  ◉ 🛠 Solo Forge                                     │              │      │
-│  ○ 🔍 Review Gate                                    └──────────────┘      │
-│  ○ 🐛 Bug Hunt                                                             │
-│  ○ 🚀 Release Train                                                        │
-│  ○ Didn't find it?                                                         │
-│     [ describe the town you need…                              ]          │
-│                                                                           │
-│  [x] Install the 🛡 Warder (recommended) — edits .claude/settings.json      │
-│                                                     [ ← Back ]  [ Build ] │
-└───────────────────────────────────────────────────────────────────────────┘
-```
-
-- **Domains and their mascots**: Engineering — orc · Design — elf · Management — knight · Indie — skeleton.
-  The ASCII mascot beside the list follows the dropdown.
-- **Town presets** are a new thing (today's presets in `realm/catalog.py` are single buildings): a
-  piece of the Town Scroll — buildings, roads, layout — kept as JSON templates. The selected preset
-  shows a short description and its buildings below the list.
-- **For now every preset is a stub that opens an empty town.** Names and descriptions:
-
-  | Domain | Preset | What it will be |
-  |---|---|---|
-  | ⚔️ Engineering | 🛠 Solo Forge | one developer: tasks → agents → tests → merge |
-  | | 🔍 Review Gate | PR review and diff inspection |
-  | | 🐛 Bug Hunt | bug reports triaged and fixed in worktrees |
-  | | 🚀 Release Train | changelog, tests, cutting a release |
-  | 🧝 Design | 🎨 Mockup Grove | an idea → mockup variants → a pick |
-  | | 📐 Design System | tokens, components, consistency checks |
-  | | 🖼 Asset Pipeline | generating assets and accepting them in the Loot Vault |
-  | | 🗣 Critique Circle | the Orc Council argues over design decisions |
-  | 🛡 Management | 📋 War Room | tasks, statuses, a daily digest |
-  | | 📨 Inbox Keep | mail, GitHub and webhooks sorted into tasks |
-  | | 🥁 Sprint Drum | sprint planning, calendar, retro |
-  | | 📊 Ledger Tower | metrics, spend, reports |
-  | 💀 Indie | 🎮 Game Jam | a fast prototype, tasks and builds |
-  | | 🏚 One-Skeleton Studio | code, copy and marketing in one town |
-  | | 📣 Launch Crypt | landing page, posts, collecting feedback |
-  | | 🧪 Side Quest | a light town for a pet project |
-
-- Presets that need an agent are disabled (with a note) when no tool was chosen in step 1.
-- **Didn't find it?** — the prompt is saved as an **order** and, once the empty town stands, the
-  📜 **Town Builder** (`realm/town_builder.py`) plans a town from it: typed buildings from the catalog
-  and plain roads between them, checked like any spec. The operator approves the plan
-  (`screens/town_plan.py`), asks again with a note, or leaves it for later — then the order waits in
-  the Town Hall, which burns 🔥 until it is opened (opening it offers to plan it; F10 → 📜 Town Builder).
-- **The Warder** is installed here (same as `orkcraft hooks install`), with the checkbox on by default,
-  because it changes `.claude/settings.json`. Hidden when `claude` is not enabled.
-
-## 5. Step 4 — Raising the town
+## 8. Raising the town
 
 No separate progress screen: the town itself opens and the progress bar runs along its bottom.
-Each bar step is real work:
 
 1. create `.orkcraft/` and the camp's git (branch `camp`);
 2. install the hooks / Warder (if checked);
-3. place the buildings one by one (they appear as if being built) and lay the roads;
-4. for a custom prompt: the order saved; the Town Builder starts as soon as the town stands.
+3. for “none fits”: the order is saved;
 
-At the end, a short toast with three keys: `B` build · `P` presets · `?` all keys.
-With a stub preset steps 3–4 are empty and the bar finishes at once.
+then, on a bar of its own, an intent's buildings one by one and its roads
+(`raise_town_plan`) — or the Town Builder for the order. An empty town ends with a toast:
+`B` build · `P` presets · `?` all keys.
 
-## 6. Edge cases
+## 9. Edge cases
 
 - A tool is found but not logged in — shown, unchecked, with the login command; checking it is allowed.
 - A tool disappears later — the HUD greys its corner; no onboarding rerun.
 - A narrow terminal — cards and the mascot stack or hide; the minimum is the list and the buttons.
 - Onboarding interrupted (quit mid-way) — nothing is written until each step's Next; the project
   part is written only on **Build**.
-- An existing `.orkcraft.json` — no onboarding; F10 → 🧭 Onboarding redoes only steps 1–2.
+- An existing `.orkcraft.json` — no onboarding; F10 → 🧭 Onboarding redoes who you are, your day and
+  the machine's part.
+- No tool chosen — intents are still raised (no model); “none fits” leaves the order in the Town Hall.
 
-## 7. Plan
+## 10. Later
 
-1. Machine settings file (`tools`, `billing`, `mode`) and the `preferences.mode` fallback.
-2. Tool detection + billing detection; the HUD corner switching between limits and 🪙.
-3. Screens 1–2 (Textual modals), the F10 entry.
-4. Screen 3 with stub presets, domains and mascots; the pending order in the Town Hall.
-5. Step 4: creation steps on the town with the progress bar; hooks install from onboarding.
-6. The Town Builder for a custom prompt (done). Later: real town presets, `codex` support.
+- Industry-specific intents (an ASO town for a games studio differs from one for a bank).
+- Real connectors for the named sources and outputs (Jira, Figma, Asana…) as building types,
+  instead of webhooks and the Catapult.
+- A follow-up question from the Builder when the answers contradict each other.
+- `codex` support.

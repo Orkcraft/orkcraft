@@ -52,7 +52,7 @@ from orkcraft.screens.garrison_modal import GarrisonModal, OrcModelModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, evolution, pressure, retro, town_builder, town_presets
+from orkcraft.realm import elders, evolution, intents, pressure, retro, town_builder, town_presets
 from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
@@ -511,7 +511,7 @@ class OrkcraftApp(App[int]):
             order = town_presets.pending_order(self.repo_root)
             if order is not None:
                 self.push_screen(Confirm("📜 A town waits to be raised. Plan it now?",
-                                         f"“{order['prompt'][:300]}”\n\nThe Town Builder plans it from the "
+                                         f"“{order['prompt'][:800]}”\n\nThe Town Builder plans it from the "
                                          "building catalog (one Claude call); you approve the plan before "
                                          "anything is raised."),
                                  lambda yes: yes and self.build_town_from_order())
@@ -829,13 +829,15 @@ class OrkcraftApp(App[int]):
         return order is not None and not order.get("seen")
 
     def start_onboarding(self, machine_steps: bool | None = None, town_step: bool = True) -> None:
-        """Steps 1–2 once per machine (or when asked, F10), step 3 for a project with no town yet."""
+        """Who you are and the machine's part once per machine (or when asked, F10); the town for a
+        project with none yet."""
         if machine_steps is None:
             machine_steps = not self.desktop.machine.onboarded
         onboarding.Onboarding(self, machine_steps, town_step, on_town=self.raise_town).start()
 
     def raise_town(self, choice: dict) -> None:
-        """Step 4: raise the chosen town over the map, a progress bar along the bottom."""
+        """The end of onboarding: the camp's records and the Warder over the map, a progress bar along
+        the bottom; then the intent's town, or the interview's order for the Town Builder."""
         steps = onboarding.raising_steps(choice)
         bar = onboarding.mount_raise_bar(self.screen, len(steps))
         self._raise_town_work(choice, steps, bar)
@@ -851,33 +853,38 @@ class OrkcraftApp(App[int]):
                 elif "Warder" in label:
                     from orkcraft.hooks import install as hooks_install
                     hooks_install.install(self.repo_root)
-                elif label.startswith("Raising"):
-                    self.call_from_thread(self._raise_buildings, choice)
                 elif "order" in label:
-                    town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("domain", ""))
+                    town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("role", ""),
+                                            choice.get("answers") or {})
             except (OSError, ValueError, RuntimeError) as e:
                 problems.append(f"{label}: {e}")
             onboarding.pause()
         self.call_from_thread(self._town_raised, choice, steps, bar, problems)
 
-    def _raise_buildings(self, choice: dict) -> None:
-        """The preset's buildings and roads, placed one by one — none yet: every preset is a stub
-        (town_presets.buildings_of is empty) and the town stays the Town Hall alone."""
-
     def _town_raised(self, choice: dict, steps: list[str], bar, problems: list[str]) -> None:
-        bar.step("The town stands", len(steps))
+        bar.step("The camp is ready", len(steps))
         self.desktop.save()
-        preset = town_presets.preset(choice.get("preset", ""))
-        reason = f"onboarding: {preset.title}" if preset else f"onboarding: {choice.get('preset', 'empty')} town"
+        it = intents.intent(choice.get("preset", ""))
+        reason = f"onboarding: {it.title}" if it else f"onboarding: {choice.get('preset', 'empty')} town"
         checkpoint.commit(self.repo_root, "create", "camp", reason, self.config.layout_file)
         self.order_burning = self._order_burns()
         self.refresh_roster()
         self.set_timer(1.5, bar.remove)
         if problems:
             self.notify("\n".join(problems), title="🏗 Raising the town", severity="warning")
-        self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
-        if choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
-            self.set_timer(1.6, self.build_town_from_order)       # after the bar has gone
+        if it is not None:
+            plan, errors = town_builder.check(it.plan, self.repo_root, self._taken_building_ids())
+            if errors:                                             # the templates are tested; never expected
+                self.notify("\n".join(errors[:3]), title=f"🏗 {it.title}", severity="error")
+            else:
+                self.set_timer(1.6, lambda: self.raise_town_plan(plan))    # after the bar has gone
+        elif choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
+            self.set_timer(1.6, self.build_town_from_order)
+        elif choice.get("expert"):
+            self.notify("B build · Y roads · 🏰 Town Hall → 📜 Preset or 🛠 New · F10 → 📜 Town Builder.",
+                        title="🤘 The town is yours to build", timeout=12)
+        else:
+            self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
 
     # -- 📜 the Town Builder: an order in words → a plan → approved → raised ----------------------
 
@@ -889,13 +896,16 @@ class OrkcraftApp(App[int]):
         if self.query(onboarding.RaiseBar):
             return                                                # one town at a time
         bar = onboarding.mount_raise_bar(self.screen, None)
-        bar.say("📜 The Town Builder is drawing your town…")
-        self._plan_town_work(order["prompt"], note, bar)
+        role = str(order.get("role") or "")
+        bar.say(f"📜 The Town Builder is adapting a {intents.role(role).title.lower()} town to your answers…"
+                if role else "📜 The Town Builder is drawing your town…")
+        self._plan_town_work(order["prompt"], note, bar, intents.templates_text(role) if role else "")
 
     @work(thread=True, exclusive=True, group="town-builder")
-    def _plan_town_work(self, order: str, note: str, bar) -> None:
+    def _plan_town_work(self, order: str, note: str, bar, templates: str = "") -> None:
         runner = BUILD_RUNNER or builders.claude_runner
-        result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note)
+        result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note,
+                                   templates=templates)
         self.call_from_thread(self._on_town_plan, order, result, bar)
 
     def _on_town_plan(self, order: str, result: town_builder.TownPlan, bar) -> None:
@@ -909,8 +919,8 @@ class OrkcraftApp(App[int]):
 
         def done(answer: dict | None) -> None:
             if answer is None:
-                town_presets.save_order(self.repo_root, order, (town_presets.pending_order(self.repo_root)
-                                                                or {}).get("domain", ""))
+                kept = town_presets.pending_order(self.repo_root) or {}
+                town_presets.save_order(self.repo_root, order, kept.get("role", ""), kept.get("answers") or {})
                 self.order_burning = True                         # later: it burns until the Hall is opened
                 self.refresh_roster()
                 self.notify("The order waits in the 🏰 Town Hall.", title="📜 Town Builder")
