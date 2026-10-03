@@ -63,6 +63,46 @@ def test_budget_and_a_question_pause_it():
     assert any("REST" in t.text for t in d.turns if t.kind == "answer")
 
 
+def test_the_operator_outranks_the_topic_and_the_moderator_hears_the_answers():
+    d = tm.new("Plan v2.0", "Agree on the release plan")
+    tm.answer(d, "ship on Friday")
+    review = tm.review_prompt(d, TEAM[1], TEAM)
+    assert "Goal (the standing brief): Agree" in review and "Topic (this request): Plan v2.0" in review
+    assert tm.PRECEDENCE in review and "- ship on Friday" in review
+    revise = tm.revise_prompt(d, ["**Critic:** later"], final=True)
+    assert "- ship on Friday" in revise and tm.PRECEDENCE in revise and "Plan v2.0" in revise
+    assert tm.PRECEDENCE not in tm.draft_prompt(tm.new("x"), TEAM[0], TEAM)     # nothing to weigh
+
+
+@pytest.mark.asyncio
+async def test_carts_that_arrive_mid_debate_wait_in_line(fake_repo: Path, monkeypatch):
+    spec = {"id": "council3", "title": "Council", "icon": "⚔", "orc": {"name": "Warchief"}, "type": "team",
+            "config": {"members": ["Planner:claude", "Critic:claude"], "max_rounds": 2, "budget_usd": 1}}
+    assert masonry.save_spec(fake_repo, spec) == []
+    s = Script({"Planner": ["# A", "# B", "# C"], "Critic": ["QUESTION: when?", "AGREE", "AGREE", "AGREE"]})
+    monkeypatch.setattr(TeamView, "runner", staticmethod(s))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("council3").query_one(TeamView)
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: [])
+        view.start("A")
+        for _ in range(60):
+            await pilot.pause(0.02)
+            if view.current and view.current.outcome == "asked" and not view._busy:
+                break
+        view.receive(None, "x", "B")        # the debate waits on the operator: B and C queue, none is lost
+        view.receive(None, "x", "C")
+        assert view.waiting == ["B", "C"] and view.mini_status()[-1] == "2 queued"
+        view.reply("tomorrow")
+        for _ in range(150):
+            await pilot.pause(0.02)
+            if len(view.history) == 3 and not view._busy:
+                break
+        assert sorted(d.topic for d in view.history) == ["A", "B", "C"] and view.waiting == []
+        assert all(d.outcome == "agreed" for d in view.history)
+
+
 @pytest.mark.asyncio
 async def test_the_team_building_discusses_and_hands_over_the_artifact(fake_repo: Path, monkeypatch):
     spec = {"id": "council2", "title": "Council", "icon": "⚔", "orc": {"name": "Warchief"}, "type": "team",
