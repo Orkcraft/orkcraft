@@ -1,8 +1,8 @@
-"""🧭 Onboarding: tools → mode → town → raising it (design: docs/design/onboarding.md).
+"""🧭 Onboarding: tools → autonomy → mode → town → raising it (design: docs/design/onboarding.md).
 
     Onboarding(app, machine_steps=True, town_step=True).start()
 
-Steps 1–2 (tools and their billing, the display mode) are asked once per machine and kept in
+Steps 1–3 (tools and their billing, the orcs' autonomy, the display mode and the day) are asked once per machine and kept in
 `settings.py`; step 3 (the town) once per project. Nothing is written before a step's Next, and
 the project's part only on Build. Skip anywhere: an empty town, defaults for the rest, no Warder.
 Step 4 raises the town over the map itself, with a progress bar along the bottom.
@@ -26,6 +26,7 @@ from textual.widgets.option_list import Option
 from orkcraft import schedule, settings, tools
 from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
 from orkcraft.realm import silhouettes, town_presets
+from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.build_flow import MODAL_CSS
 
 CUSTOM = "custom"
@@ -74,7 +75,7 @@ class ToolsStep(ModalScreen[dict | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🧭 Which clans will you lead?  ·  step 1 of 3", classes="build-title")
+            yield Label("🧭 Which clans will you lead?  ·  step 1 of 4", classes="build-title")
             yield Static("Looking for your AI tools…", id="ob-tools-loading")
             yield Vertical(id="ob-tools-list")
             yield Static("The top-right corner shows ⏳ limits for a subscription and 🪙 money for an API. "
@@ -213,7 +214,7 @@ class ModeStep(ModalScreen[dict | str | None]):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("🕰 Your day — the look of the town and its hours" if self.standalone
-                        else "🧭 How should the town look?  ·  step 2 of 3", classes="build-title")
+                        else "🧭 How should the town look?  ·  step 3 of 4", classes="build-title")
             # Camp under the camp's picture, Office under the office's, Shift — both — between them:
             # the radio row has the cards' columns (1fr · the gap · 1fr).
             with Horizontal(id="ob-cards"):
@@ -348,7 +349,7 @@ class TownStep(ModalScreen[dict | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🧭 Choose a town  ·  step 3 of 3", classes="build-title")
+            yield Label("🧭 Choose a town  ·  step 4 of 4", classes="build-title")
             yield Button("🏰 Start with an empty town", id="ob-empty")
             with Horizontal(id="ob-town"):
                 with Vertical(id="ob-town-left"):
@@ -533,6 +534,7 @@ class Onboarding:
         self.statuses = statuses
         self.machine = settings.load()
         self.picked: dict[str, settings.ToolChoice] | None = None
+        self.autonomy = self.machine.autonomy
 
     def start(self) -> None:
         if self.machine_steps:
@@ -552,6 +554,25 @@ class Onboarding:
             self._save_machine(None)
             self._skip_town()
             return
+        self._autonomy()
+
+    # step 2
+    def _autonomy(self) -> None:
+        tools_ = tuple(t for t, c in {**self.machine.tools, **(self.picked or {})}.items() if c.enabled)
+        self.app.push_screen(AutonomyStep(self.autonomy, tools_ or ("claude", "agy")), self._after_autonomy)
+
+    def _after_autonomy(self, result: dict | str | None) -> None:
+        if result is None:
+            return
+        if result == "back":
+            self._tools()
+            return
+        if isinstance(result, dict):
+            self.autonomy = int(result.get("autonomy", self.autonomy))
+        if result == "skip":
+            self._save_machine(None)
+            self._skip_town()
+            return
         self._mode()
 
     # step 2
@@ -562,7 +583,7 @@ class Onboarding:
         if result is None:
             return
         if result == "back":
-            self._tools()
+            self._autonomy()
             return
         self._save_machine(result if isinstance(result, dict) else None)
         if result == "skip":
@@ -574,7 +595,7 @@ class Onboarding:
         """Tools, mode and the day go to the machine settings (and to the town on screen)."""
         tools_ = dict(self.machine.tools)
         tools_.update(self.picked or {})
-        machine = replace(self.machine, tools=tools_, onboarded=True)
+        machine = replace(self.machine, tools=tools_, onboarded=True, autonomy=self.autonomy)
         if not self.machine.onboarded and day is None:
             machine.mode = settings.DEFAULT_MODE
         desktop = getattr(self.app, "desktop", None)

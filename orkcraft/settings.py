@@ -4,6 +4,7 @@
     s.tools["claude"].billing        # "subscription" | "api"
     s.mode                           # "camp" | "office" | "shift"
     s.quiet, s.office, s.office_days # 🌙 do-not-disturb and 👔 office hours (schedule.py)
+    s.autonomy                       # 0..3: how much the orcs do on their own (autonomy.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, the display mode and the day's schedule:
@@ -51,6 +52,7 @@ class MachineSettings:
     quiet: Span | None = None     # 🌙 do-not-disturb hours; None = off
     office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
+    autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
 
     def to_dict(self) -> dict:
         return {
@@ -60,6 +62,7 @@ class MachineSettings:
             "quiet": self.quiet.to_dict() if self.quiet else None,
             "office": self.office.to_dict(),
             "office_days": list(self.office_days),
+            "autonomy": self.autonomy,
         }
 
     @classmethod
@@ -79,6 +82,8 @@ class MachineSettings:
         days = data.get("office_days")
         if isinstance(days, list):
             s.office_days = tuple(sorted({d for d in days if isinstance(d, int) and 0 <= d <= 6}))
+        level = data.get("autonomy", 1)
+        s.autonomy = level if isinstance(level, int) and not isinstance(level, bool) and 0 <= level <= 3 else 1
         return s
 
 

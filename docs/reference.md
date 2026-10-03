@@ -458,17 +458,39 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 1. **Tools** — `claude` and `agy` are looked up on `PATH`; each found one is checked, with its
    version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
    `GEMINI_API_KEY` is set) — you can change both. `codex` is listed as coming soon. No key is stored.
-2. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
+2. **Autonomy** — a slider of four stops: 🙋 *Ask me* · 🌅 *Morning advice* (default) · 🧭 *Routine on
+   their own* · 🧌 *Free orcs* (see *Orc autonomy* below).
+3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
    day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
-3. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
+4. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
    💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
    become an order for the 📜 Town Builder (below). The 🛡 Warder is installed here when `claude`
    is in use and the box stays checked.
-4. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
+5. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
    the bottom of the town.
 
-Steps 1–2 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
+Steps 1–3 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
 F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults, no Warder.
+
+### 🏛 Orc autonomy
+
+How much the orcs do on their own (`autonomy` in the machine settings, F10 → 🏛 Orc autonomy).
+**Orkcraft never answers an agent's question itself**; autonomy comes from two places:
+
+- **The Elders' advice** (from *Morning advice* up): in 🌙 quiet hours the Elders of the Town Hall
+  read each permission question of a claude / agy session and leave advice. The Warder's rules come
+  first — anything dangerous, secret or destructive gets no advice and no model call; then the
+  Council's light model (`haiku`) may advise a **one-time** yes or a no, never an option that widens
+  permissions ("don't ask again", "allow all edits"). In the morning *Orders* (`!`) shows the advice:
+  `a` follows it, `A` follows it on every advised question; the rest wait as before. At most 40
+  questions a night, never past the 🪙 budget; every judgement is in `.orkcraft/council/elders.jsonl`.
+- **The agents' own permission settings** (from *Routine on their own* up): the step shows what to
+  paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
+  (every project) — an allow list for reading, editing the project, its tests and read-only git; at
+  *Free orcs* also `acceptEdits` and the usual project commands, with `git push` asked and
+  `rm -rf`, force pushes, `sudo` and `.env` denied — and how to start agy
+  (`agy --mode accept-edits --sandbox` at *Free orcs*). *Copy Claude settings* puts the snippet on the
+  clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
 
 ### 📜 The Town Builder
 

@@ -74,6 +74,8 @@ class AwaitingOrdersModal(AlertModal):
         Binding("c", "open_card", "Open Card", show=False),
         Binding("y", "choose('y')", show=False),
         Binding("n", "choose('n')", show=False),
+        Binding("a", "follow", "Follow the Elders' advice", show=False),
+        Binding("A", "follow_all", "Follow it for all", show=False),
     ] + [
         Binding(str(i), f"choose('{i}')", show=False) for i in range(1, 10)
     ]
@@ -92,6 +94,7 @@ class AwaitingOrdersModal(AlertModal):
     AwaitingOrdersModal #order-actions { height: auto; margin-top: 1; margin-bottom: 1; }
     AwaitingOrdersModal #order-actions Button { margin-right: 1; margin-bottom: 1; }
     AwaitingOrdersModal .order-hint { color: $text-muted; margin-top: 1; }
+    AwaitingOrdersModal #order-advice { color: $success; height: auto; }
     """
 
     def __init__(self, alerts: list[Alert] | Alert, who_map: dict[str, str] | None = None, who: str = "") -> None:
@@ -115,9 +118,11 @@ class AwaitingOrdersModal(AlertModal):
             yield lst
             yield Label("", id="order-target", classes="order-question")
             yield Static("", id="order-context", classes="order-context")
+            yield Static("", id="order-advice", markup=False)
             with Horizontal(id="order-actions"):
                 pass
-            yield Static(Text("press number/letter to answer · ↑↓ select question · esc closes"), classes="order-hint")
+            yield Static(Text("press number/letter to answer · a follows the Elders' advice, A for all · "
+                              "↑↓ select question · esc closes"), classes="order-hint")
 
     async def on_mount(self) -> None:
         await self._sync_view()
@@ -147,12 +152,24 @@ class AwaitingOrdersModal(AlertModal):
             ctx_widget.update("")
             ctx_widget.display = False
 
+        advice = self._advice(alert)
+        advice_widget = self.query_one("#order-advice", Static)
+        judged = self._judged(alert)
+        if advice is not None:
+            label = dict(alert.options).get(advice.key or "", "")
+            advice_widget.update(f"🏛 The Elders advise [{advice.key}] {label} — {advice.why}")
+        elif judged is not None:
+            advice_widget.update(f"🏛 No advice: {judged.why}")
+        advice_widget.display = judged is not None
+
         actions_box = self.query_one("#order-actions", Horizontal)
         await actions_box.remove_children()
         new_buttons = []
         for key, label in alert.options:
             var = "primary" if key in ("1", "y", "Y") else "default"
             new_buttons.append(Button(f"[{key}] {label}", id=f"opt-{key}", variant=var))
+        if advice is not None:
+            new_buttons.append(Button("[a] Follow the advice", id="btn-follow", variant="success"))
         if alert.source == "terminal":
             new_buttons.append(Button("[T] Terminal", id="btn-term", variant="default"))
         elif alert.source == "ticket":
@@ -198,12 +215,43 @@ class AwaitingOrdersModal(AlertModal):
         bid = event.button.id or ""
         if bid.startswith("opt-"):
             await self.action_choose(bid[4:])
+        elif bid == "btn-follow":
+            await self.action_follow()
         elif bid == "btn-term":
             self.action_open_terminal()
         elif bid == "btn-card":
             self.action_open_card()
         elif bid == "btn-close":
             self.dismiss(None)
+
+    # -- 🏛 the Elders' advice (left in quiet hours; followed only by the operator) ----------------
+
+    def _judged(self, alert: Alert):
+        app = getattr(self, "app", None)
+        advice = getattr(app, "advice", None)
+        mark = getattr(app, "elders_mark", None)
+        return advice.get(mark(alert)) if advice is not None and mark is not None else None
+
+    def _advice(self, alert: Alert):
+        d = self._judged(alert)
+        return d if d is not None and d.key is not None else None
+
+    async def action_follow(self) -> None:
+        """The operator follows the Elders' advice on the selected question."""
+        if not self.alerts:
+            return
+        alert = self.alerts[self.selected_index]
+        advice = self._advice(alert)
+        if advice is not None:
+            await self._answer_and_advance(alert, advice.key)
+
+    async def action_follow_all(self) -> None:
+        """The operator follows the advice on every question that has some; the rest stay."""
+        for alert in [a for a in self.alerts if self._advice(a) is not None]:
+            self.selected_index = self.alerts.index(alert)
+            await self._answer_and_advance(alert, self._advice(alert).key)
+            if not self.alerts:
+                return
 
     def action_open_terminal(self) -> None:
         if not self.alerts:

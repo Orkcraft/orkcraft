@@ -48,7 +48,9 @@ from orkcraft.screens.garrison_modal import GarrisonModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import town_builder, town_presets
+from orkcraft.realm import elders, town_builder, town_presets
+from orkcraft import autonomy
+from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.town_plan import TownPlanReview
 from orkcraft.env import getenv
 from orkcraft import schedule, settings
@@ -74,6 +76,7 @@ from orkcraft.widgets.terminal import Terminal
 from orkcraft.wm import Desktop, Taskbar, Window
 
 BUILD_RUNNER = None
+ELDERS_RUNNER = None        # tests: the Elders' model call (realm/elders.py)
 RECRUIT_RUNNER = None     # tests replace the Recruiter's and the steward's Claude call
 STEWARD_RUNNER = None
 FASTPATH_RUNNER = None    # tests put a fake light model for the Council's Fast Path here
@@ -246,6 +249,12 @@ class OrkcraftApp(App[int]):
         self.scroll_problems.extend(self.mason_problems)
         self.roster = Roster()
         self.dismissed: set[str] = set()
+        # 🏛 The Elders' advice on the orcs' questions, left in quiet hours (realm/elders.py).
+        self.advice: dict[tuple, elders.Decision] = {}
+        self._elders_seen: set[tuple] = set()
+        self._elders_busy = False
+        self._elders_count = 0
+        self._quiet_since: str | None = None
         # 🪙 / 🪵: sessions this run starts are tagged with its id (sources/telemetry.py).
         self.run_id = telemetry.new_run_id()
         self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
@@ -335,6 +344,8 @@ class OrkcraftApp(App[int]):
         self.set_interval(ORC_CHAT_REFRESH_S, self._tick_orc_chat)
         self.call_after_refresh(self.desktop.refresh_huts)
         self.order_burning = self._order_burns()
+        if self.desktop.quiet:
+            self._quiet_since = dt.datetime.now().isoformat(timespec="seconds")
         if self.first_run and getenv("ONBOARDING").lower() not in ("0", "false", "no", "off"):
             self.call_after_refresh(self.start_onboarding)
 
@@ -493,6 +504,81 @@ class OrkcraftApp(App[int]):
         """Every half minute: Shift turns Office on and off, quiet hours begin and end (schedule.py)."""
         self.desktop.apply_schedule()
         self.refresh_hud()
+        quiet = self.desktop.quiet
+        if quiet and self._quiet_since is None:
+            self._quiet_since = dt.datetime.now().isoformat(timespec="seconds")
+        elif not quiet and self._quiet_since is not None:
+            self._elders_morning()
+            self._quiet_since, self._elders_count = None, 0
+        self._elders_consider()
+
+    # -- 🏛 the Elders: in quiet hours they leave advice; the operator follows it (realm/elders.py) --
+
+    @staticmethod
+    def elders_mark(alert: Alert) -> tuple:
+        return (alert.id, alert.title, tuple(alert.options), tuple(alert.context[-3:]))
+
+    def advice_for(self, alert: Alert) -> elders.Decision | None:
+        d = self.advice.get(self.elders_mark(alert))
+        return d if d is not None and d.advised else None
+
+    def _elders_consider(self) -> None:
+        """One question at a time goes to the Elders: quiet hours, autonomy from 1, budget left."""
+        if (self.demo or self._elders_busy or not self.desktop.quiet
+                or not autonomy.advises(self.desktop.machine.autonomy) or self._elders_count >= elders.MAX_PER_NIGHT):
+            return
+        budget = self.scroll.budget.gold_session_limit_usd
+        if budget > 0 and self.snapshot.spent_usd >= budget:
+            return
+        pending = [a for a in self.roster.alerts if elders.qualifies(a) and self.elders_mark(a) not in self._elders_seen]
+        if not pending:
+            return
+        alert = pending[0]
+        self._elders_seen.add(self.elders_mark(alert))
+        self._elders_busy = True
+        self._elders_count += 1
+        self._elders_work(alert, self._alert_who_map().get(alert.id, ""))
+
+    @work(thread=True, group="elders")
+    def _elders_work(self, alert: Alert, who: str) -> None:
+        runner = ELDERS_RUNNER or fastpath.light_runner(self.repo_root)
+        decision = elders.judge(alert, runner)
+        self.call_from_thread(self._elders_done, alert, who, decision)
+
+    def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
+        """Advice only: it is kept for the operator; nothing is sent to the agent."""
+        self._elders_busy = False
+        self.advice[self.elders_mark(alert)] = decision
+        elders.log(self.repo_root, alert, decision, who)
+        self.refresh_roster()
+
+    def _elders_morning(self) -> None:
+        waiting = [a for a in self.roster.alerts if self.advice_for(a) is not None]
+        if waiting:
+            self.notify(f"{len(waiting)} question(s) have the Elders' advice — ! opens them, a follows the advice, "
+                        "A follows it for all.", title="🏛 While you were away, the Elders", timeout=15)
+
+    def follow_advice(self, alert: Alert) -> bool:
+        """The operator follows the Elders' advice on one question: their key, sent as their own answer."""
+        d = self.advice_for(alert)
+        if d is None or d.key is None:
+            return False
+        self.answer_alert(alert, d.key)
+        return True
+
+    def open_autonomy(self) -> None:
+        """F10 → 🏛 Orc autonomy: the slider and the guide for the agents' own settings."""
+        machine = self.desktop.machine
+        tools_ = tuple(t for t, c in machine.tools.items() if c.enabled) or ("claude", "agy")
+
+        def done(result: dict | str | None) -> None:
+            if isinstance(result, dict):
+                machine.autonomy = int(result.get("autonomy", machine.autonomy))
+                settings.save(machine)
+                lvl = autonomy.LEVELS[machine.autonomy]
+                self.notify(lvl.what, title=f"{lvl.icon} {lvl.title}")
+
+        self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True), done)
 
     def open_day(self) -> None:
         """F10 → 🕰 Your day: the mode, the quiet hours and the office hours, on the day bar."""
@@ -685,6 +771,8 @@ class OrkcraftApp(App[int]):
                             title=settings.MODE_TITLES[action])
             elif action == "day":
                 self.open_day()
+            elif action == "autonomy":
+                self.open_autonomy()
             elif action == "terrain":
                 self.action_toggle_terrain()
             elif action == "save":
@@ -1952,6 +2040,7 @@ class OrkcraftApp(App[int]):
         if hasattr(self, "_console") and self._console is not None:
             self._console.refresh_state(self.focus_state, self.roster)
         self.refresh_hud()
+        self._elders_consider()
 
     def refresh_hud(self) -> None:
         gold, gold_level, lumber, lumber_level = self._resource_texts()

@@ -12,6 +12,7 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.realm import town_presets
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
+from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
 from orkcraft.screens.onboarding import ModeStep, RaiseBar, ToolsStep, TownStep
 from orkcraft.wm import Window
 
@@ -99,12 +100,20 @@ async def test_the_whole_flow_on_a_new_machine(fake_repo: Path, onboard):
         step.query_one("#ob-billing-claude", Select).value = "api"
         await _press(app, pilot, "ob-next")
 
+        assert isinstance(app.screen, AutonomyStep) and app.screen.level == 1          # morning advice
+        app.screen.query_one(AutonomySlider).set_level(2)
+        await _settle(pilot)
+        guide = str(app.screen.query_one("#au-guide").render())
+        assert '"allow"' in guide and ".claude/settings.local.json" in guide and "agy" not in guide.lower()
+        await _press(app, pilot, "au-next")
+
         assert isinstance(app.screen, ModeStep) and app.screen.mode == "camp"
         app.screen.pick("office")
         await _press(app, pilot, "ob-next")
         machine = settings.load()
         assert machine.onboarded and machine.mode == "office"
         assert machine.tools["claude"].enabled and machine.tools["claude"].billing == "api"
+        assert machine.autonomy == 2
         assert app.desktop.plain
 
         assert isinstance(app.screen, TownStep)
@@ -176,11 +185,14 @@ async def test_back_goes_to_the_previous_step(fake_repo: Path, onboard):
         await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
         await _settle(pilot)
         await _press(app, pilot, "ob-next")
+        await _press(app, pilot, "au-next")
         await _press(app, pilot, "ob-next")
         assert isinstance(app.screen, TownStep)
         await _press(app, pilot, "ob-back")
         assert isinstance(app.screen, ModeStep)
         await _press(app, pilot, "ob-back")
+        assert isinstance(app.screen, AutonomyStep)
+        await _press(app, pilot, "au-back")
         await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
 
 
@@ -195,8 +207,9 @@ async def test_f10_redoes_only_the_machine_steps(fake_repo: Path, onboard, monke
         await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
         await _settle(pilot)
         await _press(app, pilot, "ob-next")
+        await _press(app, pilot, "au-next")
         await _press(app, pilot, "ob-next")
-        assert not isinstance(app.screen, (ToolsStep, ModeStep, TownStep))
+        assert not isinstance(app.screen, (ToolsStep, AutonomyStep, ModeStep, TownStep))
         assert settings.load().onboarded
 
 

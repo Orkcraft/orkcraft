@@ -51,7 +51,16 @@ Stored:
              "agy":    { "enabled": false, "billing": "subscription" } } }
 ```
 
-## 3. Step 2 — Mode and your day
+## 2b. Step 2 — Orc autonomy
+
+A slider of four stops (`screens/autonomy.py`, `autonomy.py`): 🙋 Ask me · 🌅 Morning advice ·
+🧭 Routine on their own · 🧌 Free orcs. Under it, what the level means and the guide: from Routine up,
+the Claude Code permission block to paste (*Copy Claude settings*) and how to start agy. From Morning
+advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —
+Warder rules first, then the light model, a one-time yes or a no only — and the operator follows the
+advice in the morning (`a`, `A` for all). Orkcraft never presses a key in an agent's terminal itself.
+
+## 3. Step 3 — Mode and your day
 
 ```
 ┌ How should the town look? ────────────────────────────────────────────────┐
@@ -81,7 +90,7 @@ Stored:
   `preferences.mode` in the Town Scroll stays an optional per-project override.
 - The same screen is F10 → 🕰 Your day, with Save and Cancel.
 
-## 4. Step 3 — Town
+## 4. Step 4 — Town
 
 ```
 ┌ Choose a town ────────────────────────────────────────────────────────────┐

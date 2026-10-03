@@ -28,6 +28,7 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("weekly", "🗓 Weekly self-audit — the last report, or run it now"),
     ("settings", "⚙ Self-improvement settings — models and schedules"),
     ("day", "🕰 Your day — quiet hours and office hours"),
+    ("autonomy", "🏛 Orc autonomy — the Elders' advice, the agents' own settings"),
     ("onboarding", "🧭 Onboarding — your AI tools and the look of the town"),
     ("town_order", "📜 Town Builder — plan the town ordered in words"),
     ("quit", "🚪 Quit Orkcraft"),
