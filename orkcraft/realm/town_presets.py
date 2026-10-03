@@ -4,10 +4,11 @@
     of_domain("design")          the presets of a domain
     buildings_of("solo_forge")   what the preset raises — () for now: every preset is a stub
     save_order(root, prompt)     "Didn't find it?": the town described in words, waiting in the Town Hall
+    close_order(root, town)      the Town Builder raised it (realm/town_builder.py)
 
 A town preset will be a piece of the Town Scroll (buildings, roads, layout). Until they are drawn,
-every preset raises an empty town (the Town Hall alone), and a custom prompt waits as an order
-for the Town Hall's Builder.
+every preset raises an empty town (the Town Hall alone). A custom prompt is an order: the Town
+Builder plans a town from it, and it waits in the Town Hall until a plan is approved and raised.
 """
 from __future__ import annotations
 
@@ -134,7 +135,18 @@ def pending_order(root: Path | None) -> dict | None:
         data = json.loads((Path(root) / ORDER).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return data if isinstance(data, dict) and str(data.get("prompt", "")).strip() else None
+    if not isinstance(data, dict) or not str(data.get("prompt", "")).strip() or data.get("raised"):
+        return None
+    return data
+
+
+def close_order(root: Path, town: str = "") -> None:
+    """The Town Builder raised it: the order is kept as a record, no longer pending."""
+    order = pending_order(root)
+    if order is None:
+        return
+    order.update(raised=dt.datetime.now().isoformat(timespec="seconds"), town=town)
+    (Path(root) / ORDER).write_text(json.dumps(order, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def mark_order_seen(root: Path) -> None:

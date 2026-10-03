@@ -48,7 +48,8 @@ from orkcraft.screens.garrison_modal import GarrisonModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import town_presets
+from orkcraft.realm import town_builder, town_presets
+from orkcraft.screens.town_plan import TownPlanReview
 from orkcraft.env import getenv
 from orkcraft.screens.orc_chat import OrcChat
 from orkcraft.screens.road_modal import PLAIN, RULE, RoadHandlerModal, SubscribeModal, _PickModal
@@ -475,6 +476,13 @@ class OrkcraftApp(App[int]):
             town_presets.mark_order_seen(self.repo_root)      # opened: the order stops burning
             self.order_burning = False
             self.refresh_roster()
+            order = town_presets.pending_order(self.repo_root)
+            if order is not None:
+                self.push_screen(Confirm("📜 A town waits to be raised. Plan it now?",
+                                         f"“{order['prompt'][:300]}”\n\nThe Town Builder plans it from the "
+                                         "building catalog (one Claude call); you approve the plan before "
+                                         "anything is raised."),
+                                 lambda yes: yes and self.build_town_from_order())
 
     # -- 🧭 onboarding ----------------------------------------------------------------------------
 
@@ -529,8 +537,86 @@ class OrkcraftApp(App[int]):
         self.set_timer(1.5, bar.remove)
         if problems:
             self.notify("\n".join(problems), title="🏗 Raising the town", severity="warning")
-        tail = " Your order waits in the 🏰 Town Hall." if choice.get("preset") == onboarding.CUSTOM else ""
-        self.notify(f"B build · P presets · ? all keys.{tail}", title="🏰 The town stands", timeout=10)
+        self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
+        if choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
+            self.set_timer(1.6, self.build_town_from_order)       # after the bar has gone
+
+    # -- 📜 the Town Builder: an order in words → a plan → approved → raised ----------------------
+
+    def build_town_from_order(self, note: str = "") -> None:
+        order = town_presets.pending_order(self.repo_root)
+        if order is None:
+            self.notify("no town order waits in the Town Hall", title="📜 Town Builder")
+            return
+        if self.query(onboarding.RaiseBar):
+            return                                                # one town at a time
+        bar = onboarding.mount_raise_bar(self.screen, None)
+        bar.say("📜 The Town Builder is drawing your town…")
+        self._plan_town_work(order["prompt"], note, bar)
+
+    @work(thread=True, exclusive=True, group="town-builder")
+    def _plan_town_work(self, order: str, note: str, bar) -> None:
+        runner = BUILD_RUNNER or builders.claude_runner
+        result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note)
+        self.call_from_thread(self._on_town_plan, order, result, bar)
+
+    def _on_town_plan(self, order: str, result: town_builder.TownPlan, bar) -> None:
+        bar.remove()
+        self._log_build_request(f"town: {order}", result)
+        if not result.ok:
+            self.order_burning = self._order_burns()
+            self.notify(f"{result.error or 'no plan'}\nThe order keeps waiting in the 🏰 Town Hall.",
+                        title="📜 Town Builder", severity="error", timeout=12)
+            return
+
+        def done(answer: dict | None) -> None:
+            if answer is None:
+                town_presets.save_order(self.repo_root, order, (town_presets.pending_order(self.repo_root)
+                                                                or {}).get("domain", ""))
+                self.order_burning = True                         # later: it burns until the Hall is opened
+                self.refresh_roster()
+                self.notify("The order waits in the 🏰 Town Hall.", title="📜 Town Builder")
+            elif answer.get("action") == "again":
+                self.build_town_from_order(answer.get("note", ""))
+            else:
+                self.raise_town_plan(result)
+
+        self.push_screen(TownPlanReview(order, result), done)
+
+    def raise_town_plan(self, plan: town_builder.TownPlan) -> None:
+        """Raise an approved plan: its buildings one by one, then its roads, with the bar along the bottom."""
+        steps: list[tuple[str, Callable[[], Any]]] = []
+        for spec in plan.specs:
+            label = f"{spec.get('icon', '')} {spec.get('title', spec['id'])}".strip()
+            steps.append((f"Raising {label}", functools.partial(self.raise_spec, spec, None, True)))
+        for r in plan.roads:
+            steps.append((f"Laying the road {r.source} → {r.target}",
+                          functools.partial(self.add_road, r.target, r.source, r.event, None, True)))
+        bar = onboarding.mount_raise_bar(self.screen, len(steps))
+
+        def run(i: int) -> None:
+            if i == len(steps):
+                bar.step("The town stands", len(steps))
+                town_presets.close_order(self.repo_root, plan.title)
+                self.order_burning = False
+                self.checkpoint("create", "camp", f"town: {plan.title or 'from an order'}")
+                self.desktop.set_active(None)                 # the whole town on the map, nothing open
+                self.set_focus_state("neutral")
+                self.refresh_roster()
+                self.desktop.refresh_huts()
+                self.set_timer(1.5, bar.remove)
+                self.notify(f"{len(plan.specs)} buildings · {len(plan.roads)} roads. B build · Y roads · ? all keys.",
+                            title=f"🏰 {plan.title or 'The town'} stands", timeout=10)
+                return
+            label, act = steps[i]
+            bar.step(label + "…", i)
+            try:
+                act()
+            except Exception as e:      # one building that will not stand must not stop the rest
+                self.notify(f"{label}: {e}", title="🏗 Raising the town", severity="warning")
+            self.set_timer(onboarding.STEP_PAUSE_S or 0.01, lambda: run(i + 1))
+
+        run(0)
 
     def on_clan_roster_building_selected(self, message: ClanRoster.BuildingSelected) -> None:
         w = self.desktop.get_window(message.building_id)
@@ -587,6 +673,8 @@ class OrkcraftApp(App[int]):
                 self.open_proposals()
             elif action == "weekly":
                 self.open_weekly()
+            elif action == "town_order":
+                self.build_town_from_order()
             elif action == "onboarding":
                 self.start_onboarding(machine_steps=True, town_step=False)
             elif action == "quit":
@@ -1561,7 +1649,7 @@ class OrkcraftApp(App[int]):
         self.desktop.replan_roads()
         self.refresh_rally_indicators()
 
-    def add_road(self, target_id: str, source_id: str, event: str, handler: str | None) -> None:
+    def add_road(self, target_id: str, source_id: str, event: str, handler: str | None, quiet: bool = False) -> None:
         event, _, route = event.partition("#")             # a Totem's route: a road that waits for it
         flt = {"route": [route]} if route else None
         try:
@@ -1571,7 +1659,8 @@ class OrkcraftApp(App[int]):
             self.notify(str(e), title="Roads", severity="warning")
             return
         self._roads_changed()
-        self.checkpoint("road", target_id, f"road from {source_id} on {event}{' (' + route + ')' if route else ''}")
+        if not quiet:
+            self.checkpoint("road", target_id, f"road from {source_id} on {event}{' (' + route + ')' if route else ''}")
         src, tgt = self.scroll.building(source_id), self.scroll.building(target_id)
         orc = tgt.garrison.handler(handler) if handler and tgt else None
         who = orc.name if orc else "plain"
@@ -1581,8 +1670,9 @@ class OrkcraftApp(App[int]):
                               source=src_title, event=pipes.label(event), handler=who)
         except OSError:
             pass
-        self.notify(f"🛤 {src_title} → {tgt.title if tgt else target_id} ({pipes.label(event)}, {who})",
-                    title="Roads")
+        if not quiet:
+            self.notify(f"🛤 {src_title} → {tgt.title if tgt else target_id} ({pipes.label(event)}, {who})",
+                        title="Roads")
         return road
 
     def remove_road(self, key: str) -> None:
@@ -1979,7 +2069,7 @@ class OrkcraftApp(App[int]):
         self._log_build_request(prompt, result)
         self._show_build_result(prompt, result)
 
-    def _log_build_request(self, prompt: str, result: builders.BuildResult) -> None:
+    def _log_build_request(self, prompt: str, result: builders.BuildResult | town_builder.TownPlan) -> None:
         """Every build request, kept in `.orkcraft/build-requests.jsonl`."""
         record: dict[str, Any] = {
             "ts": dt.datetime.now().isoformat(timespec="seconds"),
@@ -1988,8 +2078,9 @@ class OrkcraftApp(App[int]):
             "attempts": len(result.attempts),
             "cost_usd": result.cost_usd,
         }
-        if result.ok and result.spec:
-            record["id"] = result.spec["id"]
+        if result.ok:
+            spec = getattr(result, "spec", None)
+            record["id"] = spec["id"] if spec else [s["id"] for s in getattr(result, "specs", [])]
         else:
             last_errs = result.attempts[-1].errors if result.attempts else []
             record["error"] = result.error or ("; ".join(last_errs) if last_errs else "build failed")
@@ -2629,9 +2720,10 @@ class OrkcraftApp(App[int]):
             return False
         return raise_at(None)
 
-    def raise_spec(self, spec: dict, hut: list[float] | None = None) -> bool:
+    def raise_spec(self, spec: dict, hut: list[float] | None = None, quiet: bool = False) -> bool:
         """Save a checked spec and raise its building in the active orkspace (at `hut`, the
-        fractions of the town where its ghost settled)."""
+        fractions of the town where its ghost settled). `quiet`: one of many (a town plan) — no toast,
+        no focus, no commit of its own."""
         spec = catalog.migrate(spec)
         existing_ids = self._taken_building_ids()
         problems = masonry.save_spec(self.repo_root, spec, existing_ids=existing_ids)
@@ -2659,9 +2751,11 @@ class OrkcraftApp(App[int]):
             chronicles.record(self.repo_root, self.scroll, spec["id"], "building_raised", orkspace=ork_name)
         except OSError:
             pass
+        self.refresh_roster()
+        if quiet:
+            return True
         self.notify(f"🏗️ {spec['title']} raised", title="Build")
         self.set_focus_state("building", building_id=spec["id"])
-        self.refresh_roster()
         self.checkpoint("create", spec["id"], f"raise {spec.get('type') or 'custom'} {spec['title']}")
         return True
 

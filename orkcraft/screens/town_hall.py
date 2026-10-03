@@ -53,7 +53,8 @@ class TownHallView(Container):
         if order is not None:
             t.append("📜 A town waits to be raised\n", style="bold yellow")
             t.append(f"“{order['prompt'][:300]}”\n", style="italic")
-            t.append("ordered at onboarding — the Builder will raise it from your words\n\n", style="dim")
+            t.append("F10 → 📜 Town Builder plans it; you approve the plan before anything is raised\n\n",
+                     style="dim")
         t.append("Agents of the hall\n", style="bold")
         for icon, name, role in BUILDERS:
             t.append(f"{icon} {name}", style="bold")

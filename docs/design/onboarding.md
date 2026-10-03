@@ -122,9 +122,11 @@ Stored:
   | | 🧪 Side Quest | a light town for a pet project |
 
 - Presets that need an agent are disabled (with a note) when no tool was chosen in step 1.
-- **Didn't find it?** — the prompt is meant for the Town Hall's Builder, to raise a town from scratch.
-  Until that exists: an empty town is built and the prompt is saved as a **pending order** in the
-  Town Hall, which burns 🔥 “an order is waiting” until it is opened.
+- **Didn't find it?** — the prompt is saved as an **order** and, once the empty town stands, the
+  📜 **Town Builder** (`realm/town_builder.py`) plans a town from it: typed buildings from the catalog
+  and plain roads between them, checked like any spec. The operator approves the plan
+  (`screens/town_plan.py`), asks again with a note, or leaves it for later — then the order waits in
+  the Town Hall, which burns 🔥 until it is opened (opening it offers to plan it; F10 → 📜 Town Builder).
 - **The Warder** is installed here (same as `orkcraft hooks install`), with the checkbox on by default,
   because it changes `.claude/settings.json`. Hidden when `claude` is not enabled.
 
@@ -136,7 +138,7 @@ Each bar step is real work:
 1. create `.orkcraft/` and the camp's git (branch `camp`);
 2. install the hooks / Warder (if checked);
 3. place the buildings one by one (they appear as if being built) and lay the roads;
-4. later: the Builder's run for a custom prompt.
+4. for a custom prompt: the order saved; the Town Builder starts as soon as the town stands.
 
 At the end, a short toast with three keys: `B` build · `P` presets · `?` all keys.
 With a stub preset steps 3–4 are empty and the bar finishes at once.
@@ -157,4 +159,4 @@ With a stub preset steps 3–4 are empty and the bar finishes at once.
 3. Screens 1–2 (Textual modals), the F10 entry.
 4. Screen 3 with stub presets, domains and mascots; the pending order in the Town Hall.
 5. Step 4: creation steps on the town with the progress bar; hooks install from onboarding.
-6. Later: real town presets, `codex` support, the Builder for a custom prompt.
+6. The Town Builder for a custom prompt (done). Later: real town presets, `codex` support.

@@ -456,13 +456,31 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 2. **Mode** — 🎭 immersion or ▭ plain, shown on the same building.
 3. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
    💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
-   wait in the 🏰 Town Hall as an order (its hut burns 🔥 until you open it). The 🛡 Warder is
-   installed here when `claude` is in use and the box stays checked.
+   become an order for the 📜 Town Builder (below). The 🛡 Warder is installed here when `claude`
+   is in use and the box stays checked.
 4. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
    the bottom of the town.
 
 Steps 1–2 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
 F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults, no Warder.
+
+### 📜 The Town Builder
+
+An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole town: one
+`claude -p` call in an empty folder, like the Foreman, that sees only the order and the building
+catalog. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
+scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
+building passes `masonry.validate_spec`, and a plan with problems goes back with them (up to 3
+attempts). Nothing is raised before you approve it:
+
+- **Raise the town** (`ctrl+s`) — the buildings go up one by one, then the roads, with the bar along
+  the bottom; one checkpoint for the whole town; the order is closed.
+- **Ask again** — with a note on what to change.
+- **Later** — the order waits in the 🏰 Town Hall, whose hut burns 🔥 until you open it (opening it
+  offers to plan it); F10 → 📜 Town Builder plans it any time.
+
+The order lives in `.orkcraft/town/order.json`; every plan request is logged in
+`.orkcraft/build-requests.jsonl`.
 
 ## CLI
 

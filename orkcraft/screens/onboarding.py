@@ -311,8 +311,8 @@ class TownStep(ModalScreen[dict | None]):
         prompt.display = pid == CUSTOM
         p = town_presets.preset(pid)
         blurb = (f"{p.blurb}" + ("  ·  a stub for now: it opens an empty town" if p.stub else "")) if p else \
-            "Say what the town is for — the Town Hall's Builder will raise it. For now an empty town is built " \
-            "and your words wait in the Town Hall."
+            "Say what the town is for: the Town Builder plans it from the catalog, you approve the plan, " \
+            "then it is raised. Until then your words wait in the Town Hall."
         self.query_one("#ob-blurb", Static).update(blurb)
 
     @on(Select.Changed, "#ob-domain")
@@ -387,17 +387,34 @@ class RaiseBar(Horizontal):
     RaiseBar ProgressBar { width: 40; }
     """
 
-    def __init__(self, total: int) -> None:
+    def __init__(self, total: int | None) -> None:     # None: it runs until told (the Town Builder thinking)
         super().__init__(id="raise-bar")
         self.total = total
+        self.label = "🏗 Raising the town…"
+        self.done = 0
 
     def compose(self) -> ComposeResult:
-        yield Static("🏗 Raising the town…", id="raise-label", markup=False)
+        yield Static(self.label, id="raise-label", markup=False)
         yield ProgressBar(total=self.total, show_eta=False, id="raise-progress")
 
+    def on_mount(self) -> None:
+        self._show()
+
+    def say(self, label: str) -> None:
+        self.label = label
+        self._show()
+
     def step(self, label: str, done: int) -> None:
-        self.query_one("#raise-label", Static).update(f"🏗 {label}")
-        self.query_one("#raise-progress", ProgressBar).update(progress=done)
+        self.label, self.done = f"🏗 {label}", done
+        self._show()
+
+    def _show(self) -> None:
+        """Safe before the bar's children are in (mounted from the same handler)."""
+        for w in self.query("#raise-label").results(Static):
+            w.update(self.label)
+        for bar in self.query("#raise-progress").results(ProgressBar):
+            if self.total is not None:
+                bar.update(progress=self.done)
 
 
 def raising_steps(choice: dict) -> list[str]:
@@ -505,7 +522,7 @@ class Onboarding:
             self.on_town({"preset": EMPTY, "domain": "", "prompt": "", "warder": False})
 
 
-def mount_raise_bar(screen: Widget, total: int) -> RaiseBar:
+def mount_raise_bar(screen: Widget, total: int | None) -> RaiseBar:
     bar = RaiseBar(total)
     screen.mount(bar)
     return bar

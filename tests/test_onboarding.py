@@ -7,6 +7,7 @@ import pytest
 from textual.widgets import Button, Checkbox, Input, OptionList, Select
 
 from orkcraft import settings, tools
+from orkcraft import app as app_mod
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import town_presets
 from orkcraft.realm.buildings import TOWN_HALL
@@ -29,6 +30,10 @@ def onboard(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "1")
     monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
     monkeypatch.setattr(tools, "detect", lambda *a, **k: _statuses())
+
+    def no_model(prompt, model=None):
+        raise RuntimeError("no model in tests")
+    monkeypatch.setattr(app_mod, "BUILD_RUNNER", no_model)
 
 
 async def _settle(pilot, n: int = 6) -> None:
@@ -216,3 +221,21 @@ async def test_the_hud_shows_limits_for_a_subscription(fake_repo: Path):
         app.desktop.machine.tools["agy"] = settings.ToolChoice(enabled=True, billing="api")
         app.refresh_hud()
         assert app._hud.resources.show_gold
+
+
+@pytest.mark.asyncio
+async def test_a_town_in_words_goes_to_the_town_builder(fake_repo: Path, onboard, monkeypatch):
+    from orkcraft.screens.town_plan import TownPlanReview
+    from tests.test_town_builder import GOOD, _runner
+    monkeypatch.setattr(app_mod, "BUILD_RUNNER", _runner(GOOD))
+    settings.save(settings.MachineSettings(onboarded=True))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _until(pilot, lambda: isinstance(app.screen, TownStep) and app.screen.query("#ob-presets")
+                     and app.screen.query_one("#ob-presets", OptionList).option_count)
+        lst = app.screen.query_one("#ob-presets", OptionList)
+        lst.highlighted = lst.option_count - 1
+        await _settle(pilot)
+        app.screen.query_one("#ob-prompt", Input).value = "a town for my podcast"
+        await _press(app, pilot, "ob-build")
+        await _until(pilot, lambda: isinstance(app.screen, TownPlanReview), n=120)
