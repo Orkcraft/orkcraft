@@ -147,7 +147,7 @@ def footer(description: str, mode: str | None = None) -> str:
 
 
 # HUD resources: (immersion icon, hidden word) — the values are the same in both.
-RESOURCES = {"gold": ("🪙", "Spend"), "lumber": ("🪵", "Context"), "supply": ("🥩", "Agents")}
+RESOURCES = {"quota": ("⏳", "Quota"), "gold": ("🪙", "Spend"), "lumber": ("🪵", "Context"), "supply": ("🥩", "Agents")}
 
 
 def resource(name: str, mode: str | None = None) -> str:

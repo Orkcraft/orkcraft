@@ -1,0 +1,80 @@
+"""Tool detection for onboarding and the HUD corner that follows each tool's billing."""
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+from orkcraft import tools
+from orkcraft.widgets.hud import Hud, Resources
+
+
+def _run(cmd, **_):
+    return subprocess.CompletedProcess(cmd, 0, stdout={"claude": "2.1.4 (Claude Code)\n", "agy": "agy v1.3.0\n"}
+                                       .get(Path(cmd[0]).name, ""), stderr="")
+
+
+def _which(found: set[str]):
+    return lambda name: f"/usr/bin/{name}" if name in found else None
+
+
+def test_found_tools_with_versions_and_logins(tmp_path: Path):
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / ".credentials.json").write_text("{}", encoding="utf-8")
+    got = {t.id: t for t in tools.detect(_which({"claude", "agy"}), _run, env={}, home=tmp_path)}
+    assert got["claude"].found and got["claude"].version == "2.1.4"
+    assert got["claude"].logged_in and got["claude"].billing == "subscription"
+    assert got["agy"].found and got["agy"].version == "1.3.0" and got["agy"].logged_in is None
+    assert not got["codex"].found and got["codex"].summary() == "coming soon"
+
+
+def test_an_api_key_means_api_billing(tmp_path: Path):
+    got = {t.id: t for t in tools.detect(_which({"claude", "agy"}), _run,
+                                         env={"ANTHROPIC_API_KEY": "x", "GEMINI_API_KEY": "y"}, home=tmp_path)}
+    assert got["claude"].billing == "api" and got["agy"].billing == "api"
+    assert "API key" in got["claude"].summary()
+
+
+def test_oauth_account_in_claude_json(tmp_path: Path):
+    (tmp_path / ".claude.json").write_text(json.dumps({"oauthAccount": {"emailAddress": "a@b"}}), encoding="utf-8")
+    claude = tools.detect(_which({"claude"}), _run, env={}, home=tmp_path)[0]
+    assert claude.logged_in and claude.billing == "subscription"
+
+
+def test_missing_tools_say_how_to_get_them(tmp_path: Path):
+    got = tools.detect(_which(set()), _run, env={}, home=tmp_path)
+    assert all(not t.found for t in got)
+    assert "npm i -g @anthropic-ai/claude-code" in got[0].summary()
+
+
+def test_a_cli_that_cannot_say_its_version(tmp_path: Path):
+    def boom(cmd, **_):
+        raise subprocess.TimeoutExpired(cmd, 5)
+    claude = tools.detect(_which({"claude"}), boom, env={}, home=tmp_path)[0]
+    assert claude.found and claude.version == ""
+
+
+def test_the_hud_corner_follows_billing():
+    from textual.app import App
+
+    class _A(App):
+        def compose(self):
+            yield Hud(id="hud")
+
+    import asyncio
+
+    async def go():
+        app = _A()
+        async with app.run_test(size=(160, 5)):
+            hud = app.query_one(Hud)
+            hud.set_resources(Resources(quota="claude 38%", show_gold=False))
+            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
+            assert "⏳ claude 38%" in plain and "🪙" not in plain
+            hud.set_resources(Resources(quota="claude 90%", quota_level="warn", show_gold=True))
+            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
+            assert "⏳ claude 90%" in plain and "🪙" in plain
+            hud.set_resources(Resources())
+            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
+            assert "⏳" not in plain and "🪙" in plain
+
+    asyncio.run(go())

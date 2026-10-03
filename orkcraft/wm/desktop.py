@@ -17,7 +17,7 @@ from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import SNAP_SLOTS, Frac, Geom
 from orkcraft import scroll
 from orkcraft.scroll import TownScroll, has_outgoing
-from orkcraft import theme
+from orkcraft import settings, theme
 from orkcraft.realm import chronicles, pipes
 from orkcraft.widgets.road_layer import (ENTRY_GLYPH, EXIT_GLYPH, ROAD_SELECTED, RoadClicked, RoadGate, RoadLabel,
                                          RoadRun, road_key, runs)
@@ -164,9 +164,10 @@ class Desktop(Container):
         self._replan_pending = False
         self._road_signature: tuple = ()
         self.traffic = Traffic(self)
-        modes.set_current(self.mode)
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
+        self.machine = settings.load()
+        modes.set_current(self.mode)
         self.huts: dict[str, Hut] = {}
         self.selected_hut: str | None = None    # a hut picked by a first click, still collapsed
         self.ghost: Ghost | None = None          # a building being placed
@@ -820,8 +821,11 @@ class Desktop(Container):
 
     @property
     def mode(self) -> str:
-        """immersion (the game: ASCII, orcs, fire) or hidden (the office: frames, people, red)."""
-        return modes.normalize(self.scroll.preferences.get("mode")) if self.scroll is not None else modes.IMMERSION
+        """immersion (the game: ASCII, orcs, fire) or hidden (the office: grey frames, no emoji).
+        The project's `preferences.mode` overrides the machine's mode (settings.py)."""
+        pref = self.scroll.preferences.get("mode") if self.scroll is not None else None
+        machine = getattr(self, "machine", None)
+        return modes.normalize(pref or (machine.mode if machine is not None else None))
 
     @property
     def plain(self) -> bool:
@@ -837,9 +841,12 @@ class Desktop(Container):
             w.refresh_badge()
 
     def set_mode(self, plain: bool) -> None:
+        """Set the machine's mode (F10); the project's override is dropped so the choice shows here too."""
         if plain == self.plain or self.scroll is None:
             return
-        self.scroll.preferences["mode"] = modes.HIDDEN if plain else modes.IMMERSION
+        self.machine.mode = modes.HIDDEN if plain else modes.IMMERSION
+        settings.save(self.machine)
+        self.scroll.preferences.pop("mode", None)
         self._wear_mode()
         for hut in self.huts.values():
             if hut.set_plain(plain) and hut.display:

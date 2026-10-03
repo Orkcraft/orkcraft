@@ -242,6 +242,7 @@ def test_plain_mode_is_only_a_frame_with_the_same_text_slots():
 
 @pytest.mark.asyncio
 async def test_the_menu_switches_between_immersion_and_hidden(fake_repo: Path, town):
+    from orkcraft import settings
     from orkcraft.screens.system_menu import SystemMenu
 
     for s in (_spec("todo", "fields"), _spec("mill", "mill"), _spec("view", "lake")):
@@ -259,7 +260,8 @@ async def test_the_menu_switches_between_immersion_and_hidden(fake_repo: Path, t
         assert ids[3:5] == ["immersion", "hidden"]
         await pilot.press("5")                                                    # [5] hidden
         await _settle(pilot)
-        assert desk.plain and desk.scroll.preferences["mode"] == "hidden"
+        assert desk.plain and "mode" not in desk.scroll.preferences                  # the machine's, not the project's
+        assert settings.load().mode == "hidden"
         assert desk.huts["mill"].geom.w == 10 and desk.huts["mill"].sil.id.endswith("-plain")
         assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────┐" in str(desk.huts["todo"].render())
         geoms = [h.geom for h in desk.huts.values() if h.display]

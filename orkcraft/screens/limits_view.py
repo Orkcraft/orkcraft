@@ -84,6 +84,9 @@ class LimitsView(VerticalScroll):
         self.limits = limits
         self.updated = dt.datetime.now()
         self.refresh_view()
+        refresh_hud = getattr(self.app, "refresh_hud", None)
+        if refresh_hud is not None:
+            refresh_hud()
 
     def mini_status(self) -> list[str]:
         """Hut lines: the lowest remaining quota per provider."""

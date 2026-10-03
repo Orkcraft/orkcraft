@@ -26,6 +26,8 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("improve", "🔧 Self-improvement — proposals for the camp"),
     ("weekly", "🗓 Weekly self-audit — the last report, or run it now"),
     ("settings", "⚙ Self-improvement settings — models and schedules"),
+    ("onboarding", "🧭 Onboarding — your AI tools and the look of the town"),
+    ("town_order", "📜 Town Builder — plan the town ordered in words"),
     ("quit", "🚪 Quit Orkcraft"),
 ]
 
