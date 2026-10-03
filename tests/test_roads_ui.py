@@ -12,7 +12,7 @@ from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import chronicles
 from orkcraft.screens.road_modal import RoadHandlerModal, SubscribeModal
-from orkcraft.widgets.road_layer import RoadGate, RoadLabel, RoadRun
+from orkcraft.widgets.road_layer import EXIT_EMOJI, EXIT_GLYPH, RoadGate, RoadLabel, RoadRun
 from orkcraft.wm import roadmap
 
 SIZE = (200, 50)
@@ -43,7 +43,7 @@ async def test_road_is_planned_with_gates_and_hits(fake_repo: Path):
         loot, chat = app.desktop.get_window("loot").geom, app.desktop.get_window("town_hall").geom
         gates = _gates(app)
         assert gates["exit"].styles.offset.x.value == path.exit.x and gates["exit"].styles.offset.y.value == path.exit.y
-        assert gates["exit"].glyph in "▶◀▲▼" and gates["entry"].glyph == "●"
+        assert gates["exit"].glyph in "▶◀▲▼" and gates["entry"].glyph == "●"     # tiles: the one-cell arrow
         # the exit gate is on the Loot frame, the entry gate on the Town Hall frame
         on_frame = lambda g, x, y: (x in (g.x, g.x + g.w - 1) and g.y <= y < g.y + g.h) or \
             (y in (g.y, g.y + g.h - 1) and g.x <= x < g.x + g.w)
@@ -214,3 +214,32 @@ async def test_u_with_several_roads_asks_for_a_selection(fake_repo: Path):
         await pilot.press("U")
         await _settle(pilot)
         assert len(app.scroll.building("town_hall").roads) == 2
+
+
+@pytest.mark.asyncio
+async def test_the_town_in_immersion_shows_a_wide_exit_arrow(fake_repo: Path, monkeypatch):
+    monkeypatch.setattr(ts, "DEFAULT_VIEW", "town")
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    _with_scribe(app)
+    async with app.run_test(size=SIZE) as pilot:
+        await _settle(pilot)
+        assert app.desktop.town_active and not app.desktop.plain
+        path, gate = app.desktop.road_paths[KEY], _gates(app)["exit"]
+        assert gate.glyph == EXIT_EMOJI[path.exit.side] and gate.styles.width.value == 2
+        start = gate.styles.offset.x.value
+        assert start in ((path.exit.x - 1, path.exit.x) if path.exit.side == "left" else (path.exit.x, path.exit.x - 1))
+        assert start + 1 not in app.desktop._edges_at(path.exit.y)          # no hut edge cuts the emoji in half
+        app.desktop.set_mode(True)                                        # the plain mode: the one-cell arrow
+        await _settle(pilot)
+        path, gate = app.desktop.road_paths[KEY], _gates(app)["exit"]
+        assert gate.glyph == EXIT_GLYPH[path.exit.side] and gate.styles.offset.x.value == path.exit.x
+
+
+def test_a_wide_arrow_steps_aside_from_an_edge_or_gives_way():
+    from orkcraft.widgets.road_layer import exit_gate
+    at = lambda g: (g.glyph, g.styles.offset.x.value)
+    assert at(exit_gate("k", "right", 10, 3, "", False)) == ("⏩", 10)
+    assert at(exit_gate("k", "right", 10, 3, "", False, {11})) == ("⏩", 9)
+    assert at(exit_gate("k", "right", 10, 3, "", False, {10, 11})) == ("▶", 10)
+    assert at(exit_gate("k", "left", 10, 3, "", False)) == ("⏪", 9)
+    assert at(exit_gate("k", "left", 10, 3, "", True)) == ("◀", 10)

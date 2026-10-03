@@ -49,7 +49,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   - **Unit Chronicles** (`L` in Unit state): runs on the left (40%, numbered `#001`..`#NNN` chronologically, listed newest first with metrics: duration, 🪵 Lumber context tokens, 🪙 Gold, ✅/❓/🛑 outcome), ReAct protocol on the right (60%, list of step titles; `Enter` expands detail below, `D` sends diffs to Scrying Spire 🔮, `R` resumes the run in War Tent 💬, `Esc` / `q` closes).
 - **Roads 🛤**: roads are drawn on the canvas — faint in the gaps between windows, brighter for the
   selected building, and the selected road over the windows with a label. Gates sit on the frames
-  (`▶◀▲▼` exit, `●` entry) and stay clickable even when the road is hidden. Click a road or a gate for
+  (`⏩⏪⏫⏬` exit in the town's immersion mode, `▶◀▲▼` in the plain mode and in tiles; `●` entry) and stay clickable even when the road is hidden. Click a road or a gate for
   its card (event, filter, handler, carts): `H` handler, `U` remove, `Esc` back. `Y` in Building state
   subscribes **this** building to another one: possible sources highlight, press the source's number,
   then pick the event and the handler (or plain). `U` removes the building's only incoming road.
