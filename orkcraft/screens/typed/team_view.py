@@ -168,7 +168,7 @@ class TeamView(TypedView):
             head, lst = self.query_one("#team-head", Static), self.query_one("#team-turns", OptionList)
         except Exception:
             return
-        team = ", ".join(f"{m.role} ({m.label})" for m in self.team)
+        team = ", ".join(f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role} ({m.label})" for m in self.team)
         limits = f"≤{self.max_rounds} rounds · ≤${self.budget:.2f}"
         if d is None:
             head.update(Text(f"{team} · {limits} · ▶ starts a discussion", style="dim"))
@@ -217,7 +217,7 @@ class TeamView(TypedView):
 
     def mini_status(self) -> list[str]:
         d = self.current
-        lines = [f"{m.role} {m.label}" for m in self.team[:3]]
+        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role} {m.label}" for m in self.team[:3]]
         if len(self.team) > 3:
             lines.append(f"+{len(self.team) - 3} more")
         if d is not None and d.outcome == "asked":
@@ -230,7 +230,7 @@ class TeamView(TypedView):
 
     def hut_lines(self, widths: list[int]) -> list[str]:
         d = self.current
-        lines = [f"{m.role}: {m.label}" for m in self.team[:3]]
+        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role}: {m.label}" for m in self.team[:3]]
         if len(self.team) > 3:
             lines.append(f"+{len(self.team) - 3} more")
         if d is None:

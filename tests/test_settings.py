@@ -53,3 +53,8 @@ def test_the_old_mode_names_still_load(tmp_path: Path):
     assert settings.load(f).mode == "office"
     f.write_text('{"mode": "immersion"}', encoding="utf-8")
     assert settings.load(f).mode == "camp"
+
+
+def test_the_hidden_mode_of_main_reads_as_office():
+    assert settings.MachineSettings.from_dict({"mode": "hidden"}).mode == "office"
+    assert settings.MachineSettings.from_dict({"mode": "nonsense"}).mode == settings.DEFAULT_MODE

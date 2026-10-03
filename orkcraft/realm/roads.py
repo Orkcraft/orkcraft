@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains
+from orkcraft.realm import chains, tiers
 from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
 
 SCRIPT_TIMEOUT_S = 60
@@ -166,8 +166,9 @@ def _needs_meta(flt: dict, payload: Payload) -> bool:
 
 # -- agents ---------------------------------------------------------------------------------------
 
-# (harness, prompt, repo, env, cancel) -> (text, cost USD, tokens) — the tokens may be left out
-AgentRunner = Callable[[str, str, Path, dict, threading.Event], tuple]
+# (harness, prompt, repo, env, cancel[, model]) -> (text, cost USD, tokens) — the tokens may be left out;
+# the model comes only when the step has one (its own or its tier's, realm/tiers.py)
+AgentRunner = Callable[..., tuple]
 
 ROLE_ASK = {
     "run": "Do what your orders say with this input.",
@@ -476,7 +477,9 @@ class Engine:
         try:
             for step in orc.harness or ts.DEFAULT_HARNESS:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)
-                answer = self._agent_runner(step["harness"], prompt, self.repo_root, env, cancel)
+                model = tiers.step_model(step)       # a runner is called with a model only when there is one
+                answer = self._agent_runner(step["harness"], prompt, self.repo_root, env, cancel,
+                                            *((model,) if model else ()))
                 text, cost = answer[0], answer[1]          # a runner may also say its tokens
                 if cost is not None:
                     total = (total or 0.0) + cost

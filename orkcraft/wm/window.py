@@ -9,6 +9,7 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
+from orkcraft.realm import modes
 from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import Frac, Geom
 
@@ -16,7 +17,7 @@ from orkcraft.wm.geometry import Frac, Geom
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Window {{ background: {b.window_bg}; border: round {b.border}; }}\n"
     f"    Desktop.biome-{name} Window.-active {{ border: round {b.border_focus}; border-title-color: {b.border_focus}; }}"
-    for name, b in theme.BIOMES.items()
+    for name, b in theme.LOOKS.items()
 )
 
 
@@ -132,19 +133,21 @@ class Window(Container):
     def _update_title(self) -> None:
         """` N · Title 📌 ⛶ ── [ 🚩 ──► 🔮 Scrying Spire ] ──── [ 🧌 Smith+1 🔨 💤 ] `"""
         marks = (" 📌" if self.pinned else "") + (" ⛶" if self.restore is not None else "")
-        left = f" {self.number} · {self.window_title}{marks} "
+        if modes.hidden():
+            marks = (" pinned" if self.pinned else "") + (" max" if self.restore is not None else "")
+        left = f" {self.number} · {modes.text(self.window_title)}{marks} "
         title = Text(left)
         self._badge_cells = 0
 
         width = (self.title_width or self.geom.w) - 7
         left_len = cell_len(left)
 
-        badge_text = f" [ {self.badge} ] " if self.badge else ""
+        badge_text = f" [ {modes.skin(self.badge)} ] " if self.badge else ""
         badge_len = cell_len(badge_text)
 
         # The rally segment shrinks before it goes: `🚩 ──► 🔮 Spire` → `🚩 ──► 🔮` → nothing
         # (the badge always wins).
-        rally = getattr(self, "rally", "")
+        rally = modes.text(getattr(self, "rally", ""))
         candidates = [rally, rally.rsplit(" ", 1)[0]] if rally else []
         for text in candidates:
             rally_text = f"─[ {text} ]"
@@ -195,6 +198,10 @@ class Window(Container):
         if badge != self.badge:
             self.badge = badge
             self._update_title()
+
+    def refresh_badge(self) -> None:
+        """The mode changed: the title and the badge are drawn in its words (with or without emoji)."""
+        self._update_title()
 
     def set_pinned(self, pinned: bool) -> None:
         self.pinned = pinned

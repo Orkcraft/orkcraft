@@ -5,9 +5,10 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Label, Static
+from textual.widgets import Button, Input, Label, Select, Static
 
 from orkcraft import scroll
+from orkcraft.realm import tiers
 from orkcraft.scroll import OrcSpec
 
 MODAL_CSS = """
@@ -42,6 +43,12 @@ GarrisonModal Button {
 """
 
 
+def tier_options() -> list[tuple[str, str]]:
+    """The tier picker: the heavy models first, then the CLI's own default ("")."""
+    out = [(f"{tiers.label(t)} — {tiers.MODELS['claude'][t]} · {tiers.MODELS['agy'][t]}", t) for t in tiers.TIERS]
+    return out + [("· CLI default model", "")]
+
+
 class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
     """Recruit a garrison orc: describe it for the Recruiter (dismisses the prompt text), or by
     hand as an agent (dismisses the new OrcSpec)."""
@@ -69,6 +76,8 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
             yield Input(placeholder="e.g. tickets, testing, frontend", id="recruit-role")
             yield Label("Orders:")
             yield Input(placeholder="e.g. keep an eye on T1001", id="recruit-orders")
+            yield Label("Tier:")
+            yield Select(tier_options(), value="warrior", allow_blank=False, id="recruit-tier")
             with Horizontal():
                 yield Button("Recruit", variant="primary", id="recruit-submit")
                 yield Button("Cancel", id="recruit-cancel")
@@ -104,12 +113,61 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
         name = self.query_one("#recruit-name", Input).value.strip()
         role = self.query_one("#recruit-role", Input).value.strip()
         orders = self.query_one("#recruit-orders", Input).value.strip()
+        tier = str(self.query_one("#recruit-tier", Select).value) or None
         b_id = self.building_id or getattr(self.app.focus_state, "building_id", "")
         err = self.query_one("#recruit-error", Static)
         try:
-            orc = scroll.recruit(self.app.scroll, b_id, name, role=role, orders=orders)
+            orc = scroll.recruit(self.app.scroll, b_id, name, role=role, orders=orders, tier=tier)
         except ValueError as e:
             err.update(str(e))
             err.display = True
             return
         self.dismiss(orc)
+
+
+class OrcModelModal(ModalScreen["list[dict] | None"]):
+    """The 🎒 inventory's model button: harness and tier per step. Dismisses the new harness
+    steps (a tier replaces a model named outright), or None."""
+
+    BINDINGS = [Binding("escape", "dismiss(None)", "Cancel")]
+    DEFAULT_CSS = MODAL_CSS.replace("GarrisonModal", "OrcModelModal") + """
+OrcModelModal .model-row { margin-top: 0; }
+OrcModelModal .model-row Select { width: 1fr; }
+"""
+
+    def __init__(self, orc_name: str, harness: list[dict]) -> None:
+        super().__init__()
+        self.orc_name = orc_name
+        self.steps = [dict(s) for s in harness]
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(f"🎒 {self.orc_name} — model and tier", classes="order-title")
+            for i, step in enumerate(self.steps):
+                harness = str(step.get("harness", "claude"))
+                if harness not in ("claude", "agy"):          # a pipeline keeps its own models
+                    yield Label(f"{step.get('role', 'run')}: {harness}", classes="order-hint")
+                    continue
+                current = tiers.step_tier(step) if (step.get("tier") or step.get("model")) else ""
+                yield Label(f"{step.get('role', 'run')}:")
+                with Horizontal(classes="model-row"):
+                    yield Select([("claude", "claude"), ("agy", "agy")], value=harness,
+                                 allow_blank=False, id=f"step-harness-{i}")
+                    yield Select(tier_options(), value=current or "", allow_blank=False, id=f"step-tier-{i}")
+            with Horizontal():
+                yield Button("Save", variant="primary", id="model-save")
+                yield Button("Cancel", id="model-cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id != "model-save":
+            self.dismiss(None)
+            return
+        out = []
+        for i, step in enumerate(self.steps):
+            if not self.query(f"#step-harness-{i}"):
+                out.append(step)
+                continue
+            harness = str(self.query_one(f"#step-harness-{i}", Select).value)
+            tier = str(self.query_one(f"#step-tier-{i}", Select).value) or None
+            out += tiers.with_tier([{**step, "harness": harness}], tier)
+        self.dismiss(out)

@@ -47,7 +47,7 @@ from orkcraft.screens.custom_view import CustomBuildingView
 from orkcraft.screens.typed import view_for
 from orkcraft.screens.presets_modal import PresetsModal
 from orkcraft.screens.orkspace_modal import OrkspaceModal
-from orkcraft.screens.garrison_modal import GarrisonModal
+from orkcraft.screens.garrison_modal import GarrisonModal, OrcModelModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
@@ -73,9 +73,10 @@ from orkcraft.screens.system_menu import (
 )
 from orkcraft.sources.sessions import deploy_command
 from orkcraft.sources import telemetry
-from orkcraft.realm import workshop, worktrees
+from orkcraft.realm import modes, tiers, workshop, worktrees
 from orkcraft.screens.worktree_modal import WorktreeModal
 from orkcraft.widgets.hud import Hud, Resources
+from orkcraft.widgets.office import OfficeFooter, OfficeStatic
 from orkcraft.widgets.terminal import Terminal
 from orkcraft.wm import Desktop, Taskbar, Window
 
@@ -97,7 +98,8 @@ PROBATION_CHECK_S = 300.0  # how often the orcs' changes on probation are looked
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low
-WARMAP_FLOAT_W = 44      # the War Map's width when the console floats over the town
+BUILDING_CONSOLE_MIN_H = 9   # border, title, name, up to 3 lines about it, runs, roads, a spare row
+WARMAP_FLOAT_W = 36      # the War Map's width when the console floats over the town
 ROADS_TICK_S = 1.0
 TELEMETRY_REFRESH_S = 5.0
 HALT_RESET_S = 4.0
@@ -265,7 +267,7 @@ class OrkcraftApp(App[int]):
         self._evolve_busy = False
         self._evolve_tried: set[str] = set()
         self._evolve_count = 0
-        self._probation_at = 0.0
+        self._probation_at = 0.0          # 0: never looked yet
         # 🪙 / 🪵: sessions this run starts are tagged with its id (sources/telemetry.py).
         self.run_id = telemetry.new_run_id()
         self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
@@ -320,13 +322,15 @@ class OrkcraftApp(App[int]):
         self._orc_chat = OrcChat(id="orc-chat")
         self._orc_chat.display = False
         self._console_signature: tuple = ()
+        self.alert_first_seen: dict[str, float] = {}   # alert id → when the roster first had it
+        self.seen_alerts: set[str] = set()     # questions the operator opened from the garrison (no ❓ there)
         yield self._hud
         yield desktop
         # The console flows below the taskbar: docked at the bottom it would sit under the Footer.
         yield self._taskbar
         yield console
         yield self._orc_chat
-        yield Footer()
+        yield OfficeFooter()
 
     def on_mount(self) -> None:
         try:
@@ -462,7 +466,9 @@ class OrkcraftApp(App[int]):
         if getattr(self.desktop, "rally_mode", False):
             self.desktop.exit_rally_mode()
             return
-        if self.focus_state.mode == "road":
+        if self.focus_state.mode == "road" or (self.focus_state.mode == "unit" and self.focus_state.building_id
+                                                and self.desktop.get_window(self.focus_state.building_id) is not None):
+            # Back to the building: a garrison orc's inventory folds back into the garrison.
             self.set_focus_state("building", building_id=self.focus_state.building_id)
             return
         self.set_focus_state("neutral")
@@ -664,7 +670,7 @@ class OrkcraftApp(App[int]):
         """Every few minutes: a change on probation with a 👎 or more failures since goes back by
         itself (the operator is told); one that lived through 24 hours is kept."""
         now = now or dt.datetime.now()
-        if self.demo or time.monotonic() - self._probation_at < PROBATION_CHECK_S:
+        if self.demo or (self._probation_at and time.monotonic() - self._probation_at < PROBATION_CHECK_S):
             return
         self._probation_at = time.monotonic()
         reverted = []
@@ -949,6 +955,11 @@ class OrkcraftApp(App[int]):
 
         run(0)
 
+    def on_desktop_hut_selected(self, message: Desktop.HutSelected) -> None:
+        self.set_focus_state("building", building_id=message.building_id)
+        if hasattr(self, "_console") and self._console is not None:
+            self._console.focus_roster()     # keys must not land in a building that just closed
+
     def on_clan_roster_building_selected(self, message: ClanRoster.BuildingSelected) -> None:
         w = self.desktop.get_window(message.building_id)
         if w is not None:
@@ -959,6 +970,14 @@ class OrkcraftApp(App[int]):
         orc = next((o for o in self.roster.orcs if orc_key(o) == message.key), None)
         if orc is None:
             return
+        if (self.focus_state.mode == "building" and orc.alert is not None
+                and orc.building == self.focus_state.building_id):
+            # A question in the selected building: show it, keep the building selected, drop its ❓.
+            self.seen_alerts.add(orc.alert.id)
+            self.open_alert(orc.alert, orc.name)
+            if getattr(self, "_console", None) is not None:
+                self._console.refresh_state(self.focus_state, self.roster)
+            return
         self.set_focus_state("unit", orc_key_val=message.key, building_id=orc.building)
         if orc.alert is not None:
             self.open_alert(orc.alert, orc.name)
@@ -968,6 +987,22 @@ class OrkcraftApp(App[int]):
 
     def on_hud_alerts_clicked(self, message: Hud.AlertsClicked) -> None:
         self.action_awaiting_orders()
+
+    def wear_mode(self) -> None:
+        """The mode changed (immersion ↔ hidden): everything outside the town follows it."""
+        self._hud.update_hud()
+        self._taskbar.refresh_items()
+        self.refresh_bindings()                  # the footer recomposes in the mode's words
+        for widget in self.query(OfficeStatic):
+            widget.rewear()
+        if getattr(self, "_console", None) is not None:
+            self._console.refresh_state(self.focus_state, self.roster)
+
+    def notify(self, message, *, title: str = "", **kwargs) -> None:  # type: ignore[override]
+        if modes.hidden():                       # the office: no emoji in the toasts either
+            message = modes.strip_rich(message) if not isinstance(message, str) else modes.strip_emoji(message)
+            title = modes.strip_emoji(title)
+        super().notify(message, title=title, **kwargs)
 
     def action_system_menu(self) -> None:
         if isinstance(self.screen, SystemMenu):
@@ -986,7 +1021,7 @@ class OrkcraftApp(App[int]):
             elif action in settings.MODES:
                 self.desktop.set_mode(action)
                 self.refresh_hud()
-                self.notify({"camp": "buildings wear their ASCII", "office": "buildings are just frames",
+                self.notify({"camp": "the town of orcs, fire and gold", "office": "hidden — frames, people and plain words",
                              "shift": "Office in office hours, Camp otherwise — F10 → 🕰 Your day"}[action],
                             title=settings.MODE_TITLES[action])
             elif action == "day":
@@ -1308,6 +1343,38 @@ class OrkcraftApp(App[int]):
             visible = [w for w in self.desktop.windows if self.desktop.in_view(w) and not w.hidden]
             if not visible:
                 self._console.focus_roster()
+        self.questions_on_arrival(message.orkspace_id)
+
+    def _note_alerts(self) -> None:
+        """Remember when each question first came up (the oldest opens first); forget the answered ones."""
+        now = time.monotonic()
+        live = {a.id for a in self.roster.alerts} | {o.alert.id for o in self.roster.orcs if o.alert is not None}
+        for aid in live:
+            self.alert_first_seen.setdefault(aid, now)
+        for aid in set(self.alert_first_seen) - live:
+            del self.alert_first_seen[aid]
+
+    def questions_of(self, orkspace_id: str) -> list[Orc]:
+        """The orcs of an orkspace's buildings that wait for an answer, the longest waiting first."""
+        self._note_alerts()
+        asking = [o for o in self.roster.orcs if o.alert is not None and o.building
+                  and (ork := self.scroll.orkspace_of(o.building)) is not None and ork.id == orkspace_id]
+        return sorted(asking, key=lambda o: self.alert_first_seen.get(o.alert.id, float("inf")))   # stable
+
+    def questions_on_arrival(self, orkspace_id: str) -> None:
+        """Arriving on an orkspace with questions: the first one opens at once, its building and its orc
+        selected behind it (the others wait in the same dialog, ↑↓)."""
+        if len(self.screen_stack) > 1:                 # the operator is busy in a dialog
+            return
+        asking = self.questions_of(orkspace_id)
+        if not asking:
+            return
+        first = asking[0]
+        self.desktop.select_hut(first.building)
+        self.set_focus_state("unit", orc_key_val=orc_key(first), building_id=first.building)
+        self.seen_alerts.update(o.alert.id for o in asking if o.alert is not None)
+        self.push_screen(AwaitingOrdersModal([o.alert for o in asking if o.alert is not None],
+                                             {o.alert.id: o.name for o in asking if o.alert is not None}))
 
     # -- windows -----------------------------------------------------------------------------
 
@@ -1364,6 +1431,8 @@ class OrkcraftApp(App[int]):
         shown = bool(console.display)
         strip = len(self.scroll.orkspaces) + 3                     # border, title, one row each, footer
         full = max(strip, 6, round(console.height_pct * max(height - 2, 1) / 100))
+        if self.focus_state.mode in ("building", "unit"):
+            full = max(full, BUILDING_CONSOLE_MIN_H)    # Info's name, about, runs and roads all show
         orc = next((o for o in self.roster.orcs if orc_key(o) == self.focus_state.orc_key), None) \
             if self.focus_state.mode == "unit" else None
         chat = shown and OrcChat.supports(orc)
@@ -1383,11 +1452,12 @@ class OrkcraftApp(App[int]):
         self._taskbar.display = not town
         if not town:
             console.styles.offset = (0, 0)
-            console.styles.width = "100%"
+            console.styles.width = max(width - chat_w, WARMAP_FLOAT_W + 22 + 20) if chat else "100%"
             console.styles.height = f"{console.height_pct}%"
             desk.set_reserves(0, 0, 0)
             return
-        h, w = (strip, WARMAP_FLOAT_W) if calm else (full, width)
+        # A selected orc's chat stands at the right edge: the console ends where the chat begins.
+        h, w = (strip, WARMAP_FLOAT_W) if calm else (full, max(width - chat_w, WARMAP_FLOAT_W + 22 + 20))
         console.styles.width, console.styles.height = w, h
         console.styles.offset = (0, max(height - 1 - h, 0))
         bottom = strip if shown else 0
@@ -2263,6 +2333,7 @@ class OrkcraftApp(App[int]):
         self.roster = build_roster(
             self.repo_root, built, workers, self.dismissed, deployments=self.deployments
         )
+        self._note_alerts()
         for w in self.desktop.windows:
             badge = garrison_badge(self.roster.garrison(w.window_id))
             if w.window_id == TOWN_HALL and getattr(self, "order_burning", False) and ALERT_ICON not in badge:
@@ -2325,6 +2396,8 @@ class OrkcraftApp(App[int]):
                 del trig["expression"]
             member.trigger = trig
             member.orders = result["context"]
+            if "tier" in result:
+                member.harness = tiers.with_tier(member.harness, result["tier"] or None)
             self.desktop.save()
             self.refresh_roster()
             try:
@@ -2334,7 +2407,9 @@ class OrkcraftApp(App[int]):
                 pass
             self.notify(f"🧌 {member.name}: orders saved ({result['trigger'].label})", title="Orders")
 
-        self.push_screen(UnitModal(orc, b.label, member.orders), done)
+        is_steward = member.id == b_spec.garrison.lead_orc_id
+        tier = None if is_steward or not member.uses_model else (tiers.orc_tier(member.harness, member.kind) or "")
+        self.push_screen(UnitModal(orc, b.label, member.orders, tier=tier), done)
 
     def _alert_who_map(self) -> dict[str, str]:
         who_map: dict[str, str] = {}
@@ -2496,6 +2571,62 @@ class OrkcraftApp(App[int]):
             self._refresh_hall()
 
         self.push_screen(DislikeModal(self._title_of(building_id), str(out.get("value", "")), cascade), done)
+
+    def _orc_ids(self, orc: Orc) -> tuple[str, str]:
+        """(building id, orc id) of a garrison orc."""
+        return tuple(orc.ref.split("/", 1)) if "/" in orc.ref else (orc.building or "", "")  # type: ignore[return-value]
+
+    def like_orc(self, orc: Orc) -> None:
+        """👍 on an orc's own work (its building's results are rated on the building)."""
+        b_id, orc_id = self._orc_ids(orc)
+        if not orc_id:
+            return
+        feedback.rate_orc(self.repo_root, b_id, orc_id, True)
+        self.notify(f"{orc.name}: noted as good work", title="👍 Good")
+        self._console_refresh()
+
+    def dislike_orc(self, orc: Orc) -> None:
+        """👎 on an orc's work: what went wrong (a note), kept as an incident."""
+        b_id, orc_id = self._orc_ids(orc)
+        if not orc_id:
+            return
+
+        def done(note: str | None) -> None:
+            if note is None:
+                return
+            feedback.rate_orc(self.repo_root, b_id, orc_id, False, note)
+            self.notify(f"{orc.name}: incident saved", title="👎 Bad")
+            self._console_refresh()
+
+        self.push_screen(TextPrompt(f"👎 {orc.name} — what went wrong?", placeholder="optional"), done)
+
+    def open_orc_model(self, orc: Orc) -> None:
+        """🎒 The inventory's model button: change a garrison orc's harness and tier."""
+        b_id, orc_id = self._orc_ids(orc)
+        b_spec = self.scroll.building(b_id) if b_id else None
+        member = next((m for m in b_spec.garrison.members if m.id == orc_id), None) if b_spec else None
+        if member is None or not member.uses_model:
+            self.notify(f"{orc.name}: its model is not set here", title="🎒 Model")
+            return
+
+        def done(harness: list[dict] | None) -> None:
+            if harness is None:
+                return
+            try:
+                scroll.update_orc(self.scroll, b_id, orc_id, harness=harness)
+            except ValueError as e:
+                self.notify(str(e), title="🎒 Model", severity="error")
+                return
+            self.desktop.save()
+            self.refresh_roster()
+            self.notify(f"{member.name}: {tiers.label(tiers.orc_tier(harness, member.kind)) or 'CLI default model'}",
+                        title="🎒 Model")
+
+        self.push_screen(OrcModelModal(member.name, member.harness), done)
+
+    def _console_refresh(self) -> None:
+        if getattr(self, "_console", None) is not None:
+            self._console.refresh_state(self.focus_state, self.roster)
 
     def _refresh_hall(self) -> None:
         w = self.desktop.get_window(TOWN_HALL)

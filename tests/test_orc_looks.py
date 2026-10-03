@@ -26,7 +26,7 @@ def test_scheme_parts_and_badges():
     assert looks.scheme_long(pair) == "write: agy → review: claude"
     lead = Orc("Chieftain", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
     scribe = Orc("Scribe", "digest", RESIDENT, kind="chain")
-    assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 C 🔨 💤"
+    assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 ✻ 🔨 💤"
     assert scribe.badge == "🪧 Scribe 🔨 💤"
 
 
@@ -51,18 +51,19 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         await _settle(pilot)
         app.refresh_roster()
         await _settle(pilot)
-        assert "🧌 Chieftain+1 C" in chat.badge
+        assert "🧌 Chieftain+1 ✻" in chat.badge
         lst = app.screen.query_one("#roster-list", OptionList)
         rows = [str(lst.get_option_at_index(i).prompt) for i in range(lst.option_count)]
-        assert rows[0].startswith("[1] ★ Chieftain") and rows[1].startswith("[2] Scribe")
+        assert rows[0] == "[1] ★ Chieftain ✻ 💤" and rows[1] == "[2] Scribe 🪧 💤"
         assert len(rows) == 2
         lst.focus()
         await pilot.press("2")                       # the 2nd orc, not the 2nd row
         await _settle(pilot)
         assert app.focus_state.mode == "unit" and app.focus_state.orc_key.endswith("town_hall/scribe")
-        card = str(app.screen.query_one("#info-body").render())
-        assert "free chain (no model) on 📦 Artifacts · selection" in card and "Counting is enough." in card
-        assert "🪧 no model — free" in card and "🪙 free · never calls a model" in card
+        about = str(app.screen.query_one("#io-about").render())
+        assert "free chain (no model) on 📦 Artifacts · selection" in about and "Counting is enough." in about
+        assert "🪙 free · never calls a model" in str(app.screen.query_one("#io-runs").render())
+        assert str(lst.get_option_at_index(0).prompt).startswith("🪧 no model")     # its 🎒 inventory
 
 
 GOOD = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",

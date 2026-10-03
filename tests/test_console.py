@@ -79,7 +79,7 @@ async def test_clicking_window_enters_building_state(fake_repo: Path):
 
 
 @pytest.mark.asyncio
-async def test_choosing_orc_enters_unit_state_and_escape_returns_neutral(fake_repo: Path):
+async def test_choosing_orc_opens_its_inventory_and_escape_steps_back(fake_repo: Path):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -95,10 +95,16 @@ async def test_choosing_orc_enters_unit_state_and_escape_returns_neutral(fake_re
         assert app.focus_state.mode == "unit"
         assert app.focus_state.orc_key is not None
 
-        info = app.screen.query_one("#info-body", Static)            # the card is in the Info panel (T1104)
-        assert "Chieftain" in str(info.render())
-        assert roster_list.display and "Chieftain" in str(roster_list.get_option_at_index(roster_list.highlighted).prompt)
+        assert app.screen.query_one("#info-orc").display               # Info: the orc's name, about, runs
+        assert "Chieftain" in str(app.screen.query_one("#io-name", Static).render())
+        assert not app.screen.query_one("#io-dismiss").display           # a steward is never dismissed
+        assert "INVENTORY" in str(roster.query_one("#roster-title", Static).render())
+        assert roster_list.get_option_at_index(0).id == "inv:model"
+        assert not app.screen.query_one("#command-card").display         # the orc's chat commands it
 
+        await pilot.press("escape")
+        await pilot.pause()
+        assert app.focus_state.mode == "building"                        # back to its building
         await pilot.press("escape")
         await pilot.pause()
         assert app.focus_state.mode == "neutral"
@@ -224,3 +230,29 @@ async def test_console_height_is_smaller_resizable_and_remembered(fake_repo: Pat
     async with app2.run_test(size=(200, 50)) as pilot:
         await pilot.pause()
         assert app2.screen.query_one("#console", Console).height_pct == 10
+
+
+@pytest.mark.asyncio
+async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(fake_repo: Path):
+    from orkcraft.realm.orcs import Alert
+    from orkcraft.screens.orders import AlertModal
+
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        alert = Alert("alt-1", "Which branch?", options=[("1", "main")])
+        orc = next(o for o in app.roster.orcs if o.building == "town_hall")
+        orc.status, orc.alert = "alert", alert
+        app.set_focus_state("building", building_id="town_hall")
+        await pilot.pause()
+        lst = app.screen.query_one("#roster-list", OptionList)
+        row = lambda: str(lst.get_option_at_index(0).prompt)
+        assert row().startswith("[1] ❓ ")
+        lst.focus()
+        await pilot.press("1")
+        await pilot.pause()
+        assert isinstance(app.screen, AlertModal)
+        assert app.focus_state.mode == "building" and app.focus_state.building_id == "town_hall"
+        await pilot.press("escape")
+        await pilot.pause()
+        assert "❓" not in row()

@@ -27,7 +27,7 @@ from orkcraft.schedule import Span
 TOOLS = ("claude", "agy", "codex")
 BILLINGS = ("subscription", "api")
 MODES = ("camp", "office", "shift")
-LEGACY_MODES = {"immersion": "camp", "plain": "office"}      # the names before Shift
+LEGACY_MODES = {"immersion": "camp", "plain": "office", "hidden": "office"}   # older names of camp / office
 DEFAULT_MODE = "camp"
 MODE_TITLES = {"camp": "🧌 Camp", "office": "👔 Office", "shift": "🧌/👔 Shift"}
 

@@ -83,7 +83,7 @@ rules stop or the model would not advise still waits for the operator.
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Three modes: **🧌 Camp** (ASCII), **👔 Office** (just frames) and **🧌/👔 Shift** — Office in office
+- Three modes: **🧌 Camp** (the immersion look), **👔 Office** (the hidden look, `realm/modes.py`) and **🧌/👔 Shift** — Office in office
   hours on office days, Camp otherwise, switched by the clock (`schedule.py`). Camp sits under the
   camp's picture, Office under the office's, Shift between them; both cards light up for Shift. The cards show the same building with the same live rows, so only the look differs.
 - **The day bar** (`widgets/day_bar.py`): 48 half-hour cells, amber day, dark purple 🌙 quiet, grey

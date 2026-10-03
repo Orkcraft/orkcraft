@@ -836,10 +836,13 @@ def update_orc(scroll: TownScroll, building_id: str, orc_id: str, **changes: Any
 # there is none), dismiss removes a handler, set_lead promotes to steward.
 
 def recruit(scroll: TownScroll, building_id: str, name: str, role: str = "", orders: str = "",
-            trigger: dict | None = None) -> OrcSpec:
+            trigger: dict | None = None, tier: str | None = None) -> OrcSpec:
+    """`tier` (elder | warrior | laborer, realm/tiers.py) picks the model; None leaves the CLI's."""
+    from orkcraft.realm import tiers
     b = _building(scroll, building_id)
+    harness = tiers.with_tier([dict(s) for s in DEFAULT_HARNESS], tier) if tier else None
     orc = add_handler(scroll, building_id, name, role=role, orders=orders,
-                      trigger=trigger or {"type": "on_demand"})
+                      trigger=trigger or {"type": "on_demand"}, harness=harness)
     if b.garrison.steward is None:
         b.garrison.handlers.remove(orc)
         b.garrison.steward = orc

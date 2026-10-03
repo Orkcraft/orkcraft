@@ -126,9 +126,10 @@ A view fills the slots with `hut_lines(widths)` (else its three `mini_status` li
 are in `realm/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
 spread over the width — and keep the spot you drag them to.
 
-- Click a hut or press its number → the building opens over the map. One building is open at a
-  time; opening another closes the first. `esc`, a click on the map or a second click on its hut
-  closes it. Opening never moves a hut, so the roads stay where they are.
+- Click a hut → it is selected: the hut lights up and the console below turns to that building,
+  the map stays as it is. Click it again (or press its number) → the building opens over the map.
+  One building is open at a time; a click on another hut closes it and selects that one. `esc`,
+  a click on the map or a click on the open building's hut closes it. Opening never moves a hut, so the roads stay where they are.
 - Drag a hut to move it; its spot is kept in the Town Scroll (`buildings[].hut`).
 - **Calm console**: in the town the console floats over the map's bottom edge instead
   of taking rows from it. With nothing selected only the War Map shows (bottom left — a 🔥 on an
@@ -329,9 +330,33 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 
 ## Orcs: steward, handlers, Recruiter
 
-- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the letters are the
-  harness scheme — `C` Claude (amber), `A` agy (cyan), `P` a pipeline (magenta), e.g. `A→C` (agy
-  writes, Claude reviews); long schemes read `C→C·4`. The frame badge shows the steward.
+- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
+  harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `✦→✻` (agy
+  writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
+- **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
+  gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
+  A harness step takes a `tier` and the model follows from its harness
+  (`{"role": "run", "harness": "claude", "tier": "elder"}` runs `claude --model opus`); a step's own
+  `model` wins and its tier is read from it. An orc shows its heaviest step's icon before its name
+  (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
+  default) or later in the orc's orders; the Recruiter proposes one per step. Barracks providers
+  and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
+- **Console of a selected building**: left to right the War Map (36 columns, each orkspace's biome as an icon after its name), the Info
+  panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
+  is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
+  listens to (source, signal → the orc or a plain road) with *➕ Listen*. The garrison lists its
+  orcs one per line — number, tier, name, its models as marks (`✻` Claude orange, `✦` Gemini blue), state. An orc with a question
+  shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
+  seen. The Command Card keeps only the building's own commands (and hides when it has none);
+  the common ones stay on their keys.
+- **Console of a selected orc**: Info shows its icon, tier and name with 👍 / 👎 (its own
+  scores, under `<building>/<orc>`) and 🗑 (dismiss; never a steward), why it is here, and one
+  quiet line of spend, 👍 / 👎 and whether it is deployed with *📜 History*. The garrison turns
+  into its **🎒 Inventory**: the model and tier first (Enter or a click changes harness and tier
+  per step), then the tools of its latest runs, most recent first — one opens the Unit
+  Chronicles with only the runs and calls of that tool. The orc is commanded in its chat (45 %
+  of the screen, right), so the Command Card steps aside and the console ends where the chat
+  begins. Esc goes back to the building.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orcs, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.
@@ -555,12 +580,29 @@ cd your-project && orkcraft hooks install && orkcraft
 
 F10 → *Camp* (default), *Office* or *Shift*, kept per machine as `mode` in
 `~/.config/orkcraft/settings.json` (`$ORKCRAFT_SETTINGS_FILE` overrides the path; the old names
-`immersion` / `plain` still load as camp / office). A project may override it with `preferences.mode`
-in `.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's override.
+`immersion` / `hidden` / `plain` still load as camp / office). A project may override it with
+`preferences.mode` in `.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's
+override. The data is the same in every mode; only the look changes (`orkcraft/realm/modes.py`): Camp
+wears the immersion look, Office the hidden one.
 
-- **🧌 Camp** — every building wears its ASCII silhouette (roofs, sails, trees, waves).
-- **👔 Office** — a building is only a frame with the same live text rows; the label above and the
-  buttons below stay.
+| | 🧌 Camp (immersion) | 👔 Office (hidden) |
+|---|---|---|
+| Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
+| Agents | orcs 🧌 / 🪧 in the frame | nothing, or `busy` while one works |
+| A question | fire 🔥 | `?` |
+| Waiting for an answer | the building flickers orange (its ground too), after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red |
+| Roads | rocks 🪨 roll from building to building | small squares ■ |
+| HUD (top right) | 🪙 gold, 🪵 lumber, 🥩 meat | Spend, Context, Agents |
+| Emoji | everywhere | as few as possible: building names, status lines, buttons, window titles, the War Map and the roster, the F10 menu, the key footer (`Stop all`, `Add agent`, `Answers`) and the toasts lose theirs |
+
+The opened building's own view keeps what its data says.
+
+**Questions on another orkspace.** Its War Map row takes the question's colour (fire orange in
+immersion, red when hidden) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
+its questions at once, the one waiting longest first (↑↓ for the rest); behind the dialog the building
+of that question is selected and the orc who asked it is picked in the garrison.
+- **🧌 Camp** — the immersion look all day.
+- **👔 Office** — the hidden look all day.
 - **🧌/👔 Shift** — Office in office hours on office days (default 09:00–18:00, Mon–Fri; a span past
   midnight belongs to the day it started), Camp the rest of the time. The town switches by itself
   (checked every 30 s) and the HUD says `[👔 office till 18:00]`.

@@ -11,6 +11,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from orkcraft.realm import tiers
 from orkcraft.realm.looks import HARNESS_LETTER, HARNESS_STYLE
 from orkcraft.realm.orcs import COUNCIL, RESIDENT, WORKER, Orc
 
@@ -65,7 +66,8 @@ def orc_sentences(orc: Orc, building_title: str = "") -> list[str]:
 def building_sentences(title: str, role: str, orcs: list[Orc], roads_in: int, roads_out: int) -> list[str]:
     out = [_sentence(f"{title}: {role}" if role else title)]
     if orcs:
-        names = ", ".join(f"{'★' if o.lead else ''}{o.name} ({o.kind})" for o in orcs[:3])
+        names = ", ".join(f"{'★' if o.lead else ''}{o.tier_icon + ' ' if o.tier_icon else ''}{o.name} ({o.kind})"
+                          for o in orcs[:3])
         more = f" and {len(orcs) - 3} more" if len(orcs) > 3 else ""
         out.append(_sentence(f"{len(orcs)} orc{'s' if len(orcs) != 1 else ''}: {names}{more}"))
     else:
@@ -104,7 +106,8 @@ def models_of(orc: Orc, live_model: str = "") -> list[tuple[str, str, str]]:
     for step in orc.harness or ([{"harness": "claude"}] if orc.category == RESIDENT else []):
         harness = step.get("harness", "claude")
         letter = HARNESS_LETTER.get(harness, "P" if harness == "pipeline" else "?")
-        name = short_model(step["model"]) if step.get("model") else \
+        model = tiers.step_model(step)
+        name = short_model(model) if model else \
             {"claude": "Claude", "agy": "agy (Gemini)"}.get(harness, harness)
         label = f"{step.get('role', '')} · {name}".strip(" ·")
         out.append((letter, HARNESS_STYLE.get(harness, "bold"), label))

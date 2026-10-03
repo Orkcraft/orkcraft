@@ -25,7 +25,7 @@ from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
 from orkcraft.widgets.hut import Hut
-from orkcraft.realm import catalog, silhouettes
+from orkcraft.realm import catalog, modes, silhouettes
 from orkcraft.widgets.terrain import Terrain
 from orkcraft.wm import roadmap
 from orkcraft.wm.window import Window
@@ -121,6 +121,12 @@ class Desktop(Container):
     class CanvasClicked(Message):
         """A click landed on the desktop canvas or terrain (not on a window)."""
 
+    class HutSelected(Message):
+        """A first click on a hut: the building is selected, not opened (a second click opens it)."""
+        def __init__(self, building_id: str) -> None:
+            super().__init__()
+            self.building_id = building_id
+
     class OrkspaceChanged(Message):
         """Posted when switching to a different orkspace canvas."""
         def __init__(self, orkspace_id: str) -> None:
@@ -161,7 +167,9 @@ class Desktop(Container):
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
         self.machine = settings.load()
+        modes.set_current(self.look_mode)
         self.huts: dict[str, Hut] = {}
+        self.selected_hut: str | None = None    # a hut picked by a first click, still collapsed
         self.ghost: Ghost | None = None          # a building being placed
         self._ghost_done = None
         # Rows at the bottom under the floating console: huts stay above `hut_reserve`
@@ -353,6 +361,7 @@ class Desktop(Container):
         else:
             self.remove_class("-solid-black")
         self.set_biome(ork.biome)
+        self._wear_mode()
         self.preview_linked = bool(self.scroll.preferences.get("preview_linked", True))
 
         active = None
@@ -429,19 +438,27 @@ class Desktop(Container):
 
     # -- biome & terrain ---------------------------------------------------------
 
+    @property
+    def look(self) -> theme.Biome:
+        """What the canvas wears: the orkspace's biome, or the office's black and grey in the hidden mode."""
+        return theme.OFFICE if self.plain else theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
+
     def set_biome(self, name: str) -> None:
-        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME."""
+        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME. The hidden mode keeps it but
+        wears the office look (the biome comes back with immersion)."""
         if name not in theme.BIOMES:
             name = theme.DEFAULT_BIOME
         self.biome = name
-        for b in theme.BIOMES:
+        self._paint()
+
+    def _paint(self) -> None:
+        look = self.look
+        for b in theme.LOOKS:
             self.remove_class(f"biome-{b}")
-        self.add_class(f"biome-{name}")
-        biome = theme.BIOMES[name]
-        bg_color = theme.SOLID_BLACK if self.solid_black else biome.canvas
-        self.styles.background = bg_color
+        self.add_class(f"biome-{look.name}")
+        self.styles.background = theme.SOLID_BLACK if self.solid_black else look.canvas
         if hasattr(self, "terrain"):
-            self.terrain.set_biome(biome, self.solid_black)
+            self.terrain.set_biome(look, self.solid_black)
 
     def toggle_terrain(self) -> None:
         """Toggle solid black canvas on/off and save layout."""
@@ -450,11 +467,7 @@ class Desktop(Container):
             self.add_class("-solid-black")
         else:
             self.remove_class("-solid-black")
-        biome = theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
-        bg_color = theme.SOLID_BLACK if self.solid_black else biome.canvas
-        self.styles.background = bg_color
-        if hasattr(self, "terrain"):
-            self.terrain.set_biome(biome, self.solid_black)
+        self._paint()
         self.save()
 
     # -- focus & z-order ---------------------------------------------------------
@@ -468,7 +481,17 @@ class Desktop(Container):
         if w is not top:
             self.move_child(w, after=top)
 
+    def select_hut(self, building_id: str | None) -> None:
+        """Mark a collapsed hut as selected (None clears it); the building stays closed."""
+        if self.selected_hut is not None and self.selected_hut in self.huts:
+            self.huts[self.selected_hut].remove_class("-selected")
+        self.selected_hut = building_id
+        if building_id is not None and building_id in self.huts:
+            self.huts[building_id].add_class("-selected")
+
     def set_active(self, w: Window | None) -> None:
+        if self.selected_hut is not None:
+            self.select_hut(None)       # opening a building or closing one ends a selection
         if w is self.active:
             return
         if self.active is not None:
@@ -803,14 +826,30 @@ class Desktop(Container):
         return settings.mode_of(pref) or self.machine.mode
 
     @property
+    def look_mode(self) -> str:
+        """What the town looks like now (realm/modes.py): hidden when the buildings are frames —
+        Office, or Shift in office hours — else immersion."""
+        return modes.HIDDEN if self.plain else modes.IMMERSION
+
+    def _wear_mode(self) -> None:
+        """Every widget draws the current look (the HUD, the carts, the badges read `modes.current`)."""
+        modes.set_current(self.look_mode)
+        self.set_class(self.plain, "-hidden")
+        self._paint()
+        for w in self.windows:
+            w.refresh_badge()
+
+    @property
     def plain(self) -> bool:
         """Huts are only frames now: Office, or Shift in office hours; else they wear their ASCII."""
+        if getattr(self, "machine", None) is None:          # still being built
+            return False
         return schedule.plain_now(self.machine, mode=self.mode)
 
     @property
     def quiet(self) -> bool:
         """🌙 Do-not-disturb hours: fires do not flicker, a waiting orc shows ❓."""
-        return schedule.quiet_now(self.machine)
+        return getattr(self, "machine", None) is not None and schedule.quiet_now(self.machine)
 
     def set_mode(self, mode: str | bool) -> None:
         """Set the machine's mode (F10; True / False: office / camp); the project's override is
@@ -823,24 +862,28 @@ class Desktop(Container):
         settings.save(self.machine)
         self.scroll.preferences.pop("mode", None)
         self.save()
-        self.apply_schedule()
+        self.apply_schedule(force=True)
 
-    def apply_schedule(self) -> None:
-        """Bring the huts to the hour: the look (Shift turns Office on and off by itself) and the quiet."""
+    def apply_schedule(self, force: bool = False) -> None:
+        """Bring the town to the hour: the look (Shift turns Office on and off by itself) and the quiet."""
         plain, quiet = self.plain, self.quiet
-        resized = False
+        if force or (plain != (modes.current() == modes.HIDDEN)):
+            self._wear_mode()
+            for hut in self.huts.values():
+                if hut.set_plain(plain) and hut.display:
+                    self._settle(hut)
+            self.refresh_huts()
+            self.replan_roads()
+            self.traffic.restyle()
+            dress = getattr(self.app, "wear_mode", None)
+            if dress is not None:
+                dress()                 # the HUD, the footer, the console and the taskbar
+            self.post_message(self.LayoutChanged())
         for hut in self.huts.values():
-            if hut.set_plain(plain) and hut.display:
-                self._settle(hut)
-                resized = True
             hut.set_quiet(quiet)
         if quiet:
             for hut in self.huts.values():
                 hut.remove_class("-flame")
-        if resized:
-            self.refresh_huts()
-            self.replan_roads()
-            self.post_message(self.LayoutChanged())
 
     def set_town(self, on: bool) -> None:
         if on == self.town:
@@ -994,15 +1037,23 @@ class Desktop(Container):
                 hut.set_badge(w.badge)
                 hut.set_title(w.number, w.window_title)
 
-    def flicker_fires(self) -> None:
-        """A hut whose orc waits for orders burns: its fence flickers."""
+    def flicker_fires(self, now: float | None = None) -> None:
+        """A hut whose orc waits for orders burns: its fence flickers, turns red, then its roof burns.
+        In the hidden look it only stands red; in 🌙 quiet hours nothing burns (a ❓ instead)."""
         if self.quiet:
+            for hut in self.huts.values():
+                if hut.has_class("-flame"):
+                    hut.remove_class("-flame")
             return
         for hut in self.huts.values():
-            if hut.display and hut.has_class("-alert"):
+            if hut.display and hut.has_class("-alert") and not self.plain:
+                hut.update_fire(now)
                 hut.toggle_class("-flame")
-            elif hut.has_class("-flame"):
-                hut.remove_class("-flame")
+                hut.refresh()
+            else:
+                hut.update_fire(now)
+                if hut.has_class("-flame"):
+                    hut.remove_class("-flame")
 
     def _rally_click(self, w: Window) -> bool:
         """Road mode: a click on a building picks it as the source."""
@@ -1018,9 +1069,15 @@ class Desktop(Container):
         if w is None or self._rally_click(w):
             return
         if w is self.active:
-            self.post_message(self.CanvasClicked())   # a second click collapses it
+            self.post_message(self.CanvasClicked())   # a click on an open building collapses it
             return
-        self.focus_window(w)
+        if self.town_active and self.selected_hut != w.window_id:
+            # The first click only selects: the console turns to the building, the map stays.
+            self.set_active(None)
+            self.select_hut(w.window_id)
+            self.post_message(self.HutSelected(w.window_id))
+            return
+        self.focus_window(w)                          # the second click opens it
         self.post_message(Window.Activated(w))
 
     def on_hut_action_pressed(self, message: Hut.ActionPressed) -> None:
@@ -1140,9 +1197,9 @@ class Desktop(Container):
                 if (x, y) not in p.covered:
                     cells[(x, y)] = (ch, "selected" if selected else "bright" if bright else "faint")
         self.terrain.set_roads(cells)
-        biome = theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
+        biome = self.look
         signature = (tuple(sorted((k, p.exit, p.entry, tuple(p.cells)) for k, p in self.road_paths.items())),
-                     self.selected_road, self.biome, self._handler_keys(), self.plain, self.town_active)
+                     self.selected_road, biome.name, self._handler_keys(), self.plain, self.town_active)
         if signature == self._road_signature:
             return
         self._road_signature = signature
@@ -1397,10 +1454,11 @@ class Taskbar(Horizontal):
             if in_active:
                 item.set_class(w is self.desktop.active and not w.hidden, "-active")
                 item.set_class(w.hidden, "-hidden")
-                item.update(Text(f"{w.number} {w.window_title.split()[0]}" if self.compact else f"{w.number} {w.window_title}"))
+                title = modes.text(w.window_title) or w.window_title
+                item.update(Text(f"{w.number} {title.split()[0]}" if self.compact else f"{w.number} {title}"))
         status = Text()
         if getattr(self.desktop, "rally_mode", False):
-            status.append("🛤 ROAD — click the source building (or press its number) · esc cancels")
+            status.append(modes.text("🛤 ") + "ROAD — click the source building (or press its number) · esc cancels")
         elif self.desktop.window_mode:
             status.append(" WINDOW MODE ", style="bold reverse")
             status.append("  ←↑↓→ move · shift+←↑↓→ resize · esc done ")
@@ -1413,7 +1471,8 @@ class Taskbar(Horizontal):
 
 class TaskbarItem(Static):
     def __init__(self, window: Window, classes: str | None = None) -> None:
-        super().__init__(f"{window.number} {window.window_title}", classes=classes, id=f"taskbar-{window.window_id}")
+        super().__init__(f"{window.number} {modes.text(window.window_title)}", classes=classes,
+                         id=f"taskbar-{window.window_id}")
         self.window = window
 
     def on_click(self, event: events.Click) -> None:

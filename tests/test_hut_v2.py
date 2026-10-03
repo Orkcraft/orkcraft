@@ -184,7 +184,10 @@ async def test_town_with_typed_huts_and_quick_actions(fake_repo: Path, town):
         assert desk.active is None and isinstance(app.screen, TextPrompt)    # + New task asks for its title
         await pilot.press("escape")
         await _settle(pilot)
-        # a click elsewhere opens it
+        # a click elsewhere selects it, a second click opens it
+        await pilot.click(hut, offset=(3, 4))
+        await _settle(pilot)
+        assert desk.active is None and app.focus_state.building_id == "todo"
         await pilot.click(hut, offset=(3, 4))
         await _settle(pilot)
         assert desk.active is not None and desk.active.window_id == "todo"

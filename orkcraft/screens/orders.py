@@ -14,6 +14,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, OptionList, Select, Static
 from textual.widgets.option_list import Option
 
+from orkcraft.realm import modes
 from orkcraft.realm.orcs import TRIGGERS, Alert, Orc, Trigger
 
 MODAL_CSS = """
@@ -59,6 +60,10 @@ class AlertModal(ModalScreen[str | None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id and event.button.id.startswith("opt-"):
             self.dismiss(event.button.id[4:])
+
+
+def _title(count: str) -> str:
+    return f"Awaiting an answer{count}" if modes.hidden() else f"❓ Awaiting Orders{count}"
 
 
 class AwaitingOrdersModal(AlertModal):
@@ -109,7 +114,7 @@ class AwaitingOrdersModal(AlertModal):
         with Vertical():
             count = len(self.alerts)
             count_str = f" ({count})" if count > 1 else ""
-            yield Label(Text(f"❓ Awaiting Orders{count_str}"), id="orders-title", classes="order-title")
+            yield Label(Text(_title(count_str)), id="orders-title", classes="order-title")
             lst = OptionList(id="orders-list")
             for i, a in enumerate(self.alerts, 1):
                 w = self.who_map.get(a.id, self.who)
@@ -138,10 +143,13 @@ class AwaitingOrdersModal(AlertModal):
 
         title_label = self.query_one("#orders-title", Label)
         count = len(self.alerts)
-        title_label.update(f"❓ Awaiting Orders ({count})" if count > 1 else "❓ Awaiting Orders")
+        title_label.update(_title(f" ({count})" if count > 1 else ""))
 
         target_label = self.query_one("#order-target", Label)
-        prefix = f"🧌 {who}: " if who else "❓ "
+        if modes.hidden():
+            prefix = f"{who}: " if who else f"{modes.QUESTION} "
+        else:
+            prefix = f"🧌 {who}: " if who else "❓ "
         target_label.update(f"{prefix}{alert.title}")
 
         ctx_widget = self.query_one("#order-context", Static)
@@ -281,21 +289,24 @@ class AwaitingOrdersModal(AlertModal):
 
 
 class UnitModal(ModalScreen[dict | None]):
-    """Dismisses with {"trigger": Trigger, "context": str} or None."""
+    """Dismisses with {"trigger": Trigger, "context": str[, "tier": str]} or None."""
 
     BINDINGS = [Binding("escape", "dismiss(None)", "Close")]
     DEFAULT_CSS = MODAL_CSS.format(cls="UnitModal")
 
-    def __init__(self, orc: Orc, building_title: str, context: str = "") -> None:
+    def __init__(self, orc: Orc, building_title: str, context: str = "", tier: str | None = None) -> None:
+        """`tier` is the handler's tier ("" for the CLI default); None hides the picker (stewards, chains)."""
         super().__init__()
         self.orc = orc
         self.building_title = building_title
         self.context = context
+        self.tier = tier
 
     def compose(self) -> ComposeResult:
         o = self.orc
         with Vertical():
-            yield Label(Text(f"🧌 {o.name} — {self.building_title}"), classes="order-title")
+            yield Label(Text(f"🧌 {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} — {self.building_title}"),
+                        classes="order-title")
             yield Static(Text(f"{o.role}\nstatus: {o.status_icon} {o.status}"), classes="order-context")
             yield Label("Orders (context for this orc's work)")
             yield Input(value=self.context, placeholder="e.g. keep an eye on T1092 and nudge me before 06:00",
@@ -306,6 +317,10 @@ class UnitModal(ModalScreen[dict | None]):
                              value=o.trigger.type, allow_blank=False, id="unit-trigger")
                 yield Input(value=o.trigger.expression, placeholder="cron: */15 * * * * · webhook: /path",
                             id="unit-expr")
+            if self.tier is not None:
+                from orkcraft.screens.garrison_modal import tier_options
+                yield Label("Tier")
+                yield Select(tier_options(), value=self.tier, allow_blank=False, id="unit-tier")
             with Horizontal():
                 yield Button("Save orders", variant="primary", id="unit-save")
                 if o.alert is not None:
@@ -319,7 +334,12 @@ class UnitModal(ModalScreen[dict | None]):
         if bid == "unit-save":
             trigger = Trigger(str(self.query_one("#unit-trigger", Select).value),
                               self.query_one("#unit-expr", Input).value.strip())
-            self.dismiss({"trigger": trigger, "context": self.query_one("#unit-context", Input).value.strip()})
+            result = {"trigger": trigger, "context": self.query_one("#unit-context", Input).value.strip()}
+            if self.tier is not None:
+                tier = str(self.query_one("#unit-tier", Select).value)
+                if tier != self.tier:
+                    result["tier"] = tier
+            self.dismiss(result)
         elif bid == "unit-answer":
             self.dismiss({"answer": True})
         else:
