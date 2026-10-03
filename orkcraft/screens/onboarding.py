@@ -68,6 +68,12 @@ def _nav(can_back: bool, last: bool = False) -> Horizontal:
                     ("Build", "ob-next", "success") if last else ("Next →", "ob-next", "primary"))
 
 
+def hide_skip(screen: ModalScreen) -> None:
+    """A newcomer is walked through every step: no Skip (Back still leads to the experience step)."""
+    for b in screen.query("#ob-skip, #au-skip"):
+        b.display = False
+
+
 def _highlight(lst: OptionList, option_id: str) -> None:
     for i in range(lst.option_count):
         if lst.get_option_at_index(i).id == option_id:
@@ -77,6 +83,173 @@ def _highlight(lst: OptionList, option_id: str) -> None:
 
 def _highlighted_id(lst: OptionList) -> str:
     return "" if lst.highlighted is None else lst.get_option_at_index(lst.highlighted).id or ""
+
+
+# -- how well you know orchestration -------------------------------------------------------------------
+
+class XpStep(ModalScreen[dict | str | None]):
+    """The first question: how well the operator knows agent orchestration. It picks the path —
+    🐣 walked through everything, 🪓 the same with Skip, 🤘 straight to the tools and an empty town.
+    Dismisses {"orchestration": "new" | "some" | "expert"}, "skip" or None."""
+
+    BINDINGS = [Binding("escape", "skip", "Skip")]
+    DEFAULT_CSS = _css("XpStep", 84) + """
+    XpStep #ob-xp { height: auto; }
+    XpStep #ob-xp > .option-list--option { padding: 0 1; }
+    XpStep #ob-xp-path { height: auto; margin-top: 1; color: $text-muted; }
+    """
+    PATHS = {
+        interview.NEW: "Next: who you are, your day, your AI tools, then a town picked or built with you.",
+        interview.SOME: "Next: who you are, your day, your AI tools, then a ready town or a short interview.",
+        interview.EXPERT: "Next: the CLIs you lead, the orcs' autonomy and the look — then an empty town to build.",
+    }
+
+    def __init__(self, level: str = "", step: str = "") -> None:
+        super().__init__()
+        self.level = level
+        self.step = step
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(_title("🧭 How well do you know agent orchestration?", self.step), classes="build-title")
+            yield Static("Running several AI agents that hand work to each other. Your answer picks the path.",
+                         classes="build-hint")
+            options = []
+            for lv in interview.ORCHESTRATION:
+                prompt = Text(lv.label, style="bold")
+                prompt.append(f"\n   {lv.blurb}", style="dim")
+                options.append(Option(prompt, id=lv.id))
+            yield OptionList(*options, id="ob-xp")
+            yield Static("", id="ob-xp-path", markup=False)
+            yield Static("", id="ob-xp-note", classes="ob-note", markup=False)
+            yield _nav(False)
+
+    def on_mount(self) -> None:
+        self.call_after_refresh(self._setup)
+
+    def _setup(self) -> None:
+        lst = self.query_one("#ob-xp", OptionList)
+        lst.highlighted = None
+        if self.level:
+            _highlight(lst, self.level)
+        lst.focus()
+        self.show()
+
+    @property
+    def choice(self) -> str:
+        return _highlighted_id(self.query_one("#ob-xp", OptionList))
+
+    def show(self) -> None:
+        self.query_one("#ob-xp-path", Static).update(self.PATHS.get(self.choice, ""))
+
+    @on(OptionList.OptionHighlighted)
+    def _picked(self, event: OptionList.OptionHighlighted) -> None:
+        event.stop()
+        self.show()
+
+    @on(OptionList.OptionSelected)
+    def _selected(self, event: OptionList.OptionSelected) -> None:
+        event.stop()
+        self.action_next()
+
+    def action_next(self) -> None:
+        if not self.choice:
+            self.query_one("#ob-xp-note", Static).update("⚠ Pick the one closest to you.")
+            return
+        self.dismiss({"orchestration": self.choice})
+
+    def action_skip(self) -> None:
+        self.dismiss("skip")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        self.action_next() if event.button.id == "ob-next" else self.action_skip()
+
+
+# -- your AI tools: experience × how often -------------------------------------------------------------
+
+class AiToolsStep(ModalScreen[dict | str | None]):
+    """Each AI tool graded twice — experience and how often — with the growth zones live below.
+    Dismisses {"ai_tools": {tool: {"skill", "freq"}}} (tools left at none / never are left out),
+    "back", "skip" or None."""
+
+    BINDINGS = [Binding("escape", "back", "Back")]
+    DEFAULT_CSS = _css("AiToolsStep", 84) + """
+    AiToolsStep .ob-ai-row { height: 1; margin-top: 0; }
+    AiToolsStep .ob-ai-head { height: 1; margin-top: 1; color: $text-muted; text-style: bold; }
+    AiToolsStep .ob-ai-name { width: 36; }
+    AiToolsStep .ob-ai-row Select { width: 18; height: 1; margin-right: 2; }
+    AiToolsStep .ob-ai-row SelectCurrent { margin-top: 0; }      /* a Horizontal: no modal margin */
+    AiToolsStep #ob-growth { height: auto; margin-top: 1; }
+    """
+
+    def __init__(self, graded: dict | None = None, step: str = "", can_back: bool = True) -> None:
+        super().__init__()
+        self.graded = dict(graded or {})
+        self.step = step
+        self.can_back = can_back
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(_title("🧭 Your AI tools — how well, how often", self.step), classes="build-title")
+            yield Static("Experience and use for each. Where they differ is where you can grow; the town "
+                         "leans on it.", classes="build-hint")
+            yield Static("tool".ljust(36) + "experience".ljust(20) + "how often", classes="ob-ai-head")
+            for tool in interview.AI_TOOLS:
+                grade = self.graded.get(tool.id) or {}
+                yield Horizontal(
+                    Static(tool.label, classes="ob-ai-name"),
+                    Select([(label, key) for key, label in interview.SKILLS], value=grade.get("skill", "none"), allow_blank=False, compact=True,
+                           id=f"ob-skill-{tool.id}"),
+                    Select([(label, key) for key, label in interview.FREQS], value=grade.get("freq", "never"), allow_blank=False, compact=True,
+                           id=f"ob-freq-{tool.id}"),
+                    classes="ob-ai-row")
+            yield Static("", id="ob-growth", markup=False)
+            yield _nav(self.can_back)
+
+    def on_mount(self) -> None:
+        self.show()
+
+    def result(self) -> dict:
+        out = {}
+        for tool in interview.AI_TOOLS:
+            skill = str(self.query_one(f"#ob-skill-{tool.id}", Select).value)
+            freq = str(self.query_one(f"#ob-freq-{tool.id}", Select).value)
+            if (skill, freq) != ("none", "never"):
+                out[tool.id] = {"skill": skill, "freq": freq}
+        return out
+
+    def show(self) -> None:
+        graded = self.result()
+        zones = interview.growth(graded)
+        t = Text()
+        if not graded:
+            t.append("🌱 New to AI tools — the town starts gently: you accept what the agents make before it leaves.",
+                     style="dim")
+        elif not zones:
+            t.append("⚖️ Your experience matches your use — no gaps to grow into.", style="dim")
+        else:
+            t.append("Growth zones\n", style="bold")
+            t.append("\n".join(zones))
+        self.query_one("#ob-growth", Static).update(t)
+
+    @on(Select.Changed)
+    def _changed(self, event: Select.Changed) -> None:
+        event.stop()
+        self.show()
+
+    def action_back(self) -> None:
+        self.dismiss("back" if self.can_back else "skip")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        bid = event.button.id
+        if bid == "ob-next":
+            self.dismiss({"ai_tools": self.result()})
+        elif bid == "ob-back":
+            self.action_back()
+        else:
+            self.dismiss("skip")
 
 
 # -- who you are ------------------------------------------------------------------------------------
@@ -764,17 +937,22 @@ def raising_steps(choice: dict) -> list[str]:
 
 # -- the flow ---------------------------------------------------------------------------------------
 
-PERSON, DAY, INTENT, TOOLS, AUTONOMY, MODE = "person", "day", "intent", "tools", "autonomy", "mode"
+XP, PERSON, DAY, AI, INTENT = "xp", "person", "day", "ai", "intent"
+TOOLS, AUTONOMY, MODE = "tools", "autonomy", "mode"
+WHO_KEYS = ("role", "role_other", "industry", "industry_other")
 INTERVIEW_STEPS = tuple(f"q:{p.id}" for p in interview.INTERVIEW)
 
 
 class Onboarding:
     """Pushes the steps one after another, Back and Skip included, and applies what was chosen.
 
-    The steps: who you are and your day (when the machine is new or the profile is missing), the
-    town (for a project with none yet), the interview (only when no intent fits), then the
-    machine's part. `on_town(choice)` is called at the end with {"preset", "role", "warder",
-    "prompt", "answers"} (an empty town on skip); the app raises it."""
+    The first answer — how well the operator knows orchestration — picks the path:
+      🐣 new / 🪓 some   who you are · your day · your AI tools · the town (· the interview) · machine
+      🤘 punk orc        the machine's part, then an empty town to build themselves
+    A newcomer gets no Skip after the first step. The person's part is asked when the machine is
+    new or the profile is missing; the town for a project with none yet. `on_town(choice)` is called
+    at the end with {"preset", "role", "warder", "prompt", "answers", "expert"} (an empty town on
+    skip); the app raises it."""
 
     def __init__(self, app, machine_steps: bool, town_step: bool, on_town: Callable[[dict], None],
                  statuses: list[tools.ToolStatus] | None = None) -> None:
@@ -791,18 +969,40 @@ class Onboarding:
         self.autonomy = self.machine.autonomy
         self.warder = True
         self.day: dict | None = None
-        self.steps: list[str] = []
-        if machine_steps or not self.profile.get("role"):
-            self.steps += [PERSON, DAY]
-        if town_step:
-            self.steps.append(INTENT)
-        if machine_steps:
-            self.steps += [TOOLS, AUTONOMY, MODE]
+        self.ask_person = machine_steps or not self.profile.get("orchestration") or (
+            not self.expert and not self.profile.get("role"))
+        self.steps = self._plan()
         self.i = 0
+
+    @property
+    def expert(self) -> bool:
+        return self.profile.get("orchestration") == interview.EXPERT
+
+    @property
+    def novice(self) -> bool:
+        return self.profile.get("orchestration") == interview.NEW
+
+    def _plan(self) -> list[str]:
+        """The steps of this run, from what is known so far (the first answer reshapes them)."""
+        steps: list[str] = []
+        if self.ask_person:
+            steps.append(XP)
+            if not self.expert:
+                steps += [PERSON, DAY, AI]
+        if self.town_step and not self.expert:
+            steps.append(INTENT)
+            if self._interviewing:
+                steps += list(INTERVIEW_STEPS)
+        if self.machine_steps:
+            steps += [TOOLS, AUTONOMY, MODE]
+        return steps
 
     def start(self) -> None:
         if self.steps:
             self._show()
+        elif self.town_step:                  # a punk orc's new project: nothing to ask
+            self.warder = False
+            self._finish()
 
     @property
     def step(self) -> str:
@@ -816,7 +1016,11 @@ class Onboarding:
     def _show(self) -> None:
         name, back, last = self.steps[self.i], self.i > 0, self.i == len(self.steps) - 1
         done = lambda result: self._done(name, result)  # noqa: E731
-        if name == PERSON:
+        if name == XP:
+            screen = XpStep(self.profile.get("orchestration", ""), self.step)
+        elif name == AI:
+            screen = AiToolsStep(self.profile.get("ai_tools"), self.step, can_back=back)
+        elif name == PERSON:
             screen = PersonStep(self.profile, self.step, can_back=back)
         elif name == DAY:
             screen = QuestionsStep(interview.DAY_PAGE, self.profile, self.profile, self.step, back, last)
@@ -836,6 +1040,8 @@ class Onboarding:
         else:
             screen = ModeStep(self.machine, step=self.step)
         self.app.push_screen(screen, done)
+        if self.novice and name != XP:
+            self.app.call_after_refresh(hide_skip, screen)
 
     @property
     def _interviewing(self) -> bool:
@@ -854,8 +1060,15 @@ class Onboarding:
             self._skip()
             return
         assert isinstance(result, dict)
-        if name == PERSON:
-            keep = {k: self.profile[k] for k in settings.PROFILE_LISTS + ("day_other",) if k in self.profile}
+        if name == XP:
+            self.profile["orchestration"] = result["orchestration"]
+            self.steps = self._plan()
+        elif name == AI:
+            self.profile["ai_tools"] = result["ai_tools"]
+            if not result["ai_tools"]:
+                self.profile.pop("ai_tools")
+        elif name == PERSON:
+            keep = {k: v for k, v in self.profile.items() if k not in WHO_KEYS}
             self.profile = {**keep, **result["profile"]}
         elif name == DAY:
             self.profile.update({k: v for k, v in result["answers"].items()})
@@ -864,10 +1077,7 @@ class Onboarding:
         elif name == INTENT:
             self.choice = result
             self.warder = result.get("warder", self.warder) if TOOLS not in self.steps else self.warder
-            self.steps = [s for s in self.steps if s not in INTERVIEW_STEPS]
-            if self._interviewing:
-                at = self.steps.index(INTENT) + 1
-                self.steps[at:at] = list(INTERVIEW_STEPS)
+            self.steps = self._plan()
         elif name in INTERVIEW_STEPS:
             page = interview.INTERVIEW[INTERVIEW_STEPS.index(name)]
             for q in page.questions:
@@ -921,7 +1131,7 @@ class Onboarding:
         if not self.town_step:
             return
         choice = {"preset": self.choice.get("preset") or EMPTY, "role": self.choice.get("role", ""),
-                  "warder": self.warder and self.claude_on, "prompt": "", "answers": {}}
+                  "warder": self.warder and self.claude_on, "prompt": "", "answers": {}, "expert": self.expert}
         if choice["preset"] == CUSTOM:
             choice["answers"] = dict(self.answers)
             choice["prompt"] = interview.summary({**self.profile, "role": self.profile.get("role", "")},

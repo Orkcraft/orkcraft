@@ -31,7 +31,7 @@ MODES = ("camp", "office", "shift")
 LEGACY_MODES = {"immersion": "camp", "plain": "office", "hidden": "office"}   # older names of camp / office
 DEFAULT_MODE = "camp"
 MODE_TITLES = {"camp": "🧌 Camp", "office": "👔 Office", "shift": "🧌/👔 Shift"}
-PROFILE_TEXT = ("role", "role_other", "industry", "industry_other", "day_other")
+PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other")
 PROFILE_LISTS = ("day", "rhythm")
 
 
@@ -56,7 +56,7 @@ class MachineSettings:
     office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
     autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
-    profile: dict = field(default_factory=dict)   # role, industry (+ _other), day, rhythm, day_other
+    profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, rhythm, ai_tools
 
     def to_dict(self) -> dict:
         return {
@@ -101,6 +101,12 @@ def clean_profile(raw: object) -> dict:
     for k in PROFILE_LISTS:
         if isinstance(raw.get(k), list):
             out[k] = [str(x)[:40] for x in raw[k] if isinstance(x, str)][:20]
+    tools_ = raw.get("ai_tools")
+    if isinstance(tools_, dict):
+        graded = {str(t)[:40]: {"skill": str(g.get("skill", "none"))[:20], "freq": str(g.get("freq", "never"))[:20]}
+                  for t, g in list(tools_.items())[:20] if isinstance(g, dict)}
+        if graded:
+            out["ai_tools"] = graded
     return out
 
 

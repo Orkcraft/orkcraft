@@ -14,7 +14,8 @@ from orkcraft.realm import intents, interview, town_builder, town_presets
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
 from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
-from orkcraft.screens.onboarding import IntentStep, ModeStep, PersonStep, QuestionsStep, RaiseBar, ToolsStep
+from orkcraft.screens.onboarding import (AiToolsStep, IntentStep, ModeStep, PersonStep, QuestionsStep, RaiseBar,
+                                         ToolsStep, XpStep)
 from orkcraft.wm import Window
 
 SIZE = (160, 50)
@@ -69,10 +70,24 @@ async def _pick(app, pilot, list_id: str, option_id: str) -> None:
     await _settle(pilot)
 
 
-async def _who(app, pilot, role: str = "aso_manager", industry: str = "gaming") -> None:
+async def _xp(app, pilot, level: str = "some") -> None:
+    await _on(pilot, app, XpStep)
+    await _pick(app, pilot, "ob-xp", level)
+    await _press(app, pilot, "ob-next")
+
+
+async def _who(app, pilot, role: str = "aso_manager", industry: str = "gaming", level: str = "some") -> None:
+    await _xp(app, pilot, level)
     await _on(pilot, app, PersonStep)
     await _pick(app, pilot, "ob-role", role)
     await _pick(app, pilot, "ob-industry", industry)
+    await _press(app, pilot, "ob-next")
+
+
+async def _day_and_ai(app, pilot) -> None:
+    await _on(pilot, app, QuestionsStep)
+    await _press(app, pilot, "ob-next")
+    await _on(pilot, app, AiToolsStep)
     await _press(app, pilot, "ob-next")
 
 
@@ -129,8 +144,33 @@ def test_the_summary_is_what_the_operator_said():
 
 def test_the_profile_is_kept_and_cleaned(tmp_path: Path):
     f = tmp_path / "s.json"
-    settings.save(settings.MachineSettings(profile={"role": "qa", "day": ["build", 3], "secret": "x"}), f)
-    assert settings.load(f).profile == {"role": "qa", "day": ["build"]}
+    settings.save(settings.MachineSettings(profile={"role": "qa", "day": ["build", 3], "secret": "x",
+                                                    "ai_tools": {"cursor": {"skill": "basic"}, "x": 1}}), f)
+    assert settings.load(f).profile == {"role": "qa", "day": ["build"],
+                                        "ai_tools": {"cursor": {"skill": "basic", "freq": "never"}}}
+
+
+def test_growth_zones_are_where_experience_and_use_differ():
+    zones = interview.growth({"cursor": {"skill": "basic", "freq": "daily"},
+                              "claude_code": {"skill": "expert", "freq": "monthly"},
+                              "chatgpt": {"skill": "confident", "freq": "daily"},
+                              "copilot": {"skill": "none", "freq": "weekly"},
+                              "unknown": {"skill": "none", "freq": "daily"}})
+    assert zones == ["📈 Cursor: daily, but basic experience — worth learning deeper",
+                     "💤 Claude Code: expert, but used monthly — a skill you barely use",
+                     "📈 GitHub Copilot: weekly, but no experience — worth learning deeper"]
+
+
+def test_every_webhook_comes_in_through_a_watchtower():
+    for it in intents.INTENTS:
+        types = {b["key"]: b["type"] for b in it.plan["buildings"]}
+        for b in it.plan["buildings"]:
+            if "webhook" in b["why"].lower():
+                assert b["type"] == "watchtower", (it.id, b["key"])
+        for r in it.plan["roads"]:
+            if r["event"].startswith("watch."):
+                assert types[r["from"]] == "watchtower", (it.id, r)
+    assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in town_builder.ADAPT
 
 
 def test_raising_steps_are_real_work():
@@ -170,16 +210,29 @@ def test_the_mode_cards_show_the_same_rows():
 async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
+        await _on(pilot, app, XpStep)
+        assert "step 1 of 8" in str(app.screen.query_one(".build-title").render())   # the full path first
+        await _xp(app, pilot, "some")
         await _on(pilot, app, PersonStep)
-        assert "step 1 of 6" in str(app.screen.query_one(".build-title").render())
+        assert "step 2 of 8" in str(app.screen.query_one(".build-title").render())
+        assert app.screen.query_one("#ob-skip").display
         await _press(app, pilot, "ob-next")
         assert isinstance(app.screen, PersonStep)                                 # no role: refused
         assert "Pick your role" in str(app.screen.query_one("#ob-who-note").render())
-        await _who(app, pilot)
+        await _pick(app, pilot, "ob-role", "aso_manager")
+        await _pick(app, pilot, "ob-industry", "gaming")
+        await _press(app, pilot, "ob-next")
 
         await _on(pilot, app, QuestionsStep)                                     # your day
         await _select(app, pilot, "day", "users", "metrics")
         await _select(app, pilot, "rhythm", "weekly")
+        await _press(app, pilot, "ob-next")
+
+        await _on(pilot, app, AiToolsStep)                                       # experience × use
+        app.screen.query_one("#ob-skill-cursor", Select).value = "basic"
+        app.screen.query_one("#ob-freq-cursor", Select).value = "daily"
+        await _settle(pilot)
+        assert "Cursor: daily, but basic" in str(app.screen.query_one("#ob-growth").render())
         await _press(app, pilot, "ob-next")
 
         await _on(pilot, app, IntentStep)
@@ -222,8 +275,9 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         machine = settings.load()
         assert machine.onboarded and machine.mode == "office" and machine.autonomy == 2
         assert machine.tools["claude"].billing == "api"
-        assert machine.profile == {"role": "aso_manager", "industry": "gaming", "day": ["users", "metrics"],
-                                   "rhythm": ["weekly"]}
+        assert machine.profile == {"orchestration": "some", "role": "aso_manager", "industry": "gaming",
+                                   "day": ["users", "metrics"], "rhythm": ["weekly"],
+                                   "ai_tools": {"cursor": {"skill": "basic", "freq": "daily"}}}
         assert (fake_repo / ".claude" / "settings.json").exists()                # the Warder
         assert any(r.source == "writers" for r in app.scroll.building("replies").roads)
         assert town_presets.pending_order(fake_repo) is None                     # no model was asked
@@ -237,8 +291,13 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
     monkeypatch.setattr(app_mod, "BUILD_RUNNER", run)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _who(app, pilot)
+        await _who(app, pilot, level="new")
         await _on(pilot, app, QuestionsStep)
+        assert not app.screen.query_one("#ob-skip").display                      # a newcomer is walked through
+        await _press(app, pilot, "ob-next")
+        await _on(pilot, app, AiToolsStep)
+        app.screen.query_one("#ob-skill-chatgpt", Select).value = "basic"
+        app.screen.query_one("#ob-freq-chatgpt", Select).value = "daily"
         await _press(app, pilot, "ob-next")
         await _on(pilot, app, IntentStep)
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
@@ -246,7 +305,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         await _press(app, pilot, "ob-next")
 
         await _on(pilot, app, QuestionsStep)                                     # sources
-        assert app.screen.page.id == "sources" and "step 4 of 10" in str(app.screen.query_one(".build-title").render())
+        assert app.screen.page.id == "sources" and "step 6 of 12" in str(app.screen.query_one(".build-title").render())
         await _select(app, pilot, "sources", "app_store", "jira")
         app.screen.query_one("#ob-q-sources-other", Input).value = "AppFollow"
         await _press(app, pilot, "ob-next")
@@ -263,8 +322,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         await _on(pilot, app, QuestionsStep)                                     # problems
         await _select(app, pilot, "pains", "reports_slow", "copy_paste")
         await _press(app, pilot, "ob-next")
-        await _on(pilot, app, QuestionsStep)                                     # AI
-        await _select(app, pilot, "ai_used", "chatgpt")
+        await _on(pilot, app, QuestionsStep)                                     # what went wrong with AI
         await _select(app, pilot, "ai_problems", "no_data")
         await _press(app, pilot, "ob-next")
 
@@ -283,13 +341,16 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         prompt = run.calls[0]
         assert "I am ASO manager in Gaming." in prompt and "App Store Connect; Jira; AppFollow" in prompt
         assert "Results go to: Asana." in prompt and "Reports take hours" in prompt
-        assert "No access to my data and tools" in prompt
+        assert "No access to my data and tools" in prompt and "orchestration: new to it" in prompt
+        assert "ChatGPT (basic, daily)" in prompt and "Growth zones: ChatGPT: daily" in prompt
+        assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in prompt
         assert "START FROM A TEMPLATE" in prompt and "Keyword Tracker" in prompt
 
 
 @pytest.mark.asyncio
 async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"role": "engineer", "day": ["firefight"]},
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "engineer",
+                                                                    "day": ["firefight"]},
                                            tools={**settings.MachineSettings().tools,
                                                   "claude": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -317,10 +378,9 @@ async def test_an_existing_machine_without_a_profile_is_asked_who_first(fake_rep
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _who(app, pilot, "qa", "fintech")
-        await _on(pilot, app, QuestionsStep)
-        await _press(app, pilot, "ob-next")
+        await _day_and_ai(app, pilot)
         await _on(pilot, app, IntentStep)
-        assert "step 3 of 3" in str(app.screen.query_one(".build-title").render())
+        assert "step 5 of 5" in str(app.screen.query_one(".build-title").render())
         assert settings.load().profile == {}                                     # nothing before the end
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
@@ -329,7 +389,7 @@ async def test_an_existing_machine_without_a_profile_is_asked_who_first(fake_rep
 
 @pytest.mark.asyncio
 async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"role": "founder"},
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
                                            tools={**settings.MachineSettings().tools,
                                                   "agy": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -354,10 +414,41 @@ async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
 
 
 @pytest.mark.asyncio
+async def test_a_punk_orc_skips_the_interview_and_builds_the_town(fake_repo: Path, onboard):
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _xp(app, pilot, "expert")
+        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
+        await _settle(pilot)
+        assert "step 2 of 4" in str(app.screen.query_one(".build-title").render())
+        await _press(app, pilot, "ob-next")
+        await _on(pilot, app, AutonomyStep)
+        await _press(app, pilot, "au-next")
+        await _on(pilot, app, ModeStep)
+        await _press(app, pilot, "ob-next")
+        await _until(pilot, lambda: Path(app.config.layout_file).exists() and not app.query(RaiseBar), n=200)
+        assert settings.load().profile == {"orchestration": "expert"}
+        assert (fake_repo / ".claude" / "settings.json").exists()                # the Warder, as checked
+        assert town_presets.pending_order(fake_repo) is None
+        planned = {b["key"] for it in intents.INTENTS for b in it.plan["buildings"]} - {"loot"}
+        assert not any(app.scroll.building(k) for k in planned)                  # nothing raised for them
+
+
+@pytest.mark.asyncio
+async def test_a_known_punk_orc_gets_an_empty_town_without_questions(fake_repo: Path, onboard):
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "expert"}))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _until(pilot, lambda: Path(app.config.layout_file).exists() and not app.query(RaiseBar), n=200)
+        assert not isinstance(app.screen, (XpStep, IntentStep, ToolsStep))
+        assert not (fake_repo / ".claude" / "settings.json").exists()            # never unasked
+
+
+@pytest.mark.asyncio
 async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, PersonStep)
+        await _on(pilot, app, XpStep)
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         machine = settings.load()
@@ -371,9 +462,10 @@ async def test_back_goes_to_the_previous_step(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _who(app, pilot, "designer", "saas")
-        await _on(pilot, app, QuestionsStep)
-        await _press(app, pilot, "ob-next")
+        await _day_and_ai(app, pilot)
         await _on(pilot, app, IntentStep)
+        await _press(app, pilot, "ob-back")
+        await _on(pilot, app, AiToolsStep)
         await _press(app, pilot, "ob-back")
         await _on(pilot, app, QuestionsStep)
         await _press(app, pilot, "ob-back")
@@ -388,11 +480,10 @@ async def test_f10_asks_who_and_the_machine_steps_not_the_town(fake_repo: Path, 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
-        assert not isinstance(app.screen, PersonStep)
+        assert not isinstance(app.screen, XpStep)
         app.start_onboarding(machine_steps=True, town_step=False)
         await _who(app, pilot, "data_analyst", "ecommerce")
-        await _on(pilot, app, QuestionsStep)
-        await _press(app, pilot, "ob-next")
+        await _day_and_ai(app, pilot)
         await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
         await _settle(pilot)
         assert not app.screen.query_one("#ob-warder", Checkbox).display

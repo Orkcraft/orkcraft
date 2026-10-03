@@ -879,6 +879,9 @@ class OrkcraftApp(App[int]):
                 self.set_timer(1.6, lambda: self.raise_town_plan(plan))    # after the bar has gone
         elif choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
             self.set_timer(1.6, self.build_town_from_order)
+        elif choice.get("expert"):
+            self.notify("B build · Y roads · 🏰 Town Hall → 📜 Preset or 🛠 New · F10 → 📜 Town Builder.",
+                        title="🤘 The town is yours to build", timeout=12)
         else:
             self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
 

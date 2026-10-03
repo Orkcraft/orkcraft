@@ -1,7 +1,10 @@
 """The onboarding's questions with options: your day, and — when no intent fits — the interview.
 
+    ORCHESTRATION                    how well the operator knows agent orchestration: the first question
+    AI_TOOLS, SKILLS, FREQS          each AI tool graded twice: experience and how often it is used
+    growth(ai_tools)                 where the two differ: the growth zones
     DAY_PAGE                         a typical day and its rhythm (asked right after who you are)
-    INTERVIEW                        sources → outputs → problems → AI, for the Town Builder
+    INTERVIEW                        sources → outputs → problems → what went wrong with AI
     page.options(q, role, industry)  a question's options, the ones common for the role first
     summary(profile, answers)        everything said, as the Town Builder's order
 
@@ -61,6 +64,52 @@ AI_PROBLEMS = _c(("no_data", "🔒", "No access to my data and tools"),
 
 
 @dataclass(frozen=True)
+class Level:
+    id: str
+    icon: str
+    title: str
+    blurb: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.icon} {self.title}"
+
+
+NEW, SOME, EXPERT = "new", "some", "expert"
+ORCHESTRATION: tuple[Level, ...] = (
+    Level(NEW, "🐣", "New to it", "I chat with AI now and then; I have never run agents. Walk me through."),
+    Level(SOME, "🪓", "Some", "I use Claude Code, Cursor or similar, but rarely more than one agent at a time."),
+    Level(EXPERT, "🤘", "Punk orc", "I orchestrate agents already. Skip the interview, I will build the town myself."),
+)
+AI_TOOLS = tuple(c for c in AI_USED if c.id != "none")
+SKILLS = (("none", "— none"), ("basic", "basic"), ("confident", "confident"), ("expert", "expert"))
+FREQS = (("never", "never"), ("monthly", "monthly"), ("weekly", "weekly"), ("daily", "daily"))
+SKILL_IDS = tuple(k for k, _ in SKILLS)
+FREQ_IDS = tuple(k for k, _ in FREQS)
+
+
+def level(level_id: str) -> Level | None:
+    return next((lv for lv in ORCHESTRATION if lv.id == level_id), None)
+
+
+def growth(ai_tools: dict) -> list[str]:
+    """Where experience and use differ: 📈 used often but known little, 💤 known well but rarely used."""
+    out: list[str] = []
+    titles = {c.id: c.title for c in AI_TOOLS}
+    for tid, grade in ai_tools.items():
+        if tid not in titles or not isinstance(grade, dict):
+            continue
+        skill, freq = grade.get("skill", "none"), grade.get("freq", "never")
+        si = SKILL_IDS.index(skill) if skill in SKILL_IDS else 0
+        fi = FREQ_IDS.index(freq) if freq in FREQ_IDS else 0
+        if fi >= 2 and si <= 1:
+            out.append(f"📈 {titles[tid]}: {freq}, but {skill if si else 'no'} experience — worth learning deeper")
+        elif si >= 2 and fi <= 1:
+            out.append(f"💤 {titles[tid]}: {skill}, but used {freq} — a skill you barely use")
+    return out
+
+
+@dataclass(frozen=True)
 class Question:
     id: str
     title: str
@@ -103,10 +152,9 @@ INTERVIEW: tuple[Page, ...] = (
     Page("pains", "What hurts in the way you work now?",
          "The Builder answers each problem with a building or a road.",
          (Question("pains", "Problems", PAINS, other="what else hurts"),)),
-    Page("ai", "Which AI have you tried, and what went wrong?",
+    Page("ai", "What went wrong with AI so far?",
          "So the town avoids what did not work for you.",
-         (Question("ai_used", "Tried", AI_USED, other="other tools"),
-          Question("ai_problems", "What went wrong", AI_PROBLEMS, other="anything else the Builder should know"))),
+         (Question("ai_problems", "What went wrong", AI_PROBLEMS, other="anything else the Builder should know"),)),
 )
 
 ALL_QUESTIONS: dict[str, Question] = {q.id: q for p in (DAY_PAGE, *INTERVIEW) for q in p.questions}
@@ -133,9 +181,12 @@ def who(profile: dict) -> str:
 def summary(profile: dict, answers: dict) -> str:
     """Everything the operator said, one line per question — the Town Builder's order."""
     lines = [f"I am {who(profile)}."]
+    lv = level(profile.get("orchestration", ""))
+    if lv:
+        lines.append(f"Agent orchestration: {lv.title.lower()} — {lv.blurb}")
     for qid, label in (("day", "My day"), ("rhythm", "Recurring"), ("sources", "My data comes from"),
-                       ("outputs", "Results go to"), ("pains", "Problems now"), ("ai_used", "AI I tried"),
-                       ("ai_problems", "What went wrong with it")):
+                       ("outputs", "Results go to"), ("pains", "Problems now"),
+                       ("ai_problems", "What went wrong with AI")):
         bag = profile if qid in ("day", "rhythm") else answers
         parts = titles(qid, list(bag.get(qid) or []))
         other = str(bag.get(f"{qid}_other") or "").strip()
@@ -143,4 +194,16 @@ def summary(profile: dict, answers: dict) -> str:
             parts.append(other)
         if parts:
             lines.append(f"{label}: {'; '.join(parts)}.")
+    graded = ai_tools_text(profile.get("ai_tools") or {})
+    if graded:
+        lines.append(f"AI tools (experience, how often): {graded}.")
+    zones = growth(profile.get("ai_tools") or {})
+    if zones:
+        lines.append("Growth zones: " + "; ".join(z[2:] for z in zones) + ".")
     return "\n".join(lines)
+
+
+def ai_tools_text(ai_tools: dict) -> str:
+    titles = {c.id: c.title for c in AI_TOOLS}
+    return "; ".join(f"{titles[t]} ({g.get('skill', 'none')}, {g.get('freq', 'never')})"
+                     for t, g in ai_tools.items() if t in titles and isinstance(g, dict))

@@ -56,14 +56,19 @@ START FROM A TEMPLATE. These are ready towns for the operator's role, in the ans
 the one closest to what they said and adapt it — do not start from nothing:
 {templates}
 Adapt it to the operator's answers above:
-- every data source they named needs a way in: a Watchtower for mail, GitHub, a schedule or a tool's
-  webhooks (Jira, Linear, Asana, the stores…); a Pit for files and links they paste; a Scroll Dump for
-  documents exported to a folder; a File Forest for a folder of files;
+- every data source they named needs a way in. EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER — no
+  other building listens for webhooks: a tool that pushes events (Jira, Linear, Asana, the stores,
+  monitoring, support desks…) is a Watchtower with its webhook, and so are mail, GitHub and
+  schedules; a Pit only for files and links they paste by hand; a Scroll Dump for documents
+  exported to a folder; a File Forest for a folder of files;
 - every place their results go needs a way out: a Catapult to that tool's API (config may name the
   environment variable with its token in token_env), a Loot Vault for files they accept first;
 - every problem they named is answered by a building or a road — say which in its "why";
 - what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
   distrust the output, prefer rules (Totem, Mill) over agents where results must not vary;
+- match their experience: new to orchestration → fewer buildings and an accept step before anything
+  leaves; a growth zone (a tool used often but known little) → let the town do that tool's routine
+  and show its work, so they learn from it;
 - drop the template's buildings that serve nothing they said; keep its names where they still fit.
 """
 

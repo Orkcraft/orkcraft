@@ -1,7 +1,8 @@
 # Design — onboarding
 
-Status: design notes, written 2026-10-03, reworked the same day: the person comes first — who they
-are, how their day goes — then the town for that role; the interview and the Town Builder when no
+Status: design notes, written 2026-10-03, reworked the same day: the person comes first — how
+well they know orchestration, who they are, how their day goes, how they use AI tools — then the
+town for that role; the interview and the Town Builder when no
 ready town fits; the machine's part last. Implemented (`screens/onboarding.py`, `realm/intents.py`,
 `realm/interview.py`). Builds on the quota readers (`orkcraft/quota/`), the display modes, the
 Warder hooks, the Town Hall and the Town Builder (`realm/town_builder.py`).
@@ -10,15 +11,17 @@ Warder hooks, the Town Hall and the Town Builder (`realm/town_builder.py`).
 
 | Part | Where it is kept | Steps |
 |---|---|---|
-| **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Who you are · Your day |
+| **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Orchestration · Who you are · Your day · Your AI tools |
 | **The town** — once per project | `.orkcraft.json`, `.orkcraft/`, the order `.orkcraft/town/order.json` | The town · (the interview) |
 | **The machine** — once per machine | `~/.config/orkcraft/settings.json` | Tools · Autonomy · The look and the hours |
 
 ```
-Who are you? → Your day → What should your first town do? ─┬─ an intent ───────────────────┐
+How well do you know orchestration? ─┬─ 🤘 punk orc ─→ Tools → Autonomy → The look → an empty town
+                                     └─ 🐣 new / 🪓 some ↓   (a newcomer gets no Skip)
+Who are you? → Your day → Your AI tools → What should your first town do? ─┬─ an intent ─────┐
                                                             ├─ an empty town ──────────────┤
                                                             └─ none fits → Sources → Outputs │
-                                                                 → Problems → AI tried ──────┤
+                                                                 → Problems → What went wrong with AI ┤
   ┌─────────────────────────────────────────────────────────────────────────────────────────┘
   └→ Tools (+ the Warder) → Autonomy → The look and the hours → the town is raised
         an intent: its buildings and roads, no model · none fits: the Town Builder adapts the
@@ -26,12 +29,26 @@ Who are you? → Your day → What should your first town do? ─┬─ an inten
 ```
 
 - A project with no `.orkcraft.json` starts onboarding. A machine already onboarded skips the
-  machine's part; one that also has a profile starts at the town.
+  machine's part; one that also has a profile starts at the town — and a punk orc's gets an
+  empty town with no questions (no Warder unasked).
 - F10 → **🧭 Onboarding** asks who you are, your day and the machine's part again — never the town.
 - Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
   **Skip** anywhere = an empty town, defaults for the rest, no Warder.
 - The title counts the steps of this run: the interview adds four (“step 4 of 10”).
 - Nothing is written before the last step. `--demo` never shows onboarding.
+
+## 1b. How well do you know agent orchestration?
+
+The first question, three answers (`interview.ORCHESTRATION`); it picks the path:
+
+| Answer | Path |
+|---|---|
+| 🐣 **New to it** — chats with AI, never ran agents | everything, walked through: no Skip after this step (Back leads here) |
+| 🪓 **Some** — Claude Code, Cursor, rarely more than one agent | everything, Skip allowed |
+| 🤘 **Punk orc** — orchestrates agents already | no interview: tools, autonomy, the look, then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
+
+Stored: `profile.orchestration`. The Town Builder reads it: new to orchestration → fewer
+buildings and an accept step before anything leaves.
 
 ## 2. Who are you?
 
@@ -79,6 +96,19 @@ Who are you? → Your day → What should your first town do? ─┬─ an inten
   a weekly report becomes a schedule in a Watchtower.
 - Stored: `profile.day`, `profile.rhythm`, `profile.day_other`.
 
+## 3b. Your AI tools — how well, how often
+
+Not a multi-select: each AI tool gets two grades, experience (none · basic · confident · expert)
+and use (never · monthly · weekly · daily), compact dropdowns in a table. Where they differ are
+the **growth zones** (`interview.growth`), shown live under the table:
+
+- 📈 used weekly or daily, but known little — worth learning deeper;
+- 💤 known well (confident, expert), but used monthly or never — a skill barely used.
+
+Stored: `profile.ai_tools` = {tool: {skill, freq}} (tools left at none / never are left out). The
+Town Builder gets the grades and the zones: a tool used often but known little → the town does its
+routine and shows its work, so the operator learns from it.
+
 ## 4. What should your first town do?
 
 ```
@@ -115,13 +145,15 @@ first, marked ✦ (`Role.sources`, `Role.outputs`, plus the industry's, `INDUSTR
 | Sources | Where does your work come from? | Jira, Confluence, Linear, Asana, Notion, GitHub, Slack, Email, Calendar, Google Drive / Sheets, Figma, App Store Connect, Google Play Console, AppTweak / Sensor Tower, Amplitude / Mixpanel, Sentry, Zendesk, HubSpot, CSV / Excel, this repository |
 | Outputs | Where does the result go? | Jira, Confluence, Asana, Linear, Notion, Slack, Email, Google Docs / Sheets, Figma, pull requests, store listings, reports in the repository, a dashboard in Orkcraft, a webhook or any API |
 | Problems | What hurts in the way you work now? | copying between tools, reports take hours, things slip, notification noise, context switching, waiting on others, stale docs, the same routine every week, no single view |
-| AI | Which AI have you tried, and what went wrong? | ChatGPT, Claude, Claude Code, Gemini, Copilot, Cursor, Zapier / n8n — no access to my data, copy-pasting context, forgets between sessions, makes things up, inconsistent, checking takes as long, security, cost |
+| AI | What went wrong with AI so far? (the tools themselves are graded in §3b) | no access to my data, copy-pasting context, forgets between sessions, makes things up, inconsistent, checking takes as long, security, cost |
 
 The answers become the **order** (`town_presets.save_order(root, prompt, role, answers)`): the
 prompt is `interview.summary` — one line per question, the operator's words included. Once the
 camp stands, the **Town Builder** plans from it with the role's intents as templates
 (`intents.templates_text`, the `ADAPT` block of the planner's prompt): start from the closest one,
-give each source a way in (Watchtower webhooks and schedules, Pit, Scroll Dump, File Forest) and
+give each source a way in — **every webhook comes in through a Watchtower**, no other building
+listens for one (Jira, Linear, the stores, monitoring, support desks; mail, GitHub and schedules
+too); a Pit only for what is pasted by hand; Scroll Dump, File Forest for folders — and
 each output a way out (Catapult to the tool's API, the token in an environment variable named by
 `token_env`; Loot Vault for what is accepted first), answer each problem with a building or road,
 and avoid what went wrong with AI before (a person's accept step, rules over agents). The plan
