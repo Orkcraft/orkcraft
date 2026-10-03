@@ -7,6 +7,9 @@
     the limits  `max_rounds` (then the moderator decides and the artifact says what stayed open),
                 `budget_usd` (then it stops with the draft as it is)
 
+Precedence, stated in every prompt: the operator's answers outrank the topic, and the topic (what
+was asked for this discussion: typed at ▶ or carried by a cart) outranks the building's `goal`.
+
 Any member may answer `QUESTION: …` instead: the discussion pauses (🔥 on the hut) until the
 operator answers, and that member's turn runs again with the answer.
 
@@ -110,15 +113,26 @@ class Discussion:
 
 # -- prompts ------------------------------------------------------------------------------------------
 
-def _frame(d: Discussion, me: Member, team: list[Member]) -> str:
-    others = ", ".join(m.role for m in team if m.role != me.role)
-    parts = [f"You are {me.role} in a team of agents ({others}) that must agree on one artifact.",
-             f"Goal: {d.goal}" if d.goal else "", f"Topic: {d.topic}"]
+PRECEDENCE = ("If these conflict, the operator's answers win over the topic, and the topic wins over "
+              "the goal.")
+
+
+def _brief(d: Discussion) -> list[str]:
+    """Goal, topic and the operator's answers, with the rule of which wins."""
+    parts = [f"Goal (the standing brief): {d.goal}" if d.goal else "", f"Topic (this request): {d.topic}"]
     if d.answers():
         parts.append("The operator answered:\n" + "\n".join(f"- {a}" for a in d.answers()))
-    parts.append("If you cannot go on without the operator's decision, answer with one line "
-                 "`QUESTION: …` and nothing else.")
-    return "\n\n".join(p for p in parts if p)
+    if d.goal or d.answers():
+        parts.append(PRECEDENCE)
+    return [p for p in parts if p]
+
+
+def _frame(d: Discussion, me: Member, team: list[Member]) -> str:
+    others = ", ".join(m.role for m in team if m.role != me.role)
+    parts = [f"You are {me.role} in a team of agents ({others}) that must agree on one artifact.", *_brief(d),
+             "If you cannot go on without the operator's decision, answer with one line "
+             "`QUESTION: …` and nothing else."]
+    return "\n\n".join(parts)
 
 
 def draft_prompt(d: Discussion, me: Member, team: list[Member]) -> str:
@@ -135,8 +149,8 @@ def revise_prompt(d: Discussion, objections: list[str], final: bool) -> str:
     ask = ("This is the last round: decide. Return the final artifact, and end it with a short "
            "`## Open points` section listing what the team did not agree on." if final else
            "Revise the draft so that it answers the objections. Return the full revised artifact only.")
-    return (f"You moderate a team of agents. Topic: {d.topic}\n\n" + (f"Goal: {d.goal}\n\n" if d.goal else "") +
-            f"## The draft\n\n{d.draft}\n\n## Objections\n\n" + "\n\n".join(objections) + f"\n\n{ask}")
+    return ("You moderate a team of agents.\n\n" + "\n\n".join(_brief(d)) +
+            f"\n\n## The draft\n\n{d.draft}\n\n## Objections\n\n" + "\n\n".join(objections) + f"\n\n{ask}")
 
 
 # -- the discussion -----------------------------------------------------------------------------------

@@ -26,7 +26,7 @@ def _simulated(harness: str, prompt: str, model: str) -> tuple[str, None]:
     """The sandbox: a draft, then everyone agrees — no model is called."""
     if "Review it from your role" in prompt:
         return "AGREE — _(demo — simulated)_", None
-    topic = prompt.split("Topic: ", 1)[-1].splitlines()[0]
+    topic = prompt.split("Topic (this request): ", 1)[-1].splitlines()[0]
     return f"# {topic}\n\n_(demo — simulated draft; agents do not run in the sandbox)_", None
 
 
@@ -42,7 +42,7 @@ class TeamView(TypedView):
         super().__init__(*a, **kw)
         self.current: tm.Discussion | None = None
         self.history: list[tm.Discussion] = []
-        self.waiting: str | None = None           # a topic that arrived while one ran
+        self.waiting: list[str] = []              # topics that arrived while one ran, oldest first
         self._cancel: threading.Event | None = None
         self._busy = False
 
@@ -80,8 +80,8 @@ class TeamView(TypedView):
         if not topic:
             self.app.notify("a discussion needs a topic (or a goal in the settings)", title="⚔ Agent Team")
             return False
-        if self._busy:
-            self.waiting = topic
+        if self._busy or (self.current is not None and self.current.outcome == "asked"):
+            self.waiting.append(topic)
             return False
         if getattr(self.app, "gold_exhausted", lambda: False)():
             self.app.notify("🪙 budget exhausted — a discussion costs model calls", title="⚔ Agent Team",
@@ -143,8 +143,7 @@ class TeamView(TypedView):
         self.history = tm.load_all(self.state_dir)
         self._render_list()
         if self.waiting and d.outcome != "asked":
-            nxt, self.waiting = self.waiting, None
-            self.start(nxt)
+            self.start(self.waiting.pop(0))
 
     def reply(self, text: str | None) -> None:
         d = self.current
@@ -226,6 +225,8 @@ class TeamView(TypedView):
             lines.append(f"R{d.round}/{self.max_rounds} ${d.spent:.2f}")
         elif d is not None:
             lines.append(OUTCOME.get(d.outcome, d.outcome))
+        if self.waiting:
+            lines.append(f"{len(self.waiting)} queued")
         return lines
 
     def hut_lines(self, widths: list[int]) -> list[str]:
@@ -241,6 +242,8 @@ class TeamView(TypedView):
             lines += [f"round: {d.round}/{self.max_rounds}", f"spent: ${d.spent:.2f}"]
         else:
             lines += [f"outcome: {OUTCOME.get(d.outcome, d.outcome)}", f"rounds: {d.round}/{self.max_rounds}"]
+        if self.waiting:
+            lines.append(f"queued: {len(self.waiting)}")
         return lines
 
     def quick_action(self, action_id: str) -> bool:
