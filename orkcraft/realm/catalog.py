@@ -192,12 +192,19 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="library", orc="Woodcutter"),
     BuildingType(
         "scrolls", "Scroll Dump", "🗑️", "S",
-        "the project's wiki: notes, guides, ADRs; the Scroll Scrapper pulls the exact fragments a prompt needs",
-        "the bases and how many notes each", "the notes by heading; Enter reads one",
-        events=(_e("knowledge.changed", "knowledge changed", FILE, "a knowledge file was added or changed"),
-                _e("knowledge.chunks", "fragments", TEXT, "the fragments that answer a query")),
-        actions=(_a("knowledge.add", "Add base", "+", "connect a folder as a knowledge base"),),
-        config={"paths": (list, None, False)},
+        "the project's LLM wiki: the Scroll Scrapper turns read-only sources (notes, code, a git revision, "
+        "a Confluence space) into linked pages, an index and a log, keeps them current and lints them",
+        "pages, sources, what is not taken in yet", "the wiki's pages and the sources; i ingests, l lints",
+        events=(_e("knowledge.changed", "knowledge changed", FILE, "a source or a wiki page was added or changed"),
+                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's index, for the agent to read from"),
+                _e("wiki.updated", "wiki updated", TEXT, "an ingest finished: the pages added, changed, marked stale"),
+                _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found")),
+        actions=(_a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki"),
+                 _a("wiki.lint", "Lint", "🧹", "check the wiki for contradictions, stale facts, orphans"),
+                 _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
+        config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
+                "harness": (str, ("claude", "agy"), False), "model": (str, None, False),
+                "auto_ingest": (bool, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
@@ -411,6 +418,10 @@ def validate(spec: dict) -> list[str]:
             errors.append(f"config: {key} is too long")
         elif typ is list and (len(value) > 10 or not all(isinstance(x, str) and len(x) <= 300 for x in value)):
             errors.append(f"config: {key} must be up to 10 strings")
+    if tid == "scrolls" and isinstance(config.get("wiki"), str):
+        w = config["wiki"].strip()
+        if not w or w.startswith(("/", "~")) or ".." in w.replace("\\", "/").split("/"):
+            errors.append("config: wiki must be a folder inside the project")
     if tid == "mill" and isinstance(config.get("steps"), list):
         from orkcraft.realm import mill
         errors += [f"config: steps: {e}" for e in mill.check(config["steps"])]

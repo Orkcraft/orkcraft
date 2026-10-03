@@ -189,7 +189,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🔥 Orc Council | Chieftains | a question (▶ or a cart; carts that come mid-debate queue): members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; the operator's answers outrank the topic, the topic outranks `goal`; rounds and $ capped | `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event | `calendar.event_due`, `.day_schedule`, `.event_added/removed` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
-| 🗑️ Scroll Dump | Scroll Scrapper | folders of notes; `/` or a cart is a query → the best few fragments within a budget | `knowledge.changed`, `knowledge.chunks` |
+| 🗑️ Scroll Dump | Scroll Scrapper | the project's LLM wiki: read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`) → linked pages, an index and a log in `llm-wiki/`; ⟳ ingests what is new, 🧹 lints; a cart is a task and goes on with the wiki's index | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
@@ -234,6 +234,25 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)
   is in `.orkcraft/horn/<id>/calls.jsonl`.
+- The Scroll Dump is an **LLM wiki**: it does no retrieval of its own (Claude Code and agy search
+  files well) — its orc, the librarian, turns the sources into a wiki once and keeps it current, so
+  knowledge accumulates instead of being searched for from scratch. The wiki's folder (`wiki`,
+  default `llm-wiki/`) holds `WIKI.md` (the rules the librarian follows — edit them), `index.md`
+  (every page with one line; agents read it first), `log.md`, `lint.md`, the pages in `pages/`
+  and, in `raw/`, snapshots of the sources outside the project with `raw/manifest.json` (what the
+  wiki has taken in). **Ingest** (`i`, ⟳, or by itself with `auto_ingest`) hands the librarian the
+  sources that are new, changed or gone; it updates the pages, the index and the log, writing only
+  inside the wiki's folder, and the manifest moves on only when it succeeds. **Lint** (`l`, 🧹)
+  writes `lint.md`: contradictions, stale facts, orphans, missing pages. The librarian runs on
+  `harness` (`claude`, default, or `agy` — agy's sandbox sees only the wiki's folder, so give it
+  sources outside the project or snapshots) with `model`. Nothing is written before the first ingest.
+- The sources are strings: `docs` (or `fs:docs`) a folder of Markdown notes, `code:src` a folder of
+  code, `git:main` or `git:v2.0:docs` a revision read through git, `confluence:ENG` a Confluence
+  space (the site in `ORKCRAFT_CONFLUENCE_URL`, or `confluence:ENG@https://acme.atlassian.net/wiki`;
+  signed in with `ORKCRAFT_CONFLUENCE_EMAIL` + `ORKCRAFT_CONFLUENCE_TOKEN`, or
+  `ORKCRAFT_CONFLUENCE_PAT`). Remote pages are cached in `~/.cache/orkcraft/scrolls/` and
+  refetched in the background every 15 minutes; a failed fetch keeps the cache. The older `paths`
+  setting still works. The sources are only read.
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
   Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-orc Barracks); event ids
   are unchanged, so old roads keep working.
