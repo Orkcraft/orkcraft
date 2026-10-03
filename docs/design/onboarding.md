@@ -58,7 +58,7 @@ Stored:
 │   ┌ ⚒️ Forge (ASCII) ─────────┐      ┌ ⚒️ Forge (frame) ─────────┐          │
 │   │  …the same live rows…    │      │  …the same live rows…    │          │
 │   └──────────────────────────┘      └──────────────────────────┘          │
-│     ○ 🧌 Camp            ○ 👔 Office            ◉ 🧌/👔 Shift                │
+│        ○ 🧌 Camp          ◉ 🧌/👔 Shift           ○ 👔 Office              │
 │                                                                           │
 │  Your day                       ▼                                         │
 │   ████████████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████████████████              │
@@ -70,8 +70,8 @@ Stored:
 ```
 
 - Three modes: **🧌 Camp** (ASCII), **👔 Office** (just frames) and **🧌/👔 Shift** — Office in office
-  hours on office days, Camp otherwise, switched by the clock (`schedule.py`). Both cards light up
-  for Shift. The cards show the same building with the same live rows, so only the look differs.
+  hours on office days, Camp otherwise, switched by the clock (`schedule.py`). Camp sits under the
+  camp's picture, Office under the office's, Shift between them; both cards light up for Shift. The cards show the same building with the same live rows, so only the look differs.
 - **The day bar** (`widgets/day_bar.py`): 48 half-hour cells, amber day, dark purple 🌙 quiet, grey
   👔 office (Shift only), ▼ now. Mouse: drag a stretch for the selected span. Keys: Tab picks an edge,
   ←/→ move it, shift+←/→ move the whole span, Delete turns quiet off. Where quiet and office overlap both hold

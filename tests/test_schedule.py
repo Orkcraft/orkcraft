@@ -177,3 +177,28 @@ def test_where_quiet_and_office_overlap_both_hold():
     assert schedule.status(m, at) == "👔 office till 18:00 · 🌙 quiet till 08:00"
     bar = DayBar(quiet=m.quiet, office=m.office)
     assert bar.both_at(17 * 2) and not bar.both_at(12 * 2) and not bar.both_at(20 * 2)
+
+
+@pytest.mark.asyncio
+async def test_shift_sits_between_camp_and_office_and_one_is_on(fake_repo: Path):
+    from textual.widgets import RadioButton
+    settings.save(_machine(onboarded=True))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        app.open_day()
+        await pilot.pause()
+        step = app.screen
+        buttons = list(step.query(RadioButton))
+        assert [b.id for b in buttons] == ["ob-mode-camp", "ob-mode-shift", "ob-mode-office"]
+        cards = {c.mode: c.region for c in step.query("ModeCard")}
+        radios = {b.id.removeprefix("ob-mode-"): b.region for b in buttons}
+        for mode in ("camp", "office"):                                   # under its own picture
+            assert cards[mode].x <= radios[mode].x and radios[mode].right <= cards[mode].right
+        assert cards["camp"].right <= radios["shift"].x and radios["shift"].right <= cards["office"].x
+        await pilot.click("#ob-mode-office")
+        await pilot.pause()
+        assert step.mode == "office" and [b.value for b in buttons] == [False, False, True]
+        await pilot.click("#ob-mode-office")                              # a second click keeps it on
+        await pilot.pause()
+        assert step.mode == "office" and buttons[2].value

@@ -20,7 +20,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Button, Checkbox, Input, Label, OptionList, ProgressBar, RadioButton, RadioSet, Select, Static
+from textual.widgets import Button, Checkbox, Input, Label, OptionList, ProgressBar, RadioButton, Select, Static
 from textual.widgets.option_list import Option
 
 from orkcraft import schedule, settings, tools
@@ -190,11 +190,14 @@ class ModeStep(ModalScreen[dict | str | None]):
 
     BINDINGS = [Binding("escape", "back", "Back")]
     DEFAULT_CSS = _css("ModeStep", 80) + """
-    ModeStep #ob-cards { height: auto; }
+    ModeStep #ob-cards, ModeStep #ob-modes { height: auto; }
     ModeStep .ob-card { width: 1fr; height: auto; border: round $panel-lighten-2; padding: 0 1; margin: 0 1; }
     ModeStep .ob-card.-picked { border: round $accent; }
-    ModeStep RadioSet { width: 100%; layout: horizontal; border: none; }
-    ModeStep RadioButton { width: 1fr; }
+    ModeStep .ob-gap { width: 20; height: 1; }
+    ModeStep .ob-radio-cell { width: 1fr; height: 1; align-horizontal: center; margin: 0 1; }
+    ModeStep .ob-radio-cell.-middle { width: 20; margin: 0; }
+    ModeStep RadioButton { width: auto; height: 1; border: none; padding: 0; background: transparent; }
+    ModeStep RadioButton:focus { text-style: bold; }
     ModeStep .ob-section { text-style: bold; margin-top: 1; }
     ModeStep #ob-day-row { height: auto; align-horizontal: center; }
     ModeStep #ob-day-legend { height: auto; }
@@ -211,12 +214,16 @@ class ModeStep(ModalScreen[dict | str | None]):
         with Vertical():
             yield Label("🕰 Your day — the look of the town and its hours" if self.standalone
                         else "🧭 How should the town look?  ·  step 2 of 3", classes="build-title")
+            # Camp under the camp's picture, Office under the office's, Shift — both — between them:
+            # the radio row has the cards' columns (1fr · the gap · 1fr).
             with Horizontal(id="ob-cards"):
                 yield ModeCard("camp")
+                yield Static("", classes="ob-gap")
                 yield ModeCard("office")
-            with RadioSet(id="ob-modes"):
-                for mode in settings.MODES:
-                    yield RadioButton(settings.MODE_TITLES[mode], value=self.mode == mode, id=f"ob-mode-{mode}")
+            with Horizontal(id="ob-modes"):
+                for mode in ("camp", "shift", "office"):
+                    with Horizontal(classes="ob-radio-cell" + (" -middle" if mode == "shift" else "")):
+                        yield RadioButton(settings.MODE_TITLES[mode], value=self.mode == mode, id=f"ob-mode-{mode}")
             yield Static("", id="ob-mode-hint", classes="build-hint")
             yield Label("Your day", classes="ob-section")
             with Horizontal(id="ob-day-row"):
@@ -240,7 +247,10 @@ class ModeStep(ModalScreen[dict | str | None]):
         self._fit()
 
     def _fit(self) -> None:
-        self.query_one("#ob-cards").styles.layout = "vertical" if self.app.size.width < NARROW else "horizontal"
+        narrow = self.app.size.width < NARROW
+        self.query_one("#ob-cards").styles.layout = "vertical" if narrow else "horizontal"
+        for gap in self.query(".ob-gap"):
+            gap.display = not narrow
 
     @property
     def bar(self) -> DayBar:
@@ -250,9 +260,11 @@ class ModeStep(ModalScreen[dict | str | None]):
         self.mode = mode
         for card in self.query(ModeCard):
             card.set_class(card.mode == mode or mode == "shift", "-picked")
-        button = self.query_one(f"#ob-mode-{mode}", RadioButton)
-        if not button.value:
-            button.value = True
+        for button in self.query(RadioButton):          # one of three, kept by hand: they sit in separate cells
+            on_ = button.id == f"ob-mode-{mode}"
+            if button.value != on_:
+                with button.prevent(RadioButton.Changed):
+                    button.value = on_
         self.query_one("#ob-mode-hint", Static).update({
             "camp": "🧌 Buildings wear their ASCII all day.",
             "office": "👔 Buildings are just frames — nothing to explain over a shoulder.",
@@ -264,13 +276,12 @@ class ModeStep(ModalScreen[dict | str | None]):
     def _legend(self) -> None:
         self.query_one("#ob-day-legend", Static).update(day_legend(self.bar, self.machine.office_days))
 
-    @on(RadioSet.Changed, "#ob-modes")
-    def _radio(self, event: RadioSet.Changed) -> None:
+    @on(RadioButton.Changed)
+    def _radio(self, event: RadioButton.Changed) -> None:
         event.stop()
-        if event.pressed is not None and event.pressed.id:
-            mode = event.pressed.id.removeprefix("ob-mode-")
-            if mode != self.mode:
-                self.pick(mode)
+        mode = (event.radio_button.id or "").removeprefix("ob-mode-")
+        if mode in settings.MODES:
+            self.pick(mode if event.value else self.mode)       # a second click keeps it on
 
     @on(DayBar.Changed)
     def _day(self, event: DayBar.Changed) -> None:
