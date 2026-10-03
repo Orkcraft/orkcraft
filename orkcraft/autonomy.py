@@ -32,7 +32,7 @@ class Level:
 
 
 LEVELS: tuple[Level, ...] = (
-    Level(0, "🙋", "Ask me", "Every question waits for you; nothing is judged while you are away."),
+    Level(0, "⛓️", "Ask me", "Every question waits for you; nothing is judged while you are away."),
     Level(1, "🌅", "Morning advice", "In quiet hours the 🏛 Elders read the orcs' questions and leave advice; "
                                     "in the morning you follow it with one key."),
     Level(2, "🧭", "Routine on their own", "Agents read, edit the project and run its tests without asking "
