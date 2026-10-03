@@ -91,18 +91,22 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="burrow", orc="Scavenger"),
     BuildingType(
         "watchtower", "Watchtower", "🗼", "M",
-        "listens to the outside: a mailbox (IMAP), GitHub events, a schedule, webhooks on localhost",
+        "listens to the outside: a mailbox (IMAP, Gmail), GitHub events, comments and mentions in Slack, Jira, "
+        "Confluence and Figma, a schedule, webhooks on localhost",
         "what came in last, unread mail", "the signals that came in; Enter reads one",
         events=(_e("mail.received", "new mail", TEXT, "a new message arrived: sender, subject, first lines"),
                 _e("watch.github", "GitHub event", TEXT, "a GitHub event: PR, issue, release, check"),
                 _e("watch.cron", "schedule", TEXT, "the schedule fired"),
-                _e("watch.webhook", "webhook", TEXT, "a webhook arrived on localhost: its body")),
+                _e("watch.webhook", "webhook", TEXT, "a webhook arrived on localhost: its body"),
+                _e("watch.comment", "comment", TEXT, "a new comment or message in Slack, Jira, Confluence or Figma"),
+                _e("watch.mention", "mention", TEXT, "you were mentioned or written to: Slack, Jira, Confluence, Figma")),
         actions=(_a("mail.open_new", "Open new", "✉", "open the newest signal"),
                  _a("mail.refresh", "Check now", "↻", "check every source now")),
         config={"host": (str, None, False), "user_env": (str, None, False), "password_env": (str, None, False),
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
-                "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False)},
+                "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),
+                "feeds": (list, None, False)},
         art="watchtower", orc="Lookout"),
     BuildingType(
         "totem", "Totem", "🗿", "S",
@@ -435,6 +439,11 @@ def validate(spec: dict) -> list[str]:
             errors.append("config: cron: say `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron")
         if isinstance(config.get("github"), str) and not watch.REPO.match(config["github"]):
             errors.append("config: github must be owner/repo")
+        if isinstance(config.get("feeds"), list):
+            from orkcraft.realm import feeds
+            errors += [f"config: feeds: {e}" for e in feeds.check(config["feeds"])]
+            if not config.get("webhook_port") and any("secret=" in str(x) for x in config["feeds"]):
+                errors.append("config: feeds: secret= is for webhooks — set webhook_port too")
     if tid == "horn":
         from orkcraft.realm import horn
         if isinstance(config.get("sounds"), list):

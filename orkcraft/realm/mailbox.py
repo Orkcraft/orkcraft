@@ -6,6 +6,9 @@ itself (the Town Hall's Warder flags a spec that does):
     host  imap.example.com     user_env  MAIL_USER     password_env  MAIL_PASSWORD
     port  993 (SSL)            folder    INBOX
 
+`host: gmail` (or `yandex`, `icloud`) names the provider's server; Gmail wants an app password
+(Google account → Security → App passwords) and IMAP turned on.
+
 The mailbox is opened read-only and bodies are fetched with PEEK, so watching never marks a
 message as read.
 """
@@ -21,6 +24,7 @@ from email.header import decode_header, make_header
 from email.utils import parseaddr, parsedate_to_datetime
 
 LOOK_LIMIT = 20
+PROVIDERS = {"gmail": "imap.gmail.com", "yandex": "imap.yandex.com", "icloud": "imap.mail.me.com"}
 SNIPPET = 200
 
 
@@ -46,6 +50,7 @@ class Look:
 
 def credentials(cfg: dict) -> tuple[str, int, str, str, str]:
     host = str(cfg.get("host", "")).strip()
+    host = PROVIDERS.get(host.lower(), host)
     if not host:
         raise ValueError("set `host` in the building's settings")
     user_env, pw_env = str(cfg.get("user_env", "")), str(cfg.get("password_env", ""))

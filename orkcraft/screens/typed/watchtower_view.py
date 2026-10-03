@@ -2,13 +2,15 @@
 
 Sources, each on when its settings are there:
 
-    mail      IMAP, read-only (host, user_env, password_env, folder, port) — every 2 min
+    mail      IMAP, read-only (host — or `gmail` —, user_env, password_env, folder, port) — every 2 min
     github    events of owner/repo through `gh` (github)                   — every 2 min
+    feeds     Slack, Jira, Confluence, Figma: comments and mentions (feeds) — every 2 min
     cron      a schedule (cron: `every 15m`, `daily 05:00`, …)             — checked every 30 s
-    webhook   POSTs to http://127.0.0.1:<webhook_port>/… (webhook_secret_env to require a secret)
+    webhook   POSTs to http://127.0.0.1:<webhook_port>/… (webhook_secret_env to require a secret);
+              /slack, /jira, /confluence, /figma become comments and mentions (realm/inbound.py)
 
 Every new signal goes down the road (`mail.received`, `watch.github`, `watch.cron`,
-`watch.webhook`) and into `.orkcraft/watchtower/<id>/signals.jsonl`. The open building lists the
+`watch.webhook`, `watch.comment`, `watch.mention`) and into `.orkcraft/watchtower/<id>/signals.jsonl`. The open building lists the
 signals, Enter reads one (mail is fetched without marking it read); ✉ opens the newest.
 """
 from __future__ import annotations
@@ -26,19 +28,21 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Markdown, OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import mailbox, watch
+from orkcraft.realm import feeds, inbound, mailbox, watch
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 120.0
 CRON_S = 30.0
 KEEP = 200
-ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝"}
+RAW_KEEP = 20000                                        # a raw webhook's body, as kept
+ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 
 
 class WatchtowerView(TypedView):
     TYPE = "watchtower"
     imap_factory = staticmethod(imaplib.IMAP4_SSL)      # tests put a fake server here
     gh_runner = None                                    # and a fake `gh` here
+    feed_opener = None                                  # and fake Slack / Jira / Confluence / Figma here
     clock = staticmethod(dt.datetime.now)
 
     def __init__(self, *a, **kw) -> None:
@@ -56,8 +60,18 @@ class WatchtowerView(TypedView):
     @property
     def sources(self) -> list[str]:
         c = self.config
+        kinds = [f.kind for f in self.feeds]
         return [s for s, on in (("mail", c.get("host")), ("github", c.get("github")), ("cron", c.get("cron")),
-                                ("webhook", c.get("webhook_port"))) if on]
+                                ("webhook", c.get("webhook_port"))) if on] + sorted(set(kinds), key=kinds.index)
+
+    @property
+    def polled(self) -> list[feeds.Feed]:
+        return [f for f in self.feeds if f.poll]
+
+    @property
+    def feeds(self) -> list[feeds.Feed]:
+        lines = self.config.get("feeds")
+        return [f for f in (feeds.parse(x)[0] for x in (lines if isinstance(lines, list) else [])) if f]
 
     def _state(self) -> dict:
         try:
@@ -96,7 +110,31 @@ class WatchtowerView(TypedView):
 
     def drain(self) -> None:
         while not self.inbox.empty():
-            self.add_signal(self.inbox.get_nowait())
+            self.heard(self.inbox.get_nowait())
+
+    def heard(self, sig: watch.Signal) -> None:
+        """A webhook delivery: a service's becomes its comments and mentions, the rest stays raw."""
+        service = inbound.service_of(sig.ref)
+        st = self._state()
+        items = inbound.parse(service, sig.body, (st.get("feeds_me") or {}).get(service)) if service else None
+        if items is inbound.IGNORED:
+            return
+        if items is None:
+            sig.body = sig.body[:RAW_KEEP]
+            self.add_signal(sig)
+            return
+        heard = dict(st.get("hook_seen") or {})
+        known = set(heard.get(service) or [])
+        for line, keys in (st.get("feeds_seen") or {}).items():
+            if line.startswith(service):
+                known.update(keys)
+        fresh = [i for i in items if i.key not in known]
+        if fresh:
+            heard[service] = ((heard.get(service) or []) + [i.key for i in fresh])[-feeds.SEEN_KEEP:]
+            self._save_state(hook_seen=heard)
+        for item in fresh:
+            self.add_signal(watch.Signal(item.at or sig.at, service, item.title,
+                                         f"{item.body}\n\n{item.url}".strip(), item.url or sig.ref, item.mention))
 
     def on_unmount(self) -> None:
         if self.hook is not None:
@@ -119,7 +157,8 @@ class WatchtowerView(TypedView):
         with (self.state_dir / "signals.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(asdict(sig), ensure_ascii=False) + "\n")
         if send:
-            self.emit(sig.event, f"{sig.title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body, sig.title)
+            title = f"{sig.source} · {sig.title}" if sig.source in watch.FEEDS else sig.title   # which service
+            self.emit(sig.event, f"{title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body, title)
         self._render_list()
 
     def start_webhook(self) -> None:
@@ -127,8 +166,9 @@ class WatchtowerView(TypedView):
         if not port or self.simulated or self.hook is not None:
             return
         secret = os.environ.get(str(self.config.get("webhook_secret_env") or ""), "")
+        secrets = {f.kind: f.env("secret") for f in self.feeds if f.opts.get("secret") and f.env("secret")}
         try:                                         # the sender gets its 202 at once; the UI drains the inbox
-            self.hook = watch.Webhook(int(port), secret, self.inbox.put)
+            self.hook = watch.Webhook(int(port), secret, self.inbox.put, secrets)
             self.hook.start()
             self.errors.pop("webhook", None)
         except OSError as e:
@@ -147,25 +187,27 @@ class WatchtowerView(TypedView):
             self._save_state(cron_last=now.isoformat(timespec="seconds"))
 
     def refresh_data(self) -> None:
-        if self._looking or not ({"mail", "github"} & set(self.sources)):
+        if self._looking or not ({"mail", "github", *watch.FEEDS} & set(self.sources)):
             self._render_list()
             return
         self._looking = True
         cfg, factory, runner, app = self.config, type(self).imap_factory, type(self).gh_runner, self.app
         gh_last = str(self._state().get("gh_last", ""))
+        opener, watched = type(self).feed_opener, self.polled
 
         def work() -> None:
             look = mailbox.look(cfg, factory) if cfg.get("host") else None
             gh = watch.github_events(str(cfg["github"]), gh_last, *([runner] if runner else [])) \
                 if cfg.get("github") else None
+            looks = [(f, feeds.look(f, *([opener] if opener else []))) for f in watched]
             try:
-                app.call_from_thread(self.apply, look, gh)
+                app.call_from_thread(self.apply, look, gh, looks)
             except Exception:
                 self._looking = False
 
         self.run_worker(work, thread=True, exclusive=True, group="watch-look")
 
-    def apply(self, look: mailbox.Look | None, gh: tuple | None) -> None:
+    def apply(self, look: mailbox.Look | None, gh: tuple | None, looks: list | None = None) -> None:
         self._looking, self.checked = False, watch.now_iso()[11:16]
         if look is not None:
             self.apply_look(look)
@@ -176,7 +218,30 @@ class WatchtowerView(TypedView):
                 self.add_signal(s)
             if newest:
                 self._save_state(gh_last=newest)
+        if looks:
+            self.apply_feeds(looks)
         self._render_list()
+
+    def apply_feeds(self, looks: list[tuple[feeds.Feed, feeds.Look]]) -> None:
+        """Each feed's new items become signals; a feed that failed keeps what it had seen."""
+        st = self._state()
+        seen, me = dict(st.get("feeds_seen") or {}), dict(st.get("feeds_me") or {})
+        heard = st.get("hook_seen") or {}
+        for kind in {f.kind for f, _ in looks}:
+            self.errors.pop(kind, None)
+        for feed, got in looks:
+            if got.error:
+                self.errors[feed.kind] = got.error
+                continue
+            if got.me:
+                me[feed.kind] = got.me                    # the webhook tells mentions by it
+            fresh, seen[feed.line] = feeds.new_items(got, seen.get(feed.line))
+            pushed = set(heard.get(feed.kind) or [])      # already came by webhook
+            for item in (i for i in fresh if i.key not in pushed):
+                self.add_signal(watch.Signal(item.at or watch.now_iso(), feed.kind, item.title,
+                                             f"{item.body}\n\n{item.url}".strip(), item.url, item.mention))
+        live = {f.line for f, _ in looks}
+        self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live}, feeds_me=me)
 
     def apply_look(self, look: mailbox.Look) -> None:
         self._looking = False
@@ -203,7 +268,7 @@ class WatchtowerView(TypedView):
             head, lst = self.query_one("#watch-head", Static), self.query_one("#watch-list", OptionList)
         except Exception:
             return
-        bits = [f"{ICON[s]} {s}" for s in self.sources] or ["no source yet — set host, github, cron or webhook_port"]
+        bits = [f"{ICON[s]} {s}" for s in self.sources] or ["no source yet — set host, github, feeds, cron or webhook_port"]
         if self.look is not None and not self.look.error:
             bits.append(f"{self.look.unread} unread")
         if self.hook is not None:
@@ -220,7 +285,7 @@ class WatchtowerView(TypedView):
             row = Text(no_wrap=True, overflow="ellipsis")
             row.append(f"{ICON.get(s.source, '·')} ", style="cyan")
             row.append(f"{s.at[5:16].replace('T', ' ')}  ", style="dim")
-            row.append(s.title)
+            row.append(s.title, style="bold" if s.mention else "")
             lst.add_option(Option(row, id=f"s{i}"))
         if self.signals:
             lst.highlighted = keep if keep is not None and keep < len(self.signals) else 0

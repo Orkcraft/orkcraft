@@ -180,7 +180,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only), GitHub events (`gh`), a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; steps without a model (`grep`, `replace`, `csv`, `json`, `extract`, `template`, `script: …`) | `mill.done`, `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
@@ -230,6 +230,42 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     turns it off; a `fill.py` edited by hand is never repaired.
   - Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that presses a button with no schema and
     no confirmation.
+- The Watchtower's `feeds` are asked every two minutes over HTTPS, read-only (those services send
+  webhooks only to a public URL). One line a feed; options name environment variables, never the
+  token itself:
+
+  ```yaml
+  host: gmail                  # imap.gmail.com: an app password, IMAP on (also yandex, icloud)
+  user_env: GMAIL_USER
+  password_env: GMAIL_APP_PASSWORD
+  feeds:
+    - "slack: token=SLACK_TOKEN channels=C0123,D0456"     # a user token: search:read, *:history, users:read
+    - "jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN"            # jql=… takes the rest
+    - "confluence: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN spaces=DOC"   # cql=… too
+    - "figma: token=FIGMA_TOKEN files=AbC123,XyZ789"
+  ```
+
+  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
+  `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
+  service). Your own messages are skipped; each feed's first look only marks what is there as seen.
+- The same services can **push** instead (no two-minute wait): the Watchtower's webhook listens on
+  127.0.0.1 only, so give it a public address with a tunnel (`cloudflared tunnel --url
+  http://127.0.0.1:8787`, ngrok, tailscale funnel; `smee.io` for GitHub) and point each service at
+  its path. `secret=` on the service's `feeds` line names the variable that holds its secret (a
+  line with only `secret=` listens and never asks); without it, `webhook_secret_env`:
+
+  | Path | Where to set it | How it is checked |
+  |---|---|---|
+  | `/slack` | Slack app → Event Subscriptions (user events `message.channels`, `message.im`; `app_mention`) | the signing secret: `X-Slack-Signature`, five minutes at most; `url_verification` answered |
+  | `/jira` | Jira → System → Webhooks, event *comment created*, with a secret | `X-Hub-Signature` (HMAC-SHA256) |
+  | `/figma` | Figma Webhooks v2, `FILE_COMMENT`, with a passcode | the passcode in the body |
+  | `/confluence` | an Automation rule → *Send web request*, header `X-Orkcraft-Token` | the token |
+
+  A delivery becomes the same item a feed would find (sent once, however it came): Slack messages
+  and Jira comments, Figma comments; your own are skipped, and a mention is told by who you are
+  there — learnt by that service's polled feed, or from Slack's delivery itself. An Automation
+  rule sends the simple form `{"id", "title", "text", "url", "author", "mention"}`; other paths stay
+  a raw `watch.webhook`.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)
