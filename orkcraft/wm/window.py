@@ -133,7 +133,9 @@ class Window(Container):
     def _update_title(self) -> None:
         """` N · Title 📌 ⛶ ── [ 🚩 ──► 🔮 Scrying Spire ] ──── [ 🧌 Smith+1 🔨 💤 ] `"""
         marks = (" 📌" if self.pinned else "") + (" ⛶" if self.restore is not None else "")
-        left = f" {self.number} · {self.window_title}{marks} "
+        if modes.hidden():
+            marks = (" pinned" if self.pinned else "") + (" max" if self.restore is not None else "")
+        left = f" {self.number} · {modes.text(self.window_title)}{marks} "
         title = Text(left)
         self._badge_cells = 0
 
@@ -145,7 +147,7 @@ class Window(Container):
 
         # The rally segment shrinks before it goes: `🚩 ──► 🔮 Spire` → `🚩 ──► 🔮` → nothing
         # (the badge always wins).
-        rally = getattr(self, "rally", "")
+        rally = modes.text(getattr(self, "rally", ""))
         candidates = [rally, rally.rsplit(" ", 1)[0]] if rally else []
         for text in candidates:
             rally_text = f"─[ {text} ]"
@@ -198,9 +200,8 @@ class Window(Container):
             self._update_title()
 
     def refresh_badge(self) -> None:
-        """The mode changed: the badge is drawn in its words (🧌 or 🧑)."""
-        if self.badge:
-            self._update_title()
+        """The mode changed: the title and the badge are drawn in its words (with or without emoji)."""
+        self._update_title()
 
     def set_pinned(self, pinned: bool) -> None:
         self.pinned = pinned

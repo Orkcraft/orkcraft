@@ -3,15 +3,16 @@
     immersion   buildings wear their ASCII, agents are orcs 🧌, a question is fire 🔥 — a building
                 left waiting burns (orange, then red, then its roof turns to 🔥), resources are gold
                 🪙, lumber 🪵 and meat 🥩, rocks 🪨 roll along the roads.
-    hidden      nothing that looks like a game: buildings are only frames, agents are people 🧑, a
-                question is ❓ and a waiting building only turns red, resources are words, the roads
-                carry small squares. The icons of the buildings' names stay.
+    hidden      the office: no game and, as far as it goes, no emoji at all — buildings are grey frames
+                on black, names and status lines lose their icons, a question is `?` and a waiting
+                building only gets a red frame, resources are words, the roads carry small squares.
 
 The mode is kept as `preferences.mode` of the Town Scroll (`plain`, its old name, reads as hidden);
 the Desktop sets `current` so every widget draws the same look. Pure module, no Textual.
 """
 from __future__ import annotations
 
+import re
 import time
 
 from orkcraft.realm.looks import KIND_ICONS
@@ -21,7 +22,7 @@ IMMERSION, HIDDEN = "immersion", "hidden"
 MODES = (IMMERSION, HIDDEN)
 
 PERSON = "🧑"
-QUESTION = "❓"
+QUESTION = "?"
 ROCK = "🪨"
 SQUARE = "■"
 
@@ -54,13 +55,72 @@ def hidden(mode: str | None = None) -> bool:
 _ORC_ICONS = sorted({i for i in KIND_ICONS.values()}, key=len, reverse=True)   # 🗿🧌 before 🧌
 
 
-def skin(text: str, mode: str | None = None) -> str:
-    """Badges and titles in the mode's words: in hidden, orcs become 🧑 and the fire a ❓."""
-    if not hidden(mode) or not text:
+# Emoji and pictographs (and what glues them together); box drawing, arrows, ✓ ✗ and · stay.
+_EMOJI = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000026FF\U00002700-\U00002712\U00002714-\U00002716"
+    "\U00002718-\U000027BF\U00002300-\U000023FF\U00002B00-\U00002BFF\U0001F1E6-\U0001F1FF"
+    "\u2139\u2122\u3030\u303D\u3297\u3299\uFE0E\uFE0F\u200D\u20E3]")
+
+
+_WORDS = {"👍": "+1", "👎": "-1"}          # icons that are the whole meaning become words
+
+
+def strip_emoji(text: str) -> str:
+    """`text` without emoji: `🌾 Task fields` → `Task fields`, `[🪙 $1 / $5]` → `[$1 / $5]`."""
+    if not text:
         return text
-    for icon in _ORC_ICONS:
-        text = text.replace(icon, PERSON)
-    return text.replace(ALERT_ICON, QUESTION)
+    out = str(text)
+    for icon, word in _WORDS.items():
+        out = out.replace(icon, word)
+    out = _EMOJI.sub("", out)
+    out = re.sub(r"(?<=\S) {2,}(?=\S)", " ", out)          # a removed icon leaves no double gap
+    out = re.sub(r"([\[(]) +", r"\1", out)
+    out = re.sub(r" +([\])])", r"\1", out)
+    return out.strip()
+
+
+def strip_rich(value):
+    """A rich Text without emoji, its styles kept (an icon goes with the space after it); a str as
+    `strip_emoji`; anything else as it is."""
+    from rich.text import Text
+    if isinstance(value, str):
+        return strip_emoji(value)
+    if not isinstance(value, Text):
+        return value
+    plain = value.plain
+    for icon, word in _WORDS.items():
+        if icon in plain:
+            return Text(strip_emoji(plain), style=value.style)
+    cuts = []
+    for m in _EMOJI.finditer(plain):
+        a, b = m.start(), m.end()
+        while b < len(plain) and plain[b] == " " and (a == 0 or plain[a - 1] in " [(" or b + 1 == len(plain)):
+            b += 1
+        cuts.append((a, b))
+    if not cuts:
+        return value
+    out, at = Text(style=value.style, end=value.end, no_wrap=value.no_wrap, overflow=value.overflow), 0
+    for a, b in cuts:
+        if a > at:
+            out.append_text(value[at:a])
+        at = max(at, b)
+    if at < len(plain):
+        out.append_text(value[at:])
+    return out
+
+
+def text(value: str, mode: str | None = None) -> str:
+    """What the mode shows of a label: as it is in immersion, without emoji in the hidden mode."""
+    return strip_emoji(value) if hidden(mode) else value
+
+
+def skin(text_: str, mode: str | None = None) -> str:
+    """Badges in the mode's words: `🧌 Smith+1 C 🔨 🔥` stays in immersion, reads `Smith+1 C ?` when hidden
+    (a busy one `Smith+1 C busy`, an idle one only its name)."""
+    if not hidden(mode) or not text_:
+        return text_
+    text_ = text_.replace(ALERT_ICON, f" {QUESTION} ").replace("⚙", " busy ")
+    return " ".join(strip_emoji(text_).split())
 
 
 def alert_icon(mode: str | None = None) -> str:
@@ -73,6 +133,16 @@ def cart_glyph(mode: str | None = None) -> str:
 
 def coin_glyph(mode: str | None = None) -> str:
     return "$" if hidden(mode) else "🪙"
+
+
+# The footer's words in the hidden mode (the rest only lose their emoji).
+FOOTER_WORDS = {"📯 War Horn": "Stop all", "🔥 Orders": "Answers", "Spawn Orc": "Add agent"}
+
+
+def footer(description: str, mode: str | None = None) -> str:
+    if not hidden(mode):
+        return description
+    return FOOTER_WORDS.get(description) or strip_emoji(description)
 
 
 # HUD resources: (immersion icon, hidden word) — the values are the same in both.

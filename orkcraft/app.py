@@ -62,9 +62,10 @@ from orkcraft.screens.system_menu import (
 )
 from orkcraft.sources.sessions import deploy_command
 from orkcraft.sources import telemetry
-from orkcraft.realm import workshop, worktrees
+from orkcraft.realm import modes, workshop, worktrees
 from orkcraft.screens.worktree_modal import WorktreeModal
 from orkcraft.widgets.hud import Hud, Resources
+from orkcraft.widgets.office import OfficeFooter, OfficeStatic
 from orkcraft.widgets.terminal import Terminal
 from orkcraft.wm import Desktop, Taskbar, Window
 
@@ -297,7 +298,7 @@ class OrkcraftApp(App[int]):
         yield self._taskbar
         yield console
         yield self._orc_chat
-        yield Footer()
+        yield OfficeFooter()
 
     def on_mount(self) -> None:
         try:
@@ -482,6 +483,22 @@ class OrkcraftApp(App[int]):
 
     def on_hud_alerts_clicked(self, message: Hud.AlertsClicked) -> None:
         self.action_awaiting_orders()
+
+    def wear_mode(self) -> None:
+        """The mode changed (immersion ↔ hidden): everything outside the town follows it."""
+        self._hud.update_hud()
+        self._taskbar.refresh_items()
+        self.refresh_bindings()                  # the footer recomposes in the mode's words
+        for widget in self.query(OfficeStatic):
+            widget.rewear()
+        if getattr(self, "_console", None) is not None:
+            self._console.refresh_state(self.focus_state, self.roster)
+
+    def notify(self, message, *, title: str = "", **kwargs) -> None:  # type: ignore[override]
+        if modes.hidden():                       # the office: no emoji in the toasts either
+            message = modes.strip_rich(message) if not isinstance(message, str) else modes.strip_emoji(message)
+            title = modes.strip_emoji(title)
+        super().notify(message, title=title, **kwargs)
 
     def action_system_menu(self) -> None:
         if isinstance(self.screen, SystemMenu):

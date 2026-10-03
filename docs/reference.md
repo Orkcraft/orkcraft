@@ -466,11 +466,13 @@ changes (`orkcraft/realm/modes.py`).
 | | Immersion | Hidden |
 |---|---|---|
 | Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
-| Agents | orcs 🧌 / 🗿 | people 🧑 |
-| A question | fire 🔥 | ❓ |
-| Waiting for an answer | the whole card flickers orange, after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red (no fill) |
+| Agents | orcs 🧌 / 🗿 in the frame | nothing, or `busy` while one works |
+| A question | fire 🔥 | `?` |
+| Waiting for an answer | the building flickers orange (its ground too), after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red |
 | Roads | rocks 🪨 roll from building to building | small squares ■ |
 | HUD (top right) | 🪙 gold, 🪵 lumber, 🥩 meat | Spend, Context, Agents |
+| Emoji | everywhere | as few as possible: building names, status lines, buttons, window titles, the War Map and the roster, the F10 menu, the key footer (`Stop all`, `Add agent`, `Answers`) and the toasts lose theirs |
 
-The icons in the buildings' names stay in both. The Lake, the Crag and custom frames grow with their
+The opened building's own view keeps what its data says.
+The Lake, the Crag and custom frames grow with their
 content (up to a maximum) in both modes, and a hut that changes size or mode keeps off its neighbours.

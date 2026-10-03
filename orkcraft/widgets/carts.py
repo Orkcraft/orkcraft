@@ -188,7 +188,7 @@ class Traffic:
         p = self.desktop.road_paths.get(key)
         if p is None:
             return
-        label = f"🛒×{n}"
+        label = f"×{n}" if modes.hidden() else f"🛒×{n}"
         ox, oy = p.entry.outside
         x = ox - len(label) - 1 if p.entry.side == "left" else ox + 1 if p.entry.side == "right" else ox
         y = oy - 1 if p.entry.side in ("left", "right") else oy

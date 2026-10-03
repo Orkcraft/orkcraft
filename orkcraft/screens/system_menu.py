@@ -18,7 +18,7 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
     ("immersion", "🎭 Immersion mode — ASCII town, orcs, fire, gold and lumber"),
-    ("hidden", "🕶 Hidden mode (office) — frames, people, ❓, words"),
+    ("hidden", "🕶 Hidden mode (office) — grey frames on black, no emoji, words"),
     ("terrain", "🌲 Toggle Terrain (Dim / Black)"),
     ("save", "💾 Save Town Scroll (.orkcraft.json)"),
     ("audit", "🔍 Audit the camp (security, usability, spend)"),
@@ -156,6 +156,8 @@ def _format_column(groups: list[tuple[str, list[tuple[str, str]]]]) -> Group:
     return Group(*parts)
 
 
+from orkcraft.widgets.office import OfficeOptionList, OfficeStatic  # noqa: E402
+
 class SystemMenu(ModalScreen[str | None]):
     """System menu modal [F10]."""
 
@@ -209,8 +211,8 @@ class SystemMenu(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="system-menu-dialog"):
-            yield Static("⚙️ SYSTEM & CLAN OPERATIONS", id="system-menu-title", markup=False)
-            yield OptionList(id="system-menu-list")
+            yield OfficeStatic("⚙️ SYSTEM & CLAN OPERATIONS", id="system-menu-title", markup=False)
+            yield OfficeOptionList(id="system-menu-list")
             yield Static("[1-9] action · [Esc] cancel", id="system-menu-footer", markup=False)
 
     def on_mount(self) -> None:

@@ -12,6 +12,8 @@ from textual.message import Message
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
+from orkcraft.realm import modes
+from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
 from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
 
 if TYPE_CHECKING:
@@ -259,10 +261,10 @@ class WarMap(Vertical):
     """Left column: shows camp/orkspace list in Neutral, card in Building/Unit."""
 
     def compose(self) -> ComposeResult:
-        yield Static("🗺️ WAR MAP (Orkspaces)", id="warmap-title", classes="console-title")
-        yield OptionList(id="warmap-list")
-        yield Static("[F1] 🏰 Main Camp", markup=False, id="warmap-content")
-        yield Static("[F1-F8]   [N] New   [d] Del", markup=False, id="warmap-footer", classes="console-footer")
+        yield OfficeStatic("🗺️ WAR MAP (Orkspaces)", id="warmap-title", classes="console-title")
+        yield OfficeOptionList(id="warmap-list")
+        yield OfficeStatic("[F1] 🏰 Main Camp", markup=False, id="warmap-content")
+        yield OfficeStatic("[F1-F8]   [N] New   [d] Del", markup=False, id="warmap-footer", classes="console-footer")
 
     def update_content(self, focus_state: FocusState, roster: Roster, biome: str) -> None:
         lst = self.query_one("#warmap-list", OptionList)
@@ -283,7 +285,7 @@ class WarMap(Vertical):
                     active_idx = i
                 prefix = "▶ " if is_active else "  "
                 hk = f"[{ork.hotkey}] " if ork.hotkey else ""
-                mark = f" {ALERT_ICON}" if orkspace_has_alert(scroll_obj, ork, roster) else ""
+                mark = f" {modes.alert_icon()}" if orkspace_has_alert(scroll_obj, ork, roster) else ""
                 wt_mark = getattr(self.app, "worktree_marks", {}).get(ork.id, "")
                 row_text = f"{prefix}{hk}{ork.icon} {ork.name} ({ork.biome}){' ' + wt_mark if wt_mark else ''}{mark}"
                 lst.add_option(Option(Text(row_text, style="bold" if is_active else ""), id=f"orkspace:{ork.id}"))
@@ -293,7 +295,7 @@ class WarMap(Vertical):
             else:
                 lst.highlighted = active_idx
         else:
-            alerts_mark = f" {ALERT_ICON}" if roster.alerts else ""
+            alerts_mark = f" {modes.alert_icon()}" if roster.alerts else ""
             lst.add_option(Option(Text(f"▶ [F1] 🏰 Main Camp ({biome}){alerts_mark}", style="bold"), id="orkspace:main_camp"))
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
@@ -357,14 +359,14 @@ class ClanRoster(Vertical):
         self.folded_headers: set[str] = set()
 
     def compose(self) -> ComposeResult:
-        yield Static("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
+        yield OfficeStatic("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
         with Horizontal(id="roster-rate"):           # 👍 / 👎 beside the steward
-            yield Static("", id="rate-label", markup=False)
-            yield Static(" 👍 ", id="rate-like")
-            yield Static(" 👎 ", id="rate-dislike")
-        yield OptionList(id="roster-list")
-        yield Static("", markup=False, id="roster-card")
-        yield Static("[Space] Fold   [1-9] Select", markup=False, id="roster-footer", classes="console-footer")
+            yield OfficeStatic("", id="rate-label", markup=False)
+            yield OfficeStatic(" 👍 ", id="rate-like")
+            yield OfficeStatic(" 👎 ", id="rate-dislike")
+        yield OfficeOptionList(id="roster-list")
+        yield OfficeStatic("", markup=False, id="roster-card")
+        yield OfficeStatic("[Space] Fold   [1-9] Select", markup=False, id="roster-footer", classes="console-footer")
 
     @staticmethod
     def _render_orc_row(o: Orc, number: int | None = None) -> Text:
@@ -529,8 +531,8 @@ class UnitInfo(Vertical):
     """The Info panel: what the selected orc, building or road is, its models, its spend."""
 
     def compose(self) -> ComposeResult:
-        yield Static("ℹ INFO", id="info-title", classes="console-title")
-        yield Static("", markup=False, id="info-body")
+        yield OfficeStatic("ℹ INFO", id="info-title", classes="console-title")
+        yield OfficeStatic("", markup=False, id="info-body")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
         title = self.query_one("#info-title", Static)
@@ -556,9 +558,9 @@ class CommandCard(Vertical):
     """Right column: clickable actions for the current focus state."""
 
     def compose(self) -> ComposeResult:
-        yield Static("⚒️ COMMAND CARD", id="command-title", classes="console-title")
-        yield OptionList(id="command-actions")
-        yield Static("[Esc] Deselect / Neutral Mode", markup=False, id="command-footer", classes="console-footer")
+        yield OfficeStatic("⚒️ COMMAND CARD", id="command-title", classes="console-title")
+        yield OfficeOptionList(id="command-actions")
+        yield OfficeStatic("[Esc] Deselect / Neutral Mode", markup=False, id="command-footer", classes="console-footer")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
         actions_list = self.query_one("#command-actions", OptionList)

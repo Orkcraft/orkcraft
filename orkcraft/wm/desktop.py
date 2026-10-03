@@ -830,9 +830,9 @@ class Desktop(Container):
         self.refresh_huts()
         self.replan_roads()
         self.traffic.restyle()
-        hud = getattr(self.app, "_hud", None)
-        if hud is not None:
-            hud.update_hud()
+        dress = getattr(self.app, "wear_mode", None)
+        if dress is not None:
+            dress()                 # the HUD, the footer, the console and the taskbar
         self.save()
         self.post_message(self.LayoutChanged())
 
@@ -1387,10 +1387,11 @@ class Taskbar(Horizontal):
             if in_active:
                 item.set_class(w is self.desktop.active and not w.hidden, "-active")
                 item.set_class(w.hidden, "-hidden")
-                item.update(Text(f"{w.number} {w.window_title.split()[0]}" if self.compact else f"{w.number} {w.window_title}"))
+                title = modes.text(w.window_title) or w.window_title
+                item.update(Text(f"{w.number} {title.split()[0]}" if self.compact else f"{w.number} {title}"))
         status = Text()
         if getattr(self.desktop, "rally_mode", False):
-            status.append("🛤 ROAD — click the source building (or press its number) · esc cancels")
+            status.append(modes.text("🛤 ") + "ROAD — click the source building (or press its number) · esc cancels")
         elif self.desktop.window_mode:
             status.append(" WINDOW MODE ", style="bold reverse")
             status.append("  ←↑↓→ move · shift+←↑↓→ resize · esc done ")
@@ -1403,7 +1404,8 @@ class Taskbar(Horizontal):
 
 class TaskbarItem(Static):
     def __init__(self, window: Window, classes: str | None = None) -> None:
-        super().__init__(f"{window.number} {window.window_title}", classes=classes, id=f"taskbar-{window.window_id}")
+        super().__init__(f"{window.number} {modes.text(window.window_title)}", classes=classes,
+                         id=f"taskbar-{window.window_id}")
         self.window = window
 
     def on_click(self, event: events.Click) -> None:

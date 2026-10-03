@@ -28,8 +28,9 @@ def test_the_old_plain_reads_as_hidden_and_badges_speak_the_mode():
     assert modes.normalize("plain") == modes.normalize("hidden") == modes.HIDDEN
     assert modes.normalize(None) == modes.normalize("anything") == modes.IMMERSION
     assert modes.skin(ASKING) == ASKING
-    assert modes.skin("🗿🧌 Smith+1 C 🔨 🔥", modes.HIDDEN) == "🧑 Smith+1 C 🔨 ❓"
-    assert modes.skin("🗿 Bot 🔨 💤", modes.HIDDEN) == "🧑 Bot 🔨 💤"
+    assert modes.skin("🗿🧌 Smith+1 C 🔨 🔥", modes.HIDDEN) == "Smith+1 C ?"
+    assert modes.skin("🗿 Bot 🕒 ⚙", modes.HIDDEN) == "Bot busy"
+    assert modes.skin("🧌 Peon 🔨 💤", modes.HIDDEN) == "Peon"
     assert (modes.cart_glyph(), modes.cart_glyph(modes.HIDDEN)) == ("🪨", "■")
     assert [modes.resource(r, modes.HIDDEN) for r in ("gold", "lumber", "supply")] == ["Spend", "Context", "Agents"]
 
@@ -92,12 +93,12 @@ def test_in_the_hidden_mode_a_waiting_hut_only_gets_a_red_frame():
     hut.update_fire(now=modes.FIRE_ROOF_FULL_S * 2)
     drawn = hut.render()
     out = drawn.plain
-    assert "🔥" not in out and "🧌" not in out and "🧑 ❓" in out
+    assert "🔥" not in out and "🧌" not in out and "🗼" not in out and " ? " in out and "Tower" in out
     assert not hut.has_class("-burning") and hut.fire_ground() is None
     assert not any(" on " in str(sp.style) for sp in drawn.spans)                  # no red ground
     red = "".join(out[sp.start:sp.end] for sp in drawn.spans if str(sp.style) == f"bold {ALERT_RED}")
     assert "┌" in red and "│" in red and "Tower" in red                             # the frame and the name
-    assert "all quiet" not in red and "❓" not in red                               # not the text inside
+    assert "all quiet" not in red                                                  # not the text inside
 
 
 def test_carts_are_rocks_or_squares():
@@ -119,8 +120,8 @@ async def test_the_hud_speaks_gold_and_lumber_or_words(fake_repo: Path):
         app.desktop.set_mode(True)
         await pilot.pause()
         text = str(hud.render())
-        assert "Spend $" in text and "Context" in text and "Agents" in text and "❓ 2" in text
-        assert not {"🪙", "🪵", "🥩", "🧌", "🔥", "📯"} & set(text)
+        assert "Spend $" in text and "Context" in text and "Agents" in text and "? 2" in text
+        assert not modes._EMOJI.search(text)                                       # no emoji at all
         assert app.desktop.has_class("-hidden") and modes.hidden()
         app.desktop.set_mode(False)
         await pilot.pause()
@@ -162,3 +163,29 @@ async def test_the_hidden_mode_has_no_biome_black_ground_grey_frames(fake_repo: 
         d.set_mode(False)
         await pilot.pause()
         assert d.look.name == biome and d.has_class(f"biome-{biome}")   # … and wears it again
+
+
+def test_emoji_go_and_the_text_stays():
+    from rich.text import Text
+    assert modes.strip_emoji("🌾 Task fields") == "Task fields"
+    assert modes.strip_emoji("[🪙 $1 / $5]") == "[$1 / $5]"
+    assert modes.strip_emoji("✓ all reviewed · 02:15 → done") == "✓ all reviewed · 02:15 → done"
+    assert modes.strip_emoji(" 👍 ") == "+1"
+    t = Text("▶ [F1] ")
+    t.append("🏡 My Day", style="bold red")
+    out = modes.strip_rich(t)
+    assert out.plain == "▶ [F1] My Day" and any("red" in str(sp.style) for sp in out.spans)
+    assert modes.text("🌾 Fields") == "🌾 Fields" and modes.text("🌾 Fields", modes.HIDDEN) == "Fields"
+
+
+def test_a_hidden_hut_has_no_emoji_at_all():
+    from orkcraft.realm.catalog import ActionDef
+    modes.set_current(modes.HIDDEN)
+    hut = Hut("t", sil.TOWN_HALL, [ActionDef("a", "Preset", "📜", "")])
+    hut.set_plain(True)
+    hut.set_title(9, "🏰 Town hall")
+    hut.set_status(["🛡 all quiet", "🪙 $0.00 / $5"])
+    hut.set_badge("🧌 Peon 🔨 💤")
+    out = hut.render().plain
+    assert not modes._EMOJI.search(out)
+    assert "Town Hall" in out and "all quiet" in out and "$0.00 / $5" in out and "[Preset]" in out

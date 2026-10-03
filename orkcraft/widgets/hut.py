@@ -113,11 +113,14 @@ class Hut(Widget):
 
     @staticmethod
     def _badge_short(badge: str) -> str:
-        parts = modes.skin(badge).split()     # `🧌 Smith+1 C 🔨 💤` → `🧌 💤` (`🧑 💤` when hidden)
+        parts = badge.split()                 # `🧌 Smith+1 C 🔨 💤` → `🧌 💤`
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
+    def _shown_title(self) -> str:
+        return modes.strip_emoji(self.title) if self.plain else self.title
+
     def _relabel(self) -> None:
-        label = silhouettes.label(self.number, self.title, self.sil.width)
+        label = silhouettes.label(self.number, self._shown_title(), self.sil.width)
         if label != self.label:
             self.label = label
             self._reshape()
@@ -179,7 +182,7 @@ class Hut(Widget):
         self.update_fire()
         before = (self.geom.w, self.geom.h)
         self._apply(self._look(), self.actions)
-        self.refresh()
+        self._relabel()
         return (self.geom.w, self.geom.h) != before
 
     def set_rows(self, rows: int) -> bool:
@@ -194,7 +197,7 @@ class Hut(Widget):
     def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:
         if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
             self.sil, self.actions = sil, list(actions)
-            self.label = silhouettes.label(self.number, self.title, sil.width)
+            self.label = silhouettes.label(self.number, self._shown_title(), sil.width)
             self._reshape()
             self.refresh()
 
@@ -207,7 +210,11 @@ class Hut(Widget):
     def _action_row(self, width: int, fire: str | None = None) -> Text:
         """`[+ New task] [▶ Run]` when it fits, `[+] [▶]` when it does not; remembers where each is."""
         for long in (True, False):
-            parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
+            if self.plain:     # no emoji: the label, or its first letter when there is no room
+                parts = [f"[{a.label}]" if long else f"[{modes.strip_emoji(a.glyph) or a.label[:1]}]"
+                         for a in self.actions]
+            else:
+                parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
             if cell_len(" ".join(parts)) <= width or not long:
                 break
         total = cell_len(" ".join(parts))
@@ -255,7 +262,8 @@ class Hut(Widget):
             pad = max((w - cell_len(line)) // 2, 0)
             text.append(" " * pad + line + "\n", style=fire or NAME_STYLE)
         left = (w - self.sil.width) // 2
-        rows = self._burning(self.sil.draw(self.status))
+        status = [modes.strip_emoji(ln) for ln in self.status] if self.plain else self.status
+        rows = self._burning(self.sil.draw(status))
         for n, row in enumerate(rows):
             text.append(" " * left)
             if n == len(rows) - 1:
@@ -266,7 +274,7 @@ class Hut(Widget):
                                                  else ORC_STYLE if role == "orc" else None))
             text.append("\n")
         if self.sil.caption:
-            cap = self.sil.caption_text(self.status)
+            cap = self.sil.caption_text(status)
             text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=inside or LIVE_STYLE)
         if self.actions:
             text.append_text(self._action_row(w, inside))
@@ -287,6 +295,8 @@ class Hut(Widget):
     def _orc_in_frame(self, row: list[tuple[str, str]]) -> list[tuple[str, str]]:
         """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the last line, in the middle."""
         orc = self._badge_short(self.badge)
+        if self.plain:         # no person, no icons: `?` when it asks, `busy` when it works
+            orc = modes.QUESTION if ALERT_ICON in self.badge else "busy" if "⚙" in self.badge else ""
         line = "".join(piece for piece, _ in row)
         if not orc or any(role != "frame" for _, role in row):
             return row
