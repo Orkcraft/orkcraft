@@ -11,7 +11,7 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.realm import masonry, modes, silhouettes as sil
 from orkcraft.widgets import carts
 from orkcraft.widgets.hud import Hud
-from orkcraft.widgets.hut import ALERT_RED, FIRE, Hut
+from orkcraft.widgets.hut import ALERT_RED, FIRE, FIRE_GROUND, Hut
 
 SIZE = (200, 56)
 ASKING = "🧌 Peon 🔨 🔥"
@@ -56,16 +56,21 @@ def _roof(hut: Hut) -> str:
     return "\n".join(str(hut.render()).splitlines()[len(hut.label.lines):len(hut.label.lines) + 3])
 
 
+def _styles(hut: Hut) -> set[str]:
+    return {str(span.style) for span in hut.render().spans}
+
+
 def test_a_hut_left_waiting_burns_and_the_whole_card_takes_the_colour():
     hut = Hut("w", sil.WATCHTOWER, [])
     hut.set_title(1, "🗼 Tower")
     hut.set_badge(ASKING, now=0.0)
     assert hut.on_fire and hut.has_class("-alert") and not hut.has_class("-burning")
-    styles = {str(span.style) for span in hut.render().spans}
-    assert styles == {FIRE[0]}                                                   # name, frame, text: orange
+    name = hut.render().spans[0]
+    assert str(name.style) == FIRE[0]                                            # the name: orange letters only
+    assert _styles(hut) == {FIRE[0], f"{FIRE[0]} on {FIRE_GROUND[0]}"}            # the building: on an orange ground
     hut.update_fire(now=modes.FIRE_RED_S + 1)
     assert hut.has_class("-burning") and "🔥" not in _roof(hut)
-    assert {str(span.style) for span in hut.render().spans} == {f"bold {FIRE[1]}"}
+    assert _styles(hut) == {f"bold {FIRE[1]}", f"bold {FIRE[1]} on {FIRE_GROUND[1]}"}
     hut.update_fire(now=(modes.FIRE_ROOF_S + modes.FIRE_ROOF_FULL_S) / 2)
     half = _roof(hut).count("🔥")
     hut.update_fire(now=modes.FIRE_ROOF_FULL_S)
@@ -85,7 +90,7 @@ def test_in_the_hidden_mode_a_waiting_hut_is_only_red():
     hut.update_fire(now=modes.FIRE_ROOF_FULL_S * 2)
     out = str(hut.render())
     assert "🔥" not in out and "🧌" not in out and "🧑 ❓" in out
-    assert not hut.has_class("-burning") and {str(s.style) for s in hut.render().spans} == {f"bold {ALERT_RED}"}
+    assert not hut.has_class("-burning") and _styles(hut) == {f"bold {ALERT_RED}", f"bold {ALERT_RED} on {FIRE_GROUND[2]}"}
 
 
 def test_carts_are_rocks_or_squares():

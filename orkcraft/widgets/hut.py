@@ -7,7 +7,8 @@ building; a drag moves the hut (the town keeps the spot).
 
 The frame takes the colour of the biome, so the rules for that are CSS; only the text carries
 styles of its own. An orc waiting for an answer sets the hut on fire (immersion, `realm/modes.py`):
-the whole card — name, frame, text, buttons and its ground — flickers orange, turns red when the
+the building — its frame, text and ground — flickers orange (the name and the buttons only take
+the colour, not the ground), turns red when the
 question is left waiting, then the roof turns to 🔥 bit by bit. In the hidden mode it only turns red.
 """
 from __future__ import annotations
@@ -26,7 +27,7 @@ from orkcraft.wm.geometry import Geom
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d", "#b31b0f")   # orange ↔ amber, then red ↔ dark red
 ALERT_RED = "#ef4444"                                   # the hidden mode: a waiting hut is only red
-FIRE_GROUND = ("#3a1c06", "#420d07", "#3d0b0b")         # the card's ground: orange, red, hidden red
+FIRE_GROUND = ("#3a1c06", "#420d07", "#3d0b0b")         # the building's ground: orange, red, hidden red
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
@@ -56,11 +57,11 @@ class Hut(Widget):
     }}
 {_BIOME_RULES}
     Hut:hover {{ color: $warning; }}
-    Desktop Hut.-alert {{ color: {FIRE[0]}; background: {FIRE_GROUND[0]}; }}
+    Desktop Hut.-alert {{ color: {FIRE[0]}; }}
     Desktop Hut.-alert.-flame {{ color: {FIRE[2]}; }}
-    Desktop Hut.-alert.-burning {{ color: {FIRE[1]}; background: {FIRE_GROUND[1]}; text-style: bold; }}
+    Desktop Hut.-alert.-burning {{ color: {FIRE[1]}; text-style: bold; }}
     Desktop Hut.-alert.-burning.-flame {{ color: {FIRE[3]}; }}
-    Desktop.-hidden Hut.-alert {{ color: {ALERT_RED}; background: {FIRE_GROUND[2]}; text-style: bold; }}
+    Desktop.-hidden Hut.-alert {{ color: {ALERT_RED}; text-style: bold; }}
     Desktop Hut.-rally-target {{ color: $success; text-style: bold; }}
     """
 
@@ -235,9 +236,17 @@ class Hut(Widget):
             return f"bold {FIRE[3] if flame else FIRE[1]}"
         return FIRE[2] if flame else FIRE[0]
 
+    def fire_ground(self) -> str | None:
+        """The ground under the building itself (its box, not the name, the roof or the buttons)."""
+        if not self.on_fire:
+            return None
+        return FIRE_GROUND[2] if self.plain else FIRE_GROUND[1] if self.has_class("-burning") else FIRE_GROUND[0]
+
     def render(self) -> Text:
         w = self.geom.w
         fire = self.fire_style()
+        ground = f"{fire} on {self.fire_ground()}" if fire else None
+        box = max(min((y for y, _, _ in self.sil.slots), default=1) - 1, 0)   # the box's top row
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
@@ -249,7 +258,7 @@ class Hut(Widget):
             if n == len(rows) - 1:
                 row = self._orc_in_frame(row)
             for piece, role in row:
-                text.append(piece, style=fire or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
+                text.append(piece, style=(ground if n >= box else fire) or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
                                                   else ORC_STYLE if role == "orc" else None))
             text.append("\n")
         if self.sil.caption:
