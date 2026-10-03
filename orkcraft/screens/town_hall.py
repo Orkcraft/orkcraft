@@ -11,7 +11,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.widgets import Static, TabbedContent, TabPane
 
-from orkcraft.realm import audit, fastpath, feedback, optimize, weekly
+from orkcraft.realm import audit, fastpath, feedback, optimize, town_presets, weekly
 from orkcraft.screens.chat_view import ChatView
 from orkcraft.screens.limits_view import LimitsView
 
@@ -49,6 +49,11 @@ class TownHallView(Container):
         repo = getattr(app, "repo_root", None)
         report = report or (audit.load(repo) if repo is not None else None)
         t = Text()
+        order = town_presets.pending_order(repo)
+        if order is not None:
+            t.append("📜 A town waits to be raised\n", style="bold yellow")
+            t.append(f"“{order['prompt'][:300]}”\n", style="italic")
+            t.append("ordered at onboarding — the Builder will raise it from your words\n\n", style="dim")
         t.append("Agents of the hall\n", style="bold")
         for icon, name, role in BUILDERS:
             t.append(f"{icon} {name}", style="bold")
@@ -125,6 +130,8 @@ class TownHallView(Container):
     def mini_status(self) -> list[str]:
         app = self.app
         lines = []
+        if town_presets.pending_order(getattr(app, "repo_root", None)) is not None:
+            lines.append("📜 a town order waits")
         warder = [o for o in getattr(app, "roster", None).orcs if o.name == "Warder"] if getattr(app, "roster", None) else []
         lines.append("🛡 Warder: alert" if warder and warder[0].alert else "🛡 all quiet")
         snap, budget = getattr(app, "snapshot", None), getattr(getattr(app, "scroll", None), "budget", None)

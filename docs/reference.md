@@ -419,6 +419,9 @@ the CLI paths.
   Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
   price (agy sessions, unknown models) — it is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
+- **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
+  shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71%]`, read by the
+  Town Hall's Limits tab every few minutes), and 🪙 only while some tool runs on an API key.
 
 ## Worktrees and the Council
 
@@ -441,6 +444,25 @@ the CLI paths.
   only (agy has no documented pre-tool hook); hooks load when a Claude Code session starts.
 - The other Council orcs (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
+
+## Onboarding
+
+Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
+(design: [design/onboarding.md](design/onboarding.md)); `ORKCRAFT_ONBOARDING=0` turns it off.
+
+1. **Tools** — `claude` and `agy` are looked up on `PATH`; each found one is checked, with its
+   version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
+   `GEMINI_API_KEY` is set) — you can change both. `codex` is listed as coming soon. No key is stored.
+2. **Mode** — 🎭 immersion or ▭ plain, shown on the same building.
+3. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
+   💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
+   wait in the 🏰 Town Hall as an order (its hut burns 🔥 until you open it). The 🛡 Warder is
+   installed here when `claude` is in use and the box stays checked.
+4. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
+   the bottom of the town.
+
+Steps 1–2 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
+F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults, no Warder.
 
 ## CLI
 

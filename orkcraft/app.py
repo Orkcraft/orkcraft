@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 from typing import Any, Callable
 
-from textual import events
+from textual import events, work
 from textual.screen import Screen
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -26,7 +26,7 @@ from orkcraft.scroll import OrcSpec
 from orkcraft.realm import audit, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
-from orkcraft.realm.orcs import Alert, Trigger, WORKER, RESIDENT, Orc, garrison_badge
+from orkcraft.realm.orcs import ALERT_ICON, Alert, Trigger, WORKER, RESIDENT, Orc, garrison_badge
 from orkcraft.realm.roster import Roster, build_roster, worker_infos
 from orkcraft.widgets.hut import footprint
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview, BuildProgress
@@ -47,6 +47,9 @@ from orkcraft.screens.orkspace_modal import OrkspaceModal
 from orkcraft.screens.garrison_modal import GarrisonModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
+from orkcraft.screens import onboarding
+from orkcraft.realm import town_presets
+from orkcraft.env import getenv
 from orkcraft.screens.orc_chat import OrcChat
 from orkcraft.screens.road_modal import PLAIN, RULE, RoadHandlerModal, SubscribeModal, _PickModal
 from orkcraft.widgets.carts import CartClicked
@@ -222,10 +225,13 @@ class OrkcraftApp(App[int]):
         preset_specs = presets(self.buildings)
         for s in specs:
             self.buildings.append(custom_building(s))
+        # 🧭 Onboarding (screens/onboarding.py) runs for a project with no Town Scroll yet.
+        self.first_run = False
         if target_layout is None:
             self.scroll, self.scroll_problems = scroll.default_scroll(preset_specs), []
         else:
             legacy = [target_layout.with_name(".orcraft.json")] if target_layout.name == ".orkcraft.json" else []
+            self.first_run = not demo and not target_layout.exists() and not any(p.exists() for p in legacy)
             self.scroll, self.scroll_problems = scroll.load(target_layout, preset_specs, legacy=legacy)
         scroll.ensure_presets(self.scroll, preset_specs)
         hall = self.scroll.building(TOWN_HALL)
@@ -324,6 +330,9 @@ class OrkcraftApp(App[int]):
         self.set_interval(FIRE_FLICKER_S, self.desktop.flicker_fires)
         self.set_interval(ORC_CHAT_REFRESH_S, self._tick_orc_chat)
         self.call_after_refresh(self.desktop.refresh_huts)
+        self.order_burning = self._order_burns()
+        if self.first_run and getenv("ONBOARDING").lower() not in ("0", "false", "no", "off"):
+            self.call_after_refresh(self.start_onboarding)
 
     @property
     def desktop(self) -> Desktop:
@@ -462,6 +471,66 @@ class OrkcraftApp(App[int]):
 
     def on_window_activated(self, message: Window.Activated) -> None:
         self.set_focus_state("building", building_id=message.window.window_id)
+        if message.window.window_id == TOWN_HALL and getattr(self, "order_burning", False):
+            town_presets.mark_order_seen(self.repo_root)      # opened: the order stops burning
+            self.order_burning = False
+            self.refresh_roster()
+
+    # -- 🧭 onboarding ----------------------------------------------------------------------------
+
+    def _order_burns(self) -> bool:
+        order = town_presets.pending_order(self.repo_root)
+        return order is not None and not order.get("seen")
+
+    def start_onboarding(self, machine_steps: bool | None = None, town_step: bool = True) -> None:
+        """Steps 1–2 once per machine (or when asked, F10), step 3 for a project with no town yet."""
+        if machine_steps is None:
+            machine_steps = not self.desktop.machine.onboarded
+        onboarding.Onboarding(self, machine_steps, town_step, on_town=self.raise_town).start()
+
+    def raise_town(self, choice: dict) -> None:
+        """Step 4: raise the chosen town over the map, a progress bar along the bottom."""
+        steps = onboarding.raising_steps(choice)
+        bar = onboarding.mount_raise_bar(self.screen, len(steps))
+        self._raise_town_work(choice, steps, bar)
+
+    @work(thread=True, exclusive=True, group="raise-town")
+    def _raise_town_work(self, choice: dict, steps: list[str], bar) -> None:
+        problems: list[str] = []
+        for i, label in enumerate(steps):
+            self.call_from_thread(bar.step, label + "…", i)
+            try:
+                if label.startswith("Opening"):
+                    checkpoint.ensure(self.repo_root)
+                elif "Warder" in label:
+                    from orkcraft.hooks import install as hooks_install
+                    hooks_install.install(self.repo_root)
+                elif label.startswith("Raising"):
+                    self.call_from_thread(self._raise_buildings, choice)
+                elif "order" in label:
+                    town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("domain", ""))
+            except (OSError, ValueError, RuntimeError) as e:
+                problems.append(f"{label}: {e}")
+            onboarding.pause()
+        self.call_from_thread(self._town_raised, choice, steps, bar, problems)
+
+    def _raise_buildings(self, choice: dict) -> None:
+        """The preset's buildings and roads, placed one by one — none yet: every preset is a stub
+        (town_presets.buildings_of is empty) and the town stays the Town Hall alone."""
+
+    def _town_raised(self, choice: dict, steps: list[str], bar, problems: list[str]) -> None:
+        bar.step("The town stands", len(steps))
+        self.desktop.save()
+        preset = town_presets.preset(choice.get("preset", ""))
+        reason = f"onboarding: {preset.title}" if preset else f"onboarding: {choice.get('preset', 'empty')} town"
+        checkpoint.commit(self.repo_root, "create", "camp", reason, self.config.layout_file)
+        self.order_burning = self._order_burns()
+        self.refresh_roster()
+        self.set_timer(1.5, bar.remove)
+        if problems:
+            self.notify("\n".join(problems), title="🏗 Raising the town", severity="warning")
+        tail = " Your order waits in the 🏰 Town Hall." if choice.get("preset") == onboarding.CUSTOM else ""
+        self.notify(f"B build · P presets · ? all keys.{tail}", title="🏰 The town stands", timeout=10)
 
     def on_clan_roster_building_selected(self, message: ClanRoster.BuildingSelected) -> None:
         w = self.desktop.get_window(message.building_id)
@@ -518,6 +587,8 @@ class OrkcraftApp(App[int]):
                 self.open_proposals()
             elif action == "weekly":
                 self.open_weekly()
+            elif action == "onboarding":
+                self.start_onboarding(machine_steps=True, town_step=False)
             elif action == "quit":
                 self.action_graceful_quit()
 
@@ -1752,7 +1823,10 @@ class OrkcraftApp(App[int]):
             self.repo_root, built, workers, self.dismissed, deployments=self.deployments
         )
         for w in self.desktop.windows:
-            w.set_badge(garrison_badge(self.roster.garrison(w.window_id)))
+            badge = garrison_badge(self.roster.garrison(w.window_id))
+            if w.window_id == TOWN_HALL and getattr(self, "order_burning", False) and ALERT_ICON not in badge:
+                badge = f"{badge} {ALERT_ICON}".strip()      # a town described in words waits for the Builder
+            w.set_badge(badge)
             if (hut := self.desktop.huts.get(w.window_id)) is not None:
                 hut.set_badge(w.badge)
 

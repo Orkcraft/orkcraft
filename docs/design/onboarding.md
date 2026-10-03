@@ -1,6 +1,6 @@
 # Design — onboarding
 
-Status: design notes, written 2026-10-03 (not implemented yet). Builds on the quota readers
+Status: design notes, written 2026-10-03; stages 1–5 of §7 are implemented (presets are stubs). Builds on the quota readers
 (`orkcraft/quota/`), the two display modes (`preferences.mode`), the Warder hooks and the Town Hall.
 
 ## 1. When it runs
@@ -14,7 +14,7 @@ Onboarding has two scopes:
 
 - Opening orkcraft in a project with no `.orkcraft.json` starts onboarding. If the machine settings
   already exist, it starts at step 3.
-- F10 → **Redo onboarding** runs steps 1–2 again (and step 3 only if asked, since it replaces the town).
+- F10 → **🧭 Onboarding** runs steps 1–2 again; step 3 is not offered there, since it would replace the town.
 - Every step has `Esc` / **Back**. **Skip** anywhere = empty town, defaults for everything not chosen yet.
 - `--demo` never shows onboarding.
 
@@ -148,7 +148,7 @@ With a stub preset steps 3–4 are empty and the bar finishes at once.
 - A narrow terminal — cards and the mascot stack or hide; the minimum is the list and the buttons.
 - Onboarding interrupted (quit mid-way) — nothing is written until each step's Next; the project
   part is written only on **Build**.
-- An existing `.orkcraft.json` — no onboarding; F10 → Redo onboarding asks before replacing the town.
+- An existing `.orkcraft.json` — no onboarding; F10 → 🧭 Onboarding redoes only steps 1–2.
 
 ## 7. Plan
 
