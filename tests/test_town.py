@@ -160,17 +160,30 @@ async def test_town_starts_collapsed_and_opens_one_building(fake_repo: Path, tow
 
 
 @pytest.mark.asyncio
-async def test_click_opens_click_again_or_canvas_closes(fake_repo: Path, town):
+async def test_click_selects_second_click_opens_or_canvas_closes(fake_repo: Path, town):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
         desk = app.desktop
         await pilot.click(desk.huts["loot"])
         await _settle(pilot)
+        assert _shown(app) == [] and desk.active is None                 # the first click only selects
+        assert app.focus_state.mode == "building" and app.focus_state.building_id == "loot"
+        assert desk.huts["loot"].has_class("-selected")
+        await pilot.click(desk.huts["loot"])
+        await _settle(pilot)
         assert _shown(app) == ["loot"] and app.focus_state.building_id == "loot"
+        assert not desk.huts["loot"].has_class("-selected")
         desk.post_message(Hut.Clicked(desk.huts["loot"]))          # the hut is under the window now
         await _settle(pilot)
         assert _shown(app) == [] and app.focus_state.mode == "neutral"
+        await pilot.click(desk.huts["town_hall"])
+        await _settle(pilot)
+        assert _shown(app) == [] and app.focus_state.building_id == "town_hall"
+        await pilot.click(desk, offset=(1, 1))                           # the map drops the selection
+        await _settle(pilot)
+        assert app.focus_state.mode == "neutral" and not desk.huts["town_hall"].has_class("-selected")
+        await pilot.click(desk.huts["town_hall"])
         await pilot.click(desk.huts["town_hall"])
         await _settle(pilot)
         assert _shown(app) == ["town_hall"]

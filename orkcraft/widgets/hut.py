@@ -2,8 +2,8 @@
 
 Above the building stand its number, its one icon and its name on one line (two when long),
 then one blank row. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
-two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
-building; a drag moves the hut (the town keeps the spot).
+two quick-action buttons. A click on a button runs that action; a click elsewhere selects the
+building, a second click expands it; a drag moves the hut (the town keeps the spot).
 
 The frame takes the colour of the biome (and turns orange when an orc waits for orders), so the
 rules for that are CSS; only the text carries styles of its own.
@@ -29,7 +29,7 @@ DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
 
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
-    f"    Desktop.biome-{name} Hut.-expanded {{ color: {b.border_focus}; text-style: bold; }}"
+    f"    Desktop.biome-{name} Hut.-expanded, Desktop.biome-{name} Hut.-selected {{ color: {b.border_focus}; text-style: bold; }}"
     for name, b in theme.BIOMES.items()
 )
 

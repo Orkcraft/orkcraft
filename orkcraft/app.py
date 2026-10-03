@@ -463,6 +463,11 @@ class OrkcraftApp(App[int]):
     def on_window_activated(self, message: Window.Activated) -> None:
         self.set_focus_state("building", building_id=message.window.window_id)
 
+    def on_desktop_hut_selected(self, message: Desktop.HutSelected) -> None:
+        self.set_focus_state("building", building_id=message.building_id)
+        if hasattr(self, "_console") and self._console is not None:
+            self._console.focus_roster()     # keys must not land in a building that just closed
+
     def on_clan_roster_building_selected(self, message: ClanRoster.BuildingSelected) -> None:
         w = self.desktop.get_window(message.building_id)
         if w is not None:

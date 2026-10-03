@@ -121,6 +121,12 @@ class Desktop(Container):
     class CanvasClicked(Message):
         """A click landed on the desktop canvas or terrain (not on a window)."""
 
+    class HutSelected(Message):
+        """A first click on a hut: the building is selected, not opened (a second click opens it)."""
+        def __init__(self, building_id: str) -> None:
+            super().__init__()
+            self.building_id = building_id
+
     class OrkspaceChanged(Message):
         """Posted when switching to a different orkspace canvas."""
         def __init__(self, orkspace_id: str) -> None:
@@ -161,6 +167,7 @@ class Desktop(Container):
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
         self.huts: dict[str, Hut] = {}
+        self.selected_hut: str | None = None    # a hut picked by a first click, still collapsed
         self.ghost: Ghost | None = None          # a building being placed
         self._ghost_done = None
         # Rows at the bottom under the floating console: huts stay above `hut_reserve`
@@ -467,7 +474,17 @@ class Desktop(Container):
         if w is not top:
             self.move_child(w, after=top)
 
+    def select_hut(self, building_id: str | None) -> None:
+        """Mark a collapsed hut as selected (None clears it); the building stays closed."""
+        if self.selected_hut is not None and self.selected_hut in self.huts:
+            self.huts[self.selected_hut].remove_class("-selected")
+        self.selected_hut = building_id
+        if building_id is not None and building_id in self.huts:
+            self.huts[building_id].add_class("-selected")
+
     def set_active(self, w: Window | None) -> None:
+        if self.selected_hut is not None:
+            self.select_hut(None)       # opening a building or closing one ends a selection
         if w is self.active:
             return
         if self.active is not None:
@@ -985,9 +1002,15 @@ class Desktop(Container):
         if w is None or self._rally_click(w):
             return
         if w is self.active:
-            self.post_message(self.CanvasClicked())   # a second click collapses it
+            self.post_message(self.CanvasClicked())   # a click on an open building collapses it
             return
-        self.focus_window(w)
+        if self.town_active and self.selected_hut != w.window_id:
+            # The first click only selects: the console turns to the building, the map stays.
+            self.set_active(None)
+            self.select_hut(w.window_id)
+            self.post_message(self.HutSelected(w.window_id))
+            return
+        self.focus_window(w)                          # the second click opens it
         self.post_message(Window.Activated(w))
 
     def on_hut_action_pressed(self, message: Hut.ActionPressed) -> None:

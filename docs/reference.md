@@ -126,9 +126,10 @@ A view fills the slots with `hut_lines(widths)` (else its three `mini_status` li
 are in `realm/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
 spread over the width — and keep the spot you drag them to.
 
-- Click a hut or press its number → the building opens over the map. One building is open at a
-  time; opening another closes the first. `esc`, a click on the map or a second click on its hut
-  closes it. Opening never moves a hut, so the roads stay where they are.
+- Click a hut → it is selected: the hut lights up and the console below turns to that building,
+  the map stays as it is. Click it again (or press its number) → the building opens over the map.
+  One building is open at a time; a click on another hut closes it and selects that one. `esc`,
+  a click on the map or a click on the open building's hut closes it. Opening never moves a hut, so the roads stay where they are.
 - Drag a hut to move it; its spot is kept in the Town Scroll (`buildings[].hut`).
 - **Calm console**: in the town the console floats over the map's bottom edge instead
   of taking rows from it. With nothing selected only the War Map shows (bottom left — a 🔥 on an
