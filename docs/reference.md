@@ -493,8 +493,30 @@ Autonomy comes from three places:
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at
   *Free orcs* also `acceptEdits` and the usual project commands, with `git push` asked and
   `rm -rf`, force pushes, `sudo` and `.env` denied — and how to start agy
-  (`agy --mode accept-edits --sandbox` at *Free orcs*). *Copy Claude settings* puts the snippet on the
-  clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
+  (`agy --mode accept-edits --sandbox` at *Free orcs*). 📋 (or `c` / `g`) puts the Claude snippet or
+  the agy command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
+
+#### 🔧 Self-improvement by the orcs
+
+The daily proposal, the weekly self-audit and the stewards keep proposing as before; up to *Morning
+advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orcs
+apply what their level allows themselves (`realm/evolution.py`), one change at a time, at most 10 a
+night, never past the 🪙 budget:
+
+| Level | The orcs apply |
+|---|---|
+| 🧭 Routine on their own | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
+| ⛓️‍💥 Free orcs | also a script instead of an agent (sandbox-proved), a new plain road, a building's setting, a building from the catalog |
+| never | removing a road or a building, notes — those stay proposals |
+
+Every change still passes its own checks, then the Council's review with no block, objection or
+Warder warning (else it stays a proposal); it gets its own checkpoint, so `Z` takes it back, and **24
+hours of probation**: a 👎 on the building, or more failed runs than before, takes it back by itself
+— only while it is still the building's last checkpoint (else it is marked ⚠ stuck and `Z` is yours)
+— and a toast says so. **🧾 The list of the orcs' changes** opens when quiet hours end, after a
+probation revert, and from F10 → 🧾 What the orcs changed: 🧪 on probation, ✓ kept, ↩ taken back,
+⚠ stuck; `z` takes one back. Every applied change, yours too, is in `.orkcraft/evolution/changes.jsonl`.
+Stewards' changes now get their own checkpoint as well.
 
 ### 📜 The Town Builder
 

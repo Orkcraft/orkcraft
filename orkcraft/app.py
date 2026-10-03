@@ -6,11 +6,14 @@ Layout: HUD on top · desktop of buildings (movable windows) · lower RTS consol
 from __future__ import annotations
 
 from dataclasses import dataclass
+import contextlib
 import copy
+import dataclasses
 import functools
 import datetime as dt
 import json
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -48,7 +51,8 @@ from orkcraft.screens.garrison_modal import GarrisonModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, town_builder, town_presets
+from orkcraft.realm import elders, evolution, town_builder, town_presets
+from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.town_plan import TownPlanReview
@@ -89,6 +93,7 @@ COMPACT_MIN_COLS = 100  # 100–139: Compact — console + windows; < 100: Minim
 ROSTER_REFRESH_S = 1.0
 HUT_REFRESH_S = 5.0      # status lines of the huts in the town view
 SCHEDULE_TICK_S = 30.0   # Shift switches Office on and off, quiet hours begin and end
+PROBATION_CHECK_S = 300.0  # how often the orcs' changes on probation are looked at
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low
@@ -255,6 +260,12 @@ class OrkcraftApp(App[int]):
         self._elders_busy = False
         self._elders_count = 0
         self._quiet_since: str | None = None
+        # 🔧 The orcs' own self-improvement in quiet hours (realm/evolution.py).
+        self._hushed = False                 # the orcs at work: no toasts, no dialogs (the ledger tells)
+        self._evolve_busy = False
+        self._evolve_tried: set[str] = set()
+        self._evolve_count = 0
+        self._probation_at = 0.0
         # 🪙 / 🪵: sessions this run starts are tagged with its id (sources/telemetry.py).
         self.run_id = telemetry.new_run_id()
         self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
@@ -509,8 +520,202 @@ class OrkcraftApp(App[int]):
             self._quiet_since = dt.datetime.now().isoformat(timespec="seconds")
         elif not quiet and self._quiet_since is not None:
             self._elders_morning()
-            self._quiet_since, self._elders_count = None, 0
+            self._quiet_since, self._elders_count, self._evolve_count = None, 0, 0
+            self.show_changes(only_unseen=True)                  # what the orcs changed overnight
         self._elders_consider()
+        self._evolve_consider()
+        self._probation_tick()
+
+    # -- 🔧 the orcs improve the camp themselves, in quiet hours, by autonomy (realm/evolution.py) ---
+
+    @contextlib.contextmanager
+    def hushed(self):
+        """The orcs at work in quiet hours: no toasts and no dialogs — the ledger and the list tell."""
+        if self._hushed:
+            yield
+            return
+        self._hushed = True
+        self.notify = lambda *a, **k: None                       # type: ignore[method-assign]
+        try:
+            yield
+        finally:
+            del self.notify
+            self._hushed = False
+
+    def _evolve_candidates(self) -> list[dict]:
+        """What the daily proposal, the latest weekly report and the stewards left, that this level
+        lets the orcs apply themselves and that was not applied or tried yet."""
+        level, done = self.desktop.machine.autonomy, evolution.applied_keys(self.repo_root)
+        out: list[dict] = []
+        for p in optimize.pending(self.repo_root):
+            out.append({"key": p.id, "change": p.action, "source": "daily", "building": p.building, "proposal": p})
+        report = weekly.latest(self.repo_root)
+        if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
+            for item in report.items:
+                if item.applicable and item.n not in report.applied:
+                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in ("shrink", "chain", "script")
+                           else f"weekly:{report.ts}:{item.n}")
+                    out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,
+                                "report": report, "item": item})
+        for b in self.scroll.buildings:
+            data = steward.load_report(self.repo_root, b.id)
+            for i, prop in enumerate((data or {}).get("proposals") or []):
+                replay = prop.get("replay") or {}
+                if prop.get("type") == "demote" and not replay.get("ready"):
+                    continue
+                out.append({"key": f"steward:{b.id}:{data.get('ts', '')}:{i}", "change": str(prop.get("type")),
+                            "source": "steward", "building": b.id, "data": data, "index": i})
+        return [c for c in out if evolution.allowed(c["change"], level)
+                and c["key"] not in done and c["key"] not in self._evolve_tried]
+
+    def _evolve_subject(self, c: dict) -> fastpath.Subject:
+        """What the Council looks at for one change: the building, the orc or the road as it would be."""
+        bid = c["building"]
+        if c["source"] == "steward":
+            prop = c["data"]["proposals"][c["index"]]
+            if c["change"] in ("filter", "new_road"):
+                return fastpath.Subject("road", bid, {"source": prop.get("from") or bid, "target": bid,
+                                                      "event": prop.get("event", ""), "filter": prop.get("filter") or {}})
+            b = self.scroll.building(bid)
+            orc = b.garrison.handler(str(prop.get("orc"))) if b is not None else None
+            data = {k: v for k, v in dataclasses.asdict(orc).items() if v is not None} if orc is not None else {"id": str(prop.get("orc"))}
+            data.update({"kind": "chain", "chain": prop.get("chain") or []} if c["change"] == "demote"
+                        else {"run": prop.get("run") or {}})
+            return fastpath.Subject("agent", bid, {"orc": data})
+        if c["source"] == "weekly" and c["change"] == "add_building":
+            spec = weekly.new_spec(c["item"])
+            return fastpath.Subject("building", spec["id"], spec)
+        if c["source"] == "weekly" and c["change"] == "set_config":
+            spec = dict(self.custom_specs.get(bid) or {})
+            spec["config"] = {**(spec.get("config") or {}), str(c["item"].data["key"]): c["item"].data.get("value")}
+            return fastpath.Subject("building", bid, spec)
+        p = c.get("proposal")
+        if p is None:
+            item = c["item"]
+            p = optimize.Proposal(c["key"], c["report"].ts, bid, item.change, str(item.data.get("target")),
+                                  item.before, item.after, item.why)
+            c["proposal"] = p
+        if p.action == "script":
+            return fastpath.Subject("building", bid, dict(self.custom_specs.get(bid) or {}), script=p.after)
+        if p.target.startswith("orc:"):
+            b = self.scroll.building(bid)
+            orc = b.garrison.handler(p.target[4:]) if b is not None else None
+            data = {k: v for k, v in dataclasses.asdict(orc).items() if v is not None} if orc is not None else {"id": p.target[4:]}
+            data.update({"kind": "chain", "chain": json.loads(p.after), "orders": ""} if p.action == "chain"
+                        else {"orders": p.after})
+            return fastpath.Subject("agent", bid, {"orc": data})
+        spec = dict(self.custom_specs.get(bid) or {})
+        key = "steward_prompt" if p.target == "steward" else "orders"
+        spec["config"] = {**(spec.get("config") or {}), key: p.after}
+        return fastpath.Subject("building", bid, spec)
+
+    @staticmethod
+    def council_lets(verdict: fastpath.Verdict) -> bool:
+        """The Council lets the orcs apply a change themselves: no block, no objection, no Warder warning."""
+        return not verdict.blocked and not verdict.objections and not verdict.of("warder")
+
+    def _evolve_consider(self) -> None:
+        if (self.demo or self._evolve_busy or not self.desktop.quiet or self._evolve_count >= evolution.MAX_PER_NIGHT
+                or self.desktop.machine.autonomy < 2 or self.gold_exhausted_quietly()):
+            return
+        candidates = self._evolve_candidates()
+        if not candidates:
+            return
+        c = candidates[0]
+        self._evolve_tried.add(c["key"])
+        try:
+            subject = self._evolve_subject(c)
+        except (KeyError, ValueError, TypeError, AttributeError):
+            return
+        self._evolve_busy = True
+        self._evolve_work(c, subject)
+
+    def gold_exhausted_quietly(self) -> bool:
+        limit = self.scroll.budget.gold_session_limit_usd
+        return limit > 0 and self.snapshot.spent_usd >= limit
+
+    @work(thread=True, group="evolve")
+    def _evolve_work(self, c: dict, subject: fastpath.Subject) -> None:
+        runner = FASTPATH_RUNNER or fastpath.light_runner(self.repo_root)
+        verdict = fastpath.review(subject, self.repo_root, self._taken_building_ids() - {subject.id}, runner=runner)
+        self.call_from_thread(self._evolve_apply, c, verdict)
+
+    def _evolve_apply(self, c: dict, verdict: fastpath.Verdict) -> None:
+        """Applied by the orcs only while it is still quiet and the Council let it; else it stays a proposal."""
+        self._evolve_busy = False
+        if not self.desktop.quiet or not self.council_lets(verdict):
+            return
+        with self.hushed():
+            if c["source"] == "steward":
+                ok = self.apply_steward_proposal(c["building"], c["data"], c["index"], by="orcs") is not None
+            elif c["source"] == "daily" or c["change"] in ("shrink", "chain", "script"):
+                ok = self.apply_proposal(c["proposal"], kind="auto-improve" if c["source"] == "daily" else "weekly")
+                if ok and c["source"] == "weekly":
+                    c["report"].applied = sorted(set(c["report"].applied) | {c["item"].n})
+                    weekly.save(self.repo_root, c["report"])
+            else:
+                ok = bool(self.apply_weekly(c["report"], [c["item"].n]))
+        if ok:
+            self._evolve_count += 1
+
+    # -- probation: 24 hours for each change the orcs made ----------------------------------------
+
+    def _probation_tick(self, now: dt.datetime | None = None) -> None:
+        """Every few minutes: a change on probation with a 👎 or more failures since goes back by
+        itself (the operator is told); one that lived through 24 hours is kept."""
+        now = now or dt.datetime.now()
+        if self.demo or time.monotonic() - self._probation_at < PROBATION_CHECK_S:
+            return
+        self._probation_at = time.monotonic()
+        reverted = []
+        for change in evolution.on_probation(self.repo_root):
+            reason = evolution.verdict(self.repo_root, change, now)
+            if reason is None:
+                if now >= change.until:
+                    change.status = "kept"
+                    evolution.update(self.repo_root, change)
+                continue
+            if self.revert_change(change, f"probation: {reason}"):
+                reverted.append(change)
+        if reverted:
+            names = ", ".join(f"{self._title_of(c.building)} ({c.change})" for c in reverted[:3])
+            self.notify(f"{names} — {reverted[0].note}", title=f"↩ {len(reverted)} change(s) by the orcs taken back",
+                        severity="warning", timeout=15)
+            if not self.desktop.quiet:
+                self.show_changes(only_unseen=True)
+
+    def revert_change(self, change: evolution.Change, note: str, seen: bool = False) -> bool:
+        """Take one change back — only when it is still its building's last checkpoint, so nothing
+        newer is lost; otherwise it is marked stuck and the operator decides (Z on the building)."""
+        last = checkpoint.history(self.repo_root, change.building, 1)
+        if not change.sha or not last or last[0].sha != change.sha:
+            change.status, change.note, change.seen = "stuck", f"{note} — changed since, Z on it decides", seen
+            evolution.update(self.repo_root, change)
+            return False
+        with self.hushed():
+            ok = self.revert_building(change.building)
+        change.status, change.note, change.seen = ("reverted" if ok else "stuck"), note, seen
+        evolution.update(self.repo_root, change)
+        return ok
+
+    def show_changes(self, only_unseen: bool = False) -> None:
+        """🧾 The list of what the orcs changed: after quiet hours, after a probation revert, F10."""
+        changes = evolution.unseen(self.repo_root) if only_unseen else \
+            [c for c in evolution.load(self.repo_root) if c.by == "orcs"][-40:][::-1]
+        if only_unseen and not changes:
+            return
+        titles = {c.building: self._title_of(c.building) for c in changes}
+
+        def done(picked: str | None) -> None:
+            evolution.mark_seen(self.repo_root)
+            if picked:
+                change = next((c for c in evolution.load(self.repo_root) if c.id == picked), None)
+                if change is not None and change.status in ("probation", "kept", "stuck"):
+                    if self.revert_change(change, "taken back by you", seen=True):
+                        self.notify(f"{titles.get(change.building, change.building)}: {change.summary}",
+                                    title="↩ Taken back")
+
+        self.push_screen(ChangesModal(changes, titles), done)
 
     # -- 🏛 the Elders: in quiet hours they leave advice; the operator follows it (realm/elders.py) --
 
@@ -591,7 +796,7 @@ class OrkcraftApp(App[int]):
                 machine.autonomy = int(result.get("autonomy", machine.autonomy))
                 settings.save(machine)
                 lvl = autonomy.LEVELS[machine.autonomy]
-                self.notify(lvl.what, title=f"{lvl.icon} {lvl.title}")
+                self.notify(f"❓ {lvl.questions}\n🔧 {lvl.improves}", title=f"{lvl.icon} {lvl.title}")
 
         self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True), done)
 
@@ -788,6 +993,8 @@ class OrkcraftApp(App[int]):
                 self.open_day()
             elif action == "autonomy":
                 self.open_autonomy()
+            elif action == "changes":
+                self.show_changes()
             elif action == "terrain":
                 self.action_toggle_terrain()
             elif action == "save":
@@ -1659,21 +1866,33 @@ class OrkcraftApp(App[int]):
         def done(index: int | None) -> None:
             if index is None:
                 return
-            proposal = data["proposals"][index]
-            try:
-                what = steward.apply_proposal(self.scroll, building_id, proposal)
-            except (ValueError, TypeError, KeyError) as e:
-                self.notify(f"not applied: {e}", title="Steward", severity="warning")
+            what = self.apply_steward_proposal(building_id, data, index, by="you")
+            if what is None:
                 return
-            self._roads_changed()
-            self.refresh_roster()
-            try:
-                chronicles.record(self.repo_root, self.scroll, building_id, "proposal_applied", what=what)
-            except OSError:
-                pass
-            self.notify(f"✅ {what}", title=f"Steward · {title}")
+            self.notify(f"✅ {what} — Z on it takes it back", title=f"Steward · {title}")
 
         self.push_screen(StewardView(title, data), done)
+
+    def apply_steward_proposal(self, building_id: str, data: dict, index: int, by: str) -> str | None:
+        """One steward proposal applied, with its own checkpoint (Z takes it back) and a line in the
+        ledger of changes (realm/evolution.py). None when it could not be applied."""
+        proposal = data["proposals"][index]
+        try:
+            what = steward.apply_proposal(self.scroll, building_id, proposal)
+        except (ValueError, TypeError, KeyError) as e:
+            self.notify(f"not applied: {e}", title="Steward", severity="warning")
+            return None
+        self._roads_changed()
+        self.refresh_roster()
+        try:
+            chronicles.record(self.repo_root, self.scroll, building_id, "proposal_applied", what=what)
+        except OSError:
+            pass
+        sha = self.checkpoint("auto-improve", building_id, f"steward: {what[:60]}") or ""
+        evolution.record(self.repo_root, evolution.Change(
+            building_id, str(proposal.get("type")), "steward", what, str(proposal.get("why") or "")[:200], by=by,
+            sha=sha, key=f"steward:{building_id}:{data.get('ts', '')}:{index}"))
+        return what
 
     def check_stewards(self) -> None:
         """Run each steward whose trigger is a schedule that came due since its last watch."""
@@ -2436,6 +2655,9 @@ class OrkcraftApp(App[int]):
         sha = self.checkpoint(kind, bid, f"{p.action} {p.target}: {p.why[:60]}")
         p.status, p.commit = "applied", sha or ""
         optimize.save(self.repo_root, p)
+        evolution.record(self.repo_root, evolution.Change(
+            bid, p.action, "weekly" if kind == "weekly" else "daily", f"{p.action} {p.target}", p.why[:200],
+            by="orcs" if self._hushed else "you", sha=p.commit, key=p.id))
         self._refresh_hall()
         self.notify(f"{self._title_of(bid)}: {p.action} applied — Z on it takes it back", title="🔧 Applied")
         return True
@@ -2542,6 +2764,13 @@ class OrkcraftApp(App[int]):
             if ok:
                 done.append(item.n)
                 touched.add(bid)
+                if item.change not in ("shrink", "chain", "script"):    # those are in the ledger already
+                    where = weekly.new_spec(item)["id"] if item.change == "add_building" else bid
+                    last = checkpoint.history(self.repo_root, where, 1)
+                    evolution.record(self.repo_root, evolution.Change(
+                        where, item.change, "weekly", item.title[:120], item.why[:200],
+                        by="orcs" if self._hushed else "you", sha=last[0].sha if last else "",
+                        key=f"weekly:{report.ts}:{item.n}"))
         self.desktop.save()
         for bid in touched:                                   # the daemons pick up what changed
             again = getattr(self._custom_view(bid), "restart", None)
@@ -2552,7 +2781,7 @@ class OrkcraftApp(App[int]):
         self._refresh_hall()
         msg = f"{len(done)} applied" + (f" · {len(failed)} not: " + " | ".join(failed[:3]) if failed else "")
         self.notify(msg, title="🗓 Weekly self-audit", severity="warning" if failed else "information")
-        if restart and done:
+        if restart and done and not self._hushed:
             self.push_screen(Confirm("🔄 Restart orkcraft now?", "the camp changed its buildings — a fresh start "
                                      "reloads everything (the Town Scroll is saved)"),
                              lambda yes: yes and self.restart_app())

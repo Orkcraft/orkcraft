@@ -13,7 +13,7 @@ from rich.text import Text
 from textual import events, on
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical
 from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widget import Widget
@@ -84,13 +84,35 @@ class AutonomySlider(Widget, can_focus=True):
         self.set_level(min(range(len(STOPS)), key=lambda i: abs(STOPS[i] - at.x)))
 
 
+class CopyIcon(Static):
+    """📋 that copies on a click (a Button is three rows tall; this one is one)."""
+
+    class Pressed(Message):
+        def __init__(self, icon: CopyIcon) -> None:
+            super().__init__()
+            self.icon = icon
+
+    def __init__(self, id: str) -> None:
+        super().__init__("📋", id=id, classes="au-copy")
+
+    def on_click(self) -> None:
+        self.post_message(self.Pressed(self))
+
+
 class AutonomyStep(ModalScreen[dict | str | None]):
-    BINDINGS = [Binding("escape", "back", "Back")]
+    BINDINGS = [Binding("escape", "back", "Back"), Binding("c", "copy('claude')", "Copy Claude settings"),
+                Binding("g", "copy('agy')", "Copy the agy command")]
     DEFAULT_CSS = MODAL_CSS.format(cls="AutonomyStep", border_color="$accent", title_color="$accent") + """
     AutonomyStep > Vertical { width: 84; }
     AutonomyStep #au-row { height: auto; align-horizontal: center; margin-top: 1; }
     AutonomyStep #au-level { height: auto; margin-top: 1; }
-    AutonomyStep #au-guide-box { height: auto; max-height: 18; border: round $panel-lighten-2; padding: 0 1; margin-top: 1; }
+    AutonomyStep #au-guide-box { height: auto; border: round $panel-lighten-2; padding: 0 1; margin-top: 1; }
+    AutonomyStep .au-head { text-style: bold; color: $text-muted; }
+    AutonomyStep .au-tool { height: auto; }
+    AutonomyStep .au-line { width: 1fr; height: auto; padding-top: 0; }
+    AutonomyStep .au-copy { width: 3; height: 1; margin: 0 1 0 0; }
+    AutonomyStep .au-copy:hover { background: $boost; }
+    AutonomyStep .au-gap { width: 4; height: 1; margin: 0 1 0 0; }
     AutonomyStep .ob-buttons { height: auto; margin-top: 1; align-horizontal: right; }
     AutonomyStep .ob-buttons Button { margin-left: 1; }
     """
@@ -110,11 +132,21 @@ class AutonomyStep(ModalScreen[dict | str | None]):
             with Horizontal(id="au-row"):
                 yield AutonomySlider(self.level, id="au-slider")
             yield Static("", id="au-level")
-            with VerticalScroll(id="au-guide-box"):
-                yield Static("", id="au-guide", markup=False)
-            yield Static("←/→ or a click moves the slider. You can change it at any time: F10.", classes="build-hint")
+            with Vertical(id="au-guide-box"):
+                yield Label("The agents' own settings", classes="au-head")
+                if "claude" in self.tools:
+                    with Horizontal(classes="au-tool"):
+                        yield CopyIcon("au-copy")
+                        yield Static("", id="au-claude-gap", classes="au-gap")
+                        yield Static("", id="au-claude", classes="au-line", markup=False)
+                if "agy" in self.tools:
+                    with Horizontal(classes="au-tool"):
+                        yield CopyIcon("au-copy-agy")
+                        yield Static("", id="au-agy-gap", classes="au-gap")
+                        yield Static("", id="au-agy", classes="au-line", markup=False)
+            yield Static("←/→ or a click moves the slider · 📋 or c / g copies · you can change it at any time: F10.",
+                         classes="build-hint")
             with Horizontal(classes="ob-buttons"):
-                yield Button("Copy Claude settings", id="au-copy")
                 if self.standalone:
                     yield Button("Cancel", id="au-cancel")
                     yield Button("Save", id="au-save", variant="success")
@@ -131,10 +163,25 @@ class AutonomyStep(ModalScreen[dict | str | None]):
         lvl = autonomy.LEVELS[self.level]
         t = Text()
         t.append(f"{lvl.icon} {lvl.title}\n", style="bold")
-        t.append(lvl.what)
+        t.append("❓ Questions: ", style="bold")
+        t.append(lvl.questions + "\n")
+        t.append("🔧 Improvements: ", style="bold")
+        t.append(lvl.improves)
+        if autonomy.LEVELS[self.level].n >= 2:
+            t.append("\n   Each goes through ", style="dim")
+            t.append(autonomy.SAFEGUARDS, style="dim")
         self.query_one("#au-level", Static).update(t)
-        self.query_one("#au-guide", Static).update(autonomy.guide(self.level, self.tools))
-        self.query_one("#au-copy", Button).display = "claude" in self.tools and bool(autonomy.claude_snippet(self.level))
+        for wid, line, copy_id, can in (("#au-claude", autonomy.claude_line, "#au-copy",
+                                         bool(autonomy.claude_snippet(self.level))),
+                                        ("#au-agy", autonomy.agy_line, "#au-copy-agy",
+                                         bool(autonomy.agy_command(self.level)))):
+            for w in self.query(wid).results(Static):
+                name = "Claude Code" if wid == "#au-claude" else "Antigravity"
+                w.update(Text.assemble((f"{name}: ", "bold"), line(self.level)))
+            for b in self.query(copy_id):
+                b.display = can
+            for gap in self.query(f"{wid}-gap"):                # the line keeps its place without a 📋
+                gap.display = not can
 
     @on(AutonomySlider.Changed)
     def _moved(self, event: AutonomySlider.Changed) -> None:
@@ -142,17 +189,28 @@ class AutonomyStep(ModalScreen[dict | str | None]):
         self.level = event.slider.level
         self.show()
 
+    @on(CopyIcon.Pressed)
+    def _copy_icon(self, event: CopyIcon.Pressed) -> None:
+        event.stop()
+        self.action_copy("agy" if event.icon.id == "au-copy-agy" else "claude")
+
+    def action_copy(self, tool: str) -> None:
+        """📋 The Claude Code permissions, or the agy command, for this level onto the clipboard."""
+        text = autonomy.claude_snippet(self.level) if tool == "claude" else autonomy.agy_command(self.level)
+        if not text or tool not in self.tools:
+            return
+        self.app.copy_to_clipboard(text)
+        self.copied = text
+        self.notify(f"paste it into {autonomy.CLAUDE_FILE} or {autonomy.CLAUDE_FILE_ALL}" if tool == "claude"
+                    else "start agy with it", title="📋 Copied")
+
     def action_back(self) -> None:
         self.dismiss(None if self.standalone else "back")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
         bid = event.button.id
-        if bid == "au-copy":
-            self.app.copy_to_clipboard(autonomy.claude_snippet(self.level))
-            self.notify(f"paste it into {autonomy.CLAUDE_FILE} or {autonomy.CLAUDE_FILE_ALL}",
-                        title="📋 Claude settings copied")
-        elif bid in ("au-next", "au-save"):
+        if bid in ("au-next", "au-save"):
             self.dismiss({"autonomy": self.level})
         elif bid == "au-skip":
             self.dismiss("skip")

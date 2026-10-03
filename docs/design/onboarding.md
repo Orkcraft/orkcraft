@@ -54,8 +54,11 @@ Stored:
 ## 2b. Step 2 — Orc autonomy
 
 A slider of four stops (`screens/autonomy.py`, `autonomy.py`): ⛓️ Ask me · 📜 Morning advice ·
-🧭 Routine on their own · ⛓️‍💥 Free orcs. Under it, what the level means and the guide: from Routine up,
-the Claude Code permission block to paste (*Copy Claude settings*) and how to start agy. From Morning
+🧭 Routine on their own · ⛓️‍💥 Free orcs. Under it, what the level means in two lines — ❓ the agents'
+questions, 🔧 the camp's improvements (from Routine up, the orcs apply some in quiet hours, with the
+safeguards: Council, checkpoint, 24 h probation, the list of changes — `realm/evolution.py`) — and the
+agents' own settings, one line each, with 📋 (or `c` / `g`) copying the Claude Code permission block or
+the agy command instead of showing them. From Morning
 advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —
 Warder rules first, then the light model, a one-time yes or a no only — and the operator follows the
 advice in the morning (`a`, `A` for all). Only at ⛓️‍💥 Free orcs do the Elders answer themselves in quiet

@@ -103,8 +103,11 @@ async def test_the_whole_flow_on_a_new_machine(fake_repo: Path, onboard):
         assert isinstance(app.screen, AutonomyStep) and app.screen.level == 1          # morning advice
         app.screen.query_one(AutonomySlider).set_level(2)
         await _settle(pilot)
-        guide = str(app.screen.query_one("#au-guide").render())
-        assert '"allow"' in guide and ".claude/settings.local.json" in guide and "agy" not in guide.lower()
+        assert ".claude/settings.local.json" in str(app.screen.query_one("#au-claude").render())
+        assert not app.screen.query("#au-agy")                                          # agy not chosen
+        assert "🔧 Improvements" in str(app.screen.query_one("#au-level").render())
+        await pilot.press("c")                                                          # 📋 the Claude settings
+        assert '"allow"' in app.screen.copied
         await _press(app, pilot, "au-next")
 
         assert isinstance(app.screen, ModeStep) and app.screen.mode == "camp"

@@ -74,7 +74,7 @@ def test_the_levels_and_the_guide():
         text = autonomy.guide(n)
         assert "bypassPermissions" not in text and "dangerously" not in text
         assert ("answer routine questions for you" in text) == (n == 3)
-    assert "--mode accept-edits --sandbox" in autonomy.agy_note(3)
+    assert autonomy.agy_command(3) == "agy --mode accept-edits --sandbox" and autonomy.agy_command(2) == ""
     assert "agy" not in autonomy.guide(2, ("claude",)).lower()
 
 

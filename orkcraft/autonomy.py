@@ -3,8 +3,8 @@
     LEVELS[machine.autonomy]          0 ask me · 1 morning advice · 2 routine on their own · 3 free orcs
     advises(level)                    the Elders judge the questions in quiet hours (realm/elders.py)
     answers(level)                    …and answer them themselves (⛓️‍💥 Free orcs only)
-    claude_snippet(level)             what to paste into Claude Code's settings for this level
-    agy_note(level)                   how to start agy for this level
+    claude_snippet(level)             what to paste into Claude Code's settings for this level (📋)
+    agy_command(level)                how to start agy for this level (📋)
 
 Autonomy comes from three places:
 - **advice** (from 📜) — in quiet hours the Elders read the questions and advise; the operator
@@ -28,19 +28,31 @@ class Level:
     n: int
     icon: str
     title: str
-    what: str
+    questions: str       # what happens to the agents' questions
+    improves: str        # what the orcs do about improving the camp (realm/evolution.py)
 
 
 LEVELS: tuple[Level, ...] = (
-    Level(0, "⛓️", "Ask me", "Every question waits for you; nothing is judged while you are away."),
-    Level(1, "📜", "Morning advice", "In quiet hours the 🏛 Elders read the orcs' questions and leave advice; "
-                                    "in the morning you follow it with one key."),
-    Level(2, "🧭", "Routine on their own", "Agents read, edit the project and run its tests without asking "
-                                          "(their own settings, below); the Elders advise on the rest."),
-    Level(3, "⛓️‍💥", "Free orcs", "In quiet hours the Elders answer the routine questions themselves (a one-time "
-                               "yes or no, never 'always'); the risky ones wait for you. Agents also accept "
-                               "their edits and run the usual project commands; a push is still asked."),
+    Level(0, "⛓️", "Ask me",
+          "every question waits for you; nothing is judged while you are away.",
+          "proposals wait for your click."),
+    Level(1, "📜", "Morning advice",
+          "in quiet hours the 🏛 Elders read them and leave advice; in the morning `a` follows it.",
+          "proposals wait for your click."),
+    Level(2, "🧭", "Routine on their own",
+          "agents run the routine without asking (their settings, 📋 below); the Elders advise on the rest.",
+          "in quiet hours the orcs apply what makes a building cheaper or simpler — a shorter prompt, an "
+          "agent made a chain, a run policy, a road filter."),
+    Level(3, "⛓️‍💥", "Free orcs",
+          "in quiet hours the Elders answer routine ones themselves (a one-time yes or no, never 'always'); "
+          "the risky ones wait for you.",
+          "also a script instead of an agent, a new plain road, a setting, a building from the catalog. "
+          "Never a removal."),
 )
+
+# What every self-applied change goes through, shown under the levels that apply changes.
+SAFEGUARDS = ("the Council's review, a checkpoint each (Z takes it back), 24 h on probation — a 👎 or more "
+              "failed runs take it back by itself — and the list of changes after quiet hours.")
 
 CLAUDE_FILE = ".claude/settings.local.json"      # this project, only you (not committed)
 CLAUDE_FILE_ALL = "~/.claude/settings.json"       # every project on this machine
@@ -80,29 +92,36 @@ def claude_snippet(level: int) -> str:
     return json.dumps(data, indent=2) if data else ""
 
 
-def agy_note(level: int) -> str:
+def agy_command(level: int) -> str:
+    """How to start agy at this level, or "" when it stays as it is."""
+    return "agy --mode accept-edits --sandbox" if level >= 3 else ""
+
+
+def claude_line(level: int) -> str:
+    if not claude_settings(level):
+        return "nothing to change — it asks before it acts."
+    return f"its permissions for this level → paste into {CLAUDE_FILE} (or {CLAUDE_FILE_ALL})."
+
+
+def agy_line(level: int) -> str:
     if level < 2:
-        return "Start agy as you do now: it asks before it acts."
+        return "nothing to change — it asks before it acts."
     if level == 2:
-        return ("agy has no per-command allow list that orkcraft knows of: keep it asking, and let the Elders "
-                "advise. (Orkcraft's own agy jobs already run in its sandbox.)")
-    return ("Start agy in its sandbox, accepting its edits — the way orkcraft runs its own agy jobs:\n"
-            "    agy --mode accept-edits --sandbox\n"
-            "Check `agy --help` for your version: the flags may differ.")
+        return "keeps asking (no per-command allow list known); the Elders advise."
+    return f"start it with `{agy_command(level)}` (check `agy --help`)."
 
 
 def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
-    """The whole guide for this level, as plain text (onboarding shows it; docs/autonomy.md explains)."""
+    """The guide as plain text (docs and tests); the screen shows the same lines with 📋 buttons."""
     lines: list[str] = []
     if "claude" in tools:
-        snippet = claude_snippet(level)
-        if snippet:
-            lines += [f"Claude Code — merge into {CLAUDE_FILE} (this project) or {CLAUDE_FILE_ALL} (every project):",
-                      snippet, ""]
-        else:
-            lines += ["Claude Code — nothing to change: it asks before it acts.", ""]
+        lines.append(f"Claude Code: {claude_line(level)}")
+        if claude_snippet(level):
+            lines.append(claude_snippet(level))
     if "agy" in tools:
-        lines += ["Antigravity (agy):", agy_note(level), ""]
+        lines.append(f"Antigravity: {agy_line(level)}")
+        if agy_command(level):
+            lines.append(f"    {agy_command(level)}")
     if answers(level):
         lines.append("In quiet hours the 🏛 Elders answer routine questions for you (a one-time yes or no); "
                      "every answer is in .orkcraft/council/elders.jsonl. Move the slider down to stop it.")
