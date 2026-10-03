@@ -102,7 +102,7 @@ class Hut(Widget):
 
     @staticmethod
     def _badge_short(badge: str) -> str:
-        parts = badge.split()                 # `🧌 Smith+1 C 🔨 💤` → `🧌 💤`
+        parts = badge.split()                 # `🧌 Smith+1 ✻ 🔨 💤` → `🧌 💤`
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _relabel(self) -> None:

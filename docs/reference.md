@@ -325,9 +325,9 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 
 ## Orcs: steward, handlers, Recruiter
 
-- **Looks**: the icon is the kind — 🗿 chain / script, 🧌 agent, 🗿🧌 hybrid; the letters are the
-  harness scheme — `C` Claude (orange), `g` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `g→C` (agy
-  writes, Claude reviews); long schemes read `C→C·4`. The frame badge shows the steward.
+- **Looks**: the icon is the kind — 🗿 chain / script, 🧌 agent, 🗿🧌 hybrid; the marks are the
+  harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `✦→✻` (agy
+  writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
   gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
   A harness step takes a `tier` and the model follows from its harness
@@ -340,7 +340,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
   panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
   is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
   listens to (source, signal → the orc or a plain road) with *➕ Listen*. The garrison lists its
-  orcs one per line — number, tier, name, its models as letters (`C` orange, `g` blue), state. An orc with a question
+  orcs one per line — number, tier, name, its models as marks (`✻` Claude orange, `✦` Gemini blue), state. An orc with a question
   shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
   seen. The Command Card keeps only the building's own commands (and hides when it has none);
   the common ones stay on their keys.

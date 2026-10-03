@@ -26,7 +26,7 @@ def test_scheme_parts_and_badges():
     assert looks.scheme_long(pair) == "write: agy → review: claude"
     lead = Orc("Chieftain", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
     scribe = Orc("Scribe", "digest", RESIDENT, kind="chain")
-    assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 C 🔨 💤"
+    assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 ✻ 🔨 💤"
     assert scribe.badge == "🗿 Scribe 🔨 💤"
 
 
@@ -51,10 +51,10 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         await _settle(pilot)
         app.refresh_roster()
         await _settle(pilot)
-        assert "🧌 Chieftain+1 C" in chat.badge
+        assert "🧌 Chieftain+1 ✻" in chat.badge
         lst = app.screen.query_one("#roster-list", OptionList)
         rows = [str(lst.get_option_at_index(i).prompt) for i in range(lst.option_count)]
-        assert rows[0] == "[1] ★ Chieftain C 💤" and rows[1] == "[2] Scribe 🗿 💤"
+        assert rows[0] == "[1] ★ Chieftain ✻ 💤" and rows[1] == "[2] Scribe 🗿 💤"
         assert len(rows) == 2
         lst.focus()
         await pilot.press("2")                       # the 2nd orc, not the 2nd row

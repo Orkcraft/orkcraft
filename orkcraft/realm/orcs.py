@@ -107,13 +107,13 @@ class Orc:
 
     @property
     def scheme(self) -> str:
-        """Harness letters, e.g. `C` or `A→C` (empty for chains, scripts and orcs without one)."""
+        """Harness letters, e.g. `✻` or `✦→✻` (empty for chains, scripts and orcs without one)."""
         from orkcraft.realm.looks import scheme_plain
         return scheme_plain(self.harness, self.kind)
 
     @property
     def badge(self) -> str:
-        """Unit Frame text: `🧌 Name C 🔨 💤` (`🧌 ⚔ Name …` with a tier)."""
+        """Unit Frame text: `🧌 Name ✻ 🔨 💤` (`🧌 ⚔ Name …` with a tier)."""
         scheme = f" {self.scheme}" if self.scheme else ""
         tier = f"{self.tier_icon} " if self.tier_icon else ""
         return f"{self.icon} {tier}{self.name}{scheme} {self.trigger.icon} {self.status_icon}"
