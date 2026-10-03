@@ -145,12 +145,12 @@ WATCHTOWER = _make("watchtower", ["    /\\    ", "   /  \\   ", " _/____\\_ ", "
 
 # -- the production and staff halls (18 wide, seven text rows) ------------------------------------
 
-FIELDS = _make("fields", _box(18, 7, top="┌──\\|/──\\|/──\\|/─┐"), body=(18, 9))
+FIELDS = _make("fields", _box(18, 7, top="┌─\\||/─\\||/─\\||/─┐"), body=(18, 9))
 BARRACKS = _make("barracks", ["  __    __    __  "] + _box(18, 7, top="┌|  |──|  |──|  |┐"),
                  head=("WORKER POOL",), body=(18, 9))
-COUNCIL = _make("council", ["   o     o     o  "] + _box(18, 7, top="┌──/\\───/\\───/\\──┐"),
+COUNCIL = _make("council", ["   o    o    o    "] + _box(18, 7, top="┌──/\\───/\\───/\\──┐"),
                 head=("MULTI - AGENT", "DEBATE ENGINE"), body=(18, 9))
-FORGE = _make("forge", ["       _ oOO      "] + _box(18, 7, top="┌─────|  |───────┐"),
+FORGE = _make("forge", ["       oOO        "] + _box(18, 7, top="┌─────|  |───────┐"),
               head=("MERGE ENGINE",), body=(18, 9))
 SCROLLS = _make("scrolls", _box(18, 7, top="@" + "~" * 16 + "@", bottom="@" + "~" * 16 + "@"),
                 head=("LLM WIKI / RAG",), body=(18, 9))
@@ -159,9 +159,9 @@ SCROLLS = _make("scrolls", _box(18, 7, top="@" + "~" * 16 + "@", bottom="@" + "~
 
 WAR_DRUM = _make("war_drum", ["           \\ o /"] + _box(26, 9, top="┌" + "─" * 12 + "┴" + "─" * 11 + "┐"),
                  head=("TODAY'S RAIDS & MOOTS",), body=(26, 11))
-FOREST = _make("forest", ["   /|\\   /|\\   /|\\   /|\\  "]
-               + _box(26, 9, top="┌──/|\\───/|\\───/|\\───/|\\─┐"), head=("EXPLORER & CONTEXT",), body=(26, 11))
-LOOT = _make("loot", ["   /═════════[#]═════════\\"] + _box(26, 9), head=("ARTIFACT REPOSITORY",), body=(26, 11))
+FOREST = _make("forest", ["    /|\\  /|\\  /|\\  /|\\    "]
+               + _box(26, 9, top="┌───/|\\──/|\\──/|\\──/|\\───┐"), head=("EXPLORER & CONTEXT",), body=(26, 11))
+LOOT = _make("loot", ["/" + "═" * 10 + "[##]" + "═" * 10 + "\\"] + _box(26, 9), head=("ARTIFACT REPOSITORY",), body=(26, 11))
 def _crag(rows: int = 9) -> Silhouette:
     return _make("crag", _box(26, rows, top=" /" + "─" * 22 + "\\ ", bottom=" \\" + "─" * 22 + "/ "),
                  head=("TELEMETRY & TELEGRAPHS",), body=(26, rows + 2), grow="crag")
@@ -195,9 +195,9 @@ LAKE = _lake()
 
 # -- the Town Hall, the Workshop and the generic frame (no design given: drawn in the same spirit) -
 
-TOWN_HALL = _make("town_hall", ["  |>         /\\         |>", " /^\\_______/  \\_______/^\\"] + _box(26, 9),
+TOWN_HALL = _make("town_hall", ["  |>        /\\        |> ", " /^\\_______/  \\_______/^\\"] + _box(26, 9),
                   head=("THE TOWN HALL",), body=(26, 11))
-WORKSHOP = _make("workshop", ["  __    ||    __  "] + _box(18, 5, top="┌────||────||────┐"),
+WORKSHOP = _make("workshop", ["     ||    ||     "] + _box(18, 5, top="┌────||────||────┐"),
                  head=("WORKSHOP",), body=(18, 7))
 
 SILHOUETTES: dict[str, Silhouette] = {s.id: s for s in (
