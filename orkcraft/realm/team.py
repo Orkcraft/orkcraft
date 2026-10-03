@@ -25,6 +25,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from orkcraft.realm import tiers
+
 DEFAULT_MEMBERS = ("Author:claude", "Critic:claude")
 DEFAULT_ROUNDS = 4
 DEFAULT_BUDGET = 2.0
@@ -49,6 +51,11 @@ class Member:
     def label(self) -> str:
         return f"{self.harness}:{self.model}" if self.model else self.harness
 
+    @property
+    def tier_icon(self) -> str:
+        """🔮 / ⚔ / ⛏ by its model (realm/tiers.py); "" when the model says nothing."""
+        return tiers.model_icon(self.harness, self.model)
+
 
 def parse_member(entry: str) -> Member | None:
     role, _, rest = str(entry).partition(":")
@@ -56,7 +63,7 @@ def parse_member(entry: str) -> Member | None:
     role, harness = role.strip(), (harness.strip() or "claude")
     if not role or harness not in ("claude", "agy"):
         return None
-    return Member(role, harness, model.strip())
+    return Member(role, harness, tiers.resolve(harness, model.strip()))   # `Critic:claude:elder` → opus
 
 
 def members_of(config: dict) -> list[Member]:

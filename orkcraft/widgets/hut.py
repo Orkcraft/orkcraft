@@ -2,8 +2,8 @@
 
 Above the building stand its number, its one icon and its name on one line (two when long),
 then one blank row. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
-two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
-building; a drag moves the hut (the town keeps the spot).
+two quick-action buttons. A click on a button runs that action; a click elsewhere selects the
+building, a second click expands it; a drag moves the hut (the town keeps the spot).
 
 The frame takes the colour of the biome, so the rules for that are CSS; only the text carries
 styles of its own. An orc waiting for an answer sets the hut on fire (immersion, `realm/modes.py`):
@@ -38,7 +38,7 @@ _EDGE = re.compile(r"[─~_═]+")         # the bottom edge of a frame, where t
 
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
-    f"    Desktop.biome-{name} Hut.-expanded {{ color: {b.border_focus}; text-style: bold; }}"
+    f"    Desktop.biome-{name} Hut.-expanded, Desktop.biome-{name} Hut.-selected {{ color: {b.border_focus}; text-style: bold; }}"
     for name, b in theme.LOOKS.items()
 )
 
@@ -116,7 +116,7 @@ class Hut(Widget):
 
     @staticmethod
     def _badge_short(badge: str) -> str:
-        parts = badge.split()                 # `🧌 Smith+1 C 🔨 💤` → `🧌 💤`
+        parts = badge.split()                 # `🧌 Smith+1 ✻ 🔨 💤` → `🧌 💤`
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _shown_title(self) -> str:

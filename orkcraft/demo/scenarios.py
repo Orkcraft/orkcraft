@@ -8,8 +8,10 @@ sources. Roads use the two real events; `label` is the signal's display name.
 from __future__ import annotations
 
 SEL, TASK = "on_selection_change", "on_task_completed"
-C, A = {"role": "run", "harness": "claude"}, {"role": "write", "harness": "agy"}
-REVIEW = {"role": "review", "harness": "claude"}
+C, A = {"role": "run", "harness": "claude"}, {"role": "write", "harness": "agy", "tier": "warrior"}
+REVIEW = {"role": "review", "harness": "claude", "tier": "warrior"}
+# 🔮 elder · ⚔ warrior · ⛏ laborer (realm/tiers.py)
+ELDER, WARRIOR, LABORER = ({**C, "tier": t} for t in ("elder", "warrior", "laborer"))
 
 
 def pane(widget: str, data: str, title: str = "", ratio: int = 1, columns: list[str] | None = None) -> dict:
@@ -138,7 +140,7 @@ FAILED tests/test_token.py::test_refresh_reuse_revokes_family - assert 200 == 40
         ("oauth_vault", "oauth_spire", TASK, "on_approve", "writer", None),
     ],
     "handlers": {
-        "oauth_spire": [{"name": "Reviewer", "kind": "agent", "harness": [C], "role": "reviews every patch",
+        "oauth_spire": [{"name": "Reviewer", "kind": "agent", "harness": [ELDER], "role": "reviews every patch",
                          "orders": "Review the selected task's patch: risks, missing tests, naming.",
                          "sample": "**Review · T2101** (claude)\n- ✅ PKCE S256 only, verifier length checked\n- ⚠ `new_family()` is not persisted — reuse detection (T2102) cannot work yet\n- ⚠ no test for an expired code\n- nit: `InvalidGrant` messages leak whether a code existed"}],
         "oauth_lab": [{"name": "Runner", "kind": "chain", "role": "reruns the failing tests",
@@ -294,7 +296,7 @@ flowchart LR
         ("arch_wiki", "arch_hall", TASK, "on_adr", "sync", None),
     ],
     "handlers": {
-        "arch_hall": [{"name": "Judge", "kind": "agent", "harness": [C], "role": "code vs ADRs",
+        "arch_hall": [{"name": "Judge", "kind": "agent", "harness": [ELDER], "role": "code vs ADRs",
                        "orders": "Which ADR does the selected drift violate, and what is the smallest fix?",
                        "sample": "**T2301 violates ADR-014.** Replace `ledger.api.post_entry()` in `payments/settle.py:88` with publishing `payment.settled`; Ledger already consumes it."}],
         "arch_wiki": [{"name": "Sync", "kind": "chain", "role": "wiki line per decision",
@@ -360,7 +362,7 @@ _Tone guide: brand-voice.md · "calm, no blame, one action"_
         ("ds_watch", "ds_mirror", TASK, "on_check", "heuristics", None),
     ],
     "handlers": {
-        "ds_script": [{"name": "Copy Desk", "kind": "agent", "harness": [C], "role": "copy in the brand voice",
+        "ds_script": [{"name": "Copy Desk", "kind": "agent", "harness": [LABORER], "role": "copy in the brand voice",
                        "orders": "Three variants (short, friendly, technical) for each state of the selected step.",
                        "sample": "**Step 2 · loading** — short: *Connecting…* · friendly: *Saying hi to your bank…* · technical: *Waiting for ING (PSD2 consent)*"}],
         "ds_watch": [{"name": "Heuristics", "kind": "chain", "role": "checklist per wireframe",
@@ -440,7 +442,7 @@ Exports: `tokens.css` · `tailwind.preset.js` · `tokens.d.ts` · `colors.xml`
     "handlers": {
         "tk_loot": [{"name": "Exporter", "kind": "chain", "role": "CSS / Tailwind / TS / Android",
                      "chain": [{"op": "template", "md": "exported {title}: tokens.css · tailwind.preset.js · tokens.d.ts · colors.xml"}]}],
-        "tk_radar": [{"name": "Scanner", "kind": "hybrid", "harness": [C], "role": "grep consumers, escalate breaking",
+        "tk_radar": [{"name": "Scanner", "kind": "hybrid", "harness": [LABORER], "role": "grep consumers, escalate breaking",
                       "script": {"path": ".orkcraft/scripts/tk-radar-scanner.py"},
                       "sample": "**Breaking:** 4 repos · 20 references to `color.brand.primary` → escalated to claude for the migration plan"}],
     },
@@ -501,7 +503,7 @@ Feature: One-click export
         ("pm_vault", "pm_forge", TASK, "on_stories_done", "indexer", None),
     ],
     "handlers": {
-        "pm_hall": [{"name": "Strategist", "kind": "agent", "harness": [C], "role": "problem statement + metrics",
+        "pm_hall": [{"name": "Strategist", "kind": "agent", "harness": [ELDER], "role": "problem statement + metrics",
                      "orders": "Draft a problem statement, success metrics and 2 hypotheses from the selected cluster.",
                      "sample": "**Exports** — 23 quotes → problem: monthly export breaks in Excel for 61 %. Metric: completion ≥ 95 %. H1: UTF-8 BOM; H2: PDF summary."}],
         "pm_forge": [{"name": "Slicer", "kind": "agent", "harness": [A, REVIEW], "role": "stories in Gherkin",
@@ -564,7 +566,7 @@ _Generated from Chronicles — no status meeting needed._
         ("dc_loot", "dc_chron", TASK, "on_log", None, None),
     ],
     "handlers": {
-        "dc_loot": [{"name": "Herald Desk", "kind": "agent", "harness": [C], "role": "weekly status from chronicles",
+        "dc_loot": [{"name": "Herald Desk", "kind": "agent", "harness": [LABORER], "role": "weekly status from chronicles",
                      "orders": "Write the weekly status: shipped, on track, at risk, decisions needed.", "run": {"quiet_s": 60},
                      "sample": "**Week 40** · shipped 4.12.1 · at risk: OAuth review (2 d), e2e CI red (6 h) · decide: tokens v2 migration window"}],
         "dc_chron": [{"name": "Auditor", "kind": "chain", "role": "audit line per change",
@@ -724,7 +726,7 @@ _prefilled by Orkcraft from Calendar, Mail and Jira — edit before the meeting_
         "em_note": [
             {"name": "Agenda", "kind": "chain", "role": "one line per source, rerun on every new event",
              "chain": [{"op": "template", "md": "- {title} · _{status}_"}, {"op": "join", "sep": "\n"}]},
-            {"name": "Coach", "kind": "agent", "harness": [C], "role": "talking points for the 1on1",
+            {"name": "Coach", "kind": "agent", "harness": [WARRIOR], "role": "talking points for the 1on1",
              "orders": "From the latest meeting, mail and Jira activity, suggest three talking points and one risk.",
              "sample": "**Talking points** (claude)\n1. On-call load: 6 pages, 3 at night — offer to swap the PTO week\n2. PAY-431 blocked 9 days: unblock via vendor contact or re-scope\n3. Growth: payments design review ownership\n\n**Risk:** velocity 21 → 13 → 5 while the PM already asks about overload"},
         ],

@@ -67,7 +67,7 @@ async def test_k_and_f_on_a_building(fake_repo: Path):
 
 
 @pytest.mark.asyncio
-async def test_the_rating_buttons_sit_beside_the_steward(fake_repo: Path):
+async def test_the_rating_buttons_sit_in_the_building_info(fake_repo: Path):
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.feedback_modal import DislikeModal
 
@@ -79,12 +79,12 @@ async def test_the_rating_buttons_sit_beside_the_steward(fake_repo: Path):
         app.set_focus_state("building", building_id="mill")
         for _ in range(3):
             await pilot.pause()
-        bar = app.screen.query_one("#roster-rate")
+        bar = app.screen.query_one("#info-building")
         assert bar.display
-        await pilot.click("#rate-like")
+        await pilot.click("#ib-like")
         await pilot.pause()
         assert feedback.scores(fake_repo)["mill"]["likes"] == 1
-        await pilot.click("#rate-dislike")
+        await pilot.click("#ib-dislike")
         await pilot.pause()
         assert isinstance(app.screen, DislikeModal)
         await pilot.press("escape")
@@ -92,7 +92,7 @@ async def test_the_rating_buttons_sit_beside_the_steward(fake_repo: Path):
         assert j["results"] == 1 and j["likes"] == 1 and j["events"] == ["mill.done"]
         app.set_focus_state("neutral")
         await pilot.pause()
-        assert not app.screen.query_one("#roster-rate").display
+        assert not app.screen.query_one("#info-building").display
 
 
 def test_liked_results_reach_the_prompts():

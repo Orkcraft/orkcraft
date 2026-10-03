@@ -25,6 +25,8 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from orkcraft.realm import tiers
+
 DEFAULT_PROVIDERS = ("claude", "agy")
 DEFAULT_MAX_ORCS = 3
 AGY_CODE, AGY_DOCS = "gemini-3.8-flash-high", "gemini-3.1-pro-high"
@@ -62,6 +64,11 @@ class PoolOrc:
     def label(self) -> str:
         return f"{self.harness}:{self.model}" if self.model else self.harness
 
+    @property
+    def tier_icon(self) -> str:
+        """🔮 / ⚔ / ⛏ by its model (realm/tiers.py); "" when the model says nothing."""
+        return tiers.model_icon(self.harness, self.model)
+
 
 @dataclass
 class PoolTask:
@@ -97,8 +104,9 @@ def task_key(kind: str, value: str, title: str = "") -> str:
 
 
 def parse_provider(entry: str) -> tuple[str, str]:
+    """`claude`, `agy:gemini-3.1-pro-high`, or a tier in place of the model: `claude:laborer`."""
     harness, _, model = str(entry).partition(":")
-    return harness.strip(), model.strip()
+    return harness.strip(), tiers.resolve(harness.strip(), model.strip())
 
 
 class Foreman:

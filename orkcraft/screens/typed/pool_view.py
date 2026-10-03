@@ -228,7 +228,7 @@ class PoolView(TypedView):
         for o in st.orcs:
             task = st.task(o.task) if o.task else None
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f"{ICON.get(o.status, '·')} {o.name} ", style="bold")
+            row.append(f"{ICON.get(o.status, '·')} {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} ", style="bold")
             row.append(f"{o.label} ", style="cyan")
             row.append(task.title if task else f"✓{o.done} ✗{o.failed}", style="" if task else "dim")
             lst.add_option(Option(row, id=o.name))
@@ -268,7 +268,7 @@ class PoolView(TypedView):
         st = self.state
         if not st.orcs and not st.queue:
             return ["no orcs yet", "⏸ paused" if st.paused else "waiting for tasks"]
-        lines = [f"{ICON.get(o.status, '·')} {o.name} {o.label}" for o in st.orcs[:3]]
+        lines = [f"{ICON.get(o.status, '·')} {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} {o.label}" for o in st.orcs[:3]]
         if len(st.orcs) > 3:
             lines.append(f"+{len(st.orcs) - 3} more")
         lines.append(("⏸ " if st.paused else "") + f"queue {len(st.queue)}")

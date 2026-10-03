@@ -59,6 +59,9 @@ KINDS — pick the FIRST that can do the job and explain in "why" what a cheaper
 3. "agent": a Claude / agy session with "orders" (its prompt) and a "harness" scheme: a list of steps
    {{"role":"run|plan|write|review","harness":"claude|agy"}}, e.g. [{{"role":"run","harness":"claude"}}] or
    [{{"role":"write","harness":"agy"}},{{"role":"review","harness":"claude"}}].
+   Each step takes a "tier", the lightest that will do: "laborer" (haiku / gemini flash low: sorting,
+   summaries, routine checks), "warrior" (sonnet / gemini flash high: most coding and writing), "elder"
+   (opus / gemini pro: hard reasoning, architecture, reviews that matter).
 4. "hybrid": a script that escalates to an agent: both "script_source" and "harness".
 Optional "run": {{"quiet_s": 0-3600, "restart_on_new": bool}} (agents default to 30 s of quiet).
 {feedback}

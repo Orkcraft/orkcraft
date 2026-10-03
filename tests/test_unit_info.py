@@ -45,19 +45,22 @@ async def test_info_panel_for_a_building_and_an_agent_handler(fake_repo: Path):
         await pilot.press(str(chat_win.number))
         for _ in range(3):
             await pilot.pause()
-        info = str(app.screen.query_one("#info-body", Static).render())
-        assert "2 orcs" in info and "Reviewer (agent)" in info and "Listens to 1 road" in info
-        assert "🪙 $0.31 · 🪵 42k tokens · 1 run" in info
+        q = lambda sel: str(app.screen.query_one(sel, Static).render())
+        assert not app.screen.query_one("#info-body").display and app.screen.query_one("#info-building").display
+        assert "Town Hall" in q("#ib-name")
+        assert q("#ib-about").strip()
+        assert "🪙 $0.31 · 🪵 42k tokens · 1 run" in q("#ib-runs") and "👍 0 👎 0" in q("#ib-runs")
+        assert "Listens: ◂" in q("#ib-listens") and "→ " in q("#ib-listens") and "Reviewer" in q("#ib-listens")
         lst = app.screen.query_one("#roster-list")
         lst.focus()
         await pilot.press("2")
         for _ in range(3):
             await pilot.pause()
         assert app.focus_state.mode == "unit"
-        info = str(app.screen.query_one("#info-body", Static).render())
-        assert "Runs as an agent on 📦 Artifacts · selection." in info and "C review · Claude" in info
-        assert "not deployed" in info and "🪙 $0.31 · 🪵 42k tokens · 1 run" in info
-        assert lst.highlighted == 1                                     # the garrison stays, the orc is lit
+        assert "Runs as an agent on 📦 Artifacts · selection." in q("#io-about")
+        runs = q("#io-runs")
+        assert "not deployed" in runs and "🪙 $0.31 · 🪵 42k tokens · 1 run" in runs
+        assert str(lst.get_option_at_index(0).prompt).startswith("claude default")  # its 🎒 inventory
 
 
 @pytest.mark.asyncio

@@ -119,6 +119,8 @@ async def test_the_hud_speaks_gold_and_lumber_or_words(fake_repo: Path):
         assert "🪙" in text and "🪵" in text and "🥩" in text and "🔥 2" in text and "🧌" in text
         app.desktop.set_mode(True)
         await pilot.pause()
+        hud.resources.alerts = 2
+        hud.update_hud()
         text = str(hud.render())
         assert "Spend $" in text and "Context" in text and "Agents" in text and "? 2" in text
         assert not modes._EMOJI.search(text)                                       # no emoji at all

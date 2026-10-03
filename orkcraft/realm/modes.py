@@ -57,12 +57,13 @@ _ORC_ICONS = sorted({i for i in KIND_ICONS.values()}, key=len, reverse=True)   #
 
 # Emoji and pictographs (and what glues them together); box drawing, arrows, ✓ ✗ and · stay.
 _EMOJI = re.compile(
-    "[\U0001F000-\U0001FAFF\U00002600-\U000026FF\U00002700-\U00002712\U00002714-\U00002716"
-    "\U00002718-\U000027BF\U00002300-\U000023FF\U00002B00-\U00002BFF\U0001F1E6-\U0001F1FF"
-    "\u2139\u2122\u3030\u303D\u3297\u3299\uFE0E\uFE0F\u200D\u20E3]")
+    "[\U0001F000-\U0001FAFF\U00002600-\U000026FF\U00002300-\U000023FF\U00002B00-\U00002BFF"
+    "\u2702\u2705\u2708-\u270D\u270F\u2712\u271D\u2721\u2728\u2733\u2734\u2744\u2747\u274C\u274E"
+    "\u2753-\u2755\u2757\u2763\u2764\u2795-\u2797\u27B0\u27BF"
+    "\u2139\u2122\u3030\u303D\u3297\u3299\uFE0E\uFE0F\u200D\u20E3]")   # ✓ ✗ ✻ ✦ ➜ are text: they stay
 
 
-_WORDS = {"👍": "+1", "👎": "-1"}          # icons that are the whole meaning become words
+_WORDS = {"👍": "+1", "👎": "-1", "🗑": "Delete"}          # icons that are the whole meaning become words
 
 
 def strip_emoji(text: str) -> str:
