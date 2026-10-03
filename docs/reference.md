@@ -468,7 +468,7 @@ changes (`orkcraft/realm/modes.py`).
 | Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
 | Agents | orcs 🧌 / 🗿 | people 🧑 |
 | A question | fire 🔥 | ❓ |
-| Waiting for an answer | the whole card flickers orange, after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | the whole card is red |
+| Waiting for an answer | the whole card flickers orange, after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red (no fill) |
 | Roads | rocks 🪨 roll from building to building | small squares ■ |
 | HUD (top right) | 🪙 gold, 🪵 lumber, 🥩 meat | Spend, Context, Agents |
 

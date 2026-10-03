@@ -9,7 +9,8 @@ The frame takes the colour of the biome, so the rules for that are CSS; only the
 styles of its own. An orc waiting for an answer sets the hut on fire (immersion, `realm/modes.py`):
 the building — its frame, text and ground — flickers orange (the name and the buttons only take
 the colour, not the ground), turns red when the
-question is left waiting, then the roof turns to 🔥 bit by bit. In the hidden mode it only turns red.
+question is left waiting, then the roof turns to 🔥 bit by bit. In the hidden mode only its frame
+and its name turn red.
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from orkcraft.wm.geometry import Geom
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d", "#b31b0f")   # orange ↔ amber, then red ↔ dark red
 ALERT_RED = "#ef4444"                                   # the hidden mode: a waiting hut is only red
-FIRE_GROUND = ("#3a1c06", "#420d07", "#3d0b0b")         # the building's ground: orange, red, hidden red
+FIRE_GROUND = ("#3a1c06", "#420d07")                    # the burning building's ground: orange, red
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
@@ -238,14 +239,16 @@ class Hut(Widget):
 
     def fire_ground(self) -> str | None:
         """The ground under the building itself (its box, not the name, the roof or the buttons)."""
-        if not self.on_fire:
-            return None
-        return FIRE_GROUND[2] if self.plain else FIRE_GROUND[1] if self.has_class("-burning") else FIRE_GROUND[0]
+        if not self.on_fire or self.plain:
+            return None                       # the hidden mode: only the frame turns red
+        return FIRE_GROUND[1] if self.has_class("-burning") else FIRE_GROUND[0]
 
     def render(self) -> Text:
         w = self.geom.w
         fire = self.fire_style()
-        ground = f"{fire} on {self.fire_ground()}" if fire else None
+        bg = self.fire_ground()
+        ground = f"{fire} on {bg}" if fire and bg else fire
+        inside = None if self.plain else fire       # the hidden mode reddens the frame (and the name), not the text
         box = max(min((y for y, _, _ in self.sil.slots), default=1) - 1, 0)   # the box's top row
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
@@ -258,14 +261,15 @@ class Hut(Widget):
             if n == len(rows) - 1:
                 row = self._orc_in_frame(row)
             for piece, role in row:
-                text.append(piece, style=(ground if n >= box else fire) or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
-                                                  else ORC_STYLE if role == "orc" else None))
+                lit = (ground if n >= box else fire) if role == "frame" or not self.plain else None
+                text.append(piece, style=lit or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
+                                                 else ORC_STYLE if role == "orc" else None))
             text.append("\n")
         if self.sil.caption:
             cap = self.sil.caption_text(self.status)
-            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=fire or LIVE_STYLE)
+            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=inside or LIVE_STYLE)
         if self.actions:
-            text.append_text(self._action_row(w, fire))
+            text.append_text(self._action_row(w, inside))
         else:
             text.rstrip()
         return text

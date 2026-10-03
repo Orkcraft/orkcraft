@@ -82,15 +82,22 @@ def test_a_hut_left_waiting_burns_and_the_whole_card_takes_the_colour():
     assert not hut.on_fire and not hut.has_class("-burning") and "🔥" not in str(hut.render())
 
 
-def test_in_the_hidden_mode_a_waiting_hut_is_only_red():
+def test_in_the_hidden_mode_a_waiting_hut_only_gets_a_red_frame():
     modes.set_current(modes.HIDDEN)
     hut = Hut("w", sil.WATCHTOWER, [])
     hut.set_plain(True)
+    hut.set_title(1, "🗼 Tower")
+    hut.set_status(["all quiet"])
     hut.set_badge(ASKING, now=0.0)
     hut.update_fire(now=modes.FIRE_ROOF_FULL_S * 2)
-    out = str(hut.render())
+    drawn = hut.render()
+    out = drawn.plain
     assert "🔥" not in out and "🧌" not in out and "🧑 ❓" in out
-    assert not hut.has_class("-burning") and _styles(hut) == {f"bold {ALERT_RED}", f"bold {ALERT_RED} on {FIRE_GROUND[2]}"}
+    assert not hut.has_class("-burning") and hut.fire_ground() is None
+    assert not any(" on " in str(sp.style) for sp in drawn.spans)                  # no red ground
+    red = "".join(out[sp.start:sp.end] for sp in drawn.spans if str(sp.style) == f"bold {ALERT_RED}")
+    assert "┌" in red and "│" in red and "Tower" in red                             # the frame and the name
+    assert "all quiet" not in red and "❓" not in red                               # not the text inside
 
 
 def test_carts_are_rocks_or_squares():
