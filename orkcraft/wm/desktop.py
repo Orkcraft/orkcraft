@@ -17,7 +17,7 @@ from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import SNAP_SLOTS, Frac, Geom
 from orkcraft import scroll
 from orkcraft.scroll import TownScroll, has_outgoing
-from orkcraft import theme
+from orkcraft import settings, theme
 from orkcraft.realm import chronicles, pipes
 from orkcraft.widgets.road_layer import (ENTRY_GLYPH, EXIT_GLYPH, ROAD_SELECTED, RoadClicked, RoadGate, RoadLabel,
                                          RoadRun, road_key, runs)
@@ -160,6 +160,7 @@ class Desktop(Container):
         self.traffic = Traffic(self)
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
+        self.machine = settings.load()
         self.huts: dict[str, Hut] = {}
         self.ghost: Ghost | None = None          # a building being placed
         self._ghost_done = None
@@ -797,13 +798,18 @@ class Desktop(Container):
 
     @property
     def plain(self) -> bool:
-        """The plain mode: huts are only frames; else immersion, where they wear their ASCII."""
-        return self.scroll is not None and self.scroll.preferences.get("mode") == "plain"
+        """The plain mode: huts are only frames; else immersion, where they wear their ASCII.
+        The project's `preferences.mode` overrides the machine's mode (settings.py)."""
+        mode = self.scroll.preferences.get("mode") if self.scroll is not None else None
+        return (mode or self.machine.mode) == "plain"
 
     def set_mode(self, plain: bool) -> None:
+        """Set the machine's mode (F10); the project's override is dropped so the choice shows here too."""
         if plain == self.plain or self.scroll is None:
             return
-        self.scroll.preferences["mode"] = "plain" if plain else "immersion"
+        self.machine.mode = "plain" if plain else "immersion"
+        settings.save(self.machine)
+        self.scroll.preferences.pop("mode", None)
         for hut in self.huts.values():
             if hut.set_plain(plain) and hut.display:
                 self._settle(hut)

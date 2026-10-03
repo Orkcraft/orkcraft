@@ -459,7 +459,9 @@ cd your-project && orkcraft hooks install && orkcraft
 
 ## Modes: immersion and plain
 
-F10 → 🎭 *Immersion* (default) or ▭ *Plain*, kept as `preferences.mode` in `.orkcraft.json`. In immersion
+F10 → 🎭 *Immersion* (default) or ▭ *Plain*, kept per machine as `mode` in `~/.config/orkcraft/settings.json`
+(`$ORKCRAFT_SETTINGS_FILE` overrides the path). A project may override it with `preferences.mode` in
+`.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's override. In immersion
 every building wears its ASCII silhouette (roofs, sails, trees, waves). In plain mode a building is
 only a frame with the same live text rows; the label above and the buttons below stay. The Lake, the
 Crag and custom frames grow with their content (up to a maximum) in both modes, and a hut that changes

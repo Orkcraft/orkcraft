@@ -29,6 +29,7 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     """Keep window layouts written by the TUI out of the real ~/.config."""
     path = tmp_path / "orkcraft-layout.json"
     monkeypatch.setenv("ORKCRAFT_LAYOUT_FILE", str(path))
+    monkeypatch.setenv("ORKCRAFT_SETTINGS_FILE", str(tmp_path / "orkcraft-settings.json"))
     # No real claude/agy calls and no personal calendars in tests.
     monkeypatch.setenv("ORKCRAFT_LIMITS", "0")
     monkeypatch.setenv("ORKCRAFT_COUNCIL_LLM", "0")      # the Council's Fast Path: rules only
