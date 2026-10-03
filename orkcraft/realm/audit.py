@@ -78,7 +78,11 @@ def _security(repo_root: Path, specs: dict[str, dict]) -> list[Finding]:
         if kind == "forge" and not cfg.get("test_cmd") and not cfg.get("confirm"):
             out.append(Finding("warder", f"{spec.get('title', bid)}: merges into the base without tests or a "
                                          "confirmation — set test_cmd, or c in the Forge", bid, "warn"))
-        if kind == "catapult" and cfg.get("url") and not cfg.get("schema"):
+        if kind == "catapult" and cfg.get("mode") == "browser" and cfg.get("finish") == "press" \
+                and not cfg.get("schema") and not cfg.get("confirm"):
+            out.append(Finding("warder", f"{spec.get('title', bid)}: presses {str(cfg.get('submit'))[:30]!r} on "
+                                         f"{str(cfg.get('page'))[:40]} unchecked and unasked — set schema, or c", bid, "warn"))
+        elif kind == "catapult" and cfg.get("url") and not cfg.get("schema") and cfg.get("mode") != "browser":
             out.append(Finding("warder", f"{spec.get('title', bid)}: sends to {str(cfg['url'])[:40]} without a schema "
                                          "check — set schema", bid, "warn"))
         if kind == "barracks" and cfg.get("worktrees") is False:

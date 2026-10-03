@@ -248,15 +248,20 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
-        "and sends it to an external API",
-        "what it waits for, the last shot", "the loaded data, the check, the request and its answer",
-        events=(_e("catapult.sent", "sent", TEXT, "the request went out: the answer"),
-                _e("catapult.failed", "failed", TEXT, "the check or the request failed")),
+        "and sends it to an external API — or, where a site has no API, fills its web form in a browser "
+        "(it scouts the page, writes a Playwright script, then hands the form to you or presses submit)",
+        "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
+        events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
+                _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed")),
         actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
-                 _a("catapult.dry_run", "Dry run", "🧪", "show the request without sending it")),
+                 _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
+                 _a("catapult.scout", "Scout", "🔭", "browser mode: open the page, learn its form, write the fill script")),
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),
-                "token_env": (str, None, False), "confirm": (bool, None, False)},
+                "token_env": (str, None, False), "confirm": (bool, None, False),
+                "mode": (str, ("api", "browser"), False), "page": (str, None, False),
+                "fields": (list, None, False), "submit": (str, None, False),
+                "finish": (str, ("leave", "press"), False)},
         art="workshop", orc="Loader"),
     BuildingType(
         "town_hall", "Town Hall", "🏰", "L",
@@ -425,6 +430,14 @@ def validate(spec: dict) -> list[str]:
             errors.append(f"config: default: choose {', '.join(horn.SOUNDS)} or an audio file")
         if isinstance(config.get("quiet"), str) and not horn.quiet_ok(config["quiet"]):
             errors.append("config: quiet: say `22:00-08:00`")
+    if tid == "catapult":
+        from orkcraft.realm import catapult_web
+        if isinstance(config.get("page"), str) and not catapult_web.url_ok(config["page"]):
+            errors.append("config: page must be an http or https address")
+        if isinstance(config.get("fields"), list):
+            errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
+        if config.get("finish") == "press" and not config.get("submit"):
+            errors.append("config: finish: press needs submit — the text of the button to press")
     if tid == "totem" and isinstance(config.get("rules"), list):
         from orkcraft.realm import totem
         errors += [f"config: rules: {e}" for e in totem.rules_of(config["rules"])[1]]

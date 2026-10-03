@@ -1,0 +1,205 @@
+"""🎯 The Catapult's browser mode: scout a form, plan the fields, write fill.py, fill and press."""
+from __future__ import annotations
+
+import functools
+import http.server
+import json
+import threading
+from pathlib import Path
+
+import pytest
+
+from orkcraft import scroll as ts
+from orkcraft.app import OrkcraftApp
+from orkcraft.realm import catalog, catapult as cp, catapult_web as cw, masonry, pipes
+from orkcraft.screens.typed.catapult_view import CatapultView
+
+FORM = """<!doctype html><title>New event</title>
+<form onsubmit="event.preventDefault(); document.title = 'saved ' +
+  JSON.stringify(Object.fromEntries(new FormData(this)))">
+  <label for="ev-name">Event name</label><input id="ev-name" name="name" required>
+  <label>Description <textarea name="description"></textarea></label>
+  <input name="start_date" type="date" aria-label="Start date">
+  <select name="type" aria-label="Event type"><option>Major update</option><option>Live event</option></select>
+  <label><input type="checkbox" name="notify"> Notify players</label>
+  <fieldset><legend>Priority</legend>
+    <label><input type="radio" name="prio" value="lo"> Low</label>
+    <label><input type="radio" name="prio" value="hi"> High</label></fieldset>
+  <input type="hidden" name="csrf" value="x">
+  <button type="submit">Save draft</button>
+</form>"""
+
+MAP = {"url": "https://play.example.com/events/new", "title": "New event",
+       "fields": [{"kind": "text", "label": "Event name", "name": "name", "id": "ev-name", "selector": "#ev-name",
+                   "options": [], "required": True},
+                  {"kind": "textarea", "label": "Description", "name": "description", "id": "",
+                   "selector": "textarea[name=\"description\"]", "options": [], "required": False},
+                  {"kind": "date", "label": "Start date", "name": "start_date", "id": "",
+                   "selector": "input[name=\"start_date\"]", "options": [], "required": False},
+                  {"kind": "select", "label": "Event type", "name": "type", "id": "", "selector": "select",
+                   "options": ["Major update", "Live event"], "required": False}],
+       "buttons": [{"text": "Save draft", "selector": "button"}]}
+
+
+@pytest.fixture
+def site(tmp_path: Path):
+    (tmp_path / "www").mkdir()
+    (tmp_path / "www" / "new.html").write_text(FORM, encoding="utf-8")
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(tmp_path / "www"))
+    handler.log_message = lambda *a: None
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_address[1]}/new.html"
+    server.shutdown()
+
+
+def test_plan_matches_settings_model_and_names():
+    keys = ["title", "description", "schedule.start_date", "kind", "extra"]
+    p = cw.plan(MAP, keys, ['Event name = title', 'Event type = "Live event"', "Nope = x"], {"2": "schedule.start_date"})
+    got = {s.label: (s.path, s.literal, s.by) for s in p.steps}
+    assert got["Event name"] == ("title", None, "settings")
+    assert got["Event type"] == ("", "Live event", "settings")
+    assert got["Start date"] == ("schedule.start_date", None, "model")
+    assert got["Description"] == ("description", None, "name")
+    assert p.unused == ["kind", "extra"] and p.unfilled == [] and "'Nope'" in p.problems[0]
+    assert cw.plan(MAP, ["kind"]).unfilled == ["Event name"]          # required and nothing fills it
+    body = {"title": "Halloween", "description": "Spooky", "schedule": {"start_date": "2026-10-31"}}
+    text = cw.describe(p, body)
+    assert "Event name" in text and "'Halloween'" in text and "not used: kind, extra" in text
+
+
+def test_leaves_pick_and_rules():
+    body = {"a": {"b": 1, "c": [1, 2]}, "items": [{"x": "y"}]}
+    assert cw.leaves(body) == {"a.b": 1, "a.c": [1, 2], "items.0.x": "y"}
+    assert cw.pick(body, "items.0.x") == "y" and cw.pick(body, "a.zz") is None
+    assert cw.schema_paths({"properties": {"t": {}, "s": {"properties": {"d": {}}}}}) == ["t", "s.d"]
+    rules, errors = cw.parse_rules(["A = b.c", "B = 'text'", "nothing"])
+    assert rules == [("A", "b.c", None), ("B", None, "text")] and len(errors) == 1
+
+
+def test_the_model_maps_fields_in_any_language():
+    ru = dict(MAP, fields=[dict(f, label=lbl) for f, lbl in zip(MAP["fields"], ["Название", "Описание", "Дата", "Тип"])])
+    prompts = []
+
+    def runner(prompt):
+        prompts.append(prompt)
+        return 'Sure: {"0": "title", "1": "description", "3": "nope", "9": "title"}', 0.001
+
+    mapping, cost = cw.map_with_model(ru, {"title": "Halloween", "description": "Spooky"}, runner)
+    assert mapping == {"0": "title", "1": "description"} and cost == 0.001 and "'Название'" in prompts[0]
+    assert {s.label for s in cw.plan(ru, ["title", "description"], [], mapping).steps} == {"Название", "Описание"}
+
+
+def test_settings_are_checked():
+    spec = {"id": "c", "title": "C", "type": "catapult",
+            "config": {"mode": "browser", "page": "file:///etc", "fields": ["bad"], "finish": "press"}}
+    errors = catalog.validate(spec)
+    text = "\n".join(errors)
+    assert "page must be an http" in text and "fields:" in text and "press needs submit" in text
+
+
+def test_a_script_edited_by_hand_is_kept(tmp_path: Path):
+    p = cw.plan(MAP, ["name"])
+    first = cw.write_script(tmp_path, cw.script_text(MAP, p))
+    assert first.name == "fill.py" and not cw.edited_by_hand(tmp_path)
+    compile(first.read_text(encoding="utf-8"), "fill.py", "exec")
+    first.write_text(first.read_text(encoding="utf-8") + "\n# mine\n", encoding="utf-8")
+    assert cw.edited_by_hand(tmp_path)
+    again = cw.write_script(tmp_path, cw.script_text(MAP, p, "Save draft", "press"))
+    assert again.name == "fill.new.py" and "# mine" in first.read_text(encoding="utf-8")
+
+
+def test_form_shot_says_what_happened():
+    res = cw.Result(True, 0, {"filled": ["Event name"], "missed": [], "pressed": True, "url": "u", "title": "ok"}, "")
+    shot = cp.form_shot("u0", {"a": 1}, res, True)
+    assert shot.ok and "pressed — u" in shot.answer and "Event name" in shot.answer
+    bad = cp.form_shot("u0", {}, cw.Result(False, 2, {"filled": [], "missed": ["X: no value"]}, ""), False)
+    assert not bad.ok and "missed: X: no value" in bad.answer and bad.error == "some fields were not filled"
+    assert cp.form_shot("u0", {}, cw.Result(True, 0, {"pressed": False}, ""), True).error == "not pressed"
+
+
+playwright = pytest.importorskip("playwright.sync_api")
+
+
+def _can_launch() -> bool:
+    try:
+        with playwright.sync_playwright() as p:
+            p.chromium.launch().close()
+        return True
+    except Exception:
+        return False
+
+
+needs_browser = pytest.mark.skipif(not _can_launch(), reason="no Chromium for Playwright here")
+
+
+@needs_browser
+def test_scout_marks_the_form_and_fill_presses_it(site: str, tmp_path: Path):
+    page_map = cw.scout(site, tmp_path / "profile", watch=False, headless=True)
+    by = {f["label"]: f for f in page_map["fields"]}
+    assert set(by) == {"Event name", "Description", "Start date", "Event type", "Notify players", "Priority"}
+    assert by["Event name"]["required"] and by["Event name"]["selector"] == "#ev-name"
+    assert by["Event type"]["options"] == ["Major update", "Live event"]
+    assert by["Priority"]["kind"] == "radio" and by["Priority"]["options"] == ["Low", "High"]
+    assert "Save draft" in [b["text"] for b in page_map["buttons"]]
+    body = {"name": "Halloween", "description": "Spooky", "start_date": "2026-10-31", "type": "Live event",
+            "notify": True, "priority": "High"}
+    p = cw.plan(page_map, list(cw.leaves(body)))
+    assert len(p.steps) == 6 and not p.unused
+    script = cw.write_script(tmp_path / "state", cw.script_text(page_map, p, "Save draft", "press"))
+    res = cw.run_script(script, tmp_path / "profile", body, press=True, headless=True, timeout=90)
+    assert res.ok, (res.err, res.out)
+    saved = json.loads(res.summary["title"][len("saved "):])
+    assert saved == {"name": "Halloween", "description": "Spooky", "start_date": "2026-10-31", "type": "Live event",
+                     "notify": "on", "prio": "hi", "csrf": "x"}
+    assert res.summary["pressed"] and len(res.summary["filled"]) == 6
+    handed = cw.run_script(script, tmp_path / "profile", {"name": "x"}, press=False, headless=True, timeout=90)
+    assert handed.code == 2 and not handed.summary["pressed"] and handed.summary["filled"] == ["Event name"]
+
+
+@needs_browser
+@pytest.mark.asyncio
+async def test_the_catapult_scouts_and_fills_in_browser_mode(site: str, fake_repo: Path, monkeypatch):
+    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
+    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
+            "config": {"mode": "browser", "page": site, "submit": "Save draft", "finish": "press",
+                       "fields": ["Event name = title"]}}
+    assert masonry.save_spec(fake_repo, spec) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    ts.subscribe(app.scroll, "town_hall", "play", "catapult.sent")
+    async with app.run_test(size=(200, 46)) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("play").query_one(CatapultView)
+        view.quick_action("catapult.scout")
+        for _ in range(200):
+            await pilot.pause(0.05)
+            if not view.busy:
+                break
+        assert cw.load_map(view.state_dir) and (view.state_dir / "fill.py").exists()
+        sent = []
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
+        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"title": "Halloween", "description": "Spooky"}',
+                                                  "pit", "pit.text", "x"))
+        for _ in range(400):
+            await pilot.pause(0.05)
+            if sent:
+                break
+        assert [p.mode for p in sent] == ["catapult.sent"], view.shots[0] if view.shots else None
+        assert view.shots[0].ok and "pressed" in view.shots[0].answer and "saved" in view.shots[0].answer
+        assert not view.load.items                          # unloaded after a good shot
+        assert view.profile == fake_repo / ".orkcraft" / "catapult" / "play" / "profile"   # outside the camp's git
+
+
+@pytest.mark.asyncio
+async def test_the_demo_only_dry_runs_a_form(fake_repo: Path, tmp_path: Path):
+    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
+            "config": {"mode": "browser", "page": "https://play.example.com/events/new"}}
+    assert masonry.save_spec(fake_repo, spec) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False, demo=True)
+    async with app.run_test(size=(200, 46)) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("play").query_one(CatapultView)
+        cw.save_map(view.state_dir, MAP)
+        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
+        await pilot.pause()
+        assert view.shots[0].dry and "Event name" in view.shots[0].answer and "'Halloween'" in view.shots[0].answer

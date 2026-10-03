@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=1.0"]
+browser = ["playwright>=1.45"]              # the Catapult's browser mode
 
 [project.urls]
 Homepage = "https://github.com/VadimSidoryk/orkcraft"

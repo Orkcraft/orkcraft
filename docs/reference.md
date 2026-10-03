@@ -194,11 +194,30 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orcs, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
-| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment; 🧪 dry run | `catapult.sent`, `catapult.failed` |
+| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — or, in browser mode, fills a web form; 🧪 dry run | `catapult.sent`, `catapult.failed` |
 
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
   Catapult without a schema.
+- **The Catapult's browser mode**, for a site with no API (a new event in the Google Play Console,
+  say). Install it with `pip install 'orkcraft[browser]'` and `playwright install chromium`, then
+  set `mode: browser` and `page` (the form's address).
+  - **`s` Scout** opens a visible browser with the building's own profile. Log in (once: the login
+    stays in `.orkcraft/catapult/<id>/profile`, outside the camp's git), open the form and close the
+    window. The Catapult marks every field (label, kind, options, a stable selector) and button
+    into `map.json` and writes `fill.py`.
+  - **Which field gets what**: `fields` in the settings first (`Event name = title`,
+    `Category = "Major update"`), then a model's mapping (`m`: one call to your Claude Code, for
+    labels in another language; `mapping.json`), then plain name matching. 🧪 Dry run shows the
+    plan with the values, and lists the required fields left empty and the keys nothing took.
+  - **`fill.py`** is a standalone Playwright script: the cart on stdin, the form filled, then it
+    hands the form to you (`finish: leave`: you check it, press the button and close the window)
+    or presses `submit` itself (`finish: press`, `f`). It runs by hand too (`python fill.py
+    --profile … < cart.json`). Edit it freely: a script edited by hand is kept, and a rescout writes
+    `fill.new.py` beside it.
+  - Fields inside iframes are not marked yet, and the scout records the form's address, not the
+    clicks that led to it. The 🔍 Audit flags a Catapult that presses a button with no schema and
+    no confirmation.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)

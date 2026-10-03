@@ -10,6 +10,7 @@
              written anywhere
 
 Shots are kept in `.orkcraft/catapult/<id>/shots.jsonl` (the answer's status and first lines).
+Where a site has no API, the browser mode fills its web form instead (realm/catapult_web.py).
 """
 from __future__ import annotations
 
@@ -117,6 +118,29 @@ def dry_run(url: str, method: str, body) -> Shot:
     sent = json.dumps(body, ensure_ascii=False, indent=2)[:ANSWER_KEEP]
     return Shot(dt.datetime.now().isoformat(timespec="seconds"), True, 0, url, sent,
                 f"{method or 'POST'} {url}\nContent-Type: application/json\n\n{sent}", dry=True)
+
+
+def dry_run_form(url: str, plan_text: str, body) -> Shot:
+    """Browser mode's dry run: which field would get what — no browser opens."""
+    sent = json.dumps(body, ensure_ascii=False, indent=2)[:ANSWER_KEEP]
+    return Shot(dt.datetime.now().isoformat(timespec="seconds"), True, 0, url, sent,
+                f"🌐 {url}\n\n{plan_text}", dry=True)
+
+
+def form_shot(url: str, body, res, pressed_wanted: bool) -> Shot:
+    """A run of fill.py (catapult_web.Result) as a shot: 0 = filled (and pressed, if asked)."""
+    at, sent = dt.datetime.now().isoformat(timespec="seconds"), json.dumps(body, ensure_ascii=False)[:ANSWER_KEEP]
+    s = res.summary or {}
+    lines = [f"filled: {', '.join(s.get('filled') or []) or 'nothing'}"]
+    if s.get("missed"):
+        lines.append("missed: " + "; ".join(s["missed"]))
+    lines.append(("pressed — " if s.get("pressed") else "handed over to you — ") + str(s.get("url") or url))
+    if s.get("title"):
+        lines.append(f"page: {s['title']}")
+    error = "" if res.ok else (res.err or ("some fields were not filled" if s.get("missed") else f"exit {res.code}"))
+    if res.ok and pressed_wanted and not s.get("pressed"):
+        error = "not pressed"
+    return Shot(at, not error, res.code, str(s.get("url") or url), sent, "\n".join(lines)[:ANSWER_KEEP], error)
 
 
 def log(state_dir: Path, shot: Shot) -> None:
