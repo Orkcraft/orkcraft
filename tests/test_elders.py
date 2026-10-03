@@ -64,6 +64,7 @@ def test_without_a_model_there_is_no_advice():
 def test_the_levels_and_the_guide():
     assert [lvl.n for lvl in autonomy.LEVELS] == [0, 1, 2, 3]
     assert not autonomy.advises(0) and all(autonomy.advises(n) for n in (1, 2, 3))
+    assert [autonomy.answers(n) for n in range(4)] == [False, False, False, True]
     assert autonomy.claude_settings(0) is None and autonomy.claude_settings(1) is None
     two, three = autonomy.claude_settings(2), autonomy.claude_settings(3)
     assert "Bash(pytest *)" in two["permissions"]["allow"] and "defaultMode" not in two["permissions"]
@@ -72,7 +73,7 @@ def test_the_levels_and_the_guide():
     for n in range(4):
         text = autonomy.guide(n)
         assert "bypassPermissions" not in text and "dangerously" not in text
-        assert "never presses yes" in text
+        assert ("answer routine questions for you" in text) == (n == 3)
     assert "--mode accept-edits --sandbox" in autonomy.agy_note(3)
     assert "agy" not in autonomy.guide(2, ("claude",)).lower()
 
@@ -120,6 +121,45 @@ async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, qui
         await pilot.press("a")                                                # the operator follows it
         await pilot.pause()
         assert sent == [("t1", b"1")]
+
+
+@pytest.mark.asyncio
+async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monkeypatch):
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=3, quiet=schedule.DEFAULT_QUIET))
+    monkeypatch.setattr(app_mod, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    sent: list = []
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        monkeypatch.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
+        monkeypatch.setattr(app, "refresh_roster", lambda: None)
+        alert = _alert()
+        app.roster.alerts = [alert]
+        app._elders_consider()
+        await _until(pilot, lambda: bool(sent))
+        assert sent == [("t1", b"1")]                                         # the one-time yes, by itself
+        assert elders.recent(fake_repo)[0]["sent"] is True and app.advice_for(alert) is None
+        risky = _alert("git push --force origin main")
+        app.roster.alerts = [risky]
+        app._elders_consider()
+        await _until(pilot, lambda: not app._elders_busy)
+        await pilot.pause()
+        assert sent == [("t1", b"1")]                                         # the rules stopped it: it waits
+        assert elders.recent(fake_repo)[0]["sent"] is False
+
+
+@pytest.mark.asyncio
+async def test_a_question_that_changed_meanwhile_is_not_answered(fake_repo: Path, quiet, monkeypatch):
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=3, quiet=schedule.DEFAULT_QUIET))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    sent: list = []
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        monkeypatch.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
+        monkeypatch.setattr(app, "refresh_roster", lambda: None)
+        app.roster.alerts = [_alert("pytest -q --lf")]                        # the screen moved on
+        app._elders_done(_alert(), "", elders.Decision("1", "routine", "model"))
+        assert sent == [] and app.advice                                      # kept as advice instead
 
 
 @pytest.mark.asyncio

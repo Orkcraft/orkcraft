@@ -58,7 +58,9 @@ A slider of four stops (`screens/autonomy.py`, `autonomy.py`): 🙋 Ask me · �
 the Claude Code permission block to paste (*Copy Claude settings*) and how to start agy. From Morning
 advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —
 Warder rules first, then the light model, a one-time yes or a no only — and the operator follows the
-advice in the morning (`a`, `A` for all). Orkcraft never presses a key in an agent's terminal itself.
+advice in the morning (`a`, `A` for all). Only at 🧌 Free orcs do the Elders answer themselves in quiet
+hours: their one-time yes or no goes to the agent, if the very same question still waits; what the
+rules stop or the model would not advise still waits for the operator.
 
 ## 3. Step 3 — Mode and your day
 

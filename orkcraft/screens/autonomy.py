@@ -4,8 +4,8 @@
         dismisses {"autonomy": n}, "back", "skip" or None
 
 The stops are autonomy.LEVELS. At 0 nothing is judged; from 1 the Elders leave advice in quiet hours;
-from 2 the guide shows what to paste into Claude Code's settings and how to start agy. Orkcraft never
-answers for an agent: the settings are the operator's to paste, and they can copy the snippet here.
+from 2 the guide shows what to paste into Claude Code's settings and how to start agy (the snippet
+can be copied here); at 3 the Elders also answer routine questions themselves in quiet hours.
 """
 from __future__ import annotations
 

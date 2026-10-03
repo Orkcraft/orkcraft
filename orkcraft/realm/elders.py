@@ -1,13 +1,13 @@
 """🏛 The Elders of the Town Hall: in quiet hours they read the orcs' questions and leave advice.
 
     d = elders.judge(alert, runner)      # never raises; d.key is the option they advise, or None (no advice)
-    elders.log(repo_root, alert, d)      # .orkcraft/council/elders.jsonl
-    elders.since(repo_root, ts)          # what they advised since then (the morning summary)
+    elders.log(repo_root, alert, d, sent=False)   # .orkcraft/council/elders.jsonl
+    elders.since(repo_root, ts)          # what they judged since then (the morning summary)
 
-The Elders never answer an agent themselves: they only advise, and the operator follows the advice
-with one key in the morning (Orders → `a`, or `A` for all). How much an agent may do on its own is
-set in the agent's own permission settings (screens/autonomy.py has the guide), never by orkcraft
-pressing keys in its terminal.
+What happens with the advice depends on the operator's autonomy level (autonomy.py): up to 🧭 the
+Elders only advise and the operator follows the advice with one key in the morning (Orders → `a`,
+or `A` for all); at 🧌 Free orcs they answer themselves in quiet hours — their key goes to the agent
+(app._elders_done), and the log says `sent`.
 
 Only an agent's own question qualifies: a permission menu in a claude / agy session (an `Alert` with
 source "terminal"). The Elders are conservative by design:
@@ -118,10 +118,11 @@ def judge(alert: Alert, runner: fastpath.Runner | None) -> Decision:
     return Decision(key, why or allowed[key], "model", cost)
 
 
-def log(repo_root: Path, alert: Alert, decision: Decision, who: str = "") -> None:
+def log(repo_root: Path, alert: Alert, decision: Decision, who: str = "", sent: bool = False) -> None:
+    """One judgement; `sent`: the Elders' key went to the agent (🧌 Free orcs)."""
     path = Path(repo_root) / LOG
     record = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "who": who, "question": alert.title[:200],
-              "options": dict(alert.options), **asdict(decision)}
+              "options": dict(alert.options), **asdict(decision), "sent": sent}
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as f:

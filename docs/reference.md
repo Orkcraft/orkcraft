@@ -475,7 +475,7 @@ F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults,
 ### 🏛 Orc autonomy
 
 How much the orcs do on their own (`autonomy` in the machine settings, F10 → 🏛 Orc autonomy).
-**Orkcraft never answers an agent's question itself**; autonomy comes from two places:
+Autonomy comes from three places:
 
 - **The Elders' advice** (from *Morning advice* up): in 🌙 quiet hours the Elders of the Town Hall
   read each permission question of a claude / agy session and leave advice. The Warder's rules come
@@ -484,6 +484,10 @@ How much the orcs do on their own (`autonomy` in the machine settings, F10 → �
   permissions ("don't ask again", "allow all edits"). In the morning *Orders* (`!`) shows the advice:
   `a` follows it, `A` follows it on every advised question; the rest wait as before. At most 40
   questions a night, never past the 🪙 budget; every judgement is in `.orkcraft/council/elders.jsonl`.
+- **The Elders' answers** (*Free orcs* only): in quiet hours the Elders send that one-time yes or no
+  to the agent themselves — only if the very same question still waits and it is still quiet. What
+  the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
+  and the morning toast counts them.
 - **The agents' own permission settings** (from *Routine on their own* up): the step shows what to
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at

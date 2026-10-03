@@ -1,16 +1,19 @@
 """How much the orcs do on their own (design: docs/design/onboarding.md, the autonomy step).
 
     LEVELS[machine.autonomy]          0 ask me · 1 morning advice · 2 routine on their own · 3 free orcs
-    advises(level)                    the Elders leave advice in quiet hours (realm/elders.py)
+    advises(level)                    the Elders judge the questions in quiet hours (realm/elders.py)
+    answers(level)                    …and answer them themselves (🧌 Free orcs only)
     claude_snippet(level)             what to paste into Claude Code's settings for this level
     agy_note(level)                   how to start agy for this level
 
-Orkcraft never answers an agent's question itself. Autonomy comes from two places only:
-- **advice** — in quiet hours the Elders read the questions and advise; the operator follows the
-  advice with one key in the morning;
-- **the agents' own permission settings** — what Claude Code and agy may do without asking, which the
-  operator sets with the guide below. The 🛡 Warder hook still denies the dangerous commands in Claude
-  Code sessions whatever the settings allow.
+Autonomy comes from three places:
+- **advice** (from 🌅) — in quiet hours the Elders read the questions and advise; the operator
+  follows the advice with one key in the morning;
+- **the Elders' answers** (🧌 only) — in quiet hours they send their one-time yes or no themselves;
+  what the Warder's rules stop, and anything they would not advise, still waits for the operator;
+- **the agents' own permission settings** (from 🧭) — what Claude Code and agy may do without asking,
+  which the operator sets with the guide below. The 🛡 Warder hook still denies the dangerous
+  commands in Claude Code sessions whatever the settings allow.
 """
 from __future__ import annotations
 
@@ -34,8 +37,9 @@ LEVELS: tuple[Level, ...] = (
                                     "in the morning you follow it with one key."),
     Level(2, "🧭", "Routine on their own", "Agents read, edit the project and run its tests without asking "
                                           "(their own settings, below); the Elders advise on the rest."),
-    Level(3, "🧌", "Free orcs", "Agents accept their edits and run the usual project commands; they still ask "
-                               "before a push, and the Warder still denies the dangerous. The Elders advise."),
+    Level(3, "🧌", "Free orcs", "In quiet hours the Elders answer the routine questions themselves (a one-time "
+                               "yes or no, never 'always'); the risky ones wait for you. Agents also accept "
+                               "their edits and run the usual project commands; a push is still asked."),
 )
 
 CLAUDE_FILE = ".claude/settings.local.json"      # this project, only you (not committed)
@@ -53,6 +57,10 @@ _DENY = ["Bash(git push --force *)", "Bash(rm -rf *)", "Bash(sudo *)", "Read(./.
 
 def advises(level: int) -> bool:
     return level >= 1
+
+
+def answers(level: int) -> bool:
+    return level >= 3
 
 
 def claude_settings(level: int) -> dict | None:
@@ -95,5 +103,9 @@ def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
             lines += ["Claude Code — nothing to change: it asks before it acts.", ""]
     if "agy" in tools:
         lines += ["Antigravity (agy):", agy_note(level), ""]
-    lines.append("Orkcraft never presses yes for an agent: these settings are yours, and so is every answer.")
+    if answers(level):
+        lines.append("In quiet hours the 🏛 Elders answer routine questions for you (a one-time yes or no); "
+                     "every answer is in .orkcraft/council/elders.jsonl. Move the slider down to stop it.")
+    else:
+        lines.append("Orkcraft never presses yes for an agent at this level: the Elders only advise.")
     return "\n".join(lines)

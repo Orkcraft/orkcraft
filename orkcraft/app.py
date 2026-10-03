@@ -546,17 +546,32 @@ class OrkcraftApp(App[int]):
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
-        """Advice only: it is kept for the operator; nothing is sent to the agent."""
+        """The Elders' advice is kept for the operator. At 🧌 Free orcs (autonomy.answers) they also
+        answer: their key goes to the agent — only while it is still quiet and the very same question
+        still waits, so an answer never lands on a question that changed meanwhile."""
         self._elders_busy = False
-        self.advice[self.elders_mark(alert)] = decision
-        elders.log(self.repo_root, alert, decision, who)
+        mark = self.elders_mark(alert)
+        sent = False
+        if (decision.advised and autonomy.answers(self.desktop.machine.autonomy) and self.desktop.quiet
+                and any(self.elders_mark(a) == mark for a in self.roster.alerts)):
+            key = decision.key or ""
+            self.chat.send(alert.ref, (key if key.isdigit() else f"{key}\r").encode())   # no focus: they sleep
+            sent = True
+        else:
+            self.advice[mark] = decision
+        elders.log(self.repo_root, alert, decision, who, sent=sent)
         self.refresh_roster()
 
     def _elders_morning(self) -> None:
+        answered = [r for r in elders.since(self.repo_root, self._quiet_since or "") if r.get("sent")]
         waiting = [a for a in self.roster.alerts if self.advice_for(a) is not None]
+        words = []
+        if answered:
+            words.append(f"{len(answered)} question(s) answered by the Elders — the Town Hall lists them")
         if waiting:
-            self.notify(f"{len(waiting)} question(s) have the Elders' advice — ! opens them, a follows the advice, "
-                        "A follows it for all.", title="🏛 While you were away, the Elders", timeout=15)
+            words.append(f"{len(waiting)} have their advice — ! opens them, a follows it, A for all")
+        if words:
+            self.notify(".\n".join(words) + ".", title="🏛 While you were away, the Elders", timeout=15)
 
     def follow_advice(self, alert: Alert) -> bool:
         """The operator follows the Elders' advice on one question: their key, sent as their own answer."""
