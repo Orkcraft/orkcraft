@@ -40,6 +40,7 @@ from orkcraft.screens.feedback_modal import DislikeModal
 from orkcraft.screens.proposal_modal import ProposalModal
 from orkcraft.screens.road_rule_modal import RoadRuleModal
 from orkcraft.screens.settings_modal import SettingsModal
+from orkcraft.screens.retro_survey import RetroSurveyModal
 from orkcraft.screens.weekly_modal import WeeklyReportModal
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, ClanRoster, Console, orc_key
 from orkcraft.screens.chronicles_view import BuildingChronicles, UnitChronicles
@@ -51,7 +52,7 @@ from orkcraft.screens.garrison_modal import GarrisonModal, OrcModelModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, evolution, town_builder, town_presets
+from orkcraft.realm import elders, evolution, pressure, retro, town_builder, town_presets
 from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
@@ -85,8 +86,8 @@ ELDERS_RUNNER = None        # tests: the Elders' model call (realm/elders.py)
 RECRUIT_RUNNER = None     # tests replace the Recruiter's and the steward's Claude call
 STEWARD_RUNNER = None
 FASTPATH_RUNNER = None    # tests put a fake light model for the Council's Fast Path here
-OPTIMIZE_RUNNER = None    # … and for the self-improvement proposals
-WEEKLY_RUNNER = None      # … and for the weekly self-audit
+OPTIMIZE_RUNNER = None    # … and for the Building retro's proposals
+WEEKLY_RUNNER = None      # … and for the Town retro
 STEWARD_CHECK_S = 60.0
 
 FULL_MIN_COLS = 140     # ≥ 140: Full RTS — console + windows
@@ -559,7 +560,7 @@ class OrkcraftApp(App[int]):
         if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
             for item in report.items:
                 if item.applicable and item.n not in report.applied:
-                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in ("shrink", "chain", "script")
+                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in optimize.ACTIONS
                            else f"weekly:{report.ts}:{item.n}")
                     out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,
                                 "report": report, "item": item})
@@ -654,7 +655,7 @@ class OrkcraftApp(App[int]):
         with self.hushed():
             if c["source"] == "steward":
                 ok = self.apply_steward_proposal(c["building"], c["data"], c["index"], by="orcs") is not None
-            elif c["source"] == "daily" or c["change"] in ("shrink", "chain", "script"):
+            elif c["source"] == "daily" or c["change"] in optimize.ACTIONS:
                 ok = self.apply_proposal(c["proposal"], kind="auto-improve" if c["source"] == "daily" else "weekly")
                 if ok and c["source"] == "weekly":
                     c["report"].applied = sorted(set(c["report"].applied) | {c["item"].n})
@@ -2286,6 +2287,18 @@ class OrkcraftApp(App[int]):
                 parts.append(f"{t} —")
         return " · ".join(parts), telemetry.level(worst, 100), len(subs) < len(on)
 
+    def _quota_reads(self) -> tuple[list, list[str]]:
+        """(the last quota reads, the enabled subscription tools) — what the pressure of a building
+        is measured against (realm/pressure.py)."""
+        machine = self.desktop.machine
+        subs = [t for t, c in machine.tools.items() if c.enabled and c.billing == "subscription"]
+        from orkcraft.screens.limits_view import LimitsView
+        try:
+            limits = next((lv.limits for lv in self.query(LimitsView)), None) or []
+        except Exception:  # unmounted during shutdown
+            limits = []
+        return limits, subs
+
     def _active_terminal_key(self) -> str | None:
         try:
             term = self.chat.current_terminal
@@ -2540,6 +2553,23 @@ class OrkcraftApp(App[int]):
 
             self.push_screen(BuildFailed(result), on_failed_done)
 
+    # -- 🪙 / ⚖️ / 💎 a building's goal (docs/design/retros-and-goals.md §3) ---------------
+
+    def cycle_goal(self, building_id: str) -> str | None:
+        """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards."""
+        b = self.scroll.building(building_id)
+        if b is None:
+            return None
+        goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
+        b.goal = None if goal == "balance" else goal
+        self.desktop.save()
+        what = {"thrift": "the retros will make it cheaper", "balance": "cheaper where it is liked, better where it is not",
+                "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}[goal]
+        self.notify(f"{self._title_of(building_id)}: {what}",
+                    title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
+        self._console_refresh()
+        return goal
+
     # -- 👍 / 👎 on a building's steward -----------------------------------------------
 
     def _title_of(self, building_id: str) -> str:
@@ -2684,25 +2714,28 @@ class OrkcraftApp(App[int]):
     def optimize_now(self, interactive: bool = True) -> bool:
         """Today's hungriest building the operator is not happy with → the Council's proposal (in a
         thread). False when there is nothing to propose."""
-        cand = optimize.leader(self.repo_root)
+        goals = {b.id: b.aim for b in self.scroll.buildings if not b.demolished}
+        cand = optimize.leader(self.repo_root, None, *self._quota_reads(), goals=goals)
         if cand is None:
             if interactive:
-                self.notify("nothing to improve: today's top spender is liked, or nothing was spent",
-                            title="🔧 Self-improvement")
+                self.notify("nothing to improve: the heaviest buildings are liked, and no 💎 one is disliked or failing",
+                            title="🔧 Building retro")
             return False
         spec = self.custom_specs.get(cand.building)
         ps = optimize.parts(self.scroll, spec, cand.building, self.repo_root)
         if not ps:
             if interactive:
-                self.notify(f"{self._title_of(cand.building)} spends the most but has no prompt to shrink",
-                            title="🔧 Self-improvement")
+                self.notify(f"{self._title_of(cand.building)} is due, but has no model prompt to change",
+                            title="🔧 Building retro")
             return False
         cfg = (spec or {}).get("config") or {}
         mocks = workshop.load_blueprint(self.repo_root, cand.building).get("mocks") or []
         runtime = str(cfg.get("runtime") or "python")
         if interactive:
-            self.notify(f"the Council looks at {self._title_of(cand.building)} ({cand.tokens} tokens today)",
-                        title="🔧 Self-improvement")
+            aim = cand.goal if cand.goal == (goals.get(cand.building) or "balance") else \
+                f"{goals.get(cand.building)}→{cand.goal} (the limit is tight)"
+            self.notify(f"the Council looks at {self._title_of(cand.building)} · {aim} · {cand.reason}",
+                        title="🔧 Building retro")
 
         def _worker() -> None:
             result = optimize.propose(self.repo_root, cand, ps, OPTIMIZE_RUNNER or builders.claude_runner, runtime, mocks)
@@ -2720,8 +2753,8 @@ class OrkcraftApp(App[int]):
         optimize.save(self.repo_root, result.proposal)
         self._refresh_hall()
         if len(self.screen_stack) > 1:              # the operator is busy in a dialog: leave it waiting
-            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Self-improvement",
-                        title="🔧 Self-improvement")
+            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Building retro",
+                        title="🔧 Building retro")
             return
         self.show_proposal(result.proposal)
 
@@ -2793,7 +2826,7 @@ class OrkcraftApp(App[int]):
         self.notify(f"{self._title_of(bid)}: {p.action} applied — Z on it takes it back", title="🔧 Applied")
         return True
 
-    # -- 🗓 the weekly self-audit ------------------------------------------------------
+    # -- 🗓 the Town retro (the weekly self-audit) ------------------------------------------------------
 
     def _maybe_weekly(self, now: dt.datetime) -> None:
         if self.demo or self.gold_exhausted():
@@ -2818,7 +2851,7 @@ class OrkcraftApp(App[int]):
         snapshot, specs = copy.deepcopy(self.scroll), copy.deepcopy(self.custom_specs)
         rules = audit.run(self.repo_root, self.scroll, dict(self.custom_specs), self.snapshot.spent_usd,
                           self.scroll.budget.gold_session_limit_usd)
-        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Weekly self-audit")
+        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Town retro")
 
         def _worker() -> None:
             result = weekly.run(self.repo_root, snapshot, specs, runner, model, rules)
@@ -2828,19 +2861,52 @@ class OrkcraftApp(App[int]):
 
     def _on_weekly(self, result: weekly.Result, interactive: bool) -> None:
         if result.report is None:
-            self.notify(result.error or "no report", title="🗓 Weekly self-audit failed", severity="warning")
+            self.notify(result.error or "no report", title="🗓 Town retro failed", severity="warning")
             return
         if len(self.screen_stack) > 1:
-            self.notify("the weekly report waits — F10 → Weekly self-audit", title="🗓 Weekly self-audit")
+            self.notify("the Town retro's report waits — F10 → Town retro", title="🗓 Town retro")
             return
         self.show_weekly(result.report)
 
     def show_weekly(self, report: weekly.Report) -> None:
+        """The Town retro: first the survey, when nothing was rated this week (realm/retro.py), then the report."""
         def done(picked: list[int] | None) -> None:
             if picked:
                 self.apply_weekly(report, picked)
 
-        self.push_screen(WeeklyReportModal(report), done)
+        def report_now(answers: list | None = None) -> None:
+            if answers:
+                self.rate_survey(answers)
+            self.push_screen(WeeklyReportModal(report), done)
+
+        if report.surveyed:
+            report_now()
+            return
+        report.surveyed = True
+        weekly.save(self.repo_root, report)
+        limits, subs = self._quota_reads()
+        samples = retro.pick(self.repo_root, self.scroll, pressure.measure(self.repo_root, limits, providers=subs)) \
+            if retro.needed(self.repo_root) else []
+        if not samples:
+            report_now()
+            return
+        self.push_screen(RetroSurveyModal(samples, {s.building: self._title_of(s.building) for s in samples}),
+                         report_now)
+
+    def rate_survey(self, answers: list[tuple[retro.Sample, str]]) -> None:
+        """The survey's 👍 / 👎, each on the very result it showed."""
+        good = bad = 0
+        for sample, kind in answers:
+            if kind == "good":
+                feedback.like(self.repo_root, sample.building, sample.as_output())
+                good += 1
+            elif kind in feedback.KINDS:
+                feedback.dislike(self.repo_root, self.scroll, sample.building, kind, "the Town retro's survey",
+                                 sample.as_output())
+                bad += 1
+        if good or bad:
+            self.notify(f"👍 {good} · 👎 {bad} — the retros will go by them", title="🗓 Town retro")
+            self._refresh_hall()
 
     def apply_weekly(self, report: weekly.Report, picked: list[int]) -> list[int]:
         """Each ticked item, checked again against the camp as it is now, applied as its own
@@ -2856,7 +2922,7 @@ class OrkcraftApp(App[int]):
                 continue
             bid = item.building
             ok = False
-            if item.change in ("shrink", "chain", "script"):
+            if item.change in optimize.ACTIONS:
                 p = optimize.Proposal(f"w{report.ts[:10]}-{item.n}", report.ts, bid, item.change,
                                       str(item.data.get("target")), item.before, item.after, item.why)
                 ok = self.apply_proposal(p, kind="weekly")
@@ -2895,7 +2961,7 @@ class OrkcraftApp(App[int]):
             if ok:
                 done.append(item.n)
                 touched.add(bid)
-                if item.change not in ("shrink", "chain", "script"):    # those are in the ledger already
+                if item.change not in optimize.ACTIONS:    # those are in the ledger already
                     where = weekly.new_spec(item)["id"] if item.change == "add_building" else bid
                     last = checkpoint.history(self.repo_root, where, 1)
                     evolution.record(self.repo_root, evolution.Change(
@@ -2911,7 +2977,7 @@ class OrkcraftApp(App[int]):
         weekly.save(self.repo_root, report)
         self._refresh_hall()
         msg = f"{len(done)} applied" + (f" · {len(failed)} not: " + " | ".join(failed[:3]) if failed else "")
-        self.notify(msg, title="🗓 Weekly self-audit", severity="warning" if failed else "information")
+        self.notify(msg, title="🗓 Town retro", severity="warning" if failed else "information")
         if restart and done and not self._hushed:
             self.push_screen(Confirm("🔄 Restart orkcraft now?", "the camp changed its buildings — a fresh start "
                                      "reloads everything (the Town Scroll is saved)"),
@@ -2924,11 +2990,11 @@ class OrkcraftApp(App[int]):
         self.exit(result="restart")
 
     def open_settings(self) -> None:
-        """F10 → ⚙: the self-improvement's models and schedules (`.orkcraft/council/settings.json`)."""
+        """F10 → ⚙: the retros' models and schedules (`.orkcraft/council/settings.json`)."""
         def done(values: dict | None) -> None:
             if values:
                 fastpath.save_settings(self.repo_root, values)
-                self.notify("saved", title="⚙ Self-improvement settings")
+                self.notify("saved", title="⚙ Retro settings")
 
         self.push_screen(SettingsModal(fastpath.settings(self.repo_root)), done)
 

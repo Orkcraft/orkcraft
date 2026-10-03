@@ -1,8 +1,8 @@
-"""⚙ Self-improvement settings: the models and the schedules.
+"""⚙ Retro settings: the models and the schedules.
 
     fast_llm / fast_model    the Council's Fast Path: a light model on top of the rules
-    optimize_at              the daily local proposal
-    weekly_model / weekly_at the weekly self-audit
+    optimize_at              the Building retro (daily)
+    weekly_model / weekly_at the Town retro (weekly)
 Dismisses the values to save, or None.
 """
 from __future__ import annotations
@@ -15,8 +15,8 @@ from textual.widgets import Button, Input, Label, Static, Switch
 
 from orkcraft.screens.build_flow import MODAL_CSS
 
-FIELDS = (("fast_model", "Fast Path model (light)", "haiku"), ("optimize_at", "Daily proposal at", "daily 06:20"),
-          ("weekly_model", "Weekly self-audit model (heavy)", "opus"), ("weekly_at", "Weekly self-audit at",
+FIELDS = (("fast_model", "Fast Path model (light)", "haiku"), ("optimize_at", "Building retro at", "daily 06:20"),
+          ("weekly_model", "Town retro model (heavy)", "opus"), ("weekly_at", "Town retro at",
                                                                           "weekly sun 05:00"))
 
 
@@ -35,7 +35,7 @@ class SettingsModal(ModalScreen[dict | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("⚙ Self-improvement — models and schedules", classes="build-title")
+            yield Label("⚙ Retros — models and schedules", classes="build-title")
             with Horizontal(classes="set-row"):
                 yield Label("Fast Path asks a light model")
                 yield Switch(value=bool(self.values.get("fast_llm", True)), id="set-fast_llm")

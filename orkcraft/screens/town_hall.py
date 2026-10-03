@@ -98,8 +98,8 @@ class TownHallView(Container):
         if not board and not incidents:
             t.append("no ratings yet\n", style="dim")
         props = optimize.proposals(repo)[:4] if repo is not None else []
-        t.append("\n🔧 Self-improvement", style="bold")
-        t.append(" — F10 → Self-improvement\n", style="dim")
+        t.append("\n🔧 Building retro", style="bold")
+        t.append(" — F10 → Building retro\n", style="dim")
         marks = {"pending": ("⏳", "yellow"), "applied": ("✓", "green"), "dismissed": ("✗", "dim")}
         for p in props:
             mark, style = marks.get(p.status, ("·", ""))
@@ -108,9 +108,9 @@ class TownHallView(Container):
         if not props:
             t.append("no proposals yet\n", style="dim")
         wk = weekly.latest(repo) if repo is not None else None
-        t.append("🗓 Weekly self-audit: ", style="bold")
+        t.append("🗓 Town retro: ", style="bold")
         if wk is None:
-            t.append("not run yet — Sunday 05:00, or F10 → Weekly self-audit\n", style="dim")
+            t.append("not run yet — Sunday 05:00, or F10 → Town retro\n", style="dim")
         else:
             todo = sum(1 for i in wk.items if i.applicable and i.n not in wk.applied)
             t.append(f"{wk.ts[:10]} · {len(wk.items)} items, {len(wk.applied)} applied"

@@ -81,8 +81,9 @@ a commit in the camp's own git, so it can be undone.
   cart; a chain or a script is made unless the rule really needs judgement.
 - **👍 / 👎** beside every steward. A 👎 asks whether the *inputs* were broken (the buildings that
   fed it are penalised upstream along the roads) or its own *logic* was wrong.
-- **Self-improvement, never automatic.** Daily, the Council proposes one change for the hungriest
-  building you are unhappy with; weekly, a heavy model (`opus`) audits the whole camp. Nothing
+- **Retros, never automatic.** Daily, the 🔧 Building retro proposes one change for the building
+  that eats most of the camp and of your limit and that you are unhappy with; weekly, the 🗓 Town
+  retro has a heavy model (`opus`) audit the whole camp. Nothing
   applies without your click, each change is a checkpoint, and **`Z`** reverts one building.
 
 ## Safety

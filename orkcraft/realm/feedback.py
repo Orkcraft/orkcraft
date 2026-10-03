@@ -175,9 +175,10 @@ def _bump(root: Path, changes: dict[str, dict[str, float]]) -> dict[str, dict]:
     return data
 
 
-def like(root: Path, building: str) -> dict | None:
-    """👍: the last result is a reference. None when there is nothing to rate yet."""
-    out = last_output(root, building)
+def like(root: Path, building: str, out: dict | None = None) -> dict | None:
+    """👍: the last result (or `out`, a past one the Town retro asked about) is a reference. None
+    when there is nothing to rate yet."""
+    out = out if out is not None else last_output(root, building)
     if out is None:
         return None
     _append(_dir(root) / building / "references.jsonl", {"ts": _now(), **out})
@@ -192,14 +193,14 @@ def blame(root: Path, scroll, building: str, kind: str) -> dict[str, float]:
     return {src: CASCADE[hop - 1] for src, hop in suppliers(root, scroll, building)}
 
 
-def dislike(root: Path, scroll, building: str, kind: str, note: str = "") -> Incident:
-    """👎 with the questionnaire's answer: the penalties and an incident."""
+def dislike(root: Path, scroll, building: str, kind: str, note: str = "", out: dict | None = None) -> Incident:
+    """👎 with the questionnaire's answer: the penalties and an incident (on its last result, or `out`)."""
     kind = kind if kind in KINDS else "logic"
     blamed = blame(root, scroll, building, kind)
     changes: dict[str, dict[str, float]] = {b: {"penalty": p} for b, p in blamed.items()}
     changes.setdefault(building, {})["dislikes"] = 1
     _bump(root, changes)
-    out = last_output(root, building) or {}
+    out = (out if out is not None else last_output(root, building)) or {}
     incident = Incident(_now(), building, kind, note.strip()[:1000], str(out.get("value", ""))[:OUT_KEEP], blamed)
     _append(_dir(root) / "incidents.jsonl", asdict(incident))
     return incident
@@ -213,6 +214,16 @@ def incidents(root: Path, limit: int = 20) -> list[Incident]:
         except TypeError:
             continue
     return rows
+
+
+def rated_since(root: Path, ts: str) -> bool:
+    """Did the operator press 👍 or 👎 on anything since `ts` (an ISO time)?"""
+    if any(str(i.ts) >= ts for i in incidents(root, 1000)):
+        return True
+    for path in _dir(root).glob("*/references.jsonl"):
+        if any(str(r.get("ts", "")) >= ts for r in _tail(path, 50)):
+            return True
+    return False
 
 
 def references(root: Path, building: str, limit: int = 5) -> list[dict]:

@@ -1,4 +1,4 @@
-"""🗓 The weekly self-audit's report: tick the items, Apply makes them.
+"""🗓 The Town retro's report (the weekly self-audit): tick the items, Apply makes them.
 
 Items the camp can apply come with a checkbox (ticked); advice and items that failed their check
 are listed below with the reason. Dismisses the list of ticked item numbers, or None.
@@ -39,7 +39,7 @@ class WeeklyReportModal(ModalScreen[list[int] | None]):
         doable = [i for i in r.items if i.applicable and i.n not in r.applied]
         other = [i for i in r.items if not i.applicable]
         with Vertical():
-            yield Label(f"🗓 Weekly self-audit · {r.ts[:16].replace('T', ' ')} · {r.model or 'model'}{cost}",
+            yield Label(f"🗓 Town retro · {r.ts[:16].replace('T', ' ')} · {r.model or 'model'}{cost}",
                         classes="build-title")
             with VerticalScroll():
                 yield Static(Text(r.summary or "no summary"), classes="build-text")

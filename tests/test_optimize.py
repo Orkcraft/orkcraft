@@ -26,11 +26,24 @@ def test_the_leader_is_todays_top_spender_the_operator_is_not_happy_with(tmp_pat
     _spend(tmp_path, "a", 9999, now - dt.timedelta(days=1))             # yesterday does not count
     cand = optimize.leader(tmp_path, now)
     assert (cand.building, cand.tokens) == ("b", 500) and "not liked it since its last change" in cand.reason
+    assert "83 % of the camp's tokens" in cand.use
     feedback.record_output(tmp_path, "b", "mill.done", "fine")
     feedback.like(tmp_path, "b")
-    assert optimize.leader(tmp_path, now) is None                         # liked since its last change
+    assert optimize.leader(tmp_path, now).building == "a"                 # liked since its last change: the next
+    feedback.record_output(tmp_path, "a", "mill.done", "fine")
+    feedback.like(tmp_path, "a")
+    assert optimize.leader(tmp_path, now) is None
     feedback.dislike(tmp_path, None, "b", "logic")
     assert "disliked it 1× today" in optimize.leader(tmp_path, now).reason
+
+
+def test_a_small_spender_is_not_worth_a_retro(tmp_path: Path):
+    now = dt.datetime.now()
+    _spend(tmp_path, "big", 1000, now)
+    _spend(tmp_path, "tiny", 50, now)
+    feedback.record_output(tmp_path, "big", "mill.done", "fine")
+    feedback.like(tmp_path, "big")
+    assert optimize.leader(tmp_path, now) is None                         # tiny is under MIN_SHARE
 
 
 def test_a_like_before_the_last_change_does_not_count(tmp_path: Path):

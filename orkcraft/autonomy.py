@@ -46,7 +46,8 @@ LEVELS: tuple[Level, ...] = (
     Level(3, "⛓️‍💥", "Free orcs",
           "in quiet hours the Elders answer routine ones themselves (a one-time yes or no, never 'always'); "
           "the risky ones wait for you.",
-          "also a script instead of an agent, a new plain road, a setting, a building from the catalog. "
+          "also a script instead of an agent, a richer prompt for a ⚖️ / 💎 building, a new plain road, a setting, "
+          "a building from the catalog. "
           "Never a removal."),
 )
 
