@@ -1,7 +1,7 @@
 """Feature shots for the landing: the mechanisms behind the three pillars.
 
 Each shot drives the real pipeline — the Recruiter's checks, Mason & Artisan's validation, the
-steward's metrics, findings and replay, the War Horn — with a scripted runner in place of the
+steward's metrics, findings and replay, Halt All — with a scripted runner in place of the
 model, so no call is made. Where the model's answer comes from a real run it is marked
 "recorded": the Recruiter's answer was produced by Claude in T1098 (only its source building was
 renamed for this sandbox); the steward's proposal matches the one Claude made in the same ticket's

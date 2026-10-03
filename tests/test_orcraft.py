@@ -1,4 +1,4 @@
-"""Orkcraft core: HUD, roster and passive ❓ alerts, pins, unit orders, viewports, War Horn."""
+"""Orkcraft core: HUD, roster and passive ❓ alerts, pins, unit orders, viewports, Halt All."""
 from __future__ import annotations
 
 import json
@@ -105,7 +105,7 @@ async def test_hud_base_and_badges(fake_repo: Path):
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         hud = str(app.screen.query_one("#hud", Hud).render())
-        assert "Orkcraft" in hud and "Menu (F10) · 📯 READY" in hud and "🥩 0/5" in hud
+        assert "Orkcraft" in hud and "Menu (F10) · 🛑 READY" in hud and "🥩 0/5" in hud
         assert app.screen.query_one("#console", Console).display  # Full RTS at 200 cols
         loot = app.desktop.get_window("loot")
         assert "🧌 Quartermaster" in str(loot.border_title) and loot._badge_cells > 0
@@ -227,7 +227,7 @@ def menu_cli(tmp_path: Path, monkeypatch) -> Path:
 
 
 @pytest.mark.asyncio
-async def test_worker_menu_becomes_alert_answer_goes_to_cli_and_war_horn_interrupts(fake_repo: Path, menu_cli: Path):
+async def test_worker_menu_becomes_alert_answer_goes_to_cli_and_halt_interrupts(fake_repo: Path, menu_cli: Path):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -244,9 +244,9 @@ async def test_worker_menu_becomes_alert_answer_goes_to_cli_and_war_horn_interru
         await pilot.press("1")
         assert await _wait_for(pilot, lambda: any("answer:1" in l for l in term.text_lines()))
 
-        await pilot.press("f12", "ctrl+p")  # War Horn
+        await pilot.press("f12", "ctrl+p")  # Halt All
         assert await _wait_for(pilot, lambda: any("INTERRUPTED" in l for l in term.text_lines()))
-        assert "SOUNDED" in str(app.screen.query_one("#hud", Hud).render())
+        assert "HALTED" in str(app.screen.query_one("#hud", Hud).render())
         assert app.is_running
         term.stop()
 

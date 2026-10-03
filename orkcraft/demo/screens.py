@@ -122,7 +122,7 @@ async def _until(pilot, cond, tries: int = 60) -> bool:
 
 
 async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
-    """The mechanisms: roster + War Map, Recruiter, Mason & Artisan, steward, War Horn."""
+    """The mechanisms: roster + War Map, Recruiter, Mason & Artisan, steward, Halt All."""
     import orkcraft.app as app_mod
     from orkcraft.demo import features as ft
     from orkcraft.screens.build_flow import BuildPreview
@@ -168,12 +168,12 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
             await shot("13-steward-proposal")
             await pilot.press("escape")
 
-        # 5 · War Horn: three running sessions halted at once
+        # 5 · Halt All: three running sessions halted at once
         for i in range(3):
             app.chat.deploy("horn", ["sleep", "30"], "claude", f"orc {i + 1}")
         await pilot.pause(0.5)
-        app.action_war_horn()
-        await shot("14-war-horn")
+        app.action_halt()
+        await shot("14-halt-all")
     finally:
         app_mod.RECRUIT_RUNNER, app_mod.BUILD_RUNNER, app_mod.STEWARD_RUNNER = saved
     return shots

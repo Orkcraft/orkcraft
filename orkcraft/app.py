@@ -86,7 +86,7 @@ ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; th
 WARMAP_FLOAT_W = 44      # the War Map's width when the console floats over the town
 ROADS_TICK_S = 1.0
 TELEMETRY_REFRESH_S = 5.0
-HORN_RESET_S = 4.0
+HALT_RESET_S = 4.0
 
 ACTIVE_COMMAND_KEYS = {
     "neutral": {"B", "P", "S", "T", "G"},
@@ -113,13 +113,13 @@ class OrkcraftApp(App[int]):
     """Orkcraft TUI."""
 
     TITLE = "Orkcraft"
-    # ctrl+p belongs to the War Horn; Textual's command palette moves to ctrl+k.
+    # ctrl+p belongs to Halt All; Textual's command palette moves to ctrl+k.
     COMMAND_PALETTE_BINDING = "ctrl+k"
 
     BINDINGS = [
         Binding("q", "graceful_quit", "Quit"),
-        Binding("ctrl+p", "war_horn('ctrl+p')", "War Horn", priority=True, show=False),
-        Binding("space", "war_horn('space')", "📯 War Horn", show=True),
+        Binding("ctrl+p", "halt('ctrl+p')", "Halt All", priority=True, show=False),
+        Binding("space", "halt('space')", "🛑 Halt All", show=True),
         Binding("escape", "escape", "Deselect", show=False),
         *[Binding(str(i), f"focus_number({i})", show=False) for i in range(1, 10)],
         *[Binding(f"alt+{i}", f"focus_number({i})", show=False) for i in range(1, 10)],
@@ -375,7 +375,7 @@ class OrkcraftApp(App[int]):
             if not spec:
                 return False
             return any(a.get("key") == key for a in spec.get("actions", []))
-        if action == "war_horn":
+        if action == "halt":
             if parameters and parameters[0] == "space":
                 if self.focus_state.mode != "neutral":
                     return False
@@ -491,8 +491,8 @@ class OrkcraftApp(App[int]):
         def done(action: str | None) -> None:
             if not action:
                 return
-            if action == "war_horn":
-                self.action_war_horn()
+            if action == "halt":
+                self.action_halt()
             elif action == "screenshot":
                 self.call_after_refresh(self._save_screenshot)
             elif action == "keys":
@@ -2609,19 +2609,19 @@ class OrkcraftApp(App[int]):
 
         self.push_screen(BuildReview(spec, len(result.attempts), result.cost_usd, check), done)
 
-    # -- War Horn --------------------------------------------------------------------------------
+    # -- Halt All ----------------------------------------------------------------------------
 
-    def action_war_horn(self, source: str = "") -> None:
+    def action_halt(self, source: str = "") -> None:
         """Emergency freeze: interrupt every running agent session; the TUI stays open."""
         halted = self.chat.interrupt_all()
         for worker in self.workers:
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
         hud = self._hud
-        hud.set_horn(f"SOUNDED — {halted} halted")
-        self.notify(f"📯 War Horn: {halted} running session{'s' if halted != 1 else ''} interrupted",
+        hud.set_halt(f"HALTED — {halted} stopped")
+        self.notify(f"🛑 Halt All: {halted} running session{'s' if halted != 1 else ''} interrupted",
                     title="Emergency freeze", severity="warning")
-        self.set_timer(HORN_RESET_S, lambda: hud.set_horn("READY"))
+        self.set_timer(HALT_RESET_S, lambda: hud.set_halt("READY"))
 
     # -- sessions ------------------------------------------------------------------------------------
 

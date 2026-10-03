@@ -1,4 +1,4 @@
-"""🎺 The Bugle: a sound for every cart that comes down its roads.
+"""📯 The Horn: a sound for every cart that comes down its roads.
 
 The table says which sound answers which event, one line each, the most precise key wins:
 
@@ -7,7 +7,7 @@ The table says which sound answers which event, one line each, the most precise 
     <building>: <sound>             anything from that building   (gate_pit: ding)
     *: <sound>                      everything else (else: the `default` setting)
 
-A sound is one of the built-in ones (SOUNDS: synthesized once into `.orkcraft/bugle/sounds/`),
+A sound is one of the built-in ones (SOUNDS: synthesized once into `.orkcraft/horn/sounds/`),
 `bell` (the terminal's own bell), `none` (stay quiet), or a path to an audio file of your own
 (.wav, .mp3, .ogg, .aiff, .m4a, .flac). It plays through the system's player (afplay, paplay,
 pw-play, aplay, ffplay; winsound on Windows); with none of them the terminal bell rings instead.
@@ -37,7 +37,7 @@ KEEP = 200
 
 # name → what it sounds like (the help of the table editor and of the picker)
 SOUNDS: dict[str, str] = {
-    "horn": "a bugle call: three rising notes",
+    "horn": "a horn call: three rising notes",
     "chime": "two soft bells",
     "alarm": "a two-tone siren",
     "drum": "two beats of a war drum",
@@ -117,7 +117,7 @@ def _hours(spec: str) -> tuple[int, int] | None:
 
 
 def in_quiet(spec: str, now: dt.datetime | None = None) -> bool:
-    """`22:00-08:00`: the hours the bugle keeps quiet (they may run over midnight)."""
+    """`22:00-08:00`: the hours the horn keeps quiet (they may run over midnight)."""
     hours = _hours(spec) if spec else None
     if hours is None:
         return False
@@ -194,7 +194,7 @@ def sound_file(repo_root: Path, sound: str) -> Path | None:
         return p if p.is_file() else None
     if sound not in SOUNDS:
         return None
-    return render(repo_root / ".orkcraft" / "bugle" / "sounds" / f"{sound}.wav", sound)
+    return render(repo_root / ".orkcraft" / "horn" / "sounds" / f"{sound}.wav", sound)
 
 
 # -- playing ----------------------------------------------------------------------------------------

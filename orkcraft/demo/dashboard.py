@@ -9,7 +9,7 @@ F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, an Orc 
 finished debate, a Loot Vault with changes to review and a Tally Crag over a day of runs.
 F3 Gates — The Pit feeds a Totem whose rules send a patch or a link to the Lake of Insight and a
 release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
-Workshop built from scratch counts the words of every paste with its approved script; the Bugle
+Workshop built from scratch counts the words of every paste with its approved script; the Horn
 sounds a chime for every paste and a horn for every route the Totem takes.
 The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / 👎 with an incident,
 a self-improvement proposal and a weekly report.
@@ -139,7 +139,7 @@ GATES = {
               url="https://example.com/hooks/release", schema="demo/release.schema.json", method="POST"),
         typed("counter", "workshop", "Word Count", "🔢", "Tinker", "counts the words of every paste",
               runtime="python", layout="card", inputs=["gate_pit:pit.text"]),
-        typed("gate_bugle", "bugle", "The Bugle", "🎺", "Bugler", "sounds what comes in",
+        typed("gate_horn", "horn", "The Horn", "📯", "Hornblower", "sounds what comes in",
               sounds=["pit.text: chime", "crossroads/totem.routed: horn", "*: ding"], quiet="23:00-07:00"),
     ],
     "layout": [(0.0, 0.0, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46), (0.7, 0.0, 0.3, 0.46), (0.0, 0.54, 0.3, 0.46),
@@ -149,8 +149,8 @@ GATES = {
         ("counter", "gate_pit", "pit.text", "on_paste", None, None),
         ("insight", "crossroads", "totem.routed", "view", None, {"route": ["view"]}),
         ("launcher", "crossroads", "totem.routed", "send", None, {"route": ["send"]}),
-        ("gate_bugle", "gate_pit", "pit.text", "on_paste", None, None),
-        ("gate_bugle", "crossroads", "totem.routed", "routed", None, None),
+        ("gate_horn", "gate_pit", "pit.text", "on_paste", None, None),
+        ("gate_horn", "crossroads", "totem.routed", "routed", None, None),
     ],
     "payloads": {
         ("gate_pit", "pit.text"): ("text", "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n+++ b/src/app.py\n"

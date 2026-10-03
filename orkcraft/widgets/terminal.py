@@ -24,7 +24,7 @@ from textual.message import Message
 from textual.strip import Strip
 from textual.widget import Widget
 
-# Stay with orkcraft even inside the terminal: window cycling, leaving it, the War Horn.
+# Stay with orkcraft even inside the terminal: window cycling, leaving it, Halt All.
 RESERVED_KEYS = {
     *(f"f{i}" for i in range(1, 11)),
     "shift+f9",
