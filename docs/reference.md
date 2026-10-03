@@ -180,7 +180,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only), GitHub events (`gh`), a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; steps without a model (`grep`, `replace`, `csv`, `json`, `extract`, `template`, `script: …`) | `mill.done`, `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
@@ -199,6 +199,24 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
   Catapult without a schema.
+- The Watchtower's `feeds` are asked every two minutes over HTTPS, read-only (those services send
+  webhooks only to a public URL). One line a feed; options name environment variables, never the
+  token itself:
+
+  ```yaml
+  host: gmail                  # imap.gmail.com: an app password, IMAP on (also yandex, icloud)
+  user_env: GMAIL_USER
+  password_env: GMAIL_APP_PASSWORD
+  feeds:
+    - "slack: token=SLACK_TOKEN channels=C0123,D0456"     # a user token: search:read, *:history, users:read
+    - "jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN"            # jql=… takes the rest
+    - "confluence: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN spaces=DOC"   # cql=… too
+    - "figma: token=FIGMA_TOKEN files=AbC123,XyZ789"
+  ```
+
+  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
+  `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
+  service). Your own messages are skipped; each feed's first look only marks what is there as seen.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)

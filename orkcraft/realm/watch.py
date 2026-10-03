@@ -2,6 +2,7 @@
 
     github   `gh api repos/<owner/repo>/events` — events newer than the last one seen
     cron     a schedule: `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00`, a 5-field cron
+    feeds    Slack, Jira, Confluence, Figma: comments and mentions (realm/feeds.py)
     webhook  an HTTP server on 127.0.0.1:<port> (never another interface); a POST is a signal.
              With `webhook_secret_env` set, a request must carry the secret: `X-Orkcraft-Token`,
              or GitHub's `X-Hub-Signature-256` HMAC of the body.
@@ -24,19 +25,23 @@ from orkcraft.realm import steward
 
 GH_TIMEOUT_S = 15
 MAX_BODY = 1024 * 1024
+FEEDS = ("slack", "jira", "confluence", "figma")      # realm/feeds.py
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 @dataclass
 class Signal:
     at: str
-    source: str            # mail | github | cron | webhook
+    source: str            # mail | github | cron | webhook | slack | jira | confluence | figma
     title: str
     body: str = ""
-    ref: str = ""          # mail uid, GitHub event id, webhook path
+    ref: str = ""          # mail uid, GitHub event id, webhook path, a feed item's link
+    mention: bool = False  # a feed item about you
 
     @property
     def event(self) -> str:
+        if self.source in FEEDS:
+            return "watch.mention" if self.mention else "watch.comment"
         return {"mail": "mail.received", "github": "watch.github", "cron": "watch.cron"}.get(self.source,
                                                                                               "watch.webhook")
 
