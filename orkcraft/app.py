@@ -40,6 +40,7 @@ from orkcraft.screens.feedback_modal import DislikeModal
 from orkcraft.screens.proposal_modal import ProposalModal
 from orkcraft.screens.road_rule_modal import RoadRuleModal
 from orkcraft.screens.settings_modal import SettingsModal
+from orkcraft.screens.retro_survey import RetroSurveyModal
 from orkcraft.screens.weekly_modal import WeeklyReportModal
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, ClanRoster, Console, orc_key
 from orkcraft.screens.chronicles_view import BuildingChronicles, UnitChronicles
@@ -51,7 +52,7 @@ from orkcraft.screens.garrison_modal import GarrisonModal, OrcModelModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, evolution, town_builder, town_presets
+from orkcraft.realm import elders, evolution, pressure, retro, town_builder, town_presets
 from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
@@ -2848,11 +2849,44 @@ class OrkcraftApp(App[int]):
         self.show_weekly(result.report)
 
     def show_weekly(self, report: weekly.Report) -> None:
+        """The Town retro: first the survey, when nothing was rated this week (realm/retro.py), then the report."""
         def done(picked: list[int] | None) -> None:
             if picked:
                 self.apply_weekly(report, picked)
 
-        self.push_screen(WeeklyReportModal(report), done)
+        def report_now(answers: list | None = None) -> None:
+            if answers:
+                self.rate_survey(answers)
+            self.push_screen(WeeklyReportModal(report), done)
+
+        if report.surveyed:
+            report_now()
+            return
+        report.surveyed = True
+        weekly.save(self.repo_root, report)
+        limits, subs = self._quota_reads()
+        samples = retro.pick(self.repo_root, self.scroll, pressure.measure(self.repo_root, limits, providers=subs)) \
+            if retro.needed(self.repo_root) else []
+        if not samples:
+            report_now()
+            return
+        self.push_screen(RetroSurveyModal(samples, {s.building: self._title_of(s.building) for s in samples}),
+                         report_now)
+
+    def rate_survey(self, answers: list[tuple[retro.Sample, str]]) -> None:
+        """The survey's 👍 / 👎, each on the very result it showed."""
+        good = bad = 0
+        for sample, kind in answers:
+            if kind == "good":
+                feedback.like(self.repo_root, sample.building, sample.as_output())
+                good += 1
+            elif kind in feedback.KINDS:
+                feedback.dislike(self.repo_root, self.scroll, sample.building, kind, "the Town retro's survey",
+                                 sample.as_output())
+                bad += 1
+        if good or bad:
+            self.notify(f"👍 {good} · 👎 {bad} — the retros will go by them", title="🗓 Town retro")
+            self._refresh_hall()
 
     def apply_weekly(self, report: weekly.Report, picked: list[int]) -> list[int]:
         """Each ticked item, checked again against the camp as it is now, applied as its own

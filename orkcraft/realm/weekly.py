@@ -80,6 +80,7 @@ class Report:
     cost_usd: float | None = None
     applied: list[int] = field(default_factory=list)
     restart: bool = False
+    surveyed: bool = False                        # the Town retro's survey was shown (realm/retro.py)
 
 
 @dataclass
