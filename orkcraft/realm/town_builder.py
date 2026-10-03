@@ -21,7 +21,7 @@ from orkcraft.realm import builders, catalog, masonry
 MAX_ATTEMPTS = 3
 MAX_BUILDINGS = 8
 MAX_ROADS = 12
-ORDER_LIMIT = 2000
+ORDER_LIMIT = 4000
 KEY = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
 SPEC_KEYS = ("title", "icon", "summary", "size", "events", "quick_actions", "config", "roof")
 
@@ -43,12 +43,29 @@ invent passwords or tokens; config only names environment variables that hold th
 Then 0-{max_roads} roads: each carries one event a source building sends to a target building that
 should receive it ("from" and "to" are keys of the plan, "event" one of the source type's events or
 on_selection_change), with a one-sentence "why".
-{feedback}
+{template}{feedback}
 Answer with ONE JSON object and nothing else:
 {{"title": "<the town's name, plain>", "summary": "<one sentence>",
   "buildings": [{{"key": "...", "type": "...", "title": "...", "icon": "...", "why": "...",
                  "size": "S", "events": ["..."], "quick_actions": ["..."], "config": {{}}}}],
   "roads": [{{"from": "<key>", "event": "...", "to": "<key>", "why": "..."}}]}}"""
+
+
+ADAPT = """
+START FROM A TEMPLATE. These are ready towns for the operator's role, in the answer's own shape. Pick
+the one closest to what they said and adapt it — do not start from nothing:
+{templates}
+Adapt it to the operator's answers above:
+- every data source they named needs a way in: a Watchtower for mail, GitHub, a schedule or a tool's
+  webhooks (Jira, Linear, Asana, the stores…); a Pit for files and links they paste; a Scroll Dump for
+  documents exported to a folder; a File Forest for a folder of files;
+- every place their results go needs a way out: a Catapult to that tool's API (config may name the
+  environment variable with its token in token_env), a Loot Vault for files they accept first;
+- every problem they named is answered by a building or a road — say which in its "why";
+- what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
+  distrust the output, prefer rules (Totem, Mill) over agents where results must not vary;
+- drop the template's buildings that serve nothing they said; keep its names where they still fit.
+"""
 
 
 @dataclass
@@ -160,9 +177,10 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
 
 def plan(order: str, repo_root: Path, taken: set[str] | frozenset[str] = frozenset(),
          runner: builders.Runner = builders.claude_runner, feedback: str = "",
-         max_attempts: int = MAX_ATTEMPTS) -> TownPlan:
+         max_attempts: int = MAX_ATTEMPTS, templates: str = "") -> TownPlan:
     """Ask for a plan until one passes `check` or the attempts run out. Never raises.
-    `feedback` is the operator's note on a plan they turned down."""
+    `feedback` is the operator's note on a plan they turned down; `templates` (intents.templates_text)
+    are the role's ready towns, to adapt instead of planning from nothing."""
     order = order.strip()[:ORDER_LIMIT]
     text_catalog = catalog.catalog_text(offered_types())
     attempts: list[builders.Attempt] = []
@@ -172,7 +190,8 @@ def plan(order: str, repo_root: Path, taken: set[str] | frozenset[str] = frozens
         attempt = builders.Attempt()
         try:
             text, cost = runner(PLANNER.format(order=order, catalog=text_catalog, max_buildings=MAX_BUILDINGS,
-                                               max_roads=MAX_ROADS, feedback=note + builders._feedback(attempts)))
+                                               max_roads=MAX_ROADS, feedback=note + builders._feedback(attempts),
+                                               template=ADAPT.format(templates=templates) if templates else ""))
         except RuntimeError as e:
             attempts.append(attempt)
             return TownPlan(attempts=attempts, cost_usd=total, error=str(e))

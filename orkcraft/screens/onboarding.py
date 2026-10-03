@@ -1,11 +1,15 @@
-"""🧭 Onboarding: tools → autonomy → mode → town → raising it (design: docs/design/onboarding.md).
+"""🧭 Onboarding: who you are → your day → the town → (the interview) → tools → autonomy → the look.
 
-    Onboarding(app, machine_steps=True, town_step=True).start()
+    Onboarding(app, machine_steps=True, town_step=True, on_town=app.raise_town).start()
 
-Steps 1–3 (tools and their billing, the orcs' autonomy, the display mode and the day) are asked once per machine and kept in
-`settings.py`; step 3 (the town) once per project. Nothing is written before a step's Next, and
-the project's part only on Build. Skip anywhere: an empty town, defaults for the rest, no Warder.
-Step 4 raises the town over the map itself, with a progress bar along the bottom.
+The person comes first (design: docs/design/onboarding.md): the role and the industry, then a
+typical day and its rhythm — both kept in the machine settings (`settings.profile`). Then the town:
+the role's intents, those that fit the day first. When none fits, the interview asks about sources,
+outputs, problems and AI tried, and the Town Builder adapts the role's templates to the answers.
+The machine's part follows (tools and billing, the orcs' autonomy, the look and the hours).
+
+Nothing is written before the last step; Skip anywhere = an empty town, defaults for the rest,
+no Warder. The town is raised over the map itself, with a progress bar along the bottom.
 """
 from __future__ import annotations
 
@@ -20,12 +24,14 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Button, Checkbox, Input, Label, OptionList, ProgressBar, RadioButton, Select, Static
+from textual.widgets import (Button, Checkbox, Input, Label, OptionList, ProgressBar, RadioButton, Select,
+                             SelectionList, Static)
 from textual.widgets.option_list import Option
+from textual.widgets.selection_list import Selection
 
 from orkcraft import schedule, settings, tools
 from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
-from orkcraft.realm import silhouettes, town_presets
+from orkcraft.realm import intents, interview, silhouettes
 from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.build_flow import MODAL_CSS
 
@@ -44,7 +50,12 @@ def _css(cls: str, width: int) -> str:
     {cls} .ob-buttons {{ height: auto; margin-top: 1; align-horizontal: right; }}
     {cls} .ob-buttons Button {{ margin-left: 1; }}
     {cls} .ob-note {{ color: $warning; height: auto; }}
+    {cls} .ob-mascot {{ width: 16; height: auto; padding: 1 0 0 2; color: $accent; }}
     """
+
+
+def _title(text: str, step: str) -> str:
+    return f"{text}  ·  {step}" if step else text
 
 
 def _buttons(*specs: tuple[str, str, str]) -> Horizontal:
@@ -52,13 +63,361 @@ def _buttons(*specs: tuple[str, str, str]) -> Horizontal:
                       classes="ob-buttons")
 
 
-# -- step 1: tools ----------------------------------------------------------------------------------
+def _nav(can_back: bool, last: bool = False) -> Horizontal:
+    return _buttons(*([("← Back", "ob-back", "default")] if can_back else []), ("Skip", "ob-skip", "default"),
+                    ("Build", "ob-next", "success") if last else ("Next →", "ob-next", "primary"))
 
-class ToolsStep(ModalScreen[dict | None]):
-    """Which CLIs to lead, and how each is paid for. Dismisses {"action": "next", "tools": {...}},
-    {"action": "skip", "tools": {...}} (the found ones, as detected) or None."""
 
-    BINDINGS = [Binding("escape", "skip", "Skip")]
+def _highlight(lst: OptionList, option_id: str) -> None:
+    for i in range(lst.option_count):
+        if lst.get_option_at_index(i).id == option_id:
+            lst.highlighted = i
+            return
+
+
+def _highlighted_id(lst: OptionList) -> str:
+    return "" if lst.highlighted is None else lst.get_option_at_index(lst.highlighted).id or ""
+
+
+# -- who you are ------------------------------------------------------------------------------------
+
+class PersonStep(ModalScreen[dict | str | None]):
+    """The role and the industry, each from a list or in the operator's words. Dismisses
+    {"profile": {role, role_other, industry, industry_other}}, "back", "skip" or None."""
+
+    BINDINGS = [Binding("escape", "back", "Back")]
+    DEFAULT_CSS = _css("PersonStep", 96) + """
+    PersonStep #ob-who { height: auto; }
+    PersonStep .ob-col { width: 1fr; height: auto; margin-right: 1; }
+    PersonStep .ob-col OptionList { height: auto; max-height: 12; }
+    PersonStep .ob-col Label { text-style: bold; }
+    PersonStep #ob-who-line { margin-top: 1; height: auto; }
+    """
+
+    def __init__(self, profile: dict | None = None, step: str = "", can_back: bool = False) -> None:
+        super().__init__()
+        self.profile = dict(profile or {})
+        self.step = step
+        self.can_back = can_back
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(_title("🧭 Who are you?", self.step), classes="build-title")
+            yield Static("Your role and where you work. Your first town starts from what people like you do.",
+                         classes="build-hint")
+            with Horizontal(id="ob-who"):
+                with Vertical(classes="ob-col"):
+                    yield Label("I work as…")
+                    yield OptionList(*(Option(r.label, id=r.id) for r in intents.ROLES), id="ob-role")
+                    yield Input(self.profile.get("role_other", ""), placeholder="your role, in your words",
+                                id="ob-role-other")
+                with Vertical(classes="ob-col"):
+                    yield Label("…in")
+                    yield OptionList(*(Option(i.label, id=i.id) for i in intents.INDUSTRIES), id="ob-industry")
+                    yield Input(self.profile.get("industry_other", ""), placeholder="your field, in your words",
+                                id="ob-industry-other")
+                yield Static("", id="ob-mascot", classes="ob-mascot", markup=False)
+            yield Static("", id="ob-who-line", markup=False)
+            yield Static("", id="ob-who-note", classes="ob-note", markup=False)
+            yield _nav(self.can_back)
+
+    def on_mount(self) -> None:
+        self.call_after_refresh(self._setup)
+
+    def _setup(self) -> None:
+        role_list, ind_list = self.query_one("#ob-role", OptionList), self.query_one("#ob-industry", OptionList)
+        role_list.highlighted = None
+        ind_list.highlighted = None
+        if self.profile.get("role"):
+            _highlight(role_list, self.profile["role"])
+        if self.profile.get("industry"):
+            _highlight(ind_list, self.profile["industry"])
+        role_list.focus()
+        self.show()
+
+    def result(self) -> dict:
+        role = _highlighted_id(self.query_one("#ob-role", OptionList))
+        ind = _highlighted_id(self.query_one("#ob-industry", OptionList))
+        out = {"role": role, "industry": ind}
+        if role == intents.OTHER:
+            out["role_other"] = self.query_one("#ob-role-other", Input).value.strip()
+        if ind == intents.OTHER:
+            out["industry_other"] = self.query_one("#ob-industry-other", Input).value.strip()
+        return {k: v for k, v in out.items() if v}
+
+    def show(self) -> None:
+        r = self.result()
+        self.query_one("#ob-role-other", Input).display = r.get("role") == intents.OTHER
+        self.query_one("#ob-industry-other", Input).display = r.get("industry") == intents.OTHER
+        self.query_one("#ob-mascot", Static).update("\n".join(intents.mascot(r.get("role", intents.OTHER))))
+        line = Text()
+        if r.get("role"):
+            line.append("→ ", style="dim")
+            line.append(interview.who(r), style="bold")
+            n = len(intents.for_role(r["role"]))
+            line.append(f"  ·  {n} ready towns for this role, or the Builder makes one with you", style="dim")
+        self.query_one("#ob-who-line", Static).update(line)
+
+    @on(OptionList.OptionHighlighted)
+    def _picked(self, event: OptionList.OptionHighlighted) -> None:
+        event.stop()
+        self.show()
+
+    @on(OptionList.OptionSelected)
+    def _selected(self, event: OptionList.OptionSelected) -> None:
+        event.stop()
+        if event.option_id == intents.OTHER:
+            box = "#ob-role-other" if event.option_list.id == "ob-role" else "#ob-industry-other"
+            self.query_one(box, Input).focus()
+        elif event.option_list.id == "ob-role":
+            self.query_one("#ob-industry", OptionList).focus()
+
+    @on(Input.Changed)
+    def _typed(self, event: Input.Changed) -> None:
+        event.stop()
+        self.show()
+
+    def action_next(self) -> None:
+        r = self.result()
+        note = self.query_one("#ob-who-note", Static)
+        if not r.get("role"):
+            note.update("⚠ Pick your role — or Someone else and say it in your words.")
+            return
+        if r["role"] == intents.OTHER and not r.get("role_other"):
+            note.update("⚠ Say your role in a few words.")
+            self.query_one("#ob-role-other", Input).focus()
+            return
+        self.dismiss({"profile": r})
+
+    def action_back(self) -> None:
+        self.dismiss("back" if self.can_back else "skip")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        {"ob-next": self.action_next, "ob-back": self.action_back}.get(
+            event.button.id or "", lambda: self.dismiss("skip"))()
+
+
+# -- questions with options: your day, the interview ------------------------------------------------
+
+class QuestionsStep(ModalScreen[dict | str | None]):
+    """One page of interview.Page: each question a multi-select list (the role's common options
+    first, marked ✦) and, where it has one, a field for anything else. Dismisses {"answers": {qid:
+    [ids], qid + "_other": text}}, "back", "skip" or None."""
+
+    BINDINGS = [Binding("escape", "back", "Back")]
+    DEFAULT_CSS = _css("QuestionsStep", 100) + """
+    QuestionsStep #ob-q-row { height: auto; }
+    QuestionsStep .ob-q { width: 1fr; height: auto; margin-right: 1; }
+    QuestionsStep .ob-q Label { text-style: bold; }
+    QuestionsStep .ob-q SelectionList { height: auto; max-height: 16; }
+    """
+
+    def __init__(self, page: interview.Page, answers: dict | None = None, profile: dict | None = None,
+                 step: str = "", can_back: bool = True, last: bool = False) -> None:
+        super().__init__()
+        self.page = page
+        self.answers = dict(answers or {})
+        self.profile = dict(profile or {})
+        self.step = step
+        self.can_back = can_back
+        self.last = last
+
+    def compose(self) -> ComposeResult:
+        role, ind = self.profile.get("role", ""), self.profile.get("industry", "")
+        with Vertical():
+            yield Label(_title(f"🧭 {self.page.title}", self.step), classes="build-title")
+            yield Static(self.page.hint, classes="build-hint")
+            with Horizontal(id="ob-q-row"):
+                for q in self.page.questions:
+                    picked = set(self.answers.get(q.id) or [])
+                    with Vertical(classes="ob-q"):
+                        yield Label(q.title)
+                        items = []
+                        for choice, common in self.page.options(q, role, ind):
+                            label = Text(choice.label)
+                            if common:
+                                label.append("  ✦", style="dim")
+                            items.append(Selection(label, choice.id, choice.id in picked))
+                        yield SelectionList[str](*items, id=f"ob-q-{q.id}")
+                        if q.other:
+                            yield Input(self.answers.get(f"{q.id}_other", ""), placeholder=q.other,
+                                        id=f"ob-q-{q.id}-other")
+            if any(q.suggest for q in self.page.questions) and role:
+                yield Static(f"✦ common for {intents.role(role).title.lower()}s · space toggles",
+                             classes="build-hint")
+            else:
+                yield Static("space toggles · pick as many as fit, or none", classes="build-hint")
+            yield _nav(self.can_back, self.last)
+
+    def result(self) -> dict:
+        out: dict = {}
+        for q in self.page.questions:
+            out[q.id] = list(self.query_one(f"#ob-q-{q.id}", SelectionList).selected)
+            if q.other:
+                text = self.query_one(f"#ob-q-{q.id}-other", Input).value.strip()
+                if text:
+                    out[f"{q.id}_other"] = text
+        return out
+
+    def action_back(self) -> None:
+        self.dismiss("back" if self.can_back else "skip")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        event.stop()
+        self.dismiss({"answers": self.result()})
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        bid = event.button.id
+        if bid == "ob-next":
+            self.dismiss({"answers": self.result()})
+        elif bid == "ob-back":
+            self.action_back()
+        else:
+            self.dismiss("skip")
+
+
+# -- the town: the role's intents ---------------------------------------------------------------------
+
+def intent_blurb(it: intents.Intent) -> Text:
+    t = Text()
+    t.append(it.blurb + "\n")
+    t.append("🏗 " + " · ".join(f"{b['icon']} {b['title']}" for b in it.plan["buildings"]), style="dim")
+    return t
+
+
+class IntentStep(ModalScreen[dict | str | None]):
+    """What the first town is for: an intent of the role (★ when it fits the operator's day), an
+    empty town, or none fits — the interview. Dismisses {"preset": id | "empty" | "custom",
+    "role", "warder"}, "back", "skip" or None."""
+
+    BINDINGS = [Binding("escape", "back", "Back")]
+    DEFAULT_CSS = _css("IntentStep", 92) + """
+    IntentStep #ob-empty { width: 100%; margin-bottom: 1; }
+    IntentStep #ob-for { height: auto; margin-bottom: 1; }
+    IntentStep #ob-town { height: auto; }
+    IntentStep #ob-town-left { width: 1fr; height: auto; }
+    IntentStep #ob-role-browse { width: 100%; }
+    IntentStep #ob-presets { height: auto; max-height: 8; margin-top: 1; }
+    IntentStep #ob-blurb { height: auto; color: $text-muted; padding: 0 1; }
+    """
+
+    def __init__(self, profile: dict | None = None, step: str = "", can_back: bool = True, last: bool = False,
+                 show_warder: bool = False, choice: dict | None = None) -> None:
+        super().__init__()
+        self.profile = dict(profile or {})
+        self.step = step
+        self.can_back = can_back
+        self.last = last
+        self.show_warder = show_warder
+        self.choice = dict(choice or {})
+        self.role = self.choice.get("role") or self.profile.get("role") or intents.OTHER
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(_title("🧭 What should your first town do?", self.step), classes="build-title")
+            yield Static("", id="ob-for", markup=False)
+            yield Button("🏰 Start with an empty town", id="ob-empty")
+            with Horizontal(id="ob-town"):
+                with Vertical(id="ob-town-left"):
+                    yield Select([(r.label, r.id) for r in intents.ROLES], value=self.role, allow_blank=False,
+                                 id="ob-role-browse")
+                    yield OptionList(id="ob-presets")
+                    yield Static("", id="ob-blurb", markup=False)
+                yield Static("", id="ob-mascot", classes="ob-mascot", markup=False)
+            yield Checkbox("Install the 🛡 Warder (recommended) — edits .claude/settings.json",
+                           value=self.choice.get("warder", True), id="ob-warder")
+            yield Static("", id="ob-town-note", classes="ob-note", markup=False)
+            yield _nav(self.can_back, self.last)
+
+    def on_mount(self) -> None:
+        self.call_after_refresh(self._setup)     # pushed as the app starts, its children may not be in yet
+
+    def _setup(self) -> None:
+        self.query_one("#ob-warder", Checkbox).display = self.show_warder
+        day = self.profile.get("day") or []
+        line = Text("For ", style="dim")
+        line.append(interview.who(self.profile), style="bold")
+        if day:
+            line.append("  ·  ★ takes over a part of your day", style="dim")
+        self.query_one("#ob-for", Static).update(line)
+        self.show_role(self.role)
+        if self.choice.get("preset"):
+            _highlight(self.query_one("#ob-presets", OptionList), self.choice["preset"])
+
+    def show_role(self, role_id: str) -> None:
+        self.role = role_id
+        self.query_one("#ob-mascot", Static).update("\n".join(intents.mascot(role_id)))
+        lst = self.query_one("#ob-presets", OptionList)
+        lst.clear_options()
+        day = self.profile.get("day") or []
+        for it in intents.for_role(role_id, day):
+            star = "  ★" if intents.fit(it, day) else ""
+            lst.add_option(Option(f"{it.label}{star}", id=it.id))
+        lst.add_option(Option("❓ None fits — tell the Builder about your work", id=CUSTOM))
+        lst.highlighted = 0
+        self.show_choice()
+
+    @property
+    def choice_id(self) -> str:
+        return _highlighted_id(self.query_one("#ob-presets", OptionList)) or CUSTOM
+
+    def show_choice(self) -> None:
+        it = intents.intent(self.choice_id)
+        blurb = intent_blurb(it) if it else Text(
+            f"A short interview: where your data comes from, where results go, what hurts and what AI you "
+            f"tried. The Builder adapts a {intents.role(self.role).title.lower()} town to your answers; you "
+            "approve the plan before anything is raised.")
+        self.query_one("#ob-blurb", Static).update(blurb)
+
+    @on(Select.Changed, "#ob-role-browse")
+    def _role(self, event: Select.Changed) -> None:
+        event.stop()
+        if isinstance(event.value, str) and event.value != self.role:
+            self.show_role(event.value)
+
+    @on(OptionList.OptionHighlighted, "#ob-presets")
+    def _highlighted(self, event: OptionList.OptionHighlighted) -> None:
+        event.stop()
+        self.show_choice()
+
+    @on(OptionList.OptionSelected, "#ob-presets")
+    def _selected(self, event: OptionList.OptionSelected) -> None:
+        event.stop()
+        self.action_next()
+
+    def _result(self, preset: str) -> dict:
+        return {"preset": preset, "role": self.role,
+                "warder": self.show_warder and self.query_one("#ob-warder", Checkbox).value}
+
+    def action_next(self) -> None:
+        self.dismiss(self._result(self.choice_id))
+
+    def action_back(self) -> None:
+        self.dismiss("back" if self.can_back else "skip")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        bid = event.button.id
+        if bid == "ob-empty":
+            self.dismiss(self._result(EMPTY))
+        elif bid == "ob-next":
+            self.action_next()
+        elif bid == "ob-back":
+            self.action_back()
+        else:
+            self.dismiss("skip")
+
+
+# -- tools ------------------------------------------------------------------------------------------
+
+class ToolsStep(ModalScreen[dict | str | None]):
+    """Which CLIs to lead, and how each is paid for. Dismisses {"action": "next", "tools": {...},
+    "statuses": [...], "warder": bool}, {"action": "skip", "tools": {...}} (the found ones, as
+    detected), "back" or None. `chosen`: what was picked before (Back keeps it)."""
+
+    BINDINGS = [Binding("escape", "back", "Back")]
     DEFAULT_CSS = _css("ToolsStep", 92) + """
     ToolsStep #ob-tools-list { height: auto; margin-bottom: 1; }
     ToolsStep .ob-tool { height: 3; }
@@ -67,23 +426,33 @@ class ToolsStep(ModalScreen[dict | None]):
     ToolsStep .ob-tool .ob-summary { width: 1fr; padding: 1 0 0 1; color: $text-muted; }
     """
 
-    def __init__(self, machine: settings.MachineSettings, statuses: list[tools.ToolStatus] | None = None) -> None:
+    def __init__(self, machine: settings.MachineSettings, statuses: list[tools.ToolStatus] | None = None,
+                 step: str = "", can_back: bool = False, show_warder: bool = False,
+                 chosen: dict[str, settings.ToolChoice] | None = None, warder: bool = True) -> None:
         super().__init__()
         self.machine = machine
         self.statuses = statuses
+        self.step = step
+        self.can_back = can_back
+        self.show_warder = show_warder
+        self.chosen = chosen
+        self.warder = warder
         self._warned = False
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🧭 Which clans will you lead?  ·  step 1 of 4", classes="build-title")
+            yield Label(_title("🧭 Which clans will you lead?", self.step), classes="build-title")
             yield Static("Looking for your AI tools…", id="ob-tools-loading")
             yield Vertical(id="ob-tools-list")
             yield Static("The top-right corner shows ⏳ limits for a subscription and 🪙 money for an API. "
                          "Orkcraft never stores a key: the tool reads its own.", classes="build-hint")
+            yield Checkbox("Install the 🛡 Warder in this project (recommended) — edits .claude/settings.json",
+                           value=self.warder, id="ob-warder")
             yield Static("", id="ob-tools-note", classes="ob-note", markup=False)
-            yield _buttons(("Skip", "ob-skip", "default"), ("Next →", "ob-next", "primary"))
+            yield _nav(self.can_back)
 
     def on_mount(self) -> None:
+        self.query_one("#ob-warder", Checkbox).display = self.show_warder
         if self.statuses is None:
             self.detect()
         else:
@@ -100,10 +469,13 @@ class ToolsStep(ModalScreen[dict | None]):
         box = self.query_one("#ob-tools-list", Vertical)
         box.remove_children()
         for st in statuses:
-            known = self.machine.tools.get(st.id, settings.ToolChoice())
             usable = st.tool.available and st.found
-            enabled = (known.enabled if self.machine.onboarded else st.found) and usable
-            billing = known.billing if self.machine.onboarded and known.enabled else st.billing
+            if self.chosen is not None and st.id in self.chosen:
+                enabled, billing = self.chosen[st.id].enabled and usable, self.chosen[st.id].billing
+            else:
+                known = self.machine.tools.get(st.id, settings.ToolChoice())
+                enabled = (known.enabled if self.machine.onboarded else st.found) and usable
+                billing = known.billing if self.machine.onboarded and known.enabled else st.billing
             box.mount(Horizontal(
                 Checkbox(f"{st.tool.title}", value=enabled, id=f"ob-tool-{st.id}", disabled=not usable),
                 Select([("subscription", "subscription"), ("API key", "api")], value=billing, allow_blank=False,
@@ -134,19 +506,26 @@ class ToolsStep(ModalScreen[dict | None]):
                 "⚠ No tool chosen: agents and the Builder will be unavailable. Next again to go on — or try "
                 "`orkcraft --demo` first.")
             return
-        self.dismiss({"action": "next", "tools": picked})
+        self.dismiss({"action": "next", "tools": picked, "statuses": self.statuses,
+                      "warder": self.show_warder and self.query_one("#ob-warder", Checkbox).value})
 
     def action_skip(self) -> None:
         found = {st.id: settings.ToolChoice(enabled=st.found and st.tool.available, billing=st.billing)
                  for st in self.statuses or []}
         self.dismiss({"action": "skip", "tools": found})
 
+    def action_back(self) -> None:
+        if self.can_back:
+            self.dismiss("back")
+        else:
+            self.action_skip()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        self.action_next() if event.button.id == "ob-next" else self.action_skip()
+        {"ob-next": self.action_next, "ob-back": self.action_back}.get(event.button.id or "", self.action_skip)()
 
 
-# -- step 2: mode -----------------------------------------------------------------------------------
+# -- the look and the day -----------------------------------------------------------------------------------
 
 def card_art(plain: bool) -> Text:
     """The sample building, in its ASCII or as just a frame, with the same live rows."""
@@ -198,15 +577,17 @@ class ModeStep(ModalScreen[dict | str | None]):
     ModeStep .ob-radio-cell { width: 1fr; height: 1; align-horizontal: center; margin: 0 1; }
     ModeStep .ob-radio-cell.-middle { width: 20; margin: 0; }
     ModeStep RadioButton { width: auto; height: 1; border: none; padding: 0; background: transparent; }
-    ModeStep RadioButton:focus { text-style: bold; }
+    ModeStep RadioButton:focus { text-style: bold; border: none; }
     ModeStep .ob-section { text-style: bold; margin-top: 1; }
     ModeStep #ob-day-row { height: auto; align-horizontal: center; }
     ModeStep #ob-day-legend { height: auto; }
     ModeStep #ob-quiet { margin-top: 0; }
     """
 
-    def __init__(self, machine: settings.MachineSettings | None = None, standalone: bool = False) -> None:
+    def __init__(self, machine: settings.MachineSettings | None = None, standalone: bool = False,
+                 step: str = "") -> None:
         super().__init__()
+        self.step = step
         self.machine = machine or settings.MachineSettings()
         self.mode = self.machine.mode
         self.standalone = standalone
@@ -214,7 +595,7 @@ class ModeStep(ModalScreen[dict | str | None]):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("🕰 Your day — the look of the town and its hours" if self.standalone
-                        else "🧭 How should the town look?  ·  step 3 of 4", classes="build-title")
+                        else _title("🧭 How should the town look?", self.step), classes="build-title")
             # Camp under the camp's picture, Office under the office's, Shift — both — between them:
             # the radio row has the cards' columns (1fr · the gap · 1fr).
             with Horizontal(id="ob-cards"):
@@ -321,143 +702,7 @@ class ModeStep(ModalScreen[dict | str | None]):
             self.dismiss(None)
 
 
-# -- step 3: the town -------------------------------------------------------------------------------
-
-class TownStep(ModalScreen[dict | None]):
-    """The town: empty, a preset of a domain, or described in words. Dismisses
-    {"preset": id | "empty" | "custom", "domain", "prompt", "warder"}, "back", "skip" or None."""
-
-    BINDINGS = [Binding("escape", "back", "Back")]
-    DEFAULT_CSS = _css("TownStep", 84) + """
-    TownStep #ob-empty { width: 100%; margin-bottom: 1; }
-    TownStep #ob-town { height: auto; }
-    TownStep #ob-town-left { width: 1fr; height: auto; }
-    TownStep #ob-domain { width: 100%; }
-    TownStep #ob-presets { height: auto; max-height: 9; margin-top: 1; }
-    TownStep #ob-mascot { width: 18; height: auto; padding: 1 0 0 2; color: $accent; }
-    TownStep #ob-blurb { height: auto; color: $text-muted; padding: 0 1; }
-    TownStep #ob-prompt { margin-top: 1; }
-    """
-
-    def __init__(self, can_back: bool = True, show_warder: bool = True, has_agent: bool = True,
-                 domain: str = town_presets.DOMAINS[0].id) -> None:
-        super().__init__()
-        self.can_back = can_back
-        self.show_warder = show_warder
-        self.has_agent = has_agent        # some tool was chosen: presets that need an agent are open
-        self.domain = domain
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("🧭 Choose a town  ·  step 4 of 4", classes="build-title")
-            yield Button("🏰 Start with an empty town", id="ob-empty")
-            with Horizontal(id="ob-town"):
-                with Vertical(id="ob-town-left"):
-                    yield Select([(f"{d.icon} {d.title}", d.id) for d in town_presets.DOMAINS], value=self.domain,
-                                 allow_blank=False, id="ob-domain")
-                    yield OptionList(id="ob-presets")
-                    yield Static("", id="ob-blurb", markup=False)
-                    yield Input(placeholder="describe the town you need…", id="ob-prompt")
-                yield Static("", id="ob-mascot", markup=False)
-            yield Checkbox("Install the 🛡 Warder (recommended) — edits .claude/settings.json", value=True,
-                           id="ob-warder")
-            yield Static("", id="ob-town-note", classes="ob-note", markup=False)
-            specs = ([("← Back", "ob-back", "default")] if self.can_back else []) + [
-                ("Skip", "ob-skip", "default"), ("Build", "ob-build", "success")]
-            yield _buttons(*specs)
-
-    def on_mount(self) -> None:
-        self.call_after_refresh(self._setup)     # pushed as the app starts, its children may not be in yet
-
-    def _setup(self) -> None:
-        self.query_one("#ob-warder", Checkbox).display = self.show_warder
-        self.show_domain(self.domain)
-
-    def show_domain(self, domain_id: str) -> None:
-        self.domain = domain_id
-        d = town_presets.domain(domain_id)
-        self.query_one("#ob-mascot", Static).update("\n".join(d.art))
-        lst = self.query_one("#ob-presets", OptionList)
-        lst.clear_options()
-        for p in town_presets.of_domain(domain_id):
-            off = p.needs_agent and not self.has_agent
-            lst.add_option(Option(f"{p.icon} {p.title}" + ("  (needs an AI tool)" if off else ""), id=p.id,
-                                  disabled=off))
-        lst.add_option(Option("❓ Didn't find it?", id=CUSTOM))
-        lst.highlighted = 0
-        self.show_choice()
-
-    @property
-    def choice(self) -> str:
-        lst = self.query_one("#ob-presets", OptionList)
-        if lst.highlighted is None:
-            return CUSTOM
-        return lst.get_option_at_index(lst.highlighted).id or CUSTOM
-
-    def show_choice(self) -> None:
-        pid = self.choice
-        prompt = self.query_one("#ob-prompt", Input)
-        prompt.display = pid == CUSTOM
-        p = town_presets.preset(pid)
-        blurb = (f"{p.blurb}" + ("  ·  a stub for now: it opens an empty town" if p.stub else "")) if p else \
-            "Say what the town is for: the Town Builder plans it from the catalog, you approve the plan, " \
-            "then it is raised. Until then your words wait in the Town Hall."
-        self.query_one("#ob-blurb", Static).update(blurb)
-
-    @on(Select.Changed, "#ob-domain")
-    def _domain(self, event: Select.Changed) -> None:
-        event.stop()
-        if isinstance(event.value, str) and event.value != self.domain:
-            self.show_domain(event.value)
-
-    @on(OptionList.OptionHighlighted, "#ob-presets")
-    def _highlighted(self, event: OptionList.OptionHighlighted) -> None:
-        event.stop()
-        self.show_choice()
-
-    @on(OptionList.OptionSelected, "#ob-presets")
-    def _selected(self, event: OptionList.OptionSelected) -> None:
-        event.stop()
-        if event.option_id == CUSTOM:
-            self.query_one("#ob-prompt", Input).focus()
-        else:
-            self.action_build()
-
-    @on(Input.Submitted, "#ob-prompt")
-    def _submitted(self, event: Input.Submitted) -> None:
-        event.stop()
-        self.action_build()
-
-    def _result(self, preset: str) -> dict:
-        return {"preset": preset, "domain": self.domain,
-                "prompt": self.query_one("#ob-prompt", Input).value.strip() if preset == CUSTOM else "",
-                "warder": self.show_warder and self.query_one("#ob-warder", Checkbox).value}
-
-    def action_build(self) -> None:
-        pid = self.choice
-        if pid == CUSTOM and not self.query_one("#ob-prompt", Input).value.strip():
-            self.query_one("#ob-town-note", Static).update("⚠ Describe the town first — or pick a preset.")
-            self.query_one("#ob-prompt", Input).focus()
-            return
-        self.dismiss(self._result(pid))
-
-    def action_back(self) -> None:
-        self.dismiss("back" if self.can_back else "skip")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        event.stop()
-        bid = event.button.id
-        if bid == "ob-empty":
-            self.dismiss(self._result(EMPTY))
-        elif bid == "ob-build":
-            self.action_build()
-        elif bid == "ob-back":
-            self.action_back()
-        else:
-            self.dismiss("skip")
-
-
-# -- step 4: raising the town -------------------------------------------------------------------------
+# -- raising the town -------------------------------------------------------------------------
 
 class RaiseBar(Horizontal):
     """The progress of raising the town, along the bottom of the map."""
@@ -507,11 +752,11 @@ class RaiseBar(Horizontal):
 
 
 def raising_steps(choice: dict) -> list[str]:
-    """What raising the town does, in order — each a real piece of work."""
+    """What raising the town does, in order — each a real piece of work. An intent's buildings and
+    the Town Builder's plan are raised after it, on their own bar."""
     steps = ["Opening the camp's records"]
     if choice.get("warder"):
         steps.append("Installing the 🛡 Warder")
-    steps.append("Raising the buildings")
     if choice.get("preset") == CUSTOM:
         steps.append("Leaving your order in the Town Hall")
     return steps
@@ -519,11 +764,17 @@ def raising_steps(choice: dict) -> list[str]:
 
 # -- the flow ---------------------------------------------------------------------------------------
 
-class Onboarding:
-    """Pushes the steps one after another and applies what was chosen.
+PERSON, DAY, INTENT, TOOLS, AUTONOMY, MODE = "person", "day", "intent", "tools", "autonomy", "mode"
+INTERVIEW_STEPS = tuple(f"q:{p.id}" for p in interview.INTERVIEW)
 
-    `on_town(choice)` is called with the town step's result (or an empty town on skip); the app
-    raises it. Machine settings are saved when the mode step is passed, or on skip."""
+
+class Onboarding:
+    """Pushes the steps one after another, Back and Skip included, and applies what was chosen.
+
+    The steps: who you are and your day (when the machine is new or the profile is missing), the
+    town (for a project with none yet), the interview (only when no intent fits), then the
+    machine's part. `on_town(choice)` is called at the end with {"preset", "role", "warder",
+    "prompt", "answers"} (an empty town on skip); the app raises it."""
 
     def __init__(self, app, machine_steps: bool, town_step: bool, on_town: Callable[[dict], None],
                  statuses: list[tools.ToolStatus] | None = None) -> None:
@@ -533,69 +784,122 @@ class Onboarding:
         self.on_town = on_town
         self.statuses = statuses
         self.machine = settings.load()
+        self.profile = dict(self.machine.profile)
+        self.answers: dict = {}
+        self.choice: dict = {}
         self.picked: dict[str, settings.ToolChoice] | None = None
         self.autonomy = self.machine.autonomy
+        self.warder = True
+        self.day: dict | None = None
+        self.steps: list[str] = []
+        if machine_steps or not self.profile.get("role"):
+            self.steps += [PERSON, DAY]
+        if town_step:
+            self.steps.append(INTENT)
+        if machine_steps:
+            self.steps += [TOOLS, AUTONOMY, MODE]
+        self.i = 0
 
     def start(self) -> None:
-        if self.machine_steps:
-            self._tools()
-        elif self.town_step:
-            self._town(can_back=False)
+        if self.steps:
+            self._show()
 
-    # step 1
-    def _tools(self) -> None:
-        self.app.push_screen(ToolsStep(self.machine, self.statuses), self._after_tools)
+    @property
+    def step(self) -> str:
+        return f"step {self.i + 1} of {len(self.steps)}"
 
-    def _after_tools(self, result: dict | None) -> None:
-        if result is None:
-            return
-        self.picked = result.get("tools") or {}
-        if result.get("action") == "skip":
-            self._save_machine(None)
-            self._skip_town()
-            return
-        self._autonomy()
+    @property
+    def claude_on(self) -> bool:
+        tools_ = {**self.machine.tools, **(self.picked or {})}
+        return tools_.get("claude", settings.ToolChoice()).enabled
 
-    # step 2
-    def _autonomy(self) -> None:
-        tools_ = tuple(t for t, c in {**self.machine.tools, **(self.picked or {})}.items() if c.enabled)
-        self.app.push_screen(AutonomyStep(self.autonomy, tools_ or ("claude", "agy")), self._after_autonomy)
+    def _show(self) -> None:
+        name, back, last = self.steps[self.i], self.i > 0, self.i == len(self.steps) - 1
+        done = lambda result: self._done(name, result)  # noqa: E731
+        if name == PERSON:
+            screen = PersonStep(self.profile, self.step, can_back=back)
+        elif name == DAY:
+            screen = QuestionsStep(interview.DAY_PAGE, self.profile, self.profile, self.step, back, last)
+        elif name == INTENT:
+            screen = IntentStep(self.profile, self.step, back, last and not self._interviewing,
+                                show_warder=TOOLS not in self.steps and self.claude_on, choice=self.choice)
+        elif name in INTERVIEW_STEPS:
+            page = interview.INTERVIEW[INTERVIEW_STEPS.index(name)]
+            screen = QuestionsStep(page, self.answers, {**self.profile, "role": self.choice.get("role", "")},
+                                   self.step, back, last)
+        elif name == TOOLS:
+            screen = ToolsStep(self.machine, self.statuses, self.step, can_back=back,
+                               show_warder=self.town_step, chosen=self.picked, warder=self.warder)
+        elif name == AUTONOMY:
+            enabled = tuple(t for t, c in {**self.machine.tools, **(self.picked or {})}.items() if c.enabled)
+            screen = AutonomyStep(self.autonomy, enabled or ("claude", "agy"), step=self.step)
+        else:
+            screen = ModeStep(self.machine, step=self.step)
+        self.app.push_screen(screen, done)
 
-    def _after_autonomy(self, result: dict | str | None) -> None:
+    @property
+    def _interviewing(self) -> bool:
+        return self.choice.get("preset") == CUSTOM
+
+    def _done(self, name: str, result: dict | str | None) -> None:
         if result is None:
             return
         if result == "back":
-            self._tools()
+            self.i = max(0, self.i - 1)
+            self._show()
             return
-        if isinstance(result, dict):
+        if result == "skip" or (isinstance(result, dict) and result.get("action") == "skip"):
+            if isinstance(result, dict):
+                self.picked = result.get("tools") or {}
+            self._skip()
+            return
+        assert isinstance(result, dict)
+        if name == PERSON:
+            keep = {k: self.profile[k] for k in settings.PROFILE_LISTS + ("day_other",) if k in self.profile}
+            self.profile = {**keep, **result["profile"]}
+        elif name == DAY:
+            self.profile.update({k: v for k, v in result["answers"].items()})
+            if "day_other" not in result["answers"]:
+                self.profile.pop("day_other", None)
+        elif name == INTENT:
+            self.choice = result
+            self.warder = result.get("warder", self.warder) if TOOLS not in self.steps else self.warder
+            self.steps = [s for s in self.steps if s not in INTERVIEW_STEPS]
+            if self._interviewing:
+                at = self.steps.index(INTENT) + 1
+                self.steps[at:at] = list(INTERVIEW_STEPS)
+        elif name in INTERVIEW_STEPS:
+            page = interview.INTERVIEW[INTERVIEW_STEPS.index(name)]
+            for q in page.questions:
+                self.answers.pop(f"{q.id}_other", None)
+            self.answers.update(result["answers"])
+        elif name == TOOLS:
+            self.picked = result.get("tools") or {}
+            self.statuses = result.get("statuses") or self.statuses
+            self.warder = bool(result.get("warder"))
+        elif name == AUTONOMY:
             self.autonomy = int(result.get("autonomy", self.autonomy))
-        if result == "skip":
-            self._save_machine(None)
-            self._skip_town()
-            return
-        self._mode()
-
-    # step 2
-    def _mode(self) -> None:
-        self.app.push_screen(ModeStep(self.machine), self._after_mode)
-
-    def _after_mode(self, result: dict | str | None) -> None:
-        if result is None:
-            return
-        if result == "back":
-            self._autonomy()
-            return
-        self._save_machine(result if isinstance(result, dict) else None)
-        if result == "skip":
-            self._skip_town()
-        elif self.town_step:
-            self._town(can_back=True)
+        elif name == MODE:
+            self.day = result
+        self.i += 1
+        if self.i < len(self.steps):
+            self._show()
+        else:
+            self._finish()
 
     def _save_machine(self, day: dict | None) -> None:
-        """Tools, mode and the day go to the machine settings (and to the town on screen)."""
+        """The profile, and — when the machine's part was asked — tools, autonomy, mode and the day."""
+        machine = replace(self.machine, profile=settings.clean_profile(self.profile))
+        if not self.machine_steps:
+            settings.save(machine)
+            desktop = getattr(self.app, "desktop", None)
+            if desktop is not None:
+                desktop.machine.profile = machine.profile
+            self.machine = machine
+            return
         tools_ = dict(self.machine.tools)
         tools_.update(self.picked or {})
-        machine = replace(self.machine, tools=tools_, onboarded=True, autonomy=self.autonomy)
+        machine = replace(machine, tools=tools_, onboarded=True, autonomy=self.autonomy)
         if not self.machine.onboarded and day is None:
             machine.mode = settings.DEFAULT_MODE
         desktop = getattr(self.app, "desktop", None)
@@ -612,26 +916,22 @@ class Onboarding:
             settings.save(machine)
         self.machine = machine
 
-    # step 3
-    def _town(self, can_back: bool) -> None:
-        claude_on = self.machine.tools.get("claude", settings.ToolChoice()).enabled
-        has_agent = any(c.enabled for c in self.machine.tools.values())
-        self.app.push_screen(TownStep(can_back=can_back, show_warder=claude_on, has_agent=has_agent),
-                             self._after_town)
-
-    def _after_town(self, result: dict | str | None) -> None:
-        if result is None:
+    def _finish(self) -> None:
+        self._save_machine(self.day)
+        if not self.town_step:
             return
-        if result == "back":
-            self._mode()
-        elif result == "skip" or not isinstance(result, dict):
-            self._skip_town()
-        else:
-            self.on_town(result)
+        choice = {"preset": self.choice.get("preset") or EMPTY, "role": self.choice.get("role", ""),
+                  "warder": self.warder and self.claude_on, "prompt": "", "answers": {}}
+        if choice["preset"] == CUSTOM:
+            choice["answers"] = dict(self.answers)
+            choice["prompt"] = interview.summary({**self.profile, "role": self.profile.get("role", "")},
+                                                 self.answers)
+        self.on_town(choice)
 
-    def _skip_town(self) -> None:
+    def _skip(self) -> None:
+        self._save_machine(None)
         if self.town_step:
-            self.on_town({"preset": EMPTY, "domain": "", "prompt": "", "warder": False})
+            self.on_town({"preset": EMPTY, "role": "", "warder": False, "prompt": "", "answers": {}})
 
 
 def mount_raise_bar(screen: Widget, total: int | None) -> RaiseBar:
