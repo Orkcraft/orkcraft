@@ -10,6 +10,8 @@ rules for that are CSS; only the text carries styles of its own.
 """
 from __future__ import annotations
 
+import re
+
 from rich.cells import cell_len
 from rich.text import Text
 from textual import events
@@ -26,6 +28,7 @@ FIRE = ("#ff8c1a", "#e8411c", "#ffc04d")   # a burning hut flickers between thes
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
 DEFAULT_SIL = silhouettes.frame(silhouettes.FRAME_SIZES["S"])
+_EDGE = re.compile(r"[─~_═]+")         # the bottom edge of a frame, where the orc stands
 
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
@@ -215,17 +218,23 @@ class Hut(Widget):
         return text
 
     def _orc_in_frame(self, row: list[tuple[str, str]]) -> list[tuple[str, str]]:
-        """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the last line, in the middle."""
+        """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the middle of its edge, between
+        the corners (a mill's sails or a pit's chute stay where they are)."""
         orc = self._badge_short(self.badge)
         line = "".join(piece for piece, _ in row)
         if not orc or any(role != "frame" for _, role in row):
             return row
-        for mark in (f" {orc} ", f" {orc.split()[0]} "):
-            n = cell_len(mark)
-            if n + 2 <= len(line):
-                at = (len(line) - n) // 2
-                return [(line[:at], "frame"), (mark, "orc"), (line[at + n:], "frame")]
-        return row
+        edge = max(_EDGE.finditer(line), key=lambda m: m.end() - m.start(), default=None)
+        if edge is None:
+            return row
+        start, room = edge.start(), edge.end() - edge.start()
+        icon, state = orc.split()
+        marks = [m for m in (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon) if cell_len(m) <= room]
+        if not marks:
+            return row
+        mark = next((m for m in marks if (room - cell_len(m)) % 2 == 0), marks[0])   # dead centre when it can be
+        at = start + (room - cell_len(mark)) // 2
+        return [(line[:at], "frame"), (mark, "orc"), (line[at + cell_len(mark):], "frame")]
 
     def action_at(self, cx: int, cy: int) -> str | None:
         """The quick action under a cell (x, y) of the hut, if any: the buttons sit on its last row."""

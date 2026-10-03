@@ -274,3 +274,30 @@ def test_emoji_in_live_lines_do_not_push_the_frame_out():
     hut.set_status(["🛡 all quiet", "🪙 $0.00 / $5", "plain"])
     rows = [ln for ln in str(hut.render()).splitlines() if ln.startswith("│") or ln.lstrip().startswith("│")]
     assert rows and {cell_len(ln.strip()) for ln in rows} == {sil.TOWN_HALL.width}
+
+
+@pytest.mark.parametrize("sid", sorted(sil.SILHOUETTES))
+def test_the_orc_stands_in_the_middle_of_the_edge_and_keeps_the_corners(sid):
+    from rich.cells import cell_len
+    shape = sil.SILHOUETTES[sid]
+    hut = Hut("h", shape, [])
+    hut.badge = "🧌 Smith 💤"
+    bottom = "".join(p for p, _ in shape.draw([])[-1])
+    pieces = hut._orc_in_frame(shape.draw([])[-1])
+    (left, _), (mark, role), (right, _) = pieces
+    assert role == "orc" and cell_len(left + mark + right) == cell_len(bottom)
+    assert left[:1] == bottom[:1] and right == bottom[len(bottom) - len(right):]   # corners, sails and chutes stay
+    lead, tail = len(left) - len(left.rstrip("─~_═")), len(right) - len(right.lstrip("─~_═"))
+    assert abs(lead - tail) <= (1 if sid == "pit" else 0)                         # a 3-cell pit cannot be exact
+
+
+@pytest.mark.parametrize("sid", ["fields", "forest", "loot", "town_hall", "workshop", "barracks"])
+def test_the_roof_is_symmetric_over_the_frame(sid):
+    """(the council is not here: an orc of one cell over a tent of two stands on its left slope)"""
+    shape = sil.SILHOUETTES[sid]
+    for line in shape.lines:
+        if sil.SLOT in line:
+            break
+        line = line.ljust(shape.width)
+        marks = [i for i, ch in enumerate(line) if ch not in " ─┌┐"]
+        assert not marks or marks[0] + marks[-1] == shape.width - 1, line
