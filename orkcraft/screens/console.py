@@ -929,7 +929,7 @@ class Console(Horizontal):
     .console-col {
         height: 100%;
     }
-    /* The War Map keeps 46 columns, the garrison 22; the Info panel takes the rest. */
+    /* War Map (46) · Info (the rest) · garrison / inventory (22) · Command Card. */
     #warmap {
         width: 46;
     }
@@ -1014,8 +1014,8 @@ class Console(Horizontal):
 
     def compose(self) -> ComposeResult:
         yield WarMap(id="warmap", classes="console-col")
+        yield UnitInfo(id="unit-info", classes="console-col")       # the wide Info sits beside the map
         yield ClanRoster(id="clan-roster", classes="console-col")
-        yield UnitInfo(id="unit-info", classes="console-col")
         yield CommandCard(id="command-card", classes="console-col")
 
     def refresh_state(self, focus_state: FocusState, roster: Roster) -> None:
