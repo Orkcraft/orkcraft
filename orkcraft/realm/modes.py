@@ -63,7 +63,7 @@ _EMOJI = re.compile(
     "\u2139\u2122\u3030\u303D\u3297\u3299\uFE0E\uFE0F\u200D\u20E3]")   # ✓ ✗ ✻ ✦ ➜ are text: they stay
 
 
-_WORDS = {"👍": "+1", "👎": "-1", "🗑": "Delete"}          # icons that are the whole meaning become words
+_WORDS = {"👍": "+1", "👎": "-1", "🗑": "Delete", "🗑️": "Delete"}   # a button that is only an icon becomes a word
 
 
 def strip_emoji(text: str) -> str:
@@ -71,8 +71,9 @@ def strip_emoji(text: str) -> str:
     if not text:
         return text
     out = str(text)
-    for icon, word in _WORDS.items():
-        out = out.replace(icon, word)
+    if _EMOJI.sub("", out).strip() == "" and out.strip() in _WORDS:     # a bare 👍 button reads +1
+        return _WORDS[out.strip()]
+    out = re.sub(r"👍\s*(?=\d)", "+", re.sub(r"👎\s*(?=\d)", "−", out))   # `👍 3 👎 1` → `+3 −1`
     out = _EMOJI.sub("", out)
     out = re.sub(r"(?<=\S) {2,}(?=\S)", " ", out)          # a removed icon leaves no double gap
     out = re.sub(r"([\[(]) +", r"\1", out)
@@ -89,9 +90,8 @@ def strip_rich(value):
     if not isinstance(value, Text):
         return value
     plain = value.plain
-    for icon, word in _WORDS.items():
-        if icon in plain:
-            return Text(strip_emoji(plain), style=value.style)
+    if plain.strip() in _WORDS or re.search(r"[👍👎]\s*\d", plain):
+        return Text(strip_emoji(plain), style=value.style)
     cuts = []
     for m in _EMOJI.finditer(plain):
         a, b = m.start(), m.end()
