@@ -102,9 +102,31 @@ def test_the_hut_stands_label_over_building_buttons_under():
 def test_a_custom_building_keeps_a_frame_and_its_roof(monkeypatch):
     monkeypatch.setitem(huts.ROOFS, "gable", ("  /\\  ", " /__\\ "))
     plain = sil.of({"id": "x", "type": "custom", "size": "M"})
-    assert plain.id == "frame18x9" and plain.height == 9 and len(plain.slots) == 7
+    assert plain.width == 18 and plain.grow == "frame" and len(plain.slots) == 3
     roofed = sil.of({"id": "x", "type": "custom", "size": "M", "roof": "gable"})
-    assert roofed.height == 9 + 2 and roofed.lines[0].strip() == "/\\"
+    assert roofed.height == plain.height + 2 and roofed.lines[0].strip() == "/\\"
+    grown = sil.fit(roofed, 6)
+    assert len(grown.slots) == 6 and grown.lines[0].strip() == "/\\" and grown.height == 6 + 2 + 2
+
+
+def test_growing_buildings_follow_their_content_up_to_a_maximum():
+    lake = sil.LAKE
+    assert len(lake.slots) == 2 + 2 * 6 and sil.fit(lake, 1).height == lake.height   # never below the design
+    big = sil.fit(lake, 99)
+    assert len(big.slots) == 2 + 2 * sil.GROW_ROWS["lake"][1] and big.height > lake.height
+    assert sil.fit(sil.CRAG, 7).height == 7 + 2 and sil.fit(sil.CRAG, 99).height == sil.GROW_ROWS["crag"][1] + 2
+    assert sil.fit(sil.MILL, 9) is sil.MILL                                          # a fixed shape stays
+    assert sil.rows_needed(sil.LAKE, ["a", "b", "", "", "c", "", "", "", "", "", "", "", "last"]) == 3
+    assert sil.rows_needed(sil.CRAG, ["x", "", "y", ""]) == 3
+
+
+def test_a_hut_that_grows_changes_its_footprint():
+    hut = Hut("l", sil.LAKE)
+    before = hut.geom.h
+    assert hut.set_rows(12) and hut.geom.h == before + 6 and len(hut.live_widths) == 2 * 12 + 1
+    hut.set_silhouette(sil.LAKE)                      # a refresh of the spec keeps the grown size
+    assert hut.geom.h == before + 6
+    assert not Hut("m", sil.MILL).set_rows(9)
 
 
 def test_ten_roofs_fit_every_frame_size():
@@ -174,3 +196,31 @@ async def test_town_with_typed_huts_and_quick_actions(fake_repo: Path, town):
         card = app.screen.query_one(Console).query_one("#command-actions")
         rows = [str(card.get_option_at_index(i).prompt) for i in range(card.option_count)]
         assert rows[0] == "[[] + New task"
+
+
+@pytest.mark.asyncio
+async def test_a_lake_grows_with_its_content_and_stays_off_its_neighbours(fake_repo: Path, town):
+    from orkcraft.realm import lake as lake_logic
+
+    for s in (_spec("view", "lake"), _spec("todo", "fields"), _spec("drop", "pit"), _spec("cal", "war_drum")):
+        assert masonry.save_spec(fake_repo, s) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _settle(pilot)
+        desk = app.desktop
+        hut = desk.huts["view"]
+        small = hut.geom.h
+        body = next(iter(desk.get_window("view").children))
+        body.show(lake_logic.View("text", "notes.txt", text="\n".join(f"line {i}" for i in range(40))))
+        desk.refresh_huts()
+        await _settle(pilot)
+        maxed = sil.GROW_ROWS["lake"][1]
+        assert hut.geom.h > small and len(hut.sil.slots) == 2 + 2 * maxed          # taller, capped at the maximum
+        geoms = [h.geom for h in desk.huts.values() if h.display]
+        assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
+        room_w, room_h = desk.hut_room
+        assert all(g.x + g.w <= room_w and g.y + g.h <= room_h for g in geoms)
+        body.show(lake_logic.View("text", "short.txt", text="one\ntwo"))
+        desk.refresh_huts()
+        await _settle(pilot)
+        assert hut.geom.h == small                                                 # and back to the design

@@ -40,6 +40,7 @@ class Silhouette:
     center: bool = False                 # centre the text in its slot (the small buildings)
     caption: bool = False                # no room inside: the first live line stands under the building
     body: tuple[int, int] = (0, 0)       # the frame as the design gives it (w, h) — informative, tested
+    grow: str = ""                       # `lake` | `crag` | `frame`: rows follow the content, up to a maximum
 
     @property
     def width(self) -> int:
@@ -143,15 +144,19 @@ WAR_DRUM = _make("war_drum", ["           \\ o /"] + _box(26, 9, top="┌" + "�
 FOREST = _make("forest", ["   /|\\   /|\\   /|\\   /|\\  "]
                + _box(26, 9, top="┌──/|\\───/|\\───/|\\───/|\\─┐"), head=("EXPLORER & CONTEXT",), body=(26, 11))
 LOOT = _make("loot", ["   /═════════[#]═════════\\"] + _box(26, 9), head=("ARTIFACT REPOSITORY",), body=(26, 11))
-CRAG = _make("crag", _box(26, 9, top=" /" + "─" * 22 + "\\ ", bottom=" \\" + "─" * 22 + "/ "),
-             head=("TELEMETRY & TELEGRAPHS",), body=(26, 11))
+def _crag(rows: int = 9) -> Silhouette:
+    return _make("crag", _box(26, rows, top=" /" + "─" * 22 + "\\ ", bottom=" \\" + "─" * 22 + "/ "),
+                 head=("TELEMETRY & TELEGRAPHS",), body=(26, rows + 2), grow="crag")
+
+
+CRAG = _crag()
 
 # -- the panorama: the Lake of Insight (60 wide) --------------------------------------------------
 
 _PANE_L, _PANE_R = 28, 24
 
 
-def _lake() -> Silhouette:
+def _lake(panes: int = 6) -> Silhouette:
     waves = "~" * 60
 
     def side(i: int, inner: str) -> str:
@@ -160,12 +165,12 @@ def _lake() -> Silhouette:
 
     rows = [waves, side(0, SLOT * 58), side(1, " " * 58),
             side(2, " ┌── ACTIVE DIFF " + "─" * 13 + "┐┌── RENDER PREVIEW " + "─" * 6 + "┐ ")]
-    for i in range(6):
+    for i in range(panes):
         rows.append(side(3 + i, " │" + SLOT * _PANE_L + "││" + SLOT * _PANE_R + "│ "))
-    rows.append(side(9, " └" + "─" * _PANE_L + "┘└" + "─" * _PANE_R + "┘ "))
-    rows.append(side(10, SLOT * 58))
+    rows.append(side(3 + panes, " └" + "─" * _PANE_L + "┘└" + "─" * _PANE_R + "┘ "))
+    rows.append(side(4 + panes, SLOT * 58))
     rows.append("(" + "_" * 58 + ")")
-    return _make("lake", rows, head=("VIEWPORT & DIFF INSPECTOR",), body=(60, 13))
+    return _make("lake", rows, head=("VIEWPORT & DIFF INSPECTOR",), body=(60, panes + 7), grow="lake")
 
 
 LAKE = _lake()
@@ -195,7 +200,39 @@ def frame(size: tuple[int, int], roof: tuple[str, ...] = ()) -> Silhouette:
     """The generic frame of a custom (panes) building: a box of `size`, an optional roof over it."""
     w, h = size
     top = [line[:w].center(w).rstrip() for line in roof]
-    return Silhouette(f"frame{w}x{h}", tuple(top + _box(w, max(h - 2, 1))), body=(w, h))
+    return Silhouette(f"frame{w}x{h}", tuple(top + _box(w, max(h - 2, 1))), body=(w, h), grow="frame")
+
+
+# rows of text a growing silhouette may take: (least, most). The lake's and the crag's most is what a
+# 140×42 town can hold beside other huts; the least of the lake is its design.
+GROW_ROWS = {"lake": (6, 16), "crag": (5, 13), "frame": (3, 9)}
+
+
+def fit(sil: Silhouette, rows: int) -> Silhouette:
+    """`sil` with `rows` text rows (the lake's pane rows), clamped to its range; others come back as they are."""
+    if not sil.grow:
+        return sil
+    lo, hi = GROW_ROWS[sil.grow]
+    rows = min(max(rows, lo), hi)
+    if sil.grow == "lake":
+        return _lake(rows)
+    if sil.grow == "crag":
+        return _crag(rows)
+    w, roof_lines = sil.width, []
+    for ln in sil.lines:
+        if ln.startswith("┌"):
+            break
+        roof_lines.append(ln)
+    return Silhouette(f"frame{w}x{rows + 2}", tuple(roof_lines + _box(w, rows)), body=(w, rows + 2), grow="frame")
+
+
+def rows_needed(sil: Silhouette, lines: list[str]) -> int:
+    """How many text rows `lines` (a view's live lines) fill: the lake's pane rows come interleaved."""
+    filled = [i for i, ln in enumerate(lines) if str(ln).strip()]
+    if sil.grow == "lake":
+        panes = [i for i in filled if i < len(lines) - 1]
+        return (max(panes) // 2 + 1) if panes else 0
+    return len(filled) and max(filled) + 1
 
 
 def of(spec: dict | None, building_id: str | None = None) -> Silhouette:
@@ -206,8 +243,8 @@ def of(spec: dict | None, building_id: str | None = None) -> Silhouette:
     sid = BY_TYPE.get(t.id, "") if t else BUILTIN.get(building_id or "", "")
     if sid:
         return SILHOUETTES[sid]
-    size = FRAME_SIZES.get((spec or {}).get("size") or "S", FRAME_SIZES["S"])
-    return frame(size, huts.roof((spec or {}).get("roof"), size[0]))
+    size = FRAME_SIZES.get((spec or {}).get("size") or "M", FRAME_SIZES["M"])
+    return frame((size[0], GROW_ROWS["frame"][0] + 2), huts.roof((spec or {}).get("roof"), size[0]))
 
 
 # -- the label above a building -------------------------------------------------------------------

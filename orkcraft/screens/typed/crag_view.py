@@ -153,10 +153,10 @@ class CragView(TypedView):
         warn, crit = self._limit("warn"), self._limit("crit")
         lines = [f"{self.source} {bars.fmt(s.now)} {s.unit}".strip()]
         if self.orientation == "vertical" and s.buckets:
-            chart = bars.vbars([v for _, v in s.buckets], 2, w, s.scale, warn, crit)
+            chart = bars.vbars([v for _, v in s.buckets], 6, w, s.scale, warn, crit)
             lines += [ln.plain for ln in chart.split("\n")]
         else:
-            top = s.parts[:2]
+            top = s.parts[:6]
             hb = bars.hbars(top, w + 2, s.scale, warn, crit, 4) if top else Text(s.note or "—")
             lines += [ln.plain for ln in hb.split("\n")]
         return lines

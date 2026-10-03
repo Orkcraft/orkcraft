@@ -2,7 +2,7 @@
 
     1. BuildWizard   — the type (or "let the Foreman pick") and what the building is for;
     2. (the Foreman prefills a spec from the catalog — app.start_wizard_build);
-    3. BuildReview   — confirm or change title, size, events, quick actions, config and roof,
+    3. BuildReview   — confirm or change title, events, quick actions and config (the size follows the content),
                        with a live preview of the hut; Build saves and raises it.
 
 Everything offered comes from realm/catalog.py: an event, action or config key the type does not
@@ -160,7 +160,6 @@ class BuildReview(ModalScreen[dict | None]):
         self.check = check          # spec -> problems (masonry.validate_spec with the taken ids)
         self.type = catalog.type_of(spec)
         self.attempts, self.cost_usd = attempts, cost_usd
-        self.fixed_shape = self.type.id in silhouettes.BY_TYPE      # a camp building has its own silhouette
 
     # -- layout ---------------------------------------------------------------------------------
 
@@ -178,10 +177,6 @@ class BuildReview(ModalScreen[dict | None]):
                     yield Input(value=s.get("icon", t.icon), id="review-icon", max_length=4)
                     yield Label("Description", classes="wizard-section")
                     yield Input(value=s.get("summary", ""), id="review-summary", max_length=200)
-                    if not self.fixed_shape:
-                        yield Label(f"Size (the type's: {t.size})", classes="wizard-section")
-                        yield Select([(f"{k}  {w}×{h}", k) for k, (w, h) in catalog.SIZES.items()],
-                                     value=s.get("size") or t.size, allow_blank=False, id="review-size")
                     if t.events:
                         yield Label("Events it sends along roads", classes="wizard-section")
                         picked = set(catalog.events_of(s))
@@ -202,10 +197,6 @@ class BuildReview(ModalScreen[dict | None]):
                             with Horizontal(classes="cfg-row"):
                                 yield Label(f"{key}{' *' if required else ''}")
                                 yield Input(value=_show(config.get(key)), placeholder=hint, id=f"cfg-{key}")
-                    if not self.fixed_shape:
-                        yield Label("Roof", classes="wizard-section")
-                        roofs = [("none", "")] + [(name, name) for name in huts.ROOFS]
-                        yield Select(roofs, value=s.get("roof") or "", allow_blank=False, id="review-roof")
                 with Vertical(id="review-side"):
                     yield Label("On the map", classes="wizard-section")
                     yield Container(id="review-preview")
@@ -229,8 +220,6 @@ class BuildReview(ModalScreen[dict | None]):
         summary = self.query_one("#review-summary", Input).value.strip()
         if summary:
             s["summary"] = summary
-        if not self.fixed_shape:
-            s["size"] = self.query_one("#review-size", Select).value
         if t.events:
             s["events"] = list(self.query_one("#review-events", SelectionList).selected)
         if t.actions:
@@ -246,11 +235,6 @@ class BuildReview(ModalScreen[dict | None]):
                 except ValueError:
                     problems.append(f"{key}: not a {typ.__name__}")
             s["config"] = config
-        if not self.fixed_shape:
-            roof = self.query_one("#review-roof", Select).value
-            s["roof"] = roof or None
-            if not s["roof"]:
-                s.pop("roof")
         return s, problems
 
     def _preview(self) -> None:

@@ -113,7 +113,7 @@ class LakeView(TypedView):
         """The panorama: the left pane the diff (or the first lines of what is shown), the right
         one what it is — interleaved, row by row, as the silhouette's slots come."""
         v = self.view
-        left_w, right_w = (widths[0], widths[1]) if len(widths) >= 14 else (28, 24)
+        panes = max((len(widths) - 1) // 2, 1)      # the head is not in `widths`; pane rows come in pairs, then the last line
         if v is None:
             left, right, last = ["nothing shown yet"], [], "open the building to look at something"
         else:
@@ -135,7 +135,7 @@ class LakeView(TypedView):
             right.insert(0, v.title.rsplit("/", 1)[-1])
             last = f"{v.kind} · {v.target or v.title}"
         out: list[str] = []
-        for i in range(6):
+        for i in range(panes):
             out.append(left[i] if i < len(left) else "")
             out.append(right[i] if i < len(right) else "")
         return out + [last]

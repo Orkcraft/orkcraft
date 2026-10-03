@@ -910,6 +910,19 @@ class Desktop(Container):
             g = message.geom
             done(geo.hut_to_frac(g.x, g.y, *self.hut_room, g.w, g.h) if g is not None else None)
 
+    def _settle(self, hut: Hut) -> None:
+        """A hut that changed size stays on the canvas and off its neighbours: it keeps its spot when
+        that is free, else takes the nearest free one (and the town keeps it)."""
+        width, height = self.hut_room
+        others = [h.geom for h in self.huts.values() if h is not hut and h.display]
+        g = hut.geom
+        g = Geom(min(max(g.x, 0), max(width - g.w, 0)), min(max(g.y, 0), max(height - g.h, 0)), g.w, g.h)
+        if any(geo.overlaps(g, o, 1, 0) for o in others):
+            g = geo.first_free(width, height, g.w, g.h, others) or g
+        if g != hut.geom:
+            hut.place(g)
+        self.post_message(Hut.Moved(hut))
+
     def refresh_huts(self) -> None:
         """Live status lines: each building's view says what its hut shows (`hut_lines`, else `mini_status`)."""
         for bid, hut in self.huts.items():
@@ -920,6 +933,10 @@ class Desktop(Container):
             lines_of = getattr(body, "hut_lines", None)
             status = getattr(body, "mini_status", None)
             try:
+                if hut.base.grow and lines_of is not None:   # a chart or a preview takes the rows it needs
+                    probe = lines_of(silhouettes.fit(hut.base, silhouettes.GROW_ROWS[hut.base.grow][1]).live_widths)
+                    if hut.set_rows(silhouettes.rows_needed(hut.base, probe)):
+                        self._settle(hut)
                 lines = lines_of(hut.live_widths) if lines_of is not None else status() if status is not None else []
             except Exception:   # a status line must never take the town down
                 lines = []

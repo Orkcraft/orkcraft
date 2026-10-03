@@ -78,7 +78,9 @@ class Hut(Widget):
                  actions: list | tuple = ()) -> None:
         super().__init__(id=f"hut-{building_id}")
         self.building_id = building_id
-        self.sil = sil or DEFAULT_SIL
+        self.base = sil or DEFAULT_SIL         # the silhouette as its type draws it
+        self.sil = self.base                  # …grown to the content, for the types that grow
+        self.rows = 0
         self.actions = list(actions)          # catalog.ActionDef: id, label, glyph
         self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the button row
         self.number, self.title, self.badge = 0, "", ""
@@ -130,6 +132,21 @@ class Hut(Widget):
 
     def set_silhouette(self, sil: silhouettes.Silhouette, actions: list | tuple = ()) -> None:
         """A new shape or set of quick actions (the spec changed, or the type's defaults)."""
+        if sil != self.base:
+            self.base = sil
+            self.rows = 0
+        self._apply(sil if not self.rows else silhouettes.fit(sil, self.rows), actions)
+
+    def set_rows(self, rows: int) -> bool:
+        """The content wants `rows` text rows (a growing building only); True when the hut changed size."""
+        if not self.base.grow or rows == self.rows:
+            return False
+        self.rows = rows
+        before = (self.geom.w, self.geom.h)
+        self._apply(silhouettes.fit(self.base, rows), self.actions)
+        return (self.geom.w, self.geom.h) != before
+
+    def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:
         if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
             self.sil, self.actions = sil, list(actions)
             self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_short(self.badge))
