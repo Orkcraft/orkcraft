@@ -98,10 +98,12 @@ def road_card(app, key: str) -> Text:
 
 def unit_details(app, orc: Orc) -> Text:
     """Kind, harness scheme, roads, re-run policy and the reason — and the steward's last report."""
-    from orkcraft.realm import looks
+    from orkcraft.realm import looks, tiers
 
     t = Text()
     t.append(f"{'Steward' if orc.lead else 'Handler'} · {looks.KIND_LABELS.get(orc.kind, orc.kind)}")
+    if orc.tier_icon:
+        t.append(f" · {tiers.label(orc.tier)}", style=tiers.TIER_STYLES.get(orc.tier or "", ""))
     scheme = looks.scheme_text(orc.harness, orc.kind)
     if scheme.plain:
         t.append("  ")
@@ -150,12 +152,22 @@ def _spend_of(app, orc: Orc):
     return spend
 
 
+def _append_tier(t: Text, orc: Orc) -> None:
+    """🔮 / ⚔ / ⛏ before a handler's name, in its tier's colour (stewards have none)."""
+    from orkcraft.realm import tiers
+    if orc.tier_icon:
+        t.append(f"{orc.tier_icon} ", style=tiers.TIER_STYLES.get(orc.tier or "", ""))
+
+
 def orc_info(app, orc: Orc) -> Text:
     from orkcraft.realm import unit_info
 
     t = Text()
     st = STATUS_DISPLAY.get(orc.status, f"{orc.status_icon} {orc.status.capitalize()}")
-    t.append(f"{'★ ' if orc.lead else ''}{orc.name}", style="bold yellow" if orc.status == "alert" else "bold")
+    name_style = "bold yellow" if orc.status == "alert" else "bold"
+    t.append("★ " if orc.lead else "", style=name_style)
+    _append_tier(t, orc)
+    t.append(orc.name, style=name_style)
     t.append(f"  {st}\n", style="dim")
     b = app.building(orc.building) if orc.building else None
     for sentence in unit_info.orc_sentences(orc, f"{b.icon} {b.title}" if b else ""):
@@ -373,7 +385,9 @@ class ClanRoster(Vertical):
         t.append(f"[{number}] " if number is not None else "  • ")
         star = "★ " if o.lead else ""
         name_style = "bold yellow" if o.status == "alert" else "bold"
-        t.append(f"{star}{o.name}", style=name_style)
+        t.append(star, style=name_style)
+        _append_tier(t, o)
+        t.append(o.name, style=name_style)
         st = STATUS_DISPLAY.get(o.status, f"{o.status_icon} {o.status.capitalize()}")
         st_style = "bold yellow" if o.status == "alert" else ("bold green" if o.status == "busy" else "dim")
         t.append(f"  {st}", style=st_style)

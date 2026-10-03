@@ -94,6 +94,18 @@ class Orc:
         return kind_icon(self.kind)
 
     @property
+    def tier(self) -> str | None:
+        """elder | warrior | laborer, from the models its harness runs on (realm/tiers.py)."""
+        from orkcraft.realm import tiers
+        return tiers.orc_tier(self.harness, self.kind)
+
+    @property
+    def tier_icon(self) -> str:
+        """🔮 / ⚔ / ⛏ — none for a steward: it keeps the building, whatever it runs on."""
+        from orkcraft.realm import tiers
+        return "" if self.lead else tiers.icon(self.tier)
+
+    @property
     def scheme(self) -> str:
         """Harness letters, e.g. `C` or `A→C` (empty for chains, scripts and orcs without one)."""
         from orkcraft.realm.looks import scheme_plain
@@ -101,9 +113,10 @@ class Orc:
 
     @property
     def badge(self) -> str:
-        """Unit Frame text: `🧌 Name C 🔨 💤`."""
+        """Unit Frame text: `🧌 Name C 🔨 💤` (`🧌 ⚔ Name …` with a tier)."""
         scheme = f" {self.scheme}" if self.scheme else ""
-        return f"{self.icon} {self.name}{scheme} {self.trigger.icon} {self.status_icon}"
+        tier = f"{self.tier_icon} " if self.tier_icon else ""
+        return f"{self.icon} {tier}{self.name}{scheme} {self.trigger.icon} {self.status_icon}"
 
 
 def garrison_badge(orcs: list[Orc]) -> str:

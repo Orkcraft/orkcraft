@@ -5,9 +5,10 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Label, Static
+from textual.widgets import Button, Input, Label, Select, Static
 
 from orkcraft import scroll
+from orkcraft.realm import tiers
 from orkcraft.scroll import OrcSpec
 
 MODAL_CSS = """
@@ -42,6 +43,12 @@ GarrisonModal Button {
 """
 
 
+def tier_options() -> list[tuple[str, str]]:
+    """The tier picker: the heavy models first, then the CLI's own default ("")."""
+    out = [(f"{tiers.label(t)} — {tiers.MODELS['claude'][t]} · {tiers.MODELS['agy'][t]}", t) for t in tiers.TIERS]
+    return out + [("· CLI default model", "")]
+
+
 class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
     """Recruit a garrison orc: describe it for the Recruiter (dismisses the prompt text), or by
     hand as an agent (dismisses the new OrcSpec)."""
@@ -69,6 +76,8 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
             yield Input(placeholder="e.g. tickets, testing, frontend", id="recruit-role")
             yield Label("Orders:")
             yield Input(placeholder="e.g. keep an eye on T1001", id="recruit-orders")
+            yield Label("Tier:")
+            yield Select(tier_options(), value="warrior", allow_blank=False, id="recruit-tier")
             with Horizontal():
                 yield Button("Recruit", variant="primary", id="recruit-submit")
                 yield Button("Cancel", id="recruit-cancel")
@@ -104,10 +113,11 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
         name = self.query_one("#recruit-name", Input).value.strip()
         role = self.query_one("#recruit-role", Input).value.strip()
         orders = self.query_one("#recruit-orders", Input).value.strip()
+        tier = str(self.query_one("#recruit-tier", Select).value) or None
         b_id = self.building_id or getattr(self.app.focus_state, "building_id", "")
         err = self.query_one("#recruit-error", Static)
         try:
-            orc = scroll.recruit(self.app.scroll, b_id, name, role=role, orders=orders)
+            orc = scroll.recruit(self.app.scroll, b_id, name, role=role, orders=orders, tier=tier)
         except ValueError as e:
             err.update(str(e))
             err.display = True

@@ -328,6 +328,14 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
 - **Looks**: the icon is the kind — 🗿 chain / script, 🧌 agent, 🗿🧌 hybrid; the letters are the
   harness scheme — `C` Claude (amber), `A` agy (cyan), `P` a pipeline (magenta), e.g. `A→C` (agy
   writes, Claude reviews); long schemes read `C→C·4`. The frame badge shows the steward.
+- **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
+  gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
+  A harness step takes a `tier` and the model follows from its harness
+  (`{"role": "run", "harness": "claude", "tier": "elder"}` runs `claude --model opus`); a step's own
+  `model` wins and its tier is read from it. An orc shows its heaviest step's icon before its name
+  (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
+  default) or later in the orc's orders; the Recruiter proposes one per step. Barracks providers
+  and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orcs, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.

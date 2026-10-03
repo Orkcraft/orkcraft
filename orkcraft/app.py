@@ -62,7 +62,7 @@ from orkcraft.screens.system_menu import (
 )
 from orkcraft.sources.sessions import deploy_command
 from orkcraft.sources import telemetry
-from orkcraft.realm import workshop, worktrees
+from orkcraft.realm import tiers, workshop, worktrees
 from orkcraft.screens.worktree_modal import WorktreeModal
 from orkcraft.widgets.hud import Hud, Resources
 from orkcraft.widgets.terminal import Terminal
@@ -1787,6 +1787,8 @@ class OrkcraftApp(App[int]):
                 del trig["expression"]
             member.trigger = trig
             member.orders = result["context"]
+            if "tier" in result:
+                member.harness = tiers.with_tier(member.harness, result["tier"] or None)
             self.desktop.save()
             self.refresh_roster()
             try:
@@ -1796,7 +1798,9 @@ class OrkcraftApp(App[int]):
                 pass
             self.notify(f"🧌 {member.name}: orders saved ({result['trigger'].label})", title="Orders")
 
-        self.push_screen(UnitModal(orc, b.label, member.orders), done)
+        is_steward = member.id == b_spec.garrison.lead_orc_id
+        tier = None if is_steward or not member.uses_model else (tiers.orc_tier(member.harness, member.kind) or "")
+        self.push_screen(UnitModal(orc, b.label, member.orders, tier=tier), done)
 
     def _alert_who_map(self) -> dict[str, str]:
         who_map: dict[str, str] = {}
