@@ -308,8 +308,12 @@ class Hut(Widget):
         if edge is None:
             return row
         start, room = edge.start(), edge.end() - edge.start()
-        icon, state = orc.split()
-        marks = [m for m in (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon) if cell_len(m) <= room]
+        if self.plain:         # one word: ` ? ` or ` busy `
+            options = (f" {orc} ", orc)
+        else:
+            icon, state = orc.split()
+            options = (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon)
+        marks = [m for m in options if cell_len(m) <= room]
         if not marks:
             return row
         mark = next((m for m in marks if (room - cell_len(m)) % 2 == 0), marks[0])   # dead centre when it can be
