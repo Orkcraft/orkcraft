@@ -1,9 +1,11 @@
-"""📚 Knowledge Base: folders of notes, each note with its headings.
+"""🗑️ Scroll Dump: the project's knowledge from many sources, read-only.
 
-`paths` lists the bases (default: `docs/`, `notes/`, `wiki/`… whichever the project has, else the
-whole project). The open building shows bases → notes → headings; selecting a note reads it.
-`+` connects one more folder. A note added or changed between two looks (every 30 s) sends
-`knowledge.changed` with its path.
+`sources` (and the older `paths`) lists where it reads: folders of notes, folders of code, a git
+revision, a Confluence space (see sources/lore.py; default: `docs/`, `notes/`, `wiki/`… whichever
+the project has, else the whole project). The open building shows sources → documents → headings;
+selecting one reads it. `+` connects one more folder. A document added or changed between two
+looks (every 30 s) sends `knowledge.changed` with its path. `/` (or a cart) asks: notes answer by
+BM25, code by the code graph (realm/codegraph.py), and the fragments go out as `knowledge.chunks`.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ from textual.widgets import Markdown, Static, Tree
 from orkcraft.realm import shelves
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
+from orkcraft.sources import lore
 
 REFRESH_S = 30.0
 
@@ -28,12 +31,22 @@ class KnowledgeView(TypedView):
         super().__init__(*a, **kw)
         self.bases: list[shelves.Base] = []
         self.last_query = ""
-        self._mtimes: dict[str, float] | None = None
+        self._mtimes: dict[str, str | float] | None = None
+        self._library: lore.Library | None = None
+        self._library_key: tuple = ()
 
     @property
     def paths(self) -> list[str]:
-        configured = [str(p) for p in (self.config.get("paths") or []) if str(p).strip()]
-        return configured or shelves.default_bases(self._get_repo_root())
+        return [s.spec for s in self.library.sources]
+
+    @property
+    def library(self) -> lore.Library:
+        """The sources, made again only when the config changes (a remote one keeps its fetch state)."""
+        key = (tuple(self.config.get("sources") or ()), tuple(self.config.get("paths") or ()))
+        if self._library is None or key != self._library_key:
+            self._library = lore.Library(lore.from_config(self.config, self._get_repo_root()))
+            self._library_key = key
+        return self._library
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="kb-head", classes="typed-head")
@@ -47,11 +60,10 @@ class KnowledgeView(TypedView):
         self.set_interval(REFRESH_S, self.refresh_data)
 
     def refresh_data(self) -> None:
-        repo = self._get_repo_root()
-        self.bases = [shelves.scan_base(repo, p) for p in self.paths]
+        self.bases = self.library.scan()
         for path in shelves.note_changes(self._mtimes, self.bases):
             self.emit("knowledge.changed", path, path)
-        self._mtimes = {n.path: n.mtime for b in self.bases for n in b.notes}
+        self._mtimes = {n.path: n.stamp for b in self.bases for n in b.notes}
         self._render_list()
 
     def _render_list(self) -> None:
@@ -60,18 +72,19 @@ class KnowledgeView(TypedView):
         except Exception:
             return
         total = sum(len(b.notes) for b in self.bases)
-        head.update(Text(f"{len(self.bases)} base{'s' if len(self.bases) != 1 else ''} · {total} notes · + adds a base",
-                         style="dim"))
+        head.update(Text(f"{len(self.bases)} source{'s' if len(self.bases) != 1 else ''} · {total} scrolls · "
+                         "/ asks · + adds a folder", style="dim"))
         open_bases = {n.data for n in tree.root.children if n.is_expanded}
         tree.clear()
         tree.root.expand()
         for b in self.bases:
-            label = Text.assemble((f"📁 {b.path}", "bold"), (f"  {len(b.notes)}", "dim"))
+            label = Text.assemble((f"{lore.ICONS.get(b.kind, '📁')} {b.path}", "bold"), (f"  {len(b.notes)}", "dim"))
             if b.error:
                 label.append(f"  ⚠ {b.error}", style="yellow")
             node = tree.root.add(label, data=b.path, expand=b.path in open_bases or len(self.bases) == 1)
             for n in b.notes:
-                note = node.add(Text(n.title, no_wrap=True), data=f"note:{n.path}")
+                title = ("🧩 " if n.kind == "code" else "") + n.title
+                note = node.add(Text(title, no_wrap=True), data=f"note:{n.path}")
                 for h in n.headings:
                     note.add_leaf(Text(f"§ {h}", style="dim"), data=f"note:{n.path}")
 
@@ -85,8 +98,9 @@ class KnowledgeView(TypedView):
 
     def find(self, query: str) -> str:
         """The fragments that answer `query`: shown here and sent as `knowledge.chunks`."""
-        found = shelves.search(self._get_repo_root(), self.bases or [shelves.scan_base(self._get_repo_root(), p)
-                                                                     for p in self.paths], query)
+        if not self.bases:
+            self.bases = self.library.scan()
+        found = self.library.search(self._get_repo_root(), query)
         md = shelves.fragments_markdown(query, found)
         self.last_query = query
         try:
@@ -108,9 +122,11 @@ class KnowledgeView(TypedView):
 
     def read(self, rel: str) -> None:
         try:
-            text = shelves.inside(self._get_repo_root(), rel).read_text(encoding="utf-8", errors="replace")
-        except (OSError, ValueError) as e:
+            text = self.library.read(rel)
+        except ValueError as e:
             text = f"_{e}_"
+        if lore.kind_of(rel) == "code":
+            text = f"```{rel.rpartition('.')[2]}\n{text[:60000]}\n```"
         try:
             self.query_one("#kb-note", Markdown).update(text[:60000])
         except Exception:
@@ -120,7 +136,7 @@ class KnowledgeView(TypedView):
 
     def mini_status(self) -> list[str]:
         if not self.bases:
-            return ["no bases yet"]
+            return ["no sources yet"]
         lines = [f"{len(b.notes)} {b.path}" + (" ⚠" if b.error else "") for b in self.bases[:3]]
         if len(self.bases) > 3:
             lines.append(f"+{len(self.bases) - 3} more")
@@ -128,11 +144,14 @@ class KnowledgeView(TypedView):
 
     def hut_lines(self, widths: list[int]) -> list[str]:
         if not self.bases:
-            return ["no bases yet"]
-        notes = sum(len(b.notes) for b in self.bases)
-        lines = [f"bases: {len(self.bases)}", f"notes: {notes:,}"]
+            return ["no sources yet"]
+        notes = [n for b in self.bases for n in b.notes]
+        code = sum(1 for n in notes if n.kind == "code")
+        lines = [f"sources: {len(self.bases)}", f"notes: {len(notes) - code:,}"] + ([f"code: {code:,}"] if code else [])
         lines += [f"{len(b.notes)} {b.path}" + (" ⚠" if b.error else "") for b in self.bases[:3]]
-        lines.append("status: " + ("ERROR" if any(b.error for b in self.bases) else "SYNCED"))
+        errors = [b.error for b in self.bases if b.error]
+        lines.append("status: " + ("FETCHING" if errors and all(e == lore.FETCHING for e in errors)
+                                   else "ERROR" if errors else "SYNCED"))
         return lines
 
     def quick_action(self, action_id: str) -> bool:
@@ -151,8 +170,10 @@ class KnowledgeView(TypedView):
                 self.app.notify(f"{path}: no such folder", title="📚 Not added", severity="error")
                 return
             rel = shelves.rel_to(self._get_repo_root(), folder)
-            paths = list(dict.fromkeys([*(self.config.get("paths") or self.paths), rel]))
-            self.save_config({"paths": paths})
+            if self.config.get("sources"):
+                self.save_config({"sources": list(dict.fromkeys([*self.config["sources"], rel]))})
+            else:
+                self.save_config({"paths": list(dict.fromkeys([*(self.config.get("paths") or self.paths), rel]))})
             self.refresh_data()
 
         self.app.push_screen(TextPrompt("📚 Connect a folder of notes", placeholder="docs/handbook",

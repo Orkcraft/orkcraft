@@ -44,6 +44,13 @@ class Note:
     title: str
     headings: list[str] = field(default_factory=list)
     mtime: float = 0.0
+    kind: str = "doc"                 # doc | code | design: which retriever reads it
+    rev: str = ""                     # a version stamp when there is no mtime (a git blob, a page version)
+    url: str = ""                     # where it lives outside the project (a Confluence page)
+
+    @property
+    def stamp(self) -> str | float:
+        return self.rev or self.mtime
 
 
 @dataclass
@@ -51,6 +58,7 @@ class Base:
     path: str
     notes: list[Note] = field(default_factory=list)
     error: str = ""
+    kind: str = "fs"                  # the source it came from (sources/lore.py)
 
 
 def default_bases(repo_root: Path) -> list[str]:
@@ -58,15 +66,21 @@ def default_bases(repo_root: Path) -> list[str]:
     return found or ["."]
 
 
+def outline(text: str, fallback: str) -> tuple[str, list[str]]:
+    """A Markdown note's title (frontmatter `title`, else its H1, else `fallback`) and its H2/H3 headings."""
+    text = text[:20000]
+    heads = [m.group(2) for line in text.splitlines() if (m := _H.match(line)) and len(m.group(1)) >= 2][:30]
+    m = _FM_TITLE.search(text[:2000]) if text.startswith("---") else None
+    h1 = next((mm.group(2) for line in text.splitlines() if (mm := _H.match(line)) and len(mm.group(1)) == 1), "")
+    return (m.group(1) if m else "") or h1 or fallback, heads
+
+
 def read_note(path: Path, repo_root: Path) -> Note:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")[:20000]
     except OSError:
         text = ""
-    heads = [m.group(2) for line in text.splitlines() if (m := _H.match(line)) and len(m.group(1)) >= 2][:30]
-    m = _FM_TITLE.search(text[:2000]) if text.startswith("---") else None
-    h1 = next((mm.group(2) for line in text.splitlines() if (mm := _H.match(line)) and len(mm.group(1)) == 1), "")
-    title = (m.group(1) if m else "") or h1 or path.stem
+    title, heads = outline(text, path.stem)
     try:
         mtime = path.stat().st_mtime
     except OSError:
@@ -92,9 +106,9 @@ def scan_base(repo_root: Path, rel: str) -> Base:
     return Base(rel, notes)
 
 
-def note_changes(before: dict[str, float] | None, bases: list[Base]) -> list[str]:
+def note_changes(before: dict[str, str | float] | None, bases: list[Base]) -> list[str]:
     """Notes added or changed since the last look (the first look only sets the baseline)."""
-    now = {n.path: n.mtime for b in bases for n in b.notes}
+    now = {n.path: n.stamp for b in bases for n in b.notes}
     if before is None:
         return []
     return [p for p, m in now.items() if before.get(p) != m]
@@ -116,12 +130,15 @@ class Chunk:
     score: float = 0.0
 
 
-def chunks_of(repo_root: Path, rel: str) -> list[Chunk]:
-    """A note cut by its headings (long sections by paragraphs), each piece ≤ CHUNK_CHARS."""
-    try:
-        text = (repo_root / rel).read_text(encoding="utf-8", errors="replace")[:200_000]
-    except OSError:
-        return []
+def chunks_of(repo_root: Path, rel: str, text: str | None = None) -> list[Chunk]:
+    """A note cut by its headings (long sections by paragraphs), each piece ≤ CHUNK_CHARS. `text` is
+    the note when it does not live in the project (a git revision, a Confluence page)."""
+    if text is None:
+        try:
+            text = (repo_root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return []
+    text = text[:200_000]
     out, heading, buf = [], Path(rel).stem, []
 
     def flush() -> None:
@@ -150,28 +167,49 @@ def terms(text: str) -> list[str]:
     return [w for w in (t.lower() for t in _WORD.findall(text)) if w not in STOP]
 
 
-def search(repo_root: Path, bases: list[Base], query: str, k: int = 5, budget: int = 4000) -> list[Chunk]:
-    """The fragments that answer `query` best (term frequency × rarity, headings count double),
-    at most `k` of them and `budget` characters — what a prompt can afford."""
+BM25_K1, BM25_B = 1.2, 0.75
+
+
+def rank(pieces: list[Chunk], query: str) -> list[Chunk]:
+    """Score `pieces` against `query` with BM25 (headings count double); the ones that match, best first."""
     import math
     q = list(dict.fromkeys(terms(query)))
-    if not q:
-        return []
-    pieces = [c for b in bases for n in b.notes for c in chunks_of(repo_root, n.path)]
-    if not pieces:
+    if not q or not pieces:
         return []
     bags = [terms(c.heading) * 2 + terms(c.text) for c in pieces]
+    avg = sum(len(b) for b in bags) / len(bags) or 1.0
     df = {t: sum(1 for bag in bags if t in bag) for t in q}
+    n = len(pieces)
     for c, bag in zip(pieces, bags):
-        size = max(len(bag), 1)
-        c.score = sum((bag.count(t) / size) * math.log(1 + len(pieces) / df[t]) for t in q if df[t])
+        score = 0.0
+        for t in q:
+            tf = bag.count(t)
+            if tf and df[t]:
+                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
+                score += idf * tf * (BM25_K1 + 1) / (tf + BM25_K1 * (1 - BM25_B + BM25_B * len(bag) / avg))
+        c.score = score
+    return sorted((c for c in pieces if c.score > 0), key=lambda c: c.score, reverse=True)
+
+
+def within(ranked: list[Chunk], k: int, budget: int) -> list[Chunk]:
+    """The best of `ranked`: at most `k` pieces and `budget` characters (the first always fits)."""
     picked, used = [], 0
-    for c in sorted((c for c in pieces if c.score > 0), key=lambda c: c.score, reverse=True):
+    for c in ranked:
         if len(picked) >= k or used + len(c.text) > budget and picked:
             break
         picked.append(c)
         used += len(c.text)
     return picked
+
+
+def search(repo_root: Path, bases: list[Base], query: str, k: int = 5, budget: int = 4000,
+           read=None) -> list[Chunk]:
+    """The prose fragments (doc and design notes) that answer `query` best, at most `k` of them and
+    `budget` characters — what a prompt can afford. `read(path)` gives a note's text when it does
+    not live in the project; code goes to the code graph (realm/codegraph.py) instead."""
+    pieces = [c for b in bases for n in b.notes if n.kind != "code"
+              for c in chunks_of(repo_root, n.path, read(n.path) if read else None)]
+    return within(rank(pieces, query), k, budget)
 
 
 def fragments_markdown(query: str, found: list[Chunk]) -> str:

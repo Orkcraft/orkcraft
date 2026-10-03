@@ -189,7 +189,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🔥 Orc Council | Chieftains | a question: members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; rounds and $ capped | `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event | `calendar.event_due`, `.day_schedule`, `.event_added/removed` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
-| 🗑️ Scroll Dump | Scroll Scrapper | folders of notes; `/` or a cart is a query → the best few fragments within a budget | `knowledge.changed`, `knowledge.chunks` |
+| 🗑️ Scroll Dump | Scroll Scrapper | read-only `sources`: folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`; `/` or a cart is a query → notes by BM25 and code by its call graph, the best few fragments within a budget | `knowledge.changed`, `knowledge.chunks` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
@@ -203,6 +203,15 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)
   is in `.orkcraft/horn/<id>/calls.jsonl`.
+- The Scroll Dump's `sources` are strings: `docs` (or `fs:docs`) a folder of Markdown notes,
+  `code:src` a folder of code, `git:main` or `git:v2.0:docs` a revision read through git,
+  `confluence:ENG` a Confluence space (the site in `ORKCRAFT_CONFLUENCE_URL`, or
+  `confluence:ENG@https://acme.atlassian.net/wiki`; signed in with `ORKCRAFT_CONFLUENCE_EMAIL` +
+  `ORKCRAFT_CONFLUENCE_TOKEN`, or `ORKCRAFT_CONFLUENCE_PAT`). Remote pages are cached in
+  `~/.cache/orkcraft/scrolls/` and refetched in the background every 15 minutes; a failed fetch
+  keeps the cache. Code is answered with the symbol that matches, its code, and what it calls,
+  what calls it and what its module imports (Python by `ast`, other languages by their
+  definitions). The older `paths` setting still works. The Dump only reads.
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
   Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-orc Barracks); event ids
   are unchanged, so old roads keep working.

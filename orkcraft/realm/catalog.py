@@ -191,12 +191,13 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="library", orc="Woodcutter"),
     BuildingType(
         "scrolls", "Scroll Dump", "🗑️", "S",
-        "the project's wiki: notes, guides, ADRs; the Scroll Scrapper pulls the exact fragments a prompt needs",
-        "the bases and how many notes each", "the notes by heading; Enter reads one",
+        "the project's knowledge, read-only: notes, code, a git revision, a Confluence space; the Scroll "
+        "Scrapper pulls the exact fragments a prompt needs (notes by BM25, code by its call graph)",
+        "the sources and how many scrolls each", "the scrolls by source and heading; Enter reads one, / asks",
         events=(_e("knowledge.changed", "knowledge changed", FILE, "a knowledge file was added or changed"),
                 _e("knowledge.chunks", "fragments", TEXT, "the fragments that answer a query")),
         actions=(_a("knowledge.add", "Add base", "+", "connect a folder as a knowledge base"),),
-        config={"paths": (list, None, False)},
+        config={"paths": (list, None, False), "sources": (list, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
