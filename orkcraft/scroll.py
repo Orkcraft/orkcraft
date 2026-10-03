@@ -31,6 +31,10 @@ SCHEMAS = Path(__file__).resolve().parent / "schemas"
 SCHEMA_PATH = SCHEMAS / "town-scroll.v3.json"
 SCHEMA_V2_PATH = SCHEMAS / "town-scroll.v2.json"
 SCHEMA_URL = "https://orkcraft.dev/schemas/town-scroll.v3.json"
+# What the retros improve a building towards (docs/design/retros-and-goals.md §3).
+GOALS = ("thrift", "balance", "quality")
+GOAL_ICONS = {"thrift": "🪙", "balance": "⚖️", "quality": "💎"}
+GOAL_TITLES = {"thrift": "Thrift", "balance": "Balance", "quality": "Quality"}
 VERSION = "0.3.0"
 BIOMES = ("void", "forest", "ice")
 ROAD_EVENTS = ("on_selection_change", "on_task_completed", "on_stream")
@@ -175,6 +179,7 @@ class BuildingSpec:
     icon: str = ""
     pinned: bool = False
     demolished: bool = False
+    goal: str | None = None           # thrift | balance | quality — what the retros aim at; None = balance
     bounds: dict | None = None        # {"x","y","width","height"} in canvas cells
     frac: list[float] | None = None   # fractional slot, follows canvas resizes
     hut: list[float] | None = None    # town view: the hut's spot, fractions of the canvas room
@@ -187,6 +192,11 @@ class BuildingSpec:
     @property
     def preset_id(self) -> str:
         return self.preset_ref.split(":", 1)[1]
+
+    @property
+    def aim(self) -> str:
+        """Its goal, balance when none is set (docs/design/retros-and-goals.md §3)."""
+        return self.goal if self.goal in GOALS else "balance"
 
     def road(self, road_id: str) -> Road | None:
         return next((r for r in self.roads if r.id == road_id), None)
@@ -307,6 +317,7 @@ class TownScroll:
             buildings.append(BuildingSpec(
                 id=b["id"], preset_ref=b["preset_ref"], title=b["title"], icon=b.get("icon", ""),
                 pinned=bool(b.get("pinned", False)), demolished=bool(b.get("demolished", False)),
+                goal=b.get("goal") if b.get("goal") in GOALS else None,
                 bounds=b.get("bounds"), frac=b.get("frac"), hut=b.get("hut"), min_size=b.get("min_size"),
                 roads=[Road.from_dict(r) for r in b.get("roads", [])],
                 chronicles=b.get("chronicles") or {"enabled": True},

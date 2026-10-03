@@ -560,7 +560,7 @@ class OrkcraftApp(App[int]):
         if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
             for item in report.items:
                 if item.applicable and item.n not in report.applied:
-                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in ("shrink", "chain", "script")
+                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in optimize.ACTIONS
                            else f"weekly:{report.ts}:{item.n}")
                     out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,
                                 "report": report, "item": item})
@@ -655,7 +655,7 @@ class OrkcraftApp(App[int]):
         with self.hushed():
             if c["source"] == "steward":
                 ok = self.apply_steward_proposal(c["building"], c["data"], c["index"], by="orcs") is not None
-            elif c["source"] == "daily" or c["change"] in ("shrink", "chain", "script"):
+            elif c["source"] == "daily" or c["change"] in optimize.ACTIONS:
                 ok = self.apply_proposal(c["proposal"], kind="auto-improve" if c["source"] == "daily" else "weekly")
                 if ok and c["source"] == "weekly":
                     c["report"].applied = sorted(set(c["report"].applied) | {c["item"].n})
@@ -2553,6 +2553,23 @@ class OrkcraftApp(App[int]):
 
             self.push_screen(BuildFailed(result), on_failed_done)
 
+    # -- 🪙 / ⚖️ / 💎 a building's goal (docs/design/retros-and-goals.md §3) ---------------
+
+    def cycle_goal(self, building_id: str) -> str | None:
+        """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards."""
+        b = self.scroll.building(building_id)
+        if b is None:
+            return None
+        goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
+        b.goal = None if goal == "balance" else goal
+        self.desktop.save()
+        what = {"thrift": "the retros will make it cheaper", "balance": "cheaper where it is liked, better where it is not",
+                "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}[goal]
+        self.notify(f"{self._title_of(building_id)}: {what}",
+                    title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
+        self._console_refresh()
+        return goal
+
     # -- 👍 / 👎 on a building's steward -----------------------------------------------
 
     def _title_of(self, building_id: str) -> str:
@@ -2697,24 +2714,27 @@ class OrkcraftApp(App[int]):
     def optimize_now(self, interactive: bool = True) -> bool:
         """Today's hungriest building the operator is not happy with → the Council's proposal (in a
         thread). False when there is nothing to propose."""
-        cand = optimize.leader(self.repo_root, None, *self._quota_reads())
+        goals = {b.id: b.aim for b in self.scroll.buildings if not b.demolished}
+        cand = optimize.leader(self.repo_root, None, *self._quota_reads(), goals=goals)
         if cand is None:
             if interactive:
-                self.notify("nothing to improve: the heaviest buildings are liked, or nothing was spent",
+                self.notify("nothing to improve: the heaviest buildings are liked, and no 💎 one is disliked or failing",
                             title="🔧 Building retro")
             return False
         spec = self.custom_specs.get(cand.building)
         ps = optimize.parts(self.scroll, spec, cand.building, self.repo_root)
         if not ps:
             if interactive:
-                self.notify(f"{self._title_of(cand.building)} spends the most but has no prompt to shrink",
+                self.notify(f"{self._title_of(cand.building)} is due, but has no model prompt to change",
                             title="🔧 Building retro")
             return False
         cfg = (spec or {}).get("config") or {}
         mocks = workshop.load_blueprint(self.repo_root, cand.building).get("mocks") or []
         runtime = str(cfg.get("runtime") or "python")
         if interactive:
-            self.notify(f"the Council looks at {self._title_of(cand.building)} ({cand.tokens} tokens today)",
+            aim = cand.goal if cand.goal == (goals.get(cand.building) or "balance") else \
+                f"{goals.get(cand.building)}→{cand.goal} (the limit is tight)"
+            self.notify(f"the Council looks at {self._title_of(cand.building)} · {aim} · {cand.reason}",
                         title="🔧 Building retro")
 
         def _worker() -> None:
@@ -2902,7 +2922,7 @@ class OrkcraftApp(App[int]):
                 continue
             bid = item.building
             ok = False
-            if item.change in ("shrink", "chain", "script"):
+            if item.change in optimize.ACTIONS:
                 p = optimize.Proposal(f"w{report.ts[:10]}-{item.n}", report.ts, bid, item.change,
                                       str(item.data.get("target")), item.before, item.after, item.why)
                 ok = self.apply_proposal(p, kind="weekly")
@@ -2941,7 +2961,7 @@ class OrkcraftApp(App[int]):
             if ok:
                 done.append(item.n)
                 touched.add(bid)
-                if item.change not in ("shrink", "chain", "script"):    # those are in the ledger already
+                if item.change not in optimize.ACTIONS:    # those are in the ledger already
                     where = weekly.new_spec(item)["id"] if item.change == "add_building" else bid
                     last = checkpoint.history(self.repo_root, where, 1)
                     evolution.record(self.repo_root, evolution.Change(

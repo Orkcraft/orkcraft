@@ -13,6 +13,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft import theme
+from orkcraft.scroll import GOAL_ICONS, GOAL_TITLES
 from orkcraft.realm import modes
 from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
 from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
@@ -658,7 +659,7 @@ class ClanRoster(Vertical):
 
 class UnitInfo(Vertical):
     """The Info panel: what the selected orc, building or road is, its models, its spend.
-    A building: its name with 👍 / 👎 / 🗑, why it is here, a quiet line of its runs (📜 history)
+    A building: its name with 👍 / 👎 / its goal (🪙 / ⚖️ / 💎, a click cycles it) / 🗑, why it is here, a quiet line of its runs (📜 history)
     and who it listens to (➕ adds a road)."""
 
     def compose(self) -> ComposeResult:
@@ -668,6 +669,7 @@ class UnitInfo(Vertical):
                 yield OfficeStatic("", id="ib-name", markup=False)
                 yield OfficeStatic(" 👍 ", id="ib-like", classes="ib-button")
                 yield OfficeStatic(" 👎 ", id="ib-dislike", classes="ib-button")
+                yield OfficeStatic(" ⚖️ ", id="ib-goal", classes="ib-button")
                 yield OfficeStatic(" 🗑 ", id="ib-demolish", classes="ib-button")
             yield OfficeStatic("", id="ib-about", markup=False)
             with Horizontal(id="ib-runs-row", classes="ib-row"):
@@ -726,6 +728,9 @@ class UnitInfo(Vertical):
             self.building_id = bid
             building.display, body.display = True, False
             self.query_one("#ib-name", Static).update(Text(f"{b.icon} {b.title}", style="bold"))
+            spec = self.app.scroll.building(bid) if self.app.scroll is not None else None
+            aim = spec.aim if spec is not None else "balance"
+            self.query_one("#ib-goal", Static).update(f" {GOAL_ICONS[aim]} {GOAL_TITLES[aim]} ")
             self.query_one("#ib-about", Static).update(building_about(self.app, bid))
             self.query_one("#ib-runs", Static).update(building_runs(self.app, bid, roster))
             self.query_one("#ib-listens", Static).update(building_listens(self.app, bid))
@@ -760,6 +765,8 @@ class UnitInfo(Vertical):
             app.like_building(bid)
         elif wid == "ib-dislike":
             app.dislike_building(bid)
+        elif wid == "ib-goal":
+            app.cycle_goal(bid)
         elif wid in ("ib-demolish", "ib-history", "ib-listen"):
             app.action_command_card({"ib-demolish": "X", "ib-history": "L", "ib-listen": "Y"}[wid])
         else:

@@ -27,12 +27,15 @@ from pathlib import Path
 from orkcraft.realm import builders, catalog, feedback, metrics, optimize
 
 DIR = Path(".orkcraft") / "weekly"
-CHANGES = ("shrink", "chain", "script", "set_config", "remove_road", "remove_building", "add_building", "note")
+CHANGES = ("shrink", "chain", "script", "enrich", "set_config", "remove_road", "remove_building", "add_building", "note")
 CONTEXT_LIMIT = 24_000
+GOALS = {"thrift": "🪙 thrift", "balance": "⚖️ balance", "quality": "💎 quality"}
 
 PROMPT = """You are the Council of orkcraft doing the WEEKLY self-audit of the operator's camp: a terminal
 harness where buildings pass events along roads to scripts, chains and agents. Find what to make cheaper,
 safer, simpler or more useful — at most 8 items, the most valuable first. Prefer scripts and chains over models.
+Each building has a goal: 🪙 thrift (make it cheaper), ⚖️ balance, 💎 quality (make its results better; it may
+spend more) — work towards it: never make a 💎 building cheaper at the cost of its liked results.
 
 THE CAMP:
 {camp}
@@ -41,6 +44,8 @@ Each item applies ONE change:
 - {{"change": "shrink", "building": id, "target": "orc:<id>|steward|orders", "prompt": "<at most 70% as long>"}}
 - {{"change": "chain", "building": id, "target": "orc:<id>", "chain": [chain ops]}}   (an agent that needs no judgement)
 - {{"change": "script", "building": id, "target": "steward", "script": "<python: stdin cart JSON, exit 0/4, never 3>"}}
+- {{"change": "enrich", "building": id, "target": "orc:<id>|steward|orders", "prompt": "<a better prompt: longer, at most twice as long>"}}
+  (only for ⚖️ and 💎 buildings)
 - {{"change": "set_config", "building": id, "key": "<a setting of its type>", "value": <value>}}
 - {{"change": "remove_road", "building": id, "road": "<road id>"}}
 - {{"change": "remove_building", "building": id}}   (nobody uses it: no runs, no roads, no 👍)
@@ -109,7 +114,8 @@ def camp_text(repo_root: Path, scroll, specs: dict[str, dict], audit_report=None
         kind = catalog.type_of(spec).id if spec else "preset"
         tok, cost, runs = spent.get(b.id, [0, 0.0, 0])
         sc = scores.get(b.id, {})
-        lines.append(f"## {b.id} — {b.title} ({kind}) · week: {runs} runs, {tok} tokens, ${cost:.2f} · "
+        goal = getattr(b, "aim", "balance")
+        lines.append(f"## {b.id} — {b.title} ({kind}) · goal: {GOALS.get(goal, goal)} · week: {runs} runs, {tok} tokens, ${cost:.2f} · "
                      f"👍 {sc.get('likes', 0)} 👎 {sc.get('dislikes', 0)} penalty {sc.get('penalty', 0)}")
         if spec and spec.get("config"):
             lines.append("settings: " + json.dumps(spec["config"], ensure_ascii=False)[:800])
@@ -158,13 +164,14 @@ def check_item(item: Item, repo_root: Path, scroll, specs: dict[str, dict]) -> I
         item.problems = [f"no building {item.building!r}"]
         return item
     spec = specs.get(item.building)
-    if item.change in ("shrink", "chain", "script"):
+    if item.change in optimize.ACTIONS:
         ps = optimize.parts(scroll, spec, item.building, repo_root)
         part = next((p for p in ps if p.id == item.data.get("target")), None)
         cfg = (spec or {}).get("config") or {}
         mocks = workshop.load_blueprint(repo_root, item.building).get("mocks") or []
         after, problems = optimize.check({"action": item.change, **item.data}, ps, item.building, repo_root,
-                                         str(cfg.get("runtime") or "python"), mocks)
+                                         str(cfg.get("runtime") or "python"), mocks,
+                                         optimize.GOAL_ACTIONS.get(getattr(b, "aim", "balance"), optimize.ACTIONS))
         item.after, item.problems, item.before = after, problems, part.text if part else ""
         return item
     if item.change == "remove_road":

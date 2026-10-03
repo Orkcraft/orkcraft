@@ -68,7 +68,7 @@ Set from the Info panel: the goal button beside 👍 / 👎 cycles it.
 
 | | 🪙 Thrift | ⚖️ Balance | 💎 Quality |
 |---|---|---|---|
-| Picked by the Building retro when | its share or pressure leads, and it has no 👍 since its last change | as thrift, or it got a 👎 today | it got a 👎 or a failed run in the last 7 days, or it has no rating at all |
+| Picked by the Building retro when | its share or pressure leads, and it has no 👍 since its last change | as thrift, or it got a 👎 today | it got a 👎 or a failed run in the last 7 days, or it was never rated |
 | The Council may | shrink · chain · script | shrink · chain · script · enrich | enrich (and shrink, when it keeps the liked results) |
 | Its prompt says | spend fewer tokens, keep what was liked | fix what was disliked without spending more | make the results better; spending more is fine within the ceiling |
 
@@ -76,11 +76,18 @@ Set from the Info panel: the goal button beside 👍 / 👎 cycles it.
   disliked ones as what to avoid, a clearer instruction. The check: the new prompt is longer than the
   old one (else it is a shrink) and at most `ENRICH` (2×) as long — the **ceiling** that keeps 💎 from
   eating the quota.
-- **The order** of the Building retro: buildings are ranked by how far they are from their goal —
-  thrift and balance by pressure (share when there is no pressure), quality by dislikes and failures
-  of the week. The first that passes its rule is the candidate.
-- **A tight camp overrides 💎.** When `Camp.tight`, a 💎 building is treated as ⚖️ — it may still be
-  enriched only when it is not among the three heaviest. The Info panel shows it: `💎→⚖️ (limit)`.
+- **The order** of the Building retro (`optimize.leader`):
+  1. 💎 buildings the operator 👎-d this week, the most disliked first — the operator asked for
+     quality and did not get it;
+  2. 🪙 / ⚖️ buildings by pressure (share when there is no pressure), from `MIN_SHARE` (10 %) of the
+     camp up — the first that passes its rule; a liked one passes the turn to the next;
+  3. 💎 buildings with a failed run this week, or never rated, the most failing first.
+  Nothing due → no proposal that day.
+- **A tight camp overrides 💎.** When `Camp.tight`, the three heaviest 💎 buildings are treated as ⚖️
+  (balance: any action, a shrink included). The Building retro's notice says so: `quality→balance
+  (the limit is tight)`.
+- **The Town retro** sees each building's goal and may propose `enrich` too, for ⚖️ and 💎 buildings
+  only; its check is the same.
 - **Autonomy**: `enrich` is applied by the orcs themselves only at ⛓️‍💥 Free orcs (level 3) — it spends
   more, so it is a bigger step than a shrink. Probation is the same 24 h: a 👎 or more failed runs take
   it back.

@@ -307,10 +307,17 @@ Everything that changes the camp goes through the Town Hall and its own git:
   🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
   24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
   will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
-  change, or a 👎 today, reads its recent runs and proposes one checked change — a
-  shorter prompt, chain ops instead of an agent, or a script instead of a steward prompt. The weekly
-  🗓 **Town retro** (`weekly_at`, Sunday 05:00) has `claude -p --model opus` audit the whole camp; its report lists
-  items with checkboxes — it may also remove an unused building or add a camp building — and Apply
+  change, or a 👎 today, reads its recent runs and proposes one checked change towards the building's
+  **goal** — 🪙 thrift · ⚖️ balance · 💎 quality, a click on the goal button beside 👍 / 👎 in the Info
+  panel cycles it (`buildings[].goal` in the Town Scroll; missing = balance). 💎 buildings the operator
+  👎-d this week come first, failing or never-rated ones last; for them the Council may **enrich** a
+  prompt (longer, at most twice as long) instead of shrinking it, and a camp whose forecast passes
+  what is left of the limit treats its three heaviest 💎 buildings as ⚖️. The changes: a shorter
+  prompt, chain ops instead of an agent, a script instead of a steward prompt, or a richer prompt. The weekly
+  🗓 **Town retro** (`weekly_at`, Sunday 05:00) has `claude -p --model opus` audit the whole camp. When you rated
+  nothing that week it first shows up to four results of the week to rate (👍 / 👎 inputs / 👎 logic /
+  skip — one per building: a changed one, a 💎 one, a failed run, the heaviest; `realm/retro.py`). Its
+  report lists items with checkboxes — it may also remove an unused building or add a camp building — and Apply
   makes each one a `weekly(<id>)` checkpoint, saves the Town Scroll, restarts the touched daemons
   and, when buildings changed or the report asks, offers to restart orkcraft. Both: F10 →
   Building retro / Town retro; F10 → ⚙ Retro settings sets the models and the schedules.
@@ -533,7 +540,7 @@ night, never past the 🪙 budget:
 | Level | The orcs apply |
 |---|---|
 | 🧭 Routine on their own | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
-| ⛓️‍💥 Free orcs | also a script instead of an agent (sandbox-proved), a new plain road, a building's setting, a building from the catalog |
+| ⛓️‍💥 Free orcs | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
 | never | removing a road or a building, notes — those stay proposals |
 
 Every change still passes its own checks, then the Council's review with no block, objection or

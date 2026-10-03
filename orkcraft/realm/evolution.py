@@ -10,8 +10,9 @@ hours, at 🧭 Routine and above, the orcs apply what their level allows:
 
     🧭 Routine (2)    changes that make a building cheaper or simpler: shrink a prompt, an agent made a
                       chain, a steward's demotion (proved on recorded runs), a run policy, a road filter
-    ⛓️‍💥 Free orcs (3)  also a script instead of an agent (sandbox-proved), a new plain road, a building's
-                      setting, a building from the catalog
+    ⛓️‍💥 Free orcs (3)  also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎
+                      building (it spends more), a new plain road, a building's setting, a building
+                      from the catalog
     never             removing a road or a building, notes — those stay advice
 
 Each one must pass its own checks (validation, sandbox, replay) and the Council's review with no
@@ -38,7 +39,7 @@ FAILED = ("error", "failed", "fail")
 # The lowest autonomy level at which the orcs may apply a kind of change themselves.
 LEVEL_FOR: dict[str, int] = {
     "shrink": 2, "chain": 2, "demote": 2, "set_run": 2, "filter": 2,
-    "script": 3, "new_road": 3, "set_config": 3, "add_building": 3,
+    "script": 3, "enrich": 3, "new_road": 3, "set_config": 3, "add_building": 3,
 }
 NEVER = ("remove_road", "remove_building", "note")
 
@@ -51,7 +52,7 @@ def allowed(change: str, level: int) -> bool:
 @dataclass
 class Change:
     building: str
-    change: str                  # shrink | chain | script | demote | set_run | filter | new_road | set_config | …
+    change: str                  # shrink | chain | script | enrich | demote | set_run | filter | new_road | set_config | …
     source: str                  # daily | weekly | steward
     summary: str
     why: str = ""
