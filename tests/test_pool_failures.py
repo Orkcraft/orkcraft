@@ -42,7 +42,7 @@ class Crew:
                     raise InterruptedError("stopped")
             if call["error"] is not None:
                 raise call["error"]
-            return "ok", self.cost, 100, f"s{len(self.calls)}"
+            return "ok", self.cost, 100, resume or f"s{len(self.calls)}"   # a resumed session keeps its id
         finally:
             with self.lock:
                 self.running -= 1
@@ -103,7 +103,7 @@ async def test_three_orcs_work_at_once_and_the_rest_queue(fake_repo: Path, monke
             crew.finish(i)
         assert await _until(pilot, lambda: not st.queue and all(o.status == "idle" for o in st.orcs))
         assert crew.peak == 3 and len(crew.calls) == 6
-        assert sum(o.done for o in st.orcs) == 6 and st.stats["claude"] == {"runs": 6, "ok": 6, "cost": 0.6}
+        assert sum(o.done for o in st.orcs) == 6 and st.stats["claude"] == {"runs": 6, "ok": 6, "cost": 0.6, "tokens": 600}
         modes = [p.mode for p in sent]
         assert modes.count("pool.assigned") == 6 and modes.count("pool.done") == 6 and modes.count("pool.idle") == 1
 
@@ -210,3 +210,69 @@ async def test_the_budget_stops_hiring_mid_run(fake_repo: Path, monkeypatch):
         await pilot.pause(0.1)
         assert len(crew.calls) == 2 and st.queue[-1].decided.startswith("budget:")
         assert st.decisions(1)[0].action == "budget"
+
+
+# -- context reuse -----------------------------------------------------------------------------------
+
+
+def test_the_foreman_prefers_the_orc_that_knows_the_work():
+    f = bk.Foreman({"max_orcs": 3})
+    grub = bk.PoolOrc("Grub", "claude", recent=["Add the login page — form and validation"])
+    mogka = bk.PoolOrc("Mogka", "claude", recent=["Parser: tokenizer for quoted strings — done"])
+    t = bk.PoolTask("t", "Parser: handle escapes in quoted strings", "the tokenizer drops backslashes")
+    d = f.decide(t, [grub, mogka], [], 0.0)
+    assert (d.action, d.orc) == ("reuse", "Mogka") and "knows this work" in d.why
+    assert f.decide(bk.PoolTask("u", "Bump the version", "x"), [grub, mogka], [], 0.0).orc == "Grub"   # no fit → first
+    queue = [bk.PoolTask("a", "Bump the version", "x"), t]
+    assert f.next_for(mogka, queue).id == t.id and f.next_for(grub, queue).id == "a"
+    far = [bk.PoolTask(str(i), f"chore {i}", "x") for i in range(bk.LOOKAHEAD)] + [t]
+    assert f.next_for(mogka, far).id == "0"                                    # no jumping the whole queue
+    mogka.session, mogka.session_tasks = "s1", 4
+    assert f.can_resume(mogka)
+    mogka.session_tasks = f.session_tasks
+    assert not f.can_resume(mogka)                                             # rolled over
+    assert not f.can_resume(bk.PoolOrc("Snaga", "agy", session="x"))          # agy cannot resume
+
+
+@pytest.mark.asyncio
+async def test_related_work_resumes_the_session_and_sends_only_the_task(fake_repo: Path, monkeypatch):
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1, session_tasks=2, orders="Use type hints everywhere.")
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        st = view.state
+        say = lambda title, body: view.add_task(title, body)                               # noqa: E731
+
+        say("Parser: tokenizer for quoted strings", "split the input into tokens")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        first = crew.calls[0]["prompt"]
+        assert "Use type hints" in first and crew.calls[0]["resume"] == "" and "recent work" not in first
+        crew.finish(0)
+        assert await _until(pilot, lambda: st.orcs[0].status == "idle")
+        assert st.orcs[0].recent and st.orcs[0].session_tasks == 1
+
+        say("Parser: escapes in quoted strings", "the tokenizer drops backslashes")       # related → warm
+        assert await _until(pilot, lambda: len(crew.calls) == 2)
+        warm = crew.calls[1]
+        assert warm["resume"] == "s1" and warm["prompt"].startswith("## Task")
+        assert "Use type hints" not in warm["prompt"] and len(warm["prompt"]) < len(first) / 2
+        crew.finish(1)
+        assert await _until(pilot, lambda: st.orcs[0].status == "idle")
+        assert st.orcs[0].session_tasks == 2 and st.tasks[-1].warm
+
+        say("Parser: tokenizer errors for quoted strings", "report the column")           # related, but rolled over
+        assert await _until(pilot, lambda: len(crew.calls) == 3)
+        cold = crew.calls[2]
+        assert cold["resume"] == "" and "Use type hints" in cold["prompt"]
+        assert "## Your recent work" in cold["prompt"] and "escapes in quoted strings" in cold["prompt"]
+        crew.finish(2)
+        assert await _until(pilot, lambda: st.orcs[0].status == "idle")
+        assert st.orcs[0].session_tasks == 1                                               # a fresh session
+
+        say("Bump the version", "0.2.0")                                                   # unrelated → no history
+        assert await _until(pilot, lambda: len(crew.calls) == 4)
+        assert crew.calls[3]["resume"] == "" and "recent work" not in crew.calls[3]["prompt"]
+        crew.finish(3)
+        assert await _until(pilot, lambda: st.orcs[0].status == "idle")
+        assert st.orcs[0].tokens == 400 and st.stats["claude"]["tokens"] == 400
+        assert "♻" in str(view.query_one("#pool-detail").render())

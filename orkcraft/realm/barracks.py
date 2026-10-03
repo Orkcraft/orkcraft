@@ -9,6 +9,12 @@ A task arrives (a cart from Tasks, a ticket, any text). The foreman decides, by 
                 provider and model from `providers`
     queue       otherwise it waits
 
+Context is reused, not re-sent. An orc whose earlier work is close to the new task (same ticket,
+or overlapping words with what it recently did) is preferred, and it resumes its own session: the
+prompt is then only the task — the orders and the briefing are already in the session. A session
+is rolled over after `session_tasks` tasks (it only grows); the next run starts fresh with a short
+handoff of the orc's recent work. A cold start on an unrelated task gets no history at all.
+
 Rules first, a model only when in doubt (not wired yet: a doubtful follow-up goes to the most
 recent orc and the decision says so). The foreman learns: every finished task updates the stats
 of its provider/model, and the next hire weighs success rate against cost — the self-reflection
@@ -35,6 +41,14 @@ FOLLOW_UP = re.compile(r"^\s*(follow[- ]?up|re:|also|and also|fix (the )?review|
                        re.I)
 DOCS_WORDS = re.compile(r"\b(doc|docs|readme|write[- ]?up|research|summar|explain|report|документ|исследу|опиши)",
                         re.I)
+RESUMABLE = frozenset({"claude"})          # harnesses whose session can be resumed (`--resume`)
+DEFAULT_SESSION_TASKS = 5                  # tasks one session carries before it is rolled over
+RELATED = 0.2                              # word overlap from which a task counts as the orc's kind of work
+LOOKAHEAD = 5                              # a freed orc looks this far into the queue for related work
+KEEP_RECENT = 3
+WORD = re.compile(r"[^\W\d_][\w-]{3,}")
+STOP = frozenset("this that with from have will what when where which into your there their about please "
+                 "should could would also make sure some them then than only just like need want task".split())
 NAMES = ("Grub", "Mogka", "Thrak", "Ugluk", "Snaga", "Lurtz", "Gorbag", "Shagrat", "Muzgash", "Radbug")
 KEEP_TASKS = 50
 
@@ -59,6 +73,9 @@ class PoolOrc:
     failed: int = 0
     cost_usd: float = 0.0
     last: str = ""                  # when it last finished
+    recent: list[str] = field(default_factory=list)  # its last tasks, a line each: what it knows
+    session_tasks: int = 0          # tasks the current session carries
+    tokens: int = 0
 
     @property
     def label(self) -> str:
@@ -84,6 +101,8 @@ class PoolTask:
     error: str = ""
     cost_usd: float | None = None
     decided: str = ""               # the last decision about it
+    warm: bool = False              # ran in the orc's resumed session
+    tokens: int | None = None
 
 
 @dataclass
@@ -103,6 +122,10 @@ def task_key(kind: str, value: str, title: str = "") -> str:
     return m.group(1) if m else ""
 
 
+def words(text: str) -> set[str]:
+    return {w for w in WORD.findall(text.lower()) if w not in STOP}
+
+
 def parse_provider(entry: str) -> tuple[str, str]:
     """`claude`, `agy:gemini-3.1-pro-high`, or a tier in place of the model: `claude:laborer`."""
     harness, _, model = str(entry).partition(":")
@@ -116,6 +139,7 @@ class Foreman:
         self.providers = [parse_provider(p) for p in (config.get("providers") or DEFAULT_PROVIDERS)]
         self.providers = [(h, m) for h, m in self.providers if h in ("claude", "agy")] or \
             [parse_provider(p) for p in DEFAULT_PROVIDERS]
+        self.session_tasks = int(config.get("session_tasks") or DEFAULT_SESSION_TASKS)
         self.stats = stats or {}
 
     # -- the model ------------------------------------------------------------------------------------
@@ -141,11 +165,28 @@ class Foreman:
         assert best is not None
         return best[0], best[1], best_why
 
-    def learn(self, orc: PoolOrc, ok: bool, cost: float | None) -> None:
+    def learn(self, orc: PoolOrc, ok: bool, cost: float | None, tokens: int | None = None) -> None:
         st = self.stats.setdefault(orc.label, {"runs": 0, "ok": 0, "cost": 0.0})
         st["runs"] += 1
         st["ok"] += int(ok)
         st["cost"] = round(st["cost"] + (cost or 0.0), 4)
+        if tokens:
+            st["tokens"] = st.get("tokens", 0) + tokens
+
+    # -- the context ----------------------------------------------------------------------------------
+
+    def affinity(self, task: PoolTask, orc: PoolOrc) -> float:
+        """0…1: how much of the task the orc has already seen — its ticket, else shared words."""
+        if task.key and task.key in orc.keys:
+            return 1.0
+        a, b = words(f"{task.title} {task.text[:1000]}"), words(" ".join(orc.recent))
+        return len(a & b) / len(a | b) if a and b else 0.0
+
+    def related(self, task: PoolTask, orc: PoolOrc) -> bool:
+        return self.affinity(task, orc) >= RELATED
+
+    def can_resume(self, orc: PoolOrc) -> bool:
+        return orc.harness in RESUMABLE and bool(orc.session) and orc.session_tasks < self.session_tasks
 
     # -- the decision -----------------------------------------------------------------------------------
 
@@ -175,9 +216,12 @@ class Foreman:
         if self.budget and spent >= self.budget:
             return Decision(at, task.id, "budget", why=f"spent ${spent:.2f} of ${self.budget:.2f}")
         waiting_for = {t.wait_for for t in queue if t.wait_for}
-        idle = next((o for o in orcs if o.status == "idle" and o.name not in waiting_for), None)
-        if idle is not None:
-            return Decision(at, task.id, "reuse", idle.name, f"{idle.name} is idle")
+        idle = [o for o in orcs if o.status == "idle" and o.name not in waiting_for]
+        if idle:
+            best = max(idle, key=lambda o: self.affinity(task, o))         # max keeps the first of equals
+            score = self.affinity(task, best)
+            why = f"{best.name} is idle" + (f" and knows this work ({score:.0%} overlap)" if score >= RELATED else "")
+            return Decision(at, task.id, "reuse", best.name, why)
         if len(orcs) < self.max_orcs:
             harness, model, mwhy = self.choose_model(task)
             name = next((n for n in NAMES if n not in {o.name for o in orcs}), f"Orc{len(orcs) + 1}")
@@ -185,9 +229,16 @@ class Foreman:
         return Decision(at, task.id, "queue", why=f"all {len(orcs)} orcs busy — waits in the queue")
 
     def next_for(self, orc: PoolOrc, queue: list[PoolTask]) -> PoolTask | None:
-        """What a freed orc takes: its own follow-ups first, then the oldest task nobody waits on."""
+        """What a freed orc takes: its own follow-ups first, then — among the first few tasks nobody waits
+        on — the one closest to its work, else the oldest."""
         mine = next((t for t in queue if t.wait_for == orc.name), None)
-        return mine or next((t for t in queue if not t.wait_for), None)
+        if mine is not None:
+            return mine
+        free = [t for t in queue if not t.wait_for]
+        if not free:
+            return None
+        best = max(free[:LOOKAHEAD], key=lambda t: self.affinity(t, orc))
+        return best if self.related(best, orc) else free[0]
 
 
 class Barracks:

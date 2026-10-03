@@ -155,7 +155,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         actions=(_a("pool.hire", "Hire orc", "+", "hire one more orc now"),
                  _a("pool.pause", "Pause / resume", "⏸", "stop or resume taking tasks")),
         config={"max_orcs": (int, (1, 10), False), "budget_usd": (float, (0, 200), False),
-                "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False)},
+                "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
+                "session_tasks": (int, (1, 20), False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Orc Council", "🔥", "M",
