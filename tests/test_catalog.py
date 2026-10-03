@@ -13,7 +13,7 @@ from orkcraft.realm.huts import ART
 
 def test_catalog_is_complete_and_consistent():
     want = {"pit", "watchtower", "totem", "mill", "fields", "barracks", "council", "war_drum", "forest", "scrolls",
-            "lake", "forge", "loot", "crag", "catapult"}                   # the camp of T1107
+            "lake", "forge", "loot", "crag", "catapult", "bugle"}          # the camp of T1107, and the Bugle
     assert set(catalog.TYPES) == want | {"town_hall", "custom", "workshop"} and catalog.DEFAULT_TYPE in catalog.TYPES
     seen: set[str] = set()
     for t in catalog.TYPES.values():
@@ -167,7 +167,7 @@ async def test_a_new_camp_has_only_the_town_hall_and_builds_from_the_catalog(fak
         await pilot.pause()
         lst = app.screen.query_one("#presets-list")
         ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        assert sum(1 for i in ids if i and i.startswith("type:")) == 15
+        assert sum(1 for i in ids if i and i.startswith("type:")) == 16
         assert isinstance(app.screen, PresetsModal)
         lst.highlighted = ids.index("type:forge")
         await pilot.press("enter")
@@ -190,7 +190,7 @@ async def test_a_preset_is_picked_by_intent_then_named_and_set(fake_repo: Path):
     from orkcraft.screens.build_wizard import BuildReview
 
     ids = [t for _, types in catalog.INTENTS for t in types]
-    assert len(ids) == len(set(ids)) == 15                              # every camp type under one intent
+    assert len(ids) == len(set(ids)) == 16                              # every camp type under one intent
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(160, 45)) as pilot:
         await pilot.pause()

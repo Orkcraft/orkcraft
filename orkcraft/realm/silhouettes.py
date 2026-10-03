@@ -138,6 +138,8 @@ CATAPULT = _make("catapult", ["┌────────┐ \\", "│§§§§�
                  fallback=("EGRESS",), pad=0, center=True, body=(10, 3))
 PIT = _make("pit", ["    ┌───┐", "_// │ § │", "    └───┘"], head=("█",), pad=0, center=True,
             caption=True, body=(5, 3))
+BUGLE = _make("bugle", ["┌────────┐   /| )", "│§§§§§§§§│o==|| ))", "└────────┘   \\| )"],
+              fallback=("♪",), pad=0, center=True, body=(10, 3))
 TOTEM = _make("totem", ["  ┌────┐  ", "  │■  ■│  ", "┌─┤ §§ ├─┐", "└─┤§§§§├─┘", "  └────┘  "],
               head=("||",), pad=0, center=True, body=(10, 5))
 WATCHTOWER = _make("watchtower", ["    /\\    ", "   /  \\   ", " _/____\\_ ", "┌────────┐"]
@@ -201,11 +203,11 @@ WORKSHOP = _make("workshop", ["     ||    ||     "] + _box(18, 5, top="┌──
                  head=("WORKSHOP",), body=(18, 7))
 
 SILHOUETTES: dict[str, Silhouette] = {s.id: s for s in (
-    MILL, CATAPULT, PIT, TOTEM, WATCHTOWER, FIELDS, BARRACKS, COUNCIL, FORGE, SCROLLS, WAR_DRUM, FOREST,
+    MILL, CATAPULT, BUGLE, PIT, TOTEM, WATCHTOWER, FIELDS, BARRACKS, COUNCIL, FORGE, SCROLLS, WAR_DRUM, FOREST,
     LOOT, CRAG, LAKE, TOWN_HALL, WORKSHOP)}
 
 # The catalog's types → their silhouette ids (the same names for all but a few).
-BY_TYPE = {"pit": "pit", "watchtower": "watchtower", "totem": "totem", "mill": "mill", "fields": "fields",
+BY_TYPE = {"pit": "pit", "watchtower": "watchtower", "totem": "totem", "mill": "mill", "bugle": "bugle", "fields": "fields",
            "barracks": "barracks", "council": "council", "war_drum": "war_drum", "forest": "forest",
            "scrolls": "scrolls", "lake": "lake", "forge": "forge", "loot": "loot", "crag": "crag",
            "catapult": "catapult", "town_hall": "town_hall", "workshop": "workshop"}

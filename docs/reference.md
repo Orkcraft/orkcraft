@@ -116,7 +116,7 @@ Roads and carts run between the huts.
 
 | Footprint | Buildings |
 |---|---|
-| small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
+| small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 🎺 Bugle (a bugle and its sound) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
 | 🗼 Watchtower | a roof over four lines: port, events, state, last signal |
 | halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🔥 Orc Council · ⚒️ Forge · 🗑️ Scroll Dump |
 | complexes, 26 wide, 9 lines | 🥁 War Drum · 🌲 File Forest · 📦 Loot Vault · 🪨 Tally Crag (and the 🏰 Town Hall) |
@@ -161,7 +161,7 @@ spread over the width — and keep the spot you drag them to.
 ## Buildings: the camp
 
 A new camp starts with the **🏰 Town Hall** alone; every other building is built from it —
-`P` lists the 15 camp buildings by what you need, asks for this building's name, icon,
+`P` lists the 16 camp buildings by what you need, asks for this building's name, icon,
 description and settings, and lets you place it (no model call); `B` (🏗 on the Town Hall) also
 builds one **from scratch** or lets the Foreman prefill one from a description — see
 [Town Hall pipeline](#town-hall-pipeline). A building is a **type** from the catalog
@@ -170,7 +170,7 @@ above the hut), up to two **quick actions** (buttons under the hut, `[` / `]`), 
 sends down roads and its settings. Each camp type has its own silhouette (see Town view).
 
 ```
-1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🗿 Totem
+1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🗿 Totem      🎺 Bugle
 2. QUEUES AND WORK         🌾 Task Fields ─► 🏕️ Barracks / 🔥 Orc Council      🥁 War Drum
 3. STORAGE AND INSPECTION  🌲 File Forest   🗑️ Scroll Dump   🌊 Lake of Insight   ⚒️ Forge
 4. RESULTS AND EGRESS      📦 Loot Vault    🪨 Tally Crag    🎯 Catapult
@@ -182,6 +182,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🗼 Watchtower | Lookout | IMAP mail (read-only), GitHub events (`gh`), a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.cron`, `watch.webhook` |
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; steps without a model (`grep`, `replace`, `csv`, `json`, `extract`, `template`, `script: …`) | `mill.done`, `mill.failed` |
+| 🎺 The Bugle | Bugler | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `bugle.sounded` |
 | 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e` | `tasks.created`, `tasks.status_changed` |
 | 🏕️ Barracks | Grunts | tasks: a follow-up goes to the orc who did the earlier part, a new one to an idle or newly hired orc (provider and model by record), in its own worktree | `pool.assigned`, `pool.done`, `pool.failed`, `pool.idle` |
 | 🔥 Orc Council | Chieftains | a question: members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; rounds and $ capped | `team.artifact_ready` |
@@ -197,6 +198,10 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
   Catapult without a schema.
+- The Bugle plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
+  `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
+  are synthesized once into `.orkcraft/bugle/sounds/`; every call (heard or kept quiet, and why)
+  is in `.orkcraft/bugle/<id>/calls.jsonl`.
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
   Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-orc Barracks); event ids
   are unchanged, so old roads keep working.
