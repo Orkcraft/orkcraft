@@ -60,9 +60,10 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         await pilot.press("2")                       # the 2nd orc, not the 2nd row
         await _settle(pilot)
         assert app.focus_state.mode == "unit" and app.focus_state.orc_key.endswith("town_hall/scribe")
-        card = str(app.screen.query_one("#info-body").render())
-        assert "free chain (no model) on 📦 Artifacts · selection" in card and "Counting is enough." in card
-        assert "🗿 no model — free" in card and "🪙 free · never calls a model" in card
+        about = str(app.screen.query_one("#io-about").render())
+        assert "free chain (no model) on 📦 Artifacts · selection" in about and "Counting is enough." in about
+        assert "🪙 free · never calls a model" in str(app.screen.query_one("#io-runs").render())
+        assert str(lst.get_option_at_index(0).prompt).startswith("🗿 no model")     # its 🎒 inventory
 
 
 GOOD = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",

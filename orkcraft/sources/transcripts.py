@@ -34,6 +34,7 @@ class Step:
     detail: str = ""           # the expanded text
     ts: dt.datetime | None = None
     diff: str = ""             # for edit tools: a unified-style view of the change
+    tool: str = ""             # for tool steps: the tool's name (`Bash`, `mcp__github__get_file`)
 
 
 @dataclass
@@ -215,7 +216,7 @@ def read_run(path: str | Path) -> Run:
                     inp = b.get("input") if isinstance(b.get("input"), dict) else {}
                     step = Step("tool", f"🔧 {_tool_title(name, inp)}",
                                 _cut(json.dumps(inp, ensure_ascii=False, indent=2)), ts,
-                                diff=_cut(_edit_diff(name, inp)) if name in EDIT_TOOLS else "")
+                                diff=_cut(_edit_diff(name, inp)) if name in EDIT_TOOLS else "", tool=name)
                     run.steps.append(step)
                     run.tool_calls += 1
                     pending[str(b.get("id", ""))] = step

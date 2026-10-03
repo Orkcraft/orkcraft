@@ -79,7 +79,7 @@ async def test_clicking_window_enters_building_state(fake_repo: Path):
 
 
 @pytest.mark.asyncio
-async def test_choosing_orc_enters_unit_state_and_escape_returns_neutral(fake_repo: Path):
+async def test_choosing_orc_opens_its_inventory_and_escape_steps_back(fake_repo: Path):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -95,10 +95,16 @@ async def test_choosing_orc_enters_unit_state_and_escape_returns_neutral(fake_re
         assert app.focus_state.mode == "unit"
         assert app.focus_state.orc_key is not None
 
-        info = app.screen.query_one("#info-body", Static)            # the card is in the Info panel (T1104)
-        assert "Chieftain" in str(info.render())
-        assert roster_list.display and "Chieftain" in str(roster_list.get_option_at_index(roster_list.highlighted).prompt)
+        assert app.screen.query_one("#info-orc").display               # Info: the orc's name, about, runs
+        assert "Chieftain" in str(app.screen.query_one("#io-name", Static).render())
+        assert not app.screen.query_one("#io-dismiss").display           # a steward is never dismissed
+        assert "INVENTORY" in str(roster.query_one("#roster-title", Static).render())
+        assert roster_list.get_option_at_index(0).id == "inv:model"
+        assert not app.screen.query_one("#command-card").display         # the orc's chat commands it
 
+        await pilot.press("escape")
+        await pilot.pause()
+        assert app.focus_state.mode == "building"                        # back to its building
         await pilot.press("escape")
         await pilot.pause()
         assert app.focus_state.mode == "neutral"

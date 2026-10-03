@@ -114,9 +114,8 @@ async def test_select_coder_and_edit_trigger(fake_repo: Path, isolated_layout_fi
         assert app.focus_state.mode == "unit"
 
         # Unit card shows its orders and not deployed
-        card_rendered = str(app.screen.query_one("#info-body", Static).render())
-        assert "take T1001" in card_rendered
-        assert "not deployed" in card_rendered
+        assert "take T1001" in str(app.screen.query_one("#io-about", Static).render())
+        assert "not deployed" in str(app.screen.query_one("#io-runs", Static).render())
 
         # T -> UnitModal -> saving a cron trigger writes it into Coder's OrcSpec in the scroll file
         await pilot.press("T")
@@ -224,14 +223,11 @@ async def test_deploy_coder(fake_repo: Path, monkeypatch: pytest.MonkeyPatch, is
         assert term.running
 
         # Coder shows deployed
-        await pilot.press("escape")
+        from orkcraft.screens.console import orc_key
+        coder = next(o for o in app.roster.orcs if o.name == "Coder")
+        app.set_focus_state("unit", orc_key_val=orc_key(coder), building_id=coder.building)
         await pilot.pause()
-        await pilot.press("2")
-        await pilot.pause()
-        roster_list.focus()
-        await pilot.press("2")
-        await pilot.pause()
-        rendered = str(app.screen.query_one("#info-body", Static).render())
+        rendered = str(app.screen.query_one("#io-runs", Static).render())
         assert "deployed" in rendered
         assert "not deployed" not in rendered
 

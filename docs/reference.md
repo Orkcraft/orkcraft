@@ -344,6 +344,14 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git reposit
   shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
   seen. The Command Card keeps only the building's own commands (and hides when it has none);
   the common ones stay on their keys.
+- **Console of a selected orc**: Info shows its icon, tier and name with 👍 / 👎 (its own
+  scores, under `<building>/<orc>`) and 🗑 (dismiss; never a steward), why it is here, and one
+  quiet line of spend, 👍 / 👎 and whether it is deployed with *📜 History*. The garrison turns
+  into its **🎒 Inventory**: the model and tier first (Enter or a click changes harness and tier
+  per step), then the tools of its latest runs, most recent first — one opens the Unit
+  Chronicles with only the runs and calls of that tool. The orc is commanded in its chat (45 %
+  of the screen, right), so the Command Card steps aside and the console ends where the chat
+  begins. Esc goes back to the building.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orcs, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.

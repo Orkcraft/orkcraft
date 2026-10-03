@@ -217,3 +217,19 @@ def incidents(root: Path, limit: int = 20) -> list[Incident]:
 
 def references(root: Path, building: str, limit: int = 5) -> list[dict]:
     return _tail(_dir(root) / building / "references.jsonl", limit)
+
+
+# -- an orc's own 👍 / 👎 ----------------------------------------------------------------------------
+
+def orc_key(building: str, orc_id: str) -> str:
+    """Scores of an orc sit beside its building's, under `<building>/<orc>`."""
+    return f"{building}/{orc_id}"
+
+
+def rate_orc(root: Path, building: str, orc_id: str, good: bool, note: str = "") -> dict[str, dict]:
+    """👍 / 👎 on an orc's work: counted for the orc; a 👎 with a note is an incident too."""
+    key = orc_key(building, orc_id)
+    if not good:
+        _append(_dir(root) / "incidents.jsonl",
+                asdict(Incident(_now(), key, "logic", note.strip()[:1000], "", {key: 1.0})))
+    return _bump(root, {key: {"likes": 1} if good else {"dislikes": 1}})

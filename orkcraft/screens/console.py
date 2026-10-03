@@ -195,6 +195,27 @@ def orc_info(app, orc: Orc) -> Text:
     return t
 
 
+def orc_about(app, orc: Orc) -> str:
+    """Why the orc is here: its role, its orders, what it does now."""
+    from orkcraft.realm import unit_info
+
+    b = app.building(orc.building) if orc.building else None
+    return " ".join(unit_info.orc_sentences(orc, f"{b.icon} {b.title}" if b else ""))
+
+
+def orc_runs(app, orc: Orc) -> Text:
+    """One quiet line: what it spent over its runs, and its own 👍 / 👎."""
+    from orkcraft.realm import feedback
+
+    parts = [_spend_of(app, orc).text()]
+    repo = getattr(app, "repo_root", None)
+    if repo is not None and "/" in orc.ref:
+        sc = feedback.scores(repo).get(orc.ref, {})
+        parts.append(f"👍 {sc.get('likes', 0)} 👎 {sc.get('dislikes', 0)}")
+    parts.append("● deployed" if orc.session else "not deployed")
+    return Text(" · ".join(parts), style="dim", no_wrap=True, overflow="ellipsis")
+
+
 def building_about(app, building_id: str) -> str:
     """Why the building is here: its own summary, else its type's, else its role."""
     from orkcraft.realm import catalog
@@ -371,6 +392,9 @@ class WarMap(Vertical):
         app.refresh_roster()
 
 
+INVENTORY_W = 19     # the garrison's 22 columns less its border and the list's scrollbar
+
+
 class ClanRoster(Vertical):
     """Centre column: accordion roster in Neutral, garrison in Building, card in Unit."""
 
@@ -387,6 +411,7 @@ class ClanRoster(Vertical):
     def __init__(self, id: str | None = None, classes: str | None = None) -> None:
         super().__init__(id=id, classes=classes)
         self.folded_headers: set[str] = set()
+        self.inventory_of: str | None = None      # the orc whose 🎒 inventory the list shows
 
     def compose(self) -> ComposeResult:
         yield Static("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
@@ -491,6 +516,11 @@ class ClanRoster(Vertical):
             if highlighted is not None and highlighted < lst.option_count:
                 lst.highlighted = highlighted
 
+        elif focus_state.mode == "unit" and (orc := next(
+                (o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None)) is not None \
+                and orc.category in (RESIDENT, WORKER):
+            self._show_inventory(orc)
+
         elif focus_state.mode in ("building", "road", "unit"):
             # The garrison stays: a selected orc is highlighted in it, its card is in the Info panel.
             orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None) \
@@ -519,6 +549,55 @@ class ClanRoster(Vertical):
                 lst.highlighted = keys.index(orc_key(orc))
             elif prev is not None and prev < lst.option_count:
                 lst.highlighted = prev          # the 1 s refresh must not undo the operator's cursor
+
+    def _show_inventory(self, orc: Orc) -> None:
+        """🎒 The selected orc's inventory: its model and tier (a button to change them), then
+        the tools it reached for lately — each opens its history with that tool."""
+        from orkcraft.realm import inventory, tiers
+
+        self.query_one("#roster-title", Static).update("🎒 INVENTORY")
+        self.query_one("#roster-footer", Static).update("[Enter] · [Esc] Back")
+        self.query_one("#roster-card", Static).display = False
+        lst = self.query_one("#roster-list", OptionList)
+        lst.display = True
+        prev = lst.highlighted if self.inventory_of == orc_key(orc) else None
+        self.inventory_of = orc_key(orc)
+        lst.clear_options()
+
+        snap = getattr(self.app, "snapshot", None)
+        term = orc.session if orc.category == RESIDENT else orc.ref
+        live = snap.model_by_terminal.get(term, "") if snap is not None and term else ""
+        models = inventory.models_of(orc, live)
+        row = Text(no_wrap=True, overflow="ellipsis")
+        if not models:
+            row.append("🗿 no model", style="dim")
+        for i, (tier, model) in enumerate(models[:2]):
+            if i:
+                row.append("→", style="dim")
+            if tier:
+                row.append(f"{tiers.icon(tier)} ", style=tiers.TIER_STYLES.get(tier, ""))
+            row.append(model, style="bold")
+        if len(models) > 2:
+            row.append(f"·{len(models)}", style="dim")
+        can_change = orc.category == RESIDENT and orc.kind not in ("chain", "script")
+        if can_change:                     # the whole row is the button; ⇄ says so
+            row.append(" ")
+            row.append(" ⇄ ", style="bold black on #f2c66d")
+        lst.add_option(Option(row, id="inv:model"))
+        lst.add_option(Option(Text("── tools ──", style="dim"), disabled=True))
+        repo = getattr(self.app, "repo_root", None)
+        tools = inventory.recent_tools(repo, orc) if repo is not None else []
+        for use in tools:
+            t = Text(no_wrap=True, overflow="ellipsis")
+            t.append("🔧 ")
+            t.append(inventory.short_tool(use.name))
+            count = Text(f" ×{use.count}", style="dim")
+            t.truncate(INVENTORY_W - count.cell_len, overflow="ellipsis")
+            lst.add_option(Option(Text.assemble(t, count), id=f"inv:tool:{use.name}"))
+        if not tools:
+            lst.add_option(Option(Text("no tool calls yet", style="dim"), disabled=True))
+        if prev is not None and prev < lst.option_count:
+            lst.highlighted = prev
 
     def toggle_fold(self, header_id: str) -> None:
         if header_id in self.folded_headers:
@@ -560,7 +639,19 @@ class ClanRoster(Vertical):
             self.toggle_fold(oid)
         elif oid.startswith("orc:"):
             self.post_message(self.OrcSelected(oid))
+        elif oid.startswith("inv:"):
+            self._use_inventory(oid)
         event.stop()
+
+    def _use_inventory(self, oid: str) -> None:
+        orc = next((o for o in self.app.roster.orcs if orc_key(o) == self.inventory_of), None)
+        if orc is None:
+            return
+        if oid == "inv:model":
+            self.app.open_orc_model(orc)
+        elif oid.startswith("inv:tool:"):
+            from orkcraft.screens.chronicles_view import UnitChronicles
+            self.app.push_screen(UnitChronicles(orc, self.app.repo_root, tool=oid.split(":", 2)[2]))
 
 
 class UnitInfo(Vertical):
@@ -583,19 +674,46 @@ class UnitInfo(Vertical):
             with Horizontal(id="ib-listens-row", classes="ib-row"):
                 yield Static("", id="ib-listens", markup=False)
                 yield Static(" ➕ Listen ", id="ib-listen", classes="ib-button")
+        with Vertical(id="info-orc"):
+            with Horizontal(classes="ib-row"):
+                yield Static("", id="io-name", markup=False)
+                yield Static(" 👍 ", id="io-like", classes="ib-button")
+                yield Static(" 👎 ", id="io-dislike", classes="ib-button")
+                yield Static(" 🗑 ", id="io-dismiss", classes="ib-button")
+            yield Static("", id="io-about", markup=False)
+            with Horizontal(classes="ib-row"):
+                yield Static("", id="io-runs", markup=False)
+                yield Static(" 📜 History ", id="io-history", classes="ib-button")
         yield Static("", markup=False, id="info-body")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
         title = self.query_one("#info-title", Static)
         body = self.query_one("#info-body", Static)
         building = self.query_one("#info-building", Vertical)
+        orc_box = self.query_one("#info-orc", Vertical)
         self.building_id = None
-        building.display = False
+        self.orc = None
+        building.display = orc_box.display = False
         body.display = True
         if focus_state.mode == "unit":
             orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None)
-            title.update(f"ℹ {orc.name}" if orc else "ℹ INFO")
-            body.update(orc_info(self.app, orc) if orc else Text("This orc is gone.", style="dim"))
+            title.update("ℹ INFO" if orc and orc.category == RESIDENT else f"ℹ {orc.name}" if orc else "ℹ INFO")
+            if orc is not None and orc.category == RESIDENT:
+                self.orc = orc
+                orc_box.display, body.display = True, False
+                head = Text(no_wrap=True, overflow="ellipsis")
+                head.append(f"{orc.icon} ")
+                _append_tier(head, orc)
+                head.append(("★ " if orc.lead else "") + orc.name, style="bold")
+                b = self.app.building(orc.building) if orc.building else None
+                if b is not None:
+                    head.append(f"  · {b.icon} {b.title}", style="dim")
+                self.query_one("#io-name", Static).update(head)
+                self.query_one("#io-about", Static).update(orc_about(self.app, orc))
+                self.query_one("#io-runs", Static).update(orc_runs(self.app, orc))
+                self.query_one("#io-dismiss").display = not orc.lead       # a steward stays
+            else:
+                body.update(orc_info(self.app, orc) if orc else Text("This orc is gone.", style="dim"))
         elif focus_state.mode == "building":
             bid = focus_state.building_id or ""
             b = self.app.building(bid)
@@ -618,8 +736,21 @@ class UnitInfo(Vertical):
                              style="dim"))
 
     def on_click(self, event: events.Click) -> None:
-        bid = getattr(self, "building_id", None)
         wid = getattr(event.widget, "id", "") or ""
+        orc = getattr(self, "orc", None)
+        if orc is not None and wid.startswith("io-"):
+            app = self.app
+            if wid == "io-like":
+                app.like_orc(orc)
+            elif wid == "io-dislike":
+                app.dislike_orc(orc)
+            elif wid in ("io-dismiss", "io-history"):
+                app.action_command_card("D" if wid == "io-dismiss" else "L")
+            else:
+                return
+            event.stop()
+            return
+        bid = getattr(self, "building_id", None)
         if not bid or not wid.startswith("ib-"):
             return
         app = self.app
@@ -680,8 +811,13 @@ class CommandCard(Vertical):
 
         for key, label in actions:
             actions_list.add_option(Option(Text(label), id=f"action:{key}"))
-        # A building with no commands of its own leaves the room to the Info panel.
-        self.set_class(not actions and focus_state.mode == "building", "-empty")
+        # A building with no commands of its own leaves the room to the Info panel; a garrison or
+        # War Tent orc is commanded in its chat, which stands where the card was.
+        chat = False
+        if focus_state.mode == "unit":
+            from orkcraft.screens.orc_chat import OrcChat
+            chat = OrcChat.supports(next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None))
+        self.set_class((not actions and focus_state.mode == "building") or chat, "-empty")
 
         if highlighted is not None and highlighted < actions_list.option_count:
             actions_list.highlighted = highlighted
@@ -816,11 +952,17 @@ class Console(Horizontal):
     }
     .ib-row { height: 1; }
     #ib-name, #ib-runs, #ib-listens { width: 1fr; }
-    #ib-about { height: auto; max-height: 3; color: $text; }
+    #ib-about, #io-about { height: auto; max-height: 3; color: $text; }
+    #info-orc {
+        height: 1fr;
+        padding: 0 1;
+        display: none;
+    }
+    #io-name, #io-runs { width: 1fr; }
     .ib-button { width: auto; margin-left: 1; background: $surface; text-style: bold; }
     .ib-button:hover { background: $warning; color: $background; }
-    #ib-like { background: $success 60%; }
-    #ib-dislike { background: $error 60%; }
+    #ib-like, #io-like { background: $success 60%; }
+    #ib-dislike, #io-dislike { background: $error 60%; }
     #command-card {
         width: 32;
         border-left: vkey $accent 60%;

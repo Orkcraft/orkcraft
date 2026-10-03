@@ -123,3 +123,51 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
             err.display = True
             return
         self.dismiss(orc)
+
+
+class OrcModelModal(ModalScreen["list[dict] | None"]):
+    """The 🎒 inventory's model button: harness and tier per step. Dismisses the new harness
+    steps (a tier replaces a model named outright), or None."""
+
+    BINDINGS = [Binding("escape", "dismiss(None)", "Cancel")]
+    DEFAULT_CSS = MODAL_CSS.replace("GarrisonModal", "OrcModelModal") + """
+OrcModelModal .model-row { margin-top: 0; }
+OrcModelModal .model-row Select { width: 1fr; }
+"""
+
+    def __init__(self, orc_name: str, harness: list[dict]) -> None:
+        super().__init__()
+        self.orc_name = orc_name
+        self.steps = [dict(s) for s in harness]
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(f"🎒 {self.orc_name} — model and tier", classes="order-title")
+            for i, step in enumerate(self.steps):
+                harness = str(step.get("harness", "claude"))
+                if harness not in ("claude", "agy"):          # a pipeline keeps its own models
+                    yield Label(f"{step.get('role', 'run')}: {harness}", classes="order-hint")
+                    continue
+                current = tiers.step_tier(step) if (step.get("tier") or step.get("model")) else ""
+                yield Label(f"{step.get('role', 'run')}:")
+                with Horizontal(classes="model-row"):
+                    yield Select([("claude", "claude"), ("agy", "agy")], value=harness,
+                                 allow_blank=False, id=f"step-harness-{i}")
+                    yield Select(tier_options(), value=current or "", allow_blank=False, id=f"step-tier-{i}")
+            with Horizontal():
+                yield Button("Save", variant="primary", id="model-save")
+                yield Button("Cancel", id="model-cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id != "model-save":
+            self.dismiss(None)
+            return
+        out = []
+        for i, step in enumerate(self.steps):
+            if not self.query(f"#step-harness-{i}"):
+                out.append(step)
+                continue
+            harness = str(self.query_one(f"#step-harness-{i}", Select).value)
+            tier = str(self.query_one(f"#step-tier-{i}", Select).value) or None
+            out += tiers.with_tier([{**step, "harness": harness}], tier)
+        self.dismiss(out)

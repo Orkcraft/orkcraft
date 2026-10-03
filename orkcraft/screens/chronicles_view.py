@@ -216,10 +216,12 @@ class UnitChronicles(ModalScreen[None]):
         Binding("l", "focus_right", "Protocol", show=False),
     ]
 
-    def __init__(self, orc: Orc, repo_root: Path) -> None:
+    def __init__(self, orc: Orc, repo_root: Path, tool: str | None = None) -> None:
+        """`tool`: only the runs that used this tool, and only its calls in their protocol."""
         super().__init__()
         self.orc = orc
         self.repo_root = repo_root
+        self.tool = tool
         self._runs_cache: dict[str, transcripts.Run] = {}
         self.sessions: list[Session] = []
         self._session_numbers: dict[str, str] = {}
@@ -228,8 +230,9 @@ class UnitChronicles(ModalScreen[None]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="unit-chronicles-dialog"):
+            tool = f" · 🔧 {self.tool}" if self.tool else ""
             yield Static(
-                f"📜 UNIT CHRONICLES · 🧌 {self.orc.name} ({self.orc.role})",
+                f"📜 UNIT CHRONICLES · 🧌 {self.orc.name} ({self.orc.role}){tool}",
                 id="unit-chronicles-title",
                 markup=False,
             )
@@ -272,6 +275,9 @@ class UnitChronicles(ModalScreen[None]):
         else:
             raw_sessions = []
 
+        if self.tool:
+            raw_sessions = [s for s in raw_sessions if self._uses_tool(s)]
+
         if not raw_sessions:
             self.sessions = []
             runs_list.display = False
@@ -299,6 +305,10 @@ class UnitChronicles(ModalScreen[None]):
         runs_list.highlighted = 0
         runs_list.focus()
         self._select_session(self.sessions[0])
+
+    def _uses_tool(self, session: Session) -> bool:
+        run = self._get_run(session)
+        return run is not None and any(st.tool == self.tool for st in run.steps)
 
     def _get_run(self, session: Session) -> transcripts.Run | None:
         if session.harness == HARNESS_AGY or not session.transcript:
@@ -362,6 +372,8 @@ class UnitChronicles(ModalScreen[None]):
         proto_list.clear_options()
 
         for idx, step in enumerate(run.steps):
+            if self.tool and step.tool != self.tool:
+                continue
             proto_list.add_option(Option(Text(step.title), id=str(idx)))
 
         if run.truncated:
@@ -380,9 +392,10 @@ class UnitChronicles(ModalScreen[None]):
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option_list.id == "protocol-steps":
-            if self._current_run and event.option_index is not None:
-                if 0 <= event.option_index < len(self._current_run.steps):
-                    step = self._current_run.steps[event.option_index]
+            idx = int(event.option_id) if (event.option_id or "").isdigit() else -1
+            if self._current_run:
+                if 0 <= idx < len(self._current_run.steps):
+                    step = self._current_run.steps[idx]
                     self.query_one("#step-detail", Static).update(step.detail)
         elif event.option_list.id == "runs-list":
             proto = self.query_one("#protocol-steps", OptionList)
