@@ -42,6 +42,7 @@ class Resources:
     quota: str = ""       # ⏳ used share of the subscriptions' limits ("claude 38% · agy 71%"); "" → none
     quota_level: str = "ok"
     show_gold: bool = True    # False when every tool in use is a subscription (settings.py)
+    hour: str = ""        # 🌙 quiet / 👔 office hours now (schedule.status); "" → neither
     budget: Budget = field(default_factory=Budget)
 
     def __post_init__(self) -> None:
@@ -137,6 +138,8 @@ class Hud(Static):
         lumber_disp = r.lumber if "/" in r.lumber else f"{r.lumber} / {lumber_limit}"
 
         right = Text()
+        if r.hour:
+            right.append(f"[{r.hour}] ", style="#b48ead" if r.hour.startswith("🌙") else "dim")
         if not narrow:
             right.append(f"⛏ commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}

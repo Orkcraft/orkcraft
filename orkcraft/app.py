@@ -51,6 +51,7 @@ from orkcraft.screens import onboarding
 from orkcraft.realm import town_builder, town_presets
 from orkcraft.screens.town_plan import TownPlanReview
 from orkcraft.env import getenv
+from orkcraft import schedule, settings
 from orkcraft.screens.orc_chat import OrcChat
 from orkcraft.screens.road_modal import PLAIN, RULE, RoadHandlerModal, SubscribeModal, _PickModal
 from orkcraft.widgets.carts import CartClicked
@@ -84,6 +85,7 @@ FULL_MIN_COLS = 140     # ≥ 140: Full RTS — console + windows
 COMPACT_MIN_COLS = 100  # 100–139: Compact — console + windows; < 100: Minimal single window
 ROSTER_REFRESH_S = 1.0
 HUT_REFRESH_S = 5.0      # status lines of the huts in the town view
+SCHEDULE_TICK_S = 30.0   # Shift switches Office on and off, quiet hours begin and end
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low
@@ -328,6 +330,7 @@ class OrkcraftApp(App[int]):
         self.set_interval(ROADS_TICK_S, self.roads.tick)
         self.set_interval(STEWARD_CHECK_S, self.check_stewards)
         self.set_interval(HUT_REFRESH_S, self.desktop.refresh_huts)
+        self.set_interval(SCHEDULE_TICK_S, self.tick_schedule)
         self.set_interval(FIRE_FLICKER_S, self.desktop.flicker_fires)
         self.set_interval(ORC_CHAT_REFRESH_S, self._tick_orc_chat)
         self.call_after_refresh(self.desktop.refresh_huts)
@@ -485,6 +488,28 @@ class OrkcraftApp(App[int]):
                                  lambda yes: yes and self.build_town_from_order())
 
     # -- 🧭 onboarding ----------------------------------------------------------------------------
+
+    def tick_schedule(self) -> None:
+        """Every half minute: Shift turns Office on and off, quiet hours begin and end (schedule.py)."""
+        self.desktop.apply_schedule()
+        self.refresh_hud()
+
+    def open_day(self) -> None:
+        """F10 → 🕰 Your day: the mode, the quiet hours and the office hours, on the day bar."""
+        def done(result: dict | None) -> None:
+            if result:
+                self.apply_day(result)
+
+        self.push_screen(onboarding.ModeStep(self.desktop.machine, standalone=True), done)
+
+    def apply_day(self, result: dict) -> None:
+        machine = self.desktop.machine
+        machine.quiet, machine.office = result.get("quiet"), result.get("office") or machine.office
+        machine.office_days = tuple(result.get("office_days", machine.office_days))
+        settings.save(machine)
+        self.desktop.set_mode(result.get("mode", machine.mode))
+        self.desktop.apply_schedule()
+        self.refresh_hud()
 
     def _order_burns(self) -> bool:
         order = town_presets.pending_order(self.repo_root)
@@ -652,10 +677,14 @@ class OrkcraftApp(App[int]):
                 self.call_after_refresh(self._save_screenshot)
             elif action == "keys":
                 self.push_screen(KeysCheatSheet())
-            elif action in ("immersion", "plain"):
-                self.desktop.set_mode(action == "plain")
-                self.notify("🎭 immersion — buildings wear their ASCII" if action == "immersion"
-                            else "▭ plain — buildings are just frames", title="Mode")
+            elif action in settings.MODES:
+                self.desktop.set_mode(action)
+                self.refresh_hud()
+                self.notify({"camp": "buildings wear their ASCII", "office": "buildings are just frames",
+                             "shift": "Office in office hours, Camp otherwise — F10 → 🕰 Your day"}[action],
+                            title=settings.MODE_TITLES[action])
+            elif action == "day":
+                self.open_day()
             elif action == "terrain":
                 self.action_toggle_terrain()
             elif action == "save":
@@ -680,7 +709,7 @@ class OrkcraftApp(App[int]):
             elif action == "quit":
                 self.action_graceful_quit()
 
-        self.push_screen(SystemMenu(self.desktop.plain), done)
+        self.push_screen(SystemMenu(self.desktop.mode), done)
 
     def _save_screenshot(self) -> None:
         now_str = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1927,12 +1956,13 @@ class OrkcraftApp(App[int]):
     def refresh_hud(self) -> None:
         gold, gold_level, lumber, lumber_level = self._resource_texts()
         quota, quota_level, show_gold = self._quota_text()
+        hour = schedule.status(self.desktop.machine)
         self._hud.set_resources(Resources(
             budget=self.scroll.budget,
             supply=self.roster.active, supply_max=self.scroll.budget.supply_max_workers,
             alerts=len(self.roster.alerts), commit=self.config.auto_commit,
             gold=gold, gold_level=gold_level, lumber=lumber, lumber_level=lumber_level,
-            quota=quota, quota_level=quota_level, show_gold=show_gold,
+            quota=quota, quota_level=quota_level, show_gold=show_gold, hour=hour,
         ))
 
     # -- orders (modals only on explicit request) ----------------------------------------------------

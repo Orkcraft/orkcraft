@@ -99,11 +99,11 @@ async def test_the_whole_flow_on_a_new_machine(fake_repo: Path, onboard):
         step.query_one("#ob-billing-claude", Select).value = "api"
         await _press(app, pilot, "ob-next")
 
-        assert isinstance(app.screen, ModeStep) and app.screen.mode == "immersion"
-        app.screen.pick("plain")
+        assert isinstance(app.screen, ModeStep) and app.screen.mode == "camp"
+        app.screen.pick("office")
         await _press(app, pilot, "ob-next")
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "plain"
+        assert machine.onboarded and machine.mode == "office"
         assert machine.tools["claude"].enabled and machine.tools["claude"].billing == "api"
         assert app.desktop.plain
 
@@ -165,7 +165,7 @@ async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "immersion" and machine.tools["claude"].enabled
+        assert machine.onboarded and machine.mode == "camp" and machine.tools["claude"].enabled
         assert not (fake_repo / ".claude" / "settings.json").exists()
 
 

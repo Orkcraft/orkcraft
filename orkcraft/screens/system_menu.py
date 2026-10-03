@@ -17,8 +17,9 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("war_horn", "📯 Halt All Operations (War Horn)"),
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
-    ("immersion", "🎭 Immersion mode — buildings wear their ASCII"),
-    ("plain", "▭ Plain mode — buildings are just frames"),
+    ("camp", "🧌 Camp — buildings wear their ASCII"),
+    ("office", "👔 Office — buildings are just frames"),
+    ("shift", "🧌/👔 Shift — Office in office hours, Camp otherwise"),
     ("terrain", "🌲 Toggle Terrain (Dim / Black)"),
     ("save", "💾 Save Town Scroll (.orkcraft.json)"),
     ("audit", "🔍 Audit the camp (security, usability, spend)"),
@@ -26,6 +27,7 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("improve", "🔧 Self-improvement — proposals for the camp"),
     ("weekly", "🗓 Weekly self-audit — the last report, or run it now"),
     ("settings", "⚙ Self-improvement settings — models and schedules"),
+    ("day", "🕰 Your day — quiet hours and office hours"),
     ("onboarding", "🧭 Onboarding — your AI tools and the look of the town"),
     ("town_order", "📜 Town Builder — plan the town ordered in words"),
     ("quit", "🚪 Quit Orkcraft"),
@@ -199,15 +201,16 @@ class SystemMenu(ModalScreen[str | None]):
         Binding("1", "pick('war_horn')", show=False),
         Binding("2", "pick('screenshot')", show=False),
         Binding("3", "pick('keys')", show=False),
-        Binding("4", "pick('immersion')", show=False),
-        Binding("5", "pick('plain')", show=False),
-        Binding("6", "pick('terrain')", show=False),
-        Binding("7", "pick('save')", show=False),
+        Binding("4", "pick('camp')", show=False),
+        Binding("5", "pick('office')", show=False),
+        Binding("6", "pick('shift')", show=False),
+        Binding("7", "pick('terrain')", show=False),
+        Binding("8", "pick('save')", show=False),
     ]
 
-    def __init__(self, plain: bool = False) -> None:
+    def __init__(self, mode: str = "camp") -> None:
         super().__init__()
-        self.plain = plain          # which of the two modes is on (marked ●)
+        self.mode = mode            # which of the three modes is on (marked ●)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="system-menu-dialog"):
@@ -219,7 +222,7 @@ class SystemMenu(ModalScreen[str | None]):
         lst = self.query_one("#system-menu-list", OptionList)
         lst.clear_options()
         for i, (action_id, label) in enumerate(MENU_ITEMS, 1):
-            on = (action_id == "plain") == self.plain if action_id in ("immersion", "plain") else False
+            on = action_id == self.mode
             lst.add_option(Option(Text(f"[{i}] {label}" + ("  ●" if on else "")), id=action_id))
         lst.focus()
 

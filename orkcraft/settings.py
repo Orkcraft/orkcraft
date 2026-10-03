@@ -2,11 +2,14 @@
 
     s = settings.load()              # never raises; defaults for anything missing or broken
     s.tools["claude"].billing        # "subscription" | "api"
-    s.mode                           # "immersion" | "plain"
+    s.mode                           # "camp" | "office" | "shift"
+    s.quiet, s.office, s.office_days # 🌙 do-not-disturb and 👔 office hours (schedule.py)
     settings.save(s)
 
-The tools the operator leads and how each is paid for, and the display mode. A project may still
-override the mode with `preferences.mode` in its Town Scroll (design: docs/design/onboarding.md).
+The tools the operator leads and how each is paid for, the display mode and the day's schedule:
+🧌 Camp — buildings wear their ASCII; 👔 Office — just frames; 🧌/👔 Shift — Office in office hours
+on office days, Camp otherwise. A project may still override the mode with `preferences.mode` in
+its Town Scroll (design: docs/design/onboarding.md).
 Orkcraft never stores an API key here: `billing` only says how the CLI is paid for.
 """
 from __future__ import annotations
@@ -16,12 +19,22 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from orkcraft import schedule
 from orkcraft.env import getenv
+from orkcraft.schedule import Span
 
 TOOLS = ("claude", "agy", "codex")
 BILLINGS = ("subscription", "api")
-MODES = ("immersion", "plain")
-DEFAULT_MODE = "immersion"
+MODES = ("camp", "office", "shift")
+LEGACY_MODES = {"immersion": "camp", "plain": "office"}      # the names before Shift
+DEFAULT_MODE = "camp"
+MODE_TITLES = {"camp": "🧌 Camp", "office": "👔 Office", "shift": "🧌/👔 Shift"}
+
+
+def mode_of(value: object) -> str | None:
+    """A mode by its name, old names included; None when it is none of them."""
+    value = LEGACY_MODES.get(str(value), value)
+    return value if value in MODES else None
 
 
 @dataclass
@@ -35,12 +48,18 @@ class MachineSettings:
     tools: dict[str, ToolChoice] = field(default_factory=lambda: {t: ToolChoice() for t in TOOLS})
     mode: str = DEFAULT_MODE
     onboarded: bool = False       # steps 1–2 of onboarding done on this machine
+    quiet: Span | None = None     # 🌙 do-not-disturb hours; None = off
+    office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
+    office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
 
     def to_dict(self) -> dict:
         return {
             "tools": {t: {"enabled": c.enabled, "billing": c.billing} for t, c in self.tools.items()},
             "mode": self.mode,
             "onboarded": self.onboarded,
+            "quiet": self.quiet.to_dict() if self.quiet else None,
+            "office": self.office.to_dict(),
+            "office_days": list(self.office_days),
         }
 
     @classmethod
@@ -53,9 +72,13 @@ class MachineSettings:
                 billing = raw.get("billing")
                 s.tools[t] = ToolChoice(enabled=bool(raw.get("enabled", False)),
                                         billing=billing if billing in BILLINGS else "subscription")
-        if data.get("mode") in MODES:
-            s.mode = data["mode"]
+        s.mode = mode_of(data.get("mode")) or DEFAULT_MODE
         s.onboarded = bool(data.get("onboarded", False))
+        s.quiet = Span.from_dict(data.get("quiet"))
+        s.office = Span.from_dict(data.get("office")) or schedule.DEFAULT_OFFICE
+        days = data.get("office_days")
+        if isinstance(days, list):
+            s.office_days = tuple(sorted({d for d in days if isinstance(d, int) and 0 <= d <= 6}))
         return s
 
 

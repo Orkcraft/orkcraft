@@ -19,6 +19,8 @@ from textual.widget import Widget
 from orkcraft import theme
 from orkcraft.realm import silhouettes
 from orkcraft.realm.orcs import ALERT_ICON
+
+QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire
 from orkcraft.realm.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
@@ -82,6 +84,7 @@ class Hut(Widget):
         self.sil = self.base                  # …grown to the content, for the types that grow
         self.rows = 0
         self.plain = False                    # the plain mode: just frames
+        self.quiet = False                    # 🌙 quiet hours: no fire, ❓ instead
         self.actions = list(actions)          # catalog.ActionDef: id, label, glyph
         self._buttons: list[tuple[int, int, str]] = []   # (x0, x1, action id) on the button row
         self.number, self.title, self.badge = 0, "", ""
@@ -106,7 +109,7 @@ class Hut(Widget):
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _relabel(self) -> None:
-        label = silhouettes.label(self.number, self.title, self.sil.width, self._badge_short(self.badge))
+        label = silhouettes.label(self.number, self.title, self.sil.width, self._badge_shown())
         if label != self.label:
             self.label = label
             self._reshape()
@@ -117,12 +120,25 @@ class Hut(Widget):
             self.number, self.title = number, title
             self._relabel()
 
+    def _badge_shown(self) -> str:
+        """The short badge; in quiet hours a waiting orc shows ❓ instead of a fire."""
+        short = self._badge_short(self.badge)
+        return short.replace(ALERT_ICON, QUIET_ALERT) if self.quiet else short
+
     def set_badge(self, badge: str) -> None:
         """The roster badge, shortened to the lead's icon and state, goes on the label's first line."""
         if badge == self.badge:
             return
         self.badge = badge
-        self.set_class(ALERT_ICON in badge, "-alert")
+        self.set_class(ALERT_ICON in badge and not self.quiet, "-alert")
+        self._relabel()
+
+    def set_quiet(self, quiet: bool) -> None:
+        """🌙 Do-not-disturb: no burning fence, ❓ on the label (schedule.py)."""
+        if quiet == self.quiet:
+            return
+        self.quiet = quiet
+        self.set_class(ALERT_ICON in self.badge and not quiet, "-alert")
         self._relabel()
 
     def _reshape(self) -> None:
@@ -164,7 +180,7 @@ class Hut(Widget):
     def _apply(self, sil: silhouettes.Silhouette, actions: list | tuple) -> None:
         if sil != self.sil or [a.id for a in actions] != [a.id for a in self.actions]:
             self.sil, self.actions = sil, list(actions)
-            self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_short(self.badge))
+            self.label = silhouettes.label(self.number, self.title, sil.width, self._badge_shown())
             self._reshape()
             self.refresh()
 

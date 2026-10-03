@@ -51,29 +51,34 @@ Stored:
              "agy":    { "enabled": false, "billing": "subscription" } } }
 ```
 
-## 3. Step 2 — Mode
+## 3. Step 2 — Mode and your day
 
 ```
 ┌ How should the town look? ────────────────────────────────────────────────┐
-│                                                                           │
-│   ┌──────────────────────────┐      ┌──────────────────────────┐          │
-│   │      🕳️ Pit               │      │┌ 🕳️ Pit ────────────────┐│          │
-│   │     ___________          │      ││ 3 files · 1 link        ││          │
-│   │    /  ░░░░░░░░  \        │      ││ last: spec.md           ││          │
-│   │    \___________/         │      │└─────────────────────────┘│          │
-│   │  3 files · 1 link        │      │                           │          │
+│   ┌ ⚒️ Forge (ASCII) ─────────┐      ┌ ⚒️ Forge (frame) ─────────┐          │
+│   │  …the same live rows…    │      │  …the same live rows…    │          │
 │   └──────────────────────────┘      └──────────────────────────┘          │
-│        ◉ 🎭 Immersion                     ○ ▭ Plain                         │
+│     ○ 🧌 Camp            ○ 👔 Office            ◉ 🧌/👔 Shift                │
 │                                                                           │
-│  You can change it at any time: F10.               [ ← Back ]  [ Next → ] │
+│  Your day                       ▼                                         │
+│   ████████████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████████████████████████              │
+│   00    03    06    09    12    15    18    21  24                         │
+│   █ day  █ 🌙 quiet 23:00–08:00  █ 👔 office 09:00–18:00 Mon–Fri            │
+│  [x] 🌙 Do not disturb — no fires, only ❓ (later: no sound, no push)        │
+│                                        [ ← Back ]  [ Skip ]  [ Next → ]   │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Both cards show **the same building with the same live rows**, so only the look differs.
-- A radio choice (or a click on a card), not two checkboxes — the modes exclude each other.
-- Narrower than ~90 columns: the cards stack vertically.
-- Stored as `mode` in the machine settings. `preferences.mode` in the Town Scroll becomes an optional
-  per-project override; when it is absent the machine value applies (today it defaults to immersion).
+- Three modes: **🧌 Camp** (ASCII), **👔 Office** (just frames) and **🧌/👔 Shift** — Office in office
+  hours on office days, Camp otherwise, switched by the clock (`schedule.py`). Both cards light up
+  for Shift. The cards show the same building with the same live rows, so only the look differs.
+- **The day bar** (`widgets/day_bar.py`): 48 half-hour cells, amber day, dark purple 🌙 quiet, grey
+  👔 office (Shift only), ▼ now. Mouse: drag a stretch for the selected span. Keys: Tab picks an edge,
+  ←/→ move it, shift+←/→ move the whole span, Delete turns quiet off. Quiet wins over office.
+- **Quiet hours**: no fires flicker, a waiting orc shows ❓; later no sound, no push, no bot.
+- Stored in the machine settings: `mode`, `quiet`, `office`, `office_days` (Mon–Fri by default).
+  `preferences.mode` in the Town Scroll stays an optional per-project override.
+- The same screen is F10 → 🕰 Your day, with Save and Cancel.
 
 ## 4. Step 3 — Town
 

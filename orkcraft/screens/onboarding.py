@@ -23,7 +23,8 @@ from textual.widget import Widget
 from textual.widgets import Button, Checkbox, Input, Label, OptionList, ProgressBar, RadioButton, RadioSet, Select, Static
 from textual.widgets.option_list import Option
 
-from orkcraft import settings, tools
+from orkcraft import schedule, settings, tools
+from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
 from orkcraft.realm import silhouettes, town_presets
 from orkcraft.screens.build_flow import MODAL_CSS
 
@@ -159,44 +160,77 @@ def card_art(plain: bool) -> Text:
 
 
 class ModeCard(Static):
-    """A clickable picture of one mode."""
+    """A clickable picture of one look: the camp (ASCII) or the office (frames)."""
 
     def __init__(self, mode: str) -> None:
-        super().__init__(card_art(mode == "plain"), id=f"ob-card-{mode}", classes="ob-card")
+        super().__init__(card_art(mode == "office"), id=f"ob-card-{mode}", classes="ob-card")
         self.mode = mode
 
     def on_click(self) -> None:
         self.screen.pick(self.mode)  # type: ignore[attr-defined]
 
 
-class ModeStep(ModalScreen[str | None]):
-    """Immersion or plain. Dismisses the mode, "back", "skip" or None."""
+def day_legend(bar: DayBar, days: tuple[int, ...]) -> Text:
+    t = Text()
+    t.append("█", style=DAY_COLOR)
+    t.append(" day   ")
+    t.append("█", style=QUIET_COLOR)
+    t.append(f" 🌙 quiet {bar.quiet.label()}   " if bar.quiet else " 🌙 quiet off   ")
+    if bar.show_office:
+        t.append("█", style=OFFICE_COLOR)
+        names = "–".join((schedule.DAYS[days[0]], schedule.DAYS[days[-1]])) if days else "no days"
+        t.append(f" 👔 office {bar.office.label()} {names}")
+    return t
+
+
+class ModeStep(ModalScreen[dict | str | None]):
+    """🧌 Camp, 👔 Office or 🧌/👔 Shift, and the day: quiet hours and (for Shift) office hours.
+    Dismisses {"mode", "quiet", "office", "office_days"}, "back", "skip" or None. `standalone`
+    (F10 → 🕰 Your day): Save and Cancel instead of the onboarding's buttons."""
 
     BINDINGS = [Binding("escape", "back", "Back")]
-    DEFAULT_CSS = _css("ModeStep", 76) + """
+    DEFAULT_CSS = _css("ModeStep", 80) + """
     ModeStep #ob-cards { height: auto; }
     ModeStep .ob-card { width: 1fr; height: auto; border: round $panel-lighten-2; padding: 0 1; margin: 0 1; }
     ModeStep .ob-card.-picked { border: round $accent; }
     ModeStep RadioSet { width: 100%; layout: horizontal; border: none; }
     ModeStep RadioButton { width: 1fr; }
+    ModeStep .ob-section { text-style: bold; margin-top: 1; }
+    ModeStep #ob-day-row { height: auto; align-horizontal: center; }
+    ModeStep #ob-day-legend { height: auto; }
+    ModeStep #ob-quiet { margin-top: 0; }
     """
 
-    def __init__(self, mode: str = settings.DEFAULT_MODE) -> None:
+    def __init__(self, machine: settings.MachineSettings | None = None, standalone: bool = False) -> None:
         super().__init__()
-        self.mode = mode if mode in settings.MODES else settings.DEFAULT_MODE
+        self.machine = machine or settings.MachineSettings()
+        self.mode = self.machine.mode
+        self.standalone = standalone
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🧭 How should the town look?  ·  step 2 of 3", classes="build-title")
+            yield Label("🕰 Your day — the look of the town and its hours" if self.standalone
+                        else "🧭 How should the town look?  ·  step 2 of 3", classes="build-title")
             with Horizontal(id="ob-cards"):
-                yield ModeCard("immersion")
-                yield ModeCard("plain")
+                yield ModeCard("camp")
+                yield ModeCard("office")
             with RadioSet(id="ob-modes"):
-                yield RadioButton("🎭 Immersion", value=self.mode == "immersion", id="ob-mode-immersion")
-                yield RadioButton("▭ Plain", value=self.mode == "plain", id="ob-mode-plain")
-            yield Static("You can change it at any time: F10.", classes="build-hint")
-            yield _buttons(("← Back", "ob-back", "default"), ("Skip", "ob-skip", "default"),
-                           ("Next →", "ob-next", "primary"))
+                for mode in settings.MODES:
+                    yield RadioButton(settings.MODE_TITLES[mode], value=self.mode == mode, id=f"ob-mode-{mode}")
+            yield Static("", id="ob-mode-hint", classes="build-hint")
+            yield Label("Your day", classes="ob-section")
+            with Horizontal(id="ob-day-row"):
+                yield DayBar(self.machine.quiet, self.machine.office, show_office=self.mode == "shift", id="ob-day")
+            yield Static("", id="ob-day-legend", markup=False)
+            yield Checkbox("🌙 Do not disturb — no fires, only ❓ (later: no sound, no push)",
+                           value=self.machine.quiet is not None, id="ob-quiet")
+            yield Static("Drag across the bar, or Tab to an edge and move it with ←/→ (shift: the whole span).",
+                         classes="build-hint")
+            if self.standalone:
+                yield _buttons(("Cancel", "ob-cancel", "default"), ("Save", "ob-save", "success"))
+            else:
+                yield _buttons(("← Back", "ob-back", "default"), ("Skip", "ob-skip", "default"),
+                               ("Next →", "ob-next", "primary"))
 
     def on_mount(self) -> None:
         self.pick(self.mode)
@@ -208,13 +242,27 @@ class ModeStep(ModalScreen[str | None]):
     def _fit(self) -> None:
         self.query_one("#ob-cards").styles.layout = "vertical" if self.app.size.width < NARROW else "horizontal"
 
+    @property
+    def bar(self) -> DayBar:
+        return self.query_one("#ob-day", DayBar)
+
     def pick(self, mode: str) -> None:
         self.mode = mode
         for card in self.query(ModeCard):
-            card.set_class(card.mode == mode, "-picked")
+            card.set_class(card.mode == mode or mode == "shift", "-picked")
         button = self.query_one(f"#ob-mode-{mode}", RadioButton)
         if not button.value:
             button.value = True
+        self.query_one("#ob-mode-hint", Static).update({
+            "camp": "🧌 Buildings wear their ASCII all day.",
+            "office": "👔 Buildings are just frames — nothing to explain over a shoulder.",
+            "shift": "🧌/👔 Office in office hours on weekdays (grey on the bar), the camp the rest of the time.",
+        }[mode] + "  You can change it at any time: F10.")
+        self.bar.set_show_office(mode == "shift")
+        self._legend()
+
+    def _legend(self) -> None:
+        self.query_one("#ob-day-legend", Static).update(day_legend(self.bar, self.machine.office_days))
 
     @on(RadioSet.Changed, "#ob-modes")
     def _radio(self, event: RadioSet.Changed) -> None:
@@ -224,12 +272,41 @@ class ModeStep(ModalScreen[str | None]):
             if mode != self.mode:
                 self.pick(mode)
 
+    @on(DayBar.Changed)
+    def _day(self, event: DayBar.Changed) -> None:
+        event.stop()
+        box = self.query_one("#ob-quiet", Checkbox)
+        if box.value != (self.bar.quiet is not None):
+            with box.prevent(Checkbox.Changed):
+                box.value = self.bar.quiet is not None
+        self._legend()
+
+    @on(Checkbox.Changed, "#ob-quiet")
+    def _quiet(self, event: Checkbox.Changed) -> None:
+        event.stop()
+        if event.value and self.bar.quiet is None:
+            self.bar.set_quiet(schedule.DEFAULT_QUIET)
+        elif not event.value and self.bar.quiet is not None:
+            self.bar.set_quiet(None)
+
+    def result(self) -> dict:
+        return {"mode": self.mode, "quiet": self.bar.quiet, "office": self.bar.office,
+                "office_days": self.machine.office_days}
+
     def action_back(self) -> None:
-        self.dismiss("back")
+        self.dismiss(None if self.standalone else "back")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        self.dismiss({"ob-next": self.mode, "ob-back": "back", "ob-skip": "skip"}[event.button.id or "ob-skip"])
+        bid = event.button.id
+        if bid in ("ob-next", "ob-save"):
+            self.dismiss(self.result())
+        elif bid == "ob-skip":
+            self.dismiss("skip")
+        elif bid == "ob-back":
+            self.dismiss("back")
+        else:
+            self.dismiss(None)
 
 
 # -- step 3: the town -------------------------------------------------------------------------------
@@ -461,44 +538,47 @@ class Onboarding:
             return
         self.picked = result.get("tools") or {}
         if result.get("action") == "skip":
-            self._save_machine(settings.DEFAULT_MODE if not self.machine.onboarded else self.machine.mode)
+            self._save_machine(None)
             self._skip_town()
             return
         self._mode()
 
     # step 2
     def _mode(self) -> None:
-        self.app.push_screen(ModeStep(self.machine.mode), self._after_mode)
+        self.app.push_screen(ModeStep(self.machine), self._after_mode)
 
-    def _after_mode(self, result: str | None) -> None:
+    def _after_mode(self, result: dict | str | None) -> None:
         if result is None:
             return
         if result == "back":
             self._tools()
             return
-        self._save_machine(result if result in settings.MODES else self.machine.mode)
+        self._save_machine(result if isinstance(result, dict) else None)
         if result == "skip":
             self._skip_town()
         elif self.town_step:
             self._town(can_back=True)
 
-    def _save_machine(self, mode: str) -> None:
+    def _save_machine(self, day: dict | None) -> None:
+        """Tools, mode and the day go to the machine settings (and to the town on screen)."""
         tools_ = dict(self.machine.tools)
         tools_.update(self.picked or {})
         machine = replace(self.machine, tools=tools_, onboarded=True)
+        if not self.machine.onboarded and day is None:
+            machine.mode = settings.DEFAULT_MODE
         desktop = getattr(self.app, "desktop", None)
-        if desktop is not None:
-            desktop.machine = replace(machine, mode=desktop.machine.mode)
-            desktop.set_mode(mode == "plain")
-            desktop.machine.mode = mode
+        apply_day = getattr(self.app, "apply_day", None)
+        if desktop is not None and apply_day is not None:
+            desktop.machine = machine
+            settings.save(machine)
+            apply_day(day or {"mode": machine.mode, "quiet": machine.quiet, "office": machine.office,
+                              "office_days": machine.office_days})
             machine = desktop.machine
         else:
-            machine.mode = mode
-        settings.save(machine)
+            if day:
+                machine.mode, machine.quiet, machine.office = day["mode"], day["quiet"], day["office"]
+            settings.save(machine)
         self.machine = machine
-        refresh = getattr(self.app, "refresh_hud", None)
-        if refresh is not None:
-            refresh()
 
     # step 3
     def _town(self, can_back: bool) -> None:

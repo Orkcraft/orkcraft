@@ -453,7 +453,8 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 1. **Tools** — `claude` and `agy` are looked up on `PATH`; each found one is checked, with its
    version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
    `GEMINI_API_KEY` is set) — you can change both. `codex` is listed as coming soon. No key is stored.
-2. **Mode** — 🎭 immersion or ▭ plain, shown on the same building.
+2. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
+   day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
 3. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
    💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
    become an order for the 📜 Town Builder (below). The 🛡 Warder is installed here when `claude`
@@ -497,12 +498,30 @@ pipx install ./orkcraft        # or: python3 -m venv .venv && .venv/bin/pip inst
 cd your-project && orkcraft hooks install && orkcraft
 ```
 
-## Modes: immersion and plain
+## Modes and your day: 🧌 Camp · 👔 Office · 🧌/👔 Shift
 
-F10 → 🎭 *Immersion* (default) or ▭ *Plain*, kept per machine as `mode` in `~/.config/orkcraft/settings.json`
-(`$ORKCRAFT_SETTINGS_FILE` overrides the path). A project may override it with `preferences.mode` in
-`.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's override. In immersion
-every building wears its ASCII silhouette (roofs, sails, trees, waves). In plain mode a building is
-only a frame with the same live text rows; the label above and the buttons below stay. The Lake, the
-Crag and custom frames grow with their content (up to a maximum) in both modes, and a hut that changes
+F10 → *Camp* (default), *Office* or *Shift*, kept per machine as `mode` in
+`~/.config/orkcraft/settings.json` (`$ORKCRAFT_SETTINGS_FILE` overrides the path; the old names
+`immersion` / `plain` still load as camp / office). A project may override it with `preferences.mode`
+in `.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's override.
+
+- **🧌 Camp** — every building wears its ASCII silhouette (roofs, sails, trees, waves).
+- **👔 Office** — a building is only a frame with the same live text rows; the label above and the
+  buttons below stay.
+- **🧌/👔 Shift** — Office in office hours on office days (default 09:00–18:00, Mon–Fri; a span past
+  midnight belongs to the day it started), Camp the rest of the time. The town switches by itself
+  (checked every 30 s) and the HUD says `[👔 office till 18:00]`.
+
+The Lake, the Crag and custom frames grow with their content in every mode, and a hut that changes
 size or mode keeps off its neighbours.
+
+**🌙 Do not disturb** — quiet hours (default 23:00–08:00 when switched on, off otherwise). In quiet
+hours no fence burns or flickers: a waiting orc shows ❓ on its label instead of 🔥, and the HUD says
+`[🌙 quiet till 08:00]`. Quiet wins where it overlaps office hours. Later it will also mute sound,
+push notifications and the bot.
+
+**F10 → 🕰 Your day** (and onboarding step 2) shows the day bar: 00:00 → 24:00, one cell per half
+hour, amber for the day, dark purple for quiet, grey for office hours (Shift only), ▼ for now. Drag
+across it to set the selected span, or Tab to an edge (quiet start / end, office start / end) and
+move it with ←/→ by half an hour, shift+←/→ for the whole span; Delete turns the quiet hours off.
+Office days are `office_days` in the settings file (0 = Monday).

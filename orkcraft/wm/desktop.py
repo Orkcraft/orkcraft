@@ -17,7 +17,7 @@ from orkcraft.wm import geometry as geo
 from orkcraft.wm.geometry import SNAP_SLOTS, Frac, Geom
 from orkcraft import scroll
 from orkcraft.scroll import TownScroll, has_outgoing
-from orkcraft import settings, theme
+from orkcraft import schedule, settings, theme
 from orkcraft.realm import chronicles, pipes
 from orkcraft.widgets.road_layer import (ENTRY_GLYPH, EXIT_GLYPH, ROAD_SELECTED, RoadClicked, RoadGate, RoadLabel,
                                          RoadRun, road_key, runs)
@@ -797,26 +797,50 @@ class Desktop(Container):
         return w.geom if w is not None and not w.hidden and self.in_view(w) else None
 
     @property
-    def plain(self) -> bool:
-        """The plain mode: huts are only frames; else immersion, where they wear their ASCII.
-        The project's `preferences.mode` overrides the machine's mode (settings.py)."""
-        mode = self.scroll.preferences.get("mode") if self.scroll is not None else None
-        return (mode or self.machine.mode) == "plain"
+    def mode(self) -> str:
+        """🧌 camp · 👔 office · 🧌/👔 shift: the project's `preferences.mode` over the machine's (settings.py)."""
+        pref = self.scroll.preferences.get("mode") if self.scroll is not None else None
+        return settings.mode_of(pref) or self.machine.mode
 
-    def set_mode(self, plain: bool) -> None:
-        """Set the machine's mode (F10); the project's override is dropped so the choice shows here too."""
-        if plain == self.plain or self.scroll is None:
+    @property
+    def plain(self) -> bool:
+        """Huts are only frames now: Office, or Shift in office hours; else they wear their ASCII."""
+        return schedule.plain_now(self.machine, mode=self.mode)
+
+    @property
+    def quiet(self) -> bool:
+        """🌙 Do-not-disturb hours: fires do not flicker, a waiting orc shows ❓."""
+        return schedule.quiet_now(self.machine)
+
+    def set_mode(self, mode: str | bool) -> None:
+        """Set the machine's mode (F10; True / False: office / camp); the project's override is
+        dropped so the choice shows here too."""
+        if isinstance(mode, bool):
+            mode = "office" if mode else "camp"
+        if self.scroll is None or (mode == self.machine.mode and "mode" not in self.scroll.preferences):
             return
-        self.machine.mode = "plain" if plain else "immersion"
+        self.machine.mode = mode
         settings.save(self.machine)
         self.scroll.preferences.pop("mode", None)
+        self.save()
+        self.apply_schedule()
+
+    def apply_schedule(self) -> None:
+        """Bring the huts to the hour: the look (Shift turns Office on and off by itself) and the quiet."""
+        plain, quiet = self.plain, self.quiet
+        resized = False
         for hut in self.huts.values():
             if hut.set_plain(plain) and hut.display:
                 self._settle(hut)
-        self.refresh_huts()
-        self.replan_roads()
-        self.save()
-        self.post_message(self.LayoutChanged())
+                resized = True
+            hut.set_quiet(quiet)
+        if quiet:
+            for hut in self.huts.values():
+                hut.remove_class("-flame")
+        if resized:
+            self.refresh_huts()
+            self.replan_roads()
+            self.post_message(self.LayoutChanged())
 
     def set_town(self, on: bool) -> None:
         if on == self.town:
@@ -875,6 +899,7 @@ class Desktop(Container):
                 self.mount(hut, after=self.terrain)
             hut.display = True
             hut.plain = self.plain
+            hut.quiet = self.quiet
             hut.set_silhouette(sil, actions)
             hut.set_title(w.number, w.window_title)
             hut.set_badge(w.badge)
@@ -971,6 +996,8 @@ class Desktop(Container):
 
     def flicker_fires(self) -> None:
         """A hut whose orc waits for orders burns: its fence flickers."""
+        if self.quiet:
+            return
         for hut in self.huts.values():
             if hut.display and hut.has_class("-alert"):
                 hut.toggle_class("-flame")
