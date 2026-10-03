@@ -517,11 +517,13 @@ size or mode keeps off its neighbours.
 
 **🌙 Do not disturb** — quiet hours (default 23:00–08:00 when switched on, off otherwise). In quiet
 hours no fence burns or flickers: a waiting orc shows ❓ on its label instead of 🔥, and the HUD says
-`[🌙 quiet till 08:00]`. Quiet wins where it overlaps office hours. Later it will also mute sound,
+`[🌙 quiet till 08:00]`. Where quiet overlaps office hours both hold — the town in frames and no
+fires — the bar shows half purple, half grey and the HUD names both. Later quiet will also mute sound,
 push notifications and the bot.
 
 **F10 → 🕰 Your day** (and onboarding step 2) shows the day bar: 00:00 → 24:00, one cell per half
-hour, amber for the day, dark purple for quiet, grey for office hours (Shift only), ▼ for now. Drag
+hour, amber for the day, dark purple for quiet, grey for office hours (Shift only), half purple /
+half grey where they overlap, ▼ for now. Drag
 across it to set the selected span, or Tab to an edge (quiet start / end, office start / end) and
 move it with ←/→ by half an hour, shift+←/→ for the whole span; Delete turns the quiet hours off.
 Office days are `office_days` in the settings file (0 = Monday).

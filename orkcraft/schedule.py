@@ -6,8 +6,8 @@
     quiet_now(machine, now)                  # do-not-disturb: no fires, later no sound, no push
     plain_now(machine, now)                  # buildings as frames: Office, or Shift in office hours
 
-Times are local and snap to `STEP` minutes (the day bar has one cell per step). Quiet wins over
-office where they overlap: a quiet hour is quiet whatever the mode.
+Times are local and snap to `STEP` minutes (the day bar has one cell per step). Office and quiet
+are independent: where they overlap both hold — the town in frames, and no fires (later no sound).
 """
 from __future__ import annotations
 
@@ -122,10 +122,11 @@ def plain_now(machine, now: dt.datetime | None = None, mode: str | None = None) 
 
 
 def status(machine, now: dt.datetime | None = None) -> str:
-    """The HUD's word on the hour: `🌙 quiet till 08:00`, `👔 office till 18:00` or ""."""
+    """The HUD's word on the hour: `🌙 quiet till 08:00`, `👔 office till 18:00`, both, or ""."""
     now = now or dt.datetime.now()
-    if quiet_now(machine, now):
-        return f"🌙 quiet till {fmt(machine.quiet.end)}"
+    words = []
     if machine.mode == "shift" and office_now(machine, now):
-        return f"👔 office till {fmt(machine.office.end)}"
-    return ""
+        words.append(f"👔 office till {fmt(machine.office.end)}")
+    if quiet_now(machine, now):
+        words.append(f"🌙 quiet till {fmt(machine.quiet.end)}")
+    return " · ".join(words)

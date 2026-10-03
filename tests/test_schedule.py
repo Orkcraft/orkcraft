@@ -168,3 +168,12 @@ async def test_your_day_from_f10(fake_repo: Path):
         await pilot.pause()
         m = settings.load()
         assert m.mode == "shift" and m.quiet == schedule.DEFAULT_QUIET and m.office == schedule.DEFAULT_OFFICE
+
+
+def test_where_quiet_and_office_overlap_both_hold():
+    m = _machine(mode="shift", quiet=Span.parse("17:00", "08:00"))
+    at = MON_10.replace(hour=17, minute=30)
+    assert schedule.plain_now(m, at) and schedule.quiet_now(m, at)              # frames, and no fires
+    assert schedule.status(m, at) == "👔 office till 18:00 · 🌙 quiet till 08:00"
+    bar = DayBar(quiet=m.quiet, office=m.office)
+    assert bar.both_at(17 * 2) and not bar.both_at(12 * 2) and not bar.both_at(20 * 2)

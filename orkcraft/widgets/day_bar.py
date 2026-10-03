@@ -3,7 +3,8 @@
     DayBar(quiet=Span | None, office=Span, show_office=True)
     bar.quiet, bar.office            the spans as edited; posts DayBar.Changed on every edit
 
-Colours: the day light (amber), 🌙 quiet dark purple, 👔 office grey; quiet wins where they overlap.
+Colours: the day light (amber), 🌙 quiet dark purple, 👔 office grey; where they overlap a cell is
+half purple, half grey — both hold: frames on, no fires.
 A ▼ marks the time now. Edit with the mouse (drag across the bar: the selected span takes the
 dragged stretch) or the keys: Tab picks an edge (quiet start, quiet end, office start, office end),
 ←/→ move it by half an hour, shift+←/→ move the whole span, Delete turns the quiet hours off.
@@ -98,6 +99,12 @@ class DayBar(Widget, can_focus=True):
         self.refresh()
         self.post_message(self.Changed(self))
 
+    def both_at(self, cell: int) -> bool:
+        """Quiet and office at once: frames on, and no fires (later no sound)."""
+        minute = cell * STEP
+        return (self.quiet is not None and self.quiet.contains(minute)
+                and self.show_office and self.office.contains(minute))
+
     def color_at(self, cell: int) -> str:
         minute = cell * STEP
         if self.quiet is not None and self.quiet.contains(minute):
@@ -120,8 +127,12 @@ class DayBar(Widget, can_focus=True):
         t = Text()
         t.append(" " * now_cell + "▼\n", style="bold")
         for cell in range(CELLS):
-            t.append("█" if cell != sel_cell else "▌", style=f"{self.color_at(cell)}"
-                     + (f" on {EDGE_COLOR}" if cell == sel_cell else ""))
+            if cell == sel_cell:
+                t.append("▌", style=f"{self.color_at(cell)} on {EDGE_COLOR}")
+            elif self.both_at(cell):                 # both at once: half purple, half grey
+                t.append("▀", style=f"{QUIET_COLOR} on {OFFICE_COLOR}")
+            else:
+                t.append("█", style=self.color_at(cell))
         t.append("\n")
         ticks = "".join(f"{h:02d}".ljust(6) for h in range(0, 24, 3))
         t.append(ticks[:CELLS - 2] + "24\n", style="dim")

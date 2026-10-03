@@ -139,7 +139,7 @@ class Hud(Static):
 
         right = Text()
         if r.hour:
-            right.append(f"[{r.hour}] ", style="#b48ead" if r.hour.startswith("🌙") else "dim")
+            right.append(f"[{r.hour}] ", style="#b48ead" if "🌙" in r.hour else "dim")
         if not narrow:
             right.append(f"⛏ commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}

@@ -74,7 +74,8 @@ Stored:
   for Shift. The cards show the same building with the same live rows, so only the look differs.
 - **The day bar** (`widgets/day_bar.py`): 48 half-hour cells, amber day, dark purple 🌙 quiet, grey
   👔 office (Shift only), ▼ now. Mouse: drag a stretch for the selected span. Keys: Tab picks an edge,
-  ←/→ move it, shift+←/→ move the whole span, Delete turns quiet off. Quiet wins over office.
+  ←/→ move it, shift+←/→ move the whole span, Delete turns quiet off. Where quiet and office overlap both hold
+  (frames, and no fires): the cell is half purple, half grey.
 - **Quiet hours**: no fires flicker, a waiting orc shows ❓; later no sound, no push, no bot.
 - Stored in the machine settings: `mode`, `quiet`, `office`, `office_days` (Mon–Fri by default).
   `preferences.mode` in the Town Scroll stays an optional per-project override.
