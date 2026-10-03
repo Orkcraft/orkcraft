@@ -44,7 +44,7 @@ class Note:
     title: str
     headings: list[str] = field(default_factory=list)
     mtime: float = 0.0
-    kind: str = "doc"                 # doc | code | design: which retriever reads it
+    kind: str = "doc"                 # doc | code | design
     rev: str = ""                     # a version stamp when there is no mtime (a git blob, a page version)
     url: str = ""                     # where it lives outside the project (a Confluence page)
 
@@ -112,110 +112,6 @@ def note_changes(before: dict[str, str | float] | None, bases: list[Base]) -> li
     if before is None:
         return []
     return [p for p, m in now.items() if before.get(p) != m]
-
-
-# -- fragments for a prompt (the Scroll Dump, T1107) -------------------------------------------------------
-
-CHUNK_CHARS = 1200
-_WORD = re.compile(r"[\w\-]{2,}", re.U)
-STOP = frozenset("the and for with that this from what how are was were have has not but you your our its "
-                 "или что как это для при над под его она они все the a an of to in on is be by".split())
-
-
-@dataclass
-class Chunk:
-    path: str
-    heading: str
-    text: str
-    score: float = 0.0
-
-
-def chunks_of(repo_root: Path, rel: str, text: str | None = None) -> list[Chunk]:
-    """A note cut by its headings (long sections by paragraphs), each piece ≤ CHUNK_CHARS. `text` is
-    the note when it does not live in the project (a git revision, a Confluence page)."""
-    if text is None:
-        try:
-            text = (repo_root / rel).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return []
-    text = text[:200_000]
-    out, heading, buf = [], Path(rel).stem, []
-
-    def flush() -> None:
-        body = "\n".join(buf).strip()
-        while body:
-            piece, body = body[:CHUNK_CHARS], body[CHUNK_CHARS:]
-            if body and "\n\n" in piece:                       # cut at a paragraph when one is near
-                cut = piece.rfind("\n\n")
-                piece, body = piece[:cut], piece[cut:] + body
-            if piece.strip():
-                out.append(Chunk(rel, heading, piece.strip()))
-            body = body.strip()
-
-    for line in text.splitlines():
-        m = _H.match(line)
-        if m:
-            flush()
-            heading, buf = m.group(2), []
-        else:
-            buf.append(line)
-    flush()
-    return out
-
-
-def terms(text: str) -> list[str]:
-    return [w for w in (t.lower() for t in _WORD.findall(text)) if w not in STOP]
-
-
-BM25_K1, BM25_B = 1.2, 0.75
-
-
-def rank(pieces: list[Chunk], query: str) -> list[Chunk]:
-    """Score `pieces` against `query` with BM25 (headings count double); the ones that match, best first."""
-    import math
-    q = list(dict.fromkeys(terms(query)))
-    if not q or not pieces:
-        return []
-    bags = [terms(c.heading) * 2 + terms(c.text) for c in pieces]
-    avg = sum(len(b) for b in bags) / len(bags) or 1.0
-    df = {t: sum(1 for bag in bags if t in bag) for t in q}
-    n = len(pieces)
-    for c, bag in zip(pieces, bags):
-        score = 0.0
-        for t in q:
-            tf = bag.count(t)
-            if tf and df[t]:
-                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
-                score += idf * tf * (BM25_K1 + 1) / (tf + BM25_K1 * (1 - BM25_B + BM25_B * len(bag) / avg))
-        c.score = score
-    return sorted((c for c in pieces if c.score > 0), key=lambda c: c.score, reverse=True)
-
-
-def within(ranked: list[Chunk], k: int, budget: int) -> list[Chunk]:
-    """The best of `ranked`: at most `k` pieces and `budget` characters (the first always fits)."""
-    picked, used = [], 0
-    for c in ranked:
-        if len(picked) >= k or used + len(c.text) > budget and picked:
-            break
-        picked.append(c)
-        used += len(c.text)
-    return picked
-
-
-def search(repo_root: Path, bases: list[Base], query: str, k: int = 5, budget: int = 4000,
-           read=None) -> list[Chunk]:
-    """The prose fragments (doc and design notes) that answer `query` best, at most `k` of them and
-    `budget` characters — what a prompt can afford. `read(path)` gives a note's text when it does
-    not live in the project; code goes to the code graph (realm/codegraph.py) instead."""
-    pieces = [c for b in bases for n in b.notes if n.kind != "code"
-              for c in chunks_of(repo_root, n.path, read(n.path) if read else None)]
-    return within(rank(pieces, query), k, budget)
-
-
-def fragments_markdown(query: str, found: list[Chunk]) -> str:
-    if not found:
-        return f"_Nothing in the scrolls answers “{query}”._"
-    return "\n\n".join(f"### {c.path} § {c.heading}\n\n{c.text}" for c in found)
 
 
 # -- the file tree ------------------------------------------------------------------------------------

@@ -155,7 +155,7 @@ COUNCIL = _make("council", ["   o    o    o    "] + _box(18, 7, top="┌──/\
 FORGE = _make("forge", ["       oOO        "] + _box(18, 7, top="┌─────|  |───────┐"),
               head=("MERGE ENGINE",), body=(18, 9))
 SCROLLS = _make("scrolls", _box(18, 7, top="@" + "~" * 16 + "@", bottom="@" + "~" * 16 + "@"),
-                head=("LLM WIKI / RAG",), body=(18, 9))
+                head=("LLM WIKI",), body=(18, 9))
 
 # -- the strategic complexes (26 wide, nine text rows) --------------------------------------------
 

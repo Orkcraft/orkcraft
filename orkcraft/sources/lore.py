@@ -1,9 +1,9 @@
-"""Where the 🗑️ Scroll Dump reads from: one adapter per kind of source, read-only.
+"""Where the 🗑️ Scroll Dump's wiki comes from: one adapter per kind of source, read-only.
 
 A building's `sources` (and the older `paths`) are strings, one per source:
 
     docs                         a folder of Markdown notes in the project (also `fs:docs`)
-    code:src                     a folder of code in the project: it feeds the code graph
+    code:src                     a folder of code in the project
     git:main                     the notes and code of a revision (`git:<rev>[:<folder>]`), via git
     confluence:ENG               a Confluence space; the site is `$ORKCRAFT_CONFLUENCE_URL`, or
     confluence:ENG@https://acme.atlassian.net/wiki
@@ -415,7 +415,7 @@ def from_config(config: dict, repo_root: Path) -> list[Source]:
     return [parse(s, repo_root) for s in specs]
 
 
-# -- reading and asking across the sources --------------------------------------------------------------
+# -- reading across the sources ---------------------------------------------------------------------
 
 def reader(sources: list[Source]):
     """read(path) → the text of a document of any of `sources` (ValueError when none has it)."""
@@ -431,15 +431,12 @@ def reader(sources: list[Source]):
 
 
 class Library:
-    """The sources of one building, what they hold, and the code graph of their code (rebuilt only
-    when a code document changed)."""
+    """The sources of one building and what they hold."""
 
     def __init__(self, sources: list[Source]) -> None:
         self.sources = sources
         self.bases: list[Base] = []
         self.read = reader(sources)
-        self._graph_key: tuple = ()
-        self._graph = None
 
     def scan(self) -> list[Base]:
         self.bases = [s.scan() for s in self.sources]
@@ -448,42 +445,6 @@ class Library:
     def notes(self, kind: str | None = None) -> list[Note]:
         return [n for b in self.bases for n in b.notes if kind is None or n.kind == kind]
 
-    def graph(self):
-        from orkcraft.realm import codegraph
-        code = self.notes("code")
-        key = tuple((n.path, n.stamp) for n in code)
-        if self._graph is None or key != self._graph_key:
-            texts = {}
-            for n in code:
-                try:
-                    texts[n.path] = self.read(n.path)[:400_000]
-                except ValueError:
-                    continue
-            self._graph, self._graph_key = codegraph.build(texts), key
-        return self._graph
-
-    def search(self, repo_root: Path, query: str, k: int = 5, budget: int = 4000) -> list[shelves.Chunk]:
-        """Docs by BM25, code by the code graph; each list's scores scaled to its best, then merged."""
-        from orkcraft.realm import codegraph
-
-        def text_of(path: str) -> str | None:
-            return None if self._is_project_file(path) else self._safe_read(path)
-
-        docs = shelves.rank([c for n in self.notes() if n.kind != "code"
-                             for c in shelves.chunks_of(repo_root, n.path, text_of(n.path))], query)
-        code = codegraph.search(self.graph(), query, k, budget) if self.notes("code") else []
-        merged = []
-        for found in (docs, code):
-            top = max((c.score for c in found), default=0.0) or 1.0
-            merged += [(c.score / top, c) for c in found]
-        merged.sort(key=lambda p: p[0], reverse=True)
-        return shelves.within([c for _, c in merged], k, budget)
-
-    def _is_project_file(self, path: str) -> bool:
+    def is_project_file(self, path: str) -> bool:
+        """A file of the project itself (the wiki's orc reads it in place) — not a snapshot to take."""
         return any(isinstance(s, FolderSource) and s.owns(path) for s in self.sources)
-
-    def _safe_read(self, path: str) -> str:
-        try:
-            return self.read(path)
-        except ValueError:
-            return ""

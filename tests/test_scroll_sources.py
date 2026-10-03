@@ -1,4 +1,4 @@
-"""🗑️ Scroll Dump sources (folders, code, git, Confluence) and its retrievers (BM25, the code graph)."""
+"""🗑️ Scroll Dump sources: folders, code, git revisions, Confluence (read-only)."""
 from __future__ import annotations
 
 import io
@@ -9,10 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, codegraph, masonry, shelves
-from orkcraft.screens.typed.knowledge_view import KnowledgeView
+from orkcraft.realm import catalog, shelves
 from orkcraft.sources import lore
 
 UPLOAD = '''"""Uploads to the bucket."""
@@ -95,38 +92,6 @@ def test_code_folder_and_git_revision(shop: Path):
     assert lore.parse("git:--output=x", shop).scan().error
 
 
-def test_code_graph(shop: Path):
-    texts = {p: (shop / p).read_text() for p in ("src/shop/upload.py", "src/shop/net.py", "src/price.js")}
-    g = codegraph.build(texts)
-    up = "src/shop/upload.py::upload_file"
-    assert g.calls[up] == {"src/shop/net.py::retry_request"}
-    assert g.callers[up] == {"src/shop/upload.py::Uploader.run"}
-    assert g.imports["src/shop/upload.py"] == {"src/shop/net.py"}
-    js = {s.name: s for s in g.symbols.values() if s.path == "src/price.js" and s.kind != "module"}
-    assert set(js) == {"formatPrice", "roundCents"} and "currency" in js["formatPrice"].doc
-    assert g.calls[js["formatPrice"].id] == {js["roundCents"].id}
-    assert codegraph.words("retryUpload_now") == "retry upload now"
-
-    found = codegraph.search(g, "how is a file uploaded with retries?")
-    assert found[0].heading.startswith("upload_file (function")
-    assert "calls: retry_request (net.py:1)" in found[0].text and "called by: Uploader.run" in found[0].text
-    assert "retry_request" in [c.heading.split(" ")[0] for c in found]       # the neighbour came along
-    assert codegraph.search(g, "zebra") == []
-    broken = codegraph.build({"bad.py": "def oops(:\n  pass\n"})
-    assert "bad.py" in broken.errors and any(s.name == "oops" for s in broken.symbols.values())
-
-
-def test_library_merges_notes_and_code(shop: Path):
-    lib = lore.Library(lore.from_config({"sources": ["docs", "code:src"]}, shop))
-    lib.scan()
-    found = lib.search(shop, "upload file to the bucket")
-    assert found and found[0].path == "src/shop/upload.py"
-    assert lib.search(shop, "publish the release")[0].heading == "Release"
-    assert "retry_request" in lib.read("src/shop/net.py")
-    with pytest.raises(ValueError):
-        lib.read("confluence:1")
-
-
 # -- Confluence -----------------------------------------------------------------------------------------
 
 def page(i: int, body: str) -> dict:
@@ -172,35 +137,6 @@ def test_confluence(shop: Path, monkeypatch):
     src.refresh()
     stale = src.scan()
     assert stale.error == "HTTP 401 — check the token" and len(stale.notes) == 51      # the cache stays
-    lib = lore.Library([src])
-    lib.scan()
-    assert lib.search(shop, "rollback")[0].heading == "Rollback"
     monkeypatch.setenv("ORKCRAFT_CONFLUENCE_PAT", "pat")
     assert src.headers() == {"Authorization": "Bearer pat"}
     assert json.loads(src.cache_file.read_text())["spec"] == src.spec
-
-
-# -- the building --------------------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_the_dump_reads_many_sources(shop: Path, monkeypatch):
-    spec = {"id": "dump", "title": "Scrolls", "icon": "🗑️", "orc": {"name": "Scroll Scrapper"}, "type": "scrolls",
-            "config": {"sources": ["docs", "code:src", "git:HEAD:docs"]}}
-    assert masonry.save_spec(shop, spec) == []
-    app = OrkcraftApp(repo_root=shop, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "dump", "knowledge.chunks")
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        dump = app.desktop.get_window("dump").query_one(KnowledgeView)
-        assert [b.kind for b in dump.bases] == ["fs", "code", "git"]
-        assert dump.hut_lines([16])[:3] == ["sources: 3", "notes: 4", "code: 5"]
-        dump.find("upload a file")
-        assert "upload_file" in sent[-1].value and "called by" in sent[-1].value
-        dump.read("git:HEAD:docs/handbook.md")
-        dump.read("src/shop/net.py")
-        await pilot.pause()
-        dump.save_config({"sources": ["docs"]})
-        dump.refresh_data()
-        assert [b.kind for b in dump.bases] == ["fs"]

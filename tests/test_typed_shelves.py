@@ -73,7 +73,7 @@ async def test_the_three_buildings(fake_repo: Path, tmp_path: Path, monkeypatch)
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
 
         kb = app.desktop.get_window("kb").query_one(KnowledgeView)
-        assert kb.mini_status() == ["1 docs"]
+        assert kb.mini_status() == ["0 pages", "● 1 to take in", "no wiki"]
         (fake_repo / "docs" / "more.md").write_text("# More\n## Part\n")
         kb.refresh_data()
         assert [(p.kind, p.mode, p.value) for p in sent] == [("file", "knowledge.changed", "docs/more.md")]
