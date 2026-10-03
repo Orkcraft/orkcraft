@@ -5,6 +5,9 @@ earlier part (a follow-up), to an idle orc, to a newly hired one (picking its pr
 or queues it. Each orc works in its own worktree on `pool/<building>/<orc>`; a finished task sends
 `pool.done` with the result and the branch — no pull request is opened for it. The hut shows the
 orcs and the queue; the open building also shows the foreman's decisions and their reasons.
+
+Tokens: a follow-up or related task resumes the orc's session and sends only the task (♻ warm);
+a cold start sends the briefing, plus a handoff of the orc's recent work only when it is related.
 """
 from __future__ import annotations
 
@@ -124,39 +127,44 @@ class PoolView(TypedView):
             st.queue.remove(task)
         task.status, task.orc, task.wait_for = "working", orc.name, ""
         st.tasks.append(task)
-        follow = how == "follow-up" and bool(orc.session)
+        foreman = self.foreman
+        related = how == "follow-up" or foreman.related(task, orc)
+        task.warm = related and foreman.can_resume(orc)
         orc.status, orc.task = "working", task.id
         if task.key and task.key not in orc.keys:
             orc.keys.append(task.key)
-        self.emit("pool.assigned", f"{orc.name} ({orc.label}) ← {task.title}" + (" [follow-up]" if follow else ""),
-                  task.title)
+        self.emit("pool.assigned", f"{orc.name} ({orc.label}) ← {task.title}"
+                  + (" [follow-up]" if how == "follow-up" else "") + (" ♻" if task.warm else ""), task.title)
         cancel = threading.Event()
         self._cancels[orc.name] = cancel
         repo = self._get_repo_root()
         workdir = Path(orc.worktree) if orc.worktree else repo
-        prompt = self._prompt(task, orc, follow)
+        prompt = self._prompt(task, orc, how == "follow-up", related)
         runner = type(self).work_runner or (_simulated_work if self.simulated else jobs.run_work)
-        resume = orc.session if follow else ""
+        resume = orc.session if task.warm else ""
         env = {"ORKCRAFT_ORC": f"{self.building_id}/{orc.name.lower()}"}
         app = self.app
 
         def work() -> None:
-            ok, text, error, cost, session = False, "", "", None, ""
+            ok, text, error, cost, tokens, session = False, "", "", None, None, ""
             try:
-                text, cost, _tokens, session = runner(orc.harness, prompt, workdir, cancel, orc.model, env, resume)
+                text, cost, tokens, session = runner(orc.harness, prompt, workdir, cancel, orc.model, env, resume)
                 ok = True
             except InterruptedError:
                 error = "stopped"
             except Exception as e:  # one orc's failure must not take the barracks down
                 error = str(e)[:300]
             try:
-                app.call_from_thread(self.finish, task.id, orc.name, ok, text, error, cost, session)
+                app.call_from_thread(self.finish, task.id, orc.name, ok, text, error, cost, session, tokens)
             except Exception:
                 pass
 
         threading.Thread(target=work, daemon=True, name=f"pool-{self.building_id}-{orc.name}").start()
 
-    def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool) -> str:
+    def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool, related: bool) -> str:
+        if task.warm:                    # the session already holds the briefing, the orders and the earlier work
+            return "\n\n".join([f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}",
+                                task.text, "Same rules as before: commit on your branch, then a short Markdown report."])
         parts = [f"You are {orc.name}, one of several agents working in parallel, each in its own git worktree.",
                  f"Your worktree is on branch `{orc.branch}`." if orc.branch else "",
                  "Do the task below in this directory. Commit your work on your branch with a clear message; "
@@ -164,28 +172,34 @@ class PoolView(TypedView):
                  f"## Standing orders\n\n{self.config['orders']}" if self.config.get("orders") else "",
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
                  "Finish with a short Markdown report: what you changed, what is left."]
-        if not follow:
-            earlier = [t for t in self.state.tasks if t.orc == orc.name and t.status == "done"][-2:]
-            for t in earlier:
-                parts.append(f"Earlier you did: {t.title} — {t.result[:300]}")
+        if related and orc.recent:       # a fresh session on related work: a handoff instead of the whole history
+            parts.append("## Your recent work (the commits are on your branch)\n\n"
+                         + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
 
     def finish(self, task_id: str, orc_name: str, ok: bool, text: str, error: str, cost: float | None,
-               session: str) -> None:
+               session: str, tokens: int | None = None) -> None:
         st = self.state
         task, orc = st.task(task_id), st.orc(orc_name)
         self._cancels.pop(orc_name, None)
         if task is None or orc is None:
             return
         task.status = "done" if ok else "failed"
-        task.result, task.error, task.cost_usd = text, error, cost
+        task.result, task.error, task.cost_usd, task.tokens = text, error, cost, tokens
+        orc.tokens += tokens or 0
         orc.status, orc.task, orc.last = "idle", "", bk.now_iso()
         orc.cost_usd = round(orc.cost_usd + (cost or 0.0), 4)
         orc.done, orc.failed = orc.done + int(ok), orc.failed + int(not ok)
         if session:
+            orc.session_tasks = orc.session_tasks + 1 if task.warm else 1
             orc.session = session
+        elif ok:                         # a harness without sessions: nothing to resume
+            orc.session, orc.session_tasks = "", 0
+        if ok:
+            gist = next((ln.strip(" #*") for ln in text.splitlines() if ln.strip(" #*")), "")[:160]
+            orc.recent = (orc.recent + [f"{task.title} — {gist}" if gist else task.title])[-bk.KEEP_RECENT:]
         foreman = self.foreman
-        foreman.learn(orc, ok, cost)
+        foreman.learn(orc, ok, cost, tokens)
         st.stats = foreman.stats
         branch = f"\n\n_branch:_ `{orc.branch}`" if orc.branch else ""
         if ok:
@@ -231,6 +245,8 @@ class PoolView(TypedView):
             row.append(f"{ICON.get(o.status, '·')} {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} ", style="bold")
             row.append(f"{o.label} ", style="cyan")
             row.append(task.title if task else f"✓{o.done} ✗{o.failed}", style="" if task else "dim")
+            if o.tokens:
+                row.append(f" · {o.tokens / 1000:.0f}k tok", style="dim")
             lst.add_option(Option(row, id=o.name))
         self._detail()
 
@@ -247,7 +263,7 @@ class PoolView(TypedView):
         if recent:
             t.append("Finished\n", style="bold")
             for x in reversed(recent):
-                t.append(f"{'✓' if x.status == 'done' else '✗'} {x.title} — {x.orc}\n",
+                t.append(f"{'✓' if x.status == 'done' else '✗'} {'♻ ' if x.warm else ''}{x.title} — {x.orc}\n",
                          style="green" if x.status == "done" else "red")
             t.append("\n")
         t.append("Foreman's decisions\n", style="bold")
