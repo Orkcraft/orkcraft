@@ -11,6 +11,7 @@ import functools
 import datetime as dt
 import json
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -300,6 +301,7 @@ class OrkcraftApp(App[int]):
         self._orc_chat = OrcChat(id="orc-chat")
         self._orc_chat.display = False
         self._console_signature: tuple = ()
+        self.alert_first_seen: dict[str, float] = {}   # alert id → when the roster first had it
         self.seen_alerts: set[str] = set()     # questions the operator opened from the garrison (no ❓ there)
         yield self._hud
         yield desktop
@@ -1003,6 +1005,38 @@ class OrkcraftApp(App[int]):
             visible = [w for w in self.desktop.windows if self.desktop.in_view(w) and not w.hidden]
             if not visible:
                 self._console.focus_roster()
+        self.questions_on_arrival(message.orkspace_id)
+
+    def _note_alerts(self) -> None:
+        """Remember when each question first came up (the oldest opens first); forget the answered ones."""
+        now = time.monotonic()
+        live = {a.id for a in self.roster.alerts} | {o.alert.id for o in self.roster.orcs if o.alert is not None}
+        for aid in live:
+            self.alert_first_seen.setdefault(aid, now)
+        for aid in set(self.alert_first_seen) - live:
+            del self.alert_first_seen[aid]
+
+    def questions_of(self, orkspace_id: str) -> list[Orc]:
+        """The orcs of an orkspace's buildings that wait for an answer, the longest waiting first."""
+        self._note_alerts()
+        asking = [o for o in self.roster.orcs if o.alert is not None and o.building
+                  and (ork := self.scroll.orkspace_of(o.building)) is not None and ork.id == orkspace_id]
+        return sorted(asking, key=lambda o: self.alert_first_seen.get(o.alert.id, float("inf")))   # stable
+
+    def questions_on_arrival(self, orkspace_id: str) -> None:
+        """Arriving on an orkspace with questions: the first one opens at once, its building and its orc
+        selected behind it (the others wait in the same dialog, ↑↓)."""
+        if len(self.screen_stack) > 1:                 # the operator is busy in a dialog
+            return
+        asking = self.questions_of(orkspace_id)
+        if not asking:
+            return
+        first = asking[0]
+        self.desktop.select_hut(first.building)
+        self.set_focus_state("unit", orc_key_val=orc_key(first), building_id=first.building)
+        self.seen_alerts.update(o.alert.id for o in asking if o.alert is not None)
+        self.push_screen(AwaitingOrdersModal([o.alert for o in asking if o.alert is not None],
+                                             {o.alert.id: o.name for o in asking if o.alert is not None}))
 
     # -- windows -----------------------------------------------------------------------------
 
@@ -1949,6 +1983,7 @@ class OrkcraftApp(App[int]):
         self.roster = build_roster(
             self.repo_root, built, workers, self.dismissed, deployments=self.deployments
         )
+        self._note_alerts()
         for w in self.desktop.windows:
             badge = garrison_badge(self.roster.garrison(w.window_id))
             if w.window_id == TOWN_HALL and getattr(self, "order_burning", False) and ALERT_ICON not in badge:

@@ -339,11 +339,13 @@ class WarMap(Vertical):
                     active_idx = i
                 prefix = "▶ " if is_active else "  "
                 hk = f"[{ork.hotkey}] " if ork.hotkey else ""
-                mark = f" {modes.alert_icon()}" if orkspace_has_alert(scroll_obj, ork, roster) else ""
+                asks = orkspace_has_alert(scroll_obj, ork, roster)
+                mark = f" {modes.alert_icon()}" if asks else ""
                 wt_mark = getattr(self.app, "worktree_marks", {}).get(ork.id, "")
                 row_text = (f"{prefix}{hk}{ork.icon} {ork.name} {theme.BIOME_ICONS.get(ork.biome, '')}"
                             f"{' ' + wt_mark if wt_mark else ''}{mark}")
-                lst.add_option(Option(Text(row_text, style="bold" if is_active else ""), id=f"orkspace:{ork.id}"))
+                style = modes.alert_style() if asks else "bold" if is_active else ""   # a question lights the row
+                lst.add_option(Option(Text(row_text, style=style), id=f"orkspace:{ork.id}"))
             # The cursor follows the active orkspace unless the operator is browsing the list.
             if lst.has_focus and highlighted is not None and highlighted < lst.option_count:
                 lst.highlighted = highlighted

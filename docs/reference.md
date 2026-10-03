@@ -541,5 +541,10 @@ changes (`orkcraft/realm/modes.py`).
 | Emoji | everywhere | as few as possible: building names, status lines, buttons, window titles, the War Map and the roster, the F10 menu, the key footer (`Stop all`, `Add agent`, `Answers`) and the toasts lose theirs |
 
 The opened building's own view keeps what its data says.
+
+**Questions on another orkspace.** Its War Map row takes the question's colour (fire orange in
+immersion, red when hidden) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
+its questions at once, the one waiting longest first (↑↓ for the rest); behind the dialog the building
+of that question is selected and the orc who asked it is picked in the garrison.
 The Lake, the Crag and custom frames grow with their
 content (up to a maximum) in both modes, and a hut that changes size or mode keeps off its neighbours.

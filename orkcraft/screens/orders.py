@@ -62,6 +62,10 @@ class AlertModal(ModalScreen[str | None]):
             self.dismiss(event.button.id[4:])
 
 
+def _title(count: str) -> str:
+    return f"Awaiting an answer{count}" if modes.hidden() else f"❓ Awaiting Orders{count}"
+
+
 class AwaitingOrdersModal(AlertModal):
     """Modal displaying all questions awaiting operator orders in a list.
 
@@ -107,7 +111,7 @@ class AwaitingOrdersModal(AlertModal):
         with Vertical():
             count = len(self.alerts)
             count_str = f" ({count})" if count > 1 else ""
-            yield Label(Text(f"❓ Awaiting Orders{count_str}"), id="orders-title", classes="order-title")
+            yield Label(Text(_title(count_str)), id="orders-title", classes="order-title")
             lst = OptionList(id="orders-list")
             for i, a in enumerate(self.alerts, 1):
                 w = self.who_map.get(a.id, self.who)
@@ -134,10 +138,13 @@ class AwaitingOrdersModal(AlertModal):
 
         title_label = self.query_one("#orders-title", Label)
         count = len(self.alerts)
-        title_label.update(f"❓ Awaiting Orders ({count})" if count > 1 else "❓ Awaiting Orders")
+        title_label.update(_title(f" ({count})" if count > 1 else ""))
 
         target_label = self.query_one("#order-target", Label)
-        prefix = f"{modes.skin('🧌')} {who}: " if who else "❓ "
+        if modes.hidden():
+            prefix = f"{who}: " if who else f"{modes.QUESTION} "
+        else:
+            prefix = f"🧌 {who}: " if who else "❓ "
         target_label.update(f"{prefix}{alert.title}")
 
         ctx_widget = self.query_one("#order-context", Static)

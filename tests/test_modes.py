@@ -193,3 +193,50 @@ def test_a_hidden_hut_has_no_emoji_at_all():
     out = hut.render().plain
     assert not modes._EMOJI.search(out)
     assert "Town Hall" in out and "all quiet" in out and "$0.00 / $5" in out and "[Preset]" in out
+
+
+@pytest.mark.asyncio
+async def test_a_question_on_another_orkspace_lights_its_row_and_opens_on_arrival(
+        fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
+    from textual.widgets import OptionList
+
+    from orkcraft.realm.orcs import Alert, Orc
+    from orkcraft.realm.roster import Roster
+    from orkcraft.screens.console import orc_key
+    from orkcraft.screens.orders import AwaitingOrdersModal
+
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        ts.new_orkspace(app.scroll, "Lab", "ice")
+        ts.move_building(app.scroll, "loot", "lab")
+        old = Alert("q-old", "Merge the hotfix?", options=[("1", "Yes"), ("2", "No")])
+        new = Alert("q-new", "Which branch?")
+        roster = Roster(orcs=[Orc("Smith", "resident", "resident", status="alert", building="loot", alert=new, ref="loot/smith"),
+                              Orc("Grok", "resident", "resident", status="alert", building="loot", alert=old, ref="loot/grok")],
+                        alerts=[new, old])
+        monkeypatch.setattr(app, "refresh_roster", lambda *a, **k: setattr(app, "roster", roster))
+        app.alert_first_seen.update({"q-old": 1.0, "q-new": 2.0})                  # Grok has waited longer
+        app.refresh_roster()
+        app._console.refresh_state(app.focus_state, app.roster)
+        await pilot.pause()
+
+        rows = app.query_one("#warmap-list", OptionList)
+        lab = next(rows.get_option_at_index(i) for i in range(rows.option_count)
+                   if rows.get_option_at_index(i).id == "orkspace:lab")
+        assert "#ff8c1a" in str(lab.prompt.style) and "🔥" in lab.prompt.plain       # the row is on fire
+
+        app.desktop.switch_orkspace("lab")
+        for _ in range(4):
+            await pilot.pause()
+        assert isinstance(app.screen, AwaitingOrdersModal)
+        assert [a.id for a in app.screen.alerts] == ["q-old", "q-new"]               # all of them, the oldest first
+        assert app.focus_state.mode == "unit" and app.focus_state.building_id == "loot"
+        assert app.focus_state.orc_key == orc_key(roster.orcs[1])                   # the orc who has waited longest
+        assert app.desktop.selected_hut in ("loot", None)                            # selected when the town shows it
+
+        await pilot.press("escape")
+        await pilot.pause()
+        app.desktop.switch_orkspace("main_camp")
+        await pilot.pause()
+        assert not isinstance(app.screen, AwaitingOrdersModal)                      # nothing asks on the main camp

@@ -124,6 +124,11 @@ def skin(text_: str, mode: str | None = None) -> str:
     return " ".join(strip_emoji(text_).split())
 
 
+def alert_style(mode: str | None = None) -> str:
+    """The colour of a place with a question waiting (a War Map row): fire orange, or the office's red."""
+    return "bold #ef4444" if hidden(mode) else "bold #ff8c1a"
+
+
 def alert_icon(mode: str | None = None) -> str:
     return QUESTION if hidden(mode) else ALERT_ICON
 
