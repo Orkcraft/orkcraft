@@ -2286,6 +2286,18 @@ class OrkcraftApp(App[int]):
                 parts.append(f"{t} —")
         return " · ".join(parts), telemetry.level(worst, 100), len(subs) < len(on)
 
+    def _quota_reads(self) -> tuple[list, list[str]]:
+        """(the last quota reads, the enabled subscription tools) — what the pressure of a building
+        is measured against (realm/pressure.py)."""
+        machine = self.desktop.machine
+        subs = [t for t, c in machine.tools.items() if c.enabled and c.billing == "subscription"]
+        from orkcraft.screens.limits_view import LimitsView
+        try:
+            limits = next((lv.limits for lv in self.query(LimitsView)), None) or []
+        except Exception:  # unmounted during shutdown
+            limits = []
+        return limits, subs
+
     def _active_terminal_key(self) -> str | None:
         try:
             term = self.chat.current_terminal
@@ -2684,7 +2696,7 @@ class OrkcraftApp(App[int]):
     def optimize_now(self, interactive: bool = True) -> bool:
         """Today's hungriest building the operator is not happy with → the Council's proposal (in a
         thread). False when there is nothing to propose."""
-        cand = optimize.leader(self.repo_root)
+        cand = optimize.leader(self.repo_root, None, *self._quota_reads())
         if cand is None:
             if interactive:
                 self.notify("nothing to improve: today's top spender is liked, or nothing was spent",

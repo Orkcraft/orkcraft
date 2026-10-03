@@ -1,8 +1,10 @@
-"""🔧 Local optimisation: a proposal for today's hungriest building the operator
+"""🔧 The Building retro (local optimisation): a proposal for the hungriest building the operator
 is not happy with — never applied on its own (operator decision 2026-10-02).
 
-    the leader   the building with the most tokens in today's ledger, if since its last change (its
-                 last checkpoint) it got no 👍, or today it got at least one 👎
+    the leader   the building that eats most of the camp and of the limit (realm/pressure.py: its share
+                 of the last 24 h, or the pressure on the binding quota when one is read), if since its
+                 last change (its last checkpoint) it got no 👍, or today it got at least one 👎; a
+                 liked one passes the turn to the next (below MIN_SHARE of the camp nobody is picked)
     its parts    what calls a model there: agent handlers' orders, a Workshop's steward prompt (with
                  its script), a Barracks' standing orders
     the Council  one model call: ONE change that spends fewer tokens and keeps what was liked —
@@ -23,15 +25,16 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import builders, feedback, metrics
+from orkcraft.realm import builders, feedback, metrics, pressure
 
 DIR = Path(".orkcraft") / "optimize"
 SHRINK = 0.7
+MIN_SHARE = 0.1          # of the camp's tokens in 24 h: below it a building is not worth a retro
 ACTIONS = ("shrink", "chain", "script")
 
 PROMPT = """You are the Council of orkcraft, a terminal harness where buildings pass events along roads to
-scripts, chains and agents. Optimise ONE building: today it spent the most tokens ({tokens} tokens, ${cost:.2f})
-and {reason}.
+scripts, chains and agents. Optimise ONE building: in the last 24 h it spent {tokens} tokens (${cost:.2f}) —
+{use} — and {reason}.
 
 ITS MODEL-DRIVEN PARTS:
 {parts}
@@ -66,6 +69,8 @@ class Candidate:
     cost: float
     likes: int             # 👍 since its last change
     dislikes: int          # 👎 today
+    share: float = 0.0     # of the camp's tokens in 24 h
+    use: str = ""          # its share and pressure in words (pressure.describe)
 
     @property
     def reason(self) -> str:
@@ -108,30 +113,34 @@ class Result:
 
 # -- the leader -------------------------------------------------------------------------------------
 
-def leader(repo_root: Path, now: dt.datetime | None = None) -> Candidate | None:
-    """Today's top token consumer, when the operator disliked it or never liked it; else None."""
+def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, providers=None) -> Candidate | None:
+    """The building that eats most of the camp and of the limit, when the operator disliked it today or
+    has not liked it since its last change; a liked one passes the turn to the next. None when nobody
+    with at least MIN_SHARE of the camp's tokens is left."""
     now = now or dt.datetime.now()
+    camp = pressure.measure(repo_root, limits, now, providers)
+    if not camp.tokens:
+        return None
     since = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    spent: dict[str, list[float]] = {}
-    for row in metrics._read(repo_root / metrics.LEDGER, since):
-        s = spent.setdefault(str(row.get("building") or ""), [0, 0.0])
-        s[0] += int(row.get("tokens") or 0)
-        s[1] += float(row.get("cost") or 0.0)
-    spent.pop("", None)
-    if not spent:
-        return None
-    bid, (tokens, cost) = max(spent.items(), key=lambda kv: (kv[1][0], kv[1][1]))
-    if tokens <= 0:
-        return None
+    costs: dict[str, float] = {}
+    for row in metrics._read(repo_root / metrics.LEDGER, now - pressure.WINDOW):
+        if row["_at"] > now - pressure.WINDOW:
+            costs[str(row.get("building") or "")] = costs.get(str(row.get("building") or ""), 0.0) + float(row.get("cost") or 0.0)
     from orkcraft.realm import checkpoint
-    mine = checkpoint.history(repo_root, bid, limit=1)
-    changed = mine[0].at[:19] if mine else ""
-    likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
-    dislikes = sum(1 for i in feedback.incidents(repo_root, 1000)
-                   if i.building == bid and i.ts >= since.isoformat(timespec="seconds"))
-    if likes and not dislikes:
-        return None
-    return Candidate(bid, int(tokens), round(cost, 4), likes, dislikes)
+    incidents = feedback.incidents(repo_root, 1000)
+    for bid in sorted(camp.buildings, key=lambda b: (camp.buildings[b].weight, camp.buildings[b].tokens), reverse=True):
+        use = camp.buildings[bid]
+        if use.share < MIN_SHARE:
+            break
+        mine = checkpoint.history(repo_root, bid, limit=1)
+        changed = mine[0].at[:19] if mine else ""
+        likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
+        dislikes = sum(1 for i in incidents if i.building == bid and i.ts >= since.isoformat(timespec="seconds"))
+        if likes and not dislikes:
+            continue
+        return Candidate(bid, use.tokens, round(costs.get(bid, 0.0), 4), likes, dislikes, round(use.share, 4),
+                         pressure.describe(use, camp))
+    return None
 
 
 def run_logs(repo_root: Path, building: str, limit: int = 5) -> list[str]:
@@ -232,7 +241,8 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
     """One Council call (a second with its problems). Never raises."""
     refs = feedback.references(repo_root, cand.building, 3)
     incs = [i for i in feedback.incidents(repo_root, 20) if i.building == cand.building][:3]
-    base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, reason=cand.reason, parts=_parts_text(ps),
+    base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, use=cand.use or "the most of the camp",
+                         reason=cand.reason, parts=_parts_text(ps),
                          runs="\n".join(run_logs(repo_root, cand.building)) or "- none kept",
                          references="\n".join(f"- {r.get('value', '')[:400]}" for r in refs) or "- none yet",
                          incidents="\n".join(f"- {i.kind}: {i.note or '(no note)'} · output: {i.output[:200]}"
