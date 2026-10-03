@@ -217,6 +217,24 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
   `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
   service). Your own messages are skipped; each feed's first look only marks what is there as seen.
+- The same services can **push** instead (no two-minute wait): the Watchtower's webhook listens on
+  127.0.0.1 only, so give it a public address with a tunnel (`cloudflared tunnel --url
+  http://127.0.0.1:8787`, ngrok, tailscale funnel; `smee.io` for GitHub) and point each service at
+  its path. `secret=` on the service's `feeds` line names the variable that holds its secret (a
+  line with only `secret=` listens and never asks); without it, `webhook_secret_env`:
+
+  | Path | Where to set it | How it is checked |
+  |---|---|---|
+  | `/slack` | Slack app → Event Subscriptions (user events `message.channels`, `message.im`; `app_mention`) | the signing secret: `X-Slack-Signature`, five minutes at most; `url_verification` answered |
+  | `/jira` | Jira → System → Webhooks, event *comment created*, with a secret | `X-Hub-Signature` (HMAC-SHA256) |
+  | `/figma` | Figma Webhooks v2, `FILE_COMMENT`, with a passcode | the passcode in the body |
+  | `/confluence` | an Automation rule → *Send web request*, header `X-Orkcraft-Token` | the token |
+
+  A delivery becomes the same item a feed would find (sent once, however it came): Slack messages
+  and Jira comments, Figma comments; your own are skipped, and a mention is told by who you are
+  there — learnt by that service's polled feed, or from Slack's delivery itself. An Automation
+  rule sends the simple form `{"id", "title", "text", "url", "author", "mention"}`; other paths stay
+  a raw `watch.webhook`.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)

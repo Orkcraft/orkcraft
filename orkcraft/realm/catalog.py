@@ -424,6 +424,8 @@ def validate(spec: dict) -> list[str]:
         if isinstance(config.get("feeds"), list):
             from orkcraft.realm import feeds
             errors += [f"config: feeds: {e}" for e in feeds.check(config["feeds"])]
+            if not config.get("webhook_port") and any("secret=" in str(x) for x in config["feeds"]):
+                errors.append("config: feeds: secret= is for webhooks — set webhook_port too")
     if tid == "horn":
         from orkcraft.realm import horn
         if isinstance(config.get("sounds"), list):

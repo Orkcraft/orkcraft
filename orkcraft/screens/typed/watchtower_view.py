@@ -6,7 +6,8 @@ Sources, each on when its settings are there:
     github    events of owner/repo through `gh` (github)                   — every 2 min
     feeds     Slack, Jira, Confluence, Figma: comments and mentions (feeds) — every 2 min
     cron      a schedule (cron: `every 15m`, `daily 05:00`, …)             — checked every 30 s
-    webhook   POSTs to http://127.0.0.1:<webhook_port>/… (webhook_secret_env to require a secret)
+    webhook   POSTs to http://127.0.0.1:<webhook_port>/… (webhook_secret_env to require a secret);
+              /slack, /jira, /confluence, /figma become comments and mentions (realm/inbound.py)
 
 Every new signal goes down the road (`mail.received`, `watch.github`, `watch.cron`,
 `watch.webhook`, `watch.comment`, `watch.mention`) and into `.orkcraft/watchtower/<id>/signals.jsonl`. The open building lists the
@@ -27,12 +28,13 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Markdown, OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import feeds, mailbox, watch
+from orkcraft.realm import feeds, inbound, mailbox, watch
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 120.0
 CRON_S = 30.0
 KEEP = 200
+RAW_KEEP = 20000                                        # a raw webhook's body, as kept
 ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 
 
@@ -61,6 +63,10 @@ class WatchtowerView(TypedView):
         kinds = [f.kind for f in self.feeds]
         return [s for s, on in (("mail", c.get("host")), ("github", c.get("github")), ("cron", c.get("cron")),
                                 ("webhook", c.get("webhook_port"))) if on] + sorted(set(kinds), key=kinds.index)
+
+    @property
+    def polled(self) -> list[feeds.Feed]:
+        return [f for f in self.feeds if f.poll]
 
     @property
     def feeds(self) -> list[feeds.Feed]:
@@ -104,7 +110,31 @@ class WatchtowerView(TypedView):
 
     def drain(self) -> None:
         while not self.inbox.empty():
-            self.add_signal(self.inbox.get_nowait())
+            self.heard(self.inbox.get_nowait())
+
+    def heard(self, sig: watch.Signal) -> None:
+        """A webhook delivery: a service's becomes its comments and mentions, the rest stays raw."""
+        service = inbound.service_of(sig.ref)
+        st = self._state()
+        items = inbound.parse(service, sig.body, (st.get("feeds_me") or {}).get(service)) if service else None
+        if items is inbound.IGNORED:
+            return
+        if items is None:
+            sig.body = sig.body[:RAW_KEEP]
+            self.add_signal(sig)
+            return
+        heard = dict(st.get("hook_seen") or {})
+        known = set(heard.get(service) or [])
+        for line, keys in (st.get("feeds_seen") or {}).items():
+            if line.startswith(service):
+                known.update(keys)
+        fresh = [i for i in items if i.key not in known]
+        if fresh:
+            heard[service] = ((heard.get(service) or []) + [i.key for i in fresh])[-feeds.SEEN_KEEP:]
+            self._save_state(hook_seen=heard)
+        for item in fresh:
+            self.add_signal(watch.Signal(item.at or sig.at, service, item.title,
+                                         f"{item.body}\n\n{item.url}".strip(), item.url or sig.ref, item.mention))
 
     def on_unmount(self) -> None:
         if self.hook is not None:
@@ -136,8 +166,9 @@ class WatchtowerView(TypedView):
         if not port or self.simulated or self.hook is not None:
             return
         secret = os.environ.get(str(self.config.get("webhook_secret_env") or ""), "")
+        secrets = {f.kind: f.env("secret") for f in self.feeds if f.opts.get("secret") and f.env("secret")}
         try:                                         # the sender gets its 202 at once; the UI drains the inbox
-            self.hook = watch.Webhook(int(port), secret, self.inbox.put)
+            self.hook = watch.Webhook(int(port), secret, self.inbox.put, secrets)
             self.hook.start()
             self.errors.pop("webhook", None)
         except OSError as e:
@@ -162,7 +193,7 @@ class WatchtowerView(TypedView):
         self._looking = True
         cfg, factory, runner, app = self.config, type(self).imap_factory, type(self).gh_runner, self.app
         gh_last = str(self._state().get("gh_last", ""))
-        opener, watched = type(self).feed_opener, self.feeds
+        opener, watched = type(self).feed_opener, self.polled
 
         def work() -> None:
             look = mailbox.look(cfg, factory) if cfg.get("host") else None
@@ -193,19 +224,24 @@ class WatchtowerView(TypedView):
 
     def apply_feeds(self, looks: list[tuple[feeds.Feed, feeds.Look]]) -> None:
         """Each feed's new items become signals; a feed that failed keeps what it had seen."""
-        seen = dict(self._state().get("feeds_seen") or {})
+        st = self._state()
+        seen, me = dict(st.get("feeds_seen") or {}), dict(st.get("feeds_me") or {})
+        heard = st.get("hook_seen") or {}
         for kind in {f.kind for f, _ in looks}:
             self.errors.pop(kind, None)
         for feed, got in looks:
             if got.error:
                 self.errors[feed.kind] = got.error
                 continue
+            if got.me:
+                me[feed.kind] = got.me                    # the webhook tells mentions by it
             fresh, seen[feed.line] = feeds.new_items(got, seen.get(feed.line))
-            for item in fresh:
+            pushed = set(heard.get(feed.kind) or [])      # already came by webhook
+            for item in (i for i in fresh if i.key not in pushed):
                 self.add_signal(watch.Signal(item.at or watch.now_iso(), feed.kind, item.title,
                                              f"{item.body}\n\n{item.url}".strip(), item.url, item.mention))
         live = {f.line for f, _ in looks}
-        self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live})
+        self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live}, feeds_me=me)
 
     def apply_look(self, look: mailbox.Look) -> None:
         self._looking = False

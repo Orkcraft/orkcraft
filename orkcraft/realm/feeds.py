@@ -19,6 +19,10 @@ the token itself (the Town Hall's Warder flags a spec that does):
 
 Every feed's first look only marks what is there as seen; from then on each new item is one
 signal, `watch.mention` when it is about you, else `watch.comment`. Your own messages are skipped.
+
+`secret=ENV` on a line lets the same service push to the Watchtower's webhook (realm/inbound.py):
+Slack's signing secret, Figma's passcode, Jira's webhook secret, the token of an Automation rule.
+A line with only `secret=` listens and never asks (`slack: secret=SLACK_SIGNING_SECRET`).
 """
 from __future__ import annotations
 
@@ -38,10 +42,10 @@ SEEN_KEEP = 500                 # keys a feed remembers
 BODY = 1500
 
 KINDS = {                       # kind: (required options, optional options, the option that takes the rest)
-    "slack": (("token",), ("channels",), ""),
-    "jira": (("site", "user", "token"), ("jql",), "jql"),
-    "confluence": (("site", "user", "token"), ("spaces", "cql"), "cql"),
-    "figma": (("token", "files"), (), ""),
+    "slack": (("token",), ("channels", "secret"), ""),
+    "jira": (("site", "user", "token"), ("jql", "secret"), "jql"),
+    "confluence": (("site", "user", "token"), ("spaces", "secret", "cql"), "cql"),
+    "figma": (("token", "files"), ("secret",), ""),
 }
 ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨"}
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
@@ -56,6 +60,7 @@ class Feed:
     kind: str
     opts: dict[str, str]
     line: str                    # the setting as written: the key of what this feed has seen
+    poll: bool = True            # False: only `secret=` — it listens to the webhook, never asks
 
     def env(self, name: str) -> str:
         return os.environ.get(self.opts.get(name, ""), "")
@@ -78,6 +83,7 @@ class Item:
 class Look:
     items: list[Item] = field(default_factory=list)      # oldest first
     error: str = ""
+    me: dict = field(default_factory=dict)                 # who you are there: webhooks tell mentions by it
 
 
 # -- the setting ----------------------------------------------------------------------------------------
@@ -99,9 +105,9 @@ def parse(line: str) -> tuple[Feed | None, str]:
             return None, f"{kind}: {word!r} — it takes {', '.join(o + '=' for o in required + optional)}"
         opts[k] = v
     missing = [k for k in required if not opts.get(k)]
-    if missing:
+    if missing and (not opts.get("secret") or len(missing) < len(required)):
         return None, f"{kind}: set {', '.join(k + '=' for k in missing)}"
-    for k in ("token", "user"):
+    for k in ("token", "user", "secret"):
         if k in opts and not ENV_NAME.match(opts[k]):
             return None, f"{kind}: {k}= names an environment variable (like ATL_TOKEN), not the value"
     if "site" in opts:
@@ -111,7 +117,7 @@ def parse(line: str) -> tuple[Feed | None, str]:
     for k in ("channels", "files", "spaces"):
         if k in opts and not IDS.match(opts[k]):
             return None, f"{kind}: {k}= is a comma-separated list of ids"
-    return Feed(kind, opts, line.strip()), ""
+    return Feed(kind, opts, line.strip(), poll=not missing), ""
 
 
 def check(lines: list[str]) -> list[str]:
@@ -195,7 +201,7 @@ def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
             url = f"{team}/archives/{ch}/p{str(m.get('ts', '')).replace('.', '')}" if team else ""
             items[key] = Item(key, f"{'@ ' if direct else ''}{name(m.get('user', ''))} in {ch}: {_short(text, 60)}",
                               text[:BODY], url, _iso(m.get("ts")), mention=direct)
-    return Look(sorted(items.values(), key=lambda i: i.at))
+    return Look(sorted(items.values(), key=lambda i: i.at), me={"id": uid})
 
 
 # -- Atlassian: Jira and Confluence -----------------------------------------------------------------------
@@ -247,7 +253,7 @@ def jira(feed: Feed, opener=urllib.request.urlopen) -> Look:
                               f"{ikey} · {f.get('summary', '')}\n\n{text}"[:BODY],
                               f"{base}/browse/{ikey}?focusedCommentId={c.get('id', '')}", _iso(c.get("created")),
                               mention))
-    return Look(sorted(items, key=lambda i: i.at))
+    return Look(sorted(items, key=lambda i: i.at), me={"id": me})
 
 
 def confluence(feed: Feed, opener=urllib.request.urlopen) -> Look:
@@ -303,7 +309,7 @@ def figma(feed: Feed, opener=urllib.request.urlopen) -> Look:
                               f"{'@ ' if mention else ''}{who.get('handle', '?')} in {key}: {_short(text, 60)}",
                               text[:BODY], f"https://www.figma.com/design/{key}?comment={c.get('id', '')}",
                               _iso(c.get("created_at")), mention))
-    return Look(sorted(items, key=lambda i: i.at))
+    return Look(sorted(items, key=lambda i: i.at), me={"id": uid, "handle": handle})
 
 
 READERS = {"slack": slack, "jira": jira, "confluence": confluence, "figma": figma}
