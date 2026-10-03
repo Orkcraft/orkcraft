@@ -1,7 +1,7 @@
 """Hut: a building collapsed on the town map, drawn as its own silhouette (realm/silhouettes.py).
 
 Above the building stand its number, its one icon and its name on one line (two when long),
-then two blank rows. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
+then one blank row. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
 two quick-action buttons. A click on a button runs that action; a click elsewhere expands the
 building; a drag moves the hut (the town keeps the spot).
 

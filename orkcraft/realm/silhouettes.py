@@ -314,7 +314,7 @@ def of(spec: dict | None, building_id: str | None = None) -> Silhouette:
 
 LABEL_MIN_W = 14      # a title wraps at least this wide, so a 5-cell pit still reads "The pit"
 LABEL_TITLE_LINES = 2
-LABEL_GAP = 2         # blank rows between the name and the building
+LABEL_GAP = 1         # a blank row between the name and the building
 
 
 @dataclass(frozen=True)
@@ -338,7 +338,7 @@ class Label:
 
 def label(number: int, title: str, width: int) -> Label:
     """The name above a building: `7 🌾 Task fields` on one line (first letter capital, the rest
-    small), wrapped to a second when long, then two blank rows before the building."""
+    small), wrapped to a second when long, then one blank row before the building."""
     if " · " in title:                                   # "🔮 Scrying Spire · Diff Inspector": the part after the dot
         icon, _, rest = title.partition(" ")
         title = f"{icon} {rest.rsplit(' · ', 1)[-1]}"

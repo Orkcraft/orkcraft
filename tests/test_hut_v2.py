@@ -67,9 +67,9 @@ def test_slots_headings_live_lines_and_fallbacks():
     assert "head" in roles and "frame" in roles and "live" in barracks.draw(["x"])[3][1][1]
 
 
-def test_the_label_is_one_line_with_one_icon_and_two_blank_rows():
+def test_the_label_is_one_line_with_one_icon_and_one_blank_row():
     one = sil.label(7, "🌾 Task Fields", 18)
-    assert one.text == ("7 🌾 Task fields",) and one.lines == ("7 🌾 Task fields", "", "")
+    assert one.text == ("7 🌾 Task fields",) and one.lines == ("7 🌾 Task fields", "")
     long = sil.label(3, "🪨 A very long name that has to wrap around", 10)
     assert len(long.text) == 2 and long.text[-1].endswith("…") and long.head.startswith("3 🪨 A very")
     assert sil.label(1, "🔮 Scrying Spire · Diff Inspector", 18).head == "1 🔮 Diff inspector"
@@ -81,11 +81,11 @@ def test_the_hut_stands_label_over_building_buttons_under():
     hut = Hut("a", sil.of(_spec("a", "crag")), acts)
     hut.set_title(5, "🪨 Tally Crag")
     s = hut.sil
-    assert (hut.geom.w, hut.geom.h) == (s.width, 3 + s.height + 1) == footprint(s, hut.label, len(acts))
+    assert (hut.geom.w, hut.geom.h) == (s.width, 2 + s.height + 1) == footprint(s, hut.label, len(acts))
     hut.set_status(["spend 4.04 $", "TOKENS ▇▅▃"])
     lines = str(hut.render()).splitlines()
-    assert lines[0].strip() == "5 🪨 Tally crag" and lines[1].strip() == lines[2].strip() == ""     # one line, two blank rows
-    assert "TELEMETRY & TELEGRAPHS" in lines[4] and "spend 4.04 $" in lines[5]
+    assert lines[0].strip() == "5 🪨 Tally crag" and lines[1].strip() == ""     # one line, one blank row
+    assert "TELEMETRY & TELEGRAPHS" in lines[3] and "spend 4.04 $" in lines[4]
     assert "Flip" in lines[-1] and "Next" in lines[-1]                       # wide enough: the labels
     x0, _, first = hut._buttons[0]
     assert first == "crag.flip" and hut.action_at(x0, hut.geom.h - 1) == "crag.flip"
@@ -93,7 +93,7 @@ def test_the_hut_stands_label_over_building_buttons_under():
     small = Hut("s", sil.of(_spec("s", "pit")), acts)                        # 9 wide: glyphs only
     small.set_title(1, "🕳️ The Pit")
     assert str(small.render()).splitlines()[-1].strip() == "[⇅] [⟳]"
-    assert small.geom.h == 3 + 3 + 1 + 1                                     # label and gap, silhouette, caption, buttons
+    assert small.geom.h == 2 + 3 + 1 + 1                                     # label and gap, silhouette, caption, buttons
     shown = Hut("c", sil.of(_spec("c", "pit")))
     shown.set_status(["📄 a.txt", "3 in the pit"])
     assert str(shown.render()).splitlines()[-1].strip() == "📄 a.txt"
