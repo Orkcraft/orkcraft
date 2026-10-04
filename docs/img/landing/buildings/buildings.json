@@ -11,8 +11,8 @@
         "office": "buildings/peon/office/task-fields.png"
       },
       "alt": {
-        "camp": "Task Fields kanban: Rotate signing keys and Token TTL to do, Review auth refresh PR and PKCE exchange in progress, OAuth client and Login form done (Camp mode)",
-        "office": "Task Fields kanban: Rotate signing keys and Token TTL to do, Review auth refresh PR and PKCE exchange in progress, OAuth client and Login form done (Office mode)"
+        "camp": "Task Fields hut: 2 tasks to do, 2 in progress, 2 done, 'Review auth refresh PR' in work. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Task Fields hut: 2 tasks to do, 2 in progress, 2 done, 'Review auth refresh PR' in work. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -26,8 +26,8 @@
         "office": "buildings/peon/office/barracks.png"
       },
       "alt": {
-        "camp": "Barracks: three orcs each working a task in its own worktree (PKCE flow, Token TTL, Reuse check), one task queued, a failed task in the finished list (Camp mode)",
-        "office": "Barracks: three orcs each working a task in its own worktree (PKCE flow, Token TTL, Reuse check), one task queued, a failed task in the finished list (Office mode)"
+        "camp": "Barracks hut: worker pool with 3 of 3 orcs busy, 1 task waiting, one done and one failed. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Barracks hut: worker pool with 3 of 3 orcs busy, 1 task waiting, one done and one failed. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -41,8 +41,8 @@
         "office": "buildings/peon/office/forge.png"
       },
       "alt": {
-        "camp": "The Forge: branches feat/oauth with open PR #41 'Review auth refresh PR', fix/ttl with PR #42 and chore/deps, with lines changed and commits ahead (Camp mode)",
-        "office": "The Forge: branches feat/oauth with open PR #41 'Review auth refresh PR', fix/ttl with PR #42 and chore/deps, with lines changed and commits ahead (Office mode)"
+        "camp": "The Forge hut: merge engine on main, 3 branches, tests set, changes +3−2, gate open. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "The Forge hut: merge engine on main, 3 branches, tests set, changes +3−2, gate open. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -56,8 +56,8 @@
         "office": "buildings/peon/office/lake-of-insight.png"
       },
       "alt": {
-        "camp": "Lake of Insight: side-by-side diff of auth/token.py on feat/oauth, before on the left and after on the right (Camp mode)",
-        "office": "Lake of Insight: side-by-side diff of auth/token.py on feat/oauth, before on the left and after on the right (Office mode)"
+        "camp": "Lake of Insight hut: the active diff of feat/oauth, codes.get becoming codes.pop and verify_pkce added, +3 −2. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Lake of Insight hut: the active diff of feat/oauth, codes.get becoming codes.pop and verify_pkce added, +3 −2. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -71,8 +71,8 @@
         "office": "buildings/peon/office/orc-council.png"
       },
       "alt": {
-        "camp": "Orc Council reviewing the feat/oauth patch, round 3 of 4: Diff Inspector agrees, Test Runner objects that an expired code is accepted (Camp mode)",
-        "office": "Orc Council reviewing the feat/oauth patch, round 3 of 4: Diff Inspector agrees, Test Runner objects that an expired code is accepted (Office mode)"
+        "camp": "Orc Council hut: Smith, Diff Inspector and Test Runner debating the patch, round 3 of 4, $0.62 spent. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Orc Council hut: Smith, Diff Inspector and Test Runner debating the patch, round 3 of 4, $0.62 spent. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -86,8 +86,8 @@
         "office": "buildings/peon/office/watchtower.png"
       },
       "alt": {
-        "camp": "Watchtower GitHub feed: check 'unit' failed, review asked on PR #41, PR #42 opened, with the failed check open on the right (Camp mode)",
-        "office": "Watchtower GitHub feed: check 'unit' failed, review asked on PR #41, PR #42 opened, with the failed check open on the right (Office mode)"
+        "camp": "Watchtower hut: 4 events from GitHub, status OK. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Watchtower hut: 4 events from GitHub, status OK. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -101,8 +101,8 @@
         "office": "buildings/peon/office/loot-vault.png"
       },
       "alt": {
-        "camp": "Loot Vault: CHANGELOG.md and docs/release.md written by agents, waiting to be accepted, with the v0.9.0 changelog previewed (Camp mode)",
-        "office": "Loot Vault: CHANGELOG.md and docs/release.md written by agents, waiting to be accepted, with the v0.9.0 changelog previewed (Office mode)"
+        "camp": "Loot Vault hut: CHANGELOG.md and release.md waiting for review, with an Accept all button. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Loot Vault hut: CHANGELOG.md and release.md waiting for review, with an Accept all button. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -116,8 +116,8 @@
         "office": "buildings/peon/office/tally-crag.png"
       },
       "alt": {
-        "camp": "Tally Crag: tokens per building over 24 hours, 332k in total, the Forge's 174k bar in red over the limit (Camp mode)",
-        "office": "Tally Crag: tokens per building over 24 hours, 332k in total, the Forge's 174k bar in red over the limit (Office mode)"
+        "camp": "Tally Crag hut: tokens per building, 332k in total, the Forge's bar longest at 174k. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Tally Crag hut: tokens per building, 332k in total, the Forge's bar longest at 174k. Office mode: a plain grey frame, words instead of icons"
       }
     }
   ],
@@ -133,8 +133,8 @@
         "office": "buildings/knight/office/launch-board.png"
       },
       "alt": {
-        "camp": "Launch Board kanban: Launch post and pricing page and Product Hunt draft to do, Stripe webhooks and Fix checkout 500 in progress, Landing hero and Waitlist email done (Camp mode)",
-        "office": "Launch Board kanban: Launch post and pricing page and Product Hunt draft to do, Stripe webhooks and Fix checkout 500 in progress, Landing hero and Waitlist email done (Office mode)"
+        "camp": "Launch Board hut: 2 tasks to do, 2 in progress, 2 done, 'Stripe webhooks' in work. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Launch Board hut: 2 tasks to do, 2 in progress, 2 done, 'Stripe webhooks' in work. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -148,8 +148,8 @@
         "office": "buildings/knight/office/barracks.png"
       },
       "alt": {
-        "camp": "Barracks: two orcs at work, Smith on Stripe webhooks and Scout on Fix checkout 500, with Usage emails queued and a $5 budget (Camp mode)",
-        "office": "Barracks: two orcs at work, Smith on Stripe webhooks and Scout on Fix checkout 500, with Usage emails queued and a $5 budget (Office mode)"
+        "camp": "Barracks hut: 2 of 2 orcs busy, 1 task waiting, $0.00 of the $5 cap spent. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Barracks hut: 2 of 2 orcs busy, 1 task waiting, $0.00 of the $5 cap spent. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -163,8 +163,8 @@
         "office": "buildings/knight/office/tally-crag.png"
       },
       "alt": {
-        "camp": "Tally Crag: spend in dollars per building over 24 hours, $3.67 in total, the Barracks' $2.20 bar in orange over the warn line (Camp mode)",
-        "office": "Tally Crag: spend in dollars per building over 24 hours, $3.67 in total, the Barracks' $2.20 bar in orange over the warn line (Office mode)"
+        "camp": "Tally Crag hut: $3.67 spent today, the Barracks' bar longest at $2.20, then the Forge at $0.90. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Tally Crag hut: $3.67 spent today, the Barracks' bar longest at $2.20, then the Forge at $0.90. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -178,8 +178,8 @@
         "office": "buildings/knight/office/watchtower.png"
       },
       "alt": {
-        "camp": "Watchtower feed after a deploy: a Sentry 500 alert on /api/checkout, a failed e2e check and a refund request mail (Camp mode)",
-        "office": "Watchtower feed after a deploy: a Sentry 500 alert on /api/checkout, a failed e2e check and a refund request mail (Office mode)"
+        "camp": "Watchtower hut: 4 events, status OK, the latest a mail. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Watchtower hut: 4 events, status OK, the latest a mail. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -193,8 +193,8 @@
         "office": "buildings/knight/office/forge.png"
       },
       "alt": {
-        "camp": "The Forge: branch feat/stripe with open PR #12 'Stripe billing' (+413 −3) and fix/checkout with PR #13 (Camp mode)",
-        "office": "The Forge: branch feat/stripe with open PR #12 'Stripe billing' (+413 −3) and fix/checkout with PR #13 (Office mode)"
+        "camp": "The Forge hut: 2 branches on main, tests set, changes +413−3, gate open. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "The Forge hut: 2 branches on main, tests set, changes +413−3, gate open. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -208,8 +208,8 @@
         "office": "buildings/knight/office/loot-vault.png"
       },
       "alt": {
-        "camp": "Loot Vault: launch.md, hn.md, ph.md and pricing.md written by agents, waiting to be accepted, the Show HN draft previewed (Camp mode)",
-        "office": "Loot Vault: launch.md, hn.md, ph.md and pricing.md written by agents, waiting to be accepted, the Show HN draft previewed (Office mode)"
+        "camp": "Loot Vault hut: hn.md, launch.md, ph.md and pricing.md waiting for review. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Loot Vault hut: hn.md, launch.md, ph.md and pricing.md waiting for review. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -223,8 +223,8 @@
         "office": "buildings/knight/office/town-hall.png"
       },
       "alt": {
-        "camp": "Town Hall: the order 'post every merged PR to the changelog' waiting for the Town Builder's plan and your approval (Camp mode)",
-        "office": "Town Hall: the order 'post every merged PR to the changelog' waiting for the Town Builder's plan and your approval (Office mode)"
+        "camp": "Town Hall hut: a town order waits for the Builder, all quiet, $0.00 of $5 spent. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Town Hall hut: a town order waits for the Builder, all quiet, $0.00 of $5 spent. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -238,8 +238,8 @@
         "office": "buildings/knight/office/catapult.png"
       },
       "alt": {
-        "camp": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook (Camp mode)",
-        "office": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook (Office mode)"
+        "camp": "The Catapult hut: the last shot was a dry run, with Fire and Dry run buttons. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "The Catapult hut: the last shot was a dry run, with Fire and Dry run buttons. Office mode: a plain grey frame, words instead of icons"
       }
     }
   ],
@@ -255,8 +255,8 @@
         "office": "buildings/elf/office/loot-vault.png"
       },
       "alt": {
-        "camp": "Loot Vault: three hero variants as files, hero-b accepted with its ASCII wireframe 'Invoices in one click, Start free' previewed, hero-a and hero-c waiting (Camp mode)",
-        "office": "Loot Vault: three hero variants as files, hero-b accepted with its ASCII wireframe 'Invoices in one click, Start free' previewed, hero-a and hero-c waiting (Office mode)"
+        "camp": "Loot Vault hut: hero-a.md and hero-c.md still waiting for review after hero-b was accepted. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Loot Vault hut: hero-a.md and hero-c.md still waiting for review after hero-b was accepted. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -270,8 +270,8 @@
         "office": "buildings/elf/office/lake-of-insight.png"
       },
       "alt": {
-        "camp": "Lake of Insight: two versions of the bank-connection error copy side by side, 'Something went wrong' before and 'We couldn't reach your bank' after (Camp mode)",
-        "office": "Lake of Insight: two versions of the bank-connection error copy side by side, 'Something went wrong' before and 'We couldn't reach your bank' after (Office mode)"
+        "camp": "Lake of Insight hut: the error copy diff, 'Something went wrong' becoming 'We couldn't reach your bank', +2 −2. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Lake of Insight hut: the error copy diff, 'Something went wrong' becoming 'We couldn't reach your bank', +2 −2. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -285,8 +285,8 @@
         "office": "buildings/elf/office/orc-council.png"
       },
       "alt": {
-        "camp": "Orc Council critiquing the onboarding flow, agreed in round 2: the Accessibility orc's objection that focus jumps to the footer is open (Camp mode)",
-        "office": "Orc Council critiquing the onboarding flow, agreed in round 2: the Accessibility orc's objection that focus jumps to the footer is open (Office mode)"
+        "camp": "Orc Council hut: Critic, Accessibility and Copy agreed on the onboarding flow in round 2 of 3. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Orc Council hut: Critic, Accessibility and Copy agreed on the onboarding flow in round 2 of 3. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -300,8 +300,8 @@
         "office": "buildings/elf/office/token-mill.png"
       },
       "alt": {
-        "camp": "Token Mill: design tokens JSON run through three steps with no model, out come CSS variables for primary color, ink, radius, spacing and body font (Camp mode)",
-        "office": "Token Mill: design tokens JSON run through three steps with no model, out come CSS variables for primary color, ink, radius, spacing and body font (Office mode)"
+        "camp": "Token Mill hut: the last run of the tokens-to-CSS steps passed at 08:16, with a Run button. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Token Mill hut: the last run of the tokens-to-CSS steps passed at 08:16, with a Run button. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -315,8 +315,8 @@
         "office": "buildings/elf/office/the-pit.png"
       },
       "alt": {
-        "camp": "The Pit: two reference images, a moodboard link and a client note ('make the CTA warmer') dropped in and sorted by kind (Camp mode)",
-        "office": "The Pit: two reference images, a moodboard link and a client note ('make the CTA warmer') dropped in and sorted by kind (Office mode)"
+        "camp": "The Pit hut: the newest drop is the client note 'make the CTA warmer'. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "The Pit hut: the newest drop is the client note 'make the CTA warmer'. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -330,8 +330,8 @@
         "office": "buildings/elf/office/task-fields.png"
       },
       "alt": {
-        "camp": "Task Fields: onboarding screens by state, error and empty states to do, loading and Hero 3 variants in progress, step 1 with all 4 states done (Camp mode)",
-        "office": "Task Fields: onboarding screens by state, error and empty states to do, loading and Hero 3 variants in progress, step 1 with all 4 states done (Office mode)"
+        "camp": "Task Fields hut: 2 screens to do, 2 in progress, 2 done, 'Step 2 · loading' in work. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Task Fields hut: 2 screens to do, 2 in progress, 2 done, 'Step 2 · loading' in work. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -345,8 +345,8 @@
         "office": "buildings/elf/office/scroll-dump.png"
       },
       "alt": {
-        "camp": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone (Camp mode)",
-        "office": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone (Office mode)"
+        "camp": "Scroll Dump hut: 1 base of design guidelines with 3 notes, synced. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Scroll Dump hut: 1 base of design guidelines with 3 notes, synced. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -360,8 +360,8 @@
         "office": "buildings/elf/office/forge.png"
       },
       "alt": {
-        "camp": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2 (Camp mode)",
-        "office": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2 (Office mode)"
+        "camp": "The Forge hut: 2 branches on main, tests set, changes +2−2, gate open. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "The Forge hut: 2 branches on main, tests set, changes +2−2, gate open. Office mode: a plain grey frame, words instead of icons"
       }
     }
   ],
@@ -377,8 +377,8 @@
         "office": "buildings/lich/office/sprint-board.png"
       },
       "alt": {
-        "camp": "Sprint Board for Sprint 14: 9 to do, 4 in progress including Security review OAuth and Checkout 500, 6 done (Camp mode)",
-        "office": "Sprint Board for Sprint 14: 9 to do, 4 in progress including Security review OAuth and Checkout 500, 6 done (Office mode)"
+        "camp": "Sprint Board hut: 9 tasks to do, 4 in progress, 6 done, 'Security review OAuth' in work. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Sprint Board hut: 9 tasks to do, 4 in progress, 6 done, 'Security review OAuth' in work. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -392,8 +392,8 @@
         "office": "buildings/lich/office/loot-vault.png"
       },
       "alt": {
-        "camp": "Loot Vault with the stored 'Sprint 14 status digest' report (6 events, 2 blockers), with when it came and what it cost ($0.04) (Camp mode)",
-        "office": "Loot Vault with the stored 'Sprint 14 status digest' report (6 events, 2 blockers), with when it came and what it cost ($0.04) (Office mode)"
+        "camp": "Loot Vault hut: 2 reports stored, the Sprint 14 status digest among them, nothing waiting for review. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Loot Vault hut: 2 reports stored, the Sprint 14 status digest among them, nothing waiting for review. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -407,8 +407,8 @@
         "office": "buildings/lich/office/tally-crag.png"
       },
       "alt": {
-        "camp": "Tally Crag: Sprint 14 tasks per column as bars, 9 to do, 4 in progress, 6 done (Camp mode)",
-        "office": "Tally Crag: Sprint 14 tasks per column as bars, 9 to do, 4 in progress, 6 done (Office mode)"
+        "camp": "Tally Crag hut: Sprint 14 as bars, 9 to do, 4 in progress, 6 done, 19 tasks in all. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Tally Crag hut: Sprint 14 as bars, 9 to do, 4 in progress, 6 done, 19 tasks in all. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -422,8 +422,8 @@
         "office": "buildings/lich/office/watchtower.png"
       },
       "alt": {
-        "camp": "Watchtower escalations: '#41 review waiting 2 d' open, a failed check on main, a client mail and the 09:00 digest (Camp mode)",
-        "office": "Watchtower escalations: '#41 review waiting 2 d' open, a failed check on main, a client mail and the 09:00 digest (Office mode)"
+        "camp": "Watchtower hut: 4 events, status OK, the latest from GitHub. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Watchtower hut: 4 events, status OK, the latest from GitHub. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -437,8 +437,8 @@
         "office": "buildings/lich/office/war-drum.png"
       },
       "alt": {
-        "camp": "War Drum for today: 10:00 Standup next, then 1:1 with Mira, Sprint 14 review at 14:00 and Sprint 15 planning at 16:00 (Camp mode)",
-        "office": "War Drum for today: 10:00 Standup next, then 1:1 with Mira, Sprint 14 review at 14:00 and Sprint 15 planning at 16:00 (Office mode)"
+        "camp": "War Drum hut: today's meetings, Standup at 10:00 next, then 1:1 · Mira, Sprint 14 review and Sprint 15 planning, 4 left today. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "War Drum hut: today's meetings, Standup at 10:00 next, then 1:1 · Mira, Sprint 14 review and Sprint 15 planning, 4 left today. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -452,8 +452,8 @@
         "office": "buildings/lich/office/orc-council.png"
       },
       "alt": {
-        "camp": "Orc Council agreed on the Sprint 15 plan in round 2 of 3 for $0.38; the Critic's objection '11 stories, velocity is 8' is open (Camp mode)",
-        "office": "Orc Council agreed on the Sprint 15 plan in round 2 of 3 for $0.38; the Critic's objection '11 stories, velocity is 8' is open (Office mode)"
+        "camp": "Orc Council hut: Planner, Critic and Security agreed on the Sprint 15 plan in round 2 of 3. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Orc Council hut: Planner, Critic and Security agreed on the Sprint 15 plan in round 2 of 3. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -467,8 +467,8 @@
         "office": "buildings/lich/office/barracks.png"
       },
       "alt": {
-        "camp": "Barracks: two orcs busy on Pricing page and Usage emails, and the foreman's log of who got which task and why (Camp mode)",
-        "office": "Barracks: two orcs busy on Pricing page and Usage emails, and the foreman's log of who got which task and why (Office mode)"
+        "camp": "Barracks hut: 2 of 2 orcs busy, 1 task waiting, one done. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Barracks hut: 2 of 2 orcs busy, 1 task waiting, one done. Office mode: a plain grey frame, words instead of icons"
       }
     },
     {
@@ -482,8 +482,8 @@
         "office": "buildings/lich/office/scroll-dump.png"
       },
       "alt": {
-        "camp": "Scroll Dump of team notes (a 1:1, ADR-014, a retro); a search for 'decision' returns one fragment from ADR-014 Payments (Camp mode)",
-        "office": "Scroll Dump of team notes (a 1:1, ADR-014, a retro); a search for 'decision' returns one fragment from ADR-014 Payments (Office mode)"
+        "camp": "Scroll Dump hut: 1 base of team notes with 3 notes, synced. Camp mode: ASCII roof on an ice map, the orc at the door",
+        "office": "Scroll Dump hut: 1 base of team notes with 3 notes, synced. Office mode: a plain grey frame, words instead of icons"
       }
     }
   ]

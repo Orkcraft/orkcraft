@@ -1,7 +1,8 @@
 import asyncio, os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from shootlib import run, Payload
+from shootlib import Payload
+from hutlib import run
 
 ROOT, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 os.environ["PATH"] = f"{ROOT / '.orkcraft' / 'bin'}:{os.environ['PATH']}"

@@ -1,7 +1,8 @@
 import asyncio, os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from shootlib import run, Payload
+from shootlib import Payload
+from hutlib import run
 
 ROOT, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 os.environ["PATH"] = f"{ROOT / '.orkcraft' / 'bin'}:{os.environ['PATH']}"
@@ -16,8 +17,9 @@ def loot(app, view):
         lst.highlighted = ids.index("hero-b.md")
 
 
-def lake(app, view):
+async def lake(app, view):
     view.show_value("branch", "copy/error-v2", "copy/error-v2")
+    await asyncio.sleep(1.5)
 
 
 def council(app, view):
