@@ -5,8 +5,8 @@
 F1 My Day — Task Fields, War Drum, Scroll Dump, File Forest, The Pit and a Watchtower (it shows
 how to connect a mailbox; the sandbox has none), with a Daily Brief mill that gets the War Drum's
 digest, task moves and what is dropped in the Pit.
-F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, an Orc Council with a
-finished debate, a Loot Vault with changes to review and a Tally Crag over a day of runs.
+F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, a Clan Fire that sent
+a plan back once and then let it go, a Loot Vault with changes to review and a Tally Crag over a day of runs.
 F3 Gates — The Pit feeds a Totem whose rules send a patch or a link to the Lake of Insight and a
 release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
@@ -15,7 +15,7 @@ The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / �
 a self-improvement proposal and a weekly report.
 
 The sandbox is a real git repository (so the Forge, the Forest and the Loot show real things);
-agents never run in it — the Barracks and the Council answer with simulated text.
+agents never run in it — the Barracks and the Clan Fire answer with simulated text.
 """
 from __future__ import annotations
 
@@ -102,9 +102,10 @@ AGENT_YARD = {
         typed("branches", "forge", "The Forge", "⚒️", "Smith", "branches, PRs, changes", "castle"),
         typed("camp", "barracks", "Barracks", "🏕️", "Grunts", "runs tasks in parallel", "tent",
               max_orcs=3, providers=["claude", "agy"], budget_usd=5.0),
-        typed("council", "council", "Orc Council", "🔥", "Chieftains", "agrees on plans", "pagoda",
-              goal="Agree on the v0.2 release plan", members=["Planner:claude", "Critic:agy", "Security:claude"],
-              max_rounds=3, budget_usd=2.0),
+        typed("council", "council", "Clan Fire", "🪔", "Chieftains", "reviews what the Barracks writes", "pagoda",
+              steward_prompt="Let a plan go when nobody blocks it; ask me before a release date moves.",
+              members=["Product manager:claude", "Architect:agy", "Security:claude"], veto=["Security"],
+              max_cycles=3, budget_usd=2.0),
         typed("outputs", "loot", "Loot Vault", "📦", "Quartermaster", "files agents wrote, to review", "snow"),
         typed("crag", "crag", "Tally Crag", "🪨", "Crag Carver", "spend and load", "castle", source="spend",
               warn=2.0, crit=5.0),
@@ -277,17 +278,25 @@ def _seed_barracks(root: Path) -> None:
 
 def _seed_council(root: Path) -> None:
     from orkcraft.realm import team as tm
-    d = tm.new("Agree on the v0.2 release plan", "Agree on the v0.2 release plan")
-    d.started, d.ended, d.outcome, d.round, d.spent = "2026-10-02T05:10:00", "2026-10-02T05:14:00", "agreed", 2, 0.24
-    d.draft = ("# v0.2 release plan\n\n1. Freeze features on Monday\n2. Run the secret scan on the wheel\n"
-               "3. Tag and sign `v0.2.0`\n4. Publish to PyPI\n5. Roll back: yank and re-tag if the smoke test fails\n"
-               "6. The operator announces")
-    d.turns = [tm.Turn(1, "Planner", "draft", "# v0.2 release plan\n\n1. Freeze\n2. Tag\n3. Publish\n4. Announce"),
-               tm.Turn(1, "Critic", "review", "OBJECT: 1. No rollback step. 2. Who announces?", False),
-               tm.Turn(1, "Security", "review", "OBJECT: sign the release and scan the wheel", False),
-               tm.Turn(1, "Moderator", "revise", d.draft),
-               tm.Turn(2, "Critic", "review", "AGREE", True), tm.Turn(2, "Security", "review", "AGREE", True)]
-    tm.save(root / ".orkcraft" / "council" / "council", d)
+    plan = ("# v0.2 release plan\n\n1. Freeze features on Monday\n2. Run the secret scan on the wheel\n"
+            "3. Tag and sign `v0.2.0`\n4. Publish to PyPI\n5. Roll back: yank and re-tag if the smoke test fails\n"
+            "6. The operator announces")
+    first = tm.new("v0.2 release plan", "# v0.2 release plan\n\n1. Freeze\n2. Tag\n3. Publish\n4. Announce")
+    first.started, first.ended, first.outcome, first.spent = "2026-10-02T05:10:00", "2026-10-02T05:13:00", "rework", 0.14
+    first.decision = "1. Sign the release and scan the wheel (Security's veto).\n2. Add a rollback step.\n3. Name who announces."
+    first.turns = [tm.Turn("Product manager", "review", "1. Who announces?", "changes"),
+                   tm.Turn("Architect", "review", "1. No rollback step.", "changes"),
+                   tm.Turn("Security", "review", "An unsigned, unscanned wheel must not ship.", "veto"),
+                   tm.Turn("Steward", "decide", first.decision, "rework")]
+    second = tm.new("v0.2 release plan", plan, cycle=2)
+    second.started, second.ended, second.outcome, second.spent = "2026-10-02T05:40:00", "2026-10-02T05:42:00", "approved", 0.1
+    second.decision = "Every point of the first review is answered; Security approves."
+    second.turns = [tm.Turn("Product manager", "review", "", "approve"), tm.Turn("Architect", "review", "", "approve"),
+                    tm.Turn("Security", "review", "Signed and scanned — fine.", "approve"),
+                    tm.Turn("Steward", "decide", second.decision, "approve")]
+    folder = root / ".orkcraft" / "council" / "council"
+    tm.save(folder, first)
+    tm.save(folder, second)
 
 
 def payload_of(sc: dict, source: str, event: str):

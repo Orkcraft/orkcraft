@@ -158,15 +158,19 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
-        "council", "Orc Council", "🔥", "M",
-        "2–4 agents with roles (architect, tester, security) debate until they agree on a decision or RFC",
-        "the members and their roles, 🔥 when one asks", "the debate round by round, the decision",
-        events=(_e("team.artifact_ready", "decision ready", FILE, "the council agreed: the decision"),),
-        actions=(_a("team.add", "Add member", "+", "add a member: role and model"),
-                 _a("team.start", "Start", "▶", "start a debate")),
-        config={"goal": (str, None, False), "max_rounds": (int, (1, 20), False),
-                "budget_usd": (float, (0, 100), False), "members": (list, None, False),
-                "moderator": (str, None, False)},
+        "council", "Clan Fire", "🪔", "M",
+        "the clan reviews a document from every side (PM, architect, marketing…); the steward lets it go, "
+        "sends it back for rework or asks you",
+        "the clan and who holds a veto, 🔥 when the steward asks", "each review, the steward's decision, the report",
+        events=(_e("team.approved", "approved", TEXT, "the steward let the document go: the document as it is"),
+                _e("team.rework", "rework", TEXT, "sent back: the steward's comments, each review, the document"),
+                _e("team.artifact_ready", "review report", FILE, "the full review: every verdict and the decision")),
+        actions=(_a("team.add", "Add member", "+", "add a member: role and model; its brief is a file"),
+                 _a("team.start", "Review", "▶", "review a document (a path or text), or answer the steward")),
+        config={"steward_prompt": (str, None, False), "members": (list, None, False), "veto": (list, None, False),
+                "max_cycles": (int, (1, 10), False), "budget_usd": (float, (0, 100), False),
+                "moderator": (str, None, False),
+                "goal": (str, None, False), "max_rounds": (int, (1, 20), False)},     # the old debate's; kept loading
         art="great_hall", orc="Chieftains", agentic=True),
     BuildingType(
         "war_drum", "War Drum", "🥁", "L",
@@ -292,6 +296,7 @@ DEFAULT_TYPE = "custom"
 
 # T1107: the 15 buildings of the camp took over the types of T1105. Specs of old keep loading.
 ALIASES = {"dropzone": "pit", "mail": "watchtower", "tasks": "fields", "pool": "barracks", "team": "council",
+           "campfire": "council", "clan_fire": "council",
            "calendar": "war_drum", "file_tree": "forest", "knowledge": "scrolls", "git": "forge",
            "generator": "loot", "charts": "crag"}
 
@@ -302,6 +307,8 @@ def migrate(spec: dict) -> dict:
     Agent / Script folds in: a script becomes a Mill step, an agent a Barracks of one orc whose
     standing orders are the skill."""
     tid = spec.get("type")
+    if ALIASES.get(tid, tid) == "council" and spec.get("icon") == "🔥":
+        spec = {**spec, "icon": "🪔"}          # the Clan Fire's own icon; 🔥 means "waits for you"
     if tid in ALIASES:
         return {**spec, "type": ALIASES[tid]}
     if tid != "agent":

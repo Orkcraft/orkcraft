@@ -57,7 +57,7 @@ Sixteen buildings, each with its own events and settings:
 | | |
 |---|---|
 | **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail, GitHub, schedules, webhooks) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) · 📯 Horn (a sound of your choice per incoming event) |
-| **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel git worktrees) · 🔥 Orc Council (agents that debate to a decision) · 🥁 War Drum (your calendar) |
+| **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel git worktrees) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar) |
 | **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (your notes, retrieved by budget) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
 | **Results and egress** | 📦 Loot Vault (generated files to accept or roll back) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP) |
 

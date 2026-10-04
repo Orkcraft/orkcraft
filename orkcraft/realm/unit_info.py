@@ -53,7 +53,7 @@ def orc_sentences(orc: Orc, building_title: str = "") -> list[str]:
     elif orc.category == WORKER:
         out.append(_sentence("A live session in the War Tent"))
     elif orc.category == COUNCIL:
-        out.append(_sentence("A member of the council of the multi-agent systems"))
+        out.append(_sentence("A member of the clan at the Clan Fire"))
     if orc.alert is not None:
         out.append(_sentence(f"Waits for you: {orc.alert.title}"))
     elif orc.task:

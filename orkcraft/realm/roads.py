@@ -91,6 +91,8 @@ EXAMPLE_OUTPUT_CHARS = 8000
 AGY_MODEL = "gemini-3.8-flash-high"
 CLAUDE_READ_ONLY = ["--allowedTools", "Read,Grep,Glob",
                     "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"]
+CLAUDE_READ_WEB = ["--allowedTools", "Read,Grep,Glob,WebSearch,WebFetch",        # 🪔 Clan Fire reviewers
+                   "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit"]
 
 
 @dataclass(frozen=True)
@@ -203,10 +205,10 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     return "\n\n".join(parts)
 
 
-def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "") -> list[str]:
+def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "", web: bool = False) -> list[str]:
     if harness == "claude":
         return [os.environ.get("ORKCRAFT_CLAUDE_BIN", "claude"), "-p", prompt, "--output-format", "json",
-                *CLAUDE_READ_ONLY, *(["--model", model] if model else [])]
+                *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY), *(["--model", model] if model else [])]
     if harness == "agy":
         return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or AGY_MODEL,
                 "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
@@ -239,12 +241,13 @@ def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
 
 
 def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
-              cancel: threading.Event, model: str = "") -> tuple[str, float | None, int | None]:
-    """One harness step. Claude reads the repository (read-only tools); agy works in an empty
-    temp dir. Raises RuntimeError on failure, InterruptedError when `cancel` is set."""
+              cancel: threading.Event, model: str = "", web: bool = False) -> tuple[str, float | None, int | None]:
+    """One harness step. Claude reads the repository (read-only tools, plus web search and fetch
+    when `web`); agy works in an empty temp dir. Raises RuntimeError on failure, InterruptedError
+    when `cancel` is set."""
     with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
         workdir = repo_root if harness == "claude" else Path(scratch)
-        cmd = _harness_cmd(harness, prompt, Path(scratch), model)
+        cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
         try:
             proc = subprocess.Popen(cmd, cwd=workdir, env={**os.environ, **env}, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, text=True, start_new_session=True)

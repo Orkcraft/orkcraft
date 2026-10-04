@@ -131,7 +131,7 @@ rules stop or the model would not advise still waits for the operator.
   | 🧝 Design | 🎨 Mockup Grove | an idea → mockup variants → a pick |
   | | 📐 Design System | tokens, components, consistency checks |
   | | 🖼 Asset Pipeline | generating assets and accepting them in the Loot Vault |
-  | | 🗣 Critique Circle | the Orc Council argues over design decisions |
+  | | 🗣 Critique Circle | the Clan Fire reviews design decisions from every side |
   | 🛡 Management | 📋 War Room | tasks, statuses, a daily digest |
   | | 📨 Inbox Keep | mail, GitHub and webhooks sorted into tasks |
   | | 🥁 Sprint Drum | sprint planning, calendar, retro |

@@ -88,7 +88,7 @@ PRESETS: tuple[TownPreset, ...] = (
     TownPreset("mockup_grove", "design", "🎨", "Mockup Grove", "an idea → mockup variants → a pick"),
     TownPreset("design_system", "design", "📐", "Design System", "tokens, components, consistency checks"),
     TownPreset("asset_pipeline", "design", "🖼", "Asset Pipeline", "generating assets and accepting them in the Loot Vault"),
-    TownPreset("critique_circle", "design", "🗣", "Critique Circle", "the Orc Council argues over design decisions"),
+    TownPreset("critique_circle", "design", "🗣", "Critique Circle", "the Clan Fire reviews design decisions from every side"),
     TownPreset("war_room", "management", "📋", "War Room", "tasks, statuses, a daily digest"),
     TownPreset("inbox_keep", "management", "📨", "Inbox Keep", "mail, GitHub and webhooks sorted into tasks"),
     TownPreset("sprint_drum", "management", "🥁", "Sprint Drum", "sprint planning, calendar, retro"),
