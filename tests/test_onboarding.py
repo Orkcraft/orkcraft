@@ -189,8 +189,16 @@ def test_the_profile_is_kept_and_cleaned(tmp_path: Path):
 def test_other_ai_tools_are_found_on_disk_without_running_them(tmp_path: Path):
     (tmp_path / ".cursor").mkdir()
     (tmp_path / ".vscode" / "extensions" / "github.copilot-1.2").mkdir(parents=True)
-    found = tools.detect_others(which=lambda b: "/usr/bin/aider" if b == "aider" else None, home=tmp_path)
+    found = tools.detect_others(which=lambda b: "/usr/bin/aider" if b == "aider" else None, home=tmp_path,
+                                apps=tmp_path / "Applications")
     assert [o.id for o in found] == ["cursor", "copilot", "aider"]
+
+
+def test_apps_are_looked_up_in_the_given_applications_folder(tmp_path: Path):
+    apps = tmp_path / "Applications"
+    assert tools.detect_others(which=lambda b: None, home=tmp_path, apps=apps) == []
+    (apps / "ChatGPT.app").mkdir(parents=True)
+    assert [o.id for o in tools.detect_others(which=lambda b: None, home=tmp_path, apps=apps)] == ["chatgpt"]
 
 
 def test_every_webhook_comes_in_through_a_watchtower():
