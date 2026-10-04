@@ -1,7 +1,9 @@
-"""The AI CLIs orkcraft can lead, as onboarding finds them (design: docs/design/onboarding.md).
+"""The AI tools onboarding finds: the CLIs orkcraft can lead, and the others it only asks about
+(design: docs/design/onboarding.md).
 
     for t in tools.detect():                # blocking (a `--version` each): call from a worker thread
         t.id, t.found, t.version, t.logged_in, t.billing
+    tools.detect_others()                   # [Other(...)] installed: Cursor, Copilot, ChatGPT… (no process run)
 
 Nothing here spends quota or reads a key: a CLI is looked up on PATH, asked for its version, and
 its login is guessed from what it leaves on disk or in the environment. `logged_in` is None when
@@ -111,3 +113,44 @@ def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = su
                 status.logged_in, status.billing = login(env, home)
         out.append(status)
     return out
+
+
+# -- the AI tools orkcraft does not lead, only asks the operator about ---------------------------------
+
+@dataclass(frozen=True)
+class Other:
+    id: str
+    title: str
+    bins: tuple[str, ...] = ()            # on PATH
+    paths: tuple[str, ...] = ()           # under the home folder (~), or absolute; a glob is allowed
+
+
+OTHERS: tuple[Other, ...] = (
+    Other("cursor", "Cursor", ("cursor",), ("/Applications/Cursor.app", "~/.cursor", "~/AppData/Local/Programs/cursor")),
+    Other("copilot", "GitHub Copilot", (), ("~/.vscode/extensions/github.copilot-*",
+                                            "~/.config/github-copilot")),
+    Other("chatgpt", "ChatGPT app", ("chatgpt",), ("/Applications/ChatGPT.app", "~/AppData/Local/Programs/ChatGPT")),
+    Other("gemini", "Gemini CLI", ("gemini",), ("~/.gemini",)),
+    Other("codex", "OpenAI Codex", ("codex",), ("~/.codex",)),
+    Other("aider", "Aider", ("aider",), ()),
+    Other("windsurf", "Windsurf", ("windsurf",), ("/Applications/Windsurf.app", "~/.codeium/windsurf")),
+)
+
+
+def detect_others(which: Callable[[str], str | None] = shutil.which, home: Path | None = None) -> list[Other]:
+    """The other AI tools installed here: a binary on PATH or their folder on disk. Runs nothing."""
+    home = Path.home() if home is None else home
+    found = []
+    for o in OTHERS:
+        hit = any(which(b) for b in o.bins)
+        for raw in o.paths if not hit else ():
+            p = Path(raw.replace("~", str(home), 1)) if raw.startswith("~") else Path(raw)
+            if "*" in p.name:
+                hit = p.parent.is_dir() and any(p.parent.glob(p.name))
+            else:
+                hit = p.exists()
+            if hit:
+                break
+        if hit:
+            found.append(o)
+    return found

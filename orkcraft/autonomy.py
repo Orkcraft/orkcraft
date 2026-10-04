@@ -41,12 +41,13 @@ LEVELS: tuple[Level, ...] = (
           "proposals wait for your click."),
     Level(2, "🧭", "Routine on their own",
           "agents run the routine without asking (their settings, 📋 below); the Elders advise on the rest.",
-          "in quiet hours the orcs apply what makes a building cheaper or simpler — a shorter prompt, an "
+          "in quiet hours the orks apply what makes a building cheaper or simpler — a shorter prompt, an "
           "agent made a chain, a run policy, a road filter."),
-    Level(3, "⛓️‍💥", "Free orcs",
+    Level(3, "⛓️‍💥", "Free orks",
           "in quiet hours the Elders answer routine ones themselves (a one-time yes or no, never 'always'); "
           "the risky ones wait for you.",
-          "also a script instead of an agent, a new plain road, a setting, a building from the catalog. "
+          "also a script instead of an agent, a richer prompt for a ⚖️ / 💎 building, a new plain road, a setting, "
+          "a building from the catalog. "
           "Never a removal."),
 )
 

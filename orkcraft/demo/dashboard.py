@@ -5,8 +5,12 @@
 F1 My Day — Task Fields, War Drum, Scroll Dump, File Forest, The Pit and a Watchtower (it shows
 how to connect a mailbox; the sandbox has none), with a Daily Brief mill that gets the War Drum's
 digest, task moves and what is dropped in the Pit.
-F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, an Orc Council with a
-finished debate, a Loot Vault with changes to review and a Tally Crag over a day of runs.
+F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, a Clan Fire that sent
+a plan back once and then let it go, a Loot Vault with changes to review and a Tally Crag over a day of runs.
+F4 Library — three LLM wikis the librarian orcs keep (the code, the team, the design), seeded
+with pages: tasks from Task Fields pass through the Code Wiki on their way to a Barracks, so each
+arrives with the wiki's map; the Clan Fire spot-checks what the librarian wrote and its verdict
+lands in reviews.md. One code change is not taken in yet (● on the source).
 F3 Gates — The Pit feeds a Totem whose rules send a patch or a link to the Lake of Insight and a
 release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
@@ -15,7 +19,7 @@ The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / �
 a self-improvement proposal and a weekly report.
 
 The sandbox is a real git repository (so the Forge, the Forest and the Loot show real things);
-agents never run in it — the Barracks and the Council answer with simulated text.
+agents never run in it — the Barracks and the Clan Fire answer with simulated text.
 """
 from __future__ import annotations
 
@@ -95,16 +99,17 @@ MY_DAY = {
 
 AGENT_YARD = {
     "id": "agent_yard", "name": "Agent Yard", "icon": "⚔", "biome": "void", "git": {"enabled": False},
-    "segment": "Developers", "story": "Branches, parallel orcs, a team that agrees, files to review",
+    "segment": "Developers", "story": "Branches, parallel orks, a team that agrees, files to review",
     "nodes": [],
     "files": {},
     "buildings": [
         typed("branches", "forge", "The Forge", "⚒️", "Smith", "branches, PRs, changes", "castle"),
         typed("camp", "barracks", "Barracks", "🏕️", "Grunts", "runs tasks in parallel", "tent",
               max_orcs=3, providers=["claude", "agy"], budget_usd=5.0),
-        typed("council", "council", "Orc Council", "🔥", "Chieftains", "agrees on plans", "pagoda",
-              goal="Agree on the v0.2 release plan", members=["Planner:claude", "Critic:agy", "Security:claude"],
-              max_rounds=3, budget_usd=2.0),
+        typed("council", "council", "Clan Fire", "🪔", "Chieftains", "reviews what the Barracks writes", "pagoda",
+              steward_prompt="Let a plan go when nobody blocks it; ask me before a release date moves.",
+              members=["Product manager:claude", "Architect:agy", "Security:claude"], veto=["Security"],
+              max_cycles=3, budget_usd=2.0),
         typed("outputs", "loot", "Loot Vault", "📦", "Quartermaster", "files agents wrote, to review", "snow"),
         typed("crag", "crag", "Tally Crag", "🪨", "Crag Carver", "spend and load", "castle", source="spend",
               warn=2.0, crit=5.0),
@@ -161,7 +166,51 @@ GATES = {
     },
 }
 
-DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES]
+LIBRARY = {
+    "id": "library", "name": "Library", "icon": "📜", "biome": "forest", "git": {"enabled": False},
+    "segment": "Developers, managers, designers",
+    "story": "Three LLM wikis the orks keep — the code, the team, the design — and tasks that pass through them",
+    "nodes": [],
+    "files": {
+        "LIBRARY_TASKS.md": "# Tasks\n\n## To Do\n- [ ] Show the price tag in the new accent colour\n"
+                            "- [ ] Add yearly billing\n\n## In Progress\n\n## Done\n",
+        "design/components.md": "# Components (exported from the design file)\n\n## PriceTag\nAmount and currency; "
+                                "variants: default, discounted (old price struck through), large.\n\n## CheckoutButton\n"
+                                "Primary action; disabled while the payment is pending.\n",
+        "design/tokens.md": "# Tokens\n\n- color.accent = #E4572E (was #3A7CA5)\n- color.text = #1B1B1B\n"
+                            "- space.m = 12px\n- radius.card = 8px\n",
+        "design/decisions.md": "# Decisions\n\n## Accent colour for prices (2026-09-28)\nPrices use color.accent: "
+                               "tested better than blue in the checkout study (n=12).\n",
+    },
+    "buildings": [
+        typed("lib_tasks", "fields", "Task Fields", "🌾", "Taskmaster", "what the team asks for", "tiles",
+              path="LIBRARY_TASKS.md"),
+        typed("code_wiki", "scrolls", "Code Wiki", "📜", "Scroll Scrapper", "the code: modules, flows, decisions",
+              "dome", topic="codebase", sources=["code:src", "docs"], council="lib_council"),
+        typed("team_wiki", "scrolls", "Team Wiki", "📜", "Scroll Scrapper", "people, process, product", "dome",
+              topic="team", sources=["docs/handbook", "docs/notes"]),
+        typed("design_wiki", "scrolls", "Design Wiki", "📜", "Scroll Scrapper", "components, screens, decisions, tokens",
+              "dome", topic="design", sources=["design"]),
+        typed("lib_camp", "barracks", "Barracks", "🏕️", "Grunts", "does the tasks, wiki in hand", "tent",
+              max_orcs=2, providers=["claude"], budget_usd=3.0),
+        typed("lib_council", "council", "Wiki Clan Fire", "🪔", "Chieftains", "spot-checks fresh wiki pages", "pagoda",
+              steward_prompt="Let pages go when they match their sources; send back what is wrong.",
+              members=["Reviewer:claude", "Critic:agy"], max_cycles=2, budget_usd=1.0),
+    ],
+    "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
+               (0.0, 0.54, 0.3, 0.46), (0.33, 0.54, 0.3, 0.46), (0.66, 0.54, 0.34, 0.46)],
+    "roads": [
+        ("code_wiki", "lib_tasks", "tasks.created", "on_task", None, None),
+        ("lib_camp", "code_wiki", "knowledge.chunks", "with_the_map", None, None),
+    ],
+    "payloads": {
+        ("lib_tasks", "tasks.created"): ("node", "add-yearly-billing", "Add yearly billing"),
+        ("code_wiki", "knowledge.chunks"): ("text", "**Project wiki:** `llm-wiki/codebase/`\n\n**Task:** Add yearly "
+                                                    "billing\n\n- [Modules](pages/modules/index.md)", "Add yearly billing"),
+    },
+}
+
+DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY]
 
 
 # -- the repository and the seeded state ----------------------------------------------------------------
@@ -177,6 +226,7 @@ def prepare(root: Path) -> None:
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "demo@orkcraft.local")
     _git(root, "config", "user.name", "Orkcraft Demo")
+    _seed_wikis(root)
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "demo: the town is founded")
     for branch, path, lines, msg in (("feature/login", "src/login.py", 42, "login form with validation"),
@@ -193,6 +243,110 @@ def prepare(root: Path) -> None:
     _seed_council(root)
     _seed_ledger(root)
     _seed_pipeline(root)
+
+
+WIKI_PAGES = {
+    "codebase": {
+        "index.md": "# Index — codebase\n\nThe map of this wiki: read it first, then a section's index, then the pages.\n\n"
+                    "- [Architecture](pages/architecture/index.md) — the app in one picture\n"
+                    "- [Modules](pages/modules/index.md) — app, billing\n"
+                    "- [Flows](pages/flows/index.md) — checkout\n"
+                    "- [Decisions](pages/decisions/index.md) — why prices live in billing\n"
+                    "- [How-to](pages/how-to/index.md) — release\n",
+        "pages/modules/index.md": "# Modules\n\n- [app](app.md) — the entry point\n- [billing](billing.md) — prices and plans\n",
+        "pages/modules/app.md": "---\nkind: modules\naliases: [main, entry point]\nsources: [../../src/app.py]\n"
+                                "updated: 2026-10-01\nowner: orc\n---\n# app\n\nThe entry point: `main()` prints the "
+                                "greeting. Everything else is imported from here.\n",
+        "pages/modules/billing.md": "---\nkind: modules\naliases: [pricing, PRICE, plans]\nsources: [../../src/billing.py]\n"
+                                    "updated: 2026-10-01\nowner: orc\n---\n# billing\n\nOne monthly plan; `PRICE` is the "
+                                    "amount in euros (9). See [the decision](../decisions/prices-in-billing.md).\n",
+        "pages/flows/index.md": "# Flows\n\n- [checkout](checkout.md) — from the price tag to a paid plan\n",
+        "pages/flows/checkout.md": "---\nkind: flows\naliases: [payment, buy]\nsources: [../../src/billing.py]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Checkout\n\n1. The PriceTag shows "
+                                   "[billing](../modules/billing.md)'s `PRICE`.\n2. The CheckoutButton starts the payment.\n",
+        "pages/decisions/index.md": "# Decisions\n\n- [prices in billing](prices-in-billing.md) — one place for every price\n",
+        "pages/decisions/prices-in-billing.md": "---\nkind: decisions\naliases: [ADR-1]\nsources: [../../docs/handbook/releases.md]\n"
+                                                "updated: 2026-10-01\nowner: human\n---\n# Prices live in billing\n\n"
+                                                "Every price is read from `billing.py`; nothing else hard-codes an amount.\n",
+        "pages/how-to/index.md": "# How-to\n\n- [release](release.md) — tag, changelog, announce\n",
+        "pages/how-to/release.md": "---\nkind: how-to\naliases: [ship, publish]\nsources: [../../docs/handbook/releases.md]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Release\n\nSemVer; tag, write the "
+                                   "changelog, announce.\n",
+        "log.md": "# Log\n\nNewest first.\n\n## 2026-10-01\nTook in src/app.py, src/billing.py, docs/handbook/*: "
+                  "added modules/app, modules/billing, flows/checkout, how-to/release.\n",
+        "reviews.md": "# Reviews\n\nThe Council's spot-checks, newest first.\n\n## 2026-10-01 — spot-check\n\n"
+                      "billing.md: OK. checkout.md: name the PriceTag variant the checkout uses.\n",
+        "lint.md": "# Lint 2026-10-01\n\n- pages/modules/app.md: no page links to it — link it from architecture\n",
+    },
+    "team": {
+        "index.md": "# Index — team\n\n- [Process](pages/process/index.md) — how we release\n"
+                    "- [Onboarding](pages/onboarding/index.md) — your first day\n- [Product](pages/product/index.md) — ideas\n",
+        "pages/process/index.md": "# Process\n\n- [releases](releases.md) — versioning and the checklist\n",
+        "pages/process/releases.md": "---\nkind: process\naliases: [shipping]\nsources: [../../docs/handbook/releases.md]\n"
+                                     "updated: 2026-10-01\nowner: orc\n---\n# Releases\n\nSemVer. Checklist: tag, "
+                                     "changelog, announce.\n",
+        "pages/onboarding/index.md": "# Onboarding\n\n- [first day](first-day.md) — read the town map\n",
+        "pages/onboarding/first-day.md": "---\nkind: onboarding\nsources: [../../docs/handbook/onboarding.md]\n"
+                                         "updated: 2026-10-01\nowner: human\n---\n# Your first day\n\nRead the town "
+                                         "map, then pair with someone on a real task. (Written by people: the ork only "
+                                         "suggests changes here.)\n",
+        "pages/product/index.md": "# Product\n\n- [ideas](ideas.md) — a calendar roof, mail digests\n",
+        "pages/product/ideas.md": "---\nkind: product\nsources: [../../docs/notes/ideas.md]\nupdated: 2026-10-01\n"
+                                  "owner: orc\n---\n# Ideas\n\nA calendar roof; mail digests at 05:00.\n",
+        "proposals.md": "# Proposals\n\n- pages/onboarding/first-day.md: mention the tools list (orkcraft, git) "
+                        "from docs/handbook/onboarding.md\n",
+    },
+    "design": {
+        "index.md": "# Index — design\n\n- [Components](pages/components/index.md) — PriceTag, CheckoutButton\n"
+                    "- [Screens](pages/screens/index.md) — checkout\n- [Decisions](pages/decisions/index.md) — accent "
+                    "for prices\n- [Tokens](pages/tokens/index.md) — colours, spacing\n",
+        "pages/components/index.md": "# Components\n\n- [PriceTag](price-tag.md) — amount + currency\n"
+                                     "- [CheckoutButton](checkout-button.md) — the primary action\n",
+        "pages/components/price-tag.md": "---\nkind: components\naliases: [PriceTag, price, formatPrice]\n"
+                                         "sources: [../../design/components.md]\nupdated: 2026-10-01\nowner: orc\n---\n"
+                                         "# PriceTag\n\nAmount and currency in `color.accent`. Variants: default, "
+                                         "discounted, large. Used on [checkout](../screens/checkout.md).\n",
+        "pages/components/checkout-button.md": "---\nkind: components\naliases: [CheckoutButton, pay button]\n"
+                                               "sources: [../../design/components.md]\nupdated: 2026-10-01\nowner: orc\n"
+                                               "---\n# CheckoutButton\n\nPrimary; disabled while the payment is pending.\n",
+        "pages/screens/index.md": "# Screens\n\n- [checkout](checkout.md) — PriceTag + CheckoutButton\n",
+        "pages/screens/checkout.md": "---\nkind: screens\naliases: [payment screen]\nsources: [../../design/components.md]\n"
+                                     "updated: 2026-10-01\nowner: orc\n---\n# Checkout\n\nThe plan, its "
+                                     "[PriceTag](../components/price-tag.md) and the [CheckoutButton](../components/checkout-button.md).\n",
+        "pages/decisions/index.md": "# Decisions\n\n- [accent for prices](accent-for-prices.md) — orange beat blue\n",
+        "pages/decisions/accent-for-prices.md": "---\nkind: decisions\nsources: [../../design/decisions.md]\n"
+                                                "updated: 2026-10-01\nowner: orc\n---\n# Accent colour for prices\n\n"
+                                                "Prices use `color.accent` (#E4572E): it tested better than blue (n=12).\n",
+        "pages/tokens/index.md": "# Tokens\n\n- [colours](colors.md) — accent, text\n- [spacing](spacing.md) — m, radius\n",
+        "pages/tokens/colors.md": "---\nkind: tokens\naliases: [color.accent, color.text, palette]\n"
+                                  "sources: [../../design/tokens.md]\nupdated: 2026-10-01\nowner: orc\n---\n# Colours\n\n"
+                                  "| token | value | role |\n|---|---|---|\n| color.accent | #E4572E | prices, highlights |\n"
+                                  "| color.text | #1B1B1B | body text |\n",
+        "pages/tokens/spacing.md": "---\nkind: tokens\naliases: [space.m, radius.card]\nsources: [../../design/tokens.md]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Spacing\n\nspace.m = 12px; radius.card = 8px.\n",
+    },
+}
+
+
+def _seed_wikis(root: Path) -> None:
+    """The three wikis of the Library, as their librarians would have left them: pages, maps, a log,
+    reviews and proposals, and a manifest of what each has taken in (before the demo's last changes)."""
+    from orkcraft.realm import wiki
+    from orkcraft.sources import lore
+    for spec in LIBRARY["buildings"]:
+        if spec["type"] != "scrolls":
+            continue
+        cfg = spec["config"]
+        topic = cfg["topic"]
+        wroot = wiki.root_of(root, None, topic)
+        wiki.scaffold(wroot, topic)
+        for rel, text in WIKI_PAGES[topic].items():
+            (wroot / rel).parent.mkdir(parents=True, exist_ok=True)
+            (wroot / rel).write_text(text, encoding="utf-8")
+        lib = lore.Library(lore.from_config(cfg, root))
+        lib.scan()
+        prints = wiki.Fingerprints(root)
+        wiki.save_manifest(wroot, {n.path: prints.of(n) for n in lib.notes()})
 
 
 WORD_COUNT = """import json, sys
@@ -268,8 +422,8 @@ def _seed_barracks(root: Path) -> None:
                 bk.PoolTask("t2", "Fix the parser", "x", status="failed", orc="Mogka", error="tests failed")]
     st.stats = {"claude": {"runs": 3, "ok": 3, "cost": 0.9}, f"agy:{bk.AGY_CODE}": {"runs": 2, "ok": 1, "cost": 0.1}}
     st.save()
-    for d in (bk.Decision("2026-10-02T05:00:00", "t1", "hire", "Grub", "0/3 orcs busy → hire; claude: no record yet; fits a code task"),
-              bk.Decision("2026-10-02T05:05:00", "t2", "hire", "Mogka", "1/3 orcs busy → hire; agy: no record yet"),
+    for d in (bk.Decision("2026-10-02T05:00:00", "t1", "hire", "Grub", "0/3 orks busy → hire; claude: no record yet; fits a code task"),
+              bk.Decision("2026-10-02T05:05:00", "t2", "hire", "Mogka", "1/3 orks busy → hire; agy: no record yet"),
               bk.Decision("2026-10-02T05:21:00", "t3", "follow-up", "Grub", "T1042 was Grub's"),
               bk.Decision("2026-10-02T05:30:00", "q1", "queue", "", "paused for the night")):
         st.log(d)
@@ -277,17 +431,25 @@ def _seed_barracks(root: Path) -> None:
 
 def _seed_council(root: Path) -> None:
     from orkcraft.realm import team as tm
-    d = tm.new("Agree on the v0.2 release plan", "Agree on the v0.2 release plan")
-    d.started, d.ended, d.outcome, d.round, d.spent = "2026-10-02T05:10:00", "2026-10-02T05:14:00", "agreed", 2, 0.24
-    d.draft = ("# v0.2 release plan\n\n1. Freeze features on Monday\n2. Run the secret scan on the wheel\n"
-               "3. Tag and sign `v0.2.0`\n4. Publish to PyPI\n5. Roll back: yank and re-tag if the smoke test fails\n"
-               "6. The operator announces")
-    d.turns = [tm.Turn(1, "Planner", "draft", "# v0.2 release plan\n\n1. Freeze\n2. Tag\n3. Publish\n4. Announce"),
-               tm.Turn(1, "Critic", "review", "OBJECT: 1. No rollback step. 2. Who announces?", False),
-               tm.Turn(1, "Security", "review", "OBJECT: sign the release and scan the wheel", False),
-               tm.Turn(1, "Moderator", "revise", d.draft),
-               tm.Turn(2, "Critic", "review", "AGREE", True), tm.Turn(2, "Security", "review", "AGREE", True)]
-    tm.save(root / ".orkcraft" / "council" / "council", d)
+    plan = ("# v0.2 release plan\n\n1. Freeze features on Monday\n2. Run the secret scan on the wheel\n"
+            "3. Tag and sign `v0.2.0`\n4. Publish to PyPI\n5. Roll back: yank and re-tag if the smoke test fails\n"
+            "6. The operator announces")
+    first = tm.new("v0.2 release plan", "# v0.2 release plan\n\n1. Freeze\n2. Tag\n3. Publish\n4. Announce")
+    first.started, first.ended, first.outcome, first.spent = "2026-10-02T05:10:00", "2026-10-02T05:13:00", "rework", 0.14
+    first.decision = "1. Sign the release and scan the wheel (Security's veto).\n2. Add a rollback step.\n3. Name who announces."
+    first.turns = [tm.Turn("Product manager", "review", "1. Who announces?", "changes"),
+                   tm.Turn("Architect", "review", "1. No rollback step.", "changes"),
+                   tm.Turn("Security", "review", "An unsigned, unscanned wheel must not ship.", "veto"),
+                   tm.Turn("Steward", "decide", first.decision, "rework")]
+    second = tm.new("v0.2 release plan", plan, cycle=2)
+    second.started, second.ended, second.outcome, second.spent = "2026-10-02T05:40:00", "2026-10-02T05:42:00", "approved", 0.1
+    second.decision = "Every point of the first review is answered; Security approves."
+    second.turns = [tm.Turn("Product manager", "review", "", "approve"), tm.Turn("Architect", "review", "", "approve"),
+                    tm.Turn("Security", "review", "Signed and scanned — fine.", "approve"),
+                    tm.Turn("Steward", "decide", second.decision, "approve")]
+    folder = root / ".orkcraft" / "council" / "council"
+    tm.save(folder, first)
+    tm.save(folder, second)
 
 
 def payload_of(sc: dict, source: str, event: str):

@@ -120,7 +120,7 @@ def test_cross_references_are_checked():
     assert "not an orkspace" in problems
     assert "in two orkspaces" in problems
     assert "rally target 'ghost'" in problems
-    assert "lead orc 'nobody'" in problems
+    assert "lead ork 'nobody'" in problems
 
     schema_bad = ts.migrate_v2(SPEC_V2)
     schema_bad["orkspaces"][2]["biome"] = "desert"
@@ -330,7 +330,7 @@ def test_garrison_is_capped_and_duplicate_ids_are_invalid():
     data = scroll.to_dict()
     farm = next(b for b in data["buildings"] if b["id"] == "farm")
     farm["garrison"]["handlers"].append(dict(farm["garrison"]["handlers"][0]))
-    assert any("duplicate orc ids" in p for p in ts.validate(data))
+    assert any("duplicate ork ids" in p for p in ts.validate(data))
 
 
 def test_add_custom_building_places_it_in_the_active_orkspace():

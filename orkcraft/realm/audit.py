@@ -78,11 +78,16 @@ def _security(repo_root: Path, specs: dict[str, dict]) -> list[Finding]:
         if kind == "forge" and not cfg.get("test_cmd") and not cfg.get("confirm"):
             out.append(Finding("warder", f"{spec.get('title', bid)}: merges into the base without tests or a "
                                          "confirmation — set test_cmd, or c in the Forge", bid, "warn"))
-        if kind == "catapult" and cfg.get("url") and not cfg.get("schema"):
+        if kind == "catapult" and cfg.get("mode") == "browser" and cfg.get("finish") == "press" \
+                and not cfg.get("schema") and not cfg.get("confirm"):
+            forms = ", ".join(str(f).split("=")[0].strip() for f in cfg.get("forms") or [])[:60]
+            out.append(Finding("warder", f"{spec.get('title', bid)}: presses submit on its forms ({forms}) "
+                                         "unchecked and unasked — set schema, or c", bid, "warn"))
+        elif kind == "catapult" and cfg.get("url") and not cfg.get("schema") and cfg.get("mode") != "browser":
             out.append(Finding("warder", f"{spec.get('title', bid)}: sends to {str(cfg['url'])[:40]} without a schema "
                                          "check — set schema", bid, "warn"))
         if kind == "barracks" and cfg.get("worktrees") is False:
-            out.append(Finding("warder", f"{spec.get('title', bid)}: its orcs share the working tree and may "
+            out.append(Finding("warder", f"{spec.get('title', bid)}: its orks share the working tree and may "
                                          "overwrite each other — turn worktrees on", bid, "warn"))
         for key, value in cfg.items():
             vals = value if isinstance(value, list) else [value]

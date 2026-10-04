@@ -2,7 +2,7 @@
 
 **A terminal harness for running many coding agents in one project — as a real-time strategy game.**
 
-Windows are **buildings** with a resident **orc**. Agents are the **clan**. Buildings send **carts**
+Windows are **buildings** with a resident **ork**. Agents are the **clan**. Buildings send **carts**
 to each other along **roads**. The HUD shows what you spend. Agents never pop dialogs: when one
 needs you it sets its hut on fire 🔥 and waits for your orders.
 
@@ -34,7 +34,7 @@ You need Python 3.11+ and git. Optional: `claude` and/or `agy` on your `PATH` (a
 Builder), `gh` (GitHub events in the Watchtower).
 
 Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
-`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent).
+`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent, script and browser).
 
 ## The idea
 
@@ -42,7 +42,7 @@ Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y
 |---|---|
 | 🏰 **Town** | one canvas per workflow (`F1`–`F8`), every building a small hut with live status lines |
 | 🏗 **Building** | a window: tasks, files, git, a mailbox, a webhook, a chart… |
-| 🧌 **Orc** | an agent, a script or a free chain of data steps living in a building |
+| 🧌 **Ork** | an agent, a script or a free chain of data steps living in a building |
 | 🛤 **Road** | a subscription: what happens in one building travels as a cart to the buildings that listen |
 | 🪙 / 🪵 / 🥩 | money, context tokens and running agents — with budgets you set |
 
@@ -56,10 +56,10 @@ Sixteen buildings, each with its own events and settings:
 
 | | |
 |---|---|
-| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail, GitHub, schedules, webhooks) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) · 📯 Horn (a sound of your choice per incoming event) |
-| **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel git worktrees) · 🔥 Orc Council (agents that debate to a decision) · 🥁 War Drum (your calendar) |
-| **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (your notes, retrieved by budget) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
-| **Results and egress** | 📦 Loot Vault (generated files to accept or roll back) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP) |
+| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks — one tower, filtered by your intent) · 🗿 Totem (if/switch routes) · ⚙️ Mill (map / flat map: data steps, an agent where a script can't) · 📯 Horn (a sound of your choice per incoming event) |
+| **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel, a branch per task, reviewed by its steward; a PR for code and what goes out) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar; agents prepare documents for meetings ahead of time) |
+| **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its ork keeps from your notes, code, git and Confluence) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
+| **Results and egress** | 📦 Loot Vault (the review checkpoint: carts pass by rules or wait for you; send back for rework, see what the chain cost) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP — or, where there is no API, its ork finds the forms of an intent and fills them in a browser) |
 
 ## The Town Hall
 
@@ -81,8 +81,9 @@ a commit in the camp's own git, so it can be undone.
   cart; a chain or a script is made unless the rule really needs judgement.
 - **👍 / 👎** beside every steward. A 👎 asks whether the *inputs* were broken (the buildings that
   fed it are penalised upstream along the roads) or its own *logic* was wrong.
-- **Self-improvement, never automatic.** Daily, the Council proposes one change for the hungriest
-  building you are unhappy with; weekly, a heavy model (`opus`) audits the whole camp. Nothing
+- **Retros, never automatic.** Daily, the 🔧 Building retro proposes one change for the building
+  that eats most of the camp and of your limit and that you are unhappy with; weekly, the 🗓 Town
+  retro has a heavy model (`opus`) audit the whole camp. Nothing
   applies without your click, each change is a checkpoint, and **`Z`** reverts one building.
 
 ## Safety
@@ -111,11 +112,12 @@ Inside the project it runs in, orkcraft keeps only local state (add these to you
   tracks building specs, scripts and blueprints; `Z` reads it. It is separate from your project's history.
 
 Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_LIMITS=0`,
-`ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council are set in
-the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
+`ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council and the
+Elders' limits are set in the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
 
 The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
-the design of roads and orcs is in [docs/design/roads-and-orcs.md](docs/design/roads-and-orcs.md).
+the design of roads and orks is in [docs/design/roads-and-orks.md](docs/design/roads-and-orcs.md).
+What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 
 ## Development
 

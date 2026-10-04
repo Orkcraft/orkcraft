@@ -34,6 +34,7 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     # No real claude/agy calls and no personal calendars in tests.
     monkeypatch.setenv("ORKCRAFT_LIMITS", "0")
     monkeypatch.setenv("ORKCRAFT_COUNCIL_LLM", "0")      # the Council's Fast Path: rules only
+    monkeypatch.setenv("ORKCRAFT_WIKI_AUTO", "0")        # no librarian starts by itself (test_wiki.py opts in)
     monkeypatch.setenv("ORKCRAFT_CALENDARS_FILE", str(tmp_path / "calendars.json"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     # The window-manager tests predate the town view (T1102): they run in tiles; test_town.py opts in.
@@ -42,3 +43,21 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     # They also predate the camp that starts with the Town Hall alone (T1107): every preset stands.
     monkeypatch.setattr(scroll, "STARTING", None)
     return path
+
+
+@pytest.fixture(autouse=True)
+def fresh_spend_ledger():
+    """The side 🪙 ledger is process-wide: every test starts from an empty one."""
+    from orkcraft.sources import telemetry
+    telemetry.reset_charges()
+    yield
+    telemetry.reset_charges()
+
+
+@pytest.fixture(autouse=True)
+def fresh_halt_registry():
+    """🛑 Halt All's registry is process-wide: every test starts with nothing running and no halt."""
+    from orkcraft.realm import halt
+    halt.reset()
+    yield
+    halt.reset()

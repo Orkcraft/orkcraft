@@ -15,7 +15,7 @@ SIZE = (200, 56)
 
 # the design: (footprint width, the widths of the text slots) per building
 DESIGN = {
-    "mill": (15, [8]), "catapult": (17, [8]), "horn": (14, [8]), "pit": (9, [1]), "totem": (10, [2, 4]), "watchtower": (10, [8] * 4),
+    "mill": (15, [8]), "catapult": (17, [8]), "horn": (14, [8]), "pit": (9, [1]), "totem": (10, [2, 4]), "watchtower": (12, [10] * 4),
     "fields": (18, [16] * 7), "barracks": (18, [16] * 7), "council": (18, [16] * 7), "forge": (18, [16] * 7),
     "scrolls": (18, [16] * 7), "war_drum": (26, [24] * 9), "forest": (26, [24] * 9), "loot": (26, [24] * 9),
     "crag": (26, [24] * 9), "lake": (60, [58] + [28, 24] * 6 + [58]),
@@ -58,7 +58,7 @@ def test_slots_headings_live_lines_and_fallbacks():
     assert barracks.texts(["active: 1/3", "idle: 2"])[:3] == ["WORKER POOL", "active: 1/3", "idle: 2"]
     assert len(barracks.texts([])) == 7 and len(barracks.live_widths) == 6
     mill = sil.SILHOUETTES["mill"]
-    assert mill.texts([]) == ["WORKTREE"] and mill.texts(["✓ 05:01"]) == ["✓ 05:01"]
+    assert mill.texts([]) == ["MAP"] and mill.texts(["✓ 05:01"]) == ["✓ 05:01"]
     pit = sil.SILHOUETTES["pit"]
     assert pit.texts(["📄 a.txt"]) == ["█"] and pit.caption_text(["📄 a.txt", "3 in the pit"]) == "📄 a.txt"
     row = "".join(t for t, _ in barracks.draw(["a very long live line that cannot fit"])[3])

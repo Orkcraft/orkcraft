@@ -35,8 +35,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, tiers
+from orkcraft.realm import chains, halt, pipes, tiers
 from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
+from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 60
 ESCALATE = 3          # a hybrid's script: "the agent should take it from here"
@@ -72,13 +73,14 @@ def run_handler_script(path: Path, records: list[dict], repo_root: Path, cancel:
         except (BrokenPipeError, OSError):
             pass
         deadline = time.monotonic() + timeout_s
-        while proc.poll() is None:
-            if cancel.wait(0.1) or time.monotonic() > deadline:
-                proc.kill()
-                proc.wait(5)
-                if cancel.is_set():
-                    raise InterruptedError("stopped")
-                raise RuntimeError(f"no answer within {timeout_s} s")
+        with halt.running(proc):
+            while proc.poll() is None:
+                if cancel.wait(0.1) or time.monotonic() > deadline:
+                    proc.kill()
+                    proc.wait(5)
+                    if cancel.is_set():
+                        raise InterruptedError("stopped")
+                    raise RuntimeError(f"no answer within {timeout_s} s")
         out.seek(0)
         err.seek(0)
         return proc.returncode, out.read()[:20_000].strip(), err.read()[:4000]
@@ -91,6 +93,8 @@ EXAMPLE_OUTPUT_CHARS = 8000
 AGY_MODEL = "gemini-3.8-flash-high"
 CLAUDE_READ_ONLY = ["--allowedTools", "Read,Grep,Glob",
                     "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"]
+CLAUDE_READ_WEB = ["--allowedTools", "Read,Grep,Glob,WebSearch,WebFetch",        # 🪔 Clan Fire reviewers
+                   "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit"]
 
 
 @dataclass(frozen=True)
@@ -120,6 +124,8 @@ class HandlerRun:
     tokens: int | None = None     # every token the model read or wrote, when the CLI says
     roads: tuple[str, ...] = ()
     inputs: list[dict] = field(default_factory=list, repr=False)   # the snapshot records it ran on
+    trail: tuple = field(default=(), repr=False)   # the hops of the carts it ran on (pipes.Hop)
+    ref: str = ""
 
 
 @dataclass
@@ -186,7 +192,7 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
                for k, v in rec.items()}
         roads.append(rec)
     parts = [
-        f"You are {orc.name}, a handler orc of the {building.title} building in Orkcraft, a terminal "
+        f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
         f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
         f"event with the latest payload of each of your incoming roads.",
         f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
@@ -203,10 +209,10 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     return "\n\n".join(parts)
 
 
-def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "") -> list[str]:
+def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "", web: bool = False) -> list[str]:
     if harness == "claude":
         return [os.environ.get("ORKCRAFT_CLAUDE_BIN", "claude"), "-p", prompt, "--output-format", "json",
-                *CLAUDE_READ_ONLY, *(["--model", model] if model else [])]
+                *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY), *(["--model", model] if model else [])]
     if harness == "agy":
         return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or AGY_MODEL,
                 "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
@@ -239,32 +245,37 @@ def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
 
 
 def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
-              cancel: threading.Event, model: str = "") -> tuple[str, float | None, int | None]:
-    """One harness step. Claude reads the repository (read-only tools); agy works in an empty
-    temp dir. Raises RuntimeError on failure, InterruptedError when `cancel` is set."""
+              cancel: threading.Event, model: str = "", web: bool = False) -> tuple[str, float | None, int | None]:
+    """One harness step. Claude reads the repository (read-only tools, plus web search and fetch
+    when `web`); agy works in an empty temp dir. Raises RuntimeError on failure, InterruptedError
+    when `cancel` is set."""
     with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
         workdir = repo_root if harness == "claude" else Path(scratch)
-        cmd = _harness_cmd(harness, prompt, Path(scratch), model)
+        cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
         try:
             proc = subprocess.Popen(cmd, cwd=workdir, env={**os.environ, **env}, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, text=True, start_new_session=True)
         except FileNotFoundError as e:
             raise RuntimeError(f"{cmd[0]} not found") from e
         deadline = time.monotonic() + AGENT_TIMEOUT_S
-        while proc.poll() is None:
-            if cancel.wait(0.2) or time.monotonic() > deadline:
-                proc.terminate()
-                try:
-                    proc.wait(5)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                if cancel.is_set():
-                    raise InterruptedError("restarted by a new event")
-                raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
-        stdout, stderr = proc.communicate()
+        with halt.running(proc):                       # 🛑 Halt All kills it: Halted
+            while proc.poll() is None:
+                if cancel.wait(0.2) or time.monotonic() > deadline:
+                    proc.terminate()
+                    try:
+                        proc.wait(5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                    if cancel.is_set():
+                        raise InterruptedError("restarted by a new event")
+                    raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
+            stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         raise RuntimeError(f"{harness} exited with {proc.returncode}: {(stderr or stdout).strip()[:300]}")
-    return _result_of(stdout)
+    result = _result_of(stdout)
+    if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
+        telemetry.charge(result[1], f"{harness} agent")
+    return result
 
 
 def examples_file(repo_root: Path, building_id: str, orc_id: str) -> Path:
@@ -293,7 +304,7 @@ def read_examples(repo_root: Path, building_id: str, orc_id: str, limit: int = 5
 class Engine:
     def __init__(self, scroll: Callable[[], ts.TownScroll | None], repo_root: Path, *,
                  deliver: Callable[[str, Payload], None],
-                 on_output: Callable[[str, ts.OrcSpec, str, str], None] | None = None,
+                 on_output: Callable[..., None] | None = None,   # (target, orc, title, markdown, trail, ref)
                  meta: Callable[[Payload], dict] | None = None,
                  on_cart: Callable[[Cart], None] | None = None,
                  on_run: Callable[[HandlerRun], None] | None = None,
@@ -411,11 +422,14 @@ class Engine:
     def _start(self, b: ts.BuildingSpec, orc: ts.OrcSpec, st: HandlerState, now: float) -> None:
         with self._lock:
             records = self._records(b, orc, st)
+            carts = [p for p, _ in st.snapshot.values()]
             st.dirty = False
             st.generation += 1
             gen = st.generation
             run = HandlerRun(b.id, orc.id, orc.kind, uuid.uuid4().hex, now,
-                             roads=tuple(r["road"] for r in records), inputs=records)
+                             roads=tuple(r["road"] for r in records), inputs=records,
+                             trail=pipes.merge_trails(*(p.trail for p in carts)),
+                             ref=next((p.ref for p in carts if p.ref), ""))
         if orc.kind == "chain":
             result = chains.run_chain(orc.chain, records)
             self._finish(b, orc, run, "done" if result.ok else "error", result.markdown, result.error)
@@ -502,13 +516,15 @@ class Engine:
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:
         run.ended, run.outcome, run.markdown, run.error = self._clock(), outcome, markdown, error
+        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome),)
         with self._lock:
             self.state(b.id, orc.id).runs += 1
             self.runs = (self.runs + [run])[-200:]
         if outcome == "done" and orc.uses_model:
             self._keep_example(run)
         if outcome == "done" and self._on_output is not None:
-            self._call(self._on_output, b.id, orc, f"{orc.avatar} {orc.name} · {b.title}", markdown)
+            self._call(self._on_output, b.id, orc, f"{orc.avatar} {orc.name} · {b.title}", markdown,
+                       run.trail, run.ref)
         if self._on_run is not None:
             self._call(self._on_run, run)
 

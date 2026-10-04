@@ -53,7 +53,7 @@ def orc_sentences(orc: Orc, building_title: str = "") -> list[str]:
     elif orc.category == WORKER:
         out.append(_sentence("A live session in the War Tent"))
     elif orc.category == COUNCIL:
-        out.append(_sentence("A member of the council of the multi-agent systems"))
+        out.append(_sentence("A member of the clan at the Clan Fire"))
     if orc.alert is not None:
         out.append(_sentence(f"Waits for you: {orc.alert.title}"))
     elif orc.task:
@@ -69,9 +69,9 @@ def building_sentences(title: str, role: str, orcs: list[Orc], roads_in: int, ro
         names = ", ".join(f"{'★' if o.lead else ''}{o.tier_icon + ' ' if o.tier_icon else ''}{o.name} ({o.kind})"
                           for o in orcs[:3])
         more = f" and {len(orcs) - 3} more" if len(orcs) > 3 else ""
-        out.append(_sentence(f"{len(orcs)} orc{'s' if len(orcs) != 1 else ''}: {names}{more}"))
+        out.append(_sentence(f"{len(orcs)} ork{'s' if len(orcs) != 1 else ''}: {names}{more}"))
     else:
-        out.append(_sentence("No garrison yet — R recruits an orc"))
+        out.append(_sentence("No garrison yet — R recruits an ork"))
     burning = [o for o in orcs if o.alert is not None]
     if burning:
         out.append(_sentence(f"{len(burning)} waiting for you: {burning[0].alert.title}"))

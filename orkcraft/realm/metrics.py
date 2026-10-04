@@ -2,7 +2,7 @@
 
 Two stores, both under `.orkcraft/`:
 
-    ledger.jsonl           one line per run of any orc, chain, Mill, Barracks task, Council debate
+    ledger.jsonl           one line per run of any orc, chain, Mill, Barracks task, Clan Fire review
                            (written by the app): when, building, outcome, $, tokens
     crag/<id>/samples.jsonl  what a Crag sampled once a minute: limits, busy orcs, CPU, road numbers
 

@@ -1,21 +1,21 @@
-# Design — roads, orc handlers and stewards
+# Design — roads, ork handlers and stewards
 
 Status: design notes, written 2026-09-30 (the model below is implemented). Builds on garrisons, rally
 points, chronicles, the 🪙 / 🪵 telemetry and the Mason & Artisan builders.
 
 ## 1. The model
 
-A building has two kinds of orcs:
+A building has two kinds of orks:
 
 - **Steward** (top, in the window frame badge) — watches how well the building is used and how it
   could be automated or improved. Usually a *hybrid*: a script collects metrics on a schedule
   (free), and an agent is woken only when the script finds a reason (a metric moved, the window has
   gone unused, a road's agent keeps doing the same thing). Its main output is proposals: a new
-  road, a new orc, a spec change, or demoting an agent to a chain / script.
+  road, a new ork, a spec change, or demoting an agent to a chain / script.
 - **Handlers** (bottom, the Clan Roster in Building state) — each works on one or more **incoming
   roads** of this building.
 
-Orcs sit on **incoming** roads, not outgoing ones: the receiver knows what to do with the data, a
+Orks sit on **incoming** roads, not outgoing ones: the receiver knows what to do with the data, a
 source never needs to know its consumers (subscription, fan-out for free), and processing cost is
 spent only where there is a consumer and is charged to that building's 🪙.
 
@@ -48,7 +48,7 @@ only when the layout changes), drawn with the biome's glyphs.
 
 ## 3. Handlers
 
-### Kinds — tried in this order when an orc is created from a prompt
+### Kinds — tried in this order when an ork is created from a prompt
 
 | Kind | What it is | Safety |
 |---|---|---|
@@ -57,7 +57,7 @@ only when the layout changes), drawn with the biome's glyphs.
 | `agent` | Claude / agy session(s) | judgment; always within the 🪙 limit |
 | `hybrid` | a script with escalation to an agent | the steward's usual shape |
 
-Claude decides the kind when the orc is created and explains in the preview why a cheaper kind
+Claude decides the kind when the ork is created and explains in the preview why a cheaper kind
 was not enough (as Mason does). **Scripts are in the spec from day one; their runtime comes later**
 (until then the UI says so instead of pretending).
 
@@ -81,11 +81,11 @@ a spreadsheet cell recomputing. No join windows, no required / optional roads.
 `harness` is a list of steps `role → harness`, not a single string — e.g. `[write: agy,
 review: claude]` (a plan → write → review division of labour), `[plan: claude, write: agy, review:
 claude]`, other agents later, or a reference to an existing multi-agent system pipeline
-(`product-studio/pipelines/…`), making the orc the entry point of that system.
+(`product-studio/pipelines/…`), making the ork the entry point of that system.
 
 ## 4. Visual language
 
-- Icon = kind: 🗿 totem — script / chain (mechanical, no head); 🧌 orc — agent; 🗿🧌 — hybrid.
+- Icon = kind: 🗿 totem — script / chain (mechanical, no head); 🧌 ork — agent; 🗿🧌 — hybrid.
 - Colour + letter = harness: Claude amber `C`, agy cyan `A`; schemes read as `A→C`, `C→A→C`
   (long ones: first and last harness + step count).
 - Handlers appear under their building in the roster, each with its roads; the steward stays in

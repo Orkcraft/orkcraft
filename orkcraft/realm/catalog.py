@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from collections.abc import Collection
 from typing import Any
 
 # -- sizes ------------------------------------------------------------------------------------------
@@ -91,18 +92,23 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="burrow", orc="Scavenger"),
     BuildingType(
         "watchtower", "Watchtower", "🗼", "M",
-        "listens to the outside: a mailbox (IMAP), GitHub events, a schedule, webhooks on localhost",
-        "what came in last, unread mail", "the signals that came in; Enter reads one",
+        "listens to the outside: a mailbox (IMAP, Gmail), GitHub events, comments and mentions in Slack, Jira, "
+        "Confluence and Figma, a schedule, webhooks; an intent lets through only what you are after",
+        "what is new per source", "the signals that came in, new ones marked; Enter reads one",
         events=(_e("mail.received", "new mail", TEXT, "a new message arrived: sender, subject, first lines"),
                 _e("watch.github", "GitHub event", TEXT, "a GitHub event: PR, issue, release, check"),
                 _e("watch.cron", "schedule", TEXT, "the schedule fired"),
-                _e("watch.webhook", "webhook", TEXT, "a webhook arrived on localhost: its body")),
-        actions=(_a("mail.open_new", "Open new", "✉", "open the newest signal"),
+                _e("watch.webhook", "webhook", TEXT, "a webhook arrived on localhost: its body"),
+                _e("watch.comment", "comment", TEXT, "a new comment or message in Slack, Jira, Confluence or Figma"),
+                _e("watch.mention", "mention", TEXT, "you were mentioned or written to: Slack, Jira, Confluence, Figma")),
+        actions=(_a("mail.open_new", "Open new", "✉", "open the newest new signal"),
+                 _a("watch.read_all", "Read all", "✓", "mark every signal read"),
                  _a("mail.refresh", "Check now", "↻", "check every source now")),
         config={"host": (str, None, False), "user_env": (str, None, False), "password_env": (str, None, False),
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
-                "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False)},
+                "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),
+                "feeds": (list, None, False), "intent": (str, None, False)},
         art="watchtower", orc="Lookout"),
     BuildingType(
         "totem", "Totem", "🗿", "S",
@@ -113,13 +119,15 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"rules": (list, None, False)},
         art="spire", orc="Spirit Guide"),
     BuildingType(
-        "mill", "The Mill", "⚙️", "S",
-        "deterministic work without a model: regexes, CSV → JSON, templates, a script",
-        "its steps, the last run", "the steps, what went in and what came out",
-        events=(_e("mill.done", "milled", TEXT, "the clean result"),
+        "mill", "The Mill", "⚙️", "XS",
+        "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
+        "CSV → JSON, numbers and dates, templates, a script — and an agent for what a script cannot do",
+        "its steps, the last run, the queue", "the steps, what went in and what came out",
+        events=(_e("mill.done", "milled", TEXT, "the changed result, one per cart in"),
+                _e("mill.item", "each record", TEXT, "a flat map: one cart per record of the result (a JSON object)"),
                 _e("mill.failed", "mill failed", TEXT, "a step failed: the error")),
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
-        config={"steps": (list, None, False)},
+        config={"steps": (list, None, False), "env": (list, None, False), "model": (str, None, False)},
         art="mill", orc="Miller"),
     BuildingType(
         "horn", "The Horn", "📯", "XS",
@@ -144,29 +152,37 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="burrow", orc="Taskmaster"),
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",
-        "a pool of workers in git worktrees: a follow-up goes to the orc who did the earlier task, a new "
-        "task gets an idle or newly hired orc (the foreman picks the provider and model) or waits",
-        "each orc with its model and task, the queue length, 🔥 when one asks",
-        "the orcs, their worktrees and sessions, the queue and the foreman's decisions",
-        events=(_e("pool.assigned", "task assigned", TEXT, "the foreman gave a task to an orc (new or follow-up)"),
-                _e("pool.done", "task done", TEXT, "an orc finished a task: its result and branch"),
-                _e("pool.failed", "task failed", TEXT, "an orc failed a task: the error"),
-                _e("pool.idle", "queue empty", TEXT, "every task is done, the orcs are idle")),
-        actions=(_a("pool.hire", "Hire orc", "+", "hire one more orc now"),
+        "agents work tasks in parallel, each task on its own branch; the steward keeps the rules, answers "
+        "the orks' questions, reviews the work (tests + the diff, up to 3 reworks) and opens a pull request for "
+        "code and documents that go out (a meeting's prep and other local documents get none)",
+        "each ork with its model and task, the queue, the reviews, 🔥 when the steward asks you",
+        "the steward (rules, questions for you), the orks, the queue, the tasks with their PRs and the decisions",
+        events=(_e("pool.assigned", "task assigned", TEXT, "a task went to an ork (new, follow-up or rework)"),
+                _e("pool.done", "task accepted", TEXT, "the steward accepted a task: the report and its pull request"),
+                _e("pool.failed", "task failed", TEXT, "a task failed or was rejected after its reworks"),
+                _e("pool.question", "question for you", TEXT, "the steward needs the operator's answer"),
+                _e("pool.idle", "queue empty", TEXT, "every task is done, the orks are idle")),
+        actions=(_a("pool.hire", "Hire / answer", "+", "answer the steward's question when it asks, else hire an ork"),
                  _a("pool.pause", "Pause / resume", "⏸", "stop or resume taking tasks")),
         config={"max_orcs": (int, (1, 10), False), "budget_usd": (float, (0, 200), False),
-                "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False)},
+                "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
+                "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
+                "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
-        "council", "Orc Council", "🔥", "M",
-        "2–4 agents with roles (architect, tester, security) debate until they agree on a decision or RFC",
-        "the members and their roles, 🔥 when one asks", "the debate round by round, the decision",
-        events=(_e("team.artifact_ready", "decision ready", FILE, "the council agreed: the decision"),),
-        actions=(_a("team.add", "Add member", "+", "add a member: role and model"),
-                 _a("team.start", "Start", "▶", "start a debate")),
-        config={"goal": (str, None, False), "max_rounds": (int, (1, 20), False),
-                "budget_usd": (float, (0, 100), False), "members": (list, None, False),
-                "moderator": (str, None, False)},
+        "council", "Clan Fire", "🪔", "M",
+        "the clan reviews a document from every side (PM, architect, marketing…); the steward lets it go, "
+        "sends it back for rework or asks you",
+        "the clan and who holds a veto, 🔥 when the steward asks", "each review, the steward's decision, the report",
+        events=(_e("team.approved", "approved", TEXT, "the steward let the document go: the document as it is"),
+                _e("team.rework", "rework", TEXT, "sent back: the steward's comments, each review, the document"),
+                _e("team.artifact_ready", "review report", FILE, "the full review: every verdict and the decision")),
+        actions=(_a("team.add", "Add member", "+", "add a member: role and model; its brief is a file"),
+                 _a("team.start", "Review", "▶", "review a document (a path or text), or answer the steward")),
+        config={"steward_prompt": (str, None, False), "members": (list, None, False), "veto": (list, None, False),
+                "max_cycles": (int, (1, 10), False), "budget_usd": (float, (0, 100), False),
+                "moderator": (str, None, False),
+                "goal": (str, None, False), "max_rounds": (int, (1, 20), False)},     # the old debate's; kept loading
         art="great_hall", orc="Chieftains", agentic=True),
     BuildingType(
         "war_drum", "War Drum", "🥁", "L",
@@ -175,9 +191,13 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("calendar.event_due", "event starts", TEXT, "an event is starting now"),
                 _e("calendar.event_added", "event added", TEXT, "an event was added"),
                 _e("calendar.event_removed", "event removed", TEXT, "an event was removed"),
-                _e("calendar.day_schedule", "day schedule", TEXT, "the morning digest: today's events")),
-        actions=(_a("calendar.new", "New event", "+", "add an event"),),
-        config={"ics": (str, None, False), "day_starts": (str, None, False)},
+                _e("calendar.day_schedule", "day schedule", TEXT, "the morning digest: today's events"),
+                _e("calendar.event_upcoming", "meeting soon", TEXT,
+                   "a meeting starts in `lead` (2h): time to prepare its document; tagged [meet:<id>]"),
+                _e("calendar.doc_opened", "doc opened", FILE, "Enter on a meeting with a document: the document")),
+        actions=(_a("calendar.new", "New event", "+", "add an event"),
+                 _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now")),
+        config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False)},
         art="war_tent", orc="Drummer"),
     # -- 3. storage, code and inspection ---------------------------------------------------------------
     BuildingType(
@@ -191,12 +211,23 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="library", orc="Woodcutter"),
     BuildingType(
         "scrolls", "Scroll Dump", "🗑️", "S",
-        "the project's wiki: notes, guides, ADRs; the Scroll Scrapper pulls the exact fragments a prompt needs",
-        "the bases and how many notes each", "the notes by heading; Enter reads one",
-        events=(_e("knowledge.changed", "knowledge changed", FILE, "a knowledge file was added or changed"),
-                _e("knowledge.chunks", "fragments", TEXT, "the fragments that answer a query")),
-        actions=(_a("knowledge.add", "Add base", "+", "connect a folder as a knowledge base"),),
-        config={"paths": (list, None, False)},
+        "one LLM wiki (codebase, team, design or general): the Scroll Scrapper turns read-only sources "
+        "(notes, code, a git revision, a Confluence space) into linked pages and keeps them current by itself; "
+        "pages people own stay theirs, the Council spot-checks, every change is committed",
+        "the topic, pages, sources, what is not taken in yet", "the wiki's pages and the sources; i ingests, l lints",
+        events=(_e("knowledge.changed", "knowledge changed", FILE, "a source or a wiki page was added or changed"),
+                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's map, for the agent to read from"),
+                _e("wiki.updated", "wiki updated", TEXT, "an ingest finished: the pages added, changed, marked stale"),
+                _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found"),
+                _e("wiki.review", "spot-check", TEXT, "a sample of freshly written pages, for the Council to check")),
+        actions=(_a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki now"),
+                 _a("wiki.lint", "Lint", "🧹", "check the wiki for contradictions, stale facts, orphans"),
+                 _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
+        config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
+                "topic": (str, ("general", "codebase", "team", "design"), False),
+                "harness": (str, ("claude", "agy"), False), "model": (str, None, False),
+                "auto_ingest": (bool, None, False), "commit": (bool, None, False),
+                "review_sample": (int, (0, 10), False), "council": (str, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
@@ -224,14 +255,23 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     # -- 4. results, telemetry and egress --------------------------------------------------------------
     BuildingType(
         "loot", "Loot Vault", "📦", "S",
-        "the store of finished things: generated files to accept or roll back, reports and releases with "
-        "what they cost",
-        "files to review, what landed", "a file's preview; accept keeps it, reject rolls it back",
-        events=(_e("generator.accepted", "file accepted", FILE, "a generated file was accepted"),
+        "the review checkpoint on a road: by its rules a cart passes at once or waits for a person, "
+        "who accepts it, edits it or sends it back for rework (with what the chain cost)",
+        "held, needs you, passed today", "the queue, a cart's trail and cost; accept, rework, restore",
+        events=(_e("loot.passed", "passed", TEXT, "a cart passed: by the rules or accepted"),
+                _e("loot.rework", "sent back", TEXT, "a cart was sent back to its source with the reason"),
+                _e("loot.needs_you", "needs you", TEXT, "a cart ran out of rework rounds: the person fixes it"),
+                _e("generator.accepted", "file accepted", FILE, "a generated file was accepted"),
                 _e("generator.rejected", "file rejected", FILE, "a generated file was rejected"),
                 _e("loot.stored", "stored", FILE, "something landed in ./loot/")),
-        actions=(_a("generator.accept_all", "Accept all", "✓", "accept every file still waiting"),),
-        config={"path": (str, None, False)},
+        actions=(_a("loot.accept_all", "Accept all", "✓", "accept every held cart (not the ones that need you)"),
+                 _a("generator.accept_all", "Accept files", "✓", "accept every changed file still waiting")),
+        config={"path": (str, None, False), "review": (str, ("rules", "always", "never"), False),
+                "sources": (list, None, False), "paths": (list, None, False),
+                "max_cost_usd": (float, (0, 1000), False), "max_tokens": (int, (0, 100_000_000), False),
+                "max_files": (int, (0, 10_000), False), "on_failed": (bool, None, False),
+                "external": (bool, None, False), "max_rework": (int, (0, 10), False),
+                "rework_tokens": (int, (0, 100_000_000), False)},
         art="vault", orc="Quartermaster", agentic=True),
     BuildingType(
         "crag", "Tally Crag", "🪨", "M",
@@ -248,15 +288,21 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
-        "and sends it to an external API",
-        "what it waits for, the last shot", "the loaded data, the check, the request and its answer",
-        events=(_e("catapult.sent", "sent", TEXT, "the request went out: the answer"),
-                _e("catapult.failed", "failed", TEXT, "the check or the request failed")),
+        "and sends it to an external API — or, where a site has no API, closes a whole intent in the browser: "
+        "its ork finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
+        "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
+        events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
+                _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
+                _e("catapult.repaired", "repaired", TEXT, "the site changed: the overseer rewrote the fill script")),
         actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
-                 _a("catapult.dry_run", "Dry run", "🧪", "show the request without sending it")),
+                 _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
+                 _a("catapult.scout", "Scout", "🔭", "browser mode: the ork finds every form of the intent and writes their scripts")),
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),
-                "token_env": (str, None, False), "confirm": (bool, None, False)},
+                "token_env": (str, None, False), "confirm": (bool, None, False),
+                "mode": (str, ("api", "browser"), False), "forms": (list, None, False),
+                "fields": (list, None, False), "finish": (str, ("leave", "press"), False),
+                "repair": (bool, None, False), "key": (str, None, False), "ttl": (int, (0, 10080), False)},
         art="workshop", orc="Loader"),
     BuildingType(
         "town_hall", "Town Hall", "🏰", "L",
@@ -292,6 +338,7 @@ DEFAULT_TYPE = "custom"
 
 # T1107: the 15 buildings of the camp took over the types of T1105. Specs of old keep loading.
 ALIASES = {"dropzone": "pit", "mail": "watchtower", "tasks": "fields", "pool": "barracks", "team": "council",
+           "campfire": "council", "clan_fire": "council",
            "calendar": "war_drum", "file_tree": "forest", "knowledge": "scrolls", "git": "forge",
            "generator": "loot", "charts": "crag"}
 
@@ -302,8 +349,16 @@ def migrate(spec: dict) -> dict:
     Agent / Script folds in: a script becomes a Mill step, an agent a Barracks of one orc whose
     standing orders are the skill."""
     tid = spec.get("type")
+    if ALIASES.get(tid, tid) == "council" and spec.get("icon") == "🔥":
+        spec = {**spec, "icon": "🪔"}          # the Clan Fire's own icon; 🔥 means "waits for you"
     if tid in ALIASES:
         return {**spec, "type": ALIASES[tid]}
+    if tid == "catapult" and isinstance(spec.get("config"), dict) and "page" in spec["config"]:
+        cfg = dict(spec["config"])           # one page → the intent's first form
+        page, submit = str(cfg.pop("page") or ""), str(cfg.pop("submit", "") or "")
+        if page and not cfg.get("forms"):
+            cfg["forms"] = [f"form = {page}" + (f" | | {submit}" if submit else "")]
+        return {**spec, "config": cfg}
     if tid != "agent":
         return spec
     cfg = dict(spec.get("config") or {})
@@ -404,6 +459,10 @@ def validate(spec: dict) -> list[str]:
             errors.append(f"config: {key} is too long")
         elif typ is list and (len(value) > 10 or not all(isinstance(x, str) and len(x) <= 300 for x in value)):
             errors.append(f"config: {key} must be up to 10 strings")
+    if tid == "scrolls" and isinstance(config.get("wiki"), str):
+        w = config["wiki"].strip()
+        if not w or w.startswith(("/", "~")) or ".." in w.replace("\\", "/").split("/"):
+            errors.append("config: wiki must be a folder inside the project")
     if tid == "mill" and isinstance(config.get("steps"), list):
         from orkcraft.realm import mill
         errors += [f"config: steps: {e}" for e in mill.check(config["steps"])]
@@ -417,6 +476,11 @@ def validate(spec: dict) -> list[str]:
             errors.append("config: cron: say `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron")
         if isinstance(config.get("github"), str) and not watch.REPO.match(config["github"]):
             errors.append("config: github must be owner/repo")
+        if isinstance(config.get("feeds"), list):
+            from orkcraft.realm import feeds
+            errors += [f"config: feeds: {e}" for e in feeds.check(config["feeds"])]
+            if not config.get("webhook_port") and any("secret=" in str(x) for x in config["feeds"]):
+                errors.append("config: feeds: secret= is for webhooks — set webhook_port too")
     if tid == "horn":
         from orkcraft.realm import horn
         if isinstance(config.get("sounds"), list):
@@ -425,6 +489,14 @@ def validate(spec: dict) -> list[str]:
             errors.append(f"config: default: choose {', '.join(horn.SOUNDS)} or an audio file")
         if isinstance(config.get("quiet"), str) and not horn.quiet_ok(config["quiet"]):
             errors.append("config: quiet: say `22:00-08:00`")
+    if tid == "catapult":
+        from orkcraft.realm import catapult_web
+        if isinstance(config.get("forms"), list):
+            errors += [f"config: forms: {e}" for e in catapult_web.parse_forms(config["forms"])[1]]
+        if isinstance(config.get("fields"), list):
+            errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
+        if config.get("mode") == "browser" and not config.get("forms"):
+            errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
     if tid == "totem" and isinstance(config.get("rules"), list):
         from orkcraft.realm import totem
         errors += [f"config: rules: {e}" for e in totem.rules_of(config["rules"])[1]]
@@ -449,16 +521,237 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-def catalog_text(types: list[BuildingType] | None = None) -> str:
-    """The catalog for the wizard's AI prompt: one block per type."""
+# -- what the builders read -------------------------------------------------------------------------
+# The catalog is the only thing the Foreman and the Town Builder know of the buildings, so it says
+# what a type does with a cart, what it does outside the camp and how each setting is written.
+# tests/test_catalog_docs.py keeps these in step with the views and the config of TYPES.
+
+# What a cart on a plain road makes the building do. A type that is not here only shows the cart
+# as a note: a plain road into it does nothing.
+TAKES: dict[str, str] = {
+    "totem": "anything: the first rule that matches picks a route and the cart goes on as totem.routed "
+             "(else totem.unmatched)",
+    "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
+    "horn": "anything: plays the sound its table picks for that source and event",
+    "fields": "anything: the cart becomes a task in To Do (its title, else its first line) → tasks.created",
+    "barracks": "anything: the cart becomes a task for an ork (the title names it, the text is the brief); "
+                "its steward reviews the work → pool.done (with the pull request) / pool.failed",
+    "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
+               "(let go) or team.rework (sent back straight to the Barracks that wrote it), team.artifact_ready "
+               "(the report)",
+    "scrolls": "a task (the cart's title and text): goes on with the wiki's map → knowledge.chunks; a Clan Fire's "
+               "verdict lands in reviews.md",
+    "war_drum": "a cart tagged [meet:<id>] (e.g. Barracks' pool.done for its event_upcoming): the meeting's "
+                "document → calendar.doc_opened when opened",
+    "lake": "a file, a diff, Markdown, a branch or a URL: shows it",
+    "forge": "a cart naming one of the repository's branches (e.g. Barracks' pool.done): tests it and "
+             "squash-merges it into the base",
+    "loot": "anything finished: by its rules it passes (loot.passed) or waits for the operator, who accepts it "
+            "or sends it back to a Barracks for rework (loot.rework); stored → loot.stored",
+    "crag": "the first number in the cart: a sample of the `road` source",
+    "catapult": "anything: loads it under its source building; fires once every building of `wait_for` has loaded",
+    "workshop": "anything (a file as its content): its script runs on the cart",
+}
+
+# What a building does outside the camp on its own: the network, merges, money.
+EFFECTS: dict[str, str] = {
+    "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma) over the network; "
+                  "listens for webhooks on 127.0.0.1; an `intent` runs a light model",
+    "barracks": "runs agents (spends money) in git worktrees; pushes an accepted task's branch and opens a pull request "
+                "(code and documents that go out; local documents stay)",
+    "council": "runs agents (spends money); members read the repository and the web",
+    "scrolls": "runs its librarian agent (spends money); commits the wiki's folder; reads Confluence when a source names it",
+    "forge": "merges into the base branch without asking unless `confirm`",
+    "lake": "fetches `url` over the network",
+    "war_drum": "fetches `ics` when it is a URL",
+    "catapult": "sends HTTP requests to `url` without asking unless `confirm`; in browser mode fills web forms "
+                "and presses submit when `finish: press`",
+    "mill": "a `script:` step runs a command; an `agent:` step runs a model (spends money)",
+    "workshop": "runs its script; its steward prompt runs a model",
+}
+
+# How each setting is written, with an example: the Builder fills config from these alone.
+CONFIG_HELP: dict[str, dict[str, str]] = {
+    "watchtower": {
+        "host": "IMAP server for mail, e.g. imap.gmail.com (mail is off without it)",
+        "user_env": "the environment variable that holds the mail login, e.g. MAIL_USER",
+        "password_env": "the environment variable that holds the mail password, e.g. MAIL_PASSWORD",
+        "folder": "the mail folder to read (default INBOX)",
+        "port": "IMAP port (default 993, SSL)",
+        "github": "owner/repo whose events to watch through `gh`, e.g. acme/api",
+        "cron": "when watch.cron fires: `every 15m`, `every 2h`, `hourly`, `daily 05:00`, "
+                "`weekly mon 09:00` or a 5-field cron",
+        "webhook_port": "listen for POSTs on http://127.0.0.1:<port>/",
+        "webhook_secret_env": "the environment variable with a secret a webhook must carry "
+                              "(X-Orkcraft-Token, or GitHub's X-Hub-Signature-256)",
+        "feeds": "one line per service, options naming environment variables, never tokens: "
+                 "`slack: token=SLACK_TOKEN channels=C0123`, `jira: site=acme.atlassian.net user=ATL_EMAIL "
+                 "token=ATL_TOKEN`, `confluence: … spaces=DOC`, `figma: token=FIGMA_TOKEN files=AbC123`; "
+                 "`secret=` names a webhook's secret",
+        "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
+                  "down the roads",
+    },
+    "totem": {
+        "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
+                 "`<route>: kind <text|file|node>`, `<route>: source <building>`, `<route>: event <event id>`, "
+                 "`<route>: <field> == <value>` (or !=; field: title, value, source, event, kind or a JSON key), "
+                 "`<route>: else` last. A route is lowercase a-z 0-9 _ -. "
+                 "e.g. [\"urgent: contains urgent\", \"bugs: matches (?i)bug|crash\", \"rest: else\"]",
+    },
+    "mill": {
+        "steps": "one step per line, in order: `lines`, `grep: <regex>`, `drop: <regex>`, "
+                 "`replace: <regex> => <with>`, `trim`, `lower`, `dedupe`, `csv`, `json`, "
+                 "`extract: <field> = <regex>`, `pick: a, b`, `sort: <field> [desc]`, `limit: <n>`, "
+                 "`filter: <field> <eq|ne|contains|matches> <value>`, `count`, `to_json`, "
+                 "`template: <md with {field}>`, `join[: <sep>]`, `script: <command>`, `agent: <ask>` "
+                 "(a read-only model step), `script: <command> || agent: <ask>` (the agent when the script fails). "
+                 "e.g. [\"lines\", \"grep: TODO\", \"limit: 20\", \"join\"]",
+        "env": "environment variables a `script:` step may see besides a clean PATH, e.g. [\"API_TOKEN\"]",
+        "model": "the model of `agent:` steps, e.g. sonnet (default Claude Code's own)",
+    },
+    "horn": {
+        "sounds": "one line per key, the most precise wins: `<building>/<event>: <sound>`, `<event>: <sound>`, "
+                  "`<building>: <sound>`, `*: <sound>`; a sound is horn, chime, alarm, drum, ding, bell, none "
+                  "or an audio file. e.g. [\"mail.received: chime\", \"*: none\"]",
+        "default": "the sound when no line matches (default horn)",
+        "muted": "true keeps it quiet",
+        "quiet": "quiet hours, e.g. 22:00-08:00",
+        "cooldown": "seconds between two sounds of one key (default 2)",
+    },
+    "fields": {"path": "TASKS.md or a folder with todo/ in-progress/ done/ (default TASKS.md)"},
+    "barracks": {
+        "max_orcs": "how many orks work at once (default 3)",
+        "budget_usd": "the most the barracks may spend, in USD",
+        "providers": "who may be hired, `harness[:model]`: claude or agy, e.g. [\"claude:sonnet\", \"agy\"]",
+        "worktrees": "each ork in its own git worktree (default true)",
+        "orders": "standing orders: the steward's rules, given to every ork with each task",
+        "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
+        "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
+        "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
+        "steward": "`harness[:model]` of the steward that answers and reviews (default claude)",
+        "base": "the branch each task is cut from and its pull request targets (default the current one)",
+    },
+    "council": {
+        "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
+                          "(longer briefs live in steward.md)",
+        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Product manager:claude\", \"Architect:agy\"]",
+        "veto": "roles whose VETO blocks approval, e.g. [\"Security\"]",
+        "max_cycles": "reworks of one document before the operator decides (default 3)",
+        "budget_usd": "the most one review may spend, in USD (default 2)",
+        "moderator": "`harness[:model]` of the steward (default claude)",
+        "goal": "an older debate's setting: read as the steward's brief when steward_prompt is empty",
+        "max_rounds": "an older debate's setting; still loads, not used",
+    },
+    "war_drum": {
+        "ics": "an .ics file in the project or an https URL (+ adds events to its own file)",
+        "day_starts": "when calendar.day_schedule goes out, HH:MM (default 08:00)",
+        "lead": "how long before a meeting calendar.event_upcoming goes out, e.g. 2h, 1d, 1h30m (default 2h)",
+    },
+    "forest": {"path": "the folder to show (default the project)"},
+    "scrolls": {
+        "paths": "folders of notes (the older `sources`), e.g. [\"docs\", \"notes\"]",
+        "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
+                   "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
+        "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
+        "topic": "codebase, team, design or general: the sections and rules it starts with",
+        "harness": "the librarian's agent: claude (default) or agy",
+        "model": "the librarian's model, e.g. sonnet",
+        "auto_ingest": "ingest by itself once the sources settle (default true)",
+        "commit": "commit every change of the wiki's folder (default true)",
+        "review_sample": "pages of each ingest spot-checked (default 2, 0: none)",
+        "council": "the id of a Clan Fire that spot-checks them (without it the sample goes out as wiki.review)",
+    },
+    "lake": {"url": "a page to show on open, e.g. a local dev server http://localhost:3000"},
+    "forge": {
+        "remote": "not used yet",
+        "base": "the branch to merge into (default main)",
+        "test_cmd": "the command that must pass before a merge, e.g. `pytest -q`",
+        "confirm": "true asks before every merge",
+    },
+    "loot": {
+        "path": "the folder whose generated files wait for review (default the working tree)",
+        "review": "rules (default: hold what a rule below catches), always or never",
+        "sources": "hold carts from these buildings (ids; keys in a town plan)",
+        "paths": "hold changes to these paths, e.g. [\"auth/**\", \"migrations/**\"]",
+        "max_cost_usd": "hold a cart whose chain cost more, in USD",
+        "max_tokens": "hold a cart whose chain used more tokens",
+        "max_files": "hold a change of more files",
+        "on_failed": "true holds a cart whose last step failed",
+        "external": "true holds what leaves the town (into a Catapult)",
+        "max_rework": "times a cart may be sent back before it stays for you (default 3)",
+        "rework_tokens": "tokens a cart's chain may spend before it is no longer sent back",
+    },
+    "crag": {
+        "source": "what to chart: limits, spend, tokens, runs, orcs, tasks, cpu, or road (numbers that come by road)",
+        "orientation": "vertical (over time) or horizontal (broken down)",
+        "window": "1h, 24h or 7d (default 24h)",
+        "warn": "a value over it sends charts.threshold",
+        "crit": "a value over it sends charts.threshold, critical",
+    },
+    "catapult": {
+        "url": "where to send, http or https",
+        "method": "POST, PUT or PATCH (default POST)",
+        "schema": "a JSON Schema file in the project the body must pass, e.g. schemas/report.json",
+        "wait_for": "the buildings (their ids; keys in a town plan) that must all have sent a cart before it fires; each needs a "
+                    "road into the Catapult. Without it every cart fires",
+        "token_env": "the environment variable whose token goes as Authorization: Bearer",
+        "confirm": "true asks before every shot",
+        "mode": "api (default: an HTTP request) or browser (fill the web forms of `forms`)",
+        "forms": "browser mode, in fill order: `name = start address | what to open | button` (the last two optional)",
+        "fields": "browser mode, which field gets what: `Event name = title`, `Category = \"Major update\"`, "
+                  "`images/Banner = banner` for one form",
+        "finish": "browser mode: leave (default: you check and press) or press (submit by itself)",
+        "repair": "browser mode: false stops the ork repairing a script the site broke (default true)",
+        "key": "a body path grouping carts into one shot, e.g. version.tag (two releases never mix)",
+        "ttl": "minutes a loaded cart may wait before it is dropped (0: forever)",
+    },
+    "workshop": {
+        "runtime": "python or bash",
+        "layout": "log, table or card",
+        "steward_prompt": "what the model does with carts the script hands over (exit 3)",
+        "inputs": "the events the script expects",
+        "schedule": "run on its own: `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron",
+    },
+}
+
+
+def takes(type_id: str) -> str:
+    """What a cart on a plain road makes a building of this type do; "" — nothing."""
+    return TAKES.get(ALIASES.get(type_id, type_id), "")
+
+
+def _param_text(param: Param) -> str:
+    typ, allowed, required = param
+    if isinstance(allowed, tuple) and typ is str:
+        kind = " | ".join(allowed)
+    elif isinstance(allowed, tuple) and allowed[1] < 1e9:
+        kind = f"number {allowed[0]:g}-{allowed[1]:g}"
+    else:
+        kind = {str: "text", int: "number", float: "number", bool: "true/false", list: "list of text"}.get(typ, "text")
+    return kind + (", required" if required else "")
+
+
+def catalog_text(types: list[BuildingType] | None = None,
+                 detail: bool | Collection[str] = True) -> str:
+    """The catalog for the builders' prompts: one block per type. `detail` — True, or the type ids
+    whose settings are spelled out with their syntax; the others list only the names."""
     lines = []
     for t in types if types is not None else TYPES.values():
         lines.append(f"- {t.id} ({t.icon} {t.title}, size {t.size}): {t.summary}")
         lines.append(f"    hut shows: {t.preview}; open: {t.full}")
+        lines.append(f"    takes from a road: {takes(t.id) or 'nothing — a road into it only shows a note'}")
         if t.events:
-            lines.append("    events: " + "; ".join(f"{e.id} — {e.help}" for e in t.events))
+            lines.append("    events: " + "; ".join(f"{e.id} [{e.kind}] — {e.help}" for e in t.events))
         if t.actions:
             lines.append("    quick actions: " + "; ".join(f"{a.id} ({a.glyph} {a.label})" for a in t.actions))
-        if t.config:
+        if EFFECTS.get(t.id):
+            lines.append(f"    acts outside the camp: {EFFECTS[t.id]}")
+        if not t.config:
+            continue
+        if detail is True or (detail is not False and t.id in detail):
+            lines.append("    config:")
+            help_ = CONFIG_HELP.get(t.id, {})
+            lines.extend(f"      {k} ({_param_text(p)}): {help_.get(k, '')}".rstrip(": ") for k, p in t.config.items())
+        else:
             lines.append("    config: " + ", ".join(f"{k}{'' if r[2] else '?'}" for k, r in t.config.items()))
     return "\n".join(lines)

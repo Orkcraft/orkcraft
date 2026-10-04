@@ -104,7 +104,8 @@ async def test_the_watchtower_tells_what_is_new_in_the_mail(fake_repo: Path, ser
             await pilot.pause(0.05)
             if view.look is not None:
                 break
-        assert view.mini_status() == ["1 unread", "✉ · 1 signals", "✉ Ann: Lunch?"]   # listed, not sent
+        assert view.mini_status() == ["1 unread", "✉"]                      # listed, not sent, not new
+        assert view.signals[0].read and view.hut_lines([10] * 4) == ["mail     0", "", "", ""]
         sent = []
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
         mail(2, "Bob <bob@x.org>", "Deploy done", "All green.")
@@ -191,7 +192,8 @@ async def test_the_watchtower_hears_github_the_schedule_and_a_webhook(fake_repo:
                 break
         assert [p.mode for p in sent] == ["watch.github", "watch.cron", "watch.webhook"]
         assert sent[0].title == "PR #12 opened: Login form" and '"env": "prod"' in sent[2].value
-        assert view.mini_status()[0].startswith("🐙 ⏰ 🪝 · 3 signals")
+        assert view.mini_status()[0] == "🐙 ⏰ 🪝 · 3 new"
+        assert view.hut_lines([10] * 4) == ["github   1", "hooks    1", "cron     1", ""]
         assert f"127.0.0.1:{port}" in str(view.query_one("#watch-head").render())
     with pytest.raises(OSError):
         urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)  # the listener stops with the app

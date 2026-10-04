@@ -303,7 +303,7 @@
     },
     "config": {
       "type": "object",
-      "maxProperties": 12,
+      "maxProperties": 16,
       "description": "The type's settings (checked by realm/catalog.py)."
     }
   },

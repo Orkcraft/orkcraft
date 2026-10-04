@@ -6,7 +6,6 @@ so the windows stay visible and clickable.
 """
 from __future__ import annotations
 
-from rich.cells import cell_len
 from rich.text import Text
 from textual import events
 from textual.message import Message
@@ -17,7 +16,6 @@ ROAD_FAINT = "#5c4326"
 ROAD_BRIGHT = "#a0703c"
 ROAD_SELECTED = "#d9a066"
 EXIT_GLYPH = {"right": "▶", "left": "◀", "top": "▲", "bottom": "▼"}
-EXIT_EMOJI = {"right": "⏩", "left": "⏪", "top": "⏫", "bottom": "⏬"}     # the immersion mode: two cells wide
 ENTRY_GLYPH = "●"
 
 
@@ -66,22 +64,8 @@ class RoadGate(_RoadPiece):
     """One gate: an arrow out of the source frame, a dot on the target frame."""
 
     def __init__(self, key: str, glyph: str, x: int, y: int, style: str) -> None:
-        w = cell_len(glyph)
-        super().__init__(key, Text(glyph, style=style), x, y, w, 1, classes="road-gate")
+        super().__init__(key, Text(glyph, style=style), x, y, 1, 1, classes="road-gate")
         self.glyph = glyph
-
-
-def exit_gate(key: str, side: str, x: int, y: int, style: str, plain: bool, edges: set[int] = frozenset()) -> RoadGate:
-    """The arrow out of a source building: ▶ in the plain mode; ⏩ (two cells) in the immersion mode.
-
-    ⏩ covers the gate cell and the one the road goes on (⏪: the one before). The terminal cannot draw
-    a wide character cut by the edge of another widget (`edges`: x where one starts or ends on this
-    row), so it shifts a cell to stay whole, and falls back to ▶ when neither place is."""
-    if not plain:
-        for at in ((x - 1, x) if side == "left" else (x, x - 1)):
-            if at >= 0 and at + 1 not in edges:
-                return RoadGate(key, EXIT_EMOJI[side], at, y, style)
-    return RoadGate(key, EXIT_GLYPH[side], x, y, style)
 
 
 class RoadRun(_RoadPiece):

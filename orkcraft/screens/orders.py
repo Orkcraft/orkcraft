@@ -165,7 +165,10 @@ class AwaitingOrdersModal(AlertModal):
         judged = self._judged(alert)
         if advice is not None:
             label = dict(alert.options).get(advice.key or "", "")
-            advice_widget.update(f"🏛 The Elders advise [{advice.key}] {label} — {advice.why}")
+            text = f"🏛 The Elders advise [{advice.key}] {label} — {advice.why}"
+            if advice.warn:
+                text += f"\n⚠ The Warder flags this screen: {advice.warn} — read it before you follow (A skips it)"
+            advice_widget.update(text)
         elif judged is not None:
             advice_widget.update(f"🏛 No advice: {judged.why}")
         advice_widget.display = judged is not None
@@ -254,8 +257,9 @@ class AwaitingOrdersModal(AlertModal):
             await self._answer_and_advance(alert, advice.key)
 
     async def action_follow_all(self) -> None:
-        """The operator follows the advice on every question that has some; the rest stay."""
-        for alert in [a for a in self.alerts if self._advice(a) is not None]:
+        """The operator follows the advice on every question that has some, but for the ⚠ ones (the
+        Warder flagged their screen: one at a time, with `a`); the rest stay."""
+        for alert in [a for a in self.alerts if self._advice(a) is not None and not self._advice(a).warn]:
             self.selected_index = self.alerts.index(alert)
             await self._answer_and_advance(alert, self._advice(alert).key)
             if not self.alerts:
@@ -308,7 +312,7 @@ class UnitModal(ModalScreen[dict | None]):
             yield Label(Text(f"🧌 {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} — {self.building_title}"),
                         classes="order-title")
             yield Static(Text(f"{o.role}\nstatus: {o.status_icon} {o.status}"), classes="order-context")
-            yield Label("Orders (context for this orc's work)")
+            yield Label("Orders (context for this ork's work)")
             yield Input(value=self.context, placeholder="e.g. keep an eye on T1092 and nudge me before 06:00",
                         id="unit-context")
             yield Label("Trigger")
@@ -327,7 +331,7 @@ class UnitModal(ModalScreen[dict | None]):
                     yield Button("Answer ❓", variant="warning", id="unit-answer")
                 yield Button("Cancel", id="unit-cancel")
             yield Static("Orders and trigger are kept in the Town Scroll (.orkcraft.json). "
-                         "Resident orcs act on them from stage 5.", classes="order-hint")
+                         "Resident orks act on them from stage 5.", classes="order-hint")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id

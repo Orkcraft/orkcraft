@@ -20,7 +20,7 @@ from orkcraft.screens.build_flow import MODAL_CSS
 def plan_text(order: str, plan: TownPlan) -> Text:
     t = Text()
     t.append("You asked: ", style="dim")
-    t.append(f"“{order.strip()[:300]}”\n\n", style="italic")
+    t.append(f"“{order.strip()[:1200]}”\n\n", style="italic")
     if plan.title:
         t.append(f"{plan.title}\n", style="bold")
     if plan.summary:
@@ -35,7 +35,7 @@ def plan_text(order: str, plan: TownPlan) -> Text:
     t.append(f"\n🛤 Roads ({len(plan.roads)})\n", style="bold")
     for r in plan.roads:
         t.append(f"  {titles.get(r.source, r.source)} → {titles.get(r.target, r.target)}", style="bold")
-        t.append(f"  · {pipes.label(r.event)}\n", style="dim")
+        t.append(f"  · {pipes.label(r.event)}{f' ({r.route})' if r.route else ''}\n", style="dim")
         if r.why:
             t.append(f"     {r.why}\n")
     if not plan.roads:

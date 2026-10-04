@@ -207,9 +207,9 @@ class CustomBuildingView(Container):
     def on_mount(self) -> None:
         self.set_interval(30.0, self.refresh_data)
 
-    def show_incoming(self, title: str, markdown: str) -> None:
+    def show_incoming(self, title: str, markdown: str, trail: tuple = (), ref: str = "") -> None:
         """What arrived along a road (a node, a file, a handler's result): a pane at the end,
-        added on the first delivery."""
+        added on the first delivery. (`trail` / `ref` matter to typed buildings only.)"""
         self.incoming_title = title
         incoming = getattr(self, "_incoming", None)
         if incoming is not None:

@@ -91,3 +91,20 @@ def test_task_report_and_loot_file(tmp_path: Path):
     assert path.read_text(encoding="utf-8").startswith("# 🧌 Coder")
     second = pipes.write_loot(tmp_path, "../../etc", title, md)
     assert second != path
+
+
+def test_the_trail_adds_up_and_reads():
+    import datetime as dt
+    t0 = dt.datetime(2026, 10, 4, 12, 0)
+    a = pipes.hop("barracks", "scribe", "agent", 12000, 0.08, now=t0)
+    b = pipes.hop("council", "chief", "agent", 40000, 0.31, now=t0 + dt.timedelta(minutes=1))
+    c = pipes.hop("mill", "", "chain", now=t0 + dt.timedelta(minutes=2))
+    assert pipes.trail_totals((a, b, c)) == (52000, 0.39)
+    assert pipes.trail_totals((c,)) == (None, None)
+    assert pipes.merge_trails((b, a), (a, c)) == (a, b, c)          # each hop once, in order of time
+    line = pipes.trail_line((a, b), {"barracks": "Barracks", "council": "Council"})
+    assert line == "Barracks 12k tok $0.08 → Council 40k tok $0.31 = 52k tok $0.39"
+    p = pipes.with_hop(pipes.Payload(pipes.TEXT, "doc", "barracks", pipes.ON_TASK, ref="D-1"), a)
+    assert p.trail == (a,) and p.ref == "D-1"
+    assert p == pipes.Payload(pipes.TEXT, "doc", "barracks", pipes.ON_TASK, ref="D-1")   # the trail is not identity
+    assert pipes.trail_of([a.as_dict(), {"nope": 1}, "x"]) == (a,)

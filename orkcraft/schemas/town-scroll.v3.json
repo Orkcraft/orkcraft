@@ -421,6 +421,10 @@
           "type": "boolean",
           "description": "Window closed; its state and slot are kept."
         },
+        "goal": {
+          "enum": ["thrift", "balance", "quality"],
+          "description": "What the retros improve it towards: fewer tokens, both, better results (missing: balance)."
+        },
         "bounds": {
           "$ref": "#/$defs/bounds"
         },

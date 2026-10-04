@@ -26,7 +26,7 @@ from textual.widgets import Footer
 from orkcraft.config import Config, find_project_root
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import audit, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
+from orkcraft.realm import audit, halt, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.realm.orcs import ALERT_ICON, Alert, Trigger, WORKER, RESIDENT, Orc, garrison_badge
@@ -40,6 +40,7 @@ from orkcraft.screens.feedback_modal import DislikeModal
 from orkcraft.screens.proposal_modal import ProposalModal
 from orkcraft.screens.road_rule_modal import RoadRuleModal
 from orkcraft.screens.settings_modal import SettingsModal
+from orkcraft.screens.retro_survey import RetroSurveyModal
 from orkcraft.screens.weekly_modal import WeeklyReportModal
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, ClanRoster, Console, orc_key
 from orkcraft.screens.chronicles_view import BuildingChronicles, UnitChronicles
@@ -51,7 +52,7 @@ from orkcraft.screens.garrison_modal import GarrisonModal, OrcModelModal
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, evolution, town_builder, town_presets
+from orkcraft.realm import elders, evolution, intents, pressure, retro, town_builder, town_presets
 from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
@@ -85,8 +86,8 @@ ELDERS_RUNNER = None        # tests: the Elders' model call (realm/elders.py)
 RECRUIT_RUNNER = None     # tests replace the Recruiter's and the steward's Claude call
 STEWARD_RUNNER = None
 FASTPATH_RUNNER = None    # tests put a fake light model for the Council's Fast Path here
-OPTIMIZE_RUNNER = None    # … and for the self-improvement proposals
-WEEKLY_RUNNER = None      # … and for the weekly self-audit
+OPTIMIZE_RUNNER = None    # … and for the Building retro's proposals
+WEEKLY_RUNNER = None      # … and for the Town retro
 STEWARD_CHECK_S = 60.0
 
 FULL_MIN_COLS = 140     # ≥ 140: Full RTS — console + windows
@@ -139,14 +140,14 @@ class OrkcraftApp(App[int]):
         Binding("escape", "escape", "Deselect", show=False),
         *[Binding(str(i), f"focus_number({i})", show=False) for i in range(1, 10)],
         *[Binding(f"alt+{i}", f"focus_number({i})", show=False) for i in range(1, 10)],
-        Binding("plus", "spawn_orc", "Spawn Orc", show=True),
+        Binding("plus", "spawn_orc", "Spawn Ork", show=True),
         Binding("exclamation_mark", "next_alert", "🔥 Orders", show=True),
         Binding("ctrl+b", "toggle_console", "Console", show=False),
         Binding("alt+b", "toggle_pin", "📌 Pin", show=False),
         Binding("alt+t", "toggle_terrain", "Terrain", show=False),
         Binding("alt+c", "cycle_carts", "Carts", show=False),
         Binding("alt+v", "toggle_view", "Town / Tiles", show=False),
-        Binding("slash", "focus_orc_chat", "Type to the orc", show=False),
+        Binding("slash", "focus_orc_chat", "Type to the ork", show=False),
         Binding("left_square_bracket", "quick_action(0)", "Quick action 1", show=False),
         Binding("right_square_bracket", "quick_action(1)", "Quick action 2", show=False),
         Binding("f10", "system_menu", "Menu", show=True),
@@ -257,8 +258,8 @@ class OrkcraftApp(App[int]):
         self.roster = Roster()
         self.dismissed: set[str] = set()
         # 🏛 The Elders' advice on the orcs' questions, left in quiet hours (realm/elders.py).
-        self.advice: dict[tuple, elders.Decision] = {}
-        self._elders_seen: set[tuple] = set()
+        self.advice: dict[str, elders.Decision] = {}         # by question mark (elders.mark)
+        self._elders_seen: set[str] = set()
         self._elders_busy = False
         self._elders_count = 0
         self._quiet_since: str | None = None
@@ -360,7 +361,9 @@ class OrkcraftApp(App[int]):
         self.call_after_refresh(self.desktop.refresh_huts)
         self.order_burning = self._order_burns()
         if self.desktop.quiet:
-            self._quiet_since = dt.datetime.now().isoformat(timespec="seconds")
+            began = schedule.quiet_started(self.desktop.machine) or dt.datetime.now()
+            self._quiet_since = began.isoformat(timespec="seconds")
+        self._elders_restore()
         if self.first_run and getenv("ONBOARDING").lower() not in ("0", "false", "no", "off"):
             self.call_after_refresh(self.start_onboarding)
 
@@ -510,7 +513,7 @@ class OrkcraftApp(App[int]):
             order = town_presets.pending_order(self.repo_root)
             if order is not None:
                 self.push_screen(Confirm("📜 A town waits to be raised. Plan it now?",
-                                         f"“{order['prompt'][:300]}”\n\nThe Town Builder plans it from the "
+                                         f"“{order['prompt'][:800]}”\n\nThe Town Builder plans it from the "
                                          "building catalog (one Claude call); you approve the plan before "
                                          "anything is raised."),
                                  lambda yes: yes and self.build_town_from_order())
@@ -559,7 +562,7 @@ class OrkcraftApp(App[int]):
         if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
             for item in report.items:
                 if item.applicable and item.n not in report.applied:
-                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in ("shrink", "chain", "script")
+                    key = (f"w{report.ts[:10]}-{item.n}" if item.change in optimize.ACTIONS
                            else f"weekly:{report.ts}:{item.n}")
                     out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,
                                 "report": report, "item": item})
@@ -654,7 +657,7 @@ class OrkcraftApp(App[int]):
         with self.hushed():
             if c["source"] == "steward":
                 ok = self.apply_steward_proposal(c["building"], c["data"], c["index"], by="orcs") is not None
-            elif c["source"] == "daily" or c["change"] in ("shrink", "chain", "script"):
+            elif c["source"] == "daily" or c["change"] in optimize.ACTIONS:
                 ok = self.apply_proposal(c["proposal"], kind="auto-improve" if c["source"] == "daily" else "weekly")
                 if ok and c["source"] == "weekly":
                     c["report"].applied = sorted(set(c["report"].applied) | {c["item"].n})
@@ -685,7 +688,7 @@ class OrkcraftApp(App[int]):
                 reverted.append(change)
         if reverted:
             names = ", ".join(f"{self._title_of(c.building)} ({c.change})" for c in reverted[:3])
-            self.notify(f"{names} — {reverted[0].note}", title=f"↩ {len(reverted)} change(s) by the orcs taken back",
+            self.notify(f"{names} — {reverted[0].note}", title=f"↩ {len(reverted)} change(s) by the orks taken back",
                         severity="warning", timeout=15)
             if not self.desktop.quiet:
                 self.show_changes(only_unseen=True)
@@ -726,8 +729,29 @@ class OrkcraftApp(App[int]):
     # -- 🏛 the Elders: in quiet hours they leave advice; the operator follows it (realm/elders.py) --
 
     @staticmethod
-    def elders_mark(alert: Alert) -> tuple:
-        return (alert.id, alert.title, tuple(alert.options), tuple(alert.context[-3:]))
+    def elders_mark(alert: Alert) -> str:
+        return elders.mark(alert)
+
+    def _elders_restore(self) -> None:
+        """A restart keeps what the log knows: the advice still to follow, and tonight's judged questions
+        (so they are not judged, paid for and counted twice)."""
+        if self.demo:
+            return
+        night = elders.restore(self.repo_root, self._quiet_since)
+        self.advice.update(night.advice)
+        self._elders_seen |= night.seen
+        self._elders_count = max(self._elders_count, night.count)
+
+    def elders_state(self) -> str:
+        """The lamp on the Town Hall: `advice` (some waits for you), `watch` (quiet hours, they read the
+        questions), `rest` (by day), `off` (autonomy ⛓️ Ask me), `full` (tonight's questions are used up)."""
+        if any(self.advice_for(a) is not None for a in self.roster.alerts):
+            return "advice"
+        if not autonomy.advises(self.desktop.machine.autonomy):
+            return "off"
+        if not self.desktop.quiet:
+            return "rest"
+        return "full" if self._elders_count >= elders.limits(self.repo_root)[0] else "watch"
 
     def advice_for(self, alert: Alert) -> elders.Decision | None:
         d = self.advice.get(self.elders_mark(alert))
@@ -736,7 +760,8 @@ class OrkcraftApp(App[int]):
     def _elders_consider(self) -> None:
         """One question at a time goes to the Elders: quiet hours, autonomy from 1, budget left."""
         if (self.demo or self._elders_busy or not self.desktop.quiet
-                or not autonomy.advises(self.desktop.machine.autonomy) or self._elders_count >= elders.MAX_PER_NIGHT):
+                or not autonomy.advises(self.desktop.machine.autonomy)
+                or self._elders_count >= elders.limits(self.repo_root)[0]):
             return
         budget = self.scroll.budget.gold_session_limit_usd
         if budget > 0 and self.snapshot.spent_usd >= budget:
@@ -753,18 +778,19 @@ class OrkcraftApp(App[int]):
     @work(thread=True, group="elders")
     def _elders_work(self, alert: Alert, who: str) -> None:
         runner = ELDERS_RUNNER or fastpath.light_runner(self.repo_root)
-        decision = elders.judge(alert, runner)
+        decision = elders.judge(alert, runner, elders.limits(self.repo_root)[1])
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
         """The Elders' advice is kept for the operator. At ⛓️‍💥 Free orcs (autonomy.answers) they also
         answer: their key goes to the agent — only while it is still quiet and the very same question
-        still waits, so an answer never lands on a question that changed meanwhile."""
+        still waits, so an answer never lands on a question that changed meanwhile, and never when the
+        Warder flagged the screen (⚠: that advice is the operator's to follow)."""
         self._elders_busy = False
         mark = self.elders_mark(alert)
         sent = False
-        if (decision.advised and autonomy.answers(self.desktop.machine.autonomy) and self.desktop.quiet
-                and any(self.elders_mark(a) == mark for a in self.roster.alerts)):
+        if (decision.advised and not decision.warn and autonomy.answers(self.desktop.machine.autonomy)
+                and self.desktop.quiet and any(self.elders_mark(a) == mark for a in self.roster.alerts)):
             key = decision.key or ""
             self.chat.send(alert.ref, (key if key.isdigit() else f"{key}\r").encode())   # no focus: they sleep
             sent = True
@@ -772,6 +798,7 @@ class OrkcraftApp(App[int]):
             self.advice[mark] = decision
         elders.log(self.repo_root, alert, decision, who, sent=sent)
         self.refresh_roster()
+        self._refresh_hall()
 
     def _elders_morning(self) -> None:
         answered = [r for r in elders.since(self.repo_root, self._quiet_since or "") if r.get("sent")]
@@ -828,13 +855,15 @@ class OrkcraftApp(App[int]):
         return order is not None and not order.get("seen")
 
     def start_onboarding(self, machine_steps: bool | None = None, town_step: bool = True) -> None:
-        """Steps 1–2 once per machine (or when asked, F10), step 3 for a project with no town yet."""
+        """Who you are and the machine's part once per machine (or when asked, F10); the town for a
+        project with none yet."""
         if machine_steps is None:
             machine_steps = not self.desktop.machine.onboarded
         onboarding.Onboarding(self, machine_steps, town_step, on_town=self.raise_town).start()
 
     def raise_town(self, choice: dict) -> None:
-        """Step 4: raise the chosen town over the map, a progress bar along the bottom."""
+        """The end of onboarding: the camp's records and the Warder over the map, a progress bar along
+        the bottom; then the intent's town, or the interview's order for the Town Builder."""
         steps = onboarding.raising_steps(choice)
         bar = onboarding.mount_raise_bar(self.screen, len(steps))
         self._raise_town_work(choice, steps, bar)
@@ -850,33 +879,38 @@ class OrkcraftApp(App[int]):
                 elif "Warder" in label:
                     from orkcraft.hooks import install as hooks_install
                     hooks_install.install(self.repo_root)
-                elif label.startswith("Raising"):
-                    self.call_from_thread(self._raise_buildings, choice)
                 elif "order" in label:
-                    town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("domain", ""))
+                    town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("role", ""),
+                                            choice.get("answers") or {})
             except (OSError, ValueError, RuntimeError) as e:
                 problems.append(f"{label}: {e}")
             onboarding.pause()
         self.call_from_thread(self._town_raised, choice, steps, bar, problems)
 
-    def _raise_buildings(self, choice: dict) -> None:
-        """The preset's buildings and roads, placed one by one — none yet: every preset is a stub
-        (town_presets.buildings_of is empty) and the town stays the Town Hall alone."""
-
     def _town_raised(self, choice: dict, steps: list[str], bar, problems: list[str]) -> None:
-        bar.step("The town stands", len(steps))
+        bar.step("The camp is ready", len(steps))
         self.desktop.save()
-        preset = town_presets.preset(choice.get("preset", ""))
-        reason = f"onboarding: {preset.title}" if preset else f"onboarding: {choice.get('preset', 'empty')} town"
+        it = intents.intent(choice.get("preset", ""))
+        reason = f"onboarding: {it.title}" if it else f"onboarding: {choice.get('preset', 'empty')} town"
         checkpoint.commit(self.repo_root, "create", "camp", reason, self.config.layout_file)
         self.order_burning = self._order_burns()
         self.refresh_roster()
         self.set_timer(1.5, bar.remove)
         if problems:
             self.notify("\n".join(problems), title="🏗 Raising the town", severity="warning")
-        self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
-        if choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
-            self.set_timer(1.6, self.build_town_from_order)       # after the bar has gone
+        if it is not None:
+            plan, errors = town_builder.check(it.plan, self.repo_root, self._taken_building_ids())
+            if errors:                                             # the templates are tested; never expected
+                self.notify("\n".join(errors[:3]), title=f"🏗 {it.title}", severity="error")
+            else:
+                self.set_timer(1.6, lambda: self.raise_town_plan(plan))    # after the bar has gone
+        elif choice.get("preset") == onboarding.CUSTOM and town_presets.pending_order(self.repo_root) is not None:
+            self.set_timer(1.6, self.build_town_from_order)
+        elif choice.get("expert"):
+            self.notify("B build · Y roads · 🏰 Town Hall → 📜 Preset or 🛠 New · F10 → 📜 Town Builder.",
+                        title="🤘 The town is yours to build", timeout=12)
+        else:
+            self.notify("B build · P presets · ? all keys.", title="🏰 The town stands", timeout=10)
 
     # -- 📜 the Town Builder: an order in words → a plan → approved → raised ----------------------
 
@@ -887,14 +921,23 @@ class OrkcraftApp(App[int]):
             return
         if self.query(onboarding.RaiseBar):
             return                                                # one town at a time
+        if BUILD_RUNNER is None and not self.desktop.machine.tools.get("claude", settings.ToolChoice()).enabled:
+            self.order_burning = self._order_burns()
+            self.notify("The Town Builder plans with Claude Code, and it is off. F10 → 🧭 Onboarding turns it on; "
+                        "the order keeps waiting in the 🏰 Town Hall.", title="📜 Town Builder", severity="warning",
+                        timeout=12)
+            return
         bar = onboarding.mount_raise_bar(self.screen, None)
-        bar.say("📜 The Town Builder is drawing your town…")
-        self._plan_town_work(order["prompt"], note, bar)
+        role = str(order.get("role") or "")
+        bar.say(f"📜 The Town Builder is adapting a {intents.role(role).title.lower()} town to your answers…"
+                if role else "📜 The Town Builder is drawing your town…")
+        self._plan_town_work(order["prompt"], note, bar, intents.templates_text(role) if role else "")
 
     @work(thread=True, exclusive=True, group="town-builder")
-    def _plan_town_work(self, order: str, note: str, bar) -> None:
+    def _plan_town_work(self, order: str, note: str, bar, templates: str = "") -> None:
         runner = BUILD_RUNNER or builders.claude_runner
-        result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note)
+        result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note,
+                                   templates=templates)
         self.call_from_thread(self._on_town_plan, order, result, bar)
 
     def _on_town_plan(self, order: str, result: town_builder.TownPlan, bar) -> None:
@@ -908,8 +951,8 @@ class OrkcraftApp(App[int]):
 
         def done(answer: dict | None) -> None:
             if answer is None:
-                town_presets.save_order(self.repo_root, order, (town_presets.pending_order(self.repo_root)
-                                                                or {}).get("domain", ""))
+                kept = town_presets.pending_order(self.repo_root) or {}
+                town_presets.save_order(self.repo_root, order, kept.get("role", ""), kept.get("answers") or {})
                 self.order_burning = True                         # later: it burns until the Hall is opened
                 self.refresh_roster()
                 self.notify("The order waits in the 🏰 Town Hall.", title="📜 Town Builder")
@@ -928,7 +971,7 @@ class OrkcraftApp(App[int]):
             steps.append((f"Raising {label}", functools.partial(self.raise_spec, spec, None, True)))
         for r in plan.roads:
             steps.append((f"Laying the road {r.source} → {r.target}",
-                          functools.partial(self.add_road, r.target, r.source, r.event, None, True)))
+                          functools.partial(self.add_road, r.target, r.source, r.subscription, None, True)))
         bar = onboarding.mount_raise_bar(self.screen, len(steps))
 
         def run(i: int) -> None:
@@ -1021,7 +1064,7 @@ class OrkcraftApp(App[int]):
             elif action in settings.MODES:
                 self.desktop.set_mode(action)
                 self.refresh_hud()
-                self.notify({"camp": "the town of orcs, fire and gold", "office": "hidden — frames, people and plain words",
+                self.notify({"camp": "the town of orks, fire and gold", "office": "hidden — frames, people and plain words",
                              "shift": "Office in office hours, Camp otherwise — F10 → 🕰 Your day"}[action],
                             title=settings.MODE_TITLES[action])
             elif action == "day":
@@ -1166,7 +1209,7 @@ class OrkcraftApp(App[int]):
                 if orc is not None and orc.category == RESIDENT and orc.lead and orc.building:
                     self.watch_building(orc.building, interactive=True)
                 else:
-                    self.notify("W is the steward's: select a building's ★ orc", title="Steward")
+                    self.notify("W is the steward's: select a building's ★ ork", title="Steward")
                 return
             orc_k = self.focus_state.orc_key
             orc = next((o for o in self.roster.orcs if orc_key(o) == orc_k), None) if orc_k else None
@@ -1653,6 +1696,27 @@ class OrkcraftApp(App[int]):
         except Exception:
             return None
 
+    def return_for_rework(self, source_id: str, payload: pipes.Payload) -> str:
+        """A Loot checkpoint or a Clan Fire sends a cart back to the building that made it — directly, not
+        by a road (a road back would close a loop). The building that redoes delivered work (`TAKES_REWORK`:
+        a Barracks queues the task again) is the source, else the latest one in the cart's trail (past a
+        Totem or a Mill on the way). Its id, or "" when nobody can take it back."""
+        for bid in [source_id] + [h.building for h in reversed(payload.trail) if h.building != source_id]:
+            if getattr(self._custom_view(bid), "TAKES_REWORK", False):
+                self.deliver_payload(bid, payload, payload.title, payload.value)
+                return bid
+        return ""
+
+    def _loot_burning(self) -> list[str]:
+        """Loot buildings with a cart waiting for the person (they burn like an orc waiting for orders)."""
+        out = []
+        for w in self.desktop.windows:
+            view = self._custom_view(w.window_id)
+            burning = getattr(view, "burning", None)
+            if callable(burning) and burning():
+                out.append(w.window_id)
+        return out
+
     def _payload_markdown(self, payload: pipes.Payload) -> tuple[str, str]:
         """(title, markdown) of what a road carries, for a custom building's 📥 pane."""
         if payload.kind == pipes.FILE:
@@ -1667,15 +1731,17 @@ class OrkcraftApp(App[int]):
             event.stop()
             drop(event.text)
 
-    def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "") -> bool:
-        """A typed building sends one of its events: only when a road carries it."""
+    def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
+                   trail: tuple = (), ref: str = "") -> bool:
+        """A typed building sends one of its events: only when a road carries it (with the trail of
+        what it passes on, when it gives one)."""
         spec = self.custom_specs.get(building_id)
         ev = catalog.type_of(spec).event(event_id) if spec else None
         if ev is not None:
             feedback.record_output(self.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
         if ev is None or self.scroll is None or not scroll.has_outgoing(self.scroll, building_id, event_id):
             return False
-        self.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title))
+        self.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref))
         return True
 
     def deliver_payload(self, target_id: str, payload: pipes.Payload, title: str = "", markdown: str = "") -> None:
@@ -1684,7 +1750,7 @@ class OrkcraftApp(App[int]):
         if view is not None:
             t, md = (title, markdown) if markdown else self._payload_markdown(payload)
             src = self.scroll.building(payload.source) if self.scroll is not None else None
-            view.show_incoming(f"{src.title if src else payload.source} → {t}", md)
+            view.show_incoming(f"{src.title if src else payload.source} → {t}", md, payload.trail, payload.ref)
             receive = getattr(view, "receive", None)
             if receive is not None:
                 receive(payload, t, md)
@@ -1731,7 +1797,10 @@ class OrkcraftApp(App[int]):
         if b_spec is None or not self.roads.has_roads(b_id, pipes.ON_TASK):
             return
         title, md = pipes.task_report(orc_name, b_spec.title, term.text_lines())
-        payload = pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title)
+        cwd = Path(getattr(term, "cwd", None) or self.repo_root)
+        worktree = str(cwd.relative_to(self.repo_root)) if cwd != self.repo_root and self.repo_root in cwd.parents else ""
+        hop = pipes.hop(b_id, orc_id, "task", worktree=worktree, outcome="done")
+        payload = pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title, trail=(hop,))
         self.roads.emit(payload)
 
     # -- roads ------------------------------------------------------------------------------------
@@ -1761,14 +1830,15 @@ class OrkcraftApp(App[int]):
         return {"type": entity.type, "status": entity.status, "title": entity.title,
                 "subtype": "personal" if entity.is_personal else entity.subtype}
 
-    def deliver_handler_output(self, target_id: str, orc: scroll.OrcSpec, title: str, markdown: str) -> None:
-        """A handler's result: shown by a receiver that renders text, otherwise kept as a Loot report."""
+    def deliver_handler_output(self, target_id: str, orc: scroll.OrcSpec, title: str, markdown: str,
+                               trail: tuple = (), ref: str = "") -> None:
+        """A handler's result: shown by a receiver that renders text, otherwise kept as a Loot report.
+        `trail` is every hop the result went through, the handler's own last."""
         if not self._windows_alive():
             return
-        payload = pipes.Payload(kind=pipes.TEXT, value=markdown, source=target_id, mode="handler", title=title)
         view = self._custom_view(target_id)
         if view is not None:
-            view.show_incoming(title, markdown)
+            view.show_incoming(title, markdown, tuple(trail), ref)
         else:
             path = pipes.write_loot(self.repo_root, target_id, title, markdown)
             self.notify(f"📦 {title}: loot/pipes/{path.name}", title="Handler")
@@ -1922,7 +1992,7 @@ class OrkcraftApp(App[int]):
         if interactive:
             self.open_steward_report(building_id)
         elif report.findings:
-            self.notify(f"{len(report.findings)} finding(s), {len(report.proposals)} proposal(s) — select its ★ orc, W",
+            self.notify(f"{len(report.findings)} finding(s), {len(report.proposals)} proposal(s) — select its ★ ork, W",
                         title=f"🔎 Steward · {title}")
         self.refresh_roster()
 
@@ -2250,7 +2320,7 @@ class OrkcraftApp(App[int]):
         """(gold, gold level, lumber, lumber level) for the HUD; "—" until a session reports."""
         budget, snap = self.scroll.budget, self.snapshot
         gold_limit = f"${budget.gold_session_limit_usd:.2f}"
-        if snap.sessions or snap.unpriced:
+        if snap.sessions or snap.unpriced or snap.side_usd:
             # "+" marks spend that could not be priced (agy, or a model with no published price).
             gold = f"${snap.spent_usd:.2f}{'+' if snap.unpriced else ''} / {gold_limit}"
         else:
@@ -2285,6 +2355,18 @@ class OrkcraftApp(App[int]):
             else:
                 parts.append(f"{t} —")
         return " · ".join(parts), telemetry.level(worst, 100), len(subs) < len(on)
+
+    def _quota_reads(self) -> tuple[list, list[str]]:
+        """(the last quota reads, the enabled subscription tools) — what the pressure of a building
+        is measured against (realm/pressure.py)."""
+        machine = self.desktop.machine
+        subs = [t for t, c in machine.tools.items() if c.enabled and c.billing == "subscription"]
+        from orkcraft.screens.limits_view import LimitsView
+        try:
+            limits = next((lv.limits for lv in self.query(LimitsView)), None) or []
+        except Exception:  # unmounted during shutdown
+            limits = []
+        return limits, subs
 
     def _active_terminal_key(self) -> str | None:
         try:
@@ -2333,11 +2415,15 @@ class OrkcraftApp(App[int]):
         self.roster = build_roster(
             self.repo_root, built, workers, self.dismissed, deployments=self.deployments
         )
+        self._view_alerts()
         self._note_alerts()
+        burning = set(self._loot_burning())
         for w in self.desktop.windows:
             badge = garrison_badge(self.roster.garrison(w.window_id))
             if w.window_id == TOWN_HALL and getattr(self, "order_burning", False) and ALERT_ICON not in badge:
                 badge = f"{badge} {ALERT_ICON}".strip()      # a town described in words waits for the Builder
+            if w.window_id in burning and ALERT_ICON not in badge:
+                badge = f"{badge} {ALERT_ICON}".strip()      # a Loot cart waits for review
             w.set_badge(badge)
             if (hut := self.desktop.huts.get(w.window_id)) is not None:
                 hut.set_badge(w.badge)
@@ -2411,6 +2497,27 @@ class OrkcraftApp(App[int]):
         tier = None if is_steward or not member.uses_model else (tiers.orc_tier(member.harness, member.kind) or "")
         self.push_screen(UnitModal(orc, b.label, member.orders, tier=tier), done)
 
+    def _view_alerts(self) -> None:
+        """A building whose own view needs the operator (a Catapult that must log in again) sets its
+        lead orc's hut on fire: `orders_alert()` → (id, title, context, options)."""
+        for b_spec in self.scroll.buildings:
+            if b_spec.demolished:
+                continue
+            view = self._custom_view(b_spec.id)
+            ask = getattr(view, "orders_alert", None)
+            wanted = ask() if callable(ask) else None
+            if not wanted:
+                continue
+            key, title, context, options = wanted
+            alert = Alert(id=f"view:{b_spec.id}:{key}", title=title, context=list(context), options=list(options),
+                          source="view", ref=b_spec.id)
+            if alert.id in self.dismissed:
+                continue
+            orc = self.roster.by_building(b_spec.id)
+            if orc is not None:
+                orc.status, orc.alert = "alert", alert
+            self.roster.alerts.append(alert)
+
     def _alert_who_map(self) -> dict[str, str]:
         who_map: dict[str, str] = {}
         for o in self.roster.orcs:
@@ -2442,12 +2549,19 @@ class OrkcraftApp(App[int]):
         elif alert.source == "warder":
             if key == "1":
                 self.dismissed.add(alert.id)      # acknowledged; the log keeps it
+        elif alert.source == "view":
+            view = self._custom_view(alert.ref)
+            answer = getattr(view, "answer_alert", None)
+            if callable(answer) and answer(key) == "dismiss":
+                self.dismissed.add(alert.id)
         self.refresh_roster()
 
     def action_awaiting_orders(self) -> None:
         if self.roster.alerts:
             who_map = self._alert_who_map()
             self.push_screen(AwaitingOrdersModal(self.roster.alerts, who_map))
+        elif burning := self._loot_burning():
+            self.desktop.focus_window(self.desktop.get_window(burning[0]))     # a cart waits for review
         else:
             self.notify("No units requiring orders", title="❓")
 
@@ -2539,6 +2653,23 @@ class OrkcraftApp(App[int]):
                     self.action_build_window(initial_prompt=prompt)
 
             self.push_screen(BuildFailed(result), on_failed_done)
+
+    # -- 🪙 / ⚖️ / 💎 a building's goal (docs/design/retros-and-goals.md §3) ---------------
+
+    def cycle_goal(self, building_id: str) -> str | None:
+        """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards."""
+        b = self.scroll.building(building_id)
+        if b is None:
+            return None
+        goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
+        b.goal = None if goal == "balance" else goal
+        self.desktop.save()
+        what = {"thrift": "the retros will make it cheaper", "balance": "cheaper where it is liked, better where it is not",
+                "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}[goal]
+        self.notify(f"{self._title_of(building_id)}: {what}",
+                    title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
+        self._console_refresh()
+        return goal
 
     # -- 👍 / 👎 on a building's steward -----------------------------------------------
 
@@ -2684,25 +2815,28 @@ class OrkcraftApp(App[int]):
     def optimize_now(self, interactive: bool = True) -> bool:
         """Today's hungriest building the operator is not happy with → the Council's proposal (in a
         thread). False when there is nothing to propose."""
-        cand = optimize.leader(self.repo_root)
+        goals = {b.id: b.aim for b in self.scroll.buildings if not b.demolished}
+        cand = optimize.leader(self.repo_root, None, *self._quota_reads(), goals=goals)
         if cand is None:
             if interactive:
-                self.notify("nothing to improve: today's top spender is liked, or nothing was spent",
-                            title="🔧 Self-improvement")
+                self.notify("nothing to improve: the heaviest buildings are liked, and no 💎 one is disliked or failing",
+                            title="🔧 Building retro")
             return False
         spec = self.custom_specs.get(cand.building)
         ps = optimize.parts(self.scroll, spec, cand.building, self.repo_root)
         if not ps:
             if interactive:
-                self.notify(f"{self._title_of(cand.building)} spends the most but has no prompt to shrink",
-                            title="🔧 Self-improvement")
+                self.notify(f"{self._title_of(cand.building)} is due, but has no model prompt to change",
+                            title="🔧 Building retro")
             return False
         cfg = (spec or {}).get("config") or {}
         mocks = workshop.load_blueprint(self.repo_root, cand.building).get("mocks") or []
         runtime = str(cfg.get("runtime") or "python")
         if interactive:
-            self.notify(f"the Council looks at {self._title_of(cand.building)} ({cand.tokens} tokens today)",
-                        title="🔧 Self-improvement")
+            aim = cand.goal if cand.goal == (goals.get(cand.building) or "balance") else \
+                f"{goals.get(cand.building)}→{cand.goal} (the limit is tight)"
+            self.notify(f"the Council looks at {self._title_of(cand.building)} · {aim} · {cand.reason}",
+                        title="🔧 Building retro")
 
         def _worker() -> None:
             result = optimize.propose(self.repo_root, cand, ps, OPTIMIZE_RUNNER or builders.claude_runner, runtime, mocks)
@@ -2720,8 +2854,8 @@ class OrkcraftApp(App[int]):
         optimize.save(self.repo_root, result.proposal)
         self._refresh_hall()
         if len(self.screen_stack) > 1:              # the operator is busy in a dialog: leave it waiting
-            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Self-improvement",
-                        title="🔧 Self-improvement")
+            self.notify(f"a proposal for {self._title_of(result.proposal.building)} waits — F10 → Building retro",
+                        title="🔧 Building retro")
             return
         self.show_proposal(result.proposal)
 
@@ -2793,7 +2927,7 @@ class OrkcraftApp(App[int]):
         self.notify(f"{self._title_of(bid)}: {p.action} applied — Z on it takes it back", title="🔧 Applied")
         return True
 
-    # -- 🗓 the weekly self-audit ------------------------------------------------------
+    # -- 🗓 the Town retro (the weekly self-audit) ------------------------------------------------------
 
     def _maybe_weekly(self, now: dt.datetime) -> None:
         if self.demo or self.gold_exhausted():
@@ -2818,7 +2952,7 @@ class OrkcraftApp(App[int]):
         snapshot, specs = copy.deepcopy(self.scroll), copy.deepcopy(self.custom_specs)
         rules = audit.run(self.repo_root, self.scroll, dict(self.custom_specs), self.snapshot.spent_usd,
                           self.scroll.budget.gold_session_limit_usd)
-        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Weekly self-audit")
+        self.notify(f"{model} looks over the camp — the report follows", title="🗓 Town retro")
 
         def _worker() -> None:
             result = weekly.run(self.repo_root, snapshot, specs, runner, model, rules)
@@ -2828,19 +2962,52 @@ class OrkcraftApp(App[int]):
 
     def _on_weekly(self, result: weekly.Result, interactive: bool) -> None:
         if result.report is None:
-            self.notify(result.error or "no report", title="🗓 Weekly self-audit failed", severity="warning")
+            self.notify(result.error or "no report", title="🗓 Town retro failed", severity="warning")
             return
         if len(self.screen_stack) > 1:
-            self.notify("the weekly report waits — F10 → Weekly self-audit", title="🗓 Weekly self-audit")
+            self.notify("the Town retro's report waits — F10 → Town retro", title="🗓 Town retro")
             return
         self.show_weekly(result.report)
 
     def show_weekly(self, report: weekly.Report) -> None:
+        """The Town retro: first the survey, when nothing was rated this week (realm/retro.py), then the report."""
         def done(picked: list[int] | None) -> None:
             if picked:
                 self.apply_weekly(report, picked)
 
-        self.push_screen(WeeklyReportModal(report), done)
+        def report_now(answers: list | None = None) -> None:
+            if answers:
+                self.rate_survey(answers)
+            self.push_screen(WeeklyReportModal(report), done)
+
+        if report.surveyed:
+            report_now()
+            return
+        report.surveyed = True
+        weekly.save(self.repo_root, report)
+        limits, subs = self._quota_reads()
+        samples = retro.pick(self.repo_root, self.scroll, pressure.measure(self.repo_root, limits, providers=subs)) \
+            if retro.needed(self.repo_root) else []
+        if not samples:
+            report_now()
+            return
+        self.push_screen(RetroSurveyModal(samples, {s.building: self._title_of(s.building) for s in samples}),
+                         report_now)
+
+    def rate_survey(self, answers: list[tuple[retro.Sample, str]]) -> None:
+        """The survey's 👍 / 👎, each on the very result it showed."""
+        good = bad = 0
+        for sample, kind in answers:
+            if kind == "good":
+                feedback.like(self.repo_root, sample.building, sample.as_output())
+                good += 1
+            elif kind in feedback.KINDS:
+                feedback.dislike(self.repo_root, self.scroll, sample.building, kind, "the Town retro's survey",
+                                 sample.as_output())
+                bad += 1
+        if good or bad:
+            self.notify(f"👍 {good} · 👎 {bad} — the retros will go by them", title="🗓 Town retro")
+            self._refresh_hall()
 
     def apply_weekly(self, report: weekly.Report, picked: list[int]) -> list[int]:
         """Each ticked item, checked again against the camp as it is now, applied as its own
@@ -2856,7 +3023,7 @@ class OrkcraftApp(App[int]):
                 continue
             bid = item.building
             ok = False
-            if item.change in ("shrink", "chain", "script"):
+            if item.change in optimize.ACTIONS:
                 p = optimize.Proposal(f"w{report.ts[:10]}-{item.n}", report.ts, bid, item.change,
                                       str(item.data.get("target")), item.before, item.after, item.why)
                 ok = self.apply_proposal(p, kind="weekly")
@@ -2895,7 +3062,7 @@ class OrkcraftApp(App[int]):
             if ok:
                 done.append(item.n)
                 touched.add(bid)
-                if item.change not in ("shrink", "chain", "script"):    # those are in the ledger already
+                if item.change not in optimize.ACTIONS:    # those are in the ledger already
                     where = weekly.new_spec(item)["id"] if item.change == "add_building" else bid
                     last = checkpoint.history(self.repo_root, where, 1)
                     evolution.record(self.repo_root, evolution.Change(
@@ -2911,7 +3078,7 @@ class OrkcraftApp(App[int]):
         weekly.save(self.repo_root, report)
         self._refresh_hall()
         msg = f"{len(done)} applied" + (f" · {len(failed)} not: " + " | ".join(failed[:3]) if failed else "")
-        self.notify(msg, title="🗓 Weekly self-audit", severity="warning" if failed else "information")
+        self.notify(msg, title="🗓 Town retro", severity="warning" if failed else "information")
         if restart and done and not self._hushed:
             self.push_screen(Confirm("🔄 Restart orkcraft now?", "the camp changed its buildings — a fresh start "
                                      "reloads everything (the Town Scroll is saved)"),
@@ -2924,11 +3091,11 @@ class OrkcraftApp(App[int]):
         self.exit(result="restart")
 
     def open_settings(self) -> None:
-        """F10 → ⚙: the self-improvement's models and schedules (`.orkcraft/council/settings.json`)."""
+        """F10 → ⚙: the retros' models and schedules (`.orkcraft/council/settings.json`)."""
         def done(values: dict | None) -> None:
             if values:
                 fastpath.save_settings(self.repo_root, values)
-                self.notify("saved", title="⚙ Self-improvement settings")
+                self.notify("saved", title="⚙ Retro settings")
 
         self.push_screen(SettingsModal(fastpath.settings(self.repo_root)), done)
 
@@ -3300,11 +3467,20 @@ class OrkcraftApp(App[int]):
     # -- Halt All ----------------------------------------------------------------------------
 
     def action_halt(self, source: str = "") -> None:
-        """Emergency freeze: interrupt every running agent session; the TUI stays open."""
+        """Emergency freeze: everything the camp runs stops — War Tent sessions, road agents, the
+        buildings' own work (orcs, reviews, the librarian, scripts, tests, browsers) and every model
+        call; queues wait. The TUI stays open."""
         halted = self.chat.interrupt_all()
+        killed = halt.halt_all()                        # every agent, script, test and browser process
         for worker in self.workers:
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
+        stopped = 0
+        for b_spec in self.scroll.buildings:          # what buildings run themselves: they stop and hold their queues
+            stop = getattr(self._custom_view(b_spec.id), "halt", None)
+            if callable(stop):
+                stopped += int(stop() or 0)
+        halted += max(killed, stopped)
         hud = self._hud
         hud.set_halt(f"HALTED — {halted} stopped")
         self.notify(f"🛑 Halt All: {halted} running session{'s' if halted != 1 else ''} interrupted",

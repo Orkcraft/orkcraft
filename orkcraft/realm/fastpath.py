@@ -17,7 +17,8 @@ five duties go to it in one call; its objections are opinions — the operator m
 A model that cannot be reached never blocks: the review falls back to the rules.
 
 Every review is appended to `.orkcraft/council/reviews.jsonl`; the settings live in
-`.orkcraft/council/settings.json` (`fast_llm`, `fast_model`, `weekly_model`, `weekly_at`).
+`.orkcraft/council/settings.json` (`fast_llm`, `fast_model`, `weekly_model`, `weekly_at`, `optimize_at`,
+and the Elders' `elders_per_night` / `elders_context`).
 """
 from __future__ import annotations
 
@@ -35,7 +36,8 @@ from orkcraft.realm import audit
 
 COUNCIL_DIR = Path(".orkcraft") / "council"
 SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "weekly_at": "weekly sun 05:00",
-            "optimize_at": "daily 06:20"}       # the local proposal (stage 8): in the operator's morning window
+            "optimize_at": "daily 06:20",       # the local proposal (stage 8): in the operator's morning window
+            "elders_per_night": 40, "elders_context": 14}    # the Elders (realm/elders.py): questions, screen lines
 SUBJECT_LIMIT = 6000
 
 # (id, icon, name, duty, the councillor's fixed prompt)
@@ -241,8 +243,10 @@ def _building_rules(spec: dict, repo_root: Path, existing: set[str]) -> list[Not
     # Chief
     if kind == "barracks" and int(cfg.get("max_orcs") or 1) > 3:
         notes.append(Note("chief", "warn", f"up to {cfg['max_orcs']} agents at once — each one spends"))
-    if kind == "mill" and sum(1 for s in cfg.get("steps") or [] if str(s).startswith(("agent", "model", "claude"))) > 1:
-        notes.append(Note("chief", "warn", "more than one model step on every cart"))
+    if kind == "mill" and isinstance(cfg.get("steps"), list):
+        from orkcraft.realm import mill
+        if mill.model_steps([str(s) for s in cfg["steps"]]) > 1:
+            notes.append(Note("chief", "warn", "more than one agent step on every cart"))
     # Artisan
     title = str(spec.get("title") or "")
     if len(title) > 32:
@@ -270,7 +274,7 @@ def _building_rules(spec: dict, repo_root: Path, existing: set[str]) -> list[Not
             notes += _scan_prompt(f"its {key.replace('_', ' ')}", cfg[key])
     # Peon
     if kind == "barracks" and cfg.get("worktrees") is False:
-        notes.append(Note("peon", "warn", "its orcs share one working tree and may overwrite each other"))
+        notes.append(Note("peon", "warn", "its orks share one working tree and may overwrite each other"))
     if kind == "forge" and not cfg.get("test_cmd") and not cfg.get("confirm"):
         notes.append(Note("peon", "warn", "merges without tests or a confirmation"))
     if _PERMISSION_SKIP.search(json.dumps(spec, ensure_ascii=False)):
@@ -304,7 +308,7 @@ def _agent_rules(data: dict, script: str) -> list[Note]:
             notes.append(Note("mason", "block", f"the script does not parse: line {e.lineno}: {e.msg}"))
     # Artisan
     if len(str(orc.get("name") or "")) > 24:
-        notes.append(Note("artisan", "warn", "the orc's name is long for the roster"))
+        notes.append(Note("artisan", "warn", "the ork's name is long for the roster"))
     if len(roads) > 3:
         notes.append(Note("artisan", "warn", f"{len(roads)} roads into one handler — hard to follow on the map"))
     notes += _scan_prompt("its orders", str(orc.get("orders") or ""))

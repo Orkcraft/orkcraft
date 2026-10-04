@@ -1,16 +1,25 @@
-"""🔧 Local optimisation: a proposal for today's hungriest building the operator
-is not happy with — never applied on its own (operator decision 2026-10-02).
+"""🔧 The Building retro (local optimisation): one proposal for one building, towards its goal —
+never applied on its own (operator decision 2026-10-02; goals: docs/design/retros-and-goals.md §3).
 
-    the leader   the building with the most tokens in today's ledger, if since its last change (its
-                 last checkpoint) it got no 👍, or today it got at least one 👎
+    the leader   in this order:
+                   💎 quality buildings the operator 👎-d this week
+                   🪙 / ⚖️ buildings by how much of the camp and of the limit they eat (realm/pressure.py:
+                   the share of the last 24 h, or the pressure on the binding quota when one is read),
+                   from MIN_SHARE of the camp up; 🪙 thrift when no 👍 since its last change (its last
+                   checkpoint), ⚖️ balance also when it got a 👎 today — a liked one passes the turn
+                   💎 quality buildings with a failed run this week, or never rated
+                 a tight camp (its forecast passes what is left of the limit) treats its three heaviest
+                 💎 buildings as ⚖️
     its parts    what calls a model there: agent handlers' orders, a Workshop's steward prompt (with
                  its script), a Barracks' standing orders
-    the Council  one model call: ONE change that spends fewer tokens and keeps what was liked —
+    the Council  one model call: ONE change, of those its goal allows (GOAL_ACTIONS) —
                    shrink   a shorter prompt for one part (at most 70 % of its length)
                    chain    an agent handler becomes chain ops (data, no model)
                    script   a Workshop's script handles every cart itself; its steward prompt goes
-    the check    shrink is shorter; a chain passes `orc_problems`; a script parses, passes the
-                 Council's rules and every mock cart of the blueprint in the sandbox
+                   enrich   a better prompt for one part: longer, at most twice as long (the ceiling)
+    the check    shrink is shorter; enrich is longer, within the ceiling; a chain passes
+                 `orc_problems`; a script parses, passes the Council's rules and every mock cart of
+                 the blueprint in the sandbox
 
 A proposal waits in `.orkcraft/optimize/proposals.jsonl` until the operator applies it (one click:
 the change, a checkpoint `auto-improve(<id>)`, and Z takes it back) or dismisses it.
@@ -23,15 +32,39 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import builders, feedback, metrics
+from orkcraft.realm import builders, feedback, metrics, pressure
 
 DIR = Path(".orkcraft") / "optimize"
 SHRINK = 0.7
-ACTIONS = ("shrink", "chain", "script")
+ENRICH = 2.0             # the ceiling of an enriched prompt, times the old one
+MIN_SHARE = 0.1          # of the camp's tokens in 24 h: below it a 🪙 / ⚖️ building is not worth a retro
+TIGHT_HEAVIEST = 3       # a tight camp treats this many of its heaviest 💎 buildings as ⚖️
+ACTIONS = ("shrink", "chain", "script", "enrich")
+GOAL_ACTIONS = {"thrift": ("shrink", "chain", "script"), "balance": ACTIONS, "quality": ("enrich", "shrink")}
+GOAL_TEXT = {
+    "thrift": "Its goal is 🪙 THRIFT: spend fewer tokens without losing what the operator liked.",
+    "balance": "Its goal is ⚖️ BALANCE: fix what the operator disliked without spending more, or spend fewer "
+               "tokens without losing what was liked.",
+    "quality": "Its goal is 💎 QUALITY: make its results better — spending more tokens is fine, up to twice "
+               "the prompt; a shrink only when it keeps every liked result.",
+}
+ACTION_TEXT = {
+    "shrink": '- "shrink": a shorter prompt for one part — same intent, at most 70% of its length',
+    "chain": """- "chain": only for an agent handler (orc:…) whose job needs no judgement — chain ops, a list of
+  {"op":"filter","field":f,"cmp":"eq|ne|in|contains|matches","value":v} {"op":"pick","fields":[..]}
+  {"op":"extract","field":f,"regex":r,"as":f2} {"op":"sort","by":f,"desc":bool} {"op":"limit","n":N}
+  {"op":"count","as":f} {"op":"group","by":f} {"op":"template","md":"text with {field}"} {"op":"join","sep":s}
+  over records with fields road, source, event, kind, value, title, id, path, text, type, status, outcome""",
+    "script": """- "script": only for the steward — a new python script (stdin: the cart as JSON; stdout: the result;
+  exit 0 done, 4 alert, never 3) that handles every cart itself, so the steward prompt can go""",
+    "enrich": """- "enrich": a better prompt for one part — the liked results as examples, what was disliked as what
+  to avoid, a clearer instruction; longer than now and at most twice as long""",
+}
 
 PROMPT = """You are the Council of orkcraft, a terminal harness where buildings pass events along roads to
-scripts, chains and agents. Optimise ONE building: today it spent the most tokens ({tokens} tokens, ${cost:.2f})
-and {reason}.
+scripts, chains and agents. Improve ONE building: in the last 24 h it spent {tokens} tokens (${cost:.2f}) —
+{use} — and {reason}.
+{goal}
 
 ITS MODEL-DRIVEN PARTS:
 {parts}
@@ -45,18 +78,11 @@ ITS RECENT RUNS (its logs):
 WHAT THE OPERATOR DISLIKED:
 {incidents}
 
-Pick ONE change that spends fewer tokens without losing what the operator liked:
-- "shrink": a shorter prompt for one part — same intent, at most 70% of its length
-- "chain": only for an agent handler (orc:…) whose job needs no judgement — chain ops, a list of
-  {{"op":"filter","field":f,"cmp":"eq|ne|in|contains|matches","value":v}} {{"op":"pick","fields":[..]}}
-  {{"op":"extract","field":f,"regex":r,"as":f2}} {{"op":"sort","by":f,"desc":bool}} {{"op":"limit","n":N}}
-  {{"op":"count","as":f}} {{"op":"group","by":f}} {{"op":"template","md":"text with {{field}}"}} {{"op":"join","sep":s}}
-  over records with fields road, source, event, kind, value, title, id, path, text, type, status, outcome
-- "script": only for the steward — a new python script (stdin: the cart as JSON; stdout: the result;
-  exit 0 done, 4 alert, never 3) that handles every cart itself, so the steward prompt can go
+Pick ONE change towards its goal:
+{actions}
 Answer with ONE JSON object and nothing else:
-{{"action": "shrink|chain|script", "target": "<part id>", "prompt": "<for shrink>", "chain": [..],
-  "script": "<for script>", "why": "<one sentence>", "saving": "<what it saves, roughly>"}}"""
+{{"action": "{names}", "target": "<part id>", "prompt": "<for shrink or enrich>", "chain": [..],
+  "script": "<for script>", "why": "<one sentence>", "saving": "<what it saves or improves, roughly>"}}"""
 
 
 @dataclass
@@ -65,13 +91,28 @@ class Candidate:
     tokens: int
     cost: float
     likes: int             # 👍 since its last change
-    dislikes: int          # 👎 today
+    dislikes: int          # 👎 today (💎: this week)
+    share: float = 0.0     # of the camp's tokens in 24 h
+    use: str = ""          # its share and pressure in words (pressure.describe)
+    goal: str = "balance"  # the goal the retro works towards now (a tight camp may lower 💎 to ⚖️)
+    failures: int = 0      # 💎: failed runs this week
+    rated: bool = True     # 💎: was it ever rated
 
     @property
     def reason(self) -> str:
+        if self.goal == "quality":
+            if self.dislikes:
+                return f"the operator disliked it {self.dislikes}× this week"
+            if self.failures:
+                return f"{self.failures} of its runs failed this week"
+            return "the operator never rated it — make sure its results are good"
         if self.dislikes:
             return f"the operator disliked it {self.dislikes}× today"
         return "the operator has not liked it since its last change"
+
+    @property
+    def actions(self) -> tuple[str, ...]:
+        return GOAL_ACTIONS.get(self.goal, ACTIONS)
 
 
 @dataclass
@@ -108,30 +149,68 @@ class Result:
 
 # -- the leader -------------------------------------------------------------------------------------
 
-def leader(repo_root: Path, now: dt.datetime | None = None) -> Candidate | None:
-    """Today's top token consumer, when the operator disliked it or never liked it; else None."""
+FAILED = ("error", "failed", "fail")
+
+
+def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, providers=None,
+           goals: dict[str, str] | None = None) -> Candidate | None:
+    """The building the Building retro looks at today, in the order of the module's doc; `goals`
+    maps a building to its goal (missing: balance). None when nobody is due."""
     now = now or dt.datetime.now()
-    since = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    spent: dict[str, list[float]] = {}
-    for row in metrics._read(repo_root / metrics.LEDGER, since):
-        s = spent.setdefault(str(row.get("building") or ""), [0, 0.0])
-        s[0] += int(row.get("tokens") or 0)
-        s[1] += float(row.get("cost") or 0.0)
-    spent.pop("", None)
-    if not spent:
-        return None
-    bid, (tokens, cost) = max(spent.items(), key=lambda kv: (kv[1][0], kv[1][1]))
-    if tokens <= 0:
-        return None
+    goals = goals or {}
+    camp = pressure.measure(repo_root, limits, now, providers)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
+    week = now - dt.timedelta(days=7)
+    rows = metrics._read(repo_root / metrics.LEDGER, week)
+    costs: dict[str, float] = {}
+    failures: dict[str, int] = {}
+    for row in rows:
+        bid = str(row.get("building") or "")
+        if row["_at"] > now - pressure.WINDOW:
+            costs[bid] = costs.get(bid, 0.0) + float(row.get("cost") or 0.0)
+        if row.get("outcome") in FAILED:
+            failures[bid] = failures.get(bid, 0) + 1
     from orkcraft.realm import checkpoint
-    mine = checkpoint.history(repo_root, bid, limit=1)
-    changed = mine[0].at[:19] if mine else ""
-    likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
-    dislikes = sum(1 for i in feedback.incidents(repo_root, 1000)
-                   if i.building == bid and i.ts >= since.isoformat(timespec="seconds"))
-    if likes and not dislikes:
-        return None
-    return Candidate(bid, int(tokens), round(cost, 4), likes, dislikes)
+    incidents = feedback.incidents(repo_root, 1000)
+    heavy = set(camp.heaviest(TIGHT_HEAVIEST)) if camp.tight else set()
+
+    def goal(bid: str) -> str:
+        g = goals.get(bid) or "balance"
+        return "balance" if g == "quality" and bid in heavy else g
+
+    def cand(bid: str, likes: int, dislikes: int, **extra) -> Candidate:
+        use = camp.use(bid)
+        return Candidate(bid, use.tokens, round(costs.get(bid, 0.0), 4), likes, dislikes, round(use.share, 4),
+                         pressure.describe(use, camp), goal(bid), **extra)
+
+    def disliked(bid: str, since: str) -> int:
+        return sum(1 for i in incidents if i.building == bid and i.ts >= since)
+
+    # 💎 the operator disliked it this week
+    gems = [b for b, g in goals.items() if g == "quality" and goal(b) == "quality"]
+    week_ts = week.isoformat(timespec="seconds")
+    hurt = sorted((b for b in gems if disliked(b, week_ts)), key=lambda b: disliked(b, week_ts), reverse=True)
+    if hurt:
+        return cand(hurt[0], 0, disliked(hurt[0], week_ts))
+    # 🪙 / ⚖️ by the share and pressure
+    for bid in sorted(camp.buildings, key=lambda b: (camp.buildings[b].weight, camp.buildings[b].tokens), reverse=True):
+        if goal(bid) == "quality":
+            continue
+        if camp.buildings[bid].share < MIN_SHARE:
+            break
+        mine = checkpoint.history(repo_root, bid, limit=1)
+        changed = mine[0].at[:19] if mine else ""
+        likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
+        dislikes = disliked(bid, today) if goal(bid) == "balance" else 0
+        if likes and not dislikes:
+            continue
+        return cand(bid, likes, dislikes)
+    # 💎 failing, or never rated
+    for bid in sorted(gems, key=lambda b: failures.get(b, 0), reverse=True):
+        never = not feedback.references(repo_root, bid, 1) and not any(i.building == bid for i in incidents)
+        if failures.get(bid) or never:
+            return cand(bid, 0, 0, failures=failures.get(bid, 0), rated=not never)
+    return None
 
 
 def run_logs(repo_root: Path, building: str, limit: int = 5) -> list[str]:
@@ -164,7 +243,10 @@ def parts(scroll, spec: dict | None, building: str, repo_root: Path | None = Non
             if orc.kind in ("agent", "hybrid") and orc.orders.strip():
                 out.append(Part(f"orc:{orc.id}", "agent", orc.orders))
     cfg = (spec or {}).get("config") or {}
-    if cfg.get("steward_prompt"):
+    from orkcraft.realm import catalog
+    kind = catalog.ALIASES.get(str((spec or {}).get("type") or ""), str((spec or {}).get("type") or ""))
+    other = kind in catalog.TYPES and kind not in ("workshop", "custom")   # a Clan Fire's steward_prompt is its
+    if cfg.get("steward_prompt") and not other:                            # brief, never a Workshop script
         from orkcraft.realm import workshop
         script = workshop.load_script(repo_root, building, str(cfg.get("runtime") or "python")) if repo_root else ""
         out.append(Part("steward", "steward", str(cfg["steward_prompt"]), script))
@@ -187,12 +269,12 @@ def _parts_text(ps: list[Part]) -> str:
 
 
 def check(data: dict, ps: list[Part], building: str, repo_root: Path, runtime: str = "python",
-          mocks: list[dict] | None = None) -> tuple[str, list[str]]:
-    """(the change as text, problems)."""
+          mocks: list[dict] | None = None, actions: tuple[str, ...] = ACTIONS) -> tuple[str, list[str]]:
+    """(the change as text, problems); `actions` are the ones the building's goal allows."""
     action, target = data.get("action"), str(data.get("target") or "")
     part = next((p for p in ps if p.id == target), None)
-    if action not in ACTIONS:
-        return "", [f"action: one of {', '.join(ACTIONS)}"]
+    if action not in actions:
+        return "", [f"action: one of {', '.join(actions)}"]
     if part is None:
         return "", [f"target: one of {', '.join(p.id for p in ps)}"]
     if action == "shrink":
@@ -201,6 +283,13 @@ def check(data: dict, ps: list[Part], building: str, repo_root: Path, runtime: s
             return "", ["prompt: the shorter prompt"]
         if len(new) > SHRINK * len(part.text):
             return "", [f"prompt: {len(new)} chars — at most {int(SHRINK * len(part.text))} (70 %)"]
+        return new, []
+    if action == "enrich":
+        new = str(data.get("prompt") or "").strip()
+        if len(new) <= len(part.text):
+            return "", ["prompt: an enriched prompt is longer than the one it replaces (else it is a shrink)"]
+        if len(new) > ENRICH * len(part.text):
+            return "", [f"prompt: {len(new)} chars — at most {int(ENRICH * len(part.text))} (twice as long)"]
         return new, []
     if action == "chain":
         if part.kind != "agent":
@@ -232,7 +321,9 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
     """One Council call (a second with its problems). Never raises."""
     refs = feedback.references(repo_root, cand.building, 3)
     incs = [i for i in feedback.incidents(repo_root, 20) if i.building == cand.building][:3]
-    base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, reason=cand.reason, parts=_parts_text(ps),
+    base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, use=cand.use or "the most of the camp",
+                         reason=cand.reason, goal=GOAL_TEXT.get(cand.goal, ""), parts=_parts_text(ps),
+                         actions="\n".join(ACTION_TEXT[a] for a in cand.actions), names="|".join(cand.actions),
                          runs="\n".join(run_logs(repo_root, cand.building)) or "- none kept",
                          references="\n".join(f"- {r.get('value', '')[:400]}" for r in refs) or "- none yet",
                          incidents="\n".join(f"- {i.kind}: {i.note or '(no note)'} · output: {i.output[:200]}"
@@ -251,7 +342,7 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
         if data is None:
             problems = ["answer with ONE JSON object"]
             continue
-        after, problems = check(data, ps, cand.building, repo_root, runtime, mocks)
+        after, problems = check(data, ps, cand.building, repo_root, runtime, mocks, cand.actions)
         if not problems:
             part = next(p for p in ps if p.id == data["target"])
             result.proposal = Proposal(uuid.uuid4().hex[:8], dt.datetime.now().isoformat(timespec="seconds"),

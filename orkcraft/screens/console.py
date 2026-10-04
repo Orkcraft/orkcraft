@@ -13,6 +13,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft import theme
+from orkcraft.scroll import GOAL_ICONS, GOAL_TITLES
 from orkcraft.realm import modes
 from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
 from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
@@ -40,13 +41,13 @@ STATUS_DISPLAY = {
 NEUTRAL_ACTIONS = [
     ("B", "[B] 🏗️ Build Window (Mason & Artisan)"),
     ("P", "[P] 📜 Window Presets Catalog"),
-    ("S", "[S] 🧌 Summon Orc / Warband"),
+    ("S", "[S] 🧌 Summon Ork / Warband"),
     ("T", "[T] 🌲 Toggle Terrain (Dim / Black)"),
     ("G", "[G] ⎇ Worktree of this Orkspace"),
 ]
 
 BUILDING_ACTIONS = [
-    ("R", "[R] ➕ Recruit Orc"),
+    ("R", "[R] ➕ Recruit Ork"),
     ("L", "[L] 📜 Building Chronicles"),
     ("Y", "[Y] 🛤 Listen to Another Window (Road)"),
     ("U", "[U] 🚧 Remove the Incoming Road"),
@@ -239,7 +240,7 @@ def building_runs(app, building_id: str, roster: Roster) -> Text:
     total = unit_info.Spend(free=True)
     for o in orcs:
         total = total.add(_spend_of(app, o))
-    parts = [total.text() if orcs else "🪙 nothing spent — no orcs"]
+    parts = [total.text() if orcs else "🪙 nothing spent — no orks"]
     repo = getattr(app, "repo_root", None)
     if repo is not None:                     # the steward's journal
         from orkcraft.realm import feedback
@@ -530,7 +531,7 @@ class ClanRoster(Vertical):
             b_id = focus_state.building_id or (orc.building if orc else "") or ""
             if orc is not None and orc.category != RESIDENT:
                 members = [o for o in roster.orcs if o.category == orc.category]
-                label = {WORKER: "⚔️ Warband", COUNCIL: "🏛️ Council", BUILDER: "🔨 Builders"}.get(orc.category, "Orcs")
+                label = {WORKER: "⚔️ Warband", COUNCIL: "🏛️ Council", BUILDER: "🔨 Builders"}.get(orc.category, "Orks")
             else:
                 members = roster.garrison(b_id)
                 b = self.app.building(b_id)
@@ -545,7 +546,7 @@ class ClanRoster(Vertical):
                 lst.add_option(Option(self._render_garrison_row(o, idx, getattr(self.app, "seen_alerts", set())),
                                       id=orc_key(o)))
             if not members:
-                lst.add_option(Option(Text("No orcs yet\nR recruits", style="dim"), disabled=True))
+                lst.add_option(Option(Text("No orks yet\nR recruits", style="dim"), disabled=True))
             keys = [orc_key(o) for o in members]
             if orc is not None and orc_key(orc) in keys:
                 lst.highlighted = keys.index(orc_key(orc))
@@ -658,7 +659,7 @@ class ClanRoster(Vertical):
 
 class UnitInfo(Vertical):
     """The Info panel: what the selected orc, building or road is, its models, its spend.
-    A building: its name with 👍 / 👎 / 🗑, why it is here, a quiet line of its runs (📜 history)
+    A building: its name with 👍 / 👎 / its goal (🪙 / ⚖️ / 💎, a click cycles it) / 🗑, why it is here, a quiet line of its runs (📜 history)
     and who it listens to (➕ adds a road)."""
 
     def compose(self) -> ComposeResult:
@@ -668,6 +669,7 @@ class UnitInfo(Vertical):
                 yield OfficeStatic("", id="ib-name", markup=False)
                 yield OfficeStatic(" 👍 ", id="ib-like", classes="ib-button")
                 yield OfficeStatic(" 👎 ", id="ib-dislike", classes="ib-button")
+                yield OfficeStatic(" ⚖️ ", id="ib-goal", classes="ib-button")
                 yield OfficeStatic(" 🗑 ", id="ib-demolish", classes="ib-button")
             yield OfficeStatic("", id="ib-about", markup=False)
             with Horizontal(id="ib-runs-row", classes="ib-row"):
@@ -715,7 +717,7 @@ class UnitInfo(Vertical):
                 self.query_one("#io-runs", Static).update(orc_runs(self.app, orc))
                 self.query_one("#io-dismiss").display = not orc.lead       # a steward stays
             else:
-                body.update(orc_info(self.app, orc) if orc else Text("This orc is gone.", style="dim"))
+                body.update(orc_info(self.app, orc) if orc else Text("This ork is gone.", style="dim"))
         elif focus_state.mode == "building":
             bid = focus_state.building_id or ""
             b = self.app.building(bid)
@@ -726,6 +728,9 @@ class UnitInfo(Vertical):
             self.building_id = bid
             building.display, body.display = True, False
             self.query_one("#ib-name", Static).update(Text(f"{b.icon} {b.title}", style="bold"))
+            spec = self.app.scroll.building(bid) if self.app.scroll is not None else None
+            aim = spec.aim if spec is not None else "balance"
+            self.query_one("#ib-goal", Static).update(f" {GOAL_ICONS[aim]} {GOAL_TITLES[aim]} ")
             self.query_one("#ib-about", Static).update(building_about(self.app, bid))
             self.query_one("#ib-runs", Static).update(building_runs(self.app, bid, roster))
             self.query_one("#ib-listens", Static).update(building_listens(self.app, bid))
@@ -760,6 +765,8 @@ class UnitInfo(Vertical):
             app.like_building(bid)
         elif wid == "ib-dislike":
             app.dislike_building(bid)
+        elif wid == "ib-goal":
+            app.cycle_goal(bid)
         elif wid in ("ib-demolish", "ib-history", "ib-listen"):
             app.action_command_card({"ib-demolish": "X", "ib-history": "L", "ib-listen": "Y"}[wid])
         else:

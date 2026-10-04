@@ -7,13 +7,15 @@ A rally point (`scroll.RallyPoint`) sends one kind of event from a source buildi
     on_stream            (not implemented yet — stage 7 ships the first two)
 
 Payloads cross one hop only: a target never forwards what it received, so a chain A → B → C
-is two separate pipes fired by their own sources. The scroll refuses loops anyway.
+is two separate pipes fired by their own sources. The scroll refuses loops anyway. What a cart
+went through before travels with it all the same: its `trail` (each building and orc that worked
+on it, with tokens and cost) and its `ref` (the thing being worked on, stable across hops).
 """
 from __future__ import annotations
 
 import datetime as dt
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 NODE, FILE, TEXT = "node", "file", "text"
@@ -65,12 +67,88 @@ MODE_LABELS = {ON_SELECTION: "selection", ON_TASK: "task completed", ON_STREAM: 
 
 
 @dataclass(frozen=True)
+class Hop:
+    """One building's work on a cart: who, what it spent, where (a worktree), how it ended."""
+    building: str
+    orc: str = ""
+    kind: str = ""                # agent | chain | script | hybrid | task
+    tokens: int | None = None
+    cost: float | None = None
+    worktree: str = ""
+    branch: str = ""
+    outcome: str = ""
+    at: str = ""
+
+    def as_dict(self) -> dict:
+        return {k: v for k, v in self.__dict__.items() if v not in (None, "")}
+
+
+@dataclass(frozen=True)
 class Payload:
     kind: str            # node | file | text
     value: str           # node id, repo-relative path, or markdown text
     source: str          # source building id
     mode: str
     title: str = ""
+    trail: tuple[Hop, ...] = field(default=(), compare=False)
+    ref: str = ""        # the thing worked on, stable across hops and rework rounds
+
+
+def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,
+        worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None) -> Hop:
+    return Hop(building, orc, kind, int(tokens) if tokens is not None else None,
+               float(cost) if cost is not None else None, worktree, branch, outcome,
+               (now or dt.datetime.now()).isoformat(timespec="seconds"))
+
+
+def merge_trails(*trails: tuple[Hop, ...]) -> tuple[Hop, ...]:
+    """Several carts' trails as one (a handler ran on a batch): every hop once, in order of time."""
+    seen, out = set(), []
+    for t in trails:
+        for h in t:
+            if h not in seen:
+                seen.add(h)
+                out.append(h)
+    return tuple(sorted(out, key=lambda h: h.at))
+
+
+def with_hop(payload: Payload, h: Hop) -> Payload:
+    return replace(payload, trail=payload.trail + (h,))
+
+
+def trail_totals(trail: tuple[Hop, ...]) -> tuple[int | None, float | None]:
+    """(tokens, cost) of the whole chain; None when no hop said."""
+    toks = [h.tokens for h in trail if h.tokens is not None]
+    costs = [h.cost for h in trail if h.cost is not None]
+    return (sum(toks) if toks else None), (round(sum(costs), 4) if costs else None)
+
+
+def _tok(n: int) -> str:
+    return f"{n / 1000:.0f}k" if n >= 10_000 else f"{n / 1000:.1f}k" if n >= 1000 else str(n)
+
+
+def spent(tokens: int | None, cost: float | None) -> str:
+    return " ".join(x for x in ((f"{_tok(tokens)} tok" if tokens is not None else ""),
+                                (f"${cost:.2f}" if cost is not None else "")) if x)
+
+
+def trail_line(trail: tuple[Hop, ...], names: dict[str, str] | None = None) -> str:
+    """`Barracks 12k tok $0.08 → Council 40k tok $0.31 = 52k tok $0.39`."""
+    if not trail:
+        return ""
+    names = names or {}
+    parts = [" ".join(x for x in (names.get(h.building, h.building), spent(h.tokens, h.cost)) if x) for h in trail]
+    total = spent(*trail_totals(trail))
+    return " → ".join(parts) + (f" = {total}" if total and len(trail) > 1 else "")
+
+
+def trail_of(records: list[dict]) -> tuple[Hop, ...]:
+    """The hops a stored trail (`Hop.as_dict` rows) names; unknown keys and bad rows are skipped."""
+    out = []
+    for r in records or ():
+        if isinstance(r, dict) and r.get("building"):
+            out.append(Hop(**{k: r[k] for k in Hop.__dataclass_fields__ if k in r}))
+    return tuple(out)
 
 
 def selection_kind(building_id: str) -> str | None:

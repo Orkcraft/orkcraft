@@ -18,6 +18,8 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from orkcraft.realm import halt
+
 GIT_TIMEOUT_S = 60
 TEST_TIMEOUT_S = 900
 
@@ -61,13 +63,15 @@ def run_tests(repo: Path, branch: str, cmd: str, timeout_s: int = TEST_TIMEOUT_S
         wt = Path(tmp) / "wt"
         _git(repo, "worktree", "add", "--detach", str(wt), branch, check=True)
         try:
-            out = subprocess.run(argv, cwd=wt, capture_output=True, text=True, timeout=timeout_s)
+            out = halt.run(argv, cwd=wt, timeout=timeout_s)
             tail = "\n".join((out.stdout + out.stderr).strip().splitlines()[-25:])
             return out.returncode == 0, tail
         except subprocess.TimeoutExpired:
             return False, f"no result within {timeout_s} s"
         except FileNotFoundError:
             return False, f"{argv[0]} not found"
+        except halt.Halted:
+            return False, "stopped by Halt All"
         finally:
             _git(repo, "worktree", "remove", "--force", str(wt))
 

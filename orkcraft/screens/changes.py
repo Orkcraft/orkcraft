@@ -62,7 +62,7 @@ class ChangesModal(ModalScreen[str | None]):
     def compose(self) -> ComposeResult:
         with Vertical():
             n = len(self.changes)
-            yield Label(f"🧾 What the orcs changed by themselves ({n})" if n else "🧾 The orcs changed nothing",
+            yield Label(f"🧾 What the orks changed by themselves ({n})" if n else "🧾 The orks changed nothing",
                         classes="build-title")
             lst = OptionList(id="ch-list")
             for c in self.changes:

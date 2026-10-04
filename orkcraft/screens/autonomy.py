@@ -1,7 +1,9 @@
 """🏛 How much the orcs do on their own: a slider of four stops and the guide for the agents' settings.
 
-    AutonomyStep(level, tools, standalone=False)   onboarding step 2, and F10 → 🏛 Orc autonomy
+    AutonomyStep(level, tools, standalone=False)   F10 → 🏛 Ork autonomy
         dismisses {"autonomy": n}, "back", "skip" or None
+    AutonomyStep(level, tools, look=machine)       onboarding's camp rules: the look and the quiet
+        hours below the slider; dismisses {"autonomy", "mode", "quiet"}
 
 The stops are autonomy.LEVELS. At 0 nothing is judged; from 1 the Elders leave advice in quiet hours;
 from 2 the guide shows what to paste into Claude Code's settings and how to start agy (the snippet
@@ -17,9 +19,9 @@ from textual.containers import Horizontal, Vertical
 from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Button, Label, Static
+from textual.widgets import Button, Checkbox, Label, RadioButton, Static
 
-from orkcraft import autonomy
+from orkcraft import autonomy, schedule, settings
 from orkcraft.screens.build_flow import MODAL_CSS
 
 TRACK = 60                         # cells between the first and the last stop
@@ -113,22 +115,35 @@ class AutonomyStep(ModalScreen[dict | str | None]):
     AutonomyStep .au-copy { width: 3; height: 1; margin: 0 1 0 0; }
     AutonomyStep .au-copy:hover { background: $boost; }
     AutonomyStep .au-gap { width: 4; height: 1; margin: 0 1 0 0; }
+    AutonomyStep .au-section { text-style: bold; margin-top: 1; }
+    AutonomyStep #au-modes { height: auto; margin-top: 0; }
+    AutonomyStep #au-modes RadioButton { width: auto; height: 1; border: none; padding: 0; margin-right: 3;
+                                         background: transparent; }
+    AutonomyStep #au-modes RadioButton:focus { text-style: bold; border: none; }
+    AutonomyStep #au-quiet { height: 1; border: none; padding: 0; background: transparent; margin-top: 1; }
     AutonomyStep .ob-buttons { height: auto; margin-top: 1; align-horizontal: right; }
     AutonomyStep .ob-buttons Button { margin-left: 1; }
     """
 
+    MODE_HINTS = {"camp": "buildings wear their ASCII", "shift": "office in office hours, the camp after",
+                  "office": "just frames — nothing to explain over a shoulder"}
+
     def __init__(self, level: int = autonomy.DEFAULT_LEVEL, tools: tuple[str, ...] = ("claude", "agy"),
-                 standalone: bool = False, step: str = "step 2 of 4") -> None:
+                 standalone: bool = False, step: str = "", look: settings.MachineSettings | None = None) -> None:
         super().__init__()
         self.level = level
         self.tools = tools
         self.standalone = standalone
         self.step = step
+        self.look = look                  # the camp rules of onboarding: the look and the hours too
+        self.mode = look.mode if look is not None else settings.DEFAULT_MODE
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🏛 Orc autonomy — how much they do on their own" if self.standalone
-                        else f"🧭 How much should your orcs do on their own?  ·  {self.step}", classes="build-title")
+            title = ("🏛 Ork autonomy — how much they do on their own" if self.standalone
+                     else "🧭 Camp rules — how free the orks are, how the town looks" if self.look is not None
+                     else "🧭 How much should your orks do on their own?")
+            yield Label(f"{title}  ·  {self.step}" if self.step else title, classes="build-title")
             with Horizontal(id="au-row"):
                 yield AutonomySlider(self.level, id="au-slider")
             yield Static("", id="au-level")
@@ -144,8 +159,16 @@ class AutonomyStep(ModalScreen[dict | str | None]):
                         yield CopyIcon("au-copy-agy")
                         yield Static("", id="au-agy-gap", classes="au-gap")
                         yield Static("", id="au-agy", classes="au-line", markup=False)
-            yield Static("←/→ or a click moves the slider · 📋 or c / g copies · you can change it at any time: F10.",
-                         classes="build-hint")
+            if self.look is not None:
+                yield Label("The look", classes="au-section")
+                with Horizontal(id="au-modes"):
+                    for mode in settings.MODES:
+                        yield RadioButton(settings.MODE_TITLES[mode], value=self.mode == mode, id=f"au-mode-{mode}")
+                yield Static("", id="au-mode-hint", classes="build-hint")
+                yield Checkbox(f"🌙 Quiet hours {schedule.DEFAULT_QUIET.label()} — no fires, only ❓",
+                               value=self.look.quiet is not None, id="au-quiet")
+            yield Static("←/→ or a click moves the slider · 📋 or c / g copies · you can change it at any time: F10"
+                         + (" (the hours: 🕰 Your day)." if self.look is not None else "."), classes="build-hint")
             with Horizontal(classes="ob-buttons"):
                 if self.standalone:
                     yield Button("Cancel", id="au-cancel")
@@ -157,7 +180,32 @@ class AutonomyStep(ModalScreen[dict | str | None]):
 
     def on_mount(self) -> None:
         self.show()
+        if self.look is not None:
+            self.pick(self.mode)
         self.query_one(AutonomySlider).focus()
+
+    def pick(self, mode: str) -> None:
+        self.mode = mode
+        for b in self.query("#au-modes RadioButton").results(RadioButton):
+            on_ = b.id == f"au-mode-{mode}"
+            if b.value != on_:
+                with b.prevent(RadioButton.Changed):
+                    b.value = on_
+        self.query_one("#au-mode-hint", Static).update(self.MODE_HINTS.get(mode, ""))
+
+    @on(RadioButton.Changed)
+    def _mode(self, event: RadioButton.Changed) -> None:
+        event.stop()
+        mode = (event.radio_button.id or "").removeprefix("au-mode-")
+        if mode in settings.MODES:
+            self.pick(mode if event.value else self.mode)          # a second click keeps it on
+
+    def result(self) -> dict:
+        out: dict = {"autonomy": self.level}
+        if self.look is not None:
+            out["mode"] = self.mode
+            out["quiet"] = schedule.DEFAULT_QUIET if self.query_one("#au-quiet", Checkbox).value else None
+        return out
 
     def show(self) -> None:
         lvl = autonomy.LEVELS[self.level]
@@ -211,7 +259,7 @@ class AutonomyStep(ModalScreen[dict | str | None]):
         event.stop()
         bid = event.button.id
         if bid in ("au-next", "au-save"):
-            self.dismiss({"autonomy": self.level})
+            self.dismiss(self.result())
         elif bid == "au-skip":
             self.dismiss("skip")
         elif bid == "au-back":

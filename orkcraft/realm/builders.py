@@ -20,7 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import huts, masonry
+from orkcraft.realm import halt, huts, masonry
+from orkcraft.sources import telemetry
 from orkcraft.sources.sessions import claude_bin
 
 MAX_ATTEMPTS = 3
@@ -41,7 +42,7 @@ OPERATOR REQUEST:
 {feedback}
 Answer with ONE JSON object and nothing else:
 {{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, max 40 chars>", "icon": "<one emoji>",
-  "summary": "<one sentence>", "orc": {{"name": "<a fitting orc name>", "role": "<what it watches>"}},
+  "summary": "<one sentence>", "orc": {{"name": "<a fitting ork name>", "role": "<what it watches>"}},
   "data": [{{"name": "<snake_case>", "source": "<a catalog source>", "params": {{...catalog params only...}}}}]}}
 Use 1-6 data entries. Paths are relative to the repository root; never absolute, never outside it."""
 
@@ -110,25 +111,29 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
     with tempfile.TemporaryDirectory(prefix="orkcraft-mason-") as empty:
         env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
         try:
-            proc = subprocess.run(
+            proc = halt.run(                            # 🛑 Halt All stops it (Halted)
                 [claude_bin(), "-p", prompt, "--output-format", "json", *(["--model", model] if model else [])],
-                cwd=empty, env=env, capture_output=True, text=True, timeout=CALL_TIMEOUT_S,
+                cwd=empty, env=env, timeout=CALL_TIMEOUT_S,
             )
         except FileNotFoundError as e:
             raise RuntimeError(f"Claude Code CLI not found ({claude_bin()}) — install it or set ORKCRAFT_CLAUDE_BIN") from e
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"no answer within {CALL_TIMEOUT_S} s") from e
+        except halt.Halted as e:
+            raise halt.Stopped() from e
     if proc.returncode != 0:
         raise RuntimeError(f"claude exited with {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:300]}")
     out = proc.stdout.strip()
+    text, cost = out, None
     try:
         envelope = json.loads(out)
     except ValueError:
-        return out, None
+        envelope = None
     if isinstance(envelope, dict) and isinstance(envelope.get("result"), str):
-        cost = envelope.get("total_cost_usd")
-        return envelope["result"], float(cost) if isinstance(cost, (int, float)) else None
-    return out, None
+        raw = envelope.get("total_cost_usd")
+        text, cost = envelope["result"], float(raw) if isinstance(raw, (int, float)) else None
+    telemetry.charge(cost, f"claude -p {model or 'default'}")     # no transcript of this run: 🪙 here
+    return text, cost
 
 
 def _feedback(attempts: list[Attempt]) -> str:
@@ -193,7 +198,7 @@ BUILDING TYPES (choose only from these; every event, quick action and config key
 {catalog}
 
 Prefill it so the operator only has to confirm: a plain functional title (no fantasy), one emoji icon,
-a resident orc (a fitting orc name and what it watches), the size (XS S M L — the type's default unless
+a resident ork (a fitting ork name and what it watches), the size (XS S M L — the type's default unless
 the request says otherwise), the events this building should send (the ones the request needs; all when
 unsure), up to two quick actions that matter most on the map, and the type's config filled from the
 request (leave out what you cannot know; never invent passwords or tokens — config only names the

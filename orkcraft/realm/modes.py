@@ -142,7 +142,7 @@ def coin_glyph(mode: str | None = None) -> str:
 
 
 # The footer's words in the hidden mode (the rest only lose their emoji).
-FOOTER_WORDS = {"📯 War Horn": "Stop all", "🔥 Orders": "Answers", "Spawn Orc": "Add agent"}
+FOOTER_WORDS = {"📯 War Horn": "Stop all", "🔥 Orders": "Answers", "Spawn Ork": "Add agent"}
 
 
 def footer(description: str, mode: str | None = None) -> str:

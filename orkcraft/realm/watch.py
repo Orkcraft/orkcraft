@@ -2,9 +2,11 @@
 
     github   `gh api repos/<owner/repo>/events` — events newer than the last one seen
     cron     a schedule: `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00`, a 5-field cron
+    feeds    Slack, Jira, Confluence, Figma: comments and mentions (realm/feeds.py)
     webhook  an HTTP server on 127.0.0.1:<port> (never another interface); a POST is a signal.
              With `webhook_secret_env` set, a request must carry the secret: `X-Orkcraft-Token`,
-             or GitHub's `X-Hub-Signature-256` HMAC of the body.
+             or GitHub's `X-Hub-Signature-256` HMAC of the body. /slack, /jira, /confluence and
+             /figma are checked and answered the way those services sign (realm/inbound.py).
 """
 from __future__ import annotations
 
@@ -20,29 +22,49 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable
 
-from orkcraft.realm import steward
+from orkcraft.realm import inbound, steward
 
 GH_TIMEOUT_S = 15
 MAX_BODY = 1024 * 1024
+FEEDS = ("slack", "jira", "confluence", "figma")      # realm/feeds.py
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 @dataclass
 class Signal:
     at: str
-    source: str            # mail | github | cron | webhook
+    source: str            # mail | github | cron | webhook | slack | jira | confluence | figma
     title: str
     body: str = ""
-    ref: str = ""          # mail uid, GitHub event id, webhook path
+    ref: str = ""          # mail uid, GitHub event id, webhook path, a feed item's link
+    mention: bool = False  # a feed item about you
+    read: bool = False     # opened (Enter), or let through without a look (the first one, a miss)
+    kept: bool | None = None   # the Lookout's verdict on the intent; None: no intent asked
+    why: str = ""          # … and its reason
+
+    @property
+    def key(self) -> str:
+        return f"{self.source}|{self.ref or self.title[:60]}|{self.at}"
 
     @property
     def event(self) -> str:
+        if self.source in FEEDS:
+            return "watch.mention" if self.mention else "watch.comment"
         return {"mail": "mail.received", "github": "watch.github", "cron": "watch.cron"}.get(self.source,
                                                                                               "watch.webhook")
 
 
 def now_iso() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
+
+
+def local_iso(at: str) -> str:
+    """Slack's, Jira's and Figma's UTC times as the local ones the rest of the list shows."""
+    try:
+        when = dt.datetime.fromisoformat(at)
+    except (TypeError, ValueError):
+        return now_iso()
+    return (when.astimezone().replace(tzinfo=None) if when.tzinfo else when).isoformat(timespec="seconds")
 
 
 # -- GitHub -------------------------------------------------------------------------------------------------
@@ -133,10 +155,13 @@ def signed(secret: str, body: bytes, headers) -> bool:
 
 
 class Webhook:
-    """An HTTP listener on 127.0.0.1 only; every accepted POST calls `on_signal`."""
+    """An HTTP listener on 127.0.0.1 only; every accepted POST calls `on_signal` (the whole body:
+    the receiver parses a service's delivery, or cuts a raw one)."""
 
-    def __init__(self, port: int, secret: str, on_signal: Callable[[Signal], None]) -> None:
+    def __init__(self, port: int, secret: str, on_signal: Callable[[Signal], None],
+                 secrets: dict[str, str] | None = None) -> None:
         self.port, self.secret, self.on_signal = port, secret, on_signal
+        self.secrets = dict(secrets or {})          # a service's own secret: Slack's signing secret, …
         self.server: ThreadingHTTPServer | None = None
 
     def start(self) -> None:
@@ -150,14 +175,24 @@ class Webhook:
                     self.end_headers()
                     return
                 body = self.rfile.read(size)
-                if not signed(hook.secret, body, self.headers):
+                service = inbound.service_of(self.path)
+                ok = inbound.verify(service, hook.secrets.get(service) or hook.secret, body, self.headers) \
+                    if service else signed(hook.secret, body, self.headers)
+                if not ok:
                     self.send_response(401)
                     self.end_headers()
+                    return
+                reply = inbound.answer(service, body)
+                if reply is not None:                 # Slack checks the URL: its challenge back, no signal
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain")
+                    self.end_headers()
+                    self.wfile.write(reply)
                     return
                 text = body.decode("utf-8", errors="replace")
                 event = self.headers.get("X-GitHub-Event", "")
                 title = f"{self.path} {event}".strip() if event else f"POST {self.path}"
-                hook.on_signal(Signal(now_iso(), "webhook", title, text[:20000], self.path))
+                hook.on_signal(Signal(now_iso(), "webhook", title, text, self.path))
                 self.send_response(202)
                 self.end_headers()
                 self.wfile.write(b"accepted\n")
