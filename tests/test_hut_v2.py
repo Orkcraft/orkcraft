@@ -58,7 +58,7 @@ def test_slots_headings_live_lines_and_fallbacks():
     assert barracks.texts(["active: 1/3", "idle: 2"])[:3] == ["WORKER POOL", "active: 1/3", "idle: 2"]
     assert len(barracks.texts([])) == 7 and len(barracks.live_widths) == 6
     mill = sil.SILHOUETTES["mill"]
-    assert mill.texts([]) == ["WORKTREE"] and mill.texts(["✓ 05:01"]) == ["✓ 05:01"]
+    assert mill.texts([]) == ["MAP"] and mill.texts(["✓ 05:01"]) == ["✓ 05:01"]
     pit = sil.SILHOUETTES["pit"]
     assert pit.texts(["📄 a.txt"]) == ["█"] and pit.caption_text(["📄 a.txt", "3 in the pit"]) == "📄 a.txt"
     row = "".join(t for t, _ in barracks.draw(["a very long live line that cannot fit"])[3])

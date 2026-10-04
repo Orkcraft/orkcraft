@@ -1,14 +1,16 @@
-"""⚙️ The Mill: deterministic steps over what arrives — no model.
+"""⚙️ The Mill: changes what arrives, step by step — a map, or a flat map when the result is records.
 
 A cart's value (a file's content for a file) goes through the steps (realm/mill.py) off the UI
-thread; the result goes out as `mill.done`, a failing step as `mill.failed`. ▶ runs the steps
-again on the last input; `e` in the open building edits the steps, one per line. Every run is
-kept in `.orkcraft/mill/<id>/runs.jsonl`.
+thread, one cart at a time: what arrives while it mills waits in a queue (no limit, nothing is
+dropped). The result goes out as `mill.done`, each of its records as `mill.item`, a failing step as
+`mill.failed`. ▶ runs the steps again on the last input; `e` in the open building edits the steps,
+one per line. The newest runs are kept in `.orkcraft/mill/<id>/runs.jsonl`.
 """
 from __future__ import annotations
 
 import threading
 import uuid
+from collections import deque
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -17,14 +19,22 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
+from orkcraft import scroll as ts
 from orkcraft.realm import jobs, mill, pipes, roads
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.base import TypedView
 
 INPUT_LIMIT = 256 * 1024
+KEEP_RUNS = 200
 HELP = ("lines · grep: rx · drop: rx · replace: rx => with · trim · lower · dedupe · csv · json · "
-        "extract: field = rx · pick: a, b · sort: field [desc] · limit: n · filter: field eq|ne|contains|matches value · "
-        "count · to_json · template: {field} · join[: sep] · script: command")
+        "extract: field = rx · pick: a, b · sort: field [desc] [num|text] · limit: n · "
+        "filter: field eq|ne|contains|matches|gt|ge|lt|le value · count · to_json · template: {field} · "
+        "join[: sep] · script: command [|| agent: ask] · agent: ask")
+
+
+def _simulated_agent(ask: str, text: str) -> str:
+    """The showcase sandbox: agents never run there."""
+    return f"_(demo — simulated)_ an agent would have done: {ask}"
 
 
 class MillView(TypedView):
@@ -36,6 +46,8 @@ class MillView(TypedView):
         self.runs: list[jobs.Job] = []
         self.running = False
         self.last_input = ""
+        self.queue: deque[tuple[str, str, str, bool]] = deque()     # (text, trigger, title, cut) — no limit
+        self.cancel = threading.Event()
 
     @property
     def steps(self) -> list[str]:
@@ -64,7 +76,8 @@ class MillView(TypedView):
         except Exception:
             return
         steps = " → ".join(self.steps) or "no steps yet — e edits them"
-        head.update(Text.assemble(("⚙ " + steps, "dim"), (" · milling…" if self.running else "", "yellow")))
+        busy = (" · milling…" + (f" +{len(self.queue)} waiting" if self.queue else "")) if self.running else ""
+        head.update(Text.assemble(("⚙ " + steps, "dim"), (busy, "yellow")))
         lst.clear_options()
         for j in self.runs:
             row = Text(no_wrap=True, overflow="ellipsis")
@@ -80,8 +93,14 @@ class MillView(TypedView):
         t = Text()
         t.append("in  ", style="bold cyan")
         t.append(job.input[:2000] + ("…" if len(job.input) > 2000 else "") + "\n\n")
+        if job.meta.get("cut"):
+            t.append(f"(cut to {INPUT_LIMIT // 1024} KB)\n\n", style="yellow")
         t.append("out ", style="bold green" if job.ok else "bold red")
         t.append(job.result if job.ok else job.error)
+        if job.meta.get("items"):
+            t.append(f"\n\n→ {job.meta['items']} records went out one by one", style="dim")
+        if job.meta.get("agent"):
+            t.append(f"\n🤖 an agent did {job.meta['agent']} step(s)", style="dim")
         try:
             self.query_one("#mill-out", Static).update(t)
         except Exception:
@@ -96,50 +115,90 @@ class MillView(TypedView):
 
     # -- milling ------------------------------------------------------------------------------------
 
+    def _read_file(self, rel: str, fallback: str) -> str:
+        """A file cart: its content — only a file inside the repository."""
+        root = self._get_repo_root().resolve()
+        path = (root / rel).resolve()
+        if not path.is_relative_to(root):
+            return fallback
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return fallback
+
     def receive(self, payload, title: str, markdown: str) -> None:
         text = payload.value
         if payload.kind == pipes.FILE:
-            try:
-                text = (self._get_repo_root() / payload.value).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                text = markdown or payload.value
-        self.run_steps(text[:INPUT_LIMIT], "road")
+            text = self._read_file(payload.value, markdown or payload.value)
+        self.run_steps(text, "road", title)
 
-    def run_steps(self, text: str, trigger: str = "manual") -> bool:
-        if self.running:
-            return False
+    def run_steps(self, text: str, trigger: str = "manual", title: str = "") -> bool:
+        """Mill `text` now, or after what is already waiting. True: it is milling or queued."""
+        self.queue.append((text[:INPUT_LIMIT], trigger, title, len(text) > INPUT_LIMIT))
+        if not self.running:
+            self._next()
+        else:
+            self._render_list()
+        return True
+
+    def _agent(self) -> mill.Agent:
+        if self.simulated:
+            return _simulated_agent
+        return mill.default_agent(self._get_repo_root(), self.cancel, str(self.config.get("model") or ""))
+
+    def _next(self) -> None:
+        if not self.queue:
+            return
+        text, trigger, title, cut = self.queue.popleft()
         self.running, self.last_input = True, text
-        job = jobs.Job(uuid.uuid4().hex[:8], self.spec.get("title", self.building_id), "mill", text,
-                       started=jobs.now_iso(), outcome="running", trigger=trigger)
-        steps, repo, app = self.steps, self._get_repo_root(), self.app
+        job = jobs.Job(uuid.uuid4().hex[:8], title or self.spec.get("title", self.building_id), "mill", text,
+                       started=jobs.now_iso(), outcome="running", trigger=trigger, meta={"cut": True} if cut else {})
+        steps, repo, app, agent = self.steps, self._get_repo_root(), self.app, self._agent()
+        env, cancel = [str(n) for n in self.config.get("env") or []], self.cancel
         self._render_list()
 
         def work() -> None:
-            out, err = mill.run(steps, text, repo)
-            job.result, job.error, job.outcome, job.ended = out, err, "error" if err else "done", jobs.now_iso()
+            r = mill.run_full(steps, text, repo, cancel, agent, env)
+            job.result, job.error, job.ended = r.text, r.error, jobs.now_iso()
+            job.outcome = "error" if r.error else "done"
+            if r.agent_steps:
+                job.meta["agent"] = r.agent_steps
             try:
-                app.call_from_thread(self.finish, job)
+                app.call_from_thread(self.finish, job, r.records)
             except Exception:
                 self.running = False
 
         threading.Thread(target=work, daemon=True, name=f"mill-{self.building_id}").start()
-        return True
 
-    def finish(self, job: jobs.Job) -> None:
+    def _flat_map(self, records: list | None, title: str) -> int:
+        """Each record as its own cart — only when a road takes them (each cart is recorded)."""
+        scroll = getattr(self.app, "scroll", None)
+        values = mill.items(records)
+        if not values or scroll is None or not ts.has_outgoing(scroll, self.building_id, "mill.item"):
+            return 0
+        return sum(self.emit("mill.item", v, title) for v in values)
+
+    def finish(self, job: jobs.Job, records: list | None = None) -> None:
         self.running = False
-        try:
-            self.log.append(job)
-        except OSError:
-            pass
         if job.ok:
+            if records:
+                job.meta["items"] = len(mill.items(records))
             self.emit("mill.done", job.result, job.title)
+            self._flat_map(records, job.title)
         else:
             self.emit("mill.failed", job.error, job.title)
             on_run = getattr(self.app, "on_handler_run", None)
             if on_run is not None:
-                on_run(roads.HandlerRun(self.building_id, "miller", "script", job.id, 0.0, 0.0, outcome="error",
+                kind = "agent" if job.meta.get("agent") else "script"
+                on_run(roads.HandlerRun(self.building_id, "miller", kind, job.id, 0.0, 0.0, outcome="error",
                                         error=job.error))
+        try:
+            self.log.append(job)
+            self.log.trim(KEEP_RUNS)
+        except OSError:
+            pass
         self.refresh_data()
+        self._next()
 
     def action_edit_steps(self) -> None:
         def done(text: str | None) -> None:
@@ -157,7 +216,7 @@ class MillView(TypedView):
         lines = [f"{len(self.steps)} step{'s' if len(self.steps) != 1 else ''}"
                  + (f": {self.steps[0].split(':')[0]}…" if self.steps else "")]
         if self.running:
-            lines.append("⚙ milling…")
+            lines.append("⚙ milling…" + (f" +{len(self.queue)}" if self.queue else ""))
         elif self.runs:
             j = self.runs[0]
             lines.append(("✓ " if j.ok else "✗ ") + j.started[11:16])
@@ -166,7 +225,7 @@ class MillView(TypedView):
     def hut_lines(self, widths: list[int]) -> list[str]:
         """One short line: the last run, or how many steps it has."""
         if self.running:
-            return ["milling…"]
+            return [f"⚙ +{len(self.queue)}" if self.queue else "milling…"]
         if self.runs:
             j = self.runs[0]
             return [("✓ " if j.ok else "✗ ") + j.started[11:16]]
@@ -177,6 +236,8 @@ class MillView(TypedView):
             return False
         if not self.last_input:
             self.app.notify("nothing has arrived yet — a road brings the input", title="⚙️ The Mill")
-        elif not self.run_steps(self.last_input):
-            self.app.notify("already milling", title="⚙️ The Mill")
+        else:
+            if self.running:
+                self.app.notify("queued after the cart that is milling", title="⚙️ The Mill")
+            self.run_steps(self.last_input)
         return True

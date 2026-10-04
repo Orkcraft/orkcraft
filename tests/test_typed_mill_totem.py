@@ -35,6 +35,68 @@ def test_mill_steps():
     assert any("unknown step" in e for e in catalog.validate(bad))
 
 
+def test_mill_fixed_edges():
+    assert mill.run(["join: → "], "a\nb")[0] == "a→ b"                             # not mangled by unicode_escape
+    assert mill.run(['join: " | "'], "a\nb")[0] == "a | b"                         # quotes keep the spaces
+    assert mill.run(["join: \\t"], "a\nb")[0] == "a\tb"
+    out, err = mill.run(["replace: a"], "banana")
+    assert err.startswith("step 1") and "=>" in err and out == "banana"            # no silent delete
+    assert mill.run(["replace: a => "], "banana")[0] == "bnn"                       # an empty <with> deletes
+    assert mill.run(['replace: , => " - "'], "a,b")[0] == "a - b"
+    assert mill.check(["extract: foo", "replace: x", "filter: n gt", "filter: n bigger 2", "limit: x", "sort:"]) \
+        and len(mill.check(["extract: foo", "replace: x", "filter: n bigger 2", "limit: x", "sort:"])) == 5
+    out, err = mill.run(["lines", "extract: foo"], "abc")
+    assert "extract: <field> = <regex>" in err
+    out, err = mill.run(["csv", "filter: n bigger 2"], "n\n1\n3")
+    assert "filter:" in err
+
+
+def test_mill_numbers_and_dates():
+    csv_text = "n,day\n10,2026-03-01\n9,2026-01-15\n100,2025-12-31\n,2026-02-01\n"
+    out, _ = mill.run(["csv", "sort: n", "pick: n", "to_json"], csv_text)
+    assert [r["n"] for r in json.loads(out)] == ["9", "10", "100", ""]              # numbers, the empty last
+    out, _ = mill.run(["csv", "sort: n desc text", "pick: n", "to_json"], csv_text)
+    assert [r["n"] for r in json.loads(out)][:3] == ["9", "100", "10"]              # text when asked
+    out, _ = mill.run(["csv", "filter: n gt 9", "count"], csv_text)
+    assert out == '{"count": 2}'
+    out, _ = mill.run(["csv", "filter: n le 10", "count"], csv_text)
+    assert out == '{"count": 2}'
+    out, _ = mill.run(["csv", "filter: day ge 2026-01-01", "filter: day lt 2026-03-01", "pick: day", "to_json"], csv_text)
+    assert [r["day"] for r in json.loads(out)] == ["2026-01-15", "2026-02-01"]
+    out, _ = mill.run(["lines", "sort: n desc", "limit: 2", "pick: n", "to_json"], "\n".join("x" * i for i in range(1, 12)))
+    assert [r["n"] for r in json.loads(out)] == [11, 10]
+
+
+def test_mill_agent_steps_and_flat_map():
+    seen = []
+
+    def agent(ask, text):
+        seen.append((ask, text))
+        return text.upper()
+
+    r = mill.run_full(["grep: ERROR", "agent: shout it", "lines", "pick: line"], LOG, agent=agent)
+    assert not r.error and r.agent_steps == 1 and seen[0][0] == "shout it"
+    assert mill.items(r.records)[0] == '{"line": "ERROR DB TIMEOUT ID=17"}' and len(r.records) == 3
+    assert mill.run_full(["trim"], "a").records is None                            # text: no flat map
+    r = mill.run_full([f"script: {sys.executable} -c 'import sys; sys.exit(3)' || agent: count the lines"], "a\nb",
+                      agent=lambda ask, text: str(len(text.splitlines())))
+    assert not r.error and r.text == "2" and r.agent_steps == 1                     # the script failed, the agent did it
+    r = mill.run_full([f"script: {sys.executable} -c 'import sys; sys.exit(3)' || agent: x"], "a",
+                      agent=lambda ask, text: (_ for _ in ()).throw(RuntimeError("no claude")))
+    assert "the script failed" in r.error and "no claude" in r.error
+    assert mill.check(["agent:", "script: make || agent:"]) and mill.check(["agent: fix it", "script: make || agent: do it"]) == []
+    assert mill.model_steps(["agent: a", "script: x || agent: b", "script: y", "grep: agent"]) == 2
+    assert "## Input\n\nhello" in mill.agent_prompt("do", "hello")
+
+
+def test_mill_scripts_see_a_clean_environment(monkeypatch):
+    monkeypatch.setenv("ORK_SECRET_TOKEN", "s3cret")
+    monkeypatch.setenv("ORK_ALLOWED", "yes")
+    show = f"script: {sys.executable} -c \"import os; print(os.environ.get('ORK_SECRET_TOKEN'), os.environ.get('ORK_ALLOWED'))\""
+    assert mill.run([show], "")[0] == "None None"
+    assert mill.run([show], "", env=["ORK_ALLOWED"])[0] == "None yes"
+
+
 def P(value="", title="", kind="text", source="pit", mode="pit.text"):
     return Payload(kind, value, source, mode, title)
 
@@ -92,3 +154,33 @@ async def test_the_totem_routes_into_the_mill(fake_repo: Path, monkeypatch):
         await pilot.press("ctrl+s")
         await pilot.pause()
         assert app.custom_specs["grinder"]["config"]["steps"] == ["lines", "count"]
+
+
+@pytest.mark.asyncio
+async def test_the_mill_queues_every_cart_and_flat_maps_records(fake_repo: Path, monkeypatch):
+    slow = f"script: {sys.executable} -c \"import sys, time; time.sleep(0.2); print(sys.stdin.read())\""
+    for s in ({"id": "grinder", "title": "Mill", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill",
+               "config": {"steps": [slow, "lines", "pick: line"]}},
+              {"id": "sink", "title": "Sink", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill",
+               "config": {"steps": ["trim"]}}):
+        assert masonry.save_spec(fake_repo, s) == []
+    assert catalog.size_of({"type": "mill"}) == catalog.SIZES["XS"]
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=(200, 46)) as pilot:
+        await pilot.pause()
+        app.add_road("sink", "grinder", "mill.item", None)
+        mill_view = app.desktop.get_window("grinder").query_one(MillView)
+        delivered = []
+        monkeypatch.setattr(app, "deliver_payload", lambda t, p, *a: delivered.append((t, p.mode, p.value)))
+        for text in ("a\nb", "c", "d\ne\nf"):                       # three carts while the first still mills
+            mill_view.receive(P(text), "cart", text)
+        assert mill_view.running and len(mill_view.queue) == 2
+        assert mill_view.hut_lines([8]) == ["⚙ +2"]
+        for _ in range(100):
+            await pilot.pause(0.05)
+            if len(mill_view.runs) == 3 and not mill_view.running:
+                break
+        assert [j.input for j in reversed(mill_view.runs)] == ["a\nb", "c", "d\ne\nf"]      # nothing dropped, in order
+        items = [json.loads(v)["line"] for t, mode, v in delivered if mode == "mill.item"]
+        assert items == ["a", "b", "c", "d", "e", "f"]
+        assert mill_view.runs[0].meta.get("items") == 3

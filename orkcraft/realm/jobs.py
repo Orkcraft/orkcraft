@@ -69,12 +69,15 @@ def _wait(proc: subprocess.Popen, cancel: threading.Event, timeout_s: int) -> No
 
 
 def run_script(command: str, stdin: str, repo_root: Path, cancel: threading.Event,
-               env: dict | None = None, timeout_s: int = SCRIPT_TIMEOUT_S) -> tuple[str, None, None]:
+               env: dict | None = None, timeout_s: int = SCRIPT_TIMEOUT_S,
+               base_env: dict | None = None) -> tuple[str, None, None]:
+    """`base_env` replaces the inherited environment (the Mill passes a clean one); `env` goes on top."""
     argv = shlex.split(command)
     if not argv:
         raise RuntimeError("the script is empty — ✎ Edit skill to set its command")
     try:
-        proc = subprocess.Popen(argv, cwd=repo_root, env={**os.environ, **(env or {})}, stdin=subprocess.PIPE,
+        base = os.environ if base_env is None else base_env
+        proc = subprocess.Popen(argv, cwd=repo_root, env={**base, **(env or {})}, stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
     except FileNotFoundError as e:
         raise RuntimeError(f"{argv[0]} not found") from e
@@ -158,6 +161,15 @@ class Log:
         row["result"] = row["result"][:RESULT_KEEP]
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    def trim(self, keep: int) -> None:
+        """Keep only the newest `keep` runs on disk."""
+        try:
+            lines = self.path.read_text(encoding="utf-8").splitlines()
+            if len(lines) > keep:
+                self.path.write_text("\n".join(lines[-keep:]) + "\n", encoding="utf-8")
+        except OSError:
+            pass
 
     def read(self, limit: int = 50) -> list[Job]:
         try:
