@@ -41,7 +41,7 @@ STATUS_DISPLAY = {
 NEUTRAL_ACTIONS = [
     ("B", "[B] 🏗️ Build Window (Mason & Artisan)"),
     ("P", "[P] 📜 Window Presets Catalog"),
-    ("S", "[S] 🧌 Summon Orc / Warband"),
+    ("S", "[S] 🧌 Summon Ork / Warband"),
     ("T", "[T] 🌲 Toggle Terrain (Dim / Black)"),
     ("G", "[G] ⎇ Worktree of this Orkspace"),
 ]
@@ -546,7 +546,7 @@ class ClanRoster(Vertical):
                 lst.add_option(Option(self._render_garrison_row(o, idx, getattr(self.app, "seen_alerts", set())),
                                       id=orc_key(o)))
             if not members:
-                lst.add_option(Option(Text("No orcs yet\nR recruits", style="dim"), disabled=True))
+                lst.add_option(Option(Text("No orks yet\nR recruits", style="dim"), disabled=True))
             keys = [orc_key(o) for o in members]
             if orc is not None and orc_key(orc) in keys:
                 lst.highlighted = keys.index(orc_key(orc))

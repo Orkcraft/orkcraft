@@ -5,7 +5,7 @@ points, chronicles, the 🪙 / 🪵 telemetry and the Mason & Artisan builders.
 
 ## 1. The model
 
-A building has two kinds of orcs:
+A building has two kinds of orks:
 
 - **Steward** (top, in the window frame badge) — watches how well the building is used and how it
   could be automated or improved. Usually a *hybrid*: a script collects metrics on a schedule

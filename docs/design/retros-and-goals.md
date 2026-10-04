@@ -2,7 +2,7 @@
 
 Status: design notes, written 2026-10-03; stages 1–4 of §6 are implemented, stage 5 (calibration) is not.
 Builds on the self-improvement of `realm/optimize.py` (daily), `realm/weekly.py` (weekly),
-`realm/evolution.py` (the orcs' own changes), the ledger of `realm/metrics.py`, the quota readers
+`realm/evolution.py` (the orks' own changes), the ledger of `realm/metrics.py`, the quota readers
 (`sources/limits.py`) and the 👍 / 👎 of `realm/feedback.py`.
 
 ## 1. Why
@@ -88,7 +88,7 @@ Set from the Info panel: the goal button beside 👍 / 👎 cycles it.
   (the limit is tight)`.
 - **The Town retro** sees each building's goal and may propose `enrich` too, for ⚖️ and 💎 buildings
   only; its check is the same.
-- **Autonomy**: `enrich` is applied by the orcs themselves only at ⛓️‍💥 Free orcs (level 3) — it spends
+- **Autonomy**: `enrich` is applied by the orks themselves only at ⛓️‍💥 Free orks (level 3) — it spends
   more, so it is a bigger step than a shrink. Probation is the same 24 h: a 👎 or more failed runs take
   it back.
 
@@ -99,7 +99,7 @@ building), it first shows up to **4** past results to rate — in all, not per b
 
 ```
 ┌ 🗓 Town retro — four results from the week, were they good? ─────────────┐
-│ 1/4  🏭 Brief · Tue 09:12 · changed by the orcs Mon (on probation)        │
+│ 1/4  🏭 Brief · Tue 09:12 · changed by the orks Mon (on probation)        │
 │   in   {"title": "release 0.4", "commits": 12}                            │
 │   out  ### Release brief — 12 commits, 2 fixes, …                         │
 │                         [ 👍 Good ]  [ 👎 Bad ]  [ Skip ]                  │
@@ -107,7 +107,7 @@ building), it first shows up to **4** past results to rate — in all, not per b
 ```
 
 - **Which results**: the most useful to know about, in this order, one per building:
-  1. a building the orcs or the operator changed this week (an answer confirms or questions the change);
+  1. a building the orks or the operator changed this week (an answer confirms or questions the change);
   2. a 💎 building with no rating this week;
   3. a run that failed or was escalated (exit 3 / 4, an error);
   4. the building with the highest pressure — the next Building retro's likely candidate.

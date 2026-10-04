@@ -288,14 +288,14 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
         "and sends it to an external API — or, where a site has no API, closes a whole intent in the browser: "
-        "its orc finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
+        "its ork finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
         "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
         events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
                 _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
                 _e("catapult.repaired", "repaired", TEXT, "the site changed: the overseer rewrote the fill script")),
         actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
                  _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
-                 _a("catapult.scout", "Scout", "🔭", "browser mode: the orc finds every form of the intent and writes their scripts")),
+                 _a("catapult.scout", "Scout", "🔭", "browser mode: the ork finds every form of the intent and writes their scripts")),
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),
                 "token_env": (str, None, False), "confirm": (bool, None, False),
@@ -533,7 +533,7 @@ TAKES: dict[str, str] = {
     "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
     "horn": "anything: plays the sound its table picks for that source and event",
     "fields": "anything: the cart becomes a task in To Do (its title, else its first line) → tasks.created",
-    "barracks": "anything: the cart becomes a task for an orc (the title names it, the text is the brief); "
+    "barracks": "anything: the cart becomes a task for an ork (the title names it, the text is the brief); "
                 "its steward reviews the work → pool.done (with the pull request) / pool.failed",
     "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
                "(let go) or team.rework (sent back straight to the Barracks that wrote it), team.artifact_ready "
@@ -618,12 +618,12 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     },
     "fields": {"path": "TASKS.md or a folder with todo/ in-progress/ done/ (default TASKS.md)"},
     "barracks": {
-        "max_orcs": "how many orcs work at once (default 3)",
+        "max_orcs": "how many orks work at once (default 3)",
         "budget_usd": "the most the barracks may spend, in USD",
         "providers": "who may be hired, `harness[:model]`: claude or agy, e.g. [\"claude:sonnet\", \"agy\"]",
-        "worktrees": "each orc in its own git worktree (default true)",
-        "orders": "standing orders: the steward's rules, given to every orc with each task",
-        "session_tasks": "tasks one orc session takes before it rolls over with a handoff (default 5)",
+        "worktrees": "each ork in its own git worktree (default true)",
+        "orders": "standing orders: the steward's rules, given to every ork with each task",
+        "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
         "steward": "`harness[:model]` of the steward that answers and reviews (default claude)",
@@ -699,7 +699,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "fields": "browser mode, which field gets what: `Event name = title`, `Category = \"Major update\"`, "
                   "`images/Banner = banner` for one form",
         "finish": "browser mode: leave (default: you check and press) or press (submit by itself)",
-        "repair": "browser mode: false stops the orc repairing a script the site broke (default true)",
+        "repair": "browser mode: false stops the ork repairing a script the site broke (default true)",
         "key": "a body path grouping carts into one shot, e.g. version.tag (two releases never mix)",
         "ttl": "minutes a loaded cart may wait before it is dropped (0: forever)",
     },

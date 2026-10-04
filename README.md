@@ -58,8 +58,8 @@ Sixteen buildings, each with its own events and settings:
 |---|---|
 | **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks — one tower, filtered by your intent) · 🗿 Totem (if/switch routes) · ⚙️ Mill (map / flat map: data steps, an agent where a script can't) · 📯 Horn (a sound of your choice per incoming event) |
 | **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel, a branch and a PR per task, reviewed by its steward) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar; agents prepare documents for meetings ahead of time) |
-| **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its orc keeps from your notes, code, git and Confluence) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
-| **Results and egress** | 📦 Loot Vault (the review checkpoint: carts pass by rules or wait for you; send back for rework, see what the chain cost) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP — or, where there is no API, its orc finds the forms of an intent and fills them in a browser) |
+| **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its ork keeps from your notes, code, git and Confluence) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
+| **Results and egress** | 📦 Loot Vault (the review checkpoint: carts pass by rules or wait for you; send back for rework, see what the chain cost) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP — or, where there is no API, its ork finds the forms of an intent and fills them in a browser) |
 
 ## The Town Hall
 
@@ -116,7 +116,7 @@ Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN
 Elders' limits are set in the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
 
 The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
-the design of roads and orks is in [docs/design/roads-and-orcs.md](docs/design/roads-and-orcs.md).
+the design of roads and orks is in [docs/design/roads-and-orks.md](docs/design/roads-and-orcs.md).
 What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 
 ## Development

@@ -70,7 +70,7 @@ KEY_GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
         [
             ("B", "🏗️ Build window (Mason & Artisan)"),
             ("P", "📜 Window presets catalog"),
-            ("S", "🧌 Summon orc / warband"),
+            ("S", "🧌 Summon ork / warband"),
             ("T", "🌲 Toggle terrain (Dim / Black)"),
             ("G", "⎇ Worktree of the active orkspace"),
         ],

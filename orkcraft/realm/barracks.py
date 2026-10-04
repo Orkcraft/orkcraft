@@ -312,7 +312,7 @@ class Foreman:
         if len(orcs) < self.max_orcs:
             harness, model, mwhy = self.choose_model(task)
             name = next((n for n in NAMES if n not in {o.name for o in orcs}), f"Ork{len(orcs) + 1}")
-            return Decision(at, task.id, "hire", name, f"{len(orcs)}/{self.max_orcs} orcs busy → hire; {mwhy}")
+            return Decision(at, task.id, "hire", name, f"{len(orcs)}/{self.max_orcs} orks busy → hire; {mwhy}")
         return Decision(at, task.id, "queue", why=f"all {len(orcs)} orks busy — waits in the queue")
 
     def next_for(self, orc: PoolOrc, queue: list[PoolTask]) -> PoolTask | None:

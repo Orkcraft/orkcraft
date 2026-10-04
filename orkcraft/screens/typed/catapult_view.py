@@ -50,7 +50,7 @@ def _now() -> str:
 class CatapultView(TypedView):
     TYPE = "catapult"
     BINDINGS = [Binding("c", "toggle_confirm", "Confirm shots on/off"),
-                Binding("s", "scout", "The orc finds the forms (browser mode)"),
+                Binding("s", "scout", "The ork finds the forms (browser mode)"),
                 Binding("l", "login", "Log in to the site (browser mode)"),
                 Binding("m", "map_fields", "Map fields with a model (browser mode)"),
                 Binding("f", "toggle_finish", "Hand over / press submit (browser mode)")]

@@ -485,7 +485,7 @@ class PoolView(TypedView):
         if propose:
             rule = f"- {question.strip()[:200]} → {text.strip()[:300]}"
             self.app.push_screen(TextPrompt(f"📜 Add to {self.keeper}'s rules?", value=rule,
-                                            help="Enter keeps it as a rule for every orc; Esc — only this once"),
+                                            help="Enter keeps it as a rule for every ork; Esc — only this once"),
                                  self.add_rule)
 
     def add_rule(self, rule: str | None) -> bool:
@@ -566,7 +566,7 @@ class PoolView(TypedView):
     def _steward_detail(self, t: Text) -> None:
         st = self.state
         t.append(f"🛡 {self.keeper} — the steward\n", style="bold")
-        t.append(f"answers the orcs' questions from the rules, reviews every task (≤{self.foreman.max_reworks} "
+        t.append(f"answers the orks' questions from the rules, reviews every task (≤{self.foreman.max_reworks} "
                  "reworks), opens the pull request\n\n", style="dim")
         if st.asked:
             t.append("🔥 Waiting for you (Enter answers)\n", style="bold red")
@@ -640,7 +640,7 @@ class PoolView(TypedView):
                 return self.ask_operator()
             f = self.foreman
             if len(st.orcs) >= f.max_orcs:
-                self.app.notify(f"already {len(st.orcs)}/{f.max_orcs} orcs", title="🏕 Barracks")
+                self.app.notify(f"already {len(st.orcs)}/{f.max_orcs} orks", title="🏕 Barracks")
                 return True
             name = next((n for n in bk.NAMES if n not in {o.name for o in st.orcs}), f"Ork{len(st.orcs) + 1}")
             harness, model, why = f.choose_model(bk.PoolTask("", "", ""))

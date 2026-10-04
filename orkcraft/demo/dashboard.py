@@ -169,7 +169,7 @@ GATES = {
 LIBRARY = {
     "id": "library", "name": "Library", "icon": "📜", "biome": "forest", "git": {"enabled": False},
     "segment": "Developers, managers, designers",
-    "story": "Three LLM wikis the orcs keep — the code, the team, the design — and tasks that pass through them",
+    "story": "Three LLM wikis the orks keep — the code, the team, the design — and tasks that pass through them",
     "nodes": [],
     "files": {
         "LIBRARY_TASKS.md": "# Tasks\n\n## To Do\n- [ ] Show the price tag in the new accent colour\n"
@@ -288,7 +288,7 @@ WIKI_PAGES = {
         "pages/onboarding/index.md": "# Onboarding\n\n- [first day](first-day.md) — read the town map\n",
         "pages/onboarding/first-day.md": "---\nkind: onboarding\nsources: [../../docs/handbook/onboarding.md]\n"
                                          "updated: 2026-10-01\nowner: human\n---\n# Your first day\n\nRead the town "
-                                         "map, then pair with someone on a real task. (Written by people: the orc only "
+                                         "map, then pair with someone on a real task. (Written by people: the ork only "
                                          "suggests changes here.)\n",
         "pages/product/index.md": "# Product\n\n- [ideas](ideas.md) — a calendar roof, mail digests\n",
         "pages/product/ideas.md": "---\nkind: product\nsources: [../../docs/notes/ideas.md]\nupdated: 2026-10-01\n"
@@ -422,8 +422,8 @@ def _seed_barracks(root: Path) -> None:
                 bk.PoolTask("t2", "Fix the parser", "x", status="failed", orc="Mogka", error="tests failed")]
     st.stats = {"claude": {"runs": 3, "ok": 3, "cost": 0.9}, f"agy:{bk.AGY_CODE}": {"runs": 2, "ok": 1, "cost": 0.1}}
     st.save()
-    for d in (bk.Decision("2026-10-02T05:00:00", "t1", "hire", "Grub", "0/3 orcs busy → hire; claude: no record yet; fits a code task"),
-              bk.Decision("2026-10-02T05:05:00", "t2", "hire", "Mogka", "1/3 orcs busy → hire; agy: no record yet"),
+    for d in (bk.Decision("2026-10-02T05:00:00", "t1", "hire", "Grub", "0/3 orks busy → hire; claude: no record yet; fits a code task"),
+              bk.Decision("2026-10-02T05:05:00", "t2", "hire", "Mogka", "1/3 orks busy → hire; agy: no record yet"),
               bk.Decision("2026-10-02T05:21:00", "t3", "follow-up", "Grub", "T1042 was Grub's"),
               bk.Decision("2026-10-02T05:30:00", "q1", "queue", "", "paused for the night")):
         st.log(d)

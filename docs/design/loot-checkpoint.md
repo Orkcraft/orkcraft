@@ -2,7 +2,7 @@
 
 Status: design notes, written 2026-10-04. Stages 1 (the trail) and 2 (the checkpoint) are implemented;
 stages 3–4 are not.
-Builds on roads and handlers (`roads-and-orcs.md`), the 🔥 of a waiting orc and the 🪙 ledger.
+Builds on roads and handlers (`roads-and-orcs.md`), the 🔥 of a waiting ork and the 🪙 ledger.
 
 ## 1. What Loot is
 
@@ -53,7 +53,7 @@ that matching, not a language of their own.
 - **Rework limit.** A cart goes back at most **3 times** (`max_rework`, configurable) or until the
   chain spent `rework_tokens` tokens. After that it is not sent back again: it stays in the queue
   marked `needs you`, highlighted on the hut, for the person to review and fix by hand.
-- **Reminders** — a held cart sets the hut on 🔥 like an orc waiting for an answer: orange, red,
+- **Reminders** — a held cart sets the hut on 🔥 like an ork waiting for an answer: orange, red,
   then the roof burns (`realm/modes.py`), respecting quiet hours; `!` (🔥 Orders) lists it.
 
 Carts are matched across rework rounds by `Payload.ref` (§4), so the attempt counter survives the
@@ -77,7 +77,7 @@ stable id of the thing being worked on.
 
 - A handler run merges the trails of the carts it ran on and appends its own hop (its tokens and
   cost); its output, and whatever its building sends next, carries that trail.
-- A finished War Tent task adds a hop with the orc and its worktree / branch.
+- A finished War Tent task adds a hop with the ork and its worktree / branch.
 - Typed buildings that pass a cart on (`emit_typed(..., trail=...)`) keep it.
 - `pipes.trail_totals(trail)` gives the chain's tokens and cost; `pipes.trail_line(trail)` the
   readable chain: `Barracks 12k tok $0.08 → Council 40k tok $0.31 = 52k tok $0.39`.

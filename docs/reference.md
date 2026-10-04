@@ -18,7 +18,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 │ 🗺️ WAR MAP (Orkspaces)       │ 🧌 CLAN ROSTER (Garrison)     │ ⚒️ COMMAND CARD (Context Actions)   │
 │ [F1] 🏰 Main Camp (forest)  │ ▼ ⚒️ Forge (Garrison: 1)      │ [B] 🏗️ Build Window (Mason & Artisan)│
 │                             │   • 🧌 Smith          💤 Idle │ [P] 📜 Window Presets Catalog       │
-│                             │ ▼ ⚔️ Warband (0)              │ [S] 🧌 Summon Orc / Warband         │
+│                             │ ▼ ⚔️ Warband (0)              │ [S] 🧌 Summon Ork / Warband         │
 │                             │ ▼ 🏛️ Council (5)              │ [T] 🌲 Toggle Terrain (Dim / Black) │
 │ ─────────────────────────── │ ───────────────────────────── │ ─────────────────────────────────── │
 │ [+] [N] New Orkspace        │ [Space] Fold   [1-9] Select   │ [Esc] Deselect / Neutral Mode       │
@@ -143,7 +143,7 @@ spread over the width — and keep the spot you drag them to.
   ork, building or road does — put together from the scroll and the roster, no model call — its
   models (C Claude, A agy, P script, 🪧 a free chain, ● the live session's model) and what it cost
   (🪙 $ and 🪵 tokens from the handler's run log, the live session's spend from telemetry; "no data
-  yet" when unknown). Picking an ork keeps the garrison and lights the orc. A burning ork opens
+  yet" when unknown). Picking an ork keeps the garrison and lights the ork. A burning ork opens
   its question at once; any other garrison ork or live session opens its **chat**: a tall
   column on the right (45 % of the screen, the rest stays low) with its live session mirrored —
   the line below types into it (`/` jumps there) — or its last runs and a line that starts a
@@ -185,7 +185,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e`; a cart becomes a task in To Do | `tasks.created`, `tasks.status_changed` |
-| 🏕️ Barracks | Grunts | tasks, each on its own branch: a follow-up goes to the orc who did the earlier part, a new one to an idle or newly hired orc (provider and model by record); related work resumes the orc's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
+| 🏕️ Barracks | Grunts | tasks, each on its own branch: a follow-up goes to the ork who did the earlier part, a new one to an idle or newly hired ork (provider and model by record); related work resumes the ork's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
 | 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review queue | `team.approved`, `team.rework`, `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
@@ -193,8 +193,8 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; accept, send back for rework (≤ 3 rounds, then 🔥 needs you), restore rejected files; the chain's tokens and cost | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
-| 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orcs, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
-| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its orc finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
+| 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
+| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
@@ -210,7 +210,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `pip install 'orkcraft[browser]'` and `playwright install chromium`, then set `mode: browser`
   and `forms`, in the order they are filled — `name = start address | what to open | button`
   (the last two optional): `event = https://play.google.com/console/… | the form for a new event`.
-  - **`s` Scout**: the building's orc walks the site to each form itself, headless, with the
+  - **`s` Scout**: the building's ork walks the site to each form itself, headless, with the
     building's own browser profile. Each step it sees the page (fields, buttons, links) and clicks
     one numbered element; it never types, never submits and refuses what looks like it changes data
     (delete, publish, send…). When the form is open it names its submit button. The form's map
@@ -219,10 +219,10 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     so every scout, mapping and repair is a commit `Z` can revert. One model call a step, at most 12.
   - **`l` Log in** opens a visible browser with that profile: log in once (the login stays in
     `.orkcraft/catapult/<id>/profile`; the Catapult adds `.orkcraft/` to the project's
-    `.git/info/exclude` so it never reaches your git). If the orc cannot find a form, open it in
+    `.git/info/exclude` so it never reaches your git). If the ork cannot find a form, open it in
     that window yourself before closing it: a form with no map yet keeps the way you showed.
   - **A login page** (a password field, or another host) met by a scout, a shot or a repair sets
-    the hut on fire 🔥: the lead orc waits for orders ("log in again"), the shot goes back to the
+    the hut on fire 🔥: the lead ork waits for orders ("log in again"), the shot goes back to the
     front of the queue and the queue holds. Answer 1 (or `l`), log in, close the window: the queue
     goes on.
   - **Which field gets what**: `fields` first (`Event name = title`, `Category = "Major update"`;
@@ -239,7 +239,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     opens). `fill.py` runs by hand too (`python fill.py --profile … < cart.json`); edit it freely —
     a script edited by hand is kept, a rescout writes `fill.new.py` beside it.
   - **When the site changes** and a script breaks (a field or a button not found, the clicks no
-    longer open the form), it reports where it broke with a snapshot of that page. The orc repairs
+    longer open the form), it reports where it broke with a snapshot of that page. The ork repairs
     the map from it: at most two model calls, never in the sandbox or past the 🪙 budget; only data
     comes back (a path on the same site, labels, selectors, known field kinds) and a renamed field
     keeps its old name for `fields`. `fill.py` is rewritten, checked headless (the form reached,
@@ -314,7 +314,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)
   is in `.orkcraft/horn/<id>/calls.jsonl`.
 - The Scroll Dump is an **LLM wiki**: no retrieval of its own (Claude Code and agy search files
-  well) — its librarian orc turns the sources into a wiki once and keeps it current, so knowledge
+  well) — its librarian ork turns the sources into a wiki once and keeps it current, so knowledge
   accumulates instead of being searched for from scratch. **A wiki is a topic, not a building**:
   `topic` picks the sections and rules it starts with — `codebase` (architecture, modules, flows,
   decisions, how-to, glossary), `team` (teams, process, product, decisions, onboarding, glossary),
@@ -340,7 +340,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   protected the same way for that run. Files outside the wiki that change while it works are
   reported.
 - **Every change is committed** (`commit`, default on) — the wiki's folder alone, authored by
-  `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the orc's
+  `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the ork's
   edits from people's. Snapshots in `raw/` stay out of git (`raw/.gitignore`); `raw/manifest.json`
   goes in.
 - **The Clan Fire spot-checks.** After each ingest `review_sample` pages it wrote (default 2) go to
@@ -363,7 +363,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   refetched in the background every 15 minutes; a failed fetch keeps the cache. The older `paths`
   setting still works. The sources are only read.
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
-  Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-orc Barracks); event ids
+  Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-ork Barracks); event ids
   are unchanged, so old roads keep working.
 - `orkcraft --demo --demo-set dashboard` opens all of them on four canvases (My Day, Agent Yard,
   Gates, Library — three LLM wikis, code, team and design, that tasks pass through) in a real git
@@ -502,7 +502,7 @@ SVG + PNG screenshots. `--demo-set managers` opens a second sandbox (default
 `~/.orkcraft-demo-managers`) with the engineering-manager 1on1-Prep canvas; `--demo-set dashboard`
 one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real git repository.
 
-## Orcs: steward, handlers, Recruiter
+## Orks: steward, handlers, Recruiter
 
 - **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
   harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `✦→✻` (agy
@@ -615,7 +615,7 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder, the Building retro and the Town retro (`claude -p`), the Barracks orcs and the
+  Town Builder, the Building retro and the Town retro (`claude -p`), the Barracks orks and the
   Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
@@ -706,21 +706,21 @@ Autonomy comes from three places:
 #### 🔧 Self-improvement by the orks
 
 The Building retro, the Town retro and the stewards keep proposing as before; up to *Morning
-advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orcs
+advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orks
 apply what their level allows themselves (`realm/evolution.py`), one change at a time, at most 10 a
 night, never past the 🪙 budget:
 
 | Level | The orks apply |
 |---|---|
 | 🧭 Routine on their own | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
-| ⛓️‍💥 Free orcs | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
+| ⛓️‍💥 Free orks | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
 | never | removing a road or a building, notes — those stay proposals |
 
 Every change still passes its own checks, then the Council's review with no block, objection or
 Warder warning (else it stays a proposal); it gets its own checkpoint, so `Z` takes it back, and **24
 hours of probation**: a 👎 on the building, or more failed runs than before, takes it back by itself
 — only while it is still the building's last checkpoint (else it is marked ⚠ stuck and `Z` is yours)
-— and a toast says so. **🧾 The list of the orcs' changes** opens when quiet hours end, after a
+— and a toast says so. **🧾 The list of the orks' changes** opens when quiet hours end, after a
 probation revert, and from F10 → 🧾 What the orks changed: 🧪 on probation, ✓ kept, ↩ taken back,
 ⚠ stuck; `z` takes one back. Every applied change, yours too, is in `.orkcraft/evolution/changes.jsonl`.
 Stewards' changes now get their own checkpoint as well.
