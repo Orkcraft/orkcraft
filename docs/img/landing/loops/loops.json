@@ -2,6 +2,23 @@
   "peon": {
     "id": "peon-red-green",
     "title": "Red-Green",
+    "tagline": "Code until the tests are green.",
+    "chain": "Task → Barracks → Orc Council → Loot Vault",
+    "loopBack": "Forge: red tests → back to the same orc",
+    "steps": [
+      "You move a task to In Progress. An orc picks it up.",
+      "Two reviewer agents check the patch until they agree.",
+      "Red tests send it back to the orc who wrote it."
+    ],
+    "you": "You press Merge.",
+    "limit": "4 review rounds, $5 per batch.",
+    "patterns": [
+      "Orchestrator–workers",
+      "Evaluator–optimizer",
+      "Sticky retry",
+      "Human gate",
+      "Budget cap"
+    ],
     "media": {
       "camp": {
         "gif": "loops/camp/peon-red-green.gif",
@@ -13,68 +30,28 @@
         "mp4": "loops/office/peon-red-green.mp4",
         "still": "loops/office/peon-red-green.png"
       }
-    },
-    "flow": "A task moved to In Progress rolls to the Barracks; an orc takes it in its own worktree and works. Its finished patch rolls to the Orc Council, where a Diff Inspector and a Test Runner review it round by round until they agree; the verdict lands in the Loot Vault for you. When the Forge's tests go red, the failure rolls back to the Barracks and goes to the same orc. Meanwhile the Tally Crag sees the Forge pass its token cap and sounds the Horn.",
-    "timeline": [
-      {
-        "t": "0.3 s",
-        "what": "Task Fields sends 'T2101 → In Progress'; a cart rolls to the Barracks, which turns BUSY (1 of 3 orcs)."
-      },
-      {
-        "t": "0.6 s",
-        "what": "The Tally Crag crosses its 150k-token cap; a cart rolls to the Horn."
-      },
-      {
-        "t": "1.9 s",
-        "what": "The orc finishes; pool.done rolls to the Orc Council, which opens round 1 and agrees."
-      },
-      {
-        "t": "2.1 s",
-        "what": "team.artifact_ready rolls to the Loot Vault: 1 to review."
-      },
-      {
-        "t": "3.9 s",
-        "what": "The Barracks opens: the orc, the finished task and the foreman's reason for picking it."
-      }
-    ],
-    "patterns": [
-      {
-        "name": "Event-driven trigger",
-        "where": "A status change on the board starts the work; nobody assigns it."
-      },
-      {
-        "name": "Orchestrator–workers",
-        "where": "The Barracks' foreman hires or reuses an orc for each task and says why."
-      },
-      {
-        "name": "Prompt chaining",
-        "where": "Task → code → review → verdict, each step's output is the next step's input."
-      },
-      {
-        "name": "Evaluator–optimizer",
-        "where": "The Orc Council: reviewers object, the moderator revises, the next round reviews again."
-      },
-      {
-        "name": "Sticky assignment",
-        "where": "Red tests from the Forge go back to the orc who wrote the code (forge.conflict → Barracks)."
-      },
-      {
-        "name": "Human-in-the-loop gate",
-        "where": "The verdict waits in the Loot Vault; Merge in the Forge is your key."
-      },
-      {
-        "name": "Bounded loop",
-        "where": "The Council stops at 4 rounds or $2; the Barracks at $5; roads may not form a cycle."
-      },
-      {
-        "name": "Budget alarm",
-        "where": "Tally Crag charts.threshold → the Horn."
-      }
-    ]
+    }
   },
   "knight": {
     "id": "knight-night-watch",
     "title": "Night Watch",
+    "tagline": "Production watches itself at night.",
+    "chain": "Alert mail → Totem → Barracks → Forge → Catapult",
+    "loopBack": "Refund mail → Reply Mill → Loot Vault",
+    "steps": [
+      "A Sentry alert comes in. An orc fixes the bug.",
+      "Tests pass, the fix merges, the release fires.",
+      "Refund mail gets a template reply. No model, $0."
+    ],
+    "you": "You read the replies in the morning.",
+    "limit": "Spend over $3 sounds the alarm.",
+    "patterns": [
+      "Router",
+      "Prompt chain",
+      "Quality gate",
+      "No-model step",
+      "Budget alarm"
+    ],
     "media": {
       "camp": {
         "gif": "loops/camp/knight-night-watch.gif",
@@ -86,72 +63,27 @@
         "mp4": "loops/office/knight-night-watch.mp4",
         "still": "loops/office/knight-night-watch.png"
       }
-    },
-    "flow": "After a deploy the Watchtower reads the mail. A Totem sorts each message by rules, without a model: a Sentry alert goes to the Barracks, where an orc fixes the bug; the fix rolls to the Forge, which runs the tests and squash-merges it; the merge fires the Catapult at the deploy webhook. A refund request goes the cheap way: the Reply Mill fills a template and the draft waits in the Loot Vault. The Tally Crag watches the money and sounds the Horn past the cap.",
-    "timeline": [
-      {
-        "t": "0.3 s",
-        "what": "A Sentry alert mail arrives; the Totem routes it to 'bug' and a cart rolls to the Barracks, which turns BUSY."
-      },
-      {
-        "t": "0.9 s",
-        "what": "A refund request arrives; the Totem routes it to 'help'; the Reply Mill drafts an answer and the Loot Vault stores it."
-      },
-      {
-        "t": "1.4 s",
-        "what": "Spend passes $3; a cart rolls from the Tally Crag to the Horn."
-      },
-      {
-        "t": "2.0 s",
-        "what": "The orc reports 'fixed in fix/checkout'; the Forge tests and squash-merges fix/checkout into main."
-      },
-      {
-        "t": "2.3 s",
-        "what": "forge.merged rolls to the Catapult, which fires (a dry run in the sandbox)."
-      },
-      {
-        "t": "4.0 s",
-        "what": "The Catapult opens: the POST to the deploy webhook with the merge in its body."
-      }
-    ],
-    "patterns": [
-      {
-        "name": "Event-driven trigger",
-        "where": "Incoming mail, webhooks and a schedule start every run."
-      },
-      {
-        "name": "Routing",
-        "where": "The Totem's rules send bugs and support mail down different roads, no model call."
-      },
-      {
-        "name": "Deterministic step instead of an LLM",
-        "where": "The Reply Mill answers routine mail with a template: $0."
-      },
-      {
-        "name": "Orchestrator–workers",
-        "where": "The Barracks takes the bug and hands it to an orc in its own worktree."
-      },
-      {
-        "name": "Prompt chaining",
-        "where": "Alert → fix → tests → merge → release, each step feeding the next."
-      },
-      {
-        "name": "Quality gate",
-        "where": "The Forge merges only when its test command passes."
-      },
-      {
-        "name": "Human-in-the-loop gate",
-        "where": "Support replies wait in the Loot Vault; the Catapult can ask before each shot."
-      },
-      {
-        "name": "Budget alarm",
-        "where": "Tally Crag spend cap → the Horn."
-      }
-    ]
+    }
   },
   "elf": {
     "id": "elf-variants",
     "title": "Variants",
+    "tagline": "Variants, critique, your pick.",
+    "chain": "Brief → Barracks → Orc Council → Lake of Insight",
+    "loopBack": "Loot Vault: rejected → back to the same orc",
+    "steps": [
+      "Drop a brief. Orcs draw variants in parallel.",
+      "Critic, Accessibility and Copy agents review until they agree.",
+      "Reject one and it goes back with your reason."
+    ],
+    "you": "You pick the winner.",
+    "limit": "3 critique rounds, $1.",
+    "patterns": [
+      "Parallel workers",
+      "Evaluator–optimizer",
+      "Feedback loop",
+      "Human gate"
+    ],
     "media": {
       "camp": {
         "gif": "loops/camp/elf-variants.gif",
@@ -163,64 +95,28 @@
         "mp4": "loops/office/elf-variants.mp4",
         "still": "loops/office/elf-variants.png"
       }
-    },
-    "flow": "A brief dropped into the Pit becomes work in the Barracks: orcs draw hero variants. A variant rolls to the Orc Council, where a Critic, an Accessibility orc and a Copy orc critique it until they agree; the agreed version opens in the Lake of Insight for you to look at. In the Loot Vault you reject a variant: it rolls back to the Barracks with the reason and goes to the orc who drew it. Accepted tokens go to the Token Mill, which turns them into CSS without a model.",
-    "timeline": [
-      {
-        "t": "0.3 s",
-        "what": "The brief 'Hero section, 3 variants' drops into the Pit; a cart rolls to the Barracks, which turns BUSY."
-      },
-      {
-        "t": "1.9 s",
-        "what": "The orc finishes hero-b; pool.done rolls to the Orc Council, which agrees in round 1."
-      },
-      {
-        "t": "2.1 s",
-        "what": "team.artifact_ready rolls to the Lake of Insight: 'Hero B · Start free'."
-      },
-      {
-        "t": "3.0 s",
-        "what": "hero-a is rejected in the Loot Vault; generator.rejected rolls back to the Barracks, BUSY again."
-      },
-      {
-        "t": "4.0 s",
-        "what": "The Lake of Insight opens on the agreed Hero B."
-      }
-    ],
-    "patterns": [
-      {
-        "name": "Parallelization",
-        "where": "The Barracks runs up to three orcs at once, one variant each."
-      },
-      {
-        "name": "Evaluator–optimizer",
-        "where": "The Orc Council critiques by role and revises until all agree."
-      },
-      {
-        "name": "Human-in-the-loop gate",
-        "where": "You accept or reject each file in the Loot Vault; nothing lands without it."
-      },
-      {
-        "name": "Feedback loop",
-        "where": "A rejection rolls back to the Barracks with its reason (generator.rejected)."
-      },
-      {
-        "name": "Sticky assignment",
-        "where": "The send-back goes to the orc who drew the variant."
-      },
-      {
-        "name": "Deterministic step instead of an LLM",
-        "where": "The Token Mill turns tokens JSON into CSS with templates."
-      },
-      {
-        "name": "Bounded loop",
-        "where": "The Council stops at 3 rounds or $1; the Barracks at $3."
-      }
-    ]
+    }
   },
   "lich": {
     "id": "lich-daily-status",
     "title": "Daily Status",
+    "tagline": "One morning digest, blockers flagged.",
+    "chain": "Calendar + Board + GitHub → Catapult → team chat",
+    "loopBack": "Review stuck 2 days → Orc Council → unblock plan",
+    "steps": [
+      "Calendar, board and GitHub feed one digest.",
+      "It goes out only when all three are in.",
+      "A review stuck for 2 days gets an unblock plan."
+    ],
+    "you": "You read one message, not three tools.",
+    "limit": "Too much in progress sounds the alarm.",
+    "patterns": [
+      "Scheduled trigger",
+      "Fan-in",
+      "Router",
+      "Evaluator–optimizer",
+      "Threshold alarm"
+    ],
     "media": {
       "camp": {
         "gif": "loops/camp/lich-daily-status.gif",
@@ -232,59 +128,6 @@
         "mp4": "loops/office/lich-daily-status.mp4",
         "still": "loops/office/lich-daily-status.png"
       }
-    },
-    "flow": "Three sources feed one digest: the War Drum sends today's meetings, the Sprint Board sends task moves, the Watchtower sends its 09:00 tick. The Digest Catapult waits until all three have arrived, checks them and posts one digest to the team chat; in a real camp catapult.sent keeps a copy in the Loot Vault (the sandbox only dry-runs, so the clip shows the shot, not the copy). A review that has waited two days is caught by the Totem and goes to the Orc Council, which agrees on an unblock plan. When In Progress grows past its limit, the Tally Crag sounds the Horn.",
-    "timeline": [
-      {
-        "t": "0.3–0.9 s",
-        "what": "The War Drum, the Sprint Board and the Watchtower each send a cart to the Digest Catapult."
-      },
-      {
-        "t": "1.0 s",
-        "what": "All three are in: the Catapult fires the digest. In the sandbox this is a dry run, so nothing is sent and catapult.sent does not go on; in a real camp it stores the digest in the Loot Vault."
-      },
-      {
-        "t": "1.4 s",
-        "what": "'#41 review waiting 2 d' comes from GitHub; the Totem routes it to 'stuck' and the Orc Council starts."
-      },
-      {
-        "t": "1.8 s",
-        "what": "In Progress reaches 7 of 6; a cart rolls from the Tally Crag to the Horn."
-      },
-      {
-        "t": "4.0 s",
-        "what": "The Orc Council opens on the agreed unblock plan."
-      }
-    ],
-    "patterns": [
-      {
-        "name": "Scheduled trigger",
-        "where": "The Watchtower's daily 09:00 tick and the War Drum's day schedule."
-      },
-      {
-        "name": "Fan-in (join / barrier)",
-        "where": "The Catapult waits for all three sources (wait_for) before it fires."
-      },
-      {
-        "name": "Schema-checked output",
-        "where": "The digest is checked against a JSON Schema before it is sent."
-      },
-      {
-        "name": "Routing",
-        "where": "The Totem's rule picks out stuck reviews from the GitHub events."
-      },
-      {
-        "name": "Evaluator–optimizer",
-        "where": "The Planner and the Critic agree on the unblock plan round by round."
-      },
-      {
-        "name": "Threshold alarm",
-        "where": "Tally Crag tasks per column → the Horn."
-      },
-      {
-        "name": "Self-improvement, human-approved",
-        "where": "Weekly, the stewards propose cheaper steps; nothing applies without your click (not in the clip)."
-      }
-    ]
+    }
   }
 }
