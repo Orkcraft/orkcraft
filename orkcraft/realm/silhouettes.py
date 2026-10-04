@@ -138,7 +138,7 @@ def _make(sid: str, lines: list[str], **kw) -> Silhouette:
 # -- the small buildings (10 wide) ----------------------------------------------------------------
 
 MILL = _make("mill", ["┌────────┐ \\ /", "│§§§§§§§§│-(O)-", "└────────┘ / \\"],
-             fallback=("WORKTREE",), pad=0, center=True, body=(10, 3))
+             fallback=("MAP",), pad=0, center=True, body=(10, 3))
 CATAPULT = _make("catapult", ["┌────────┐ \\", "│§§§§§§§§│  \\═(O)", "└────────┘"],
                  fallback=("EGRESS",), pad=0, center=True, body=(10, 3))
 PIT = _make("pit", ["    ┌───┐", "_// │ § │", "    └───┘"], head=("█",), pad=0, center=True,

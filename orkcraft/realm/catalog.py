@@ -119,13 +119,15 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"rules": (list, None, False)},
         art="spire", orc="Spirit Guide"),
     BuildingType(
-        "mill", "The Mill", "⚙️", "S",
-        "deterministic work without a model: regexes, CSV → JSON, templates, a script",
-        "its steps, the last run", "the steps, what went in and what came out",
-        events=(_e("mill.done", "milled", TEXT, "the clean result"),
+        "mill", "The Mill", "⚙️", "XS",
+        "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
+        "CSV → JSON, numbers and dates, templates, a script — and an agent for what a script cannot do",
+        "its steps, the last run, the queue", "the steps, what went in and what came out",
+        events=(_e("mill.done", "milled", TEXT, "the changed result, one per cart in"),
+                _e("mill.item", "each record", TEXT, "a flat map: one cart per record of the result (a JSON object)"),
                 _e("mill.failed", "mill failed", TEXT, "a step failed: the error")),
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
-        config={"steps": (list, None, False)},
+        config={"steps": (list, None, False), "env": (list, None, False), "model": (str, None, False)},
         art="mill", orc="Miller"),
     BuildingType(
         "horn", "The Horn", "📯", "XS",

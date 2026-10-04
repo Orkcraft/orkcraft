@@ -123,3 +123,10 @@ async def test_the_app_raises_clean_buildings_and_stops_blocked_ones(fake_repo: 
             hall.refresh_hall()
             body = str(hall.query_one("#hall-body").render())
             assert "Fast Path" in body and "building mymill" in body
+
+
+def test_the_chief_warns_of_a_mill_with_more_than_one_agent_step(tmp_path: Path):
+    one = dict(MILL, config={"steps": ["grep: x", "script: make || agent: do it"]})
+    two = dict(MILL, config={"steps": ["agent: tidy it", "script: make || agent: do it"]})
+    assert ("chief", "warn") not in _bad(fp.rules(fp.Subject("building", "mymill", one), tmp_path))
+    assert ("chief", "warn") in _bad(fp.rules(fp.Subject("building", "mymill", two), tmp_path))

@@ -243,8 +243,10 @@ def _building_rules(spec: dict, repo_root: Path, existing: set[str]) -> list[Not
     # Chief
     if kind == "barracks" and int(cfg.get("max_orcs") or 1) > 3:
         notes.append(Note("chief", "warn", f"up to {cfg['max_orcs']} agents at once — each one spends"))
-    if kind == "mill" and sum(1 for s in cfg.get("steps") or [] if str(s).startswith(("agent", "model", "claude"))) > 1:
-        notes.append(Note("chief", "warn", "more than one model step on every cart"))
+    if kind == "mill" and isinstance(cfg.get("steps"), list):
+        from orkcraft.realm import mill
+        if mill.model_steps([str(s) for s in cfg["steps"]]) > 1:
+            notes.append(Note("chief", "warn", "more than one agent step on every cart"))
     # Artisan
     title = str(spec.get("title") or "")
     if len(title) > 32:

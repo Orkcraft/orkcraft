@@ -1,7 +1,10 @@
-"""⚙️ The Mill: deterministic work, no model — one step per line.
+"""⚙️ The Mill: a map over what arrives — one step per line, strictly in order.
 
-What arrives (text, a file's content, a node id) goes through the steps in order. A value is
-either text or a list of records; a step turns one into the other where it says so.
+What arrives (text, a file's content, a node id) goes through the steps and comes out changed: one
+cart in, one result out (`mill.done`, a map) and, when the result is a list of records, one cart per
+record (`mill.item`, a flat map). A value is either text or a list of records; a step turns one into
+the other where it says so. The steps are scripts and rules, no model — except `agent:`, the step
+for what a script cannot do, and the `|| agent:` fallback of a script that fails.
 
     lines                       text → one record per line {n, line}
     grep: <regex>               keep lines / records that match        drop: <regex>  the others
@@ -9,14 +12,20 @@ either text or a list of records; a step turns one into the other where it says 
     trim · lower · dedupe       on text lines
     csv · json                  text → records (header row / a JSON list or object)
     extract: <field> = <regex>  first group (or match) of each record's line/text → a field
-    pick: a, b                  keep these fields          sort: <field> [desc]     limit: <n>
-    filter: <field> <eq|ne|contains|matches> <value>
+    pick: a, b                  keep these fields
+    sort: <field> [desc] [num|text]   numbers sort as numbers when every value is one (or say num)
+    limit: <n>
+    filter: <field> <eq|ne|contains|matches|gt|ge|lt|le> <value>
+                                gt…le compare numbers, else text (ISO dates and times compare right)
     count                       records → {count: n}
     to_json                     records → JSON text        template: <md with {field}>  → lines
-    join[: <sep>]               lines → text
-    script: <command>           the value on stdin, stdout is the new text (timeout, no shell)
+    join[: <sep>]               lines → text (\\n, \\t; "quoted" keeps edge spaces)
+    script: <command>           the value on stdin, stdout is the new text (timeout, no shell, and only
+                                the safe environment plus the names in the building's `env`)
+    script: <command> || agent: <ask>   when the script fails, an agent does the step instead
+    agent: <ask>                a read-only agent changes the value as asked, its answer is the new text
 
-`run(steps, text)` never raises: (output text, error).
+`run(steps, text)` never raises: (output text, error). `run_full` also gives the records.
 """
 from __future__ import annotations
 
@@ -24,7 +33,9 @@ import csv
 import io
 import json
 import re
+import os
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -32,7 +43,30 @@ from orkcraft.realm import chains, jobs
 
 MAX_RECORDS = 5000
 STEP_NAMES = ("lines", "grep", "drop", "replace", "trim", "lower", "dedupe", "csv", "json", "extract", "pick",
-              "sort", "limit", "filter", "count", "to_json", "template", "join", "script")
+              "sort", "limit", "filter", "count", "to_json", "template", "join", "script", "agent")
+MODEL_STEPS = ("agent",)
+FILTER_OPS = ("eq", "ne", "contains", "matches", "gt", "ge", "lt", "le")
+FALLBACK = re.compile(r"\s\|\|\s*agent\s*:")       # `script: cmd || agent: ask` (scripts run without a shell)
+# What a script step sees of the environment: enough to run, no tokens. A building adds names in `env`.
+SAFE_ENV = ("PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LANGUAGE", "TERM", "TZ", "TMPDIR", "TEMP", "TMP",
+            "SYSTEMROOT", "PYTHONIOENCODING")
+
+Agent = Callable[[str, str], str]        # (ask, input text) → the new text
+
+
+@dataclass
+class Result:
+    text: str
+    records: list | None = None          # the result as records (a flat map's items), None when it is text
+    error: str = ""
+    agent_steps: int = 0                 # how many steps an agent did (an `agent:` or a script's fallback)
+
+
+def _edge(arg: str) -> str:
+    """One space after the colon or the arrow is syntax; "quoted" keeps the spaces at the edges."""
+    arg = arg[1:] if arg.startswith(" ") else arg
+    q = arg.strip()
+    return q[1:-1] if len(q) >= 2 and q[0] == q[-1] == '"' else arg
 
 
 def parse(step: str) -> tuple[str, str]:
@@ -40,13 +74,42 @@ def parse(step: str) -> tuple[str, str]:
     name = name.strip().lower()
     if name not in STEP_NAMES:
         raise ValueError(f"unknown step {name!r}; steps: {', '.join(STEP_NAMES)}")
-    if name == "join":                                  # "join: , " keeps its spaces
-        return name, arg[1:] if arg.startswith(" ") else arg
+    if name in ("join", "replace"):                     # "join: , " keeps its spaces
+        return name, arg
     return name, arg.strip()
 
 
+def _replace_parts(arg: str) -> tuple[str, str]:
+    if "=>" not in arg:
+        raise ValueError("say replace: <regex> => <with> (an empty <with> deletes)")
+    pat, _, rep = arg.partition("=>")
+    return pat.strip(), _edge(rep.rstrip("\n"))
+
+
+def _extract_parts(arg: str) -> tuple[str, str]:
+    field, eq, rx = arg.partition("=")
+    if not eq or not field.strip() or not rx.strip():
+        raise ValueError("say extract: <field> = <regex>")
+    return field.strip(), rx.strip()
+
+
+def _filter_parts(arg: str) -> tuple[str, str, str]:
+    field, how, value = (arg.split(" ", 2) + ["", ""])[:3]
+    if how not in FILTER_OPS:
+        raise ValueError(f"say filter: <field> <{'|'.join(FILTER_OPS)}> <value>")
+    return field, how, value
+
+
+def _script_parts(arg: str) -> tuple[str, str]:
+    """(command, the agent's ask when the script fails — or '')."""
+    m = FALLBACK.search(arg)
+    if not m:
+        return arg.strip(), ""
+    return arg[:m.start()].strip(), arg[m.end():].strip()
+
+
 def check(steps: list[str]) -> list[str]:
-    """Problems of a step list, before it runs (bad names, bad regexes)."""
+    """Problems of a step list, before it runs (bad names, bad regexes, bad arguments)."""
     out = []
     for i, step in enumerate(steps, 1):
         try:
@@ -54,12 +117,86 @@ def check(steps: list[str]) -> list[str]:
             if name in ("grep", "drop"):
                 re.compile(arg)
             elif name == "replace":
-                re.compile(arg.split("=>", 1)[0].strip())
+                re.compile(_replace_parts(arg)[0])
             elif name == "extract":
-                re.compile(arg.split("=", 1)[1].strip())
+                re.compile(_extract_parts(arg)[1])
+            elif name == "filter":
+                field, how, value = _filter_parts(arg)
+                if how == "matches":
+                    re.compile(value)
+            elif name == "limit" and arg:
+                int(arg)
+            elif name == "sort" and not arg:
+                raise ValueError("say sort: <field> [desc] [num|text]")
+            elif name == "script":
+                cmd, ask = _script_parts(arg)
+                if not cmd:
+                    raise ValueError("say script: <command>")
+                if FALLBACK.search(f" {arg}") and not ask:
+                    raise ValueError("say what the agent should do after || agent:")
+            elif name == "agent" and not arg:
+                raise ValueError("say agent: <what to do with the value>")
         except (ValueError, IndexError, re.error) as e:
             out.append(f"step {i} ({step[:30]}): {e}")
     return out
+
+
+def model_steps(steps: list[str]) -> int:
+    """How many steps may call a model: `agent:` and a script's `|| agent:` fallback."""
+    n = 0
+    for step in steps:
+        try:
+            name, arg = parse(step)
+        except ValueError:
+            continue
+        n += name in MODEL_STEPS or (name == "script" and bool(_script_parts(arg)[1]))
+    return n
+
+
+def script_env(names: list[str] | tuple[str, ...] = ()) -> dict[str, str]:
+    """The environment of a script step: the safe names, the locale, and what the building allows."""
+    keep = set(SAFE_ENV) | {str(n) for n in names}
+    return {k: v for k, v in os.environ.items() if k in keep or k.startswith("LC_")}
+
+
+def agent_prompt(ask: str, text: str) -> str:
+    return ("You are the Miller of a Mill in Orkcraft: one step of a pipeline that changes what passes "
+            "through it. Change the input as asked and answer with the result only — no comments, no code "
+            "fences, nothing around it; the next step reads your answer as it is.\n\n"
+            f"## What to do\n\n{ask}\n\n## Input\n\n{text}")
+
+
+def _num(v: Any) -> float | None:
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(str(v).strip().replace("_", ""))
+    except (TypeError, ValueError):
+        return None
+
+
+def _compare(have: Any, how: str, want: str) -> bool:
+    if have is None or have == "":
+        return False
+    a, b = _num(have), _num(want)
+    left, right = (a, b) if a is not None and b is not None else (chains._text(have), want)
+    return {"gt": left > right, "ge": left >= right, "lt": left < right, "le": left <= right}[how]
+
+
+def _sort_key(by: str, numeric: bool) -> Callable[[Any], Any]:
+    def key(r: Any) -> Any:
+        v = r.get(by) if isinstance(r, dict) else r
+        if numeric:
+            n = _num(v)
+            return (n is None, n if n is not None else 0.0)
+        return "" if v is None else str(v)
+    return key
+
+
+def _escapes(sep: str) -> str:
+    return re.sub(r"\\([nt\\])", lambda m: {"n": "\n", "t": "\t"}.get(m.group(1), "\\"), sep)
 
 
 def _text(v: Any) -> str:
@@ -78,16 +215,16 @@ def _hay(r: Any) -> str:
     return str(r)
 
 
-def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str]) -> Any:
+def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str], agent: Agent) -> Any:
     if name == "lines":
-        return [{"n": i, "line": ln} for i, ln in enumerate(_text(v).splitlines(), 1)]
+        return [{"n": i, "line": ln} for i, ln in enumerate(_text(v).splitlines()[:MAX_RECORDS], 1)]
     if name in ("grep", "drop"):
         rx = re.compile(arg)
         keep = name == "grep"
         return [r for r in _lines(v) if bool(rx.search(_hay(r)[:chains.FIELD_CHARS])) == keep]
     if name == "replace":
-        pat, _, rep = arg.partition("=>")
-        return re.sub(pat.strip(), rep.strip(), _text(v))
+        pat, rep = _replace_parts(arg)
+        return re.sub(pat, rep, _text(v))
     if name == "trim":
         return "\n".join(ln.strip() for ln in _text(v).splitlines() if ln.strip())
     if name == "lower":
@@ -100,8 +237,8 @@ def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str]) -> Any
         data = json.loads(_text(v))
         return (data if isinstance(data, list) else [data])[:MAX_RECORDS]
     if name == "extract":
-        field, _, rx = arg.partition("=")
-        pattern, field = re.compile(rx.strip()), field.strip()
+        field, rx = _extract_parts(arg)
+        pattern = re.compile(rx)
         out = []
         for r in _lines(v):
             rec = r if isinstance(r, dict) else {"line": r}
@@ -112,15 +249,25 @@ def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str]) -> Any
         fields = [f.strip() for f in arg.split(",") if f.strip()]
         return [{f: r.get(f) for f in fields if f in r} for r in _lines(v) if isinstance(r, dict)]
     if name == "sort":
-        by, _, how = arg.partition(" ")
-        return sorted(_lines(v), key=lambda r: str(r.get(by, "")) if isinstance(r, dict) else str(r),
-                      reverse=how.strip() == "desc")
+        by, *how = arg.split()
+        items = _lines(v)
+        if "num" in how:
+            numeric = True
+        elif "text" in how:
+            numeric = False
+        else:                                           # numbers when every value is one
+            vals = [r.get(by) if isinstance(r, dict) else r for r in items]
+            numeric = bool(vals) and all(_num(x) is not None for x in vals if x not in (None, ""))
+        return sorted(items, key=_sort_key(by, numeric), reverse="desc" in how)
     if name == "limit":
         return _lines(v)[: int(arg or 10)]
     if name == "filter":
-        field, how, value = (arg.split(" ", 2) + ["", ""])[:3]
+        field, how, value = _filter_parts(arg)
+        recs = [r if isinstance(r, dict) else {"line": r} for r in _lines(v)]
+        if how in ("gt", "ge", "lt", "le"):
+            return [r for r in recs if _compare(r.get(field), how, value)]
         op = {"field": field, "cmp": how, "value": value}
-        return [r for r in _lines(v) if chains._cmp(r if isinstance(r, dict) else {"line": r}, op)]
+        return [r for r in recs if chains._cmp(r, op)]
     if name == "count":
         return [{"count": len(_lines(v))}]
     if name == "to_json":
@@ -128,26 +275,67 @@ def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str]) -> Any
     if name == "template":
         return [chains._fill(arg, r if isinstance(r, dict) else {"line": r}) for r in _lines(v)]
     if name == "join":
-        sep = arg.encode().decode("unicode_escape") if arg else "\n"
+        sep = _escapes(_edge(arg.rstrip("\n"))) if arg.strip() else "\n"
         return sep.join(_hay(r) if isinstance(r, dict) else str(r) for r in _lines(v))
     if name == "script":
-        return script(arg, _text(v))
+        cmd, ask = _script_parts(arg)
+        try:
+            return script(cmd, _text(v))
+        except InterruptedError:
+            raise
+        except Exception as e:
+            if not ask:
+                raise
+            try:
+                return agent(ask, _text(v))
+            except Exception as e2:
+                raise RuntimeError(f"the script failed ({e}), then the agent too: {e2}") from e2
+    if name == "agent":
+        return agent(arg, _text(v))
     raise ValueError(name)
 
 
-def run(steps: list[str], text: str, repo_root: Path | None = None,
-        cancel: threading.Event | None = None) -> tuple[str, str]:
-    """(output, error) — the error names the step that failed."""
+def default_agent(repo_root: Path, cancel: threading.Event, model: str = "") -> Agent:
+    """A read-only Claude (it may read the repository, never change it) as the `agent:` step."""
+    from orkcraft.realm import roads
+
+    def ask(what: str, text: str) -> str:
+        return roads.run_agent("claude", agent_prompt(what, text), repo_root, {}, cancel, model)[0].strip()
+    return ask
+
+
+def run_full(steps: list[str], text: str, repo_root: Path | None = None, cancel: threading.Event | None = None,
+             agent: Agent | None = None, env: list[str] | tuple[str, ...] = ()) -> Result:
+    """Every step in order; never raises — a failing step is the result's error, with what came before it."""
     cancel = cancel or threading.Event()
+    root = repo_root or Path.cwd()
+    agent = agent or default_agent(root, cancel)
+    used = [0]
 
     def script(cmd: str, stdin: str) -> str:
-        return jobs.run_script(cmd, stdin, repo_root or Path.cwd(), cancel)[0]
+        return jobs.run_script(cmd, stdin, root, cancel, base_env=script_env(env))[0]
+
+    def counted(ask: str, stdin: str) -> str:
+        used[0] += 1
+        return agent(ask, stdin)
 
     v: Any = text
     for i, step in enumerate(steps, 1):
         try:
             name, arg = parse(step)
-            v = _step(name, arg, v, script)
+            v = _step(name, arg, v, script, counted)
         except Exception as e:  # a failing step is the run's result, never a crash
-            return _text(v), f"step {i} ({str(step)[:40]}): {e}"
-    return _text(v), ""
+            return Result(_text(v), None, f"step {i} ({str(step)[:40]}): {e}", used[0])
+    return Result(_text(v), v if isinstance(v, list) else None, "", used[0])
+
+
+def run(steps: list[str], text: str, repo_root: Path | None = None, cancel: threading.Event | None = None,
+        agent: Agent | None = None, env: list[str] | tuple[str, ...] = ()) -> tuple[str, str]:
+    """(output, error) — the error names the step that failed."""
+    r = run_full(steps, text, repo_root, cancel, agent, env)
+    return r.text, r.error
+
+
+def items(records: list | None) -> list[str]:
+    """The flat map: each record of a result as the value of its own cart (a JSON object, or the line)."""
+    return [r if isinstance(r, str) else json.dumps(r, ensure_ascii=False) for r in (records or [])[:MAX_RECORDS]]
