@@ -120,5 +120,127 @@
         "office": "Tally Crag: tokens per building over 24 hours, 332k in total, the Forge's 174k bar in red over the limit (Office mode)"
       }
     }
+  ],
+  "knight": [
+    {
+      "id": "launch-board",
+      "title": "Launch Board",
+      "rtsAnalog": "build queue",
+      "text": "Code, copy and launch on one board:\n'Stripe webhooks', 'Launch post and pricing page',\n'Fix checkout 500'. Nothing lives in your head.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/knight/camp/launch-board.png",
+        "office": "buildings/knight/office/launch-board.png"
+      },
+      "alt": {
+        "camp": "Launch Board kanban: Launch post and pricing page and Product Hunt draft to do, Stripe webhooks and Fix checkout 500 in progress, Landing hero and Waitlist email done (Camp mode)",
+        "office": "Launch Board kanban: Launch post and pricing page and Product Hunt draft to do, Stripe webhooks and Fix checkout 500 in progress, Landing hero and Waitlist email done (Office mode)"
+      }
+    },
+    {
+      "id": "barracks",
+      "title": "Barracks",
+      "rtsAnalog": "unit production",
+      "text": "While you write the launch post,\ntwo orcs take Stripe webhooks and the 500 fix,\neach in its own worktree. Hard cap: $5.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/knight/camp/barracks.png",
+        "office": "buildings/knight/office/barracks.png"
+      },
+      "alt": {
+        "camp": "Barracks: two orcs at work, Smith on Stripe webhooks and Scout on Fix checkout 500, with Usage emails queued and a $5 budget (Camp mode)",
+        "office": "Barracks: two orcs at work, Smith on Stripe webhooks and Scout on Fix checkout 500, with Usage emails queued and a $5 budget (Office mode)"
+      }
+    },
+    {
+      "id": "tally-crag",
+      "title": "Tally Crag",
+      "rtsAnalog": "resource counter",
+      "text": "Your own money, per building:\nBarracks $2.20, Forge $0.90 today.\nYellow at the warn line, red at the cap.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/knight/camp/tally-crag.png",
+        "office": "buildings/knight/office/tally-crag.png"
+      },
+      "alt": {
+        "camp": "Tally Crag: spend in dollars per building over 24 hours, $3.67 in total, the Barracks' $2.20 bar in orange over the warn line (Camp mode)",
+        "office": "Tally Crag: spend in dollars per building over 24 hours, $3.67 in total, the Barracks' $2.20 bar in orange over the warn line (Office mode)"
+      }
+    },
+    {
+      "id": "watchtower",
+      "title": "Watchtower",
+      "rtsAnalog": "early-warning tower",
+      "text": "After the deploy it keeps watch:\na Sentry alert mail, a refund request,\na failed check. You get the cart, not the noise.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/knight/camp/watchtower.png",
+        "office": "buildings/knight/office/watchtower.png"
+      },
+      "alt": {
+        "camp": "Watchtower feed after a deploy: a Sentry 500 alert on /api/checkout, a failed e2e check and a refund request mail (Camp mode)",
+        "office": "Watchtower feed after a deploy: a Sentry 500 alert on /api/checkout, a failed e2e check and a refund request mail (Office mode)"
+      }
+    },
+    {
+      "id": "forge",
+      "title": "The Forge",
+      "rtsAnalog": "upgrade gate",
+      "text": "feat/stripe: PR #12 open, +413 −3.\nOne key tests it and squash-merges it into main.\nRed tests keep the gate shut.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/knight/camp/forge.png",
+        "office": "buildings/knight/office/forge.png"
+      },
+      "alt": {
+        "camp": "The Forge: branch feat/stripe with open PR #12 'Stripe billing' (+413 −3) and fix/checkout with PR #13 (Camp mode)",
+        "office": "The Forge: branch feat/stripe with open PR #12 'Stripe billing' (+413 −3) and fix/checkout with PR #13 (Office mode)"
+      }
+    },
+    {
+      "id": "loot-vault",
+      "title": "Loot Vault",
+      "rtsAnalog": "loot stash",
+      "text": "The launch post, HN and Product Hunt drafts,\nthe pricing page copy: read it, accept it,\nor roll it back.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/knight/camp/loot-vault.png",
+        "office": "buildings/knight/office/loot-vault.png"
+      },
+      "alt": {
+        "camp": "Loot Vault: launch.md, hn.md, ph.md and pricing.md written by agents, waiting to be accepted, the Show HN draft previewed (Camp mode)",
+        "office": "Loot Vault: launch.md, hn.md, ph.md and pricing.md written by agents, waiting to be accepted, the Show HN draft previewed (Office mode)"
+      }
+    },
+    {
+      "id": "town-hall",
+      "title": "Town Hall",
+      "rtsAnalog": "base building / tech tree",
+      "text": "Say what you need: 'post every merged PR to the changelog'.\nThe Builder plans it; you approve before anything stands.\nZ undoes any building.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/knight/camp/town-hall.png",
+        "office": "buildings/knight/office/town-hall.png"
+      },
+      "alt": {
+        "camp": "Town Hall: the order 'post every merged PR to the changelog' waiting for the Town Builder's plan and your approval (Camp mode)",
+        "office": "Town Hall: the order 'post every merged PR to the changelog' waiting for the Town Builder's plan and your approval (Office mode)"
+      }
+    },
+    {
+      "id": "catapult",
+      "title": "The Catapult",
+      "rtsAnalog": "launch siege engine",
+      "text": "Waits for the build, the notes and the board,\nchecks them against a schema,\nthen fires the release to your webhook.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/knight/camp/catapult.png",
+        "office": "buildings/knight/office/catapult.png"
+      },
+      "alt": {
+        "camp": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook (Camp mode)",
+        "office": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook (Office mode)"
+      }
+    }
   ]
 }

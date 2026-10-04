@@ -55,7 +55,8 @@ async def shoot(root: Path, bid: str, mode: str, out: Path | None, prep=None, ro
         await settle(pilot, 4)
         app.set_focus_state("neutral")
         await settle(pilot, 10)
-        view = w.query_one(TypedView)
+        found = w.query(TypedView)
+        view = found.first() if found else w
         if prep:
             r = prep(app, view)
             if asyncio.iscoroutine(r):
