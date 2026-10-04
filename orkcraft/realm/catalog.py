@@ -247,14 +247,23 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     # -- 4. results, telemetry and egress --------------------------------------------------------------
     BuildingType(
         "loot", "Loot Vault", "📦", "S",
-        "the store of finished things: generated files to accept or roll back, reports and releases with "
-        "what they cost",
-        "files to review, what landed", "a file's preview; accept keeps it, reject rolls it back",
-        events=(_e("generator.accepted", "file accepted", FILE, "a generated file was accepted"),
+        "the review checkpoint on a road: by its rules a cart passes at once or waits for a person, "
+        "who accepts it, edits it or sends it back for rework (with what the chain cost)",
+        "held, needs you, passed today", "the queue, a cart's trail and cost; accept, rework, restore",
+        events=(_e("loot.passed", "passed", TEXT, "a cart passed: by the rules or accepted"),
+                _e("loot.rework", "sent back", TEXT, "a cart was sent back to its source with the reason"),
+                _e("loot.needs_you", "needs you", TEXT, "a cart ran out of rework rounds: the person fixes it"),
+                _e("generator.accepted", "file accepted", FILE, "a generated file was accepted"),
                 _e("generator.rejected", "file rejected", FILE, "a generated file was rejected"),
                 _e("loot.stored", "stored", FILE, "something landed in ./loot/")),
-        actions=(_a("generator.accept_all", "Accept all", "✓", "accept every file still waiting"),),
-        config={"path": (str, None, False)},
+        actions=(_a("loot.accept_all", "Accept all", "✓", "accept every held cart (not the ones that need you)"),
+                 _a("generator.accept_all", "Accept files", "✓", "accept every changed file still waiting")),
+        config={"path": (str, None, False), "review": (str, ("rules", "always", "never"), False),
+                "sources": (list, None, False), "paths": (list, None, False),
+                "max_cost_usd": (float, (0, 1000), False), "max_tokens": (int, (0, 100_000_000), False),
+                "max_files": (int, (0, 10_000), False), "on_failed": (bool, None, False),
+                "external": (bool, None, False), "max_rework": (int, (0, 10), False),
+                "rework_tokens": (int, (0, 100_000_000), False)},
         art="vault", orc="Quartermaster", agentic=True),
     BuildingType(
         "crag", "Tally Crag", "🪨", "M",

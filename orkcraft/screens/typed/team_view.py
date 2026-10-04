@@ -59,7 +59,8 @@ class TeamView(TypedView):
         super().__init__(*a, **kw)
         self.current: tm.Discussion | None = None
         self.history: list[tm.Discussion] = []
-        self.waiting: list[tuple[str, str, str]] = []     # (title, text, path) that came mid-review
+        self.waiting: list[tuple] = []     # (title, text, path, ref, trail) that came mid-review
+        self._cart: tuple[str, tuple] = ("", ())     # the ref and trail of the document under review
         self._cancel: threading.Event | None = None
         self._busy = False
 
@@ -147,8 +148,9 @@ class TeamView(TypedView):
 
     # -- the review ----------------------------------------------------------------------------------
 
-    def start(self, text: str, title: str = "", path: str = "") -> bool:
-        """Review a document: its text, and its repo-relative path when it is a file."""
+    def start(self, text: str, title: str = "", path: str = "", ref: str = "", trail: tuple = ()) -> bool:
+        """Review a document: its text, and its repo-relative path when it is a file. `ref` and `trail`
+        are the cart's: they travel on with what the review sends."""
         text = text.strip()
         if not text and path:
             try:
@@ -160,7 +162,7 @@ class TeamView(TypedView):
             return False
         title = (title or _title_of(text)).strip()
         if self._busy or (self.current is not None and self.current.outcome == "asked"):
-            self.waiting.append((title, text, path))
+            self.waiting.append((title, text, path, ref, tuple(trail)))
             self._render_list()
             return False
         if getattr(self.app, "gold_exhausted", lambda: False)():
@@ -178,6 +180,7 @@ class TeamView(TypedView):
             except OSError:
                 pass
         self.current = d
+        self._cart = (ref, tuple(trail))         # what came in: travels on with what the review sends
         self._run()
         return True
 
@@ -223,11 +226,13 @@ class TeamView(TypedView):
         if d.outcome in ("approved", "rework"):
             root = self._get_repo_root()
             path = pipes.write_loot(root, self.building_id, d.title[:80], tm.report_markdown(d, self.team))
-            self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80])
+            ref, trail = self._cart
+            trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome),)
+            self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
             if d.outcome == "approved":
-                self.emit("team.approved", d.doc, d.title)
+                self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
             else:
-                self.emit("team.rework", tm.rework_markdown(d, self.max_cycles), d.title)
+                self.emit("team.rework", tm.rework_markdown(d, self.max_cycles), d.title, trail=trail, ref=ref)
             self.app.notify(f"{d.title[:60]}: {OUTCOME[d.outcome]}", title=f"{ICON} Clan Fire")
         elif d.outcome == "asked":
             self.app.notify(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
@@ -239,8 +244,8 @@ class TeamView(TypedView):
         self.history = tm.load_all(self.state_dir)
         self._render_list()
         if self.waiting and d.outcome != "asked":
-            title, text, path = self.waiting.pop(0)
-            self.start(text, title, path)
+            title, text, path, ref, trail = self.waiting.pop(0)
+            self.start(text, title, path, ref, trail)
 
     def reply(self, text: str | None) -> None:
         d = self.current
@@ -251,9 +256,9 @@ class TeamView(TypedView):
 
     def receive(self, payload, title: str, markdown: str) -> None:
         if payload.kind == pipes.FILE and (self._get_repo_root() / payload.value).is_file():
-            self.start("", payload.title or title, payload.value)      # members read the file itself
+            self.start("", payload.title or title, payload.value, payload.ref, payload.trail)   # members read the file
         else:
-            self.start(markdown or payload.value, payload.title or title)
+            self.start(markdown or payload.value, payload.title or title, "", payload.ref, payload.trail)
 
     def on_unmount(self) -> None:
         if self._cancel is not None:

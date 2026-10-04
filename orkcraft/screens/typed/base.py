@@ -24,6 +24,7 @@ STATE_ROOT = Path(".orkcraft")
 
 class TypedView(CustomBuildingView):
     TYPE = ""
+    TAKES_REWORK = False      # a delivered cart is work it redoes (a Loot checkpoint may send one back)
 
     DEFAULT_CSS = """
     TypedView .typed-list { width: 2fr; height: 1fr; border: round $surface-lighten-1; }
@@ -35,6 +36,8 @@ class TypedView(CustomBuildingView):
     def __init__(self, spec: dict, repo_root: Path | None = None, graph=None, id: str | None = None) -> None:
         super().__init__(spec, repo_root, graph, id)
         self.incoming_title = ""
+        self.incoming_trail: tuple[pipes.Hop, ...] = ()   # what the last cart went through
+        self.incoming_ref = ""
 
     # -- what it is ---------------------------------------------------------------------------------
 
@@ -99,17 +102,21 @@ class TypedView(CustomBuildingView):
 
     # -- roads --------------------------------------------------------------------------------------
 
-    def show_incoming(self, title: str, markdown: str) -> None:
-        self.incoming_title = title
+    def show_incoming(self, title: str, markdown: str, trail: tuple = (), ref: str = "") -> None:
+        self.incoming_title, self.incoming_trail, self.incoming_ref = title, tuple(trail), ref
 
     def receive(self, payload: pipes.Payload, title: str, markdown: str) -> None:
         """A cart arrived. Most types only note it; some act on it (Agent runs, Barracks enqueues)."""
 
-    def emit(self, event_id: str, value: str, title: str = "") -> bool:
-        """Send `event_id` (one this building declares) down its roads. True when a road took it."""
+    def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "") -> bool:
+        """Send `event_id` (one this building declares) down its roads. True when a road took it.
+        A building that passes on what it received gives its `trail` and `ref` so they travel on."""
         app = getattr(self, "app", None)
         emit = getattr(app, "emit_typed", None)
-        return bool(emit(self.building_id, event_id, value, title)) if emit is not None else False
+        if emit is None:
+            return False
+        extra = {k: v for k, v in (("trail", tuple(trail)), ("ref", ref)) if v}
+        return bool(emit(self.building_id, event_id, value, title, **extra))
 
     def save_config(self, changes: dict) -> bool:
         """Change the building's settings and save its spec (it is checked like any spec)."""

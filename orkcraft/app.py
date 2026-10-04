@@ -1670,6 +1670,26 @@ class OrkcraftApp(App[int]):
         except Exception:
             return None
 
+    def return_for_rework(self, source_id: str, payload: pipes.Payload) -> bool:
+        """A Loot checkpoint sends a cart back to the building that made it — directly, not by a road
+        (a road back would close a loop). True when that building redoes delivered work
+        (`TAKES_REWORK`: a Barracks queues the task again)."""
+        view = self._custom_view(source_id)
+        if not getattr(view, "TAKES_REWORK", False):
+            return False
+        self.deliver_payload(source_id, payload, payload.title, payload.value)
+        return True
+
+    def _loot_burning(self) -> list[str]:
+        """Loot buildings with a cart waiting for the person (they burn like an orc waiting for orders)."""
+        out = []
+        for w in self.desktop.windows:
+            view = self._custom_view(w.window_id)
+            burning = getattr(view, "burning", None)
+            if callable(burning) and burning():
+                out.append(w.window_id)
+        return out
+
     def _payload_markdown(self, payload: pipes.Payload) -> tuple[str, str]:
         """(title, markdown) of what a road carries, for a custom building's 📥 pane."""
         if payload.kind == pipes.FILE:
@@ -1684,15 +1704,17 @@ class OrkcraftApp(App[int]):
             event.stop()
             drop(event.text)
 
-    def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "") -> bool:
-        """A typed building sends one of its events: only when a road carries it."""
+    def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
+                   trail: tuple = (), ref: str = "") -> bool:
+        """A typed building sends one of its events: only when a road carries it (with the trail of
+        what it passes on, when it gives one)."""
         spec = self.custom_specs.get(building_id)
         ev = catalog.type_of(spec).event(event_id) if spec else None
         if ev is not None:
             feedback.record_output(self.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
         if ev is None or self.scroll is None or not scroll.has_outgoing(self.scroll, building_id, event_id):
             return False
-        self.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title))
+        self.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref))
         return True
 
     def deliver_payload(self, target_id: str, payload: pipes.Payload, title: str = "", markdown: str = "") -> None:
@@ -1701,7 +1723,7 @@ class OrkcraftApp(App[int]):
         if view is not None:
             t, md = (title, markdown) if markdown else self._payload_markdown(payload)
             src = self.scroll.building(payload.source) if self.scroll is not None else None
-            view.show_incoming(f"{src.title if src else payload.source} → {t}", md)
+            view.show_incoming(f"{src.title if src else payload.source} → {t}", md, payload.trail, payload.ref)
             receive = getattr(view, "receive", None)
             if receive is not None:
                 receive(payload, t, md)
@@ -1748,7 +1770,10 @@ class OrkcraftApp(App[int]):
         if b_spec is None or not self.roads.has_roads(b_id, pipes.ON_TASK):
             return
         title, md = pipes.task_report(orc_name, b_spec.title, term.text_lines())
-        payload = pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title)
+        cwd = Path(getattr(term, "cwd", None) or self.repo_root)
+        worktree = str(cwd.relative_to(self.repo_root)) if cwd != self.repo_root and self.repo_root in cwd.parents else ""
+        hop = pipes.hop(b_id, orc_id, "task", worktree=worktree, outcome="done")
+        payload = pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title, trail=(hop,))
         self.roads.emit(payload)
 
     # -- roads ------------------------------------------------------------------------------------
@@ -1778,14 +1803,15 @@ class OrkcraftApp(App[int]):
         return {"type": entity.type, "status": entity.status, "title": entity.title,
                 "subtype": "personal" if entity.is_personal else entity.subtype}
 
-    def deliver_handler_output(self, target_id: str, orc: scroll.OrcSpec, title: str, markdown: str) -> None:
-        """A handler's result: shown by a receiver that renders text, otherwise kept as a Loot report."""
+    def deliver_handler_output(self, target_id: str, orc: scroll.OrcSpec, title: str, markdown: str,
+                               trail: tuple = (), ref: str = "") -> None:
+        """A handler's result: shown by a receiver that renders text, otherwise kept as a Loot report.
+        `trail` is every hop the result went through, the handler's own last."""
         if not self._windows_alive():
             return
-        payload = pipes.Payload(kind=pipes.TEXT, value=markdown, source=target_id, mode="handler", title=title)
         view = self._custom_view(target_id)
         if view is not None:
-            view.show_incoming(title, markdown)
+            view.show_incoming(title, markdown, tuple(trail), ref)
         else:
             path = pipes.write_loot(self.repo_root, target_id, title, markdown)
             self.notify(f"📦 {title}: loot/pipes/{path.name}", title="Handler")
@@ -2364,10 +2390,13 @@ class OrkcraftApp(App[int]):
         )
         self._view_alerts()
         self._note_alerts()
+        burning = set(self._loot_burning())
         for w in self.desktop.windows:
             badge = garrison_badge(self.roster.garrison(w.window_id))
             if w.window_id == TOWN_HALL and getattr(self, "order_burning", False) and ALERT_ICON not in badge:
                 badge = f"{badge} {ALERT_ICON}".strip()      # a town described in words waits for the Builder
+            if w.window_id in burning and ALERT_ICON not in badge:
+                badge = f"{badge} {ALERT_ICON}".strip()      # a Loot cart waits for review
             w.set_badge(badge)
             if (hut := self.desktop.huts.get(w.window_id)) is not None:
                 hut.set_badge(w.badge)
@@ -2504,6 +2533,8 @@ class OrkcraftApp(App[int]):
         if self.roster.alerts:
             who_map = self._alert_who_map()
             self.push_screen(AwaitingOrdersModal(self.roster.alerts, who_map))
+        elif burning := self._loot_burning():
+            self.desktop.focus_window(self.desktop.get_window(burning[0]))     # a cart waits for review
         else:
             self.notify("No units requiring orders", title="❓")
 

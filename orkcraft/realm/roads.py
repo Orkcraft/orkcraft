@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, tiers
+from orkcraft.realm import chains, pipes, tiers
 from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
 
 SCRIPT_TIMEOUT_S = 60
@@ -122,6 +122,8 @@ class HandlerRun:
     tokens: int | None = None     # every token the model read or wrote, when the CLI says
     roads: tuple[str, ...] = ()
     inputs: list[dict] = field(default_factory=list, repr=False)   # the snapshot records it ran on
+    trail: tuple = field(default=(), repr=False)   # the hops of the carts it ran on (pipes.Hop)
+    ref: str = ""
 
 
 @dataclass
@@ -296,7 +298,7 @@ def read_examples(repo_root: Path, building_id: str, orc_id: str, limit: int = 5
 class Engine:
     def __init__(self, scroll: Callable[[], ts.TownScroll | None], repo_root: Path, *,
                  deliver: Callable[[str, Payload], None],
-                 on_output: Callable[[str, ts.OrcSpec, str, str], None] | None = None,
+                 on_output: Callable[..., None] | None = None,   # (target, orc, title, markdown, trail, ref)
                  meta: Callable[[Payload], dict] | None = None,
                  on_cart: Callable[[Cart], None] | None = None,
                  on_run: Callable[[HandlerRun], None] | None = None,
@@ -414,11 +416,14 @@ class Engine:
     def _start(self, b: ts.BuildingSpec, orc: ts.OrcSpec, st: HandlerState, now: float) -> None:
         with self._lock:
             records = self._records(b, orc, st)
+            carts = [p for p, _ in st.snapshot.values()]
             st.dirty = False
             st.generation += 1
             gen = st.generation
             run = HandlerRun(b.id, orc.id, orc.kind, uuid.uuid4().hex, now,
-                             roads=tuple(r["road"] for r in records), inputs=records)
+                             roads=tuple(r["road"] for r in records), inputs=records,
+                             trail=pipes.merge_trails(*(p.trail for p in carts)),
+                             ref=next((p.ref for p in carts if p.ref), ""))
         if orc.kind == "chain":
             result = chains.run_chain(orc.chain, records)
             self._finish(b, orc, run, "done" if result.ok else "error", result.markdown, result.error)
@@ -505,13 +510,15 @@ class Engine:
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:
         run.ended, run.outcome, run.markdown, run.error = self._clock(), outcome, markdown, error
+        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome),)
         with self._lock:
             self.state(b.id, orc.id).runs += 1
             self.runs = (self.runs + [run])[-200:]
         if outcome == "done" and orc.uses_model:
             self._keep_example(run)
         if outcome == "done" and self._on_output is not None:
-            self._call(self._on_output, b.id, orc, f"{orc.avatar} {orc.name} · {b.title}", markdown)
+            self._call(self._on_output, b.id, orc, f"{orc.avatar} {orc.name} · {b.title}", markdown,
+                       run.trail, run.ref)
         if self._on_run is not None:
             self._call(self._on_run, run)
 

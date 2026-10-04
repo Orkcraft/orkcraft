@@ -31,7 +31,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, roads
+from orkcraft.realm import jobs, pipes, roads
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
@@ -71,6 +71,7 @@ class RunOutcome:
 
 class PoolView(TypedView):
     TYPE = "barracks"
+    TAKES_REWORK = True
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
     steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost)
@@ -135,11 +136,12 @@ class PoolView(TypedView):
     def receive(self, payload, title: str, markdown: str) -> None:
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
-        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title))
+        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title),
+                      ref=payload.ref, trail=payload.trail)
 
-    def add_task(self, title: str, text: str, key: str = "") -> bk.PoolTask:
+    def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:
         task = bk.PoolTask(uuid.uuid4().hex[:8], title[:80], text, key or bk.task_key("text", text, title),
-                           bk.now_iso())
+                           bk.now_iso(), ref=ref, trail=[h.as_dict() for h in trail])
         st = self.state
         st.queue.append(task)
         self._dispatch(task)
@@ -349,6 +351,11 @@ class PoolView(TypedView):
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
 
+    def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
+        """The task's trail with this building's hop: the whole task (every run and review) as one."""
+        return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
+                                                       task.cost_usd, orc.worktree, task.branch, outcome),)
+
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state
         task, orc = st.task(task_id), st.orc(orc_name)
@@ -377,7 +384,8 @@ class PoolView(TypedView):
             st.log(bk.Decision(bk.now_iso(), task.id, "answer", orc.name, f"{q} → {a}"))
         if out.error:
             task.status = "failed"
-            self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title)
+            self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title,
+                      trail=self._trail(task, orc, "error"), ref=task.ref)
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks")
         elif ok:
@@ -387,7 +395,8 @@ class PoolView(TypedView):
             st.log(bk.Decision(bk.now_iso(), task.id, "accept", orc.name, out.notes or "accepted"))
             where = f"\n\n_pull request:_ {out.pr}" if out.pr else (f"\n\n_branch:_ `{task.branch}`" if task.branch else "")
             note = f" ({out.pr_note})" if out.pr_note and not out.pr else ""
-            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}", task.title)
+            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}", task.title,
+                      trail=self._trail(task, orc, "done"), ref=task.ref)
         else:
             self._rework(task, orc, out.notes)
         on_run = getattr(self.app, "on_handler_run", None)
@@ -414,7 +423,8 @@ class PoolView(TypedView):
             task.status, task.wait_for = "queued", orc.name
             st.queue.insert(0, task)
             return
-        self.emit("pool.failed", f"**{task.title}** — rejected after {reworks} reworks: {notes}", task.title)
+        self.emit("pool.failed", f"**{task.title}** — rejected after {reworks} reworks: {notes}", task.title,
+                  trail=self._trail(task, orc, "error"), ref=task.ref)
         self._ask(task, f"Rejected after {reworks} reworks. Last notes: {notes[:500]}\n\nWhat should {orc.name} do?",
                   "rejected")
 

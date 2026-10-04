@@ -128,6 +128,8 @@ class PoolTask:
     qa: list[list[str]] = field(default_factory=list)   # [question, answer, who answered]
     question: str = ""              # the question waiting for the operator (status asked)
     pr: str = ""                    # the pull request's URL
+    ref: str = ""                   # the thing worked on (a cart's ref), kept through rework rounds
+    trail: list = field(default_factory=list)   # the hops before it arrived (pipes.Hop dicts)
 
 
 @dataclass
