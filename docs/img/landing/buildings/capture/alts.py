@@ -30,3 +30,13 @@ ALT["elf"] = {
  "scroll-dump": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone",
  "forge": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2",
 }
+ALT["lich"] = {
+ "sprint-board": "Sprint Board for Sprint 14: 9 to do, 4 in progress including Security review OAuth and Checkout 500, 6 done",
+ "loot-vault": "Loot Vault with the stored 'Sprint 14 status digest' report (6 events, 2 blockers), with when it came and what it cost ($0.04)",
+ "tally-crag": "Tally Crag: Sprint 14 tasks per column as bars, 9 to do, 4 in progress, 6 done",
+ "watchtower": "Watchtower escalations: '#41 review waiting 2 d' open, a failed check on main, a client mail and the 09:00 digest",
+ "war-drum": "War Drum for today: 10:00 Standup next, then 1:1 with Mira, Sprint 14 review at 14:00 and Sprint 15 planning at 16:00",
+ "orc-council": "Orc Council agreed on the Sprint 15 plan in round 2 of 3 for $0.38; the Critic's objection '11 stories, velocity is 8' is open",
+ "barracks": "Barracks: two orcs busy on Pricing page and Usage emails, and the foreman's log of who got which task and why",
+ "scroll-dump": "Scroll Dump of team notes (a 1:1, ADR-014, a retro); a search for 'decision' returns one fragment from ADR-014 Payments",
+}

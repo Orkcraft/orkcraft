@@ -12,6 +12,35 @@ from orkcraft.realm.pipes import Payload
 
 W, H = 56, 15
 
+# One clock for the whole run: Camp and Office of a building show the same times.
+import datetime as _dt
+import types as _types
+_FROZEN = _dt.datetime.now().replace(second=0, microsecond=0)
+
+
+class _FrozenDatetime(_dt.datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return _FROZEN if tz is None else _FROZEN.astimezone(tz)
+
+
+_FROZEN_DT = _types.SimpleNamespace(**{k: getattr(_dt, k) for k in dir(_dt) if not k.startswith("__")})
+_FROZEN_DT.datetime = _FrozenDatetime
+
+
+def _freeze_clock():
+    import importlib, pkgutil
+    import orkcraft.realm, orkcraft.screens.typed, orkcraft.sources
+    for pkg in (orkcraft.realm, orkcraft.screens.typed, orkcraft.sources):   # import them all first
+        for info in pkgutil.iter_modules(pkg.__path__, pkg.__name__ + "."):
+            try:
+                importlib.import_module(info.name)
+            except Exception:
+                pass
+    for name, mod in list(sys.modules.items()):
+        if name.startswith("orkcraft") and getattr(mod, "dt", None) is _dt:
+            mod.dt = _FROZEN_DT
+
 
 def _slow_work(harness, prompt, workdir, cancel, model, env, resume):
     """The sandbox's simulated orc, kept at work until the picture is taken."""
@@ -44,6 +73,7 @@ def pad_to_ratio(path: Path) -> None:
 
 
 async def shoot(root: Path, bid: str, mode: str, out: Path | None, prep=None, rows=None) -> str:
+    _freeze_clock()
     app = OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True)
     async with app.run_test(size=(W, H)) as pilot:
         await settle(pilot, 6)

@@ -364,5 +364,127 @@
         "office": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2 (Office mode)"
       }
     }
+  ],
+  "lich": [
+    {
+      "id": "sprint-board",
+      "title": "Sprint Board",
+      "rtsAnalog": "build queue",
+      "text": "Sprint 14 at a glance: 9 to do, 4 in work,\n6 done. 'Security review OAuth' sits\nwhere everyone can see it.",
+      "dogma": "Less text",
+      "media": {
+        "camp": "buildings/lich/camp/sprint-board.png",
+        "office": "buildings/lich/office/sprint-board.png"
+      },
+      "alt": {
+        "camp": "Sprint Board for Sprint 14: 9 to do, 4 in progress including Security review OAuth and Checkout 500, 6 done (Camp mode)",
+        "office": "Sprint Board for Sprint 14: 9 to do, 4 in progress including Security review OAuth and Checkout 500, 6 done (Office mode)"
+      }
+    },
+    {
+      "id": "loot-vault",
+      "title": "Loot Vault",
+      "rtsAnalog": "loot stash",
+      "text": "'Sprint 14 status digest' arrives every morning\nas a report: 6 events, 2 blockers.\nKept with when it came and what it cost.",
+      "dogma": "Less text",
+      "media": {
+        "camp": "buildings/lich/camp/loot-vault.png",
+        "office": "buildings/lich/office/loot-vault.png"
+      },
+      "alt": {
+        "camp": "Loot Vault with the stored 'Sprint 14 status digest' report (6 events, 2 blockers), with when it came and what it cost ($0.04) (Camp mode)",
+        "office": "Loot Vault with the stored 'Sprint 14 status digest' report (6 events, 2 blockers), with when it came and what it cost ($0.04) (Office mode)"
+      }
+    },
+    {
+      "id": "tally-crag",
+      "title": "Tally Crag",
+      "rtsAnalog": "resource counter",
+      "text": "Sprint 14 in bars: 9 to do, 4 in work, 6 done.\nOne key flips it to spend or runs,\nwith a warn line and a cap you set.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/lich/camp/tally-crag.png",
+        "office": "buildings/lich/office/tally-crag.png"
+      },
+      "alt": {
+        "camp": "Tally Crag: Sprint 14 tasks per column as bars, 9 to do, 4 in progress, 6 done (Camp mode)",
+        "office": "Tally Crag: Sprint 14 tasks per column as bars, 9 to do, 4 in progress, 6 done (Office mode)"
+      }
+    },
+    {
+      "id": "watchtower",
+      "title": "Watchtower",
+      "rtsAnalog": "early-warning tower",
+      "text": "Watches GitHub, mail and the schedule:\n'#41 review waiting 2 days'\nlands here, not in a lost thread.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/lich/camp/watchtower.png",
+        "office": "buildings/lich/office/watchtower.png"
+      },
+      "alt": {
+        "camp": "Watchtower escalations: '#41 review waiting 2 d' open, a failed check on main, a client mail and the 09:00 digest (Camp mode)",
+        "office": "Watchtower escalations: '#41 review waiting 2 d' open, a failed check on main, a client mail and the 09:00 digest (Office mode)"
+      }
+    },
+    {
+      "id": "war-drum",
+      "title": "War Drum",
+      "rtsAnalog": "turn timer",
+      "text": "Your calendar as the day's rhythm:\n10:00 standup, 14:00 Sprint 14 review.\nWhat is now and what is next, nothing else.",
+      "dogma": "Less text",
+      "media": {
+        "camp": "buildings/lich/camp/war-drum.png",
+        "office": "buildings/lich/office/war-drum.png"
+      },
+      "alt": {
+        "camp": "War Drum for today: 10:00 Standup next, then 1:1 with Mira, Sprint 14 review at 14:00 and Sprint 15 planning at 16:00 (Camp mode)",
+        "office": "War Drum for today: 10:00 Standup next, then 1:1 with Mira, Sprint 14 review at 14:00 and Sprint 15 planning at 16:00 (Office mode)"
+      }
+    },
+    {
+      "id": "orc-council",
+      "title": "Orc Council",
+      "rtsAnalog": "war council",
+      "text": "Planner, Critic and Security agree on\nthe Sprint 15 plan before you read it:\n11 stories cut to 8. Max 3 rounds, max $2.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/lich/camp/orc-council.png",
+        "office": "buildings/lich/office/orc-council.png"
+      },
+      "alt": {
+        "camp": "Orc Council agreed on the Sprint 15 plan in round 2 of 3 for $0.38; the Critic's objection '11 stories, velocity is 8' is open (Camp mode)",
+        "office": "Orc Council agreed on the Sprint 15 plan in round 2 of 3 for $0.38; the Critic's objection '11 stories, velocity is 8' is open (Office mode)"
+      }
+    },
+    {
+      "id": "barracks",
+      "title": "Barracks",
+      "rtsAnalog": "unit production",
+      "text": "Who works on what right now:\ntwo orcs busy, one task waiting.\nEvery assignment comes with its reason.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/lich/camp/barracks.png",
+        "office": "buildings/lich/office/barracks.png"
+      },
+      "alt": {
+        "camp": "Barracks: two orcs busy on Pricing page and Usage emails, and the foreman's log of who got which task and why (Camp mode)",
+        "office": "Barracks: two orcs busy on Pricing page and Usage emails, and the foreman's log of who got which task and why (Office mode)"
+      }
+    },
+    {
+      "id": "scroll-dump",
+      "title": "Scroll Dump",
+      "rtsAnalog": "lore library",
+      "text": "Meeting notes, decisions, ADRs in one place.\nAgents quote the decision, not the whole wiki.\n1:1 notes stay personal.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/lich/camp/scroll-dump.png",
+        "office": "buildings/lich/office/scroll-dump.png"
+      },
+      "alt": {
+        "camp": "Scroll Dump of team notes (a 1:1, ADR-014, a retro); a search for 'decision' returns one fragment from ADR-014 Payments (Camp mode)",
+        "office": "Scroll Dump of team notes (a 1:1, ADR-014, a retro); a search for 'decision' returns one fragment from ADR-014 Payments (Office mode)"
+      }
+    }
   ]
 }
