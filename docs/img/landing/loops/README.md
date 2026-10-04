@@ -36,3 +36,14 @@ python capture/seed_loop_peon.py work/peon && python capture/shoot_loop_peon.py 
 ```
 (the scripts sit next to `docs/img/landing/buildings/capture/` and import its `classes.py`,
 `shootlib.py` and `shotlib.py`).
+
+## Animations (`<class>.gif`, `<class>.mp4`, 5 s)
+
+`capture/giflib.py` runs the real app on the scheme's camp (copied to a neutral `/srv/camp`, so
+no hut can show a path of this machine) and takes a frame every 0.1 s of real time: one or two
+events are sent, the buildings take the carts and change their status, the chain goes on by
+itself (the sandbox's simulated orcs work 1.6 s; the Council's simulated members agree), and one
+building opens at the end. Every frame is checked for paths, session ids and addresses before
+it is rendered. GIF at 1×, MP4 at 2×, the last frame held for 0.8 s.
+
+The flow of each clip, second by second, and the agentic patterns it shows are in `loops.json`.
