@@ -139,11 +139,12 @@ async def test_a_raised_totem_road_waits_for_its_route(fake_repo: Path, monkeypa
     monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
     plan, problems = town_builder.check(ROUTED, fake_repo, set())
     assert problems == []
+    town_presets.save_order(fake_repo, "triage my mail")
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         app.raise_town_plan(plan)
-        await _until(pilot, lambda: app.scroll.building("log") is not None and app.scroll.building("log").roads)
+        await _until(pilot, lambda: town_presets.pending_order(fake_repo) is None, n=200)   # the town stands
         road = app.scroll.building("log").roads[0]
         assert road.source == "gate" and road.filter.get("route") == ["rest"]
 
