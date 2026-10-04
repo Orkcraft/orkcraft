@@ -9,7 +9,7 @@ event (to the local calendar — a URL calendar is read-only).
 Documents for meetings: `lead` (2h) before a meeting starts, `calendar.event_upcoming` goes out
 once (`upcoming.json` remembers which went, so a restart does not repeat them), tagged
 `[meet:<id>]` in its title and its text; 📄 (]) sends it for the selected meeting at once. Which
-meetings get a document is the roads' business (a Totem), not the Drum's. A cart that comes back
+meetings get a document is the roads' business (a Signpost), not the Drum's. A cart that comes back
 with the tag — a Barracks' `pool.done` — is the meeting's document (`docs.json`): a file it names,
 else its Markdown kept in `docs/<id>.md`. The meeting then shows 📄, and Enter on it sends the
 document as `calendar.doc_opened` — along its road, or straight to a Lake of Insight when none

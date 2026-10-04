@@ -15,7 +15,7 @@ SIZE = (200, 56)
 
 # the design: (footprint width, the widths of the text slots) per building
 DESIGN = {
-    "mill": (15, [8]), "catapult": (17, [8]), "horn": (14, [8]), "pit": (9, [1]), "totem": (10, [2, 4]), "watchtower": (12, [10] * 4),
+    "mill": (15, [8]), "catapult": (17, [8]), "horn": (14, [8]), "pit": (9, [1]), "signpost": (10, [6, 6]), "watchtower": (12, [10] * 4),
     "fields": (18, [16] * 7), "barracks": (18, [16] * 7), "council": (18, [16] * 7), "forge": (18, [16] * 7),
     "scrolls": (18, [16] * 7), "war_drum": (26, [24] * 9), "forest": (26, [24] * 9), "loot": (26, [24] * 9),
     "crag": (26, [24] * 9), "lake": (60, [58] + [28, 24] * 6 + [58]),

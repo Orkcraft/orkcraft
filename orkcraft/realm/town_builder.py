@@ -7,8 +7,8 @@ One `claude -p` call per attempt, in an empty folder, like the Foreman: the plan
 and the building catalog, never the project. Its answer is untrusted: buildings come only from the
 catalog's types (a spec, data — never code) and pass `masonry.validate_spec`; roads are plain (no
 orc handles them, nothing runs a model), may only wait for an event their source sends and only lead
-into a building that does something with a cart (`catalog.takes`). A road from a Totem waits for one
-of its routes. Settings that name buildings (a Catapult's `wait_for`, a Horn's sounds, a Totem's
+into a building that does something with a cart (`catalog.takes`). A road from a Signpost waits for one
+of its routes. Settings that name buildings (a Catapult's `wait_for`, a Horn's sounds, a Signpost's
 `source` rule) are written with plan keys and point at the buildings' ids once these are known.
 
 The first attempt sees the catalog with the settings' names only; a plan that fails goes back with
@@ -21,7 +21,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import builders, catalog, masonry, totem
+from orkcraft.realm import builders, catalog, masonry, signpost
 
 MAX_ATTEMPTS = 3
 MAX_BUILDINGS = 8
@@ -48,14 +48,14 @@ invent passwords or tokens; config only names environment variables that hold th
 Then 0-{max_roads} roads: each carries one event a source building sends to a target building that
 should receive it ("from" and "to" are keys of the plan, "event" one of the source type's events or
 on_selection_change), with a one-sentence "why". A road leads only into a type that takes something
-from a road. A road from a totem on totem.routed names the "route" (one of the totem's rules) it waits
-for. A setting that names a building (wait_for, a horn's sounds, a totem's `source` rule) uses plan keys.
+from a road. A road from a signpost on signpost.routed names the "route" (one of the signpost's rules) it
+waits for. A setting that names a building (wait_for, a horn's sounds, a signpost's `source` rule) uses plan keys.
 {template}{feedback}
 Answer with ONE JSON object and nothing else:
 {{"title": "<the town's name, plain>", "summary": "<one sentence>",
   "buildings": [{{"key": "...", "type": "...", "title": "...", "icon": "...", "why": "...",
                  "size": "S", "events": ["..."], "quick_actions": ["..."], "config": {{}}}}],
-  "roads": [{{"from": "<key>", "event": "...", "to": "<key>", "why": "...", "route": "<a totem's route, else leave out>"}}]}}"""
+  "roads": [{{"from": "<key>", "event": "...", "to": "<key>", "why": "...", "route": "<a signpost's route, else leave out>"}}]}}"""
 
 
 ADAPT = """
@@ -72,11 +72,11 @@ Adapt it to the operator's answers above:
   environment variable with its token in token_env), a Loot Vault for files they accept first;
 - every problem they named is answered by a building or a road — say which in its "why";
 - what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
-  distrust the output, prefer rules (Totem, Mill) over agents where results must not vary;
+  distrust the output, prefer rules (Signpost, Mill) over agents where results must not vary;
 - match their experience: new to orkestration → fewer buildings and an accept step before anything
   leaves;
 - their AI tools: work a tool is liked for (👍 docs, code…) may go to agents in the town; work a tool
-  is weak at (👎 tickets…) gets a person's accept step or a rule (Totem, Mill) instead of an agent —
+  is weak at (👎 tickets…) gets a person's accept step or a rule (Signpost, Mill) instead of an agent —
   say so in the "why";
 - drop the template's buildings that serve nothing they said; keep its names where they still fit.
 """
@@ -88,11 +88,11 @@ class PlannedRoad:
     event: str
     target: str        # building id
     why: str = ""
-    route: str = ""    # from a Totem: the route the road waits for
+    route: str = ""    # from a Signpost: the route the road waits for
 
     @property
     def subscription(self) -> str:
-        """The event as the app subscribes to it: a Totem's route rides after `#`."""
+        """The event as the app subscribes to it: a Signpost's route rides after `#`."""
         return f"{self.event}#{self.route}" if self.route else self.event
 
 
@@ -141,7 +141,7 @@ def _rewired(type_id: str, config: dict, ids: dict[str, str], taken: set[str]) -
             head, slash, ev = k.strip().partition("/")
             return f"{ids.get(head, head)}{slash}{ev}{sep}{rest}" if "." not in head or slash else line
         out["sounds"] = [key(str(line)) for line in config["sounds"]]
-    if type_id == "totem" and isinstance(config.get("rules"), list):
+    if type_id == "signpost" and isinstance(config.get("rules"), list):
         source = re.compile(r"^(\s*[^:]+:\s*source\s+)(\S+)(\s*)$")
         out["rules"] = [source.sub(lambda m: m[1] + ids.get(m[2], m[2]) + m[3], str(line)) for line in config["rules"]]
     return out, problems
@@ -203,7 +203,7 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
         if not isinstance(r, dict):
             problems.append(f"roads/{i}: not an object")
             continue
-        src, dst, event = ids.get(str(r.get("from"))), ids.get(str(r.get("to"))), str(r.get("event") or "")
+        src, dst, event = ids.get(str(r.get("from"))), ids.get(str(r.get("to"))), catalog.event_id(str(r.get("event") or ""))
         route = str(r.get("route") or "").strip().lower()
         if src is None or dst is None:
             problems.append(f"roads/{i}: from {r.get('from')!r} and to {r.get('to')!r} must be keys of planned buildings")
@@ -220,14 +220,14 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
             problems.append(f"roads/{i}: {r.get('to')} ({specs[dst]['type']}) does nothing with a cart; "
                             f"lead the road into a type that takes one from a road")
             continue
-        if specs[src]["type"] == "totem" and event == "totem.routed":
-            routes = totem.routes((specs[src].get("config") or {}).get("rules") or [])
+        if specs[src]["type"] == "signpost" and event == "signpost.routed":
+            routes = signpost.routes((specs[src].get("config") or {}).get("rules") or [])
             if route not in routes:
-                problems.append(f"roads/{i}: a road from the totem {r.get('from')} waits for one of its routes "
+                problems.append(f"roads/{i}: a road from the signpost {r.get('from')} waits for one of its routes "
                                 f"({', '.join(routes) or 'it has no rules: give it `rules`'}), not {route or 'none'!r}")
                 continue
         elif route:
-            problems.append(f"roads/{i}: only a road from a totem on totem.routed has a route")
+            problems.append(f"roads/{i}: only a road from a signpost on signpost.routed has a route")
             continue
         if (src, event, dst, route) in seen:
             continue

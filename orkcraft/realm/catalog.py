@@ -111,13 +111,13 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "feeds": (list, None, False), "intent": (str, None, False)},
         art="watchtower", orc="Lookout"),
     BuildingType(
-        "totem", "Totem", "🗿", "S",
-        "a crossroads: rules (if / switch) send what arrives down one of its roads, no model",
-        "the rules, the last route taken", "the rules and what went where",
-        events=(_e("totem.routed", "routed", TEXT, "what arrived, sent down the route its rule picked"),
-                _e("totem.unmatched", "no rule", TEXT, "no rule matched what arrived")),
+        "signpost", "Signpost", "🚏", "S",
+        "a crossroads post: rules (if / switch) send what arrives down one of its roads, no model",
+        "the last route taken, how many routes", "the rules and what went where",
+        events=(_e("signpost.routed", "routed", TEXT, "what arrived, sent down the route its rule picked"),
+                _e("signpost.unmatched", "no rule", TEXT, "no rule matched what arrived")),
         config={"rules": (list, None, False)},
-        art="spire", orc="Spirit Guide"),
+        art="spire", orc="Grot Pointa"),
     BuildingType(
         "mill", "The Mill", "⚙️", "XS",
         "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
@@ -346,7 +346,17 @@ DEFAULT_TYPE = "custom"
 ALIASES = {"dropzone": "pit", "mail": "watchtower", "tasks": "fields", "pool": "barracks", "team": "council",
            "campfire": "council", "clan_fire": "council",
            "calendar": "war_drum", "file_tree": "forest", "knowledge": "scrolls", "git": "forge",
-           "generator": "loot", "charts": "crag"}
+           "generator": "loot", "charts": "crag",
+           # the Totem's rules moved to the Signpost; the Totem's name and look wait for a building of their own
+           # (when it comes, a "totem" spec with `rules` still has to load as a Signpost — see `migrate`)
+           "totem": "signpost"}
+# Events of old: a road, a spec's pick or a Horn's table that names one still finds the new event.
+EVENT_ALIASES = {"totem.routed": "signpost.routed", "totem.unmatched": "signpost.unmatched"}
+
+
+def event_id(event: str) -> str:
+    """The current id of an event (an old id → its new one)."""
+    return EVENT_ALIASES.get(event, event)
 
 
 def migrate(spec: dict) -> dict:
@@ -357,8 +367,14 @@ def migrate(spec: dict) -> dict:
     tid = spec.get("type")
     if ALIASES.get(tid, tid) == "council" and spec.get("icon") == "🔥":
         spec = {**spec, "icon": "🪔"}          # the Clan Fire's own icon; 🔥 means "waits for you"
+    if tid == "totem":                         # the Totem's look stays the Totem's: the post wears its own
+        spec = {**spec, "icon": "🚏" if spec.get("icon") in (None, "", "🗿") else spec["icon"],
+                "title": "Signpost" if spec.get("title") == "Totem" else spec.get("title", "Signpost")}
     if tid in ALIASES:
-        return {**spec, "type": ALIASES[tid]}
+        spec = {**spec, "type": ALIASES[tid]}
+        if isinstance(spec.get("events"), list):
+            spec["events"] = [event_id(str(e)) for e in spec["events"]]
+        return spec
     if tid == "catapult" and isinstance(spec.get("config"), dict) and "page" in spec["config"]:
         cfg = dict(spec["config"])           # one page → the intent's first form
         page, submit = str(cfg.pop("page") or ""), str(cfg.pop("submit", "") or "")
@@ -396,6 +412,7 @@ def events_of(spec: dict | None) -> list[str]:
     """The typed events this building sends: the spec's pick, else every event of its type."""
     t = type_of(spec)
     picked = (spec or {}).get("events")
+    picked = None if picked is None else {event_id(str(e)) for e in picked}
     return [e.id for e in t.events if picked is None or e.id in picked]
 
 
@@ -503,9 +520,9 @@ def validate(spec: dict) -> list[str]:
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
         if config.get("mode") == "browser" and not config.get("forms"):
             errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
-    if tid == "totem" and isinstance(config.get("rules"), list):
-        from orkcraft.realm import totem
-        errors += [f"config: rules: {e}" for e in totem.rules_of(config["rules"])[1]]
+    if tid == "signpost" and isinstance(config.get("rules"), list):
+        from orkcraft.realm import signpost
+        errors += [f"config: rules: {e}" for e in signpost.rules_of(config["rules"])[1]]
     if tid != DEFAULT_TYPE:
         for key, (_, _, required) in t.config.items():
             if required and key not in config:
@@ -517,7 +534,7 @@ def validate(spec: dict) -> list[str]:
 # Every type stands under exactly one intent, in the order the operator is likely to need it.
 INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Take in what I drop, paste or receive", ("pit", "watchtower")),
-    ("Sort and transform it — no model", ("totem", "mill")),
+    ("Sort and transform it — no model", ("signpost", "mill")),
     ("Plan and track the work", ("fields", "war_drum")),
     ("Put agents to work", ("barracks", "council")),
     ("Know the project: files, notes, diffs", ("forest", "scrolls", "lake")),
@@ -535,8 +552,8 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 # What a cart on a plain road makes the building do. A type that is not here only shows the cart
 # as a note: a plain road into it does nothing.
 TAKES: dict[str, str] = {
-    "totem": "anything: the first rule that matches picks a route and the cart goes on as totem.routed "
-             "(else totem.unmatched)",
+    "signpost": "anything: the first rule that matches picks a route and the cart goes on as signpost.routed "
+                "(else signpost.unmatched)",
     "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
     "horn": "anything: plays the sound its table picks for that source and event",
     "fields": "anything: the cart becomes a card — a task in To Do (a note in `notes` mode); its title, else "
@@ -598,7 +615,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",
     },
-    "totem": {
+    "signpost": {
         "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
                  "`<route>: kind <text|file|node>`, `<route>: source <building>`, `<route>: event <event id>`, "
                  "`<route>: <field> == <value>` (or !=; field: title, value, source, event, kind or a JSON key), "

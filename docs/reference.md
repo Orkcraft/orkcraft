@@ -120,7 +120,7 @@ Roads and carts run between the huts.
 
 | Footprint | Buildings |
 |---|---|
-| small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 📯 Horn (a horn and its sound) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
+| small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 📯 Horn (a horn and its sound) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🚏 Signpost (a post with two boards: the last route, the number of routes; DIS / WAY while it has none) |
 | 🗼 Watchtower (12 wide) | a roof over what is new per source: `gmail    3`, `slack  99+`, `jira   ERR`; more than four → `+2 more` |
 | halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🪔 Clan Fire · ⚒️ Forge · 🗑️ Scroll Dump |
 | complexes, 26 wide, 9 lines | 🥁 War Drum · 🌲 File Forest · 📦 Loot Vault · 🪨 Tally Crag (and the 🏰 Town Hall) |
@@ -175,7 +175,7 @@ above the hut), up to two **quick actions** (buttons under the hut, `[` / `]`), 
 sends down roads and its settings. Each camp type has its own silhouette (see Town view).
 
 ```
-1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🗿 Totem      📯 Horn
+1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🚏 Signpost   📯 Horn
 2. QUEUES AND WORK         🌾 Task Fields ─► 🏕️ Barracks ⇄ 🪔 Clan Fire       🥁 War Drum
 3. STORAGE AND INSPECTION  🌲 File Forest   🗑️ Scroll Dump   🌊 Lake of Insight   ⚒️ Forge
 4. RESULTS AND EGRESS      📦 Loot Vault    🪨 Tally Crag    🎯 Catapult
@@ -185,7 +185,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
 | 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
-| 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
+| 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own; a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | a board of cards in `TASKS.md` or a folder: tasks in To Do / In Progress / Done, sticky notes in lanes of their own (Ideas, Questions…); `mode`: `board` · `tasks` · `notes`; `n` `<` `>` `e` `c` `t` `s` `d` `N` (below); a cart becomes a card | `tasks.created`, `tasks.status_changed`, `notes.created`, `tasks.sent` |
@@ -778,10 +778,10 @@ catalog. The plan is 2–8 typed buildings from the catalog (never the Town Hall
 scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
 building passes `masonry.validate_spec`, and a plan with problems goes back with them (up to 3
 attempts). The checks also refuse a road into a building that does nothing with a cart (Pit,
-Watchtower, Task Fields, War Drum, File Forest), a road from a 🗿 Totem that does not name one of
+Watchtower, Task Fields, War Drum, File Forest), a road from a 🚏 Signpost that does not name one of
 its routes (it is raised as a road waiting for that route), and a 🎯 Catapult whose `wait_for` names
 a building that has no road into it. Settings that name buildings (`wait_for`, a Horn's sounds, a
-Totem's `source` rule) are written with the plan's keys and follow the buildings' ids. Nothing is
+Signpost's `source` rule) are written with the plan's keys and follow the buildings' ids. Nothing is
 raised before you approve it:
 
 - **Raise the town** (`ctrl+s`) — the buildings go up one by one, then the roads, with the bar along

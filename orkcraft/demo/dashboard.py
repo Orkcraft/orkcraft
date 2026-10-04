@@ -11,10 +11,10 @@ F4 Library — three LLM wikis the librarian orcs keep (the code, the team, the 
 with pages: tasks from Task Fields pass through the Code Wiki on their way to a Barracks, so each
 arrives with the wiki's map; the Clan Fire spot-checks what the librarian wrote and its verdict
 lands in reviews.md. One code change is not taken in yet (● on the source).
-F3 Gates — The Pit feeds a Totem whose rules send a patch or a link to the Lake of Insight and a
+F3 Gates — The Pit feeds a Signpost whose rules send a patch or a link to the Lake of Insight and a
 release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
-sounds a chime for every paste and a horn for every route the Totem takes.
+sounds a chime for every paste and a horn for every route the Signpost takes.
 The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / 👎 with an incident,
 a self-improvement proposal and a weekly report.
 
@@ -141,7 +141,7 @@ GATES = {
     "files": {"demo/release.schema.json": RELEASE_SCHEMA},
     "buildings": [
         typed("gate_pit", "pit", "The Pit", "🕳️", "Scavenger", "drop or paste anything"),
-        typed("crossroads", "totem", "Totem", "🗿", "Spirit Guide", "routes by rules", "pagoda",
+        typed("crossroads", "signpost", "Signpost", "🚏", "Grot Pointa", "routes by rules", "pagoda",
               rules=["view: matches (?i)diff --git|http", "send: contains release", "view: else"]),
         typed("insight", "lake", "Lake of Insight", "🌊", "Seer", "shows what it is given", "dome"),
         typed("launcher", "catapult", "The Catapult", "🎯", "Loader", "sends releases out", "flag",
@@ -149,22 +149,22 @@ GATES = {
         typed("counter", "workshop", "Word Count", "🔢", "Tinker", "counts the words of every paste",
               runtime="python", layout="card", inputs=["gate_pit:pit.text"]),
         typed("gate_horn", "horn", "The Horn", "📯", "Hornblower", "sounds what comes in",
-              sounds=["pit.text: chime", "crossroads/totem.routed: horn", "*: ding"], quiet="23:00-07:00"),
+              sounds=["pit.text: chime", "crossroads/signpost.routed: horn", "*: ding"], quiet="23:00-07:00"),
     ],
     "layout": [(0.0, 0.0, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46), (0.7, 0.0, 0.3, 0.46), (0.0, 0.54, 0.3, 0.46),
                (0.35, 0.54, 0.3, 0.46), (0.7, 0.54, 0.3, 0.46)],
     "roads": [
         ("crossroads", "gate_pit", "pit.text", "on_drop", None, None),
         ("counter", "gate_pit", "pit.text", "on_paste", None, None),
-        ("insight", "crossroads", "totem.routed", "view", None, {"route": ["view"]}),
-        ("launcher", "crossroads", "totem.routed", "send", None, {"route": ["send"]}),
+        ("insight", "crossroads", "signpost.routed", "view", None, {"route": ["view"]}),
+        ("launcher", "crossroads", "signpost.routed", "send", None, {"route": ["send"]}),
         ("gate_horn", "gate_pit", "pit.text", "on_paste", None, None),
-        ("gate_horn", "crossroads", "totem.routed", "routed", None, None),
+        ("gate_horn", "crossroads", "signpost.routed", "routed", None, None),
     ],
     "payloads": {
         ("gate_pit", "pit.text"): ("text", "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n+++ b/src/app.py\n"
                                            "@@ -1 +1 @@\n-print('hello')\n+print('hello, camp')\n", "patch"),
-        ("crossroads", "totem.routed"): ("text", "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n"
+        ("crossroads", "signpost.routed"): ("text", "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n"
                                                  "+++ b/src/app.py\n@@ -1 +1 @@\n-print('hello')\n+print('hello, camp')\n",
                                          "view"),
     },
@@ -401,7 +401,7 @@ def _seed_pipeline(root: Path) -> None:
                                     "warns too early.", [
         weekly.Item(1, "Shorter Barracks orders", "same job, fewer words", "shrink", "camp", {"target": "orders"}),
         weekly.Item(2, "Warn at $3", "$2 fires every day", "set_config", "crag", {"key": "warn", "value": 3.0}),
-        weekly.Item(3, "Try a Totem before the Lake", "advice", "note")], "opus", 1.4))
+        weekly.Item(3, "Try a Signpost before the Lake", "advice", "note")], "opus", 1.4))
 
 
 def _seed_ledger(root: Path) -> None:

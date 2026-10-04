@@ -31,9 +31,9 @@ def test_the_tables_name_only_real_types():
 
 
 def test_the_text_spells_out_settings_only_where_asked():
-    totem, mill = catalog.TYPES["totem"], catalog.TYPES["mill"]
-    full = catalog.catalog_text([totem, mill])
-    some = catalog.catalog_text([totem, mill], detail={"mill"})
+    signpost, mill = catalog.TYPES["signpost"], catalog.TYPES["mill"]
+    full = catalog.catalog_text([signpost, mill])
+    some = catalog.catalog_text([signpost, mill], detail={"mill"})
     assert "contains <text>" in full and "grep: <regex>" in full
     assert "contains <text>" not in some and "rules?" in some and "grep: <regex>" in some
-    assert "takes from a road: anything" in full and "totem.routed [text]" in full
+    assert "takes from a road: anything" in full and "signpost.routed [text]" in full

@@ -112,7 +112,7 @@ operator, or their admin, has to make — and polls meanwhile.
 
 - From the intent alone the tower proposes sources and filters: "user feedback about the app" →
   Gmail (support@), Slack `#feedback`, Jira project `SUP`, App Store / Google Play reviews (new
-  sources), a Totem route to Barracks for a summary.
+  sources), a Signpost route to Barracks for a summary.
 - A cheap prefilter before the model (keywords the model proposes once from the intent) cuts the
   cost; the model sees only what passes.
 - 👍 / 👎 on what the Lookout let through (realm/feedback.py already records ratings) become

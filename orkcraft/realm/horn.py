@@ -78,7 +78,9 @@ def parse(lines: list[str]) -> tuple[dict[str, str], list[str]]:
 
 def pick(table: dict[str, str], source: str, event: str, default: str = DEFAULT) -> tuple[str, str]:
     """(sound, the key that chose it) for a cart of `event` from `source`; ("…", "") is the default."""
-    for key in (f"{source}/{event}", event, source, "*"):
+    from orkcraft.realm import catalog
+    old = [e for e, new in catalog.EVENT_ALIASES.items() if new == event]     # a table written before a rename
+    for key in (f"{source}/{event}", *(f"{source}/{e}" for e in old), event, *old, source, "*"):
         if key in table:
             return table[key], key
     return default, ""

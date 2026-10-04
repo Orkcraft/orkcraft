@@ -145,6 +145,18 @@ PIT = _make("pit", ["    ┌───┐", "_// │ § │", "    └───�
             caption=True, body=(5, 3))
 HORN = _make("horn", ["┌────────┐ /|", "│§§§§§§§§│=| )", "└────────┘ \\|"],
               fallback=("♪",), pad=0, center=True, body=(10, 3))
+# The Signpost: a post with a board pointing left (where the last cart went) and one pointing right
+# (how many routes); with nothing to show yet the boards read DIS / WAY.
+SIGNPOST = _make("signpost", ["    /\\    ",
+                              " ┌──┴┴──┐ ",
+                              "<┤§§§§§§│ ",
+                              " └──┬┬──┘ ",
+                              " ┌──┴┴──┐ ",
+                              " │§§§§§§├>",
+                              " └──┬┬──┘ ",
+                              "  __││__  "],
+                 fallback=("DIS", "WAY"), pad=0, center=True, body=(10, 8))
+# The Totem's look, kept for a building of its own to come (the Signpost took over its routing).
 TOTEM = _make("totem", ["  ┌────┐  ", "  │■  ■│  ", "┌─┤ §§ ├─┐", "└─┤§§§§├─┘", "  └────┘  "],
               head=("||",), pad=0, center=True, body=(10, 5))
 WATCHTOWER = _make("watchtower", ["     /\\     ", "   _/  \\_   ", " _/______\\_ ", "┌──────────┐"]
@@ -215,11 +227,11 @@ WORKSHOP = _make("workshop", ["     ||    ||     "] + _box(18, 5, top="┌──
                  head=("WORKSHOP",), body=(18, 7))
 
 SILHOUETTES: dict[str, Silhouette] = {s.id: s for s in (
-    MILL, CATAPULT, HORN, PIT, TOTEM, WATCHTOWER, FIELDS, BARRACKS, COUNCIL, FORGE, SCROLLS, WAR_DRUM, FOREST,
+    MILL, CATAPULT, HORN, PIT, SIGNPOST, TOTEM, WATCHTOWER, FIELDS, BARRACKS, COUNCIL, FORGE, SCROLLS, WAR_DRUM, FOREST,
     LOOT, CRAG, LAKE, TOWN_HALL, WORKSHOP)}
 
 # The catalog's types → their silhouette ids (the same names for all but a few).
-BY_TYPE = {"pit": "pit", "watchtower": "watchtower", "totem": "totem", "mill": "mill", "horn": "horn", "fields": "fields",
+BY_TYPE = {"pit": "pit", "watchtower": "watchtower", "signpost": "signpost", "mill": "mill", "horn": "horn", "fields": "fields",
            "barracks": "barracks", "council": "council", "war_drum": "war_drum", "forest": "forest",
            "scrolls": "scrolls", "lake": "lake", "forge": "forge", "loot": "loot", "crag": "crag",
            "catapult": "catapult", "town_hall": "town_hall", "workshop": "workshop"}
@@ -289,6 +301,8 @@ def plain(sil: Silhouette) -> Silhouette:
     rows = []
     for i in range(keep[0], keep[-1] + 1):
         row = list(lines[i][left:right + 1])
+        if i not in keep and not {row[0], row[-1]} <= _SIDES | {"│"}:
+            continue                      # between two boxes (the Signpost's boards): not part of one frame
         for end in (0, -1):
             if row[end] in _SIDES:
                 row[end] = "│"

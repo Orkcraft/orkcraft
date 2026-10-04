@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(".orkcraft")
 LOG_LIMIT = 1_000_000
 KEEP_LINES = 2000
-STATE_TYPES = ("pit", "watchtower", "totem", "mill", "fields", "barracks", "war_drum", "forest", "scrolls",
+STATE_TYPES = ("pit", "watchtower", "signpost", "mill", "fields", "barracks", "war_drum", "forest", "scrolls",
                "lake", "forge", "loot", "crag", "catapult", "workshop", "horn")
 
 
