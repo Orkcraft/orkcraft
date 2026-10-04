@@ -117,7 +117,7 @@ Roads and carts run between the huts.
 | Footprint | Buildings |
 |---|---|
 | small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 📯 Horn (a horn and its sound) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
-| 🗼 Watchtower | a roof over four lines: port, events, state, last signal |
+| 🗼 Watchtower (12 wide) | a roof over what is new per source: `gmail    3`, `slack  99+`, `jira   ERR`; more than four → `+2 more` |
 | halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🔥 Orc Council · ⚒️ Forge · 🗑️ Scroll Dump |
 | complexes, 26 wide, 9 lines | 🥁 War Drum · 🌲 File Forest · 📦 Loot Vault · 🪨 Tally Crag (and the 🏰 Town Hall) |
 | panorama, 60 wide | 🌊 Lake of Insight: two panes, the diff and what it is |
@@ -180,7 +180,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed) | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; steps without a model (`grep`, `replace`, `csv`, `json`, `extract`, `template`, `script: …`) | `mill.done`, `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
@@ -235,6 +235,30 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   there — learnt by that service's polled feed, or from Slack's delivery itself. An Automation
   rule sends the simple form `{"id", "title", "text", "url", "author", "mention"}`; other paths stay
   a raw `watch.webhook`.
+- **One tower, an intent.** Rather than a tower per source, give one tower every source and say what
+  you listen for: `intent: user feedback about the app`. The Lookout puts each new signal (the
+  schedule's aside) to the Fast Path's light model, twenty at a time, fenced as data it must not
+  obey; what matches goes down the roads with its reason (`🎯 a user complains about login`), the
+  rest stays in the list, dimmed and read. With the Fast Path off everything passes, and the head
+  says so.
+- **New and read.** A signal is new (• in the list, counted on the hut) until Enter reads it, ✓
+  *Read all* clears them, ✉ opens the newest new one. What was there at the first look is listed,
+  not new; an intent's misses are never new.
+- **Later** — open questions, not built yet:
+  1. *A tower that never sleeps.* It hears only while orkcraft runs; a background `orkcraft watch`
+     (a service) would poll, take webhooks and write `signals.jsonl`, the TUI only reading it. Today
+     a webhook's 202 also goes out before the signal is written.
+  2. *Prompt injection.* Signals are strangers' text and travel on to Barracks and the Council.
+     The intent's judge fences it, but the agents downstream do not yet: mark carts from outside as
+     untrusted, let agents act on them only for allow-listed people, or ask before acting.
+  3. *A secret required* for `/slack`, `/jira`, `/figma`, `/confluence` (today: optional).
+  4. *OAuth* for Gmail's API and Microsoft 365 (Outlook has no password IMAP; Workspaces often
+     forbid app passwords) — with tokens refreshed and kept safe.
+  5. *The tunnel, automatic.* Start cloudflared with the tower, keep a named tunnel's stable address
+     and register it with Slack, Jira and Figma by their APIs — no address pasted by hand.
+  6. *Checked against the live services.* Proven on recorded answers only: Slack's `search.messages`
+     for `<@id>`, Confluence's CQL `mention`, Jira's `search/jql` comments and its webhook signature,
+     Figma's `FILE_COMMENT` fields, Slack's 2025 history limits for apps outside the Marketplace.
 - The Horn plays its sounds through the system's player (`afplay`, `paplay`, `pw-play`, `aplay`,
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)

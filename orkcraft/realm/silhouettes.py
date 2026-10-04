@@ -40,6 +40,11 @@ def clip(text: str, width: int) -> str:
     return out + ELLIPSIS
 
 
+def _one_line(text: str) -> str:
+    """Breaks and tabs become one space; runs of spaces stay (`slack  99+` keeps its column)."""
+    return re.sub(r"\s*[\r\n\t\f\v]+\s*", " ", text).strip()
+
+
 def _fill(text: str, width: int, center: bool = False) -> str:
     """Pad `text` to exactly `width` cells (rich's cell width, so emoji do not push the frame out)."""
     from rich.cells import cell_len
@@ -85,7 +90,7 @@ class Silhouette:
         room = n - len(out)
         shown = [str(x) for x in live[:room]] if not self.caption else []
         for i in range(room):
-            text = " ".join(shown[i].split()) if i < len(shown) else ""
+            text = _one_line(shown[i]) if i < len(shown) else ""
             if not text and not shown and i < len(self.fallback):
                 text = self.fallback[i]
             out.append(text)
@@ -142,8 +147,8 @@ HORN = _make("horn", ["┌────────┐ /|", "│§§§§§§§§�
               fallback=("♪",), pad=0, center=True, body=(10, 3))
 TOTEM = _make("totem", ["  ┌────┐  ", "  │■  ■│  ", "┌─┤ §§ ├─┐", "└─┤§§§§├─┘", "  └────┘  "],
               head=("||",), pad=0, center=True, body=(10, 5))
-WATCHTOWER = _make("watchtower", ["    /\\    ", "   /  \\   ", " _/____\\_ ", "┌────────┐"]
-                   + _rows("│", 4, 10) + ["└────────┘"], pad=0, body=(10, 6))
+WATCHTOWER = _make("watchtower", ["     /\\     ", "   _/  \\_   ", " _/______\\_ ", "┌──────────┐"]
+                   + _rows("│", 4, 12) + ["└──────────┘"], pad=0, body=(12, 6))
 
 # -- the production and staff halls (18 wide, seven text rows) ------------------------------------
 
