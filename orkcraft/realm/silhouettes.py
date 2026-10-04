@@ -197,10 +197,10 @@ LAKE = _lake()
 
 # -- the Town Hall, the Workshop and the generic frame (no design given: drawn in the same spirit) -
 
-# The hall of the Council and the Elders: two towers with their flags, a pediment over the round window
+# The hall of the Council and the Elders: two towers with their flags flying outwards, a pediment over the round window
 # of the Elders' lamp, columns between. The first row holds the heading and, in its corner, the lamp
 # (🌙 on watch, 📜 advice waits, ⏳ used up, 💤 at rest; screens/town_hall.py `LAMPS`).
-TOWN_HALL = _make("town_hall", ["  |>       _/\\_       |>  ",
+TOWN_HALL = _make("town_hall", ["  |>       _/\\_       <|  ",
                                 " /^\\__||__/ () \\__||__/^\\ ",
                                 "┌─┴" + "─" * 20 + "┴─┐",
                                 "│" + SLOT * 19 + " " + SLOT * 4 + "│"]
