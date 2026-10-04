@@ -1,10 +1,10 @@
-"""The onboarding's questions with options: your day, and — when no intent fits — the interview.
+"""The onboarding's questions with options: your day, your AI tools and — when no intent fits —
+the interview.
 
-    ORCHESTRATION                    how well the operator knows agent orchestration: the first question
-    AI_TOOLS, SKILLS, FREQS          each AI tool graded twice: experience and how often it is used
-    growth(ai_tools)                 where the two differ: the growth zones
-    DAY_PAGE                         a typical day and its rhythm (asked right after who you are)
-    INTERVIEW                        sources → outputs → problems → what went wrong with AI
+    ORCHESTRATION                    how well the operator knows agent orkestration: the first question
+    day_options(role)                a typical day as chips, the role's own first (an ork's: code, tests…)
+    USES                             what an AI tool is good for, or weak at (👍 / 👎 on the tools step)
+    INTERVIEW                        where work comes from and goes → what hurts
     page.options(q, role, industry)  a question's options, the ones common for the role first
     summary(profile, answers)        everything said, as the Town Builder's order
 
@@ -23,14 +23,36 @@ def _c(*rows: tuple[str, str, str]) -> tuple[Choice, ...]:
     return tuple(Choice(*r) for r in rows)
 
 
-DAY = _c(("mail", "📨", "Inbox and messages"), ("meetings", "🗣", "Meetings and syncs"),
-         ("build", "🛠", "Hands-on work: code, design, content"), ("review", "🔍", "Reviewing others' work"),
-         ("reports", "📝", "Reports and documents"), ("metrics", "📈", "Watching metrics and dashboards"),
-         ("planning", "🗺", "Planning and prioritising"), ("users", "💬", "Users, customers, reviews"),
-         ("research", "🔬", "Research and competitors"), ("firefight", "🔥", "Incidents and urgent fixes"))
-RHYTHM = _c(("daily", "☀️", "A daily summary or stand-up"), ("weekly", "📅", "A weekly report or sync"),
-            ("monthly", "🗓", "A monthly review"), ("releases", "🚀", "Releases or launches"),
-            ("sprints", "🥁", "Sprints and their rituals"), ("adhoc", "⚡", "Mostly ad hoc, no fixed rhythm"))
+DAY = _c(("mail", "📨", "Inbox"), ("meetings", "🗣", "Meetings"), ("build", "🛠", "Hands-on work"),
+         ("review", "🔍", "Reviews"), ("reports", "📝", "Reports"), ("metrics", "📈", "Metrics"),
+         ("planning", "🗺", "Planning"), ("users", "💬", "Users"), ("research", "🔬", "Research"),
+         ("firefight", "🔥", "Incidents"))
+# A role's own parts of a day, first among the chips; each counts as a general one for the intents.
+DAY_BY_MASCOT: dict[str, tuple[Choice, ...]] = {
+    "orc": _c(("code", "⌨️", "Writing code"), ("tests", "🧪", "Tests and CI"), ("deploys", "🚢", "Deploys")),
+    "lich": _c(("status", "📋", "Status updates"), ("one_on_ones", "👥", "1:1s"), ("hiring", "🤝", "Hiring")),
+    "elf": _c(("mockups", "🎨", "Mockups"), ("design_system", "🧩", "Design system"), ("playtests", "🎮", "Playtests")),
+    "gnome": _c(("campaigns", "📣", "Campaigns"), ("content", "✍️", "Content"), ("listings", "🔑", "Keywords, listings")),
+    "goblin": _c(("queries", "🧮", "Queries"), ("dashboards", "📊", "Dashboards")),
+    "knight": _c(("customers", "🤝", "Customers"), ("shipping", "🚀", "Shipping"), ("fundraising", "💰", "Fundraising")),
+}
+DAY_AS = {"code": "build", "tests": "review", "deploys": "firefight", "status": "reports", "one_on_ones": "meetings",
+          "hiring": "meetings", "mockups": "build", "design_system": "build", "playtests": "research",
+          "campaigns": "planning", "content": "build", "listings": "metrics", "queries": "research",
+          "dashboards": "metrics", "customers": "users", "shipping": "build", "fundraising": "reports"}
+ALL_DAY = DAY + tuple(c for extra in DAY_BY_MASCOT.values() for c in extra)
+
+
+def day_options(role_id: str) -> list[Choice]:
+    """The chips of a typical day: the role's own first, then the general ones."""
+    return list(DAY_BY_MASCOT.get(intents.role(role_id).mascot, ())) + list(DAY) if role_id else list(DAY)
+
+
+def day_general(day: list[str] | tuple[str, ...]) -> list[str]:
+    """A day in the general parts the intents know (a role's own part counts as its general one)."""
+    return list(dict.fromkeys(DAY_AS.get(d, d) for d in day))
+
+
 SOURCES = _c(("jira", "🟦", "Jira"), ("confluence", "📘", "Confluence"), ("linear", "🟪", "Linear"),
              ("asana", "🟥", "Asana"), ("notion", "⬛", "Notion"), ("github", "🐙", "GitHub"),
              ("gitlab", "🦊", "GitLab"), ("slack", "💬", "Slack"), ("mail", "📨", "Email"),
@@ -51,16 +73,9 @@ PAINS = _c(("copy_paste", "📋", "Copying data between tools by hand"), ("repor
            ("context", "🔀", "Constant context switching"), ("waiting", "🐢", "Waiting on others and reviews"),
            ("stale", "🕸", "Docs and statuses go stale"), ("repetitive", "🔁", "The same routine every week"),
            ("no_overview", "🌫", "No single view of what is going on"))
-AI_USED = _c(("chatgpt", "🟢", "ChatGPT"), ("claude", "🟠", "Claude (chat)"), ("claude_code", "🧡", "Claude Code"),
-             ("gemini", "🔷", "Gemini / Antigravity"), ("copilot", "🛩", "GitHub Copilot"), ("cursor", "🖱", "Cursor"),
-             ("automations", "🔗", "Automations: Zapier, n8n, Make"), ("none", "🚫", "None yet"))
-AI_PROBLEMS = _c(("no_data", "🔒", "No access to my data and tools"),
-                 ("copy_context", "📋", "Copy-pasting context in and out"),
-                 ("forgets", "🧠", "Forgets everything between sessions"), ("wrong", "🎲", "Makes things up"),
-                 ("inconsistent", "🔀", "Different results every time"),
-                 ("review_cost", "🔍", "Checking its work takes as long as doing it"),
-                 ("security", "🛡", "Security or compliance concerns"), ("cost", "🪙", "Too expensive"),
-                 ("not_tried", "🤷", "Haven't really tried"))
+USES = (("code", "code"), ("architecture", "architecture"), ("docs", "documentation"),
+        ("search", "search: web, Jira"), ("tickets", "tickets"))
+USE_TITLES = dict(USES)
 
 
 @dataclass(frozen=True)
@@ -81,32 +96,8 @@ ORCHESTRATION: tuple[Level, ...] = (
     Level(SOME, "🪓", "Some", "I use Claude Code, Cursor or similar, but rarely more than one agent at a time."),
     Level(EXPERT, "🤘", "Punk ork", "I orkestrate agents already. Skip the interview, I will build the town myself."),
 )
-AI_TOOLS = tuple(c for c in AI_USED if c.id != "none")
-SKILLS = (("none", "— none"), ("basic", "basic"), ("confident", "confident"), ("expert", "expert"))
-FREQS = (("never", "never"), ("monthly", "monthly"), ("weekly", "weekly"), ("daily", "daily"))
-SKILL_IDS = tuple(k for k, _ in SKILLS)
-FREQ_IDS = tuple(k for k, _ in FREQS)
-
-
 def level(level_id: str) -> Level | None:
     return next((lv for lv in ORCHESTRATION if lv.id == level_id), None)
-
-
-def growth(ai_tools: dict) -> list[str]:
-    """Where experience and use differ: 📈 used often but known little, 💤 known well but rarely used."""
-    out: list[str] = []
-    titles = {c.id: c.title for c in AI_TOOLS}
-    for tid, grade in ai_tools.items():
-        if tid not in titles or not isinstance(grade, dict):
-            continue
-        skill, freq = grade.get("skill", "none"), grade.get("freq", "never")
-        si = SKILL_IDS.index(skill) if skill in SKILL_IDS else 0
-        fi = FREQ_IDS.index(freq) if freq in FREQ_IDS else 0
-        if fi >= 2 and si <= 1:
-            out.append(f"📈 {titles[tid]}: {freq}, but {skill if si else 'no'} experience — worth learning deeper")
-        elif si >= 2 and fi <= 1:
-            out.append(f"💤 {titles[tid]}: {skill}, but used {freq} — a skill you barely use")
-    return out
 
 
 @dataclass(frozen=True)
@@ -137,34 +128,23 @@ class Page:
         return first + [(c, False) for c in q.choices if c.id not in common]
 
 
-DAY_PAGE = Page("day", "How does your day go?",
-                "What fills a typical day, and what comes back on a schedule. The town takes over the routine.",
-                (Question("day", "A typical day is…", DAY, other="a typical day in your words"),
-                 Question("rhythm", "It comes back as…", RHYTHM)))
-
 INTERVIEW: tuple[Page, ...] = (
-    Page("sources", "Where does your work come from?",
-         "Pick every tool you take data from. The Builder gives each a way into the town.",
-         (Question("sources", "Sources", SOURCES, other="other sources", suggest="sources"),)),
-    Page("outputs", "Where does the result go?",
-         "Pick where you put what you make. The Builder gives each a way out.",
-         (Question("outputs", "Outputs", OUTPUTS, other="other places", suggest="outputs"),)),
+    Page("flow", "Where does your work come from, and where does it go?",
+         "The Builder gives each source a way into the town and each place a way out.",
+         (Question("sources", "Comes from", SOURCES, other="other sources", suggest="sources"),
+          Question("outputs", "Goes to", OUTPUTS, other="other places", suggest="outputs"))),
     Page("pains", "What hurts in the way you work now?",
          "The Builder answers each problem with a building or a road.",
-         (Question("pains", "Problems", PAINS, other="what else hurts"),)),
-    Page("ai", "What went wrong with AI so far?",
-         "So the town avoids what did not work for you.",
-         (Question("ai_problems", "What went wrong", AI_PROBLEMS, other="anything else the Builder should know"),)),
+         (Question("pains", "Problems", PAINS, other="anything else the Builder should know"),)),
 )
 
-ALL_QUESTIONS: dict[str, Question] = {q.id: q for p in (DAY_PAGE, *INTERVIEW) for q in p.questions}
+ALL_QUESTIONS: dict[str, Question] = {q.id: q for p in INTERVIEW for q in p.questions}
 
 
 def titles(question_id: str, ids: list[str]) -> list[str]:
-    q = ALL_QUESTIONS.get(question_id)
-    if q is None:
-        return []
-    by_id = {c.id: c.title for c in q.choices}
+    choices = ALL_DAY if question_id == "day" else ALL_QUESTIONS[question_id].choices \
+        if question_id in ALL_QUESTIONS else ()
+    by_id = {c.id: c.title for c in choices}
     return [by_id[i] for i in ids if i in by_id]
 
 
@@ -184,26 +164,31 @@ def summary(profile: dict, answers: dict) -> str:
     lv = level(profile.get("orchestration", ""))
     if lv:
         lines.append(f"Agent orkestration: {lv.title.lower()} — {lv.blurb}")
-    for qid, label in (("day", "My day"), ("rhythm", "Recurring"), ("sources", "My data comes from"),
-                       ("outputs", "Results go to"), ("pains", "Problems now"),
-                       ("ai_problems", "What went wrong with AI")):
-        bag = profile if qid in ("day", "rhythm") else answers
+    for qid, label in (("day", "My day"), ("sources", "My data comes from"), ("outputs", "Results go to"),
+                       ("pains", "Problems now")):
+        bag = profile if qid == "day" else answers
         parts = titles(qid, list(bag.get(qid) or []))
         other = str(bag.get(f"{qid}_other") or "").strip()
         if other:
             parts.append(other)
         if parts:
             lines.append(f"{label}: {'; '.join(parts)}.")
-    graded = ai_tools_text(profile.get("ai_tools") or {})
-    if graded:
-        lines.append(f"AI tools (experience, how often): {graded}.")
-    zones = growth(profile.get("ai_tools") or {})
-    if zones:
-        lines.append("Growth zones: " + "; ".join(z[2:] for z in zones) + ".")
+    rated = ai_tools_text(profile.get("ai_tools") or {})
+    if rated:
+        lines.append(f"AI tools I use: {rated}.")
     return "\n".join(lines)
 
 
 def ai_tools_text(ai_tools: dict) -> str:
-    titles = {c.id: c.title for c in AI_TOOLS}
-    return "; ".join(f"{titles[t]} ({g.get('skill', 'none')}, {g.get('freq', 'never')})"
-                     for t, g in ai_tools.items() if t in titles and isinstance(g, dict))
+    """"Claude Code — 👍 documentation, 👎 tickets; Cursor — 👍" (titles as the tools step showed them)."""
+    parts = []
+    for rating in ai_tools.values():
+        if not isinstance(rating, dict) or not (rating.get("like") or rating.get("dislike")):
+            continue
+        bits = []
+        if rating.get("like"):
+            bits.append("👍 " + USE_TITLES.get(rating.get("good", ""), "liked") if rating.get("good") else "👍")
+        if rating.get("dislike"):
+            bits.append("👎 " + USE_TITLES.get(rating.get("weak", ""), "") if rating.get("weak") else "👎")
+        parts.append(f"{rating.get('title', '?')} — {', '.join(b.strip() for b in bits)}")
+    return "; ".join(parts)

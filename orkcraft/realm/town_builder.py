@@ -67,8 +67,10 @@ Adapt it to the operator's answers above:
 - what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
   distrust the output, prefer rules (Totem, Mill) over agents where results must not vary;
 - match their experience: new to orkestration → fewer buildings and an accept step before anything
-  leaves; a growth zone (a tool used often but known little) → let the town do that tool's routine
-  and show its work, so they learn from it;
+  leaves;
+- their AI tools: work a tool is liked for (👍 docs, code…) may go to agents in the town; work a tool
+  is weak at (👎 tickets…) gets a person's accept step or a rule (Totem, Mill) instead of an agent —
+  say so in the "why";
 - drop the template's buildings that serve nothing they said; keep its names where they still fit.
 """
 
