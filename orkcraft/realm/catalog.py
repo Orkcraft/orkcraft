@@ -532,13 +532,21 @@ TAKES: dict[str, str] = {
              "(else totem.unmatched)",
     "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
     "horn": "anything: plays the sound its table picks for that source and event",
-    "barracks": "anything: the cart becomes a task for an orc (the title names it, the text is the brief)",
-    "council": "a question or a draft: the council debates it → team.artifact_ready",
-    "scrolls": "a query (the cart's title and text): finds the fragments that answer it → knowledge.chunks",
+    "fields": "anything: the cart becomes a task in To Do (its title, else its first line) → tasks.created",
+    "barracks": "anything: the cart becomes a task for an orc (the title names it, the text is the brief); "
+                "its steward reviews the work → pool.done (with the pull request) / pool.failed",
+    "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
+               "(let go) or team.rework (sent back straight to the Barracks that wrote it), team.artifact_ready "
+               "(the report)",
+    "scrolls": "a task (the cart's title and text): goes on with the wiki's map → knowledge.chunks; a Clan Fire's "
+               "verdict lands in reviews.md",
+    "war_drum": "a cart tagged [meet:<id>] (e.g. Barracks' pool.done for its event_upcoming): the meeting's "
+                "document → calendar.doc_opened when opened",
     "lake": "a file, a diff, Markdown, a branch or a URL: shows it",
     "forge": "a cart naming one of the repository's branches (e.g. Barracks' pool.done): tests it and "
              "squash-merges it into the base",
-    "loot": "anything finished: stores it with when and its source → loot.stored",
+    "loot": "anything finished: by its rules it passes (loot.passed) or waits for the operator, who accepts it "
+            "or sends it back to a Barracks for rework (loot.rework); stored → loot.stored",
     "crag": "the first number in the cart: a sample of the `road` source",
     "catapult": "anything: loads it under its source building; fires once every building of `wait_for` has loaded",
     "workshop": "anything (a file as its content): its script runs on the cart",
@@ -546,14 +554,17 @@ TAKES: dict[str, str] = {
 
 # What a building does outside the camp on its own: the network, merges, money.
 EFFECTS: dict[str, str] = {
-    "watchtower": "reads mail (IMAP) and GitHub over the network; listens for webhooks on 127.0.0.1",
-    "barracks": "runs agents (spends money) in git worktrees",
-    "council": "runs agents (spends money)",
+    "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma) over the network; "
+                  "listens for webhooks on 127.0.0.1; an `intent` runs a light model",
+    "barracks": "runs agents (spends money) in git worktrees; pushes each accepted task's branch and opens a pull request",
+    "council": "runs agents (spends money); members read the repository and the web",
+    "scrolls": "runs its librarian agent (spends money); commits the wiki's folder; reads Confluence when a source names it",
     "forge": "merges into the base branch without asking unless `confirm`",
     "lake": "fetches `url` over the network",
     "war_drum": "fetches `ics` when it is a URL",
-    "catapult": "sends HTTP requests to `url` without asking unless `confirm`",
-    "mill": "a `script:` step runs a command",
+    "catapult": "sends HTTP requests to `url` without asking unless `confirm`; in browser mode fills web forms "
+                "and presses submit when `finish: press`",
+    "mill": "a `script:` step runs a command; an `agent:` step runs a model (spends money)",
     "workshop": "runs its script; its steward prompt runs a model",
 }
 
@@ -571,6 +582,12 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "webhook_port": "listen for POSTs on http://127.0.0.1:<port>/",
         "webhook_secret_env": "the environment variable with a secret a webhook must carry "
                               "(X-Orkcraft-Token, or GitHub's X-Hub-Signature-256)",
+        "feeds": "one line per service, options naming environment variables, never tokens: "
+                 "`slack: token=SLACK_TOKEN channels=C0123`, `jira: site=acme.atlassian.net user=ATL_EMAIL "
+                 "token=ATL_TOKEN`, `confluence: … spaces=DOC`, `figma: token=FIGMA_TOKEN files=AbC123`; "
+                 "`secret=` names a webhook's secret",
+        "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
+                  "down the roads",
     },
     "totem": {
         "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
@@ -584,8 +601,11 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "`replace: <regex> => <with>`, `trim`, `lower`, `dedupe`, `csv`, `json`, "
                  "`extract: <field> = <regex>`, `pick: a, b`, `sort: <field> [desc]`, `limit: <n>`, "
                  "`filter: <field> <eq|ne|contains|matches> <value>`, `count`, `to_json`, "
-                 "`template: <md with {field}>`, `join[: <sep>]`, `script: <command>`. "
+                 "`template: <md with {field}>`, `join[: <sep>]`, `script: <command>`, `agent: <ask>` "
+                 "(a read-only model step), `script: <command> || agent: <ask>` (the agent when the script fails). "
                  "e.g. [\"lines\", \"grep: TODO\", \"limit: 20\", \"join\"]",
+        "env": "environment variables a `script:` step may see besides a clean PATH, e.g. [\"API_TOKEN\"]",
+        "model": "the model of `agent:` steps, e.g. sonnet (default Claude Code's own)",
     },
     "horn": {
         "sounds": "one line per key, the most precise wins: `<building>/<event>: <sound>`, `<event>: <sound>`, "
@@ -602,22 +622,43 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "budget_usd": "the most the barracks may spend, in USD",
         "providers": "who may be hired, `harness[:model]`: claude or agy, e.g. [\"claude:sonnet\", \"agy\"]",
         "worktrees": "each orc in its own git worktree (default true)",
-        "orders": "standing orders every orc gets with each task",
+        "orders": "standing orders: the steward's rules, given to every orc with each task",
+        "session_tasks": "tasks one orc session takes before it rolls over with a handoff (default 5)",
+        "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
+        "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
+        "steward": "`harness[:model]` of the steward that answers and reviews (default claude)",
+        "base": "the branch each task is cut from and its pull request targets (default the current one)",
     },
     "council": {
-        "goal": "what the decision is for, given with every question",
-        "max_rounds": "rounds before the moderator decides (default 4)",
-        "budget_usd": "the most one debate may spend, in USD (default 2)",
-        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Architect:claude\", \"Critic:agy:gemini-3.1-pro-high\"]",
-        "moderator": "`harness[:model]` that revises the draft (default claude)",
+        "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
+                          "(longer briefs live in steward.md)",
+        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Product manager:claude\", \"Architect:agy\"]",
+        "veto": "roles whose VETO blocks approval, e.g. [\"Security\"]",
+        "max_cycles": "reworks of one document before the operator decides (default 3)",
+        "budget_usd": "the most one review may spend, in USD (default 2)",
+        "moderator": "`harness[:model]` of the steward (default claude)",
+        "goal": "an older debate's setting: read as the steward's brief when steward_prompt is empty",
+        "max_rounds": "an older debate's setting; still loads, not used",
     },
     "war_drum": {
         "ics": "an .ics file in the project or an https URL (+ adds events to its own file)",
         "day_starts": "when calendar.day_schedule goes out, HH:MM (default 08:00)",
+        "lead": "how long before a meeting calendar.event_upcoming goes out, e.g. 2h, 1d, 1h30m (default 2h)",
     },
     "forest": {"path": "the folder to show (default the project)"},
-    "scrolls": {"paths": "folders of notes, e.g. [\"docs\", \"notes\"] (default whichever of docs, notes, wiki, "
-                         "knowledge, context the project has)"},
+    "scrolls": {
+        "paths": "folders of notes (the older `sources`), e.g. [\"docs\", \"notes\"]",
+        "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
+                   "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
+        "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
+        "topic": "codebase, team, design or general: the sections and rules it starts with",
+        "harness": "the librarian's agent: claude (default) or agy",
+        "model": "the librarian's model, e.g. sonnet",
+        "auto_ingest": "ingest by itself once the sources settle (default true)",
+        "commit": "commit every change of the wiki's folder (default true)",
+        "review_sample": "pages of each ingest spot-checked (default 2, 0: none)",
+        "council": "the id of a Clan Fire that spot-checks them (without it the sample goes out as wiki.review)",
+    },
     "lake": {"url": "a page to show on open, e.g. a local dev server http://localhost:3000"},
     "forge": {
         "remote": "not used yet",
@@ -625,7 +666,19 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "test_cmd": "the command that must pass before a merge, e.g. `pytest -q`",
         "confirm": "true asks before every merge",
     },
-    "loot": {"path": "the folder whose generated files wait for review (default the working tree)"},
+    "loot": {
+        "path": "the folder whose generated files wait for review (default the working tree)",
+        "review": "rules (default: hold what a rule below catches), always or never",
+        "sources": "hold carts from these buildings (ids; keys in a town plan)",
+        "paths": "hold changes to these paths, e.g. [\"auth/**\", \"migrations/**\"]",
+        "max_cost_usd": "hold a cart whose chain cost more, in USD",
+        "max_tokens": "hold a cart whose chain used more tokens",
+        "max_files": "hold a change of more files",
+        "on_failed": "true holds a cart whose last step failed",
+        "external": "true holds what leaves the town (into a Catapult)",
+        "max_rework": "times a cart may be sent back before it stays for you (default 3)",
+        "rework_tokens": "tokens a cart's chain may spend before it is no longer sent back",
+    },
     "crag": {
         "source": "what to chart: limits, spend, tokens, runs, orcs, tasks, cpu, or road (numbers that come by road)",
         "orientation": "vertical (over time) or horizontal (broken down)",
@@ -641,6 +694,14 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                     "road into the Catapult. Without it every cart fires",
         "token_env": "the environment variable whose token goes as Authorization: Bearer",
         "confirm": "true asks before every shot",
+        "mode": "api (default: an HTTP request) or browser (fill the web forms of `forms`)",
+        "forms": "browser mode, in fill order: `name = start address | what to open | button` (the last two optional)",
+        "fields": "browser mode, which field gets what: `Event name = title`, `Category = \"Major update\"`, "
+                  "`images/Banner = banner` for one form",
+        "finish": "browser mode: leave (default: you check and press) or press (submit by itself)",
+        "repair": "browser mode: false stops the orc repairing a script the site broke (default true)",
+        "key": "a body path grouping carts into one shot, e.g. version.tag (two releases never mix)",
+        "ttl": "minutes a loaded cart may wait before it is dropped (0: forever)",
     },
     "workshop": {
         "runtime": "python or bash",

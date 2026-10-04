@@ -3,7 +3,8 @@
 A cart that arrives is a document to review (a Barracks result, a file, text); ▶ asks for a repo
 path or the text itself. The review (realm/team.py) runs off the UI thread and shows turn by turn.
 Then the steward decides: `team.approved` sends the document on as it is, `team.rework` sends it back
-with the comments (wire it to the Barracks for the prepare → review → rework loop), and either way the
+with the comments — straight to the building that wrote it when that one redoes work (a Barracks: the
+prepare → review → rework loop needs no road back, which would close a loop) and down its roads — and either way the
 full report goes to `loot/` as `team.artifact_ready`. When the steward asks, 🔥 shows on the hut and ▶
 takes your answer. Documents that arrive mid-review wait in line.
 
@@ -59,8 +60,8 @@ class TeamView(TypedView):
         super().__init__(*a, **kw)
         self.current: tm.Discussion | None = None
         self.history: list[tm.Discussion] = []
-        self.waiting: list[tuple] = []     # (title, text, path, ref, trail) that came mid-review
-        self._cart: tuple[str, tuple] = ("", ())     # the ref and trail of the document under review
+        self.waiting: list[tuple] = []     # (title, text, path, ref, trail, source) that came mid-review
+        self._cart: tuple[str, tuple, str] = ("", (), "")   # the ref, trail and source of the document under review
         self._cancel: threading.Event | None = None
         self._busy = False
 
@@ -148,9 +149,10 @@ class TeamView(TypedView):
 
     # -- the review ----------------------------------------------------------------------------------
 
-    def start(self, text: str, title: str = "", path: str = "", ref: str = "", trail: tuple = ()) -> bool:
+    def start(self, text: str, title: str = "", path: str = "", ref: str = "", trail: tuple = (),
+              source: str = "") -> bool:
         """Review a document: its text, and its repo-relative path when it is a file. `ref` and `trail`
-        are the cart's: they travel on with what the review sends."""
+        are the cart's: they travel on with what the review sends; a rework goes back to `source`."""
         text = text.strip()
         if not text and path:
             try:
@@ -162,7 +164,7 @@ class TeamView(TypedView):
             return False
         title = (title or _title_of(text)).strip()
         if self._busy or (self.current is not None and self.current.outcome == "asked"):
-            self.waiting.append((title, text, path, ref, tuple(trail)))
+            self.waiting.append((title, text, path, ref, tuple(trail), source))
             self._render_list()
             return False
         if getattr(self.app, "gold_exhausted", lambda: False)():
@@ -180,7 +182,7 @@ class TeamView(TypedView):
             except OSError:
                 pass
         self.current = d
-        self._cart = (ref, tuple(trail))         # what came in: travels on with what the review sends
+        self._cart = (ref, tuple(trail), source)     # what came in: travels on with what the review sends
         self._run()
         return True
 
@@ -226,13 +228,17 @@ class TeamView(TypedView):
         if d.outcome in ("approved", "rework"):
             root = self._get_repo_root()
             path = pipes.write_loot(root, self.building_id, d.title[:80], tm.report_markdown(d, self.team))
-            ref, trail = self._cart
+            ref, trail, source = self._cart
+            ref = ref or f"{self.building_id}:{d.id}"   # the rework comes back under it
             trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome),)
             self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
             if d.outcome == "approved":
                 self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
             else:
-                self.emit("team.rework", tm.rework_markdown(d, self.max_cycles), d.title, trail=trail, ref=ref)
+                back = tm.rework_markdown(d, self.max_cycles)
+                self.emit("team.rework", back, d.title, trail=trail, ref=ref)
+                self._send_back(source, pipes.Payload(pipes.TEXT, back, self.building_id, "team.rework", d.title,
+                                                      trail, ref))
             self.app.notify(f"{d.title[:60]}: {OUTCOME[d.outcome]}", title=f"{ICON} Clan Fire")
         elif d.outcome == "asked":
             self.app.notify(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
@@ -244,8 +250,20 @@ class TeamView(TypedView):
         self.history = tm.load_all(self.state_dir)
         self._render_list()
         if self.waiting and d.outcome != "asked":
-            title, text, path, ref, trail = self.waiting.pop(0)
-            self.start(text, title, path, ref, trail)
+            title, text, path, ref, trail, source = self.waiting.pop(0)
+            self.start(text, title, path, ref, trail, source)
+
+    def _send_back(self, source: str, payload: pipes.Payload) -> None:
+        """A rework goes straight back to the building that wrote the document (a road back would close
+        a loop); without one that redoes work, the operator is told."""
+        back = getattr(self.app, "return_for_rework", None)
+        if source and source != self.building_id and callable(back) and back(source, payload):
+            return
+        try:
+            self.app.notify(f"{payload.title[:60]}: sent back, but no Barracks wrote it — rework it yourself",
+                            title=f"{ICON} Clan Fire", severity="warning")
+        except Exception:
+            pass
 
     def reply(self, text: str | None) -> None:
         d = self.current
@@ -256,9 +274,11 @@ class TeamView(TypedView):
 
     def receive(self, payload, title: str, markdown: str) -> None:
         if payload.kind == pipes.FILE and (self._get_repo_root() / payload.value).is_file():
-            self.start("", payload.title or title, payload.value, payload.ref, payload.trail)   # members read the file
+            self.start("", payload.title or title, payload.value, payload.ref, payload.trail,
+                       payload.source)                                  # members read the file itself
         else:
-            self.start(markdown or payload.value, payload.title or title, "", payload.ref, payload.trail)
+            self.start(markdown or payload.value, payload.title or title, "", payload.ref, payload.trail,
+                       payload.source)
 
     def on_unmount(self) -> None:
         if self._cancel is not None:

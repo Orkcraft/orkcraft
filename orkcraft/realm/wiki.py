@@ -399,7 +399,7 @@ def ingest_prompt(items: list[Item], manual: list[str] = (), today: dt.date | No
 
 Read `{SCHEMA}` first: it is the wiki's rules — its sections, page format and owners — and you
 follow them. Then read `{INDEX}`, the index of each section you will touch, and the newest
-entries of `{REVIEWS}` if it exists (the Council's spot-checks: fix what they found).
+entries of `{REVIEWS}` if it exists (the Clan Fire's spot-checks: fix what they found).
 
 These sources are new, changed or gone since the wiki last took them in:
 
@@ -452,7 +452,7 @@ def touched_pages(repo_root: Path, root: Path, sha: str) -> list[str]:
 
 
 def review_request(root: Path, pages_: list[str], topic: str) -> str:
-    """What the Council is asked about a sample of the pages an ingest wrote."""
+    """What the Clan Fire is asked about a sample of the pages an ingest wrote."""
     parts = [f"Spot-check these pages of the {topic} LLM wiki, just written by its librarian orc from the "
              f"project's sources. For each: is it accurate to its sources (listed in its front matter), "
              f"clear, in the right section, free of secrets? Answer per page: OK, or what is wrong and how to fix it."]
@@ -469,7 +469,7 @@ REVIEWS_HEADER = "# Reviews\n\nThe Council's spot-checks, newest first.\n"
 
 
 def record_review(root: Path, verdict: str, title: str = "", today: dt.date | None = None) -> None:
-    """The Council's verdict on top of reviews.md (the next ingest reads it)."""
+    """The Clan Fire's report on top of reviews.md (the next ingest reads it)."""
     today = today or dt.date.today()
     path = root / REVIEWS
     try:

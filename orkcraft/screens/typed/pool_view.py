@@ -146,8 +146,17 @@ class PoolView(TypedView):
                       ref=payload.ref, trail=payload.trail)
 
     def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:
-        task = bk.PoolTask(uuid.uuid4().hex[:8], title[:80], text, key or bk.task_key("text", text, title),
-                           bk.now_iso(), ref=ref, trail=[h.as_dict() for h in trail])
+        """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
+        of that task — the same orc, the same branch."""
+        key = key or bk.task_key("text", text, title)
+        prior = next((t for t in reversed(self.state.tasks) if ref and t.ref == ref), None)
+        if prior is not None and not key:
+            key = prior.key or prior.id               # the orc that did it knows it by that
+        task_id = uuid.uuid4().hex[:8]
+        task = bk.PoolTask(task_id, title[:80], text, key, bk.now_iso(), ref=ref or f"{self.building_id}:{task_id}",
+                           trail=[h.as_dict() for h in trail])
+        if prior is not None:
+            task.branch, task.base = prior.branch, prior.base
         st = self.state
         st.queue.append(task)
         self._dispatch(task)
@@ -220,8 +229,8 @@ class PoolView(TypedView):
         related = follow or foreman.related(task, orc)
         task.warm = related and foreman.can_resume(orc)
         orc.status, orc.task = "working", task.id
-        if task.key and task.key not in orc.keys:
-            orc.keys.append(task.key)
+        if (task.key or task.id) not in orc.keys:     # a rework of a task without a ticket comes back by its id
+            orc.keys.append(task.key or task.id)
         repo = self._get_repo_root()
         if self.uses_git:
             task.branch = task.branch or bk.task_branch(self.building_id, task)

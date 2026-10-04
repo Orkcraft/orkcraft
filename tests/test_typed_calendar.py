@@ -228,7 +228,7 @@ def test_barracks_keeps_the_meeting_tag_in_the_task_title(monkeypatch):
     from orkcraft.realm import pipes
     from orkcraft.screens.typed.pool_view import PoolView
     got = []
-    monkeypatch.setattr(PoolView, "add_task", lambda self, title, text, key="": got.append(title))
+    monkeypatch.setattr(PoolView, "add_task", lambda self, title, text, key="", **kw: got.append(title))
     view = PoolView.__new__(PoolView)
     tag = "[meet:0123456789ab]"
     view.receive(pipes.Payload(pipes.TEXT, f"14:00 1:1 Ann (Fri 02) {tag}", "totem", "totem.routed", "1on1"), "", "")

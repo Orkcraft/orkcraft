@@ -175,3 +175,37 @@ async def test_the_clan_fire_reviews_a_barracks_result_and_sends_it_back(fake_re
         assert [p.value for p in approved] == ["# Release plan\n1. sign\n2. tag", "another doc"]
         report = (fake_repo / [p for p in sent if p.mode == "team.artifact_ready"][0].value).read_text()
         assert "> **Operator:** yes" in report and "Security — approve" in report
+
+
+@pytest.mark.asyncio
+async def test_a_rework_goes_straight_back_to_the_barracks_onto_the_same_branch(fake_repo: Path, monkeypatch):
+    from orkcraft.realm import barracks as bk
+    from orkcraft.screens.typed.pool_view import PoolView
+    for spec in ({"id": "camp", "title": "Barracks", "icon": "🏕", "orc": {"name": "Grunts"}, "type": "barracks"},
+                 {"id": "fire", "title": "Clan Fire", "icon": "🪔", "orc": {"name": "Chieftain"}, "type": "council",
+                  "config": {"members": ["Planner:claude"], "max_cycles": 3, "budget_usd": 1}}):
+        assert masonry.save_spec(fake_repo, spec) == []
+    s = Script({"Planner": ["CHANGES: no rollback"], "Steward": ["DECISION: rework\nadd a rollback"]})
+    monkeypatch.setattr(TeamView, "runner", staticmethod(s))
+    monkeypatch.setattr(PoolView, "_dispatch", lambda self, task: None)          # no orc runs: only the queue
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        camp = app.desktop.get_window("camp").query_one(PoolView)
+        view = app.desktop.get_window("fire").query_one(TeamView)
+        first = camp.add_task("Release plan", "write the release plan")
+        first.branch, first.status = f"pool/camp/{first.id}", "done"
+        camp.state.queue.remove(first)
+        camp.state.tasks.append(first)
+        assert first.ref == f"camp:{first.id}"
+        app.deliver_payload("fire", pipes.Payload(pipes.TEXT, "# Release plan\n1. tag", "camp", "pool.done",
+                                                  "Release plan", (), first.ref), "Release plan", "# Release plan\n1. tag")
+        for _ in range(80):
+            await pilot.pause(0.02)
+            if view.current and view.current.finished and not view._busy:
+                break
+        assert view.current.outcome == "rework"
+        back = [t for t in camp.state.queue if t is not first]
+        assert len(back) == 1 and back[0].ref == first.ref and "add a rollback" in back[0].text
+        assert back[0].key == first.id and back[0].branch == first.branch          # the same work, the same branch
+        assert bk.task_branch("camp", back[0]) == first.branch

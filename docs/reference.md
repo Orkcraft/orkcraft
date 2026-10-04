@@ -184,12 +184,12 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
-| 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e` | `tasks.created`, `tasks.status_changed` |
+| 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e`; a cart becomes a task in To Do | `tasks.created`, `tasks.status_changed` |
 | 🏕️ Barracks | Grunts | tasks, each on its own branch: a follow-up goes to the orc who did the earlier part, a new one to an idle or newly hired orc (provider and model by record); related work resumes the orc's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
 | 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review queue | `team.approved`, `team.rework`, `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
-| 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has the Council spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
+| 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has a Clan Fire spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; accept, send back for rework (≤ 3 rounds, then 🔥 needs you), restore rejected files; the chain's tokens and cost | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
@@ -298,7 +298,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   1. *A tower that never sleeps.* It hears only while orkcraft runs; a background `orkcraft watch`
      (a service) would poll, take webhooks and write `signals.jsonl`, the TUI only reading it. Today
      a webhook's 202 also goes out before the signal is written.
-  2. *Prompt injection.* Signals are strangers' text and travel on to Barracks and the Council.
+  2. *Prompt injection.* Signals are strangers' text and travel on to Barracks and the Clan Fire.
      The intent's judge fences it, but the agents downstream do not yet: mark carts from outside as
      untrusted, let agents act on them only for allow-listed people, or ask before acting.
   3. *A secret required* for `/slack`, `/jira`, `/figma`, `/confluence` (today: optional).
@@ -343,9 +343,10 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the orc's
   edits from people's. Snapshots in `raw/` stay out of git (`raw/.gitignore`); `raw/manifest.json`
   goes in.
-- **The Council spot-checks.** After each ingest `review_sample` pages it wrote (default 2) go to
-  the Orc Council named in `council`: its members, at most two rounds; the discussion shows in the
-  Council, the verdict lands in `reviews.md`, which the next ingest reads. Without `council` the
+- **The Clan Fire spot-checks.** After each ingest `review_sample` pages it wrote (default 2) go to
+  the 🪔 Clan Fire named in `council` as one document: its members review it from their roles and
+  its steward approves it or sends it back (a spot-check never waits for you); the review shows in
+  the Clan Fire, its report lands in `reviews.md`, which the next ingest reads. Without `council` the
   sample goes out as `wiki.review` (roads cannot loop, so a verdict cannot come back on one).
 - **The steward closes the loop.** When a building's agents go into a wiki by themselves (tool
   calls naming its folder, ≥3 in a week) and no road brings it, the steward of that building
@@ -614,8 +615,8 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder, the daily proposal and the weekly self-audit (`claude -p`), the Barracks orcs and the
-  Orc Council's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
+  Town Builder, the Building retro and the Town retro (`claude -p`), the Barracks orcs and the
+  Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
 - Colours: yellow from 80 %, red from 100 %. At 100 % of 🪙 new sessions (`+`, `S`, deploy `C`,

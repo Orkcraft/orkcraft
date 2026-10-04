@@ -307,17 +307,17 @@ def test_the_steward_proposes_a_wiki_loop(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_the_council_spot_checks(fake_repo: Path, monkeypatch):
-    council = {"id": "elders", "title": "Council", "icon": "🔥", "orc": {"name": "Chieftains"}, "type": "council",
-               "config": {"members": ["Reviewer:claude", "Critic:claude"], "max_rounds": 4, "budget_usd": 5.0}}
+    council = {"id": "elders", "title": "Clan Fire", "icon": "🪔", "orc": {"name": "Chieftains"}, "type": "council",
+               "config": {"members": ["Reviewer:claude", "Critic:claude"], "max_cycles": 4, "budget_usd": 5.0}}
     assert masonry.save_spec(fake_repo, council) == []
     assert masonry.save_spec(fake_repo, spec(sources=["docs"], council="elders", review_sample=1)) == []
     asked = []
 
     def members(harness, prompt, model):
         asked.append(prompt)
-        if "Review it from your role" in prompt:
-            return "AGREE", 0.01
-        return "release.md: OK", 0.02
+        if prompt.startswith("You are the steward"):
+            return "DECISION: approve\n\nrelease.md: OK", 0.02
+        return "APPROVE — release.md: OK", 0.01
 
     monkeypatch.setattr(KnowledgeView, "work_runner", Librarian())
     monkeypatch.setattr(KnowledgeView, "review_runner", staticmethod(members))
@@ -331,9 +331,10 @@ async def test_the_council_spot_checks(fake_repo: Path, monkeypatch):
             await pilot.pause()
             if not dump.reviewing:
                 break
-        assert "## pages/how-to/release.md" in asked[0] and len(asked) == 2      # a draft, one review: agreed
+        assert len(asked) == 3 and all("pages/how-to/release.md" in p for p in asked[:2])   # two reviews, a decision
+        assert "Never ask the operator" in asked[2]
         reviews = (dump.wiki_root / "reviews.md").read_text()
-        assert "release.md: OK" in reviews and "Reviewer (claude" in reviews
+        assert "release.md: OK" in reviews and "Reviewer" in reviews
         saved = list((fake_repo / ".orkcraft" / "council" / "elders" / "discussions").glob("*.json"))
-        assert len(saved) == 1 and json.loads(saved[0].read_text())["outcome"] == "agreed"
+        assert len(saved) == 1 and json.loads(saved[0].read_text())["outcome"] == "approved"
         assert git(fake_repo, "log", "-1", "--format=%s").strip() == "wiki(general): the Council's review"

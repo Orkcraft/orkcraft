@@ -1,6 +1,7 @@
 """📋 Tasks: to do, in progress, done — kept in `TASKS.md` or a tasks folder.
 
-Three columns; `n` adds a task, `<` / `>` move the highlighted one, `e` renames it. Each change —
+Three columns; `n` adds a task, `<` / `>` move the highlighted one, `e` renames it. A cart that comes
+by road becomes a task in To Do (its title, else its first line). Each change —
 here or in the file by hand (looked at every 10 s) — sends `tasks.created` or
 `tasks.status_changed` with the task's id. The hut counts the columns; * marks what is new since
 the building was last opened.
@@ -133,6 +134,14 @@ class TasksView(TypedView):
             return
         self.emit("tasks.created", task.id, f"{task.title} · {LABELS['todo']}")
         self._sync_after_own_change()
+
+    def receive(self, payload, title: str, markdown: str) -> None:
+        """A cart is a new task in To Do: its title, else the first line of what it carries."""
+        text = markdown or str(payload.value or "")
+        first = next((ln.strip(" #*-") for ln in text.splitlines() if ln.strip(" #*-")), "")
+        name = " ".join((payload.title or title or first).split())[:120]
+        if name:
+            self.add(name)
 
     def move(self, task_id: str, column: str) -> None:
         before, after = self.store.move(task_id, column)

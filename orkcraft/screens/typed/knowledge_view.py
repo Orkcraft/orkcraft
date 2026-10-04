@@ -11,8 +11,9 @@ sources have settled for `SETTLE_S` (`auto_ingest`, default on; `$ORKCRAFT_WIKI_
 everywhere), a module at a time; `i` ingests now, `l` lints, `x` stops the librarian, `+`
 connects a folder. After each ingest the wiki is committed (`commit`, default on), the pages
 people own are put back if the librarian touched them, and `review_sample` of the pages it wrote
-are spot-checked: by the Orc Council named in `council` (its members, at most two rounds; the
-discussion shows in the Council, the verdict lands in reviews.md — no road needed, so no loop),
+are spot-checked: by the Clan Fire named in `council` (its members review the sample, its steward
+approves it or sends it back; the review shows in the Clan Fire, the report lands in reviews.md — no
+road needed, so no loop),
 else sent out as `wiki.review` for whatever is on that road. A cart of a task goes on as `knowledge.chunks` with the wiki's map.
 """
 from __future__ import annotations
@@ -40,9 +41,10 @@ from orkcraft.sources import lore
 REFRESH_S = 30.0
 SETTLE_S = 25.0                 # the sources must stay as they are this long before an ingest starts by itself
 REVIEW_SAMPLE = 2
-REVIEW_ROUNDS, REVIEW_BUDGET = 2, 1.0      # a spot-check is short, whatever the Council's own limits
-REVIEW_GOAL = "A verdict per page: OK, or what is wrong and how to fix it — short."
-VERDICT_EVENTS = ("team.artifact_ready",)
+REVIEW_CYCLES, REVIEW_BUDGET = 2, 1.0      # a spot-check is short, whatever the Clan Fire's own limits
+REVIEW_BRIEF = ("This is a spot-check of wiki pages its librarian just wrote: approve when every page is fine, "
+                "else send it back with what is wrong per page and how to fix it — short. Never ask the operator.")
+VERDICT_EVENTS = ("team.artifact_ready", "team.approved", "team.rework")
 
 
 def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
@@ -393,35 +395,48 @@ class KnowledgeView(TypedView):
         return self.emit("wiki.review", request, title)
 
     def council_review(self, council_id: str, request: str, title: str) -> bool:
+        """The sample goes to the Clan Fire's members and its steward, as a document like any other;
+        the review shows in the Clan Fire, and its report lands in reviews.md."""
         spec = (getattr(self.app, "custom_specs", {}) or {}).get(council_id)
         if not spec or catalog.migrate(spec).get("type") != "council":
-            self.last_note = f"no Orc Council {council_id!r} for the spot-check"
+            self.last_note = f"no Clan Fire {council_id!r} for the spot-check"
             return False
         if self.reviewing or getattr(self.app, "gold_exhausted", lambda: False)():
             return False
+        from orkcraft.screens.typed.team_view import TeamView
         cfg = dict(spec.get("config") or {})
-        team = tm.members_of(cfg)
-        moderator = str(cfg.get("moderator") or "claude")
-        rounds = min(int(cfg.get("max_rounds") or tm.DEFAULT_ROUNDS), REVIEW_ROUNDS)
+        team, veto = tm.members_of(cfg), tm.veto_of(cfg)
         budget = min(float(tm.DEFAULT_BUDGET if cfg.get("budget_usd") is None else cfg["budget_usd"]), REVIEW_BUDGET)
-        d = tm.new(request, REVIEW_GOAL)
         repo, app, cancel = self._get_repo_root(), self.app, threading.Event()
         state = repo / ".orkcraft" / "council" / council_id
-        env = {"ORKCRAFT_ORC": f"{council_id}/team"}
+        harness, _, model = str(cfg.get("moderator") or "claude").partition(":")
+        steward = tm.Steward(f"{REVIEW_BRIEF} {str(cfg.get('steward_prompt') or '').strip()}".strip(),
+                             harness.strip() or "claude", model.strip())
+
+        def brief_of(m: tm.Member) -> tuple[str, str]:
+            path = state / "roles" / f"{tm.slug(m.role)}.md"
+            text = TeamView._knowledge(path)
+            return (shelves.rel_to(repo, path), text) if text else ("", "")
+
+        d = tm.new(title, request)
+        env = {"ORKCRAFT_ORC": f"{council_id}/clan"}
         if type(self).review_runner is not None:
             runner = type(self).review_runner
         elif self.simulated:
             from orkcraft.screens.typed.team_view import _simulated as runner
         else:
             def runner(h, p, m):
-                return roads.run_agent(h, p, repo, env, cancel, m)[:2]
+                return roads.run_agent(h, p, repo, env, cancel, m, web=True)[:2]
         self.reviewing = True
 
         def work() -> None:
             try:
-                tm.run(d, team, moderator, rounds, budget, runner, None, cancel)
+                tm.run(d, team, steward, veto, REVIEW_CYCLES, budget, runner, None, cancel, brief_of)
             except Exception as e:                            # a failed review must not take the camp down
                 d.outcome, d.error = "error", str(e)[:300]
+            if d.outcome == "asked":                          # a spot-check never waits for the operator
+                d.outcome = "rework"
+                d.ended = tm.now_iso()
             try:
                 tm.save(state, d)
             except OSError:
@@ -436,10 +451,10 @@ class KnowledgeView(TypedView):
 
     def reviewed(self, d: tm.Discussion, team: list, title: str) -> None:
         self.reviewing = False
-        if d.outcome in ("error", "stopped") or not d.draft.strip():
+        if d.outcome not in ("approved", "rework"):
             self.last_note = f"the spot-check failed: {d.error or d.outcome}"
             return
-        self.record_verdict(tm.artifact_markdown(d, team), title)
+        self.record_verdict(tm.report_markdown(d, team), title)
 
     def record_verdict(self, verdict: str, title: str) -> None:
         try:

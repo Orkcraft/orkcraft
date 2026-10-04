@@ -161,7 +161,8 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
         gen = app.desktop.get_window("outputs").query_one(GeneratorView)
         assert {g.path for g in gen.rows} == {"docs/release-notes.md", "src/billing.py"}
         team = app.desktop.get_window("council").query_one(TeamView)
-        assert team.current is not None and team.current.outcome == "approved" and team.current.cycle == 2
+        seeded = [d for d in team.history if d.title == "v0.2 release plan"]          # the Barracks' resumed work
+        assert [(d.outcome, d.cycle) for d in seeded] == [("approved", 2), ("rework", 1)]   # may be reviewed since
         camp = app.desktop.get_window("camp").query_one(PoolView)
         assert [o.name for o in camp.state.orcs] == ["Grub", "Mogka"]
         camp.add_task("Write the changelog", "Write the changelog for v0.2")     # simulated work, no model
