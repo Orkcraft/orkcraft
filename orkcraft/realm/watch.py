@@ -38,6 +38,13 @@ class Signal:
     body: str = ""
     ref: str = ""          # mail uid, GitHub event id, webhook path, a feed item's link
     mention: bool = False  # a feed item about you
+    read: bool = False     # opened (Enter), or let through without a look (the first one, a miss)
+    kept: bool | None = None   # the Lookout's verdict on the intent; None: no intent asked
+    why: str = ""          # … and its reason
+
+    @property
+    def key(self) -> str:
+        return f"{self.source}|{self.ref or self.title[:60]}|{self.at}"
 
     @property
     def event(self) -> str:
@@ -49,6 +56,15 @@ class Signal:
 
 def now_iso() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
+
+
+def local_iso(at: str) -> str:
+    """Slack's, Jira's and Figma's UTC times as the local ones the rest of the list shows."""
+    try:
+        when = dt.datetime.fromisoformat(at)
+    except (TypeError, ValueError):
+        return now_iso()
+    return (when.astimezone().replace(tzinfo=None) if when.tzinfo else when).isoformat(timespec="seconds")
 
 
 # -- GitHub -------------------------------------------------------------------------------------------------

@@ -56,7 +56,7 @@ Sixteen buildings, each with its own events and settings:
 
 | | |
 |---|---|
-| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) · 📯 Horn (a sound of your choice per incoming event) |
+| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks — one tower, filtered by your intent) · 🗿 Totem (if/switch routes) · ⚙️ Mill (data steps, no model) · 📯 Horn (a sound of your choice per incoming event) |
 | **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel git worktrees) · 🔥 Orc Council (agents that debate to a decision) · 🥁 War Drum (your calendar) |
 | **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its orc keeps from your notes, code, git and Confluence) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
 | **Results and egress** | 📦 Loot Vault (generated files to accept or roll back) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP — or, where there is no API, its orc finds the forms of an intent and fills them in a browser) |

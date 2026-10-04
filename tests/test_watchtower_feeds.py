@@ -185,5 +185,9 @@ async def test_the_watchtower_sends_comments_and_mentions(fake_repo: Path, env, 
         for _ in range(20):
             await pilot.pause(0.05)
         assert len(sent) == 4                                                          # once each
-        assert view.mini_status()[:2] == ["0 unread", "✉ 💬 🎨 · 4 signals"]
-        assert view.hut_lines([8] * 4)[1] == "evts:  4"
+        assert view.mini_status()[:2] == ["0 unread", "✉ 💬 🎨 · 4 new · @2"]
+        assert view.hut_lines([10] * 4) == ["gmail    0", "slack    2", "figma    2", ""]
+        view.read(view.signals[0])
+        assert view.hut_lines([10] * 4)[2] == "figma    1" and len(view.unread()) == 3
+        assert view.quick_action("watch.read_all") and view.unread() == []
+        assert view.hut_lines([10] * 4)[1] == "slack    0"

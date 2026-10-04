@@ -65,6 +65,11 @@ class Feed:
     def env(self, name: str) -> str:
         return os.environ.get(self.opts.get(name, ""), "")
 
+    @property
+    def identity(self) -> str:
+        """Who is asked and as whom: what it has seen survives a change of channels, files or query."""
+        return "|".join([self.kind] + [self.opts.get(k, "") for k in ("site", "user", "token")])
+
     def ids(self, name: str) -> list[str]:
         return [x for x in self.opts.get(name, "").split(",") if x]
 
@@ -327,11 +332,36 @@ def look(feed: Feed, opener=urllib.request.urlopen) -> Look:
         return Look(error=f"{feed.kind}: {e}"[:200])
 
 
-def new_items(feed_look: Look, seen: list[str] | None) -> tuple[list[Item], list[str]]:
-    """(what to send, the keys seen now). The first look (nothing seen yet) sends nothing."""
+def _when(at: str) -> dt.datetime | None:
+    try:
+        when = dt.datetime.fromisoformat(at)
+    except (TypeError, ValueError):
+        return None
+    return when if when.tzinfo else when.astimezone()
+
+
+def new_items(feed_look: Look, seen: list[str] | None, after: str = "") -> tuple[list[Item], list[str]]:
+    """(what to send, the keys seen now). The first look (nothing seen yet) sends nothing; after the
+    line was edited, an item older than the last look (`after`: a channel or file just added, an
+    hour of slack for slow search indexes) is only marked seen."""
     keys = [i.key for i in feed_look.items]
     if seen is None:
         return [], keys[-SEEN_KEEP:]
-    known = set(seen)
-    fresh = [i for i in feed_look.items if i.key not in known]
-    return fresh, (seen + [i.key for i in fresh])[-SEEN_KEEP:]
+    known, since = set(seen), _when(after)
+    since = since - dt.timedelta(hours=1) if since else None
+    unseen = [i for i in feed_look.items if i.key not in known]
+    fresh = [i for i in unseen if since is None or (_when(i.at) or since) >= since]
+    return fresh, (seen + [i.key for i in unseen])[-SEEN_KEEP:]
+
+
+def slack_names(token: str, users: set[str], opener=urllib.request.urlopen) -> None:
+    """users.info for the people not named yet (a webhook carries only their ids). Never raises."""
+    for user in users - set(SLACK_NAMES):
+        try:
+            data = get_json(f"https://slack.com/api/users.info?{urllib.parse.urlencode({'user': user})}",
+                            {"Authorization": f"Bearer {token}"}, opener)
+        except (OSError, ValueError):
+            continue
+        u = (data or {}).get("user") or {}
+        SLACK_NAMES[user] = ((u.get("profile") or {}).get("display_name") or u.get("real_name") or u.get("name")
+                             or user) if (data or {}).get("ok") else user        # no users:read: the id, once
