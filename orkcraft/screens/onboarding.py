@@ -226,7 +226,8 @@ class PersonStep(ModalScreen[dict | str | None]):
     PersonStep .ob-col OptionList { height: auto; max-height: 12; }
     PersonStep .ob-col Label, PersonStep .ob-day-label { text-style: bold; }
     PersonStep .ob-day-label { margin-top: 1; }
-    PersonStep #ob-day-chips { layout: grid; grid-size: 5; grid-gutter: 0 0; height: auto; }
+    PersonStep #ob-day-chips { layout: grid; grid-size: 4; grid-rows: 1; grid-gutter: 0 1; height: auto; }
+    PersonStep #ob-day-chips Chip { margin: 0; }
     PersonStep #ob-day-other { margin-top: 0; }
     PersonStep #ob-who-line { margin-top: 1; height: auto; }
     """

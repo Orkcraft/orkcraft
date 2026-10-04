@@ -32,7 +32,7 @@ DAY_BY_MASCOT: dict[str, tuple[Choice, ...]] = {
     "orc": _c(("code", "⌨️", "Writing code"), ("tests", "🧪", "Tests and CI"), ("deploys", "🚢", "Deploys")),
     "lich": _c(("status", "📋", "Status updates"), ("one_on_ones", "👥", "1:1s"), ("hiring", "🤝", "Hiring")),
     "elf": _c(("mockups", "🎨", "Mockups"), ("design_system", "🧩", "Design system"), ("playtests", "🎮", "Playtests")),
-    "gnome": _c(("campaigns", "📣", "Campaigns"), ("content", "✍️", "Content"), ("listings", "🔑", "Keywords, listings")),
+    "gnome": _c(("campaigns", "📣", "Campaigns"), ("content", "✍️", "Content"), ("listings", "🔑", "Store listings")),
     "goblin": _c(("queries", "🧮", "Queries"), ("dashboards", "📊", "Dashboards")),
     "knight": _c(("customers", "🤝", "Customers"), ("shipping", "🚀", "Shipping"), ("fundraising", "💰", "Fundraising")),
 }
