@@ -237,11 +237,15 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
-        "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text",
-        "what it shows now", "the view of what arrived; ↗ opens a URL in the browser",
-        events=(_e("lake.viewed", "viewed", TEXT, "something was opened in the Lake"),),
-        actions=(_a("lake.open", "Open in browser", "↗", "open what it shows in the browser"),),
-        config={"url": (str, None, False)},
+        "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
+        "a text file on disk is edited in place and saves by itself",
+        "what it shows now, or the file being edited", "the view of what arrived; ↗ opens a URL in the browser; "
+        "e edits a file (autosave on a timer and on leaving)",
+        events=(_e("lake.viewed", "viewed", TEXT, "something was opened in the Lake"),
+                _e("lake.saved", "file edited", FILE, "a file edited in the Lake was saved: the file")),
+        actions=(_a("lake.open", "Open in browser", "↗", "open what it shows in the browser"),
+                 _a("lake.edit", "Edit", "✎", "edit the file it shows (again: save and close the editor)")),
+        config={"url": (str, None, False), "autosave": (int, (1, 600), False)},
         art="spire", orc="Seer"),
     BuildingType(
         "forge", "The Forge", "⚒️", "M",
@@ -586,7 +590,7 @@ EFFECTS: dict[str, str] = {
     "council": "runs agents (spends money); members read the repository and the web",
     "scrolls": "runs its librarian agent (spends money); commits the wiki's folder; reads Confluence when a source names it",
     "forge": "merges into the base branch without asking unless `confirm`",
-    "lake": "fetches `url` over the network",
+    "lake": "fetches `url` over the network; writes the files you edit in it",
     "war_drum": "fetches `ics` when it is a URL",
     "catapult": "sends HTTP requests to `url` without asking unless `confirm`; in browser mode fills web forms "
                 "and presses submit when `finish: press`",
@@ -690,7 +694,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "review_sample": "pages of each ingest spot-checked (default 2, 0: none)",
         "council": "the id of a Clan Fire that spot-checks them (without it the sample goes out as wiki.review)",
     },
-    "lake": {"url": "a page to show on open, e.g. a local dev server http://localhost:3000"},
+    "lake": {"url": "a page to show on open, e.g. a local dev server http://localhost:3000",
+             "autosave": "while a file is edited, save it every this many seconds when it changed (default 5); "
+                         "it also saves when the editor loses focus"},
     "forge": {
         "remote": "not used yet",
         "base": "the branch to merge into (default main)",

@@ -8,11 +8,17 @@
     text       anything else
 
 A terminal cannot draw a web page or a diagram: a URL becomes text, a mermaid block stays code.
+
+A text file on disk (`View.path`) can be edited in the Lake: `read_for_edit` gives its whole text,
+`save` writes it back — never over a change made on disk since it was read (a conflict), keeping
+the file's line endings and mode.
 """
 from __future__ import annotations
 
 import html.parser
+import os
 import re
+import tempfile
 import subprocess
 import urllib.request
 from dataclasses import dataclass, field
@@ -21,6 +27,7 @@ from pathlib import Path
 FETCH_TIMEOUT_S = 10
 FETCH_LIMIT = 1024 * 1024
 SHOW_LIMIT = 200_000
+EDIT_LIMIT = 2 * 1024 * 1024        # a bigger file is shown, not edited
 URL = re.compile(r"^https?://\S+$")
 HUNK = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$")
 
@@ -32,6 +39,7 @@ class View:
     text: str = ""
     rows: list[tuple[str, str, str]] = field(default_factory=list)   # diff: (left, right, change)
     target: str = ""           # what ↗ opens: a URL or a file path
+    path: str = ""             # a text file on disk: what `e` edits
 
 
 class _Text(html.parser.HTMLParser):
@@ -137,10 +145,10 @@ def look(repo: Path, kind: str, value: str, title: str = "", opener=urllib.reque
         if "\0" in text[:4000]:
             return View("text", value, f"(binary, {p.stat().st_size} bytes)", target=str(p))
         if p.suffix.lower() in (".md", ".markdown"):
-            return View("markdown", value, text, target=str(p))
+            return View("markdown", value, text, target=str(p), path=str(p))
         if p.suffix.lower() in (".diff", ".patch") or text.startswith("diff --git"):
-            return View("diff", value, text, side_by_side(text), str(p))
-        return View("code", value, text, target=str(p))
+            return View("diff", value, text, side_by_side(text), str(p), str(p))
+        return View("code", value, text, target=str(p), path=str(p))
     stripped = value.strip()
     if URL.match(stripped):
         try:
@@ -156,3 +164,69 @@ def look(repo: Path, kind: str, value: str, title: str = "", opener=urllib.reque
     if re.search(r"^#{1,3} |\n[-*] |\*\*|```", stripped, re.M):
         return View("markdown", title or "note", stripped)
     return View("text", title or "text", stripped)
+
+
+# -- editing a file on disk -------------------------------------------------------------------------
+
+@dataclass
+class Draft:
+    """A file opened for editing: what was on disk when it was read (or last saved) and its line ending."""
+    path: str
+    text: str                  # with \n line endings, as the editor holds it
+    newline: str = "\n"        # \n or \r\n, as the file has it
+
+
+def _read_raw(path: Path) -> str:
+    with path.open(encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def read_for_edit(path: str) -> Draft:
+    """The whole file to edit. ValueError when it cannot be: missing, too big, binary or not UTF-8."""
+    p = Path(path)
+    try:
+        if p.stat().st_size > EDIT_LIMIT:
+            raise ValueError(f"too big to edit here ({p.stat().st_size // 1024} KB); ↗ opens it")
+        raw = _read_raw(p)
+    except UnicodeDecodeError:
+        raise ValueError("not UTF-8 text") from None
+    except OSError as e:
+        raise ValueError(str(e)) from None
+    if "\0" in raw[:4000]:
+        raise ValueError("a binary file")
+    newline = "\r\n" if "\r\n" in raw else "\n"
+    return Draft(str(p), raw.replace("\r\n", "\n"), newline)
+
+
+def save(draft: Draft, text: str, force: bool = False) -> str:
+    """Write `text` over the draft's file: "saved", "unchanged" or "conflict" (the file changed on
+    disk since the draft was read and `force` is off — nothing is written). On "saved" the draft
+    holds the new text. OSError when the file cannot be written."""
+    p = Path(draft.path)
+    try:
+        now = _read_raw(p).replace("\r\n", "\n")
+    except FileNotFoundError:
+        now = None
+    except UnicodeDecodeError:
+        now = None if force else ""
+    if now is not None and now != draft.text and not force:
+        return "conflict" if now != text else _taken(draft, text, "unchanged")
+    if now == text:
+        return _taken(draft, text, "unchanged")
+    mode = p.stat().st_mode & 0o7777 if p.exists() else None
+    fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=f".{p.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.write(text.replace("\n", draft.newline))
+        if mode is not None:
+            os.chmod(tmp, mode)
+        os.replace(tmp, p)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+    return _taken(draft, text)
+
+
+def _taken(draft: Draft, text: str, status: str = "saved") -> str:
+    draft.text = text
+    return status
