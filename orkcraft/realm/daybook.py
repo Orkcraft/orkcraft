@@ -4,10 +4,16 @@
 none, the calendars of `~/.config/orkcraft/calendars.json` are read. Events added from the
 building go to the `ics` file when it is a local one, else to the building's own `local.ics` —
 a URL calendar is never written. Parsing is `sources/ics.py`.
+
+A meeting is named on the roads by a short id, `meet_id` (its UID and start, so each occurrence of
+a recurring meeting has its own), carried as a `[meet:<id>]` tag that `meet_tag` finds again in
+whatever comes back.
 """
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +21,9 @@ from pathlib import Path
 from orkcraft.sources import ics
 
 WEEK_DAYS = 7
+DEFAULT_LEAD = dt.timedelta(hours=2)
+_LEAD = re.compile(r"(\d+)\s*([dhm])")
+_MEET = re.compile(r"\[meet:([0-9a-f]{6,32})\]")
 
 
 @dataclass
@@ -69,6 +78,33 @@ def now_and_next(events: list[ics.CalendarEvent], now: dt.datetime) -> tuple[ics
 def due(events: list[ics.CalendarEvent], since: dt.datetime, now: dt.datetime) -> list[ics.CalendarEvent]:
     """Timed events that started in (since, now]."""
     return [e for e in events if isinstance(e.start, dt.datetime) and since < e.start <= now]
+
+
+def upcoming(events: list[ics.CalendarEvent], since: dt.datetime, now: dt.datetime,
+             lead: dt.timedelta) -> list[ics.CalendarEvent]:
+    """Timed events whose `start - lead` fell in (since, now]."""
+    return [e for e in events if isinstance(e.start, dt.datetime) and since < e.start - lead <= now]
+
+
+def parse_lead(value: str) -> dt.timedelta:
+    """`2h`, `24h`, `30m`, `1d`, `1h30m` → a timedelta; empty or unreadable → 2 hours."""
+    parts = _LEAD.findall((value or "").strip().lower())
+    if not parts or _LEAD.sub("", value.strip().lower()).strip():
+        return DEFAULT_LEAD
+    unit = {"d": "days", "h": "hours", "m": "minutes"}
+    return sum((dt.timedelta(**{unit[u]: int(n)}) for n, u in parts), dt.timedelta())
+
+
+def meet_id(e: ics.CalendarEvent) -> str:
+    """A short, stable id of one occurrence of a meeting."""
+    start = e.start.isoformat()
+    return hashlib.sha256(f"{e.uid or e.calendar + '|' + e.summary}|{start}".encode()).hexdigest()[:12]
+
+
+def meet_tag(text: str) -> str:
+    """The meeting id in a `[meet:<id>]` tag of `text`, or ""."""
+    m = _MEET.search(text or "")
+    return m.group(1) if m else ""
 
 
 def key(e: ics.CalendarEvent) -> str:

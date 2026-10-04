@@ -5,6 +5,8 @@ earlier part (a follow-up), to an idle orc, to a newly hired one (picking its pr
 or queues it. Each orc works in its own worktree on `pool/<building>/<orc>`; a finished task sends
 `pool.done` with the result and the branch — no pull request is opened for it. The hut shows the
 orcs and the queue; the open building also shows the foreman's decisions and their reasons.
+A `[meet:<id>]` tag in the cart (a War Drum's meeting) stays in the task's title, so `pool.done`
+finds its way back to the meeting even when a Totem renamed the cart to its route.
 """
 from __future__ import annotations
 
@@ -19,7 +21,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, roads
+from orkcraft.realm import daybook, jobs, roads
 from orkcraft.screens.typed.base import TypedView
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -73,7 +75,11 @@ class PoolView(TypedView):
     def receive(self, payload, title: str, markdown: str) -> None:
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
-        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title))
+        title = payload.title or first
+        meet = daybook.meet_tag(title) or daybook.meet_tag(text)
+        if meet and daybook.meet_tag(title[:80]) != meet:          # the task keeps 80 characters
+            title = f"{title.replace(f'[meet:{meet}]', '').strip()[:80 - len(meet) - 8]} [meet:{meet}]"
+        self.add_task(title, text, bk.task_key(payload.kind, payload.value, payload.title))
 
     def add_task(self, title: str, text: str, key: str = "") -> bk.PoolTask:
         task = bk.PoolTask(uuid.uuid4().hex[:8], title[:80], text, key or bk.task_key("text", text, title),

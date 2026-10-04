@@ -187,7 +187,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e` | `tasks.created`, `tasks.status_changed` |
 | 🏕️ Barracks | Grunts | tasks: a follow-up goes to the orc who did the earlier part, a new one to an idle or newly hired orc (provider and model by record), in its own worktree | `pool.assigned`, `pool.done`, `pool.failed`, `pool.idle` |
 | 🔥 Orc Council | Chieftains | a question: members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; rounds and $ capped | `team.artifact_ready` |
-| 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event | `calendar.event_due`, `.day_schedule`, `.event_added/removed` |
+| 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
 | 🗑️ Scroll Dump | Scroll Scrapper | folders of notes; `/` or a cart is a query → the best few fragments within a budget | `knowledge.changed`, `knowledge.chunks` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
