@@ -18,10 +18,10 @@ GOOD = {
     "title": "Podcast Town", "summary": "Episodes from notes to release.",
     "buildings": [
         {"key": "inbox", "type": "pit", "title": "Episode Drops", "icon": "🎙", "why": "drop raw notes and links"},
-        {"key": "board", "type": "fields", "title": "Episode Board", "icon": "📋", "why": "one task per episode"},
+        {"key": "board", "type": "lake", "title": "Episode Preview", "icon": "📋", "why": "reads what was pasted"},
         {"key": "notes", "type": "scrolls", "title": "Show Notes", "icon": "📜", "why": "what was said"},
     ],
-    "roads": [{"from": "inbox", "event": "pit.text", "to": "board", "why": "a pasted idea becomes a task"}],
+    "roads": [{"from": "inbox", "event": "pit.text", "to": "board", "why": "a pasted script shows up to read"}],
 }
 
 
@@ -41,7 +41,7 @@ def test_a_good_plan_passes(tmp_path: Path):
     plan, problems = town_builder.check(GOOD, tmp_path, set())
     assert problems == []
     assert [s["id"] for s in plan.specs] == ["inbox", "board", "notes"]
-    assert plan.specs[0]["title"] == "Episode Drops" and plan.whys["board"] == "one task per episode"
+    assert plan.specs[0]["title"] == "Episode Drops" and plan.whys["board"] == "reads what was pasted"
     assert [(r.source, r.event, r.target) for r in plan.roads] == [("inbox", "pit.text", "board")]
 
 
@@ -59,12 +59,93 @@ def test_taken_ids_get_a_number(tmp_path: Path):
     (lambda a: a["buildings"].append({"key": "inbox", "type": "pit"}), "must be unique"),
     (lambda a: a.update(buildings=a["buildings"][:1], roads=[]), "at least two"),
     (lambda a: a["buildings"][0].update(config={"rm": "-rf"}), "inbox"),
+    (lambda a: a["roads"].append({"from": "board", "event": "lake.viewed", "to": "inbox"}), "does nothing with a cart"),
+    (lambda a: a["roads"][0].update(route="urgent"), "only a road from a totem"),
 ])
 def test_bad_plans_are_refused(tmp_path: Path, change, expect):
     answer = json.loads(json.dumps(GOOD))
     change(answer)
     _, problems = town_builder.check(answer, tmp_path, set())
     assert any(expect in p for p in problems), problems
+
+
+ROUTED = {
+    "title": "Triage", "summary": "Mail sorted to a crew or a log.",
+    "buildings": [
+        {"key": "tower", "type": "watchtower", "title": "Mail", "icon": "📬", "why": "mail comes in"},
+        {"key": "gate", "type": "totem", "title": "Sorter", "icon": "🗿", "why": "urgent or not",
+         "config": {"rules": ["urgent: contains urgent", "rest: else"]}},
+        {"key": "crew", "type": "barracks", "title": "Crew", "icon": "🏕", "why": "acts on urgent mail"},
+        {"key": "log", "type": "loot", "title": "Log", "icon": "📦", "why": "keeps the rest"},
+        {"key": "chime", "type": "horn", "title": "Chime", "icon": "📯", "why": "rings on urgent mail",
+         "config": {"sounds": ["gate/totem.routed: alarm", "*: none"]}},
+        {"key": "out", "type": "catapult", "title": "Report", "icon": "🎯", "why": "sends the crew's result",
+         "config": {"wait_for": ["crew"]}},
+    ],
+    "roads": [
+        {"from": "tower", "event": "mail.received", "to": "gate"},
+        {"from": "gate", "event": "totem.routed", "route": "urgent", "to": "crew"},
+        {"from": "gate", "event": "totem.routed", "route": "rest", "to": "log"},
+        {"from": "gate", "event": "totem.routed", "route": "urgent", "to": "chime"},
+        {"from": "crew", "event": "pool.done", "to": "out"},
+    ],
+}
+
+
+def test_roads_from_a_totem_wait_for_its_routes(tmp_path: Path):
+    plan, problems = town_builder.check(ROUTED, tmp_path, set())
+    assert problems == []
+    assert {(r.target, r.subscription) for r in plan.roads if r.source == "gate"} == {
+        ("crew", "totem.routed#urgent"), ("log", "totem.routed#rest"), ("chime", "totem.routed#urgent")}
+
+
+@pytest.mark.parametrize("change, expect", [
+    (lambda a: a["roads"][1].pop("route"), "waits for one of its routes (urgent, rest)"),
+    (lambda a: a["roads"][1].update(route="spam"), "not 'spam'"),
+    (lambda a: a["buildings"][1].pop("config"), "it has no rules"),
+    (lambda a: a["buildings"][5]["config"].update(wait_for=["crew", "ghost"]), "not a key of the plan"),
+    (lambda a: a["roads"].pop(), "no road leads from it"),
+])
+def test_routes_and_waits_are_checked(tmp_path: Path, change, expect):
+    answer = json.loads(json.dumps(ROUTED))
+    change(answer)
+    _, problems = town_builder.check(answer, tmp_path, set())
+    assert any(expect in p for p in problems), problems
+
+
+def test_settings_that_name_buildings_follow_their_ids(tmp_path: Path):
+    answer = json.loads(json.dumps(ROUTED))
+    answer["buildings"][1]["config"]["rules"].insert(0, "mine: source tower")
+    plan, problems = town_builder.check(answer, tmp_path, {"tower", "gate", "crew"})
+    assert problems == []
+    cfg = {s["id"]: s.get("config") for s in plan.specs}
+    assert cfg["out"]["wait_for"] == ["crew_1"]
+    assert cfg["chime"]["sounds"] == ["gate_1/totem.routed: alarm", "*: none"]
+    assert cfg["gate_1"]["rules"][0] == "mine: source tower_1"
+
+
+def test_the_retry_spells_out_the_chosen_types(tmp_path: Path):
+    bad = json.loads(json.dumps(ROUTED))
+    bad["roads"][1].pop("route")
+    run = _runner(bad, ROUTED)
+    assert town_builder.plan("triage my mail", tmp_path, set(), run).ok
+    assert "rules?" in run.calls[0] and "contains <text>" not in run.calls[0]
+    assert "contains <text>" in run.calls[1] and "IMAP server" in run.calls[1]
+    assert "takes from a road" in run.calls[0] and "[file]" in run.calls[0]
+
+
+@pytest.mark.asyncio
+async def test_a_raised_totem_road_waits_for_its_route(fake_repo: Path, monkeypatch):
+    monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
+    plan, problems = town_builder.check(ROUTED, fake_repo, set())
+    assert problems == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        app.raise_town_plan(plan)
+        await _until(pilot, lambda: app.scroll.building("log") is not None and app.scroll.building("log").roads)
+        road = app.scroll.building("log").roads[0]
+        assert road.source == "gate" and road.filter.get("route") == ["rest"]
 
 
 def test_a_refused_plan_goes_back_with_its_problems(tmp_path: Path):
@@ -121,7 +202,7 @@ async def test_plan_review_and_raise(fake_repo: Path, monkeypatch):
         app.build_town_from_order()
         await _until(pilot, lambda: isinstance(app.screen, TownPlanReview))
         body = str(app.screen.query_one("#tp-body Static").render())
-        assert "Episode Drops" in body and "a pasted idea becomes a task" in body
+        assert "Episode Drops" in body and "a pasted script shows up to read" in body
         app.screen.query_one("#tp-raise").press()
         await _until(pilot, lambda: app.scroll.building("notes") is not None
                      and any(r.source == "inbox" for r in app.scroll.building("board").roads)

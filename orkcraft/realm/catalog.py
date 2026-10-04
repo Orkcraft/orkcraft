@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from collections.abc import Collection
 from typing import Any
 
 # -- sizes ------------------------------------------------------------------------------------------
@@ -449,16 +450,175 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-def catalog_text(types: list[BuildingType] | None = None) -> str:
-    """The catalog for the wizard's AI prompt: one block per type."""
+# -- what the builders read -------------------------------------------------------------------------
+# The catalog is the only thing the Foreman and the Town Builder know of the buildings, so it says
+# what a type does with a cart, what it does outside the camp and how each setting is written.
+# tests/test_catalog_docs.py keeps these in step with the views and the config of TYPES.
+
+# What a cart on a plain road makes the building do. A type that is not here only shows the cart
+# as a note: a plain road into it does nothing.
+TAKES: dict[str, str] = {
+    "totem": "anything: the first rule that matches picks a route and the cart goes on as totem.routed "
+             "(else totem.unmatched)",
+    "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
+    "horn": "anything: plays the sound its table picks for that source and event",
+    "barracks": "anything: the cart becomes a task for an orc (the title names it, the text is the brief)",
+    "council": "a question or a draft: the council debates it → team.artifact_ready",
+    "scrolls": "a query (the cart's title and text): finds the fragments that answer it → knowledge.chunks",
+    "lake": "a file, a diff, Markdown, a branch or a URL: shows it",
+    "forge": "a cart naming one of the repository's branches (e.g. Barracks' pool.done): tests it and "
+             "squash-merges it into the base",
+    "loot": "anything finished: stores it with when and its source → loot.stored",
+    "crag": "the first number in the cart: a sample of the `road` source",
+    "catapult": "anything: loads it under its source building; fires once every building of `wait_for` has loaded",
+    "workshop": "anything (a file as its content): its script runs on the cart",
+}
+
+# What a building does outside the camp on its own: the network, merges, money.
+EFFECTS: dict[str, str] = {
+    "watchtower": "reads mail (IMAP) and GitHub over the network; listens for webhooks on 127.0.0.1",
+    "barracks": "runs agents (spends money) in git worktrees",
+    "council": "runs agents (spends money)",
+    "forge": "merges into the base branch without asking unless `confirm`",
+    "lake": "fetches `url` over the network",
+    "war_drum": "fetches `ics` when it is a URL",
+    "catapult": "sends HTTP requests to `url` without asking unless `confirm`",
+    "mill": "a `script:` step runs a command",
+    "workshop": "runs its script; its steward prompt runs a model",
+}
+
+# How each setting is written, with an example: the Builder fills config from these alone.
+CONFIG_HELP: dict[str, dict[str, str]] = {
+    "watchtower": {
+        "host": "IMAP server for mail, e.g. imap.gmail.com (mail is off without it)",
+        "user_env": "the environment variable that holds the mail login, e.g. MAIL_USER",
+        "password_env": "the environment variable that holds the mail password, e.g. MAIL_PASSWORD",
+        "folder": "the mail folder to read (default INBOX)",
+        "port": "IMAP port (default 993, SSL)",
+        "github": "owner/repo whose events to watch through `gh`, e.g. acme/api",
+        "cron": "when watch.cron fires: `every 15m`, `every 2h`, `hourly`, `daily 05:00`, "
+                "`weekly mon 09:00` or a 5-field cron",
+        "webhook_port": "listen for POSTs on http://127.0.0.1:<port>/",
+        "webhook_secret_env": "the environment variable with a secret a webhook must carry "
+                              "(X-Orkcraft-Token, or GitHub's X-Hub-Signature-256)",
+    },
+    "totem": {
+        "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
+                 "`<route>: kind <text|file|node>`, `<route>: source <building>`, `<route>: event <event id>`, "
+                 "`<route>: <field> == <value>` (or !=; field: title, value, source, event, kind or a JSON key), "
+                 "`<route>: else` last. A route is lowercase a-z 0-9 _ -. "
+                 "e.g. [\"urgent: contains urgent\", \"bugs: matches (?i)bug|crash\", \"rest: else\"]",
+    },
+    "mill": {
+        "steps": "one step per line, in order: `lines`, `grep: <regex>`, `drop: <regex>`, "
+                 "`replace: <regex> => <with>`, `trim`, `lower`, `dedupe`, `csv`, `json`, "
+                 "`extract: <field> = <regex>`, `pick: a, b`, `sort: <field> [desc]`, `limit: <n>`, "
+                 "`filter: <field> <eq|ne|contains|matches> <value>`, `count`, `to_json`, "
+                 "`template: <md with {field}>`, `join[: <sep>]`, `script: <command>`. "
+                 "e.g. [\"lines\", \"grep: TODO\", \"limit: 20\", \"join\"]",
+    },
+    "horn": {
+        "sounds": "one line per key, the most precise wins: `<building>/<event>: <sound>`, `<event>: <sound>`, "
+                  "`<building>: <sound>`, `*: <sound>`; a sound is horn, chime, alarm, drum, ding, bell, none "
+                  "or an audio file. e.g. [\"mail.received: chime\", \"*: none\"]",
+        "default": "the sound when no line matches (default horn)",
+        "muted": "true keeps it quiet",
+        "quiet": "quiet hours, e.g. 22:00-08:00",
+        "cooldown": "seconds between two sounds of one key (default 2)",
+    },
+    "fields": {"path": "TASKS.md or a folder with todo/ in-progress/ done/ (default TASKS.md)"},
+    "barracks": {
+        "max_orcs": "how many orcs work at once (default 3)",
+        "budget_usd": "the most the barracks may spend, in USD",
+        "providers": "who may be hired, `harness[:model]`: claude or agy, e.g. [\"claude:sonnet\", \"agy\"]",
+        "worktrees": "each orc in its own git worktree (default true)",
+        "orders": "standing orders every orc gets with each task",
+    },
+    "council": {
+        "goal": "what the decision is for, given with every question",
+        "max_rounds": "rounds before the moderator decides (default 4)",
+        "budget_usd": "the most one debate may spend, in USD (default 2)",
+        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Architect:claude\", \"Critic:agy:gemini-3.1-pro-high\"]",
+        "moderator": "`harness[:model]` that revises the draft (default claude)",
+    },
+    "war_drum": {
+        "ics": "an .ics file in the project or an https URL (+ adds events to its own file)",
+        "day_starts": "when calendar.day_schedule goes out, HH:MM (default 08:00)",
+    },
+    "forest": {"path": "the folder to show (default the project)"},
+    "scrolls": {"paths": "folders of notes, e.g. [\"docs\", \"notes\"] (default whichever of docs, notes, wiki, "
+                         "knowledge, context the project has)"},
+    "lake": {"url": "a page to show on open, e.g. a local dev server http://localhost:3000"},
+    "forge": {
+        "remote": "not used yet",
+        "base": "the branch to merge into (default main)",
+        "test_cmd": "the command that must pass before a merge, e.g. `pytest -q`",
+        "confirm": "true asks before every merge",
+    },
+    "loot": {"path": "the folder whose generated files wait for review (default the working tree)"},
+    "crag": {
+        "source": "what to chart: limits, spend, tokens, runs, orcs, tasks, cpu, or road (numbers that come by road)",
+        "orientation": "vertical (over time) or horizontal (broken down)",
+        "window": "1h, 24h or 7d (default 24h)",
+        "warn": "a value over it sends charts.threshold",
+        "crit": "a value over it sends charts.threshold, critical",
+    },
+    "catapult": {
+        "url": "where to send, http or https",
+        "method": "POST, PUT or PATCH (default POST)",
+        "schema": "a JSON Schema file in the project the body must pass, e.g. schemas/report.json",
+        "wait_for": "the buildings (their ids; keys in a town plan) that must all have sent a cart before it fires; each needs a "
+                    "road into the Catapult. Without it every cart fires",
+        "token_env": "the environment variable whose token goes as Authorization: Bearer",
+        "confirm": "true asks before every shot",
+    },
+    "workshop": {
+        "runtime": "python or bash",
+        "layout": "log, table or card",
+        "steward_prompt": "what the model does with carts the script hands over (exit 3)",
+        "inputs": "the events the script expects",
+        "schedule": "run on its own: `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron",
+    },
+}
+
+
+def takes(type_id: str) -> str:
+    """What a cart on a plain road makes a building of this type do; "" — nothing."""
+    return TAKES.get(ALIASES.get(type_id, type_id), "")
+
+
+def _param_text(param: Param) -> str:
+    typ, allowed, required = param
+    if isinstance(allowed, tuple) and typ is str:
+        kind = " | ".join(allowed)
+    elif isinstance(allowed, tuple) and allowed[1] < 1e9:
+        kind = f"number {allowed[0]:g}-{allowed[1]:g}"
+    else:
+        kind = {str: "text", int: "number", float: "number", bool: "true/false", list: "list of text"}.get(typ, "text")
+    return kind + (", required" if required else "")
+
+
+def catalog_text(types: list[BuildingType] | None = None,
+                 detail: bool | Collection[str] = True) -> str:
+    """The catalog for the builders' prompts: one block per type. `detail` — True, or the type ids
+    whose settings are spelled out with their syntax; the others list only the names."""
     lines = []
     for t in types if types is not None else TYPES.values():
         lines.append(f"- {t.id} ({t.icon} {t.title}, size {t.size}): {t.summary}")
         lines.append(f"    hut shows: {t.preview}; open: {t.full}")
+        lines.append(f"    takes from a road: {takes(t.id) or 'nothing — a road into it only shows a note'}")
         if t.events:
-            lines.append("    events: " + "; ".join(f"{e.id} — {e.help}" for e in t.events))
+            lines.append("    events: " + "; ".join(f"{e.id} [{e.kind}] — {e.help}" for e in t.events))
         if t.actions:
             lines.append("    quick actions: " + "; ".join(f"{a.id} ({a.glyph} {a.label})" for a in t.actions))
-        if t.config:
+        if EFFECTS.get(t.id):
+            lines.append(f"    acts outside the camp: {EFFECTS[t.id]}")
+        if not t.config:
+            continue
+        if detail is True or (detail is not False and t.id in detail):
+            lines.append("    config:")
+            help_ = CONFIG_HELP.get(t.id, {})
+            lines.extend(f"      {k} ({_param_text(p)}): {help_.get(k, '')}".rstrip(": ") for k, p in t.config.items())
+        else:
             lines.append("    config: " + ", ".join(f"{k}{'' if r[2] else '?'}" for k, r in t.config.items()))
     return "\n".join(lines)

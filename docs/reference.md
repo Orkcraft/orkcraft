@@ -550,13 +550,24 @@ An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole to
 catalog. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
 scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
 building passes `masonry.validate_spec`, and a plan with problems goes back with them (up to 3
-attempts). Nothing is raised before you approve it:
+attempts). The checks also refuse a road into a building that does nothing with a cart (Pit,
+Watchtower, Task Fields, War Drum, File Forest), a road from a 🗿 Totem that does not name one of
+its routes (it is raised as a road waiting for that route), and a 🎯 Catapult whose `wait_for` names
+a building that has no road into it. Settings that name buildings (`wait_for`, a Horn's sounds, a
+Totem's `source` rule) are written with the plan's keys and follow the buildings' ids. Nothing is
+raised before you approve it:
 
 - **Raise the town** (`ctrl+s`) — the buildings go up one by one, then the roads, with the bar along
   the bottom; one checkpoint for the whole town; the order is closed.
 - **Ask again** — with a note on what to change.
 - **Later** — the order waits in the 🏰 Town Hall, whose hut burns 🔥 until you open it (opening it
   offers to plan it); F10 → 📜 Town Builder plans it any time.
+
+What the planner knows of the buildings is `catalog.catalog_text()`: per type what it does with a
+cart (`catalog.TAKES`), the payload kind of each event, what it does outside the camp
+(`catalog.EFFECTS`) and how each setting is written (`catalog.CONFIG_HELP`).
+The first attempt lists only the settings' names; a retry spells out the settings of the types the
+plan chose. `tests/test_catalog_docs.py` keeps these tables in step with the views and the config.
 
 The order lives in `.orkcraft/town/order.json`; every plan request is logged in
 `.orkcraft/build-requests.jsonl`.

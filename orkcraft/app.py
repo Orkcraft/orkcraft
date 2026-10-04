@@ -928,7 +928,7 @@ class OrkcraftApp(App[int]):
             steps.append((f"Raising {label}", functools.partial(self.raise_spec, spec, None, True)))
         for r in plan.roads:
             steps.append((f"Laying the road {r.source} → {r.target}",
-                          functools.partial(self.add_road, r.target, r.source, r.event, None, True)))
+                          functools.partial(self.add_road, r.target, r.source, r.subscription, None, True)))
         bar = onboarding.mount_raise_bar(self.screen, len(steps))
 
         def run(i: int) -> None:
