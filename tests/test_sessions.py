@@ -133,6 +133,16 @@ async def test_chat_resumes_recorded_session(fake_repo: Path, fake_cli: Path):
         term.stop()
 
 
+def test_hook_logs_into_the_project_the_session_works_in(tmp_path: Path):
+    hook = _hook_module(tmp_path / "fallback")
+    project = tmp_path / "project"
+    (project / ".git").mkdir(parents=True)
+    hook.record("codex", {"session_id": "th-1", "cwd": str(project)}, env={})
+    lines = (project / ".orkcraft" / "sessions.jsonl").read_text().splitlines()
+    assert json.loads(lines[-1])["session"] == "th-1" and not hook.LOG.exists()
+    assert ss.collect_sessions(project, max_age=0)[0].key == "codex:th-1"
+
+
 def test_deploy_command_passes_orders_as_one_safe_argument(monkeypatch):
     from orkcraft.sources.sessions import deploy_command
 
