@@ -192,7 +192,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🗑️ Scroll Dump | Scroll Scrapper | folders of notes; `/` or a cart is a query → the best few fragments within a budget | `knowledge.changed`, `knowledge.chunks` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
-| 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
+| 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; accept, send back for rework (≤ 3 rounds, then 🔥 needs you), restore rejected files; the chain's tokens and cost | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orcs, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment; 🧪 dry run | `catapult.sent`, `catapult.failed` |
 

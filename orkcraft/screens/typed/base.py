@@ -24,6 +24,7 @@ STATE_ROOT = Path(".orkcraft")
 
 class TypedView(CustomBuildingView):
     TYPE = ""
+    TAKES_REWORK = False      # a delivered cart is work it redoes (a Loot checkpoint may send one back)
 
     DEFAULT_CSS = """
     TypedView .typed-list { width: 2fr; height: 1fr; border: round $surface-lighten-1; }

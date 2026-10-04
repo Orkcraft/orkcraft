@@ -36,6 +36,7 @@ OUTCOME = {"agreed": "agreed ✓", "no_consensus": "decided (no consensus)", "bu
 
 class TeamView(TypedView):
     TYPE = "council"
+    TAKES_REWORK = True
     runner = None              # tests put a (harness, prompt, model) → (text, cost) here
 
     def __init__(self, *a, **kw) -> None:
@@ -75,19 +76,21 @@ class TeamView(TypedView):
 
     # -- the discussion -----------------------------------------------------------------------------
 
-    def start(self, topic: str) -> bool:
+    def start(self, topic: str, ref: str = "", trail: tuple = ()) -> bool:
         topic = topic.strip() or str(self.config.get("goal", "")).strip()
         if not topic:
             self.app.notify("a discussion needs a topic (or a goal in the settings)", title="⚔ Agent Team")
             return False
         if self._busy:
             self.waiting = topic
+            self._waiting_cart = (ref, tuple(trail))
             return False
         if getattr(self.app, "gold_exhausted", lambda: False)():
             self.app.notify("🪙 budget exhausted — a discussion costs model calls", title="⚔ Agent Team",
                             severity="warning")
             return False
         self.current = tm.new(topic, str(self.config.get("goal", "")))
+        self._cart = (ref, tuple(trail))         # what came in: travels on with the artifact
         self._run()
         return True
 
@@ -131,7 +134,9 @@ class TeamView(TypedView):
             path = pipes.write_loot(self._get_repo_root(), self.building_id, d.topic[:80],
                                     tm.artifact_markdown(d, self.team))
             rel = shelves.rel_to(self._get_repo_root(), path)
-            self.emit("team.artifact_ready", rel, d.topic[:80])
+            ref, trail = getattr(self, "_cart", ("", ()))
+            hop = pipes.hop(self.building_id, "team", "team", None, d.spent or None, outcome=d.outcome)
+            self.emit("team.artifact_ready", rel, d.topic[:80], trail=trail + (hop,), ref=ref)
             self.app.notify(f"{OUTCOME[d.outcome]} — {rel}", title="⚔ Agent Team")
         elif d.outcome == "asked":
             self.app.notify(f"{d.asking} asks: {d.question}", title="🔥 Agent Team")
@@ -144,7 +149,7 @@ class TeamView(TypedView):
         self._render_list()
         if self.waiting and d.outcome != "asked":
             nxt, self.waiting = self.waiting, None
-            self.start(nxt)
+            self.start(nxt, *getattr(self, "_waiting_cart", ("", ())))
 
     def reply(self, text: str | None) -> None:
         d = self.current
@@ -154,7 +159,7 @@ class TeamView(TypedView):
         self._run()
 
     def receive(self, payload, title: str, markdown: str) -> None:
-        self.start(markdown or payload.value)
+        self.start(markdown or payload.value, payload.ref, payload.trail)
 
     def on_unmount(self) -> None:
         if self._cancel is not None:

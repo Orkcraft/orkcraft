@@ -84,6 +84,8 @@ class PoolTask:
     error: str = ""
     cost_usd: float | None = None
     decided: str = ""               # the last decision about it
+    ref: str = ""                   # the thing worked on (a cart's ref), kept through rework rounds
+    trail: list = field(default_factory=list)   # the hops before it arrived (pipes.Hop dicts)
 
 
 @dataclass

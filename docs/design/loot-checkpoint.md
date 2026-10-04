@@ -1,6 +1,7 @@
 # Design — 📦 Loot: the review checkpoint
 
-Status: design notes, written 2026-10-04. Stage 1 (the trail) is implemented; stages 2–4 are not.
+Status: design notes, written 2026-10-04. Stages 1 (the trail) and 2 (the checkpoint) are implemented;
+stages 3–4 are not.
 Builds on roads and handlers (`roads-and-orcs.md`), the 🔥 of a waiting orc and the 🪙 ledger.
 
 ## 1. What Loot is
@@ -56,7 +57,17 @@ that matching, not a language of their own.
   then the roof burns (`realm/modes.py`), respecting quiet hours; `!` (🔥 Orders) lists it.
 
 Carts are matched across rework rounds by `Payload.ref` (§4), so the attempt counter survives the
-round trip through the source.
+round trip through the source. A cart that comes back is always held again, whatever the rules.
+
+**The way back is not a road.** Roads may not form a loop, so Loot hands the cart straight to its
+source (`app.return_for_rework`): the source must redo delivered work (`TAKES_REWORK` — the Agent
+Team discusses again, the Barracks queues the task) and keeps the `ref` on what it sends next. A
+source that cannot take work back (a War Tent task, a plain building) makes the cart *needs you*
+at once. `loot.rework` also goes down Loot's roads, for a Horn or a Herald.
+
+Keys in the list: `a` accept · `r` reject a file / send a held cart back (asks for the reason) ·
+`d` drop a cart · `u` restore a rejected file. Quick actions: ✓ Accept all (held carts), ✓ Accept
+files.
 
 ## 4. The trail — metadata that travels with a cart
 
@@ -99,6 +110,8 @@ change in the working tree.
 1. **The trail** — `Hop`, `Payload.trail` / `ref`, handler runs merge and extend it, the vault
    records the chain's tokens and cost instead of parsing `$…` out of the text. *(done)*
 2. **The checkpoint** — rules in the wizard, the queue, `passed / rework / needs_you`, the rework
-   limit, 🔥 reminders, ↺ restore, authorship from the trail's worktree.
-3. **The full window** — diff, edit, the trail with cost.
+   limit, 🔥 reminders, ↺ restore; the rules read the files of the trail's worktree; Loot's own
+   `loot/` is never up for review; file names are read unescaped. *(done)*
+3. **The full window** — diff, edit, the trail with cost; per-file decisions inside a held cart's
+   worktree.
 4. **Images** — kitty / sixel in the full window, or the system viewer.

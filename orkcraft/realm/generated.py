@@ -17,6 +17,7 @@ from pathlib import Path
 
 GIT_TIMEOUT_S = 10
 PREVIEW_LINES = 200
+SKIP = (".orkcraft/", "loot/")           # never up for review: orkcraft's state and Loot's own reports
 
 
 @dataclass
@@ -70,18 +71,18 @@ class Review:
     # -- what there is ------------------------------------------------------------------------------
 
     def files(self) -> list[Generated]:
-        args = ["status", "--porcelain=v1", "--untracked-files=all", "--no-renames"]
+        args = ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames"]
         if self.scope:
             args += ["--", self.scope]
-        out = _git(self.repo, *args)
+        out = _git(self.repo, *args)             # -z: paths as they are, never quoted or escaped
         accepted = self._load().get("accepted", {})
         rows = []
-        for line in out.splitlines():
-            if len(line) < 4:
+        for entry in out.split("\0"):
+            if len(entry) < 4:
                 continue
-            xy, rel = line[:2], line[3:].strip().strip('"')
-            if rel.startswith(".orkcraft/") or rel.endswith(".DS_Store"):
-                continue                       # orkcraft's own state (and the rejects) is not up for review
+            xy, rel = entry[:2], entry[3:]
+            if rel.startswith(SKIP) or rel.endswith(".DS_Store"):
+                continue                       # orkcraft's own state, the rejects and what Loot keeps
             change = "A" if xy == "??" or "A" in xy else "D" if "D" in xy else "M"
             reviewed = "accepted" if accepted.get(rel) == _hash(self.repo, rel) else ""
             rows.append(Generated(rel, change, reviewed))
@@ -139,3 +140,20 @@ class Review:
         data["rejected"] = data["rejected"][-200:]
         self._save(data)
         return kept
+
+    def rejected(self) -> list[dict]:
+        """Rejected files whose content is still kept, newest first: {path, at, kept}."""
+        return [r for r in reversed(self._load().get("rejected", [])) if r.get("kept") and Path(r["kept"]).is_file()]
+
+    def restore(self, rel: str, at: str = "") -> Path:
+        """Bring a rejected file back (the latest rejection of `rel`, or the one at `at`)."""
+        p = _inside(self.repo, rel)
+        entry = next((r for r in self.rejected() if r["path"] == rel and (not at or r["at"] == at)), None)
+        if entry is None:
+            raise ValueError(f"no kept copy of {rel}")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(entry["kept"], p)
+        data = self._load()
+        data["rejected"] = [r for r in data.get("rejected", []) if r != entry]
+        self._save(data)
+        return p

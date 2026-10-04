@@ -19,7 +19,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, roads
+from orkcraft.realm import jobs, pipes, roads
 from orkcraft.screens.typed.base import TypedView
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -35,6 +35,7 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
 
 class PoolView(TypedView):
     TYPE = "barracks"
+    TAKES_REWORK = True
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
 
@@ -73,11 +74,12 @@ class PoolView(TypedView):
     def receive(self, payload, title: str, markdown: str) -> None:
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
-        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title))
+        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title),
+                      ref=payload.ref, trail=payload.trail)
 
-    def add_task(self, title: str, text: str, key: str = "") -> bk.PoolTask:
+    def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:
         task = bk.PoolTask(uuid.uuid4().hex[:8], title[:80], text, key or bk.task_key("text", text, title),
-                           bk.now_iso())
+                           bk.now_iso(), ref=ref, trail=[h.as_dict() for h in trail])
         st = self.state
         st.queue.append(task)
         self._dispatch(task)
@@ -188,10 +190,13 @@ class PoolView(TypedView):
         foreman.learn(orc, ok, cost)
         st.stats = foreman.stats
         branch = f"\n\n_branch:_ `{orc.branch}`" if orc.branch else ""
+        trail = pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", None, cost, orc.worktree,
+                                                         orc.branch, "done" if ok else "error"),)
         if ok:
-            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{text}{branch}", task.title)
+            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{text}{branch}", task.title,
+                      trail=trail, ref=task.ref)
         else:
-            self.emit("pool.failed", f"**{task.title}** — {orc.name}: {error}", task.title)
+            self.emit("pool.failed", f"**{task.title}** — {orc.name}: {error}", task.title, trail=trail, ref=task.ref)
         on_run = getattr(self.app, "on_handler_run", None)
         if on_run is not None and error != "stopped":
             on_run(roads.HandlerRun(self.building_id, orc.name.lower(), orc.harness, task.id, 0.0, 0.0,
