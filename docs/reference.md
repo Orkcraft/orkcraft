@@ -189,7 +189,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🔥 Orc Council | Chieftains | a question: members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; rounds and $ capped | `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event | `calendar.event_due`, `.day_schedule`, `.event_added/removed` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
-| 🗑️ Scroll Dump | Scroll Scrapper | the project's LLM wiki: read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`) → linked pages, an index and a log in `llm-wiki/`; ⟳ ingests what is new, 🧹 lints; a cart is a task and goes on with the wiki's index | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted` |
+| 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has the Council spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser | `lake.viewed` |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
@@ -203,18 +203,47 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `ffplay`; `winsound` on Windows); with none of them the terminal bell rings. The built-in sounds
   are synthesized once into `.orkcraft/horn/sounds/`; every call (heard or kept quiet, and why)
   is in `.orkcraft/horn/<id>/calls.jsonl`.
-- The Scroll Dump is an **LLM wiki**: it does no retrieval of its own (Claude Code and agy search
-  files well) — its orc, the librarian, turns the sources into a wiki once and keeps it current, so
-  knowledge accumulates instead of being searched for from scratch. The wiki's folder (`wiki`,
-  default `llm-wiki/`) holds `WIKI.md` (the rules the librarian follows — edit them), `index.md`
-  (every page with one line; agents read it first), `log.md`, `lint.md`, the pages in `pages/`
-  and, in `raw/`, snapshots of the sources outside the project with `raw/manifest.json` (what the
-  wiki has taken in). **Ingest** (`i`, ⟳, or by itself with `auto_ingest`) hands the librarian the
-  sources that are new, changed or gone; it updates the pages, the index and the log, writing only
-  inside the wiki's folder, and the manifest moves on only when it succeeds. **Lint** (`l`, 🧹)
-  writes `lint.md`: contradictions, stale facts, orphans, missing pages. The librarian runs on
-  `harness` (`claude`, default, or `agy` — agy's sandbox sees only the wiki's folder, so give it
-  sources outside the project or snapshots) with `model`. Nothing is written before the first ingest.
+- The Scroll Dump is an **LLM wiki**: no retrieval of its own (Claude Code and agy search files
+  well) — its librarian orc turns the sources into a wiki once and keeps it current, so knowledge
+  accumulates instead of being searched for from scratch. **A wiki is a topic, not a building**:
+  `topic` picks the sections and rules it starts with — `codebase` (architecture, modules, flows,
+  decisions, how-to, glossary), `team` (teams, process, product, decisions, onboarding, glossary),
+  `design` (components, screens, decisions, tokens) or `general` — and `wiki` its folder (default
+  `llm-wiki/<topic>/`). A project may keep several, one Scroll Dump each; a wiki is never another
+  wiki's source.
+- **Built for thousands of pages and fast search.** `WIKI.md` holds the rules (edit them);
+  `index.md` maps the sections, each `pages/<section>/` has its own `index.md` and `CLAUDE.md`
+  (the section's rules — Claude Code loads them when it works there), and a section past ~40
+  pages splits into subfolders with their own maps, so an agent walks index → section → page.
+  Every page has front matter (`kind`, `aliases` — every name the thing goes by, `sources`,
+  `updated`, `owner`) and an answering first paragraph: what grep hits. `CLAUDE.md` and
+  `AGENTS.md` at the wiki's root point agents in. Ingest takes a module at a time (sources
+  grouped by folder, ≤60 per run) and goes on by itself until all are in.
+- **Ingest runs by itself** once the sources have stayed unchanged for a while (`auto_ingest`,
+  default on; `ORKCRAFT_WIKI_AUTO=0` turns it off everywhere). What is new is judged by content
+  (a hash, a git blob, a page version), not by mtime; a source that fails to answer (Confluence
+  down, a revision gone) never makes its pages "gone"; a source unreadable right now waits for the
+  next run, and you are told. `x` stops the librarian; the manifest moves on only on success.
+- **Pages are shared.** A page with `owner: human` in its front matter (or `<!-- manual -->`) is
+  the people's: the librarian reads it and writes suggestions in `proposals.md`; if it touches the
+  page anyway the harness puts it back and says so. A page with edits not yet committed is
+  protected the same way for that run. Files outside the wiki that change while it works are
+  reported.
+- **Every change is committed** (`commit`, default on) — the wiki's folder alone, authored by
+  `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the orc's
+  edits from people's. Snapshots in `raw/` stay out of git (`raw/.gitignore`); `raw/manifest.json`
+  goes in.
+- **The Council spot-checks.** After each ingest `review_sample` pages it wrote (default 2) go to
+  the Orc Council named in `council`: its members, at most two rounds; the discussion shows in the
+  Council, the verdict lands in `reviews.md`, which the next ingest reads. Without `council` the
+  sample goes out as `wiki.review` (roads cannot loop, so a verdict cannot come back on one).
+- **The steward closes the loop.** When a building's agents go into a wiki by themselves (tool
+  calls naming its folder, ≥3 in a week) and no road brings it, the steward of that building
+  proposes, without a model: the wiki's `knowledge.chunks` into the building, and the building's
+  own sources routed through the wiki — then each task arrives with the wiki's map.
+- The librarian runs on `harness` (`claude`, default, or `agy` — agy's sandbox sees only the
+  wiki's folder, so give it snapshot sources) with `model`. Nothing is written before the first
+  ingest.
 - The sources are strings: `docs` (or `fs:docs`) a folder of Markdown notes, `code:src` a folder of
   code, `git:main` or `git:v2.0:docs` a revision read through git, `confluence:ENG` a Confluence
   space (the site in `ORKCRAFT_CONFLUENCE_URL`, or `confluence:ENG@https://acme.atlassian.net/wiki`;
@@ -225,8 +254,9 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
   Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-orc Barracks); event ids
   are unchanged, so old roads keep working.
-- `orkcraft --demo --demo-set dashboard` opens all of them on three canvases (My Day, Agent Yard,
-  Gates) in a real git repository; agents never run there and the Catapult only dry-runs.
+- `orkcraft --demo --demo-set dashboard` opens all of them on four canvases (My Day, Agent Yard,
+  Gates, Library — three LLM wikis, code, team and design, that tasks pass through) in a real git
+  repository; agents never run there and the Catapult only dry-runs.
 
 ## Windows (tiles view)
 
@@ -345,7 +375,7 @@ touched). Data is simulated; chains run for real, agents show a prepared last re
 call a model. `--demo-reset` rebuilds it; `--demo-screens OUT` walks F1–F8 headless and saves
 SVG + PNG screenshots. `--demo-set managers` opens a second sandbox (default
 `~/.orkcraft-demo-managers`) with the engineering-manager 1on1-Prep canvas; `--demo-set dashboard`
-one with the 15 camp buildings (My Day, Agent Yard, Gates) in a real git repository.
+one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real git repository.
 
 ## Orcs: steward, handlers, Recruiter
 

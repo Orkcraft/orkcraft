@@ -34,6 +34,7 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     # No real claude/agy calls and no personal calendars in tests.
     monkeypatch.setenv("ORKCRAFT_LIMITS", "0")
     monkeypatch.setenv("ORKCRAFT_COUNCIL_LLM", "0")      # the Council's Fast Path: rules only
+    monkeypatch.setenv("ORKCRAFT_WIKI_AUTO", "0")        # no librarian starts by itself (test_wiki.py opts in)
     monkeypatch.setenv("ORKCRAFT_CALENDARS_FILE", str(tmp_path / "calendars.json"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     # The window-manager tests predate the town view (T1102): they run in tiles; test_town.py opts in.

@@ -191,19 +191,23 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="library", orc="Woodcutter"),
     BuildingType(
         "scrolls", "Scroll Dump", "🗑️", "S",
-        "the project's LLM wiki: the Scroll Scrapper turns read-only sources (notes, code, a git revision, "
-        "a Confluence space) into linked pages, an index and a log, keeps them current and lints them",
-        "pages, sources, what is not taken in yet", "the wiki's pages and the sources; i ingests, l lints",
+        "one LLM wiki (codebase, team, design or general): the Scroll Scrapper turns read-only sources "
+        "(notes, code, a git revision, a Confluence space) into linked pages and keeps them current by itself; "
+        "pages people own stay theirs, the Council spot-checks, every change is committed",
+        "the topic, pages, sources, what is not taken in yet", "the wiki's pages and the sources; i ingests, l lints",
         events=(_e("knowledge.changed", "knowledge changed", FILE, "a source or a wiki page was added or changed"),
-                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's index, for the agent to read from"),
+                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's map, for the agent to read from"),
                 _e("wiki.updated", "wiki updated", TEXT, "an ingest finished: the pages added, changed, marked stale"),
-                _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found")),
-        actions=(_a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki"),
+                _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found"),
+                _e("wiki.review", "spot-check", TEXT, "a sample of freshly written pages, for the Council to check")),
+        actions=(_a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki now"),
                  _a("wiki.lint", "Lint", "🧹", "check the wiki for contradictions, stale facts, orphans"),
                  _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
         config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
+                "topic": (str, ("general", "codebase", "team", "design"), False),
                 "harness": (str, ("claude", "agy"), False), "model": (str, None, False),
-                "auto_ingest": (bool, None, False)},
+                "auto_ingest": (bool, None, False), "commit": (bool, None, False),
+                "review_sample": (int, (0, 10), False), "council": (str, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",

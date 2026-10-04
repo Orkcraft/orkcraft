@@ -128,7 +128,11 @@ class FolderSource(Source):
         return shelves.inside(self.repo_root, path).read_text(encoding="utf-8", errors="replace")
 
     def owns(self, path: str) -> bool:
-        return ":" not in path
+        """A project file under this folder (prefixed paths belong to the other sources)."""
+        if ":" in path:
+            return False
+        folder = PurePosixPath(self.path.replace("\\", "/")).as_posix().strip("/")
+        return folder in ("", ".") or path == folder or path.startswith(folder + "/")
 
 
 # -- a git revision -----------------------------------------------------------------------------------

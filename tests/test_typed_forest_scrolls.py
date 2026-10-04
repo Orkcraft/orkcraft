@@ -43,9 +43,9 @@ async def test_the_forest_picks_and_the_scrolls_answer(fake_repo: Path, monkeypa
         assert "🎯 app.py" in forest.mini_status()
 
         assert app.desktop.get_window("dump").query_one(KnowledgeView).status() == "NO WIKI"
-        (fake_repo / "llm-wiki").mkdir()
-        (fake_repo / "llm-wiki" / "index.md").write_text("# Index\n\n- [Rollback](pages/rollback.md) — how to undo a release\n")
+        (fake_repo / "llm-wiki" / "general").mkdir(parents=True)
+        (fake_repo / "llm-wiki" / "general" / "index.md").write_text("# Index\n\n- [Rollback](pages/rollback.md) — how to undo a release\n")
         app.deliver_payload("dump", pipes.Payload(pipes.TEXT, "what is the rollback plan?", "loot", "pit.text", "q"),
                             "q", "what is the rollback plan?")
         [ctx] = [p for p in sent if p.mode == "knowledge.chunks"]
-        assert "`llm-wiki/`" in ctx.value and "pages/rollback.md" in ctx.value and "rollback plan" in ctx.value
+        assert "`llm-wiki/general/`" in ctx.value and "pages/rollback.md" in ctx.value and "rollback plan" in ctx.value
