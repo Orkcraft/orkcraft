@@ -243,7 +243,10 @@ def parts(scroll, spec: dict | None, building: str, repo_root: Path | None = Non
             if orc.kind in ("agent", "hybrid") and orc.orders.strip():
                 out.append(Part(f"orc:{orc.id}", "agent", orc.orders))
     cfg = (spec or {}).get("config") or {}
-    if cfg.get("steward_prompt"):
+    from orkcraft.realm import catalog
+    kind = catalog.ALIASES.get(str((spec or {}).get("type") or ""), str((spec or {}).get("type") or ""))
+    other = kind in catalog.TYPES and kind not in ("workshop", "custom")   # a Clan Fire's steward_prompt is its
+    if cfg.get("steward_prompt") and not other:                            # brief, never a Workshop script
         from orkcraft.realm import workshop
         script = workshop.load_script(repo_root, building, str(cfg.get("runtime") or "python")) if repo_root else ""
         out.append(Part("steward", "steward", str(cfg["steward_prompt"]), script))

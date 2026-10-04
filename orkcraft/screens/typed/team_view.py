@@ -269,6 +269,8 @@ class TeamView(TypedView):
         d = self.current
         if not text or d is None or d.outcome != "asked":
             return
+        if self.out_of_gold("the review"):
+            return
         tm.answer(d, text)
         self._run()
 
@@ -283,6 +285,13 @@ class TeamView(TypedView):
     def on_unmount(self) -> None:
         if self._cancel is not None:
             self._cancel.set()
+
+    def halt(self) -> int:
+        """🛑 Halt All: the review stops where it is."""
+        if self._cancel is None or self._cancel.is_set() or not self._busy:
+            return 0
+        self._cancel.set()
+        return 1
 
     # -- the list and the reader ---------------------------------------------------------------------
 

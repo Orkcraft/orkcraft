@@ -108,6 +108,19 @@ class TypedView(CustomBuildingView):
     def receive(self, payload: pipes.Payload, title: str, markdown: str) -> None:
         """A cart arrived. Most types only note it; some act on it (Agent runs, Barracks enqueues)."""
 
+    def out_of_gold(self, what: str = "") -> bool:
+        """The run's 🪙 limit is reached: no model call starts (the operator is told when `what` says what waits)."""
+        app = self.app
+        if not getattr(app, "gold_exhausted", lambda: False)():
+            return False
+        if what:
+            try:
+                app.notify(f"🪙 budget exhausted — {what} waits", title=self.spec.get("title", self.building_id),
+                           severity="warning")
+            except Exception:
+                pass
+        return True
+
     def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "") -> bool:
         """Send `event_id` (one this building declares) down its roads. True when a road took it.
         A building that passes on what it received gives its `trail` and `ref` so they travel on."""

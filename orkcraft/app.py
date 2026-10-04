@@ -1696,15 +1696,16 @@ class OrkcraftApp(App[int]):
         except Exception:
             return None
 
-    def return_for_rework(self, source_id: str, payload: pipes.Payload) -> bool:
-        """A Loot checkpoint sends a cart back to the building that made it — directly, not by a road
-        (a road back would close a loop). True when that building redoes delivered work
-        (`TAKES_REWORK`: a Barracks queues the task again)."""
-        view = self._custom_view(source_id)
-        if not getattr(view, "TAKES_REWORK", False):
-            return False
-        self.deliver_payload(source_id, payload, payload.title, payload.value)
-        return True
+    def return_for_rework(self, source_id: str, payload: pipes.Payload) -> str:
+        """A Loot checkpoint or a Clan Fire sends a cart back to the building that made it — directly, not
+        by a road (a road back would close a loop). The building that redoes delivered work (`TAKES_REWORK`:
+        a Barracks queues the task again) is the source, else the latest one in the cart's trail (past a
+        Totem or a Mill on the way). Its id, or "" when nobody can take it back."""
+        for bid in [source_id] + [h.building for h in reversed(payload.trail) if h.building != source_id]:
+            if getattr(self._custom_view(bid), "TAKES_REWORK", False):
+                self.deliver_payload(bid, payload, payload.title, payload.value)
+                return bid
+        return ""
 
     def _loot_burning(self) -> list[str]:
         """Loot buildings with a cart waiting for the person (they burn like an orc waiting for orders)."""

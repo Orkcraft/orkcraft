@@ -104,10 +104,10 @@ class TotemView(TypedView):
         self.state_dir.mkdir(parents=True, exist_ok=True)
         with self.log_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        if route:
-            self.emit("totem.routed", payload.value, route)
+        if route:                                     # the cart goes on: its trail and ref with it
+            self.emit("totem.routed", payload.value, route, trail=payload.trail, ref=payload.ref)
         else:
-            self.emit("totem.unmatched", payload.value, payload.title or title)
+            self.emit("totem.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref)
         self.refresh_data()
 
     def action_edit_rules(self) -> None:

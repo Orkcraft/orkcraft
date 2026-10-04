@@ -131,9 +131,9 @@ class GeneratorView(TypedView):
             back = pipes.Payload(pipes.TEXT, md, self.building_id, "loot.rework",
                                  f"rework: {item.title or item.ref}", item.hops, item.ref)
             taker = getattr(self.app, "return_for_rework", None)
-            if taker is not None and taker(item.source, back):
+            if taker is not None and (to := taker(item.source, back)):
                 self.emit("loot.rework", md, back.title, trail=item.hops, ref=item.ref)
-                self.app.notify(f"sent back to {item.source} (round {item.attempts}): {reason}", title="📦 Loot")
+                self.app.notify(f"sent back to {to} (round {item.attempts}): {reason}", title="📦 Loot")
                 self._changed()
                 return item.status
             item.attempts -= 1

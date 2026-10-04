@@ -61,7 +61,8 @@ round trip through the source. A cart that comes back is always held again, what
 
 **The way back is not a road.** Roads may not form a loop, so Loot hands the cart straight to its
 source (`app.return_for_rework`): the source must redo delivered work (`TAKES_REWORK` — the
-Barracks queues the task; a Clan Fire only reviews, so it is not one) and keeps the `ref` on what it sends next. A
+Barracks queues the task; a Clan Fire only reviews, so it is not one), else the latest building in the
+cart's trail that does (past a Totem, a Mill or a Clan Fire on the way) and keeps the `ref` on what it sends next. A
 source that cannot take work back (a War Tent task, a plain building) makes the cart *needs you*
 at once. `loot.rework` also goes down Loot's roads, for a Horn or a Herald.
 

@@ -135,8 +135,16 @@ class KnowledgeView(TypedView):
         self.set_interval(REFRESH_S, self.refresh_data)
 
     def on_unmount(self) -> None:
-        if self._cancel is not None:
-            self._cancel.set()
+        self.halt()
+
+    def halt(self) -> int:
+        """🛑 Halt All (and leaving): the librarian and a spot-check stop."""
+        n = 0
+        for c in (self._cancel, getattr(self, "_review_cancel", None)):
+            if c is not None and not c.is_set():
+                c.set()
+                n += 1
+        return n
 
     def refresh_data(self) -> None:
         repo = self._get_repo_root()
@@ -252,7 +260,7 @@ class KnowledgeView(TypedView):
         return out, unreadable
 
     def ingest(self, trigger: str = "manual") -> bool:
-        if self.running:
+        if self.running or self.out_of_gold("the ingest" if trigger == "manual" else ""):
             return False
         if not self.pending:
             if trigger == "manual":
@@ -283,7 +291,7 @@ class KnowledgeView(TypedView):
                          "\n".join(f"{i.status} {i.source}" for i in items), trigger, taken, message)
 
     def lint(self, trigger: str = "manual") -> bool:
-        if self.running or not self._prepare():
+        if self.running or self.out_of_gold("the lint" if trigger == "manual" else "") or not self._prepare():
             return False
         return self._run("lint", wiki.lint_prompt(sorted(self._protected())), "lint", trigger, None,
                          f"wiki({self.topic}): lint")
@@ -407,7 +415,8 @@ class KnowledgeView(TypedView):
         cfg = dict(spec.get("config") or {})
         team, veto = tm.members_of(cfg), tm.veto_of(cfg)
         budget = min(float(tm.DEFAULT_BUDGET if cfg.get("budget_usd") is None else cfg["budget_usd"]), REVIEW_BUDGET)
-        repo, app, cancel = self._get_repo_root(), self.app, threading.Event()
+        repo, app = self._get_repo_root(), self.app
+        self._review_cancel = cancel = threading.Event()
         state = repo / ".orkcraft" / "council" / council_id
         harness, _, model = str(cfg.get("moderator") or "claude").partition(":")
         steward = tm.Steward(f"{REVIEW_BRIEF} {str(cfg.get('steward_prompt') or '').strip()}".strip(),
@@ -483,7 +492,8 @@ class KnowledgeView(TypedView):
             self.record_verdict(markdown or payload.value, payload.title or title)
             return
         task = f"{payload.title} {payload.value}".strip()[:500]
-        self.emit("knowledge.chunks", wiki.context(self.wiki_root, self._get_repo_root(), task), task[:80])
+        self.emit("knowledge.chunks", wiki.context(self.wiki_root, self._get_repo_root(), task), task[:80],
+                  trail=payload.trail, ref=payload.ref)
 
     # -- the hut ----------------------------------------------------------------------------------
 

@@ -233,8 +233,8 @@ class WatchtowerView(TypedView):
 
     def judge(self) -> None:
         """The Lookout's verdict on what waits, a batch at a time, off the UI thread."""
-        if self._judging or not self.pending:
-            return
+        if self._judging or not self.pending or (not self.simulated and self.out_of_gold()):
+            return                                       # out of 🪙: the signals wait, unjudged
         self._judging = True
         batch, self.pending = self.pending[:lookout.BATCH], self.pending[lookout.BATCH:]
         intent, app = self.intent, self.app

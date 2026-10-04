@@ -452,6 +452,8 @@ class CatapultView(TypedView):
         if self.simulated:
             self.app.notify("the sandbox opens no browsers", title="🎯 Catapult")
             return
+        if self.out_of_gold("scouting"):
+            return
         if self.busy or self.firing:
             return
         todo = [f for f in forms if cw.load_map(self.fdir(f)) is None] or forms
@@ -597,6 +599,8 @@ class CatapultView(TypedView):
         keys = self._keys()
         if not self.browser or not forms:
             self.app.notify("scout the forms first (s)", title="🎯 Catapult")
+            return
+        if not self.simulated and self.out_of_gold("the mapping"):
             return
         if not keys:
             self.app.notify("load a cart or set schema — the model needs the keys", title="🎯 Catapult")

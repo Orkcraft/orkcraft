@@ -46,7 +46,8 @@ class MillView(TypedView):
         self.runs: list[jobs.Job] = []
         self.running = False
         self.last_input = ""
-        self.queue: deque[tuple[str, str, str, bool]] = deque()     # (text, trigger, title, cut) — no limit
+        self.queue: deque[tuple] = deque()     # (text, trigger, title, cut, trail, ref) — no limit
+        self._carts: dict[str, tuple[tuple, str]] = {}     # a running job's trail and ref, to send on
         self.cancel = threading.Event()
 
     @property
@@ -130,11 +131,12 @@ class MillView(TypedView):
         text = payload.value
         if payload.kind == pipes.FILE:
             text = self._read_file(payload.value, markdown or payload.value)
-        self.run_steps(text, "road", title)
+        self.run_steps(text, "road", title, payload.trail, payload.ref)
 
-    def run_steps(self, text: str, trigger: str = "manual", title: str = "") -> bool:
-        """Mill `text` now, or after what is already waiting. True: it is milling or queued."""
-        self.queue.append((text[:INPUT_LIMIT], trigger, title, len(text) > INPUT_LIMIT))
+    def run_steps(self, text: str, trigger: str = "manual", title: str = "", trail: tuple = (), ref: str = "") -> bool:
+        """Mill `text` now, or after what is already waiting. True: it is milling or queued. A cart's
+        `trail` and `ref` go on with what it becomes."""
+        self.queue.append((text[:INPUT_LIMIT], trigger, title, len(text) > INPUT_LIMIT, tuple(trail), ref))
         if not self.running:
             self._next()
         else:
@@ -144,15 +146,30 @@ class MillView(TypedView):
     def _agent(self) -> mill.Agent:
         if self.simulated:
             return _simulated_agent
-        return mill.default_agent(self._get_repo_root(), self.cancel, str(self.config.get("model") or ""))
+        ask, app = mill.default_agent(self._get_repo_root(), self.cancel, str(self.config.get("model") or "")), self.app
+
+        def gated(what: str, text: str) -> str:
+            if getattr(app, "gold_exhausted", lambda: False)():
+                raise RuntimeError("🪙 budget exhausted: no agent step")
+            return ask(what, text)
+        return gated
+
+    def halt(self) -> int:
+        """🛑 Halt All: the running steps stop (an agent step too); what waits in the queue stays."""
+        if not self.running:
+            return 0
+        self.cancel.set()
+        self.cancel = threading.Event()              # the next cart mills again
+        return 1
 
     def _next(self) -> None:
         if not self.queue:
             return
-        text, trigger, title, cut = self.queue.popleft()
+        text, trigger, title, cut, trail, ref = self.queue.popleft()
         self.running, self.last_input = True, text
         job = jobs.Job(uuid.uuid4().hex[:8], title or self.spec.get("title", self.building_id), "mill", text,
                        started=jobs.now_iso(), outcome="running", trigger=trigger, meta={"cut": True} if cut else {})
+        self._carts[job.id] = (trail, ref)
         steps, repo, app, agent = self.steps, self._get_repo_root(), self.app, self._agent()
         env, cancel = [str(n) for n in self.config.get("env") or []], self.cancel
         self._render_list()
@@ -170,23 +187,27 @@ class MillView(TypedView):
 
         threading.Thread(target=work, daemon=True, name=f"mill-{self.building_id}").start()
 
-    def _flat_map(self, records: list | None, title: str) -> int:
+    def _flat_map(self, records: list | None, title: str, cart: tuple = ((), "")) -> int:
         """Each record as its own cart — only when a road takes them (each cart is recorded)."""
         scroll = getattr(self.app, "scroll", None)
         values = mill.items(records)
         if not values or scroll is None or not ts.has_outgoing(scroll, self.building_id, "mill.item"):
             return 0
-        return sum(self.emit("mill.item", v, title) for v in values)
+        trail, ref = cart
+        return sum(self.emit("mill.item", v, title, trail=trail, ref=ref) for v in values)
 
     def finish(self, job: jobs.Job, records: list | None = None) -> None:
         self.running = False
+        trail, ref = self._carts.pop(job.id, ((), ""))
+        kind = "agent" if job.meta.get("agent") else "script"
+        trail = tuple(trail) + (pipes.hop(self.building_id, "miller", kind, outcome="done" if job.ok else "error"),)
         if job.ok:
             if records:
                 job.meta["items"] = len(mill.items(records))
-            self.emit("mill.done", job.result, job.title)
-            self._flat_map(records, job.title)
+            self.emit("mill.done", job.result, job.title, trail=trail, ref=ref)
+            self._flat_map(records, job.title, (trail, ref))
         else:
-            self.emit("mill.failed", job.error, job.title)
+            self.emit("mill.failed", job.error, job.title, trail=trail, ref=ref)
             on_run = getattr(self.app, "on_handler_run", None)
             if on_run is not None:
                 kind = "agent" if job.meta.get("agent") else "script"

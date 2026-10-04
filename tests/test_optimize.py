@@ -142,3 +142,10 @@ async def test_apply_with_one_click_and_z_takes_it_back(fake_repo: Path, monkeyp
         assert app.revert_building("town_hall")
         assert app.scroll.building("town_hall").garrison.handler("seer").orders == ORDERS
         assert not app.apply_proposal(p)                                   # applied once: never twice
+
+
+def test_a_clan_fires_brief_is_never_a_workshop_steward():
+    spec = {"id": "fire", "type": "council", "config": {"steward_prompt": "Let it go when nobody blocks it."}}
+    assert [p.id for p in optimize.parts(None, spec, "fire")] == []
+    shop = {"id": "shop", "type": "workshop", "config": {"steward_prompt": "Sort what the script hands over."}}
+    assert [p.id for p in optimize.parts(None, shop, "shop")] == ["steward"]

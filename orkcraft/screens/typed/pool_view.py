@@ -166,6 +166,11 @@ class PoolView(TypedView):
 
     def _dispatch(self, task: bk.PoolTask) -> None:
         st = self.state
+        if self.out_of_gold():                       # the run's 🪙 limit: the task waits in the queue
+            d = bk.Decision(bk.now_iso(), task.id, "budget", why="the run's 🪙 budget is exhausted")
+            task.decided = f"{d.action}: {d.why}"
+            st.log(d)
+            return
         d = self.foreman.decide(task, st.orcs, [t for t in st.queue if t is not task], st.spent, st.paused)
         task.decided = f"{d.action}: {d.why}"
         st.log(d)
@@ -497,6 +502,16 @@ class PoolView(TypedView):
     def on_unmount(self) -> None:
         for c in self._cancels.values():
             c.set()
+
+    def halt(self) -> int:
+        """🛑 Halt All: every orc and the steward stop; the barracks pauses (⏸ resumes it)."""
+        running = [c for c in self._cancels.values() if not c.is_set()]
+        for c in running:
+            c.set()
+        self.state.paused = True
+        self.state.save()
+        self._render_list()
+        return len(running)
 
     # -- the view -----------------------------------------------------------------------------------
 

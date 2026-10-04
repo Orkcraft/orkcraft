@@ -64,6 +64,9 @@ def _matches(path: str, globs: list[str]) -> bool:
                or path.startswith(g.rstrip("*").rstrip("/") + "/") for g in globs)
 
 
+CLEAN = ("", "done", "approved", "rework")   # a Clan Fire's verdict is how its review ended, not a failure
+
+
 def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) -> list[str]:
     """Why a cart is held; empty when it passes."""
     ctx = ctx or Context()
@@ -86,8 +89,9 @@ def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) ->
         why.append(f"{tokens} tokens > {int(limit)}")
     if (limit := _num(config, "max_files")) is not None and len(ctx.files) > limit:
         why.append(f"{len(ctx.files)} files > {int(limit)}")
-    if config.get("on_failed", True) and (bad := next((h for h in payload.trail if h.outcome not in ("", "done")), None)):
-        why.append(f"{bad.building} ended {bad.outcome}")
+    last = payload.trail[-1] if payload.trail else None        # how the run that made it ended; an earlier
+    if config.get("on_failed", True) and last is not None and last.outcome not in CLEAN:   # failed round was redone
+        why.append(f"{last.building} ended {last.outcome}")
     if config.get("external") and ctx.external:
         why.append("leaves the town")
     return why

@@ -31,6 +31,9 @@ def test_rules_decide_what_waits():
     failed = (pipes.hop("barracks", "scribe", "agent", outcome="error", now=NOW),)
     assert gate.reasons(cart(trail=failed), {}) == ["barracks ended error"]
     assert gate.reasons(cart(trail=failed), {"on_failed": False}) == []
+    redone = failed + (pipes.hop("barracks", "scribe", "agent", outcome="done", now=NOW),
+                       pipes.hop("fire", "clan", "team", outcome="approved", now=NOW))
+    assert gate.reasons(cart(trail=redone), {}) == []          # failed once, redone and approved: clean
     assert gate.reasons(cart("auth/login.py", kind=pipes.FILE), {"paths": ["auth/**"]}) == ["touches auth/login.py"]
     ctx = gate.Context(files=["migrations/0001.sql", "a.py", "b.py"], external=True)
     assert gate.reasons(cart(), {"paths": ["migrations"], "max_files": 2, "external": True}, ctx) == \
@@ -128,7 +131,25 @@ async def test_rework_goes_back_by_delivery_to_a_building_that_takes_work(fake_r
         back = pipes.Payload(pipes.TEXT, "## Sent back\n\nfix it", "gate", "loot.rework", "rework: Docs", (hop,), "D-1")
         assert app.return_for_rework("camp2", back)
         assert [(r, t) for _, r, t in started] == [("D-1", (hop,))]
-        assert not app.return_for_rework("council2", back)             # a Clan Fire reviews, it does not redo work
-        assert not app.return_for_rework("nowhere", back)              # no such building
-        assert not app.return_for_rework("town_hall", back)            # not a typed building
-        assert not app.return_for_rework("crag", back)                 # takes samples, does not redo work
+        assert app.return_for_rework("council2", back) == "camp2"     # a Clan Fire only reviews: back to who wrote it
+        alone = pipes.Payload(pipes.TEXT, "fix it", "gate", "loot.rework", "rework: Docs", (), "D-2")
+        assert not app.return_for_rework("council2", alone)            # nobody in its trail redoes work
+        assert not app.return_for_rework("nowhere", alone)             # no such building
+        assert not app.return_for_rework("town_hall", alone)           # not a typed building
+        assert not app.return_for_rework("crag", alone)                # takes samples, does not redo work
+
+
+@pytest.mark.asyncio
+async def test_a_rework_finds_the_barracks_past_a_mill(fake_repo: Path, monkeypatch):
+    from orkcraft.screens.typed.pool_view import PoolView
+    for s in ({"id": "camp2", "title": "Camp", "icon": "🏕", "orc": {"name": "Grunts"}, "type": "barracks"},
+              {"id": "grinder", "title": "Mill", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill"}):
+        assert masonry.save_spec(fake_repo, s) == []
+    got = []
+    monkeypatch.setattr(PoolView, "receive", lambda self, payload, title, md: got.append(payload.ref))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        trail = (pipes.hop("camp2", "grub", "agent", 100, 0.01), pipes.hop("grinder", "miller", "script"))
+        back = pipes.Payload(pipes.TEXT, "fix it", "gate", "loot.rework", "rework: Docs", trail, "D-1")
+        assert app.return_for_rework("grinder", back) == "camp2" and got == ["D-1"]
