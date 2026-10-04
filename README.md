@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="docs/img/ork.png" alt="" width="128"><br>
+  <img src="docs/img/logo.png" alt="Orkcraft" width="360">
+</p>
+
 # Orkcraft
 
 **A terminal harness for running many coding agents in one project — as a real-time strategy game.**
