@@ -1,7 +1,7 @@
 # Design — onboarding
 
 Status: design notes, written 2026-10-03, reworked the same day: the person comes first — how
-well they know orchestration, who they are, how their day goes, how they use AI tools — then the
+well they know orkestration, who they are, how their day goes, how they use AI tools — then the
 town for that role; the interview and the Town Builder when no
 ready town fits; the machine's part last. Implemented (`screens/onboarding.py`, `realm/intents.py`,
 `realm/interview.py`). Builds on the quota readers (`orkcraft/quota/`), the display modes, the
@@ -12,7 +12,7 @@ Warder hooks, the Town Hall and the Town Builder (`realm/town_builder.py`).
 | Part | Where it is kept | Steps |
 |---|---|---|
 | **The machine** — once per machine | `~/.config/orkcraft/settings.json` | **Tools first** · … · Autonomy · The look and the hours |
-| **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Orchestration · Who you are · Your day · Your AI tools |
+| **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Orkestration · Who you are · Your day · Your AI tools |
 | **The town** — once per project | `.orkcraft.json`, `.orkcraft/`, the order `.orkcraft/town/order.json` | The town · (the interview) |
 
 ```
@@ -28,7 +28,7 @@ Who are you? → Your day → Your AI tools → What should your first town do? 
         role's templates to the answers → the plan → approved → raised
 ```
 
-**Why the tools come first.** Everything after them depends on what the orcs run on: the Town
+**Why the tools come first.** Everything after them depends on what the orks run on: the Town
 Builder plans with Claude Code (`builders.claude_runner`; there is no agy planner yet). So when
 Claude Code is not chosen, “None fits” on the town step is shown but closed — “needs Claude Code
 for the Builder”, with a note to turn it on (Back to the first step); a ready town or an empty one
@@ -37,16 +37,16 @@ off, an order waiting in the Town Hall stays there and a toast says how to turn 
 
 - A project with no `.orkcraft.json` starts onboarding. A machine already onboarded skips the
   machine's part (the tools too); one that also has a profile starts at the town — and a punk
-  orc's gets an empty town with no questions (no Warder unasked).
+  ork's gets an empty town with no questions (no Warder unasked).
 - F10 → **🧭 Onboarding** asks the tools, who you are, your day and the rest of the machine's part
   again — never the town.
 - Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
   **Skip** anywhere = an empty town, defaults for the rest, no Warder.
 - The title counts the steps of this run (8 on the full path, 12 with the interview, 4 for a punk
-  orc); a lone step shows no count.
+  ork); a lone step shows no count.
 - Nothing is written before the last step. `--demo` never shows onboarding.
 
-## 1b. How well do you know agent orchestration?
+## 1b. How well do you know agent orkestration?
 
 The first question, three answers (`interview.ORCHESTRATION`); it picks the path:
 
@@ -54,9 +54,9 @@ The first question, three answers (`interview.ORCHESTRATION`); it picks the path
 |---|---|
 | 🐣 **New to it** — chats with AI, never ran agents | everything, walked through: no Skip after this step (Back leads here) |
 | 🪓 **Some** — Claude Code, Cursor, rarely more than one agent | everything, Skip allowed |
-| 🤘 **Punk orc** — orchestrates agents already | no interview: autonomy and the look (the tools came first), then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
+| 🤘 **Punk ork** — orkestrates agents already | no interview: autonomy and the look (the tools came first), then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
 
-Stored: `profile.orchestration`. The Town Builder reads it: new to orchestration → fewer
+Stored: `profile.orchestration`. The Town Builder reads it: new to orkestration → fewer
 buildings and an accept step before anything leaves.
 
 ## 2. Who are you?
@@ -79,7 +79,7 @@ buildings and an accept step before anything leaves.
 
 - Ten roles and “Someone else”, nine industries and “Something else” (`realm/intents.py`);
   “else” opens a field for the operator's own words. A role is required, the industry is not.
-- The mascot follows the role's family: engineers orc · designers elf · managers knight ·
+- The mascot follows the role's family: engineers ork · designers elf · managers knight ·
   marketing and data goblin · founders and others skeleton.
 - Stored: `profile.role`, `role_other`, `industry`, `industry_other`.
 
@@ -205,17 +205,17 @@ Stored:
 - **🛡 The Warder** for this project (same as `orkcraft hooks install`, it edits `.claude/settings.json`)
   is a checkbox here, on by default, when the run raises a town; Back keeps the tools picked.
 
-## 6. Orc autonomy
+## 6. Ork autonomy
 
 A slider of four stops (`screens/autonomy.py`, `autonomy.py`): ⛓️ Ask me · 📜 Morning advice ·
 🧭 Routine on their own · ⛓️‍💥 Free orcs. Under it, what the level means in two lines — ❓ the agents'
-questions, 🔧 the camp's improvements (from Routine up, the orcs apply some in quiet hours, with the
+questions, 🔧 the camp's improvements (from Routine up, the orks apply some in quiet hours, with the
 safeguards: Council, checkpoint, 24 h probation, the list of changes — `realm/evolution.py`) — and the
 agents' own settings, one line each, with 📋 (or `c` / `g`) copying the Claude Code permission block or
 the agy command instead of showing them. From Morning
 advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —
 Warder rules first, then the light model, a one-time yes or a no only — and the operator follows the
-advice in the morning (`a`, `A` for all). Only at ⛓️‍💥 Free orcs do the Elders answer themselves in quiet
+advice in the morning (`a`, `A` for all). Only at ⛓️‍💥 Free orks do the Elders answer themselves in quiet
 hours: their one-time yes or no goes to the agent, if the very same question still waits; what the
 rules stop or the model would not advise still waits for the operator.
 
@@ -244,7 +244,7 @@ rules stop or the model would not advise still waits for the operator.
   👔 office (Shift only), ▼ now. Mouse: drag a stretch for the selected span. Keys: Tab picks an edge,
   ←/→ move it, shift+←/→ move the whole span, Delete turns quiet off. Where quiet and office overlap both hold
   (frames, and no fires): the cell is half purple, half grey.
-- **Quiet hours**: no fires flicker, a waiting orc shows ❓; later no sound, no push, no bot.
+- **Quiet hours**: no fires flicker, a waiting ork shows ❓; later no sound, no push, no bot.
 - Stored in the machine settings: `mode`, `quiet`, `office`, `office_days` (Mon–Fri by default).
   `preferences.mode` in the Town Scroll stays an optional per-project override.
 - The same screen is F10 → 🕰 Your day, with Save and Cancel.

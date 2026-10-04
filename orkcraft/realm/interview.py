@@ -79,7 +79,7 @@ NEW, SOME, EXPERT = "new", "some", "expert"
 ORCHESTRATION: tuple[Level, ...] = (
     Level(NEW, "🐣", "New to it", "I chat with AI now and then; I have never run agents. Walk me through."),
     Level(SOME, "🪓", "Some", "I use Claude Code, Cursor or similar, but rarely more than one agent at a time."),
-    Level(EXPERT, "🤘", "Punk orc", "I orchestrate agents already. Skip the interview, I will build the town myself."),
+    Level(EXPERT, "🤘", "Punk ork", "I orkestrate agents already. Skip the interview, I will build the town myself."),
 )
 AI_TOOLS = tuple(c for c in AI_USED if c.id != "none")
 SKILLS = (("none", "— none"), ("basic", "basic"), ("confident", "confident"), ("expert", "expert"))
@@ -183,7 +183,7 @@ def summary(profile: dict, answers: dict) -> str:
     lines = [f"I am {who(profile)}."]
     lv = level(profile.get("orchestration", ""))
     if lv:
-        lines.append(f"Agent orchestration: {lv.title.lower()} — {lv.blurb}")
+        lines.append(f"Agent orkestration: {lv.title.lower()} — {lv.blurb}")
     for qid, label in (("day", "My day"), ("rhythm", "Recurring"), ("sources", "My data comes from"),
                        ("outputs", "Results go to"), ("pains", "Problems now"),
                        ("ai_problems", "What went wrong with AI")):

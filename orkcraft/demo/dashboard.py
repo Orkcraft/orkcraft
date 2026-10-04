@@ -95,14 +95,14 @@ MY_DAY = {
 
 AGENT_YARD = {
     "id": "agent_yard", "name": "Agent Yard", "icon": "⚔", "biome": "void", "git": {"enabled": False},
-    "segment": "Developers", "story": "Branches, parallel orcs, a team that agrees, files to review",
+    "segment": "Developers", "story": "Branches, parallel orks, a team that agrees, files to review",
     "nodes": [],
     "files": {},
     "buildings": [
         typed("branches", "forge", "The Forge", "⚒️", "Smith", "branches, PRs, changes", "castle"),
         typed("camp", "barracks", "Barracks", "🏕️", "Grunts", "runs tasks in parallel", "tent",
               max_orcs=3, providers=["claude", "agy"], budget_usd=5.0),
-        typed("council", "council", "Orc Council", "🔥", "Chieftains", "agrees on plans", "pagoda",
+        typed("council", "council", "Ork Council", "🔥", "Chieftains", "agrees on plans", "pagoda",
               goal="Agree on the v0.2 release plan", members=["Planner:claude", "Critic:agy", "Security:claude"],
               max_rounds=3, budget_usd=2.0),
         typed("outputs", "loot", "Loot Vault", "📦", "Quartermaster", "files agents wrote, to review", "snow"),

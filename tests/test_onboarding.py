@@ -346,7 +346,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         prompt = run.calls[0]
         assert "I am ASO manager in Gaming." in prompt and "App Store Connect; Jira; AppFollow" in prompt
         assert "Results go to: Asana." in prompt and "Reports take hours" in prompt
-        assert "No access to my data and tools" in prompt and "orchestration: new to it" in prompt
+        assert "No access to my data and tools" in prompt and "orkestration: new to it" in prompt
         assert "ChatGPT (basic, daily)" in prompt and "Growth zones: ChatGPT: daily" in prompt
         assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in prompt
         assert "START FROM A TEMPLATE" in prompt and "Keyword Tracker" in prompt

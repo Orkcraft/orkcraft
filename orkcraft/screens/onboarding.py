@@ -113,7 +113,7 @@ class XpStep(ModalScreen[dict | str | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label(_title("🧭 How well do you know agent orchestration?", self.step), classes="build-title")
+            yield Label(_title("🧭 How well do you know agent orkestration?", self.step), classes="build-title")
             yield Static("Running several AI agents that hand work to each other. Your answer picks the path.",
                          classes="build-hint")
             options = []

@@ -66,7 +66,7 @@ Adapt it to the operator's answers above:
 - every problem they named is answered by a building or a road — say which in its "why";
 - what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
   distrust the output, prefer rules (Totem, Mill) over agents where results must not vary;
-- match their experience: new to orchestration → fewer buildings and an accept step before anything
+- match their experience: new to orkestration → fewer buildings and an accept step before anything
   leaves; a growth zone (a tool used often but known little) → let the town do that tool's routine
   and show its work, so they learn from it;
 - drop the template's buildings that serve nothing they said; keep its names where they still fit.

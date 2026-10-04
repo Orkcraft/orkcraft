@@ -170,7 +170,7 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
 
         # 5 · Halt All: three running sessions halted at once
         for i in range(3):
-            app.chat.deploy("horn", ["sleep", "30"], "claude", f"orc {i + 1}")
+            app.chat.deploy("horn", ["sleep", "30"], "claude", f"ork {i + 1}")
         await pilot.pause(0.5)
         app.action_halt()
         await shot("14-halt-all")

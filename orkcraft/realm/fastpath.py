@@ -270,7 +270,7 @@ def _building_rules(spec: dict, repo_root: Path, existing: set[str]) -> list[Not
             notes += _scan_prompt(f"its {key.replace('_', ' ')}", cfg[key])
     # Peon
     if kind == "barracks" and cfg.get("worktrees") is False:
-        notes.append(Note("peon", "warn", "its orcs share one working tree and may overwrite each other"))
+        notes.append(Note("peon", "warn", "its orks share one working tree and may overwrite each other"))
     if kind == "forge" and not cfg.get("test_cmd") and not cfg.get("confirm"):
         notes.append(Note("peon", "warn", "merges without tests or a confirmation"))
     if _PERMISSION_SKIP.search(json.dumps(spec, ensure_ascii=False)):
@@ -304,7 +304,7 @@ def _agent_rules(data: dict, script: str) -> list[Note]:
             notes.append(Note("mason", "block", f"the script does not parse: line {e.lineno}: {e.msg}"))
     # Artisan
     if len(str(orc.get("name") or "")) > 24:
-        notes.append(Note("artisan", "warn", "the orc's name is long for the roster"))
+        notes.append(Note("artisan", "warn", "the ork's name is long for the roster"))
     if len(roads) > 3:
         notes.append(Note("artisan", "warn", f"{len(roads)} roads into one handler — hard to follow on the map"))
     notes += _scan_prompt("its orders", str(orc.get("orders") or ""))

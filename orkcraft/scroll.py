@@ -371,17 +371,17 @@ def orc_problems(orc: dict, where: str = "") -> list[str]:
     harness = orc.get("harness", DEFAULT_HARNESS)
     name = orc.get("id", "?")
     if kind == "chain" and not orc.get("chain"):
-        errors.append(f"{prefix}orc {name}: a chain needs at least one op")
+        errors.append(f"{prefix}ork {name}: a chain needs at least one op")
     if kind in ("script", "hybrid") and not orc.get("script"):
-        errors.append(f"{prefix}orc {name}: a {kind} needs a script")
+        errors.append(f"{prefix}ork {name}: a {kind} needs a script")
     if kind in ("agent", "hybrid") and not harness:
-        errors.append(f"{prefix}orc {name}: an {kind} needs a harness")
+        errors.append(f"{prefix}ork {name}: an {kind} needs a harness")
     if kind != "chain" and orc.get("chain"):
-        errors.append(f"{prefix}orc {name}: only a chain has chain ops")
+        errors.append(f"{prefix}ork {name}: only a chain has chain ops")
     for op in orc.get("chain", []):
         pattern = op.get("regex") or (op.get("value") if op.get("cmp") == "matches" else None)
         if isinstance(pattern, str) and (p := _regex_problem(pattern)):
-            errors.append(f"{prefix}orc {name}: {p}")
+            errors.append(f"{prefix}ork {name}: {p}")
     return errors
 
 
@@ -428,9 +428,9 @@ def validate(data: dict[str, Any]) -> list[str]:
         ids = [m["id"] for m in orcs]
         dupes = sorted({m for m in ids if ids.count(m) > 1})
         if dupes:
-            errors.append(f"building {b['id']}: duplicate orc ids {', '.join(dupes)}")
+            errors.append(f"building {b['id']}: duplicate ork ids {', '.join(dupes)}")
         if len(orcs) > MAX_GARRISON:
-            errors.append(f"building {b['id']}: more than {MAX_GARRISON} orcs in the garrison")
+            errors.append(f"building {b['id']}: more than {MAX_GARRISON} orks in the garrison")
         for m in orcs:
             errors += orc_problems(m, f"building {b['id']}")
         handler_ids = {m["id"] for m in handlers}
@@ -500,11 +500,11 @@ def validate_v2(data: dict[str, Any]) -> list[str]:
         members = [m["id"] for m in g.get("members", [])]
         dupes = sorted({m for m in members if members.count(m) > 1})
         if dupes:
-            errors.append(f"building {b['id']}: duplicate orc ids {', '.join(dupes)}")
+            errors.append(f"building {b['id']}: duplicate ork ids {', '.join(dupes)}")
         if len(members) > MAX_GARRISON:
-            errors.append(f"building {b['id']}: more than {MAX_GARRISON} orcs in the garrison")
+            errors.append(f"building {b['id']}: more than {MAX_GARRISON} orks in the garrison")
         if g.get("lead_orc_id") and g["lead_orc_id"] not in members:
-            errors.append(f"building {b['id']}: lead orc {g['lead_orc_id']!r} is not in the garrison")
+            errors.append(f"building {b['id']}: lead ork {g['lead_orc_id']!r} is not in the garrison")
     edges = {b["id"]: {b["rally_point"]["target_building_id"]} for b in data["buildings"] if b.get("rally_point")}
     if (hit := _cycle(edges)) is not None:
         errors.append(f"rally points form a loop through {hit!r}")
@@ -752,7 +752,7 @@ def add_handler(scroll: TownScroll, building_id: str, name: str, *, kind: str = 
     b = _building(scroll, building_id)
     name = name.strip()
     if not name:
-        raise ValueError("an orc needs a name")
+        raise ValueError("an ork needs a name")
     if len(b.garrison.members) >= MAX_GARRISON:
         raise ValueError(f"{b.title}: the garrison is full ({MAX_GARRISON})")
     if trigger is not None and trigger.get("type") not in TRIGGER_TYPES:
@@ -781,7 +781,7 @@ def remove_handler(scroll: TownScroll, building_id: str, orc_id: str) -> list[st
     if orc is None:
         if b.garrison.steward and b.garrison.steward.id == orc_id:
             raise ValueError(f"{b.garrison.steward.name} is the steward of {b.title}: replace it, don't dismiss it")
-        raise ValueError(f"{b.title}: no orc {orc_id!r}")
+        raise ValueError(f"{b.title}: no ork {orc_id!r}")
     b.garrison.handlers.remove(orc)
     freed = []
     for r in b.roads_of(orc_id):
@@ -802,7 +802,7 @@ def set_steward(scroll: TownScroll, building_id: str, orc_id: str) -> None:
         return
     orc = g.handler(orc_id)
     if orc is None:
-        raise ValueError(f"unknown building {building_id!r} or orc {orc_id!r}")
+        raise ValueError(f"unknown building {building_id!r} or ork {orc_id!r}")
     if b.roads_of(orc_id):
         raise ValueError(f"{orc.name} works on roads of {b.title}: move them to another handler first")
     idx = g.handlers.index(orc)
@@ -818,7 +818,7 @@ def update_orc(scroll: TownScroll, building_id: str, orc_id: str, **changes: Any
     b = _building(scroll, building_id)
     orc = b.garrison.orc(orc_id)
     if orc is None:
-        raise ValueError(f"{b.title}: no orc {orc_id!r}")
+        raise ValueError(f"{b.title}: no ork {orc_id!r}")
     unknown = set(changes) - set(OrcSpec.__dataclass_fields__) - {"id"}
     if unknown or "id" in changes:
         raise ValueError(f"cannot change {', '.join(sorted(unknown | ({'id'} & set(changes))))}")

@@ -240,7 +240,7 @@ class UnitChronicles(ModalScreen[None]):
                 with Vertical(id="runs-col"):
                     yield OptionList(id="runs-list")
                     yield Static(
-                        "No runs yet — deploy this orc (C) to start one.",
+                        "No runs yet — deploy this ork (C) to start one.",
                         id="runs-empty",
                         markup=False,
                     )
@@ -283,7 +283,7 @@ class UnitChronicles(ModalScreen[None]):
             runs_list.display = False
             runs_empty.display = True
             runs_list.add_option(
-                Option(Text("No runs yet — deploy this orc (C) to start one.", style="dim"), disabled=True)
+                Option(Text("No runs yet — deploy this ork (C) to start one.", style="dim"), disabled=True)
             )
             proto_list.display = False
             proto_empty.display = True

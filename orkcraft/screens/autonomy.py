@@ -127,8 +127,8 @@ class AutonomyStep(ModalScreen[dict | str | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🏛 Orc autonomy — how much they do on their own" if self.standalone
-                        else f"🧭 How much should your orcs do on their own?  ·  {self.step}", classes="build-title")
+            yield Label("🏛 Ork autonomy — how much they do on their own" if self.standalone
+                        else f"🧭 How much should your orks do on their own?  ·  {self.step}", classes="build-title")
             with Horizontal(id="au-row"):
                 yield AutonomySlider(self.level, id="au-slider")
             yield Static("", id="au-level")
