@@ -60,7 +60,7 @@ def test_taken_ids_get_a_number(tmp_path: Path):
     (lambda a: a.update(buildings=a["buildings"][:1], roads=[]), "at least two"),
     (lambda a: a["buildings"][0].update(config={"rm": "-rf"}), "inbox"),
     (lambda a: a["roads"].append({"from": "board", "event": "lake.viewed", "to": "inbox"}), "does nothing with a cart"),
-    (lambda a: a["roads"][0].update(route="urgent"), "only a road from a totem"),
+    (lambda a: a["roads"][0].update(route="urgent"), "only a road from a signpost"),
 ])
 def test_bad_plans_are_refused(tmp_path: Path, change, expect):
     answer = json.loads(json.dumps(GOOD))
@@ -73,30 +73,39 @@ ROUTED = {
     "title": "Triage", "summary": "Mail sorted to a crew or a log.",
     "buildings": [
         {"key": "tower", "type": "watchtower", "title": "Mail", "icon": "📬", "why": "mail comes in"},
-        {"key": "gate", "type": "totem", "title": "Sorter", "icon": "🗿", "why": "urgent or not",
+        {"key": "gate", "type": "signpost", "title": "Sorter", "icon": "🚏", "why": "urgent or not",
          "config": {"rules": ["urgent: contains urgent", "rest: else"]}},
         {"key": "crew", "type": "barracks", "title": "Crew", "icon": "🏕", "why": "acts on urgent mail"},
         {"key": "log", "type": "loot", "title": "Log", "icon": "📦", "why": "keeps the rest"},
         {"key": "chime", "type": "horn", "title": "Chime", "icon": "📯", "why": "rings on urgent mail",
-         "config": {"sounds": ["gate/totem.routed: alarm", "*: none"]}},
+         "config": {"sounds": ["gate/signpost.routed: alarm", "*: none"]}},
         {"key": "out", "type": "catapult", "title": "Report", "icon": "🎯", "why": "sends the crew's result",
          "config": {"wait_for": ["crew"]}},
     ],
     "roads": [
         {"from": "tower", "event": "mail.received", "to": "gate"},
-        {"from": "gate", "event": "totem.routed", "route": "urgent", "to": "crew"},
-        {"from": "gate", "event": "totem.routed", "route": "rest", "to": "log"},
-        {"from": "gate", "event": "totem.routed", "route": "urgent", "to": "chime"},
+        {"from": "gate", "event": "signpost.routed", "route": "urgent", "to": "crew"},
+        {"from": "gate", "event": "signpost.routed", "route": "rest", "to": "log"},
+        {"from": "gate", "event": "signpost.routed", "route": "urgent", "to": "chime"},
         {"from": "crew", "event": "pool.done", "to": "out"},
     ],
 }
 
 
-def test_roads_from_a_totem_wait_for_its_routes(tmp_path: Path):
+def test_roads_from_a_signpost_wait_for_its_routes(tmp_path: Path):
     plan, problems = town_builder.check(ROUTED, tmp_path, set())
     assert problems == []
     assert {(r.target, r.subscription) for r in plan.roads if r.source == "gate"} == {
-        ("crew", "totem.routed#urgent"), ("log", "totem.routed#rest"), ("chime", "totem.routed#urgent")}
+        ("crew", "signpost.routed#urgent"), ("log", "signpost.routed#rest"), ("chime", "signpost.routed#urgent")}
+
+
+def test_a_plan_of_old_names_a_totem_and_its_events(tmp_path: Path):
+    """A planner (or a template) of before the Signpost still writes `totem` and `totem.routed`."""
+    answer = json.loads(json.dumps(ROUTED).replace('"signpost', '"totem'))
+    plan, problems = town_builder.check(answer, tmp_path, set())
+    assert problems == []
+    assert next(s for s in plan.specs if s["id"] == "gate")["type"] == "signpost"
+    assert ("crew", "signpost.routed#urgent") in {(r.target, r.subscription) for r in plan.roads}
 
 
 @pytest.mark.parametrize("change, expect", [
@@ -120,7 +129,7 @@ def test_settings_that_name_buildings_follow_their_ids(tmp_path: Path):
     assert problems == []
     cfg = {s["id"]: s.get("config") for s in plan.specs}
     assert cfg["out"]["wait_for"] == ["crew_1"]
-    assert cfg["chime"]["sounds"] == ["gate_1/totem.routed: alarm", "*: none"]
+    assert cfg["chime"]["sounds"] == ["gate_1/signpost.routed: alarm", "*: none"]
     assert cfg["gate_1"]["rules"][0] == "mine: source tower_1"
 
 
@@ -135,7 +144,7 @@ def test_the_retry_spells_out_the_chosen_types(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_a_raised_totem_road_waits_for_its_route(fake_repo: Path, monkeypatch):
+async def test_a_raised_signpost_road_waits_for_its_route(fake_repo: Path, monkeypatch):
     monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
     plan, problems = town_builder.check(ROUTED, fake_repo, set())
     assert problems == []

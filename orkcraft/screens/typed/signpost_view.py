@@ -1,8 +1,8 @@
-"""🗿 The Totem: rules send what arrives down one of its roads, no model.
+"""🚏 The Signpost: rules send what arrives down one of its roads, no model.
 
-The rules (realm/totem.py) are read top to bottom; the first that matches names the route, and
-the cart goes out as `totem.routed` with that route — each road from the Totem waits for its own
-route (Y on the receiver offers one road per route). No rule → `totem.unmatched`. `e` edits the
+The rules (realm/signpost.py) are read top to bottom; the first that matches names the route, and
+the cart goes out as `signpost.routed` with that route — each road from the Signpost waits for its own
+route (Y on the receiver offers one road per route). No rule → `signpost.unmatched`. `e` edits the
 rules. The open building shows the rules and what went where.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import jobs, totem
+from orkcraft.realm import jobs, signpost
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.base import TypedView
 
@@ -25,8 +25,8 @@ HELP = ("route: contains text · route: matches regex · route: kind text|file|n
         "route: event id · route: field == value · route: field != value · route: else")
 
 
-class TotemView(TypedView):
-    TYPE = "totem"
+class SignpostView(TypedView):
+    TYPE = "signpost"
     BINDINGS = [Binding("e", "edit_rules", "Edit rules")]
 
     def __init__(self, *a, **kw) -> None:
@@ -42,11 +42,11 @@ class TotemView(TypedView):
         return self.state_dir / "routes.jsonl"
 
     def compose_body(self) -> ComposeResult:
-        yield Static("", id="totem-rules", classes="typed-head")
+        yield Static("", id="signpost-rules", classes="typed-head")
         with Horizontal(classes="typed-row"):
-            yield OptionList(id="totem-history", classes="typed-list")
+            yield OptionList(id="signpost-history", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="totem-detail", markup=False)
+                yield Static("", id="signpost-detail", markup=False)
 
     def refresh_data(self) -> None:
         try:
@@ -58,13 +58,13 @@ class TotemView(TypedView):
 
     def _render_list(self) -> None:
         try:
-            head, lst = self.query_one("#totem-rules", Static), self.query_one("#totem-history", OptionList)
+            head, lst = self.query_one("#signpost-rules", Static), self.query_one("#signpost-history", OptionList)
         except Exception:
             return
-        rules, problems = totem.rules_of(self.rules_text)
+        rules, problems = signpost.rules_of(self.rules_text)
         t = Text()
         for r in self.rules_text:
-            t.append(f"🗿 {r}\n")
+            t.append(f"🚏 {r}\n")
         if not self.rules_text:
             t.append("no rules yet — e edits them\n", style="dim")
         for p in problems:
@@ -83,31 +83,31 @@ class TotemView(TypedView):
 
     def _show(self, h: dict) -> None:
         try:
-            self.query_one("#totem-detail", Static).update(
+            self.query_one("#signpost-detail", Static).update(
                 f"from {h.get('source', '?')} · {h.get('event', '')}\nroute: {h['route'] or '— none matched'}\n\n"
                 f"{h.get('value', '')[:3000]}")
         except Exception:
             pass
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
-        if event.option_list.id == "totem-history" and event.option_index < len(self.history):
+        if event.option_list.id == "signpost-history" and event.option_index < len(self.history):
             event.stop()
             self._show(self.history[event.option_index])
 
     # -- routing ------------------------------------------------------------------------------------
 
     def receive(self, payload, title: str, markdown: str) -> None:
-        rules, _ = totem.rules_of(self.rules_text)
-        route = totem.route(rules, payload)
+        rules, _ = signpost.rules_of(self.rules_text)
+        route = signpost.route(rules, payload)
         rec = {"at": jobs.now_iso(), "route": route or "", "source": payload.source, "event": payload.mode,
                "title": payload.title or title, "value": payload.value[:4000]}
         self.state_dir.mkdir(parents=True, exist_ok=True)
         with self.log_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         if route:                                     # the cart goes on: its trail and ref with it
-            self.emit("totem.routed", payload.value, route, trail=payload.trail, ref=payload.ref)
+            self.emit("signpost.routed", payload.value, route, trail=payload.trail, ref=payload.ref)
         else:
-            self.emit("totem.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref)
+            self.emit("signpost.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref)
         self.refresh_data()
 
     def action_edit_rules(self) -> None:
@@ -118,18 +118,21 @@ class TotemView(TypedView):
             if self.save_config({"rules": rules}):
                 self._render_list()
 
-        self.app.push_screen(TextBlock("🗿 The Totem — rules, first match wins", "\n".join(self.rules_text), HELP), done)
+        self.app.push_screen(TextBlock("🚏 The Signpost — rules, first match wins", "\n".join(self.rules_text), HELP), done)
 
     # -- the hut ----------------------------------------------------------------------------------
 
     def hut_lines(self, widths: list[int]) -> list[str]:
-        """One small slot under the mouth: where the last cart went, else how many routes there are."""
-        n = len(totem.routes(self.rules_text))
+        """Two boards on the post: where the last cart went, and how many routes there are.
+        No rules and no carts yet → nothing, and the boards read DIS / WAY."""
+        n = len(signpost.routes(self.rules_text))
         last = self.history[0]["route"] if self.history else ""
-        return [f"→{last[:3]}" if last else f"{n} rt" if n else "—"]
+        if not n and not last:
+            return []
+        return [f"→{last}" if last else "—", f"{n} rt"]
 
     def mini_status(self) -> list[str]:
-        routes = totem.routes(self.rules_text)
+        routes = signpost.routes(self.rules_text)
         lines = [f"routes: {', '.join(routes)}" if routes else "no rules yet"]
         if self.history:
             h = self.history[0]

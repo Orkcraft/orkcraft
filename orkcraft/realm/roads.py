@@ -156,7 +156,7 @@ def passes(flt: dict, payload: Payload, meta: dict) -> tuple[bool, str]:
     if payload.mode == "on_task_completed" and flt.get("outcome"):
         if (meta.get("outcome") or "unknown") not in flt["outcome"]:
             return False, f"outcome {meta.get('outcome') or 'unknown'}"
-    if flt.get("route") and payload.mode == "totem.routed" and payload.title not in flt["route"]:
+    if flt.get("route") and payload.mode == "signpost.routed" and payload.title not in flt["route"]:
         return False, f"route {payload.title or '?'}"
     if flt.get("match"):
         hay = f"{payload.title}\n{payload.value}"[: chains.FIELD_CHARS]

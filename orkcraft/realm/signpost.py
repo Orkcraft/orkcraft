@@ -1,4 +1,7 @@
-"""🗿 The Totem: a crossroads — rules send what arrives down one route.
+"""🚏 The Signpost: a crossroads post — rules send what arrives down one route.
+
+A grot with a pointy stick stands at the crossroads and shouts "DIS WAY!": the post took over the
+routing of the old Totem (whose name and look wait for a building of its own).
 
 One rule per line, the first that matches wins:
 
@@ -11,8 +14,8 @@ One rule per line, the first that matches wins:
     <route>: <field> != <value>
     <route>: else                     always (put it last)
 
-The match goes out as `totem.routed` with the route as its title; each road from the Totem waits
-for its own route (a road filter). Nothing matched → `totem.unmatched`.
+The match goes out as `signpost.routed` with the route as its title; each road from the Signpost waits
+for its own route (a road filter). Nothing matched → `signpost.unmatched`.
 """
 from __future__ import annotations
 

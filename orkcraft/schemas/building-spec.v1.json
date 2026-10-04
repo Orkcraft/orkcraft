@@ -245,7 +245,7 @@
       "enum": [
         "pit",
         "watchtower",
-        "totem",
+        "signpost",
         "mill",
         "horn",
         "fields",

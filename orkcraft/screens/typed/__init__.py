@@ -20,10 +20,10 @@ def _views() -> dict[str, type]:
     from orkcraft.screens.typed.pool_view import PoolView
     from orkcraft.screens.typed.tasks_view import TasksView
     from orkcraft.screens.typed.team_view import TeamView
-    from orkcraft.screens.typed.totem_view import TotemView
+    from orkcraft.screens.typed.signpost_view import SignpostView
     from orkcraft.screens.typed.workshop_view import WorkshopView
     return {v.TYPE: v for v in (HornView, CalendarView, CatapultView, CragView, PitView, FilesView, GeneratorView, GitView,
-                                KnowledgeView, LakeView, WatchtowerView, MillView, PoolView, TasksView, TeamView, TotemView,
+                                KnowledgeView, LakeView, WatchtowerView, MillView, PoolView, TasksView, TeamView, SignpostView,
                                 WorkshopView)}
 
 

@@ -1700,7 +1700,7 @@ class OrkcraftApp(App[int]):
         """A Loot checkpoint or a Clan Fire sends a cart back to the building that made it — directly, not
         by a road (a road back would close a loop). The building that redoes delivered work (`TAKES_REWORK`:
         a Barracks queues the task again) is the source, else the latest one in the cart's trail (past a
-        Totem or a Mill on the way). Its id, or "" when nobody can take it back."""
+        Signpost or a Mill on the way). Its id, or "" when nobody can take it back."""
         for bid in [source_id] + [h.building for h in reversed(payload.trail) if h.building != source_id]:
             if getattr(self._custom_view(bid), "TAKES_REWORK", False):
                 self.deliver_payload(bid, payload, payload.title, payload.value)
@@ -2096,10 +2096,10 @@ class OrkcraftApp(App[int]):
         out = [(ev, None, f"plain · {pipes.label(ev)}")
                for ev in pipes.road_events(source_id, target_id, has_garrison, handler=False)]
         spec = self.custom_specs.get(source_id)
-        if spec is not None and catalog.type_of(spec).id == "totem":     # one road per route
-            from orkcraft.realm import totem
-            out = [(f"totem.routed#{r}", None, f"plain · route {r}")
-                   for r in totem.routes((spec.get("config") or {}).get("rules") or [])] + out
+        if spec is not None and catalog.type_of(spec).id == "signpost":     # one road per route
+            from orkcraft.realm import signpost
+            out = [(f"signpost.routed#{r}", None, f"plain · route {r}")
+                   for r in signpost.routes((spec.get("config") or {}).get("rules") or [])] + out
         for orc in tgt.garrison.handlers:
             for ev in pipes.road_events(source_id, target_id, has_garrison, handler=True):
                 out.append((ev, orc.id, f"{orc.avatar} {orc.name} ({orc.kind}) · {pipes.label(ev)}"))
@@ -2141,7 +2141,7 @@ class OrkcraftApp(App[int]):
         self.refresh_rally_indicators()
 
     def add_road(self, target_id: str, source_id: str, event: str, handler: str | None, quiet: bool = False) -> None:
-        event, _, route = event.partition("#")             # a Totem's route: a road that waits for it
+        event, _, route = event.partition("#")             # a Signpost's route: a road that waits for it
         flt = {"route": [route]} if route else None
         try:
             road = scroll.subscribe(self.scroll, target_id, source_id, event, flt, handler=handler,

@@ -1,4 +1,4 @@
-"""⚙️ The Mill and 🗿 the Totem (T1107 stage 3): deterministic steps, rule-based routes."""
+"""⚙️ The Mill and 🚏 the Signpost (T1107 stage 3): deterministic steps, rule-based routes."""
 from __future__ import annotations
 
 import json
@@ -7,12 +7,13 @@ from pathlib import Path
 
 import pytest
 
+from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, masonry, mill, roads, totem
+from orkcraft.realm import catalog, horn, masonry, mill, roads, signpost, silhouettes
 from orkcraft.realm.pipes import Payload
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.mill_view import MillView
-from orkcraft.screens.typed.totem_view import TotemView
+from orkcraft.screens.typed.signpost_view import SignpostView
 
 LOG = "INFO start\nERROR db timeout id=17\nINFO ok\nERROR disk full id=42\nERROR db timeout id=17\n"
 
@@ -101,22 +102,22 @@ def P(value="", title="", kind="text", source="pit", mode="pit.text"):
     return Payload(kind, value, source, mode, title)
 
 
-def test_totem_rules():
-    rules, problems = totem.rules_of(["bugs: matches (?i)traceback|error", "links: kind text", "deploys: env == prod",
+def test_signpost_rules():
+    rules, problems = signpost.rules_of(["bugs: matches (?i)traceback|error", "links: kind text", "deploys: env == prod",
                                       "other: else", "BAD RULE: x", "x: frob it"])
     assert [r.route for r in rules] == ["bugs", "links", "deploys", "other"] and len(problems) == 2
-    assert totem.route(rules, P("Traceback (most recent call last)")) == "bugs"
-    assert totem.route(rules, P("https://x", kind="text")) == "links"
-    assert totem.route(rules[2:], P('{"env": "prod"}', kind="file")) == "deploys"
-    assert totem.route(rules[2:3], P('{"env": "dev"}')) is None
-    assert totem.routes(["a: else", "b: kind node", "a: contains x"]) == ["a", "b"]
-    assert roads.passes({"route": ["bugs"]}, Payload("text", "x", "t", "totem.routed", "bugs"), {})[0]
-    assert not roads.passes({"route": ["bugs"]}, Payload("text", "x", "t", "totem.routed", "links"), {})[0]
+    assert signpost.route(rules, P("Traceback (most recent call last)")) == "bugs"
+    assert signpost.route(rules, P("https://x", kind="text")) == "links"
+    assert signpost.route(rules[2:], P('{"env": "prod"}', kind="file")) == "deploys"
+    assert signpost.route(rules[2:3], P('{"env": "dev"}')) is None
+    assert signpost.routes(["a: else", "b: kind node", "a: contains x"]) == ["a", "b"]
+    assert roads.passes({"route": ["bugs"]}, Payload("text", "x", "t", "signpost.routed", "bugs"), {})[0]
+    assert not roads.passes({"route": ["bugs"]}, Payload("text", "x", "t", "signpost.routed", "links"), {})[0]
 
 
 @pytest.mark.asyncio
-async def test_the_totem_routes_into_the_mill(fake_repo: Path, monkeypatch):
-    for s in ({"id": "crossroads", "title": "Totem", "icon": "🗿", "orc": {"name": "Spirit Guide"}, "type": "totem",
+async def test_the_signpost_routes_into_the_mill(fake_repo: Path, monkeypatch):
+    for s in ({"id": "crossroads", "title": "Signpost", "icon": "🚏", "orc": {"name": "Grot Pointa"}, "type": "signpost",
                "config": {"rules": ["errors: matches ERROR", "rest: else"]}},
               {"id": "grinder", "title": "Mill", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill",
                "config": {"steps": ["grep: ERROR", "dedupe", "count"]}}):
@@ -125,25 +126,25 @@ async def test_the_totem_routes_into_the_mill(fake_repo: Path, monkeypatch):
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
         choices = app._road_choices("crossroads", "grinder")
-        assert [c[0] for c in choices[:2]] == ["totem.routed#errors", "totem.routed#rest"]
-        app.add_road("grinder", "crossroads", "totem.routed#errors", None)
+        assert [c[0] for c in choices[:2]] == ["signpost.routed#errors", "signpost.routed#rest"]
+        app.add_road("grinder", "crossroads", "signpost.routed#errors", None)
         app.add_road("town_hall", "grinder", "mill.done", None)
         road = app.scroll.building("grinder").roads[0]
         assert road.filter == {"route": ["errors"]} and road.label == "errors"
-        totem_view = app.desktop.get_window("crossroads").query_one(TotemView)
+        signpost_view = app.desktop.get_window("crossroads").query_one(SignpostView)
         mill_view = app.desktop.get_window("grinder").query_one(MillView)
         delivered = []
         real_deliver = app.deliver_payload
         monkeypatch.setattr(app, "deliver_payload", lambda t, p, *a: delivered.append((t, p.title)) or real_deliver(t, p, *a))
-        totem_view.receive(P(LOG), "log", LOG)                           # → route errors → the mill
-        totem_view.receive(P("all good"), "ok", "all good")               # → route rest: no road takes it
+        signpost_view.receive(P(LOG), "log", LOG)                           # → route errors → the mill
+        signpost_view.receive(P("all good"), "ok", "all good")               # → route rest: no road takes it
         for _ in range(40):
             await pilot.pause(0.05)
             if mill_view.runs:
                 break
         assert [d for d in delivered if d[0] == "grinder"] == [("grinder", "errors")]
         assert mill_view.runs[0].ok and mill_view.runs[0].result == '{"count": 2}'
-        assert totem_view.mini_status() == ["routes: errors, rest", "last → rest"]
+        assert signpost_view.mini_status() == ["routes: errors, rest", "last → rest"]
         assert mill_view.quick_action("mill.run")
         app.desktop.focus_window(app.desktop.get_window("grinder"))
         await pilot.pause()
@@ -184,3 +185,20 @@ async def test_the_mill_queues_every_cart_and_flat_maps_records(fake_repo: Path,
         items = [json.loads(v)["line"] for t, mode, v in delivered if mode == "mill.item"]
         assert items == ["a", "b", "c", "d", "e", "f"]
         assert mill_view.runs[0].meta.get("items") == 3
+
+
+def test_a_totem_of_old_loads_as_a_signpost():
+    """Towns written before the Signpost keep their routing; the Totem's look waits for its own building."""
+    old = {"id": "crossroads", "title": "Totem", "icon": "🗿", "orc": {"name": "Spirit Guide"}, "type": "totem",
+           "events": ["totem.routed"], "config": {"rules": ["bugs: contains bug"]}}
+    assert catalog.type_of(old).id == "signpost" and catalog.events_of(old) == ["signpost.routed"]
+    new = catalog.migrate(old)
+    assert (new["type"], new["icon"], new["title"], new["events"]) == ("signpost", "🚏", "Signpost", ["signpost.routed"])
+    assert catalog.migrate({**old, "title": "Triage", "icon": "🔱"})["title"] == "Triage"
+    assert catalog.validate(old) == []
+    assert "totem" not in catalog.TYPES and "totem" in silhouettes.SILHOUETTES
+    assert silhouettes.of(old).id == "signpost"
+    road = ts.Road.from_dict({"id": "r", "from": "crossroads", "event": "totem.routed", "filter": {"route": ["bugs"]}})
+    assert road.event == "signpost.routed"
+    assert horn.pick({"crossroads/totem.routed": "alarm"}, "crossroads", "signpost.routed")[0] == "alarm"
+    assert horn.pick({"totem.unmatched": "ding"}, "x", "signpost.unmatched")[0] == "ding"

@@ -134,7 +134,8 @@ class Road:
 
     @classmethod
     def from_dict(cls, d: dict) -> Road:
-        return cls(d["id"], d["from"], d["event"], dict(d.get("filter") or {}), d.get("handler"),
+        from orkcraft.realm import catalog                  # a road of old waits for the event's new id
+        return cls(d["id"], d["from"], catalog.event_id(d["event"]), dict(d.get("filter") or {}), d.get("handler"),
                    d.get("transform", ""), d.get("label", ""))
 
 

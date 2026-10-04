@@ -203,7 +203,7 @@ async def test_a_tagged_cart_is_the_meetings_document_and_enter_opens_it(fake_re
         await pilot.pause()
         assert shown == [] and [str(o.prompt) for o in today.options] == [str(o.prompt) for o in before]
 
-        # what a Barracks sends back once its orc is done (the Totem had renamed the cart to its route)
+        # what a Barracks sends back once its orc is done (the Signpost had renamed the cart to its route)
         done = f"**1on1 [meet:{mid}]** — Grunt (claude)\n\n# 1:1 with Ann\n\n- her goals\n\n_branch:_ `pool/b/grunt`"
         app.deliver_payload("days", pipes.Payload(pipes.TEXT, done, "barracks", "pool.done", f"1on1 [meet:{mid}]"))
         await pilot.pause()
@@ -231,7 +231,7 @@ def test_barracks_keeps_the_meeting_tag_in_the_task_title(monkeypatch):
     monkeypatch.setattr(PoolView, "add_task", lambda self, title, text, key="", **kw: got.append(title))
     view = PoolView.__new__(PoolView)
     tag = "[meet:0123456789ab]"
-    view.receive(pipes.Payload(pipes.TEXT, f"14:00 1:1 Ann (Fri 02) {tag}", "totem", "totem.routed", "1on1"), "", "")
+    view.receive(pipes.Payload(pipes.TEXT, f"14:00 1:1 Ann (Fri 02) {tag}", "signpost", "signpost.routed", "1on1"), "", "")
     view.receive(pipes.Payload(pipes.TEXT, "x", "drum", "calendar.event_upcoming", "A" * 90 + " " + tag), "", "")
     view.receive(pipes.Payload(pipes.TEXT, "plain", "pit", "pit.text", "plain"), "", "")
     assert got[0] == f"1on1 {tag}" and got[1].endswith(tag) and len(got[1]) <= 80 and got[2] == "plain"

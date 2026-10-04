@@ -654,7 +654,7 @@
             "type": "string",
             "pattern": "^[a-z0-9_-]{1,32}$"
           },
-          "description": "From a Totem: only these routes (T1107)."
+          "description": "From a Signpost: only these routes (T1107; the Totem's of old)."
         }
       }
     },

@@ -12,7 +12,7 @@ from orkcraft.realm.huts import ART
 
 
 def test_catalog_is_complete_and_consistent():
-    want = {"pit", "watchtower", "totem", "mill", "fields", "barracks", "council", "war_drum", "forest", "scrolls",
+    want = {"pit", "watchtower", "signpost", "mill", "fields", "barracks", "council", "war_drum", "forest", "scrolls",
             "lake", "forge", "loot", "crag", "catapult", "horn"}          # the camp of T1107, and the Horn
     assert set(catalog.TYPES) == want | {"town_hall", "custom", "workshop"} and catalog.DEFAULT_TYPE in catalog.TYPES
     seen: set[str] = set()

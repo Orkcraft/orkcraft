@@ -17,7 +17,7 @@ The steward — the building's own orc — keeps the rules (`orders`) and judges
 Tokens: a follow-up, a rework or a related task resumes the orc's session and sends only what is new
 (♻ warm); a cold start sends the briefing, plus a handoff of the orc's recent work only when related.
 A `[meet:<id>]` tag in the cart (a War Drum's meeting) stays in the task's title, so `pool.done`
-finds its way back to the meeting even when a Totem renamed the cart to its route.
+finds its way back to the meeting even when a Signpost renamed the cart to its route.
 """
 from __future__ import annotations
 
