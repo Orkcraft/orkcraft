@@ -101,7 +101,7 @@ def test_managers_set_is_separate_and_wired(tmp_path: Path):
     # the Agenda chain reruns with the latest of all three roads
     from orkcraft.realm import roads as rd
     outs = []
-    engine = rd.Engine(lambda: scroll, root, deliver=lambda *a: None, on_output=lambda t, o, ti, md: outs.append(md),
+    engine = rd.Engine(lambda: scroll, root, deliver=lambda *a: None, on_output=lambda t, o, ti, md, *_: outs.append(md),
                        meta=lambda p: {"title": g.get_entity(p.value).title, "status": g.get_entity(p.value).status})
     for src, nid in (("em_calendar", "T3101"), ("em_mail", "T3112"), ("em_jira", "T3122")):
         engine.emit(Payload("node", nid, src, "on_selection_change"))

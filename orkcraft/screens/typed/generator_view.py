@@ -5,7 +5,8 @@ Left: the changed files of the working tree (or of its `path`), * for not review
 diff or the new file. `a` accepts the highlighted file, `r` rejects it (rolled back, its content
 kept under `.orkcraft/generator/<id>/rejected/`); the hut's ✓ accepts every file still waiting.
 Each decision sends `generator.accepted` / `generator.rejected` with the file's path. A cart that
-arrives is stored (realm/vault.py) and listed below the review, `loot.stored` goes on.
+arrives is stored (realm/vault.py) with what its chain spent, listed below the review, and
+`loot.stored` goes on carrying the cart's trail.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import generated, vault
+from orkcraft.realm import generated, pipes, vault
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
@@ -77,15 +78,18 @@ class GeneratorView(TypedView):
             row.append(g.path, style="" if not g.reviewed else "dim")
             lst.add_option(Option(row, id=g.path))
         if self.stored:
-            spent = sum(x.cost or 0 for x in self.stored)
-            lst.add_option(Option(Text(f"── stored · {len(self.stored)}" + (f" · ${spent:.2f}" if spent else ""),
+            toks = [x.tokens for x in self.stored if x.tokens is not None]
+            costs = [x.cost for x in self.stored if x.cost is not None]
+            spent = pipes.spent(sum(toks) if toks else None, sum(costs) if costs else None)
+            lst.add_option(Option(Text(f"── stored · {len(self.stored)}" + (f" · {spent}" if spent else ""),
                                        style="bold dim"), disabled=True))
             for i, x in enumerate(self.stored):
                 row = Text(no_wrap=True, overflow="ellipsis")
                 row.append("📦 ", style="")
                 row.append(f"{x.at[5:16].replace('T', ' ')} ", style="dim")
                 row.append(x.title)
-                row.append(f"  {x.source}" + (f" · ${x.cost:.2f}" if x.cost else ""), style="dim")
+                each = pipes.spent(x.tokens, x.cost)
+                row.append(f"  {x.source}" + (f" · {each}" if each else ""), style="dim")
                 lst.add_option(Option(row, id=f"stored:{i}"))
         paths = [g.path for g in self.rows]
         if paths:
@@ -121,8 +125,9 @@ class GeneratorView(TypedView):
             body = (self._get_repo_root() / x.path).read_text(encoding="utf-8", errors="replace")[:20000]
         except OSError as e:
             body = str(e)
+        chain = pipes.trail_line(x.hops, self._names())
         head = Text(f"{x.path}\nfrom {x.source} · {x.at.replace('T', ' ')} · {x.bytes} bytes"
-                    + (f" · ${x.cost:.2f}" if x.cost else "") + "\n\n", style="bold")
+                    + (f"\n{chain}" if chain else "") + "\n\n", style="bold")
         try:
             self.query_one("#gen-preview", Static).update(head + Text(body))
         except Exception:
@@ -132,9 +137,14 @@ class GeneratorView(TypedView):
         """A finished thing came by road: kept in the vault, `loot.stored` goes on."""
         item = vault.store(self._get_repo_root(), self.building_id, self.state_dir, payload.kind,
                            markdown if payload.kind == "text" and markdown else payload.value,
-                           payload.title or title, payload.source)
-        self.emit("loot.stored", item.path, item.title)
+                           payload.title or title, payload.source, trail=payload.trail, ref=payload.ref)
+        self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref)
         self.refresh_data()
+
+    def _names(self) -> dict[str, str]:
+        """Building ids → titles, for the chain line."""
+        scroll = getattr(getattr(self, "app", None), "scroll", None)
+        return {b.id: b.title for b in getattr(scroll, "buildings", ())} if scroll is not None else {}
 
     def _preview(self, rel: str) -> None:
         try:

@@ -53,12 +53,17 @@ def test_metrics_sources(tmp_path: Path):
 
 def test_vault_store(fake_repo: Path):
     state = fake_repo / ".orkcraft" / "loot" / "vault"
-    item = vault.store(fake_repo, "vault", state, "text", "**Plan** agreed · $0.24", "Release plan", "council", NOW)
-    assert item.path == "loot/vault/20261002-120000-release-plan.md" and item.cost == 0.24
+    trail = (pipes.hop("camp", "grub", "agent", 12000, 0.08, now=NOW), pipes.hop("council", "", "agent", 40000, 0.16, now=NOW))
+    item = vault.store(fake_repo, "vault", state, "text", "run ./deploy.sh $1 prod", "Release plan", "council", NOW,
+                       trail=trail, ref="T-7")
+    assert item.path == "loot/vault/20261002-120000-release-plan.md"
+    assert (item.cost, item.tokens, item.ref) == (0.24, 52000, "T-7")      # the trail's, not the `$1` in the text
     assert "_from council · 2026-10-02 12:00_" in (fake_repo / item.path).read_text()
     f = vault.store(fake_repo, "vault", state, "file", "README.md", "", "pit", NOW)
     assert (f.path, f.title, f.cost) == ("README.md", "README.md", None) and f.bytes > 0
     assert [x.path for x in vault.stored(state)] == ["README.md", item.path]
+    assert vault.stored(state)[1].hops == trail
+    assert vault.store(fake_repo, "vault", state, "text", "costs $5", "Copy", "pit", NOW).cost is None
 
 
 @pytest.mark.asyncio
@@ -88,8 +93,11 @@ async def test_the_crag_carves_and_warns_and_the_vault_keeps(fake_repo: Path, mo
         assert (crag.state_dir / "samples.jsonl").exists()
 
         vault_view = app.desktop.get_window("vault").query_one(GeneratorView)
-        app.deliver_payload("vault", pipes.Payload(pipes.TEXT, "the decision · $0.30", "council", "team.artifact_ready",
-                                                   "Release plan"), "Release plan", "the decision · $0.30")
+        hop = pipes.hop("council", "chief", "agent", 3000, 0.30)
+        app.deliver_payload("vault", pipes.Payload(pipes.TEXT, "the decision", "council", "team.artifact_ready",
+                                                   "Release plan", (hop,), "R-1"), "Release plan", "the decision")
         stored = [p for p in sent if p.mode == "loot.stored"]
         assert stored and stored[0].value.startswith("loot/vault/") and (fake_repo / stored[0].value).exists()
+        assert (stored[0].trail, stored[0].ref) == ((hop,), "R-1")         # the chain travels on
+        assert vault_view.stored[0].cost == 0.30 and vault_view.stored[0].tokens == 3000
         assert "📦 1 stored" in vault_view.mini_status()

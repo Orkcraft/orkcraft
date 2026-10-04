@@ -47,7 +47,7 @@ class Rig:
         self.engine = roads.Engine(
             lambda: self.scroll, self.repo,
             deliver=lambda t, p: self.delivered.append((t, p)),
-            on_output=lambda t, orc, title, md: self.outputs.append((t, orc.id, md)),
+            on_output=lambda t, orc, title, md, *_: self.outputs.append((t, orc.id, md)),
             on_run=self.runs.append,
             meta=lambda p: dict(NODES.get(p.value, {})),
             budget_ok=lambda: budget, clock=self.clock,
@@ -249,6 +249,26 @@ def test_harness_scheme_runs_steps_in_order():
     assert [h for h, _ in calls] == ["agy", "claude"]
     assert "Produce the result" in calls[0][1] and "out of agy" in calls[1][1] and "Check the previous" in calls[1][1]
     assert rig.outputs[-1][2] == "out of claude" and rig.runs[0].cost_usd == pytest.approx(0.02)
+
+
+def test_a_handler_run_carries_the_trail_of_its_carts_and_adds_its_own_hop():
+    from orkcraft.realm import pipes
+    scroll = ts.default_scroll(PRESETS)
+    ts.add_handler(scroll, "scrying", "Pair", run={"quiet_s": 0},
+                   harness=[{"role": "write", "harness": "agy"}, {"role": "review", "harness": "claude"}])
+    ts.subscribe(scroll, "scrying", "forge", "on_task_completed", handler="pair")
+    outs = []
+    rig = Rig(scroll, lambda *a: ("ok", 0.01, 500))
+    rig.engine._on_output = lambda t, orc, title, md, trail, ref: outs.append((trail, ref))
+    before = pipes.hop("forge", "smith", "task", worktree=".orkcraft/worktrees/auth", outcome="done")
+    rig.engine.emit(Payload("text", "tests failed", "forge", "on_task_completed", "report", (before,), "T1001"))
+    wait_for(lambda: outs)
+    [(trail, ref)] = outs
+    assert ref == "T1001" and trail[0] == before and len(trail) == 2
+    own = trail[1]
+    assert (own.building, own.orc, own.kind, own.tokens, own.outcome) == ("scrying", "pair", "agent", 1000, "done")
+    assert own.cost == pytest.approx(0.02) and rig.runs[0].trail == trail
+    assert pipes.trail_totals(trail) == (1000, pytest.approx(0.02))
 
 
 def test_new_event_restarts_a_running_agent_with_the_fresh_snapshot():
