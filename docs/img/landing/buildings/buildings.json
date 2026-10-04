@@ -1,0 +1,124 @@
+{
+  "peon": [
+    {
+      "id": "task-fields",
+      "title": "Task Fields",
+      "rtsAnalog": "build queue",
+      "text": "Three columns: to do, in work, done.\nPull 'Review auth refresh PR' into work,\nand an orc picks it up.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/peon/camp/task-fields.png",
+        "office": "buildings/peon/office/task-fields.png"
+      },
+      "alt": {
+        "camp": "Task Fields kanban: Rotate signing keys and Token TTL to do, Review auth refresh PR and PKCE exchange in progress, OAuth client and Login form done (Camp mode)",
+        "office": "Task Fields kanban: Rotate signing keys and Token TTL to do, Review auth refresh PR and PKCE exchange in progress, OAuth client and Login form done (Office mode)"
+      }
+    },
+    {
+      "id": "barracks",
+      "title": "Barracks",
+      "rtsAnalog": "unit production / control groups",
+      "text": "Three orcs, three git worktrees, one queue.\nA follow-up goes to the orc that wrote the first part.\nThe foreman says why it hired whom.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/peon/camp/barracks.png",
+        "office": "buildings/peon/office/barracks.png"
+      },
+      "alt": {
+        "camp": "Barracks: three orcs each working a task in its own worktree (PKCE flow, Token TTL, Reuse check), one task queued, a failed task in the finished list (Camp mode)",
+        "office": "Barracks: three orcs each working a task in its own worktree (PKCE flow, Token TTL, Reuse check), one task queued, a failed task in the finished list (Office mode)"
+      }
+    },
+    {
+      "id": "forge",
+      "title": "The Forge",
+      "rtsAnalog": "upgrade gate",
+      "text": "Branches with their PRs and changes.\nTests run in a throw-away worktree first;\nred means no merge, green squash-merges.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/peon/camp/forge.png",
+        "office": "buildings/peon/office/forge.png"
+      },
+      "alt": {
+        "camp": "The Forge: branches feat/oauth with open PR #41 'Review auth refresh PR', fix/ttl with PR #42 and chore/deps, with lines changed and commits ahead (Camp mode)",
+        "office": "The Forge: branches feat/oauth with open PR #41 'Review auth refresh PR', fix/ttl with PR #42 and chore/deps, with lines changed and commits ahead (Office mode)"
+      }
+    },
+    {
+      "id": "lake-of-insight",
+      "title": "Lake of Insight",
+      "rtsAnalog": "unit inspection panel",
+      "text": "Review the agent's diff side by side,\nnot as a wall of chat:\nauth/token.py on feat/oauth, before | after.",
+      "dogma": "Less text",
+      "media": {
+        "camp": "buildings/peon/camp/lake-of-insight.png",
+        "office": "buildings/peon/office/lake-of-insight.png"
+      },
+      "alt": {
+        "camp": "Lake of Insight: side-by-side diff of auth/token.py on feat/oauth, before on the left and after on the right (Camp mode)",
+        "office": "Lake of Insight: side-by-side diff of auth/token.py on feat/oauth, before on the left and after on the right (Office mode)"
+      }
+    },
+    {
+      "id": "orc-council",
+      "title": "Orc Council",
+      "rtsAnalog": "war council",
+      "text": "Diff Inspector and Test Runner review the patch.\nAn objection sends it back: round 3 of 4,\nwith a hard cap on rounds and dollars.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/peon/camp/orc-council.png",
+        "office": "buildings/peon/office/orc-council.png"
+      },
+      "alt": {
+        "camp": "Orc Council reviewing the feat/oauth patch, round 3 of 4: Diff Inspector agrees, Test Runner objects that an expired code is accepted (Camp mode)",
+        "office": "Orc Council reviewing the feat/oauth patch, round 3 of 4: Diff Inspector agrees, Test Runner objects that an expired code is accepted (Office mode)"
+      }
+    },
+    {
+      "id": "watchtower",
+      "title": "Watchtower",
+      "rtsAnalog": "early-warning tower",
+      "text": "Watches GitHub for you: a PR opened,\na review requested, a check failed.\nEach event rolls down a road to whoever handles it.",
+      "dogma": "No micromanagement",
+      "media": {
+        "camp": "buildings/peon/camp/watchtower.png",
+        "office": "buildings/peon/office/watchtower.png"
+      },
+      "alt": {
+        "camp": "Watchtower GitHub feed: check 'unit' failed, review asked on PR #41, PR #42 opened, with the failed check open on the right (Camp mode)",
+        "office": "Watchtower GitHub feed: check 'unit' failed, review asked on PR #41, PR #42 opened, with the failed check open on the right (Office mode)"
+      }
+    },
+    {
+      "id": "loot-vault",
+      "title": "Loot Vault",
+      "rtsAnalog": "loot stash",
+      "text": "What the agents wrote, waiting for a yes:\nCHANGELOG for v0.9.0, release notes.\nAccept it, or roll it back.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/peon/camp/loot-vault.png",
+        "office": "buildings/peon/office/loot-vault.png"
+      },
+      "alt": {
+        "camp": "Loot Vault: CHANGELOG.md and docs/release.md written by agents, waiting to be accepted, with the v0.9.0 changelog previewed (Camp mode)",
+        "office": "Loot Vault: CHANGELOG.md and docs/release.md written by agents, waiting to be accepted, with the v0.9.0 changelog previewed (Office mode)"
+      }
+    },
+    {
+      "id": "tally-crag",
+      "title": "Tally Crag",
+      "rtsAnalog": "resource counter",
+      "text": "Tokens per building over the last 24 h.\nThe Forge ate 174k; the Lake 77k.\nA bar turns red past the limit you set.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/peon/camp/tally-crag.png",
+        "office": "buildings/peon/office/tally-crag.png"
+      },
+      "alt": {
+        "camp": "Tally Crag: tokens per building over 24 hours, 332k in total, the Forge's 174k bar in red over the limit (Camp mode)",
+        "office": "Tally Crag: tokens per building over 24 hours, 332k in total, the Forge's 174k bar in red over the limit (Office mode)"
+      }
+    }
+  ]
+}
