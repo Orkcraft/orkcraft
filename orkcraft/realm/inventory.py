@@ -11,7 +11,7 @@ from pathlib import Path
 from orkcraft.realm import tiers
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 from orkcraft.sources import transcripts
-from orkcraft.sources.sessions import HARNESS_AGY, Session, collect_sessions, sessions_for_orc
+from orkcraft.sources.sessions import HARNESS_CLAUDE, Session, collect_sessions, sessions_for_orc
 
 RECENT_RUNS = 5          # the tools of this many latest runs
 _RUNS: dict[str, tuple[float, int, transcripts.Run]] = {}
@@ -62,7 +62,7 @@ def recent_tools(repo_root: Path, orc: Orc, runs: int = RECENT_RUNS) -> list[Too
     """The tools of its latest runs, the most recently used first, with how often."""
     uses: dict[str, ToolUse] = {}
     for session in sessions_of(repo_root, orc)[:runs]:
-        if session.harness == HARNESS_AGY or not session.transcript:
+        if session.harness != HARNESS_CLAUDE or not session.transcript:     # only Claude's transcripts are read
             continue
         run = read_run(session.transcript)
         for step in run.steps if run else []:

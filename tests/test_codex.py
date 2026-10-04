@@ -1,4 +1,4 @@
-"""Codex as a harness: `codex exec` without a terminal, its JSONL events read back."""
+"""Codex: a harness without a terminal (`codex exec`, its JSONL events) and a War Tent session."""
 from __future__ import annotations
 
 import json
@@ -9,10 +9,13 @@ from pathlib import Path
 import pytest
 
 from orkcraft import scroll as ts
+from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, looks, roads, team, tiers
+from orkcraft.realm import jobs, looks, orcs, roads, roster, team, tiers
+from orkcraft.sources import sessions as ss
 
 FIXTURE = Path(__file__).parent / "fixtures" / "codex_exec.jsonl"
+TRUST_SCREEN = Path(__file__).parent / "fixtures" / "codex_trust_screen.txt"
 
 
 def fake_codex(tmp_path: Path, monkeypatch, *, exit_code: int = 0, noise: int = 0) -> Path:
@@ -113,3 +116,48 @@ def test_the_schema_takes_a_codex_step():
     jsonschema.validate({"role": "run", "harness": "codex", "tier": "elder"}, step)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate({"role": "run", "harness": "openai"}, step)
+
+
+# -- sessions and the War Tent ------------------------------------------------------------------------
+
+def test_codex_sessions_start_resume_and_deploy(monkeypatch):
+    monkeypatch.setenv("ORKCRAFT_CODEX_BIN", "codex")
+    assert ss.new_command("codex") == ["codex"]
+    assert ss.resume_command(ss.Session("codex", "th-1")) == ["codex", "resume", "th-1"]
+    assert ss.Session("codex", "th-1").resumable
+    assert ss.deploy_command("codex", "You are Scout. Orders: look") == ["codex", "You are Scout. Orders: look"]
+    assert ss.deploy_command("codex", "--yolo") == ["codex", "Orders: --yolo"]
+
+
+def test_a_codex_session_comes_from_the_hook_log(tmp_path):
+    log = ss.log_file(tmp_path)
+    log.parent.mkdir(parents=True)
+    log.write_text(json.dumps({"ts": "2026-10-04T21:00:00", "harness": "codex", "session": "th-9",
+                               "tickets": ["T1001"], "prompt": "fix the parser", "transcript": ""}) + "\n")
+    found = ss.collect_sessions(tmp_path, max_age=0)
+    assert [(s.key, s.title, s.tickets) for s in found] == [("codex:th-9", "fix the parser", {"T1001"})]
+
+
+def test_a_codex_menu_is_an_order_to_wait_for():
+    question, options = orcs.detect_prompt(TRUST_SCREEN.read_text(encoding="utf-8").splitlines())
+    assert question.startswith("Trust this folder?")
+    assert options == [("1", "Trust and continue"), ("2", "Back to Agent Command Center")]
+    goblin = roster._worker(roster.WorkerInfo("new:codex:1", "codex", "", None, [], 0.0, False), 1)
+    assert goblin.name == "Goblin #1"
+
+
+@pytest.mark.asyncio
+async def test_a_codex_menu_is_answered_with_enter(fake_repo: Path):
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=(160, 50)) as pilot:
+        await pilot.pause()
+        sent = []
+        monkey = pytest.MonkeyPatch()
+        monkey.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
+        monkey.setattr(app.chat, "show_terminal", lambda ref: None)
+        app.chat.meta["new:codex:1"] = ("codex", "", None)
+        app.chat.meta["new:claude:1"] = ("claude", "", None)
+        for ref in ("new:codex:1", "new:claude:1"):
+            app.answer_alert(orcs.Alert(id=ref, title="?", options=[("1", "Yes")], source="terminal", ref=ref), "1")
+        monkey.undo()
+        assert sent == [("new:codex:1", b"1\r"), ("new:claude:1", b"1")]   # a digit alone only moves Codex's cursor

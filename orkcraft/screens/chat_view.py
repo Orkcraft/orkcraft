@@ -1,4 +1,4 @@
-"""Chat window: sessions of the selected node on the left, a live Claude / agy terminal on the right.
+"""Chat window: sessions of the selected node on the left, a live Claude / agy / Codex terminal on the right.
 
 The terminal is the real CLI on a PTY, so its own interface — polls, buttons,
 `/model`, `/goal`, permission prompts — works unchanged. Started sessions keep
@@ -15,18 +15,19 @@ from textual.widgets import ContentSwitcher, OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.sources.sessions import (
-    HARNESS_AGY, HARNESS_CLAUDE, HARNESS_CLAUDE_WEB, Session, collect_sessions, new_command,
+    HARNESS_AGY, HARNESS_CLAUDE, HARNESS_CLAUDE_WEB, HARNESS_CODEX, Session, collect_sessions, new_command,
     resume_command, sessions_for,
 )
 from orkcraft.widgets.terminal import Terminal
 
-HARNESS_ICONS = {HARNESS_CLAUDE: "✳", HARNESS_AGY: "◆", HARNESS_CLAUDE_WEB: "☁"}
+HARNESS_ICONS = {HARNESS_CLAUDE: "✳", HARNESS_AGY: "◆", HARNESS_CODEX: "⌬", HARNESS_CLAUDE_WEB: "☁"}
+HARNESS_STYLES = {HARNESS_AGY: "bold blue", HARNESS_CODEX: "bold #10a37f"}
 
 
 def session_label(s: Session, running: bool = False) -> Text:
     t = Text(no_wrap=True, overflow="ellipsis")
     t.append("▶ " if running else "  ", style="bold green")
-    t.append(f"{HARNESS_ICONS.get(s.harness, '·')} ", style="bold magenta" if s.harness != HARNESS_AGY else "bold blue")
+    t.append(f"{HARNESS_ICONS.get(s.harness, '·')} ", style=HARNESS_STYLES.get(s.harness, "bold magenta"))
     when = s.last.strftime("%d.%m %H:%M") if s.last else "—"
     t.append(f"{when} ", style="cyan")
     if s.tickets:
@@ -41,6 +42,7 @@ class ChatView(Container):
     BINDINGS = [
         Binding("n", "new_session('claude')", "New Claude"),
         Binding("a", "new_session('agy')", "New agy"),
+        Binding("c", "new_session('codex')", "New Codex"),
         Binding("A", "toggle_scope", "All / Node"),
         Binding("x", "stop_session", "Stop"),
         Binding("f12", "focus_list", "Leave Terminal", show=False),
@@ -110,13 +112,13 @@ class ChatView(Container):
                 yield Static("", id="chat-scope")
                 yield OptionList(id="chat-sessions")
                 yield Static(
-                    Text("enter resume · n new Claude · a new agy\nA all/node · x stop · F12 leave terminal",
+                    Text("enter resume · n new Claude · a new agy · c new Codex\nA all/node · x stop · F12 leave terminal",
                          style="dim"),
                     id="chat-help",
                 )
             with ContentSwitcher(id="chat-main", initial="chat-placeholder"):
                 yield Static(
-                    Text("Pick a session and press Enter, or n / a to start one.\n"
+                    Text("Pick a session and press Enter, or n / a / c to start one.\n"
                          "The node selected in any window scopes the list (A shows all).", style="dim"),
                     id="chat-placeholder",
                 )
