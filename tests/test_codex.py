@@ -161,3 +161,30 @@ async def test_a_codex_menu_is_answered_with_enter(fake_repo: Path):
             app.answer_alert(orcs.Alert(id=ref, title="?", options=[("1", "Yes")], source="terminal", ref=ref), "1")
         monkey.undo()
         assert sent == [("new:codex:1", b"1\r"), ("new:claude:1", b"1")]   # a digit alone only moves Codex's cursor
+
+
+# -- onboarding: the autonomy guide ---------------------------------------------------------------------
+
+def test_the_autonomy_guide_says_how_to_start_codex():
+    from orkcraft import autonomy
+    assert autonomy.codex_command(1) == "" and "nothing to change" in autonomy.codex_line(1)
+    assert autonomy.codex_command(3) == "codex --sandbox workspace-write --ask-for-approval on-request"
+    assert "Codex: start it with" in autonomy.guide(2, ("claude", "codex")) and "Antigravity" not in autonomy.guide(2, ("codex",))
+
+
+@pytest.mark.asyncio
+async def test_the_autonomy_step_has_a_codex_line_to_copy():
+    from textual.app import App
+    from textual.widgets import Static
+
+    from orkcraft.screens.autonomy import AutonomyStep
+
+    step = AutonomyStep(level=2, tools=("claude", "codex"))
+    async with App().run_test(size=(120, 50)) as pilot:
+        pilot.app.push_screen(step)
+        await pilot.pause()
+        line = str(step.query_one("#au-codex", Static).render())
+        assert line.startswith("Codex: start it with") and not step.query("#au-agy")
+        await pilot.press("o")
+        await pilot.pause()
+        assert step.copied == "codex --sandbox workspace-write --ask-for-approval on-request"

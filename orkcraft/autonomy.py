@@ -5,15 +5,16 @@
     answers(level)                    …and answer them themselves (⛓️‍💥 Free orcs only)
     claude_snippet(level)             what to paste into Claude Code's settings for this level (📋)
     agy_command(level)                how to start agy for this level (📋)
+    codex_command(level)              how to start Codex for this level (📋)
 
 Autonomy comes from three places:
 - **advice** (from 📜) — in quiet hours the Elders read the questions and advise; the operator
   follows the advice with one key in the morning;
 - **the Elders' answers** (⛓️‍💥 only) — in quiet hours they send their one-time yes or no themselves;
   what the Warder's rules stop, and anything they would not advise, still waits for the operator;
-- **the agents' own permission settings** (from 🧭) — what Claude Code and agy may do without asking,
-  which the operator sets with the guide below. The 🛡 Warder hook still denies the dangerous
-  commands in Claude Code sessions whatever the settings allow.
+- **the agents' own permission settings** (from 🧭) — what Claude Code, agy and Codex may do without
+  asking, which the operator sets with the guide below. The 🛡 Warder hook still denies the dangerous
+  commands in Claude Code and Codex sessions whatever the settings allow.
 """
 from __future__ import annotations
 
@@ -98,6 +99,12 @@ def agy_command(level: int) -> str:
     return "agy --mode accept-edits --sandbox" if level >= 3 else ""
 
 
+def codex_command(level: int) -> str:
+    """How to start Codex at this level, or "" when it stays as it is: from 🧭 it works in its sandbox
+    (the project, no network) without asking and asks only to step out of it."""
+    return "codex --sandbox workspace-write --ask-for-approval on-request" if level >= 2 else ""
+
+
 def claude_line(level: int) -> str:
     if not claude_settings(level):
         return "nothing to change — it asks before it acts."
@@ -112,6 +119,12 @@ def agy_line(level: int) -> str:
     return f"start it with `{agy_command(level)}` (check `agy --help`)."
 
 
+def codex_line(level: int) -> str:
+    if level < 2:
+        return "nothing to change — it asks before it acts."
+    return f"start it with `{codex_command(level)}`: it works in its sandbox and asks only to leave it."
+
+
 def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
     """The guide as plain text (docs and tests); the screen shows the same lines with 📋 buttons."""
     lines: list[str] = []
@@ -123,6 +136,10 @@ def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
         lines.append(f"Antigravity: {agy_line(level)}")
         if agy_command(level):
             lines.append(f"    {agy_command(level)}")
+    if "codex" in tools:
+        lines.append(f"Codex: {codex_line(level)}")
+        if codex_command(level):
+            lines.append(f"    {codex_command(level)}")
     if answers(level):
         lines.append("In quiet hours the 🏛 Elders answer routine questions for you (a one-time yes or no); "
                      "every answer is in .orkcraft/council/elders.jsonl. Move the slider down to stop it.")

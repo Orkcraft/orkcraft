@@ -1902,6 +1902,11 @@ class OrkcraftApp(App[int]):
 
     # -- recruiter and steward -----------------------------------------------------------------
 
+    def harnesses(self) -> tuple[str, ...]:
+        """The agent CLIs this machine runs (onboarding's tools); Claude and agy when none is chosen."""
+        enabled = tuple(t for t, c in self.desktop.machine.tools.items() if c.enabled and t in scroll.HARNESSES)
+        return enabled or ("claude", "agy")
+
     def recruit_from_prompt(self, building_id: str, prompt: str, road=None,
                             on_rejected: Callable[[str], Any] | None = None) -> None:
         """R → a description → the Recruiter (one Claude call per attempt, in a thread) → preview."""
@@ -1913,7 +1918,7 @@ class OrkcraftApp(App[int]):
 
         def _worker() -> None:
             result = recruiter.recruit(prompt, snapshot, building_id, runner=RECRUIT_RUNNER or builders.claude_runner,
-                                       road=road)
+                                       road=road, harnesses=self.harnesses())
             self.call_from_thread(self._on_recruited, building_id, prompt, result, on_rejected)
 
         self.run_worker(_worker, thread=True, name="recruiter")

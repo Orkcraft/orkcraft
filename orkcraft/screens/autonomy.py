@@ -103,7 +103,9 @@ class CopyIcon(Static):
 
 class AutonomyStep(ModalScreen[dict | str | None]):
     BINDINGS = [Binding("escape", "back", "Back"), Binding("c", "copy('claude')", "Copy Claude settings"),
-                Binding("g", "copy('agy')", "Copy the agy command")]
+                Binding("g", "copy('agy')", "Copy the agy command"), Binding("o", "copy('codex')", "Copy the Codex command")]
+    TOOLS = {"claude": ("Claude Code", "#au-claude", "au-copy"), "agy": ("Antigravity", "#au-agy", "au-copy-agy"),
+             "codex": ("Codex", "#au-codex", "au-copy-codex")}            # name, its line, its 📋
     DEFAULT_CSS = MODAL_CSS.format(cls="AutonomyStep", border_color="$accent", title_color="$accent") + """
     AutonomyStep > Vertical { width: 84; }
     AutonomyStep #au-row { height: auto; align-horizontal: center; margin-top: 1; }
@@ -154,11 +156,12 @@ class AutonomyStep(ModalScreen[dict | str | None]):
                         yield CopyIcon("au-copy")
                         yield Static("", id="au-claude-gap", classes="au-gap")
                         yield Static("", id="au-claude", classes="au-line", markup=False)
-                if "agy" in self.tools:
-                    with Horizontal(classes="au-tool"):
-                        yield CopyIcon("au-copy-agy")
-                        yield Static("", id="au-agy-gap", classes="au-gap")
-                        yield Static("", id="au-agy", classes="au-line", markup=False)
+                for tool in ("agy", "codex"):
+                    if tool in self.tools:
+                        with Horizontal(classes="au-tool"):
+                            yield CopyIcon(f"au-copy-{tool}")
+                            yield Static("", id=f"au-{tool}-gap", classes="au-gap")
+                            yield Static("", id=f"au-{tool}", classes="au-line", markup=False)
             if self.look is not None:
                 yield Label("The look", classes="au-section")
                 with Horizontal(id="au-modes"):
@@ -167,7 +170,7 @@ class AutonomyStep(ModalScreen[dict | str | None]):
                 yield Static("", id="au-mode-hint", classes="build-hint")
                 yield Checkbox(f"🌙 Quiet hours {schedule.DEFAULT_QUIET.label()} — no fires, only ❓",
                                value=self.look.quiet is not None, id="au-quiet")
-            yield Static("←/→ or a click moves the slider · 📋 or c / g copies · you can change it at any time: F10"
+            yield Static("←/→ or a click moves the slider · 📋 or c / g / o copies · you can change it at any time: F10"
                          + (" (the hours: 🕰 Your day)." if self.look is not None else "."), classes="build-hint")
             with Horizontal(classes="ob-buttons"):
                 if self.standalone:
@@ -219,14 +222,12 @@ class AutonomyStep(ModalScreen[dict | str | None]):
             t.append("\n   Each goes through ", style="dim")
             t.append(autonomy.SAFEGUARDS, style="dim")
         self.query_one("#au-level", Static).update(t)
-        for wid, line, copy_id, can in (("#au-claude", autonomy.claude_line, "#au-copy",
-                                         bool(autonomy.claude_snippet(self.level))),
-                                        ("#au-agy", autonomy.agy_line, "#au-copy-agy",
-                                         bool(autonomy.agy_command(self.level)))):
+        lines = {"claude": autonomy.claude_line, "agy": autonomy.agy_line, "codex": autonomy.codex_line}
+        for tool, (name, wid, copy_id) in self.TOOLS.items():
+            can = bool(self.copy_text(tool))
             for w in self.query(wid).results(Static):
-                name = "Claude Code" if wid == "#au-claude" else "Antigravity"
-                w.update(Text.assemble((f"{name}: ", "bold"), line(self.level)))
-            for b in self.query(copy_id):
+                w.update(Text.assemble((f"{name}: ", "bold"), lines[tool](self.level)))
+            for b in self.query(f"#{copy_id}"):
                 b.display = can
             for gap in self.query(f"{wid}-gap"):                # the line keeps its place without a 📋
                 gap.display = not can
@@ -240,17 +241,22 @@ class AutonomyStep(ModalScreen[dict | str | None]):
     @on(CopyIcon.Pressed)
     def _copy_icon(self, event: CopyIcon.Pressed) -> None:
         event.stop()
-        self.action_copy("agy" if event.icon.id == "au-copy-agy" else "claude")
+        self.action_copy(next((t for t, (_, _, c) in self.TOOLS.items() if c == event.icon.id), "claude"))
+
+    def copy_text(self, tool: str) -> str:
+        """The Claude Code permissions, or the command that starts agy / Codex, for this level."""
+        return {"claude": autonomy.claude_snippet, "agy": autonomy.agy_command,
+                "codex": autonomy.codex_command}[tool](self.level)
 
     def action_copy(self, tool: str) -> None:
-        """📋 The Claude Code permissions, or the agy command, for this level onto the clipboard."""
-        text = autonomy.claude_snippet(self.level) if tool == "claude" else autonomy.agy_command(self.level)
+        """📋 The Claude Code permissions, or the agy / Codex command, for this level onto the clipboard."""
+        text = self.copy_text(tool)
         if not text or tool not in self.tools:
             return
         self.app.copy_to_clipboard(text)
         self.copied = text
         self.notify(f"paste it into {autonomy.CLAUDE_FILE} or {autonomy.CLAUDE_FILE_ALL}" if tool == "claude"
-                    else "start agy with it", title="📋 Copied")
+                    else f"start {self.TOOLS[tool][0]} with it", title="📋 Copied")
 
     def action_back(self) -> None:
         self.dismiss(None if self.standalone else "back")
