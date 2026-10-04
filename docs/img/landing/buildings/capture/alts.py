@@ -20,3 +20,13 @@ ALT["knight"] = {
  "town-hall": "Town Hall: the order 'post every merged PR to the changelog' waiting for the Town Builder's plan and your approval",
  "catapult": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook",
 }
+ALT["elf"] = {
+ "loot-vault": "Loot Vault: three hero variants as files, hero-b accepted with its ASCII wireframe 'Invoices in one click, Start free' previewed, hero-a and hero-c waiting",
+ "lake-of-insight": "Lake of Insight: two versions of the bank-connection error copy side by side, 'Something went wrong' before and 'We couldn't reach your bank' after",
+ "orc-council": "Orc Council critiquing the onboarding flow, agreed in round 2: the Accessibility orc's objection that focus jumps to the footer is open",
+ "token-mill": "Token Mill: design tokens JSON run through three steps with no model, out come CSS variables for primary color, ink, radius, spacing and body font",
+ "the-pit": "The Pit: two reference images, a moodboard link and a client note ('make the CTA warmer') dropped in and sorted by kind",
+ "task-fields": "Task Fields: onboarding screens by state, error and empty states to do, loading and Hero 3 variants in progress, step 1 with all 4 states done",
+ "scroll-dump": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone",
+ "forge": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2",
+}

@@ -1,7 +1,7 @@
 """Print the text drawn in each SVG (one row per line) and flag anything that looks personal."""
 import re, sys, html
 from pathlib import Path
-BAD = re.compile(r"/tmp|claude-0|(?<!@)@(?!@)|vadim|sidoryk|/home/|https?://|token=|sk-|ghp_", re.I)
+BAD = re.compile(r"/tmp|claude-0|(?<!@)@(?!@)|vadim|sidoryk|/home/|https?://(?!example\.com|moodboard\.example|[a-z]+\.example)|token=|sk-|ghp_", re.I)
 hits = 0
 for f in sorted(Path(sys.argv[1]).glob("**/*.svg")):
     t = f.read_text()

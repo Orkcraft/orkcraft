@@ -242,5 +242,127 @@
         "office": "The Catapult: build, notes and board all loaded, checked against the release schema, and a dry-run POST to the release webhook (Office mode)"
       }
     }
+  ],
+  "elf": [
+    {
+      "id": "loot-vault",
+      "title": "Loot Vault",
+      "rtsAnalog": "loot stash",
+      "text": "'Hero section, 3 variants' land as files.\nApprove hero-b, roll back a and c.\nNothing reaches the repo without your yes.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/elf/camp/loot-vault.png",
+        "office": "buildings/elf/office/loot-vault.png"
+      },
+      "alt": {
+        "camp": "Loot Vault: three hero variants as files, hero-b accepted with its ASCII wireframe 'Invoices in one click, Start free' previewed, hero-a and hero-c waiting (Camp mode)",
+        "office": "Loot Vault: three hero variants as files, hero-b accepted with its ASCII wireframe 'Invoices in one click, Start free' previewed, hero-a and hero-c waiting (Office mode)"
+      }
+    },
+    {
+      "id": "lake-of-insight",
+      "title": "Lake of Insight",
+      "rtsAnalog": "scouting lens",
+      "text": "Two versions of the error copy, side by side:\n'Something went wrong' or 'We couldn't\nreach your bank'. Pick one, no doc ping-pong.",
+      "dogma": "Less text",
+      "media": {
+        "camp": "buildings/elf/camp/lake-of-insight.png",
+        "office": "buildings/elf/office/lake-of-insight.png"
+      },
+      "alt": {
+        "camp": "Lake of Insight: two versions of the bank-connection error copy side by side, 'Something went wrong' before and 'We couldn't reach your bank' after (Camp mode)",
+        "office": "Lake of Insight: two versions of the bank-connection error copy side by side, 'Something went wrong' before and 'We couldn't reach your bank' after (Office mode)"
+      }
+    },
+    {
+      "id": "orc-council",
+      "title": "Orc Council",
+      "rtsAnalog": "war council",
+      "text": "A Critic, an Accessibility orc and a Copy orc\ncritique the onboarding flow until they agree.\nObjections come back as a list, round by round.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/elf/camp/orc-council.png",
+        "office": "buildings/elf/office/orc-council.png"
+      },
+      "alt": {
+        "camp": "Orc Council critiquing the onboarding flow, agreed in round 2: the Accessibility orc's objection that focus jumps to the footer is open (Camp mode)",
+        "office": "Orc Council critiquing the onboarding flow, agreed in round 2: the Accessibility orc's objection that focus jumps to the footer is open (Office mode)"
+      }
+    },
+    {
+      "id": "token-mill",
+      "title": "Token Mill",
+      "rtsAnalog": "refinery",
+      "text": "Design tokens JSON in, CSS variables out.\nRegexes and templates, no model,\nso rebuilding the tokens costs nothing.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/elf/camp/token-mill.png",
+        "office": "buildings/elf/office/token-mill.png"
+      },
+      "alt": {
+        "camp": "Token Mill: design tokens JSON run through three steps with no model, out come CSS variables for primary color, ink, radius, spacing and body font (Camp mode)",
+        "office": "Token Mill: design tokens JSON run through three steps with no model, out come CSS variables for primary color, ink, radius, spacing and body font (Office mode)"
+      }
+    },
+    {
+      "id": "the-pit",
+      "title": "The Pit",
+      "rtsAnalog": "resource drop-off",
+      "text": "Drop screenshots, paste a moodboard link\nor a client note. No dialog, no form:\nthe Scavenger sorts it to the right building.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/elf/camp/the-pit.png",
+        "office": "buildings/elf/office/the-pit.png"
+      },
+      "alt": {
+        "camp": "The Pit: two reference images, a moodboard link and a client note ('make the CTA warmer') dropped in and sorted by kind (Camp mode)",
+        "office": "The Pit: two reference images, a moodboard link and a client note ('make the CTA warmer') dropped in and sorted by kind (Office mode)"
+      }
+    },
+    {
+      "id": "task-fields",
+      "title": "Task Fields",
+      "rtsAnalog": "build queue",
+      "text": "Every screen through its states:\n'Onboarding step 2: empty, loading, error'.\nDone only when all four are.",
+      "dogma": "Play, not toil",
+      "media": {
+        "camp": "buildings/elf/camp/task-fields.png",
+        "office": "buildings/elf/office/task-fields.png"
+      },
+      "alt": {
+        "camp": "Task Fields: onboarding screens by state, error and empty states to do, loading and Hero 3 variants in progress, step 1 with all 4 states done (Camp mode)",
+        "office": "Task Fields: onboarding screens by state, error and empty states to do, loading and Hero 3 variants in progress, step 1 with all 4 states done (Office mode)"
+      }
+    },
+    {
+      "id": "scroll-dump",
+      "title": "Scroll Dump",
+      "rtsAnalog": "lore library",
+      "text": "Your design guidelines and component notes.\nAgents get only the fragment they need,\nand personal notes never reach a model.",
+      "dogma": "Count the lumber",
+      "media": {
+        "camp": "buildings/elf/camp/scroll-dump.png",
+        "office": "buildings/elf/office/scroll-dump.png"
+      },
+      "alt": {
+        "camp": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone (Camp mode)",
+        "office": "Scroll Dump: the design guidelines base with Buttons, Spacing and Voice and tone; a search for 'errors' returns one fragment from Voice and tone (Office mode)"
+      }
+    },
+    {
+      "id": "forge",
+      "title": "The Forge",
+      "rtsAnalog": "upgrade gate",
+      "text": "Hand off chore/tokens-v2 as PR #7:\nthe tests run first,\nthen one key squash-merges it.",
+      "dogma": "Hard knocks teach",
+      "media": {
+        "camp": "buildings/elf/camp/forge.png",
+        "office": "buildings/elf/office/forge.png"
+      },
+      "alt": {
+        "camp": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2 (Camp mode)",
+        "office": "The Forge: branch chore/tokens-v2 with open PR #7 'Tokens v2' highlighted, next to the draft PR #8 for error copy v2 (Office mode)"
+      }
+    }
   ]
 }
