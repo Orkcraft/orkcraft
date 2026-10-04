@@ -430,7 +430,7 @@ class ClanRoster(Vertical):
     @staticmethod
     def _render_garrison_row(o: Orc, number: int, seen: set[str] | frozenset = frozenset()) -> Text:
         """One line for the narrow garrison: number, ❓ when it has a question you have not opened
-        yet, tier, name, its models as marks (✻ Claude orange, ✦ agy blue) and its state."""
+        yet, tier, name, its models as marks (✻ Claude orange, ✦ agy blue, ⌬ Codex green) and its state."""
         from orkcraft.realm import looks
 
         t = Text(no_wrap=True, overflow="ellipsis")

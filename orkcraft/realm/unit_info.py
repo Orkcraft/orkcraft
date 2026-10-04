@@ -108,7 +108,7 @@ def models_of(orc: Orc, live_model: str = "") -> list[tuple[str, str, str]]:
         letter = HARNESS_LETTER.get(harness, "P" if harness == "pipeline" else "?")
         model = tiers.step_model(step)
         name = short_model(model) if model else \
-            {"claude": "Claude", "agy": "agy (Gemini)"}.get(harness, harness)
+            {"claude": "Claude", "agy": "agy (Gemini)", "codex": "Codex"}.get(harness, harness)
         label = f"{step.get('role', '')} · {name}".strip(" ·")
         out.append((letter, HARNESS_STYLE.get(harness, "bold"), label))
     if live_model:

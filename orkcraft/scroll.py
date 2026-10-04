@@ -52,7 +52,7 @@ MAX_ROADS = 32
 # Orc kinds, tried in this order when an orc is created from a prompt.
 KINDS = ("chain", "script", "agent", "hybrid")
 HARNESS_ROLES = ("run", "plan", "write", "review")
-HARNESSES = ("claude", "agy")     # plus "pipeline:<repo-relative spec>.json"
+HARNESSES = ("claude", "agy", "codex")     # plus "pipeline:<repo-relative spec>.json"
 DEFAULT_HARNESS = [{"role": "run", "harness": "claude"}]
 CHAIN_OPS = ("filter", "pick", "extract", "sort", "limit", "count", "group", "template", "join")
 # Re-run policy per kind: cheap kinds rerun at once, agents coalesce a burst and restart.

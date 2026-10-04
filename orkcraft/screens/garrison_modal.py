@@ -45,7 +45,7 @@ GarrisonModal Button {
 
 def tier_options() -> list[tuple[str, str]]:
     """The tier picker: the heavy models first, then the CLI's own default ("")."""
-    out = [(f"{tiers.label(t)} — {tiers.MODELS['claude'][t]} · {tiers.MODELS['agy'][t]}", t) for t in tiers.TIERS]
+    out = [(f"{tiers.label(t)} — {' · '.join(m[t] for m in tiers.MODELS.values())}", t) for t in tiers.TIERS]
     return out + [("· CLI default model", "")]
 
 
@@ -145,13 +145,13 @@ OrcModelModal .model-row Select { width: 1fr; }
             yield Label(f"🎒 {self.orc_name} — model and tier", classes="order-title")
             for i, step in enumerate(self.steps):
                 harness = str(step.get("harness", "claude"))
-                if harness not in ("claude", "agy"):          # a pipeline keeps its own models
+                if harness not in scroll.HARNESSES:           # a pipeline keeps its own models
                     yield Label(f"{step.get('role', 'run')}: {harness}", classes="order-hint")
                     continue
                 current = tiers.step_tier(step) if (step.get("tier") or step.get("model")) else ""
                 yield Label(f"{step.get('role', 'run')}:")
                 with Horizontal(classes="model-row"):
-                    yield Select([("claude", "claude"), ("agy", "agy")], value=harness,
+                    yield Select([(h, h) for h in scroll.HARNESSES], value=harness,
                                  allow_blank=False, id=f"step-harness-{i}")
                     yield Select(tier_options(), value=current or "", allow_blank=False, id=f"step-tier-{i}")
             with Horizontal():

@@ -6,6 +6,7 @@ thread; the caller passes a `cancel` event and gets (text, cost, tokens) back or
     script   the skill is a command line, run in the repository with the input on stdin
     claude   `claude -p`; read-only in the repository unless `workdir` is given (a worktree)
     agy      `agy --print` in a sandbox limited to `workdir` (a scratch dir when none is given)
+    codex    `codex exec` in a read-only sandbox; may write only inside `workdir` when one is given
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ from orkcraft.sources import telemetry
 SCRIPT_TIMEOUT_S = 300
 WORK_TIMEOUT_S = 1800
 RESULT_KEEP = 4000
-HARNESSES = ("claude", "agy", "script")
+HARNESSES = ("claude", "agy", "codex", "script")
 
 
 @dataclass
@@ -116,6 +117,8 @@ def work_cmd(harness: str, prompt: str, workdir: Path, model: str = "", resume: 
     if harness == "agy":
         return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or roads.AGY_MODEL,
                 "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
+    if harness == "codex":                     # the prompt goes on stdin (roads.harness_stdin)
+        return roads.codex_cmd("workspace-write", model, resume=resume)
     raise RuntimeError(f"harness {harness!r} cannot work in a worktree")
 
 
@@ -132,19 +135,17 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of an agent working in `workdir`."""
     cmd = work_cmd(harness, prompt, workdir, model, resume)
-    try:
-        proc = subprocess.Popen(cmd, cwd=workdir, env={**os.environ, **(env or {})}, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, text=True, start_new_session=True)
-    except FileNotFoundError as e:
-        raise RuntimeError(f"{cmd[0]} not found") from e
-    _wait(proc, cancel, timeout_s)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise RuntimeError(f"{harness} exited with {proc.returncode}: {(err or out).strip()[:300]}")
-    text, cost, tokens = roads._result_of(out)
+    code, out, err = roads.run_proc(cmd, workdir, {**os.environ, **(env or {})}, roads.harness_stdin(harness, prompt),
+                                    lambda proc: _wait(proc, cancel, timeout_s))
+    if code != 0:
+        raise RuntimeError(roads.failure(harness, code, out, err))
+    if harness == "codex":
+        text, cost, tokens, session = roads.codex_result_of(out)
+    else:
+        (text, cost, tokens), session = roads._result_of(out), session_of(out)
     if not telemetry.charged({**os.environ, **(env or {})}):
         telemetry.charge(cost, f"{harness} worker")
-    return text, cost, tokens, session_of(out)
+    return text, cost, tokens, session
 
 
 def run_skill(harness: str, skill: str, input_text: str, repo_root: Path, cancel: threading.Event,

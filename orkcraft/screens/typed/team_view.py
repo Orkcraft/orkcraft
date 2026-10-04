@@ -430,7 +430,7 @@ class TeamView(TypedView):
                 role, harness = (answer.split("\t") + [""])[:2]
                 member = tm.parse_member(f"{role.strip()}:{harness.strip() or 'claude'}")
                 if member is None:
-                    self.app.notify("a member is a role and claude or agy[:model]", title=f"{ICON} Not added",
+                    self.app.notify("a member is a role and claude, agy or codex[:model]", title=f"{ICON} Not added",
                                     severity="error")
                     return
                 current = [f"{m.role}:{m.label}" for m in self.team]
@@ -441,6 +441,6 @@ class TeamView(TypedView):
                     self._render_list()
 
             self.app.push_screen(TextPrompt(f"{ICON} Add a member of the clan", placeholder="role, e.g. Marketing",
-                                            fields=(("claude · agy · agy:gemini-3.1-pro-high", "claude"),)), done)
+                                            fields=(("claude · agy · codex · agy:gemini-3.1-pro-high", "claude"),)), done)
             return True
         return False

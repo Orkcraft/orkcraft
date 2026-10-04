@@ -42,6 +42,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from orkcraft import scroll as ts
 from orkcraft.realm import tiers
 
 DEFAULT_PROVIDERS = ("claude", "agy")
@@ -52,7 +53,7 @@ FOLLOW_UP = re.compile(r"^\s*(follow[- ]?up|re:|also|and also|fix (the )?review|
                        re.I)
 DOCS_WORDS = re.compile(r"\b(doc|docs|readme|write[- ]?up|research|summar|explain|report|документ|исследу|опиши)",
                         re.I)
-RESUMABLE = frozenset({"claude"})          # harnesses whose session can be resumed (`--resume`)
+RESUMABLE = frozenset({"claude", "codex"})   # harnesses whose session can be resumed (`--resume`, `exec resume`)
 DEFAULT_SESSION_TASKS = 5                  # tasks one session carries before it is rolled over
 RELATED = 0.2                              # word overlap from which a task counts as the orc's kind of work
 LOOKAHEAD = 5                              # a freed orc looks this far into the queue for related work
@@ -259,7 +260,7 @@ class Foreman:
         self.max_orcs = int(config.get("max_orcs") or DEFAULT_MAX_ORCS)
         self.budget = float(config.get("budget_usd") or 0.0)          # 0: no budget of its own
         self.providers = [parse_provider(p) for p in (config.get("providers") or DEFAULT_PROVIDERS)]
-        self.providers = [(h, m) for h, m in self.providers if h in ("claude", "agy")] or \
+        self.providers = [(h, m) for h, m in self.providers if h in ts.HARNESSES] or \
             [parse_provider(p) for p in DEFAULT_PROVIDERS]
         self.session_tasks = int(config.get("session_tasks") or DEFAULT_SESSION_TASKS)
         self.max_reworks = int(config["max_reworks"]) if config.get("max_reworks") is not None else DEFAULT_MAX_REWORKS
@@ -279,7 +280,7 @@ class Foreman:
             runs, ok, cost = int(st.get("runs", 0)), int(st.get("ok", 0)), float(st.get("cost", 0.0))
             rate = (ok + 1) / (runs + 2)                         # Laplace: unknown providers start at ½
             avg_cost = cost / runs if runs else 0.0
-            fit = 0.1 if (docs and harness == "agy") or (not docs and harness == "claude") else 0.0
+            fit = 0.1 if (docs and harness == "agy") or (not docs and harness in ("claude", "codex")) else 0.0
             score = rate - 0.2 * min(avg_cost, 2.0) + fit
             if score > best_score:
                 why = f"{key}: {ok}/{runs} ok" + (f", ${avg_cost:.2f}/task" if runs else ", no record yet")
