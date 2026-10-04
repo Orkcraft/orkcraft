@@ -12,8 +12,11 @@ Google Antigravity (`agy`) — so there are no API keys to configure.
 
 ![The town: a Pit and a Totem feed a Lake, a Catapult and a Workshop](docs/img/town.png)
 
-> **Status: alpha.** It is used daily and has ~500 tests, but expect rough edges and changes.
-> Issues and ideas are welcome.
+> [!WARNING]
+> **Alpha version — it may be unstable.** Orkcraft is under active development: features, settings
+> and file formats can change between versions, and some things may break or behave unexpectedly.
+> It has ~800 tests and is used daily, but try it on projects you have committed or backed up, and
+> keep an eye on what the agents do. Issues and ideas are welcome.
 
 ## Try it
 
