@@ -132,9 +132,11 @@ What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 ```bash
 git clone https://github.com/VadimSidoryk/orkcraft && cd orkcraft
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -q                # ~500 tests; the UI tests drive a real Textual app headlessly
+.venv/bin/pytest -q -n auto        # ~800 tests in parallel; the UI tests drive a real Textual app headlessly
 .venv/bin/orkcraft --demo
 ```
+
+Every pull request and every push to `main` runs the tests on GitHub Actions (`.github/workflows/tests.yml`).
 
 ```
 orkcraft/
