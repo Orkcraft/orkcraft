@@ -156,7 +156,7 @@ FIELDS = _make("fields", _box(18, 7, top="┌─\\||/─\\||/─\\||/─┐"), b
 BARRACKS = _make("barracks", ["  __    __    __  "] + _box(18, 7, top="┌|  |──|  |──|  |┐"),
                  head=("WORKER POOL",), body=(18, 9))
 COUNCIL = _make("council", ["   o    o    o    "] + _box(18, 7, top="┌──/\\───/\\───/\\──┐"),
-                head=("MULTI - AGENT", "DEBATE ENGINE"), body=(18, 9))
+                head=("CLAN FIRE", "REVIEW & VETO"), body=(18, 9))
 FORGE = _make("forge", ["       oOO        "] + _box(18, 7, top="┌─────|  |───────┐"),
               head=("MERGE ENGINE",), body=(18, 9))
 SCROLLS = _make("scrolls", _box(18, 7, top="@" + "~" * 16 + "@", bottom="@" + "~" * 16 + "@"),

@@ -1,14 +1,21 @@
-"""⚔ Agent Team: agents with roles discuss until they agree on one artifact.
+"""🪔 Clan Fire: the clan reviews a document, the steward lets it go, sends it back or asks you.
 
-▶ Start asks for the topic (the goal is the default); a cart that arrives starts one with what it
-carries. The discussion (realm/team.py) runs off the UI thread and shows round by round; when the
-team agrees — or the moderator decides at the last round — the artifact goes to `loot/` and out
-as `team.artifact_ready`. A member's QUESTION pauses it: 🔥 on the hut, and ▶ asks the operator.
+A cart that arrives is a document to review (a Barracks result, a file, text); ▶ asks for a repo
+path or the text itself. The review (realm/team.py) runs off the UI thread and shows turn by turn.
+Then the steward decides: `team.approved` sends the document on as it is, `team.rework` sends it back
+with the comments (wire it to the Barracks for the prepare → review → rework loop), and either way the
+full report goes to `loot/` as `team.artifact_ready`. When the steward asks, 🔥 shows on the hut and ▶
+takes your answer. Documents that arrive mid-review wait in line.
+
+Briefs live in the building's state folder: `steward.md` (beside `steward_prompt`) and `roles/<role>.md`
+per member — written as empty templates when a member joins, so you know where to put the knowledge.
 + adds a member (`Role`, `harness[:model]`).
 """
 from __future__ import annotations
 
+import re
 import threading
+from pathlib import Path
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -21,17 +28,27 @@ from orkcraft.realm import team as tm
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
-KIND = {"draft": "✍", "review": "🔎", "revise": "⚖", "decide": "⚖", "question": "🔥", "answer": "💬"}
+ICON = "🪔"
+VERDICT = {"approve": ("✓ approves", "green"), "changes": ("✎ changes", "yellow"), "veto": ("⛔ veto", "red"),
+           "rework": ("↩ rework", "yellow"), "ask": ("🔥 asks you", "red")}
+OUTCOME = {"approved": "approved ✓", "rework": "sent back ↩", "budget": "stopped: budget", "asked": "🔥 waits for you",
+           "error": "failed", "stopped": "stopped", "running": "reviewing…"}
+_COMMENT = re.compile(r"<!--.*?-->", re.S)
+
+
 def _simulated(harness: str, prompt: str, model: str) -> tuple[str, None]:
-    """The sandbox: a draft, then everyone agrees — no model is called."""
-    if "Review it from your role" in prompt:
-        return "AGREE — _(demo — simulated)_", None
-    topic = prompt.split("Topic (this request): ", 1)[-1].splitlines()[0]
-    return f"# {topic}\n\n_(demo — simulated draft; agents do not run in the sandbox)_", None
+    """The sandbox: everyone approves and the steward lets it go — no model is called."""
+    if prompt.startswith("You are the steward"):
+        return "DECISION: approve\n\n_(demo — simulated; agents do not run in the sandbox)_", None
+    return "APPROVE — _(demo — simulated)_", None
 
 
-OUTCOME = {"agreed": "agreed ✓", "no_consensus": "decided (no consensus)", "budget": "stopped: budget",
-           "asked": "🔥 waits for you", "error": "failed", "stopped": "stopped", "running": "discussing…"}
+def _title_of(text: str) -> str:
+    for line in text.strip().splitlines():
+        line = line.strip().lstrip("#").strip().strip("*").strip()
+        if line:
+            return line[:80]
+    return "document"
 
 
 class TeamView(TypedView):
@@ -42,7 +59,7 @@ class TeamView(TypedView):
         super().__init__(*a, **kw)
         self.current: tm.Discussion | None = None
         self.history: list[tm.Discussion] = []
-        self.waiting: list[str] = []              # topics that arrived while one ran, oldest first
+        self.waiting: list[tuple[str, str, str]] = []     # (title, text, path) that came mid-review
         self._cancel: threading.Event | None = None
         self._busy = False
 
@@ -51,13 +68,68 @@ class TeamView(TypedView):
         return tm.members_of(self.config)
 
     @property
-    def max_rounds(self) -> int:
-        return int(self.config.get("max_rounds") or tm.DEFAULT_ROUNDS)
+    def veto(self) -> set[str]:
+        return tm.veto_of(self.config)
+
+    @property
+    def max_cycles(self) -> int:
+        return int(self.config.get("max_cycles") or tm.DEFAULT_CYCLES)
 
     @property
     def budget(self) -> float:
         b = self.config.get("budget_usd")
         return float(tm.DEFAULT_BUDGET if b is None else b)
+
+    # -- the briefs ---------------------------------------------------------------------------------
+
+    def role_file(self, role: str) -> Path:
+        return self.state_dir / "roles" / f"{tm.slug(role)}.md"
+
+    @property
+    def steward_file(self) -> Path:
+        return self.state_dir / "steward.md"
+
+    def _rel(self, path: Path) -> str:
+        return shelves.rel_to(self._get_repo_root(), path)
+
+    @staticmethod
+    def _knowledge(path: Path) -> str:
+        """A brief's text without its template comments; "" when nothing but headings was written."""
+        try:
+            text = _COMMENT.sub("", path.read_text(encoding="utf-8")).strip()
+        except OSError:
+            return ""
+        return text if any(line.strip() and not line.lstrip().startswith("#") for line in text.splitlines()) else ""
+
+    def ensure_briefs(self) -> None:
+        """Empty templates for the steward and every member, so the operator knows where to write."""
+        todo = [(self.steward_file, "Steward", "when to let a document go, when to send it back, when to "
+                                               "ask the operator; what matters most")]
+        todo += [(self.role_file(m.role), m.role, "what this role checks, what it knows, its red lines; "
+                                                  "links to the files it should read") for m in self.team]
+        for path, who, what in todo:
+            if path.exists():
+                continue
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"# {who}\n\n<!-- {ICON} Clan Fire brief: {what}. Write below; as long as the "
+                                f"knowledge needs. -->\n", encoding="utf-8")
+            except OSError:
+                pass
+
+    def brief_of(self, member: tm.Member) -> tuple[str, str]:
+        path = self.role_file(member.role)
+        text = self._knowledge(path)
+        return (self._rel(path), text) if text else ("", "")
+
+    def steward(self) -> tm.Steward:
+        own = str(self.config.get("steward_prompt") or self.config.get("goal") or "").strip()
+        known = self._knowledge(self.steward_file)
+        harness, _, model = str(self.config.get("moderator") or "claude").partition(":")
+        return tm.Steward(own, harness.strip() or "claude", model.strip(), known,
+                          self._rel(self.steward_file) if known else "")
+
+    # -- the view ------------------------------------------------------------------------------------
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="team-head", classes="typed-head")
@@ -67,27 +139,45 @@ class TeamView(TypedView):
                 yield Markdown("", id="team-read")
 
     def refresh_data(self) -> None:
+        self.ensure_briefs()
         self.history = tm.load_all(self.state_dir)
         if self.current is None and self.history:
-            last = self.history[0]
-            self.current = last
+            self.current = self.history[0]
         self._render_list()
 
-    # -- the discussion -----------------------------------------------------------------------------
+    # -- the review ----------------------------------------------------------------------------------
 
-    def start(self, topic: str) -> bool:
-        topic = topic.strip() or str(self.config.get("goal", "")).strip()
-        if not topic:
-            self.app.notify("a discussion needs a topic (or a goal in the settings)", title="⚔ Agent Team")
+    def start(self, text: str, title: str = "", path: str = "") -> bool:
+        """Review a document: its text, and its repo-relative path when it is a file."""
+        text = text.strip()
+        if not text and path:
+            try:
+                text = (self._get_repo_root() / path).read_text(encoding="utf-8")
+            except OSError:
+                text = ""
+        if not text:
+            self.app.notify("nothing to review", title=f"{ICON} Clan Fire")
             return False
+        title = (title or _title_of(text)).strip()
         if self._busy or (self.current is not None and self.current.outcome == "asked"):
-            self.waiting.append(topic)
+            self.waiting.append((title, text, path))
+            self._render_list()
             return False
         if getattr(self.app, "gold_exhausted", lambda: False)():
-            self.app.notify("🪙 budget exhausted — a discussion costs model calls", title="⚔ Agent Team",
+            self.app.notify("🪙 budget exhausted — a review costs model calls", title=f"{ICON} Clan Fire",
                             severity="warning")
             return False
-        self.current = tm.new(topic, str(self.config.get("goal", "")))
+        cycle = tm.cycle_of(tm.load_all(self.state_dir, 200), title)
+        d = tm.new(title, text, path, cycle)
+        if not path:                       # Claude reads it from disk; the prompt stays small
+            try:
+                f = self.state_dir / "documents" / f"{d.id}.md"
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_text(text, encoding="utf-8")
+                d.doc_path = self._rel(f)
+            except OSError:
+                pass
+        self.current = d
         self._run()
         return True
 
@@ -95,12 +185,14 @@ class TeamView(TypedView):
         d, team = self.current, self.team
         if d is None:
             return
+        self.ensure_briefs()
         self._busy, self._cancel = True, threading.Event()
         cancel, app = self._cancel, self.app
-        repo, env = self._get_repo_root(), {"ORKCRAFT_ORC": f"{self.building_id}/team"}
+        repo, env = self._get_repo_root(), {"ORKCRAFT_ORC": f"{self.building_id}/clan"}
         runner = type(self).runner or (_simulated if self.simulated else
-                                       (lambda h, p, m: roads.run_agent(h, p, repo, env, cancel, m)[:2]))
-        moderator, rounds, budget = str(self.config.get("moderator") or "claude"), self.max_rounds, self.budget
+                                       (lambda h, p, m: roads.run_agent(h, p, repo, env, cancel, m, web=True)[:2]))
+        steward, veto, cycles, budget = self.steward(), self.veto, self.max_cycles, self.budget
+        briefs = {m.role: self.brief_of(m) for m in team}
 
         def on_turn(_d: tm.Discussion, _t: tm.Turn) -> None:
             try:
@@ -110,8 +202,9 @@ class TeamView(TypedView):
 
         def work() -> None:
             try:
-                tm.run(d, team, moderator, rounds, budget, runner, on_turn, cancel)
-            except Exception as e:  # the app goes on whatever happens in a discussion
+                tm.run(d, team, steward, veto, cycles, budget, runner, on_turn, cancel,
+                       lambda m: briefs.get(m.role, ("", "")))
+            except Exception as e:  # the app goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:
                 app.call_from_thread(self.finish, d)
@@ -119,7 +212,7 @@ class TeamView(TypedView):
                 pass
 
         self._render_list()
-        threading.Thread(target=work, daemon=True, name=f"team-{self.building_id}").start()
+        threading.Thread(target=work, daemon=True, name=f"clan-{self.building_id}").start()
 
     def finish(self, d: tm.Discussion) -> None:
         self._busy, self._cancel = False, None
@@ -127,23 +220,27 @@ class TeamView(TypedView):
             tm.save(self.state_dir, d)
         except OSError:
             pass
-        if d.outcome in ("agreed", "no_consensus"):
-            path = pipes.write_loot(self._get_repo_root(), self.building_id, d.topic[:80],
-                                    tm.artifact_markdown(d, self.team))
-            rel = shelves.rel_to(self._get_repo_root(), path)
-            self.emit("team.artifact_ready", rel, d.topic[:80])
-            self.app.notify(f"{OUTCOME[d.outcome]} — {rel}", title="⚔ Agent Team")
+        if d.outcome in ("approved", "rework"):
+            root = self._get_repo_root()
+            path = pipes.write_loot(root, self.building_id, d.title[:80], tm.report_markdown(d, self.team))
+            self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80])
+            if d.outcome == "approved":
+                self.emit("team.approved", d.doc, d.title)
+            else:
+                self.emit("team.rework", tm.rework_markdown(d, self.max_cycles), d.title)
+            self.app.notify(f"{d.title[:60]}: {OUTCOME[d.outcome]}", title=f"{ICON} Clan Fire")
         elif d.outcome == "asked":
-            self.app.notify(f"{d.asking} asks: {d.question}", title="🔥 Agent Team")
+            self.app.notify(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
         on_run = getattr(self.app, "on_handler_run", None)
         if on_run is not None and d.outcome != "asked":
-            on_run(roads.HandlerRun(self.building_id, "team", "team", d.id, 0.0, 0.0,
+            on_run(roads.HandlerRun(self.building_id, "clan", "team", d.id, 0.0, 0.0,
                                     outcome="error" if d.outcome == "error" else "done",
-                                    markdown=d.draft, error=d.error, cost_usd=d.spent or None))
+                                    markdown=d.decision, error=d.error, cost_usd=d.spent or None))
         self.history = tm.load_all(self.state_dir)
         self._render_list()
         if self.waiting and d.outcome != "asked":
-            self.start(self.waiting.pop(0))
+            title, text, path = self.waiting.pop(0)
+            self.start(text, title, path)
 
     def reply(self, text: str | None) -> None:
         d = self.current
@@ -153,13 +250,21 @@ class TeamView(TypedView):
         self._run()
 
     def receive(self, payload, title: str, markdown: str) -> None:
-        self.start(markdown or payload.value)
+        if payload.kind == pipes.FILE and (self._get_repo_root() / payload.value).is_file():
+            self.start("", payload.title or title, payload.value)      # members read the file itself
+        else:
+            self.start(markdown or payload.value, payload.title or title)
 
     def on_unmount(self) -> None:
         if self._cancel is not None:
             self._cancel.set()
 
-    # -- the view -----------------------------------------------------------------------------------
+    # -- the list and the reader ---------------------------------------------------------------------
+
+    def _clan_text(self) -> str:
+        veto = self.veto
+        return ", ".join(f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role}{' ⛔' if m.role.lower() in veto else ''}"
+                         f" ({m.label})" for m in self.team)
 
     def _render_list(self) -> None:
         d = self.current
@@ -167,26 +272,29 @@ class TeamView(TypedView):
             head, lst = self.query_one("#team-head", Static), self.query_one("#team-turns", OptionList)
         except Exception:
             return
-        team = ", ".join(f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role} ({m.label})" for m in self.team)
-        limits = f"≤{self.max_rounds} rounds · ≤${self.budget:.2f}"
+        limits = f"≤{self.max_cycles} cycles · ≤${self.budget:.2f}" + (f" · {len(self.waiting)} queued"
+                                                                       if self.waiting else "")
         if d is None:
-            head.update(Text(f"{team} · {limits} · ▶ starts a discussion", style="dim"))
+            head.update(Text(f"{self._clan_text()} · {limits} · ▶ reviews a document", style="dim"))
             lst.clear_options()
-            self._read("_No discussion yet._")
+            self._read("_No review yet._ Send a document down a road, or ▶ with a path or the text.")
             return
-        head.update(Text.assemble((f"{d.topic[:60]} · ", "bold"),
-                                  (f"round {d.round}/{self.max_rounds} · ${d.spent:.2f} · {OUTCOME.get(d.outcome, d.outcome)}"
-                                   f" · {team}", "dim")))
+        head.update(Text.assemble((f"{d.title[:60]} · ", "bold"),
+                                  (f"cycle {d.cycle}/{self.max_cycles} · ${d.spent:.2f} · "
+                                   f"{OUTCOME.get(d.outcome, d.outcome)} · {self._clan_text()} · {limits}", "dim")))
         keep = lst.highlighted
         lst.clear_options()
-        lst.add_option(Option(Text("📜 the artifact", style="bold"), id="artifact"))
+        lst.add_option(Option(Text("📜 the report", style="bold"), id="report"))
+        lst.add_option(Option(Text("📄 the document", style="bold"), id="doc"))
         for i, t in enumerate(d.turns):
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f"R{t.round} {KIND.get(t.kind, '·')} {t.role} ", style="bold")
-            if t.kind == "review":
-                row.append("agrees" if t.agree else "objects", style="green" if t.agree else "yellow")
-            else:
+            if t.kind == "answer":
+                row.append("💬 Operator ", style="bold")
                 row.append(t.text.splitlines()[0][:60] if t.text else "", style="dim")
+            else:
+                row.append(f"{'⚖ ' if t.kind == 'decide' else ''}{t.role} ", style="bold")
+                label, style = VERDICT.get(t.verdict, (t.verdict, "dim"))
+                row.append(label, style=style)
             lst.add_option(Option(row, id=f"t{i}"))
         lst.highlighted = keep if keep is not None and keep < lst.option_count else 0
         self._show(lst.get_option_at_index(lst.highlighted).id)
@@ -195,11 +303,15 @@ class TeamView(TypedView):
         d = self.current
         if d is None or oid is None:
             return
-        if oid == "artifact":
-            self._read(tm.artifact_markdown(d, self.team) if d.draft else "_no draft yet_")
+        if oid == "report":
+            self._read(tm.report_markdown(d, self.team))
+            return
+        if oid == "doc":
+            self._read((f"_`{d.doc_path}`_\n\n" if d.doc_path else "") + d.doc)
             return
         t = d.turns[int(oid[1:])]
-        self._read(f"**R{t.round} · {t.role} · {t.kind}**" + (f" · ${t.cost:.2f}" if t.cost else "") + f"\n\n{t.text}")
+        self._read(f"**{t.role} · {t.verdict or t.kind}**" + (f" · _{t.note}_" if t.note else "") +
+                   (f" · ${t.cost:.2f}" if t.cost else "") + f"\n\n{t.text}")
 
     def _read(self, md: str) -> None:
         try:
@@ -214,15 +326,23 @@ class TeamView(TypedView):
 
     # -- the hut ----------------------------------------------------------------------------------
 
+    def _tally(self, d: tm.Discussion) -> str:
+        r = d.reviews()
+        return " ".join(f"{mark}{n}" for mark, n in (("✓", sum(t.verdict == "approve" for t in r)),
+                                                     ("✎", sum(t.verdict == "changes" for t in r)),
+                                                     ("⛔", sum(t.verdict == "veto" for t in r))) if n)
+
     def mini_status(self) -> list[str]:
         d = self.current
-        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role} {m.label}" for m in self.team[:3]]
+        veto = self.veto
+        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role}{' ⛔' if m.role.lower() in veto else ''} {m.label}"
+                 for m in self.team[:3]]
         if len(self.team) > 3:
             lines.append(f"+{len(self.team) - 3} more")
         if d is not None and d.outcome == "asked":
-            lines.insert(0, f"🔥 {d.asking} asks")
+            lines.insert(0, "🔥 the steward asks")
         elif d is not None and d.outcome == "running":
-            lines.append(f"R{d.round}/{self.max_rounds} ${d.spent:.2f}")
+            lines.append(f"C{d.cycle}/{self.max_cycles} {self._tally(d)} ${d.spent:.2f}".strip())
         elif d is not None:
             lines.append(OUTCOME.get(d.outcome, d.outcome))
         if self.waiting:
@@ -231,17 +351,19 @@ class TeamView(TypedView):
 
     def hut_lines(self, widths: list[int]) -> list[str]:
         d = self.current
-        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role}: {m.label}" for m in self.team[:3]]
+        veto = self.veto
+        lines = [f"{m.tier_icon + ' ' if m.tier_icon else ''}{m.role}{' ⛔' if m.role.lower() in veto else ''}: {m.label}"
+                 for m in self.team[:3]]
         if len(self.team) > 3:
             lines.append(f"+{len(self.team) - 3} more")
         if d is None:
-            lines.append("no debate yet")
+            lines.append("no review yet")
         elif d.outcome == "asked":
-            lines.insert(0, f"🔥 {d.asking} asks")
+            lines.insert(0, "🔥 the steward asks")
         elif d.outcome == "running":
-            lines += [f"round: {d.round}/{self.max_rounds}", f"spent: ${d.spent:.2f}"]
+            lines += [f"cycle: {d.cycle}/{self.max_cycles}", f"reviews: {self._tally(d) or '…'}"]
         else:
-            lines += [f"outcome: {OUTCOME.get(d.outcome, d.outcome)}", f"rounds: {d.round}/{self.max_rounds}"]
+            lines += [f"last: {OUTCOME.get(d.outcome, d.outcome)}", f"cycle: {d.cycle}/{self.max_cycles}"]
         if self.waiting:
             lines.append(f"queued: {len(self.waiting)}")
         return lines
@@ -250,14 +372,22 @@ class TeamView(TypedView):
         if action_id == "team.start":
             d = self.current
             if d is not None and d.outcome == "asked":
-                self.app.push_screen(TextPrompt(f"🔥 {d.asking} asks", placeholder="your answer", help=d.question),
+                self.app.push_screen(TextPrompt("🔥 The steward asks", placeholder="your answer", help=d.question),
                                      self.reply)
             elif self._busy:
-                self.app.notify("a discussion is under way", title="⚔ Agent Team")
+                self.app.notify("a review is under way", title=f"{ICON} Clan Fire")
             else:
-                self.app.push_screen(TextPrompt("⚔ What should the team agree on?",
-                                                value=str(self.config.get("goal", ""))),
-                                     lambda topic: self.start(topic) if topic else None)
+                def go(answer: str | None) -> None:
+                    if not answer:
+                        return
+                    answer = answer.strip()
+                    if (self._get_repo_root() / answer).is_file():
+                        self.start("", "", answer)
+                    else:
+                        self.start(answer)
+
+                self.app.push_screen(TextPrompt(f"{ICON} What should the clan review?",
+                                                placeholder="a repo path, or paste the text"), go)
             return True
         if action_id == "team.add":
             def done(answer: str | None) -> None:
@@ -266,14 +396,17 @@ class TeamView(TypedView):
                 role, harness = (answer.split("\t") + [""])[:2]
                 member = tm.parse_member(f"{role.strip()}:{harness.strip() or 'claude'}")
                 if member is None:
-                    self.app.notify("a member is a role and claude or agy[:model]", title="⚔ Not added",
+                    self.app.notify("a member is a role and claude or agy[:model]", title=f"{ICON} Not added",
                                     severity="error")
                     return
                 current = [f"{m.role}:{m.label}" for m in self.team]
                 if self.save_config({"members": current + [f"{member.role}:{member.label}"]}):
+                    self.ensure_briefs()
+                    self.app.notify(f"its brief: {self._rel(self.role_file(member.role))}",
+                                    title=f"{ICON} {member.role} joined")
                     self._render_list()
 
-            self.app.push_screen(TextPrompt("⚔ Add an agent", placeholder="role, e.g. Security reviewer",
+            self.app.push_screen(TextPrompt(f"{ICON} Add a member of the clan", placeholder="role, e.g. Marketing",
                                             fields=(("claude · agy · agy:gemini-3.1-pro-high", "claude"),)), done)
             return True
         return False

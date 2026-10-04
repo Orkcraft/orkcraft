@@ -118,7 +118,7 @@ Roads and carts run between the huts.
 |---|---|
 | small, 10 wide | ⚙️ Mill (sails) · 🎯 Catapult (arm) · 📯 Horn (a horn and its sound) · 🕳️ Pit (5 wide, a pipe; its status stands under it) · 🗿 Totem |
 | 🗼 Watchtower (12 wide) | a roof over what is new per source: `gmail    3`, `slack  99+`, `jira   ERR`; more than four → `+2 more` |
-| halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🔥 Orc Council · ⚒️ Forge · 🗑️ Scroll Dump |
+| halls, 18 wide, 7 lines | 🌾 Task Fields · 🏕️ Barracks · 🪔 Clan Fire · ⚒️ Forge · 🗑️ Scroll Dump |
 | complexes, 26 wide, 9 lines | 🥁 War Drum · 🌲 File Forest · 📦 Loot Vault · 🪨 Tally Crag (and the 🏰 Town Hall) |
 | panorama, 60 wide | 🌊 Lake of Insight: two panes, the diff and what it is |
 
@@ -172,7 +172,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 
 ```
 1. INTAKE AND ROUTING      🕳️ Pit ─► ⚙️ Mill            🗼 Watchtower ─► 🗿 Totem      📯 Horn
-2. QUEUES AND WORK         🌾 Task Fields ─► 🏕️ Barracks / 🔥 Orc Council      🥁 War Drum
+2. QUEUES AND WORK         🌾 Task Fields ─► 🏕️ Barracks ⇄ 🪔 Clan Fire       🥁 War Drum
 3. STORAGE AND INSPECTION  🌲 File Forest   🗑️ Scroll Dump   🌊 Lake of Insight   ⚒️ Forge
 4. RESULTS AND EGRESS      📦 Loot Vault    🪨 Tally Crag    🎯 Catapult
 ```
@@ -186,7 +186,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e` | `tasks.created`, `tasks.status_changed` |
 | 🏕️ Barracks | Grunts | tasks, each on its own branch: a follow-up goes to the orc who did the earlier part, a new one to an idle or newly hired orc (provider and model by record); related work resumes the orc's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
-| 🔥 Orc Council | Chieftains | a question (▶ or a cart; carts that come mid-debate queue): members review the draft (`AGREE` / `OBJECT:`), the moderator revises, the last round decides; the operator's answers outrank the topic, the topic outranks `goal`; rounds and $ capped | `team.artifact_ready` |
+| 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review queue | `team.approved`, `team.rework`, `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event | `calendar.event_due`, `.day_schedule`, `.event_added/removed` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
 | 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has the Council spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
@@ -508,7 +508,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
   `model` wins and its tier is read from it. An ork shows its heaviest step's icon before its name
   (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
   default) or later in the ork's orders; the Recruiter proposes one per step. Barracks providers
-  and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
+  and Clan Fire members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
 - **Console of a selected building**: left to right the War Map (36 columns, each orkspace's biome as an icon after its name), the Info
   panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
   is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
