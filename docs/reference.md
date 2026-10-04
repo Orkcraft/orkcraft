@@ -254,8 +254,8 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   3. *A secret required* for `/slack`, `/jira`, `/figma`, `/confluence` (today: optional).
   4. *OAuth* for Gmail's API and Microsoft 365 (Outlook has no password IMAP; Workspaces often
      forbid app passwords) — with tokens refreshed and kept safe.
-  5. *The tunnel, automatic.* Start cloudflared with the tower, keep a named tunnel's stable address
-     and register it with Slack, Jira and Figma by their APIs — no address pasted by hand.
+  5. *Fully automatic.* The tower runs its own tunnel, registers its webhooks, logs in through the
+     browser and heals itself — the plan, in stages: [design/watchtower-automation.md](design/watchtower-automation.md).
   6. *Checked against the live services.* Proven on recorded answers only: Slack's `search.messages`
      for `<@id>`, Confluence's CQL `mention`, Jira's `search/jql` comments and its webhook signature,
      Figma's `FILE_COMMENT` fields, Slack's 2025 history limits for apps outside the Marketplace.
