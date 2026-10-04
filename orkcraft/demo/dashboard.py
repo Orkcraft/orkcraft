@@ -7,6 +7,10 @@ how to connect a mailbox; the sandbox has none), with a Daily Brief mill that ge
 digest, task moves and what is dropped in the Pit.
 F2 Agent Yard — The Forge, a Barracks whose foreman has already hired, an Orc Council with a
 finished debate, a Loot Vault with changes to review and a Tally Crag over a day of runs.
+F4 Library — three LLM wikis the librarian orcs keep (the code, the team, the design), seeded
+with pages: tasks from Task Fields pass through the Code Wiki on their way to a Barracks, so each
+arrives with the wiki's map; the Council spot-checks what the librarian wrote and its verdict
+lands in reviews.md. One code change is not taken in yet (● on the source).
 F3 Gates — The Pit feeds a Totem whose rules send a patch or a link to the Lake of Insight and a
 release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
@@ -161,7 +165,50 @@ GATES = {
     },
 }
 
-DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES]
+LIBRARY = {
+    "id": "library", "name": "Library", "icon": "📜", "biome": "forest", "git": {"enabled": False},
+    "segment": "Developers, managers, designers",
+    "story": "Three LLM wikis the orcs keep — the code, the team, the design — and tasks that pass through them",
+    "nodes": [],
+    "files": {
+        "LIBRARY_TASKS.md": "# Tasks\n\n## To Do\n- [ ] Show the price tag in the new accent colour\n"
+                            "- [ ] Add yearly billing\n\n## In Progress\n\n## Done\n",
+        "design/components.md": "# Components (exported from the design file)\n\n## PriceTag\nAmount and currency; "
+                                "variants: default, discounted (old price struck through), large.\n\n## CheckoutButton\n"
+                                "Primary action; disabled while the payment is pending.\n",
+        "design/tokens.md": "# Tokens\n\n- color.accent = #E4572E (was #3A7CA5)\n- color.text = #1B1B1B\n"
+                            "- space.m = 12px\n- radius.card = 8px\n",
+        "design/decisions.md": "# Decisions\n\n## Accent colour for prices (2026-09-28)\nPrices use color.accent: "
+                               "tested better than blue in the checkout study (n=12).\n",
+    },
+    "buildings": [
+        typed("lib_tasks", "fields", "Task Fields", "🌾", "Taskmaster", "what the team asks for", "tiles",
+              path="LIBRARY_TASKS.md"),
+        typed("code_wiki", "scrolls", "Code Wiki", "📜", "Scroll Scrapper", "the code: modules, flows, decisions",
+              "dome", topic="codebase", sources=["code:src", "docs"], council="lib_council"),
+        typed("team_wiki", "scrolls", "Team Wiki", "📜", "Scroll Scrapper", "people, process, product", "dome",
+              topic="team", sources=["docs/handbook", "docs/notes"]),
+        typed("design_wiki", "scrolls", "Design Wiki", "📜", "Scroll Scrapper", "components, screens, decisions, tokens",
+              "dome", topic="design", sources=["design"]),
+        typed("lib_camp", "barracks", "Barracks", "🏕️", "Grunts", "does the tasks, wiki in hand", "tent",
+              max_orcs=2, providers=["claude"], budget_usd=3.0),
+        typed("lib_council", "council", "Orc Council", "🔥", "Chieftains", "spot-checks fresh wiki pages", "pagoda",
+              goal="Spot-check the wiki", members=["Reviewer:claude", "Critic:agy"], max_rounds=2, budget_usd=1.0),
+    ],
+    "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
+               (0.0, 0.54, 0.3, 0.46), (0.33, 0.54, 0.3, 0.46), (0.66, 0.54, 0.34, 0.46)],
+    "roads": [
+        ("code_wiki", "lib_tasks", "tasks.created", "on_task", None, None),
+        ("lib_camp", "code_wiki", "knowledge.chunks", "with_the_map", None, None),
+    ],
+    "payloads": {
+        ("lib_tasks", "tasks.created"): ("node", "add-yearly-billing", "Add yearly billing"),
+        ("code_wiki", "knowledge.chunks"): ("text", "**Project wiki:** `llm-wiki/codebase/`\n\n**Task:** Add yearly "
+                                                    "billing\n\n- [Modules](pages/modules/index.md)", "Add yearly billing"),
+    },
+}
+
+DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY]
 
 
 # -- the repository and the seeded state ----------------------------------------------------------------
@@ -177,6 +224,7 @@ def prepare(root: Path) -> None:
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "demo@orkcraft.local")
     _git(root, "config", "user.name", "Orkcraft Demo")
+    _seed_wikis(root)
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "demo: the town is founded")
     for branch, path, lines, msg in (("feature/login", "src/login.py", 42, "login form with validation"),
@@ -193,6 +241,110 @@ def prepare(root: Path) -> None:
     _seed_council(root)
     _seed_ledger(root)
     _seed_pipeline(root)
+
+
+WIKI_PAGES = {
+    "codebase": {
+        "index.md": "# Index — codebase\n\nThe map of this wiki: read it first, then a section's index, then the pages.\n\n"
+                    "- [Architecture](pages/architecture/index.md) — the app in one picture\n"
+                    "- [Modules](pages/modules/index.md) — app, billing\n"
+                    "- [Flows](pages/flows/index.md) — checkout\n"
+                    "- [Decisions](pages/decisions/index.md) — why prices live in billing\n"
+                    "- [How-to](pages/how-to/index.md) — release\n",
+        "pages/modules/index.md": "# Modules\n\n- [app](app.md) — the entry point\n- [billing](billing.md) — prices and plans\n",
+        "pages/modules/app.md": "---\nkind: modules\naliases: [main, entry point]\nsources: [../../src/app.py]\n"
+                                "updated: 2026-10-01\nowner: orc\n---\n# app\n\nThe entry point: `main()` prints the "
+                                "greeting. Everything else is imported from here.\n",
+        "pages/modules/billing.md": "---\nkind: modules\naliases: [pricing, PRICE, plans]\nsources: [../../src/billing.py]\n"
+                                    "updated: 2026-10-01\nowner: orc\n---\n# billing\n\nOne monthly plan; `PRICE` is the "
+                                    "amount in euros (9). See [the decision](../decisions/prices-in-billing.md).\n",
+        "pages/flows/index.md": "# Flows\n\n- [checkout](checkout.md) — from the price tag to a paid plan\n",
+        "pages/flows/checkout.md": "---\nkind: flows\naliases: [payment, buy]\nsources: [../../src/billing.py]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Checkout\n\n1. The PriceTag shows "
+                                   "[billing](../modules/billing.md)'s `PRICE`.\n2. The CheckoutButton starts the payment.\n",
+        "pages/decisions/index.md": "# Decisions\n\n- [prices in billing](prices-in-billing.md) — one place for every price\n",
+        "pages/decisions/prices-in-billing.md": "---\nkind: decisions\naliases: [ADR-1]\nsources: [../../docs/handbook/releases.md]\n"
+                                                "updated: 2026-10-01\nowner: human\n---\n# Prices live in billing\n\n"
+                                                "Every price is read from `billing.py`; nothing else hard-codes an amount.\n",
+        "pages/how-to/index.md": "# How-to\n\n- [release](release.md) — tag, changelog, announce\n",
+        "pages/how-to/release.md": "---\nkind: how-to\naliases: [ship, publish]\nsources: [../../docs/handbook/releases.md]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Release\n\nSemVer; tag, write the "
+                                   "changelog, announce.\n",
+        "log.md": "# Log\n\nNewest first.\n\n## 2026-10-01\nTook in src/app.py, src/billing.py, docs/handbook/*: "
+                  "added modules/app, modules/billing, flows/checkout, how-to/release.\n",
+        "reviews.md": "# Reviews\n\nThe Council's spot-checks, newest first.\n\n## 2026-10-01 — spot-check\n\n"
+                      "billing.md: OK. checkout.md: name the PriceTag variant the checkout uses.\n",
+        "lint.md": "# Lint 2026-10-01\n\n- pages/modules/app.md: no page links to it — link it from architecture\n",
+    },
+    "team": {
+        "index.md": "# Index — team\n\n- [Process](pages/process/index.md) — how we release\n"
+                    "- [Onboarding](pages/onboarding/index.md) — your first day\n- [Product](pages/product/index.md) — ideas\n",
+        "pages/process/index.md": "# Process\n\n- [releases](releases.md) — versioning and the checklist\n",
+        "pages/process/releases.md": "---\nkind: process\naliases: [shipping]\nsources: [../../docs/handbook/releases.md]\n"
+                                     "updated: 2026-10-01\nowner: orc\n---\n# Releases\n\nSemVer. Checklist: tag, "
+                                     "changelog, announce.\n",
+        "pages/onboarding/index.md": "# Onboarding\n\n- [first day](first-day.md) — read the town map\n",
+        "pages/onboarding/first-day.md": "---\nkind: onboarding\nsources: [../../docs/handbook/onboarding.md]\n"
+                                         "updated: 2026-10-01\nowner: human\n---\n# Your first day\n\nRead the town "
+                                         "map, then pair with someone on a real task. (Written by people: the orc only "
+                                         "suggests changes here.)\n",
+        "pages/product/index.md": "# Product\n\n- [ideas](ideas.md) — a calendar roof, mail digests\n",
+        "pages/product/ideas.md": "---\nkind: product\nsources: [../../docs/notes/ideas.md]\nupdated: 2026-10-01\n"
+                                  "owner: orc\n---\n# Ideas\n\nA calendar roof; mail digests at 05:00.\n",
+        "proposals.md": "# Proposals\n\n- pages/onboarding/first-day.md: mention the tools list (orkcraft, git) "
+                        "from docs/handbook/onboarding.md\n",
+    },
+    "design": {
+        "index.md": "# Index — design\n\n- [Components](pages/components/index.md) — PriceTag, CheckoutButton\n"
+                    "- [Screens](pages/screens/index.md) — checkout\n- [Decisions](pages/decisions/index.md) — accent "
+                    "for prices\n- [Tokens](pages/tokens/index.md) — colours, spacing\n",
+        "pages/components/index.md": "# Components\n\n- [PriceTag](price-tag.md) — amount + currency\n"
+                                     "- [CheckoutButton](checkout-button.md) — the primary action\n",
+        "pages/components/price-tag.md": "---\nkind: components\naliases: [PriceTag, price, formatPrice]\n"
+                                         "sources: [../../design/components.md]\nupdated: 2026-10-01\nowner: orc\n---\n"
+                                         "# PriceTag\n\nAmount and currency in `color.accent`. Variants: default, "
+                                         "discounted, large. Used on [checkout](../screens/checkout.md).\n",
+        "pages/components/checkout-button.md": "---\nkind: components\naliases: [CheckoutButton, pay button]\n"
+                                               "sources: [../../design/components.md]\nupdated: 2026-10-01\nowner: orc\n"
+                                               "---\n# CheckoutButton\n\nPrimary; disabled while the payment is pending.\n",
+        "pages/screens/index.md": "# Screens\n\n- [checkout](checkout.md) — PriceTag + CheckoutButton\n",
+        "pages/screens/checkout.md": "---\nkind: screens\naliases: [payment screen]\nsources: [../../design/components.md]\n"
+                                     "updated: 2026-10-01\nowner: orc\n---\n# Checkout\n\nThe plan, its "
+                                     "[PriceTag](../components/price-tag.md) and the [CheckoutButton](../components/checkout-button.md).\n",
+        "pages/decisions/index.md": "# Decisions\n\n- [accent for prices](accent-for-prices.md) — orange beat blue\n",
+        "pages/decisions/accent-for-prices.md": "---\nkind: decisions\nsources: [../../design/decisions.md]\n"
+                                                "updated: 2026-10-01\nowner: orc\n---\n# Accent colour for prices\n\n"
+                                                "Prices use `color.accent` (#E4572E): it tested better than blue (n=12).\n",
+        "pages/tokens/index.md": "# Tokens\n\n- [colours](colors.md) — accent, text\n- [spacing](spacing.md) — m, radius\n",
+        "pages/tokens/colors.md": "---\nkind: tokens\naliases: [color.accent, color.text, palette]\n"
+                                  "sources: [../../design/tokens.md]\nupdated: 2026-10-01\nowner: orc\n---\n# Colours\n\n"
+                                  "| token | value | role |\n|---|---|---|\n| color.accent | #E4572E | prices, highlights |\n"
+                                  "| color.text | #1B1B1B | body text |\n",
+        "pages/tokens/spacing.md": "---\nkind: tokens\naliases: [space.m, radius.card]\nsources: [../../design/tokens.md]\n"
+                                   "updated: 2026-10-01\nowner: orc\n---\n# Spacing\n\nspace.m = 12px; radius.card = 8px.\n",
+    },
+}
+
+
+def _seed_wikis(root: Path) -> None:
+    """The three wikis of the Library, as their librarians would have left them: pages, maps, a log,
+    reviews and proposals, and a manifest of what each has taken in (before the demo's last changes)."""
+    from orkcraft.realm import wiki
+    from orkcraft.sources import lore
+    for spec in LIBRARY["buildings"]:
+        if spec["type"] != "scrolls":
+            continue
+        cfg = spec["config"]
+        topic = cfg["topic"]
+        wroot = wiki.root_of(root, None, topic)
+        wiki.scaffold(wroot, topic)
+        for rel, text in WIKI_PAGES[topic].items():
+            (wroot / rel).parent.mkdir(parents=True, exist_ok=True)
+            (wroot / rel).write_text(text, encoding="utf-8")
+        lib = lore.Library(lore.from_config(cfg, root))
+        lib.scan()
+        prints = wiki.Fingerprints(root)
+        wiki.save_manifest(wroot, {n.path: prints.of(n) for n in lib.notes()})
 
 
 WORD_COUNT = """import json, sys

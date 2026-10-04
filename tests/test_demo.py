@@ -136,9 +136,9 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
 
     root = demo.build(tmp_path / "dash", set_name="dashboard")
     scroll, problems = ts.load(root / ".orkcraft.json", {})
-    assert problems == [] and [o.name for o in scroll.orkspaces] == ["My Day", "Agent Yard", "Gates"]
+    assert problems == [] and [o.name for o in scroll.orkspaces] == ["My Day", "Agent Yard", "Gates", "Library"]
     specs, spec_problems = masonry.load_specs(root)
-    assert spec_problems == [] and len(specs) == 18 and all(s.get("type") for s in specs)
+    assert spec_problems == [] and len(specs) == 24 and all(s.get("type") for s in specs)
     from orkcraft.realm import catalog
     assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom"}   # the 16 camp buildings and a Workshop (T1108)
     branches = subprocess.run(["git", "branch", "--format=%(refname:short)"], cwd=root, capture_output=True,
@@ -186,3 +186,41 @@ def test_dashboard_seeds_the_t1108_pipeline(tmp_path):
     assert feedback.incidents(root)[0].blamed == {"days": 1.0} and feedback.scores(root)["counter"]["likes"] == 1
     assert optimize.pending(root)[0].building == "camp"
     assert [i.applicable for i in weekly.latest(root).items] == [True, True, False]
+
+
+@pytest.mark.asyncio
+async def test_the_library_scene(tmp_path: Path, monkeypatch):
+    """F4: three seeded wikis, one code change not taken in yet, tasks passing through the Code Wiki."""
+    from orkcraft.app import OrkcraftApp
+    from orkcraft.realm import jobs, pipes, wiki
+    from orkcraft.screens.typed.knowledge_view import KnowledgeView
+
+    root = demo.build(tmp_path / "dash", set_name="dashboard")
+    for topic in ("codebase", "team", "design"):
+        assert (root / "llm-wiki" / topic / "WIKI.md").is_file()
+    calls = []
+    monkeypatch.setattr(jobs, "run_work", lambda *a, **k: calls.append(a) or ("x", 1.0, None, ""))
+    app = OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True)
+    async with app.run_test(size=(200, 52)) as pilot:
+        await pilot.press("f4")
+        for _ in range(10):
+            await pilot.pause(0.05)
+        code = app.desktop.get_window("code_wiki").query_one(KnowledgeView)
+        team = app.desktop.get_window("team_wiki").query_one(KnowledgeView)
+        design = app.desktop.get_window("design_wiki").query_one(KnowledgeView)
+        assert code.pending.changed == ["src/billing.py"] and code.pending.new == ["docs/release-notes.md"]
+        assert not team.pending and not design.pending and design.status() == "FRESH"
+        assert wiki.page_count(code.pages) == 5 and code.manual == {"pages/decisions/prices-in-billing.md"}
+        assert team.manual == {"pages/onboarding/first-day.md"}
+        assert code.hut_lines([16])[0] == "codebase: 5 pages" and "lint: 1" in code.hut_lines([16])
+        sent = []
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
+        app.deliver_payload("code_wiki", pipes.Payload(pipes.TEXT, "Add yearly billing", "lib_tasks", "tasks.created",
+                                                       "Add yearly billing"), "Add yearly billing", "Add yearly billing")
+        assert sent[-1].mode == "knowledge.chunks" and "pages/modules/index.md" in sent[-1].value
+        assert code.ingest() and code.running == "ingest"                 # simulated: no model
+        for _ in range(60):
+            await pilot.pause(0.05)
+            if not code.running:
+                break
+        assert calls == [] and not code.pending

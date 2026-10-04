@@ -38,6 +38,7 @@ READY_SCORE = 0.8               # replay agreement needed for a demotion to be "
 MIN_EXAMPLES = 5                # recorded agent runs before a demotion is considered
 REPEAT_SIMILARITY = 0.7
 SPEND_SHARE = 0.25              # of the 🪙 session limit, in the window
+WIKI_READS = 3                  # an agent's own trips into a wiki before a road to it is proposed
 
 
 # -- schedule ------------------------------------------------------------------------------------
@@ -116,6 +117,7 @@ class Metrics:
     carts_out: int = 0
     examples: dict[str, int] = field(default_factory=dict)           # agent orc id → recorded runs
     similarity: dict[str, float] = field(default_factory=dict)       # agent orc id → output likeness
+    wiki_reads: dict[str, int] = field(default_factory=dict)         # wiki building id → its agents' own trips there
 
     @property
     def total_spend(self) -> float:
@@ -199,6 +201,7 @@ def collect(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: 
             m.carts_in[cart.road_id][cart.status] += 1
         elif cart.source == building_id:
             m.carts_out += 1
+    m.wiki_reads = wiki_trips(repo_root, building_id, sessions, since)
     for orc in b.garrison.handlers:
         if orc.uses_model:
             ex = roads.read_examples(repo_root, building_id, orc.id)
@@ -208,9 +211,45 @@ def collect(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: 
     return m
 
 
+def wikis(repo_root: Path) -> dict[str, str]:
+    """The project's LLM wikis: Scroll Dump building id → its wiki's folder (repo-relative)."""
+    from orkcraft.realm import catalog, masonry, wiki
+    try:
+        specs, _ = masonry.load_specs(repo_root)
+    except OSError:
+        return {}
+    out = {}
+    for spec in specs:
+        if catalog.migrate(spec).get("type") == "scrolls":
+            cfg = spec.get("config") or {}
+            folder = str(cfg.get("wiki") or "").strip() or wiki.default_dir(wiki.topic_of(cfg))
+            out[str(spec.get("id"))] = folder.strip("/")
+    return out
+
+
+def wiki_trips(repo_root: Path, building_id: str, sessions: list, since: dt.datetime) -> dict[str, int]:
+    """How often the building's agents went into a wiki by themselves (a tool call naming its folder)."""
+    folders = {bid: f for bid, f in wikis(repo_root).items() if bid != building_id}
+    if not folders:
+        return {}
+    from orkcraft.sources.transcripts import read_run
+    trips: Counter = Counter()
+    for s in sessions:
+        if not any(str(o).startswith(f"{building_id}/") for o in getattr(s, "orcs", set())):
+            continue
+        if not s.transcript or (s.last is not None and s.last.replace(tzinfo=None) < since):
+            continue
+        for step in read_run(s.transcript).steps:
+            if step.kind == "tool":
+                for bid, folder in folders.items():
+                    if f"{folder}/" in step.detail or f"{folder}/" in step.title:
+                        trips[bid] += 1
+    return dict(trips)
+
+
 @dataclass
 class Finding:
-    kind: str            # handler_errors | jam | repeats | noisy_filter | spend | unused
+    kind: str            # handler_errors | jam | repeats | noisy_filter | spend | unused | wiki_bypass
     summary: str
     orc_id: str = ""
     road_id: str = ""
@@ -248,7 +287,12 @@ def findings(m: Metrics, scroll: ts.TownScroll) -> list[Finding]:
         out.append(Finding("spend", f"{b.title} spent ${m.total_spend:.2f} in {m.days} days "
                                     f"({m.total_spend / limit:.0%} of the ${limit:.0f} limit)",
                            evidence={"by_orc": m.spend_usd}))
-    if not b.demolished and not m.events and not m.carts_in and not m.carts_out and not m.runs:
+    fed = {r.source for r in b.roads}
+    for wiki_id, n in sorted(m.wiki_reads.items()):
+        if n >= WIKI_READS and wiki_id not in fed:
+            out.append(Finding("wiki_bypass", f"{b.title}'s agents went into the {wiki_id} wiki by themselves {n} "
+                                              f"times: send their tasks through it", evidence={"wiki": wiki_id, "trips": n}))
+    if not b.demolished and not m.events and not m.carts_in and not m.carts_out and not m.runs and not m.wiki_reads:
         out.append(Finding("unused", f"{b.title}: no events, carts or runs in {m.days} days"))
     return out
 
@@ -373,7 +417,10 @@ def apply_proposal(scroll: ts.TownScroll, building_id: str, p: Proposal | dict) 
         ts.set_road_filter(scroll, building_id, str(d.get("road")), dict(d.get("filter") or {}))
         return f"road {d['road']}: filter {d.get('filter')}"
     if p.type == "new_road":
-        r = ts.subscribe(scroll, building_id, str(d.get("from")), str(d.get("event")), d.get("filter") or None,
+        target = str(d.get("to") or building_id)
+        if scroll.building(target) is None:
+            raise ValueError(f"no building {target!r}")
+        r = ts.subscribe(scroll, target, str(d.get("from")), str(d.get("event")), d.get("filter") or None,
                          handler=d.get("handler") or None)
         return f"new road {r.id}"
     if p.type == "note":
@@ -443,6 +490,10 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
     b = scroll.building(building_id)
     if b is None or not report.findings:
         return report
+    known = wiki_loop(scroll, b, [f for f in report.findings if f.kind == "wiki_bypass"])
+    if known and all(f.kind == "wiki_bypass" for f in report.findings):
+        report.proposals = known                          # free: no model needed to say this
+        return report
     if not budget_ok:
         report.error = "🪙 budget exhausted — findings only"
         return report
@@ -464,11 +515,43 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
             report.cost_usd = (report.cost_usd or 0.0) + cost
         proposals, errors = _check(builders.extract_json(text), repo_root, scroll, building_id)
         if proposals:
-            report.proposals, report.errors = proposals, []
+            report.proposals, report.errors = known + proposals, []
             return report
         report.errors = errors or ["no JSON object in the answer"]
         feedback = "\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix every problem:\n" + "\n".join(f"- {e}" for e in report.errors[:12])
     return report
+
+
+def wiki_loop(scroll: ts.TownScroll, b: ts.BuildingSpec, found: list[Finding]) -> list[Proposal]:
+    """For each wiki the agents reach by themselves: the wiki's map to the building, and the
+    building's own sources to the wiki — its tasks then pass through the wiki on their way in."""
+    out: list[Proposal] = []
+    trial = copy.deepcopy(scroll)
+
+    def fits(p: Proposal) -> bool:                    # no loop of roads, no unknown building
+        try:
+            apply_proposal(trial, b.id, p)
+            return True
+        except (ValueError, TypeError, KeyError):
+            return False
+
+    for f in found:
+        wiki_id = str(f.evidence.get("wiki"))
+        if scroll.building(wiki_id) is None:
+            continue
+        first = Proposal("new_road", f"{f.summary}; the wiki's map then comes with every task",
+                         {"from": wiki_id, "event": "knowledge.chunks"})
+        if not fits(first):
+            continue
+        out.append(first)
+        for r in b.roads:
+            if r.source != wiki_id and not any(x.source == r.source and x.event == r.event
+                                               for x in scroll.building(wiki_id).roads):
+                p = Proposal("new_road", f"route {r.source} {r.event} through the {wiki_id} wiki "
+                                         f"(then retire road {r.id})", {"to": wiki_id, "from": r.source, "event": r.event})
+                if fits(p):
+                    out.append(p)
+    return out
 
 
 def save_report(repo_root: Path, report: StewardReport) -> Path:
