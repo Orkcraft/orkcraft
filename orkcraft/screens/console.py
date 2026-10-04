@@ -47,7 +47,7 @@ NEUTRAL_ACTIONS = [
 ]
 
 BUILDING_ACTIONS = [
-    ("R", "[R] ➕ Recruit Orc"),
+    ("R", "[R] ➕ Recruit Ork"),
     ("L", "[L] 📜 Building Chronicles"),
     ("Y", "[Y] 🛤 Listen to Another Window (Road)"),
     ("U", "[U] 🚧 Remove the Incoming Road"),
@@ -240,7 +240,7 @@ def building_runs(app, building_id: str, roster: Roster) -> Text:
     total = unit_info.Spend(free=True)
     for o in orcs:
         total = total.add(_spend_of(app, o))
-    parts = [total.text() if orcs else "🪙 nothing spent — no orcs"]
+    parts = [total.text() if orcs else "🪙 nothing spent — no orks"]
     repo = getattr(app, "repo_root", None)
     if repo is not None:                     # the steward's journal
         from orkcraft.realm import feedback
@@ -531,7 +531,7 @@ class ClanRoster(Vertical):
             b_id = focus_state.building_id or (orc.building if orc else "") or ""
             if orc is not None and orc.category != RESIDENT:
                 members = [o for o in roster.orcs if o.category == orc.category]
-                label = {WORKER: "⚔️ Warband", COUNCIL: "🏛️ Council", BUILDER: "🔨 Builders"}.get(orc.category, "Orcs")
+                label = {WORKER: "⚔️ Warband", COUNCIL: "🏛️ Council", BUILDER: "🔨 Builders"}.get(orc.category, "Orks")
             else:
                 members = roster.garrison(b_id)
                 b = self.app.building(b_id)
@@ -717,7 +717,7 @@ class UnitInfo(Vertical):
                 self.query_one("#io-runs", Static).update(orc_runs(self.app, orc))
                 self.query_one("#io-dismiss").display = not orc.lead       # a steward stays
             else:
-                body.update(orc_info(self.app, orc) if orc else Text("This orc is gone.", style="dim"))
+                body.update(orc_info(self.app, orc) if orc else Text("This ork is gone.", style="dim"))
         elif focus_state.mode == "building":
             bid = focus_state.building_id or ""
             b = self.app.building(bid)

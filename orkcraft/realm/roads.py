@@ -186,7 +186,7 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
                for k, v in rec.items()}
         roads.append(rec)
     parts = [
-        f"You are {orc.name}, a handler orc of the {building.title} building in Orkcraft, a terminal "
+        f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
         f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
         f"event with the latest payload of each of your incoming roads.",
         f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",

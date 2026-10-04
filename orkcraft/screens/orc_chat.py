@@ -107,7 +107,7 @@ class OrcChat(Vertical):
         line = self.query_one("#orc-chat-input", Input)
         if orc is None:
             title.update("💬 —")
-            log.update(Text("This orc is gone.", style="dim"))
+            log.update(Text("This ork is gone.", style="dim"))
             return
         term = self._terminal(orc)
         if term is not None:

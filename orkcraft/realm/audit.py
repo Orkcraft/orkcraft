@@ -87,7 +87,7 @@ def _security(repo_root: Path, specs: dict[str, dict]) -> list[Finding]:
             out.append(Finding("warder", f"{spec.get('title', bid)}: sends to {str(cfg['url'])[:40]} without a schema "
                                          "check — set schema", bid, "warn"))
         if kind == "barracks" and cfg.get("worktrees") is False:
-            out.append(Finding("warder", f"{spec.get('title', bid)}: its orcs share the working tree and may "
+            out.append(Finding("warder", f"{spec.get('title', bid)}: its orks share the working tree and may "
                                          "overwrite each other — turn worktrees on", bid, "warn"))
         for key, value in cfg.items():
             vals = value if isinstance(value, list) else [value]

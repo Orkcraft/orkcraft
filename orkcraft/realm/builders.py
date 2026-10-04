@@ -41,7 +41,7 @@ OPERATOR REQUEST:
 {feedback}
 Answer with ONE JSON object and nothing else:
 {{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, max 40 chars>", "icon": "<one emoji>",
-  "summary": "<one sentence>", "orc": {{"name": "<a fitting orc name>", "role": "<what it watches>"}},
+  "summary": "<one sentence>", "orc": {{"name": "<a fitting ork name>", "role": "<what it watches>"}},
   "data": [{{"name": "<snake_case>", "source": "<a catalog source>", "params": {{...catalog params only...}}}}]}}
 Use 1-6 data entries. Paths are relative to the repository root; never absolute, never outside it."""
 
@@ -193,7 +193,7 @@ BUILDING TYPES (choose only from these; every event, quick action and config key
 {catalog}
 
 Prefill it so the operator only has to confirm: a plain functional title (no fantasy), one emoji icon,
-a resident orc (a fitting orc name and what it watches), the size (XS S M L — the type's default unless
+a resident ork (a fitting ork name and what it watches), the size (XS S M L — the type's default unless
 the request says otherwise), the events this building should send (the ones the request needs; all when
 unsure), up to two quick actions that matter most on the map, and the type's config filled from the
 request (leave out what you cannot know; never invent passwords or tokens — config only names the

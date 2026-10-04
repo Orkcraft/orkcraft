@@ -2,9 +2,9 @@
 
 _The detailed reference. Start with the [README](../README.md). Old `MGTUI_*` / `ORCRAFT_*` environment variables (from the project's earlier names) still work as fallbacks for `ORKCRAFT_*`._
 
-A terminal harness and orchestrator for multi-agent work in any git project, in an
+A terminal harness and orkestrator for multi-agent work in any git project, in an
 RTS (Warcraft) metaphor, built to cut the operator's cognitive load: windows are
-**buildings** with a resident **orc**, agents are the **clan**, the HUD shows
+**buildings** with a resident **ork**, agents are the **clan**, the HUD shows
 resources, and agents never pop dialogs — they raise a 🔥 and wait for orders.
 
 ```
@@ -28,7 +28,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 ## Orkcraft core
 
 - **HUD**: logo, 🛑 Halt All state, ❓ count, 🪙 Gold (`$— / $20.00` budget limit), 🪵 Lumber
-  (`— / 128k` budget limit), 🥩 Supply (running orcs / 5). The menu and Halt All share one segment at the left,
+  (`— / 128k` budget limit), 🥩 Supply (running orks / 5). The menu and Halt All share one segment at the left,
   `[ ⚙️ Menu (F10) · 🛑 READY ]`: a click opens the system menu (Halt All is its item `[1]`),
   and it shows the halt state (`HALTED — n stopped`).
 - **🛑 Halt All** — `space` (in neutral state when the focused widget does not use space) or
@@ -38,12 +38,12 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 - **The Console** (lower RTS console 33/33/33):
   - **War Map** (left): camp / orkspaces (F1–F8, biomes, alerts marker `❓`), creation hint `[N]`.
   - **Clan Roster** (centre): accordion roster in Neutral (`space` folds/unfolds, garrison members listed under their building with lead marked ★), building garrison in Building
-    (numbered `[1]..[9]`, keys 1..9 select), orc card in Unit (name ★ if lead, status, orders, trigger, deployment state, prompt question, terminal steps).
+    (numbered `[1]..[9]`, keys 1..9 select), ork card in Unit (name ★ if lead, status, orders, trigger, deployment state, prompt question, terminal steps).
   - **Command Card** (right): context-sensitive capital letter actions per focus state; clickable rows.
 - **Focus State Machine**:
   - **Neutral**: default base state (`Esc` or click on empty canvas/terrain); Command Card: `B` Build, `P` Presets, `S` Summon, `T` Terrain.
-  - **Building**: activated window or number key `1`–`9`; Command Card: `R` Recruit Orc, `L` Chronicles, `Y` 🛤 Listen to another window (road), `U` 🚧 Remove the incoming road, `P` Pin/Unpin, `M` Window Mode, `X` Demolish.
-  - **Unit**: orc selected in roster; Command Card (residents): `C` Deploy / Open Session, `T` Orders & Trigger, `D` Dismiss, `H` Halt, `L` Unit Chronicles (+ `Enter` ❓ Resolve Alert); Command Card (workers/council/builders): `C` Chat/Orders, `L` Chronicles, `T` Triggers, `H` Halt.
+  - **Building**: activated window or number key `1`–`9`; Command Card: `R` Recruit Ork, `L` Chronicles, `Y` 🛤 Listen to another window (road), `U` 🚧 Remove the incoming road, `P` Pin/Unpin, `M` Window Mode, `X` Demolish.
+  - **Unit**: ork selected in roster; Command Card (residents): `C` Deploy / Open Session, `T` Orders & Trigger, `D` Dismiss, `H` Halt, `L` Unit Chronicles (+ `Enter` ❓ Resolve Alert); Command Card (workers/council/builders): `C` Chat/Orders, `L` Chronicles, `T` Triggers, `H` Halt.
 - **Chronicles 📜 [L]**:
   - **Building Chronicles** (`L` in Building state): append-only audit log of building mutations (`.orkcraft/history/buildings/<id>.events.jsonl`), newest first with timestamp, icon, sentence and author; date separators on day changes; `Esc` / `q` closes.
   - **Unit Chronicles** (`L` in Unit state): runs on the left (40%, numbered `#001`..`#NNN` chronologically, listed newest first with metrics: duration, 🪵 Lumber context tokens, 🪙 Gold, ✅/❓/🛑 outcome), ReAct protocol on the right (60%, list of step titles; `Enter` expands detail below, `D` sends diffs to Scrying Spire 🔮, `R` resumes the run in War Tent 💬, `Esc` / `q` closes).
@@ -54,7 +54,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   subscribes **this** building to another one: possible sources highlight, press the source's number,
   then pick the event and the handler (or plain). `U` removes the building's only incoming road.
   `preferences.roads = "off"` hides the gap roads (gates stay). Plain roads still show on the source frame as `[ 🚩 ──► <target> ]` (selection pipe) or `[ 🚩 ⏹──► <target> ]` (task-completed pipe), positioned after the title and before the garrison badge. On selection change, selected nodes or Loot files are routed to the receiver (e.g. Scrying Spire 🔮); on task completed, finished deployment sessions deliver reports to Scrying Spire or Loot Chest 📦 (`./loot/pipes/`).
-- **Passive alerts ❓ & Awaiting Orders (`!` / HUD click)**: a session showing a numbered menu or confirmation prompt (Claude's / agy's permission and question prompts) and tickets with open `## Clarification Needed` for the human turn their orc ❓ and increment the HUD `[ ❓ N awaiting orders ]` badge. Nothing pops up automatically:
+- **Passive alerts ❓ & Awaiting Orders (`!` / HUD click)**: a session showing a numbered menu or confirmation prompt (Claude's / agy's permission and question prompts) and tickets with open `## Clarification Needed` for the human turn their ork ❓ and increment the HUD `[ ❓ N awaiting orders ]` badge. Nothing pops up automatically:
   - Clicking `[ ❓ N awaiting orders ]` in the HUD or pressing `!` opens the **Awaiting Orders** modal (`AwaitingOrdersModal`).
   - Displays all pending questions to the user in a list (`#orders-list`), showing the origin unit/ticket, the full question, and context lines.
   - Numbered keys `1`..`9` or `y`/`n` answer the currently selected question immediately; action buttons also support mouse clicks.
@@ -67,7 +67,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 - **Unit Frame**: every building shows its garrison on the top-right border
   `[ 🧌 Lead+N 🔨 ❓ ]` (lead name, `+N` for other members, lead's trigger icon, status: ❓ if any alert, ⚙ if any busy, else lead status); a click on it — or the building's number key pressed again, or `T` on the lead —
   opens the unit's orders: context and trigger (🔨 On Demand, 🕒 Cron, ⚡ Webhook),
-  kept in the Town Scroll. Orcs act on them from stage 5.
+  kept in the Town Scroll. Orks act on them from stage 5.
 - **📌 Pin** (`alt+b` / Command Card `P` in Building mode): the window keeps its slot — no drag,
   no keyboard moves, no tiling, kept through layout resets and restarts.
 - **Move / resize** without window mode: `alt+h/j/k/l` or `alt+arrows` move,
@@ -108,7 +108,7 @@ Every other building is built from the catalog of typed buildings (below) or by 
 
 Every building of the canvas is a **hut** on the map, drawn as its own silhouette: a mill with
 sails, a watchtower under a roof, a forest of trees on a long hall, a pit with its pipe. Above it
-stand two or three lines — its number, icon and the resident orc's state (🔥 when it waits for
+stand two or three lines — its number, icon and the resident ork's state (🔥 when it waits for
 orders, and the whole frame turns orange), then its name. The silhouette is the building: a frame
 with live status lines in it (the big ones start with a fixed heading of what the building is for —
 `WORKER POOL`, `MERGE ENGINE`, `TELEMETRY & TELEGRAPHS`…). Under it, up to two quick-action buttons.
@@ -133,22 +133,22 @@ spread over the width — and keep the spot you drag them to.
 - Drag a hut to move it; its spot is kept in the Town Scroll (`buildings[].hut`).
 - **Calm console**: in the town the console floats over the map's bottom edge instead
   of taking rows from it. With nothing selected only the War Map shows (bottom left — a 🔥 on an
-  orkspace tells you an orc there waits for orders) and the **🏰 Town Hall** (bottom right, on
+  orkspace tells you an ork there waits for orders) and the **🏰 Town Hall** (bottom right, on
   every canvas, never moved or demolished) with its two buttons: **📜 Preset** (pick what you need,
-  name it, place it) and **🛠 New** (build from scratch with the Builder); `B` opens the whole build menu. Select a building, an orc or a road and the
+  name it, place it) and **🛠 New** (build from scratch with the Builder); `B` opens the whole build menu. Select a building, an ork or a road and the
   garrison and Command Card slide in; `esc` hides them. The huts live above the calm strip, so
   nothing on the map moves; the open building shrinks to stay clear of the console.
 - **Garrison, Info, chat**: the garrison lists names and states only (⚙ busy, 💤 idle,
   🔥 waiting). The **Info** column next to it tells in up to three sentences what the selected
-  orc, building or road does — put together from the scroll and the roster, no model call — its
+  ork, building or road does — put together from the scroll and the roster, no model call — its
   models (C Claude, A agy, P script, 🪧 a free chain, ● the live session's model) and what it cost
   (🪙 $ and 🪵 tokens from the handler's run log, the live session's spend from telemetry; "no data
-  yet" when unknown). Picking an orc keeps the garrison and lights the orc. A burning orc opens
-  its question at once; any other garrison orc or live session opens its **chat**: a tall
+  yet" when unknown). Picking an ork keeps the garrison and lights the orc. A burning ork opens
+  its question at once; any other garrison ork or live session opens its **chat**: a tall
   column on the right (45 % of the screen, the rest stays low) with its live session mirrored —
   the line below types into it (`/` jumps there) — or its last runs and a line that starts a
   Claude session with its orders and your message; below, its earlier sessions, Enter reopens.
-- **A waiting orc sets its hut on fire**: the fence flickers orange and red, 🔥 on the hut, in
+- **A waiting ork sets its hut on fire**: the fence flickers orange and red, 🔥 on the hut, in
   the War Map, the roster and the HUD. The question itself (`!`, `Enter`) opens with ❓.
 - `alt+v` switches to **tiles** (every window open side by side, the table below) and back; the
   choice is `preferences.view`. Minimal mode (narrow terminal) shows one window full size.
@@ -505,30 +505,30 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
   gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
   A harness step takes a `tier` and the model follows from its harness
   (`{"role": "run", "harness": "claude", "tier": "elder"}` runs `claude --model opus`); a step's own
-  `model` wins and its tier is read from it. An orc shows its heaviest step's icon before its name
+  `model` wins and its tier is read from it. An ork shows its heaviest step's icon before its name
   (roster, unit card, orders); stewards show none. Pick the tier when recruiting by hand (warrior by
-  default) or later in the orc's orders; the Recruiter proposes one per step. Barracks providers
+  default) or later in the ork's orders; the Recruiter proposes one per step. Barracks providers
   and Council members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
 - **Console of a selected building**: left to right the War Map (36 columns, each orkspace's biome as an icon after its name), the Info
   panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
   is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
-  listens to (source, signal → the orc or a plain road) with *➕ Listen*. The garrison lists its
-  orcs one per line — number, tier, name, its models as marks (`✻` Claude orange, `✦` Gemini blue), state. An orc with a question
+  listens to (source, signal → the ork or a plain road) with *➕ Listen*. The garrison lists its
+  orks one per line — number, tier, name, its models as marks (`✻` Claude orange, `✦` Gemini blue), state. An ork with a question
   shows ❓: picking it opens the question and the building stays selected; the ❓ goes once
   seen. The Command Card keeps only the building's own commands (and hides when it has none);
   the common ones stay on their keys.
-- **Console of a selected orc**: Info shows its icon, tier and name with 👍 / 👎 (its own
+- **Console of a selected ork**: Info shows its icon, tier and name with 👍 / 👎 (its own
   scores, under `<building>/<orc>`) and 🗑 (dismiss; never a steward), why it is here, and one
   quiet line of spend, 👍 / 👎 and whether it is deployed with *📜 History*. The garrison turns
   into its **🎒 Inventory**: the model and tier first (Enter or a click changes harness and tier
   per step), then the tools of its latest runs, most recent first — one opens the Unit
-  Chronicles with only the runs and calls of that tool. The orc is commanded in its chat (45 %
+  Chronicles with only the runs and calls of that tool. The ork is commanded in its chat (45 %
   of the screen, right), so the Command Card steps aside and the console ends where the chat
   begins. Esc goes back to the building.
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
-  (`◂ ⚒️ Forge · selection`); `1`–`9` pick orcs, not rows. The unit card shows the kind, the
+  (`◂ ⚒️ Forge · selection`); `1`–`9` pick orks, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.
-- **`R` Recruit**: describe what the orc should do and press *Ask the Recruiter* — Claude picks the
+- **`R` Recruit**: describe what the ork should do and press *Ask the Recruiter* — Claude picks the
   cheapest kind (chain → script → agent → hybrid), explains why, proposes its roads; the preview
   shows it all with attempts and cost, Enter recruits (handler + roads). Scripts are saved as drafts
   under `.orkcraft/scripts/` and do not run yet. The name / role / orders fields below still recruit
@@ -544,7 +544,7 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
 - **Build Flow (`B` in Neutral)**: Opens `BuildModal` to prompt Mason (data sourcing) and Artisan (panes, widgets, actions). While `builders.build(...)` runs in a background worker thread, `BuildProgress` shows progress with a spinner (`Esc` hides the modal while generation proceeds).
 - **Preview & Raise**:
   - Artisan also writes the hut (`mini`: up to three status templates), see Town view.
-  - Valid specifications display in `BuildPreview`: inspecting title, icon, resident orc, data queries, widget panes, custom actions, attempts used, and API cost.
+  - Valid specifications display in `BuildPreview`: inspecting title, icon, resident ork, data queries, widget panes, custom actions, attempts used, and API cost.
   - Pressing `Enter` / "Raise" saves the spec to `.orkcraft/buildings/<id>.json`, registers the building in the Town Scroll (`.orkcraft.json`), mounts and focuses the new window in the active orkspace, and logs `building_raised` to the Chronicles.
   - Invalids or build errors show in `BuildFailed` with failure details and a "Try again" shortcut (retaining the prompt).
   - All build requests are recorded in `.orkcraft/build-requests.jsonl` (timestamp, prompt, ok status, attempts, cost, id/error).
@@ -640,7 +640,7 @@ the CLI paths.
   `.orkcraft/warder.jsonl` (tokens redacted) and puts ❓ on Warder in the Council — `1`
   acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code
   only (agy has no documented pre-tool hook); hooks load when a Claude Code session starts.
-- The other Council orcs (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
+- The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 
 ## Onboarding
@@ -652,7 +652,7 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
    version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
    `GEMINI_API_KEY` is set) — you can change both. `codex` is listed as coming soon. No key is stored.
 2. **Autonomy** — a slider of four stops: ⛓️ *Ask me* · 📜 *Morning advice* (default) · 🧭 *Routine on
-   their own* · ⛓️‍💥 *Free orcs* (see *Orc autonomy* below).
+   their own* · ⛓️‍💥 *Free orks* (see *Ork autonomy* below).
 3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
    day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
 4. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
@@ -665,9 +665,9 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 Steps 1–3 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
 F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults, no Warder.
 
-### 🏛 Orc autonomy
+### 🏛 Ork autonomy
 
-How much the orcs do on their own (`autonomy` in the machine settings, F10 → 🏛 Orc autonomy).
+How much the orks do on their own (`autonomy` in the machine settings, F10 → 🏛 Ork autonomy).
 Autonomy comes from three places:
 
 - **The Elders' advice** (from *Morning advice* up): in 🌙 quiet hours the Elders of the Town Hall
@@ -677,26 +677,26 @@ Autonomy comes from three places:
   permissions ("don't ask again", "allow all edits"). In the morning *Orders* (`!`) shows the advice:
   `a` follows it, `A` follows it on every advised question; the rest wait as before. At most 40
   questions a night, never past the 🪙 budget; every judgement is in `.orkcraft/council/elders.jsonl`.
-- **The Elders' answers** (*Free orcs* only): in quiet hours the Elders send that one-time yes or no
+- **The Elders' answers** (*Free orks* only): in quiet hours the Elders send that one-time yes or no
   to the agent themselves — only if the very same question still waits and it is still quiet. What
   the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
   and the morning toast counts them.
 - **The agents' own permission settings** (from *Routine on their own* up): the step shows what to
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at
-  *Free orcs* also `acceptEdits` and the usual project commands, with `git push` asked and
+  *Free orks* also `acceptEdits` and the usual project commands, with `git push` asked and
   `rm -rf`, force pushes, `sudo` and `.env` denied — and how to start agy
-  (`agy --mode accept-edits --sandbox` at *Free orcs*). 📋 (or `c` / `g`) puts the Claude snippet or
+  (`agy --mode accept-edits --sandbox` at *Free orks*). 📋 (or `c` / `g`) puts the Claude snippet or
   the agy command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
 
-#### 🔧 Self-improvement by the orcs
+#### 🔧 Self-improvement by the orks
 
 The Building retro, the Town retro and the stewards keep proposing as before; up to *Morning
 advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orcs
 apply what their level allows themselves (`realm/evolution.py`), one change at a time, at most 10 a
 night, never past the 🪙 budget:
 
-| Level | The orcs apply |
+| Level | The orks apply |
 |---|---|
 | 🧭 Routine on their own | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
 | ⛓️‍💥 Free orcs | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
@@ -707,7 +707,7 @@ Warder warning (else it stays a proposal); it gets its own checkpoint, so `Z` ta
 hours of probation**: a 👎 on the building, or more failed runs than before, takes it back by itself
 — only while it is still the building's last checkpoint (else it is marked ⚠ stuck and `Z` is yours)
 — and a toast says so. **🧾 The list of the orcs' changes** opens when quiet hours end, after a
-probation revert, and from F10 → 🧾 What the orcs changed: 🧪 on probation, ✓ kept, ↩ taken back,
+probation revert, and from F10 → 🧾 What the orks changed: 🧪 on probation, ✓ kept, ↩ taken back,
 ⚠ stuck; `z` takes one back. Every applied change, yours too, is in `.orkcraft/evolution/changes.jsonl`.
 Stewards' changes now get their own checkpoint as well.
 
@@ -756,7 +756,7 @@ wears the immersion look, Office the hidden one.
 | | 🧌 Camp (immersion) | 👔 Office (hidden) |
 |---|---|---|
 | Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
-| Agents | orcs 🧌 / 🪧 in the frame | nothing, or `busy` while one works |
+| Agents | orks 🧌 / 🪧 in the frame | nothing, or `busy` while one works |
 | A question | fire 🔥 | `?` |
 | Waiting for an answer | the building flickers orange (its ground too), after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red |
 | Roads | rocks 🪨 roll from building to building | small squares ■ |
@@ -768,7 +768,7 @@ The opened building's own view keeps what its data says.
 **Questions on another orkspace.** Its War Map row takes the question's colour (fire orange in
 immersion, red when hidden) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
 its questions at once, the one waiting longest first (↑↓ for the rest); behind the dialog the building
-of that question is selected and the orc who asked it is picked in the garrison.
+of that question is selected and the ork who asked it is picked in the garrison.
 - **🧌 Camp** — the immersion look all day.
 - **👔 Office** — the hidden look all day.
 - **🧌/👔 Shift** — Office in office hours on office days (default 09:00–18:00, Mon–Fri; a span past
@@ -779,7 +779,7 @@ The Lake, the Crag and custom frames grow with their content in every mode, and 
 size or mode keeps off its neighbours.
 
 **🌙 Do not disturb** — quiet hours (default 23:00–08:00 when switched on, off otherwise). In quiet
-hours no fence burns or flickers: a waiting orc shows ❓ on its label instead of 🔥, and the HUD says
+hours no fence burns or flickers: a waiting ork shows ❓ on its label instead of 🔥, and the HUD says
 `[🌙 quiet till 08:00]`. Where quiet overlaps office hours both hold — the town in frames and no
 fires — the bar shows half purple, half grey and the HUD names both. Later quiet will also mute sound,
 push notifications and the bot.

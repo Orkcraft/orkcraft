@@ -140,14 +140,14 @@ class OrkcraftApp(App[int]):
         Binding("escape", "escape", "Deselect", show=False),
         *[Binding(str(i), f"focus_number({i})", show=False) for i in range(1, 10)],
         *[Binding(f"alt+{i}", f"focus_number({i})", show=False) for i in range(1, 10)],
-        Binding("plus", "spawn_orc", "Spawn Orc", show=True),
+        Binding("plus", "spawn_orc", "Spawn Ork", show=True),
         Binding("exclamation_mark", "next_alert", "🔥 Orders", show=True),
         Binding("ctrl+b", "toggle_console", "Console", show=False),
         Binding("alt+b", "toggle_pin", "📌 Pin", show=False),
         Binding("alt+t", "toggle_terrain", "Terrain", show=False),
         Binding("alt+c", "cycle_carts", "Carts", show=False),
         Binding("alt+v", "toggle_view", "Town / Tiles", show=False),
-        Binding("slash", "focus_orc_chat", "Type to the orc", show=False),
+        Binding("slash", "focus_orc_chat", "Type to the ork", show=False),
         Binding("left_square_bracket", "quick_action(0)", "Quick action 1", show=False),
         Binding("right_square_bracket", "quick_action(1)", "Quick action 2", show=False),
         Binding("f10", "system_menu", "Menu", show=True),
@@ -686,7 +686,7 @@ class OrkcraftApp(App[int]):
                 reverted.append(change)
         if reverted:
             names = ", ".join(f"{self._title_of(c.building)} ({c.change})" for c in reverted[:3])
-            self.notify(f"{names} — {reverted[0].note}", title=f"↩ {len(reverted)} change(s) by the orcs taken back",
+            self.notify(f"{names} — {reverted[0].note}", title=f"↩ {len(reverted)} change(s) by the orks taken back",
                         severity="warning", timeout=15)
             if not self.desktop.quiet:
                 self.show_changes(only_unseen=True)
@@ -895,6 +895,12 @@ class OrkcraftApp(App[int]):
             return
         if self.query(onboarding.RaiseBar):
             return                                                # one town at a time
+        if BUILD_RUNNER is None and not self.desktop.machine.tools.get("claude", settings.ToolChoice()).enabled:
+            self.order_burning = self._order_burns()
+            self.notify("The Town Builder plans with Claude Code, and it is off. F10 → 🧭 Onboarding turns it on; "
+                        "the order keeps waiting in the 🏰 Town Hall.", title="📜 Town Builder", severity="warning",
+                        timeout=12)
+            return
         bar = onboarding.mount_raise_bar(self.screen, None)
         role = str(order.get("role") or "")
         bar.say(f"📜 The Town Builder is adapting a {intents.role(role).title.lower()} town to your answers…"
@@ -1032,7 +1038,7 @@ class OrkcraftApp(App[int]):
             elif action in settings.MODES:
                 self.desktop.set_mode(action)
                 self.refresh_hud()
-                self.notify({"camp": "the town of orcs, fire and gold", "office": "hidden — frames, people and plain words",
+                self.notify({"camp": "the town of orks, fire and gold", "office": "hidden — frames, people and plain words",
                              "shift": "Office in office hours, Camp otherwise — F10 → 🕰 Your day"}[action],
                             title=settings.MODE_TITLES[action])
             elif action == "day":
@@ -1177,7 +1183,7 @@ class OrkcraftApp(App[int]):
                 if orc is not None and orc.category == RESIDENT and orc.lead and orc.building:
                     self.watch_building(orc.building, interactive=True)
                 else:
-                    self.notify("W is the steward's: select a building's ★ orc", title="Steward")
+                    self.notify("W is the steward's: select a building's ★ ork", title="Steward")
                 return
             orc_k = self.focus_state.orc_key
             orc = next((o for o in self.roster.orcs if orc_key(o) == orc_k), None) if orc_k else None
@@ -1933,7 +1939,7 @@ class OrkcraftApp(App[int]):
         if interactive:
             self.open_steward_report(building_id)
         elif report.findings:
-            self.notify(f"{len(report.findings)} finding(s), {len(report.proposals)} proposal(s) — select its ★ orc, W",
+            self.notify(f"{len(report.findings)} finding(s), {len(report.proposals)} proposal(s) — select its ★ ork, W",
                         title=f"🔎 Steward · {title}")
         self.refresh_roster()
 

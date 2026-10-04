@@ -114,7 +114,7 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         view = app.desktop.get_window("camp").query_one(PoolView)
-        assert view.mini_status() == ["no orcs yet", "waiting for tasks"]
+        assert view.mini_status() == ["no orks yet", "waiting for tasks"]
         sent = []
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
 

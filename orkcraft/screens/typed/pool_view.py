@@ -283,7 +283,7 @@ class PoolView(TypedView):
     def mini_status(self) -> list[str]:
         st = self.state
         if not st.orcs and not st.queue:
-            return ["no orcs yet", "⏸ paused" if st.paused else "waiting for tasks"]
+            return ["no orks yet", "⏸ paused" if st.paused else "waiting for tasks"]
         lines = [f"{ICON.get(o.status, '·')} {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} {o.label}" for o in st.orcs[:3]]
         if len(st.orcs) > 3:
             lines.append(f"+{len(st.orcs) - 3} more")
@@ -297,7 +297,7 @@ class PoolView(TypedView):
         failed = sum(1 for t in st.tasks if t.status == "failed")
         spent = sum(float((v or {}).get("cost") or 0) for v in st.stats.values())
         state = "PAUSED" if st.paused else "BUSY" if busy else "READY"
-        return [f"active: {busy}/{f.max_orcs}", f"idle: {len(st.orcs) - busy} orcs", f"queue: {len(st.queue)} wait",
+        return [f"active: {busy}/{f.max_orcs}", f"idle: {len(st.orcs) - busy} orks", f"queue: {len(st.queue)} wait",
                 f"done {done} · failed {failed}", f"spent: ${spent:.2f}", f"status: {state}"]
 
     def quick_action(self, action_id: str) -> bool:
@@ -307,7 +307,7 @@ class PoolView(TypedView):
             if len(st.orcs) >= f.max_orcs:
                 self.app.notify(f"already {len(st.orcs)}/{f.max_orcs} orcs", title="🏕 Barracks")
                 return True
-            name = next((n for n in bk.NAMES if n not in {o.name for o in st.orcs}), f"Orc{len(st.orcs) + 1}")
+            name = next((n for n in bk.NAMES if n not in {o.name for o in st.orcs}), f"Ork{len(st.orcs) + 1}")
             harness, model, why = f.choose_model(bk.PoolTask("", "", ""))
             orc = self.hire(name, harness, model)
             if orc is not None:

@@ -32,9 +32,10 @@ class Role:
     id: str
     icon: str
     title: str
-    mascot: str                               # orc · elf · knight · goblin · skeleton
+    mascot: str                               # orc · elf · lich · gnome · goblin · knight · skeleton
     sources: tuple[str, ...] = ()             # interview options most people in the role use
     outputs: tuple[str, ...] = ()
+    nick: str = ""                            # the mascot's name: Merge Ork, Jira Lich, Indie Knight…
 
     @property
     def label(self) -> str:
@@ -65,7 +66,7 @@ MASCOTS: dict[str, tuple[str, ...]] = {
             "   | v  v |   ",
             "   \\ '--' /   ",
             "  _/`----`\\_  ",
-            " /  ORC   \\_\\ "),
+            " /  ORK   \\_\\ "),
     "elf": ("      /\\      ",
             "  <\\ (  ) />  ",
             "    \\ -- /    ",
@@ -80,6 +81,20 @@ MASCOTS: dict[str, tuple[str, ...]] = {
                "  [|  ++  |]  ",
                "   |  ++  |   ",
                "   /KNIGHT\\   "),
+    "gnome": ("      /\\      ",
+              "     /  \\     ",
+              "    /____\\    ",
+              "   ( o  o )   ",
+              "   (  <>  )   ",
+              "    \\_~~_/    ",
+              "   /GNOME\\    "),
+    "lich": ("   _/\\/\\/\\_   ",
+             "   \\ .--. /   ",
+             "    ( xx )    ",
+             "   /|~~~~|\\   ",
+             "  / | ** | \\  ",
+             "    |____|    ",
+             "    /LICH\\    "),
     "goblin": ("  ,        ,  ",
                "  \\`.____.'/  ",
                "   ( o  O )   ",
@@ -98,26 +113,28 @@ MASCOTS: dict[str, tuple[str, ...]] = {
 
 ROLES: tuple[Role, ...] = (
     Role("engineer", "🛠", "Software engineer", "orc",
-         ("github", "jira", "slack", "sentry", "repo"), ("github", "jira", "slack")),
-    Role("eng_manager", "🧭", "Engineering manager", "knight",
-         ("jira", "github", "slack", "gcal", "confluence"), ("confluence", "slack", "md_reports")),
-    Role("product_manager", "📋", "Product manager", "knight",
-         ("jira", "confluence", "analytics", "slack", "mail"), ("confluence", "jira", "slack")),
-    Role("designer", "🎨", "Product designer", "elf",
-         ("figma", "jira", "notion", "slack"), ("figma", "jira", "slack")),
-    Role("aso_manager", "📈", "ASO manager", "goblin",
-         ("app_store", "google_play", "aso_tools", "analytics", "gsheets"), ("gsheets", "app_store", "slack")),
-    Role("marketing", "📣", "Marketing / growth manager", "goblin",
-         ("analytics", "gsheets", "crm", "slack", "notion"), ("gdocs", "slack", "asana")),
-    Role("data_analyst", "📊", "Data analyst", "goblin",
-         ("analytics", "gsheets", "files", "jira"), ("gsheets", "md_reports", "slack")),
+         ("github", "jira", "slack", "sentry", "repo"), ("github", "jira", "slack"), "Merge Ork"),
     Role("qa", "🧪", "QA engineer", "orc",
-         ("jira", "github", "sentry", "repo"), ("jira", "slack", "md_reports")),
+         ("jira", "github", "sentry", "repo"), ("jira", "slack", "md_reports"), "Bug Ork"),
+    Role("eng_manager", "🧭", "Engineering manager", "lich",
+         ("jira", "github", "slack", "gcal", "confluence"), ("confluence", "slack", "md_reports"), "Jira Lich"),
+    Role("product_manager", "📋", "Product manager", "lich",
+         ("jira", "confluence", "analytics", "slack", "mail"), ("confluence", "jira", "slack"), "Roadmap Wraith"),
+    Role("designer", "🎨", "Product designer", "elf",
+         ("figma", "jira", "notion", "slack"), ("figma", "jira", "slack"), "Figma Elf"),
     Role("game_designer", "🎮", "Game designer", "elf",
-         ("confluence", "gsheets", "jira", "files"), ("confluence", "gsheets", "jira")),
-    Role("founder", "💀", "Founder / indie maker", "skeleton",
-         ("mail", "github", "analytics", "notion"), ("github", "notion", "mail")),
-    Role(OTHER, "🧩", "Someone else", "skeleton", ("mail", "slack", "gdrive", "files"), ("gdocs", "slack", "mail")),
+         ("confluence", "gsheets", "jira", "files"), ("confluence", "gsheets", "jira"), "Lore Elf"),
+    Role("aso_manager", "📈", "ASO manager", "gnome",
+         ("app_store", "google_play", "aso_tools", "analytics", "gsheets"), ("gsheets", "app_store", "slack"),
+         "Keyword Gnome"),
+    Role("marketing", "📣", "Marketing / growth manager", "gnome",
+         ("analytics", "gsheets", "crm", "slack", "notion"), ("gdocs", "slack", "asana"), "Funnel Gnome"),
+    Role("data_analyst", "📊", "Data analyst", "goblin",
+         ("analytics", "gsheets", "files", "jira"), ("gsheets", "md_reports", "slack"), "Dashboard Goblin"),
+    Role("founder", "🛡", "Founder / indie maker", "knight",
+         ("mail", "github", "analytics", "notion"), ("github", "notion", "mail"), "Indie Knight"),
+    Role(OTHER, "🧩", "Someone else", "skeleton", ("mail", "slack", "gdrive", "files"), ("gdocs", "slack", "mail"),
+         "Wandering Skeleton"),
 )
 
 INDUSTRIES: tuple[Choice, ...] = (
@@ -170,8 +187,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("crew", "pool.done", "merge", "a finished branch goes to tests and merge"),
                   _r("merge", "git.pr_opened", "diffs", "you read the diff before merging")]),
            day=("build", "review")),
-    Intent("review_gate", "engineer", "🔍", "Review Gate", "PRs come in, a council of agents reviews, you read the verdict",
-           _plan("Review Gate", "Every pull request is reviewed by agents before you look at it.",
+    Intent("review_gate", "engineer", "🔍", "Review Gatehouse", "PRs come in, a council of agents reviews, you read the verdict",
+           _plan("Review Gatehouse", "Every pull request is reviewed by agents before you look at it.",
                  [_b("prs", "watchtower", "Pull requests", "🗼", "GitHub events of the repository"),
                   _b("review", "council", "Review council", "🔥", "an architect, a tester and a security agent argue"),
                   _b("notes", "loot", "Review notes", "📦", "the council's verdicts, to accept or drop")],
@@ -189,8 +206,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("fixers", "pool.done", "merge", "a fix is tested and merged")]),
            day=("firefight", "build")),
     # -- 🧭 engineering manager --------------------------------------------------------------------
-    Intent("team_pulse", "eng_manager", "💓", "Team Pulse", "what the team shipped, as a weekly digest",
-           _plan("Team Pulse", "GitHub activity milled into a weekly digest of what shipped and what is stuck.",
+    Intent("team_pulse", "eng_manager", "💓", "War Drum Report", "what the team shipped, as a weekly digest",
+           _plan("War Drum Report", "GitHub activity milled into a weekly digest of what shipped and what is stuck.",
                  [_b("activity", "watchtower", "Team activity", "🗼", "PRs, reviews and releases from GitHub"),
                   _b("digest", "mill", "Digest", "⚙️", "groups the week's events by person and project"),
                   _b("reports", "loot", "Weekly reports", "📦", "the digest, ready to send"),
@@ -198,8 +215,8 @@ INTENTS: tuple[Intent, ...] = (
                  [_r("activity", "watch.github", "digest", "every event feeds the digest"),
                   _r("digest", "mill.done", "reports", "the digest becomes a report")]),
            day=("reports", "metrics")),
-    Intent("incident_room", "eng_manager", "🚨", "Incident Room", "alerts sound, agents draft the postmortem",
-           _plan("Incident Room", "Alerts are announced at once and every incident ends with a postmortem draft.",
+    Intent("incident_room", "eng_manager", "🚨", "Alarm Tower", "alerts sound, agents draft the postmortem",
+           _plan("Alarm Tower", "Alerts are announced at once and every incident ends with a postmortem draft.",
                  [_b("alerts", "watchtower", "Alerts", "🗼", "webhooks from monitoring"),
                   _b("alarm", "horn", "Alarm", "📯", "a sound you cannot miss"),
                   _b("council", "council", "Incident council", "🔥", "agents reconstruct what happened"),
@@ -208,8 +225,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("alerts", "watch.webhook", "council", "the council starts collecting the timeline"),
                   _r("council", "team.artifact_ready", "postmortems", "the draft waits for you")]),
            day=("firefight",)),
-    Intent("one_on_ones", "eng_manager", "🤝", "1:1 Desk", "your calendar preps every 1:1 and keeps the action items",
-           _plan("1:1 Desk", "The day's meetings are prepared from your notes; action items become tasks.",
+    Intent("one_on_ones", "eng_manager", "🤝", "1:1 War Tent", "your calendar preps every 1:1 and keeps the action items",
+           _plan("1:1 War Tent", "The day's meetings are prepared from your notes; action items become tasks.",
                  [_b("calendar", "war_drum", "Calendar", "🥁", "today's 1:1s and syncs"),
                   _b("notes", "scrolls", "Meeting notes", "🗑️", "what was said, per person"),
                   _b("prep", "mill", "Prep sheet", "⚙️", "the last notes and open items for each meeting"),
@@ -239,8 +256,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("research", "knowledge.chunks", "council", "the council cites your research"),
                   _r("council", "team.artifact_ready", "prds", "the PRD waits for review")]),
            day=("reports", "research")),
-    Intent("feedback_loop", "product_manager", "🔁", "Feedback Loop", "user feedback sorted into requests and insights",
-           _plan("Feedback Loop", "Feedback from support and mail is sorted: requests to the board, the rest to insights.",
+    Intent("feedback_loop", "product_manager", "🔁", "Feedback Totem", "user feedback sorted into requests and insights",
+           _plan("Feedback Totem", "Feedback from support and mail is sorted: requests to the board, the rest to insights.",
                  [_b("feedback", "watchtower", "Feedback", "🗼", "support webhooks and mail"),
                   _b("sort", "totem", "Sorter", "🗿", "a request, a bug or an insight — by rules"),
                   _b("requests", "fields", "Feature requests", "📋", "requests as tasks, with votes"),
@@ -258,8 +275,8 @@ INTENTS: tuple[Intent, ...] = (
                  [_r("briefs", "pit.text", "studio", "a brief starts the variants"),
                   _r("studio", "pool.done", "picks", "every variant waits for your pick")]),
            day=("build",)),
-    Intent("design_system", "designer", "📐", "Design System", "tokens change, the build and checks run",
-           _plan("Design System", "Token files are watched; every change is built and checked for consistency.",
+    Intent("design_system", "designer", "📐", "Token Smithy", "tokens change, the build and checks run",
+           _plan("Token Smithy", "Token files are watched; every change is built and checked for consistency.",
                  [_b("tokens", "forest", "Tokens", "🌲", "the design tokens folder"),
                   _b("build", "mill", "Token build", "⚙️", "tokens → css, tailwind, ts"),
                   _b("output", "loot", "Built tokens", "📦", "the build, to accept"),
@@ -277,8 +294,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("council", "team.artifact_ready", "decisions", "the decision is recorded")]),
            day=("review", "meetings")),
     # -- 📈 ASO manager ----------------------------------------------------------------------------
-    Intent("keyword_tracker", "aso_manager", "🔑", "Keyword Tracker", "rankings collected weekly, diffed, reported",
-           _plan("Keyword Tracker", "Every week agents collect keyword rankings; the Mill diffs them into a report.",
+    Intent("keyword_tracker", "aso_manager", "🔑", "Keyword Lookout", "rankings collected weekly, diffed, reported",
+           _plan("Keyword Lookout", "Every week agents collect keyword rankings; the Mill diffs them into a report.",
                  [_b("schedule", "watchtower", "Weekly schedule", "🗼", "fires every Monday morning"),
                   _b("collectors", "barracks", "Rank collectors", "🏕️", "agents pull rankings per store and country"),
                   _b("diff", "mill", "Rank diff", "⚙️", "this week against last, per keyword"),
@@ -288,8 +305,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("collectors", "pool.done", "diff", "rankings are compared"),
                   _r("diff", "mill.done", "reports", "the diff becomes the report")]),
            day=("metrics", "reports")),
-    Intent("review_desk", "aso_manager", "⭐", "Review Desk", "store reviews sorted, replies drafted for approval",
-           _plan("Review Desk", "New store reviews are sorted; agents draft replies, bugs become tasks.",
+    Intent("review_desk", "aso_manager", "⭐", "Review War Tent", "store reviews sorted, replies drafted for approval",
+           _plan("Review War Tent", "New store reviews are sorted; agents draft replies, bugs become tasks.",
                  [_b("reviews", "watchtower", "Store reviews", "🗼", "review alerts by webhook or mail"),
                   _b("sort", "totem", "Review sorter", "🗿", "by rating and language, no model"),
                   _b("writers", "barracks", "Reply writers", "🏕️", "agents draft a reply in the reviewer's language"),
@@ -300,8 +317,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("writers", "pool.done", "replies", "the draft waits for you"),
                   _r("sort", "totem.unmatched", "bugs", "complaints become tasks")]),
            day=("users",)),
-    Intent("listing_lab", "aso_manager", "🧪", "Listing Lab", "competitors and ideas → listing variants to test",
-           _plan("Listing Lab", "Competitor listings and ideas feed a council that drafts listing variants for A/B tests.",
+    Intent("listing_lab", "aso_manager", "🧪", "Listing Forge", "competitors and ideas → listing variants to test",
+           _plan("Listing Forge", "Competitor listings and ideas feed a council that drafts listing variants for A/B tests.",
                  [_b("competitors", "pit", "Competitor drops", "🕳️", "links and screenshots of other listings"),
                   _b("notes", "scrolls", "Market notes", "🗑️", "what competitors do, searchable"),
                   _b("experiments", "fields", "Experiments", "📋", "the A/B tests to run"),
@@ -312,8 +329,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("council", "team.artifact_ready", "variants", "variants wait for your pick")]),
            day=("research", "build")),
     # -- 📣 marketing / growth ---------------------------------------------------------------------
-    Intent("campaign_report", "marketing", "📊", "Campaign Report", "metrics milled into a weekly report",
-           _plan("Campaign Report", "A weekly schedule pulls the numbers; the Mill writes the report.",
+    Intent("campaign_report", "marketing", "📊", "Campaign Tally", "metrics milled into a weekly report",
+           _plan("Campaign Tally", "A weekly schedule pulls the numbers; the Mill writes the report.",
                  [_b("schedule", "watchtower", "Weekly schedule", "🗼", "fires before the weekly sync"),
                   _b("analysts", "barracks", "Number pullers", "🏕️", "agents export the campaign numbers"),
                   _b("report", "mill", "Report mill", "⚙️", "numbers into the report template"),
@@ -332,8 +349,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("calendar", "tasks.created", "writers", "a planned post gets a draft"),
                   _r("writers", "pool.done", "posts", "the draft waits for you")]),
            day=("build", "planning")),
-    Intent("launch_crypt", "marketing", "🚀", "Launch Crypt", "a launch plan, its copy and the posts going out",
-           _plan("Launch Crypt", "The launch plan drives the copy; approved posts go out through an API.",
+    Intent("launch_crypt", "marketing", "🚀", "Launch Catapult", "a launch plan, its copy and the posts going out",
+           _plan("Launch Catapult", "The launch plan drives the copy; approved posts go out through an API.",
                  [_b("plan", "fields", "Launch plan", "📋", "every launch step as a task"),
                   _b("copy", "barracks", "Copywriters", "🏕️", "agents write the launch copy"),
                   _b("approved", "loot", "Copy to approve", "📦", "accept what goes out"),
@@ -353,8 +370,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("pull", "pool.done", "clean", "raw exports are cleaned"),
                   _r("clean", "mill.done", "reports", "clean data becomes the report")]),
            day=("reports", "metrics")),
-    Intent("anomaly_watch", "data_analyst", "📉", "Anomaly Watch", "metric alerts routed to an alarm and investigations",
-           _plan("Anomaly Watch", "Metric alerts are checked by rules; real anomalies sound and open an investigation.",
+    Intent("anomaly_watch", "data_analyst", "📉", "Anomaly Watchtower", "metric alerts routed to an alarm and investigations",
+           _plan("Anomaly Watchtower", "Metric alerts are checked by rules; real anomalies sound and open an investigation.",
                  [_b("alerts", "watchtower", "Metric alerts", "🗼", "webhooks from your analytics"),
                   _b("rules", "totem", "Thresholds", "🗿", "which alerts matter, by rules"),
                   _b("alarm", "horn", "Alarm", "📯", "a sound for a real anomaly"),
@@ -363,8 +380,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("rules", "totem.routed", "alarm", "a real anomaly is heard"),
                   _r("rules", "totem.routed", "cases", "and becomes an investigation")]),
            day=("metrics", "firefight")),
-    Intent("adhoc_desk", "data_analyst", "❓", "Ad-hoc Desk", "questions in, agents answer with queries and charts",
-           _plan("Ad-hoc Desk", "Paste a question; agents answer it with queries, you read the result.",
+    Intent("adhoc_desk", "data_analyst", "❓", "Question Pit", "questions in, agents answer with queries and charts",
+           _plan("Question Pit", "Paste a question; agents answer it with queries, you read the result.",
                  [_b("questions", "pit", "Questions", "🕳️", "paste what someone asked"),
                   _b("analysts", "barracks", "Analyst agents", "🏕️", "agents write and run the query"),
                   _b("view", "lake", "Answer view", "🌊", "the answer with its query"),
@@ -374,8 +391,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("analysts", "pool.done", "answers", "and it is kept")]),
            day=("users", "research")),
     # -- 🧪 QA engineer ----------------------------------------------------------------------------
-    Intent("regression_run", "qa", "🔁", "Regression Run", "every PR runs the suites; failures become bugs",
-           _plan("Regression Run", "Opened PRs are tested by agents; failures become bug tasks, passes become reports.",
+    Intent("regression_run", "qa", "🔁", "Regression Raid", "every PR runs the suites; failures become bugs",
+           _plan("Regression Raid", "Opened PRs are tested by agents; failures become bug tasks, passes become reports.",
                  [_b("branches", "forge", "Branches", "⚒️", "PRs and their branches"),
                   _b("runners", "barracks", "Test runners", "🏕️", "agents run and extend the suites"),
                   _b("bugs", "fields", "Bugs", "📋", "every failure as a task"),
@@ -384,8 +401,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("runners", "pool.failed", "bugs", "a failure becomes a bug"),
                   _r("runners", "pool.done", "reports", "a pass leaves a report")]),
            day=("review", "build")),
-    Intent("bug_triage", "qa", "🗂", "Bug Triage", "reports from everywhere sorted onto one board",
-           _plan("Bug Triage", "Bug reports from mail and pastes are sorted by rules onto one board.",
+    Intent("bug_triage", "qa", "🗂", "Bug Triage Totem", "reports from everywhere sorted onto one board",
+           _plan("Bug Triage Totem", "Bug reports from mail and pastes are sorted by rules onto one board.",
                  [_b("mail", "watchtower", "Bug mail", "🗼", "reports by mail or webhook"),
                   _b("paste", "pit", "Pasted reports", "🕳️", "logs and screenshots"),
                   _b("sort", "totem", "Triage rules", "🗿", "component and severity"),
@@ -394,8 +411,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("paste", "pit.text", "sort", "pasted reports too"),
                   _r("sort", "totem.routed", "board", "everything lands on the board")]),
            day=("firefight", "users")),
-    Intent("release_check", "qa", "✅", "Release Check", "a go / no-go council before every release",
-           _plan("Release Check", "Before a release a council weighs the open bugs and test results.",
+    Intent("release_check", "qa", "✅", "Release Council", "a go / no-go council before every release",
+           _plan("Release Council", "Before a release a council weighs the open bugs and test results.",
                  [_b("board", "fields", "Release checklist", "📋", "what must pass"),
                   _b("council", "council", "Go / no-go council", "🔥", "a QA, a dev and a product agent"),
                   _b("verdicts", "loot", "Verdicts", "📦", "the decision with its reasons")],
@@ -403,8 +420,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("council", "team.artifact_ready", "verdicts", "the verdict is kept")]),
            day=("review", "planning")),
     # -- 🎮 game designer --------------------------------------------------------------------------
-    Intent("balance_lab", "game_designer", "⚖️", "Balance Lab", "configs change, balance sheets are rebuilt",
-           _plan("Balance Lab", "Game configs are watched; the Mill rebuilds balance sheets you can inspect.",
+    Intent("balance_lab", "game_designer", "⚖️", "Balance Scales", "configs change, balance sheets are rebuilt",
+           _plan("Balance Scales", "Game configs are watched; the Mill rebuilds balance sheets you can inspect.",
                  [_b("configs", "forest", "Game configs", "🌲", "the balance and economy files"),
                   _b("sheets", "mill", "Balance sheets", "⚙️", "curves and tables from the configs"),
                   _b("view", "lake", "Balance view", "🌊", "the sheets, side by side with the last ones")],
@@ -421,8 +438,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("gdd", "knowledge.chunks", "council", "the council knows what is decided"),
                   _r("council", "team.artifact_ready", "pages", "the page waits for you")]),
            day=("build", "reports")),
-    Intent("game_jam", "game_designer", "🕹", "Game Jam", "a fast prototype: tasks, agents, builds",
-           _plan("Game Jam", "A prototype in days: tasks to agents, branches merged as they pass.",
+    Intent("game_jam", "game_designer", "🕹", "Game Jam Camp", "a fast prototype: tasks, agents, builds",
+           _plan("Game Jam Camp", "A prototype in days: tasks to agents, branches merged as they pass.",
                  [_b("tasks", "fields", "Jam board", "📋", "what the prototype needs"),
                   _b("crew", "barracks", "Jam crew", "🏕️", "agents build features in parallel"),
                   _b("merge", "forge", "Build forge", "⚒️", "tests and merges each feature")],
@@ -430,8 +447,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("crew", "pool.done", "merge", "finished features are merged")]),
            day=("build",)),
     # -- 💀 founder / indie ------------------------------------------------------------------------
-    Intent("one_skeleton_studio", "founder", "🏚", "One-Skeleton Studio", "code, copy and releases in one town",
-           _plan("One-Skeleton Studio", "One board for everything; agents code and write, you accept and merge.",
+    Intent("one_skeleton_studio", "founder", "🏚", "One-Knight Studio", "code, copy and releases in one town",
+           _plan("One-Knight Studio", "One board for everything; agents code and write, you accept and merge.",
                  [_b("tasks", "fields", "Everything board", "📋", "code, copy and chores"),
                   _b("crew", "barracks", "Crew", "🏕️", "agents for code and for copy"),
                   _b("merge", "forge", "Merge forge", "⚒️", "code is tested and merged"),
@@ -458,8 +475,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("board", "tasks.created", "helper", "the helper picks it up")]),
            day=("build",)),
     # -- 🧩 someone else ---------------------------------------------------------------------------
-    Intent("task_desk", OTHER, "📋", "Task Desk", "requests from mail become tasks, agents help with them",
-           _plan("Task Desk", "Requests from mail become tasks; agents draft what they can.",
+    Intent("task_desk", OTHER, "📋", "Task Camp", "requests from mail become tasks, agents help with them",
+           _plan("Task Camp", "Requests from mail become tasks; agents draft what they can.",
                  [_b("inbox", "watchtower", "Inbox", "🗼", "your mail"),
                   _b("board", "fields", "Tasks", "📋", "every request as a task"),
                   _b("helpers", "barracks", "Helpers", "🏕️", "agents draft answers and documents"),
@@ -478,8 +495,8 @@ INTENTS: tuple[Intent, ...] = (
                   _r("files", "files.changed", "mill", "new data refreshes it"),
                   _r("mill", "mill.done", "reports", "the report is kept")]),
            day=("reports",)),
-    Intent("knowledge_base", OTHER, "📚", "Knowledge Base", "notes and documents you can ask questions of",
-           _plan("Knowledge Base", "Drop documents in; ask questions, agents answer from them.",
+    Intent("knowledge_base", OTHER, "📚", "Scroll Library", "notes and documents you can ask questions of",
+           _plan("Scroll Library", "Drop documents in; ask questions, agents answer from them.",
                  [_b("drops", "pit", "Drops", "🕳️", "documents and links"),
                   _b("base", "scrolls", "Knowledge", "🗑️", "everything, searchable"),
                   _b("helpers", "barracks", "Answerers", "🏕️", "agents answer from the base")],
@@ -502,8 +519,10 @@ def intent(intent_id: str) -> Intent | None:
 
 
 def fit(it: Intent, day: tuple[str, ...] | list[str]) -> int:
-    """How many parts of the operator's day the intent takes over."""
-    return len(set(it.day) & set(day))
+    """How many parts of the operator's day the intent takes over (a role's own part — an ork's
+    "writing code" — counts as its general one, "hands-on work")."""
+    from orkcraft.realm.interview import day_general
+    return len(set(it.day) & set(day_general(day)))
 
 
 def for_role(role_id: str, day: tuple[str, ...] | list[str] = ()) -> list[Intent]:
@@ -514,6 +533,10 @@ def for_role(role_id: str, day: tuple[str, ...] | list[str] = ()) -> list[Intent
 
 def mascot(role_id: str) -> tuple[str, ...]:
     return MASCOTS[role(role_id).mascot]
+
+
+def nick(role_id: str) -> str:
+    return role(role_id).nick
 
 
 def templates_text(role_id: str) -> str:

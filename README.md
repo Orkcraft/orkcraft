@@ -2,7 +2,7 @@
 
 **A terminal harness for running many coding agents in one project — as a real-time strategy game.**
 
-Windows are **buildings** with a resident **orc**. Agents are the **clan**. Buildings send **carts**
+Windows are **buildings** with a resident **ork**. Agents are the **clan**. Buildings send **carts**
 to each other along **roads**. The HUD shows what you spend. Agents never pop dialogs: when one
 needs you it sets its hut on fire 🔥 and waits for your orders.
 
@@ -42,7 +42,7 @@ Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y
 |---|---|
 | 🏰 **Town** | one canvas per workflow (`F1`–`F8`), every building a small hut with live status lines |
 | 🏗 **Building** | a window: tasks, files, git, a mailbox, a webhook, a chart… |
-| 🧌 **Orc** | an agent, a script or a free chain of data steps living in a building |
+| 🧌 **Ork** | an agent, a script or a free chain of data steps living in a building |
 | 🛤 **Road** | a subscription: what happens in one building travels as a cart to the buildings that listen |
 | 🪙 / 🪵 / 🥩 | money, context tokens and running agents — with budgets you set |
 
@@ -116,7 +116,7 @@ Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN
 the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
 
 The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
-the design of roads and orcs is in [docs/design/roads-and-orcs.md](docs/design/roads-and-orcs.md).
+the design of roads and orks is in [docs/design/roads-and-orcs.md](docs/design/roads-and-orcs.md).
 
 ## Development
 

@@ -260,7 +260,7 @@ async def test_unit_chronicles_empty(fake_repo: Path, isolated_layout_file: Path
 
         unit_chron = app.screen
         empty_widget = unit_chron.query_one("#runs-empty", Static)
-        assert "No runs yet — deploy this orc (C) to start one." in str(empty_widget.render())
+        assert "No runs yet — deploy this ork (C) to start one." in str(empty_widget.render())
 
         # Esc returns to Unit state
         await pilot.press("escape")

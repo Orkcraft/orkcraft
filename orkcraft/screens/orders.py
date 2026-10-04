@@ -308,7 +308,7 @@ class UnitModal(ModalScreen[dict | None]):
             yield Label(Text(f"🧌 {o.tier_icon + ' ' if o.tier_icon else ''}{o.name} — {self.building_title}"),
                         classes="order-title")
             yield Static(Text(f"{o.role}\nstatus: {o.status_icon} {o.status}"), classes="order-context")
-            yield Label("Orders (context for this orc's work)")
+            yield Label("Orders (context for this ork's work)")
             yield Input(value=self.context, placeholder="e.g. keep an eye on T1092 and nudge me before 06:00",
                         id="unit-context")
             yield Label("Trigger")
@@ -327,7 +327,7 @@ class UnitModal(ModalScreen[dict | None]):
                     yield Button("Answer ❓", variant="warning", id="unit-answer")
                 yield Button("Cancel", id="unit-cancel")
             yield Static("Orders and trigger are kept in the Town Scroll (.orkcraft.json). "
-                         "Resident orcs act on them from stage 5.", classes="order-hint")
+                         "Resident orks act on them from stage 5.", classes="order-hint")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id

@@ -63,7 +63,7 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label(f"➕ Recruit Orc — {self.building_title}", classes="order-title")
+            yield Label(f"➕ Recruit Ork — {self.building_title}", classes="order-title")
             yield Static("", id="recruit-error", classes="order-error")
             yield Label("What should it do? (the Recruiter picks chain → script → agent):")
             yield Input(placeholder="e.g. when a task in the Forge is done, show its id and title", id="recruit-prompt")
@@ -104,7 +104,7 @@ class GarrisonModal(ModalScreen["OrcSpec | str | None"]):
         prompt = self.query_one("#recruit-prompt", Input).value.strip()
         if not prompt:
             err = self.query_one("#recruit-error", Static)
-            err.update("describe what the orc should do")
+            err.update("describe what the ork should do")
             err.display = True
             return
         self.dismiss(prompt)
