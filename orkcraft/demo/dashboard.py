@@ -59,9 +59,13 @@ MY_DAY = {
     "segment": "Everyone", "story": "A personal dashboard: the day, the tasks, the notes, the mail",
     "nodes": [],
     "files": {
-        "TASKS.md": "# My tasks\n\n## To Do\n- [ ] Plan the v0.2 release\n- [ ] Answer Ann about the offsite\n"
-                    "- [ ] Renew the domain\n\n## In Progress\n- [ ] Write the Barracks docs\n\n## Done\n"
-                    "- [x] Town Hall audit\n- [x] Git building\n",
+        "TASKS.md": "# My tasks\n\n## To Do\n- [ ] Plan the v0.2 release\n  freeze on Monday, tag on Thursday\n"
+                    "- [ ] Answer Ann about the offsite\n- [ ] 🟥 Renew the domain\n  expires on the 12th\n\n"
+                    "## In Progress\n- [ ] Write the Barracks docs\n\n## Done\n"
+                    "- [x] Town Hall audit\n- [x] Git building\n\n"
+                    "## Ideas\n- 🟨 A calendar roof\n  the War Drum's hut shows the next meeting\n"
+                    "- 🟩 Mail digests at 05:00\n  one page, before the stand-up\n"
+                    "- 🟦 Ask the clan about pricing\n",
         "demo/calendar.ics": CALENDAR,
         "docs/handbook/onboarding.md": "# Onboarding\n\n## Your first day\nRead the town map.\n\n## Tools\n- orkcraft\n- git\n",
         "docs/handbook/releases.md": "# Releases\n\n## Versioning\nSemVer.\n\n## Checklist\n- tag\n- changelog\n- announce\n",
@@ -70,7 +74,7 @@ MY_DAY = {
         "src/billing.py": "PRICE = 9\n",
     },
     "buildings": [
-        typed("todo", "fields", "Task Fields", "🌾", "Taskmaster", "keeps my three columns", "tiles", path="TASKS.md"),
+        typed("todo", "fields", "Task Fields", "🌾", "Taskmaster", "my tasks and sticky notes", "tiles", path="TASKS.md"),
         typed("days", "war_drum", "War Drum", "🥁", "Drummer", "today and this week", "flag",
               ics="demo/calendar.ics", day_starts="05:00"),
         typed("notes", "scrolls", "Scroll Dump", "🗑️", "Scroll Scrapper", "my handbook and notes", "dome",

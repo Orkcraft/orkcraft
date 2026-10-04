@@ -143,12 +143,18 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     # -- 2. queues and execution -----------------------------------------------------------------------
     BuildingType(
         "fields", "Task Fields", "🌾", "M",
-        "a terminal kanban: to do, in progress, done, with dependencies",
-        "counts per column, * when something is new", "the three columns; move and edit tasks",
+        "a board of cards: tasks in To Do / In Progress / Done and sticky notes in lanes of their own "
+        "(Ideas, Questions…); a note becomes a task by moving into a status lane",
+        "counts per status, the notes, * when something is new",
+        "the lanes; add, move, open, colour and send cards",
         events=(_e("tasks.status_changed", "task moved", NODE, "a task changed its status (from → to)"),
-                _e("tasks.created", "task added", NODE, "a new task was added")),
-        actions=(_a("tasks.new", "New task", "+", "add a task to To Do"),),
-        config={"path": (str, None, False)},
+                _e("tasks.created", "task added", NODE, "a new task was added (or a note became one)"),
+                _e("notes.created", "note added", TEXT, "a sticky note was added: its title and text"),
+                _e("tasks.sent", "card sent", TEXT, "the operator sent a card on (s): its title and text")),
+        actions=(_a("tasks.new", "New task", "+", "add a card to the focused lane"),
+                 _a("notes.new", "New note", "🗒", "add a sticky note")),
+        config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
+                "lanes": (list, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",
@@ -533,7 +539,8 @@ TAKES: dict[str, str] = {
              "(else totem.unmatched)",
     "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
     "horn": "anything: plays the sound its table picks for that source and event",
-    "fields": "anything: the cart becomes a task in To Do (its title, else its first line) → tasks.created",
+    "fields": "anything: the cart becomes a card — a task in To Do (a note in `notes` mode); its title, else "
+              "its first line, the rest its text → tasks.created / notes.created",
     "barracks": "anything: the cart becomes a task for an ork (the title names it, the text is the brief); "
                 "its steward reviews the work → pool.done (with the pull request) / pool.failed",
     "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
@@ -618,7 +625,12 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "quiet": "quiet hours, e.g. 22:00-08:00",
         "cooldown": "seconds between two sounds of one key (default 2)",
     },
-    "fields": {"path": "TASKS.md or a folder with todo/ in-progress/ done/ (default TASKS.md)"},
+    "fields": {
+        "path": "TASKS.md (one ## section per lane) or a folder with todo/ in-progress/ done/ and a subfolder "
+                "per lane of notes (default TASKS.md)",
+        "mode": "board (default: every lane), tasks (the three status lanes, a kanban) or notes (a wall of stickers)",
+        "lanes": "lanes of notes that are always there, e.g. [\"Ideas\", \"Questions\"]",
+    },
     "barracks": {
         "max_orcs": "how many orks work at once (default 3)",
         "budget_usd": "the most the barracks may spend, in USD",

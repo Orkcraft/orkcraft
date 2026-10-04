@@ -188,7 +188,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🗿 Totem | Spirit Guide | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own | `totem.routed`, `totem.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
-| 🌾 Task Fields | Taskmaster | `TASKS.md` or a `todo/ in-progress/ done/` folder; `n` `<` `>` `e`; a cart becomes a task in To Do | `tasks.created`, `tasks.status_changed` |
+| 🌾 Task Fields | Taskmaster | a board of cards in `TASKS.md` or a folder: tasks in To Do / In Progress / Done, sticky notes in lanes of their own (Ideas, Questions…); `mode`: `board` · `tasks` · `notes`; `n` `<` `>` `e` `c` `t` `s` `d` `N` (below); a cart becomes a card | `tasks.created`, `tasks.status_changed`, `notes.created`, `tasks.sent` |
 | 🏕️ Barracks | Grunts | tasks, each on its own branch: a follow-up goes to the ork who did the earlier part, a new one to an idle or newly hired ork (provider and model by record); related work resumes the ork's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request — for code (always) and documents that go out; a local document (a War Drum meeting's prep, or what the steward marks `SCOPE: local`) gets no PR and needs no commit when it is a meeting's | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
 | 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review queue | `team.approved`, `team.rework`, `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
@@ -200,6 +200,47 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
+- **🌾 Task Fields is a board of cards** — tasks and sticky notes on one board
+  ([design](design/fields-board.md)). A **lane** is a column: the three status lanes (To Do, In
+  Progress, Done) hold **tasks**, every other lane (Ideas, Notes, Questions…) holds **notes**. What a
+  card is follows its lane: a note moved into a status lane becomes a task (`tasks.created`), a task
+  moved out becomes a note. A card has a title, a text (its indented lines in the file) and a colour
+  — the square its title starts with: 🟨 🟩 🟦 🟥 🟪.
+  - **`mode`** — `board` (default) shows every lane; with no lanes of notes it looks as it always
+    did. `tasks` shows only the kanban; `notes` only the wall of stickers (a cart that arrives
+    becomes a note there). **`lanes`** names lanes of notes that are always on the board
+    (`["Ideas", "Questions"]`); any other `##` section of the file is one too.
+  - **Keys** in the open building: `n` a new card in the focused lane · `<` `>` move it to the next
+    lane · `e` or Enter open it (the first line is the title, the rest its text; ctrl+s keeps it) ·
+    `c` the next colour · `t` a note ⇄ a task · `s` send it down the building's roads (`tasks.sent`,
+    its title and text — a Barracks takes it as a task, a Clan Fire reviews it) · `d` delete it ·
+    `N` a new lane of notes. The quick actions are + New task and 🗒 New note.
+  - **The file** stays plain Markdown in git, one `##` section per lane:
+
+    ```markdown
+    # My tasks
+
+    ## To Do
+    - [ ] Plan the v0.2 release
+      freeze on Monday, tag on Thursday
+    - [ ] 🟥 Renew the domain
+
+    ## Done
+    - [x] Town Hall audit
+
+    ## Ideas
+    - 🟨 A calendar roof
+      the War Drum's hut shows the next meeting
+    ```
+
+    What comes before the first `##` is kept, and so is every lane — the board never drops a
+    section it does not know. In a folder (`path: tasks`), `todo/`, `in-progress/` and `done/` hold
+    the tasks and any other subfolder (`ideas/`) is a lane of notes, a card a file whose text
+    follows its `# title`.
+  - **Events**: a task added, or a note that became one → `tasks.created`; a task moved between
+    statuses → `tasks.status_changed` (its id); a note added → `notes.created` (its title and text);
+    `s` → `tasks.sent`. Cards edited in the file by hand are seen on the next look (10 s).
+  - The hut counts the status lanes and the notes (`🗒 3 notes`), `*` for what is new.
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
   Catapult without a schema.

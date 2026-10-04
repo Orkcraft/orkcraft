@@ -60,7 +60,7 @@ Sixteen buildings, each with its own events and settings:
 | | |
 |---|---|
 | **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks — one tower, filtered by your intent) · 🗿 Totem (if/switch routes) · ⚙️ Mill (map / flat map: data steps, an agent where a script can't) · 📯 Horn (a sound of your choice per incoming event) |
-| **Queues and work** | 🌾 Task Fields (kanban) · 🏕️ Barracks (agents in parallel, a branch per task, reviewed by its steward; a PR for code and what goes out) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar; agents prepare documents for meetings ahead of time) |
+| **Queues and work** | 🌾 Task Fields (a board of tasks and sticky notes) · 🏕️ Barracks (agents in parallel, a branch per task, reviewed by its steward; a PR for code and what goes out) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar; agents prepare documents for meetings ahead of time) |
 | **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its ork keeps from your notes, code, git and Confluence) · 🌊 Lake of Insight (diffs, Markdown) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
 | **Results and egress** | 📦 Loot Vault (the review checkpoint: carts pass by rules or wait for you; send back for rework, see what the chain cost) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP — or, where there is no API, its ork finds the forms of an intent and fills them in a browser) |
 
