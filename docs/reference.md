@@ -437,7 +437,11 @@ Everything that changes the camp goes through the Town Hall and its own git:
   cache). Rules first — a rule's block stops it and says why; then one `claude -p --model haiku`
   call whose objections you may override. Reviews: `.orkcraft/council/reviews.jsonl`, the Town Hall.
 - **The Town Hall's hut** has two buttons — 📜 Preset and 🛠 New (also `[` / `]`); the audit, the
-  clean-up and the settings live in F10.
+  clean-up and the settings live in F10. Two towers, a pediment over the round window of the Elders,
+  columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
+  hours), 📜 advice waits for you, ⏳ tonight's questions are used up, 💤 at rest by day, nothing at
+  ⛓️ Ask me. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
+  you, ⚠ flagged by the Warder.
 - **From scratch** is a conversation: the Builder asks until it knows what the building does, offers
   three views, the carts it takes, the events it sends and an optional timer; a rejected blueprint
   goes back into the conversation. The blueprint's window shows a 🖼 preview of the building on the
@@ -481,7 +485,8 @@ Everything that changes the camp goes through the Town Hall and its own git:
   and, when buildings changed or the report asks, offers to restart orkcraft. Both: F10 →
   Building retro / Town retro; F10 → ⚙ Retro settings sets the models and the schedules.
 - Settings live in `.orkcraft/council/settings.json`: `fast_llm`, `fast_model`, `optimize_at`,
-  `weekly_model`, `weekly_at`. `--demo --demo-set dashboard` shows the pipeline seeded (F3 Gates
+  `weekly_model`, `weekly_at`, and the Elders' `elders_per_night` (40; 0–200) and `elders_context`
+  (lines of the agent's screen they read, 14; 4–60). `--demo --demo-set dashboard` shows the pipeline seeded (F3 Gates
   has a Workshop; the Town Hall lists reviews, ratings, an incident, a proposal and a report).
 
 ## Showcase sandbox (`orkcraft --demo`)
@@ -607,6 +612,10 @@ the CLI paths.
   tagged with `ORKCRAFT_RUN` / `ORKCRAFT_TERMINAL`; the session hook writes them next to the
   transcript path, and orkcraft prices each assistant message of those transcripts (read
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
+  Model calls that leave no transcript of this run count too, as they answer
+  (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
+  Town Builder, the daily proposal and the weekly self-audit (`claude -p`), the Barracks orcs and the
+  Orc Council's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
 - Colours: yellow from 80 %, red from 100 %. At 100 % of 🪙 new sessions (`+`, `S`, deploy `C`,
@@ -672,14 +681,18 @@ Autonomy comes from three places:
 
 - **The Elders' advice** (from *Morning advice* up): in 🌙 quiet hours the Elders of the Town Hall
   read each permission question of a claude / agy session and leave advice. The Warder's rules come
-  first — anything dangerous, secret or destructive gets no advice and no model call; then the
-  Council's light model (`haiku`) may advise a **one-time** yes or a no, never an option that widens
-  permissions ("don't ask again", "allow all edits"). In the morning *Orders* (`!`) shows the advice:
-  `a` follows it, `A` follows it on every advised question; the rest wait as before. At most 40
-  questions a night, never past the 🪙 budget; every judgement is in `.orkcraft/council/elders.jsonl`.
+  first — what they block (secrets, sudo, `curl | sh`, `rm -rf /`…) gets no advice and no model call;
+  what they only warn about (the network, a push, a backtick) goes to the model with the Warder's note,
+  and that advice carries a ⚠. Then the Council's light model (`haiku`) may advise a **one-time** yes
+  or a no, never an option that widens permissions ("don't ask again", "allow all edits"); options are
+  read from their words, cursor and number aside. In the morning *Orders* (`!`) shows the advice: `a`
+  follows it, `A` follows it on every advised question but the ⚠ ones; the rest wait as before. At
+  most `elders_per_night` questions a night (40), never past the 🪙 budget — their own calls count in
+  it; every judgement is in `.orkcraft/council/elders.jsonl`, and a restart brings back the advice of
+  the last day and tonight's count from it. The Town Hall lists them.
 - **The Elders' answers** (*Free orks* only): in quiet hours the Elders send that one-time yes or no
-  to the agent themselves — only if the very same question still waits and it is still quiet. What
-  the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
+  to the agent themselves — only if the very same question still waits and it is still quiet, and
+  never a ⚠ advice. What the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
   and the morning toast counts them.
 - **The agents' own permission settings** (from *Routine on their own* up): the step shows what to
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`

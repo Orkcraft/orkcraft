@@ -43,3 +43,12 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     # They also predate the camp that starts with the Town Hall alone (T1107): every preset stands.
     monkeypatch.setattr(scroll, "STARTING", None)
     return path
+
+
+@pytest.fixture(autouse=True)
+def fresh_spend_ledger():
+    """The side 🪙 ledger is process-wide: every test starts from an empty one."""
+    from orkcraft.sources import telemetry
+    telemetry.reset_charges()
+    yield
+    telemetry.reset_charges()

@@ -258,8 +258,8 @@ class OrkcraftApp(App[int]):
         self.roster = Roster()
         self.dismissed: set[str] = set()
         # 🏛 The Elders' advice on the orcs' questions, left in quiet hours (realm/elders.py).
-        self.advice: dict[tuple, elders.Decision] = {}
-        self._elders_seen: set[tuple] = set()
+        self.advice: dict[str, elders.Decision] = {}         # by question mark (elders.mark)
+        self._elders_seen: set[str] = set()
         self._elders_busy = False
         self._elders_count = 0
         self._quiet_since: str | None = None
@@ -361,7 +361,9 @@ class OrkcraftApp(App[int]):
         self.call_after_refresh(self.desktop.refresh_huts)
         self.order_burning = self._order_burns()
         if self.desktop.quiet:
-            self._quiet_since = dt.datetime.now().isoformat(timespec="seconds")
+            began = schedule.quiet_started(self.desktop.machine) or dt.datetime.now()
+            self._quiet_since = began.isoformat(timespec="seconds")
+        self._elders_restore()
         if self.first_run and getenv("ONBOARDING").lower() not in ("0", "false", "no", "off"):
             self.call_after_refresh(self.start_onboarding)
 
@@ -727,8 +729,29 @@ class OrkcraftApp(App[int]):
     # -- 🏛 the Elders: in quiet hours they leave advice; the operator follows it (realm/elders.py) --
 
     @staticmethod
-    def elders_mark(alert: Alert) -> tuple:
-        return (alert.id, alert.title, tuple(alert.options), tuple(alert.context[-3:]))
+    def elders_mark(alert: Alert) -> str:
+        return elders.mark(alert)
+
+    def _elders_restore(self) -> None:
+        """A restart keeps what the log knows: the advice still to follow, and tonight's judged questions
+        (so they are not judged, paid for and counted twice)."""
+        if self.demo:
+            return
+        night = elders.restore(self.repo_root, self._quiet_since)
+        self.advice.update(night.advice)
+        self._elders_seen |= night.seen
+        self._elders_count = max(self._elders_count, night.count)
+
+    def elders_state(self) -> str:
+        """The lamp on the Town Hall: `advice` (some waits for you), `watch` (quiet hours, they read the
+        questions), `rest` (by day), `off` (autonomy ⛓️ Ask me), `full` (tonight's questions are used up)."""
+        if any(self.advice_for(a) is not None for a in self.roster.alerts):
+            return "advice"
+        if not autonomy.advises(self.desktop.machine.autonomy):
+            return "off"
+        if not self.desktop.quiet:
+            return "rest"
+        return "full" if self._elders_count >= elders.limits(self.repo_root)[0] else "watch"
 
     def advice_for(self, alert: Alert) -> elders.Decision | None:
         d = self.advice.get(self.elders_mark(alert))
@@ -737,7 +760,8 @@ class OrkcraftApp(App[int]):
     def _elders_consider(self) -> None:
         """One question at a time goes to the Elders: quiet hours, autonomy from 1, budget left."""
         if (self.demo or self._elders_busy or not self.desktop.quiet
-                or not autonomy.advises(self.desktop.machine.autonomy) or self._elders_count >= elders.MAX_PER_NIGHT):
+                or not autonomy.advises(self.desktop.machine.autonomy)
+                or self._elders_count >= elders.limits(self.repo_root)[0]):
             return
         budget = self.scroll.budget.gold_session_limit_usd
         if budget > 0 and self.snapshot.spent_usd >= budget:
@@ -754,18 +778,19 @@ class OrkcraftApp(App[int]):
     @work(thread=True, group="elders")
     def _elders_work(self, alert: Alert, who: str) -> None:
         runner = ELDERS_RUNNER or fastpath.light_runner(self.repo_root)
-        decision = elders.judge(alert, runner)
+        decision = elders.judge(alert, runner, elders.limits(self.repo_root)[1])
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
         """The Elders' advice is kept for the operator. At ⛓️‍💥 Free orcs (autonomy.answers) they also
         answer: their key goes to the agent — only while it is still quiet and the very same question
-        still waits, so an answer never lands on a question that changed meanwhile."""
+        still waits, so an answer never lands on a question that changed meanwhile, and never when the
+        Warder flagged the screen (⚠: that advice is the operator's to follow)."""
         self._elders_busy = False
         mark = self.elders_mark(alert)
         sent = False
-        if (decision.advised and autonomy.answers(self.desktop.machine.autonomy) and self.desktop.quiet
-                and any(self.elders_mark(a) == mark for a in self.roster.alerts)):
+        if (decision.advised and not decision.warn and autonomy.answers(self.desktop.machine.autonomy)
+                and self.desktop.quiet and any(self.elders_mark(a) == mark for a in self.roster.alerts)):
             key = decision.key or ""
             self.chat.send(alert.ref, (key if key.isdigit() else f"{key}\r").encode())   # no focus: they sleep
             sent = True
@@ -773,6 +798,7 @@ class OrkcraftApp(App[int]):
             self.advice[mark] = decision
         elders.log(self.repo_root, alert, decision, who, sent=sent)
         self.refresh_roster()
+        self._refresh_hall()
 
     def _elders_morning(self) -> None:
         answered = [r for r in elders.since(self.repo_root, self._quiet_since or "") if r.get("sent")]
@@ -2293,7 +2319,7 @@ class OrkcraftApp(App[int]):
         """(gold, gold level, lumber, lumber level) for the HUD; "—" until a session reports."""
         budget, snap = self.scroll.budget, self.snapshot
         gold_limit = f"${budget.gold_session_limit_usd:.2f}"
-        if snap.sessions or snap.unpriced:
+        if snap.sessions or snap.unpriced or snap.side_usd:
             # "+" marks spend that could not be priced (agy, or a model with no published price).
             gold = f"${snap.spent_usd:.2f}{'+' if snap.unpriced else ''} / {gold_limit}"
         else:

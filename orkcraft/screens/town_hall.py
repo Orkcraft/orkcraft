@@ -1,8 +1,9 @@
 """🏰 Town Hall: the town's own building, bottom right on the map.
 
-Three tabs: the Hall (its agents and the last audit), Sessions (every live Claude / agy session —
-the War Tent of old, `#chat-view`) and Limits (the quotas — the Treasury of old, `#limits-view`).
-Its hut carries the two quick actions of the town: Build and Audit.
+Three tabs: the Hall (its agents, the Elders' night, the Council's reviews and the last audit),
+Sessions (every live Claude / agy session — the War Tent of old, `#chat-view`) and Limits (the quotas —
+the Treasury of old, `#limits-view`). Its hut carries the two quick actions of the town: Build and
+Audit, and the Elders' lamp in the corner of its first row (`LAMPS`).
 """
 from __future__ import annotations
 
@@ -11,11 +12,18 @@ from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.widgets import Static, TabbedContent, TabPane
 
-from orkcraft.realm import audit, fastpath, feedback, optimize, town_presets, weekly
+from orkcraft.realm import audit, elders, fastpath, feedback, modes, optimize, town_presets, weekly
 from orkcraft.screens.chat_view import ChatView
 from orkcraft.screens.limits_view import LimitsView
 
 BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "lays out its panes and hut"))
+
+# The Elders' lamp on the hut (app.elders_state) and its word in the Hall.
+LAMPS = {"advice": ("📜", "advice waits for you — ! opens it"), "watch": ("🌙", "on watch: they read the questions"),
+         "full": ("⏳", "tonight's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
+         "off": ("", "off — autonomy is ⛓️ Ask me")}
+LAMPS_HIDDEN = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
+ELDERS_SHOWN = 8
 
 
 class TownHallView(Container):
@@ -69,6 +77,7 @@ class TownHallView(Container):
             else:
                 t.append(f"{len(found)} finding{'s' if len(found) != 1 else ''}", style="yellow" if serious else "")
                 t.append(f"{f', {len(serious)} to look at' if serious else ''}\n")
+        self._elders_section(t, repo)
         t.append("\nThe Council's Fast Path", style="bold")
         t.append(" — every new building, agent and road from scratch\n", style="dim")
         for _, icon, name, duty, _ in fastpath.ROLES:
@@ -126,6 +135,44 @@ class TownHallView(Container):
                     t.append(f"{icon} {f.text}\n", style=style)
         self.query_one("#hall-body", Static).update(t)
 
+    def _elders_section(self, t: Text, repo) -> None:
+        """🏛 What the Elders judged lately: answered (↪), advised (📜), left to you (·); ⚠ the Warder's note."""
+        app = self.app
+        state = app.elders_state() if hasattr(app, "elders_state") else "off"
+        per_night, _ = elders.limits(repo)
+        t.append("\n🏛 The Elders", style="bold")
+        t.append(f" — {LAMPS.get(state, LAMPS['off'])[1]}", style="dim")
+        if getattr(app, "_quiet_since", None) is not None:
+            t.append(f" · {getattr(app, '_elders_count', 0)} of {per_night} tonight", style="dim")
+        t.append("\n")
+        records = elders.recent(repo, ELDERS_SHOWN) if repo is not None else []
+        for r in records:
+            options, key = r.get("options") or {}, r.get("key")
+            if r.get("sent"):
+                mark, style, said = "↪", "green", f"answered [{key}] {options.get(key, '')}"
+            elif key is not None:
+                mark, style, said = "📜", "yellow", f"advised [{key}] {options.get(key, '')}"
+            else:
+                mark, style, said = "·", "dim", "left to you"
+            who = f"{r.get('who')} · " if r.get("who") else ""
+            t.append(f"{mark} {str(r.get('ts', ''))[5:16].replace('T', ' ')} {who}{str(r.get('question', ''))[:50]}",
+                     style=style)
+            t.append(f" → {said}")
+            if r.get("why"):
+                t.append(f" — {str(r['why'])[:60]}", style="dim")
+            if r.get("warn"):
+                t.append(" ⚠", style="bold yellow")
+            t.append("\n")
+        if not records:
+            t.append("nothing judged yet — they read the agents' questions in 🌙 quiet hours\n", style="dim")
+
+    def lamp(self) -> str:
+        app = self.app
+        state = app.elders_state() if hasattr(app, "elders_state") else "off"
+        if modes.hidden():
+            return LAMPS_HIDDEN.get(state, "")
+        return LAMPS.get(state, LAMPS["off"])[0]
+
     # -- the hut ----------------------------------------------------------------------------------
 
     def mini_status(self) -> list[str]:
@@ -147,9 +194,14 @@ class TownHallView(Container):
         return lines
 
     def hut_lines(self, widths: list[int]) -> list[str]:
+        """The Elders' lamp first (the corner of the heading row), then the status lines."""
         app = self.app
         repo = getattr(app, "repo_root", None)
-        lines = self.mini_status()
+        try:
+            lamp = self.lamp()
+        except Exception:
+            lamp = ""
+        lines = [lamp, *self.mini_status()]
         if repo is not None:
             report = audit.load(repo)
             lines.append(f"audit: {len(report.findings)} findings" if report else "audit: not run")

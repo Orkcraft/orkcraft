@@ -37,6 +37,7 @@ from typing import Any, Callable
 from orkcraft import scroll as ts
 from orkcraft.realm import chains, pipes, tiers
 from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
+from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 60
 ESCALATE = 3          # a hybrid's script: "the agent should take it from here"
@@ -269,7 +270,10 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         raise RuntimeError(f"{harness} exited with {proc.returncode}: {(stderr or stdout).strip()[:300]}")
-    return _result_of(stdout)
+    result = _result_of(stdout)
+    if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
+        telemetry.charge(result[1], f"{harness} agent")
+    return result
 
 
 def examples_file(repo_root: Path, building_id: str, orc_id: str) -> Path:

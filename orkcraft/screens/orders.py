@@ -165,7 +165,10 @@ class AwaitingOrdersModal(AlertModal):
         judged = self._judged(alert)
         if advice is not None:
             label = dict(alert.options).get(advice.key or "", "")
-            advice_widget.update(f"🏛 The Elders advise [{advice.key}] {label} — {advice.why}")
+            text = f"🏛 The Elders advise [{advice.key}] {label} — {advice.why}"
+            if advice.warn:
+                text += f"\n⚠ The Warder flags this screen: {advice.warn} — read it before you follow (A skips it)"
+            advice_widget.update(text)
         elif judged is not None:
             advice_widget.update(f"🏛 No advice: {judged.why}")
         advice_widget.display = judged is not None
@@ -254,8 +257,9 @@ class AwaitingOrdersModal(AlertModal):
             await self._answer_and_advance(alert, advice.key)
 
     async def action_follow_all(self) -> None:
-        """The operator follows the advice on every question that has some; the rest stay."""
-        for alert in [a for a in self.alerts if self._advice(a) is not None]:
+        """The operator follows the advice on every question that has some, but for the ⚠ ones (the
+        Warder flagged their screen: one at a time, with `a`); the rest stay."""
+        for alert in [a for a in self.alerts if self._advice(a) is not None and not self._advice(a).warn]:
             self.selected_index = self.alerts.index(alert)
             await self._answer_and_advance(alert, self._advice(alert).key)
             if not self.alerts:

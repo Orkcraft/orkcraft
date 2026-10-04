@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Callable
 
 from orkcraft.realm import huts, masonry
+from orkcraft.sources import telemetry
 from orkcraft.sources.sessions import claude_bin
 
 MAX_ATTEMPTS = 3
@@ -121,14 +122,16 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
     if proc.returncode != 0:
         raise RuntimeError(f"claude exited with {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:300]}")
     out = proc.stdout.strip()
+    text, cost = out, None
     try:
         envelope = json.loads(out)
     except ValueError:
-        return out, None
+        envelope = None
     if isinstance(envelope, dict) and isinstance(envelope.get("result"), str):
-        cost = envelope.get("total_cost_usd")
-        return envelope["result"], float(cost) if isinstance(cost, (int, float)) else None
-    return out, None
+        raw = envelope.get("total_cost_usd")
+        text, cost = envelope["result"], float(raw) if isinstance(raw, (int, float)) else None
+    telemetry.charge(cost, f"claude -p {model or 'default'}")     # no transcript of this run: 🪙 here
+    return text, cost
 
 
 def _feedback(attempts: list[Attempt]) -> str:

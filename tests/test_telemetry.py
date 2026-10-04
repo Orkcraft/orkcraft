@@ -145,3 +145,32 @@ def test_hook_records_run_and_terminal(tmp_path, monkeypatch):
     assert "run" not in e and "terminal" not in e
     e = hook.record("claude", {"session_id": "s"}, env={"ORKCRAFT_RUN": run, "ORKCRAFT_TERMINAL": "a b;rm"})
     assert e["run"] == run and "terminal" not in e
+
+
+def test_model_calls_with_no_transcript_count_in_the_run(tmp_path: Path):
+    telemetry.reset_charges()
+    telemetry.charge(0.5, "before the run")
+    meter = telemetry.Telemetry(tmp_path, "run1", started=dt.datetime.now().astimezone() + dt.timedelta(seconds=1))
+    import time
+    time.sleep(1.1)
+    telemetry.charge(0.25, "claude -p haiku")
+    telemetry.charge(0.10, "claude -p haiku")
+    telemetry.charge(None, "agy agent")
+    telemetry.charge(-1, "nonsense")
+    snap = meter.refresh()
+    assert snap.side_usd == pytest.approx(0.35) and snap.spent_usd == pytest.approx(0.35)
+    assert snap.side_by_source == {"claude -p haiku": pytest.approx(0.35)} and "agy agent" in snap.unpriced
+    assert telemetry.charged({"ORKCRAFT_RUN": "x"}) and not telemetry.charged({}) and not telemetry.charged(None)
+    telemetry.reset_charges()
+
+
+def test_the_light_calls_charge_the_ledger(monkeypatch):
+    import subprocess
+    from orkcraft.realm import builders
+    telemetry.reset_charges()
+    since = dt.datetime.now().astimezone()
+    answer = json.dumps({"result": "ok", "total_cost_usd": 0.02})
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, answer, ""))
+    assert builders.claude_runner("hi", model="haiku") == ("ok", 0.02)
+    assert [(usd, src) for _, usd, src in telemetry.charges(since)] == [(0.02, "claude -p haiku")]
+    telemetry.reset_charges()

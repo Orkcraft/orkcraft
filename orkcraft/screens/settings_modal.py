@@ -3,6 +3,8 @@
     fast_llm / fast_model    the Council's Fast Path: a light model on top of the rules
     optimize_at              the Building retro (daily)
     weekly_model / weekly_at the Town retro (weekly)
+    elders_per_night         🏛 the Elders: questions judged a night (0: none)
+    elders_context           🏛 the Elders: lines of the agent's screen they read
 Dismisses the values to save, or None.
 """
 from __future__ import annotations
@@ -17,7 +19,10 @@ from orkcraft.screens.build_flow import MODAL_CSS
 
 FIELDS = (("fast_model", "Fast Path model (light)", "haiku"), ("optimize_at", "Building retro at", "daily 06:20"),
           ("weekly_model", "Town retro model (heavy)", "opus"), ("weekly_at", "Town retro at",
-                                                                          "weekly sun 05:00"))
+                                                                          "weekly sun 05:00"),
+          ("elders_per_night", "🏛 Elders: questions a night", "40"),
+          ("elders_context", "🏛 Elders: screen lines they read", "14"))
+NUMBERS = {"elders_per_night": (0, 200), "elders_context": (4, 60)}
 
 
 class SettingsModal(ModalScreen[dict | None]):
@@ -35,7 +40,7 @@ class SettingsModal(ModalScreen[dict | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("⚙ Retros — models and schedules", classes="build-title")
+            yield Label("⚙ Retros and the Elders — models and schedules", classes="build-title")
             with Horizontal(classes="set-row"):
                 yield Label("Fast Path asks a light model")
                 yield Switch(value=bool(self.values.get("fast_llm", True)), id="set-fast_llm")
@@ -60,6 +65,13 @@ class SettingsModal(ModalScreen[dict | None]):
                 problems.append(f"{label}: not a schedule")
             if key.endswith("_model") and not value:
                 problems.append(f"{label}: name a model (haiku, sonnet, opus…)")
+            if key in NUMBERS:
+                lo, hi = NUMBERS[key]
+                if not value.isdigit() or not lo <= int(value) <= hi:
+                    problems.append(f"{label}: a number from {lo} to {hi}")
+                    continue
+                out[key] = int(value)
+                continue
             out[key] = value
         if problems:
             self.query_one("#set-errors", Static).update("\n".join(f"⚠ {p}" for p in problems))

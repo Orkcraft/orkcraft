@@ -188,7 +188,7 @@ def test_a_hidden_hut_has_no_emoji_at_all():
     hut = Hut("t", sil.TOWN_HALL, [ActionDef("a", "Preset", "📜", "")])
     hut.set_plain(True)
     hut.set_title(9, "🏰 Town hall")
-    hut.set_status(["🛡 all quiet", "🪙 $0.00 / $5"])
+    hut.set_status(["🌙", "🛡 all quiet", "🪙 $0.00 / $5"])                  # the Elders' lamp, then the lines
     hut.set_badge("🧌 Peon 🔨 💤")
     out = hut.render().plain
     assert not modes._EMOJI.search(out)
