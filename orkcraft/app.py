@@ -878,7 +878,7 @@ class OrkcraftApp(App[int]):
                     checkpoint.ensure(self.repo_root)
                 elif "Warder" in label:
                     from orkcraft.hooks import install as hooks_install
-                    hooks_install.install(self.repo_root)
+                    hooks_install.install_all(self.repo_root)
                 elif "order" in label:
                     town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("role", ""),
                                             choice.get("answers") or {})

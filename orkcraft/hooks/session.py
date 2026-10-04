@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Record which Claude Code / agy session worked on which ticket — hook target.
+"""Record which Claude Code / agy / Codex session worked on which ticket — hook target.
 
     python3 -m orkcraft.hooks.session claude   # .claude/settings.json hooks (`orkcraft hooks install`)
+    python3 -m orkcraft.hooks.session codex    # .codex/hooks.json hooks (`orkcraft hooks install`)
     python3 -m orkcraft.hooks.session agy      # .agents/hooks.json hooks
 
 Reads the hook payload (JSON) on stdin and appends one line to
@@ -10,12 +11,12 @@ Reads the hook payload (JSON) on stdin and appends one line to
 
     {"ts", "harness", "event", "session", "tickets", "cwd", "transcript", "prompt", "orc"?, "run"?, "terminal"?}
 
-Session id: Claude sends `session_id`; agy sends `conversationId`. Tickets come
+Session id: Claude and Codex send `session_id`; agy sends `conversationId`. Tickets come
 from `$ORKCRAFT_TICKET` (set by orkcraft when it opens a session for a node;
 the older `$ORCRAFT_TICKET` / `$MGTUI_TICKET` still work) and from
 `[[T1234]]` / `T1234` in the prompt; `orc` from `$ORKCRAFT_ORC` (a deployed garrison orc). Never fails the host tool: any error is
 swallowed and the hook exits 0. For agy it prints `{}` (agy reads hook stdout
-as a response); for Claude it prints nothing (Claude adds SessionStart /
+as a response); for Claude and Codex it prints nothing (both add SessionStart /
 UserPromptSubmit stdout to the conversation). Standard library only.
 """
 import datetime as dt

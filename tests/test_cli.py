@@ -57,3 +57,31 @@ def test_packaged_hooks_run_as_modules(tmp_path: Path):
         out = subprocess.run([sys.executable, "-m", module, "claude"], input=stdin, capture_output=True, text=True,
                              cwd=tmp_path, env=env)
         assert out.returncode == 0 and out.stdout.strip() == expect, out.stderr
+
+
+def test_codex_hooks_go_into_codex_hooks_json(tmp_path: Path, monkeypatch, capsys):
+    import json
+    import subprocess
+    import sys
+
+    from orkcraft.cli import main
+    from orkcraft.hooks import install as hooks_install
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(hooks_install.shutil, "which", lambda name: None)
+    assert hooks_install.install_all(tmp_path) == [tmp_path / ".claude" / "settings.json"]   # no Codex here
+    assert not (tmp_path / ".codex").exists()
+
+    (tmp_path / ".codex").mkdir()                                     # the project configures Codex
+    codex = tmp_path / ".codex" / "hooks.json"
+    codex.write_text(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"}]}]}}))
+    assert main(["--repo", str(tmp_path), "hooks", "install"]) == 0
+    assert main(["--repo", str(tmp_path), "hooks", "install"]) == 0  # idempotent
+    assert "/hooks" in capsys.readouterr().out                       # Codex runs them once trusted
+    data = json.loads(codex.read_text())
+    pre = data["hooks"]["PreToolUse"]
+    assert len(pre) == 1 and pre[0]["matcher"] == "Bash|apply_patch|Edit|Write"
+    assert pre[0]["hooks"][0]["command"] == f"{sys.executable} -m orkcraft.hooks.warder codex"
+    assert data["hooks"]["SessionStart"][0]["hooks"][0]["command"].endswith("-m orkcraft.hooks.session codex")
+    assert main(["--repo", str(tmp_path), "hooks", "uninstall"]) == 0
+    assert json.loads(codex.read_text())["hooks"] == {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"}]}]}

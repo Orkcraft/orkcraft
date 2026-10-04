@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""🛡️ Warder — the Council's security orc, as a Claude Code PreToolUse hook.
+"""🛡️ Warder — the Council's security orc, as a Claude Code and Codex PreToolUse hook.
 
-    .claude/settings.json → hooks.PreToolUse → python3 -m orkcraft.hooks.warder (`orkcraft hooks install`)
+    .claude/settings.json → hooks.PreToolUse → python3 -m orkcraft.hooks.warder        (`orkcraft hooks install`)
+    .codex/hooks.json     → hooks.PreToolUse → python3 -m orkcraft.hooks.warder codex
 
 Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
 
@@ -10,13 +11,16 @@ Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
   files (.env, private keys, .ssh, .aws credentials, .netrc, …);
 - ask  — destructive but legitimate: `git reset --hard`, `git clean -f`, discarding all changes,
   `git branch -D`, dropping stashes, `sudo`, dumping the environment, and edits to Warder itself
-  (`orkcraft/hooks/warder.py`, `scripts/warder_hook.py`, `.claude/settings*.json`);
-- nothing — everything else goes through Claude Code's normal permission flow.
+  (`orkcraft/hooks/warder.py`, `scripts/warder_hook.py`, `.claude/settings*.json`, `.codex/hooks.json`,
+  `.codex/config.toml`). Codex cannot ask yet, so for Codex an ask is a deny that says why;
+- nothing — everything else goes through the agent's normal permission flow.
+
+Codex edits files with `apply_patch`: the files it touches are read from the patch itself.
 
 Every deny / ask is appended to `.orkcraft/warder.jsonl` of the project the session works in
 (redacted, cut to 160 chars) so the Warder orc in orkcraft shows ❓ with the reason. An internal error never blocks a tool call (the
 error is logged) — a guard must not brick the sessions it guards. Standard library only.
-agy has no documented pre-tool hook, so Warder guards Claude Code sessions only.
+agy has no documented pre-tool hook, so Warder guards Claude Code and Codex sessions only.
 """
 from __future__ import annotations
 
@@ -69,7 +73,8 @@ SECRET_NAMES = ("id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", ".netrc", ".pgpass
 SECRET_GLOBS = ("*.pem", "*.key", "*.p12", "*.pfx", "*.keystore", "*.jks")
 SECRET_DIRS = (".ssh", ".gnupg")
 ENV_OK = (".env.example", ".env.sample", ".env.template", ".env.dist")
-SELF = ("orkcraft/hooks/warder.py", "scripts/warder_hook.py", ".claude/settings.json", ".claude/settings.local.json")
+SELF = ("orkcraft/hooks/warder.py", "scripts/warder_hook.py", ".claude/settings.json", ".claude/settings.local.json",
+        ".codex/hooks.json", ".codex/config.toml")
 # Programs that may name a secret file without reading it.
 HARMLESS = {"ls", "stat", "test", "[", "file", "realpath", "dirname", "basename", "echo"}
 _TOKEN = re.compile(r"(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{8,}|xox[a-z]-[A-Za-z0-9-]{8,}|AKIA[A-Z0-9]{12,}"
@@ -260,16 +265,26 @@ def _paths_of(tool_input: dict) -> list[str]:
     return out
 
 
+_PATCH_FILE = re.compile(r"^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$", re.MULTILINE)
+
+
+def patch_paths(patch: str) -> list[str]:
+    """The files a Codex `apply_patch` touches: its `*** Add / Update / Delete File:` and `*** Move to:` lines."""
+    return [p.strip() for p in _PATCH_FILE.findall(patch)]
+
+
 def judge(tool_name: str, tool_input: dict, cwd: Path) -> tuple[str, str] | None:
     if tool_name == "Bash":
         return judge_bash(str(tool_input.get("command") or ""), cwd)
     paths = _paths_of(tool_input)
+    if tool_name == "apply_patch":                        # Codex: the patch names the files it edits
+        paths = patch_paths(str(tool_input.get("command") or ""))
     if tool_name in ("Grep", "Glob"):
         paths = [str(tool_input.get("path") or "")] + ([str(tool_input["glob"])] if tool_input.get("glob") else [])
     for p in paths:
         if p and is_secret(p):
             return DENY, f"{p} looks like a secret (keys, tokens, .env) — Warder keeps it out of sessions"
-    if tool_name in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
+    if tool_name in ("Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"):
         for p in paths:
             try:
                 rel = (cwd / p).resolve().relative_to(REPO).as_posix() if p else ""
@@ -297,6 +312,7 @@ def log(entry: dict, cwd: Path | None = None) -> None:
 
 
 def main() -> int:
+    harness = sys.argv[1] if len(sys.argv) > 1 else "claude"
     try:
         payload = json.loads(sys.stdin.read() or "{}")
         tool = str(payload.get("tool_name") or "")
@@ -309,7 +325,12 @@ def main() -> int:
     if verdict is None:
         return 0
     decision, reason = verdict
-    subject = tool_input.get("command") or next(iter(_paths_of(tool_input)), "")
+    if decision == ASK and harness == "codex":           # Codex parses "ask" but does not support it yet
+        decision, reason = DENY, f"{reason} — Codex cannot ask, so Warder stops it; run it yourself if you mean it"
+    if tool == "apply_patch":
+        subject = ", ".join(patch_paths(str(tool_input.get("command") or "")))
+    else:
+        subject = tool_input.get("command") or next(iter(_paths_of(tool_input)), "")
     log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": decision, "tool": tool,
          "reason": reason, "subject": redact(str(subject)), "session": str(payload.get("session_id") or "")[:64]},
         cwd)
