@@ -111,11 +111,12 @@ Inside the project it runs in, orkcraft keeps only local state (add these to you
   tracks building specs, scripts and blueprints; `Z` reads it. It is separate from your project's history.
 
 Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_LIMITS=0`,
-`ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council are set in
-the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
+`ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council and the
+Elders' limits are set in the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
 
 The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
 the design of roads and orcs is in [docs/design/roads-and-orcs.md](docs/design/roads-and-orcs.md).
+What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 
 ## Development
 

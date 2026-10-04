@@ -8,11 +8,20 @@ messages timestamped after the run started — a resumed session's old history i
 
 Costs are API-equivalent estimates (see `pricing`); agy sessions have no published prices and
 are counted as unpriced, never as $0.
+
+Model calls that leave no transcript of this run — the Council's Fast Path, the Elders, the Builder,
+the Recruiter, the daily proposal and the weekly self-audit (`claude -p` in an empty folder), the
+Barracks orcs and the Orc Council's members — are charged here as they answer (`charge`); the
+snapshot adds them to the same 🪙, so every limit and gate sees the whole spend. A call that carries
+`ORKCRAFT_RUN` (a road's agent) is not charged: its transcript already counts.
+
+    telemetry.charge(0.004, "claude -p haiku")    # from any thread
 """
 from __future__ import annotations
 
 import datetime as dt
 import json
+import threading
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +34,37 @@ MAX_LINE = 4 * 1024 * 1024  # a single transcript line beyond this is skipped, n
 
 def new_run_id() -> str:
     return uuid.uuid4().hex
+
+
+# -- the side ledger: model calls with no transcript of this run -----------------------------------
+
+_LEDGER: list[tuple[dt.datetime, float | None, str]] = []      # (when, usd or None: unpriced, source)
+_LEDGER_LOCK = threading.Lock()
+LEDGER_KEEP = 10_000
+
+
+def charge(usd: float | None, source: str) -> None:
+    """One model call's cost; None when it could not be priced (agy, or no cost in the answer)."""
+    if usd is not None and (not isinstance(usd, (int, float)) or usd < 0):
+        return
+    with _LEDGER_LOCK:
+        _LEDGER.append((dt.datetime.now().astimezone(), None if usd is None else float(usd), source))
+        del _LEDGER[:-LEDGER_KEEP]
+
+
+def charged(env: dict | None) -> bool:
+    """Whether a call run with `env` leaves a transcript this run already counts (it carries `ORKCRAFT_RUN`)."""
+    return bool((env or {}).get("ORKCRAFT_RUN"))
+
+
+def charges(since: dt.datetime) -> list[tuple[dt.datetime, float | None, str]]:
+    with _LEDGER_LOCK:
+        return [c for c in _LEDGER if c[0] >= since]
+
+
+def reset_charges() -> None:
+    with _LEDGER_LOCK:
+        _LEDGER.clear()
 
 
 def _ts(value: object) -> dt.datetime | None:
@@ -103,6 +143,8 @@ class Snapshot:
     context_by_terminal: dict[str, int] = field(default_factory=dict)
     model_by_terminal: dict[str, str] = field(default_factory=dict)
     cost_by_terminal: dict[str, float] = field(default_factory=dict)   # this run's spend per session
+    side_usd: float = 0.0                              # model calls with no transcript (already in spent_usd)
+    side_by_source: dict[str, float] = field(default_factory=dict)
 
 
 class Telemetry:
@@ -149,6 +191,13 @@ class Telemetry:
             snap.model_by_terminal[terminal] = meter.model
             snap.cost_by_terminal[terminal] = meter.cost
         snap.sessions = len(transcripts)
+        for _, usd, source in charges(self.started):
+            if usd is None:
+                snap.unpriced.add(source)
+                continue
+            snap.side_usd += usd
+            snap.side_by_source[source] = snap.side_by_source.get(source, 0.0) + usd
+        snap.spent_usd += snap.side_usd
         return snap
 
 

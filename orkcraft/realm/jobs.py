@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft.realm import roads
+from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
 WORK_TIMEOUT_S = 1800
@@ -129,6 +130,8 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     if proc.returncode != 0:
         raise RuntimeError(f"{harness} exited with {proc.returncode}: {(err or out).strip()[:300]}")
     text, cost, tokens = roads._result_of(out)
+    if not telemetry.charged({**os.environ, **(env or {})}):
+        telemetry.charge(cost, f"{harness} worker")
     return text, cost, tokens, session_of(out)
 
 

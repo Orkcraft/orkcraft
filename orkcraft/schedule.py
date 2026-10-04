@@ -4,6 +4,7 @@
     span.contains(30)                        # 00:30 → True
     office_now(machine, now)                 # Shift mode: an office hour on an office day
     quiet_now(machine, now)                  # do-not-disturb: no fires, later no sound, no push
+    quiet_started(machine, now)              # when tonight's quiet hours began (None: not quiet)
     plain_now(machine, now)                  # buildings as frames: Office, or Shift in office hours
 
 Times are local and snap to `STEP` minutes (the day bar has one cell per step). Office and quiet
@@ -113,6 +114,16 @@ def office_now(machine, now: dt.datetime | None = None) -> bool:
 def quiet_now(machine, now: dt.datetime | None = None) -> bool:
     now = now or dt.datetime.now()
     return machine.quiet is not None and machine.quiet.contains(_minute(now))
+
+
+def quiet_started(machine, now: dt.datetime | None = None) -> dt.datetime | None:
+    """When the quiet hours that hold now began (yesterday evening for a night past midnight); None
+    when it is not quiet."""
+    now = now or dt.datetime.now()
+    if not quiet_now(machine, now):
+        return None
+    back = (_minute(now) - machine.quiet.start) % DAY
+    return (now - dt.timedelta(minutes=back)).replace(second=0, microsecond=0)
 
 
 def plain_now(machine, now: dt.datetime | None = None, mode: str | None = None) -> bool:

@@ -60,9 +60,10 @@ safeguards: Council, checkpoint, 24 h probation, the list of changes — `realm/
 agents' own settings, one line each, with 📋 (or `c` / `g`) copying the Claude Code permission block or
 the agy command instead of showing them. From Morning
 advice up, the 🏛 Elders (`realm/elders.py`) advise on the agents' permission questions in quiet hours —
-Warder rules first, then the light model, a one-time yes or a no only — and the operator follows the
-advice in the morning (`a`, `A` for all). Only at ⛓️‍💥 Free orcs do the Elders answer themselves in quiet
-hours: their one-time yes or no goes to the agent, if the very same question still waits; what the
+Warder rules first (a block: no advice; a warning: advice with a ⚠), then the light model, a one-time
+yes or a no only — and the operator follows the advice in the morning (`a`, `A` for all but the ⚠
+ones). Only at ⛓️‍💥 Free orcs do the Elders answer themselves in quiet hours: their one-time yes or no
+goes to the agent, if the very same question still waits and the Warder flagged nothing; what the
 rules stop or the model would not advise still waits for the operator.
 
 ## 3. Step 3 — Mode and your day
