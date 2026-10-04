@@ -52,3 +52,12 @@ def fresh_spend_ledger():
     telemetry.reset_charges()
     yield
     telemetry.reset_charges()
+
+
+@pytest.fixture(autouse=True)
+def fresh_halt_registry():
+    """🛑 Halt All's registry is process-wide: every test starts with nothing running and no halt."""
+    from orkcraft.realm import halt
+    halt.reset()
+    yield
+    halt.reset()

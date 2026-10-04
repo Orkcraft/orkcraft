@@ -237,6 +237,9 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
             return None
         try:
             text, cost = runner(harness, prompt, model)
+        except InterruptedError:                 # 🛑 Halt All (or leaving): stopped, not failed
+            d.outcome = "stopped"
+            return None
         except Exception as e:  # one failing call ends the gathering, the app goes on
             d.outcome, d.error = "error", f"{e}"[:300]
             return None

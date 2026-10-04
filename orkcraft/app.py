@@ -26,7 +26,7 @@ from textual.widgets import Footer
 from orkcraft.config import Config, find_project_root
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import audit, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
+from orkcraft.realm import audit, halt, blueprint, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, metrics, builders, catalog, chronicles, huts, masonry, silhouettes, pipes, recruiter, roads, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.realm.orcs import ALERT_ICON, Alert, Trigger, WORKER, RESIDENT, Orc, garrison_badge
@@ -3467,15 +3467,20 @@ class OrkcraftApp(App[int]):
     # -- Halt All ----------------------------------------------------------------------------
 
     def action_halt(self, source: str = "") -> None:
-        """Emergency freeze: interrupt every running agent session; the TUI stays open."""
+        """Emergency freeze: everything the camp runs stops — War Tent sessions, road agents, the
+        buildings' own work (orcs, reviews, the librarian, scripts, tests, browsers) and every model
+        call; queues wait. The TUI stays open."""
         halted = self.chat.interrupt_all()
+        killed = halt.halt_all()                        # every agent, script, test and browser process
         for worker in self.workers:
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
-        for b_spec in self.scroll.buildings:          # what buildings run themselves (a Catapult's browser)
-            halt = getattr(self._custom_view(b_spec.id), "halt", None)
-            if callable(halt):
-                halted += int(halt() or 0)
+        stopped = 0
+        for b_spec in self.scroll.buildings:          # what buildings run themselves: they stop and hold their queues
+            stop = getattr(self._custom_view(b_spec.id), "halt", None)
+            if callable(stop):
+                stopped += int(stop() or 0)
+        halted += max(killed, stopped)
         hud = self._hud
         hud.set_halt(f"HALTED — {halted} stopped")
         self.notify(f"🛑 Halt All: {halted} running session{'s' if halted != 1 else ''} interrupted",

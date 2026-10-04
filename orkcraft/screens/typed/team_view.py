@@ -249,7 +249,7 @@ class TeamView(TypedView):
                                     markdown=d.decision, error=d.error, cost_usd=d.spent or None))
         self.history = tm.load_all(self.state_dir)
         self._render_list()
-        if self.waiting and d.outcome != "asked":
+        if self.waiting and d.outcome not in ("asked", "stopped"):    # after a halt the queue waits for ▶ or a cart
             title, text, path, ref, trail, source = self.waiting.pop(0)
             self.start(text, title, path, ref, trail, source)
 

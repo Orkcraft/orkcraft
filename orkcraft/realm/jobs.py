@@ -19,7 +19,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import roads
+from orkcraft.realm import halt, roads
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
@@ -56,6 +56,15 @@ def now_iso() -> str:
 
 
 def _wait(proc: subprocess.Popen, cancel: threading.Event, timeout_s: int) -> None:
+    """Until it ends, `cancel` is set (InterruptedError) or the time is up; 🛑 Halt All kills it (Halted)."""
+    halt.started(proc)
+    try:
+        _wait_for(proc, cancel, timeout_s)
+    finally:
+        halt.ended(proc)
+
+
+def _wait_for(proc: subprocess.Popen, cancel: threading.Event, timeout_s: int) -> None:
     deadline = time.monotonic() + timeout_s
     while proc.poll() is None:
         if cancel.wait(0.2) or time.monotonic() > deadline:

@@ -170,7 +170,8 @@ def test_the_light_calls_charge_the_ledger(monkeypatch):
     telemetry.reset_charges()
     since = dt.datetime.now().astimezone()
     answer = json.dumps({"result": "ok", "total_cost_usd": 0.02})
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, answer, ""))
+    from orkcraft.realm import halt
+    monkeypatch.setattr(halt, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, answer, ""))
     assert builders.claude_runner("hi", model="haiku") == ("ok", 0.02)
     assert [(usd, src) for _, usd, src in telemetry.charges(since)] == [(0.02, "claude -p haiku")]
     telemetry.reset_charges()

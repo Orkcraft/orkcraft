@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from orkcraft.realm import halt
+
 INSTALL_HINT = "Playwright is not installed — pip install 'orkcraft[browser]' && playwright install chromium"
 WATCH_LIMIT_S = 15 * 60          # how long a scouting window may stay open
 WATCH_TICK_S = 1.5
@@ -244,8 +246,9 @@ def scout(url: str, profile: Path, watch: bool = True, headless: bool = False,
                     pass
                 best = page.evaluate(SCOUT_JS)
             else:
-                end, tick = time.monotonic() + limit_s, 0
+                end, tick, seen0 = time.monotonic() + limit_s, 0, halt.count()
                 while time.monotonic() < end and ctx.pages:
+                    halt.check(seen0)                   # 🛑 Halt All closes the window too
                     for pg in list(ctx.pages):
                         try:
                             snap = pg.evaluate(SCOUT_JS)
@@ -784,18 +787,21 @@ def run_script(script: Path, profile: Path, body, press: bool, headless: bool = 
     ensure_profile(profile)
     try:
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                text=True, env=env, cwd=str(script.parent))
+                                text=True, env=env, cwd=str(script.parent), start_new_session=True)
     except OSError as e:
         return Result(False, -1, {}, "", str(e)[:300])
     if on_start is not None:
         on_start(proc)
     try:
-        out, err_text = proc.communicate(json.dumps(body, ensure_ascii=False),
-                                         timeout=timeout or (PRESS_TIMEOUT_S if press or check else LEAVE_TIMEOUT_S))
+        with halt.running(proc):                      # its browser is in its process group: Halt All kills both
+            out, err_text = proc.communicate(json.dumps(body, ensure_ascii=False),
+                                             timeout=timeout or (PRESS_TIMEOUT_S if press or check else LEAVE_TIMEOUT_S))
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.communicate()
         return Result(False, -1, {}, "", "the script ran out of time")
+    except halt.Halted:
+        return Result(False, -1, {}, "", "stopped by Halt All")
     summary = {}
     out, err_text = out or "", err_text or ""
     for line in reversed(out.strip().splitlines()):
@@ -942,10 +948,14 @@ def repair(state_dir: Path, page_map: dict, plan_of: Callable[[dict], Plan], sub
     if edited_by_hand(state_dir):
         out.errors = ["fill.py was edited by hand — repair it there, or delete it to let the overseer write it"]
         return out
+    seen0 = halt.count()
     for _ in range(MAX_REPAIRS):
+        halt.check(seen0)
         out.attempts += 1
         try:
             text, cost = runner(repair_prompt(page_map, plan_of(page_map), submit, broken, page, orc, feedback))
+        except halt.Halted:
+            raise
         except Exception as e:                    # the model is out of reach
             out.errors.append(str(e)[:300])
             break
@@ -1113,7 +1123,7 @@ def agent_scout(form: Form, profile: Path, orc: str = "Loader",
     runner = runner or builders.claude_runner
     ensure_profile(profile)
     cost, history, start, path = 0.0, [], form.url, []
-    loads = [0]
+    loads, seen0 = [0], halt.count()
     with sync_playwright() as p:
         try:
             ctx = p.chromium.launch_persistent_context(str(profile), headless=headless)
@@ -1125,6 +1135,7 @@ def agent_scout(form: Form, profile: Path, orc: str = "Loader",
             page.goto(form.url, wait_until="domcontentloaded")
             _settle(page, PwError)
             for _ in range(steps):
+                halt.check(seen0)                       # 🛑 Halt All: the scout stops, its browser closes
                 snap = page.evaluate(SCOUT_JS)
                 if login_page(snap, form.url):
                     raise LoginNeeded(f"{form.name}: a login page ({str(snap.get('url'))[:80]}) — log in with l")

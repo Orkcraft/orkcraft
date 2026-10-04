@@ -36,7 +36,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import catapult as cp, catapult_web as cw, roads
+from orkcraft.realm import catapult as cp, catapult_web as cw, halt, roads
 from orkcraft.screens.dialogs import Confirm
 from orkcraft.screens.typed.base import TypedView
 
@@ -398,8 +398,11 @@ class CatapultView(TypedView):
 
         def work() -> None:
             started = time.time()
-            r = cw.repair(d, page_map, lambda m: cw.plan(m, keys, rules, mapping), submit, finish,
-                          list(summary.get("broken") or []), summary.get("page") or {}, profile, orc, runner=runner)
+            try:
+                r = cw.repair(d, page_map, lambda m: cw.plan(m, keys, rules, mapping), submit, finish,
+                              list(summary.get("broken") or []), summary.get("page") or {}, profile, orc, runner=runner)
+            except halt.Halted:
+                r = cw.Repair(False, errors=["stopped by Halt All"])
             try:
                 app.call_from_thread(self._repaired, form, index, r, body, started)
             except Exception:

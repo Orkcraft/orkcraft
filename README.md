@@ -34,7 +34,7 @@ You need Python 3.11+ and git. Optional: `claude` and/or `agy` on your `PATH` (a
 Builder), `gh` (GitHub events in the Watchtower).
 
 Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
-`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent).
+`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent, script and browser).
 
 ## The idea
 

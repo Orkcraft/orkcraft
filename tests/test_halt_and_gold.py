@@ -57,3 +57,44 @@ async def test_out_of_gold_no_task_is_hired_and_no_agent_step_runs(fake_repo: Pa
         mill = app.desktop.get_window("grinder").query_one(MillView)
         with pytest.raises(RuntimeError, match="budget exhausted"):
             mill._agent()("shorten it", "a long text")
+
+
+def test_halt_all_kills_every_registered_process_and_its_children(tmp_path: Path):
+    import subprocess
+    import sys
+    from orkcraft.realm import halt
+    halt.reset()
+    done = threading.Event()
+    seen: dict = {}
+
+    def work() -> None:
+        try:
+            halt.run([sys.executable, "-c", "import subprocess, sys, time; "
+                      "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); time.sleep(60)"],
+                     timeout=30)
+        except halt.Halted:
+            seen["halted"] = True
+        except subprocess.TimeoutExpired:
+            seen["timeout"] = True
+        done.set()
+
+    threading.Thread(target=work, daemon=True).start()
+    for _ in range(100):
+        if halt._LIVE:
+            break
+        threading.Event().wait(0.05)
+    seen_before = halt.count()
+    assert halt.halt_all() == 1 and halt.stopped_since(seen_before)
+    assert done.wait(10) and seen == {"halted": True}
+    assert halt.halt_all() == 0                                   # nothing left running
+
+
+def test_a_short_model_call_stopped_by_the_halt_is_not_a_failure_the_lookout_passes_on():
+    from orkcraft.realm import halt, lookout, watch
+
+    def runner(prompt):
+        raise halt.Stopped()
+
+    sig = watch.Signal("2026-10-04T09:00:00", "slack", "hi", "body")
+    with pytest.raises(halt.Stopped):
+        lookout.judge("feedback", [sig], runner)

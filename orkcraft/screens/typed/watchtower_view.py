@@ -34,7 +34,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Markdown, OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import fastpath, feeds, inbound, lookout, mailbox, watch
+from orkcraft.realm import fastpath, feeds, halt, inbound, lookout, mailbox, watch
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 120.0
@@ -241,13 +241,24 @@ class WatchtowerView(TypedView):
         runner = None if self.simulated else (type(self).judge_runner or fastpath.light_runner(self._get_repo_root()))
 
         def work() -> None:
-            verdicts, problem = lookout.judge(intent, batch, runner)
+            try:
+                verdicts, problem = lookout.judge(intent, batch, runner)
+            except halt.Stopped:                         # 🛑 Halt All: the batch waits, unjudged
+                try:
+                    app.call_from_thread(self._unjudged, batch)
+                except Exception:
+                    self._judging = False
+                return
             try:
                 app.call_from_thread(self.judged, batch, verdicts, problem)
             except Exception:
                 self._judging = False
 
         self.run_worker(work, thread=True, group="watch-judge")
+
+    def _unjudged(self, batch: list[watch.Signal]) -> None:
+        self.pending[:0] = batch
+        self._judging = False
 
     def judged(self, batch: list[watch.Signal], verdicts: list[lookout.Verdict], problem: str) -> None:
         self._judging = False

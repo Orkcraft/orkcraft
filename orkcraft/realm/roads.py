@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, pipes, tiers
+from orkcraft.realm import chains, halt, pipes, tiers
 from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
 from orkcraft.sources import telemetry
 
@@ -73,13 +73,14 @@ def run_handler_script(path: Path, records: list[dict], repo_root: Path, cancel:
         except (BrokenPipeError, OSError):
             pass
         deadline = time.monotonic() + timeout_s
-        while proc.poll() is None:
-            if cancel.wait(0.1) or time.monotonic() > deadline:
-                proc.kill()
-                proc.wait(5)
-                if cancel.is_set():
-                    raise InterruptedError("stopped")
-                raise RuntimeError(f"no answer within {timeout_s} s")
+        with halt.running(proc):
+            while proc.poll() is None:
+                if cancel.wait(0.1) or time.monotonic() > deadline:
+                    proc.kill()
+                    proc.wait(5)
+                    if cancel.is_set():
+                        raise InterruptedError("stopped")
+                    raise RuntimeError(f"no answer within {timeout_s} s")
         out.seek(0)
         err.seek(0)
         return proc.returncode, out.read()[:20_000].strip(), err.read()[:4000]
@@ -257,17 +258,18 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         except FileNotFoundError as e:
             raise RuntimeError(f"{cmd[0]} not found") from e
         deadline = time.monotonic() + AGENT_TIMEOUT_S
-        while proc.poll() is None:
-            if cancel.wait(0.2) or time.monotonic() > deadline:
-                proc.terminate()
-                try:
-                    proc.wait(5)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                if cancel.is_set():
-                    raise InterruptedError("restarted by a new event")
-                raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
-        stdout, stderr = proc.communicate()
+        with halt.running(proc):                       # 🛑 Halt All kills it: Halted
+            while proc.poll() is None:
+                if cancel.wait(0.2) or time.monotonic() > deadline:
+                    proc.terminate()
+                    try:
+                        proc.wait(5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                    if cancel.is_set():
+                        raise InterruptedError("restarted by a new event")
+                    raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
+            stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         raise RuntimeError(f"{harness} exited with {proc.returncode}: {(stderr or stdout).strip()[:300]}")
     result = _result_of(stdout)

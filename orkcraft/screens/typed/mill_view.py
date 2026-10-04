@@ -20,7 +20,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft import scroll as ts
-from orkcraft.realm import jobs, mill, pipes, roads
+from orkcraft.realm import halt, jobs, mill, pipes, roads
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.base import TypedView
 
@@ -170,6 +170,7 @@ class MillView(TypedView):
         job = jobs.Job(uuid.uuid4().hex[:8], title or self.spec.get("title", self.building_id), "mill", text,
                        started=jobs.now_iso(), outcome="running", trigger=trigger, meta={"cut": True} if cut else {})
         self._carts[job.id] = (trail, ref)
+        self._halts = halt.count()
         steps, repo, app, agent = self.steps, self._get_repo_root(), self.app, self._agent()
         env, cancel = [str(n) for n in self.config.get("env") or []], self.cancel
         self._render_list()
@@ -219,7 +220,8 @@ class MillView(TypedView):
         except OSError:
             pass
         self.refresh_data()
-        self._next()
+        if not halt.stopped_since(getattr(self, "_halts", halt.count())):   # after 🛑 Halt All the queue waits
+            self._next()
 
     def action_edit_steps(self) -> None:
         def done(text: str | None) -> None:

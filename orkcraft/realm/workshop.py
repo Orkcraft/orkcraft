@@ -30,6 +30,8 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from orkcraft.realm import halt
+
 RUNTIMES = {"python": (["python3", "-I"], "main.py"), "bash": (["bash"], "main.sh")}
 LAYOUTS = ("log", "table", "card")
 DONE, ESCALATE, ALERT = 0, 3, 4
@@ -128,9 +130,10 @@ def run(script: Path, runtime: str, the_cart: dict, cwd: Path, timeout_s: int = 
                 input=value[:OUT_KEEP])
     start = time.monotonic()
     try:
-        proc = subprocess.run(argv, input=json.dumps(the_cart, ensure_ascii=False), cwd=str(cwd),
-                              env=_env(bare, cwd if bare else None), capture_output=True, text=True,
-                              timeout=timeout_s)
+        proc = halt.run(argv, input=json.dumps(the_cart, ensure_ascii=False), cwd=str(cwd),
+                        env=_env(bare, cwd if bare else None), timeout=timeout_s)
+    except halt.Halted:
+        return Run(**base, code=-1, err="stopped by Halt All")
     except FileNotFoundError as e:
         return Run(**base, code=-1, err=f"{argv[0]} not found: {e}")
     except subprocess.TimeoutExpired:

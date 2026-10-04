@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import huts, masonry
+from orkcraft.realm import halt, huts, masonry
 from orkcraft.sources import telemetry
 from orkcraft.sources.sessions import claude_bin
 
@@ -111,14 +111,16 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
     with tempfile.TemporaryDirectory(prefix="orkcraft-mason-") as empty:
         env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
         try:
-            proc = subprocess.run(
+            proc = halt.run(                            # 🛑 Halt All stops it (Halted)
                 [claude_bin(), "-p", prompt, "--output-format", "json", *(["--model", model] if model else [])],
-                cwd=empty, env=env, capture_output=True, text=True, timeout=CALL_TIMEOUT_S,
+                cwd=empty, env=env, timeout=CALL_TIMEOUT_S,
             )
         except FileNotFoundError as e:
             raise RuntimeError(f"Claude Code CLI not found ({claude_bin()}) — install it or set ORKCRAFT_CLAUDE_BIN") from e
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"no answer within {CALL_TIMEOUT_S} s") from e
+        except halt.Halted as e:
+            raise halt.Stopped() from e
     if proc.returncode != 0:
         raise RuntimeError(f"claude exited with {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:300]}")
     out = proc.stdout.strip()

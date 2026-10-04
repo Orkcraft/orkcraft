@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from orkcraft.realm import builders
+from orkcraft.realm import builders, halt
 
 BATCH = 20
 EXCERPT = 600
@@ -61,6 +61,8 @@ def judge(intent: str, signals: list, runner) -> tuple[list[Verdict], str]:
             answer = builders.extract_json(text)
             if answer is None:
                 raise RuntimeError("no JSON in the answer")
+        except halt.Stopped:
+            raise                                   # 🛑 Halt All: nothing is judged, nothing passes
         except RuntimeError as e:
             problem = f"intent: the model failed ({e}) — these passed unchecked"[:200]
             verdicts += [Verdict(True, "unchecked") for _ in batch]

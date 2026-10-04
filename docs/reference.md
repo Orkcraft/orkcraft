@@ -33,7 +33,11 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   and it shows the halt state (`HALTED — n stopped`).
 - **🛑 Halt All** — `space` (in neutral state when the focused widget does not use space) or
   `ctrl+p` (always, even inside a terminal): interrupts every running Claude / agy session
-  (SIGINT — the CLI cancels its turn, the session stays), the TUI stays open.
+  (SIGINT — the CLI cancels its turn, the session stays) and stops everything else the camp runs —
+  road agents, Barracks orks and their steward, a Clan Fire review, the wiki's librarian, Mill and
+  Workshop scripts, tests, a Catapult's browser and scouts, every model call (`realm/halt.py` kills
+  each process with its children). Queues hold: the Barracks and the Catapult pause, a Mill and a
+  Clan Fire wait for the next cart or ▶. The TUI stays open.
   Textual's command palette moved to `ctrl+k`.
 - **The Console** (lower RTS console 33/33/33):
   - **War Map** (left): camp / orkspaces (F1–F8, biomes, alerts marker `❓`), creation hint `[N]`.
