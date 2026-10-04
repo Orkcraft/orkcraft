@@ -5,8 +5,9 @@ from __future__ import annotations
 class FakeGit:
     """No real branches: every task 'has' a commit, the tests pass, nothing is pushed."""
 
-    def __init__(self, commits: int = 1, tests: tuple[bool, str] = (True, ""), pr: str = ""):
-        self.commits, self.tests, self.pr = commits, tests, pr
+    def __init__(self, commits: int = 1, tests: tuple[bool, str] = (True, ""), pr: str = "",
+                 files: tuple[str, ...] = ("app.py",)):
+        self.commits, self.tests, self.pr, self.files = commits, tests, pr, files
         self.prepared, self.published = [], []
 
     def base_of(self, repo_root, configured=""):
@@ -16,7 +17,7 @@ class FakeGit:
         self.prepared.append((branch, base))
 
     def diff(self, workdir, base, branch):
-        return self.commits, "+ a change\n" if self.commits else ""
+        return self.commits, "".join(f"diff --git a/{f} b/{f}\n+ a change\n" for f in self.files) if self.commits else ""
 
     def test(self, workdir, command, cancel):
         return self.tests

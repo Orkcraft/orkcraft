@@ -64,6 +64,10 @@ QUESTION = re.compile(r"^\s*\**\s*QUESTION\b\s*:?\s*(.+)", re.I | re.S | re.M)
 ACCEPT = re.compile(r"^\s*\**\s*ACCEPT\b", re.I)
 REWORK = re.compile(r"^\s*\**\s*REWORK\b\s*:?\s*", re.I)
 ANSWER = re.compile(r"^\s*\**\s*ANSWER\b\s*:?\s*(.+)", re.I | re.S)
+SCOPE = re.compile(r"^\s*\**\s*SCOPE\b\s*:?\s*\**\s*(local|external)\b", re.I | re.M)
+DOC_SUFFIXES = (".md", ".markdown", ".txt", ".rst", ".adoc", ".org")
+LOCAL, EXTERNAL = "local", "external"      # a task's scope: no pull request / reviewed and sent as a PR
+_DIFF_FILE = re.compile(r"^diff --git a/(.+?) b/(.+)$", re.M)
 WORD = re.compile(r"[^\W\d_][\w-]{3,}")
 STOP = frozenset("this that with from have will what when where which into your there their about please "
                  "should could would also make sure some them then than only just like need want task".split())
@@ -128,6 +132,7 @@ class PoolTask:
     qa: list[list[str]] = field(default_factory=list)   # [question, answer, who answered]
     question: str = ""              # the question waiting for the operator (status asked)
     pr: str = ""                    # the pull request's URL
+    scope: str = ""                 # local (no pull request) | external (reviewed, sent as a PR); "" not yet
     ref: str = ""                   # the thing worked on (a cart's ref), kept through rework rounds
     trail: list = field(default_factory=list)   # the hops before it arrived (pipes.Hop dicts)
 
@@ -164,6 +169,33 @@ def question_of(text: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+def changed_files(diff: str) -> list[str]:
+    """The files a `git diff` touches (both names of a rename)."""
+    out: list[str] = []
+    for a, b in _DIFF_FILE.findall(diff or ""):
+        out += [a] if a == b else [a, b]
+    return list(dict.fromkeys(out))
+
+
+def docs_only(files: list[str]) -> bool:
+    """Only documents changed (Markdown, text…) — no code, no config."""
+    return all(f.lower().endswith(DOC_SUFFIXES) for f in files)
+
+
+def scope_rule(files: list[str], meeting: bool) -> str:
+    """What the rules decide before the steward: code (or any non-document) → `external`, always
+    reviewed and sent as a pull request; a meeting's document → `local`; "" — the steward decides."""
+    if files and not docs_only(files):
+        return EXTERNAL
+    return LOCAL if meeting else ""
+
+
+def scope_of(text: str) -> str:
+    """The steward's `SCOPE: local | external` line; `external` when it said nothing (the safe side)."""
+    m = SCOPE.search(text or "")
+    return m.group(1).lower() if m else EXTERNAL
+
+
 def verdict_of(text: str) -> tuple[bool, str]:
     """(accepted, notes) from the steward's review: `ACCEPT` or `REWORK: …` (anything else is a rework)."""
     text = (text or "").strip()
@@ -192,7 +224,9 @@ def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: 
         "`ASK` and nothing else."])
 
 
-def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str) -> str:
+def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
+                  scope: str = EXTERNAL) -> str:
+    """`scope`: what the rules decided already; "" asks the steward for a `SCOPE:` line."""
     cut = diff if len(diff) <= DIFF_LIMIT else diff[:DIFF_LIMIT] + "\n… (cut)"
     return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge their work.",
@@ -200,9 +234,14 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         "## Earlier notes\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in task.qa) if task.qa else "",
         f"## The orc's report\n\n{report.strip() or '(none)'}",
         f"## Tests\n\n{tests}" if tests else "",
-        f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```",
+        f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```" if diff.strip()
+        else "## The diff\n\n(nothing committed: the report is the document)",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "
-        "`REWORK: …` with what exactly to fix."] if p)
+        "`REWORK: …` with what exactly to fix.",
+        "" if scope else
+        "Only documents changed. After ACCEPT add one line `SCOPE: local` when they are only for the operator's "
+        "own use and stay in the camp (notes, a meeting's prep), or `SCOPE: external` when they go out — to the "
+        "repository's readers, a wiki, other people or a tool — and need a pull request. In doubt: external."] if p)
 
 
 def words(text: str) -> set[str]:

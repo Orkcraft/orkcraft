@@ -153,7 +153,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",
         "agents work tasks in parallel, each task on its own branch; the steward keeps the rules, answers "
-        "the orks' questions, reviews the work (tests + the diff, up to 3 reworks) and opens the pull request",
+        "the orks' questions, reviews the work (tests + the diff, up to 3 reworks) and opens a pull request for "
+        "code and documents that go out (a meeting's prep and other local documents get none)",
         "each ork with its model and task, the queue, the reviews, 🔥 when the steward asks you",
         "the steward (rules, questions for you), the orks, the queue, the tasks with their PRs and the decisions",
         events=(_e("pool.assigned", "task assigned", TEXT, "a task went to an ork (new, follow-up or rework)"),
@@ -556,7 +557,8 @@ TAKES: dict[str, str] = {
 EFFECTS: dict[str, str] = {
     "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma) over the network; "
                   "listens for webhooks on 127.0.0.1; an `intent` runs a light model",
-    "barracks": "runs agents (spends money) in git worktrees; pushes each accepted task's branch and opens a pull request",
+    "barracks": "runs agents (spends money) in git worktrees; pushes an accepted task's branch and opens a pull request "
+                "(code and documents that go out; local documents stay)",
     "council": "runs agents (spends money); members read the repository and the web",
     "scrolls": "runs its librarian agent (spends money); commits the wiki's folder; reads Confluence when a source names it",
     "forge": "merges into the base branch without asking unless `confirm`",

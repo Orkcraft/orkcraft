@@ -328,6 +328,49 @@ async def test_each_task_has_its_branch_and_an_accepted_one_gets_a_pr(fake_repo:
 
 
 @pytest.mark.asyncio
+async def test_the_barracks_decides_who_needs_a_pull_request(fake_repo: Path, monkeypatch):
+    """Code always goes out reviewed as a PR; a meeting's document never; other documents as the steward says."""
+    crew, git = Crew(), FakeGit(pr="https://github.com/o/r/pull/9", files=("docs/notes.md",))
+    steward = Steward(verdicts=["ACCEPT\nSCOPE: local", "ACCEPT", "ACCEPT"])
+    monkeypatch.setattr(PoolView, "git", git)
+    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        st = view.state
+        _arrive(app, "T7001")                                    # docs only, the steward: local → no PR
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        crew.finish(0)
+        assert await _until(pilot, lambda: st.tasks and st.tasks[0].status == "done")
+        assert "Only documents changed" in steward.prompts[-1]                # the steward decides
+        assert git.published == [] and st.tasks[0].scope == bk.LOCAL
+        assert "a local document: no pull request" in next(p.value for p in sent if p.mode == "pool.done")
+
+        _arrive(app, "T7002")                                    # docs only, the steward says nothing: PR
+        assert await _until(pilot, lambda: len(crew.calls) == 2)
+        crew.finish(1)
+        assert await _until(pilot, lambda: len(st.tasks) == 2 and st.tasks[1].status == "done")
+        assert [b for b, *_ in git.published] == ["pool/camp/t7002"] and st.tasks[1].scope == bk.EXTERNAL
+
+        git.commits = 0                                          # a meeting's prep: no commit needed, no PR
+        view.add_task("Prep the sync [meet:abc123]", "the agenda and open items [meet:abc123]")
+        assert await _until(pilot, lambda: len(crew.calls) == 3)
+        assert "local document for a meeting" in crew.calls[2]["prompt"]
+        crew.finish(2)
+        assert await _until(pilot, lambda: len(st.tasks) == 3 and st.tasks[2].status == "done")
+        assert len(git.published) == 1 and st.tasks[2].scope == bk.LOCAL
+        assert "Only documents changed" not in steward.prompts[-1]          # the rule decided, not the steward
+
+
+def test_code_is_always_external():
+    assert bk.scope_rule(["src/app.py", "README.md"], meeting=True) == bk.EXTERNAL
+    assert bk.scope_rule(["docs/a.md"], meeting=True) == bk.LOCAL
+    assert bk.scope_rule(["docs/a.md"], meeting=False) == ""
+    assert bk.scope_of("ACCEPT\nscope: Local") == bk.LOCAL and bk.scope_of("ACCEPT") == bk.EXTERNAL
+    assert bk.changed_files("diff --git a/x.md b/y.md\n+1\ndiff --git a/z.py b/z.py\n") == ["x.md", "y.md", "z.py"]
+
+
+@pytest.mark.asyncio
 async def test_rework_goes_back_to_the_same_orc_at_most_three_times(fake_repo: Path, monkeypatch):
     crew = Crew()
     steward = Steward(verdicts=["REWORK: add a test"] * 4)

@@ -69,6 +69,7 @@ class RunOutcome:
     notes: str = ""
     pr: str = ""
     pr_note: str = ""
+    scope: str = ""                                      # local: no pull request · external: reviewed and sent
 
 
 class PoolView(TypedView):
@@ -326,26 +327,37 @@ class PoolView(TypedView):
 
     def _review(self, task: bk.PoolTask, workdir: Path, git: jobs.TaskGit | None, cancel: threading.Event,
                 out: RunOutcome) -> None:
-        """The tests first (cheap and strict), then the steward reads the diff; accepted → the PR."""
-        diff, tests = "", ""
+        """The tests first (cheap and strict), then the steward reads the diff; accepted → the PR — for code
+        and documents that go out. A local document (a meeting's prep, notes for the operator) gets no PR."""
+        meeting = self._meeting(task)
+        diff, tests, files, commits = "", "", [], 0
         if git is not None:
             commits, diff = git.diff(workdir, task.base, task.branch)
-            if commits == 0:
+            files = bk.changed_files(diff)
+            if commits == 0 and not meeting:
                 out.accepted, out.notes = False, "nothing was committed on the branch — commit your work"
                 return
-            cmd = str(self.config.get("test_cmd") or "")
-            if cmd:
-                passed, tail = git.test(workdir, cmd, cancel)
-                if not passed:
-                    out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
-                    return
-                tests = f"`{cmd}` passes"
-        verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests),
+        rule = bk.scope_rule(files, meeting)
+        cmd = str(self.config.get("test_cmd") or "") if git is not None and commits and rule != bk.LOCAL else ""
+        if cmd:
+            passed, tail = git.test(workdir, cmd, cancel)
+            if not passed:
+                out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
+                return
+            tests = f"`{cmd}` passes"
+        verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule),
                                 workdir, cancel, out)
         out.accepted, out.notes = bk.verdict_of(verdict)
-        if out.accepted and git is not None:
+        out.notes = bk.SCOPE.sub("", out.notes).strip()
+        out.scope = rule or bk.scope_of(verdict)
+        if out.accepted and git is not None and commits and out.scope == bk.EXTERNAL:
             body = f"{task.text}\n\n---\n\n{out.text}\n\n_Reviewed by {self.keeper}: {out.notes or 'accepted'}_"
             out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
+
+    @staticmethod
+    def _meeting(task: bk.PoolTask) -> bool:
+        """A War Drum's meeting asked for it: a local document, no pull request."""
+        return bool(daybook.meet_tag(task.title) or daybook.meet_tag(task.text))
 
     def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool, related: bool,
                 extra_qa: list[list[str]] | None = None) -> str:
@@ -366,7 +378,10 @@ class PoolView(TypedView):
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
-                 decisions, sent_back, ask, "Finish with a short Markdown report: what you changed, what is left."]
+                 decisions, sent_back, ask,
+                 "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
+                 "no pull request." if self._meeting(task) else "",
+                 "Finish with a short Markdown report: what you changed, what is left."]
         if related and orc.recent:       # a fresh session on related work: a handoff instead of the whole history
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
@@ -409,12 +424,15 @@ class PoolView(TypedView):
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks")
         elif ok:
-            task.status, task.pr, task.feedback = "done", out.pr, ""
+            task.status, task.pr, task.feedback, task.scope = "done", out.pr, "", out.scope
             gist = next((ln.strip(" #*") for ln in out.text.splitlines() if ln.strip(" #*")), "")[:160]
             orc.recent = (orc.recent + [f"{task.title} — {gist}" if gist else task.title])[-bk.KEEP_RECENT:]
-            st.log(bk.Decision(bk.now_iso(), task.id, "accept", orc.name, out.notes or "accepted"))
+            local = out.scope == bk.LOCAL
+            st.log(bk.Decision(bk.now_iso(), task.id, "accept", orc.name,
+                               ("local, no pull request: " if local else "") + (out.notes or "accepted")))
             where = f"\n\n_pull request:_ {out.pr}" if out.pr else (f"\n\n_branch:_ `{task.branch}`" if task.branch else "")
-            note = f" ({out.pr_note})" if out.pr_note and not out.pr else ""
+            note = " (a local document: no pull request)" if local else \
+                (f" ({out.pr_note})" if out.pr_note and not out.pr else "")
             self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}", task.title,
                       trail=self._trail(task, orc, "done"), ref=task.ref)
         else:
