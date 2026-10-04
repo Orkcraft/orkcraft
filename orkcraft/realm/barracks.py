@@ -20,6 +20,17 @@ recent orc and the decision says so). The foreman learns: every finished task up
 of its provider/model, and the next hire weighs success rate against cost — the self-reflection
 the orcs of the town already do.
 
+The unit of work is the task, not the orc: every task has its own branch `pool/<building>/<task>`,
+cut from a fresh base in the orc's worktree (a follow-up of the same ticket goes on the same
+branch). Orcs are only a pool of agents to reuse.
+
+The steward (the building's own orc) keeps the rules — the `orders`, like a CLAUDE.md — and
+judges. An orc that cannot go on answers `QUESTION: …`; the steward answers from its rules, or
+hands the question to the operator (🔥 on the steward, never on the orc). A finished task is
+reviewed: the tests (`test_cmd`) first, then the steward reads the diff against the task and the
+rules → `ACCEPT` (the branch is pushed and a pull request opened) or `REWORK: …` (back to the same
+orc, at most `max_reworks` times; then 🔥 for the operator).
+
 State lives in `.orkcraft/pool/<id>/`: `barracks.json` (orcs, queue, recent tasks),
 `decisions.jsonl` (every decision with its reason) and `stats.json` (per provider/model).
 """
@@ -46,6 +57,13 @@ DEFAULT_SESSION_TASKS = 5                  # tasks one session carries before it
 RELATED = 0.2                              # word overlap from which a task counts as the orc's kind of work
 LOOKAHEAD = 5                              # a freed orc looks this far into the queue for related work
 KEEP_RECENT = 3
+DEFAULT_MAX_REWORKS = 3
+MAX_STEWARD_ANSWERS = 3                    # questions the steward answers in one run before the operator is asked
+DIFF_LIMIT = 20_000                        # characters of the diff the steward reads
+QUESTION = re.compile(r"^\s*\**\s*QUESTION\b\s*:?\s*(.+)", re.I | re.S | re.M)
+ACCEPT = re.compile(r"^\s*\**\s*ACCEPT\b", re.I)
+REWORK = re.compile(r"^\s*\**\s*REWORK\b\s*:?\s*", re.I)
+ANSWER = re.compile(r"^\s*\**\s*ANSWER\b\s*:?\s*(.+)", re.I | re.S)
 WORD = re.compile(r"[^\W\d_][\w-]{3,}")
 STOP = frozenset("this that with from have will what when where which into your there their about please "
                  "should could would also make sure some them then than only just like need want task".split())
@@ -94,7 +112,7 @@ class PoolTask:
     text: str
     key: str = ""
     arrived: str = ""
-    status: str = "queued"          # queued | working | done | failed
+    status: str = "queued"          # queued | working | reviewing | asked | done | failed
     orc: str = ""
     wait_for: str = ""              # a follow-up waiting for this orc
     result: str = ""
@@ -103,6 +121,13 @@ class PoolTask:
     decided: str = ""               # the last decision about it
     warm: bool = False              # ran in the orc's resumed session
     tokens: int | None = None
+    branch: str = ""                # its own branch; follow-ups and reworks stay on it
+    base: str = ""                  # what the branch is cut from and the PR targets
+    attempts: int = 0               # runs of the orc; 1 + the reworks
+    feedback: str = ""              # the steward's last REWORK notes
+    qa: list[list[str]] = field(default_factory=list)   # [question, answer, who answered]
+    question: str = ""              # the question waiting for the operator (status asked)
+    pr: str = ""                    # the pull request's URL
 
 
 @dataclass
@@ -120,6 +145,62 @@ def task_key(kind: str, value: str, title: str = "") -> str:
         return value.strip()
     m = TICKET.search(f"{title} {value}")
     return m.group(1) if m else ""
+
+
+def slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40]
+
+
+def task_branch(building_id: str, task: PoolTask) -> str:
+    """`pool/<building>/<ticket or id>`: a follow-up of the same ticket lands on the same branch."""
+    return f"pool/{slug(building_id) or 'barracks'}/{slug(task.key) or task.id}"
+
+
+def question_of(text: str) -> str:
+    """The orc's `QUESTION: …` when it stopped to ask, else ""."""
+    m = QUESTION.search(text or "")
+    return m.group(1).strip() if m else ""
+
+
+def verdict_of(text: str) -> tuple[bool, str]:
+    """(accepted, notes) from the steward's review: `ACCEPT` or `REWORK: …` (anything else is a rework)."""
+    text = (text or "").strip()
+    if ACCEPT.match(text):
+        return True, ACCEPT.sub("", text, count=1).strip(" :-\n")
+    return False, REWORK.sub("", text, count=1).strip() or "the steward did not accept it"
+
+
+def steward_answer_of(text: str) -> str:
+    """The steward's `ANSWER: …`, or "" when it hands the question to the operator."""
+    m = ANSWER.match(text or "")
+    return m.group(1).strip() if m else ""
+
+
+def _rules(orders: str) -> str:
+    return f"## Your rules\n\n{orders.strip()}" if orders.strip() else "## Your rules\n\n(none written yet)"
+
+
+def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: str) -> str:
+    return "\n\n".join([
+        f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge.",
+        _rules(orders), f"## The task: {task.title}", task.text,
+        f"## The orc working on it asks\n\n{question}",
+        "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
+        "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
+        "`ASK` and nothing else."])
+
+
+def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str) -> str:
+    cut = diff if len(diff) <= DIFF_LIMIT else diff[:DIFF_LIMIT] + "\n… (cut)"
+    return "\n\n".join(p for p in [
+        f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge their work.",
+        _rules(orders), f"## The task: {task.title}", task.text,
+        "## Earlier notes\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in task.qa) if task.qa else "",
+        f"## The orc's report\n\n{report.strip() or '(none)'}",
+        f"## Tests\n\n{tests}" if tests else "",
+        f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```",
+        "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "
+        "`REWORK: …` with what exactly to fix."] if p)
 
 
 def words(text: str) -> set[str]:
@@ -140,6 +221,7 @@ class Foreman:
         self.providers = [(h, m) for h, m in self.providers if h in ("claude", "agy")] or \
             [parse_provider(p) for p in DEFAULT_PROVIDERS]
         self.session_tasks = int(config.get("session_tasks") or DEFAULT_SESSION_TASKS)
+        self.max_reworks = int(config["max_reworks"]) if config.get("max_reworks") is not None else DEFAULT_MAX_REWORKS
         self.stats = stats or {}
 
     # -- the model ------------------------------------------------------------------------------------
@@ -182,6 +264,9 @@ class Foreman:
         a, b = words(f"{task.title} {task.text[:1000]}"), words(" ".join(orc.recent))
         return len(a & b) / len(a | b) if a and b else 0.0
 
+    def over_budget(self, spent: float) -> bool:
+        return bool(self.budget) and spent >= self.budget
+
     def related(self, task: PoolTask, orc: PoolOrc) -> bool:
         return self.affinity(task, orc) >= RELATED
 
@@ -208,13 +293,13 @@ class Foreman:
         at = now_iso()
         if paused:
             return Decision(at, task.id, "paused", why="the barracks is paused")
+        if self.over_budget(spent):
+            return Decision(at, task.id, "budget", why=f"spent ${spent:.2f} of ${self.budget:.2f}")
         orc, why = self.follow_up_of(task, orcs)
         if orc is not None:
             if orc.status == "idle":
                 return Decision(at, task.id, "follow-up", orc.name, why)
             return Decision(at, task.id, "wait", orc.name, why + f"; waits until {orc.name} is free")
-        if self.budget and spent >= self.budget:
-            return Decision(at, task.id, "budget", why=f"spent ${spent:.2f} of ${self.budget:.2f}")
         waiting_for = {t.wait_for for t in queue if t.wait_for}
         idle = [o for o in orcs if o.status == "idle" and o.name not in waiting_for]
         if idle:
@@ -250,12 +335,18 @@ class Barracks:
         self.queue: list[PoolTask] = []
         self.tasks: list[PoolTask] = []       # working and finished, newest last
         self.paused = False
+        self.steward_cost = 0.0
         self.stats: dict = {}
         self.load()
 
     @property
     def spent(self) -> float:
-        return round(sum(o.cost_usd for o in self.orcs), 4)
+        return round(sum(o.cost_usd for o in self.orcs) + self.steward_cost, 4)
+
+    @property
+    def asked(self) -> list[PoolTask]:
+        """Tasks waiting for the operator at the steward (🔥)."""
+        return [t for t in self.tasks if t.status == "asked"]
 
     def orc(self, name: str) -> PoolOrc | None:
         return next((o for o in self.orcs if o.name == name), None)
@@ -270,11 +361,12 @@ class Barracks:
             self.queue = [PoolTask(**t) for t in data.get("queue", [])]
             self.tasks = [PoolTask(**t) for t in data.get("tasks", [])]
             self.paused = bool(data.get("paused", False))
+            self.steward_cost = float(data.get("steward_cost", 0.0))
         except (OSError, ValueError, TypeError):
             pass
         for o in self.orcs:                   # a restart interrupts the work: those tasks go back
             if o.status == "working":
-                t = next((x for x in self.tasks if x.id == o.task and x.status == "working"), None)
+                t = next((x for x in self.tasks if x.id == o.task and x.status in ("working", "reviewing")), None)
                 if t is not None:
                     self.tasks.remove(t)
                     t.status, t.wait_for = "queued", o.name
@@ -288,9 +380,15 @@ class Barracks:
     def save(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
         data = {"orcs": [asdict(o) for o in self.orcs], "queue": [asdict(t) for t in self.queue],
-                "tasks": [asdict(t) for t in self.tasks[-KEEP_TASKS:]], "paused": self.paused}
+                "tasks": [asdict(t) for t in self._kept()], "paused": self.paused,
+                "steward_cost": self.steward_cost}
         (self.dir / "barracks.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         (self.dir / "stats.json").write_text(json.dumps(self.stats, indent=2), encoding="utf-8")
+
+    def _kept(self) -> list[PoolTask]:
+        """The last KEEP_TASKS tasks, and every one still open whatever its age."""
+        old = self.tasks[:-KEEP_TASKS]
+        return [t for t in old if t.status not in ("done", "failed")] + self.tasks[-KEEP_TASKS:]
 
     def log(self, d: Decision) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)

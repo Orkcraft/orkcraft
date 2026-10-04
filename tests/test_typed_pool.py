@@ -12,10 +12,17 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import jobs, masonry, pipes
 from orkcraft.screens.typed.pool_view import PoolView
+from tests.pool_fakes import FakeGit, Steward
 
 SIZE = (200, 46)
 SPEC = {"id": "camp", "title": "Camp", "icon": "🏕", "orc": {"name": "Foreman"}, "type": "pool",
         "config": {"max_orcs": 2, "providers": ["claude", "agy"]}}
+
+
+@pytest.fixture(autouse=True)
+def fake_git_and_steward(monkeypatch):
+    monkeypatch.setattr(PoolView, "git", FakeGit())
+    monkeypatch.setattr(PoolView, "steward_runner", Steward())
 
 
 def task(title: str, text: str = "", key: str = "") -> bk.PoolTask:
@@ -68,11 +75,11 @@ def test_state_survives_a_restart_and_puts_work_back(tmp_path: Path):
 
 def test_each_orc_gets_its_worktree(fake_repo: Path):
     path, branch = jobs.add_worktree(fake_repo, "camp", "Grub")
-    assert branch == "pool/camp/grub" and (path / "README.md").exists()
+    assert branch == "" and (path / "README.md").exists()                     # detached: branches are the tasks'
     assert path == fake_repo / ".orkcraft" / "worktrees" / "pool-camp-grub"     # where orkspaces keep theirs
     assert jobs.add_worktree(fake_repo, "camp", "Grub") == (path, branch)      # reused
     listed = subprocess.run(["git", "worktree", "list"], cwd=fake_repo, capture_output=True, text=True).stdout
-    assert "pool/camp/grub" in listed
+    assert "pool-camp-grub" in listed and "detached" in listed
     assert jobs.work_cmd("claude", "p", path, "sonnet", "sess-1")[-4:] == ["--model", "sonnet", "--resume", "sess-1"]
     assert "--add-dir" in jobs.work_cmd("agy", "p", path)
 
@@ -137,7 +144,7 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
         assert crew.calls[2]["resume"] == "s1"                          # … and resumes its session
         assert "follow-up" in crew.calls[2]["prompt"]
         assert [p.mode for p in sent].count("pool.done") == 1
-        assert "pool/camp/grub" in next(p.value for p in sent if p.mode == "pool.done")
+        assert "pool/camp/t1001" in next(p.value for p in sent if p.mode == "pool.done")   # the task's branch
 
         crew.calls[1]["gate"].set()                                      # Mogka frees → takes T1003
         assert await _until(pilot, lambda: len(crew.calls) == 4)

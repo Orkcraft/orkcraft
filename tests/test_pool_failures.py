@@ -12,8 +12,15 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import masonry, pipes
 from orkcraft.screens.typed.pool_view import PoolView
+from tests.pool_fakes import FakeGit, Steward
 
 SIZE = (200, 46)
+
+
+@pytest.fixture(autouse=True)
+def fake_git_and_steward(monkeypatch):
+    monkeypatch.setattr(PoolView, "git", FakeGit())
+    monkeypatch.setattr(PoolView, "steward_runner", Steward())
 
 
 def spec(**config) -> dict:
@@ -78,7 +85,7 @@ def _app(repo: Path, monkeypatch, crew, maker=None, **config) -> OrkcraftApp:
                         staticmethod(maker or (lambda r, bid, orc: (r, f"pool/{bid}/{orc.lower()}"))))
     assert masonry.save_spec(repo, spec(**config)) == []
     app = OrkcraftApp(repo_root=repo, auto_commit=False)
-    for event in ("pool.assigned", "pool.done", "pool.failed", "pool.idle"):     # emit() sends only what is heard
+    for event in ("pool.assigned", "pool.done", "pool.failed", "pool.question", "pool.idle"):     # emit() sends only what is heard
         ts.subscribe(app.scroll, "town_hall", "camp", event)
     return app
 
@@ -205,7 +212,7 @@ async def test_the_budget_stops_hiring_mid_run(fake_repo: Path, monkeypatch):
         crew.finish(0)
         crew.finish(1)
         st = view.state
-        assert await _until(pilot, lambda: st.spent == 1.2)
+        assert await _until(pilot, lambda: st.spent >= 1.2)                          # the steward costs too
         _arrive(app, "T5003")
         await pilot.pause(0.1)
         assert len(crew.calls) == 2 and st.queue[-1].decided.startswith("budget:")
@@ -276,3 +283,254 @@ async def test_related_work_resumes_the_session_and_sends_only_the_task(fake_rep
         assert await _until(pilot, lambda: st.orcs[0].status == "idle")
         assert st.orcs[0].tokens == 400 and st.stats["claude"]["tokens"] == 400
         assert "♻" in str(view.query_one("#pool-detail").render())
+
+
+# -- the steward: questions, reviews, reworks, the PR -------------------------------------------------
+
+
+class Asker(Crew):
+    """A crew whose run ends with the text the test gives (a QUESTION, a report)."""
+
+    def finish_with(self, i: int, text: str) -> None:
+        self.calls[i]["text"] = text
+        self.calls[i]["gate"].set()
+
+    def __call__(self, harness, prompt, workdir, cancel, model, env, resume):
+        text, cost, tokens, session = super().__call__(harness, prompt, workdir, cancel, model, env, resume)
+        return self.calls[-1].get("text", text), cost, tokens, session
+
+
+def _calls_done(crew, n):
+    return lambda: len(crew.calls) >= n
+
+
+@pytest.mark.asyncio
+async def test_each_task_has_its_branch_and_an_accepted_one_gets_a_pr(fake_repo: Path, monkeypatch):
+    crew, git = Crew(), FakeGit(pr="https://github.com/o/r/pull/7")
+    monkeypatch.setattr(PoolView, "git", git)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        st = view.state
+        _arrive(app, "T6001")
+        _arrive(app, "T6002")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        crew.finish(0)
+        assert await _until(pilot, lambda: len(crew.calls) == 2)                       # the same orc, a new branch
+        crew.finish(1)
+        assert await _until(pilot, lambda: all(t.status == "done" for t in st.tasks) and len(st.tasks) == 2)
+        assert [b for b, _ in git.prepared] == ["pool/camp/t6001", "pool/camp/t6002"]
+        assert [b for b, *_ in git.published] == ["pool/camp/t6001", "pool/camp/t6002"]
+        assert all(t.pr == "https://github.com/o/r/pull/7" for t in st.tasks)
+        done = [p.value for p in sent if p.mode == "pool.done"]
+        assert len(done) == 2 and "pull/7" in done[0]
+        assert "Work on the branch `pool/camp/t6001`" in crew.calls[0]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_rework_goes_back_to_the_same_orc_at_most_three_times(fake_repo: Path, monkeypatch):
+    crew = Crew()
+    steward = Steward(verdicts=["REWORK: add a test"] * 4)
+    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=2)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        st = view.state
+        _arrive(app, "T7001")
+        for i in range(4):                                                             # 1 run + 3 reworks
+            assert await _until(pilot, _calls_done(crew, i + 1))
+            if i:
+                assert "sent it back\n\nadd a test" in crew.calls[i]["prompt"]
+                assert crew.calls[i]["resume"]                                         # in the orc's session
+            crew.finish(i)
+        task = st.tasks[0]
+        assert await _until(pilot, lambda: task.status == "asked")
+        assert len(crew.calls) == 4 and {o.name for o in st.orcs} == {"Grub"}        # never another orc
+        assert "Rejected after 3 reworks" in task.question and "add a test" in task.question
+        assert "pool.failed" in [p.mode for p in sent] and "pool.question" in [p.mode for p in sent]
+        assert view.hut_lines([16] * 6)[0] == "🔥 Foreman asks"
+        assert "🔥 1 asks" in str(view.query_one("#pool-orcs").get_option_at_index(0).prompt)
+
+        steward.verdicts = ["ACCEPT"]
+        view.answer(task.id, "skip the test, document it instead", propose=False)      # a new round
+        assert await _until(pilot, _calls_done(crew, 5))
+        assert "skip the test" in crew.calls[4]["prompt"]
+        crew.finish(4)
+        assert await _until(pilot, lambda: task.status == "done")
+
+
+@pytest.mark.asyncio
+async def test_failing_tests_send_it_back_without_asking_the_model(fake_repo: Path, monkeypatch):
+    crew, steward = Crew(), Steward()
+    monkeypatch.setattr(PoolView, "git", FakeGit(tests=(False, "FAILED test_login - assert 1 == 2")))
+    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1, test_cmd="pytest -q", max_reworks=1)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _arrive(app, "T8001")
+        assert await _until(pilot, _calls_done(crew, 1))
+        crew.finish(0)
+        assert await _until(pilot, _calls_done(crew, 2))
+        assert "FAILED test_login" in crew.calls[1]["prompt"] and steward.prompts == []
+        crew.finish(1)
+        assert await _until(pilot, lambda: view.state.tasks[0].status == "asked")
+
+
+@pytest.mark.asyncio
+async def test_nothing_committed_is_not_accepted(fake_repo: Path, monkeypatch):
+    crew = Crew()
+    monkeypatch.setattr(PoolView, "git", FakeGit(commits=0))
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1, max_reworks=0)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _arrive(app, "T8101")
+        assert await _until(pilot, _calls_done(crew, 1))
+        crew.finish(0)
+        assert await _until(pilot, lambda: view.state.tasks[0].status == "asked")
+        assert "nothing was committed" in view.state.tasks[0].question
+
+
+@pytest.mark.asyncio
+async def test_the_steward_answers_from_its_rules_or_asks_the_operator(fake_repo: Path, monkeypatch):
+    crew = Asker()
+    steward = Steward(answers=["PostgreSQL — rule 2"])
+    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1, orders="1. Type hints.\n2. The database is PostgreSQL.")
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        st = view.state
+        view.add_task("Add the users table", "a migration")
+        assert await _until(pilot, _calls_done(crew, 1))
+        crew.finish_with(0, "Looked around.\nQUESTION: which database?")
+        assert await _until(pilot, _calls_done(crew, 2))                               # answered by the steward
+        assert "The database is PostgreSQL" in steward.prompts[0] and "which database?" in steward.prompts[0]
+        assert "answers your question: PostgreSQL" in crew.calls[1]["prompt"] and crew.calls[1]["resume"] == "s1"
+        crew.finish_with(1, "QUESTION: which colour for the admin badge?")              # not in the rules
+        task = st.tasks[0]
+        assert await _until(pilot, lambda: task.status == "asked")
+        assert task.question == "which colour for the admin badge?"
+        assert st.orcs[0].status == "idle"                                             # the orc is free meanwhile
+        orc_row = str(view.query_one("#pool-orcs").get_option_at_index(1).prompt)
+        assert orc_row.endswith(" ?") or " ? " in orc_row                              # a quiet mark on the orc
+        assert [q for q, *_ in task.qa] == ["which database?"]
+
+        view.answer(task.id, "green", propose=False)
+        assert await _until(pilot, _calls_done(crew, 3))
+        assert crew.calls[2]["resume"] == "s1" and "admin badge? → green" in crew.calls[2]["prompt"]
+        crew.finish(2)
+        assert await _until(pilot, lambda: task.status == "done")
+        assert [a for _, a, who in task.qa] == ["PostgreSQL — rule 2", "green"]
+        review = steward.prompts[-1]
+        assert "which colour for the admin badge? → green" in review
+
+        assert view.add_rule("- admin badge → green")                                   # the proposal, kept
+        assert "admin badge → green" in view.orders and "PostgreSQL" in view.orders
+
+
+@pytest.mark.asyncio
+async def test_a_restart_picks_the_interrupted_work_up_again(fake_repo: Path, monkeypatch):
+    st = bk.Barracks(fake_repo / ".orkcraft" / "pool" / "camp")
+    st.orcs = [bk.PoolOrc("Grub", "claude", status="working", task="t1", worktree=str(fake_repo))]
+    st.tasks = [bk.PoolTask("t1", "Do it", "Do it", status="working", orc="Grub", attempts=1)]
+    st.save()
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        assert await _until(pilot, _calls_done(crew, 1))                              # nothing new had to arrive
+        crew.finish(0)
+        assert await _until(pilot, lambda: view.state.tasks[0].status == "done")
+
+
+@pytest.mark.asyncio
+async def test_a_freed_orc_takes_nothing_over_the_budget(fake_repo: Path, monkeypatch):
+    crew = Crew(cost=0.6)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1, budget_usd=0.5)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _arrive(app, "T9001")
+        _arrive(app, "T9002")                                                          # queued behind the first
+        assert await _until(pilot, _calls_done(crew, 1))
+        crew.finish(0)
+        st = view.state
+        assert await _until(pilot, lambda: st.orcs[0].status == "idle")
+        await pilot.pause(0.1)
+        assert len(crew.calls) == 1 and [t.key for t in st.queue] == ["T9002"]
+
+
+# -- the real git ------------------------------------------------------------------------------------
+
+
+def _git(cwd: Path, *args: str) -> str:
+    import subprocess
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+
+
+def test_task_git_cuts_reuses_and_publishes_branches(fake_repo: Path, tmp_path: Path, monkeypatch):
+    from orkcraft.realm import jobs
+    import shutil
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "--bare", str(origin))
+    base = _git(fake_repo, "rev-parse", "--abbrev-ref", "HEAD")
+    _git(fake_repo, "remote", "add", "origin", str(origin))
+    _git(fake_repo, "push", "-u", "origin", base)
+    git = jobs.TaskGit()
+    assert git.base_of(fake_repo) == base and git.base_of(fake_repo, "develop") == "develop"
+    wt, _ = jobs.add_worktree(fake_repo, "camp", "Grub")
+
+    git.prepare(wt, "pool/camp/t1", base)
+    assert _git(wt, "branch", "--show-current") == "pool/camp/t1"
+    assert git.diff(wt, base, "pool/camp/t1") == (0, "")
+    (wt / "feature.py").write_text("x = 1\n")
+    _git(wt, "add", ".")
+    _git(wt, "commit", "-m", "feature")
+    commits, diff = git.diff(wt, base, "pool/camp/t1")
+    assert commits == 1 and "+x = 1" in diff
+    (wt / "scratch.txt").write_text("left behind")                                    # leftovers get stashed
+
+    git.prepare(wt, "pool/camp/t2", base)                                             # another task, fresh from base
+    assert not (wt / "feature.py").exists() and not (wt / "scratch.txt").exists()
+    git.prepare(wt, "pool/camp/t1", base)                                             # its follow-up: same branch
+    assert (wt / "feature.py").exists()
+
+    monkeypatch.setattr(shutil, "which", lambda name: None)                           # no gh here
+    url, note = git.publish(wt, "pool/camp/t1", base, "Feature", "body")
+    assert url == "" and note == "pushed; no gh to open the pull request"
+    assert "pool/camp/t1" in _git(origin, "branch", "--list", "pool/camp/t1")
+
+    _git(fake_repo, "merge", "--ff-only", "pool/camp/t1")                             # merged upstream …
+    _git(fake_repo, "push", "origin", base)
+    git.prepare(wt, "pool/camp/t1", base)                                             # … so a new follow-up starts anew
+    assert git.diff(wt, base, "pool/camp/t1")[0] == 0
+
+    ok, out = git.test(wt, "python -c \"import sys; print('boom'); sys.exit(1)\"", threading.Event())
+    assert not ok and "boom" in out
+    assert git.test(wt, "python -c \"print('fine')\"", threading.Event())[0]
+
+
+@pytest.mark.asyncio
+async def test_a_real_orc_commits_on_its_task_branch(fake_repo: Path, monkeypatch):
+    """Real worktrees and real git; only the agent and the steward are fakes."""
+    monkeypatch.setattr(PoolView, "git", None)
+
+    def coder(harness, prompt, workdir, cancel, model, env, resume):
+        name = prompt.split("## Task", 1)[1].splitlines()[0].split(":")[-1].strip()
+        (workdir / f"{name}.txt").write_text(name)
+        _git(workdir, "add", ".")
+        _git(workdir, "commit", "-m", name)
+        return f"added {name}.txt", 0.0, 10, ""
+
+    monkeypatch.setattr(PoolView, "work_runner", staticmethod(coder))
+    monkeypatch.setattr(PoolView, "worktree_maker", None)
+    assert masonry.save_spec(fake_repo, spec(max_orcs=2)) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        view, _ = await _open(pilot, app)
+        view.add_task("alpha", "make alpha")
+        view.add_task("beta", "make beta")
+        st = view.state
+        assert await _until(pilot, lambda: len(st.tasks) == 2 and all(t.status == "done" for t in st.tasks), n=300)
+        for t in st.tasks:
+            assert t.branch == f"pool/camp/{t.id}"
+            files = _git(fake_repo, "show", "--name-only", "--format=", t.branch)
+            assert files == f"{t.title}.txt"                                           # one task, one branch
