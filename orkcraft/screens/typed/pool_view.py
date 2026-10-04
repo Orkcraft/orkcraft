@@ -16,6 +16,8 @@ The steward — the building's own orc — keeps the rules (`orders`) and judges
 
 Tokens: a follow-up, a rework or a related task resumes the orc's session and sends only what is new
 (♻ warm); a cold start sends the briefing, plus a handoff of the orc's recent work only when related.
+A `[meet:<id>]` tag in the cart (a War Drum's meeting) stays in the task's title, so `pool.done`
+finds its way back to the meeting even when a Totem renamed the cart to its route.
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, pipes, roads
+from orkcraft.realm import daybook, jobs, pipes, roads
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
@@ -136,7 +138,11 @@ class PoolView(TypedView):
     def receive(self, payload, title: str, markdown: str) -> None:
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
-        self.add_task(payload.title or first, text, bk.task_key(payload.kind, payload.value, payload.title),
+        title = payload.title or first
+        meet = daybook.meet_tag(title) or daybook.meet_tag(text)
+        if meet and daybook.meet_tag(title[:80]) != meet:          # the task keeps 80 characters
+            title = f"{title.replace(f'[meet:{meet}]', '').strip()[:80 - len(meet) - 8]} [meet:{meet}]"
+        self.add_task(title, text, bk.task_key(payload.kind, payload.value, payload.title),
                       ref=payload.ref, trail=payload.trail)
 
     def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:

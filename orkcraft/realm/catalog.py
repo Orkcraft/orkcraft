@@ -190,9 +190,13 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("calendar.event_due", "event starts", TEXT, "an event is starting now"),
                 _e("calendar.event_added", "event added", TEXT, "an event was added"),
                 _e("calendar.event_removed", "event removed", TEXT, "an event was removed"),
-                _e("calendar.day_schedule", "day schedule", TEXT, "the morning digest: today's events")),
-        actions=(_a("calendar.new", "New event", "+", "add an event"),),
-        config={"ics": (str, None, False), "day_starts": (str, None, False)},
+                _e("calendar.day_schedule", "day schedule", TEXT, "the morning digest: today's events"),
+                _e("calendar.event_upcoming", "meeting soon", TEXT,
+                   "a meeting starts in `lead` (2h): time to prepare its document; tagged [meet:<id>]"),
+                _e("calendar.doc_opened", "doc opened", FILE, "Enter on a meeting with a document: the document")),
+        actions=(_a("calendar.new", "New event", "+", "add an event"),
+                 _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now")),
+        config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False)},
         art="war_tent", orc="Drummer"),
     # -- 3. storage, code and inspection ---------------------------------------------------------------
     BuildingType(

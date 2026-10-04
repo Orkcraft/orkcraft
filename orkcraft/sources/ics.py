@@ -7,7 +7,7 @@ Config: `~/.config/orkcraft/calendars.json` (`$ORKCRAFT_CALENDARS_FILE`):
 
 Feeds are cached in `~/.cache/orkcraft/ics/` and refetched after `CACHE_TTL_S`; a
 failed fetch falls back to the cache. Standard library only: VEVENT with
-DTSTART/DTEND/SUMMARY/LOCATION, TZID via zoneinfo, RRULE DAILY/WEEKLY/MONTHLY/
+UID/DTSTART/DTEND/SUMMARY/LOCATION (no UID: a stable hash of calendar, summary and start), TZID via zoneinfo, RRULE DAILY/WEEKLY/MONTHLY/
 YEARLY with INTERVAL/COUNT/UNTIL/BYDAY, EXDATE, STATUS:CANCELLED.
 """
 from __future__ import annotations
@@ -41,6 +41,7 @@ class CalendarEvent:
     start: dt.datetime | dt.date
     end: dt.datetime | dt.date | None = None
     location: str = ""
+    uid: str = ""
 
     @property
     def all_day(self) -> bool:
@@ -235,6 +236,8 @@ def parse_ics(text: str, calendar: str, win_start: dt.date, win_end: dt.date) ->
                 cur["exdates"].update(_parse_dt(v, params) for v in value.split(","))
             elif name == "RRULE":
                 cur["RRULE"] = {k.upper(): v for k, _, v in (p.partition("=") for p in value.split(";"))}
+            elif name == "UID":
+                cur["UID"] = value.strip()
             elif name in ("SUMMARY", "LOCATION", "STATUS"):
                 cur[name] = _unescape(value)
         except ValueError:
@@ -253,7 +256,11 @@ def _materialise(ev: dict, calendar: str, win_start: dt.date, win_end: dt.date) 
     else:
         # A multi-day event shows on its first day only.
         starts = [start] if win_start <= _day(start) <= win_end else []
+    summary = ev.get("SUMMARY", "(no title)")
+    if not ev.get("UID"):
+        seed = f"{calendar}|{summary}|{start.isoformat()}"
+        ev["UID"] = hashlib.sha256(seed.encode()).hexdigest()[:16] + "@hash"
     return [
-        CalendarEvent(calendar, ev.get("SUMMARY", "(no title)"), s, s + duration if duration else None, ev.get("LOCATION", ""))
+        CalendarEvent(calendar, summary, s, s + duration if duration else None, ev.get("LOCATION", ""), ev["UID"])
         for s in starts
     ]

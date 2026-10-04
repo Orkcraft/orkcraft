@@ -32,8 +32,8 @@ def test_defaults_come_from_the_type():
     spec = {"type": "calendar"}
     assert catalog.size_of(spec) == catalog.SIZES["L"]
     assert catalog.events_of(spec) == ["calendar.event_due", "calendar.event_added", "calendar.event_removed",
-                                       "calendar.day_schedule"]
-    assert [a.id for a in catalog.quick_actions_of(spec)] == ["calendar.new"]
+                                       "calendar.day_schedule", "calendar.event_upcoming", "calendar.doc_opened"]
+    assert [a.id for a in catalog.quick_actions_of(spec)] == ["calendar.new", "calendar.prepare"]
     picked = {"type": "calendar", "size": "M", "events": ["calendar.day_schedule"], "quick_actions": []}
     assert catalog.size_of(picked) == catalog.SIZES["M"] and catalog.events_of(picked) == ["calendar.day_schedule"]
     assert catalog.quick_actions_of(picked) == []
