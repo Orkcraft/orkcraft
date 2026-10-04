@@ -70,6 +70,12 @@ async def _pick(app, pilot, list_id: str, option_id: str) -> None:
     await _settle(pilot)
 
 
+async def _tools(app, pilot) -> None:
+    await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
+    await _settle(pilot)
+    await _press(app, pilot, "ob-next")
+
+
 async def _xp(app, pilot, level: str = "some") -> None:
     await _on(pilot, app, XpStep)
     await _pick(app, pilot, "ob-xp", level)
@@ -210,11 +216,25 @@ def test_the_mode_cards_show_the_same_rows():
 async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
+        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
+        await _settle(pilot)                                                     # first: what the orcs run on
+        step = app.screen
+        assert "step 1 of 8" in str(step.query_one(".build-title").render())    # the full path first
+        assert not step.query(".ob-buttons #ob-back")
+        assert step.query_one("#ob-warder", Checkbox).display and step.query_one("#ob-warder", Checkbox).value
+        assert step.query_one("#ob-tool-agy", Checkbox).disabled
+        step.query_one("#ob-billing-claude", Select).value = "api"
+        await _press(app, pilot, "ob-next")
         await _on(pilot, app, XpStep)
-        assert "step 1 of 8" in str(app.screen.query_one(".build-title").render())   # the full path first
+        assert "step 2 of 8" in str(app.screen.query_one(".build-title").render())
+        await _press(app, pilot, "ob-back")                                      # Back keeps the tools
+        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
+        await _settle(pilot)
+        assert app.screen.query_one("#ob-billing-claude", Select).value == "api"
+        await _press(app, pilot, "ob-next")
         await _xp(app, pilot, "some")
         await _on(pilot, app, PersonStep)
-        assert "step 2 of 8" in str(app.screen.query_one(".build-title").render())
+        assert "step 3 of 8" in str(app.screen.query_one(".build-title").render())
         assert app.screen.query_one("#ob-skip").display
         await _press(app, pilot, "ob-next")
         assert isinstance(app.screen, PersonStep)                                 # no role: refused
@@ -244,24 +264,10 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         assert "★" in str(lst.get_option_at_index(0).prompt) and "★" not in str(lst.get_option_at_index(2).prompt)
         assert "GOBLIN" in str(app.screen.query_one("#ob-mascot").render())
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # it is on the tools step
+        assert not app.screen.query_one("#ob-presets", OptionList).get_option_at_index(3).disabled
         await _pick(app, pilot, "ob-presets", "review_desk")
         await _press(app, pilot, "ob-next")
 
-        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
-        await _settle(pilot)
-        step = app.screen
-        assert step.query_one("#ob-warder", Checkbox).display and step.query_one("#ob-warder", Checkbox).value
-        assert step.query_one("#ob-tool-agy", Checkbox).disabled
-        step.query_one("#ob-billing-claude", Select).value = "api"
-        await _press(app, pilot, "ob-next")
-
-        await _on(pilot, app, AutonomyStep)
-        app.screen.query_one(AutonomySlider).set_level(2)
-        await _press(app, pilot, "au-back")                                      # Back keeps the tools
-        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
-        await _settle(pilot)
-        assert app.screen.query_one("#ob-billing-claude", Select).value == "api"
-        await _press(app, pilot, "ob-next")
         await _on(pilot, app, AutonomyStep)
         app.screen.query_one(AutonomySlider).set_level(2)
         await _press(app, pilot, "au-next")
@@ -292,6 +298,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
     monkeypatch.setattr(app_mod, "BUILD_RUNNER", run)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
+        await _tools(app, pilot)
         await _who(app, pilot, level="new")
         await _on(pilot, app, QuestionsStep)
         assert not app.screen.query_one("#ob-skip").display                      # a newcomer is walked through
@@ -306,7 +313,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         await _press(app, pilot, "ob-next")
 
         await _on(pilot, app, QuestionsStep)                                     # sources
-        assert app.screen.page.id == "sources" and "step 6 of 12" in str(app.screen.query_one(".build-title").render())
+        assert app.screen.page.id == "sources" and "step 7 of 12" in str(app.screen.query_one(".build-title").render())
         await _select(app, pilot, "sources", "app_store", "jira")
         app.screen.query_one("#ob-q-sources-other", Input).value = "AppFollow"
         await _press(app, pilot, "ob-next")
@@ -327,9 +334,6 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         await _select(app, pilot, "ai_problems", "no_data")
         await _press(app, pilot, "ob-next")
 
-        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
-        await _settle(pilot)
-        await _press(app, pilot, "ob-next")
         await _on(pilot, app, AutonomyStep)
         await _press(app, pilot, "au-next")
         await _on(pilot, app, ModeStep)
@@ -393,12 +397,12 @@ async def test_an_existing_machine_without_a_profile_is_asked_who_first(fake_rep
 async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
     settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
                                            tools={**settings.MachineSettings().tools,
-                                                  "agy": settings.ToolChoice(enabled=True)}))
+                                                  "claude": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _on(pilot, app, IntentStep)
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
-        assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
+        app.screen.query_one("#ob-warder", Checkbox).value = False               # the Warder declined
         await _pick(app, pilot, "ob-presets", "custom")
         await _press(app, pilot, "ob-next")
         for _ in interview.INTERVIEW:
@@ -416,15 +420,45 @@ async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
 
 
 @pytest.mark.asyncio
+async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard):
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
+                                           tools={**settings.MachineSettings().tools,
+                                                  "agy": settings.ToolChoice(enabled=True)}))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _on(pilot, app, IntentStep)
+        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        lst = app.screen.query_one("#ob-presets", OptionList)
+        custom = lst.get_option_at_index(lst.option_count - 1)
+        assert custom.id == "custom" and custom.disabled and "needs Claude Code" in str(custom.prompt)
+        assert "Claude Code" in str(app.screen.query_one("#ob-town-note").render())
+        assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
+
+
+@pytest.mark.asyncio
+async def test_the_town_builder_never_calls_claude_code_when_it_is_off(fake_repo: Path, onboard, monkeypatch):
+    monkeypatch.setattr(app_mod, "BUILD_RUNNER", None)
+    monkeypatch.setattr(app_mod.builders, "claude_runner",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("claude was called")))
+    monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
+    settings.save(settings.MachineSettings(onboarded=True))
+    town_presets.save_order(fake_repo, "a town for my podcast", "founder")
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _settle(pilot)
+        app.build_town_from_order()
+        await _settle(pilot)
+        assert not app.query(RaiseBar) and town_presets.pending_order(fake_repo) is not None
+
+
+@pytest.mark.asyncio
 async def test_a_punk_orc_skips_the_interview_and_builds_the_town(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
+        await _tools(app, pilot)
         await _xp(app, pilot, "expert")
-        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
-        await _settle(pilot)
-        assert "step 2 of 4" in str(app.screen.query_one(".build-title").render())
-        await _press(app, pilot, "ob-next")
         await _on(pilot, app, AutonomyStep)
+        assert "step 3 of 4" in str(app.screen.query_one(".build-title").render())
         await _press(app, pilot, "au-next")
         await _on(pilot, app, ModeStep)
         await _press(app, pilot, "ob-next")
@@ -450,7 +484,8 @@ async def test_a_known_punk_orc_gets_an_empty_town_without_questions(fake_repo: 
 async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, XpStep)
+        await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
+        await _settle(pilot)
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         machine = settings.load()
@@ -463,6 +498,7 @@ async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
 async def test_back_goes_to_the_previous_step(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
+        await _tools(app, pilot)
         await _who(app, pilot, "designer", "saas")
         await _day_and_ai(app, pilot)
         await _on(pilot, app, IntentStep)
@@ -482,14 +518,14 @@ async def test_f10_asks_who_and_the_machine_steps_not_the_town(fake_repo: Path, 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
-        assert not isinstance(app.screen, XpStep)
+        assert not isinstance(app.screen, ToolsStep)
         app.start_onboarding(machine_steps=True, town_step=False)
-        await _who(app, pilot, "data_analyst", "ecommerce")
-        await _day_and_ai(app, pilot)
         await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.statuses is not None)
         await _settle(pilot)
-        assert not app.screen.query_one("#ob-warder", Checkbox).display
+        assert not app.screen.query_one("#ob-warder", Checkbox).display          # no town: no Warder
         await _press(app, pilot, "ob-next")
+        await _who(app, pilot, "data_analyst", "ecommerce")
+        await _day_and_ai(app, pilot)
         await _on(pilot, app, AutonomyStep)
         await _press(app, pilot, "au-next")
         await _on(pilot, app, ModeStep)

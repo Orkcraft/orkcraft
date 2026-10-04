@@ -92,22 +92,24 @@ class XpStep(ModalScreen[dict | str | None]):
     🐣 walked through everything, 🪓 the same with Skip, 🤘 straight to the tools and an empty town.
     Dismisses {"orchestration": "new" | "some" | "expert"}, "skip" or None."""
 
-    BINDINGS = [Binding("escape", "skip", "Skip")]
+    BINDINGS = [Binding("escape", "back", "Back")]
     DEFAULT_CSS = _css("XpStep", 84) + """
     XpStep #ob-xp { height: auto; }
     XpStep #ob-xp > .option-list--option { padding: 0 1; }
     XpStep #ob-xp-path { height: auto; margin-top: 1; color: $text-muted; }
     """
     PATHS = {
-        interview.NEW: "Next: who you are, your day, your AI tools, then a town picked or built with you.",
+        interview.NEW: "Next: who you are, your day, your AI tools, then a town picked or built with you — "
+                       "every step, no skipping.",
         interview.SOME: "Next: who you are, your day, your AI tools, then a ready town or a short interview.",
-        interview.EXPERT: "Next: the CLIs you lead, the orcs' autonomy and the look — then an empty town to build.",
+        interview.EXPERT: "No interview: the rest of the setup, then an empty town you build yourself.",
     }
 
-    def __init__(self, level: str = "", step: str = "") -> None:
+    def __init__(self, level: str = "", step: str = "", can_back: bool = False) -> None:
         super().__init__()
         self.level = level
         self.step = step
+        self.can_back = can_back
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -122,7 +124,7 @@ class XpStep(ModalScreen[dict | str | None]):
             yield OptionList(*options, id="ob-xp")
             yield Static("", id="ob-xp-path", markup=False)
             yield Static("", id="ob-xp-note", classes="ob-note", markup=False)
-            yield _nav(False)
+            yield _nav(self.can_back)
 
     def on_mount(self) -> None:
         self.call_after_refresh(self._setup)
@@ -161,9 +163,12 @@ class XpStep(ModalScreen[dict | str | None]):
     def action_skip(self) -> None:
         self.dismiss("skip")
 
+    def action_back(self) -> None:
+        self.dismiss("back" if self.can_back else "skip")
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        self.action_next() if event.button.id == "ob-next" else self.action_skip()
+        {"ob-next": self.action_next, "ob-back": self.action_back}.get(event.button.id or "", self.action_skip)()
 
 
 # -- your AI tools: experience × how often -------------------------------------------------------------
@@ -478,13 +483,14 @@ class IntentStep(ModalScreen[dict | str | None]):
     """
 
     def __init__(self, profile: dict | None = None, step: str = "", can_back: bool = True, last: bool = False,
-                 show_warder: bool = False, choice: dict | None = None) -> None:
+                 show_warder: bool = False, choice: dict | None = None, builder: bool = True) -> None:
         super().__init__()
         self.profile = dict(profile or {})
         self.step = step
         self.can_back = can_back
         self.last = last
         self.show_warder = show_warder
+        self.builder = builder            # the Town Builder plans with Claude Code: is it chosen?
         self.choice = dict(choice or {})
         self.role = self.choice.get("role") or self.profile.get("role") or intents.OTHER
 
@@ -529,7 +535,10 @@ class IntentStep(ModalScreen[dict | str | None]):
         for it in intents.for_role(role_id, day):
             star = "  ★" if intents.fit(it, day) else ""
             lst.add_option(Option(f"{it.label}{star}", id=it.id))
-        lst.add_option(Option("❓ None fits — tell the Builder about your work", id=CUSTOM))
+        if self.builder:
+            lst.add_option(Option("❓ None fits — tell the Builder about your work", id=CUSTOM))
+        else:
+            lst.add_option(Option("❓ None fits — needs Claude Code for the Builder", id=CUSTOM, disabled=True))
         lst.highlighted = 0
         self.show_choice()
 
@@ -539,6 +548,9 @@ class IntentStep(ModalScreen[dict | str | None]):
 
     def show_choice(self) -> None:
         it = intents.intent(self.choice_id)
+        note = self.query_one("#ob-town-note", Static)
+        note.update("" if self.builder else "The Builder plans a town with Claude Code: turn it on in the first "
+                    "step (Back) to describe your own — a ready town or an empty one needs no model.")
         blurb = intent_blurb(it) if it else Text(
             f"A short interview: where your data comes from, where results go, what hurts and what AI you "
             f"tried. The Builder adapts a {intents.role(self.role).title.lower()} town to your answers; you "
@@ -947,9 +959,10 @@ INTERVIEW_STEPS = tuple(f"q:{p.id}" for p in interview.INTERVIEW)
 class Onboarding:
     """Pushes the steps one after another, Back and Skip included, and applies what was chosen.
 
-    The first answer — how well the operator knows orchestration — picks the path:
-      🐣 new / 🪓 some   who you are · your day · your AI tools · the town (· the interview) · machine
-      🤘 punk orc        the machine's part, then an empty town to build themselves
+    First the tools the orcs run on (on a new machine): the rest depends on them — the Town Builder
+    plans with Claude Code. Then how well the operator knows orchestration picks the path:
+      🐣 new / 🪓 some   who you are · your day · your AI tools · the town (· the interview) · autonomy · look
+      🤘 punk orc        autonomy · look, then an empty town to build themselves
     A newcomer gets no Skip after the first step. The person's part is asked when the machine is
     new or the profile is missing; the town for a project with none yet. `on_town(choice)` is called
     at the end with {"preset", "role", "warder", "prompt", "answers", "expert"} (an empty town on
@@ -985,7 +998,7 @@ class Onboarding:
 
     def _plan(self) -> list[str]:
         """The steps of this run, from what is known so far (the first answer reshapes them)."""
-        steps: list[str] = []
+        steps: list[str] = [TOOLS] if self.machine_steps else []      # first: what the orcs run on
         if self.ask_person:
             steps.append(XP)
             if not self.expert:
@@ -995,7 +1008,7 @@ class Onboarding:
             if self._interviewing:
                 steps += list(INTERVIEW_STEPS)
         if self.machine_steps:
-            steps += [TOOLS, AUTONOMY, MODE]
+            steps += [AUTONOMY, MODE]
         return steps
 
     def start(self) -> None:
@@ -1018,7 +1031,7 @@ class Onboarding:
         name, back, last = self.steps[self.i], self.i > 0, self.i == len(self.steps) - 1
         done = lambda result: self._done(name, result)  # noqa: E731
         if name == XP:
-            screen = XpStep(self.profile.get("orchestration", ""), self.step)
+            screen = XpStep(self.profile.get("orchestration", ""), self.step, can_back=back)
         elif name == AI:
             screen = AiToolsStep(self.profile.get("ai_tools"), self.step, can_back=back)
         elif name == PERSON:
@@ -1027,7 +1040,8 @@ class Onboarding:
             screen = QuestionsStep(interview.DAY_PAGE, self.profile, self.profile, self.step, back, last)
         elif name == INTENT:
             screen = IntentStep(self.profile, self.step, back, last and not self._interviewing,
-                                show_warder=TOOLS not in self.steps and self.claude_on, choice=self.choice)
+                                show_warder=TOOLS not in self.steps and self.claude_on, choice=self.choice,
+                                builder=self.claude_on)
         elif name in INTERVIEW_STEPS:
             page = interview.INTERVIEW[INTERVIEW_STEPS.index(name)]
             screen = QuestionsStep(page, self.answers, {**self.profile, "role": self.choice.get("role", "")},

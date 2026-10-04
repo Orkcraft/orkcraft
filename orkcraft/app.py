@@ -894,6 +894,12 @@ class OrkcraftApp(App[int]):
             return
         if self.query(onboarding.RaiseBar):
             return                                                # one town at a time
+        if BUILD_RUNNER is None and not self.desktop.machine.tools.get("claude", settings.ToolChoice()).enabled:
+            self.order_burning = self._order_burns()
+            self.notify("The Town Builder plans with Claude Code, and it is off. F10 → 🧭 Onboarding turns it on; "
+                        "the order keeps waiting in the 🏰 Town Hall.", title="📜 Town Builder", severity="warning",
+                        timeout=12)
+            return
         bar = onboarding.mount_raise_bar(self.screen, None)
         role = str(order.get("role") or "")
         bar.say(f"📜 The Town Builder is adapting a {intents.role(role).title.lower()} town to your answers…"

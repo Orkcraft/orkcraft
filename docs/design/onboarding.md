@@ -11,30 +11,39 @@ Warder hooks, the Town Hall and the Town Builder (`realm/town_builder.py`).
 
 | Part | Where it is kept | Steps |
 |---|---|---|
+| **The machine** — once per machine | `~/.config/orkcraft/settings.json` | **Tools first** · … · Autonomy · The look and the hours |
 | **The person** — once per machine | `~/.config/orkcraft/settings.json` → `profile` | Orchestration · Who you are · Your day · Your AI tools |
 | **The town** — once per project | `.orkcraft.json`, `.orkcraft/`, the order `.orkcraft/town/order.json` | The town · (the interview) |
-| **The machine** — once per machine | `~/.config/orkcraft/settings.json` | Tools · Autonomy · The look and the hours |
 
 ```
-How well do you know orchestration? ─┬─ 🤘 punk orc ─→ Tools → Autonomy → The look → an empty town
-                                     └─ 🐣 new / 🪓 some ↓   (a newcomer gets no Skip)
+Tools (+ the Warder) → How well do you know orchestration? ─┬─ 🤘 punk orc ─→ Autonomy → The look → an empty town
+                                                            └─ 🐣 new / 🪓 some ↓   (a newcomer gets no Skip)
 Who are you? → Your day → Your AI tools → What should your first town do? ─┬─ an intent ─────┐
                                                             ├─ an empty town ──────────────┤
                                                             └─ none fits → Sources → Outputs │
                                                                  → Problems → What went wrong with AI ┤
   ┌─────────────────────────────────────────────────────────────────────────────────────────┘
-  └→ Tools (+ the Warder) → Autonomy → The look and the hours → the town is raised
+  └→ Autonomy → The look and the hours → the town is raised
         an intent: its buildings and roads, no model · none fits: the Town Builder adapts the
         role's templates to the answers → the plan → approved → raised
 ```
 
+**Why the tools come first.** Everything after them depends on what the orcs run on: the Town
+Builder plans with Claude Code (`builders.claude_runner`; there is no agy planner yet). So when
+Claude Code is not chosen, “None fits” on the town step is shown but closed — “needs Claude Code
+for the Builder”, with a note to turn it on (Back to the first step); a ready town or an empty one
+needs no model. The Town Builder never calls Claude Code against the operator's choice: with it
+off, an order waiting in the Town Hall stays there and a toast says how to turn it on.
+
 - A project with no `.orkcraft.json` starts onboarding. A machine already onboarded skips the
-  machine's part; one that also has a profile starts at the town — and a punk orc's gets an
-  empty town with no questions (no Warder unasked).
-- F10 → **🧭 Onboarding** asks who you are, your day and the machine's part again — never the town.
+  machine's part (the tools too); one that also has a profile starts at the town — and a punk
+  orc's gets an empty town with no questions (no Warder unasked).
+- F10 → **🧭 Onboarding** asks the tools, who you are, your day and the rest of the machine's part
+  again — never the town.
 - Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
   **Skip** anywhere = an empty town, defaults for the rest, no Warder.
-- The title counts the steps of this run: the interview adds four (“step 4 of 10”).
+- The title counts the steps of this run (8 on the full path, 12 with the interview, 4 for a punk
+  orc); a lone step shows no count.
 - Nothing is written before the last step. `--demo` never shows onboarding.
 
 ## 1b. How well do you know agent orchestration?
@@ -45,7 +54,7 @@ The first question, three answers (`interview.ORCHESTRATION`); it picks the path
 |---|---|
 | 🐣 **New to it** — chats with AI, never ran agents | everything, walked through: no Skip after this step (Back leads here) |
 | 🪓 **Some** — Claude Code, Cursor, rarely more than one agent | everything, Skip allowed |
-| 🤘 **Punk orc** — orchestrates agents already | no interview: tools, autonomy, the look, then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
+| 🤘 **Punk orc** — orchestrates agents already | no interview: autonomy and the look (the tools came first), then an empty town and a toast on how to build it (B, the Town Hall's Preset / New, F10 → 📜 Town Builder) |
 
 Stored: `profile.orchestration`. The Town Builder reads it: new to orchestration → fewer
 buildings and an accept step before anything leaves.
