@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import io
+import re
 import http.server
 import json
 import threading
@@ -100,10 +102,16 @@ def test_the_model_maps_fields_in_any_language():
 
 def test_settings_are_checked():
     spec = {"id": "c", "title": "C", "type": "catapult",
-            "config": {"mode": "browser", "page": "file:///etc", "fields": ["bad"], "finish": "press"}}
-    errors = catalog.validate(spec)
-    text = "\n".join(errors)
-    assert "page must be an http" in text and "fields:" in text and "press needs submit" in text
+            "config": {"mode": "browser", "forms": ["Bad Name = https://x", "e = file:///etc"], "fields": ["bad"]}}
+    text = "\n".join(catalog.validate(spec))
+    assert "short lowercase name" in text and "must be http or https" in text and "fields:" in text
+    assert "needs forms" in "\n".join(catalog.validate({"id": "c", "title": "C", "type": "catapult",
+                                                        "config": {"mode": "browser"}}))
+    old = catalog.migrate({"id": "c", "type": "catapult", "config": {"page": "https://a/x", "submit": "Save"}})
+    assert old["config"] == {"forms": ["form = https://a/x | | Save"]} and catalog.validate(old) == []
+    forms, _ = cw.parse_forms(["event = https://a/new | the event form | Save draft", "img = https://a/img"])
+    assert [(f.name, f.goal, f.submit) for f in forms] == [("event", "the event form", "Save draft"), ("img", "", "")]
+    assert cw.rules_for(["A = a", "img/B = b", "event/C = c"], "img", ["event", "img"]) == ["A = a", "B = b"]
 
 
 def test_a_script_edited_by_hand_is_kept(tmp_path: Path):
@@ -205,49 +213,114 @@ def test_scout_remembers_the_clicks_and_fill_repeats_them(site: str, tmp_path: P
     assert res.summary["page"]["url"].endswith("/events.html")       # where it broke, for the overseer
 
 
+def _operator_agent(answers_log: list):
+    """A fake scout: on a page without fields it clicks `Create event`, then says done."""
+    def runner(prompt: str):
+        answers_log.append(prompt)
+        if "FORM FIELDS ON THE PAGE: (none)" in prompt:
+            n = re.search(r"^(\d+): button, 'Create event'", prompt, re.M)
+            return json.dumps({"click": int(n.group(1))}), 0.01
+        return json.dumps({"done": True, "submit": "Save draft"}), 0.01
+    return runner
+
+
 @needs_browser
 @pytest.mark.asyncio
-async def test_the_catapult_scouts_and_fills_in_browser_mode(site: str, fake_repo: Path, monkeypatch):
+async def test_the_orc_scouts_an_intent_of_two_forms_and_the_queue_fills_them(site: str, fake_repo: Path, monkeypatch):
     monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
+    events, details = site.replace("new.html", "events.html"), site
     spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
-            "config": {"mode": "browser", "page": site, "submit": "Save draft", "finish": "press",
-                       "fields": ["Event name = title"]}}
+            "config": {"mode": "browser", "finish": "press", "fields": ["Event name = title", "details/Description = text"],
+                       "forms": [f"event = {events} | the new-event form", f"details = {details} | the details form"]}}
     assert masonry.save_spec(fake_repo, spec) == []
+    prompts = []
+    monkeypatch.setattr(CatapultView, "scout_runner", staticmethod(_operator_agent(prompts)))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.subscribe(app.scroll, "town_hall", "play", "catapult.sent")
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
         view = app.desktop.get_window("play").query_one(CatapultView)
+        assert view.hut_lines([20])[0].startswith("🌐")
         view.quick_action("catapult.scout")
-        for _ in range(200):
+        for _ in range(600):
             await pilot.pause(0.05)
             if not view.busy:
                 break
-        assert cw.load_map(view.state_dir) and (view.state_dir / "fill.py").exists()
+        event_map = cw.load_map(view.fdir("event"))
+        assert event_map["path"] == [{"role": "button", "name": "Create event", "selector": "#create"}]
+        assert event_map["submit"] == "Save draft" and event_map["by"] == "Loader"
+        assert view.fdir("event") == fake_repo / ".orkcraft" / "scripts" / "play" / "forms" / "event"   # the camp's git
+        assert (view.fdir("details") / "fill.py").exists()
         sent = []
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"title": "Halloween", "description": "Spooky"}',
-                                                  "pit", "pit.text", "x"))
+        for title in ("Halloween", "Christmas"):               # the second waits in the queue
+            app.deliver_payload("play", pipes.Payload(pipes.TEXT, json.dumps({"title": title, "text": "Spooky"}),
+                                                      "pit", "pit.text", "x"))
+        assert view.firing and len(view.queue) == 1
         for _ in range(1800):
-            await pilot.pause(0.05)
-            if sent:
+            await pilot.pause(0.1)
+            if len(sent) == 2:
                 break
-        assert [p.mode for p in sent] == ["catapult.sent"], view.shots[0] if view.shots else None
-        assert view.shots[0].ok and "pressed" in view.shots[0].answer and "saved" in view.shots[0].answer
-        assert not view.load.items                          # unloaded after a good shot
+        assert [p.mode for p in sent] == ["catapult.sent", "catapult.sent"], [s.error for s in view.shots]
+        assert "[event]" in sent[0].value and "[details]" in sent[0].value and "Halloween" in sent[0].value
+        assert "Christmas" in sent[1].value and not len(view.queue)
         assert view.profile == fake_repo / ".orkcraft" / "catapult" / "play" / "profile"   # outside the camp's git
+        exclude = (fake_repo / ".git" / "info" / "exclude").read_text(encoding="utf-8")
+        assert ".orkcraft/" in exclude.splitlines()                # and outside the project's git
+
+
+@needs_browser
+@pytest.mark.asyncio
+async def test_a_login_page_sets_the_hut_on_fire_and_holds_the_queue(site: str, tmp_path: Path, fake_repo: Path, monkeypatch):
+    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
+    www = tmp_path / "www"
+    (www / "secure.html").write_text(FORM, encoding="utf-8")
+    secure = site.replace("new.html", "secure.html")
+    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
+            "config": {"mode": "browser", "finish": "press", "forms": [f"event = {secure} | | Save draft"]}}
+    assert masonry.save_spec(fake_repo, spec) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    for event in ("catapult.sent", "catapult.failed"):
+        ts.subscribe(app.scroll, "town_hall", "play", event)
+    async with app.run_test(size=(200, 46)) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("play").query_one(CatapultView)
+        page_map = await asyncio.to_thread(cw.scout, secure, view.profile, watch=False, headless=True)
+        cw.save_map(view.fdir("event"), page_map)
+        (www / "secure.html").write_text("<!doctype html><title>Sign in</title><input type=password>", encoding="utf-8")
+        sent = []
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
+        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
+        for _ in range(600):
+            await pilot.pause(0.1)
+            if view.login_needed:
+                break
+        assert view.login_needed and len(view.queue) == 1 and [p.mode for p in sent] == ["catapult.failed"]
+        assert view.hut_lines([20]) == ["🌐 🔥 log in"]
+        app.refresh_roster()
+        alert = next(a for a in app.roster.alerts if a.source == "view")
+        assert "log in" in alert.title and app.roster.by_building("play").status == "alert"
+        (www / "secure.html").write_text(FORM, encoding="utf-8")        # logged in
+        view._logged_in(view.forms[0], {"url": secure, "fields": []}, "")
+        for _ in range(600):
+            await pilot.pause(0.1)
+            if len(sent) == 2:
+                break
+        assert [p.mode for p in sent] == ["catapult.failed", "catapult.sent"] and not view.login_needed
+        app.refresh_roster()
+        assert not [a for a in app.roster.alerts if a.source == "view"]
 
 
 @pytest.mark.asyncio
 async def test_the_demo_only_dry_runs_a_form(fake_repo: Path, tmp_path: Path):
     spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
-            "config": {"mode": "browser", "page": "https://play.example.com/events/new"}}
+            "config": {"mode": "browser", "forms": ["event = https://play.example.com/events/new"]}}
     assert masonry.save_spec(fake_repo, spec) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False, demo=True)
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
         view = app.desktop.get_window("play").query_one(CatapultView)
-        cw.save_map(view.state_dir, MAP)
+        cw.save_map(view.fdir("event"), MAP)
         app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
         await pilot.pause()
         assert view.shots[0].dry and "Event name" in view.shots[0].answer and "'Halloween'" in view.shots[0].answer
@@ -315,7 +388,7 @@ async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_pa
     monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
     events = site.replace("new.html", "events.html")
     spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Gruk"}, "type": "catapult",
-            "config": {"mode": "browser", "page": events, "submit": "Save draft", "finish": "press",
+            "config": {"mode": "browser", "forms": [f"event = {events} | | Save draft"], "finish": "press",
                        "fields": ["Event name = title"]}}
     assert masonry.save_spec(fake_repo, spec) == []
     monkeypatch.setattr(CatapultView, "repair_runner", staticmethod(lambda prompt: (json.dumps(REPAIRED), 0.03)))
@@ -325,13 +398,12 @@ async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_pa
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
         view = app.desktop.get_window("play").query_one(CatapultView)
-        state = view.state_dir
         page_map = await asyncio.to_thread(
             cw.scout, events, view.profile, watch=True, headless=True, limit_s=30,
             driver=lambda page, tick: page.get_by_role("button", name="Create event").click()
             if tick == 0 else page.close() if tick == 2 else None)
-        cw.save_map(state, page_map)
-        view.write_script()
+        cw.save_map(view.fdir("event"), page_map)
+        view.write_script(view.forms[0])
         _renamed(tmp_path / "www")
         sent = []
         monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
@@ -341,5 +413,88 @@ async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_pa
             if "catapult.sent" in [p.mode for p in sent] or "catapult.failed" in [p.mode for p in sent]:
                 break
         assert [p.mode for p in sent] == ["catapult.repaired", "catapult.sent"], [p.value for p in sent]
-        assert "Gruk: the button is now New event" in sent[0].value
-        assert view.shots[0].ok and "pressed" in view.shots[0].answer and view.shots[1].error.startswith("broken")
+        assert "Gruk (event): the button is now New event" in sent[0].value
+        assert view.shots[0].ok and "pressed" in view.shots[0].answer and view.shots[2].error.startswith("broken")
+
+
+def test_groups_by_key_drop_old_carts_and_queue(tmp_path: Path):
+    load = cp.Load(tmp_path)
+    load.put("notes", '{"tag": "v1", "text": "one"}', "tag", now="2026-10-04T10:00:00")
+    load.put("notes", '{"tag": "v2", "text": "two"}', "tag", now="2026-10-04T10:01:00")
+    load.put("version", '{"tag": "v1"}', "tag", now="2026-10-04T10:02:00")
+    assert load.take(["notes", "version"]) == {"notes": {"tag": "v1", "text": "one"}, "version": {"tag": "v1"}}
+    assert load.take(["notes", "version"]) is None and load.missing(["notes", "version"]) == ["version"]
+    load.put("version", "plain text, no tag", "tag", now="2026-10-04T10:03:00")   # joins the open group
+    assert load.take(["notes", "version"])["notes"]["text"] == "two"
+    load.put("notes", "old", now="2026-10-04T08:00:00")
+    load.put("version", "new", now="2026-10-04T10:00:00")
+    import datetime as dt
+    assert load.expire(60, now=dt.datetime(2026, 10, 4, 10, 30)) == ["notes (1)"] and load.items == {"version": "new"}
+    assert cp.Load(tmp_path).items == {"version": "new"}                         # kept on disk
+    legacy = tmp_path / "old"
+    legacy.mkdir()
+    (legacy / "loaded.json").write_text('{"pit": {"a": 1}}')
+    assert cp.Load(legacy).body([]) == {"a": 1}                                  # the old flat file loads
+    q = cp.Queue(tmp_path)
+    q.push({"n": 1})
+    q.push({"n": 0}, start=1, front=True)
+    assert len(cp.Queue(tmp_path)) == 2 and q.pop()["start"] == 1 and q.pop()["body"] == {"n": 1} and q.pop() is None
+
+
+def test_files_come_from_the_project_loot_or_a_url(tmp_path: Path):
+    repo = tmp_path / "repo"
+    (repo / "loot").mkdir(parents=True)
+    (repo / "loot" / "banner.png").write_bytes(b"png")
+    (repo / "loot" / "draft.png").write_bytes(b"png")
+    page_map = {"fields": [{"kind": "file", "label": "Banner", "selector": "#b"},
+                           {"kind": "file", "label": "Gallery", "selector": "#g"}]}
+    p = cw.plan(page_map, ["banner", "gallery"])
+
+    class Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    body = {"banner": "loot:loot/banner.png", "gallery": ["https://cdn.example/a.png?x=1", "loot/banner.png"]}
+    out, problems = cw.resolve_files(body, p.steps, repo, {"loot/draft.png"}, tmp_path / "dl",
+                                     opener=lambda url, timeout=None: Resp(b"remote"))
+    assert not problems and out["banner"] == str((repo / "loot" / "banner.png").resolve())
+    assert Path(out["gallery"][0]).read_bytes() == b"remote" and body["banner"] == "loot:loot/banner.png"
+    _, problems = cw.resolve_files({"banner": "loot/draft.png", "gallery": "../etc/passwd"}, p.steps, repo,
+                                   {"loot/draft.png"}, tmp_path / "dl")
+    assert "waiting for your review in the Loot Vault" in problems[0] and "outside the project" in problems[1]
+
+
+@needs_browser
+def test_the_scout_agent_refuses_what_changes_data(site: str, tmp_path: Path):
+    www = tmp_path / "www"
+    (www / "events.html").write_text((www / "events.html").read_text(encoding="utf-8").replace(
+        "<button id=create>", "<button id=wipe>Delete everything</button><button id=create>"), encoding="utf-8")
+    prompts = []
+    answers = iter([{"click": 0}, {"click": 1}, {"done": True, "submit": "Save draft"}])
+    runner = lambda prompt: prompts.append(prompt) or (json.dumps(next(answers)), 0.02)   # noqa: E731
+    form = cw.Form("event", site.replace("new.html", "events.html"), "the new-event form")
+    page_map, cost = cw.agent_scout(form, tmp_path / "profile", "Loader", runner=runner)
+    assert "refused 'Delete everything'" in prompts[1] and cost == pytest.approx(0.06)
+    assert [c["name"] for c in page_map["path"]] == ["Create event"] and page_map["fields"]
+    (www / "login.html").write_text("<!doctype html><input type=password>", encoding="utf-8")
+    with pytest.raises(cw.LoginNeeded):
+        cw.agent_scout(cw.Form("x", site.replace("new.html", "login.html")), tmp_path / "profile",
+                       runner=lambda prompt: ("{}", None))
+
+
+def test_halt_kills_the_running_browser():
+    class Proc:
+        killed = False
+
+        def poll(self):
+            return None
+
+        def kill(self):
+            self.killed = True
+
+    view = CatapultView({"id": "c", "type": "catapult", "config": {}})
+    view.proc = proc = Proc()
+    assert view.halt() == 1 and proc.killed and view.paused and view.halt() == 0

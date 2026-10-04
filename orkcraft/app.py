@@ -2356,6 +2356,7 @@ class OrkcraftApp(App[int]):
         self.roster = build_roster(
             self.repo_root, built, workers, self.dismissed, deployments=self.deployments
         )
+        self._view_alerts()
         self._note_alerts()
         for w in self.desktop.windows:
             badge = garrison_badge(self.roster.garrison(w.window_id))
@@ -2434,6 +2435,27 @@ class OrkcraftApp(App[int]):
         tier = None if is_steward or not member.uses_model else (tiers.orc_tier(member.harness, member.kind) or "")
         self.push_screen(UnitModal(orc, b.label, member.orders, tier=tier), done)
 
+    def _view_alerts(self) -> None:
+        """A building whose own view needs the operator (a Catapult that must log in again) sets its
+        lead orc's hut on fire: `orders_alert()` → (id, title, context, options)."""
+        for b_spec in self.scroll.buildings:
+            if b_spec.demolished:
+                continue
+            view = self._custom_view(b_spec.id)
+            ask = getattr(view, "orders_alert", None)
+            wanted = ask() if callable(ask) else None
+            if not wanted:
+                continue
+            key, title, context, options = wanted
+            alert = Alert(id=f"view:{b_spec.id}:{key}", title=title, context=list(context), options=list(options),
+                          source="view", ref=b_spec.id)
+            if alert.id in self.dismissed:
+                continue
+            orc = self.roster.by_building(b_spec.id)
+            if orc is not None:
+                orc.status, orc.alert = "alert", alert
+            self.roster.alerts.append(alert)
+
     def _alert_who_map(self) -> dict[str, str]:
         who_map: dict[str, str] = {}
         for o in self.roster.orcs:
@@ -2465,6 +2487,11 @@ class OrkcraftApp(App[int]):
         elif alert.source == "warder":
             if key == "1":
                 self.dismissed.add(alert.id)      # acknowledged; the log keeps it
+        elif alert.source == "view":
+            view = self._custom_view(alert.ref)
+            answer = getattr(view, "answer_alert", None)
+            if callable(answer) and answer(key) == "dismiss":
+                self.dismissed.add(alert.id)
         self.refresh_roster()
 
     def action_awaiting_orders(self) -> None:
@@ -3381,6 +3408,10 @@ class OrkcraftApp(App[int]):
         for worker in self.workers:
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
+        for b_spec in self.scroll.buildings:          # what buildings run themselves (a Catapult's browser)
+            halt = getattr(self._custom_view(b_spec.id), "halt", None)
+            if callable(halt):
+                halted += int(halt() or 0)
         hud = self._hud
         hud.set_halt(f"HALTED — {halted} stopped")
         self.notify(f"🛑 Halt All: {halted} running session{'s' if halted != 1 else ''} interrupted",

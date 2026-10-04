@@ -47,36 +47,160 @@ def parse(value: str):
 
 
 class Load:
+    """What is loaded, in groups: one group is one shot's worth of carts. With `key` (a body path,
+    "version.tag") carts that name the same value share a group, so two releases never mix; a cart
+    without it joins the newest group still missing its source. Each source keeps its latest cart
+    in a group; carts older than `ttl` minutes are dropped."""
+
     def __init__(self, state_dir: Path) -> None:
         self.file = state_dir / "loaded.json"
         try:
-            self.items: dict[str, object] = json.loads(self.file.read_text(encoding="utf-8"))
+            raw = json.loads(self.file.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            self.items = {}
+            raw = {}
+        if isinstance(raw, dict) and "groups" in raw:
+            self.groups: dict[str, dict[str, dict]] = raw["groups"]
+            self.seq = int(raw.get("seq", 0))
+        else:                                     # the old flat {source: value}
+            now = _now()
+            self.groups = {"#0": {k: {"v": v, "at": now} for k, v in raw.items()}} if raw else {}
+            self.seq = 1
+
+    @property
+    def items(self) -> dict[str, object]:
+        """The newest group's carts, {source: value} (what the screen shows)."""
+        g = self._newest()
+        return {k: e["v"] for k, e in self.groups.get(g, {}).items()} if g else {}
+
+    def _newest(self) -> str | None:
+        if not self.groups:
+            return None
+        return max(self.groups, key=lambda g: max((e["at"] for e in self.groups[g].values()), default=""))
+
+    def save(self) -> None:
+        self.file.parent.mkdir(parents=True, exist_ok=True)
+        self.file.write_text(json.dumps({"groups": self.groups, "seq": self.seq}, ensure_ascii=False, indent=1),
+                             encoding="utf-8")
+
+    def put(self, source: str, value: str, key: str = "", now: str | None = None) -> str:
+        """Load a cart; returns its group."""
+        v, now = parse(value), now or _now()
+        named = _pick(v, key) if key else None
+        if named is not None and not isinstance(named, (dict, list)):
+            group = f"={named}"
+        else:
+            open_groups = sorted((g for g in self.groups if source not in self.groups[g]),
+                                 key=lambda g: max((e["at"] for e in self.groups[g].values()), default=""))
+            group = open_groups[-1] if open_groups else f"#{self.seq}"
+            if not open_groups:
+                self.seq += 1
+        self.groups.setdefault(group, {})[source] = {"v": v, "at": now}
+        self.save()
+        return group
+
+    def expire(self, ttl_min: int, now: dt.datetime | None = None) -> list[str]:
+        """Drop carts older than `ttl_min` minutes (0: never); returns "source (group)" of each."""
+        if not ttl_min:
+            return []
+        edge = ((now or dt.datetime.now()) - dt.timedelta(minutes=ttl_min)).isoformat(timespec="seconds")
+        dropped = []
+        for g in list(self.groups):
+            for src in [s for s, e in self.groups[g].items() if e["at"] < edge]:
+                del self.groups[g][src]
+                dropped.append(f"{src} ({g.lstrip('=#')})")
+            if not self.groups[g]:
+                del self.groups[g]
+        if dropped:
+            self.save()
+        return dropped
+
+    def clear(self) -> None:
+        self.groups = {}
+        self.save()
+
+    def missing(self, wait_for: list[str]) -> list[str]:
+        """What the most complete group still waits for."""
+        if not self.groups:
+            return list(wait_for)
+        best = min(self.groups.values(), key=lambda g: len([s for s in wait_for if s not in g]))
+        return [s for s in wait_for if s not in best]
+
+    def _ready(self, wait_for: list[str]) -> list[str]:
+        ok = [g for g, items in self.groups.items() if items and all(s in items for s in wait_for)]
+        return sorted(ok, key=lambda g: min(e["at"] for e in self.groups[g].values()))
+
+    def ready(self, wait_for: list[str]) -> bool:
+        return bool(self._ready(wait_for))
+
+    @staticmethod
+    def _body_of(items: dict[str, object], wait_for: list[str]):
+        if len(wait_for) <= 1 and len(items) == 1:
+            return next(iter(items.values()))
+        keys = wait_for or list(items)
+        return {k: items[k] for k in keys if k in items}
+
+    def body(self, wait_for: list[str]):
+        """The body of the oldest ready group, else of the newest (a look, nothing is taken)."""
+        ready = self._ready(wait_for)
+        g = ready[0] if ready else self._newest()
+        return self._body_of({k: e["v"] for k, e in self.groups.get(g, {}).items()}, wait_for) if g else None
+
+    def take(self, wait_for: list[str], force: bool = False):
+        """Take the oldest ready group out (with `force`, the newest group, ready or not): its body,
+        or None. Only that group's carts leave; carts loaded meanwhile stay."""
+        ready = self._ready(wait_for)
+        g = ready[0] if ready else (self._newest() if force else None)
+        if g is None:
+            return None
+        items = {k: e["v"] for k, e in self.groups.pop(g).items()}
+        self.save()
+        return self._body_of(items, wait_for)
+
+
+def _now() -> str:
+    return dt.datetime.now().isoformat(timespec="seconds")
+
+
+def _pick(body, path: str):
+    cur = body
+    for part in path.split("."):
+        if isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        elif isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
+            cur = cur[int(part)]
+        else:
+            return None
+    return cur
+
+
+class Queue:
+    """Shots waiting their turn: one fires at a time, the rest wait here (kept across restarts)."""
+
+    def __init__(self, state_dir: Path) -> None:
+        self.file = state_dir / "queue.json"
+        try:
+            self.items: list[dict] = json.loads(self.file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            self.items = []
 
     def save(self) -> None:
         self.file.parent.mkdir(parents=True, exist_ok=True)
         self.file.write_text(json.dumps(self.items, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    def put(self, source: str, value: str) -> None:
-        self.items[source] = parse(value)
+    def push(self, body, start: int = 0, front: bool = False) -> None:
+        item = {"body": body, "start": start, "at": _now()}
+        self.items.insert(0, item) if front else self.items.append(item)
         self.save()
 
-    def clear(self) -> None:
-        self.items = {}
+    def pop(self) -> dict | None:
+        if not self.items:
+            return None
+        item = self.items.pop(0)
         self.save()
+        return item
 
-    def missing(self, wait_for: list[str]) -> list[str]:
-        return [s for s in wait_for if s not in self.items]
-
-    def ready(self, wait_for: list[str]) -> bool:
-        return bool(self.items) and not self.missing(wait_for)
-
-    def body(self, wait_for: list[str]):
-        if len(wait_for) <= 1 and len(self.items) == 1:
-            return next(iter(self.items.values()))
-        keys = wait_for or list(self.items)
-        return {k: self.items[k] for k in keys if k in self.items}
+    def __len__(self) -> int:
+        return len(self.items)
 
 
 def check(body, schema_path: Path | None) -> list[str]:

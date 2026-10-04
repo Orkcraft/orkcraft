@@ -194,42 +194,61 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | generated files to accept / roll back; what arrives is stored with when and its cost | `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orcs, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
-| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — or, in browser mode, fills a web form and has its overseer repair the script when the site changes; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
+| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its orc finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
 - The Forge and the Catapult act without asking; `c` in the open building turns a confirmation
   on (the `confirm` setting). The Town Hall's 🔍 Audit flags a Forge without tests and a
   Catapult without a schema.
-- **The Catapult's browser mode**, for a site with no API (a new event in the Google Play Console,
-  say). Install it with `pip install 'orkcraft[browser]'` and `playwright install chromium`, then
-  set `mode: browser` and `page` (the form's address).
-  - **`s` Scout** opens a visible browser with the building's own profile. Log in (once: the login
-    stays in `.orkcraft/catapult/<id>/profile`, outside the camp's git), open the form and close the
-    window. The Catapult marks every field (label, kind, options, a stable selector) and button
-    into `map.json`, remembers the clicks that opened the form since the last page load (say
-    `Create event` in a single-page app — the path the scout notice shows) and writes `fill.py`.
-  - **Which field gets what**: `fields` in the settings first (`Event name = title`,
-    `Category = "Major update"`), then a model's mapping (`m`: one call to your Claude Code, for
-    labels in another language; `mapping.json`), then plain name matching. 🧪 Dry run shows the
-    plan with the values, and lists the required fields left empty and the keys nothing took.
-  - **`fill.py`** is a standalone Playwright script: the cart on stdin; it opens the form by its
-    address, or, when the address alone does not show it, opens the start page and repeats the
-    remembered clicks (by role and name, then text, then selector); fills the form; then it
-    hands the form to you (`finish: leave`: you check it, press the button and close the window)
-    or presses `submit` itself (`finish: press`, `f`). It runs by hand too (`python fill.py
-    --profile … < cart.json`). Edit it freely: a script edited by hand is kept, and a rescout writes
-    `fill.new.py` beside it.
-  - **When the site changes** and the script breaks (a button or a field is not found, the clicks
-    no longer open the form), the script reports where it broke with a snapshot of that page
-    (its fields and buttons). The building's orc, its overseer, repairs the map from it: one call
-    to your Claude Code, at most two attempts, never in the sandbox or past the 🪙 budget. The page
-    text goes to the model as data. Only data comes back: a path on the same site, labels,
-    selectors, known field kinds. A renamed field keeps its old name, so `fields` rules still match.
-    `fill.py` is rewritten and checked headless (the form reached, every field found) before the
-    cart is filled again, once. A failed repair leaves the old map and script, and sends
-    `catapult.failed`; a good one sends `catapult.repaired` with what changed. `repair: false`
-    turns it off; a `fill.py` edited by hand is never repaired.
-  - Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that presses a button with no schema and
-    no confirmation.
+- **The Catapult's queue.** A shot is one group of carts: with `key` (a body path such as
+  `version.tag`) carts naming the same value share a group, so two releases never mix; a cart
+  without it joins the newest group still missing its source. `ttl` (minutes) drops carts that
+  waited too long. A group that has everything `wait_for` names becomes a shot and joins the queue;
+  shots fire one at a time, in order, and a cart loaded meanwhile is never lost. A failed shot
+  takes its group with it: 🎯 fires it again.
+- **The Catapult's browser mode** closes a whole intent on a site with no API (a new event in the
+  Google Play Console: the event, then its images, …). Install it with
+  `pip install 'orkcraft[browser]'` and `playwright install chromium`, then set `mode: browser`
+  and `forms`, in the order they are filled — `name = start address | what to open | button`
+  (the last two optional): `event = https://play.google.com/console/… | the form for a new event`.
+  - **`s` Scout**: the building's orc walks the site to each form itself, headless, with the
+    building's own browser profile. Each step it sees the page (fields, buttons, links) and clicks
+    one numbered element; it never types, never submits and refuses what looks like it changes data
+    (delete, publish, send…). When the form is open it names its submit button. The form's map
+    (fields with label, kind, options and a stable selector; the clicks since the last page load;
+    the button) and its `fill.py` go to `.orkcraft/scripts/<id>/forms/<name>/` — in the camp's git,
+    so every scout, mapping and repair is a commit `Z` can revert. One model call a step, at most 12.
+  - **`l` Log in** opens a visible browser with that profile: log in once (the login stays in
+    `.orkcraft/catapult/<id>/profile`; the Catapult adds `.orkcraft/` to the project's
+    `.git/info/exclude` so it never reaches your git). If the orc cannot find a form, open it in
+    that window yourself before closing it: a form with no map yet keeps the way you showed.
+  - **A login page** (a password field, or another host) met by a scout, a shot or a repair sets
+    the hut on fire 🔥: the lead orc waits for orders ("log in again"), the shot goes back to the
+    front of the queue and the queue holds. Answer 1 (or `l`), log in, close the window: the queue
+    goes on.
+  - **Which field gets what**: `fields` first (`Event name = title`, `Category = "Major update"`;
+    `images/Banner = banner` for one form only), then a model's mapping (`m`, every form: one call
+    to your Claude Code, for labels in another language; its cost is in the ledger), then plain
+    name matching. 🧪 Dry run shows each form's plan with the values, the required fields left empty
+    and the keys nothing took.
+  - **Files**: a file field takes a project file (`loot/banner.png`, or `loot:loot/banner.png`),
+    or an http(s) URL (downloaded first, 50 MB at most). A file a Loot Vault still waits for you to
+    review is refused until you accept it (`a` in the Vault).
+  - **A shot** runs each form's `fill.py` in turn: it opens the form by its address, or the start
+    page and the remembered clicks; fills it; then presses the button (`finish: press`) or hands the
+    form to you (`finish: leave`, `f`: you check it, press and close the window, and the next form
+    opens). `fill.py` runs by hand too (`python fill.py --profile … < cart.json`); edit it freely —
+    a script edited by hand is kept, a rescout writes `fill.new.py` beside it.
+  - **When the site changes** and a script breaks (a field or a button not found, the clicks no
+    longer open the form), it reports where it broke with a snapshot of that page. The orc repairs
+    the map from it: at most two model calls, never in the sandbox or past the 🪙 budget; only data
+    comes back (a path on the same site, labels, selectors, known field kinds) and a renamed field
+    keeps its old name for `fields`. `fill.py` is rewritten, checked headless (the form reached,
+    every field found) and committed, and the shot resumes at that form — the forms already filled
+    are not filled twice. A failed repair restores the old script and sends `catapult.failed`; a good
+    one sends `catapult.repaired` with what changed. `repair: false` turns it off.
+  - 🛑 Halt All stops the running browser; the queue waits for 🎯. The hut's line starts with 🌐 in
+    browser mode. Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that
+    presses submit with no schema and no confirmation.
 - The Watchtower's `feeds` are asked every two minutes over HTTPS, read-only (those services send
   webhooks only to a public URL). One line a feed; options name environment variables, never the
   token itself:

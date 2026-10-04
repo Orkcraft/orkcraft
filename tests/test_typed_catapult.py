@@ -97,6 +97,8 @@ async def test_the_catapult_waits_for_both_roads_then_fires(fake_repo: Path, mon
         assert "'notes' is a required property" in view.shots[0].error and len(net.requests) == 1
         app.deliver_payload("launcher", pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"))
         assert len(net.requests) == 1 and "tag" in view.shots[0].error    # loaded but invalid: not sent
+        assert view.failed and not view.load.items                   # the failed shot took its group
+        app.deliver_payload("launcher", pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"))
         app.deliver_payload("launcher", pipes.Payload(pipes.TEXT, '{"tag": "v0.2.1"}', "version", "mill.done", "v"))
         for _ in range(40):
             await pilot.pause(0.05)

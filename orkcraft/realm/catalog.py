@@ -260,21 +260,21 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
-        "and sends it to an external API — or, where a site has no API, fills its web form in a browser "
-        "(it scouts the page, writes a Playwright script, then hands the form to you or presses submit)",
+        "and sends it to an external API — or, where a site has no API, closes a whole intent in the browser: "
+        "its orc finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
         "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
         events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
                 _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
                 _e("catapult.repaired", "repaired", TEXT, "the site changed: the overseer rewrote the fill script")),
         actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
                  _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
-                 _a("catapult.scout", "Scout", "🔭", "browser mode: open the page, learn its form, write the fill script")),
+                 _a("catapult.scout", "Scout", "🔭", "browser mode: the orc finds every form of the intent and writes their scripts")),
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),
                 "token_env": (str, None, False), "confirm": (bool, None, False),
-                "mode": (str, ("api", "browser"), False), "page": (str, None, False),
-                "fields": (list, None, False), "submit": (str, None, False),
-                "finish": (str, ("leave", "press"), False), "repair": (bool, None, False)},
+                "mode": (str, ("api", "browser"), False), "forms": (list, None, False),
+                "fields": (list, None, False), "finish": (str, ("leave", "press"), False),
+                "repair": (bool, None, False), "key": (str, None, False), "ttl": (int, (0, 10080), False)},
         art="workshop", orc="Loader"),
     BuildingType(
         "town_hall", "Town Hall", "🏰", "L",
@@ -322,6 +322,12 @@ def migrate(spec: dict) -> dict:
     tid = spec.get("type")
     if tid in ALIASES:
         return {**spec, "type": ALIASES[tid]}
+    if tid == "catapult" and isinstance(spec.get("config"), dict) and "page" in spec["config"]:
+        cfg = dict(spec["config"])           # one page → the intent's first form
+        page, submit = str(cfg.pop("page") or ""), str(cfg.pop("submit", "") or "")
+        if page and not cfg.get("forms"):
+            cfg["forms"] = [f"form = {page}" + (f" | | {submit}" if submit else "")]
+        return {**spec, "config": cfg}
     if tid != "agent":
         return spec
     cfg = dict(spec.get("config") or {})
@@ -454,12 +460,12 @@ def validate(spec: dict) -> list[str]:
             errors.append("config: quiet: say `22:00-08:00`")
     if tid == "catapult":
         from orkcraft.realm import catapult_web
-        if isinstance(config.get("page"), str) and not catapult_web.url_ok(config["page"]):
-            errors.append("config: page must be an http or https address")
+        if isinstance(config.get("forms"), list):
+            errors += [f"config: forms: {e}" for e in catapult_web.parse_forms(config["forms"])[1]]
         if isinstance(config.get("fields"), list):
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
-        if config.get("finish") == "press" and not config.get("submit"):
-            errors.append("config: finish: press needs submit — the text of the button to press")
+        if config.get("mode") == "browser" and not config.get("forms"):
+            errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
     if tid == "totem" and isinstance(config.get("rules"), list):
         from orkcraft.realm import totem
         errors += [f"config: rules: {e}" for e in totem.rules_of(config["rules"])[1]]
