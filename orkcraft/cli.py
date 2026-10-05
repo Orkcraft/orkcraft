@@ -19,6 +19,16 @@ def _gui():
     return launch
 
 
+def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
+    """`orkcraft --demo gui`: the optional DIR of --demo would swallow the subcommand, so a
+    subcommand right after it means the default sandbox (`--demo=`)."""
+    out = list(argv)
+    for i, word in enumerate(out[:-1]):
+        if word == "--demo" and out[i + 1] in subcommands:
+            out[i] = "--demo="
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -44,13 +54,15 @@ def main(argv: list[str] | None = None) -> int:
     gui_p = subparsers.add_parser("gui", help="Open the town in a window (Office look; pip install 'orkcraft[gui]')")
     gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
+    gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
+                       help="Open the showcase sandbox in the window")
     hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(_demo_before_subcommand(sys.argv[1:] if argv is None else list(argv), subparsers.choices))
 
     if args.subcommand == "hooks":
         from orkcraft.hooks import install as hooks_install
