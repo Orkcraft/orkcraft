@@ -119,7 +119,16 @@ class Town:
         building whose type has none yet (its view still does the work)."""
         if not building_id:
             return None
-        return self.workers.get(building_id)
+        if building_id in self.workers:
+            return self.workers[building_id]
+        from orkcraft.core import workers
+        spec = self.custom_specs.get(building_id)
+        cls = workers.registry().get(workers.type_id(spec)) if spec else None
+        if cls is None:
+            return None
+        w = self.workers[building_id] = cls(self, building_id)
+        w.start()
+        return w
 
     def deliver(self, target_id: str, payload, title: str = "", markdown: str = "") -> None:
         """A cart arrives in `target_id` (core/delivery.py)."""

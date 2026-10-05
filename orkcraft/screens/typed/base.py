@@ -7,6 +7,8 @@ deliveries along roads, the 📥 note, refresh — keeps working. On top it has:
     state_dir       `.orkcraft/<type>/<building id>/`, where it keeps what it learns
     emit(...)       sends one of its type's events down the roads that carry it
     receive(...)    what a delivery means to it (run, enqueue, …)
+    worker          its worker in the core (core/workers), for a type that has one: the view
+                    draws the worker's state (`redraw`, on every `WORKER`) and calls its acts
     quick_action    the hut buttons and [ / ]
     mini_status     the hut lines
 """
@@ -16,10 +18,11 @@ from pathlib import Path
 
 from textual.app import ComposeResult
 
+from orkcraft.core import workers
 from orkcraft.realm import catalog, masonry, pipes
 from orkcraft.screens.custom_view import CustomBuildingView
 
-STATE_ROOT = Path(".orkcraft")
+STATE_ROOT = workers.STATE_ROOT
 
 
 class TypedView(CustomBuildingView):
@@ -63,16 +66,16 @@ class TypedView(CustomBuildingView):
 
     @property
     def state_dir(self) -> Path:
-        root = self._get_repo_root() / STATE_ROOT
-        here = root / self.TYPE / self.building_id
-        if not here.exists():                        # T1107: a building of an old type keeps what it learned
-            for old, new in catalog.ALIASES.items():
-                legacy = root / old / self.building_id
-                if new == self.TYPE and legacy.is_dir():
-                    here.parent.mkdir(parents=True, exist_ok=True)
-                    legacy.rename(here)
-                    break
-        return here
+        return workers.state_dir(self._get_repo_root(), self.TYPE, self.building_id)
+
+    @property
+    def worker(self):
+        """Its worker (core/workers): the building's state and acts; None for a type without one."""
+        try:
+            town = getattr(self.app, "core", None)
+        except Exception:                            # not mounted in an app
+            return None
+        return town.worker(self.building_id) if town is not None else None
 
     # -- the view -----------------------------------------------------------------------------------
 
@@ -102,6 +105,9 @@ class TypedView(CustomBuildingView):
             ui_apply.apply(self, doc or self.ui_document(), self.UI_PANES)
         except Exception:      # a layout never takes a building down: it keeps the one it had
             pass
+
+    def redraw(self) -> None:
+        """Its worker's state changed: draw it again (a view whose type has a worker overrides it)."""
 
     def restart(self) -> None:
         """After the weekly self-audit changed it: pick up the new settings."""

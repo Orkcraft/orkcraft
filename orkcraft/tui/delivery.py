@@ -140,6 +140,13 @@ class DeliveryMixin:
         on(bus.CART, lambda e: self._show_cart(e.data["cart"]))
         on(bus.RUN, lambda e: self._show_run(e.data["run"], e.data["name"]))
         on(bus.LOOT, lambda e: self._refresh_loot())
+        on(bus.WORKER, lambda e: self._worker_changed(e.data["building"]))
+
+    def _worker_changed(self, building_id: str) -> None:
+        """A building's worker changed its state: its view draws it again."""
+        redraw = getattr(self._custom_view(building_id), "redraw", None)
+        if redraw is not None:
+            redraw()
 
     def _show_delivered(self, building: str, payload: pipes.Payload, title: str, markdown: str, label: str,
                         worker: bool) -> None:
