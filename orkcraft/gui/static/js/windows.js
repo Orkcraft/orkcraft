@@ -7,6 +7,8 @@ import { Layout } from "./layout.js";
 import * as lake from "./buildings/lake.js";
 import * as fields from "./buildings/fields.js";
 import * as scrolls from "./buildings/scrolls.js";
+import { WarTent, HALL, deploy } from "./tent.js";
+import { openOrders } from "./orders.js";
 
 // The types whose window the GUI draws (gui/views/ on the host); the others show what they are.
 const VIEWS = { lake, fields, scrolls };
@@ -65,7 +67,7 @@ function Roads({ b, t }) {
   </section>`;
 }
 
-function Garrison({ garrison }) {
+function Garrison({ garrison, b }) {
   if (!garrison.length) return null;
   return html`<section class="gui-section">
     <h3 class="ok-font-heading">Garrison</h3>
@@ -73,36 +75,50 @@ function Garrison({ garrison }) {
       <span class="ok-font-label">${o.name}</span>
       ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
       <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
+      ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>
+        <span class="ok-act__label">${o.session ? "Its session" : "Deploy"}</span></button>`}
       ${o.role && html`<div class="ok-font-status ok-tone-muted">${o.role}</div>`}
     </li>`)}</ul>
   </section>`;
 }
 
 function About({ b, t }) {
-  return html`<details class="gui-about">
+  return html`<details key=${b.id} class="gui-about">
     <summary class="ok-font-heading">About this building</summary>
-    <${Garrison} garrison=${b.garrison} />
+    <${Garrison} garrison=${b.garrison} b=${b} />
     <${Roads} b=${b} t=${t} />
   </details>`;
 }
 
+function Question({ alert }) {
+  return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
+    <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
+}
+
 function Body({ b, t }) {
+  if (b.id === HALL) {
+    return html`<div class="ok-win__body gui-win__body is-view">
+      ${b.alert && html`<${Question} alert=${b.alert} />`}
+      <${WarTent} />
+      <${About} b=${b} t=${t} />
+    </div>`;
+  }
   const d = details.value[b.id];
   const view = d && d.data && VIEWS[d.type];
   if (view) {
     return html`<div class="ok-win__body gui-win__body is-view">
-      ${b.alert && html`<p class="ok-font-body ok-tone-fire gui-alert">${b.alert.title}</p>`}
+      ${b.alert && html`<${Question} alert=${b.alert} />`}
       <${Layout} doc=${d.ui} panes=${view.panes(b.id, d.data)} />
       <${About} b=${b} t=${t} />
     </div>`;
   }
   return html`<div class="ok-win__body gui-win__body">
-    ${b.alert && html`<p class="ok-font-body ok-tone-fire">${b.alert.title}</p>`}
+    ${b.alert && html`<${Question} alert=${b.alert} />`}
     ${b.status_plain.length > 0 && html`<section class="gui-section">
       ${b.status_plain.map((line, i) => html`<div key=${i} class="ok-font-status">${line}</div>`)}</section>`}
     ${!b.has_worker && html`<p class="ok-font-status ok-tone-muted">
       This building's own view is not in the window yet; it works in the TUI meanwhile.</p>`}
-    <${Garrison} garrison=${b.garrison} />
+    <${Garrison} garrison=${b.garrison} b=${b} />
     <${Roads} b=${b} t=${t} />
   </div>`;
 }

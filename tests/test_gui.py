@@ -289,3 +289,80 @@ def test_every_road_has_a_town_wide_key(fake_repo):
     keys = [r["id"] for r in host.snapshot()["roads"]]
     assert len(keys) == len(set(keys))
     assert all(r["id"] == f"{r['to']}:{r['road']}" for r in host.snapshot()["roads"])
+
+
+# -- sessions and Orders through the host and the socket ------------------------------------------
+
+def _fake_cli(tmp_path, monkeypatch) -> None:
+    import stat
+    path = tmp_path / "fake-claude"
+    path.write_text("#!/bin/sh\nprintf 'Proceed?\\r\\n1. Yes\\r\\n2. No\\r\\n'\nstty -icanon\n"
+                    "a=$(dd bs=1 count=1 2>/dev/null)\nprintf 'chose %s\\r\\n' \"$a\"\nsleep 30\n", encoding="utf-8")
+    path.chmod(path.stat().st_mode | stat.S_IXUSR)
+    monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(path))
+
+
+def test_orders_answer_a_session_question_and_refuse_the_rest(fake_repo, tmp_path, monkeypatch):
+    import time
+    _fake_cli(tmp_path, monkeypatch)
+    host = _host(fake_repo)
+    try:
+        key = host.command("sessions.new", {"harness": "claude"})
+        s = host.sessions.get(key)
+        for _ in range(100):
+            if "2. No" in "\n".join(s.text_lines()):
+                break
+            time.sleep(0.05)
+        time.sleep(1.1)
+        host.tick()
+        snap = host.snapshot()
+        assert [x["key"] for x in snap["sessions"]] == [key] and snap["sessions"][0]["running"]
+        asked = next(a for a in snap["alerts"] if a["ref"] == key)
+        assert asked["source"] == "terminal" and asked["options"] == [["1", "Yes"], ["2", "No"]]
+        with pytest.raises(CommandError):
+            host.command("orders.answer", {"id": asked["id"], "key": "7"})
+        assert host.command("orders.answer", {"id": asked["id"], "key": "1"})
+        for _ in range(100):
+            if any("chose 1" in line for line in s.text_lines()):
+                break
+            time.sleep(0.05)
+        assert any("chose 1" in line for line in s.text_lines())
+        with pytest.raises(CommandError):
+            host.command("orders.answer", {"id": "term:nobody", "key": "1"})
+        with pytest.raises(CommandError):
+            host.command("sessions.new", {"harness": "bash"})
+        with pytest.raises(CommandError):
+            host.command("term.input", {"key": key, "data": 7})
+        assert host.command("halt") >= 1                     # Halt All interrupts the session
+    finally:
+        host.sessions.close()
+
+
+@pytest.mark.asyncio
+async def test_a_terminal_gets_its_session_as_binary_frames(fake_repo, tmp_path, monkeypatch):
+    _fake_cli(tmp_path, monkeypatch)
+    host = _host(fake_repo)
+    server = Server(host)
+    task = await _serving(server)
+    try:
+        async with connect(f"ws://127.0.0.1:{server.port}/ws?t={server.token}", origin=server.origin) as ws:
+            async def recv_until(pred):
+                while True:
+                    msg = await asyncio.wait_for(ws.recv(), 5)
+                    if pred(msg):
+                        return msg
+            await ws.send(json.dumps({"t": "cmd", "id": 1, "name": "sessions.new", "args": {"harness": "claude"}}))
+            reply = json.loads(await recv_until(lambda m: isinstance(m, str) and '"reply"' in m))
+            key = reply["result"]
+            await asyncio.sleep(0.5)
+            await ws.send(json.dumps({"t": "cmd", "id": 2, "name": "term.replay", "args": {"key": key}}))
+            replay = await recv_until(lambda m: isinstance(m, bytes) and m[0] == 1)
+            k = replay[2:2 + replay[1]].decode()
+            assert k == key and b"Proceed?" in replay[2 + replay[1]:]
+            await ws.send(json.dumps({"t": "cmd", "id": 3, "name": "term.input", "args": {"key": key, "data": "2"}}))
+            out = await recv_until(lambda m: isinstance(m, bytes) and m[0] == 0 and b"chose 2" in m)
+            assert out[2:2 + out[1]].decode() == key
+    finally:
+        host.sessions.close()
+        server.stop()
+        await asyncio.wait_for(task, 10)

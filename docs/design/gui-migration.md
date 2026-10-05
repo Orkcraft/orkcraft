@@ -98,7 +98,8 @@ the deployments), `core/runners.py`, and:
 2. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
    ork, the processes and the roster's view of running sessions are not. Split them into a
    sessions service in the core that keeps the processes, and terminals that draw them (pyte
-   today, xterm.js later).
+   today, xterm.js later). The service stands (`core/sessions.py`) and the GUI runs on it; the
+   TUI's War Tent still runs its own terminals and moves onto it next.
 3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker,
    but the TUI's Halt All still walks the views and the War Tent itself. Once every type has a
    worker and sessions are a service, Halt All is `town.halt()` plus the face's own terminals.
@@ -180,6 +181,7 @@ orkcraft/gui/
   state.py    the snapshot: project, HUD, orkspaces, buildings (spot, status lines, garrison, question), roads
   server.py   websockets: the page, /ds/ (the design system), /roles.css, and /ws
   launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
+  (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, windows, layout, dialog),
@@ -202,6 +204,14 @@ orkcraft/gui/
   is the worker's, sent by `gui/views/<type>.py` as a `detail` only to the pages that have the
   building open (`watch`), again whenever the worker says it changed. Its acts are
   `{"name": "act", "args": {"id", "act", "args"}}`, each one a call on the worker.
+- **Terminals are the core's sessions drawn by xterm.js.** `core/sessions.py` runs each CLI on a
+  PTY, keeps a pyte screen (the roster reads questions off it) and the last 512 KB of output. The
+  page shows a session in the War Tent (the Town Hall's window, as in the TUI) with xterm.js, loaded
+  the first time a terminal opens: `term.replay` sends the session as it stands, then its bytes
+  come as binary frames to the pages that show it (`term.attach`); keys go back as `term.input`.
+- **Orders**: the questions in the snapshot (`alerts`, the longest waiting first); the person picks
+  an answer and `orders.answer` hands it to `Muster.answer` (typed into the session, or the
+  Warder's acknowledged). A building whose ork asks burns: its hut and its orkspace say `?`.
 - **Huts stand where the person put them**: `hut` in the Town Scroll, fractions of the room, the
   same the TUI reads. Dragging a hut saves its spot; a hut without one stands in a grid.
 - **Roads run as in the TUI**: `js/roads.js` is `wm/roadmap.py` ported to the page (gates on the
@@ -220,8 +230,13 @@ orkcraft/gui/
   add, open, colour, task ⇄ note, send, delete) and 🗑️ Scroll Dump (the librarian's state, the
   wiki and its sources as a tree, a page rendered; take in, check, stop, add a folder).
 
+- The War Tent: new Claude, Codex and agy sessions, earlier ones reopened, a garrison ork deployed
+  with its orders (Deploy in its building's window), interrupt, stop; Orders answer the orks'
+  questions; Halt All interrupts the sessions and kills every agent process too.
+
 ### Next
 
-1. The sessions service in the core and the War Tent's terminals in `xterm.js` (binary frames on
-   the same socket); Orders answer an ork's question.
-2. Building, roads and settings from the GUI; the other types' windows as their workers come.
+1. The TUI onto `core/sessions.py` (stage 1, item 2): its terminals draw the core's sessions with
+   pyte, so `deploy_resident`, the task report and Halt All live in one place.
+2. The Elders' advice in Orders (quiet hours run in the GUI's host).
+3. Building, roads and settings from the GUI; the other types' windows as their workers come.

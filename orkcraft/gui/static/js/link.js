@@ -9,7 +9,8 @@ export const toasts = signal([]);          // [{id, message, title, severity}]
 export const details = signal({});         // building id → its window's state (gui/views/), for the open ones
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
-const pending = new Map();                 // command id → {resolve, reject}
+const pending = new Map();
+const terminals = new Map();               // session key → (kind, bytes) => void: who draws its frames                 // command id → {resolve, reject}
 let socket = null;
 let nextId = 1;
 
@@ -48,6 +49,20 @@ export function command(name, args = {}) {
   });
 }
 
+/** Who draws a session's bytes (js/terminal.js); kind 0 is output, 1 the whole of it again. */
+export function onTerminal(key, fn) {
+  terminals.set(key, fn);
+  return () => { if (terminals.get(key) === fn) terminals.delete(key); };
+}
+
+function frame(buf) {
+  const bytes = new Uint8Array(buf);
+  const kind = bytes[0], len = bytes[1];
+  const key = new TextDecoder().decode(bytes.subarray(2, 2 + len));
+  const fn = terminals.get(key);
+  if (fn) fn(kind, bytes.subarray(2 + len));
+}
+
 function receive(msg) {
   if (msg.t === "state") {
     town.value = msg.state;
@@ -68,7 +83,8 @@ function receive(msg) {
 export function connect() {
   const ws = new WebSocket(`ws://${location.host}/ws?t=${encodeURIComponent(TOKEN)}`);
   ws.onopen = () => { socket = ws; online.value = true; };
-  ws.onmessage = (e) => receive(JSON.parse(e.data));
+  ws.binaryType = "arraybuffer";
+  ws.onmessage = (e) => (typeof e.data === "string" ? receive(JSON.parse(e.data)) : frame(e.data));
   ws.onclose = () => {
     online.value = false;
     socket = null;

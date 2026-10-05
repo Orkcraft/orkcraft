@@ -24,7 +24,7 @@ HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office 
 
 def _ork(o) -> dict[str, Any]:
     return {"name": o.name, "kind": o.kind, "status": o.status, "lead": o.lead, "scheme": o.scheme,
-            "tier": o.tier or "", "role": o.role}
+            "tier": o.tier or "", "role": o.role, "ref": o.ref, "session": o.session}
 
 
 def _hut_lines(town: Town, building_id: str) -> list[str]:
@@ -108,7 +108,31 @@ def look(town: Town) -> str:
     return "office" if schedule.plain_now(town.machine) else "camp"
 
 
-def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None) -> dict[str, Any]:
+def sessions(live) -> list[dict[str, Any]]:
+    """The War Tent: every session this run opened."""
+    if live is None:
+        return []
+    return [{"key": s.key, "harness": s.harness, "title": modes.strip_emoji(s.title), "running": s.running,
+             "exit_code": s.exit_code, "ork": s.ork, "ticket": s.ticket or ""} for s in live.live.values()]
+
+
+def alerts(town: Town, muster: Muster) -> list[dict[str, Any]]:
+    """The questions that wait for the person (Orders), the longest waiting first."""
+    who = muster.who()
+    found = list(muster.roster.alerts)
+    seen = {a.id for a in found}
+    found += [o.alert for o in muster.roster.orcs if o.alert is not None and o.alert.id not in seen]
+    now = time.monotonic()
+    found.sort(key=lambda a: muster.alert_first_seen.get(a.id, now))
+    by_alert = {o.alert.id: o.building for o in muster.roster.orcs if o.alert is not None and o.building}
+    return [{"id": a.id, "title": modes.strip_emoji(a.title), "context": list(a.context[-12:]),
+             "options": [[k, modes.strip_emoji(label)] for k, label in a.options], "source": a.source, "ref": a.ref,
+             "who": who.get(a.id, ""), "building": by_alert.get(a.id, ""),
+             "waited": round(now - muster.alert_first_seen.get(a.id, now), 1)} for a in found]
+
+
+def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
+             live=None) -> dict[str, Any]:
     return {
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
@@ -120,4 +144,6 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "buildings": buildings(town, muster),
         "roads": roads(town),
         "hud": hud(town, muster, treasury, limits),
+        "sessions": sessions(live),
+        "alerts": alerts(town, muster),
     }

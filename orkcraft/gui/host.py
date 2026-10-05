@@ -21,11 +21,13 @@ from typing import Any, Callable
 
 from orkcraft.core import bus
 from orkcraft.core.roster import Muster
+from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
 from orkcraft.gui import state, views
-from orkcraft.realm import catalog, modes
+from orkcraft.realm import catalog, halt, modes
+from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
 
@@ -40,6 +42,7 @@ class Host:
         self.town = Town(repo_root, auto_commit, layout_file, demo=demo)
         self.treasury = Treasury(self.town)
         self.muster = Muster(self.town)
+        self.sessions = Sessions(self.town)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         self.on_change: Callable[[], None] = lambda: None
         self.on_toast: Callable[[dict], None] = lambda data: None
@@ -53,6 +56,17 @@ class Host:
             "building.open": self._open_building,
             "halt": self._halt,
             "act": self._act,
+            "sessions.new": lambda a: self._session_call(self.sessions.new, self._word(a, "harness")),
+            "sessions.resume": lambda a: self._session_call(self.sessions.resume, self._word(a, "key")),
+            "sessions.deploy": self._deploy,
+            "sessions.past": self._past,
+            "term.input": self._input,
+            "term.resize": lambda a: self.sessions.resize(self._word(a, "key"), int(a.get("cols") or 0),
+                                                          int(a.get("rows") or 0)),
+            "term.interrupt": lambda a: self.sessions.interrupt(self._word(a, "key")),
+            "term.stop": lambda a: self.sessions.stop(self._word(a, "key")),
+            "term.forget": lambda a: self.sessions.forget(self._word(a, "key")),
+            "orders.answer": self._answer,
         }
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -61,7 +75,7 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        return state.snapshot(self.town, self.muster, self.treasury)
+        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions)
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
@@ -110,7 +124,11 @@ class Host:
                     view.refresh(w)
                 except Exception as e:                 # one building's look never stops the clock
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
-        self.muster.rebuild([])
+        self.refresh_roster()
+
+    def refresh_roster(self) -> None:
+        """The roster again, with what each session's screen says now (its questions)."""
+        self.muster.rebuild(self.sessions.infos(), self.sessions.keys())
         self.on_change()
 
     def close(self) -> None:
@@ -122,6 +140,7 @@ class Host:
                     flush(w)
                 except Exception:
                     pass
+        self.sessions.close()
         self.town.halt()
         self.town.save()
 
@@ -175,8 +194,53 @@ class Host:
         except views.ActError as e:
             raise CommandError(str(e)) from None
 
+    @staticmethod
+    def _word(args: dict, key: str) -> str:
+        value = args.get(key, "")
+        if not isinstance(value, str) or not value:
+            raise CommandError(f"{key} is missing")
+        return value[:500]
+
+    @staticmethod
+    def _session_call(fn, *a) -> Any:
+        try:
+            return fn(*a)
+        except ValueError as e:
+            raise CommandError(str(e)) from None
+
+    def _deploy(self, args: dict) -> str | None:
+        message = args.get("message") or ""
+        key = self._session_call(self.sessions.deploy, self._word(args, "ork"), self.muster, self.treasury,
+                                 str(message)[:4000])
+        self.refresh_roster()
+        return key
+
+    def _past(self, args: dict) -> list[dict]:
+        """This project's earlier sessions that can be reopened here, newest first."""
+        found = [s for s in past.collect_sessions(self.town.repo_root) if s.resumable][:100]
+        return [{"key": s.key, "harness": s.harness, "title": modes.strip_emoji(s.title or s.short_id),
+                 "when": s.last.isoformat(timespec="minutes") if s.last else "", "live": s.key in self.sessions.live}
+                for s in found]
+
+    def _input(self, args: dict) -> bool:
+        data = args.get("data", "")
+        if not isinstance(data, str):
+            raise CommandError("data is not text")
+        return self.sessions.write(self._word(args, "key"), data.encode("utf-8", "surrogatepass")[:65536])
+
+    def _answer(self, args: dict) -> bool:
+        """The person answers a question (Orders): a session gets the key typed, the rest are acknowledged."""
+        alert = self.muster.alert(self._word(args, "id"))
+        if alert is None:
+            raise CommandError("That question was answered already")
+        if not self.muster.answer(alert, self._word(args, "key"), self.sessions.write):
+            raise CommandError("Not one of its answers")
+        self.refresh_roster()
+        return True
+
     def _halt(self, args: dict) -> int:
-        stopped = self.town.halt()
+        """🛑 Halt All: every session interrupted, every agent process killed, the buildings' work stopped."""
+        stopped = self.sessions.interrupt_all() + max(halt.halt_all(), self.town.halt())
         self.town.toast(f"Stopped {stopped} building{'s' if stopped != 1 else ''}" if stopped
                         else "Nothing was running", title="Halt All")
         return stopped

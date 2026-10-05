@@ -6,8 +6,9 @@ import { town, connect } from "./js/link.js";
 import { Hud, WarMap, BuildingList, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
 import { Windows, opened } from "./js/windows.js";
+import { Orders } from "./js/orders.js";
 
-const HALL = "town_hall";
+import { HALL } from "./js/tent.js";
 
 function App() {
   const t = town.value;
@@ -24,6 +25,7 @@ function App() {
     <${Windows} />
     <${StatusBar} />
     <${Toasts} />
+    <${Orders} />
   </div>`;
 }
 

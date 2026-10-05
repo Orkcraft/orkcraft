@@ -14,6 +14,12 @@ differs from the last one), toasts as they come, and sends commands back:
 A building's own state (`detail`, gui/views/) goes only to the pages that have it open, when its
 worker says it changed.
 
+A session's bytes go as binary frames, only to the pages that show it (`term.attach`):
+
+    → {"t": "cmd", "id": 9, "name": "term.attach", "args": {"keys": ["new:claude:1"]}}   (all it shows)
+    → {"t": "cmd", "id": 10, "name": "term.replay", "args": {"key": "new:claude:1"}}      (a terminal opened)
+    ← [kind: 1 byte][key length: 1 byte][key, UTF-8][bytes]    kind 0: output, 1: all of it again (replay)
+
 The socket takes only the page this server gave out: a random token in its address and an Origin
 of this server, so another page open in a browser cannot drive the town.
 """
@@ -75,8 +81,10 @@ class Server:
         self.watching: dict[ServerConnection, set[str]] = {}
         self._details: set[str] = set()             # buildings whose detail waits to be sent
         self._sent: dict[tuple[int, str], str] = {}  # (page, building) → the detail it has
+        self.attached: dict[ServerConnection, set[str]] = {}
         host.on_change = self._changed
         host.on_detail = self._detail_changed
+        host.sessions.on_output = self._output
         host.on_toast = lambda data: self._send_all({"t": "toast", **data})
 
     @property
@@ -124,6 +132,7 @@ class Server:
         finally:
             self.clients.discard(ws)
             self.watching.pop(ws, None)
+            self.attached.pop(ws, None)
             self._sent = {k: v for k, v in self._sent.items() if k[0] != id(ws)}
 
     def _watch(self, ws: ServerConnection | None, args: dict) -> list[str]:
@@ -134,6 +143,35 @@ class Server:
             for bid in ids:
                 self._send_detail(ws, bid, force=True)
         return ids
+
+    @staticmethod
+    def frame(kind: int, key: str, data: bytes) -> bytes:
+        k = key.encode("utf-8")[:255]
+        return bytes([kind, len(k)]) + k + data
+
+    def _attach(self, ws: ServerConnection | None, args: dict) -> list[str]:
+        """The sessions this page shows: their bytes as they come."""
+        keys = [str(x) for x in (args.get("keys") or [])][:20]
+        if ws is not None:
+            self.attached[ws] = set(keys)
+        return keys
+
+    def _replay(self, ws: ServerConnection | None, args: dict) -> bool:
+        """A terminal opened on the page: the session as it stands now, then its bytes as they come."""
+        key = str(args.get("key") or "")
+        s = self.host.sessions.get(key)
+        if ws is None or s is None:
+            return False
+        self.attached.setdefault(ws, set()).add(key)
+        asyncio.ensure_future(self._send(ws, self.frame(1, key, s.replay())))
+        return True
+
+    def _output(self, key: str, data: bytes) -> None:
+        frame = None
+        for ws, keys in list(self.attached.items()):
+            if key in keys:
+                frame = frame or self.frame(0, key, data)
+                asyncio.ensure_future(self._send(ws, frame))
 
     def _send_detail(self, ws: ServerConnection, bid: str, force: bool = False) -> None:
         detail = self.host.detail(bid)
@@ -170,7 +208,14 @@ class Server:
             name, args = str(msg.get("name", "")), msg.get("args") or {}
             if not isinstance(args, dict):
                 raise CommandError("Arguments are an object")
-            result = self._watch(ws, args) if name == "watch" else self.host.command(name, args)
+            if name == "watch":
+                result = self._watch(ws, args)
+            elif name == "term.attach":
+                result = self._attach(ws, args)
+            elif name == "term.replay":
+                result = self._replay(ws, args)
+            else:
+                result = self.host.command(name, args)
             return {"t": "reply", "id": cid, "ok": True, "result": result}
         except CommandError as e:
             return {"t": "reply", "id": cid, "ok": False, "error": str(e)}
@@ -183,7 +228,7 @@ class Server:
             asyncio.ensure_future(self._send(ws, text))
 
     @staticmethod
-    async def _send(ws: ServerConnection, text: str) -> None:
+    async def _send(ws: ServerConnection, text: str | bytes) -> None:
         try:
             await ws.send(text)
         except ConnectionClosed:

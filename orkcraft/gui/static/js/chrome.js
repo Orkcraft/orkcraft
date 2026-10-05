@@ -4,6 +4,8 @@
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
+import { openOrders } from "./orders.js";
+import { newSession, HALL } from "./tent.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -24,7 +26,8 @@ export function Hud() {
     ${online.value
       ? html`<span class="ok-hud__ready">Ready</span>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
-    ${hud.alerts > 0 && html`<span class="ok-hud__fire">${hud.alerts} awaiting orders</span>`}
+    ${hud.alerts > 0 && html`<button class="ok-hud__fire gui-link" onClick=${() => openOrders()}>
+      ${hud.alerts} awaiting an answer</button>`}
     <span class="ok-hud__spacer"></span>
     ${hud.hour_plain && html`<span class=${cls("ok-res", { quiet: hud.quiet })}>${hud.hour_plain}</span>`}
     ${hud.quota && html`<${Resource} word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
@@ -70,6 +73,9 @@ export function StatusBar() {
   const t = town.value;
   return html`<footer class="ok-keys gui-status">
     <button class="gui-status__item" onClick=${() => command("halt")}>Halt All</button>
+    <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
+    <button class="gui-status__item" onClick=${() => newSession("claude")}>Add agent</button>
+    <button class="gui-status__item" onClick=${() => openBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
     <span class="gui-status__spacer"></span>
     <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
   </footer>`;

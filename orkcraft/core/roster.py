@@ -7,7 +7,7 @@ and the questions a building's own view raises (`view_alerts`). Everything else 
 from __future__ import annotations
 
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from orkcraft.core.town import Town
 from orkcraft.realm import pipes
@@ -25,12 +25,15 @@ class Muster:
         self.dismissed: set[str] = set()              # questions acknowledged; the logs keep them
         self.deployments: dict[str, str] = {}         # session key → "<building id>/<orc id>"
         self.alert_first_seen: dict[str, float] = {}  # question id → when the roster first had it
+        self._infos: list[WorkerInfo] = []            # the sessions the last rebuild saw
 
     def rebuild(self, workers: Iterable[WorkerInfo], live: Iterable[str] = (),
                 view_alerts: Iterable[ViewAlert] = ()) -> Roster:
         """The roster anew. `live`: the keys of the sessions that still exist (a deployment of a closed
         one is forgotten)."""
         town, live = self.town, set(live)
+        workers = list(workers)
+        self._infos = workers
         self.deployments = {k: v for k, v in self.deployments.items() if k in live}
         built = []
         for b_spec in town.scroll.buildings:
@@ -92,6 +95,31 @@ class Muster:
                 out[a.id] = {"ticket": f"Ticket {a.ref}" if a.ref else "Ticket", "warder": "Warder",
                              "terminal": f"Session {a.ref}"}.get(a.source, "Alert")
         return out
+
+    def alert(self, alert_id: str) -> Alert | None:
+        """A question waiting now, by its id: on the board, or an ork's own."""
+        return next((a for a in self.roster.alerts if a.id == alert_id),
+                    next((o.alert for o in self.roster.orcs if o.alert is not None and o.alert.id == alert_id), None))
+
+    def answer(self, alert: Alert, key: str, send: Callable[[str, bytes], bool],
+               view_answer: Callable[[str, str], str | None] = lambda building_id, key: None) -> bool:
+        """The person's answer to a question: typed into the session that asks it (`send`), the
+        Warder's or a spec's acknowledged, a building's own handed to it (`view_answer`). False when
+        `key` is not one of its options."""
+        if not any(k == key for k, _ in alert.options):
+            return False
+        if alert.source == "terminal":
+            # Claude / agy menus take a digit as it is; Codex wants Enter after one, as yes/no and
+            # input prompts do.
+            harness = next((w.harness for w in self._infos if w.key == alert.ref), "")
+            send(alert.ref, (key if key.isdigit() and harness != "codex" else f"{key}\r").encode())
+        elif alert.source == "warder":
+            if key == "1":
+                self.dismissed.add(alert.id)          # acknowledged; the log keeps it
+        elif alert.source == "view":
+            if view_answer(alert.ref, key) == "dismiss":
+                self.dismissed.add(alert.id)
+        return True
 
     def badge(self, building_id: str, burning: bool = False) -> str:
         """The badge on a building's window and hut: its garrison, with 🔥 when something else waits
