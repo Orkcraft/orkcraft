@@ -405,7 +405,8 @@ class PoolView(TypedView):
     def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
-                                                       task.cost_usd, orc.worktree, task.branch, outcome),)
+                                                       task.cost_usd, orc.worktree, task.branch, outcome,
+                                                       base=task.base),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state

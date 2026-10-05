@@ -69,13 +69,19 @@ source that cannot take work back (a War Tent task, a plain building) makes the 
 at once. `loot.rework` also goes down Loot's roads, for a Horn or a Herald.
 
 Keys in the list: `a` accept · `r` reject a file / send a held cart back (asks for the reason) ·
-`d` drop a cart · `u` restore a rejected file. Quick actions: ✓ Accept all (held carts), ✓ Accept
-files.
+`d` drop a cart · `u` restore a rejected file · `o` open the highlighted file in the system viewer.
+Quick actions: ✓ Accept all (held carts), ✓ Accept files.
+
+**A cart's files.** Under each waiting cart the list shows the files its task committed on its
+branch: the latest hop that names a worktree and a branch (`gate.branch_of`), read there as
+`git diff --name-status <base>...<branch>` (`generated.Branch`; `origin/<base>` when the worktree
+has it). Highlighting one shows its diff, or its content when the diff is binary. The rules
+(`paths`, `max_files`) read these files as well as the worktree's uncommitted ones.
 
 ## 4. The trail — metadata that travels with a cart
 
 Every cart carries `Payload.trail`: the hops it went through, each
-`Hop(building, orc, kind, tokens, cost, worktree, branch, outcome, at)`, and `Payload.ref`, a
+`Hop(building, orc, kind, tokens, cost, worktree, branch, outcome, at, base)`, and `Payload.ref`, a
 stable id of the thing being worked on.
 
 - A handler run merges the trails of the carts it ran on and appends its own hop (its tokens and
@@ -95,9 +101,12 @@ change in the working tree.
   the total cost of what passed today. No preview.
 - **Full window** — list | diff or preview | the trail with cost. Diffs, images and editing live
   here only.
-- **Images** — shown only in the full window, by the terminal's own image protocol (kitty /
-  sixel) when the terminal supports it, otherwise an `open in…` button hands the file to the
-  system viewer. No block-character fallback.
+- **Images** — the preview names a picture by its first bytes: `PNG image · 512×512 · 34.2 KB ·
+  o opens it`. `o` hands the highlighted file to the system viewer (`open` on macOS, `xdg-open`
+  on Linux); a file that is only on a task's branch is first copied out with `git show
+  <branch>:<path>` into a temporary folder, under its own name. Later: the picture inside the
+  window by the terminal's own image protocol (kitty / sixel) when the terminal supports it,
+  `o` otherwise. No block-character fallback.
 
 ## 6. Events
 
@@ -115,6 +124,8 @@ change in the working tree.
 2. **The checkpoint** — rules in the wizard, the queue, `passed / rework / needs_you`, the rework
    limit, 🔥 reminders, ↺ restore; the rules read the files of the trail's worktree; Loot's own
    `loot/` is never up for review; file names are read unescaped. *(done)*
-3. **The full window** — diff, edit, the trail with cost; per-file decisions inside a held cart's
-   worktree.
-4. **Images** — kitty / sixel in the full window, or the system viewer.
+3. **The full window** — diff, the trail with cost; a held cart's branch files listed under it,
+   each with its diff or content *(done)*. Still to do: editing, per-file decisions inside a held
+   cart's branch.
+4. **Images** — size, type and dimensions in the preview, `o` opens any file in the system viewer
+   (a branch's file copied out first) *(done)*. Still to do: kitty / sixel inside the window.

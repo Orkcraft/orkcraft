@@ -146,6 +146,11 @@ def worktree_of(payload: pipes.Payload) -> str:
     return next((h.worktree for h in reversed(payload.trail) if h.worktree), "")
 
 
+def branch_of(trail: tuple[pipes.Hop, ...]) -> pipes.Hop | None:
+    """The latest hop that names both a worktree and a branch: where the cart's files were committed."""
+    return next((h for h in reversed(trail) if h.worktree and h.branch), None)
+
+
 class Queue:
     def __init__(self, state_dir: Path) -> None:
         self.path = state_dir / "queue.json"
