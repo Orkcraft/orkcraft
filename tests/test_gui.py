@@ -726,3 +726,14 @@ def test_a_tally_crag_charts_busy_orks_and_quotas_through_the_host(fake_repo, is
     orcs, limits = host.detail(bid)["data"]["charts"]
     assert orcs["source"] == "orcs" and orcs["now"] == 3
     assert limits["source"] == "limits" and ["claude 5h session", 75.0] in limits["parts"]
+
+
+def test_the_task_board_card_counts_the_note_folders_too(fake_repo, isolated_layout_file):
+    """Closed: the status lanes' counters, then the note folders with theirs (building-views.md §3)."""
+    host = _host(fake_repo)
+    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields"))
+    w = host.town.worker(built.id)
+    w.add("Should we drop IE?", "notes")
+    card = next(b for b in host.snapshot()["buildings"] if b["id"] == built.id)["card"]
+    assert [l["label"] for l in card["lanes"]][:3] == ["To Do", "In Progress", "Done"]
+    assert any(n["count"] == 1 for n in card["notes"])

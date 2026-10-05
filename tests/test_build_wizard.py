@@ -10,7 +10,7 @@ from textual.widgets import Input, OptionList, Select, SelectionList
 from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import builders, catalog, masonry, pipes
-from orkcraft.screens.build_flow import BuildFailed, BuildPreview
+from orkcraft.screens.build_flow import BuildFailed
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 
 SIZE = (160, 50)
@@ -58,16 +58,19 @@ def test_propose_retries_with_feedback_and_the_pick_wins(fake_repo: Path):
     assert "REJECTED" in run.prompts[1] and "does not send 'mail.received'" in run.prompts[1]
 
 
-def test_auto_type_and_custom_goes_to_mason(fake_repo: Path):
+def test_auto_type_and_custom_is_not_built_anew(fake_repo: Path):
+    """Custom (panes) left the catalog: the Foreman never offers it and never hands over to Mason & Artisan."""
     run = runner_of(TASKS)
     r = builders.propose("a release checklist", fake_repo, None, runner=run)
     assert r.ok and "Pick the type" in run.prompts[0] and "mail.received" in run.prompts[0]
-    mason = {"id": "ci", "title": "CI", "icon": "🛠", "summary": "x", "orc": {"name": "Tinker"},
-             "data": [{"name": "c", "source": "git_log"}]}
-    artisan = {**mason, "layout": {"direction": "vertical", "panes": [{"widget": "list", "data": "c"}]}}
-    run2 = runner_of({"type": "custom"}, mason, artisan)
-    r2 = builders.propose("recent commits", fake_repo, None, runner=run2)
-    assert r2.ok and "layout" in r2.spec and run2.prompts[1].startswith("You are Mason")
+    assert "Custom (panes)" not in run.prompts[0]
+    run2 = runner_of({"type": "custom"}, TASKS)                       # the model asks for panes anyway
+    r2 = builders.propose("a release checklist", fake_repo, None, runner=run2)
+    assert r2.ok and r2.spec["type"] == "fields" and len(r2.attempts) == 2
+    assert "'custom' is not offered" in run2.prompts[1] and not any(p.startswith("You are Mason") for p in run2.prompts)
+    run3 = runner_of(TASKS)                                           # a picked custom type: refused, no model call
+    r3 = builders.propose("recent commits", fake_repo, "custom", runner=run3)
+    assert not r3.ok and "no longer built" in r3.error and run3.prompts == []
 
 
 def test_propose_reports_cli_failure(fake_repo: Path):
@@ -109,7 +112,7 @@ async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
         await _open_wizard(app, pilot)
         types = app.screen.query_one("#wizard-types", OptionList)
         ids = [types.get_option_at_index(i).id for i in range(types.option_count)]
-        assert ids[0] == "auto" and {"watchtower", "fields", "barracks", "custom"} <= set(ids)
+        assert ids[0] == "auto" and {"watchtower", "fields", "barracks"} <= set(ids) and "custom" not in ids
         types.highlighted = ids.index("fields")
         await pilot.press("enter")                                      # to the description
         await _settle(pilot)

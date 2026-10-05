@@ -40,7 +40,7 @@ STATUS_DISPLAY = {
 }
 
 NEUTRAL_ACTIONS = [
-    ("B", "[B] 🏗️ Build Window (Mason & Artisan)"),
+    ("B", "[B] 🏗️ Build"),
     ("P", "[P] 📜 Window Presets Catalog"),
     ("S", "[S] 🧌 Summon Ork / Warband"),
     ("T", "[T] 🌲 Toggle Terrain (Dim / Black)"),

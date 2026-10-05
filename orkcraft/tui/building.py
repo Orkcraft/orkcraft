@@ -17,7 +17,6 @@ from orkcraft.tui.views import make_view
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.realm import town_builder
 from orkcraft.screens.dialogs import TextPrompt
-from orkcraft.screens.orders import BuildModal
 from orkcraft.realm import workshop
 from orkcraft.wm import Window
 
@@ -26,15 +25,9 @@ from orkcraft.core import runners
 
 
 class BuildingMixin:
-    def action_build_window(self, initial_prompt: str = "") -> None:
-        def done(prompt: str | None) -> None:
-            if not prompt:
-                return
-            self._start_build(prompt)
-
-        self.push_screen(BuildModal(initial_prompt=initial_prompt), done)
-
     def _start_build(self, prompt: str) -> None:
+        """Mason & Artisan's custom (panes) building from a prompt. Custom left the catalog: no screen
+        offers it any more; only the demo's feature shots (`orkcraft/demo/screens.py`) still call it."""
         self.push_screen(BuildProgress())
 
         def _worker() -> None:
@@ -68,7 +61,7 @@ class BuildingMixin:
         else:
             def on_failed_done(action: str | None) -> None:
                 if action == "retry":
-                    self.action_build_window(initial_prompt=prompt)
+                    self._start_build(prompt)
 
             self.push_screen(BuildFailed(result), on_failed_done)
 
@@ -257,7 +250,7 @@ class BuildingMixin:
         self.push_screen(BuildWizard(), done)
 
     def start_wizard_build(self, type_id: str | None, request: str) -> None:
-        self.push_screen(BuildProgress())
+        self.push_screen(BuildProgress("🏗 The Foreman prefills the building…"))
 
         def _worker() -> None:
             runner = runners.BUILD_RUNNER or builders.claude_runner
@@ -277,10 +270,6 @@ class BuildingMixin:
             self.push_screen(BuildFailed(result), on_failed)
             return
         spec = result.spec
-        if (spec.get("type") or catalog.DEFAULT_TYPE) == catalog.DEFAULT_TYPE:
-            # Mason & Artisan's panes: their own preview
-            self.push_screen(BuildPreview(spec, result), lambda ok: ok and self.review_and_raise(spec))
-            return
 
         def check(s: dict) -> list[str]:
             return masonry.validate_spec(s, self.repo_root, self._taken_building_ids())
