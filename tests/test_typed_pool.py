@@ -145,6 +145,7 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
         assert "follow-up" in crew.calls[2]["prompt"]
         assert [p.mode for p in sent].count("pool.done") == 1
         assert "pool/camp/t1001" in next(p.value for p in sent if p.mode == "pool.done")   # the task's branch
+        assert "## Files on `pool/camp/t1001`" in next(p.value for p in sent if p.mode == "pool.done")
 
         crew.calls[1]["gate"].set()                                      # Mogka frees → takes T1003
         assert await _until(pilot, lambda: len(crew.calls) == 4)
@@ -164,3 +165,31 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
         assert await _until(pilot, lambda: len(crew.calls) == 5)
         crew.calls[4]["gate"].set()
         assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs))
+
+
+@pytest.mark.asyncio
+async def test_new_task_is_written_to_the_barracks_directly(fake_repo: Path, monkeypatch):
+    from orkcraft.screens.dialogs import TextPrompt
+    crew = Crew()
+    monkeypatch.setattr(PoolView, "work_runner", staticmethod(crew))
+    monkeypatch.setattr(PoolView, "worktree_maker",
+                        staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/{orc.lower()}")))
+    assert masonry.save_spec(fake_repo, SPEC) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("camp").query_one(PoolView)
+        assert view.quick_action("pool.task")
+        await pilot.pause()
+        assert isinstance(app.screen, TextPrompt) and "New task" in app.screen.prompt_heading
+        await pilot.press(*"Add a login page", "enter", *"email and password", "enter")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        t = view.state.task(view.state.orcs[0].task)
+        assert (t.title, t.text) == ("Add a login page", "email and password")
+        assert "Add a login page" in crew.calls[0]["prompt"]
+        crew.calls[0]["gate"].set()
+        assert await _until(pilot, lambda: all(o.status == "idle" for o in view.state.orcs))
+
+        assert view.new_task(None) is None and view.new_task(" \t ") is None     # Esc or nothing typed
+        only = view.new_task("Rename the README title\t")                         # no brief: the title is it
+        assert (only.title, only.text) == ("Rename the README title", "Rename the README title")

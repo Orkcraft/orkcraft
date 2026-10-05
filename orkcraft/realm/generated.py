@@ -4,6 +4,9 @@
 when it changes again); rejecting one rolls it back — a new file moves to the building's
 `rejected/` folder, a changed or deleted one is restored from HEAD after its current content is
 copied there. Nothing is ever thrown away.
+
+A task's branch is read the same way (`Branch`): the files it committed since its base, their diff
+or content, and a copy of one to open in the system viewer.
 """
 from __future__ import annotations
 
@@ -11,13 +14,17 @@ import datetime as dt
 import hashlib
 import json
 import shutil
+import struct
 import subprocess
+import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 GIT_TIMEOUT_S = 10
 PREVIEW_LINES = 200
 SKIP = (".orkcraft/", "loot/")           # never up for review: orkcraft's state and Loot's own reports
+OPEN_HINT = "o opens it"
 
 
 @dataclass
@@ -32,6 +39,78 @@ def _git(repo: Path, *args: str, check: bool = True) -> str:
     if check and out.returncode != 0:
         raise RuntimeError(out.stderr.strip() or f"git {args[0]} failed")
     return out.stdout
+
+
+def _git_bytes(repo: Path, *args: str) -> bytes:
+    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, timeout=GIT_TIMEOUT_S)
+    if out.returncode != 0:
+        raise RuntimeError(out.stderr.decode("utf-8", "replace").strip() or f"git {args[0]} failed")
+    return out.stdout
+
+
+def _size(n: int) -> str:
+    return f"{n} bytes" if n < 1024 else f"{n / 1024:.1f} KB" if n < 1024 * 1024 else f"{n / 1024 / 1024:.1f} MB"
+
+
+def image_info(data: bytes) -> str:
+    """`PNG image · 512×512 · 34.2 KB` for a picture (by its first bytes), "" for anything else."""
+    kind, dims = "", None
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        kind = "PNG"
+        if len(data) >= 24:
+            dims = struct.unpack(">II", data[16:24])
+    elif data[:6] in (b"GIF87a", b"GIF89a"):
+        kind = "GIF"
+        if len(data) >= 10:
+            dims = struct.unpack("<HH", data[6:10])
+    elif data[:3] == b"\xff\xd8\xff":
+        kind, dims = "JPEG", _jpeg_dims(data)
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        kind = "WebP"
+    elif data[:2] == b"BM":
+        kind = "BMP"
+        if len(data) >= 26:
+            w, h = struct.unpack("<ii", data[18:26])
+            dims = (w, abs(h))
+    if not kind:
+        return ""
+    return " · ".join([f"{kind} image"] + ([f"{dims[0]}×{dims[1]}"] if dims else []) + [_size(len(data))])
+
+
+def _jpeg_dims(data: bytes) -> tuple[int, int] | None:
+    i = 2
+    while i + 9 < len(data):                     # walk the markers to the frame header (SOF0…SOF15)
+        if data[i] != 0xFF:
+            return None
+        marker, length = data[i + 1], struct.unpack(">H", data[i + 2:i + 4])[0]
+        if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+            h, w = struct.unpack(">HH", data[i + 5:i + 9])
+            return w, h
+        i += 2 + length
+    return None
+
+
+def binary_note(data: bytes) -> str:
+    """What the preview says for a file that is not text."""
+    return f"({image_info(data) or f'binary, {_size(len(data))}'} · {OPEN_HINT})"
+
+
+def opener() -> list[str] | None:
+    """The system viewer's command: `open` on macOS, `xdg-open` on Linux; None when there is none."""
+    if sys.platform == "darwin":
+        return ["open"]
+    if sys.platform.startswith("linux") and shutil.which("xdg-open"):
+        return ["xdg-open"]
+    return None
+
+
+def open_file(path: Path) -> None:
+    """Hand `path` to the system viewer, detached from orkcraft."""
+    cmd = opener()
+    if cmd is None:
+        raise RuntimeError(f"no system viewer here (open / xdg-open) — the file is {path}")
+    subprocess.Popen([*cmd, str(path)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
 
 
 def _hash(repo: Path, rel: str) -> str:
@@ -104,7 +183,7 @@ class Review:
         try:
             text = p.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
-            return f"(binary, {p.stat().st_size} bytes)"
+            return binary_note(p.read_bytes())
         return "\n".join(text.splitlines()[:PREVIEW_LINES])
 
     # -- decisions ----------------------------------------------------------------------------------
@@ -157,3 +236,53 @@ class Review:
         data["rejected"] = [r for r in data.get("rejected", []) if r != entry]
         self._save(data)
         return p
+
+
+class Branch:
+    """The files a task committed on its branch, read in the worktree it ran in (`base...branch`)."""
+
+    def __init__(self, worktree: Path, branch: str, base: str = "") -> None:
+        if not branch or branch.startswith("-") or (base and base.startswith("-")):
+            raise ValueError(f"not a branch: {branch!r}")
+        self.worktree, self.branch, self.base = worktree, branch, base
+
+    def _since(self) -> str:
+        """Where the branch left its base: origin's copy of the base when there is one."""
+        for ref in ([f"origin/{self.base}", self.base] if self.base else []):
+            if subprocess.run(["git", "rev-parse", "--verify", "--quiet", ref], cwd=self.worktree,
+                              capture_output=True, timeout=GIT_TIMEOUT_S).returncode == 0:
+                return ref
+        raise RuntimeError(f"no base to compare {self.branch} with")
+
+    def files(self) -> list[Generated]:
+        out = _git(self.worktree, "diff", "--name-status", "-z", "--no-renames", f"{self._since()}...{self.branch}")
+        parts = out.split("\0")
+        rows = [Generated(rel, st[:1]) for st, rel in zip(parts[0::2], parts[1::2])
+                if st and rel and not rel.startswith(SKIP)]
+        return sorted(rows, key=lambda g: g.path)
+
+    def blob(self, rel: str) -> bytes:
+        """The file as the branch has it."""
+        return _git_bytes(self.worktree, "show", f"{self.branch}:{rel}")
+
+    def preview(self, rel: str) -> str:
+        diff = _git(self.worktree, "diff", f"{self._since()}...{self.branch}", "--", rel, check=False)
+        if diff.strip() and "\nBinary files " not in diff and "\nGIT binary patch" not in diff:
+            return "\n".join(diff.splitlines()[:PREVIEW_LINES])
+        try:
+            data = self.blob(rel)
+        except RuntimeError:
+            return "(deleted on the branch)"
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            return binary_note(data)
+        return "\n".join(text.splitlines()[:PREVIEW_LINES])
+
+    def export(self, rel: str, into: Path | None = None) -> Path:
+        """A copy of the branch's `rel` in a temporary folder (its own name, so the viewer knows its type)."""
+        key = hashlib.sha1(f"{self.worktree}\0{self.branch}\0{rel}".encode()).hexdigest()[:12]
+        dest = (into or Path(tempfile.gettempdir()) / "orkcraft-loot") / key / Path(rel).name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(self.blob(rel))
+        return dest

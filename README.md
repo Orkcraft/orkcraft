@@ -27,7 +27,7 @@ keys to configure.
 ## Try it
 
 ```bash
-pipx install git+https://github.com/VadimSidoryk/orkcraft
+pipx install git+https://github.com/Orkcraft/orkcraft
 orkcraft --demo                    # a sandbox with simulated data: nothing real is touched, no model is called
 ```
 
@@ -132,11 +132,13 @@ What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 ## Development
 
 ```bash
-git clone https://github.com/VadimSidoryk/orkcraft && cd orkcraft
+git clone https://github.com/Orkcraft/orkcraft && cd orkcraft
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -q                # ~500 tests; the UI tests drive a real Textual app headlessly
+.venv/bin/pytest -q -n auto        # ~800 tests in parallel; the UI tests drive a real Textual app headlessly
 .venv/bin/orkcraft --demo
 ```
+
+Every pull request and every push to `main` runs the tests on GitHub Actions (`.github/workflows/tests.yml`).
 
 ```
 orkcraft/
