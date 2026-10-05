@@ -6,10 +6,11 @@ to the steward prompt (one model call, never in the demo, never past the budget)
 operator chose in the interview decides the right pane: the run log, a table of the latest JSON
 rows, or a card of its fields. ▶ runs the last cart again; 🧪 runs the blueprint's mock carts in
 the sandbox and shows the log; `e` edits the script (a checkpoint, so Z takes it back).
+
+The work — running, the schedule, the tests, saving the script — is the building's worker's
+(core/workers/workshop.py). The view draws its runs and holds the editor and its timer.
 """
 from __future__ import annotations
-
-import threading
 
 from rich.table import Table
 from rich.text import Text
@@ -19,11 +20,11 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import pipes, roads, workshop
+from orkcraft.core.workers.workshop import WorkshopWorker, mini_line  # noqa: F401  (the builder's preview)
+from orkcraft.realm import pipes, workshop
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.base import TypedView
 
-INPUT_LIMIT = 256 * 1024
 TICK_S = 30
 
 
@@ -53,149 +54,98 @@ def render_run(layout: str, r: workshop.Run):
     return t
 
 
-def mini_line(r: workshop.Run) -> str:
-    mark = {"done": "✓", "alert": "!", "escalated": "?"}.get(r.outcome, "✗")
-    first = (r.result or r.err).splitlines()[0][:14] if (r.result or r.err) else ""
-    return f"{mark} {r.at[11:16]} {first}"
-
-
 class WorkshopView(TypedView):
     TYPE = "workshop"
+    UI_PANES = {"head": "#ws-head", "runs": "#ws-runs", "run": "#ws-detail", "tests": "#ws-tests"}
     BINDINGS = [Binding("e", "edit_script", "Edit script")]
-    steward_runner = None                # tests put a fake model here
 
-    def __init__(self, *a, **kw) -> None:
-        super().__init__(*a, **kw)
-        self.runs: list[workshop.Run] = []
-        self.running = False
-        self.last_cart: dict | None = None
-        self.tests: list[workshop.Run] = []
+    @property
+    def worker(self) -> WorkshopWorker:
+        return super().worker
+
+    # -- the worker's state, as the view's own (tests and other views read these) ------------------
+
+    @property
+    def runs(self) -> list[workshop.Run]:
+        return self.worker.runs
+
+    @property
+    def running(self) -> bool:
+        return self.worker.running
+
+    @property
+    def last_cart(self) -> dict | None:
+        return self.worker.last_cart
+
+    @property
+    def tests(self) -> list[workshop.Run]:
+        return self.worker.tests
+
+    @property
+    def last_tick(self):
+        return self.worker.last_tick
+
+    @last_tick.setter
+    def last_tick(self, value) -> None:
+        self.worker.last_tick = value
 
     @property
     def runtime(self) -> str:
-        return str(self.config.get("runtime") or "python")
+        return self.worker.runtime
 
     @property
     def ws_layout(self) -> str:
-        return str(self.config.get("layout") or "log")
+        return self.worker.layout
 
     @property
     def script(self):
-        return workshop.script_path(self._get_repo_root(), self.building_id, self.runtime)
+        return self.worker.script
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="ws-head", classes="typed-head")
         with Horizontal(classes="typed-row"):
             yield OptionList(id="ws-runs", classes="typed-list")
-            with VerticalScroll(classes="typed-detail"):
+            with VerticalScroll(classes="typed-detail", id="ws-detail"):
                 yield Static("", id="ws-out", classes="-as-written")
+        yield Static("", id="ws-tests", classes="typed-head")
 
     def on_mount(self) -> None:
-        import datetime as dt
-        self.last_tick = dt.datetime.now()            # its timer fires from now on
         super().on_mount()
         self.set_interval(TICK_S, self.tick)
 
     def tick(self, now=None) -> bool:
         """Its own timer: on schedule a `workshop.tick` cart runs the script."""
-        import datetime as dt
-
-        from orkcraft.realm import watch
-        expr = str(self.config.get("schedule") or "").strip()
-        now = now or dt.datetime.now()
-        if not expr or not watch.cron_due(expr, getattr(self, "last_tick", None), now):
-            return False
-        self.last_tick = now
-        return self.run_cart(workshop.cart("workshop.tick", self.building_id, now.isoformat(timespec="seconds"),
-                                           "timer"))
+        return self.worker.tick(now)
 
     def refresh_data(self) -> None:
-        self.runs = workshop.runs(self.state_dir)
-        if self.runs and self.last_cart is None:
-            r = self.runs[0]
-            self.last_cart = workshop.cart(r.event, r.source, r.input)
+        self.worker.refresh()
+
+    def redraw(self) -> None:
         self._render_list()
 
     # -- running --------------------------------------------------------------------------------
 
     def receive(self, payload: pipes.Payload, title: str, markdown: str) -> None:
-        value = payload.value
-        if payload.kind == pipes.FILE:
-            try:
-                value = (self._get_repo_root() / payload.value).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                value = markdown or payload.value
-        self.run_cart(workshop.cart(payload.mode, payload.source, value[:INPUT_LIMIT], title))
+        self.worker.receive(payload, title, markdown)
 
     def run_cart(self, the_cart: dict) -> bool:
-        if self.running:
-            return False
-        self.running, self.last_cart = True, the_cart
-        script, runtime, repo, app = self.script, self.runtime, self._get_repo_root(), self.app
-        prompt = str(self.config.get("steward_prompt") or "")
-        may_ask = bool(prompt) and not self.simulated and not getattr(app, "gold_exhausted", lambda: False)()
-        runner = type(self).steward_runner
-        from orkcraft.realm import feedback
-        liked = [str(r.get("value", "")) for r in feedback.examples(repo, self.building_id, 3)]
-        self._render_list()
-
-        def work() -> None:
-            r = workshop.run(script, runtime, the_cart, repo)
-            if r.code == workshop.ESCALATE and may_ask:
-                from orkcraft.realm import builders
-                try:
-                    r.steward = (runner or builders.claude_runner)(workshop.steward_prompt(prompt, the_cart, r.out, liked))[0].strip()
-                except Exception as e:  # the model is out of reach: the cart stays escalated
-                    r.err = (r.err + f"\nsteward: {e}").strip()[:workshop.OUT_KEEP]
-            try:
-                app.call_from_thread(self.finish, r)
-            except Exception:
-                self.running = False
-
-        threading.Thread(target=work, daemon=True, name=f"workshop-{self.building_id}").start()
-        return True
+        return self.worker.run_cart(the_cart)
 
     def finish(self, r: workshop.Run) -> None:
-        self.running = False
-        try:
-            workshop.log(self.state_dir, r)
-        except OSError:
-            pass
-        title = self.spec.get("title", self.building_id)
-        if r.outcome == "done":
-            self.emit("workshop.done", r.result, title)
-        elif r.outcome == "alert":
-            self.emit("workshop.alert", r.result, title)
-        elif r.outcome == "failed":
-            self.emit("workshop.failed", r.err or f"exit {r.code}", title)
-            on_run = getattr(self.app, "on_handler_run", None)
-            if on_run is not None:
-                on_run(roads.HandlerRun(self.building_id, "tinker", "script", r.at, 0.0, 0.0, outcome="error",
-                                        error=r.err or f"exit {r.code}"))
-        self.refresh_data()
+        self.worker.finish(r)
 
     def run_tests(self) -> list[workshop.Run]:
-        bp = workshop.load_blueprint(self._get_repo_root(), self.building_id)
-        source = workshop.load_script(self._get_repo_root(), self.building_id, self.runtime)
-        self.tests = workshop.sandbox(source, self.runtime, bp.get("mocks") or [])
-        self._render_list()
-        return self.tests
+        return self.worker.run_tests()
 
     def action_edit_script(self) -> None:
-        source = workshop.load_script(self._get_repo_root(), self.building_id, self.runtime)
+        source = self.worker.source()
 
         def done(text: str | None) -> None:
-            if text is None or text == source:
+            if text is None:
                 return
-            why = workshop.check_syntax(text, self.runtime)
+            why = self.worker.save_script(text)
             if why:
                 self.app.notify(why, title="🛠 Script not saved", severity="error")
-                return
-            workshop.save_script(self._get_repo_root(), self.building_id, self.runtime, text)
-            mark = getattr(self.app, "checkpoint", None)
-            if mark is not None:
-                mark("update", self.building_id, "script edited")
-            self._render_list()
 
         self.app.push_screen(TextBlock(f"🛠 {self.spec.get('title', '')} — {self.script.name}", source,
                                        "stdin: the cart as JSON · exit 0 done · 3 steward · 4 alert"), done)
@@ -212,8 +162,15 @@ class WorkshopView(TypedView):
             steward += f" · ⏰ {self.config['schedule']}"
         head.update(Text.assemble((f"🛠 {self.script.name} ({self.runtime}) · layout {self.ws_layout}{steward}", "dim"),
                                   (" · running…" if self.running else "", "yellow")))
+        tests = self.tests
+        try:
+            self.query_one("#ws-tests", Static).update(
+                Text(f"🧪 {sum(1 for r in tests if r.ok)}/{len(tests)} mock carts passed · the list shows them", style="dim")
+                if tests else "")
+        except Exception:
+            pass
         lst.clear_options()
-        shown = self.tests or self.runs
+        shown = tests or self.runs
         for i, r in enumerate(shown):
             row = Text(no_wrap=True, overflow="ellipsis")
             mark = {"done": ("✓ ", "green"), "alert": ("! ", "yellow"), "escalated": ("? ", "yellow")}.get(
@@ -248,26 +205,16 @@ class WorkshopView(TypedView):
     # -- the hut --------------------------------------------------------------------------------
 
     def mini_status(self) -> list[str]:
-        if self.running:
-            return ["🛠 running…"]
-        if not self.runs:
-            return ["waiting for a cart"]
-        return [mini_line(self.runs[0]), f"{len(self.runs)} run{'s' if len(self.runs) != 1 else ''}"]
+        return self.worker.mini_status()
 
     def hut_lines(self, widths: list[int]) -> list[str]:
-        if self.running:
-            return ["running…"]
-        n = len(self.runs)
-        last = mini_line(self.runs[0]) if self.runs else "waiting for a cart"
-        timer = f"⏰ {self.config['schedule']}" if self.config.get("schedule") else f"layout: {self.ws_layout}"
-        return [last, f"{n} run{'s' if n != 1 else ''}", timer, self.script.name]
+        return self.worker.hut_lines(widths)
 
     def quick_action(self, action_id: str) -> bool:
         if action_id == "workshop.run":
-            if self.last_cart is None:
-                self.app.notify("no cart yet — a road brings one, or 🧪 tests the mocks", title="🛠 Workshop")
-            elif not self.run_cart(self.last_cart):
-                self.app.notify("already running", title="🛠 Workshop")
+            why = self.worker.run_again()
+            if why:
+                self.app.notify(why, title="🛠 Workshop")
             return True
         if action_id == "workshop.test":
             tests = self.run_tests()

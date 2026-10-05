@@ -30,7 +30,7 @@ from pathlib import Path
 LEDGER = Path(".orkcraft") / "ledger.jsonl"
 WINDOWS = {"1h": (dt.timedelta(hours=1), 12), "24h": (dt.timedelta(hours=24), 24), "7d": (dt.timedelta(days=7), 14)}
 SOURCES = ("limits", "spend", "tokens", "runs", "orcs", "tasks", "cpu", "road")
-UNITS = {"limits": "% used", "spend": "$", "tokens": "tok", "runs": "runs", "orcs": "orcs", "tasks": "tasks",
+UNITS = {"limits": "% used", "spend": "$", "tokens": "tok", "runs": "runs", "orcs": "orks", "tasks": "tasks",
          "cpu": "load", "road": ""}
 NUMBER = re.compile(r"-?\d+(?:[.,]\d+)?")
 KEEP_DAYS = 8
@@ -183,3 +183,97 @@ def prune(state_dir: Path, now: dt.datetime | None = None) -> None:
     if path.exists():
         path.write_text("".join(json.dumps({k: v for k, v in r.items() if k != "_at"}) + "\n" for r in rows),
                         encoding="utf-8")
+
+
+# -- a Crag's charts --------------------------------------------------------------------------------------
+#
+# A Crag is a dashboard: each line of its `charts` setting is one chart, written by its keeper from
+# what the person asked in plain words:
+#
+#     Spend today = spend 24h warn 1 crit 5 all
+#     cpu 1h horizontal full
+#
+# `<title> =` is optional; then the source, and in any order a window, an orientation, `warn N`,
+# `crit N`, and where it shows: `all` (the hut too), `command` (the Command Card and the dashboard)
+# or `full` (the dashboard only). A Crag without `charts` has one chart, from its old settings.
+
+SHOWS = ("all", "command", "full")
+NAMES = {"orcs": "busy orks"}           # how a source is said where it has no title
+ORIENTATIONS = ("vertical", "horizontal")
+
+
+@dataclass
+class Chart:
+    source: str
+    title: str = ""
+    window: str = "24h"
+    orientation: str = "vertical"
+    warn: float | None = None
+    crit: float | None = None
+    show: str = "all"
+
+    @property
+    def name(self) -> str:
+        return self.title or NAMES.get(self.source, self.source)
+
+    def shows_in(self, view: str) -> bool:
+        """`closed` (the hut), `command` (the Command Card) or `full` (the dashboard)."""
+        if view == "closed":
+            return self.show == "all"
+        if view == "command":
+            return self.show in ("all", "command")
+        return True
+
+
+def _num(word: str) -> float | None:
+    try:
+        return float(word.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def parse_chart(line: str) -> tuple[Chart | None, str]:
+    """One `charts` line → (its chart, "") or (None, why not)."""
+    title, _, rest = line.rpartition("=") if "=" in line else ("", "", line)
+    words = rest.split()
+    if not words or words[0] not in SOURCES:
+        return None, f"{line.strip()[:40]!r}: start with a source ({', '.join(SOURCES)})"
+    c = Chart(words[0], " ".join(title.split())[:40])
+    i = 1
+    while i < len(words):
+        w = words[i]
+        if w in WINDOWS:
+            c.window = w
+        elif w in ORIENTATIONS:
+            c.orientation = w
+        elif w in SHOWS:
+            c.show = w
+        elif w in ("warn", "crit") and i + 1 < len(words) and _num(words[i + 1]) is not None:
+            setattr(c, w, _num(words[i + 1]))
+            i += 1
+        else:
+            return None, f"{line.strip()[:40]!r}: {w!r} is not a window, orientation, warn N, crit N or {'/'.join(SHOWS)}"
+        i += 1
+    return c, ""
+
+
+def parse_charts(lines: list) -> tuple[list[Chart], list[str]]:
+    charts, errors = [], []
+    for line in lines:
+        c, why = parse_chart(str(line))
+        if c is None:
+            errors.append(why)
+        else:
+            charts.append(c)
+    return charts, errors
+
+
+def chart_line(c: Chart) -> str:
+    """A chart as its `charts` line (what `parse_chart` reads back)."""
+    def fmt(x: float) -> str:
+        return f"{x:g}"
+    words = [c.source, c.window, c.orientation]
+    words += [f"warn {fmt(c.warn)}"] if c.warn is not None else []
+    words += [f"crit {fmt(c.crit)}"] if c.crit is not None else []
+    words.append(c.show)
+    return (f"{c.title} = " if c.title else "") + " ".join(words)
