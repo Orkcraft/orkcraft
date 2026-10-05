@@ -664,14 +664,8 @@ class UnitInfo(Vertical):
     A building: its name with 👍 / 👎 / its goal (🪙 / ⚖️ / 💎, a click cycles it) / 🗑, why it is here, a quiet line of its runs (📜 history)
     and who it listens to (➕ adds a road)."""
 
-    def on_mount(self) -> None:
-        self._title("ℹ INFO")
-
-    def _title(self, value: str) -> None:
-        """Info is a window of its own: its name stands in its frame, in the mode's words."""
-        self.border_title = modes.text(value)
-
     def compose(self) -> ComposeResult:
+        yield OfficeStatic("ℹ INFO", id="info-title", classes="console-title")
         with Vertical(id="info-building"):
             with Horizontal(id="ib-head", classes="ib-row"):
                 yield OfficeStatic("", id="ib-name", markup=False)
@@ -699,6 +693,7 @@ class UnitInfo(Vertical):
         yield OfficeStatic("", markup=False, id="info-body")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
+        title = self.query_one("#info-title", Static)
         body = self.query_one("#info-body", Static)
         building = self.query_one("#info-building", Vertical)
         orc_box = self.query_one("#info-orc", Vertical)
@@ -708,7 +703,7 @@ class UnitInfo(Vertical):
         body.display = True
         if focus_state.mode == "unit":
             orc = next((o for o in roster.orcs if orc_key(o) == focus_state.orc_key), None)
-            self._title("ℹ INFO" if orc and orc.category == RESIDENT else f"ℹ {orc.name}" if orc else "ℹ INFO")
+            title.update("ℹ INFO" if orc and orc.category == RESIDENT else f"ℹ {orc.name}" if orc else "ℹ INFO")
             if orc is not None and orc.category == RESIDENT:
                 self.orc = orc
                 orc_box.display, body.display = True, False
@@ -728,7 +723,7 @@ class UnitInfo(Vertical):
         elif focus_state.mode == "building":
             bid = focus_state.building_id or ""
             b = self.app.building(bid)
-            self._title("ℹ INFO")
+            title.update("ℹ INFO")
             if b is None:
                 body.update(Text("This building is gone.", style="dim"))
                 return
@@ -742,10 +737,10 @@ class UnitInfo(Vertical):
             self.query_one("#ib-runs", Static).update(building_runs(self.app, bid, roster))
             self.query_one("#ib-listens", Static).update(building_listens(self.app, bid))
         elif focus_state.mode == "road":
-            self._title("ℹ 🛤 Road")
+            title.update("ℹ 🛤 Road")
             body.update(road_card(self.app, focus_state.road_key or ""))
         else:
-            self._title("ℹ INFO")
+            title.update("ℹ INFO")
             body.update(Text("Select a building or an orc: what it does, its models and what it cost show here.",
                              style="dim"))
 
@@ -945,8 +940,7 @@ class Console(Horizontal):
     .console-col {
         height: 100%;
     }
-    /* War Map (36) · Info (the rest, a window of its own: framed, apart from both sides) ·
-       garrison / inventory (22) · Command Card. */
+    /* War Map (36) · Info (the rest) · garrison / inventory (22) · Command Card. */
     #warmap {
         width: 36;
     }
@@ -956,10 +950,7 @@ class Console(Horizontal):
     }
     #unit-info {
         width: 1fr;
-        margin: 0 1;
-        border: round $accent 60%;
-        border-title-color: $accent;
-        border-title-style: bold;
+        border-left: vkey $accent 60%;
     }
     #info-body {
         height: 1fr;
@@ -1034,7 +1025,7 @@ class Console(Horizontal):
 
     def compose(self) -> ComposeResult:
         yield WarMap(id="warmap", classes="console-col")
-        yield UnitInfo(id="unit-info", classes="console-col")       # the wide Info: its own window beside the map
+        yield UnitInfo(id="unit-info", classes="console-col")       # the wide Info sits beside the map
         yield ClanRoster(id="clan-roster", classes="console-col")
         yield CommandCard(id="command-card", classes="console-col")
 
