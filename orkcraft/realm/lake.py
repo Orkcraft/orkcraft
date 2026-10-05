@@ -315,3 +315,38 @@ class Origins:
         row["judged"] = edit.kind
         self._save(data)
         return row.get("maker", ""), edit
+
+
+# -- Lake is the town's window, not a building (docs/design/building-views.md §2) -------------------
+
+WINDOW_TYPES = frozenset({"lake"})      # never raised from the GUI's catalog: the town has one Lake window
+PLAIN = ("on_selection_change", "on_task_completed", "on_stream")
+
+
+def opens_in_lake(building, event_id: str) -> bool:
+    """Does what `building` sends as `event_id` open in the Lake (a road of it once went into a Lake
+    building: `open_in_lake` in the scroll)?"""
+    return any(e == event_id or e in PLAIN for e in building.open_in_lake or ())
+
+
+def retire(town_scroll, type_of) -> list[str]:
+    """An old Town Scroll's Lake buildings leave the map (demolished: their spec stays, as for any
+    building that came down); a road into one becomes "open in Lake" on its source, a road out of
+    one goes. `type_of(building id)` is the building's type id. The ids that left, sorted."""
+    lakes = {b.id for b in town_scroll.buildings if not b.demolished and type_of(b.id) in WINDOW_TYPES}
+    if not lakes:
+        return []
+    for b in town_scroll.buildings:
+        if b.id in lakes:
+            for r in b.roads:
+                src = town_scroll.building(r.source)
+                if src is not None and src.id not in lakes and r.event not in (src.open_in_lake or ()):
+                    src.open_in_lake = [*(src.open_in_lake or ()), r.event]
+            b.roads = []
+            b.demolished = True
+        else:
+            b.roads = [r for r in b.roads if r.source not in lakes]
+    for o in town_scroll.orkspaces:
+        if o.active_building in lakes:
+            o.active_building = None
+    return sorted(lakes)

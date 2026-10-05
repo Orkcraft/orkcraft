@@ -510,6 +510,12 @@
         "ui": {
           "description": "Its UI document (building-ui.v1.json: panes of components, roles only); missing: its type's default.",
           "anyOf": [{"type": "object"}, {"type": "null"}]
+        },
+        "open_in_lake": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {"type": "string", "pattern": "^([a-z]+\\.[a-z_]+|on_selection_change|on_task_completed|on_stream)$"},
+          "description": "What this building sends that opens in the town's Lake window: the events of its roads into an old Lake building (realm/lake.py retire)."
         }
       }
     },

@@ -76,8 +76,8 @@ A hook a type does not export falls back: `card` → the status lines (`status_p
 preview (the buttons only), `panes` → the window's old body. Shared helpers a type calls but never
 redefines:
 
-- `openInLake({path | url | text, title, from})` — `js/lake.js`; until the Lake window lands it shows
-  the document in the Lake building when there is one, else says so.
+- `openInLake({path | url | text, title, from})` — `js/lake.js`: the document in a tab of the town's Lake
+  window (the host's `lake.open`, `gui/views/lake.py`); resolves with the tab's id.
 - `askKeeper(buildingId, request, selection?)` — `js/keeper.js`, over the host's `keeper.ask`; until
   the keeper lands it says so.
 

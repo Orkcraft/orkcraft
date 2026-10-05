@@ -190,6 +190,7 @@ class BuildingSpec:
     actions: list[dict] = field(default_factory=list)
     garrison: Garrison = field(default_factory=Garrison)
     ui: dict | None = None            # its UI document (schemas/building-ui.v1.json); None: its type's default
+    open_in_lake: list[str] | None = None   # events of it that open in the town's Lake window (realm/lake.py retire)
 
     @property
     def preset_id(self) -> str:
@@ -327,6 +328,7 @@ class TownScroll:
                 garrison=Garrison(OrcSpec(**g["steward"]) if g.get("steward") else None,
                                   [OrcSpec(**m) for m in g.get("handlers", [])]),
                 ui=b.get("ui") if isinstance(b.get("ui"), dict) else None,
+                open_in_lake=[str(e) for e in b["open_in_lake"]] if b.get("open_in_lake") else None,
             ))
         orkspaces = [
             Orkspace(
