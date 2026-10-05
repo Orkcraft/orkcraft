@@ -1,6 +1,8 @@
 """🎯 The Catapult's browser mode: scout a form, plan the fields, write fill.py, fill and press."""
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import asyncio
 import functools
 import io
@@ -15,6 +17,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import catalog, catapult as cp, catapult_web as cw, masonry, pipes
+from orkcraft.core.workers.catapult import CatapultWorker
 from orkcraft.screens.typed.catapult_view import CatapultView
 
 FORM_BODY = """<form onsubmit="event.preventDefault(); document.title = 'saved ' +
@@ -234,7 +237,7 @@ async def test_the_orc_scouts_an_intent_of_two_forms_and_the_queue_fills_them(si
                        "forms": [f"event = {events} | the new-event form", f"details = {details} | the details form"]}}
     assert masonry.save_spec(fake_repo, spec) == []
     prompts = []
-    monkeypatch.setattr(CatapultView, "scout_runner", staticmethod(_operator_agent(prompts)))
+    monkeypatch.setattr(CatapultWorker, "scout_runner", staticmethod(_operator_agent(prompts)))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.subscribe(app.scroll, "town_hall", "play", "catapult.sent")
     async with app.run_test(size=(200, 46)) as pilot:
@@ -264,6 +267,8 @@ async def test_the_orc_scouts_an_intent_of_two_forms_and_the_queue_fills_them(si
         assert [p.mode for p in sent] == ["catapult.sent", "catapult.sent"], [s.error for s in view.shots]
         assert "[event]" in sent[0].value and "[details]" in sent[0].value and "Halloween" in sent[0].value
         assert "Christmas" in sent[1].value and not len(view.queue)
+        last = view.worker.screens(view.shots[0].at)                    # a picture of each form, kept with its shot
+        assert [r["form"] for r in last] == ["event", "details"] and (fake_repo / last[0]["path"]).read_bytes()[:4] == b"\x89PNG"
         assert view.profile == fake_repo / ".orkcraft" / "catapult" / "play" / "profile"   # outside the camp's git
         exclude = (fake_repo / ".git" / "info" / "exclude").read_text(encoding="utf-8")
         assert ".orkcraft/" in exclude.splitlines()                # and outside the project's git
@@ -391,7 +396,7 @@ async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_pa
             "config": {"mode": "browser", "forms": [f"event = {events} | | Save draft"], "finish": "press",
                        "fields": ["Event name = title"]}}
     assert masonry.save_spec(fake_repo, spec) == []
-    monkeypatch.setattr(CatapultView, "repair_runner", staticmethod(lambda prompt: (json.dumps(REPAIRED), 0.03)))
+    monkeypatch.setattr(CatapultWorker, "repair_runner", staticmethod(lambda prompt: (json.dumps(REPAIRED), 0.03)))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for event in ("catapult.repaired", "catapult.sent", "catapult.failed"):
         ts.subscribe(app.scroll, "town_hall", "play", event)
@@ -495,6 +500,6 @@ def test_halt_kills_the_running_browser():
         def kill(self):
             self.killed = True
 
-    view = CatapultView({"id": "c", "type": "catapult", "config": {}})
-    view.proc = proc = Proc()
-    assert view.halt() == 1 and proc.killed and view.paused and view.halt() == 0
+    w = CatapultWorker(SimpleNamespace(custom_specs={}), "c")
+    w.proc = proc = Proc()
+    assert w.halt() == 1 and proc.killed and w.paused and w.halt() == 0

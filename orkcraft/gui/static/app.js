@@ -6,6 +6,7 @@ import { town, connect } from "./js/link.js";
 import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
 import { Opened } from "./js/windows.js";
+import { LakeWindow } from "./js/lake.js";
 import { Selected } from "./js/console.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
@@ -26,6 +27,7 @@ function App() {
     <${Town} buildings=${buildings} roads=${t.roads} />
     <div class="gui-strip"><${WarMap} /><${Selected} /></div>
     <${Opened} />
+    <${LakeWindow} />
     <${StatusBar} />
     <${Toasts} />
     <${Orders} />

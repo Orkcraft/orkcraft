@@ -34,8 +34,8 @@ async def test_halt_all_stops_the_barracks_the_clan_fire_and_the_mill(fake_repo:
         fire = app.desktop.get_window("fire").query_one(TeamView)
         mill = app.desktop.get_window("grinder").query_one(MillView)
         orc_run, review = threading.Event(), threading.Event()
-        camp._cancels["Grub"] = orc_run
-        fire._cancel, fire._busy = review, True
+        camp.worker._cancels["Grub"] = orc_run
+        fire.worker._cancel, fire.worker._busy = review, True
         mill.running, milling = True, mill.cancel
         app.action_halt()
         assert orc_run.is_set() and review.is_set() and milling.is_set()

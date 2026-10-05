@@ -29,6 +29,7 @@ from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
 from orkcraft.gui import builder, console, state, views
+from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
@@ -85,6 +86,7 @@ class Host:
         # The console of a selected building or ork (gui/console.py): Info, the garrison, the jobs.
         self.console = console.Console(self)
         self.commands.update(self.console.commands())
+        lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
                 self.town.worker(bs.id)
@@ -95,6 +97,7 @@ class Host:
         snap = state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
                               look_choice=self.look)
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
+        snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         return snap
 
     def _event(self, event: bus.Event) -> None:
@@ -196,6 +199,7 @@ class Host:
                     flush(w)
                 except Exception:
                     pass
+        lake_view.flush_town(self.town.lake)
         self.sessions.close()
         self.town.halt()
         self.town.save()

@@ -118,6 +118,7 @@ async def test_from_scratch_end_to_end(fake_repo: Path, monkeypatch):
     from orkcraft.app import OrkcraftApp
     from orkcraft.realm import pipes
     from orkcraft.screens.builder_interview import BlueprintReview, BuilderChat
+    from orkcraft.core.workers.workshop import WorkshopWorker
     from orkcraft.screens.typed.workshop_view import WorkshopView
 
     prompts = []
@@ -189,21 +190,21 @@ async def test_from_scratch_end_to_end(fake_repo: Path, monkeypatch):
         view = app._custom_view("word_count")
         assert isinstance(view, WorkshopView)
         sent = []
-        monkeypatch.setattr(app, "emit_typed", lambda b, ev, value, title="": sent.append((ev, value)) or True)
+        monkeypatch.setattr(app.core, "emit_typed", lambda b, ev, value, title="", *a: sent.append((ev, value)) or True)
         view.receive(pipes.Payload(pipes.TEXT, "red green blue", "pit", "pit.text"), "", "")
         assert await _wait(pilot, lambda: bool(sent))
         assert sent[0][0] == "workshop.done" and json.loads(sent[0][1])["words"] == 3
 
         # exit 3: the steward prompt takes the cart
-        view.spec = dict(view.spec, config=dict(view.spec["config"], steward_prompt="say what it is"))
-        WorkshopView.steward_runner = staticmethod(lambda p: ("an empty paste", 0.0))
+        app.custom_specs["word_count"] = dict(view.spec, config=dict(view.spec["config"], steward_prompt="say what it is"))
+        WorkshopWorker.steward_runner = staticmethod(lambda p: ("an empty paste", 0.0))
         try:
             sent.clear()
             view.run_cart(workshop.cart("pit.text", "pit", ""))
             assert await _wait(pilot, lambda: bool(sent))
             assert sent[0] == ("workshop.done", "an empty paste")
         finally:
-            WorkshopView.steward_runner = None
+            WorkshopWorker.steward_runner = None
         tests = view.run_tests()
         assert [r.outcome for r in tests] == ["done", "alert"]
 
@@ -278,7 +279,7 @@ async def test_a_workshop_runs_on_its_own_timer(fake_repo: Path, monkeypatch):
         await pilot.pause()
         view = app._custom_view("word_count")
         sent = []
-        monkeypatch.setattr(app, "emit_typed", lambda b, ev, value, title="": sent.append((ev, value)) or True)
+        monkeypatch.setattr(app.core, "emit_typed", lambda b, ev, value, title="", *a: sent.append((ev, value)) or True)
         view.last_tick = dt.datetime(2026, 10, 2, 6, 0)                    # every 15m: :00 :15 :30 :45
         assert not view.tick(dt.datetime(2026, 10, 2, 6, 14))
         assert view.tick(dt.datetime(2026, 10, 2, 6, 16))

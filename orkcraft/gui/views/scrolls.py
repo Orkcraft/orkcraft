@@ -10,6 +10,7 @@ from orkcraft.sources import lore
 
 REFRESH_S = 30.0              # as the TUI
 ITEMS = 2000                  # rows per branch of the tree: a huge source is cut, the window stays quick
+RECENT = 5                    # the last changed pages the Command Card shows
 
 
 def refresh(w) -> None:
@@ -24,6 +25,17 @@ def _state(w) -> str:
     if w.pending:
         return f"{w.pending.count} to take in" + (" (by itself)" if w.auto else "")
     return "up to date"
+
+
+def card(w) -> dict:
+    """Closed (docs/design/building-views.md): the pages and what waits to be taken in, nothing more."""
+    return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
+            "error": bool(w.last_error)}
+
+
+def _recent(w) -> list[dict]:
+    pages = sorted((n for n in w.pages if wiki.is_page(n.path)), key=lambda n: n.mtime, reverse=True)
+    return [{"path": n.path, "title": n.title, "mtime": n.mtime} for n in pages[:RECENT]]
 
 
 def detail(w) -> dict:
@@ -48,6 +60,7 @@ def detail(w) -> dict:
         "topic": w.topic, "root": rel, "pages_count": count, "state": _state(w),
         "state_plain": _state(w).replace("⚠ ", ""), "running": w.running, "error": bool(w.last_error),
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
+        "recent": _recent(w),
     }
 
 

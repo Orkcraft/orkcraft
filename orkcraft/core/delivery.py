@@ -111,6 +111,8 @@ def emit(town, building_id: str, event_id: str, value: str, title: str = "",
     ev = catalog.type_of(spec).event(event_id) if spec else None
     if ev is not None:
         feedback.record_output(town.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
+        if getattr(town, "lake", None) is not None:          # a road of it once went into a Lake building
+            town.lake.follow(building_id, event_id, ev.kind, value, title)
     if ev is None or town.scroll is None or not scroll.has_outgoing(town.scroll, building_id, event_id):
         return False
     town.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref))

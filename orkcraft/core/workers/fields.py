@@ -137,6 +137,16 @@ class FieldsWorker(Worker):
         self._sync()
         return card
 
+    def add_lane(self, name: str) -> str:
+        """A new lane of notes on the board (a folder of notes). Its id, "" when it was not made."""
+        try:
+            lane = self.store.add_lane(name)
+        except (OSError, ValueError) as e:
+            self.toast(str(e), title=TITLE, severity="error")
+            return ""
+        self._sync()
+        return lane.id
+
     def receive(self, payload, title: str, markdown: str) -> None:
         """A cart is a new card — a task in To Do (a note in `notes` mode): its title, else its first
         line; the rest of what it carries is the card's text."""

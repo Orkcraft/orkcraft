@@ -1,0 +1,53 @@
+/* The Lake window (js/lake.js, js/buildings/lake.js): the town's one viewer over the right half of the
+   town, or the whole of it (between the HUD and the status bar). Only tokens and the components'
+   knobs, as layout.css. The keeper's colour is the purple mark: a selection asked of the keeper is
+   marked in it and its mark stands beside it. */
+
+.gui-lake { grid-area: town; z-index: 7; justify-self: end; width: 50%; min-width: 360px; min-height: 0; }
+.gui-lake.is-full { width: 100%; }
+.gui-lake > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
+.gui-lake__tabs { flex: none; overflow-x: auto; overflow-y: hidden; }
+.gui-lake__tab { display: inline-flex; align-items: center; gap: var(--space-1); max-width: 220px; cursor: pointer; flex: none; }
+.gui-lake__tabtitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-lake__dirty { color: var(--warning); }
+.gui-lake__win { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.gui-lake__handle { grid-area: town; z-index: 7; justify-self: end; align-self: start; margin: var(--space-3); }
+
+.gui-lake__doc { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-lake__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.gui-lake__page { flex: 1; min-height: 320px; width: 100%; border: 1px solid var(--frame); background: var(--panel-inset); }
+
+/* Code and text: the editor over bands that mark the lines picked (and asked of the keeper). */
+.gui-lake__code { position: relative; flex: 1; min-height: 240px; display: flex; background: var(--panel-inset);
+  border-radius: var(--ok-radius, 0); overflow: hidden; }
+.gui-lake__text { position: relative; z-index: 1; background: transparent; font-family: var(--font-mono); font-size: 12px;
+  line-height: 20px; white-space: pre; overflow: auto; }
+.gui-lake__band { position: absolute; left: 0; right: 0; z-index: 0; background: var(--selection); pointer-events: none; }
+.gui-lake__band.is-asked { background: var(--sticky-purple); box-shadow: inset 3px 0 0 var(--mark-purple); }
+
+/* Rendered Markdown: its paragraphs picked and asked. */
+.gui-lake__prose { position: relative; padding-right: var(--space-8); }
+.gui-lake__picked { background: var(--selection); }
+.gui-lake__asked { background: var(--sticky-purple); box-shadow: -3px 0 0 var(--mark-purple); }
+
+/* A picture: an area dragged out over it. */
+.gui-lake__picture { overflow: auto; }
+.gui-lake__frame { position: relative; display: inline-block; cursor: crosshair; touch-action: none; user-select: none; }
+.gui-lake__frame > img { display: block; max-width: 100%; }
+.gui-lake__area { position: absolute; box-sizing: border-box; border: 1px dashed var(--frame-focus); background: var(--selection);
+  opacity: .85; }
+.gui-lake__area.is-asked { border: 2px solid var(--mark-purple); background: transparent; opacity: 1; }
+
+/* The keeper's mark beside what was asked; the bar that asks. */
+.gui-lake__keeper { position: absolute; right: var(--space-2); z-index: 2; width: 20px; height: 20px; padding: 0;
+  border-radius: var(--radius-full); border: 1px solid var(--mark-purple); background: var(--sticky-purple);
+  color: var(--mark-purple); cursor: pointer; font: 700 11px/18px var(--font-mono); text-align: center; }
+.gui-lake__area > .gui-lake__keeper { top: -10px; right: -10px; }
+.gui-lake__ask > .gui-lake__keeper { position: static; flex: none; }
+.gui-lake__keeper.is-asking { opacity: .6; }
+.gui-lake__keeper.is-failed { border-style: dashed; color: var(--ink-muted); }
+.gui-lake__keeper:focus-visible { outline: 1px solid var(--frame-focus); outline-offset: 2px; }
+.gui-lake__ask { flex: none; display: flex; align-items: center; gap: var(--space-2); }
+.gui-lake__ask > .ok-input { flex: 1; min-width: 0; }
+.gui-lake__what { flex: none; color: var(--ink-muted); white-space: nowrap; }
+.gui-lake__what.is-picked { color: var(--ink); }

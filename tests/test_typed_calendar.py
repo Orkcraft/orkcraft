@@ -10,6 +10,7 @@ from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import daybook, masonry
 from orkcraft.screens.dialogs import TextPrompt
+from orkcraft.core.workers.war_drum import WarDrumWorker
 from orkcraft.screens.typed.calendar_view import CalendarView
 
 SIZE = (200, 46)
@@ -65,7 +66,7 @@ async def test_the_calendar_building_ticks_digests_and_adds(fake_repo: Path, mon
             "config": {"ics": "cal.ics", "day_starts": "08:30"}}
     assert masonry.save_spec(fake_repo, spec) == []
     clock = {"now": at(8, 0)}
-    monkeypatch.setattr(CalendarView, "clock", staticmethod(lambda: clock["now"]))
+    monkeypatch.setattr(WarDrumWorker, "clock", staticmethod(lambda: clock["now"]))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for ev in ("calendar.event_due", "calendar.day_schedule", "calendar.event_added"):
         ts.subscribe(app.scroll, "town_hall", "days", ev)
@@ -136,7 +137,7 @@ async def _calendar_app(repo: Path, monkeypatch, clock: dict, lake: bool = False
     if lake:
         assert masonry.save_spec(repo, {"id": "insight", "title": "Lake", "icon": "🌊", "orc": {"name": "Seer"},
                                         "type": "lake"}) == []
-    monkeypatch.setattr(CalendarView, "clock", staticmethod(lambda: clock["now"]))
+    monkeypatch.setattr(WarDrumWorker, "clock", staticmethod(lambda: clock["now"]))
     app = OrkcraftApp(repo_root=repo, auto_commit=False)
     if not ts.has_outgoing(app.scroll, "days", "calendar.event_upcoming"):        # a restart keeps the road
         ts.subscribe(app.scroll, "town_hall", "days", "calendar.event_upcoming")
@@ -225,11 +226,11 @@ async def test_a_tagged_cart_is_the_meetings_document_and_enter_opens_it(fake_re
 
 
 def test_barracks_keeps_the_meeting_tag_in_the_task_title(monkeypatch):
+    from orkcraft.core.workers.barracks import BarracksWorker
     from orkcraft.realm import pipes
-    from orkcraft.screens.typed.pool_view import PoolView
     got = []
-    monkeypatch.setattr(PoolView, "add_task", lambda self, title, text, key="", **kw: got.append(title))
-    view = PoolView.__new__(PoolView)
+    monkeypatch.setattr(BarracksWorker, "add_task", lambda self, title, text, key="", **kw: got.append(title))
+    view = BarracksWorker.__new__(BarracksWorker)
     tag = "[meet:0123456789ab]"
     view.receive(pipes.Payload(pipes.TEXT, f"14:00 1:1 Ann (Fri 02) {tag}", "signpost", "signpost.routed", "1on1"), "", "")
     view.receive(pipes.Payload(pipes.TEXT, "x", "drum", "calendar.event_upcoming", "A" * 90 + " " + tag), "", "")

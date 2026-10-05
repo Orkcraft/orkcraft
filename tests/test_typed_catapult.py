@@ -12,6 +12,7 @@ from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import audit, catapult as cp, masonry, pipes
 from orkcraft.screens.dialogs import Confirm
+from orkcraft.core.workers.catapult import CatapultWorker
 from orkcraft.screens.typed.catapult_view import CatapultView
 
 SCHEMA = {"type": "object", "required": ["notes", "version"],
@@ -75,7 +76,7 @@ async def test_the_catapult_waits_for_both_roads_then_fires(fake_repo: Path, mon
     assert masonry.save_spec(fake_repo, spec) == []
     monkeypatch.setenv("T_API", "s3cret")
     net = Net()
-    monkeypatch.setattr(CatapultView, "opener", staticmethod(net))
+    monkeypatch.setattr(CatapultWorker, "opener", staticmethod(net))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.subscribe(app.scroll, "town_hall", "launcher", "catapult.sent")
     async with app.run_test(size=(200, 46)) as pilot:
@@ -125,7 +126,7 @@ async def test_the_demo_never_sends(fake_repo: Path, monkeypatch):
             "config": {"url": "https://api.example.com/x"}}
     assert masonry.save_spec(fake_repo, spec) == []
     net = Net()
-    monkeypatch.setattr(CatapultView, "opener", staticmethod(net))
+    monkeypatch.setattr(CatapultWorker, "opener", staticmethod(net))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False, demo=True)
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()

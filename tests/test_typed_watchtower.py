@@ -16,6 +16,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import mailbox, masonry, watch
+from orkcraft.core.workers.watchtower import WatchtowerWorker
 from orkcraft.screens.typed.watchtower_view import WatchtowerView
 
 SIZE = (200, 46)
@@ -95,7 +96,7 @@ async def test_the_watchtower_tells_what_is_new_in_the_mail(fake_repo: Path, ser
     mail(1, "Ann <ann@x.org>", "Lunch?", "Noon?")
     spec = {"id": "post", "title": "Post", "icon": "📨", "orc": {"name": "Raven"}, "type": "mail", "config": CFG}
     assert masonry.save_spec(fake_repo, spec) == []                   # an old mail spec: now a Watchtower
-    monkeypatch.setattr(WatchtowerView, "imap_factory", staticmethod(server))
+    monkeypatch.setattr(WatchtowerWorker, "imap_factory", staticmethod(server))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.subscribe(app.scroll, "town_hall", "post", "mail.received")
     async with app.run_test(size=SIZE) as pilot:
@@ -158,9 +159,9 @@ async def test_the_watchtower_hears_github_the_schedule_and_a_webhook(fake_repo:
     assert masonry.save_spec(fake_repo, spec) == []
     monkeypatch.setenv("T_HOOK", "s3cret")
     events = {"now": GH_EVENTS[1:]}
-    monkeypatch.setattr(WatchtowerView, "gh_runner", staticmethod(lambda cmd, **kw: gh(events["now"])(cmd)))
+    monkeypatch.setattr(WatchtowerWorker, "gh_runner", staticmethod(lambda cmd, **kw: gh(events["now"])(cmd)))
     clock = {"now": dt.datetime(2026, 10, 2, 5, 14)}
-    monkeypatch.setattr(WatchtowerView, "clock", staticmethod(lambda: clock["now"]))
+    monkeypatch.setattr(WatchtowerWorker, "clock", staticmethod(lambda: clock["now"]))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for ev in ("watch.github", "watch.cron", "watch.webhook"):
         ts.subscribe(app.scroll, "town_hall", "tower", ev)

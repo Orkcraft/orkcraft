@@ -297,7 +297,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"source": (str, ("limits", "spend", "tokens", "runs", "orcs", "tasks", "cpu", "road"), False),
                 "orientation": (str, ("vertical", "horizontal"), False),
                 "window": (str, ("1h", "24h", "7d"), False),
-                "warn": (float, (0, 1e9), False), "crit": (float, (0, 1e9), False)},
+                "warn": (float, (0, 1e9), False), "crit": (float, (0, 1e9), False),
+                "charts": (list, None, False)},
         art="rookery", orc="Crag Carver"),
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
@@ -528,6 +529,9 @@ def validate(spec: dict) -> list[str]:
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
         if config.get("mode") == "browser" and not config.get("forms"):
             errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
+    if tid == "crag" and isinstance(config.get("charts"), list):
+        from orkcraft.realm import metrics
+        errors += [f"config: charts: {e}" for e in metrics.parse_charts(config["charts"])[1]]
     if tid == "signpost" and isinstance(config.get("rules"), list):
         from orkcraft.realm import signpost
         errors += [f"config: rules: {e}" for e in signpost.rules_of(config["rules"])[1]]
@@ -727,6 +731,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "window": "1h, 24h or 7d (default 24h)",
         "warn": "a value over it sends charts.threshold",
         "crit": "a value over it sends charts.threshold, critical",
+        "charts": "its dashboard, a chart per line: `Title = source [1h|24h|7d] [vertical|horizontal] [warn N] [crit N] "
+                  "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
+                  "without it one chart from the settings above",
     },
     "catapult": {
         "url": "where to send, http or https",

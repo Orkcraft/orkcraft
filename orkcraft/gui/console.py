@@ -24,6 +24,8 @@ from orkcraft.core import roads as core_roads
 from orkcraft.core import runners
 from orkcraft.design import ui
 from orkcraft.gui import info, markdown
+from orkcraft.gui.views import ActError
+from orkcraft.gui.views import lake as lake_view
 from orkcraft.realm import builders, catalog, chronicles, fastpath, modes, pipes, recruiter, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
@@ -76,9 +78,10 @@ class Console:
             "ork.report": self.report,
             "job.accept": self.accept,
             "job.drop": self.drop,
-            # Shared by every type (docs/design/building-views.md §4): Lake's is a stub until track L lands.
+            # Shared by every type (docs/design/building-views.md §4).
             "lake.open": self.lake_open,
             "keeper.ask": self.keeper_ask,
+            **{name: self._lake_call(fn) for name, fn in lake_view.commands(self.town).items()},
         }
 
     # -- helpers --------------------------------------------------------------------------------------
@@ -194,15 +197,24 @@ class Console:
         self.host.refresh_roster()
         return ok
 
-    def quick(self, args: dict) -> bool:
-        """One of the type's quick actions (the Command Card). Its handler comes with the type's own
-        view; until then the person is told so, never left with a silent button."""
+    def quick(self, args: dict) -> Any:
+        """One of the type's quick actions (the Command Card): its view's act of the same id
+        (gui/views/<type>.py `ACTS`), else its worker's `quick_action`; until a type has either the
+        person is told so, never left with a silent button."""
         bs = self._spec(args)
         t = catalog.type_of(self.town.spec_of(bs.id))
         act = t.action(str(args.get("action") or ""))
         if act is None:
             raise ConsoleError(f"{bs.title} has no such action")
-        quick = getattr(self.town.worker(bs.id), "quick_action", None)      # a worker that does it
+        from orkcraft.gui import views
+        view, worker = views.of(t.id), self.town.worker(bs.id)
+        fn = getattr(view, "ACTS", {}).get(act.id) if worker is not None else None
+        if fn is not None:
+            try:
+                return fn(worker, {})
+            except views.ActError as e:
+                raise ConsoleError(str(e)) from None
+        quick = getattr(worker, "quick_action", None)      # a worker that does it
         if quick is not None and quick(act.id):
             return True
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
@@ -211,18 +223,17 @@ class Console:
     # -- Lake and the keeper: what every type calls --------------------------------------------------
 
     def lake_open(self, args: dict) -> str:
-        """A document opened in Lake: shown in the town's Lake building (the Lake window replaces this)."""
-        kind = str(args.get("kind") or "text")
-        value = self._text(args, "value", 2_000_000)
-        if kind not in ("file", "text") or not value:
-            raise ConsoleError("Nothing to open")
-        lake = next((b for b in self.town.scroll.buildings if not b.demolished
-                     and catalog.type_of(self.town.spec_of(b.id)).id == "lake"), None)
-        worker = self.town.worker(lake.id) if lake is not None else None
-        if worker is None:
-            raise ConsoleError("Lake opens documents once the Lake window is here — no Lake in this town yet")
-        worker.show_value(kind, value, self._text(args, "title", 200))
-        return lake.id
+        """A document opened in the town's Lake window, in a tab (gui/views/lake.py): the tab's id."""
+        return self._lake_call(lambda a: lake_view.open_doc(self.town, a))(args)
+
+    @staticmethod
+    def _lake_call(fn: Callable[[dict], Any]) -> Callable[[dict], Any]:
+        def call(args: dict) -> Any:
+            try:
+                return fn(args)
+            except ActError as e:
+                raise ConsoleError(str(e)) from None
+        return call
 
     def keeper_ask(self, args: dict) -> str:
         """A building's keeper asked in plain words (core/keeper.py): its proposal comes back as a job — the

@@ -86,6 +86,7 @@ class Session:
 class Sessions:
     def __init__(self, town: Town) -> None:
         self.town = town
+        town.sessions = self                 # a worker opens its orks' terminals through it (a Barracks)
         self.live: dict[str, Session] = {}
         self.on_output: Callable[[str, bytes], None] = lambda key, data: None
         self._seq = 0

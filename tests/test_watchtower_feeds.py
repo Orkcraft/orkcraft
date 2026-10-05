@@ -11,6 +11,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import audit, catalog, feeds, mailbox, masonry
+from orkcraft.core.workers.watchtower import WatchtowerWorker
 from orkcraft.screens.typed.watchtower_view import WatchtowerView
 
 SLACK = "slack: token=T_SLACK channels=C1,D2"
@@ -157,7 +158,7 @@ async def test_the_watchtower_sends_comments_and_mentions(fake_repo: Path, env, 
     api = {k: ({"ok": True, "messages": []} if "conversations" in k else v) for k, v in API.items()}
     api["api.figma.com/v1/files/AbC123/comments"] = {"comments": API["api.figma.com/v1/files/AbC123/comments"]["comments"][:2]}
     opener = Opener(api)
-    monkeypatch.setattr(WatchtowerView, "feed_opener", staticmethod(opener))
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", staticmethod(opener))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for ev in ("watch.comment", "watch.mention"):
         ts.subscribe(app.scroll, "town_hall", "tower", ev)

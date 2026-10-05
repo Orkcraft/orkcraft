@@ -510,7 +510,7 @@ SCRIPT = '''#!/usr/bin/env python3
 Fills the form with the cart from stdin, then {finish_text}.
 Run by hand: python fill.py --profile <dir> [--press] [--headless] < cart.json
 Edit it freely — the Catapult keeps a script edited by hand (rescouting writes fill.new.py instead)."""
-import argparse, json, sys
+import argparse, json, os, sys
 
 from playwright.sync_api import Error, sync_playwright
 
@@ -664,6 +664,11 @@ def main():
                         "url": page.url, "title": page.title()}}
             if broken:
                 summary["page"] = look(page)
+            if os.environ.get("CATAPULT_SCREEN"):          # the Catapult keeps a picture of the page
+                try:
+                    page.screenshot(path=os.environ["CATAPULT_SCREEN"])
+                except Error:
+                    pass
             print(json.dumps(summary, ensure_ascii=False), flush=True)
             return code
 
@@ -778,10 +783,14 @@ class Result:
 
 def run_script(script: Path, profile: Path, body, press: bool, headless: bool = False,
                timeout: float | None = None, check: bool = False,
-               on_start: Callable[[subprocess.Popen], None] | None = None) -> Result:
+               on_start: Callable[[subprocess.Popen], None] | None = None, screen: Path | None = None) -> Result:
     """Run fill.py with the cart on stdin (`check`: only reach the form and find its fields).
-    `on_start` gets the process (🛑 Halt All kills it). Blocking: call from a worker thread."""
+    `on_start` gets the process (🛑 Halt All kills it); `screen`, where the page's picture goes when
+    it is done (a script edited by hand may not take one). Blocking: call from a worker thread."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
+    if screen is not None:
+        screen.parent.mkdir(parents=True, exist_ok=True)
+        env["CATAPULT_SCREEN"] = str(screen)
     cmd = [sys.executable, str(script), "--profile", str(profile), *(["--press"] if press else []),
            *(["--headless"] if headless else []), *(["--check"] if check else [])]
     ensure_profile(profile)

@@ -1,0 +1,23 @@
+/* 🛠 Workshop: its runs and results on the design system's tokens only (design-system/tokens.css). */
+.ws-card { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.ws-runs { list-style: none; margin: 0; padding: 0; }
+.ws-run { display: flex; gap: var(--space-2); align-items: baseline; padding: var(--space-1) var(--space-1); cursor: pointer;
+  white-space: nowrap; overflow: hidden; }
+.ws-run:hover { background: var(--panel-raised); }
+.ws-run.is-selected { background: var(--selection); }
+.ws-run.is-static { cursor: default; }
+.ws-run.is-static:hover { background: none; }
+.ws-run__what { overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--ink-muted); }
+.ws-run__mark { flex: none; min-width: 1.5em; }
+.ws-run__code { flex: none; color: var(--ink-comment); }
+.ws-pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); }
+.ws-cut { max-height: 9em; overflow: hidden; }
+.ws-section { margin: var(--space-2) 0 var(--space-1); color: var(--ink-muted); }
+.ws-table { border-collapse: collapse; width: 100%; }
+.ws-table th, .ws-table td { text-align: left; padding: 2px var(--space-2); border-bottom: 1px solid var(--frame); }
+.ws-table th { color: var(--ink-muted); font-weight: 400; }
+.ws-fields { display: grid; grid-template-columns: max-content 1fr; gap: 2px var(--space-3); margin: 0; }
+.ws-fields dt { color: var(--ink-muted); }
+.ws-fields dd { margin: 0; overflow-wrap: anywhere; }
+.ws-link { cursor: pointer; text-decoration: underline dotted; }
+.ws-scroll { max-height: 60vh; overflow: auto; }

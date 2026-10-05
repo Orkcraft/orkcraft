@@ -7,6 +7,7 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
+from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import gate, masonry, pipes
 from orkcraft.screens.typed.generator_view import GeneratorView
@@ -52,10 +53,10 @@ def test_publish_of_splits_the_draft():
 @pytest.mark.asyncio
 async def test_a_draft_waits_in_loot_goes_back_and_is_posted_once_accepted(fake_repo: Path, monkeypatch):
     writer = Writer()
-    monkeypatch.setattr(PoolView, "git", FakeGit(commits=0))          # a ticket: nothing committed, the report is the work
-    monkeypatch.setattr(PoolView, "steward_runner", Steward())
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(writer))
-    monkeypatch.setattr(PoolView, "worktree_maker", staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/x")))
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit(commits=0))          # a ticket: nothing committed, the report is the work
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(writer))
+    monkeypatch.setattr(BarracksWorker, "worktree_maker", staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/x")))
     for spec in (CAMP, GATE):
         assert masonry.save_spec(fake_repo, spec) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -102,10 +103,10 @@ async def test_a_draft_waits_in_loot_goes_back_and_is_posted_once_accepted(fake_
 @pytest.mark.asyncio
 async def test_the_fire_approves_or_sends_back_without_a_loot(fake_repo: Path, monkeypatch):
     writer = Writer()
-    monkeypatch.setattr(PoolView, "git", FakeGit(commits=0))
-    monkeypatch.setattr(PoolView, "steward_runner", Steward())
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(writer))
-    monkeypatch.setattr(PoolView, "worktree_maker", staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/x")))
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit(commits=0))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(writer))
+    monkeypatch.setattr(BarracksWorker, "worktree_maker", staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/x")))
     assert masonry.save_spec(fake_repo, CAMP) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:

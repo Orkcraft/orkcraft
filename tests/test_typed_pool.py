@@ -9,6 +9,7 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
+from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import jobs, masonry, pipes
 from orkcraft.screens.typed.pool_view import PoolView
@@ -21,8 +22,8 @@ SPEC = {"id": "camp", "title": "Camp", "icon": "🏕", "orc": {"name": "Foreman"
 
 @pytest.fixture(autouse=True)
 def fake_git_and_steward(monkeypatch):
-    monkeypatch.setattr(PoolView, "git", FakeGit())
-    monkeypatch.setattr(PoolView, "steward_runner", Steward())
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit())
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
 
 
 def task(title: str, text: str = "", key: str = "") -> bk.PoolTask:
@@ -111,9 +112,9 @@ async def _until(pilot, cond, n=100):
 @pytest.mark.asyncio
 async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo: Path, monkeypatch):
     crew = Crew()
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(crew))
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(crew))
     made = []
-    monkeypatch.setattr(PoolView, "worktree_maker",
+    monkeypatch.setattr(BarracksWorker, "worktree_maker",
                         staticmethod(lambda repo, bid, orc: made.append(orc) or (fake_repo, f"pool/{bid}/{orc.lower()}")))
     assert masonry.save_spec(fake_repo, SPEC) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -171,8 +172,8 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
 async def test_new_task_is_written_to_the_barracks_directly(fake_repo: Path, monkeypatch):
     from orkcraft.screens.dialogs import TextPrompt
     crew = Crew()
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(crew))
-    monkeypatch.setattr(PoolView, "worktree_maker",
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(crew))
+    monkeypatch.setattr(BarracksWorker, "worktree_maker",
                         staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/{orc.lower()}")))
     assert masonry.save_spec(fake_repo, SPEC) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
