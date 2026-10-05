@@ -188,8 +188,9 @@ orkcraft/gui/
   launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
   (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
   info.py     what the console says of a selected building or ork: Info, listens, the Inventory
-  console.py  the console's acts (👍 / 👎, goal, pin, revert, recruit, orders, model, roads) and its
-              jobs: the Recruiter, the Council, the steward's watch and a redesign, in threads
+  console.py  the console's acts (👍 / 👎, goal, pin, revert, recruit, orders, model, roads), made of
+              parts: jobs.py (a model call in a thread, taken or let go), keeper.py (lake.open and
+              keeper.ask), recruiter.py (the Recruiter, then the Council), steward.py (its watch, a redesign)
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
