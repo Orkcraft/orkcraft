@@ -17,3 +17,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Claude Code agents' worktrees (parallel work on this repo)
+.claude/worktrees/
