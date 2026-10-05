@@ -49,7 +49,25 @@ function plannedPaths(rects, roads) {
   return planned.paths;
 }
 
-function Roads({ roads, rects }) {
+// A building's card may colour the start of its roads out (`card.tints`: road key → a design-system mark,
+// `--mark-<name>`): the Signpost's counters wear the colours of their roads.
+const MARKS = new Set(["blue", "green", "purple", "yellow", "red"]);
+const TINT_PX = 28;
+
+function start(points) {
+  const out = [points[0]];
+  let left = TINT_PX;
+  for (let i = 1; i < points.length && left > 0; i++) {
+    const [ax, ay] = points[i - 1], [bx, by] = points[i];
+    const d = Math.hypot(bx - ax, by - ay);
+    const k = d > left ? left / d : 1;
+    out.push([ax + (bx - ax) * k, ay + (by - ay) * k]);
+    left -= d;
+  }
+  return out.map((q) => q.join(",")).join(" ");
+}
+
+function Roads({ roads, rects, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const active = opened.value.active;
@@ -61,6 +79,7 @@ function Roads({ roads, rects }) {
       const pts = p.points.map((q) => q.join(",")).join(" ");
       return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": sel || pickedRoad.value === p.id })}>
         <polyline points=${pts} />
+        ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
         <polyline points=${pts} class="gui-road__hit" onClick=${() => { pickedRoad.value = p.id; }} />
         <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
         ${sel && html`<text x=${mid[0] + 6} y=${mid[1] - 6} class="ok-font-status">${road.label}</text>`}
@@ -112,7 +131,8 @@ export function Town({ buildings, roads }) {
   const shown = new Set(buildings.map((b) => b.id));
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
-      <${Roads} roads=${roads.filter((r) => shown.has(r.from) && shown.has(r.to))} rects=${rects} />
+      <${Roads} roads=${roads.filter((r) => shown.has(r.from) && shown.has(r.to))} rects=${rects}
+        tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}

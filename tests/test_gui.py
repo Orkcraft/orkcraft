@@ -453,7 +453,7 @@ def test_a_type_registers_itself_by_its_files():
         if path.stem != "__init__":
             assert path.stem in found, f"gui/views/{path.name} without a worker"
             assert (srv.STATIC / "js" / "buildings" / f"{path.stem}.js").is_file(), f"no js/buildings/{path.stem}.js"
-    assert views.of("pit") is None and views.of("../server") is None
+    assert views.of("no_such_type") is None and views.of("../server") is None
 
 
 def test_the_look_is_office_until_asked_otherwise(fake_repo):
