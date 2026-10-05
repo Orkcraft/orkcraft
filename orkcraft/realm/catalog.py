@@ -590,6 +590,16 @@ TAKES: dict[str, str] = {
     "workshop": "anything (a file as its content): its script runs on the cart",
 }
 
+# What payload kinds a plain road may bring each type of TAKES: a road whose event carries another kind
+# is offered only with a handler. A type not here takes nothing by a plain road.
+_ANY = frozenset({TEXT, FILE, NODE})
+ACCEPTS: dict[str, frozenset[str]] = {
+    "signpost": _ANY, "horn": _ANY, "fields": _ANY, "barracks": _ANY, "loot": _ANY, "catapult": _ANY,
+    "workshop": _ANY, "lake": _ANY,
+    "mill": frozenset({TEXT, FILE}), "council": frozenset({TEXT, FILE}), "war_drum": frozenset({TEXT, FILE}),
+    "scrolls": frozenset({TEXT}), "forge": frozenset({TEXT}), "crag": frozenset({TEXT}),
+}
+
 # What a building does outside the camp on its own: the network, merges, money.
 EFFECTS: dict[str, str] = {
     "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma) over the network; "
@@ -765,6 +775,11 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
 def takes(type_id: str) -> str:
     """What a cart on a plain road makes a building of this type do; "" — nothing."""
     return TAKES.get(ALIASES.get(type_id, type_id), "")
+
+
+def accepts(spec: dict | None) -> frozenset[str]:
+    """The payload kinds a building of this spec takes by a plain road (none: only through a handler)."""
+    return ACCEPTS.get(type_of(spec).id, frozenset()) if spec else frozenset()
 
 
 def _param_text(param: Param) -> str:

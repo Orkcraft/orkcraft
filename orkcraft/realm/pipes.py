@@ -35,13 +35,30 @@ NO_SELECTION = frozenset({"scrying", "chat", "town_hall"})
 # Typed events: what each typed building sends besides the two generic events, set by the
 # app from the building specs (catalog.events_of). Their payload kind decides who can show them.
 TYPED: dict[str, tuple[str, ...]] = {}
+# What each typed building takes by a plain road (catalog.accepts): the payload kinds its worker acts on.
+ACCEPTS: dict[str, frozenset[str]] = {}
 
 
-def set_typed(building_id: str, events: list[str] | tuple[str, ...]) -> None:
+def set_typed(building_id: str, events: list[str] | tuple[str, ...], accepts: frozenset[str] = frozenset()) -> None:
     if events:
         TYPED[building_id] = tuple(events)
     else:
         TYPED.pop(building_id, None)
+    if accepts:
+        ACCEPTS[building_id] = frozenset(accepts)
+    else:
+        ACCEPTS.pop(building_id, None)
+
+
+def clear_typed() -> None:
+    """Forget every typed building (one town at a time)."""
+    TYPED.clear()
+    ACCEPTS.clear()
+
+
+def accepts(building_id: str) -> frozenset[str]:
+    """The payload kinds a building shows or acts on when a plain road brings them."""
+    return RECEIVES.get(building_id) or ACCEPTS.get(building_id, frozenset())
 
 
 def label(event: str) -> str:
@@ -170,7 +187,7 @@ def emits(building_id: str, has_garrison: bool = True) -> list[str]:
 
 def road_events(source_id: str, target_id: str, has_garrison: bool = True, handler: bool = False) -> list[str]:
     """Events a road source → target can carry: a handler takes anything the source emits;
-    a plain road only what the target can show (`modes_for`)."""
+    a plain road only what the target shows or acts on (`modes_for`)."""
     if source_id == target_id:
         return []
     if handler:
@@ -182,19 +199,19 @@ def modes_for(source_id: str, target_id: str) -> list[str]:
     """The implemented pipe modes that make sense from `source_id` to `target_id`."""
     if source_id == target_id:
         return []
-    accepts = RECEIVES.get(target_id, frozenset())
+    kinds = accepts(target_id)
     modes = []
     kind = selection_kind(source_id)
-    if kind is not None and kind in accepts:
+    if kind is not None and kind in kinds:
         modes.append(ON_SELECTION)
-    if TEXT in accepts:  # garrison sessions report when they end
+    if TEXT in kinds:  # garrison sessions report when they end
         modes.append(ON_TASK)
-    modes += [ev for ev in TYPED.get(source_id, ()) if _typed_kind(ev) in accepts]
+    modes += [ev for ev in TYPED.get(source_id, ()) if _typed_kind(ev) in kinds]
     return modes
 
 
 def can_receive(building_id: str) -> bool:
-    return bool(RECEIVES.get(building_id))
+    return bool(accepts(building_id))
 
 
 def read_file_payload(repo_root: Path, path: str | Path) -> tuple[str, str]:

@@ -53,7 +53,7 @@ def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Buildi
     building = custom_building(spec)
     town.buildings.append(building)
     town.custom_specs[spec["id"]] = spec
-    pipes.set_typed(spec["id"], catalog.events_of(spec))
+    pipes.set_typed(spec["id"], catalog.events_of(spec), catalog.accepts(spec))
     return building
 
 
@@ -125,7 +125,7 @@ def revert(town: Town, building_id: str) -> bool:
     if spec is not None:
         spec = catalog.migrate(spec)
         town.custom_specs[building_id] = spec
-        pipes.set_typed(building_id, catalog.events_of(spec))
+        pipes.set_typed(building_id, catalog.events_of(spec), catalog.accepts(spec))
         town.publish(bus.SPEC, building=building_id, spec=spec, refresh=True)
     town.publish(bus.ROADS)
     town.publish(bus.ROSTER)
