@@ -247,6 +247,10 @@ async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(
         await pilot.pause()
         lst = app.screen.query_one("#roster-list", OptionList)
         row = lambda: str(lst.get_option_at_index(0).prompt)
+        for _ in range(40):                       # the roster redraws on its own beat: a busy machine is slower
+            if row().startswith("[1] ❓ "):
+                break
+            await pilot.pause(0.05)
         assert row().startswith("[1] ❓ ")
         lst.focus()
         await pilot.press("1")
@@ -254,5 +258,8 @@ async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(
         assert isinstance(app.screen, AlertModal)
         assert app.focus_state.mode == "building" and app.focus_state.building_id == "town_hall"
         await pilot.press("escape")
-        await pilot.pause()
+        for _ in range(40):
+            await pilot.pause(0.05)
+            if "❓" not in row():
+                break
         assert "❓" not in row()
