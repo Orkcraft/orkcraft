@@ -9,7 +9,7 @@ from textual.screen import ModalScreen
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm.buildings import CORE, MIGRATED, Building
+from orkcraft.realm.buildings import CORE, CUSTOM, MIGRATED, Building
 from orkcraft.scroll import TownScroll
 
 
@@ -91,7 +91,7 @@ class PresetsModal(ModalScreen[str | None]):
         for category, title in (
             (CORE, "[ Core Presets ]"),
             (MIGRATED, "[ Migrated from mg-tui ]"),
-            ("custom", "[ Custom (Mason & Artisan) ]"),
+            (CUSTOM, "[ Your buildings ]"),            # every building raised from a spec
         ):
             lst.add_option(Option(Text(title, style="bold dim"), disabled=True))
             for b in self.buildings:
