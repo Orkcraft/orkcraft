@@ -97,12 +97,15 @@ class TownHallView(Container):
         incidents = feedback.incidents(repo, 5) if repo is not None else []
         board = feedback.scores(repo) if repo is not None else {}
         t.append("\n👍 / 👎 of the stewards", style="bold")
-        t.append(" — K / F on a building\n", style="dim")
+        t.append(" — K / F on a building, and what you do with their results\n", style="dim")
         for bid, row in sorted(board.items(), key=lambda kv: -kv[1].get("penalty", 0))[:5]:
-            t.append(f"{bid}: 👍 {row.get('likes', 0)} 👎 {row.get('dislikes', 0)} · penalty {row.get('penalty', 0):g}\n")
+            t.append(f"{bid}: 👍 {row.get('likes', 0)} 👎 {row.get('dislikes', 0)} · penalty {row.get('penalty', 0):g}")
+            quiet = {k: v for k, v in (row.get("by") or {}).items() if k != feedback.EXPLICIT}
+            t.append(f" · from your work {sum(quiet.values()):+.1f}\n" if quiet else "\n", style="dim")
         for inc in incidents:
             who = ", ".join(f"{b} −{p:g}" for b, p in inc.blamed.items())
-            t.append(f"⚠ {inc.ts[5:16].replace('T', ' ')} {inc.building} · {inc.kind} → {who}"
+            how = "" if inc.source == feedback.EXPLICIT else f" ({feedback.LABELS.get(inc.source, inc.source)})"
+            t.append(f"⚠ {inc.ts[5:16].replace('T', ' ')} {inc.building} · {inc.kind}{how} → {who}"
                      + (f" — {inc.note[:50]}" if inc.note else "") + "\n", style="yellow")
         if not board and not incidents:
             t.append("no ratings yet\n", style="dim")

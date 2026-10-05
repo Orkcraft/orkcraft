@@ -16,6 +16,7 @@ the file's line endings and mode.
 from __future__ import annotations
 
 import html.parser
+import json
 import os
 import re
 import tempfile
@@ -230,3 +231,87 @@ def save(draft: Draft, text: str, force: bool = False) -> str:
 def _taken(draft: Draft, text: str, status: str = "saved") -> str:
     draft.text = text
     return status
+
+
+# -- what the person's edit of an ork's file says ---------------------------------------------------
+
+ORIGINS_KEEP = 30
+ORIGIN_LIMIT = 200_000          # an ork's file longer than this is not kept to compare with
+_FRONT = re.compile(r"\A---\n(.*?)\n---", re.S)
+_RANK = ("same", "filled", "touched", "reshaped", "rewritten")
+
+
+def personal(text: str) -> bool:
+    """A personal node (`subtype: personal` in its front matter): its text never reaches a model."""
+    m = _FRONT.match(text or "")
+    return bool(m and re.search(r"^subtype:\s*personal\s*$", m.group(1), re.M))
+
+
+def committed_unchanged(path: str) -> bool:
+    """The file is tracked by git and has no change since the last commit (False outside git)."""
+    p = Path(path)
+    try:
+        tracked = subprocess.run(["git", "-C", str(p.parent), "ls-files", "--error-unmatch", "--", p.name],
+                                 capture_output=True, text=True, timeout=5)
+        if tracked.returncode != 0:
+            return False
+        dirty = subprocess.run(["git", "-C", str(p.parent), "status", "--porcelain", "--", p.name],
+                               capture_output=True, text=True, timeout=5)
+        return dirty.returncode == 0 and not dirty.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+class Origins:
+    """The files orks brought to this Lake, as they were when they came: `remember` on arrival,
+    `judge` after the person saved an edit. The comparison is always with the ork's own text, so
+    what the person wrote and later changed again is never held against the ork, and a file is
+    judged again only when the edit got worse for the ork (filled in → reshaped → rewritten)."""
+
+    def __init__(self, state_dir: Path) -> None:
+        self.path = Path(state_dir) / "origins.json"
+
+    def _load(self) -> dict[str, dict]:
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _save(self, data: dict[str, dict]) -> None:
+        keep = dict(sorted(data.items(), key=lambda kv: kv[1].get("at", ""))[-ORIGINS_KEEP:])
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps(keep, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
+
+    def remember(self, path: str, maker: str, at: str) -> None:
+        """An ork's file arrived: keep its text as the ork made it. A file git knows and nobody
+        changed since the last commit was not written by this ork — it only pointed at it (a
+        document of the operator's): it is not kept, so editing it says nothing about the ork."""
+        try:
+            text = read_for_edit(path).text
+        except ValueError:
+            return
+        if not maker or len(text) > ORIGIN_LIMIT or committed_unchanged(path):
+            return
+        data = self._load()
+        data[str(Path(path).resolve())] = {"maker": maker, "text": text, "judged": "same", "at": at}
+        self._save(data)
+
+    def judge(self, path: str, text: str):
+        """(maker, edits.Edit) when the person's text says something new about the ork's file, else None."""
+        from orkcraft.realm import edits
+        data = self._load()
+        key = str(Path(path).resolve())
+        row = data.get(key)
+        if not row:
+            return None
+        edit = edits.classify(row.get("text", ""), text)
+        was = row.get("judged", "same")
+        if _RANK.index(edit.kind) <= _RANK.index(was if was in _RANK else "same"):
+            return None
+        row["judged"] = edit.kind
+        self._save(data)
+        return row.get("maker", ""), edit

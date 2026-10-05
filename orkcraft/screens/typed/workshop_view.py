@@ -136,7 +136,7 @@ class WorkshopView(TypedView):
         may_ask = bool(prompt) and not self.simulated and not getattr(app, "gold_exhausted", lambda: False)()
         runner = type(self).steward_runner
         from orkcraft.realm import feedback
-        liked = [str(r.get("value", "")) for r in feedback.references(repo, self.building_id, 3)]
+        liked = [str(r.get("value", "")) for r in feedback.examples(repo, self.building_id, 3)]
         self._render_list()
 
         def work() -> None:

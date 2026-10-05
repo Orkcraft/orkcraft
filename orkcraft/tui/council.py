@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from orkcraft.realm import fastpath
+from orkcraft.realm import checkpoint, feedback, fastpath
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.council_review import CouncilProgress, CouncilVerdict
 from orkcraft.screens.feedback_modal import DislikeModal
@@ -14,6 +14,8 @@ from orkcraft.screens.town_hall import TownHallView
 
 from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
+
+RETRO_KINDS = ("auto-improve", "weekly")   # checkpoints a retro made: Z on one of them is a 👎 for it
 
 
 class CouncilMixin:
@@ -117,7 +119,18 @@ class CouncilMixin:
     def action_revert_building(self) -> None:
         bid = self.focus_state.building_id if self.focus_state.mode == "building" else None
         if bid:
-            self.revert_building(bid)
+            self.revert_by_you(bid)
+
+    def revert_by_you(self, building_id: str) -> bool:
+        """Z by the operator: the building goes back; when what is taken back was a retro's change
+        (`RETRO_KINDS`), that is what they think of it — a 👎 the next retro reads."""
+        last = checkpoint.history(self.repo_root, building_id, 1)
+        if not self.revert_building(building_id):
+            return False
+        if last and last[0].message.split("(", 1)[0] in RETRO_KINDS:
+            feedback.signal(self.repo_root, building_id, False, "revert", value=last[0].message,
+                            note=f"the operator took back: {last[0].message}")
+        return True
 
     def revert_building(self, building_id: str) -> bool:
         """Z: this building back to its previous checkpoint — its files, incoming roads and garrison;

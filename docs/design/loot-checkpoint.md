@@ -68,15 +68,19 @@ cart's trail that does (past a Signpost, a Mill or a Clan Fire on the way) and k
 source that cannot take work back (a War Tent task, a plain building) makes the cart *needs you*
 at once. `loot.rework` also goes down Loot's roads, for a Horn or a Herald.
 
-Keys in the list: `a` accept · `r` reject a file / send a held cart back (asks for the reason) ·
-`d` drop a cart · `u` restore a rejected file · `o` open the highlighted file in the system viewer.
-Quick actions: ✓ Accept all (held carts), ✓ Accept files.
+Keys in the list: `a` accept · `e` edit a text cart and accept your version · `r` reject a file /
+send a held cart back (a chip for the reason, and a note) · `d` drop a cart · `u` restore a
+rejected file · `o` open the highlighted file in the system viewer. Quick actions: ✓ Accept all
+(held carts), ✓ Accept files.
 
 **A cart's files.** Under each waiting cart the list shows the files its task committed on its
 branch: the latest hop that names a worktree and a branch (`gate.branch_of`), read there as
 `git diff --name-status <base>...<branch>` (`generated.Branch`; `origin/<base>` when the worktree
 has it). Highlighting one shows its diff, or its content when the diff is binary. The rules
 (`paths`, `max_files`) read these files as well as the worktree's uncommitted ones.
+
+Every decision is also feedback for the building that made the cart (the last hop of its trail):
+see `native-feedback.md`.
 
 ## 4. The trail — metadata that travels with a cart
 

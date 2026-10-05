@@ -9,7 +9,7 @@ from textual import events
 from orkcraft import scroll
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.console import ClanRoster, orc_key
-from orkcraft.realm import town_presets
+from orkcraft.realm import feedback, town_presets
 from orkcraft.widgets.road_layer import RoadClicked, split_key
 from orkcraft.screens.dialogs import Confirm
 from orkcraft.widgets.hud import Hud
@@ -66,6 +66,8 @@ class FocusMixin:
             self.focus_state = FocusState("neutral", None, None)
         elif mode == "building":
             self.focus_state = FocusState("building", building_id=building_id, orc_key=None)
+            if building_id and getattr(self, "repo_root", None) is not None:
+                feedback.viewed(self.repo_root, building_id)     # what waited there was seen
         elif mode == "unit":
             if not building_id and orc_key_val:
                 orc = next((o for o in self.roster.orcs if orc_key(o) == orc_key_val), None)

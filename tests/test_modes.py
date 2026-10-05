@@ -217,7 +217,8 @@ async def test_a_question_on_another_orkspace_lights_its_row_and_opens_on_arriva
         roster = Roster(orcs=[Orc("Smith", "resident", "resident", status="alert", building="loot", alert=new, ref="loot/smith"),
                               Orc("Grok", "resident", "resident", status="alert", building="loot", alert=old, ref="loot/grok")],
                         alerts=[new, old])
-        monkeypatch.setattr(app, "refresh_roster", lambda *a, **k: setattr(app, "roster", roster))
+        # the questions stay while the roster is rebuilt each second (the timer holds the real refresh_roster)
+        monkeypatch.setattr(app.muster, "rebuild", lambda *a, **k: setattr(app.muster, "roster", roster))
         app.alert_first_seen.update({"q-old": 1.0, "q-new": 2.0})                  # Grok has waited longer
         app.refresh_roster()
         app._console.refresh_state(app.focus_state, app.roster)

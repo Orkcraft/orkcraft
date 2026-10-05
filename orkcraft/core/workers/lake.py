@@ -6,17 +6,28 @@ arrived. A text file on disk is edited in place: `open()` reads it, `save(text)`
 over a change on disk unless `force`), `close()` saves and goes back to the view (`lake.saved`
 when something was written). The face draws `view` and `draft` and holds the editor; it may set
 `reader` so the worker reads what the editor holds right now.
+
+An ork's file (a cart with a trail) is kept as the ork made it (`lake.Origins`). When the person
+leaves the editor — or the face goes with it open (`flush`), or an edit was saved and left alone for
+`JUDGE_IDLE_S` (`autosave`) — their text is compared with the ork's (`realm/edits.py`): filling it in
+— a daily note the ork laid out and the person writes into — says nothing against the ork; fixing
+it, changing its format or rewriting it is a 👎 for the building that made it (`feedback.signal`),
+with the edit unless the file is personal. A file git tracks unchanged since the last commit was
+only pointed at, not written: it is not the ork's. A file that came and was never opened for a day
+counts as unused (`feedback.await_view`; selecting this Lake sees it).
 """
 from __future__ import annotations
 
 import threading
+import time
 from pathlib import Path
 from typing import Callable
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import jobs, lake
+from orkcraft.realm import feedback, jobs, lake
 
 AUTOSAVE_S = 5
+JUDGE_IDLE_S = 600     # an edit saved and left alone this long is judged, the editor still open
 TITLE = "🌊 Lake"
 
 
@@ -33,6 +44,8 @@ class LakeWorker(Worker):
         self.edit_note = ""                      # saved 12:03 · ● unsaved · ⚠ changed on disk
         self.conflict = False
         self.saved_any = False                   # something was written since the editor opened
+        self._typed = 0.0                        # when the editor's text last changed (monotonic)
+        self._judged = ""                        # the text last judged while the editor stayed open
 
     def start(self) -> None:
         url = str(self.config.get("url") or "")
@@ -42,6 +55,13 @@ class LakeWorker(Worker):
     # -- looking at things ----------------------------------------------------------------------
 
     def receive(self, payload, title: str, markdown: str) -> None:
+        made_by = feedback.maker(payload.trail)          # only what an ork worked on is the ork's
+        if made_by:
+            if payload.kind == "file":
+                path = Path(payload.value)
+                path = path if path.is_absolute() else self.repo_root / path
+                lake.Origins(self.state_dir).remember(str(path), made_by, jobs.now_iso())
+            feedback.await_view(self.repo_root, self.building_id, made_by, payload.title or title)
         self.show_value(payload.kind, payload.value, payload.title or title)
 
     def show_value(self, kind: str, value: str, title: str = "") -> None:
@@ -107,11 +127,14 @@ class LakeWorker(Worker):
             return False
         self.text = self.draft.text
         self.conflict, self.saved_any, self.edit_note = False, False, ""
+        self._typed, self._judged = time.monotonic(), ""
         self.changed()
         return True
 
     def typed(self, text: str) -> None:
         """The editor's text changed."""
+        if text != self.text:
+            self._typed = time.monotonic()
         self.text = text
         if self.draft is not None and text != self.draft.text and not self.conflict:
             self.edit_note = "● unsaved"
@@ -123,6 +146,8 @@ class LakeWorker(Worker):
             return True
         if text is None:
             text = self.current()
+        if text != self.text:
+            self._typed = time.monotonic()
         self.text = text
         if text == self.draft.text and not (force and self.conflict):
             return True
@@ -147,6 +172,17 @@ class LakeWorker(Worker):
         self.changed()
         return True
 
+    def autosave(self, text: str | None = None) -> bool:
+        """The editor's timer: save; an edit saved and left alone for `JUDGE_IDLE_S` is as good as
+        left, so it is judged (never in the middle of typing, when a heading deleted to be retyped
+        would read as a new format)."""
+        if self.draft is None or self.conflict or not self.save(text):
+            return False
+        if self.saved_any and time.monotonic() - self._typed >= JUDGE_IDLE_S and self._judged != self.draft.text:
+            self._judged = self.draft.text
+            self.judge(self.draft.path, self.draft.text)
+        return True
+
     def close(self, reload: bool = True, text: str | None = None) -> bool:
         """Save and go back to the view (a conflict keeps the editor open, so nothing is lost).
         True when the editor closed."""
@@ -157,22 +193,37 @@ class LakeWorker(Worker):
                 self.toast(f"{self.file_name()} changed on disk: ctrl+s writes your text over it",
                            title=TITLE, severity="warning")
             return False
-        path, saved = self.draft.path, self.saved_any
+        path, saved, text = self.draft.path, self.saved_any, self.draft.text
         self.draft, self.conflict, self.edit_note = None, False, ""
         self.changed()
         if saved:
+            self.judge(path, text)
             self.emit("lake.saved", self.rel(path), f"edited: {self.file_name(path)}")
         if reload and self.view is not None and self.view.path == path:     # the view shows what is on disk now
             self.show_value("file", path, self.view.title)
         return True
 
     def flush(self) -> None:
-        """The face goes away: what the editor holds is written, quietly (never over a change on disk)."""
+        """The face goes away (the app closes in the editor): what the editor holds is written,
+        quietly (never over a change on disk), and judged."""
         if self.draft is not None and not self.conflict:
             try:
-                lake.save(self.draft, self.current())
+                if lake.save(self.draft, self.current()) == "saved" or self.saved_any:
+                    self.judge(self.draft.path, self.draft.text)
             except Exception:
                 pass
+
+    def judge(self, path: str, text: str) -> None:
+        """What the person's edit of an ork's file says about the ork (filling it in says nothing)."""
+        judged = lake.Origins(self.state_dir).judge(path, text)
+        if judged is None:
+            return
+        made_by, edit = judged
+        if edit.kind in ("touched", "reshaped", "rewritten"):
+            private = lake.personal(text)                # a personal note's text never reaches a model
+            feedback.signal(self.repo_root, made_by, False, f"lake.{edit.kind}", value=self.rel(path),
+                            note=f"{self.rel(path)}: {edit.summary}", tag="format" if edit.kind == "reshaped" else "",
+                            edit="" if private else edit.diff)
 
     def file_name(self, path: str = "") -> str:
         return Path(path or (self.draft.path if self.draft else "")).name

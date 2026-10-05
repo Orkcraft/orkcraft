@@ -11,7 +11,8 @@ which saves by itself every `autosave` seconds while there are changes and whene
 never overwritten by an autosave: the Lake says so, and `ctrl+s` writes your text over it. Leaving
 the editor after a save sends `lake.saved` with the file.
 
-The work — what is shown, the file open, saving it — is the building's worker's
+An edit of a file an ork wrote is feedback for that ork (filling it in says nothing). The work — what
+is shown, the file open, saving it, judging the edit — is the building's worker's
 (core/workers/lake.py). The view draws it and holds the editor, its autosave timer and the keys.
 """
 from __future__ import annotations
@@ -135,7 +136,7 @@ class LakeView(TypedView):
 
     def _autosave_tick(self) -> None:
         if self.editing and not self.conflict:
-            self.action_save()
+            self.worker.autosave(self._editor_text())
 
     def action_save(self, force: bool = False) -> bool:
         """Write what the editor holds. False when it could not (a conflict, an error)."""

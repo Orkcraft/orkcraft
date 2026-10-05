@@ -24,6 +24,7 @@ class PR:
     state: str            # OPEN | DRAFT | MERGED | CLOSED
     url: str = ""
     title: str = ""
+    labels: tuple[str, ...] = ()
 
     @property
     def badge(self) -> str:
@@ -95,7 +96,7 @@ def pull_requests(repo: Path, runner=subprocess.run) -> dict[str, PR] | None:
         return None
     try:
         out = runner(["gh", "pr", "list", "--state", "all", "--limit", "60",
-                      "--json", "number,state,headRefName,url,title,isDraft"],
+                      "--json", "number,state,headRefName,url,title,isDraft,labels"],
                      cwd=repo, capture_output=True, text=True, timeout=GIT_TIMEOUT_S)
         if out.returncode != 0:
             return None
@@ -109,7 +110,8 @@ def pull_requests(repo: Path, runner=subprocess.run) -> dict[str, PR] | None:
             continue
         if state == "OPEN" and r.get("isDraft"):
             state = "DRAFT"
-        prs[head] = PR(int(r.get("number", 0)), state, str(r.get("url", "")), str(r.get("title", "")))
+        labels = tuple(str((lb or {}).get("name", "")).lower() for lb in r.get("labels") or () if isinstance(lb, dict))
+        prs[head] = PR(int(r.get("number", 0)), state, str(r.get("url", "")), str(r.get("title", "")), labels)
     return prs
 
 

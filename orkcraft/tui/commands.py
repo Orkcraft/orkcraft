@@ -155,7 +155,7 @@ class CommandsMixin:
                     self._console.focus_roster()
             elif key == "Z":
                 if b_id:
-                    self.revert_building(b_id)
+                    self.revert_by_you(b_id)
             elif key == "K":
                 if b_id:
                     self.like_building(b_id)

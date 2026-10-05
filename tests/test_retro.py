@@ -68,7 +68,8 @@ def test_a_survey_answer_rates_the_very_result_it_showed(tmp_path: Path):
     feedback.record_output(tmp_path, "a", "mill.done", "today's brief")
     assert feedback.like(tmp_path, "a", s.as_output())["value"] == "the old brief"
     inc = feedback.dislike(tmp_path, None, "a", "logic", "survey", s.as_output())
-    assert inc.output == "the old brief" and feedback.scores(tmp_path)["a"] == {"likes": 1, "dislikes": 1, "penalty": 1.0}
+    assert inc.output == "the old brief" and feedback.scores(tmp_path)["a"] == {
+        "likes": 1, "dislikes": 1, "penalty": 1.0, "liked": 1.0, "disliked": 1.0, "by": {"explicit": 0.0}}
 
 
 @pytest.mark.asyncio

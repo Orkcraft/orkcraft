@@ -12,7 +12,7 @@ from textual import work
 from orkcraft.realm import checkpoint, fastpath, optimize, weekly
 from orkcraft.realm.orcs import Alert
 from orkcraft.screens import onboarding
-from orkcraft.realm import elders, evolution
+from orkcraft.realm import elders, evolution, feedback
 from orkcraft.screens.changes import ChangesModal
 from orkcraft import autonomy
 from orkcraft.screens.autonomy import AutonomyStep
@@ -100,6 +100,7 @@ class NightMixin:
         now = now or dt.datetime.now()
         if not self.night.probation_due():
             return
+        feedback.sweep_unseen(self.repo_root, now)      # results nobody opened for a day
         reverted = []
         for change in evolution.on_probation(self.repo_root):
             reason = evolution.verdict(self.repo_root, change, now)
@@ -145,6 +146,8 @@ class NightMixin:
                 change = next((c for c in evolution.load(self.repo_root) if c.id == picked), None)
                 if change is not None and change.status in ("probation", "kept", "stuck"):
                     if self.revert_change(change, "taken back by you", seen=True):
+                        feedback.signal(self.repo_root, change.building, False, "revert", value=change.summary,
+                                        note=f"the operator took back the orks' change: {change.summary}")
                         self.notify(f"{titles.get(change.building, change.building)}: {change.summary}",
                                     title="↩ Taken back")
 

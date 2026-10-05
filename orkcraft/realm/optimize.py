@@ -3,6 +3,8 @@ never applied on its own (operator decision 2026-10-02; goals: docs/design/retro
 
     the leader   in this order:
                    💎 quality buildings the operator 👎-d this week
+                   🪙 / ⚖️ suppliers whose results came back as broken inputs downstream (the cascade, a
+                   weight of ENOUGH this week), whatever they spend — worked on as ⚖️
                    🪙 / ⚖️ buildings by how much of the camp and of the limit they eat (realm/pressure.py:
                    the share of the last 24 h, or the pressure on the binding quota when one is read),
                    from MIN_SHARE of the camp up; 🪙 thrift when no 👍 since its last change (its last
@@ -97,9 +99,12 @@ class Candidate:
     goal: str = "balance"  # the goal the retro works towards now (a tight camp may lower 💎 to ⚖️)
     failures: int = 0      # 💎: failed runs this week
     rated: bool = True     # 💎: was it ever rated
+    fed: int = 0           # what it fed was sent back for broken inputs this week (the cascade, by weight)
 
     @property
     def reason(self) -> str:
+        if self.fed:
+            return f"what it fed others came back as broken inputs {self.fed}× this week — fix what it passes on"
         if self.goal == "quality":
             if self.dislikes:
                 return f"the operator disliked it {self.dislikes}× this week"
@@ -178,20 +183,35 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
         g = goals.get(bid) or "balance"
         return "balance" if g == "quality" and bid in heavy else g
 
-    def cand(bid: str, likes: int, dislikes: int, **extra) -> Candidate:
+    def cand(bid: str, likes: int, dislikes: int, aim: str = "", **extra) -> Candidate:
         use = camp.use(bid)
         return Candidate(bid, use.tokens, round(costs.get(bid, 0.0), 4), likes, dislikes, round(use.share, 4),
-                         pressure.describe(use, camp), goal(bid), **extra)
+                         pressure.describe(use, camp), aim or goal(bid), **extra)
 
-    def disliked(bid: str, since: str) -> int:
-        return sum(1 for i in incidents if i.building == bid and i.ts >= since)
+    def disliked(bid: str, since: str, quality: bool = False) -> int:
+        """👎 since `since`, counting what the operator did with its results by weight: a quiet
+        signal alone is not a dislike (`feedback.ENOUGH`). `quality`: "too expensive" is not a reason
+        to make it better and spend more."""
+        w = feedback.disliked(repo_root, bid, since, incidents, quality)
+        return int(w / feedback.ENOUGH + 1e-9)
 
     # 💎 the operator disliked it this week
     gems = [b for b, g in goals.items() if g == "quality" and goal(b) == "quality"]
     week_ts = week.isoformat(timespec="seconds")
-    hurt = sorted((b for b in gems if disliked(b, week_ts)), key=lambda b: disliked(b, week_ts), reverse=True)
+    hurt = sorted((b for b in gems if disliked(b, week_ts, True)), key=lambda b: disliked(b, week_ts, True),
+                  reverse=True)
     if hurt:
-        return cand(hurt[0], 0, disliked(hurt[0], week_ts))
+        return cand(hurt[0], 0, disliked(hurt[0], week_ts, True))
+    # 🪙 / ⚖️ a supplier whose results keep coming back as broken inputs downstream, whatever it
+    # spends: ⚖️ for this turn, as a shorter prompt alone would not fix what it passes on. Only one
+    # that called a model this week — a chain or a script has no prompt to change
+    spent = {str(r.get("building") or "") for r in rows if int(r.get("tokens") or 0) > 0}
+    fed = {b: feedback.fed_broken(repo_root, b, week_ts, incidents) for b in spent
+           if b and goal(b) != "quality" and (not goals or b in goals)}
+    fed = {b: w for b, w in fed.items() if w >= feedback.ENOUGH - 1e-9}
+    if fed:
+        bid = max(sorted(fed), key=lambda b: fed[b])
+        return cand(bid, 0, disliked(bid, week_ts), "balance", fed=int(fed[bid] / feedback.ENOUGH + 1e-9))
     # 🪙 / ⚖️ by the share and pressure
     for bid in sorted(camp.buildings, key=lambda b: (camp.buildings[b].weight, camp.buildings[b].tokens), reverse=True):
         if goal(bid) == "quality":
@@ -200,17 +220,29 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
             break
         mine = checkpoint.history(repo_root, bid, limit=1)
         changed = mine[0].at[:19] if mine else ""
-        likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
+        # only a 👍 or a merged pull request shields it: a cart accepted as it was says it is good
+        # enough, which is when spending less is safe to try ("keep what was liked")
+        likes = int(feedback.liked(repo_root, bid, changed, strong=True) / feedback.ENOUGH + 1e-9)
         dislikes = disliked(bid, today) if goal(bid) == "balance" else 0
         if likes and not dislikes:
             continue
         return cand(bid, likes, dislikes)
     # 💎 failing, or never rated
     for bid in sorted(gems, key=lambda b: failures.get(b, 0), reverse=True):
-        never = not feedback.references(repo_root, bid, 1) and not any(i.building == bid for i in incidents)
+        never = feedback.liked(repo_root, bid) + feedback.disliked(repo_root, bid, "", incidents) < feedback.ENOUGH - 1e-9
         if failures.get(bid) or never:
             return cand(bid, 0, 0, failures=failures.get(bid, 0), rated=not never)
     return None
+
+
+def _incident_line(i: feedback.Incident, building: str = "") -> str:
+    """An incident for the Council: how it was told (a 👎, a cart sent back, a file reshaped…), the
+    note, the output and, when the operator edited it, what they changed. One about a building
+    downstream says so: `building` fed it what was wrong."""
+    how = "" if i.source == feedback.EXPLICIT else f" [{i.source}{' · ' + i.tag if i.tag else ''}]"
+    via = f" (downstream, at {i.building}: this building fed it broken inputs)" if building and i.building != building else ""
+    line = f"- {i.kind}{how}{via}: {i.note or '(no note)'} · output: {i.output[:200]}"
+    return line + (f"\n  the operator's edit:\n  " + i.edit[:600].replace("\n", "\n  ") if i.edit else "")
 
 
 def run_logs(repo_root: Path, building: str, limit: int = 5) -> list[str]:
@@ -319,15 +351,14 @@ def check(data: dict, ps: list[Part], building: str, repo_root: Path, runtime: s
 def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.Runner = builders.claude_runner,
             runtime: str = "python", mocks: list[dict] | None = None, attempts: int = 2) -> Result:
     """One Council call (a second with its problems). Never raises."""
-    refs = feedback.references(repo_root, cand.building, 3)
-    incs = [i for i in feedback.incidents(repo_root, 20) if i.building == cand.building][:3]
+    refs = feedback.examples(repo_root, cand.building, 3)
+    incs = feedback.blaming(repo_root, cand.building, limit=200)[:3]
     base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, use=cand.use or "the most of the camp",
                          reason=cand.reason, goal=GOAL_TEXT.get(cand.goal, ""), parts=_parts_text(ps),
                          actions="\n".join(ACTION_TEXT[a] for a in cand.actions), names="|".join(cand.actions),
                          runs="\n".join(run_logs(repo_root, cand.building)) or "- none kept",
                          references="\n".join(f"- {r.get('value', '')[:400]}" for r in refs) or "- none yet",
-                         incidents="\n".join(f"- {i.kind}: {i.note or '(no note)'} · output: {i.output[:200]}"
-                                             for i in incs) or "- none")
+                         incidents="\n".join(_incident_line(i, cand.building) for i in incs) or "- none")
     result, total, problems = Result(), None, []
     for _ in range(attempts):
         prompt = base + ("\n\nYOUR LAST ANSWER WAS REJECTED:\n" + "\n".join(f"- {p}" for p in problems) if problems else "")
