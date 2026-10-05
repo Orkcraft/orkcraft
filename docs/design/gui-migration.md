@@ -229,21 +229,23 @@ orkcraft/gui/
 - The shell: HUD (Office words for the resources), the town with huts and orthogonal roads, toasts,
   Halt All in the status bar. The strip over the town's bottom is the TUI's console: the War Map
   (the orkspaces only, a small square at the left, its list scrolls) and, for the selected
-  building, its Info window and its Command Card window at the right.
+  building, its Info, its garrison (or a picked ork's Inventory) and its Command Card, laid out as
+  the TUI's console.
 
 - A building three ways, as in the TUI: its hut (the status lines its type keeps); selected (one
-  click: its Command Card, a square window half the window high, at the right, and its Info in the
-  room up to the War Map, as tall as the War Map); open (a click on the selected hut, or Open:
+  click: Info in the room after the War Map and its garrison beside it, both as tall as the War Map,
+  then its Command Card, a square window half the window high, at the right); open (a click on the selected hut, or Open:
   its whole window over the town). Esc steps back; a click on the bare town lets go.
 
-- The console: **Info** holds what every building and ork shares — 👍 / 👎 (what went wrong: the
-  inputs or its logic), the goal, Pin (a pinned hut is not dragged), Revert, Recruit (the Recruiter,
-  then the Council; or by hand), Redesign (its steward redraws the window), Demolish, why it is here,
-  what it spent, the week's runs, History, and who it listens to (each road's handler, removing it,
-  Listen). Beside it the garrison; an ork picked there shows its Info (orders and trigger, 👍 / 👎,
-  dismiss) and its 🎒 Inventory (model and tier per step, the tools of its latest runs). The
-  **Command Card** holds what only this building or ork does: open its window, answer its question,
-  its type's quick actions, deploy, halt, the steward's Watch now and its report. A model call runs
+- The console, as the TUI's: **Info** — the name with Good / Bad (what went wrong: the inputs or
+  its logic) / its goal / Demolish, why it is here (three lines), one line of what it spent and its
+  runs with History, one line of who it listens to with Listen (a road there picks it: its handler,
+  removing it). An ork's Info: Good / Bad / Dismiss, why it is here, its spend with History. The
+  **garrison** beside it; an ork picked there turns it into its 🎒 **Inventory** (model and tier per
+  step, a click changes them; the tools of its latest runs). The **Command Card**: the type's own
+  actions, Answer, Open, then the commands the TUI keeps on keys — Recruit (the Recruiter, then the
+  Council; or by hand), Pin (a pinned hut is not dragged), Revert, Redesign; for an ork Deploy,
+  Orders & trigger, Halt, the steward's Watch now and its report. A model call runs
   as a job (`jobs` in the snapshot) the page shows until the person takes it or lets it go.
 
 - The windows of 🌊 Lake (Markdown rendered, a diff side by side, a file edited in place with the
