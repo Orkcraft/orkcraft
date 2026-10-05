@@ -57,6 +57,7 @@ class Host:
         self.on_detail: Callable[[str], None] = lambda building_id: None
         self._telemetry_at = 0.0
         self._refreshed: dict[str, float] = {}     # building id → when its worker last looked again
+        self._attached: dict[str, Any] = {}        # building id → the worker its view's `attach` was given
         self.town.bus.subscribe(bus.ANY, self._event)
         self.commands: dict[str, Callable[[dict], Any]] = {
             "orkspace.select": self._select_orkspace,
@@ -89,7 +90,7 @@ class Host:
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
-                self.town.worker(bs.id)
+                self._attach(bs.id, self.town.worker(bs.id))
 
     # -- what the page sees --------------------------------------------------------------------
 
@@ -125,8 +126,19 @@ class Host:
             return None
         type_id = self.type_of(building_id)
         view, worker = views.of(type_id), self.town.worker(building_id)
+        self._attach(building_id, worker)
         data = view.detail(worker) if view is not None and worker is not None else None
         return {"id": building_id, "type": type_id, "ui": ui.current(bs, type_id), "data": data}
+
+    def _attach(self, building_id: str, worker) -> None:
+        """Once per worker: its view's `attach(worker, host)` hands it what only the face knows (a
+        Crag's `probe`: busy orks and quotas), as the TUI's views do when they mount."""
+        if worker is None or self._attached.get(building_id) is worker:
+            return
+        self._attached[building_id] = worker
+        attach = getattr(views.of(self.type_of(building_id)), "attach", None)
+        if attach is not None:
+            attach(worker, self)
 
     # -- the clocks ----------------------------------------------------------------------------
 
@@ -142,6 +154,7 @@ class Host:
             self.treasury.refresh()
         for bid, w in list(self.town.workers.items()):     # the workers that look again by themselves
             view = views.of(self.type_of(bid))
+            self._attach(bid, w)
             every = getattr(view, "REFRESH_S", 0)
             if every and now - self._refreshed.get(bid, -every) >= every:
                 self._refreshed[bid] = now
