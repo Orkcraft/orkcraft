@@ -5,7 +5,7 @@ import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online, say } from "./link.js";
 import { Layout } from "./layout.js";
-import { WarTent, HALL, deploy } from "./tent.js";
+import { HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useState } from "preact/hooks";
@@ -121,13 +121,6 @@ export function Question({ alert }) {
 }
 
 function Body({ b, t }) {
-  if (b.id === HALL) {
-    return html`<div class="ok-win__body gui-win__body is-view">
-      ${b.alert && html`<${Question} alert=${b.alert} />`}
-      <${WarTent} />
-      <${About} b=${b} t=${t} />
-    </div>`;
-  }
   const d = details.value[b.id];
   const view = d && d.data && viewOf(d.type);
   if (view) {

@@ -326,10 +326,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "Warder's alerts, today's spend, the lowest quota",
         "the hall's agents and the last audit, the sessions, the quotas",
         events=(_e("hall.audit_done", "audit done", TEXT, "an audit finished: its findings"),),
-        actions=(_a("hall.preset", "Preset", "📜", "build from a preset: what you need, name it, place it"),
-                 _a("hall.scratch", "New", "🛠", "build from scratch: the Builder asks, writes a script, tests it"),
+        actions=(_a("hall.build", "Build", "🏗", "build: from a preset, or new from scratch — one way in"),
                  _a("hall.audit", "Audit", "🔍", "audit the town: security, usability, spend")),
-        art="great_hall", orc="Chieftain"),
+        art="great_hall", orc="Warchief"),
     BuildingType(
         "workshop", "Workshop", "🛠️", "S",
         "a building made from scratch: the Builder's script does the work on every cart; a "
@@ -402,6 +401,7 @@ def migrate(spec: dict) -> dict:
                          **({"orders": cfg["skill"]} if cfg.get("skill") else {})}
     return out
 SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never offered in the wizard
+RETIRED_TYPES = frozenset({DEFAULT_TYPE})      # Custom (panes): an old scroll's still loads, none is built anew
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
 MAX_QUICK_ACTIONS = 2
 

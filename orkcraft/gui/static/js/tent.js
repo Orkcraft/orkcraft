@@ -1,6 +1,6 @@
-// The War Tent, in the Town Hall's window as in the TUI: the sessions of this run, new ones and
-// earlier ones to reopen, and the selected one's terminal. The processes are the host's
-// (core/sessions.py); closing the window leaves them running.
+// The War Tent, the Sessions tab of the Town Hall's window as in the TUI (js/buildings/town_hall.js):
+// the sessions of this run, new ones and earlier ones to reopen, and the selected one's terminal.
+// The processes are the host's (core/sessions.py); closing the window leaves them running.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -10,13 +10,15 @@ import { showBuilding } from "./windows.js";
 
 export const HALL = "town_hall";
 export const tentKey = signal(null);       // the session the War Tent shows
+export const hallTab = signal("hall");     // the Town Hall's tab open: hall | sessions | limits
 
 const HARNESSES = [["claude", "Claude"], ["codex", "Codex"], ["agy", "agy"]];
 const MARK = { claude: "✻", agy: "✦", codex: "⌬" };
 
-/** Show a session in the War Tent (it opens the Town Hall). */
+/** Show a session in the War Tent (it opens the Town Hall on its Sessions tab). */
 export function showSession(key) {
   tentKey.value = key;
+  hallTab.value = "sessions";
   showBuilding(HALL);
 }
 

@@ -62,7 +62,7 @@ async def test_clicking_window_enters_building_state(fake_repo: Path):
         roster = app.screen.query_one("#clan-roster", ClanRoster)
         roster_list = roster.query_one("#roster-list", OptionList)
         prompts = [str(roster_list.get_option_at_index(i).prompt) for i in range(roster_list.option_count)]
-        assert any("Chieftain" in p for p in prompts)
+        assert any("Warchief" in p for p in prompts)
         assert not any("Quartermaster" in p for p in prompts)
 
         # Y and L notify without raising
@@ -96,7 +96,7 @@ async def test_choosing_orc_opens_its_inventory_and_escape_steps_back(fake_repo:
         assert app.focus_state.orc_key is not None
 
         assert app.screen.query_one("#info-orc").display               # Info: the orc's name, about, runs
-        assert "Chieftain" in str(app.screen.query_one("#io-name", Static).render())
+        assert "Warchief" in str(app.screen.query_one("#io-name", Static).render())
         assert not app.screen.query_one("#io-dismiss").display           # a steward is never dismissed
         assert "INVENTORY" in str(roster.query_one("#roster-title", Static).render())
         assert roster_list.get_option_at_index(0).id == "inv:model"

@@ -23,6 +23,7 @@ class Building:
     role: str         # what the resident orc looks after
     view: str         # which view a face opens for it: the id of a built-in, or CUSTOM (drawn from `spec`)
     built_by_default: bool = True
+    was: tuple[str, ...] = ()   # the resident's old names: a scroll that has one renames it (its id stays)
     spec: dict | None = field(default=None, compare=False, hash=False)   # a custom building's spec
 
     @property
@@ -36,7 +37,8 @@ def registry() -> list[Building]:
     return [
         Building("loot", "Artifacts", "📦", CORE, "Quartermaster", "wiki and generated artifacts (./loot/)", "loot"),
         # T1105: the hall holds the live sessions (Chat of old) and the quotas (Limits of old).
-        Building(TOWN_HALL, "Town Hall", "🏰", CORE, "Chieftain", "builds, audits, sessions and quotas", TOWN_HALL),
+        Building(TOWN_HALL, "Town Hall", "🏰", CORE, "Warchief", "builds, audits, sessions and quotas", TOWN_HALL,
+                 was=("Chieftain",)),
         Building("systems", "Systems", "🏛️", CORE, "Engineer", "multi-agent pipelines", "systems",
                  built_by_default=False),
     ]
@@ -50,7 +52,8 @@ BUILTIN_SPECS: dict[str, dict] = {TOWN_HALL: {"id": TOWN_HALL, "type": "town_hal
 
 def presets(buildings: list[Building]) -> dict[str, dict[str, str]]:
     """The registry as plain data for the Town Scroll (`orkcraft.scroll`)."""
-    return {b.id: {"title": b.title, "icon": b.icon, "orc": b.orc, "role": b.role, "category": b.category}
+    return {b.id: {"title": b.title, "icon": b.icon, "orc": b.orc, "role": b.role, "category": b.category,
+                   **({"was": list(b.was)} if b.was else {})}
             for b in buildings}
 
 

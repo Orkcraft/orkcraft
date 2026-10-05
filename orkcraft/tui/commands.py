@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import audit, fastpath, catalog, chronicles, pipes
+from orkcraft.realm import fastpath, catalog, chronicles
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL
 from orkcraft.realm.orcs import WORKER, RESIDENT
 from orkcraft.screens.settings_modal import SettingsModal
@@ -355,22 +355,14 @@ class CommandsMixin:
         self.notify(f"{act.glyph} {act.label}: arrives with the {t.title} view", title=f"{t.icon} {spec.get('title', building_id) if spec else building_id}")
 
     def run_audit(self) -> None:
-        """🔍 Audit: the hall's three agents look over the town (rules, no model call)."""
-        report = audit.run(self.repo_root, self.scroll, dict(self.custom_specs), self.snapshot.spent_usd,
-                           self.scroll.budget.gold_session_limit_usd)
-        try:
-            audit.save(self.repo_root, report)
-        except OSError:
-            pass
+        """🔍 Audit: the hall's three agents look over the town (rules, no model call) — the hall's
+        worker runs it (core/workers/town_hall.py), says it in a toast and sends it down its roads."""
+        report = self.core.worker(TOWN_HALL).audit()
         w = self.desktop.get_window(TOWN_HALL)
         view = next(iter(w.query(TownHallView)), None) if w is not None else None
         if view is not None:
             view.refresh_hall(report)
             view.show_tab("hall")
-        if scroll.has_outgoing(self.scroll, TOWN_HALL, "hall.audit_done"):
-            self.roads.emit(pipes.Payload(pipes.TEXT, report.markdown(), TOWN_HALL, "hall.audit_done", "Audit"))
-        serious = sum(f.severity != "info" for f in report.findings)
-        self.notify(f"{report.summary()}" + (f" — {serious} to look at" if serious else ""), title="🔍 Audit")
 
     def action_build_menu(self) -> None:
         """One way to build: raise a preset (built-in or saved) or describe a new one."""

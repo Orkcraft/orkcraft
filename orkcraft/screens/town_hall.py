@@ -1,6 +1,7 @@
 """🏰 Town Hall: the town's own building, bottom right on the map.
 
-Three tabs: the Hall (its agents, the Elders' night, the Council's reviews and the last audit),
+Three tabs: the Hall (its agents, the Elders' night, the Council's reviews and the last audit — the
+hall's worker keeps them, core/workers/town_hall.py, and this view draws them),
 Sessions (every live Claude / agy session — the War Tent of old, `#chat-view`) and Limits (the quotas —
 the Treasury of old, `#limits-view`). Its hut carries the two quick actions of the town: Build and
 Audit, and the Elders' lamp in the corner of its first row (`LAMPS`).
@@ -12,18 +13,16 @@ from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.widgets import Static, TabbedContent, TabPane
 
-from orkcraft.realm import audit, elders, fastpath, feedback, modes, optimize, town_presets, weekly
+from orkcraft.realm import audit, elders, modes, optimize, town_presets, weekly
+from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.chat_view import ChatView
 from orkcraft.screens.limits_view import LimitsView
-
-BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "lays out its panes and hut"))
 
 # The Elders' lamp on the hut (app.elders_state) and its word in the Hall.
 LAMPS = {"advice": ("📜", "advice waits for you — ! opens it"), "watch": ("🌙", "on watch: they read the questions"),
          "full": ("⏳", "tonight's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
          "off": ("", "off — autonomy is ⛓️ Ask me")}
 LAMPS_OFFICE = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
-ELDERS_SHOWN = 8
 
 
 class TownHallView(Container):
@@ -52,93 +51,88 @@ class TownHallView(Container):
 
     # -- the Hall tab -----------------------------------------------------------------------------
 
+    def worker(self):
+        """The hall's work is its worker's (core/workers/town_hall.py); this view draws it."""
+        core = getattr(self.app, "core", None)
+        return core.worker(TOWN_HALL) if core is not None else None
+
     def refresh_hall(self, report: audit.Report | None = None) -> None:
-        app = self.app
-        repo = getattr(app, "repo_root", None)
-        report = report or (audit.load(repo) if repo is not None else None)
+        w = self.worker()
+        if w is None:
+            return
+        h = w.hall(report)
         t = Text()
-        order = town_presets.pending_order(repo)
-        if order is not None:
+        if h["order"]:
             t.append("📜 A town waits to be raised\n", style="bold yellow")
-            t.append(f"“{order['prompt'][:300]}”\n", style="italic")
+            t.append(f"“{h['order']}”\n", style="italic")
             t.append("F10 → 📜 Town Builder plans it; you approve the plan before anything is raised\n\n",
                      style="dim")
         t.append("Agents of the hall\n", style="bold")
-        for icon, name, role in BUILDERS:
-            t.append(f"{icon} {name}", style="bold")
-            t.append(f" — {role}\n", style="dim")
-        for aid, icon, name, area in audit.AGENTS:
-            found = report.of(aid) if report else []
-            serious = [f for f in found if f.severity != "info"]
-            t.append(f"{icon} {name}", style="bold")
-            t.append(f" — {area}: ", style="dim")
-            if report is None:
+        for b in h["builders"]:
+            t.append(f"{b['icon']} {b['name']}", style="bold")
+            t.append(f" — {b['role']}\n", style="dim")
+        for a in h["agents"]:
+            t.append(f"{a['icon']} {a['name']}", style="bold")
+            t.append(f" — {a['area']}: ", style="dim")
+            if h["audit"] is None:
                 t.append("not audited yet\n", style="dim")
             else:
-                t.append(f"{len(found)} finding{'s' if len(found) != 1 else ''}", style="yellow" if serious else "")
-                t.append(f"{f', {len(serious)} to look at' if serious else ''}\n")
-        self._elders_section(t, repo)
+                n, serious = a["found"], a["serious"]
+                t.append(f"{n} finding{'s' if n != 1 else ''}", style="yellow" if serious else "")
+                t.append(f"{f', {serious} to look at' if serious else ''}\n")
+        self._elders_section(t, w.repo_root, h["elders"])
         t.append("\nThe Council's Fast Path", style="bold")
         t.append(" — every new building, agent and road from scratch\n", style="dim")
-        for _, icon, name, duty, _ in fastpath.ROLES:
-            t.append(f"{icon} {name}", style="bold")
-            t.append(f" — {duty}\n", style="dim")
-        reviews = fastpath.recent(repo, 6) if repo is not None else []
+        for r in h["fast_path"]:
+            t.append(f"{r['icon']} {r['name']}", style="bold")
+            t.append(f" — {r['duty']}\n", style="dim")
         marks = {"approved": ("✓", "green"), "overridden": ("?", "yellow"), "rejected": ("✗", "bold red"),
                  "cancelled": ("·", "dim")}
-        for r in reviews:
-            mark, style = marks.get(r.get("decision"), ("·", ""))
+        for r in h["reviews"]:
+            mark, style = marks.get(r["decision"], ("·", ""))
             t.append(f"{mark} ", style=style)
-            t.append(f"{str(r.get('ts', ''))[5:16].replace('T', ' ')} {r.get('kind')} {r.get('id')}")
-            first = next(iter(r.get("notes") or []), None)
-            t.append(f" — {first['text'][:60]}\n" if first else "\n", style="dim")
-        if not reviews:
+            t.append(f"{r['ts']} {r['kind']} {r['id']}")
+            t.append(f" — {r['note']}\n" if r["note"] else "\n", style="dim")
+        if not h["reviews"]:
             t.append("no reviews yet\n", style="dim")
-        incidents = feedback.incidents(repo, 5) if repo is not None else []
-        board = feedback.scores(repo) if repo is not None else {}
         t.append("\n👍 / 👎 of the stewards", style="bold")
         t.append(" — K / F on a building, and what you do with their results\n", style="dim")
-        for bid, row in sorted(board.items(), key=lambda kv: -kv[1].get("penalty", 0))[:5]:
-            t.append(f"{bid}: 👍 {row.get('likes', 0)} 👎 {row.get('dislikes', 0)} · penalty {row.get('penalty', 0):g}")
-            quiet = {k: v for k, v in (row.get("by") or {}).items() if k != feedback.EXPLICIT}
-            t.append(f" · from your work {sum(quiet.values()):+.1f}\n" if quiet else "\n", style="dim")
-        for inc in incidents:
-            who = ", ".join(f"{b} −{p:g}" for b, p in inc.blamed.items())
-            how = "" if inc.source == feedback.EXPLICIT else f" ({feedback.LABELS.get(inc.source, inc.source)})"
-            t.append(f"⚠ {inc.ts[5:16].replace('T', ' ')} {inc.building} · {inc.kind}{how} → {who}"
-                     + (f" — {inc.note[:50]}" if inc.note else "") + "\n", style="yellow")
-        if not board and not incidents:
+        for row in h["board"]:
+            t.append(f"{row['building']}: 👍 {row['likes']} 👎 {row['dislikes']} · penalty {row['penalty']:g}")
+            t.append(f" · from your work {row['quiet']:+.1f}\n" if row["quiet"] is not None else "\n", style="dim")
+        for inc in h["incidents"]:
+            how = f" ({inc['how']})" if inc["how"] else ""
+            t.append(f"⚠ {inc['ts']} {inc['building']} · {inc['kind']}{how} → {inc['blamed']}"
+                     + (f" — {inc['note']}" if inc["note"] else "") + "\n", style="yellow")
+        if not h["board"] and not h["incidents"]:
             t.append("no ratings yet\n", style="dim")
-        props = optimize.proposals(repo)[:4] if repo is not None else []
         t.append("\n🔧 Building retro", style="bold")
         t.append(" — F10 → Building retro\n", style="dim")
         marks = {"pending": ("⏳", "yellow"), "applied": ("✓", "green"), "dismissed": ("✗", "dim")}
-        for p in props:
-            mark, style = marks.get(p.status, ("·", ""))
-            t.append(f"{mark} {p.ts[5:16].replace('T', ' ')} {p.building} · {p.action} {p.target}", style=style)
-            t.append(f" — {p.why[:50]}\n", style="dim")
-        if not props:
+        for p in h["proposals"]:
+            mark, style = marks.get(p["status"], ("·", ""))
+            t.append(f"{mark} {p['ts']} {p['building']} · {p['action']} {p['target']}", style=style)
+            t.append(f" — {p['why']}\n", style="dim")
+        if not h["proposals"]:
             t.append("no proposals yet\n", style="dim")
-        wk = weekly.latest(repo) if repo is not None else None
+        wk = h["weekly"]
         t.append("🗓 Town retro: ", style="bold")
         if wk is None:
             t.append("not run yet — Sunday 05:00, or F10 → Town retro\n", style="dim")
         else:
-            todo = sum(1 for i in wk.items if i.applicable and i.n not in wk.applied)
-            t.append(f"{wk.ts[:10]} · {len(wk.items)} items, {len(wk.applied)} applied"
-                     f"{f', {todo} waiting' if todo else ''}\n")
+            waiting = f", {wk['waiting']} waiting" if wk["waiting"] else ""
+            t.append(f"{wk['ts'][:10]} · {wk['items']} items, {wk['applied']} applied{waiting}\n")
         t.append("\n")
-        if report is None:
+        if h["audit"] is None:
             t.append("No audit yet — F10 → 🔍 Audit the camp.", style="dim")
         else:
-            t.append(f"Last audit {report.ts[:16].replace('T', ' ')}\n", style="bold")
-            for aid, icon, name, _ in audit.AGENTS:
-                for f in report.of(aid)[:6]:
-                    style = "bold red" if f.severity == "high" else "yellow" if f.severity == "warn" else ""
-                    t.append(f"{icon} {f.text}\n", style=style)
+            t.append(f"Last audit {h['audit']['ts'][:16].replace('T', ' ')}\n", style="bold")
+            for f in h["audit"]["findings"]:
+                style = "bold red" if f["severity"] == "high" else "yellow" if f["severity"] == "warn" else ""
+                t.append(f"{f['icon']} {f['text']}\n", style=style)
         self.query_one("#hall-body", Static).update(t)
 
-    def _elders_section(self, t: Text, repo) -> None:
+    def _elders_section(self, t: Text, repo, records: list[dict]) -> None:
         """🏛 What the Elders judged lately: answered (↪), advised (📜), left to you (·); ⚠ the Warder's note."""
         app = self.app
         state = app.elders_state() if hasattr(app, "elders_state") else "off"
@@ -148,22 +142,16 @@ class TownHallView(Container):
         if getattr(app, "_quiet_since", None) is not None:
             t.append(f" · {getattr(app, '_elders_count', 0)} of {per_night} tonight", style="dim")
         t.append("\n")
-        records = elders.recent(repo, ELDERS_SHOWN) if repo is not None else []
+        looks = {"answered": ("↪", "green", "answered"), "advised": ("📜", "yellow", "advised")}
         for r in records:
-            options, key = r.get("options") or {}, r.get("key")
-            if r.get("sent"):
-                mark, style, said = "↪", "green", f"answered [{key}] {options.get(key, '')}"
-            elif key is not None:
-                mark, style, said = "📜", "yellow", f"advised [{key}] {options.get(key, '')}"
-            else:
-                mark, style, said = "·", "dim", "left to you"
-            who = f"{r.get('who')} · " if r.get("who") else ""
-            t.append(f"{mark} {str(r.get('ts', ''))[5:16].replace('T', ' ')} {who}{str(r.get('question', ''))[:50]}",
-                     style=style)
+            mark, style, word = looks.get(r["how"], ("·", "dim", ""))
+            said = f"{word} [{r['key']}] {r['option']}" if word else "left to you"
+            who = f"{r['who']} · " if r["who"] else ""
+            t.append(f"{mark} {r['ts']} {who}{r['question']}", style=style)
             t.append(f" → {said}")
-            if r.get("why"):
-                t.append(f" — {str(r['why'])[:60]}", style="dim")
-            if r.get("warn"):
+            if r["why"]:
+                t.append(f" — {r['why']}", style="dim")
+            if r["warn"]:
                 t.append(" ⚠", style="bold yellow")
             t.append("\n")
         if not records:

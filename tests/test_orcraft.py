@@ -110,7 +110,7 @@ async def test_hud_base_and_badges(fake_repo: Path):
         loot = app.desktop.get_window("loot")
         assert "🧌 Quartermaster" in str(loot.border_title) and loot._badge_cells > 0
         names = {o.name for o in app.roster.orcs}
-        assert {"Quartermaster", "Chieftain", "Mason", "Artisan"} <= names   # systems (Engineer) starts demolished: gone at the first roster tick
+        assert {"Quartermaster", "Warchief", "Mason", "Artisan"} <= names   # systems (Engineer) starts demolished: gone at the first roster tick
 
 
 @pytest.mark.asyncio
