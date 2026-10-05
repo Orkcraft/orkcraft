@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import app as app_mod
+from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import town_builder, town_presets
 from orkcraft.screens import onboarding
@@ -204,7 +204,7 @@ async def _until(pilot, cond, n: int = 80) -> None:
 @pytest.mark.asyncio
 async def test_plan_review_and_raise(fake_repo: Path, monkeypatch):
     monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", _runner(GOOD))
+    monkeypatch.setattr(runners, "BUILD_RUNNER", _runner(GOOD))
     town_presets.save_order(fake_repo, "a town for my podcast")
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
@@ -223,7 +223,7 @@ async def test_plan_review_and_raise(fake_repo: Path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_later_keeps_the_order_burning(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", _runner(GOOD))
+    monkeypatch.setattr(runners, "BUILD_RUNNER", _runner(GOOD))
     town_presets.save_order(fake_repo, "a town for my podcast")
     town_presets.mark_order_seen(fake_repo)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -240,7 +240,7 @@ async def test_later_keeps_the_order_burning(fake_repo: Path, monkeypatch):
 @pytest.mark.asyncio
 async def test_ask_again_sends_the_note(fake_repo: Path, monkeypatch):
     run = _runner(GOOD)
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", run)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", run)
     town_presets.save_order(fake_repo, "a town for my podcast")
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:

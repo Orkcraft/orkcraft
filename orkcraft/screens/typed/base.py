@@ -7,6 +7,8 @@ deliveries along roads, the 📥 note, refresh — keeps working. On top it has:
     state_dir       `.orkcraft/<type>/<building id>/`, where it keeps what it learns
     emit(...)       sends one of its type's events down the roads that carry it
     receive(...)    what a delivery means to it (run, enqueue, …)
+    worker          its worker in the core (core/workers), for a type that has one: the view
+                    draws the worker's state (`redraw`, on every `WORKER`) and calls its acts
     quick_action    the hut buttons and [ / ]
     mini_status     the hut lines
 """
@@ -16,15 +18,19 @@ from pathlib import Path
 
 from textual.app import ComposeResult
 
+from orkcraft.core import workers
 from orkcraft.realm import catalog, masonry, pipes
 from orkcraft.screens.custom_view import CustomBuildingView
 
-STATE_ROOT = Path(".orkcraft")
+STATE_ROOT = workers.STATE_ROOT
 
 
 class TypedView(CustomBuildingView):
     TYPE = ""
     TAKES_REWORK = False      # a delivered cart is work it redoes (a Loot checkpoint may send one back)
+    # Which widget draws each pane of its UI contract (design/buildings/<type>.json): pane id → CSS
+    # selector inside the view. A type without a contract is one pane, `main`: the view itself.
+    UI_PANES: dict[str, str] = {}
 
     DEFAULT_CSS = """
     TypedView .typed-list { width: 2fr; height: 1fr; border: round $surface-lighten-1; }
@@ -60,16 +66,16 @@ class TypedView(CustomBuildingView):
 
     @property
     def state_dir(self) -> Path:
-        root = self._get_repo_root() / STATE_ROOT
-        here = root / self.TYPE / self.building_id
-        if not here.exists():                        # T1107: a building of an old type keeps what it learned
-            for old, new in catalog.ALIASES.items():
-                legacy = root / old / self.building_id
-                if new == self.TYPE and legacy.is_dir():
-                    here.parent.mkdir(parents=True, exist_ok=True)
-                    legacy.rename(here)
-                    break
-        return here
+        return workers.state_dir(self._get_repo_root(), self.TYPE, self.building_id)
+
+    @property
+    def worker(self):
+        """Its worker (core/workers): the building's state and acts; None for a type without one."""
+        try:
+            town = getattr(self.app, "core", None)
+        except Exception:                            # not mounted in an app
+            return None
+        return town.worker(self.building_id) if town is not None else None
 
     # -- the view -----------------------------------------------------------------------------------
 
@@ -81,9 +87,27 @@ class TypedView(CustomBuildingView):
 
     def on_mount(self) -> None:
         self.refresh_data()
+        self.apply_ui()
 
     def refresh_data(self) -> None:
         pass
+
+    def ui_document(self) -> dict:
+        """Its UI document: what the Town Scroll keeps for it, else its type's default."""
+        from orkcraft.design import ui
+        town = getattr(getattr(self, "app", None), "scroll", None)
+        return ui.current(town.building(self.building_id) if town is not None else None, self.btype.id)
+
+    def apply_ui(self, doc: dict | None = None) -> None:
+        """Lay the window out as its UI document says (docs/design-system.md)."""
+        from orkcraft.tui import ui_apply
+        try:
+            ui_apply.apply(self, doc or self.ui_document(), self.UI_PANES)
+        except Exception:      # a layout never takes a building down: it keeps the one it had
+            pass
+
+    def redraw(self) -> None:
+        """Its worker's state changed: draw it again (a view whose type has a worker overrides it)."""
 
     def restart(self) -> None:
         """After the weekly self-audit changed it: pick up the new settings."""

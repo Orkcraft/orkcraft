@@ -359,6 +359,7 @@ async def test_z_on_a_retro_s_change_is_a_dislike_and_on_your_own_is_not(fake_re
 
 @pytest.mark.asyncio
 async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake_repo: Path, monkeypatch):
+    from orkcraft.core.workers import lake as lake_worker
     from orkcraft.screens.typed import lake_view
     spec = {"id": "insight", "title": "Lake", "icon": "🌊", "orc": {"name": "Seer"}, "type": "lake"}
     assert masonry.save_spec(fake_repo, spec) == []
@@ -385,7 +386,7 @@ async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake
         view.query_one("#lake-edit").load_text(DAILY.replace("## Notes", "## Log"))
         view._autosave_tick()                                       # saved, but typed just now
         assert feedback.incidents(fake_repo) == []
-        monkeypatch.setattr(lake_view, "JUDGE_IDLE_S", 0)
+        monkeypatch.setattr(lake_worker, "JUDGE_IDLE_S", 0)
         view._autosave_tick()                                       # left alone long enough
         view._autosave_tick()                                       # … judged once
         [inc] = feedback.incidents(fake_repo)
@@ -400,7 +401,7 @@ async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake
         view.action_edit()
         assert view.draft is not None and view.draft.path.endswith("other.md")
         view.query_one("#lake-edit").load_text("something else\nentirely")
-        monkeypatch.setattr(lake_view, "JUDGE_IDLE_S", 10_000)
+        monkeypatch.setattr(lake_worker, "JUDGE_IDLE_S", 10_000)
     # the app closed with the editor open
     assert (fake_repo / "other.md").read_text() == "something else\nentirely"
     assert [(i.building, i.source) for i in feedback.incidents(fake_repo)] == [("scribe", "lake.rewritten"),

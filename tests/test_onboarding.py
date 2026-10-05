@@ -8,9 +8,9 @@ import pytest
 from textual.widgets import Button, Checkbox, Input, OptionList, Select, SelectionList
 
 from orkcraft import schedule, settings, tools
-from orkcraft import app as app_mod
+from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import intents, interview, town_builder, town_presets
+from orkcraft.realm import builders, intents, interview, town_builder, town_presets
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
 from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
@@ -37,7 +37,7 @@ def onboard(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def no_model(prompt, model=None):
         raise RuntimeError("no model in tests")
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", no_model)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", no_model)
 
 
 async def _settle(pilot, n: int = 6) -> None:
@@ -333,7 +333,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
     from orkcraft.screens.town_plan import TownPlanReview
     from tests.test_town_builder import GOOD, _runner
     run = _runner(GOOD)
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", run)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", run)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _xp(app, pilot, "new")
@@ -441,8 +441,8 @@ async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard)
 
 @pytest.mark.asyncio
 async def test_the_town_builder_never_calls_claude_code_when_it_is_off(fake_repo: Path, onboard, monkeypatch):
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", None)
-    monkeypatch.setattr(app_mod.builders, "claude_runner",
+    monkeypatch.setattr(runners, "BUILD_RUNNER", None)
+    monkeypatch.setattr(builders, "claude_runner",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("claude was called")))
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
     settings.save(settings.MachineSettings(onboarded=True))

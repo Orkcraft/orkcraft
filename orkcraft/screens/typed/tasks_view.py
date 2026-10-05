@@ -13,10 +13,11 @@ the title, the rest its text) · `c` its colour · `t` a note ⇄ a task · `s` 
 Each change — here or in the file by hand (looked at every 10 s) — sends `tasks.created` or
 `tasks.status_changed` for a task, `notes.created` for a note; `s` sends `tasks.sent`. The hut
 counts the lanes; * marks what is new since the building was last opened.
+
+The board's work — reading it, the acts, the events — is the building's worker's
+(core/workers/fields.py). The view draws the lanes and holds the keys and the dialogs.
 """
 from __future__ import annotations
-
-import json
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -25,20 +26,20 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Label, OptionList
 from textual.widgets.option_list import Option
 
+from orkcraft.core.workers.fields import TITLE, FieldsWorker
 from orkcraft.realm import tasklist
-from orkcraft.realm.tasklist import COLUMNS, LABELS, NOTE, TASK
+from orkcraft.realm.tasklist import NOTE, TASK
 from orkcraft.screens.dialogs import Confirm, TextBlock, TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
-SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
-MODES = ("board", "tasks", "notes")
 NOTE_LINES = 2                       # lines of a note's text shown on the board
 COLOR_STYLE = {"🟨": "on #3b3416", "🟩": "on #18301c", "🟦": "on #142a3d", "🟥": "on #3d1a1a", "🟪": "on #2e1d3d"}
 
 
 class TasksView(TypedView):
     TYPE = "fields"
+    UI_PANES = {"board": "#tasks-board"}
     BINDINGS = [Binding("n", "new", "New card"), Binding("less_than_sign", "move(-1)", "◀ Move"),
                 Binding("greater_than_sign", "move(1)", "Move ▶"), Binding("e", "open", "Open"),
                 Binding("enter", "open", "Open", show=False), Binding("c", "color", "Colour"),
@@ -54,44 +55,56 @@ class TasksView(TypedView):
 
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
-        self.cards: list[tasklist.Task] = []
-        self.lanes: list[tasklist.Lane] = []
-        self.error = ""
-        self._last: list[tasklist.Task] | None = None
         self._shown: tuple[str, ...] = ()
 
-    # -- what it is -----------------------------------------------------------------------------------
+    @property
+    def worker(self) -> FieldsWorker:
+        return super().worker
+
+    # -- the worker's board, as the view's own (tests and other views read these) -------------------
+
+    @property
+    def cards(self) -> list[tasklist.Task]:
+        return self.worker.cards
+
+    @property
+    def lanes(self) -> list[tasklist.Lane]:
+        return self.worker.lanes
+
+    @property
+    def error(self) -> str:
+        return self.worker.error
 
     @property
     def store(self) -> tasklist.TaskList:
-        return tasklist.TaskList(self._get_repo_root(), str(self.config.get("path", "")))
+        return self.worker.store
 
     @property
     def mode(self) -> str:
-        m = str(self.config.get("mode") or "board")
-        return m if m in MODES else "board"
+        return self.worker.mode
 
     @property
     def tasks(self) -> list[tasklist.Task]:
-        """The task cards (what the status events and other buildings count)."""
-        return [c for c in self.cards if c.kind == TASK]
+        return self.worker.tasks
 
     @property
     def notes(self) -> list[tasklist.Task]:
-        return [c for c in self.cards if c.kind == NOTE]
+        return self.worker.notes
 
     def visible_lanes(self) -> list[tasklist.Lane]:
-        lanes = list(self.lanes) or [tasklist.Lane(c, LABELS[c]) for c in COLUMNS]
-        for name in self.config.get("lanes") or []:                 # lanes of notes always there
-            lid = tasklist.slug(str(name))
-            if lid not in COLUMNS and not any(ln.id == lid for ln in lanes):
-                lanes.append(tasklist.Lane(lid, str(name)))
-        if self.mode == "tasks":
-            return [ln for ln in lanes if ln.kind == TASK]
-        if self.mode == "notes":
-            notes = [ln for ln in lanes if ln.kind == NOTE]
-            return notes or [tasklist.Lane(tasklist.NOTES, "Notes")]
-        return lanes
+        return self.worker.visible_lanes()
+
+    def card(self, card_id: str) -> tasklist.Task | None:
+        return self.worker.card(card_id)
+
+    def add(self, title: str, lane: str = "todo", body: str = "") -> tasklist.Task | None:
+        return self.worker.add(title, lane, body)
+
+    def receive(self, payload, title: str, markdown: str) -> None:
+        self.worker.receive(payload, title, markdown)
+
+    def mark_seen(self) -> None:
+        self.worker.mark_seen()
 
     # -- the view -------------------------------------------------------------------------------------
 
@@ -101,6 +114,13 @@ class TasksView(TypedView):
     def on_mount(self) -> None:
         self.refresh_data()
         self.set_interval(REFRESH_S, self.refresh_data)
+
+    def refresh_data(self) -> None:
+        """A look at the file (a hand edit is seen here); the worker redraws the board."""
+        self.worker.refresh()
+
+    def redraw(self) -> None:
+        self._render_list()
 
     def _build_lanes(self) -> bool:
         """One column per visible lane; rebuilt only when the lanes change (True: just rebuilt — the
@@ -126,50 +146,9 @@ class TasksView(TypedView):
         self._shown = ids
         return True
 
-    # -- seen (the hut's *) ---------------------------------------------------------------------------
-
-    def _seen(self) -> set[str]:
-        try:
-            return set(json.loads((self.state_dir / "seen.json").read_text(encoding="utf-8")))
-        except (OSError, ValueError, TypeError):
-            return set()
-
-    def mark_seen(self) -> None:
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-        (self.state_dir / "seen.json").write_text(json.dumps(sorted(t.id for t in self.cards)), encoding="utf-8")
-
     def on_show(self) -> None:
         if self.cards:
             self.mark_seen()
-
-    # -- data ---------------------------------------------------------------------------------------
-
-    def refresh_data(self) -> None:
-        try:
-            store = self.store
-            self.lanes, self.cards, self.error = store.lanes(), store.load(), ""
-        except (OSError, ValueError) as e:
-            self.lanes, self.cards, self.error = [], [], str(e)[:200]
-        for event_id, card, detail in tasklist.changes(self._last, self.cards):
-            self._announce(event_id, card, detail)
-        if self._last is None and not (self.state_dir / "seen.json").exists():
-            self.mark_seen()                     # the first look: nothing is new yet
-        self._last = list(self.cards)
-        self._render_list()
-
-    def _announce(self, event_id: str, card: tasklist.Task, detail: str) -> None:
-        if event_id == "notes.created":
-            self.emit(event_id, self._card_text(card), tasklist.plain(card.title), ref=self._ref(card))
-        else:
-            self.emit(event_id, card.id, f"{tasklist.plain(card.title)} · {detail}")
-
-    def _ref(self, card: tasklist.Task) -> str:
-        return f"{self.building_id}:{card.id}"
-
-    @staticmethod
-    def _card_text(card: tasklist.Task) -> str:
-        title = tasklist.plain(card.title)
-        return f"{title}\n\n{card.body}" if card.body else title
 
     def _render_list(self) -> None:
         if self._build_lanes():
@@ -178,7 +157,7 @@ class TasksView(TypedView):
         self._fill_lanes()
 
     def _fill_lanes(self) -> None:
-        seen = self._seen()
+        seen = self.worker.seen()
         for ln in self.visible_lanes():
             try:
                 lst, label = self.query_one(f"#tasks-{ln.id}", OptionList), self.query_one(f"#tasks-label-{ln.id}", Label)
@@ -239,52 +218,11 @@ class TasksView(TypedView):
                 return c, tid
         return None
 
-    def card(self, card_id: str) -> tasklist.Task | None:
-        return next((t for t in self.cards if t.id == card_id), None)
-
     # -- actions ------------------------------------------------------------------------------------
 
-    def add(self, title: str, lane: str = "todo", body: str = "") -> tasklist.Task | None:
-        try:
-            card = self.store.add(title, lane, body)
-        except (OSError, ValueError) as e:
-            self.app.notify(str(e), title="🌾 Task Fields", severity="error")
-            return None
-        if card.kind == TASK:
-            self._announce("tasks.created", card, LABELS[card.column])
-        else:
-            self._announce("notes.created", card, card.column)
-        self._sync_after_own_change()
-        return card
-
-    def receive(self, payload, title: str, markdown: str) -> None:
-        """A cart is a new card — a task in To Do (a note in `notes` mode): its title, else its first
-        line; the rest of what it carries is the card's text."""
-        lines = (markdown or str(payload.value or "")).splitlines()
-        first_i = next((i for i, ln in enumerate(lines) if ln.strip(" #*-")), None)
-        first = " ".join(lines[first_i].strip(" #*-").split()) if first_i is not None else ""
-        name = " ".join((payload.title or title or first).split())[:120]
-        if not name:
-            return
-        rest = lines[first_i + 1:] if first_i is not None and first == name else lines
-        lane = self.visible_lanes()[0].id if self.mode == "notes" else "todo"
-        self.add(name, lane, "\n".join(rest).strip()[:2000])
-
     def move(self, task_id: str, column: str) -> None:
-        card = self.card(task_id)
-        try:
-            before, after = self.store.move(task_id, column)
-        except (OSError, ValueError, KeyError) as e:
-            self.app.notify(str(e), title="🌾 Task Fields", severity="error")
-            return
-        if before != after and card is not None:
-            moved = tasklist.Task(card.id, card.title, after, card.body)
-            if moved.kind == TASK and card.kind == TASK:
-                self._announce("tasks.status_changed", moved, f"{LABELS[before]} → {LABELS[after]}")
-            elif moved.kind == TASK:
-                self._announce("tasks.created", moved, LABELS[after])
-        self._sync_after_own_change()
-        self._focus_card(column, task_id)
+        if self.worker.move(task_id, column):
+            self._focus_card(column, task_id)
 
     def _focus_card(self, lane: str, card_id: str) -> None:
         try:
@@ -296,13 +234,9 @@ class TasksView(TypedView):
             lst.focus()
             lst.highlighted = ids.index(card_id)
 
-    def _sync_after_own_change(self) -> None:
-        """Reload without re-sending what was just sent."""
-        store = self.store
-        self.lanes, self.cards = store.lanes(), store.load()
-        self._last = list(self.cards)
-        self.mark_seen()
-        self._render_list()
+    def _selected_card(self) -> tasklist.Task | None:
+        sel = self.selected()
+        return self.card(sel[1]) if sel else None
 
     def action_new(self) -> None:
         lane = self.focused_lane()
@@ -334,23 +268,14 @@ class TasksView(TypedView):
 
     def action_open(self) -> None:
         """The card in full: its first line is the title, the rest its text."""
-        sel = self.selected()
-        card = self.card(sel[1]) if sel else None
+        card = self._selected_card()
         if card is None:
             return
 
         def done(text: str | None) -> None:
-            if text is None:
-                return
-            lines = text.strip().splitlines()
-            if not lines:
-                return
-            try:
-                self.store.edit(card.id, lines[0], "\n".join(lines[1:]))
-            except (OSError, ValueError, KeyError) as e:
-                self.app.notify(str(e), title="🌾 Task Fields", severity="error")
-                return
-            self._sync_after_own_change()
+            lines = (text or "").strip().splitlines()
+            if lines:
+                self.worker.edit(card.id, lines[0], "\n".join(lines[1:]))
 
         self.app.push_screen(TextBlock(f"🌾 {'Task' if card.kind == TASK else 'Note'} · {tasklist.plain(card.title)}",
                                        f"{card.title}\n{card.body}".rstrip(),
@@ -360,100 +285,47 @@ class TasksView(TypedView):
         self.action_open()
 
     def action_color(self) -> None:
-        sel = self.selected()
-        card = self.card(sel[1]) if sel else None
-        if card is None:
-            return
-        self.store.edit(card.id, tasklist.next_color(card.title))
-        self._sync_after_own_change()
-        self._focus_card(card.column, card.id)
+        card = self._selected_card()
+        if card is not None and self.worker.color(card.id):
+            self._focus_card(card.column, card.id)
 
     def action_flip(self) -> None:
         """A note becomes a task in To Do; a task becomes a note (in the first lane of notes)."""
-        sel = self.selected()
-        card = self.card(sel[1]) if sel else None
-        if card is None:
-            return
-        if card.kind == NOTE:
-            self.move(card.id, "todo")
-            return
-        notes = [ln.id for ln in self.lanes if ln.kind == NOTE] or \
-                [tasklist.slug(str(n)) for n in self.config.get("lanes") or []] or [tasklist.NOTES]
-        self.move(card.id, notes[0])
+        card = self._selected_card()
+        lane = self.worker.flip(card.id) if card is not None else ""
+        if lane:
+            self._focus_card(lane, card.id)
 
     def action_send(self) -> None:
         """The card goes down the building's roads as it is (`tasks.sent`): a Barracks takes it as a task,
         a Clan Fire reviews it, a Scroll Dump files it."""
-        sel = self.selected()
-        card = self.card(sel[1]) if sel else None
+        card = self._selected_card()
         if card is None:
             return
-        sent = self.emit("tasks.sent", self._card_text(card), tasklist.plain(card.title), ref=self._ref(card))
+        sent = self.worker.send(card.id)
         self.app.notify(f"{tasklist.plain(card.title)[:60]}: " + ("sent down the roads" if sent else
                                                                   "no road takes tasks.sent from here"),
-                        title="🌾 Task Fields", severity="information" if sent else "warning")
+                        title=TITLE, severity="information" if sent else "warning")
 
     def action_delete(self) -> None:
-        sel = self.selected()
-        card = self.card(sel[1]) if sel else None
+        card = self._selected_card()
         if card is None:
             return
 
         def done(yes: bool | None) -> None:
             if yes:
-                self.store.remove(card.id)
-                self._sync_after_own_change()
+                self.worker.remove(card.id)
 
         self.app.push_screen(Confirm(f"🌾 Delete “{tasklist.plain(card.title)[:60]}”?",
                                      "It goes from the file too (git keeps it)."), done)
 
     # -- the hut ----------------------------------------------------------------------------------
 
-    def _note_line(self, seen: set[str]) -> str:
-        notes = self.notes
-        star = " *" if any(t.id not in seen for t in notes) else ""
-        return f"🗒 {len(notes)} note{'s' if len(notes) != 1 else ''}{star}"
-
     def mini_status(self) -> list[str]:
-        if self.error:
-            return [f"⚠ {self.error[:40]}"]
-        seen = self._seen()
-        if self.mode == "notes":
-            return [self._note_line(seen)] + [
-                f"{ln.label} {sum(1 for t in self.cards if t.column == ln.id)}" for ln in self.visible_lanes()[:3]]
-        lines = []
-        for col in COLUMNS:
-            rows = [t for t in self.cards if t.column == col]
-            star = " *" if any(t.id not in seen for t in rows) else ""
-            lines.append(f"{SHORT[col]} {len(rows)}{star}")
-        doing = [t for t in self.cards if t.column == "in_progress"]
-        if doing:
-            lines.append(f"⚒ {tasklist.plain(doing[0].title)}")
-        if self.mode == "board" and self.notes:
-            lines.append(self._note_line(seen))
-        return lines
+        return self.worker.mini_status()
 
     def hut_lines(self, widths: list[int]) -> list[str]:
-        if self.error:
-            return [f"⚠ {self.error[:40]}"]
-        seen, lines = self._seen(), []
-        if self.mode == "notes":
-            lines.append(self._note_line(seen))
-            for ln in self.visible_lanes()[:3]:
-                rows = [t for t in self.cards if t.column == ln.id]
-                lines.append(f"{ln.label[:10]}: {len(rows)}" + (" *" if any(t.id not in seen for t in rows) else ""))
-            last = self.notes[-1:] if self.notes else []
-            lines.append(f"✎ {tasklist.plain(last[0].title)}" if last else "no notes yet")
-            return lines
-        for col, tag in zip(COLUMNS, ("TODO", "PROG", "DONE")):
-            rows = [t for t in self.cards if t.column == col]
-            lines.append(f"[{tag}] {len(rows)} task{'s' if len(rows) != 1 else ''}"
-                         + (" *" if any(t.id not in seen for t in rows) else ""))
-        doing = [t for t in self.cards if t.column == "in_progress"]
-        lines.append(f"⚒ {tasklist.plain(doing[0].title)}" if doing else "nothing in progress")
-        if self.mode == "board" and self.notes:
-            lines.append(self._note_line(seen))
-        return lines
+        return self.worker.hut_lines(widths)
 
     def quick_action(self, action_id: str) -> bool:
         if action_id == "tasks.new":

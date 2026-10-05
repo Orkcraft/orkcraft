@@ -1,5 +1,5 @@
 """Huts: the `mini` block of a custom building, the roofs of a custom frame and the older ASCII art
-library. (What a camp building looks like on the map is in `realm/silhouettes.py`.)
+library. (What a camp building looks like on the map is in `tui/silhouettes.py`.)
 
 The town view shows every building as a hut and expands one at a time. This module is pure (no
 Textual): the art library, which art a built-in building wears, and the `mini` block of a custom

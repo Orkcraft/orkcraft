@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/VadimSidoryk/orkcraft/schemas/building-ui.v1.json",
+  "title": "orkcraft building UI document",
+  "description": "How a building's window is laid out: panes of components, split in rows and columns. Roles only: fonts, tones and components are names from the design system (docs/design-system.md), never raw colours, font names or code. Which panes a building has, and which components each may wear, is its type's contract (orkcraft/design/buildings/).",
+  "type": "object",
+  "required": ["version", "type", "split", "panes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": 1},
+    "type": {"type": "string", "pattern": "^[a-z0-9_]+$", "description": "The building type whose contract this follows."},
+    "split": {"$ref": "#/$defs/split"},
+    "panes": {"$ref": "#/$defs/items"},
+    "note": {"type": "string", "maxLength": 300, "description": "Why it looks like this, in a sentence (who changed it and why)."}
+  },
+  "$defs": {
+    "split": {"enum": ["column", "row"], "description": "column: one under another; row: side by side."},
+    "size": {
+      "description": "auto: as tall (or wide) as its content; 1-12: a share of the room left.",
+      "oneOf": [{"const": "auto"}, {"type": "integer", "minimum": 1, "maximum": 12}]
+    },
+    "items": {"type": "array", "minItems": 1, "maxItems": 12, "items": {"oneOf": [{"$ref": "#/$defs/pane"}, {"$ref": "#/$defs/group"}]}},
+    "pane": {
+      "type": "object",
+      "required": ["id", "component"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "A pane of the type's contract."},
+        "component": {"type": "string", "description": "One of the components the contract allows for this pane."},
+        "size": {"$ref": "#/$defs/size"},
+        "font": {"type": "string", "description": "A font role (tokens.json fonts)."},
+        "tone": {"type": "string", "description": "A colour role (tokens.json colors)."},
+        "title": {"type": "string", "maxLength": 40, "description": "The pane's heading on its frame; empty: none."},
+        "hidden": {"type": "boolean", "description": "Not shown (never for a required pane)."}
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": ["split", "panes"],
+      "additionalProperties": false,
+      "properties": {
+        "split": {"$ref": "#/$defs/split"},
+        "size": {"$ref": "#/$defs/size"},
+        "panes": {"$ref": "#/$defs/items"}
+      }
+    }
+  }
+}

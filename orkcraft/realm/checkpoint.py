@@ -33,7 +33,7 @@ GITIGNORE = "\n".join([
 ])
 TRAILER = "Orkcraft-Building"
 GIT_TIMEOUT_S = 30
-KINDS = ("create", "update", "road", "revert", "auto-improve", "weekly", "remove")
+KINDS = ("create", "update", "road", "revert", "auto-improve", "weekly", "remove", "ui")
 
 
 @dataclass

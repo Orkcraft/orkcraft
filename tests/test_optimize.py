@@ -111,13 +111,13 @@ def test_propose_retries_once_with_its_problems(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_apply_with_one_click_and_z_takes_it_back(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft import scroll as ts
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.proposal_modal import ProposalModal
 
     short = "Summarise the PR, flag risk, give a verdict."
-    monkeypatch.setattr(app_mod, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
+    monkeypatch.setattr(runners, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
         {"action": "shrink", "target": "orc:seer", "prompt": short, "why": "same job, fewer words"}), 0.003))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:

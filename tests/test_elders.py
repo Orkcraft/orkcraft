@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import app as app_mod, autonomy, schedule, settings
+from orkcraft.core import runners
+from orkcraft import autonomy, schedule, settings
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import elders
 from orkcraft.realm.orcs import Alert
@@ -162,7 +163,7 @@ async def _until(pilot, cond, n: int = 60) -> None:
 @pytest.mark.asyncio
 async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
-    monkeypatch.setattr(app_mod, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
+    monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
@@ -186,7 +187,7 @@ async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, qui
 @pytest.mark.asyncio
 async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=3, quiet=schedule.DEFAULT_QUIET))
-    monkeypatch.setattr(app_mod, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
+    monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
@@ -233,7 +234,7 @@ async def test_a_question_that_changed_meanwhile_is_not_answered(fake_repo: Path
 async def test_level_zero_judges_nothing(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=0, quiet=schedule.DEFAULT_QUIET))
     calls: list = []
-    monkeypatch.setattr(app_mod, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
+    monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -291,7 +292,7 @@ async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_r
     a = _alert()
     elders.log(fake_repo, a, elders.Decision("1", "runs the tests", "model", 0.001), who="Grunt")
     calls: list = []
-    monkeypatch.setattr(app_mod, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
+    monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()

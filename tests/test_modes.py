@@ -8,10 +8,12 @@ from rich.cells import cell_len
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import masonry, modes, silhouettes as sil
+from orkcraft.realm import masonry, modes
+from orkcraft.tui import silhouettes as sil
 from orkcraft.widgets import carts
 from orkcraft.widgets.hud import Hud
 from orkcraft.widgets.hut import ALERT_RED, FIRE, FIRE_GROUND, Hut
+from orkcraft.tui.text import strip_rich
 
 SIZE = (200, 56)
 ASKING = "🧌 Peon 🔨 🔥"
@@ -177,7 +179,7 @@ def test_emoji_go_and_the_text_stays():
     assert modes.strip_emoji("0 results · 👍 3 👎 1") == "0 results · +3 −1"                    # an icon in a name just goes
     t = Text("▶ [F1] ")
     t.append("🏡 My Day", style="bold red")
-    out = modes.strip_rich(t)
+    out = strip_rich(t)
     assert out.plain == "▶ [F1] My Day" and any("red" in str(sp.style) for sp in out.spans)
     assert modes.text("🌾 Fields") == "🌾 Fields" and modes.text("🌾 Fields", modes.HIDDEN) == "Fields"
 

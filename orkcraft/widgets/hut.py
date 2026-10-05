@@ -1,4 +1,4 @@
-"""Hut: a building collapsed on the town map, drawn as its own silhouette (realm/silhouettes.py).
+"""Hut: a building collapsed on the town map, drawn as its own silhouette (tui/silhouettes.py).
 
 Above the building stand its number, its one icon and its name on one line (two when long),
 then one blank row. The silhouette is the building itself: a frame with live status lines in it. Under it, up to
@@ -23,9 +23,10 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
-from orkcraft.realm import modes, silhouettes
+from orkcraft.realm import modes
+from orkcraft.tui import silhouettes
 from orkcraft.realm.orcs import ALERT_ICON
-from orkcraft.realm.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
+from orkcraft.tui.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
 QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire (hidden look: modes.QUESTION)

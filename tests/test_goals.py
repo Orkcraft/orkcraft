@@ -97,12 +97,12 @@ def test_the_council_hears_the_goal(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_the_goal_button_cycles_and_the_retro_enriches(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.proposal_modal import ProposalModal
 
     better = ORDERS + " Show the verdict first, then the risky files."
-    monkeypatch.setattr(app_mod, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
+    monkeypatch.setattr(runners, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
         {"action": "enrich", "target": "orc:seer", "prompt": better, "why": "clearer"}), 0.003))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:

@@ -13,6 +13,7 @@ from textual.widgets._footer import FooterKey
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import modes
+from orkcraft.tui.text import strip_rich
 
 
 class OfficeStatic(Static):
@@ -22,7 +23,7 @@ class OfficeStatic(Static):
 
     @staticmethod
     def _dressed(content):
-        return modes.strip_rich(content) if modes.hidden() else content
+        return strip_rich(content) if modes.hidden() else content
 
     def update(self, content="", *args, **kwargs) -> None:
         self._raw = content
@@ -35,8 +36,8 @@ class OfficeStatic(Static):
 class OfficeOptionList(OptionList):
     def add_options(self, items):
         if modes.hidden():
-            items = [Option(modes.strip_rich(o.prompt), id=o.id, disabled=o.disabled) if isinstance(o, Option)
-                     else modes.strip_rich(o) for o in items]
+            items = [Option(strip_rich(o.prompt), id=o.id, disabled=o.disabled) if isinstance(o, Option)
+                     else strip_rich(o) for o in items]
         return super().add_options(items)
 
 

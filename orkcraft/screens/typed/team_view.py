@@ -14,7 +14,6 @@ per member — written as empty templates when a member joins, so you know where
 """
 from __future__ import annotations
 
-import re
 import threading
 from pathlib import Path
 
@@ -34,14 +33,7 @@ VERDICT = {"approve": ("✓ approves", "green"), "changes": ("✎ changes", "yel
            "rework": ("↩ rework", "yellow"), "ask": ("🔥 asks you", "red")}
 OUTCOME = {"approved": "approved ✓", "rework": "sent back ↩", "budget": "stopped: budget", "asked": "🔥 waits for you",
            "error": "failed", "stopped": "stopped", "running": "reviewing…"}
-_COMMENT = re.compile(r"<!--.*?-->", re.S)
-
-
-def _simulated(harness: str, prompt: str, model: str) -> tuple[str, None]:
-    """The sandbox: everyone approves and the steward lets it go — no model is called."""
-    if prompt.startswith("You are the steward"):
-        return "DECISION: approve\n\n_(demo — simulated; agents do not run in the sandbox)_", None
-    return "APPROVE — _(demo — simulated)_", None
+_simulated = tm.simulated        # the sandbox: no model is called
 
 
 def _title_of(text: str) -> str:
@@ -97,11 +89,7 @@ class TeamView(TypedView):
     @staticmethod
     def _knowledge(path: Path) -> str:
         """A brief's text without its template comments; "" when nothing but headings was written."""
-        try:
-            text = _COMMENT.sub("", path.read_text(encoding="utf-8")).strip()
-        except OSError:
-            return ""
-        return text if any(line.strip() and not line.lstrip().startswith("#") for line in text.splitlines()) else ""
+        return tm.brief_text(path)
 
     def ensure_briefs(self) -> None:
         """Empty templates for the steward and every member, so the operator knows where to write."""

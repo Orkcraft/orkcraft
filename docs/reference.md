@@ -128,7 +128,7 @@ Roads and carts run between the huts.
 | panorama, 60 wide | 🌊 Lake of Insight: two panes, the diff and what it is |
 
 A view fills the slots with `hut_lines(widths)` (else its three `mini_status` lines); the shapes
-are in `realm/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
+are in `tui/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
 spread over the width — and keep the spot you drag them to.
 
 - Click a hut → it is selected: the hut lights up and the console below turns to that building,
@@ -519,12 +519,16 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   the reason's chip; "what came in was wrong" blames the hops before the maker along the cart's
   trail), past the rework limit or dropped (👎 0.5); in a 🌊 Lake an ork's file you fixed (0.2),
   reformatted or rewritten (0.5) — filling it in (a daily note you write into) says nothing, and a
-  personal note's text is never kept; a Barracks pull request merged 👍 1 or closed 👎 1; `Z` on a
+  personal note's text is never kept; a Barracks pull request merged 👍 1 or closed 👎 0.5 (a duplicate: nothing); `Z` on a
   retro's change 👎 1. The ork that wrote a cart is the one judged (a Clan Fire or a chain after it
   is not). A result left in a Lake or a Loot and not opened for a day counts as unused (0.1, for the
   Town retro), never as a dislike; nor does "too expensive" make a 💎 building richer. Only a 👍 or a
   merged pull request spares a building its thrift turn. The Town
   Hall shows the weight of what you did beside the buttons; incidents say how they were told.
+- **🎨 `D` on a building**: say what should change in its window; its steward rewrites the
+  building's UI document (panes, sizes, font and colour roles — never raw values), checked against
+  the type's contract. `Enter` keeps it as a checkpoint `ui(<id>)`, `Z` takes it back, and `default`
+  restores the type's own layout. See [docs/design-system.md](design-system.md).
 - **The Council's duties** also cover prompts (🛡 injections, leaks, secret files, "ignore previous
   instructions", writers asked to push or delete), the load on you (🎨 too many events, settings,
   roads, buildings on a canvas) and housekeeping (⛏ F10 → 🧹 rotates big logs, removes the state of

@@ -74,12 +74,12 @@ def test_a_survey_answer_rates_the_very_result_it_showed(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_the_town_retro_asks_first_then_shows_its_report(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.retro_survey import RetroSurveyModal
     from orkcraft.screens.weekly_modal import WeeklyReportModal
 
-    monkeypatch.setattr(app_mod, "WEEKLY_RUNNER", lambda p: (json.dumps({"summary": "fine", "items": []}), 0.1))
+    monkeypatch.setattr(runners, "WEEKLY_RUNNER", lambda p: (json.dumps({"summary": "fine", "items": []}), 0.1))
     _run(fake_repo, "town_hall", "a hall cart")
     metrics.record_run(fake_repo, "town_hall", "done", 0.1, 500)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)

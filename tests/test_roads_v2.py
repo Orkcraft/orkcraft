@@ -6,9 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import app as app_mod
+from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import fastpath, recruiter
+from orkcraft.screens.road_modal import RULE
 
 CHAIN = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",
          "chain": [{"op": "template", "md": "✅ {id} — {title}"}],
@@ -45,11 +46,11 @@ async def test_a_road_with_a_rule_goes_past_the_council(fake_repo: Path, monkeyp
     from orkcraft.screens.road_rule_modal import RoadRuleModal
 
     prompts = []
-    monkeypatch.setattr(app_mod, "RECRUIT_RUNNER", lambda p: (prompts.append(p) or json.dumps(CHAIN), 0.01))
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda p: (prompts.append(p) or json.dumps(CHAIN), 0.01))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(200, 50)) as pilot:
         await pilot.pause()
-        assert [h for _, h, _ in app._rule_choices("loot", "town_hall")] == [app_mod.RULE]
+        assert [h for _, h, _ in app._rule_choices("loot", "town_hall")] == [RULE]
         app.road_with_rule("town_hall", "loot")
         await pilot.pause()
         modal = app.screen
@@ -106,7 +107,7 @@ async def test_a_hired_script_is_reviewed_and_runs(fake_repo: Path, monkeypatch)
 
     script = dict(CHAIN, name="Lister", kind="script", chain=[], why="needs a loop",
                   script_source="import json, sys\nprint(len(json.load(sys.stdin)))\n")
-    monkeypatch.setattr(app_mod, "RECRUIT_RUNNER", lambda p: (json.dumps(script), 0.01))
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda p: (json.dumps(script), 0.01))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(200, 50)) as pilot:
         await pilot.pause()

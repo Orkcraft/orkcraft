@@ -10,7 +10,9 @@ only when they find a reason.
 
 Proposals: `demote` (an agent handler → a chain, replayed on its recorded runs before it can
 replace the agent), `set_run` (quiet period / restart), `filter` (a road's source filter),
-`new_road` (a road from another building), `note` (anything else, for the operator). Each is
+`new_road` (a road from another building), `ui` (a new layout of its window: a UI document,
+docs/design-system.md), `note` (anything else, for the operator). `redesign` asks for a `ui`
+proposal alone, from what the operator wants changed. Each is
 checked on a copy of the scroll; an invalid answer goes back to the model with the errors, at
 most `MAX_ATTEMPTS` rounds. The model sees only the metrics summary and the findings — never the
 graph, never the recorded inputs. The replay's ground truth is the agent's own past outputs, so
@@ -29,6 +31,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from orkcraft import scroll as ts
+from orkcraft.design import ui as design_ui
 from orkcraft.realm import builders, chains, chronicles, roads
 
 MAX_ATTEMPTS = 3
@@ -423,6 +426,16 @@ def apply_proposal(scroll: ts.TownScroll, building_id: str, p: Proposal | dict) 
         r = ts.subscribe(scroll, target, str(d.get("from")), str(d.get("event")), d.get("filter") or None,
                          handler=d.get("handler") or None)
         return f"new road {r.id}"
+    if p.type == "ui":
+        b = scroll.building(building_id)
+        doc = d.get("ui")
+        if b is None or not isinstance(doc, dict):
+            raise ValueError("a ui proposal carries the whole UI document in `ui`")
+        problems = design_ui.validate(doc, design_ui.contract(str(doc.get("type") or "")))
+        if problems:
+            raise ValueError("; ".join(problems[:6]))
+        b.ui = copy.deepcopy(doc)
+        return "a new layout"
     if p.type == "note":
         if not str(d.get("text") or "").strip():
             raise ValueError("a note needs text")
@@ -518,6 +531,75 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
             report.proposals, report.errors = known + proposals, []
             return report
         report.errors = errors or ["no JSON object in the answer"]
+        feedback = "\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix every problem:\n" + "\n".join(f"- {e}" for e in report.errors[:12])
+    return report
+
+
+REDESIGN = """You are the steward of the {title} building in orkcraft. The operator wants its window laid out
+differently. Its window is described by a UI document: panes of components in rows and columns, named
+by roles from the design system. Rewrite the document.
+
+WHAT THE OPERATOR WANTS:
+{request}
+
+THE BUILDING'S CONTRACT (the panes it has, the components each may wear):
+{contract}
+
+COMPONENTS: {components}
+FONT ROLES: {fonts}
+COLOUR ROLES (tone): {tones}
+
+THE RULES:
+{rules}
+
+ITS UI DOCUMENT NOW:
+{current}
+{feedback}
+Answer with ONE JSON object and nothing else: {{"proposals": [{{"type": "ui", "ui": <the whole new document>,
+"why": "<one sentence for the operator>"}}]}}"""
+
+
+def redesign(repo_root: Path, scroll: ts.TownScroll, building_id: str, type_id: str, request: str, *,
+             runner: builders.Runner = builders.claude_runner, budget_ok: bool = True,
+             max_attempts: int = MAX_ATTEMPTS) -> StewardReport:
+    """The operator's wish for the building's window → one `ui` proposal (a whole UI document, checked
+    against the type's contract; a rejected answer goes back with the problems). Never raises."""
+    report = StewardReport(building_id, Metrics(building_id))
+    b = scroll.building(building_id)
+    if b is None:
+        report.error = f"no building {building_id!r}"
+        return report
+    if not budget_ok:
+        report.error = "🪙 budget exhausted — the steward costs a model call"
+        return report
+    from orkcraft.design import tokens
+    contract = design_ui.contract(type_id)
+    current = design_ui.current(b, type_id)
+    report.escalated = True
+    feedback = ""
+    for _ in range(max_attempts):
+        prompt = REDESIGN.format(
+            title=b.title, request=request.strip()[:1500] or "make it easier to read", contract=contract.describe(),
+            components="; ".join(f"{k} ({v})" for k, v in design_ui.COMPONENTS.items()),
+            fonts=", ".join(tokens.FONTS), tones=", ".join(tokens.TONES), rules=design_ui.RULES,
+            current=json.dumps(current, ensure_ascii=False, indent=1), feedback=feedback)
+        report.attempts += 1
+        try:
+            text, cost = runner(prompt)
+        except RuntimeError as e:
+            report.error = str(e)
+            return report
+        if cost is not None:
+            report.cost_usd = (report.cost_usd or 0.0) + cost
+        answer = builders.extract_json(text)
+        proposals, errors = _check(answer, repo_root, scroll, building_id)
+        if proposals and all(p.type == "ui" for p in proposals):
+            wrong = [p for p in proposals if (p.data.get("ui") or {}).get("type") != type_id]
+            if not wrong:
+                report.proposals, report.errors = proposals[:1], []
+                return report
+            errors = [f"ui.type must be {type_id!r}"]
+        report.errors = errors or ['answer with {"proposals": [{"type": "ui", "ui": {...}, "why": "..."}]}']
         feedback = "\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix every problem:\n" + "\n".join(f"- {e}" for e in report.errors[:12])
     return report
 

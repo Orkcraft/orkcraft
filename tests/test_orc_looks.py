@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from textual.widgets import Input, OptionList
 
-from orkcraft import app as app_mod
+from orkcraft.core import runners
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import chronicles, looks, roads, steward
@@ -73,7 +73,7 @@ GOOD = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a templ
 
 @pytest.mark.asyncio
 async def test_r_asks_the_recruiter(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_mod, "RECRUIT_RUNNER", lambda prompt: (json.dumps(GOOD), 0.05))
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda prompt: (json.dumps(GOOD), 0.05))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
@@ -100,7 +100,7 @@ async def test_r_asks_the_recruiter(fake_repo: Path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_recruiter_failure_is_shown(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_mod, "RECRUIT_RUNNER", lambda prompt: ("no idea", None))
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda prompt: ("no idea", None))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
@@ -128,7 +128,7 @@ DEMOTE = {"proposals": [{"type": "demote", "orc": "seer", "why": "always id and 
 
 @pytest.mark.asyncio
 async def test_w_watches_and_applies_a_ready_demotion(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_mod, "STEWARD_RUNNER", lambda prompt: (json.dumps(DEMOTE), 0.05))
+    monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: (json.dumps(DEMOTE), 0.05))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line")
     ts.subscribe(app.scroll, "town_hall", "loot", "on_selection_change", handler="seer")
@@ -161,7 +161,7 @@ async def test_w_watches_and_applies_a_ready_demotion(fake_repo: Path, monkeypat
 @pytest.mark.asyncio
 async def test_scheduled_steward_runs_in_the_background(fake_repo: Path, monkeypatch):
     calls = []
-    monkeypatch.setattr(app_mod, "STEWARD_RUNNER", lambda prompt: calls.append(1) or (json.dumps(DEMOTE), 0.05))
+    monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: calls.append(1) or (json.dumps(DEMOTE), 0.05))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line")
     ts.subscribe(app.scroll, "town_hall", "loot", "on_selection_change", handler="seer")

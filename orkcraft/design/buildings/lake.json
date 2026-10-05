@@ -1,0 +1,17 @@
+{
+  "type": "lake",
+  "about": "🌊 Lake of Insight: what a road brought (a diff, Markdown, a page), and a file edited in place.",
+  "panes": {
+    "head":   {"about": "what is shown: its kind, its title, the file being edited", "components": ["status"], "required": true},
+    "view":   {"about": "the thing itself: Markdown rendered, a diff, plain text", "components": ["markdown", "diff", "text"], "required": true},
+    "editor": {"about": "the file being edited (shown only while editing, by the view itself)", "components": ["editor"], "dynamic": true}
+  },
+  "default": {
+    "version": 1, "type": "lake", "split": "column",
+    "panes": [
+      {"id": "head", "component": "status", "size": "auto", "font": "status"},
+      {"id": "view", "component": "markdown", "size": 1, "font": "body"},
+      {"id": "editor", "component": "editor", "size": 1, "font": "mono"}
+    ]
+  }
+}

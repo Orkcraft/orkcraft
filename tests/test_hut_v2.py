@@ -7,7 +7,8 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, huts, masonry, silhouettes as sil
+from orkcraft.realm import catalog, huts, masonry
+from orkcraft.tui import silhouettes as sil
 from orkcraft.widgets.hut import Hut, footprint
 from orkcraft.wm import geometry as geo
 

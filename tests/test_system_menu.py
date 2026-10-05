@@ -189,7 +189,7 @@ async def test_graceful_quit_no_running_terminal(fake_repo: Path, isolated_layou
 @pytest.mark.asyncio
 async def test_graceful_quit_with_running_terminal(fake_repo: Path, isolated_layout_file: Path, monkeypatch: pytest.MonkeyPatch):
     """6b. with running terminal, q shows QuitConfirm; n stays; q then y exits and terminal stops."""
-    monkeypatch.setattr("orkcraft.app.deploy_command", lambda harness, prompt: ["cat"])
+    monkeypatch.setattr("orkcraft.tui.sessions.deploy_command", lambda harness, prompt: ["cat"])
     monkeypatch.setattr("orkcraft.sources.sessions.deploy_command", lambda harness, prompt: ["cat"])
 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False, layout_file=isolated_layout_file)

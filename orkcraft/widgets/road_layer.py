@@ -11,22 +11,14 @@ from textual import events
 from textual.message import Message
 from textual.widgets import Static
 
+from orkcraft.scroll import road_key, split_key  # noqa: F401 (the canvas's keys are the scroll's)
+
 # Roads are dirt paths: shades of brown, lighter the more attention they get (faint → selected).
 ROAD_FAINT = "#5c4326"
 ROAD_BRIGHT = "#a0703c"
 ROAD_SELECTED = "#d9a066"
 EXIT_GLYPH = {"right": "▶", "left": "◀", "top": "▲", "bottom": "▼"}
 ENTRY_GLYPH = "●"
-
-
-def road_key(target_id: str, road_id: str) -> str:
-    """Road ids are unique per receiver; the canvas needs one key for all roads."""
-    return f"{target_id}:{road_id}"
-
-
-def split_key(key: str) -> tuple[str, str]:
-    target, _, road = key.partition(":")
-    return target, road
 
 
 class RoadClicked(Message):

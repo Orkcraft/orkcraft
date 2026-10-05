@@ -189,6 +189,7 @@ class BuildingSpec:
     chronicles: dict = field(default_factory=lambda: {"enabled": True})
     actions: list[dict] = field(default_factory=list)
     garrison: Garrison = field(default_factory=Garrison)
+    ui: dict | None = None            # its UI document (schemas/building-ui.v1.json); None: its type's default
 
     @property
     def preset_id(self) -> str:
@@ -325,6 +326,7 @@ class TownScroll:
                 actions=list(b.get("actions") or []),
                 garrison=Garrison(OrcSpec(**g["steward"]) if g.get("steward") else None,
                                   [OrcSpec(**m) for m in g.get("handlers", [])]),
+                ui=b.get("ui") if isinstance(b.get("ui"), dict) else None,
             ))
         orkspaces = [
             Orkspace(
@@ -882,6 +884,16 @@ def incoming(scroll: TownScroll, building_id: str) -> list[Road]:
 def outgoing(scroll: TownScroll, building_id: str) -> list[tuple[BuildingSpec, Road]]:
     """(target building, road) for every road leaving `building_id`."""
     return [(b, r) for b in scroll.buildings for r in b.roads if r.source == building_id]
+
+
+def road_key(target_id: str, road_id: str) -> str:
+    """Road ids are unique per receiver; a town needs one key for all roads: `<target id>:<road id>`."""
+    return f"{target_id}:{road_id}"
+
+
+def split_key(key: str) -> tuple[str, str]:
+    target, _, road = key.partition(":")
+    return target, road
 
 
 def find_road(scroll: TownScroll, road_id: str, target_id: str | None = None) -> tuple[BuildingSpec, Road] | None:
