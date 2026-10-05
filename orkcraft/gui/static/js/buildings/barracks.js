@@ -1,8 +1,8 @@
 // 🏕 Barracks: the orks and their tasks, three ways (docs/design/building-views.md §3). Closed: how many
 // work, the queue, the tally and the spend, the steward first when it asks. Command: the orks (a click
 // opens the ork's terminal), the queue's top, New task / Pause / Answer. Full: the tasks in lanes by
-// state with the chosen one beside them, a tab per ork with its terminal, the rules and settings. The
-// worker does it all (core/workers/barracks.py); documents open in Lake, the rules change through the
+// state with the chosen one beside them, a tab per ork with its terminal, the rules and settings, each a
+// pane of its UI document (design/buildings/barracks.json). The worker does it all (core/workers/barracks.py); documents open in Lake, the rules change through the
 // keeper.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
@@ -14,7 +14,7 @@ import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 import { showBuilding } from "../windows.js";
 
-const tabs = signal({});           // building id → "tasks" | "ork:<name>" | "rules"
+const tabs = signal({});           // building id → "ork:<name>": the ork whose terminal shows
 const chosen = signal({});         // building id → the task shown beside the lanes
 const dialogs = signal({});        // building id → {kind: "task" | "answer" | "rule", …}
 
@@ -30,7 +30,7 @@ function sessionOf(key) {
   return (town.value.sessions || []).find((s) => s.key === key) || null;
 }
 
-/** An ork's tab, over the whole town; its terminal opens when it is free (its session resumed). */
+/** An ork's tab in the orks' pane, over the whole town; its terminal opens when it is free (its session resumed). */
 export function openOrk(id, ork) {
   setIn(tabs, id, `ork:${ork.name}`);
   showBuilding(id);
@@ -210,15 +210,6 @@ function TaskDetail({ id, data }) {
   </div>`;
 }
 
-function Tasks({ id, data }) {
-  return html`<div class="gui-split is-row">
-    <div class="gui-pane" style="flex: 3 1 0">
-      <${Lanes} id=${id} data=${data} />
-    </div>
-    <div class="gui-pane" style="flex: 2 1 0"><${TaskDetail} id=${id} data=${data} /></div>
-  </div>`;
-}
-
 function OrkTab({ id, data, o }) {
   const s = sessionOf(o.terminal);
   const open = () => act(id, "terminal", { ork: o.name }).catch(() => {});
@@ -257,52 +248,58 @@ function Rules({ id, data }) {
   const settings = [["Tests", data.test_cmd || "none — the review reads the diff only"], ["Steward", `${data.steward} · spent ${data.steward_cost}`],
     ["Providers", data.providers.join(", ")], ["Orks at most", data.max], ["Budget", data.budget || "none of its own"],
     ["Reworks at most", data.max_reworks], ["Worktrees", say(data.worktrees ? "one per ork" : "off: they work in the project")]];
-  return html`<div class="gui-split is-row">
-    <div class="gui-pane" style="flex: 1 1 0"><div>
-      <section class="gui-section"><h3 class="ok-font-heading">Rules</h3>
-        <p class="ok-tone-muted">${data.keeper}, the steward, answers the orks' questions from them and reviews every task.</p>
-        ${data.rules.length ? html`<ul class="gui-rows">${data.rules.map((r, i) => html`<li key=${i}>${r.replace(/^-\s*/, "")}</li>`)}</ul>`
-          : html`<p class="ok-tone-muted">None yet — answers you give can become rules.</p>`}</section>
-      <${KeeperAsk} id=${id} keeper=${data.keeper} />
-      <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
-        <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
-    </div></div>
-    <div class="gui-pane" style="flex: 1 1 0"><div>
-      <section class="gui-section"><h3 class="ok-font-heading">Decisions</h3>
-        ${data.decisions.length ? html`<ul class="gui-rows">${data.decisions.map((d, i) => html`<li key=${i}>
-          <span class="ok-tone-muted">${d.at}</span> <span class="ok-tone-wait">${d.action}</span>${d.ork ? ` ${d.ork}` : ""}
-          <span class="ok-tone-muted"> · ${d.why}</span></li>`)}</ul>`
-          : html`<p class="ok-tone-muted">None yet — a road brings tasks here.</p>`}</section>
-    </div></div>
+  return html`<div>
+    <section class="gui-section"><h3 class="ok-font-heading">Rules</h3>
+      <p class="ok-tone-muted">${data.keeper}, the steward, answers the orks' questions from them and reviews every task.</p>
+      ${data.rules.length ? html`<ul class="gui-rows">${data.rules.map((r, i) => html`<li key=${i}>${r.replace(/^-\s*/, "")}</li>`)}</ul>`
+        : html`<p class="ok-tone-muted">None yet — answers you give can become rules.</p>`}</section>
+    <${KeeperAsk} id=${id} keeper=${data.keeper} />
+    <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
+      <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
+    <section class="gui-section"><h3 class="ok-font-heading">Decisions</h3>
+      ${data.decisions.length ? html`<ul class="gui-rows">${data.decisions.map((d, i) => html`<li key=${i}>
+        <span class="ok-tone-muted">${d.at}</span> <span class="ok-tone-wait">${d.action}</span>${d.ork ? ` ${d.ork}` : ""}
+        <span class="ok-tone-muted"> · ${d.why}</span></li>`)}</ul>`
+        : html`<p class="ok-tone-muted">None yet — a road brings tasks here.</p>`}</section>
   </div>`;
 }
 
-function Full({ id, data }) {
-  const tab = tabs.value[id] || "tasks";
-  const ork = tab.startsWith("ork:") && data.orks.find((o) => `ork:${o.name}` === tab);
-  const at = ork ? tab : tab === "rules" ? "rules" : "tasks";
+/** The head: the counters, the acts, the steward when it asks; the dialogs live here (the pane is always there). */
+function Head({ id, data }) {
   const queue = data.tasks.filter((t) => t.lane === "queue").length;
-  return html`<div class="gui-split">
-    <div class="gui-head">
-      <span class="gui-head__what">${data.paused && html`<span class="ok-tone-wait">paused · </span>`}
-        ${data.orks.length}/${data.max} orks · ${queue} queued · ${data.spent}${data.budget ? ` of ${data.budget}` : ""}</span>
-      ${data.asked.length > 0 && html`<span class="ok-tone-fire">${data.keeper} asks (${data.asked.length})</span>`}
-      <span class="gui-head__spacer"></span>
-      <${Acts} id=${id} data=${data} />
-      <button class="ok-act" onClick=${() => act(id, "hire").catch(() => {})}><span class="ok-act__label">Hire an ork</span></button>
-    </div>
-    <nav class="ok-tabs" role="tablist">
-      <button class=${cls("ok-tab", { "is-active": at === "tasks" })} onClick=${() => setIn(tabs, id, "tasks")}>Tasks</button>
-      ${data.orks.map((o) => html`<button key=${o.name} class=${cls("ok-tab", { "is-active": at === `ork:${o.name}` })}
-          onClick=${() => setIn(tabs, id, `ork:${o.name}`)}>${o.name}${o.asks ? " ?" : o.status === "working" ? " ·" : ""}</button>`)}
-      <button class=${cls("ok-tab", { "is-active": at === "rules" })} onClick=${() => setIn(tabs, id, "rules")}>Rules & settings</button>
-    </nav>
-    ${ork ? html`<${OrkTab} key=${ork.name} id=${id} data=${data} o=${ork} />`
-      : at === "rules" ? html`<${Rules} id=${id} data=${data} />` : html`<${Tasks} id=${id} data=${data} />`}
+  return html`<div class="gui-head">
+    <span class="gui-head__what">${data.paused && html`<span class="ok-tone-wait">paused · </span>`}
+      ${data.orks.length}/${data.max} orks · ${queue} queued · ${data.spent}${data.budget ? ` of ${data.budget}` : ""}</span>
+    ${data.asked.length > 0 && html`<span class="ok-tone-fire">${data.keeper} asks (${data.asked.length})</span>`}
+    <span class="gui-head__spacer"></span>
+    <${Acts} id=${id} data=${data} />
+    <button class="ok-act" onClick=${() => act(id, "hire").catch(() => {})}><span class="ok-act__label">Hire an ork</span></button>
     <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
 
+/** The orks' pane: a tab per ork, the chosen one's terminal under it (the one that asks comes first). */
+function Orks({ id, data }) {
+  if (!data.orks.length) return html`<p class="ok-tone-muted">No orks yet — a task hires one, or Hire an ork.</p>`;
+  const tab = tabs.value[id] || "";
+  const ork = data.orks.find((o) => `ork:${o.name}` === tab)
+    || data.orks.find((o) => o.asks) || data.orks.find((o) => o.status === "working") || data.orks[0];
+  return html`<div class="gui-split">
+    <nav class="ok-tabs" role="tablist">
+      ${data.orks.map((o) => html`<button key=${o.name} class=${cls("ok-tab", { "is-active": o === ork })}
+          onClick=${() => setIn(tabs, id, `ork:${o.name}`)}>${o.name}${o.asks ? " ?" : o.status === "working" ? " ·" : ""}</button>`)}
+    </nav>
+    <${OrkTab} key=${ork.name} id=${id} data=${data} o=${ork} />
+  </div>`;
+}
+
+/** The full window by its UI document (design/buildings/barracks.json). */
 export function panes(id, data) {
-  return { main: () => html`<${Full} id=${id} data=${data} />` };
+  return {
+    head: () => html`<${Head} id=${id} data=${data} />`,
+    lanes: () => html`<${Lanes} id=${id} data=${data} />`,
+    task: () => html`<${TaskDetail} id=${id} data=${data} />`,
+    orks: () => html`<${Orks} id=${id} data=${data} />`,
+    rules: () => html`<${Rules} id=${id} data=${data} />`,
+  };
 }

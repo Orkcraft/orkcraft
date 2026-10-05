@@ -116,11 +116,17 @@ def default(type_id: str) -> dict:
 
 def current(building: Any, type_id: str) -> dict:
     """The building's UI document: what its scroll entry keeps (`BuildingSpec.ui`), when it is still
-    one for this type, else the type's default."""
+    one for this type and still fits its contract (a type that got its panes after the document was
+    kept: the old `main` no longer does), else the type's default."""
     doc = getattr(building, "ui", None)
-    if isinstance(doc, dict) and doc.get("type") == type_id:
+    if isinstance(doc, dict) and doc.get("type") == type_id and _fits(json.dumps(doc, sort_keys=True), type_id):
         return copy.deepcopy(doc)
     return default(type_id)
+
+
+@functools.lru_cache(maxsize=256)
+def _fits(doc_json: str, type_id: str) -> bool:
+    return not validate(json.loads(doc_json), contract(type_id))
 
 
 # -- reading a document -------------------------------------------------------------------------

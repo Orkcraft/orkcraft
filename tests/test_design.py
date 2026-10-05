@@ -46,6 +46,43 @@ def test_every_type_has_a_contract_and_its_default_passes(type_id):
     assert c.required() and c.describe().startswith(f"type {type_id}")
 
 
+JS_BUILDINGS = Path(ui.__file__).resolve().parents[1] / "gui" / "static" / "js" / "buildings"
+
+
+@pytest.mark.parametrize("type_id", sorted(ui._contract_files()))
+def test_the_page_fills_every_pane_of_a_contract(type_id):
+    """`panes(id, data)` of the type's page returns a function for every pane its contract names, so a
+    pane the document lays out is never empty for want of a key (docs/design/building-views.md §4)."""
+    page = JS_BUILDINGS / f"{type_id}.js"
+    if not page.exists():
+        pytest.skip(f"{type_id} has no page of its own yet")
+    import re
+    src = page.read_text(encoding="utf-8")
+    at = src.index("export function panes(")
+    body = src[at:src.index("\n}\n", at)]
+    filled = set(re.findall(r"\b(\w+):\s*\(", body))
+    assert set(ui.contract(type_id).panes) <= filled, sorted(set(ui.contract(type_id).panes) - filled)
+
+
+def test_barracks_and_clan_fire_lay_out_their_parts_as_panes():
+    assert set(ui.contract("barracks").panes) == {"head", "lanes", "task", "orks", "rules"}
+    assert set(ui.contract("council").panes) == {"head", "members", "review", "document", "history"}
+    assert {leaf.pane["component"] for leaf in ui.leaves(ui.default("barracks"))} >= {"board", "terminal"}
+
+
+def test_a_document_kept_before_its_type_got_panes_wears_the_default():
+    """A building whose scroll kept the old one-pane `main` document (or any that no longer fits its
+    type's contract) gets its type's default; one that fits is kept."""
+    from types import SimpleNamespace
+    for type_id in ("barracks", "council"):
+        main = {"version": 1, "type": type_id, "split": "column",
+                "panes": [{"id": "main", "component": "view", "size": 1, "font": "body"}]}
+        assert ui.current(SimpleNamespace(ui=main), type_id) == ui.default(type_id)
+        kept = ui.default(type_id)
+        kept["panes"][0]["title"] = "Now"
+        assert ui.current(SimpleNamespace(ui=kept), type_id) == kept
+
+
 def test_the_validator_says_what_to_fix():
     c = ui.contract("lake")
     doc = ui.default("lake")
