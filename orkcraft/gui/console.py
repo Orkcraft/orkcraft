@@ -3,9 +3,9 @@ or ork (screens/console.py, tui/garrison.py, tui/council.py), as the host's comm
 
 Quick ones answer at once (👍 / 👎, the goal, pin, revert, recruit by hand, orders, model, dismiss,
 halt, the roads it listens to). The ones that call a model — the Recruiter, the Council's Fast Path,
-the steward's watch and a redesign — run in a thread as a *job*: the snapshot carries every job
-(`jobs`), the page shows it, and when it is ready the person takes it (`job.accept`) or lets it go
-(`job.drop`). Nothing here shows anything: it changes the town and says so with a toast.
+the steward's watch, a redesign and a request to the keeper — run in a thread as a *job*: the snapshot
+carries every job (`jobs`), the page shows it, and when it is ready the person takes it (`job.accept`)
+or lets it go (`job.drop`). Nothing here shows anything: it changes the town and says so with a toast.
 
     console = Console(host)
     host.commands.update(console.commands())
@@ -19,11 +19,11 @@ from typing import Any, Callable
 
 from orkcraft import scroll
 from orkcraft.core import buildings as core_buildings
-from orkcraft.core import bus
+from orkcraft.core import bus, keeper
 from orkcraft.core import roads as core_roads
 from orkcraft.core import runners
 from orkcraft.design import ui
-from orkcraft.gui import info
+from orkcraft.gui import info, markdown
 from orkcraft.realm import builders, catalog, chronicles, fastpath, modes, pipes, recruiter, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
@@ -76,7 +76,7 @@ class Console:
             "ork.report": self.report,
             "job.accept": self.accept,
             "job.drop": self.drop,
-            # Shared by every type (docs/design/building-views.md §4): stubs until tracks L and K land.
+            # Shared by every type (docs/design/building-views.md §4): Lake's is a stub until track L lands.
             "lake.open": self.lake_open,
             "keeper.ask": self.keeper_ask,
         }
@@ -196,8 +196,8 @@ class Console:
 
     def quick(self, args: dict) -> Any:
         """One of the type's quick actions (the Command Card): its view's act of the same id
-        (gui/views/<type>.py `ACTS`); until a type has one the person is told so, never left with a
-        silent button."""
+        (gui/views/<type>.py `ACTS`), else its worker's `quick_action`; until a type has either the
+        person is told so, never left with a silent button."""
         bs = self._spec(args)
         t = catalog.type_of(self.town.spec_of(bs.id))
         act = t.action(str(args.get("action") or ""))
@@ -211,6 +211,9 @@ class Console:
                 return fn(worker, {})
             except views.ActError as e:
                 raise ConsoleError(str(e)) from None
+        quick = getattr(worker, "quick_action", None)      # a worker that does it
+        if quick is not None and quick(act.id):
+            return True
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
         return False
 
@@ -230,10 +233,49 @@ class Console:
         worker.show_value(kind, value, self._text(args, "title", 200))
         return lake.id
 
-    def keeper_ask(self, args: dict) -> None:
-        """A building's keeper asked in plain words: arrives with the keeper (track K)."""
-        self._spec(args)
-        raise ConsoleError("The keeper takes requests soon — for now Redesign and the orks' orders")
+    def keeper_ask(self, args: dict) -> str:
+        """A building's keeper asked in plain words (core/keeper.py): its proposal comes back as a job — the
+        change line by line and its answer (on a Lake selection, about it) — and Apply takes it."""
+        bs = self._spec(args)
+        request = self._text(args, "request")
+        if not request:
+            raise ConsoleError("Say what the building should do")
+        spec = self.town.custom_specs.get(bs.id)
+        if spec is None:
+            raise ConsoleError(f"{bs.title} keeps no rules or settings for a keeper")
+        if self.town.demo and runners.KEEPER_RUNNER is None:
+            raise ConsoleError("The demo's keeper calls no model — run without --demo to ask it")
+        self._budget()
+        repo, spec, snapshot = self.town.repo_root, copy.deepcopy(spec), copy.deepcopy(self.town.scroll)
+        others, selection = set(self.town.custom_specs) - {bs.id}, keeper.selection_of(args.get("selection"))
+
+        def work() -> keeper.Proposal:
+            return keeper.ask(repo, spec, snapshot, bs.id, request, selection=selection, existing_ids=others,
+                              runner=runners.KEEPER_RUNNER or builders.claude_runner)
+
+        def done(job: dict, p: keeper.Proposal) -> None:
+            if p.error:
+                job.update(state="failed", error=f"The keeper could not: {plain(p.error)}"[:500])
+                return
+            job["view"] = {"request": request, "selection": selection, "kind": p.kind, "why": plain(p.why),
+                           "answer": markdown.render(p.answer) if p.answer else "", "attempts": p.attempts,
+                           "diff": p.diff(keeper.subject_of(spec)) if p.changes else [],
+                           "cost": f"${p.cost_usd:.2f}" if p.cost_usd is not None else ""}
+            job.update(state="ready", text="", _proposal=p, _request=request, _accept=self._keeper_apply)
+
+        return self._job("keeper", bs.id, "The keeper is writing it…", work, done)
+
+    def _keeper_apply(self, job: dict, args: dict) -> str:
+        p: keeper.Proposal = job["_proposal"]
+        if not p.changes:
+            raise ConsoleError("Nothing to change")
+        problems = keeper.apply(self.town, job["building"], p, job["_request"])
+        if problems:
+            raise ConsoleError("\n".join(problems))
+        self.jobs.pop(job["id"], None)
+        self.host.on_change()
+        self.town.toast(f"new {p.kind} — Revert takes it back", title=f"Keeper · {job['title']}")
+        return p.kind
 
     # -- the garrison ---------------------------------------------------------------------------------
 
