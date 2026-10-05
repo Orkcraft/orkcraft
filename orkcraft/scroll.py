@@ -884,6 +884,16 @@ def outgoing(scroll: TownScroll, building_id: str) -> list[tuple[BuildingSpec, R
     return [(b, r) for b in scroll.buildings for r in b.roads if r.source == building_id]
 
 
+def road_key(target_id: str, road_id: str) -> str:
+    """Road ids are unique per receiver; a town needs one key for all roads: `<target id>:<road id>`."""
+    return f"{target_id}:{road_id}"
+
+
+def split_key(key: str) -> tuple[str, str]:
+    target, _, road = key.partition(":")
+    return target, road
+
+
 def find_road(scroll: TownScroll, road_id: str, target_id: str | None = None) -> tuple[BuildingSpec, Road] | None:
     """(target building, road) by road id — ids are unique per receiver, so pass the target when known."""
     for b in scroll.buildings:

@@ -11,16 +11,16 @@ from typing import Any, Callable
 
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import fastpath, feedback, builders, chronicles, recruiter, steward
+from orkcraft.realm import fastpath, builders, chronicles, recruiter, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.orcs import Trigger, RESIDENT, Orc
 from orkcraft.screens.garrison_modal import OrcModelModal
-from orkcraft.realm import evolution
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.orders import UnitModal
 from orkcraft.realm import tiers
 from orkcraft.wm import Window
 
+from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
 
 
@@ -148,25 +148,8 @@ class GarrisonMixin:
         self.push_screen(StewardView(title, data), done)
 
     def apply_steward_proposal(self, building_id: str, data: dict, index: int, by: str) -> str | None:
-        """One steward proposal applied, with its own checkpoint (Z takes it back) and a line in the
-        ledger of changes (realm/evolution.py). None when it could not be applied."""
-        proposal = data["proposals"][index]
-        try:
-            what = steward.apply_proposal(self.scroll, building_id, proposal)
-        except (ValueError, TypeError, KeyError) as e:
-            self.notify(f"not applied: {e}", title="Steward", severity="warning")
-            return None
-        self._roads_changed()
-        self.refresh_roster()
-        try:
-            chronicles.record(self.repo_root, self.scroll, building_id, "proposal_applied", what=what)
-        except OSError:
-            pass
-        sha = self.checkpoint("auto-improve", building_id, f"steward: {what[:60]}") or ""
-        evolution.record(self.repo_root, evolution.Change(
-            building_id, str(proposal.get("type")), "steward", what, str(proposal.get("why") or "")[:200], by=by,
-            sha=sha, key=f"steward:{building_id}:{data.get('ts', '')}:{index}"))
-        return what
+        """One steward proposal applied (core/buildings.py). None when it could not be applied."""
+        return core_buildings.apply_steward(self.core, building_id, data, index, by)
 
     def check_stewards(self) -> None:
         """Run each steward whose trigger is a schedule that came due since its last watch."""
@@ -245,8 +228,7 @@ class GarrisonMixin:
         b_id, orc_id = self._orc_ids(orc)
         if not orc_id:
             return
-        feedback.rate_orc(self.repo_root, b_id, orc_id, True)
-        self.notify(f"{orc.name}: noted as good work", title="👍 Good")
+        core_buildings.rate_orc(self.core, b_id, orc_id, orc.name, True)
         self._console_refresh()
 
     def dislike_orc(self, orc: Orc) -> None:
@@ -258,8 +240,7 @@ class GarrisonMixin:
         def done(note: str | None) -> None:
             if note is None:
                 return
-            feedback.rate_orc(self.repo_root, b_id, orc_id, False, note)
-            self.notify(f"{orc.name}: incident saved", title="👎 Bad")
+            core_buildings.rate_orc(self.core, b_id, orc_id, orc.name, False, note)
             self._console_refresh()
 
         self.push_screen(TextPrompt(f"👎 {orc.name} — what went wrong?", placeholder="optional"), done)

@@ -3,6 +3,7 @@ per focus state, and the focus state itself."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 STEWARD_CHECK_S = 60.0
 
@@ -40,3 +41,10 @@ class FocusState:
 def mode_for(width: int) -> str:
     """Full RTS (console + windows) · Compact (console + windows) · Minimal (one window)."""
     return "full" if width >= FULL_MIN_COLS else ("compact" if width >= COMPACT_MIN_COLS else "minimal")
+
+
+def delegate(holder: str, name: str) -> Any:
+    """An attribute of the app that lives on one of its parts (`self.core.scroll` read and set as
+    `self.scroll`): the parts own the state, the old names keep working."""
+    return property(lambda self: getattr(getattr(self, holder), name),
+                    lambda self, value: setattr(getattr(self, holder), name, value))

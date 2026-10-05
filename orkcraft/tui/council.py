@@ -7,66 +7,44 @@ from __future__ import annotations
 from typing import Any, Callable
 
 
-from orkcraft import scroll
-from orkcraft.realm import checkpoint, fastpath, feedback, catalog, pipes
+from orkcraft.realm import fastpath
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.council_review import CouncilProgress, CouncilVerdict
 from orkcraft.screens.feedback_modal import DislikeModal
 from orkcraft.screens.town_hall import TownHallView
 
+from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
 
 
 class CouncilMixin:
     def _taken_building_ids(self) -> set[str]:
-        """Ids a new building may not take: loaded buildings and every building the scroll remembers
-        (a custom building whose spec file was deleted still has its scroll entry)."""
-        return {b.id for b in self.buildings} | {b.id for b in self.scroll.buildings}
+        """Ids a new building may not take (core/town.py)."""
+        return self.core.taken_ids()
 
     def cycle_goal(self, building_id: str) -> str | None:
         """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards."""
-        b = self.scroll.building(building_id)
-        if b is None:
-            return None
-        goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
-        b.goal = None if goal == "balance" else goal
-        self.desktop.save()
-        what = {"thrift": "the retros will make it cheaper", "balance": "cheaper where it is liked, better where it is not",
-                "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}[goal]
-        self.notify(f"{self._title_of(building_id)}: {what}",
-                    title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
-        self._console_refresh()
+        goal = core_buildings.cycle_goal(self.core, building_id)
+        if goal is not None:
+            self._console_refresh()
         return goal
 
     def _title_of(self, building_id: str) -> str:
-        b = self.scroll.building(building_id) if self.scroll is not None else None
-        return f"{b.icon} {b.title}".strip() if b else building_id
+        return self.core.title_of(building_id)
 
     def like_building(self, building_id: str) -> bool:
         """K 👍: the building's last result becomes a reference."""
-        out = feedback.like(self.repo_root, building_id)
-        if out is None:
-            self.notify("nothing to rate yet — it has sent no result", title="👍")
-            return False
-        self.notify(f"{self._title_of(building_id)}: its last result is a reference now", title="👍 Good")
-        self._refresh_hall()
-        return True
+        return core_buildings.like(self.core, building_id)
 
     def dislike_building(self, building_id: str) -> None:
         """F 👎: what went wrong? Broken inputs penalise its suppliers upstream, its logic only it."""
-        out = feedback.last_output(self.repo_root, building_id) or {}
-        cascade = [(self._title_of(b), feedback.CASCADE[hop - 1])
-                   for b, hop in feedback.suppliers(self.repo_root, self.scroll, building_id)]
+        last, cascade = core_buildings.dislike_context(self.core, building_id)
 
         def done(answer: tuple[str, str] | None) -> None:
-            if answer is None:
-                return
-            incident = feedback.dislike(self.repo_root, self.scroll, building_id, *answer)
-            who = ", ".join(f"{self._title_of(b)} −{p:g}" for b, p in incident.blamed.items()) or "nobody"
-            self.notify(f"incident saved · {who}", title=f"👎 {self._title_of(building_id)}")
-            self._refresh_hall()
+            if answer is not None:
+                core_buildings.dislike(self.core, building_id, *answer)
 
-        self.push_screen(DislikeModal(self._title_of(building_id), str(out.get("value", "")), cascade), done)
+        self.push_screen(DislikeModal(self._title_of(building_id), last, cascade), done)
 
     def review_and_raise(self, spec: dict) -> bool:
         """A building made from scratch: past the Council, then raised (presets skip this)."""
@@ -135,13 +113,7 @@ class CouncilMixin:
 
     def checkpoint(self, kind: str, building: str, reason: str) -> str | None:
         """Save the scroll and commit the change in the service repository (never in the demo)."""
-        if self.demo:
-            return None
-        try:
-            self.desktop.save()
-        except Exception:
-            pass
-        return checkpoint.commit(self.repo_root, kind, building, reason, self.config.layout_file)
+        return self.core.checkpoint(kind, building, reason)
 
     def action_revert_building(self) -> None:
         bid = self.focus_state.building_id if self.focus_state.mode == "building" else None
@@ -151,34 +123,4 @@ class CouncilMixin:
     def revert_building(self, building_id: str) -> bool:
         """Z: this building back to its previous checkpoint — its files, incoming roads and garrison;
         nothing else in the camp changes."""
-        before = checkpoint.building_before(self.repo_root, building_id)
-        if before is None:
-            self.notify("no earlier checkpoint for this building", title="↶ Revert")
-            return False
-        parent, spec, entry, files = before
-        if entry is None and spec is None:
-            self.notify("this is the building's first checkpoint — demolish it with X instead", title="↶ Revert")
-            return False
-        checkpoint.restore_files(self.repo_root, building_id, spec, files)
-        current = self.scroll.building(building_id) if self.scroll is not None else None
-        if current is not None and entry is not None:
-            old = scroll.TownScroll.from_dict({"active_orkspace_id": "x", "orkspaces": [], "buildings": [entry]}).buildings[0]
-            known = {b.id for b in self.scroll.buildings}
-            current.roads = [r for r in old.roads if r.source in known]
-            current.garrison, current.actions = old.garrison, old.actions
-            current.title, current.icon = old.title, old.icon
-        if spec is not None:
-            spec = catalog.migrate(spec)
-            self.custom_specs[building_id] = spec
-            pipes.set_typed(building_id, catalog.events_of(spec))
-            view = self._custom_view(building_id)
-            if view is not None:
-                view.spec = spec
-                refresh = getattr(view, "refresh_data", None)
-                if refresh is not None:
-                    refresh()
-        self._roads_changed()
-        self.refresh_roster()
-        self.checkpoint("revert", building_id, f"back to {parent[:8]}")
-        self.notify(f"back to checkpoint {parent[:8]}", title=f"↶ {building_id}")
-        return True
+        return core_buildings.revert(self.core, building_id)

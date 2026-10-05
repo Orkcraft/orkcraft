@@ -12,10 +12,8 @@ from textual.screen import Screen
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 
-from orkcraft.config import Config, find_project_root
-from orkcraft import scroll
-from orkcraft.realm import feedback, catalog, masonry, pipes, roads
-from orkcraft.realm.buildings import TOWN_HALL, Building, custom_building, presets, registry
+from orkcraft.realm import feedback, roads
+from orkcraft.realm.buildings import Building
 from orkcraft.realm.roster import Roster
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, Console
 from orkcraft.realm import elders
@@ -23,10 +21,13 @@ from orkcraft.env import getenv
 from orkcraft import schedule
 from orkcraft.screens.orc_chat import OrcChat
 from orkcraft.screens.chat_view import ChatView
-from orkcraft.sources import telemetry
 from orkcraft.widgets.hud import Hud
 from orkcraft.widgets.office import OfficeFooter
 from orkcraft.wm import Desktop, Taskbar, Window
+from orkcraft.core import bus
+from orkcraft.core.town import Town
+from orkcraft.core.treasury import Treasury
+from orkcraft.tui.base import delegate
 from orkcraft.tui.views import make_view
 # Re-exported: tests and older callers import these from orkcraft.app.
 from orkcraft.tui.base import (  # noqa: F401
@@ -154,50 +155,12 @@ class OrkcraftApp(
         demo: bool = False,
     ) -> None:
         super().__init__()
-        # The showcase sandbox (orkcraft --demo): simulated data, agent handlers never run.
-        self.demo = demo
-        self.repo_root = repo_root or find_project_root()
-        self.config = Config(repo_root=self.repo_root)
-        if auto_commit is not None:
-            self.config.auto_commit = auto_commit
-        if layout_file is not None:
-            self.config.layout_file = layout_file
-        target_layout = self.config.layout_file
-        if reset_layout and target_layout is not None:
-            target_layout.unlink(missing_ok=True)
+        # The town without a face (core/town.py): the project, its Town Scroll, specs and treasury.
+        self.core = Town(repo_root, auto_commit, layout_file, reset_layout, demo)
+        self.core.saver = lambda: self.desktop.save()        # the desktop records what it laid out first
+        self.treasury = Treasury(self.core)
+        self._wire_bus()
         self.selected_node: str | None = None
-        if self.demo:
-            from orkcraft.demo.graph import Graph
-            self.graph = Graph(self.repo_root)
-        else:
-            self.graph = None
-        self.buildings: list[Building] = registry()
-        specs, self.mason_problems = masonry.load_specs(self.repo_root)
-        self.custom_specs: dict[str, dict] = {s["id"]: s for s in specs}
-        pipes.TYPED.clear()                               # one town at a time (tests open several)
-        for s in specs:                                   # what each typed building sends
-            pipes.set_typed(s["id"], catalog.events_of(s))
-        # Presets are the core registry only: a custom building is registered as `custom:<id>`
-        # below, never as a preset (ensure_presets would add it demolished, as `legacy:<id>`).
-        preset_specs = presets(self.buildings)
-        for s in specs:
-            self.buildings.append(custom_building(s))
-        # 🧭 Onboarding (screens/onboarding.py) runs for a project with no Town Scroll yet.
-        self.first_run = False
-        if target_layout is None:
-            self.scroll, self.scroll_problems = scroll.default_scroll(preset_specs), []
-        else:
-            legacy = [target_layout.with_name(".orcraft.json")] if target_layout.name == ".orkcraft.json" else []
-            self.first_run = not demo and not target_layout.exists() and not any(p.exists() for p in legacy)
-            self.scroll, self.scroll_problems = scroll.load(target_layout, preset_specs, legacy=legacy)
-        scroll.ensure_presets(self.scroll, preset_specs)
-        hall = self.scroll.building(TOWN_HALL)
-        if hall is not None:
-            hall.demolished = False          # the town's own building: always standing, on every canvas
-        for s in specs:
-            if self.scroll.building(s["id"]) is None:
-                scroll.add_custom_building(self.scroll, s)
-        self.scroll_problems.extend(self.mason_problems)
         self.roster = Roster()
         self.dismissed: set[str] = set()
         # 🏛 The Elders' advice on the orcs' questions, left in quiet hours (realm/elders.py).
@@ -212,13 +175,7 @@ class OrkcraftApp(
         self._evolve_tried: set[str] = set()
         self._evolve_count = 0
         self._probation_at = 0.0          # 0: never looked yet
-        # 🪙 / 🪵: sessions this run starts are tagged with its id (sources/telemetry.py).
-        self.run_id = telemetry.new_run_id()
-        self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
-        self.snapshot = telemetry.Snapshot()
-        self._gold_warned = False
         self.worktree_marks: dict[str, str] = {}
-        self._lumber_warned: set[str] = set()
         self.deployments: dict[str, str] = {}
         self._watching: set[str] = set()
         # Roads: events from a source building to the receivers' plain deliveries and handlers.
@@ -233,6 +190,33 @@ class OrkcraftApp(
         self.focus_state = FocusState("neutral")
         self.mode = "full"
         self._console_forced: bool | None = None  # user toggle in Compact / Minimal / Full
+
+    # What the town without a face owns, seen as the app's own attributes (views and tests read them).
+    demo = delegate("core", "demo")
+    repo_root = delegate("core", "repo_root")
+    config = delegate("core", "config")
+    graph = delegate("core", "graph")
+    buildings = delegate("core", "buildings")
+    custom_specs = delegate("core", "custom_specs")
+    mason_problems = delegate("core", "mason_problems")
+    scroll = delegate("core", "scroll")
+    scroll_problems = delegate("core", "scroll_problems")
+    first_run = delegate("core", "first_run")
+    run_id = delegate("core", "run_id")
+    telemetry = delegate("core", "telemetry")
+    snapshot = delegate("core", "snapshot")
+
+    def _wire_bus(self) -> None:
+        """What the core publishes, shown the Textual way (core/bus.py)."""
+        on = self.core.bus.subscribe
+        on(bus.TOAST, lambda e: self.notify(e.data["message"], title=e.data.get("title", ""),
+                                            severity=e.data.get("severity", "information"),
+                                            **({"timeout": e.data["timeout"]} if e.data.get("timeout") else {})))
+        on(bus.ROADS, lambda e: self._roads_changed())
+        on(bus.ROSTER, lambda e: self.refresh_roster())
+        on(bus.HALL, lambda e: self._refresh_hall())
+        on(bus.HUD, lambda e: self.refresh_hud())
+        on(bus.SPEC, lambda e: self._spec_changed(e.data["building"], e.data["spec"], e.data.get("refresh", False)))
 
     def get_default_screen(self) -> Screen:
         # The desktop focuses the home building itself; Textual's auto focus would pick the first
@@ -317,7 +301,7 @@ class OrkcraftApp(
         return self._desktop.query_one("#chat-view", ChatView)
 
     def building(self, building_id: str) -> Building | None:
-        return next((b for b in self.buildings if b.id == building_id), None)
+        return self.core.building(building_id)
 
     def on_unmount(self) -> None:
         self.roads.stop()

@@ -4,20 +4,17 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
-import datetime as dt
-import json
 from typing import Any, Callable
 
 
-from orkcraft import scroll
-from orkcraft.realm import blueprint, fastpath, builders, catalog, chronicles, masonry, pipes
+from orkcraft.realm import blueprint, fastpath, builders, catalog, masonry, pipes
 from orkcraft.tui import silhouettes
-from orkcraft.realm.buildings import TOWN_HALL, custom_building
+from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.hut import footprint
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview, BuildProgress
 from orkcraft.screens import builder_interview as bp_chat
 from orkcraft.screens.builder_interview import BlueprintReview, BuilderChat, BuilderInterview
-from orkcraft.screens.typed import view_for
+from orkcraft.tui.views import make_view
 from orkcraft.screens.build_wizard import BuildReview, BuildWizard
 from orkcraft.realm import town_builder
 from orkcraft.screens.dialogs import TextPrompt
@@ -25,6 +22,7 @@ from orkcraft.screens.orders import BuildModal
 from orkcraft.realm import workshop
 from orkcraft.wm import Window
 
+from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
 
 
@@ -54,27 +52,7 @@ class BuildingMixin:
 
     def _log_build_request(self, prompt: str, result: builders.BuildResult | town_builder.TownPlan) -> None:
         """Every build request, kept in `.orkcraft/build-requests.jsonl`."""
-        record: dict[str, Any] = {
-            "ts": dt.datetime.now().isoformat(timespec="seconds"),
-            "prompt": prompt,
-            "ok": result.ok,
-            "attempts": len(result.attempts),
-            "cost_usd": result.cost_usd,
-        }
-        if result.ok:
-            spec = getattr(result, "spec", None)
-            record["id"] = spec["id"] if spec else [s["id"] for s in getattr(result, "specs", [])]
-        else:
-            last_errs = result.attempts[-1].errors if result.attempts else []
-            record["error"] = result.error or ("; ".join(last_errs) if last_errs else "build failed")
-
-        queue = self.repo_root / ".orkcraft" / "build-requests.jsonl"
-        try:
-            queue.parent.mkdir(parents=True, exist_ok=True)
-            with queue.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        except OSError:
-            pass
+        core_buildings.log_build_request(self.core, prompt, result)
 
     def _show_build_result(self, prompt: str, result: builders.BuildResult) -> None:
         if isinstance(self.screen, BuildProgress):
@@ -97,15 +75,7 @@ class BuildingMixin:
 
     def _type_spec(self, type_id: str) -> dict | None:
         """A camp building's spec from the catalog: the type's defaults and a free id."""
-        t = catalog.TYPES.get(type_id)
-        if t is None or type_id in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES or type_id == catalog.DEFAULT_TYPE:
-            return None
-        taken = self._taken_building_ids() | masonry.ID_RESERVED
-        bid, n = type_id, 1
-        while bid in taken:
-            bid, n = f"{type_id}_{n}", n + 1
-        return {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
-                "orc": {"name": t.orc, "role": t.preview[:80]}}
+        return core_buildings.type_spec(self.core, type_id)
 
     def build_from_type(self, type_id: str) -> bool:
         """A camp building straight from the catalog: the type's defaults, no model call."""
@@ -260,39 +230,24 @@ class BuildingMixin:
         """Save a checked spec and raise its building in the active orkspace (at `hut`, the
         fractions of the town where its ghost settled). `quiet`: one of many (a town plan) — no toast,
         no focus, no commit of its own."""
-        spec = catalog.migrate(spec)
-        existing_ids = self._taken_building_ids()
-        problems = masonry.save_spec(self.repo_root, spec, existing_ids=existing_ids)
-        if problems:
-            self.notify("\n".join(problems), title="Save failed", severity="error")
+        building = core_buildings.raise_spec(self.core, spec, hut)
+        if building is None:
             return False
-        scroll.add_custom_building(self.scroll, spec)
-        placed = self.scroll.building(spec["id"])
-        if hut is not None and placed is not None:
-            placed.hut = hut
-        building = custom_building(spec)
-        self.buildings.append(building)
-        self.custom_specs[spec["id"]] = spec
-        pipes.set_typed(spec["id"], catalog.events_of(spec))
-
+        spec = building.spec
         active_ork = self.scroll.active_orkspace
         next_number = len(active_ork.buildings) if active_ork else 1
-        new_win = Window(view_for(spec), window_id=spec["id"], title=building.label, number=next_number)
-        self.desktop.add_window(new_win)
+        self.desktop.add_window(Window(make_view(building), window_id=building.id, title=building.label,
+                                       number=next_number))
         self.desktop.save()
-
         active_ork = self.scroll.active_orkspace
-        ork_name = active_ork.name if active_ork else self.scroll.active_orkspace_id
-        try:
-            chronicles.record(self.repo_root, self.scroll, spec["id"], "building_raised", orkspace=ork_name)
-        except OSError:
-            pass
+        self.core.record(building.id, "building_raised",
+                         orkspace=active_ork.name if active_ork else self.scroll.active_orkspace_id)
         self.refresh_roster()
         if quiet:
             return True
         self.notify(f"🏗️ {spec['title']} raised", title="Build")
-        self.set_focus_state("building", building_id=spec["id"])
-        self.checkpoint("create", spec["id"], f"raise {spec.get('type') or 'custom'} {spec['title']}")
+        self.set_focus_state("building", building_id=building.id)
+        self.checkpoint("create", building.id, f"raise {spec.get('type') or 'custom'} {spec['title']}")
         return True
 
     def action_build_wizard(self) -> None:

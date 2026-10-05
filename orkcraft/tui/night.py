@@ -144,8 +144,7 @@ class NightMixin:
         self._evolve_work(c, subject)
 
     def gold_exhausted_quietly(self) -> bool:
-        limit = self.scroll.budget.gold_session_limit_usd
-        return limit > 0 and self.snapshot.spent_usd >= limit
+        return self.treasury.exhausted(quiet=True)
 
     @work(thread=True, group="evolve")
     def _evolve_work(self, c: dict, subject: fastpath.Subject) -> None:

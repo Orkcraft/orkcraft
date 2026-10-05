@@ -7,11 +7,10 @@ from __future__ import annotations
 import copy
 import functools
 import datetime as dt
-import json
 
 
 from orkcraft import scroll
-from orkcraft.realm import audit, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, builders, masonry, steward
+from orkcraft.realm import audit, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, builders, steward
 from orkcraft.screens.proposal_modal import ProposalModal
 from orkcraft.screens.retro_survey import RetroSurveyModal
 from orkcraft.screens.weekly_modal import WeeklyReportModal
@@ -19,6 +18,7 @@ from orkcraft.realm import evolution, pressure, retro
 from orkcraft.screens.dialogs import Confirm
 from orkcraft.realm import workshop
 
+from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
 
 
@@ -133,53 +133,7 @@ class RetrosMixin:
 
     def apply_proposal(self, p: optimize.Proposal, kind: str = "auto-improve") -> bool:
         """The change, a checkpoint `<kind>(<id>)` (Z takes it back), the proposal marked applied."""
-        if p.status != "pending":
-            self.notify(f"this proposal was {p.status} already", title="🔧 Not applied", severity="warning")
-            return False
-        bid = p.building
-        b = self.scroll.building(bid)
-        spec = self.custom_specs.get(bid)
-        stale = "it changed since the proposal — ask again"
-        if p.target.startswith("orc:"):
-            orc = b.garrison.handler(p.target[4:]) if b is not None else None
-            if orc is None or orc.orders != p.before:
-                self.notify(stale, title="🔧 Not applied", severity="warning")
-                return False
-            if p.action == "chain":
-                orc.kind, orc.chain, orc.orders = "chain", json.loads(p.after), ""
-            else:
-                orc.orders = p.after
-            self.desktop.save()
-            self.refresh_roster()
-        else:
-            cfg = dict((spec or {}).get("config") or {})
-            key = "steward_prompt" if p.target == "steward" else "orders"
-            if spec is None or cfg.get(key) != p.before:
-                self.notify(stale, title="🔧 Not applied", severity="warning")
-                return False
-            if p.action == "script":
-                cfg.pop(key, None)
-                workshop.save_script(self.repo_root, bid, str(cfg.get("runtime") or "python"), p.after)
-            else:
-                cfg[key] = p.after
-            new = dict(spec, config=cfg)
-            problems = masonry.save_spec(self.repo_root, new, existing_ids=set(self.custom_specs) - {bid})
-            if problems:
-                self.notify("\n".join(problems), title="🔧 Not applied", severity="error")
-                return False
-            self.custom_specs[bid] = new
-            view = self._custom_view(bid)
-            if view is not None:
-                view.spec = new
-        sha = self.checkpoint(kind, bid, f"{p.action} {p.target}: {p.why[:60]}")
-        p.status, p.commit = "applied", sha or ""
-        optimize.save(self.repo_root, p)
-        evolution.record(self.repo_root, evolution.Change(
-            bid, p.action, "weekly" if kind == "weekly" else "daily", f"{p.action} {p.target}", p.why[:200],
-            by="orcs" if self._hushed else "you", sha=p.commit, key=p.id))
-        self._refresh_hall()
-        self.notify(f"{self._title_of(bid)}: {p.action} applied — Z on it takes it back", title="🔧 Applied")
-        return True
+        return core_buildings.apply_proposal(self.core, p, kind, by="orcs" if self._hushed else "you")
 
     def _maybe_weekly(self, now: dt.datetime) -> None:
         if self.demo or self.gold_exhausted():
@@ -301,14 +255,10 @@ class RetrosMixin:
             elif item.change == "set_config":
                 spec = self.custom_specs[bid]
                 new = dict(spec, config={**(spec.get("config") or {}), str(item.data["key"]): item.data.get("value")})
-                problems = masonry.save_spec(self.repo_root, new, existing_ids=set(self.custom_specs) - {bid})
+                problems = core_buildings.set_spec(self.core, bid, new)
                 if problems:
                     failed.append(f"{item.title}: {'; '.join(problems)}")
                 else:
-                    self.custom_specs[bid] = new
-                    view = self._custom_view(bid)
-                    if view is not None:
-                        view.spec = new
                     self.checkpoint("weekly", bid, f"set {item.data['key']}: {item.why[:60]}")
                     ok = True
             if ok:

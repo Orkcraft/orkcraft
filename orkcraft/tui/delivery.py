@@ -38,6 +38,16 @@ class DeliveryMixin:
             if view is not None:
                 view.show_incoming(sample.get("title", ""), sample.get("markdown", ""))
 
+    def _spec_changed(self, building_id: str, spec: dict, refresh: bool = False) -> None:
+        """A custom building's spec changed in the core (a revert, a retro): its view takes the new one
+        (and reloads its data when `refresh`)."""
+        view = self._custom_view(building_id)
+        if view is not None:
+            view.spec = spec
+            reload = getattr(view, "refresh_data", None) if refresh else None
+            if reload is not None:
+                reload()
+
     def _custom_view(self, building_id: str):
         w = self.desktop.get_window(building_id)
         if w is None:

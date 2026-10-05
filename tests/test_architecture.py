@@ -34,3 +34,17 @@ def test_no_face_in(package):
                                                       "orkcraft.wm", "orkcraft.app")):
                 bad.append(f"{path.relative_to(ROOT.parent)}:{line} imports {module}")
     assert not bad, "\n".join(bad)
+
+
+def test_loading_the_core_loads_no_face():
+    """Transitively too: importing every module of core/, realm/ and design/ pulls in no toolkit."""
+    import subprocess
+    import sys
+    modules = [f"orkcraft.{p.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.')}"
+               for package in FACELESS for p in sorted((ROOT / package).rglob("*.py"))]
+    modules = [m.removesuffix(".__init__") for m in modules]
+    code = ("import importlib, sys\n"
+            f"for m in {modules!r}: importlib.import_module(m)\n"
+            "print(sorted({n.split('.')[0] for n in sys.modules} & {'textual', 'rich'}))")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "[]", out.stdout + out.stderr
