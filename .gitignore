@@ -17,3 +17,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# tools/gallery.py writes its page here
+/gallery/
