@@ -666,8 +666,23 @@ class PoolView(TypedView):
                  f"✓{done} ✗{failed}", f"spent: ${st.spent:.2f}", f"status: {state}"]
         return ([f"🔥 {self.keeper} asks"] + lines[:5]) if st.asked else lines
 
+    def new_task(self, answer: str | None) -> bk.PoolTask | None:
+        """✍ New task: the operator writes to the barracks directly — the title, then the brief (the title
+        alone when it is empty)."""
+        title, _, brief = (answer or "").partition("\t")
+        title, brief = title.strip(), brief.strip()
+        if not title and not brief:
+            return None
+        return self.add_task(title or brief.splitlines()[0][:60], brief or title)
+
     def quick_action(self, action_id: str) -> bool:
         st = self.state
+        if action_id == "pool.task":
+            self.app.push_screen(TextPrompt("✍ New task for the barracks", placeholder="the task's title",
+                                            fields=(("the brief: what to do, where, what done looks like", ""),),
+                                            help="Enter goes to the next line, then sends the task to the foreman"),
+                                 self.new_task)
+            return True
         if action_id == "pool.hire":
             if st.asked:                     # the steward's question comes first
                 return self.ask_operator()
