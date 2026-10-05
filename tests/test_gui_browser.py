@@ -50,6 +50,8 @@ if not _can_launch():
 def gui(tmp_path_factory):
     """One project, its host and server, one browser for the module (the same settings as `isolated_layout_file`)."""
     tmp = tmp_path_factory.mktemp("gui")
+    pw = playwright.sync_playwright().start()
+    browser = _launch(pw)                       # before XDG_CACHE_HOME moves: Playwright finds its Chromium under it
     mp = pytest.MonkeyPatch()
     for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
@@ -67,10 +69,9 @@ def gui(tmp_path_factory):
     checkpoint.ensure(repo)
     server = Server(Host(repo, auto_commit=False))
     thread = server.start_thread()
-    with playwright.sync_playwright() as p:
-        browser = _launch(p)
-        yield server, browser
-        browser.close()
+    yield server, browser
+    browser.close()
+    pw.stop()
     server.stop()
     thread.join(10)
     mp.undo()
