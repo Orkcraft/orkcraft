@@ -697,3 +697,14 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
     assert host.detail("town_hall")["data"]["chat"] == []
     types = host.command("town.catalog")
     assert types[0]["intent"].startswith("Take in") and all(t["intent"] for t in types)
+
+
+def test_the_task_board_card_counts_the_note_folders_too(fake_repo, isolated_layout_file):
+    """Closed: the status lanes' counters, then the note folders with theirs (building-views.md §3)."""
+    host = _host(fake_repo)
+    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields"))
+    w = host.town.worker(built.id)
+    w.add("Should we drop IE?", "notes")
+    card = next(b for b in host.snapshot()["buildings"] if b["id"] == built.id)["card"]
+    assert [l["label"] for l in card["lanes"]][:3] == ["To Do", "In Progress", "Done"]
+    assert any(n["count"] == 1 for n in card["notes"])

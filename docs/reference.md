@@ -16,7 +16,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 │    └───────────────────────────────────────┘  .  └────────────────────────────────────────────┘   │
 ├─────────────────────────────┬───────────────────────────────┬─────────────────────────────────────┤
 │ 🗺️ WAR MAP (Orkspaces)       │ 🧌 CLAN ROSTER (Garrison)     │ ⚒️ COMMAND CARD (Context Actions)   │
-│ [F1] 🏰 Main Camp (forest)  │ ▼ ⚒️ Forge (Garrison: 1)      │ [B] 🏗️ Build Window (Mason & Artisan)│
+│ [F1] 🏰 Main Camp (forest)  │ ▼ ⚒️ Forge (Garrison: 1)      │ [B] 🏗️ Build                        │
 │                             │   • 🧌 Smith          💤 Idle │ [P] 📜 Window Presets Catalog       │
 │                             │ ▼ ⚔️ Warband (0)              │ [S] 🧌 Summon Ork / Warband         │
 │                             │ ▼ 🏛️ Council (5)              │ [T] 🌲 Toggle Terrain (Dim / Black) │
@@ -89,7 +89,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   (Claude read-only in the repo, Codex in the repo in its read-only sandbox with web search off unless asked
   for, agy in an empty sandbox dir, within the 🪙 budget). Personal nodes
   never reach a model. Script handlers run once reviewed (`python3 -I`, the records as JSON on stdin) and are held again when the file changes. Build requests from
-  `[B] Build Window` queue in `.orkcraft/build-requests.jsonl` for Mason & Artisan (stage 4).
+  `[B] Build` are kept in `.orkcraft/build-requests.jsonl`.
 - **⚙️ System Menu (`F10`)**: opens `⚙️ SYSTEM & CLAN OPERATIONS` (`[1-6]` action, `Esc` cancels):
   - `[1]` 🛑 Halt All Operations
   - `[2]` 📸 Capture Screenshot (SVG screenshot without menu saved to `./loot/screenshots/`)
@@ -107,7 +107,7 @@ Buildings (keys `1`–`9`):
 | 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
-Every other building is built from the catalog of typed buildings (below) or by Mason & Artisan.
+Every other building is built from the catalog of typed buildings (below) or from scratch by the Builder (a Workshop).
 
 ## Town view (default)
 
@@ -616,22 +616,19 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
   road) open in a list; Enter applies a ready one. A steward whose trigger is `cron` watches on its
   schedule in the background (`* * * * *` or `daily 05:00`).
 
-## Custom buildings (Mason & Artisan)
+## Custom buildings (Mason & Artisan, retired)
 
-- **Build Flow (`B` in Neutral)**: Opens `BuildModal` to prompt Mason (data sourcing) and Artisan (panes, widgets, actions). While `builders.build(...)` runs in a background worker thread, `BuildProgress` shows progress with a spinner (`Esc` hides the modal while generation proceeds).
-- **Preview & Raise**:
-  - Artisan also writes the hut (`mini`: up to three status templates), see Town view.
-  - Valid specifications display in `BuildPreview`: inspecting title, icon, resident ork, data queries, widget panes, custom actions, attempts used, and API cost.
-  - Pressing `Enter` / "Raise" saves the spec to `.orkcraft/buildings/<id>.json`, registers the building in the Town Scroll (`.orkcraft.json`), mounts and focuses the new window in the active orkspace, and logs `building_raised` to the Chronicles.
-  - Invalids or build errors show in `BuildFailed` with failure details and a "Try again" shortcut (retaining the prompt).
-  - All build requests are recorded in `.orkcraft/build-requests.jsonl` (timestamp, prompt, ok status, attempts, cost, id/error).
+Custom (panes) left the catalog: neither the build wizard nor the presets offer it, and nothing builds one
+anew (`builders.propose` refuses the type). A Town Scroll of old that holds one still loads and draws it:
+its spec stays in `.orkcraft/buildings/<id>.json`, its building in the Town Scroll (`custom:<id>`).
+
 - **Custom Building Views (`screens/custom_view.py`)**:
   - Flexible layout panes in `Vertical` or `Horizontal` orientations with proportional fr ratios (`1fr`–`4fr`).
   - Whitelisted widgets: `table` (`DataTable`), `list` (`OptionList`), `counter` (large metric display), `markdown` (`Markdown`), `log` (tailing `TextArea`), and `tree` (`DirectoryTree`).
   - Strict security boundary: data is only acquired through `masonry.fetch(...)` with whitelisted sources. Auto-refreshes every 30 seconds or on `building:refresh`, preserving active selections across reloads.
 - **Command Card & Presets**:
   - Focused custom buildings show their `spec["actions"]` on the Command Card bound to free shortcut keys (`A`, `E`, `F`, `G`, `I`, `J`, `K`, `O`, `Q`, `V`, `W`, `Z`). Supported actions include `node:open`, `node:chat`, `node:preview`, and `building:refresh`.
-  - The Presets modal (`P`) includes a `[ Custom (Mason & Artisan) ]` section to view, move, or resurrect custom buildings.
+  - The Presets modal (`P`) lists every building raised from a spec (custom ones of old among them) under `[ Your buildings ]`, to view, move or resurrect it.
 
 ## Calendars and limits
 

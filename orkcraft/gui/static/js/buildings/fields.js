@@ -16,7 +16,10 @@ const TOP = 3;                     // cards a lane shows in the Command Card
 const CSS = `
 .gui-fields--mini .ok-lane { min-height: 0; }
 .gui-fields--mini .ok-card { padding: var(--space-1) var(--space-2); }
-.gui-fields--mini .ok-card__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-fields--mini .ok-card__title { min-width: 0; white-space: nowrap; }
+.gui-fields--mini .ok-card__title > span:not(.ok-word) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gui-fields--mini .ok-card__title > .ok-word { flex: none; }
+.gui-counters__notes { flex-basis: 100%; }
 .gui-fields__folded { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-fields__folded .ok-chip.gui-drop { box-shadow: inset 0 0 0 1px var(--frame-focus); }
 `;
@@ -136,13 +139,17 @@ function Board({ id, data }) {
   </div>`;
 }
 
-/** Closed: a counter per lane, `*` on a lane with unseen cards (docs/design/building-views.md). */
+/** Closed: a counter per status lane, then the note folders with theirs; `*` on one with unseen cards
+ * (docs/design/building-views.md). In notes mode only the folders. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   if (c.error) return html`<span class="ok-tone-fire">${c.error}</span>`;
-  return html`<div class="gui-counters">${c.lanes.map((l) => html`<span key=${l.label} class="gui-counter">
-    <span class="ok-tone-muted">${say(l.label)}</span> <b>${l.count}</b>${l.new ? "*" : ""}</span>`)}</div>`;
+  const counter = (l) => html`<span key=${l.label} class="gui-counter">
+    <span class="ok-tone-muted">${say(l.label)}</span> <b>${l.count}</b>${l.new ? "*" : ""}</span>`;
+  const notes = c.notes || [];
+  return html`<div class="gui-counters">${c.lanes.map(counter)}
+    ${notes.length > 0 && html`<div class="gui-counters gui-counters__notes">${notes.map(counter)}</div>`}</div>`;
 }
 
 function MiniLane({ id, lane }) {

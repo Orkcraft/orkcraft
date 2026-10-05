@@ -2,7 +2,6 @@
 
 - `AlertModal` — a ❓: minimal context and numbered quick answers.
 - `UnitModal` — a resident orc: context for its work and its trigger.
-- `BuildModal` — ask Mason & Artisan for a new building.
 """
 from __future__ import annotations
 
@@ -346,35 +345,5 @@ class UnitModal(ModalScreen[dict | None]):
             self.dismiss(result)
         elif bid == "unit-answer":
             self.dismiss({"answer": True})
-        else:
-            self.dismiss(None)
-
-
-class BuildModal(ModalScreen[str | None]):
-    BINDINGS = [Binding("escape", "dismiss(None)", "Close")]
-    DEFAULT_CSS = MODAL_CSS.format(cls="BuildModal")
-
-    def __init__(self, initial_prompt: str = "") -> None:
-        super().__init__()
-        self.initial_prompt = initial_prompt
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("🏗️ Build Window — Mason & Artisan", classes="order-title")
-            yield Static(Text("Describe the building: what it shows, where the data comes from, who watches it.\n"
-                              "Mason designs the data schema, Artisan offers layouts and actions;\n"
-                              "the spec is validated against the JSON Schema before you confirm raising it."),
-                         classes="order-context")
-            yield Input(value=self.initial_prompt, placeholder="e.g. a window with failing CI runs and the last 50 log lines", id="build-prompt")
-            with Horizontal():
-                yield Button("Send to Mason", variant="primary", id="build-send")
-                yield Button("Cancel", id="build-cancel")
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.dismiss(event.value.strip() or None)
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "build-send":
-            self.dismiss(self.query_one("#build-prompt", Input).value.strip() or None)
         else:
             self.dismiss(None)
