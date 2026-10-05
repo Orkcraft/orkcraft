@@ -48,9 +48,9 @@ class Town:
         self.buildings: list[Building] = registry()
         specs, self.mason_problems = masonry.load_specs(self.repo_root)
         self.custom_specs: dict[str, dict] = {s["id"]: s for s in specs}
-        pipes.TYPED.clear()                               # one town at a time (tests open several)
-        for s in specs:                                   # what each typed building sends
-            pipes.set_typed(s["id"], catalog.events_of(s))
+        pipes.clear_typed()                               # one town at a time (tests open several)
+        for s in specs:                                   # what each typed building sends and takes
+            pipes.set_typed(s["id"], catalog.events_of(s), catalog.accepts(s))
         # Presets are the core registry only: a custom building is registered as `custom:<id>`
         # below, never as a preset (ensure_presets would add it demolished, as `legacy:<id>`).
         preset_specs = presets(self.buildings)
