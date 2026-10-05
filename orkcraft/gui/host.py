@@ -91,6 +91,9 @@ class Host:
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
                 self._attach(bs.id, self.town.worker(bs.id))
+        if demo:                                   # the sandbox's orks have screens (and questions) of their own
+            from orkcraft.demo import live
+            live.open_all(self.sessions, self.town.repo_root)
 
     # -- what the page sees --------------------------------------------------------------------
 

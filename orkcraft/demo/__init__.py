@@ -1,6 +1,7 @@
 """Showcase sandbox: eight orkspaces, one closed workflow each, with simulated data.
 
-    orkcraft --demo [DIR]            build the sandbox (once) and open it
+    orkcraft --demo [DIR]            build the sandbox (once) and open it in the TUI (the 8 roles)
+    orkcraft gui --demo [DIR]        … in the GUI: the dashboard set, every building type with its state
     orkcraft --demo DIR --demo-reset rebuild it from scratch
     orkcraft --demo DIR --demo-screens OUT   walk F1–F8 headless and save SVG (+ PNG) screenshots
 
@@ -27,6 +28,7 @@ def default_dir(set_name: str = "main") -> Path:
 QUADRANTS = [(0.0, 0.0, 0.44, 0.46), (0.56, 0.0, 0.44, 0.46), (0.0, 0.54, 0.44, 0.46), (0.56, 0.54, 0.44, 0.46)]
 MARKER = ".orkcraft-demo"
 SAMPLES = Path(".orkcraft") / "demo-samples.json"
+VERSION = 2          # raise it when a set changes: an older sandbox is then built again
 
 
 def _node_md(scenario_id: str, n: dict) -> tuple[Path, str]:
@@ -45,13 +47,18 @@ def _node_md(scenario_id: str, n: dict) -> tuple[Path, str]:
     return rel, f"---\n{fm}---\n\n{body}\n"
 
 
+def _stamp(set_name: str) -> str:
+    return f"orkcraft showcase sandbox · set {set_name} · demo {VERSION} — simulated data\n"
+
+
 def build(root: Path = DEFAULT_DIR, reset: bool = False, set_name: str = "main") -> Path:
-    """Write the sandbox under `root` and return it. Refuses a non-empty folder it did not create."""
+    """Write the sandbox under `root` and return it. Refuses a non-empty folder it did not create;
+    a sandbox of another set or of an older demo is built again."""
     root = Path(root).expanduser().resolve()
     if root.exists() and any(root.iterdir()):
         if not (root / MARKER).exists():
             raise ValueError(f"{root} is not empty and is not an orkcraft demo — choose another folder")
-        if not reset:
+        if not reset and (root / MARKER).read_text(encoding="utf-8") == _stamp(set_name):
             return root
         shutil.rmtree(root)
     root.mkdir(parents=True, exist_ok=True)
@@ -60,7 +67,6 @@ def build(root: Path = DEFAULT_DIR, reset: bool = False, set_name: str = "main")
         (root / sub).mkdir(parents=True, exist_ok=True)
 
     scenarios = SETS[set_name]
-    (root / MARKER).write_text(f"orkcraft showcase sandbox · set {set_name} — simulated data\n", encoding="utf-8")
     buildings_all: list[dict] = []
     for sc in scenarios:
         for n in sc["nodes"]:
@@ -88,6 +94,7 @@ def build(root: Path = DEFAULT_DIR, reset: bool = False, set_name: str = "main")
         from orkcraft.demo import dashboard
         dashboard.prepare(root)            # a real git repository, seeded Barracks and Council
     (root / SAMPLES).write_text(json.dumps(samples(scenarios), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    (root / MARKER).write_text(_stamp(set_name), encoding="utf-8")       # last: a half-built sandbox is built again
     return root
 
 

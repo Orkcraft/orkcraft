@@ -11,21 +11,25 @@ F4 Library — three LLM wikis the librarian orcs keep (the code, the team, the 
 with pages: tasks from Task Fields pass through the Code Wiki on their way to a Barracks, so each
 arrives with the wiki's map; the Clan Fire spot-checks what the librarian wrote and its verdict
 lands in reviews.md. One code change is not taken in yet (● on the source).
-F3 Gates — The Pit feeds a Signpost whose rules send a patch or a link to the Lake of Insight and a
-release note out through the Catapult (checked against a schema; the sandbox only dry-runs); a
+F3 Gates — The Pit feeds a Signpost whose rules send release notes through a Mill (a changelog entry)
+and JSON straight out through the Catapult (checked against a schema; the sandbox only dry-runs); a
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
-sounds a chime for every paste and a horn for every route the Signpost takes.
+sounds a chime for every paste, a horn for every route the Signpost takes and a ding for what no
+rule matched. (No Lake building: Lake is the town's window.)
 The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / 👎 with an incident,
 a self-improvement proposal and a weekly report.
 
 The sandbox is a real git repository (so the Forge, the Forest and the Loot show real things);
-agents never run in it — the Barracks and the Clan Fire answer with simulated text.
+agents never run in it — the Barracks and the Clan Fire answer with simulated text. Every building
+starts with a few days of state (seeds.py), and two orks have a question on their screens (live.py).
 """
 from __future__ import annotations
 
 import datetime as dt
 import subprocess
 from pathlib import Path
+
+from orkcraft.demo import seeds
 
 SEL = "on_selection_change"
 TODAY = dt.date.today()
@@ -66,23 +70,27 @@ MY_DAY = {
                     "## Ideas\n- 🟨 A calendar roof\n  the War Drum's hut shows the next meeting\n"
                     "- 🟩 Mail digests at 05:00\n  one page, before the stand-up\n"
                     "- 🟦 Ask the clan about pricing\n",
-        "demo/calendar.ics": CALENDAR,
+        "demo/calendar.ics": CALENDAR,          # rewritten around the hour of the build (seeds.war_drum)
+        **seeds.MEETING_DOCS,
         "docs/handbook/onboarding.md": "# Onboarding\n\n## Your first day\nRead the town map.\n\n## Tools\n- orkcraft\n- git\n",
         "docs/handbook/releases.md": "# Releases\n\n## Versioning\nSemVer.\n\n## Checklist\n- tag\n- changelog\n- announce\n",
         "docs/notes/ideas.md": "# Ideas\n\n## A calendar roof\n## Mail digests at 05:00\n",
+        seeds.NOT_TAKEN: "# Retro\n\n- The Barracks docs took two days\n",
         "src/app.py": "def main():\n    print('hello from the demo')\n",
         "src/billing.py": "PRICE = 9\n",
     },
     "buildings": [
-        typed("todo", "fields", "Task Fields", "🌾", "Taskmaster", "my tasks and sticky notes", "tiles", path="TASKS.md"),
+        typed("todo", "fields", "Task Fields", "🌾", "Taskmaster", "my tasks and sticky notes", "tiles", path="TASKS.md",
+              lanes=["Ideas", "Questions"]),
         typed("days", "war_drum", "War Drum", "🥁", "Drummer", "today and this week", "flag",
               ics="demo/calendar.ics", day_starts="05:00"),
         typed("notes", "scrolls", "Scroll Dump", "🗑️", "Scroll Scrapper", "my handbook and notes", "dome",
-              paths=["docs/handbook", "docs/notes"]),
-        typed("tree", "forest", "File Forest", "🌲", "Woodcutter", "the source folder", "gable", path="src"),
+              paths=["docs/handbook", "docs/notes"], auto_ingest=False),
+        typed("tree", "forest", "File Forest", "🌲", "Woodcutter", "the web folder", "gable", path="web"),
         typed("drop", "pit", "The Pit", "🕳️", "Scavenger", "drop a file to brief it"),
-        typed("post", "watchtower", "Watchtower", "🗼", "Lookout", "my inbox", "chimney",
-              host="imap.example.com", user_env="DEMO_MAIL_USER", password_env="DEMO_MAIL_PASSWORD"),
+        typed("post", "watchtower", "Watchtower", "🗼", "Lookout", "my inbox, GitHub and the team's chats", "chimney",
+              host="gmail", user_env="DEMO_MAIL_USER", password_env="DEMO_MAIL_PASSWORD", github="orkcraft/orkcraft-demo",
+              cron="daily 05:00", feeds=seeds.FEEDS),
         typed("brief", "mill", "Daily Brief", "⚙️", "Miller", "turns what arrives into a brief", "thatch",
               steps=[f"script: {BRIEF}"]),
     ],
@@ -107,16 +115,21 @@ AGENT_YARD = {
     "nodes": [],
     "files": {},
     "buildings": [
-        typed("branches", "forge", "The Forge", "⚒️", "Smith", "branches, PRs, changes", "castle"),
+        typed("branches", "forge", "The Forge", "⚒️", "Smith", "branches, PRs, changes", "castle",
+              test_cmd="python3 -c \"print('12 passed in 0.41s')\"", confirm=True),
         typed("camp", "barracks", "Barracks", "🏕️", "Grunts", "runs tasks in parallel", "tent",
-              max_orcs=3, providers=["claude", "agy"], budget_usd=5.0),
+              max_orcs=4, providers=["claude", "agy"], budget_usd=5.0,
+              orders="Work on a branch of your own.\nRun the tests before you say done.\nAsk when a price or a date "
+                     "would change."),
         typed("council", "council", "Clan Fire", "🪔", "Chieftains", "reviews what the Barracks writes", "pagoda",
               steward_prompt="Let a plan go when nobody blocks it; ask me before a release date moves.",
               members=["Product manager:claude", "Architect:agy", "Security:claude"], veto=["Security"],
               max_cycles=3, budget_usd=2.0),
         typed("outputs", "loot", "Loot Vault", "📦", "Quartermaster", "files agents wrote, to review", "snow"),
-        typed("crag", "crag", "Tally Crag", "🪨", "Crag Carver", "spend and load", "castle", source="spend",
-              warn=2.0, crit=5.0),
+        typed("crag", "crag", "Tally Crag", "🪨", "Crag Carver", "spend and load", "castle", charts=[
+            "Spend today = spend 24h warn 2 crit 5 all", "Runs = runs 24h all", "Busy orks = orcs 24h all",
+            "Tokens = tokens 24h horizontal command", "Quotas = limits 24h horizontal warn 80 crit 95 command",
+            "CPU = cpu 1h full"]),
     ],
     "layout": [(0.0, 0.0, 0.44, 0.46), (0.56, 0.0, 0.44, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
                (0.7, 0.54, 0.3, 0.46)],
@@ -142,22 +155,27 @@ GATES = {
     "buildings": [
         typed("gate_pit", "pit", "The Pit", "🕳️", "Scavenger", "drop or paste anything"),
         typed("crossroads", "signpost", "Signpost", "🚏", "Grot Pointa", "routes by rules", "pagoda",
-              rules=["view: matches (?i)diff --git|http", "send: contains release", "view: else"]),
-        typed("insight", "lake", "Lake of Insight", "🌊", "Seer", "shows what it is given", "dome"),
-        typed("launcher", "catapult", "The Catapult", "🎯", "Loader", "sends releases out", "flag",
+              rules=["notes: contains release notes", "send: matches ^\\s*\\{"]),
+        typed("notes_mill", "mill", "Release notes", "⚙️", "Miller", "turns a paste into a changelog entry", "thatch",
+              steps=["grep: (?i)release", "replace: (?i)release notes for (v[0-9.]+): => \\1 — ",
+                     "agent: rewrite as three short bullet points for the changelog", "to_json"]),
+        typed("launcher", "catapult", "Release hook", "🎯", "Loader", "sends releases out", "flag",
               url="https://example.com/hooks/release", schema="demo/release.schema.json", method="POST"),
         typed("counter", "workshop", "Word Count", "🔢", "Tinker", "counts the words of every paste",
               runtime="python", layout="card", inputs=["gate_pit:pit.text"]),
         typed("gate_horn", "horn", "The Horn", "📯", "Hornblower", "sounds what comes in",
-              sounds=["pit.text: chime", "crossroads/signpost.routed: horn", "*: ding"], quiet="23:00-07:00"),
+              sounds=["pit.text: chime", "crossroads/signpost.routed: horn", "*: ding"], quiet="23:00-07:00",
+              cooldown=5),
     ],
     "layout": [(0.0, 0.0, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46), (0.7, 0.0, 0.3, 0.46), (0.0, 0.54, 0.3, 0.46),
                (0.35, 0.54, 0.3, 0.46), (0.7, 0.54, 0.3, 0.46)],
     "roads": [
         ("crossroads", "gate_pit", "pit.text", "on_drop", None, None),
         ("counter", "gate_pit", "pit.text", "on_paste", None, None),
-        ("insight", "crossroads", "signpost.routed", "view", None, {"route": ["view"]}),
+        ("notes_mill", "crossroads", "signpost.routed", "notes", None, {"route": ["notes"]}),
         ("launcher", "crossroads", "signpost.routed", "send", None, {"route": ["send"]}),
+        ("launcher", "notes_mill", "mill.done", "on_notes", None, None),
+        ("gate_horn", "crossroads", "signpost.unmatched", "unmatched", None, None),
         ("gate_horn", "gate_pit", "pit.text", "on_paste", None, None),
         ("gate_horn", "crossroads", "signpost.routed", "routed", None, None),
     ],
@@ -166,7 +184,7 @@ GATES = {
                                            "@@ -1 +1 @@\n-print('hello')\n+print('hello, camp')\n", "patch"),
         ("crossroads", "signpost.routed"): ("text", "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n"
                                                  "+++ b/src/app.py\n@@ -1 +1 @@\n-print('hello')\n+print('hello, camp')\n",
-                                         "view"),
+                                         "notes"),
     },
 }
 
@@ -224,13 +242,15 @@ def _git(root: Path, *args: str) -> None:
 
 
 def prepare(root: Path) -> None:
-    """Make the sandbox a git repository with two feature branches, then leave a few files changed
-    for the File Generator to review; seed the Barracks and the Council."""
+    """Make the sandbox a git repository with four feature branches (one conflicts with main), then
+    leave a few files changed for the Loot Vault to review; seed every building's state (seeds.py)."""
     (root / ".gitignore").write_text(".orkcraft/\n.orkcraft.json\n.orkcraft-demo\n", encoding="utf-8")
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "demo@orkcraft.local")
     _git(root, "config", "user.name", "Orkcraft Demo")
+    now = dt.datetime.now().replace(microsecond=0)
     _seed_wikis(root)
+    seeds.before_commit(root, now)
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "demo: the town is founded")
     for branch, path, lines, msg in (("feature/login", "src/login.py", 42, "login form with validation"),
@@ -240,13 +260,14 @@ def prepare(root: Path) -> None:
         _git(root, "add", path)
         _git(root, "commit", "-q", "-m", msg)
         _git(root, "checkout", "-q", "main")
+    seeds.forge(root, now)
     # what the agents "generated": the File Generator and the File Tree see them
     (root / "docs" / "release-notes.md").write_text("# v0.2\n\n- Town Hall\n- typed buildings\n- roofs\n", encoding="utf-8")
     (root / "src" / "billing.py").write_text("PRICE = 12  # raised by the pricing agent\n", encoding="utf-8")
-    _seed_barracks(root)
     _seed_council(root)
     _seed_ledger(root)
     _seed_pipeline(root)
+    seeds.after_commit(root, now)
 
 
 WIKI_PAGES = {
@@ -413,24 +434,6 @@ def _seed_ledger(root: Path) -> None:
                                             (8, "brief", 0.0, "done"), (5, "camp", 1.1, "done"),
                                             (2, "council", 0.5, "done"), (1, "camp", 0.6, "done"))):
         metrics.record_run(root, b, out, cost, int(cost * 40000), now=now - dt.timedelta(hours=h, minutes=i))
-
-
-def _seed_barracks(root: Path) -> None:
-    from orkcraft.realm import barracks as bk
-    st = bk.Barracks(root / ".orkcraft" / "barracks" / "camp")
-    st.orcs = [bk.PoolOrc("Grub", "claude", keys=["T1042"], done=3, last="2026-10-02T05:20:00", hired="2026-10-02T05:00:00"),
-               bk.PoolOrc("Mogka", "agy", bk.AGY_CODE, done=1, failed=1, last="2026-10-02T05:25:00",
-                          hired="2026-10-02T05:05:00")]
-    st.queue = [bk.PoolTask("q1", "Docs for the API", "Write the API docs", "", "2026-10-02T05:30:00")]
-    st.tasks = [bk.PoolTask("t1", "T1042 login form", "x", "T1042", status="done", orc="Grub", result="form + tests"),
-                bk.PoolTask("t2", "Fix the parser", "x", status="failed", orc="Mogka", error="tests failed")]
-    st.stats = {"claude": {"runs": 3, "ok": 3, "cost": 0.9}, f"agy:{bk.AGY_CODE}": {"runs": 2, "ok": 1, "cost": 0.1}}
-    st.save()
-    for d in (bk.Decision("2026-10-02T05:00:00", "t1", "hire", "Grub", "0/3 orks busy → hire; claude: no record yet; fits a code task"),
-              bk.Decision("2026-10-02T05:05:00", "t2", "hire", "Mogka", "1/3 orks busy → hire; agy: no record yet"),
-              bk.Decision("2026-10-02T05:21:00", "t3", "follow-up", "Grub", "T1042 was Grub's"),
-              bk.Decision("2026-10-02T05:30:00", "q1", "queue", "", "paused for the night")):
-        st.log(d)
 
 
 def _seed_council(root: Path) -> None:
