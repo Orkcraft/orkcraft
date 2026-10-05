@@ -8,6 +8,12 @@
 - Code keeps its names: identifiers, module and file names (`realm/orcs.py`, `Orc`, `orc_id`),
   CSS ids, dict keys, event ids and config values stay as they are, so settings and town scrolls
   written before keep loading.
+- Each concept also has an **Office** name (the Watchtower is *External listeners*, an ork an *agent*,
+  a road a *link*): `orkcraft/realm/lexicon.py` `TERMS` is the glossary. A new concept or building
+  type gets its pair there; in the Office the interface says it through `modes.text` (TUI) or
+  `say()` (GUI, `gui/static/js/link.js`). Write the Camp word in code; never hard-code an Office one.
+- The two modes are `camp` and `office` in code (`modes.CAMP`, `modes.OFFICE`, `modes.office()`);
+  `immersion` / `hidden` / `plain` are only old names that still load.
 - Tests that check a visible string use the same wording.
 
 ## Where code goes (docs/design/gui-migration.md)

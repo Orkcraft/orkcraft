@@ -263,7 +263,7 @@ async def test_the_menu_switches_between_camp_and_office(fake_repo: Path, town):
         await _settle(pilot)
         assert desk.plain and "mode" not in desk.scroll.preferences                  # the machine's, not the project's
         assert settings.load().mode == "office"
-        assert desk.huts["mill"].geom.w == 10 and desk.huts["mill"].sil.id.endswith("-plain")
+        assert desk.huts["mill"].geom.w == 13 and desk.huts["mill"].sil.id.endswith("-plain")   # "Transformer"
         assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────┐" in str(desk.huts["todo"].render())
         geoms = [h.geom for h in desk.huts.values() if h.display]
         assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])

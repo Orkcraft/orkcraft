@@ -456,12 +456,12 @@ class Desktop(Container):
 
     @property
     def look(self) -> theme.Biome:
-        """What the canvas wears: the orkspace's biome, or the office's black and grey in the hidden mode."""
+        """What the canvas wears: the orkspace's biome, or the office's black and grey in the office mode."""
         return theme.OFFICE if self.plain else theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
 
     def set_biome(self, name: str) -> None:
-        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME. The hidden mode keeps it but
-        wears the office look (the biome comes back with immersion)."""
+        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME. The office mode keeps it but
+        wears the office look (the biome comes back with the camp)."""
         if name not in theme.BIOMES:
             name = theme.DEFAULT_BIOME
         self.biome = name
@@ -843,14 +843,14 @@ class Desktop(Container):
 
     @property
     def look_mode(self) -> str:
-        """What the town looks like now (realm/modes.py): hidden when the buildings are frames —
-        Office, or Shift in office hours — else immersion."""
-        return modes.HIDDEN if self.plain else modes.IMMERSION
+        """What the town looks like now (realm/modes.py): office when the buildings are frames —
+        Office, or Shift in office hours — else the camp."""
+        return modes.OFFICE if self.plain else modes.CAMP
 
     def _wear_mode(self) -> None:
         """Every widget draws the current look (the HUD, the carts, the badges read `modes.current`)."""
         modes.set_current(self.look_mode)
-        self.set_class(self.plain, "-hidden")
+        self.set_class(self.plain, "-office")
         self._paint()
         for w in self.windows:
             w.refresh_badge()
@@ -883,7 +883,7 @@ class Desktop(Container):
     def apply_schedule(self, force: bool = False) -> None:
         """Bring the town to the hour: the look (Shift turns Office on and off by itself) and the quiet."""
         plain, quiet = self.plain, self.quiet
-        if force or (plain != (modes.current() == modes.HIDDEN)):
+        if force or (plain != (modes.current() == modes.OFFICE)):
             self._wear_mode()
             for hut in self.huts.values():
                 if hut.set_plain(plain) and hut.display:
@@ -1055,7 +1055,7 @@ class Desktop(Container):
 
     def flicker_fires(self, now: float | None = None) -> None:
         """A hut whose orc waits for orders burns: its fence flickers, turns red, then its roof burns.
-        In the hidden look it only stands red; in 🌙 quiet hours nothing burns (a ❓ instead)."""
+        In the office look it only stands red; in 🌙 quiet hours nothing burns (a ❓ instead)."""
         if self.quiet:
             for hut in self.huts.values():
                 if hut.has_class("-flame"):
