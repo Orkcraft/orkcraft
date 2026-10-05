@@ -1,4 +1,6 @@
-"""Mason & Artisan: a prompt becomes a validated custom building spec.
+"""Mason & Artisan: a prompt becomes a validated custom building spec. Custom (panes) left the
+catalog: no screen builds one any more (an old Town Scroll's still loads and draws); `build` stays for
+the demo's feature shots. `propose` (the Foreman) is the live build wizard's.
 
     [B] prompt → Mason (data: which sources, which filters) → Artisan (panes, widgets, actions)
               → JSON spec → masonry.validate_spec → valid: raise it / invalid: back to Mason
@@ -188,6 +190,9 @@ def build(request: str, repo_root: Path, existing_ids: set[str] | frozenset[str]
 
 # -- the build wizard: a typed building from the catalog ---------------------------------
 
+RETIRED = ("Custom (panes) buildings are no longer built: pick a camp building, or build one from "
+           "scratch (the Builder's Workshop)")
+
 FOREMAN = """You are the Foreman of orkcraft (a terminal town where every building is a typed block on
 a map, joined by roads that carry events). The operator wants a new building. {pick}
 
@@ -215,13 +220,13 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
             existing_ids: set[str] | frozenset[str] = frozenset(),
             runner: Runner = claude_runner, max_attempts: int = MAX_ATTEMPTS) -> BuildResult:
     """The Foreman's prefilled spec for a typed building, checked like any spec; the AI picks the
-    type when `type_id` is None. A custom (panes) building goes to Mason & Artisan. Never raises."""
+    type when `type_id` is None. Custom (panes) is retired: none is proposed anew. Never raises."""
     from orkcraft.realm import catalog
 
     request = request.strip()[:PROMPT_LIMIT]
     type_id = catalog.ALIASES.get(type_id, type_id) if type_id else type_id   # an old id names its camp building
-    if type_id == catalog.DEFAULT_TYPE:
-        return build(request, repo_root, existing_ids, runner, max_attempts)
+    if type_id in catalog.RETIRED_TYPES:
+        return BuildResult(None, [], error=RETIRED)
     types = [catalog.TYPES[type_id]] if type_id in catalog.TYPES else \
         [t for t in catalog.TYPES.values() if t.id != catalog.DEFAULT_TYPE
          and t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES]
@@ -247,12 +252,11 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
             spec.pop("version", None)
             if type_id:
                 spec["type"] = type_id                 # the operator's pick wins over the model's
-            if spec.get("type") == catalog.DEFAULT_TYPE:
-                attempts.append(attempt)               # the model asks for panes: Mason & Artisan
-                result = build(request, repo_root, existing_ids, runner, max_attempts)
-                result.attempts[:0] = attempts
-                return result
-            attempt.errors = masonry.validate_spec(spec, repo_root, existing_ids)
+            if not spec.get("type") or spec["type"] in catalog.RETIRED_TYPES:   # custom (panes) left the catalog
+                attempt.errors = [f"type: {spec.get('type') or 'missing'!r} is not offered, pick one of the "
+                                  "BUILDING TYPES above"]
+            else:
+                attempt.errors = masonry.validate_spec(spec, repo_root, existing_ids)
         attempts.append(attempt)
         if not attempt.errors:
             return BuildResult(spec, attempts, total)

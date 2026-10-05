@@ -56,7 +56,6 @@ GROUPS = (                                     # the camp map of T1107
     ("Queues and work", ("fields", "barracks", "council", "war_drum")),
     ("Storage, code, inspection", ("forest", "scrolls", "lake", "forge")),
     ("Results, telemetry, egress", ("loot", "crag", "catapult")),
-    ("Other", ("custom",)),
 )
 
 
