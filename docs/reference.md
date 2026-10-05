@@ -144,7 +144,7 @@ spread over the width — and keep the spot you drag them to.
   garrison and Command Card slide in; `esc` hides them. The huts live above the calm strip, so
   nothing on the map moves; the open building shrinks to stay clear of the console.
 - **Garrison, Info, chat**: the garrison lists names and states only (⚙ busy, 💤 idle,
-  🔥 waiting). The **Info** column next to it tells in up to three sentences what the selected
+  🔥 waiting). The **Info** window next to it tells in up to three sentences what the selected
   ork, building or road does — put together from the scroll and the roster, no model call — its
   models (✻ Claude, ✦ agy, ⌬ Codex, P script, 🪧 a free chain, ● the live session's model) and what it cost
   (🪙 $ and 🪵 tokens from the handler's run log, the live session's spend from telemetry; "no data
@@ -583,7 +583,8 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
   default) or later in the ork's orders; the Recruiter proposes one per step. Barracks providers
   and Clan Fire members take a tier in place of a model: `claude:laborer`, `Critic:claude:elder`.
 - **Console of a selected building**: left to right the War Map (36 columns, each orkspace's biome as an icon after its name), the Info
-  panel (the rest), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
+  window (the rest: a window of its own in a round frame, its name — ℹ INFO, the ork's or 🛤 Road — in the frame,
+  a gap on either side), the garrison (22) and the Command Card. Info: the building's icon and name with 👍 / 👎 / 🗑 (demolish), why it
   is here, one quiet line of spend, the week's runs and 👍 / 👎 with *📜 History*, and who it
   listens to (source, signal → the ork or a plain road) with *➕ Listen*. The garrison lists its
   orks one per line — number, tier, name, its models as marks (`✻` Claude orange, `✦` Gemini blue), state. An ork with a question

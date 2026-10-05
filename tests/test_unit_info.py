@@ -47,6 +47,9 @@ async def test_info_panel_for_a_building_and_an_agent_handler(fake_repo: Path):
             await pilot.pause()
         q = lambda sel: str(app.screen.query_one(sel, Static).render())
         assert not app.screen.query_one("#info-body").display and app.screen.query_one("#info-building").display
+        info, warmap = app.screen.query_one("#unit-info"), app.screen.query_one("#warmap")
+        assert info.border_title == "ℹ INFO"                                     # a window of its own, named in its frame
+        assert info.region.x > warmap.region.right and info.styles.border_top[0] == "round"
         assert "Town Hall" in q("#ib-name")
         assert q("#ib-about").strip()
         assert "🪙 $0.31 · 🪵 42k tokens · 1 run" in q("#ib-runs") and "👍 0 👎 0" in q("#ib-runs")
