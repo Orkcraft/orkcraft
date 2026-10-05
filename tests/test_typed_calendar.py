@@ -225,11 +225,11 @@ async def test_a_tagged_cart_is_the_meetings_document_and_enter_opens_it(fake_re
 
 
 def test_barracks_keeps_the_meeting_tag_in_the_task_title(monkeypatch):
+    from orkcraft.core.workers.barracks import BarracksWorker
     from orkcraft.realm import pipes
-    from orkcraft.screens.typed.pool_view import PoolView
     got = []
-    monkeypatch.setattr(PoolView, "add_task", lambda self, title, text, key="", **kw: got.append(title))
-    view = PoolView.__new__(PoolView)
+    monkeypatch.setattr(BarracksWorker, "add_task", lambda self, title, text, key="", **kw: got.append(title))
+    view = BarracksWorker.__new__(BarracksWorker)
     tag = "[meet:0123456789ab]"
     view.receive(pipes.Payload(pipes.TEXT, f"14:00 1:1 Ann (Fri 02) {tag}", "signpost", "signpost.routed", "1on1"), "", "")
     view.receive(pipes.Payload(pipes.TEXT, "x", "drum", "calendar.event_upcoming", "A" * 90 + " " + tag), "", "")

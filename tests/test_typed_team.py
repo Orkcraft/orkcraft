@@ -7,6 +7,8 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
+from orkcraft.core.workers.barracks import BarracksWorker
+from orkcraft.core.workers.council import CouncilWorker
 from orkcraft.realm import masonry, pipes, roads
 from orkcraft.realm import team as tm
 from orkcraft.screens.dialogs import TextPrompt
@@ -121,7 +123,7 @@ async def test_the_clan_fire_reviews_a_barracks_result_and_sends_it_back(fake_re
     assert masonry.save_spec(fake_repo, spec) == []
     s = Script({"Planner": ["APPROVE", "APPROVE"], "Security": ["VETO: unsigned", "APPROVE"],
                 "Steward": ["DECISION: approve\nfine", "DECISION: ask\nShip on Friday?", "DECISION: approve\nyes"]})
-    monkeypatch.setattr(TeamView, "runner", staticmethod(s))
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for event in ("team.artifact_ready", "team.approved", "team.rework"):
         ts.subscribe(app.scroll, "town_hall", "fire", event)
@@ -186,8 +188,8 @@ async def test_a_rework_goes_straight_back_to_the_barracks_onto_the_same_branch(
                   "config": {"members": ["Planner:claude"], "max_cycles": 3, "budget_usd": 1}}):
         assert masonry.save_spec(fake_repo, spec) == []
     s = Script({"Planner": ["CHANGES: no rollback"], "Steward": ["DECISION: rework\nadd a rollback"]})
-    monkeypatch.setattr(TeamView, "runner", staticmethod(s))
-    monkeypatch.setattr(PoolView, "_dispatch", lambda self, task: None)          # no orc runs: only the queue
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
+    monkeypatch.setattr(BarracksWorker, "_dispatch", lambda self, task: None)          # no orc runs: only the queue
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()

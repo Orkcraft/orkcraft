@@ -17,6 +17,7 @@ from typing import Any
 from orkcraft import scroll as ts
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
+from orkcraft.gui import views
 from orkcraft.realm import catalog, chronicles, feedback, inventory, modes, pipes, roads, steward, tiers, unit_info
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
@@ -103,7 +104,8 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
         "pinned": bool(bs.pinned),
         "listens": _listens(town, building_id),
-        "quick": [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
+        "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
+                 [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
     }
 
 

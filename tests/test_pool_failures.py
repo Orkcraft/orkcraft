@@ -9,6 +9,8 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
+from orkcraft.core import bus
+from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import masonry, pipes
 from orkcraft.screens.typed.pool_view import PoolView
@@ -19,8 +21,8 @@ SIZE = (200, 46)
 
 @pytest.fixture(autouse=True)
 def fake_git_and_steward(monkeypatch):
-    monkeypatch.setattr(PoolView, "git", FakeGit())
-    monkeypatch.setattr(PoolView, "steward_runner", Steward())
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit())
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
 
 
 def spec(**config) -> dict:
@@ -80,8 +82,8 @@ def _arrive(app, value):
 
 
 def _app(repo: Path, monkeypatch, crew, maker=None, **config) -> OrkcraftApp:
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(crew))
-    monkeypatch.setattr(PoolView, "worktree_maker",
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(crew))
+    monkeypatch.setattr(BarracksWorker, "worktree_maker",
                         staticmethod(maker or (lambda r, bid, orc: (r, f"pool/{bid}/{orc.lower()}"))))
     assert masonry.save_spec(repo, spec(**config)) == []
     app = OrkcraftApp(repo_root=repo, auto_commit=False)
@@ -122,7 +124,7 @@ async def test_a_crashing_agent_fails_its_task_only(fake_repo: Path, monkeypatch
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
         runs = []
-        app.on_handler_run = runs.append
+        app.core.bus.subscribe(bus.RUN, lambda e: runs.append(e.data["run"]))
         for t in ("T2001", "T2002", "T2003"):
             _arrive(app, t)
         assert await _until(pilot, lambda: len(crew.calls) == 2)
@@ -160,7 +162,7 @@ async def test_closing_the_building_stops_its_orcs(fake_repo: Path, monkeypatch)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
         runs = []
-        app.on_handler_run = runs.append
+        app.core.bus.subscribe(bus.RUN, lambda e: runs.append(e.data["run"]))
         _arrive(app, "T3001")
         _arrive(app, "T3002")
         assert await _until(pilot, lambda: crew.running == 2)
@@ -307,7 +309,7 @@ def _calls_done(crew, n):
 @pytest.mark.asyncio
 async def test_each_task_has_its_branch_and_an_accepted_one_gets_a_pr(fake_repo: Path, monkeypatch):
     crew, git = Crew(), FakeGit(pr="https://github.com/o/r/pull/7")
-    monkeypatch.setattr(PoolView, "git", git)
+    monkeypatch.setattr(BarracksWorker, "git", git)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -332,8 +334,8 @@ async def test_the_barracks_decides_who_needs_a_pull_request(fake_repo: Path, mo
     """Code always goes out reviewed as a PR; a meeting's document never; other documents as the steward says."""
     crew, git = Crew(), FakeGit(pr="https://github.com/o/r/pull/9", files=("docs/notes.md",))
     steward = Steward(verdicts=["ACCEPT\nSCOPE: local", "ACCEPT", "ACCEPT"])
-    monkeypatch.setattr(PoolView, "git", git)
-    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    monkeypatch.setattr(BarracksWorker, "git", git)
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -374,7 +376,7 @@ def test_code_is_always_external():
 async def test_rework_goes_back_to_the_same_orc_at_most_three_times(fake_repo: Path, monkeypatch):
     crew = Crew()
     steward = Steward(verdicts=["REWORK: add a test"] * 4)
-    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=2)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -405,8 +407,8 @@ async def test_rework_goes_back_to_the_same_orc_at_most_three_times(fake_repo: P
 @pytest.mark.asyncio
 async def test_failing_tests_send_it_back_without_asking_the_model(fake_repo: Path, monkeypatch):
     crew, steward = Crew(), Steward()
-    monkeypatch.setattr(PoolView, "git", FakeGit(tests=(False, "FAILED test_login - assert 1 == 2")))
-    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit(tests=(False, "FAILED test_login - assert 1 == 2")))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1, test_cmd="pytest -q", max_reworks=1)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -422,7 +424,7 @@ async def test_failing_tests_send_it_back_without_asking_the_model(fake_repo: Pa
 @pytest.mark.asyncio
 async def test_nothing_committed_is_not_accepted(fake_repo: Path, monkeypatch):
     crew = Crew()
-    monkeypatch.setattr(PoolView, "git", FakeGit(commits=0))
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit(commits=0))
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1, max_reworks=0)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -437,7 +439,7 @@ async def test_nothing_committed_is_not_accepted(fake_repo: Path, monkeypatch):
 async def test_the_steward_answers_from_its_rules_or_asks_the_operator(fake_repo: Path, monkeypatch):
     crew = Asker()
     steward = Steward(answers=["PostgreSQL — rule 2"])
-    monkeypatch.setattr(PoolView, "steward_runner", steward)
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1, orders="1. Type hints.\n2. The database is PostgreSQL.")
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -554,7 +556,7 @@ def test_task_git_cuts_reuses_and_publishes_branches(fake_repo: Path, tmp_path: 
 @pytest.mark.asyncio
 async def test_a_real_orc_commits_on_its_task_branch(fake_repo: Path, monkeypatch):
     """Real worktrees and real git; only the agent and the steward are fakes."""
-    monkeypatch.setattr(PoolView, "git", None)
+    monkeypatch.setattr(BarracksWorker, "git", None)
 
     def coder(harness, prompt, workdir, cancel, model, env, resume):
         name = prompt.split("## Task", 1)[1].splitlines()[0].split(":")[-1].strip()
@@ -563,8 +565,8 @@ async def test_a_real_orc_commits_on_its_task_branch(fake_repo: Path, monkeypatc
         _git(workdir, "commit", "-m", name)
         return f"added {name}.txt", 0.0, 10, ""
 
-    monkeypatch.setattr(PoolView, "work_runner", staticmethod(coder))
-    monkeypatch.setattr(PoolView, "worktree_maker", None)
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(coder))
+    monkeypatch.setattr(BarracksWorker, "worktree_maker", None)
     assert masonry.save_spec(fake_repo, spec(max_orcs=2)) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:

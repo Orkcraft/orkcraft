@@ -8,6 +8,7 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
+from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import gate, generated, masonry, pipes
 from orkcraft.screens.typed.generator_view import GeneratorView
 
@@ -116,14 +117,13 @@ async def test_the_checkpoint_holds_sends_back_and_burns(fake_repo: Path, monkey
 
 @pytest.mark.asyncio
 async def test_rework_goes_back_by_delivery_to_a_building_that_takes_work(fake_repo: Path, monkeypatch):
-    from orkcraft.screens.typed.pool_view import PoolView
     for s in ({"id": "camp2", "title": "Camp", "icon": "🏕", "orc": {"name": "Grunts"}, "type": "barracks"},
               {"id": "council2", "title": "Clan Fire", "icon": "🪔", "orc": {"name": "Chieftains"}, "type": "council"},
               {"id": "crag", "title": "Crag", "icon": "🪨", "orc": {"name": "Carver"}, "type": "crag"}):
         assert masonry.save_spec(fake_repo, s) == []
     started = []
-    monkeypatch.setattr(PoolView, "receive", lambda self, payload, title, md: started.append((md, payload.ref,
-                                                                                             payload.trail)))
+    monkeypatch.setattr(BarracksWorker, "receive", lambda self, payload, title, md: started.append((md, payload.ref,
+                                                                                                   payload.trail)))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -141,12 +141,11 @@ async def test_rework_goes_back_by_delivery_to_a_building_that_takes_work(fake_r
 
 @pytest.mark.asyncio
 async def test_a_rework_finds_the_barracks_past_a_mill(fake_repo: Path, monkeypatch):
-    from orkcraft.screens.typed.pool_view import PoolView
     for s in ({"id": "camp2", "title": "Camp", "icon": "🏕", "orc": {"name": "Grunts"}, "type": "barracks"},
               {"id": "grinder", "title": "Mill", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill"}):
         assert masonry.save_spec(fake_repo, s) == []
     got = []
-    monkeypatch.setattr(PoolView, "receive", lambda self, payload, title, md: got.append(payload.ref))
+    monkeypatch.setattr(BarracksWorker, "receive", lambda self, payload, title, md: got.append(payload.ref))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
