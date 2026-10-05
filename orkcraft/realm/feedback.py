@@ -54,7 +54,7 @@ WEIGHTS = {
     "lake.reshaped": 0.5,          # … its format changed
     "lake.rewritten": 0.5,         # … rewritten
     "pr.merged": 1.0,              # its pull request merged
-    "pr.closed": 1.0,              # … closed without merging
+    "pr.closed": 0.5,              # … closed without merging (a duplicate says nothing)
     "revert": 1.0,                 # a change of the orks taken back with Z
     "usage.ignored": 0.1,          # a result nobody opened in IGNORED_AFTER
 }
@@ -334,6 +334,14 @@ def disliked(root: Path, building: str, since: str = "", rows: list[Incident] | 
     rows = rows if rows is not None else incidents(root, 1000)
     return round(sum(i.share(building) for i in rows if i.ts >= since and i.source not in NOT_QUALITY
                      and not (quality and i.tag == "cost")), 3)
+
+
+def fed_broken(root: Path, building: str, since: str = "", rows: list[Incident] | None = None) -> float:
+    """What `building` carries since `since` for the broken inputs it fed others: its part of the
+    cascade of incidents told about a building after it (`rows`: incidents already read)."""
+    rows = rows if rows is not None else incidents(root, 1000)
+    return round(sum(i.share(building) for i in rows if i.ts >= since and i.kind == "inputs"
+                     and i.building != building and i.source not in NOT_QUALITY), 3)
 
 
 def blaming(root: Path, building: str, since: str = "", limit: int = 1000) -> list[Incident]:

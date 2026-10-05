@@ -829,6 +829,9 @@ The order lives in `.orkcraft/town/order.json`; every plan request is logged in
   or `.git`); `--repo PATH` for another one.
 - `orkcraft hooks install` / `uninstall` — add (or remove) the session log and the Warder guard
   to the project's `.claude/settings.json`; other hooks and settings stay as they are.
+- `orkcraft feedback calibrate [--days N]` — how far each quiet feedback signal (an accepted cart, an
+  edited file, a closed pull request…) agrees with the 👍 / 👎 pressed near it, and the weight it has
+  earned; it changes nothing (docs/design/native-feedback.md §8).
 - `orkcraft --demo` — the showcase sandbox (simulated data).
 
 ## Installation

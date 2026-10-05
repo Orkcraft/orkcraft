@@ -3,6 +3,8 @@ never applied on its own (operator decision 2026-10-02; goals: docs/design/retro
 
     the leader   in this order:
                    💎 quality buildings the operator 👎-d this week
+                   🪙 / ⚖️ suppliers whose results came back as broken inputs downstream (the cascade, a
+                   weight of ENOUGH this week), whatever they spend — worked on as ⚖️
                    🪙 / ⚖️ buildings by how much of the camp and of the limit they eat (realm/pressure.py:
                    the share of the last 24 h, or the pressure on the binding quota when one is read),
                    from MIN_SHARE of the camp up; 🪙 thrift when no 👍 since its last change (its last
@@ -97,9 +99,12 @@ class Candidate:
     goal: str = "balance"  # the goal the retro works towards now (a tight camp may lower 💎 to ⚖️)
     failures: int = 0      # 💎: failed runs this week
     rated: bool = True     # 💎: was it ever rated
+    fed: int = 0           # what it fed was sent back for broken inputs this week (the cascade, by weight)
 
     @property
     def reason(self) -> str:
+        if self.fed:
+            return f"what it fed others came back as broken inputs {self.fed}× this week — fix what it passes on"
         if self.goal == "quality":
             if self.dislikes:
                 return f"the operator disliked it {self.dislikes}× this week"
@@ -178,10 +183,10 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
         g = goals.get(bid) or "balance"
         return "balance" if g == "quality" and bid in heavy else g
 
-    def cand(bid: str, likes: int, dislikes: int, **extra) -> Candidate:
+    def cand(bid: str, likes: int, dislikes: int, aim: str = "", **extra) -> Candidate:
         use = camp.use(bid)
         return Candidate(bid, use.tokens, round(costs.get(bid, 0.0), 4), likes, dislikes, round(use.share, 4),
-                         pressure.describe(use, camp), goal(bid), **extra)
+                         pressure.describe(use, camp), aim or goal(bid), **extra)
 
     def disliked(bid: str, since: str, quality: bool = False) -> int:
         """👎 since `since`, counting what the operator did with its results by weight: a quiet
@@ -197,6 +202,16 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
                   reverse=True)
     if hurt:
         return cand(hurt[0], 0, disliked(hurt[0], week_ts, True))
+    # 🪙 / ⚖️ a supplier whose results keep coming back as broken inputs downstream, whatever it
+    # spends: ⚖️ for this turn, as a shorter prompt alone would not fix what it passes on. Only one
+    # that called a model this week — a chain or a script has no prompt to change
+    spent = {str(r.get("building") or "") for r in rows if int(r.get("tokens") or 0) > 0}
+    fed = {b: feedback.fed_broken(repo_root, b, week_ts, incidents) for b in spent
+           if b and goal(b) != "quality" and (not goals or b in goals)}
+    fed = {b: w for b, w in fed.items() if w >= feedback.ENOUGH - 1e-9}
+    if fed:
+        bid = max(sorted(fed), key=lambda b: fed[b])
+        return cand(bid, 0, disliked(bid, week_ts), "balance", fed=int(fed[bid] / feedback.ENOUGH + 1e-9))
     # 🪙 / ⚖️ by the share and pressure
     for bid in sorted(camp.buildings, key=lambda b: (camp.buildings[b].weight, camp.buildings[b].tokens), reverse=True):
         if goal(bid) == "quality":

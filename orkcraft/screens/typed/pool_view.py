@@ -41,6 +41,7 @@ ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗"}
 STEWARD = "steward"
 PR_CHECK_S = 600                  # how often the pull requests of done tasks are looked at
+DUPLICATE_LABELS = frozenset({"duplicate", "superseded"})   # a closed pull request so labelled is no 👎
 
 
 def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
@@ -152,18 +153,40 @@ class PoolView(TypedView):
 
     def settle_prs(self, prs: dict) -> int:
         """A pull request merged is a 👍 for this Barracks, one closed without merging a 👎 — what the
-        operator thought of the work, without pressing anything. Returns how many were settled."""
+        operator thought of the work, without pressing anything. A closed one that was a duplicate
+        says nothing: labelled so (`DUPLICATE_LABELS`), or another task of the same title merged — and
+        while that one is still open, the closed one waits. Returns how many were settled."""
         by_url = {getattr(pr, "url", ""): pr for pr in prs.values()}
+
+        def pr_of(task):
+            return by_url.get(task.pr) or prs.get(task.branch)
+
+        def state_of(task) -> str:
+            return task.pr_state or str(getattr(pr_of(task), "state", "")).upper()
+
+        def twins(task) -> list[str]:
+            title = task.title.strip().lower()
+            return [state_of(t) for t in self.state.tasks
+                    if t is not task and t.pr and t.title.strip().lower() == title]
+
         settled = 0
         for task in self.state.tasks:
             if task.status != "done" or not task.pr or task.pr_state:
                 continue
-            pr = by_url.get(task.pr) or prs.get(task.branch)
+            pr = pr_of(task)
             state = str(getattr(pr, "state", "")).upper()
             if state not in ("MERGED", "CLOSED"):
                 continue
-            task.pr_state, settled = state, settled + 1
             good = state == "MERGED"
+            duplicate = False
+            if not good:
+                others = twins(task)
+                if any(s in ("OPEN", "DRAFT") for s in others):
+                    continue                                    # wait: it may be the twin that merges
+                duplicate = "MERGED" in others or bool(set(getattr(pr, "labels", ())) & DUPLICATE_LABELS)
+            task.pr_state, settled = state, settled + 1
+            if duplicate:
+                continue
             feedback.signal(self._get_repo_root(), self.building_id, good, "pr.merged" if good else "pr.closed",
                             value=task.result or task.title,
                             note=f"{task.title}: pull request {'merged' if good else 'closed without merging'} {task.pr}")

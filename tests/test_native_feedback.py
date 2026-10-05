@@ -307,9 +307,39 @@ async def test_a_merged_pull_request_is_a_like_and_a_closed_one_a_dislike(fake_r
                "pool/camp/t2": gitinfo.PR(2, "CLOSED", "https://github.com/o/r/pull/2"),
                "pool/camp/t3": gitinfo.PR(3, "OPEN", "https://github.com/o/r/pull/3")}
         assert view.settle_prs(prs) == 2 and view.settle_prs(prs) == 0        # each once
-        assert feedback.liked(fake_repo, "camp") == 1.0 and feedback.disliked(fake_repo, "camp") == 1.0
+        assert feedback.liked(fake_repo, "camp") == 1.0 and feedback.disliked(fake_repo, "camp") == 0.5
         assert [t.pr_state for t in view.state.tasks] == ["MERGED", "CLOSED", ""]
         assert bk.Barracks(view.state_dir).tasks[0].pr_state == "MERGED"      # saved
+
+
+@pytest.mark.asyncio
+async def test_a_closed_duplicate_pull_request_says_nothing(fake_repo: Path):
+    from orkcraft.screens.typed.pool_view import PoolView
+    spec = {"id": "camp", "title": "Camp", "icon": "🏕", "orc": {"name": "Foreman"}, "type": "pool"}
+    assert masonry.save_spec(fake_repo, spec) == []
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("camp").query_one(PoolView)
+        url = "https://github.com/o/r/pull/"
+        view.state.tasks = [bk.PoolTask("t1", "Login page", "x", status="done", branch="b1", pr=url + "1"),
+                            bk.PoolTask("t2", "login page ", "x", status="done", branch="b2", pr=url + "2"),
+                            bk.PoolTask("t3", "Docs", "x", status="done", branch="b3", pr=url + "3")]
+        prs = {"b1": gitinfo.PR(1, "CLOSED", url + "1"), "b2": gitinfo.PR(2, "OPEN", url + "2"),
+               "b3": gitinfo.PR(3, "CLOSED", url + "3", labels=("superseded",))}
+        assert view.settle_prs(prs) == 1                      # #3 labelled; #1 waits for its twin
+        assert [t.pr_state for t in view.state.tasks] == ["", "", "CLOSED"]
+        prs["b2"] = gitinfo.PR(2, "MERGED", url + "2")
+        assert view.settle_prs(prs) == 2                      # the twin merged: #1 was a duplicate
+        assert feedback.incidents(fake_repo) == [] and feedback.liked(fake_repo, "camp") == 1.0
+
+
+def test_gh_s_labels_are_read():
+    import json as _json
+    import subprocess
+    row = {"number": 4, "state": "CLOSED", "headRefName": "b", "url": "u", "title": "t", "labels": [{"name": "Duplicate"}]}
+    run = lambda *a, **k: subprocess.CompletedProcess(a, 0, _json.dumps([row]), "")
+    assert gitinfo.pull_requests(Path("."), runner=run)["b"].labels == ("duplicate",)
 
 
 @pytest.mark.asyncio
@@ -325,3 +355,91 @@ async def test_z_on_a_retro_s_change_is_a_dislike_and_on_your_own_is_not(fake_re
         assert app.revert_by_you("brief")
         [inc] = feedback.incidents(fake_repo)
         assert (inc.building, inc.source, inc.weight) == ("brief", "revert", 1.0) and "auto-improve" in inc.note
+
+
+@pytest.mark.asyncio
+async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake_repo: Path, monkeypatch):
+    from orkcraft.screens.typed import lake_view
+    spec = {"id": "insight", "title": "Lake", "icon": "🌊", "orc": {"name": "Seer"}, "type": "lake"}
+    assert masonry.save_spec(fake_repo, spec) == []
+    (fake_repo / "daily.md").write_text(DAILY)
+    (fake_repo / "other.md").write_text(DAILY)
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        view = app.desktop.get_window("insight").query_one(lake_view.LakeView)
+        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: [])
+        for name, maker in (("daily.md", "brief"), ("other.md", "scribe")):
+            app.deliver_payload("insight", pipes.Payload(pipes.FILE, name, maker, "mill.done", name,
+                                                         (pipes.hop(maker, "w", "agent"),)))
+            for _ in range(40):
+                await pilot.pause(0.05)
+                if view.view is not None and view.view.path.endswith(name):
+                    break
+        view.show_value("file", str(fake_repo / "daily.md"), "daily")
+        for _ in range(40):
+            await pilot.pause(0.05)
+            if view.view is not None and view.view.path.endswith("daily.md"):
+                break
+        view.action_edit()
+        view.query_one("#lake-edit").load_text(DAILY.replace("## Notes", "## Log"))
+        view._autosave_tick()                                       # saved, but typed just now
+        assert feedback.incidents(fake_repo) == []
+        monkeypatch.setattr(lake_view, "JUDGE_IDLE_S", 0)
+        view._autosave_tick()                                       # left alone long enough
+        view._autosave_tick()                                       # … judged once
+        [inc] = feedback.incidents(fake_repo)
+        assert (inc.building, inc.source) == ("brief", "lake.reshaped")
+        view.action_leave_edit()
+        assert len(feedback.incidents(fake_repo)) == 1
+        view.show_value("file", str(fake_repo / "other.md"), "other")
+        for _ in range(40):
+            await pilot.pause(0.05)
+            if view.view is not None and view.view.path.endswith("other.md"):
+                break
+        view.action_edit()
+        view.query_one("#lake-edit").load_text("something else\nentirely")
+        monkeypatch.setattr(lake_view, "JUDGE_IDLE_S", 10_000)
+    # the app closed with the editor open
+    assert (fake_repo / "other.md").read_text() == "something else\nentirely"
+    assert [(i.building, i.source) for i in feedback.incidents(fake_repo)] == [("scribe", "lake.rewritten"),
+                                                                                 ("brief", "lake.reshaped")]
+
+
+# -- the cascade in the Building retro and the calibration --------------------------------------------
+
+def test_a_supplier_that_keeps_breaking_inputs_is_due_whatever_it_spends(tmp_path: Path):
+    from orkcraft.realm import metrics
+    now = dt.datetime.now()
+    metrics.record_run(tmp_path, "big", "done", 0.01, 10_000, now=now)
+    metrics.record_run(tmp_path, "feeder", "done", 0.01, 10, now=now)             # far under MIN_SHARE
+    feedback.record_output(tmp_path, "big", "mill.done", "fine")
+    feedback.like(tmp_path, "big")
+    assert optimize.leader(tmp_path, now, goals={"big": "thrift", "feeder": "thrift"}) is None
+    trail = (pipes.hop("feeder", "w", "agent"), pipes.hop("writer", "w", "agent"))
+    blamed = feedback.trail_blame(trail, "writer", "inputs")
+    feedback.signal(tmp_path, "writer", False, "loot.rework", value="x", kind="inputs", blamed=blamed)
+    assert optimize.leader(tmp_path, now, goals={"big": "thrift", "feeder": "thrift"}) is None   # 0.5: not yet
+    feedback.signal(tmp_path, "writer", False, "loot.dropped", value="y", kind="inputs", blamed=blamed)
+    cand = optimize.leader(tmp_path, now, goals={"big": "thrift", "feeder": "thrift"})
+    assert (cand.building, cand.goal, cand.fed) == ("feeder", "balance", 1) and "broken inputs" in cand.reason
+    assert "enrich" in cand.actions
+    assert optimize.leader(tmp_path, now, goals={"big": "thrift"}) is None       # gone from the town
+
+
+def test_calibration_measures_quiet_signals_against_the_buttons(tmp_path: Path):
+    from orkcraft.realm import calibrate
+    for i in range(6):
+        feedback.signal(tmp_path, "a", True, "loot.accepted", value=f"ok {i}")
+        feedback.signal(tmp_path, "a", False, "lake.touched", value=f"meh {i}")
+    feedback.record_output(tmp_path, "a", "mill.done", "fine")
+    feedback.like(tmp_path, "a")
+    feedback.like(tmp_path, "a")
+    feedback.signal(tmp_path, "b", False, "loot.dropped", value="z")                # no button near it
+    rows = {r.source: r for r in calibrate.report(tmp_path)}
+    acc, touched = rows["loot.accepted"], rows["lake.touched"]
+    assert (acc.count, acc.matched, acc.agreed) == (6, 6, 6) and acc.suggested is not None and acc.suggested > 0.34
+    assert (touched.matched, touched.agreed, touched.suggested) == (6, 0, calibrate.FLOOR)
+    assert (rows["loot.dropped"].count, rows["loot.dropped"].matched, rows["loot.dropped"].suggested) == (1, 0, None)
+    assert "usage.ignored" not in rows and "loot.accepted" in calibrate.render(list(rows.values()))
+    assert calibrate.suggest(3, 4) is None and calibrate.suggest(50, 50) > calibrate.suggest(5, 5)

@@ -12,16 +12,18 @@ never overwritten by an autosave: the Lake says so, and `ctrl+s` writes your tex
 the editor after a save sends `lake.saved` with the file.
 
 An ork's file (a cart with a trail) is kept as the ork made it (`lake.Origins`). When the person
-leaves the editor, their text is compared with the ork's (`realm/edits.py`): filling it in — a
-daily note the ork laid out and the person writes into — says nothing against the ork; fixing it,
-changing its format or rewriting it is a 👎 for the building that made it (`feedback.signal`), with
-the edit unless the file is personal. A file git tracks unchanged since the last commit was only
-pointed at, not written: it is not the ork's. A file that came and was never opened for a day
-counts as unused (`feedback.await_view`; opening this Lake sees it).
+leaves the editor — or closes the app in it, or saves and leaves it alone for `JUDGE_IDLE_S` — their
+text is compared with the ork's (`realm/edits.py`): filling it in — a daily note the ork laid out
+and the person writes into — says nothing against the ork; fixing it, changing its format or
+rewriting it is a 👎 for the building that made it (`feedback.signal`), with the edit unless the file
+is personal. A file git tracks unchanged since the last commit was only pointed at, not written: it
+is not the ork's. A file that came and was never opened for a day counts as unused
+(`feedback.await_view`; opening this Lake sees it).
 """
 from __future__ import annotations
 
 import threading
+import time
 import webbrowser
 from pathlib import Path
 
@@ -40,6 +42,7 @@ from orkcraft.screens.typed.base import TypedView
 STYLE = {"-": ("red", ""), "+": ("", "green"), "~": ("red", "green"), "@": ("bold cyan", "bold cyan"), " ": ("", "")}
 DIFF_ROWS = 2000
 AUTOSAVE_S = 5
+JUDGE_IDLE_S = 600     # an edit saved and left alone this long is judged, the editor still open
 
 
 class LakeView(TypedView):
@@ -61,6 +64,9 @@ class LakeView(TypedView):
         self.conflict = False
         self.saved_any = False                   # something was written since the editor opened
         self._autosave: Timer | None = None
+        self._typed = 0.0                        # when the editor's text last changed (monotonic)
+        self._editor: TextArea | None = None     # the editor, for on_unmount (its children are gone by then)
+        self._judged = ""                        # the text last judged while the editor stayed open
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="lake-head", classes="typed-head")
@@ -141,7 +147,8 @@ class LakeView(TypedView):
             self.app.notify(f"{v.title}: {e}", title="🌊 Lake", severity="warning")
             return
         self.conflict, self.saved_any, self.edit_note = False, False, ""
-        editor = self.query_one("#lake-edit", TextArea)
+        self._typed, self._judged = time.monotonic(), ""
+        editor = self._editor = self.query_one("#lake-edit", TextArea)
         editor.load_text(self.draft.text)
         editor.show_line_numbers = v.kind != "markdown"
         self.query_one("#lake-scroll").display = False
@@ -151,8 +158,10 @@ class LakeView(TypedView):
         self._render_head()
 
     def _autosave_tick(self) -> None:
-        if self.editing and not self.conflict:
-            self.action_save()
+        if self.editing and not self.conflict and self.action_save():
+            if self.saved_any and time.monotonic() - self._typed >= JUDGE_IDLE_S and self._judged != self.draft.text:
+                self._judged = self.draft.text                  # saved and left alone: as good as left
+                self._judge(self.draft.path, self.draft.text)
 
     @property
     def dirty(self) -> bool:
@@ -187,6 +196,8 @@ class LakeView(TypedView):
         return True
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area.id == "lake-edit":
+            self._typed = time.monotonic()
         if event.text_area.id == "lake-edit" and self.dirty and not self.conflict:
             self.edit_note = "● unsaved"
             self._render_head()
@@ -237,9 +248,13 @@ class LakeView(TypedView):
             pass
 
     def on_unmount(self) -> None:
-        if self.draft is not None and not self.conflict:
+        """The app closes (or the window goes) with the editor open: save, and judge what was saved.
+        The editor is already unmounted here, so it is the one `action_edit` kept."""
+        if self.draft is not None and not self.conflict and self._editor is not None:
             try:
-                lake.save(self.draft, self.query_one("#lake-edit", TextArea).text)
+                saved = lake.save(self.draft, self._editor.text) == "saved"
+                if saved or self.saved_any:
+                    self._judge(self.draft.path, self.draft.text)
             except Exception:
                 pass
 
