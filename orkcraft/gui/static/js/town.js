@@ -19,7 +19,7 @@ const dropped = signal({});                // building id → {x, y}: where a hu
 const MIN_ROOM = { w: 1080, h: 600 };
 const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
-const STRIP = 0.3, STRIP_MIN = 180;         // the War Map's share of the window (layout.css .gui-strip): no hut under it
+const STRIP = 0.21, STRIP_MIN = 126;         // the War Map's share of the window (layout.css .gui-strip): no hut under it
 
 /** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the strip. */
 function free(size) {

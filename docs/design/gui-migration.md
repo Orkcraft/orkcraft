@@ -228,7 +228,7 @@ orkcraft/gui/
 
 - The shell: HUD (Office words for the resources), the town with huts and orthogonal roads, toasts,
   Halt All in the status bar. The strip over the town's bottom is the TUI's console: the War Map
-  (the orkspaces only, a small square at the left, its list scrolls) and, for the selected
+  (the orkspaces only, a small block at the left, about a fifth of the window high; its list scrolls) and, for the selected
   building, its Info, its garrison (or a picked ork's Inventory) and its Command Card, laid out as
   the TUI's console.
 

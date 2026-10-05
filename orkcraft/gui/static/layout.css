@@ -20,15 +20,16 @@ button { font: inherit; color: inherit; }
 .gui-hud__project { color: var(--ink-muted); }
 
 /* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
-   square at the left; its list scrolls) and, while a building is selected, its Info, its garrison and
+   block at the left, 240px wide; its list scrolls) and, while a building is selected, its Info, its garrison and
    its Command Card, as the TUI's console.
    It shares the town's grid area, so it stays put while the town scrolls. The strip is 50% of the
    window's height: the Command Card takes all of it, as wide as tall; Info and the garrison
-   are as tall as the War Map: 60% of it, about 30% (STRIP in js/town.js keeps the huts above it). */
+   are as tall as the War Map: 42% of it, about 21% (STRIP in js/town.js keeps the huts above it). */
 .gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
   display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
 .gui-strip > * { pointer-events: auto; }
-.gui-warmap { flex: none; height: 60%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
+.gui-warmap { flex: none; height: 42%; width: 240px; display: flex; flex-direction: column; }
+.gui-warmap .ok-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-warmap > .ok-list__head { flex: none; }
 .gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
 .gui-warmap .ok-item { cursor: pointer; }
@@ -51,8 +52,8 @@ button { font: inherit; color: inherit; }
 /* A selected building, as the TUI's console (js/console.js): Info fills the room after the War Map and
    is as tall as it; the garrison (or an ork's Inventory) a narrow column as tall; the Command Card a
    square window at the right, half the window high. */
-.gui-console { flex: 1; height: 60%; min-width: 0; }
-.gui-roster { flex: none; width: 220px; height: 60%; min-width: 0; }
+.gui-console { flex: 1; height: 42%; min-width: 0; }
+.gui-roster { flex: none; width: 220px; height: 42%; min-width: 0; }
 .gui-card { flex: none; height: 100%; aspect-ratio: 1; width: auto; min-width: 0; }
 :is(.gui-console, .gui-roster, .gui-card) > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-console__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }
