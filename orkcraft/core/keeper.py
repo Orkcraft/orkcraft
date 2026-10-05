@@ -6,7 +6,9 @@ Nobody edits a building's rules or settings by hand.
     keeper.apply(town, building_id, proposal, request)     # checked again, saved, a checkpoint (Z takes it back)
 
 What a keeper may change is its type's **subject**: the building's whole `config` (every type), or a part
-of it a type registers with `register` (the Signpost's `rules` here; other types add theirs). Every
+of it a type registers with `register` (the Signpost's `rules`, the Workshop's script and schedule here;
+other types add theirs). A part may live outside the spec (the Workshop's script is a file): the subject
+then loads it, checks it and keeps it when the proposal is taken, in the same checkpoint. Every
 proposal is checked like any spec (`masonry.validate_spec`, so `catalog.validate` and the type's own
 checks); a rejected answer goes back to the model with its problems. A request may come with a
 selection (a part of a document in Lake): the keeper then answers about it, and may still propose a change.
@@ -26,7 +28,7 @@ from typing import Any, Callable
 from orkcraft import scroll as ts
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import builders, catalog, evolution, masonry, signpost
+from orkcraft.realm import builders, catalog, evolution, masonry, signpost, workshop
 
 MAX_ATTEMPTS = 3
 SELECTION_LIMIT = 20_000
@@ -35,7 +37,9 @@ SELECTION_LIMIT = 20_000
 @dataclass(frozen=True)
 class Subject:
     """What a type's keeper writes: `read` takes it out of a spec, `write` puts a new one in (a new spec);
-    `shape` says what is wrong with a value's form before the spec is checked; `lines` shows it for the diff."""
+    `shape` says what is wrong with a value's form before the spec is checked; `lines` shows it for the diff.
+    A part kept outside the spec (a file): `load` reads the whole value in place of `read`, `problems` checks
+    it against the spec, `keep` saves it when the proposal is taken (before the checkpoint)."""
     kind: str
     what: str
     language: Callable[[dict], str]
@@ -43,6 +47,13 @@ class Subject:
     write: Callable[[dict, Any], dict]
     shape: Callable[[Any], str | None]
     lines: Callable[[Any], list[str]]
+    load: Callable[[Path, str, dict], Any] | None = None
+    problems: Callable[[dict, Any], list[str]] | None = None
+    keep: Callable[[Path, str, dict, Any], None] | None = None
+
+    def now(self, repo_root: Path, building_id: str, spec: dict) -> Any:
+        """What it is now: from the spec, and from its files when it keeps a part outside it."""
+        return self.load(repo_root, building_id, spec) if self.load else self.read(spec)
 
 
 def _config_lines(config: Any) -> list[str]:
@@ -83,7 +94,72 @@ RULES = Subject(
     lines=lambda value: [str(x) for x in value or []],
 )
 
-SUBJECTS: dict[str, Subject] = {"signpost": RULES}
+SCRIPT_LIMIT = 64 * 1024
+
+
+def _ws_runtime(spec: dict) -> str:
+    return str((spec.get("config") or {}).get("runtime") or "python")
+
+
+def _ws_read(spec: dict) -> dict:
+    return {"schedule": str((spec.get("config") or {}).get("schedule") or "").strip(), "script": ""}
+
+
+def _ws_load(repo_root: Path, building_id: str, spec: dict) -> dict:
+    return {**_ws_read(spec), "script": workshop.load_script(repo_root, building_id, _ws_runtime(spec))}
+
+
+def _ws_write(spec: dict, value: dict) -> dict:
+    config = {k: v for k, v in (spec.get("config") or {}).items() if k != "schedule"}
+    if str(value.get("schedule") or "").strip():
+        config["schedule"] = str(value["schedule"]).strip()
+    return {**spec, "config": config}
+
+
+def _ws_shape(value: Any) -> str | None:
+    if not isinstance(value, dict) or set(value) != {"schedule", "script"}:
+        return 'value must be a JSON object {"schedule": "...", "script": "..."}'
+    if not isinstance(value["schedule"], str) or not isinstance(value["script"], str):
+        return 'schedule and script must be strings (schedule "" runs it only on carts)'
+    if len(value["script"]) > SCRIPT_LIMIT:
+        return f"the script is longer than {SCRIPT_LIMIT} characters"
+    return None
+
+
+def _ws_problems(spec: dict, value: dict) -> list[str]:
+    why = workshop.check_syntax(value["script"], _ws_runtime(spec))
+    return [f"script: {why}"] if why else []
+
+
+def _ws_keep(repo_root: Path, building_id: str, spec: dict, value: dict) -> None:
+    runtime = _ws_runtime(spec)
+    if value["script"] != workshop.load_script(repo_root, building_id, runtime):
+        workshop.save_script(repo_root, building_id, runtime, value["script"])
+
+
+def _ws_language(spec: dict) -> str:
+    runtime = _ws_runtime(spec)
+    contract = (workshop.__doc__ or "").split("The contract", 1)[-1].split("Scripts run with", 1)[0].strip()
+    name = workshop.RUNTIMES.get(runtime, workshop.RUNTIMES["python"])[1]
+    return (f"The script is {runtime} ({name}), run with no shell in the project's folder. The contract {contract}\n"
+            f"schedule: {catalog.CONFIG_HELP['workshop']['schedule']}; \"\" runs it only on carts.\n"
+            "The runtime, the layout and the steward prompt stay as they are.")
+
+
+def _ws_lines(value: Any) -> list[str]:
+    value = value or {}
+    return [f"schedule: {value.get('schedule') or 'none'}", "script:",
+            *[f"  {line}" for line in str(value.get("script") or "").splitlines()]]
+
+
+SCRIPT = Subject(
+    "script and schedule", "the Workshop's script and its schedule: a JSON object "
+    '{"schedule": "<when it runs on its own, or empty>", "script": "<the whole script, as it should be>"}',
+    _ws_language, read=_ws_read, write=_ws_write, shape=_ws_shape, lines=_ws_lines,
+    load=_ws_load, problems=_ws_problems, keep=_ws_keep,
+)
+
+SUBJECTS: dict[str, Subject] = {"signpost": RULES, "workshop": SCRIPT}
 
 
 def register(type_id: str, subject: Subject) -> None:
@@ -202,6 +278,8 @@ def check(answer: Any, spec: dict, subject: Subject, repo_root: Path,
     wrong = subject.shape(value)
     if wrong:
         return None, [wrong]
+    if subject.problems and (own := subject.problems(spec, value)):
+        return None, own
     problems = masonry.validate_spec(subject.write(copy.deepcopy(spec), value), repo_root, existing_ids)
     return (value, []) if not problems else (None, problems)
 
@@ -212,7 +290,7 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
     """The person's words → the keeper's proposal (checked against the type's contract; a rejected answer
     goes back with its problems). Never raises."""
     subject = subject_of(spec)
-    p = Proposal(building_id, subject.kind, before=subject.read(spec))
+    p = Proposal(building_id, subject.kind, before=subject.now(repo_root, building_id, spec))
     if not budget_ok:
         p.error = "the budget is spent — the keeper calls a model"
         return p
@@ -260,11 +338,18 @@ def apply(town: Town, building_id: str, p: Proposal, request: str = "") -> list[
     wrong = subject.shape(p.after)
     if wrong:
         return [wrong]
+    if subject.problems and (own := subject.problems(spec, p.after)):
+        return own
     new = subject.write(copy.deepcopy(spec), p.after)
     others = set(town.custom_specs) - {building_id}
     problems = masonry.save_spec(town.repo_root, new, existing_ids=others)
     if problems:
         return problems
+    if subject.keep:
+        try:
+            subject.keep(town.repo_root, building_id, new, p.after)
+        except OSError as e:
+            return [f"could not keep its {p.kind}: {e}"]
     town.custom_specs[building_id] = new
     town.publish(bus.SPEC, building=building_id, spec=new)
     why = p.why or request or f"new {p.kind}"

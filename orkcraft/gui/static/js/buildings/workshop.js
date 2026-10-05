@@ -1,12 +1,14 @@
 // 🛠 Workshop: a script that runs on every cart (core/workers/workshop.py runs it). Its runs, the chosen
 // one's input, output and result, and Test's log — in a dialog when Test is pressed from the Command
-// Card, and in the full window. The script is edited in Lake.
+// Card, and in the full window. The script is edited in Lake; its keeper rewrites the script and the
+// schedule from plain words (core/keeper.py, docs/design/building-views.md §2).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
+import { askKeeper } from "../keeper.js";
 
 const sheet = new URL("./workshop.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -85,6 +87,31 @@ function TestDialog({ id, data }) {
   </${Dialog}>`;
 }
 
+/** The request to its keeper: the script or the schedule, in plain words. */
+function Ask({ id, data, onDone }) {
+  const [request, setRequest] = useState("");
+  const keeper = data.keeper_name || say("the keeper");
+  const send = () => request.trim() && askKeeper(id, request.trim()).then((r) => {
+    if (r !== null) { setRequest(""); onDone && onDone(); }
+  });
+  return html`<div class="ws-ask">
+    <textarea class="ok-input gui-textarea" rows="2" value=${request}
+      placeholder=${say("In plain words: what the script should do, when it should run on its own…")}
+      onInput=${(e) => setRequest(e.target.value)}></textarea>
+    <div class="gui-head">
+      <button class="ok-act" disabled=${!request.trim()} onClick=${send}><span class="ok-act__label">Ask ${keeper}</span></button>
+      <span class="ok-tone-muted">${keeper} writes the script and the schedule; you see the change before it is kept.</span>
+    </div>
+  </div>`;
+}
+
+function AskDialog({ id, data, onClose }) {
+  return html`<${Dialog} title=${`${say("Ask")} ${data.keeper_name || say("the keeper")} ${say("to change the script or schedule")}`}
+      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>Close</button>`}>
+    <${Ask} id=${id} data=${data} onDone=${onClose} />
+  </${Dialog}>`;
+}
+
 /** Closed: the last run (✓ / ✗ / → keeper) and its schedule (docs/design/building-views.md). */
 export function card(b) {
   const c = b.card;
@@ -99,6 +126,11 @@ export function card(b) {
 /** Command: the last runs (time, code, what went out) and the last result cut down; Run and Test are
  * the type's quick actions below. */
 export function preview(id, data) {
+  return html`<${Command} id=${id} data=${data} />`;
+}
+
+function Command({ id, data }) {
+  const [asking, setAsking] = useState(false);
   const last = data.runs[0];
   return html`<div class="ws-card">
     ${data.running && html`<span class="ok-tone-wait">${say("running…")}</span>`}
@@ -106,6 +138,9 @@ export function preview(id, data) {
       : html`<p class="ok-tone-muted">${say("No cart yet — a road brings one, or Test runs the mock carts.")}</p>`}
     ${last && html`<${Result} r=${last} cut=${true} />`}
     <${TestDialog} id=${id} data=${data} />
+    <div class="gui-head"><button class="ok-act" onClick=${() => setAsking(true)}>
+      <span class="ok-act__label">Ask ${data.keeper_name || say("the keeper")} to change the script or schedule</span></button></div>
+    ${asking && html`<${AskDialog} id=${id} data=${data} onClose=${() => setAsking(false)} />`}
   </div>`;
 }
 
@@ -147,7 +182,7 @@ function Run({ id, data }) {
 /** Full: the runs, the chosen one's input, output and result, and Test's log. */
 export function panes(id, data) {
   return {
-    head: () => html`<${Head} id=${id} data=${data} />`,
+    head: () => html`<div><${Head} id=${id} data=${data} /><${Ask} id=${id} data=${data} /></div>`,
     runs: () => html`<${Runs} id=${id} data=${data} />`,
     run: () => html`<${Run} id=${id} data=${data} />`,
     tests: () => html`<${TestLog} data=${data} />`,
