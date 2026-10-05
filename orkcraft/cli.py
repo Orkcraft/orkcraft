@@ -9,6 +9,16 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.config import find_project_root
 
 
+def _gui():
+    """The GUI's launcher, or None (said why) when its packages are missing."""
+    try:
+        from orkcraft.gui import launch
+    except ImportError as e:
+        sys.stderr.write(f"orkcraft error: the GUI needs pip install 'orkcraft[gui]' ({e.name} is missing)\n")
+        return None
+    return launch
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -31,6 +41,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # orkcraft tui
     subparsers.add_parser("tui", help="Launch interactive Textual TUI (default)")
+    gui_p = subparsers.add_parser("gui", help="Open the town in a window (Office look; pip install 'orkcraft[gui]')")
+    gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
+    gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
     hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
@@ -82,6 +95,11 @@ def main(argv: list[str] | None = None) -> int:
             for path in take(root, args.demo_screens, args.demo_set):
                 print(path)
             return 0
+        if args.subcommand == "gui":
+            launch = _gui()
+            if launch is None:
+                return 1
+            return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port)
         OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True).run()
         return 0
 
@@ -91,8 +109,14 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"orkcraft error: {e}\n")
         return 1
 
-    # Default: launch TUI
     auto_commit = not args.no_commit
+    if args.subcommand == "gui":
+        launch = _gui()
+        if launch is None:
+            return 1
+        return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port)
+
+    # Default: launch TUI
     reset = args.reset_layout
     while True:                       # the weekly self-audit may ask for a fresh start
         app = OrkcraftApp(

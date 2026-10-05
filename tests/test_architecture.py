@@ -31,7 +31,7 @@ def test_no_face_in(package):
         for line, module in _imports(path):
             top = module.split(".")[0]
             if top in FORBIDDEN or module.startswith(("orkcraft.tui", "orkcraft.screens", "orkcraft.widgets",
-                                                      "orkcraft.wm", "orkcraft.app")):
+                                                      "orkcraft.wm", "orkcraft.app", "orkcraft.gui")):
                 bad.append(f"{path.relative_to(ROOT.parent)}:{line} imports {module}")
     assert not bad, "\n".join(bad)
 
@@ -48,3 +48,15 @@ def test_loading_the_core_loads_no_face():
             "print(sorted({n.split('.')[0] for n in sys.modules} & {'textual', 'rich'}))")
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
     assert out.stdout.strip() == "[]", out.stdout + out.stderr
+
+
+def test_the_gui_face_has_no_terminal_toolkit():
+    """gui/ is a face of its own: it loads without Textual or Rich, and never reaches into the TUI."""
+    bad = []
+    for path in sorted((ROOT / "gui").rglob("*.py")):
+        for line, module in _imports(path):
+            if module.split(".")[0] in FORBIDDEN or module.startswith(("orkcraft.tui", "orkcraft.screens",
+                                                                       "orkcraft.widgets", "orkcraft.wm",
+                                                                       "orkcraft.app")):
+                bad.append(f"{path.relative_to(ROOT.parent)}:{line} imports {module}")
+    assert not bad, "\n".join(bad)

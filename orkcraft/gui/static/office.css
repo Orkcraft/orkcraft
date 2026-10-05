@@ -1,0 +1,69 @@
+/* The GUI's own layout: where the design system's components stand in the Office window.
+   Only tokens (design-system/tokens.css) and the component knobs: no colour or font of its own.
+   The components themselves (huts, windows, lists, the HUD) are design-system/components.css. */
+
+html, body, #app { height: 100%; margin: 0; }
+body { background: var(--canvas); color: var(--ink); font-family: var(--ok-font, var(--font-office)); overflow: hidden; }
+button { font: inherit; color: inherit; }
+
+.gui {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) 22px;
+  grid-template-areas: "hud hud" "side town" "status status";
+}
+.gui--open { grid-template-columns: 260px minmax(0, 1fr) minmax(360px, 44%); grid-template-areas: "hud hud hud" "side town group" "status status status"; }
+.gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
+
+.gui-hud { grid-area: hud; }
+.gui-hud__project { color: var(--ink-muted); }
+
+/* The sidebar: the War Map over the buildings of the orkspace. */
+.gui-side { grid-area: side; display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto;
+  background: var(--panel); box-shadow: inset -1px 0 0 var(--frame); }
+.gui-side .ok-list { box-shadow: none; }
+.gui-side .ok-item { cursor: pointer; }
+
+/* The town: huts where the person put them, roads under them. */
+.gui-town { grid-area: town; position: relative; overflow: auto; }
+.gui-town__room { position: relative; }
+.gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
+.gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
+.gui-town__room > .gui-roads { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.gui-road line { stroke: var(--road); stroke-width: 2; }
+.gui-road circle { fill: var(--road); }
+.gui-road .gui-road__in { fill: var(--canvas); stroke: var(--road); stroke-width: 2; }
+.gui-road.is-selected line { stroke: var(--road-selected); }
+.gui-road.is-selected circle { fill: var(--road-selected); }
+.gui-road.is-selected .gui-road__in { fill: var(--canvas); stroke: var(--road-selected); }
+.gui-road text { fill: var(--ink-muted); text-anchor: middle; }
+.gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
+
+/* An opened building: an editor group, its tabs over one window. */
+.gui-group { grid-area: group; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  background: var(--panel); box-shadow: inset 1px 0 0 var(--frame); }
+.gui-group.is-max { position: fixed; inset: 30px 0 22px 0; z-index: 5; }
+.gui-tabs { flex: none; overflow-x: auto; }
+.gui-tabs .ok-tab { cursor: pointer; gap: var(--space-2); }
+.gui-tab__close { border: 0; background: none; padding: 0 var(--space-1); cursor: pointer; color: var(--ink-muted); line-height: 1; }
+.gui-tab__close:hover { color: var(--ink); }
+.gui-win { flex: 1; min-height: 0; }
+.gui-win > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
+.gui-win__body { flex: 1; overflow: auto; }
+.gui-section { margin: 0 0 var(--space-4); }
+.gui-section > h3 { margin: 0 0 var(--space-1); color: var(--ink-muted); }
+.gui-rows { list-style: none; margin: 0; padding: 0; }
+.gui-rows > li { padding: var(--space-1) 0; }
+.gui-scheme { color: var(--ink-muted); }
+
+/* The status bar (KeyFooter): mouse first, every item a button. */
+.gui-status { grid-area: status; gap: 0; }
+.gui-status__item { border: 0; background: none; padding: 0 var(--space-2); height: 100%; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+button.gui-status__item { cursor: pointer; }
+.gui-status__spacer { flex: 1; }
+
+.gui-toasts { position: fixed; right: var(--space-4); bottom: calc(22px + var(--space-4)); z-index: 10;
+  display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
+.gui-toasts .ok-toast { cursor: pointer; }
