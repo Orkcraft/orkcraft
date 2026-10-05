@@ -28,6 +28,7 @@ CART = "cart"        # cart: a cart set off along a road (or was held)
 RUN = "run"          # run, name: a handler or a building's own agent finished
 LOOT = "loot"        # path, source: a report was kept in Loot
 WORKER = "worker"    # building: a building's worker changed its state (its view draws it again)
+SESSION = "session"  # key, state ("opened" | "exited" | "forgotten"), code: an ork's CLI session (core/sessions.py)
 
 SEVERITIES = ("information", "warning", "error")
 

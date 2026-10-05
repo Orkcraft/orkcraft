@@ -85,3 +85,24 @@ def test_codex_hooks_go_into_codex_hooks_json(tmp_path: Path, monkeypatch, capsy
     assert data["hooks"]["SessionStart"][0]["hooks"][0]["command"].endswith("-m orkcraft.hooks.session codex")
     assert main(["--repo", str(tmp_path), "hooks", "uninstall"]) == 0
     assert json.loads(codex.read_text())["hooks"] == {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"}]}]}
+
+
+def test_the_demo_flag_never_swallows_the_gui_subcommand(monkeypatch, tmp_path: Path):
+    """`orkcraft --demo gui` and `orkcraft gui --demo` both open the sandbox in the GUI, not the TUI."""
+    import orkcraft.cli as cli
+    import orkcraft.demo as demo
+    opened = []
+
+    class Launch:
+        @staticmethod
+        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
+            opened.append((root, demo, browser))
+            return 0
+
+    monkeypatch.setattr(cli, "_gui", lambda: Launch)
+    monkeypatch.setattr(demo, "build", lambda path, reset=False, set_name="main": tmp_path)
+    monkeypatch.setattr(cli, "OrkcraftApp", lambda *a, **kw: pytest.fail("the TUI opened"))
+    assert main(["--demo", "gui"]) == 0
+    assert main(["gui", "--demo", "--browser"]) == 0
+    assert main(["--demo", "gui", "--browser"]) == 0
+    assert opened == [(tmp_path, True, False), (tmp_path, True, True), (tmp_path, True, True)]

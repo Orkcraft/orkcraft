@@ -13,28 +13,33 @@ the orks that rebuild buildings all follow the same rules. Background: [docs/des
 
 ## 1. Tokens: roles, not values
 
-A document never says "18 px Cinzel in #ff8c1a". It says `"font": "title", "tone": "fire"`, and each
+A document never says "18 px Almendra SC in #ff8c1a". It says `"font": "title", "tone": "fire"`, and each
 face looks the role up.
 
 **Font roles**
 
-| role | for | GUI (camp / office) | TUI |
+| role | for | GUI type style (camp / office) | TUI |
 |---|---|---|---|
-| `title` | a building's name, a dialog's heading | display face, 18, bold | bold |
-| `heading` | a pane's or a section's heading | display face, 15, semibold | bold |
-| `body` | running text: notes, Markdown | text face, 14 | as is |
-| `mono` | code, diffs, paths, terminals, the editor | mono face, 13 | as is |
-| `status` | the short live lines | text face, 12 | the view's muted colour |
-| `label` | a field's or a column's name, a key | text face, 12, semibold | bold, dim |
-| `number` | counters, money, tokens, percentages | mono face, 14, semibold | bold |
+| `title` | a building's name, a dialog's heading | `camp-heading` / `office-title` | bold |
+| `heading` | a pane's or a section's heading | `camp-label` / `office-heading` | bold |
+| `body` | running text: notes, Markdown | `camp-body` / `office-body` | as is |
+| `mono` | code, diffs, paths, terminals, the editor | `code` / `code` | as is |
+| `status` | the short live lines | `camp-caption` / `office-caption` | the view's muted colour |
+| `label` | a field's or a column's name, a key | `camp-label` / `office-label` | bold, dim |
+| `number` | counters, money, tokens, percentages | `camp-number` / `office-label` | bold |
 
-The faces: Camp uses Cinzel for display and Alegreya Sans for text. Office uses Inter for both.
-Both themes use JetBrains Mono for code. All of these fonts are under the OFL, with system fallbacks.
+The GUI's type styles, faces and colours are the GUI design system's
+([design/gui-design-system.md](design/gui-design-system.md), `design-system/tokens.json`), the source
+of truth: Camp sets headings in Almendra SC and the rest in Titillium Web, Office uses the system UI
+face, and both use JetBrains Mono for code. The fonts ship with it (`design-system/fonts/`, OFL).
+`orkcraft/design/tokens.json` maps each role onto it (`gui`), and the GUI wears them as the classes
+`tokens.roles_css()` writes (`.ok-font-status`, `.ok-tone-fire`).
 
 **Colour roles** (`tone`): `text`, `muted`, `accent`, `ok`, `wait`, `fire`, `error`; and the frame
 and ground roles `canvas`, `surface`, `frame`, `frame_focus`, `road`, `road_selected`; and one per
 harness (`harness.claude`, `harness.agy`, `harness.codex`, `harness.pipeline`). Camp and Office give
-each role their own value. **`fire` means one thing only: something waits for the person.**
+each role their own value: in the GUI the design system's colour token the role maps to (`fire` →
+`alert`, `ok` → `success`, `surface` → `panel`, …), in the TUI the hex in `tokens.json`. **`fire` means one thing only: something waits for the person.**
 
 **Space**: steps 0–6, which are pixels in a GUI (0, 4, 8, 12, 16, 24, 32) and cells in the terminal.
 

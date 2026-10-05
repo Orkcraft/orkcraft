@@ -1,0 +1,160 @@
+"""What the GUI shows of the town, as plain data: one snapshot the page draws from.
+
+Pure functions over a `core.Town` and its roster. The host sends a fresh snapshot whenever the town
+changes; the page keeps it in signals, so only what changed is drawn again. Nothing here picks the
+look: the page drops pictographs and words resources the Office way (`modes.RESOURCES`), and a
+text that may carry emoji comes twice, as it is and `_plain` (`modes.strip_emoji`).
+
+    snapshot(town, muster, treasury)   # {"project", "hud", "orkspaces", "buildings", "roads", "alerts"}
+"""
+from __future__ import annotations
+
+import time
+from typing import Any
+
+from orkcraft import schedule
+from orkcraft.core import treasury as tr
+from orkcraft.core.roster import Muster
+from orkcraft.core.town import Town
+from orkcraft.realm import catalog, modes, pipes
+from orkcraft.scroll import road_key
+
+HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
+
+
+def _ork(o) -> dict[str, Any]:
+    return {"name": o.name, "kind": o.kind, "status": o.status, "lead": o.lead, "scheme": o.scheme,
+            "tier": o.tier or "", "role": o.role, "ref": o.ref, "session": o.session}
+
+
+def _hut_lines(town: Town, building_id: str) -> list[str]:
+    """A building's live status lines (up to three): its worker says them (`mini_status`, else the
+    TUI hut's `hut_lines`); a type without a worker has none in the GUI yet."""
+    w = town.workers.get(building_id)
+    mini, lines_of = getattr(w, "mini_status", None), getattr(w, "hut_lines", None)
+    if mini is None and lines_of is None:
+        return []
+    try:
+        lines = mini() if mini is not None else lines_of(HUT_WIDTHS)
+        return [str(x) for x in lines if str(x).strip()][:3]
+    except Exception:          # a status line never takes the town down
+        return []
+
+
+def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
+    out = []
+    for bs in town.scroll.buildings:
+        if bs.demolished:
+            continue
+        spec = town.spec_of(bs.id)
+        garrison = muster.roster.garrison(bs.id)
+        asking = next((o for o in garrison if o.alert is not None), None)
+        since = muster.alert_first_seen.get(asking.alert.id) if asking else None
+        worker = town.workers.get(bs.id)
+        out.append({
+            "id": bs.id, "title": bs.title, "icon": bs.icon,
+            "type": catalog.type_of(spec).id if spec else bs.preset_ref or bs.id,
+            "hut": list(bs.hut) if bs.hut else None,
+            "status": (lines := _hut_lines(town, bs.id)),
+            "status_plain": [modes.strip_emoji(x) for x in lines],
+            "state": worker.status() if worker is not None else "",
+            "garrison": [_ork(o) for o in garrison],
+            "alert": {"id": asking.alert.id, "title": asking.alert.title,
+                      "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
+            "has_worker": worker is not None,
+        })
+    return out
+
+
+def roads(town: Town) -> list[dict[str, Any]]:
+    """Every road as an edge: from its source to the building that keeps it (a road is incoming). Its
+    `id` is the town-wide key (`scroll.road_key`): a road's own id is only unique in its building."""
+    out = []
+    for bs in town.scroll.buildings:
+        if bs.demolished:
+            continue
+        for r in bs.roads:
+            out.append({"id": road_key(bs.id, r.id), "road": r.id, "from": r.source, "to": bs.id, "event": r.event,
+                        "label": r.label or pipes.label(r.event), "handler": r.handler or ""})
+    return out
+
+
+def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
+    out = []
+    for o in town.scroll.orkspaces:
+        out.append({"id": o.id, "name": o.name, "icon": o.icon, "biome": o.biome, "hotkey": o.hotkey,
+                    "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id))})
+    return out
+
+
+def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None) -> dict[str, Any]:
+    gold, gold_level, lumber, lumber_level = treasury.resources()
+    quota, quota_level, show_gold = tr.quota(town.machine, limits or [])
+    return {
+        "gold": gold, "gold_level": gold_level, "show_gold": show_gold,
+        "lumber": lumber, "lumber_level": lumber_level,
+        "quota": quota, "quota_level": quota_level,
+        "supply": muster.roster.active, "supply_max": town.scroll.budget.supply_max_workers,
+        "alerts": len(muster.roster.alerts),
+        "hour": (hour := schedule.status(town.machine)),
+        "hour_plain": modes.strip_emoji(hour),
+        "quiet": schedule.quiet_now(town.machine),
+    }
+
+
+LOOKS = ("office", "camp", "auto")
+
+
+def look(town: Town, choice: str = "office") -> str:
+    """The look the page wears (`office` or `camp`). `auto` follows the machine's mode, Shift being
+    Office in office hours (schedule.py); the GUI opens in Office until Camp (stage 5) is done, and
+    `orkcraft gui --look camp` opens Camp to work on it."""
+    if choice != "auto":
+        return choice if choice in LOOKS else "office"
+    return "office" if schedule.plain_now(town.machine) else "camp"
+
+
+def sessions(live) -> list[dict[str, Any]]:
+    """The War Tent: every session this run opened."""
+    if live is None:
+        return []
+    return [{"key": s.key, "harness": s.harness, "title": modes.strip_emoji(s.title), "running": s.running,
+             "exit_code": s.exit_code, "ork": s.ork, "ticket": s.ticket or ""} for s in live.live.values()]
+
+
+def _advice(night, alert) -> dict[str, Any] | None:
+    d = night.advice_for(alert) if night is not None else None
+    return {"key": d.key, "why": modes.strip_emoji(d.why), "warn": modes.strip_emoji(d.warn)} if d else None
+
+
+def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
+    """The questions that wait for the person (Orders), the longest waiting first."""
+    who = muster.who()
+    found = list(muster.roster.alerts)
+    seen = {a.id for a in found}
+    found += [o.alert for o in muster.roster.orcs if o.alert is not None and o.alert.id not in seen]
+    now = time.monotonic()
+    found.sort(key=lambda a: muster.alert_first_seen.get(a.id, now))
+    by_alert = {o.alert.id: o.building for o in muster.roster.orcs if o.alert is not None and o.building}
+    return [{"id": a.id, "title": modes.strip_emoji(a.title), "context": list(a.context[-12:]),
+             "options": [[k, modes.strip_emoji(label)] for k, label in a.options], "source": a.source, "ref": a.ref,
+             "who": who.get(a.id, ""), "building": by_alert.get(a.id, ""), "advice": _advice(night, a),
+             "waited": round(now - muster.alert_first_seen.get(a.id, now), 1)} for a in found]
+
+
+def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
+             live=None, night=None, look_choice: str = "office") -> dict[str, Any]:
+    return {
+        "project": town.scroll.meta.get("project_name") or town.repo_root.name,
+        "repo": str(town.repo_root),
+        "demo": bool(town.demo),
+        "look": look(town, look_choice),
+        "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
+        "active_orkspace": town.scroll.active_orkspace_id,
+        "orkspaces": orkspaces(town, muster),
+        "buildings": buildings(town, muster),
+        "roads": roads(town),
+        "hud": hud(town, muster, treasury, limits),
+        "sessions": sessions(live),
+        "alerts": alerts(town, muster, night),
+    }

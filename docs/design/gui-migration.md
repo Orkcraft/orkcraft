@@ -11,7 +11,7 @@ would stop all other work, so the move goes in stages. The TUI keeps working the
 | 1 | the logic apart from the interface | the core, the road engine and the first workers stand; what is left is listed in §2 |
 | 2 | no file everybody has to touch | done for `app.py` (§3) |
 | 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
-| 4 | Office in the GUI: plain widgets, the same town graph | paused |
+| 4 | Office in the GUI: plain widgets, the same town graph | in progress: the stack is chosen and the shell stands (§5) |
 | 5 | Camp in the GUI: tiles and sprites in the spirit of Warcraft II | paused |
 
 ## 1. Stage 0 — where the core lives
@@ -29,9 +29,8 @@ start the same ork twice and both write `.orkcraft/`.
 - **Not chosen:** two full apps over the same files. Locks on every file would be needed, and Halt
   All would only stop half of what runs.
 
-The GUI stack is chosen at stage 4: a web face (HTML/CSS/SVG in `pywebview` or a browser) over
-the core. Fonts, roads as SVG paths, sprites and `xterm.js` for the agents' terminals all come
-with it. Nothing in stages 1–3 depends on that choice.
+The GUI stack is chosen in §5: a web face (HTML/CSS/SVG in `pywebview` or a browser) over the
+core. Fonts, roads as SVG paths, sprites and `xterm.js` for the agents' terminals all come with it.
 
 ## 2. Stage 1 — the logic apart from the interface
 
@@ -99,7 +98,9 @@ the deployments), `core/runners.py`, and:
 2. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
    ork, the processes and the roster's view of running sessions are not. Split them into a
    sessions service in the core that keeps the processes, and terminals that draw them (pyte
-   today, xterm.js later).
+   today, xterm.js later). Done: `core/sessions.py` runs every session (processes, screens,
+   deployment, the report of an ork that went home); the TUI's `Terminal` draws a session with
+   pyte and the GUI's with xterm.js.
 3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker,
    but the TUI's Halt All still walks the views and the War Tent itself. Once every type has a
    worker and sessions are a service, Halt All is `town.halt()` plus the face's own terminals.
@@ -144,7 +145,138 @@ a contract for each remaining type as its view is split into named panes. The sh
 - **Components are a closed list** (`list`, `table`, `counter`, `markdown`, `editor`, `board`,
   `diff`, `tree`, `terminal`, `chart`, `form`, `log`). Each face renders each component in its
   own way. Nothing in the document is code, a raw colour or a font name.
+- **The design system is the source of truth** ([gui-design-system.md](gui-design-system.md),
+  `design-system/`). `design/tokens.json` keeps the roles a UI document names and the TUI's hex
+  values; its `gui` section maps each role onto the design system (a font role to a type style per
+  look, a colour role to a colour token), and `tokens.roles_css()` writes the `.ok-font-*` and
+  `.ok-tone-*` classes from it. `tests/test_design.py` checks that every mapped name exists there.
 - **The graph stays simple** (the invariant Office and Camp must keep): one kind of edge, the
   road. No ports or parameters on the canvas. A building shows its name and up to three status
   lines, and all its settings live inside its window. Positions are the person's, never an
   automatic layout.
+
+## 5. Stage 4 — Office in the GUI
+
+### Decided
+
+| question | answer |
+|---|---|
+| where it runs | macOS first (Linux works too); `pip install 'orkcraft[gui]'`, no app bundle: the product is for geeks |
+| the window | `pywebview`: the system's own web view (WKWebView on macOS), so no browser ships with it. `orkcraft gui --browser` opens the same page in a tab |
+| between the page and the core | one WebSocket on 127.0.0.1: snapshots and toasts out, commands in. It is the daemon's boundary from §1 already |
+| the page | Preact + htm + `@preact/signals` as ES modules from `gui/static/vendor/` (~26 KB, no build step, no Node) |
+| the first look | Office; Camp is stage 5 |
+| the first buildings | the War Map, the HUD, 🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump (they have workers and contracts), Orders and toasts; the other types follow their workers (§2, 1) |
+| terminals | the sessions service (§2, 2) is built for the GUI: processes and PTYs in the core, `xterm.js` in the page |
+| two faces at once | no: one face owns a project at a time until the daemon comes (§1) |
+| tokens | `design-system/` is the source of truth (§4) |
+| fonts | kept with the design system (`design-system/fonts/`, SIL OFL), never loaded from the network |
+| input | the mouse first: every act is a click; keys come later and only as shortcuts |
+| Shift | the core decides the look by the hour (`schedule.plain_now`) and the snapshot says it (`look`) |
+
+### How it is built
+
+```
+orkcraft/gui/
+  host.py     the Town, its clocks (roads, roster, treasury) and the page's commands, on one thread
+  state.py    the snapshot: project, HUD, orkspaces, buildings (spot, status lines, garrison, question), roads
+  server.py   websockets: the page, /ds/ (the design system), /roles.css, and /ws
+  launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
+  (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
+  views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
+  markdown.py Markdown as HTML, raw HTML off
+  static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
+              layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
+              draws, loaded when one opens), layout.css (every look), office.css, camp.css
+```
+
+- **The protocol.** The host sends a whole snapshot (`gui/state.py`) when the town changes, at most
+  every 50 ms and only when it differs; the page keeps it in a signal, so only what read a changed
+  part draws again. Commands are `{"t": "cmd", "id", "name", "args"}` answered by a `reply`; the host
+  keeps a closed list of them (`Host.commands`). Toasts go out as they come. A text that may carry
+  emoji comes twice, as it is and `_plain`, for Office.
+- **Only its own page drives the town.** The socket takes a random token from the page's address
+  and an `Origin` of this server; anything else gets 403.
+- **The layout is the design system's.** `layout.css` places the components (HUD on top, the War
+  Map and the buildings on the left, the town, an editor group of opened buildings on the right,
+  the status bar) and uses tokens only.
+- **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
+  panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
+  pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it
+  is the worker's, sent by `gui/views/<type>.py` as a `detail` only to the pages that have the
+  building open (`watch`), again whenever the worker says it changed. Its acts are
+  `{"name": "act", "args": {"id", "act", "args"}}`, each one a call on the worker.
+- **Terminals are the core's sessions drawn by xterm.js.** `core/sessions.py` runs each CLI on a
+  PTY, keeps a pyte screen (the roster reads questions off it) and the last 512 KB of output. The
+  page shows a session in the War Tent (the Town Hall's window, as in the TUI) with xterm.js, loaded
+  the first time a terminal opens: `term.replay` sends the session as it stands, then its bytes
+  come as binary frames to the pages that show it (`term.attach`); keys go back as `term.input`.
+- **Orders**: the questions in the snapshot (`alerts`, the longest waiting first); the person picks
+  an answer and `orders.answer` hands it to `Muster.answer` (typed into the session, or the
+  Warder's acknowledged). A building whose ork asks burns: its hut and its orkspace say `?`.
+- **Huts stand where the person put them**: `hut` in the Town Scroll, fractions of the room, the
+  same the TUI reads. Dragging a hut saves its spot; a hut without one stands in a grid.
+- **Roads run as in the TUI**: `js/roads.js` is `wm/roadmap.py` ported to the page (gates on the
+  side that faces the other end, spread along it; orthogonal A* paths that keep to the gaps and
+  turn as little as they can), so a road follows a hut while it is dragged. A road is keyed by
+  `scroll.road_key` (`<target>:<road id>`): a road's own id is only unique in its building.
+
+### Done
+
+- The shell: HUD (Office words for the resources), War Map (switches the orkspace), the building
+  list, the town with huts and orthogonal roads, an opened building as a tab with its status lines, garrison
+  and roads, toasts, Halt All in the status bar.
+
+- The windows of 🌊 Lake (Markdown rendered, a diff side by side, a file edited in place with the
+  same autosave, conflict and judging as the TUI), 🌾 Task Fields (the board: drag a card to a lane,
+  add, open, colour, task ⇄ note, send, delete) and 🗑️ Scroll Dump (the librarian's state, the
+  wiki and its sources as a tree, a page rendered; take in, check, stop, add a folder).
+
+- The War Tent: new Claude, Codex and agy sessions, earlier ones reopened, a garrison ork deployed
+  with its orders (Deploy in its building's window), interrupt, stop; Orders answer the orks'
+  questions; Halt All interrupts the sessions and kills every agent process too.
+
+- The Elders in quiet hours: the host runs `core/night.py` as the TUI does; their advice shows in
+  Orders with its option marked, and Follow the Elders sends it as the person's answer (at ⛓️‍💥 Free
+  orks they answer themselves, as in the TUI).
+
+- Changing the town (`gui/builder.py` over `core/buildings.py` and `core/roads.py`): Build raises a
+  building from the catalog with its defaults; Demolish in a window takes it down (the Town Hall
+  always stands); a road is pulled out of a hut's `+` handle onto another hut and laid with one of
+  the events it may carry; a road clicked shows what it is and is taken up from there.
+
+### Porting a building type
+
+The recipe the three first types followed (🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump); a type is
+found by its files, so a port touches no shared list and parallel ports do not collide.
+
+1. **The worker** — `orkcraft/core/workers/<type>.py`: a `Worker` subclass with `TYPE = "<type>"`
+   (the catalog id). Move into it everything the view does that is not drawing: its state, its
+   acts, its threads (results come back through `self.town.call`), `receive`, `halt`, `status`,
+   `mini_status` / `hut_lines`, and `self.changed()` whenever its state changes. No Textual, no
+   Rich (`tests/test_architecture.py`). It registers itself.
+2. **The TUI view** — `orkcraft/screens/typed/<type>_view.py` keeps its widgets, keys, dialogs and
+   timers, and reads and calls the worker (`self.worker`); its old attribute names read the worker,
+   so callers and tests keep working. It draws again on `WORKER` (see `lake_view.py`).
+3. **The contract** — `orkcraft/design/buildings/<type>.json`: the panes the window has, the
+   components each may wear and the default document (`design/ui.py`). Name the panes in the TUI
+   view's `UI_PANES`.
+4. **The GUI's side** — `orkcraft/gui/views/<type>.py`: `detail(worker)` (plain data the page
+   draws, Markdown rendered by `gui/markdown.py`, emoji also as `_plain`), `ACTS` (each a call on the
+   worker, its arguments checked with `views.text`, a refusal raised as `ActError`), and
+   `REFRESH_S` / `refresh(worker)` when the view looked again on a timer.
+5. **The page** — `orkcraft/gui/static/js/buildings/<type>.js`: `panes(id, data)` returning one
+   function per pane id of the contract; acts are `act(id, name, args)`. Use the design system's
+   markup and classes, the roles' classes for fonts and tones, and the words of Office (no
+   pictographs; `ok-ico` for what Camp may show).
+6. **Tests** — the worker without an app (`tests/test_core.py`), the TUI's tests unchanged and green,
+   and `detail` and every act through the host (`tests/test_gui.py`). Then look at it in the page:
+   `orkcraft gui --demo --browser`.
+
+### Next
+
+1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
+   building wizard with the Builder, and a building's settings in its window.
+2. The other types' windows as their workers come (§2, 1).
+3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
+   camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.

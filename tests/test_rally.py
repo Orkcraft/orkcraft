@@ -41,7 +41,6 @@ async def test_task_completed_pipe(fake_repo: Path, monkeypatch: pytest.MonkeyPa
     """Task completed: recruit + deploy a Chat orc with deploy_command replaced by
     echo done-marker, Chat -> Loot on_task_completed set via scroll.set_rally_point ->
     after exit a file in loot/pipes/ contains done-marker."""
-    monkeypatch.setattr("orkcraft.tui.sessions.deploy_command", lambda harness, prompt: ["sh", "-c", "echo done-marker"])
     monkeypatch.setattr("orkcraft.sources.sessions.deploy_command", lambda harness, prompt: ["sh", "-c", "echo done-marker"])
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     scroll.set_rally_point(app.scroll, "town_hall", "loot", pipe_mode="on_task_completed")

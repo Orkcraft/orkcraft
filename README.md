@@ -39,6 +39,13 @@ orkcraft hooks install             # session log + the Warder guard in .claude/s
 orkcraft                           # open the town
 ```
 
+The GUI is coming (Office look first, see [stage 4](docs/design/gui-migration.md#5-stage-4--office-in-the-gui)):
+
+```bash
+pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"
+orkcraft gui                       # the town in a window (macOS: the system's WebKit); --browser for a tab
+```
+
 You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
 Builder needs `claude`), `gh` (GitHub events in the Watchtower).
 
@@ -149,6 +156,8 @@ orkcraft/
   app.py, cli.py     the app (it composes tui/) and the command line
   core/              the town without a face: state, services, the bus (no Textual)
   tui/               the app's parts, one domain each: roads, sessions, council, retros…
+  gui/               the GUI face: host and server over the core, the page (Preact, no build step)
+  design/            tokens, the building UI contracts; design/system → design-system/ (the GUI's CSS, fonts, sprites)
   wm/                the window manager: town, huts, roads, ghost
   screens/           modals and the typed views of every building (screens/typed/)
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,

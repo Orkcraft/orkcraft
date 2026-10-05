@@ -1,0 +1,3 @@
+/* What only Office adds to the layout (layout.css), scoped to [data-theme="office"]: VS Code chrome
+   over Camp's colours, no sprites (docs/design/gui-design-system.md). Empty while layout.css and
+   the components already draw Office as it is. */

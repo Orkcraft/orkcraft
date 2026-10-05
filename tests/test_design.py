@@ -21,8 +21,22 @@ def test_the_tokens_hold_together():
     assert tokens.problems() == []
     assert {"title", "body", "mono", "status"} <= set(tokens.FONTS)
     assert {"ok", "wait", "fire", "error", "harness.claude"} <= set(tokens.TONES)
-    assert "Cinzel" in tokens.family("title", "camp") and "Inter" in tokens.family("title", "office")
+    assert tokens.style("title", "camp") == "camp-heading" and tokens.style("body", "office") == "office-body"
+    assert tokens.css_var("fire") == "--alert"
     assert tokens.color("fire", "office").startswith("#") and tokens.space(9) == tokens.space(6)
+
+
+def test_the_gui_roles_come_from_the_design_system():
+    """design-system/tokens.json is the source of truth: the role classes are read from it, and every
+    variable they name is one tokens.css defines."""
+    import re
+    css = tokens.roles_css()
+    defined = set(re.findall(r"(--[\w-]+):", (tokens.SYSTEM / "tokens.css").read_text(encoding="utf-8")))
+    used = set(re.findall(r"var\((--[\w-]+)\)", css))
+    assert used and used <= defined, sorted(used - defined)
+    for role in tokens.FONTS:
+        assert f".ok-font-{role} " in css
+    assert ".ok-tone-harness-claude { color: var(--harness-claude); }" in css
 
 
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))

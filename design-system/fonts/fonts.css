@@ -1,0 +1,15 @@
+/* The look's faces, kept with the design system so the app needs no network (SIL OFL 1.1, the
+   licences sit beside the files). Latin only: every word the app shows is English. */
+
+@font-face { font-family: "Almendra SC"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("almendra-sc-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Titillium Web"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("titillium-web-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Titillium Web"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("titillium-web-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Titillium Web"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("titillium-web-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("jetbrains-mono-latin-700-normal.woff2") format("woff2"); }

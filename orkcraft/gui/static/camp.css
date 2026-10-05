@@ -1,0 +1,4 @@
+/* What only Camp adds to the layout (layout.css), scoped to [data-theme^="camp"] (camp, camp-ice,
+   camp-void): Warcraft 2 × Factorio — header sprites on huts and windows, the ground and its
+   decorations, fire in stages (docs/design/gui-design-system.md, design-system/components.md).
+   Stage 5: open it with `orkcraft gui --look camp`. */

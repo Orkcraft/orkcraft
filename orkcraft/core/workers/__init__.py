@@ -133,8 +133,15 @@ class Worker:
 
 
 def registry() -> dict[str, type[Worker]]:
-    """The type id → its worker's class (types not here keep their work in their views)."""
-    from orkcraft.core.workers.fields import FieldsWorker
-    from orkcraft.core.workers.lake import LakeWorker
-    from orkcraft.core.workers.scrolls import ScrollsWorker
-    return {w.TYPE: w for w in (FieldsWorker, LakeWorker, ScrollsWorker)}
+    """The type id → its worker's class: every `Worker` with a `TYPE` in a module of this package
+    registers itself (a new worker is one new file, no list to edit). Types without one keep their
+    work in their views."""
+    import importlib
+    import pkgutil
+    out: dict[str, type[Worker]] = {}
+    for info in pkgutil.iter_modules(__path__):
+        module = importlib.import_module(f"{__name__}.{info.name}")
+        for value in vars(module).values():
+            if isinstance(value, type) and issubclass(value, Worker) and value.TYPE and value.__module__ == module.__name__:
+                out[value.TYPE] = value
+    return out

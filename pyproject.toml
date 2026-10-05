@@ -23,11 +23,13 @@ dependencies = [
     "textual>=8.2",
     "pyte>=0.8",
     "jsonschema>=4.18",
+    "markdown-it-py>=3.0",       # the GUI renders Markdown (Textual brings it too)
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3"]
+dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0"]
 browser = ["playwright>=1.45"]              # the Catapult's browser mode
+gui = ["pywebview>=5.0", "websockets>=13.0"]   # orkcraft gui: the window and its socket
 
 [project.urls]
 Homepage = "https://github.com/Orkcraft/orkcraft"
@@ -40,7 +42,8 @@ orkcraft = "orkcraft.cli:main"
 include = ["orkcraft*"]
 
 [tool.setuptools.package-data]
-orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json"]
+# design/system links to design-system/: a wheel carries the files themselves.
+orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json", "design/system/**/*", "gui/static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

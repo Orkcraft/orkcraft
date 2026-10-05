@@ -9,6 +9,26 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.config import find_project_root
 
 
+def _gui():
+    """The GUI's launcher, or None (said why) when its packages are missing."""
+    try:
+        from orkcraft.gui import launch
+    except ImportError as e:
+        sys.stderr.write(f"orkcraft error: the GUI needs pip install 'orkcraft[gui]' ({e.name} is missing)\n")
+        return None
+    return launch
+
+
+def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
+    """`orkcraft --demo gui`: the optional DIR of --demo would swallow the subcommand, so a
+    subcommand right after it means the default sandbox (`--demo=`)."""
+    out = list(argv)
+    for i, word in enumerate(out[:-1]):
+        if word == "--demo" and out[i + 1] in subcommands:
+            out[i] = "--demo="
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -31,13 +51,20 @@ def main(argv: list[str] | None = None) -> int:
 
     # orkcraft tui
     subparsers.add_parser("tui", help="Launch interactive Textual TUI (default)")
+    gui_p = subparsers.add_parser("gui", help="Open the town in a window (Office look; pip install 'orkcraft[gui]')")
+    gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
+    gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
+    gui_p.add_argument("--look", choices=("office", "camp", "auto"), default="office",
+                       help="Office (default), Camp (in the making) or auto (your mode and hours)")
+    gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
+                       help="Open the showcase sandbox in the window")
     hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(_demo_before_subcommand(sys.argv[1:] if argv is None else list(argv), subparsers.choices))
 
     if args.subcommand == "hooks":
         from orkcraft.hooks import install as hooks_install
@@ -82,6 +109,12 @@ def main(argv: list[str] | None = None) -> int:
             for path in take(root, args.demo_screens, args.demo_set):
                 print(path)
             return 0
+        if args.subcommand == "gui":
+            launch = _gui()
+            if launch is None:
+                return 1
+            return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port,
+                              look=args.look)
         OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True).run()
         return 0
 
@@ -91,8 +124,14 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"orkcraft error: {e}\n")
         return 1
 
-    # Default: launch TUI
     auto_commit = not args.no_commit
+    if args.subcommand == "gui":
+        launch = _gui()
+        if launch is None:
+            return 1
+        return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port, look=args.look)
+
+    # Default: launch TUI
     reset = args.reset_layout
     while True:                       # the weekly self-audit may ask for a fresh start
         app = OrkcraftApp(
