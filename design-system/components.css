@@ -1,0 +1,546 @@
+@import url("https://fonts.googleapis.com/css2?family=Almendra+SC&family=JetBrains+Mono:wght@400;700&family=Titillium+Web:wght@400;600;700&display=swap");
+
+/* Orkcraft GUI — one markup, two looks.
+   Camp (Warcraft 2 × Factorio): pixel-art sprites on a tiled ground, square bevelled stone and oak panels,
+   gold labels, hard shadows.
+   Office (VS Code): flat editor chrome, hairlines, rounded controls, smooth meters, no emoji, no sprites.
+   Colours come only from tokens.css; the mode knobs below switch shape and type.
+   Mono (--font-mono) is for code, logs and terminals only — never for chrome. */
+
+:root, [data-theme="camp"], [data-theme="camp-ice"], [data-theme="camp-void"] {
+  --ok-font: var(--font-camp);
+  --ok-head: var(--font-display);
+  --ok-radius: var(--radius-0);
+  --ok-radius-md: var(--radius-0);
+  --ok-radius-lg: var(--radius-0);
+  --ok-stroke: var(--border-bevel);
+  --ok-frame: var(--border-frame);
+  --ok-control: var(--control-camp);
+  --ok-pad: var(--space-3);
+  --ok-case: uppercase;
+  --ok-track: 0.06em;
+  --ok-body: 15px;
+}
+[data-theme="office"] {
+  --ok-font: var(--font-office);
+  --ok-head: var(--font-office);
+  --ok-radius: var(--radius-sm);
+  --ok-radius-md: var(--radius-md);
+  --ok-radius-lg: var(--radius-lg);
+  --ok-stroke: var(--border-hair);
+  --ok-frame: var(--border-hair);
+  --ok-control: var(--control-office);
+  --ok-pad: var(--space-2);
+  --ok-case: none;
+  --ok-track: 0;
+  --ok-body: 13px;
+}
+
+/* --- preview scaffolding: Camp | Office side by side ----------------------------------- */
+.ok-split { display: grid; grid-template-columns: 1fr 1fr; min-height: 100%; }
+.ok-split.three { grid-template-columns: repeat(4, 1fr); }
+.ok-split.stack { grid-template-columns: 1fr; }
+.ok-stage { background: var(--canvas); color: var(--ink); font-family: var(--ok-font); font-size: var(--ok-body);
+  padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; min-width: 0; box-sizing: border-box; }
+.ok-stage > .ok-mode { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
+.ok-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.ok-num { font-variant-numeric: tabular-nums; }
+
+/* Camp shows its pictographs; Office hides them and shows the words (modes.strip_emoji). */
+.ok-ico { font-style: normal; }
+.ok-word { display: none; }
+[data-theme="office"] .ok-ico { display: none; }
+[data-theme="office"] .ok-word { display: inline; }
+
+/* Key hints: an engraved gold key in Camp, a VS Code keycap in Office. */
+.ok-kbd { font: 700 12px/1 var(--ok-font); color: var(--ink-gold); letter-spacing: .02em; }
+[data-theme="office"] .ok-kbd { font: 400 11px/16px var(--font-office); color: var(--ink); padding: 0 5px; border-radius: 3px;
+  background: var(--panel-raised); box-shadow: inset 0 -1px 0 var(--bevel-lo), inset 0 0 0 1px var(--frame); }
+
+/* --- Button ----------------------------------------------------------------------------- */
+.ok-btn { appearance: none; font: 700 13px/1 var(--ok-font); text-transform: var(--ok-case); letter-spacing: var(--ok-track);
+  height: var(--ok-control); padding: 0 var(--ok-pad); border: 0; border-radius: var(--ok-radius); cursor: pointer;
+  background: var(--panel-raised); color: var(--ink-gold); box-shadow: var(--bevel-raised);
+  display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+.ok-btn:hover { filter: brightness(1.15); }
+.ok-btn:active, .ok-btn.is-pressed { box-shadow: var(--bevel-sunken); padding-top: 2px; }
+.ok-btn:focus-visible, .ok-btn.is-focus { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+.ok-btn.primary { background: var(--action); color: var(--on-action); }
+.ok-btn.danger { color: var(--danger); }
+.ok-btn:disabled, .ok-btn.is-disabled { color: var(--ink-comment); filter: none; cursor: default; }
+.ok-btn .ok-kbd { color: inherit; opacity: .75; font-weight: 400; }
+[data-theme="office"] .ok-btn { font-weight: 400; color: var(--ink); background: var(--panel-raised); box-shadow: none; padding: 0 var(--space-3); }
+[data-theme="office"] .ok-btn:hover { filter: none; background: var(--bevel-hi); }
+[data-theme="office"] .ok-btn.primary { background: var(--action); color: var(--on-action); font-weight: 600; }
+[data-theme="office"] .ok-btn.primary:hover { filter: brightness(1.08); }
+[data-theme="office"] .ok-btn.danger { color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); background: transparent; }
+[data-theme="office"] .ok-btn:active, [data-theme="office"] .ok-btn.is-pressed { padding-top: 0; background: var(--panel-inset); box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .ok-btn:disabled, [data-theme="office"] .ok-btn.is-disabled { color: var(--ink-comment); background: var(--panel-raised); }
+[data-theme="office"] .ok-btn .ok-kbd { background: none; box-shadow: none; padding: 0; }
+
+/* Building action. Camp: a square Warcraft 2 command button holding a 32px icon sprite (or a pictograph
+   until the sprite exists). Office: a text link with a hover wash, as in VS Code view toolbars. */
+.ok-act { appearance: none; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: 40px; height: 40px; padding: 0; background: var(--panel-raised); box-shadow: var(--bevel-raised); color: var(--ink-gold);
+  font: 700 18px/1 var(--ok-font); position: relative; }
+.ok-act img { width: 32px; height: 32px; image-rendering: pixelated; }
+.ok-act .ok-act__label { display: none; }
+.ok-act:active { box-shadow: var(--bevel-sunken); }
+.ok-act:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+[data-theme="office"] .ok-act { width: auto; height: 22px; padding: 0 6px; background: transparent; box-shadow: none; border-radius: var(--radius-md);
+  color: var(--info); font: 400 12px/22px var(--font-office); }
+[data-theme="office"] .ok-act:hover { background: var(--panel-raised); }
+[data-theme="office"] .ok-act img { display: none; }
+[data-theme="office"] .ok-act .ok-act__label { display: inline; }
+
+/* --- Window (an opened building) -------------------------------------------------------- */
+/* .ok-win stacks the building's banner (Camp only, unframed, standing on the frame's top edge) over
+   .ok-win__frame, which carries the border, the panel, focus and fire. */
+.ok-win { display: flex; flex-direction: column; min-width: 240px; width: 100%; color: var(--ink); }
+.ok-win__frame { background: var(--panel); border: var(--ok-frame) solid var(--frame); border-radius: var(--ok-radius-lg);
+  box-shadow: var(--shadow-window); display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+.ok-win.is-active > .ok-win__frame { border-color: var(--frame-focus); }
+.ok-win.is-alert > .ok-win__frame { border-color: var(--alert); box-shadow: var(--glow-fire); }
+.ok-win.is-alert.is-hot > .ok-win__frame { border-color: var(--alert-hot); }
+.ok-win__bar { height: var(--titlebar); display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2);
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 700 15px/1 var(--ok-head); color: var(--ink-muted); }
+.ok-win.is-active .ok-win__bar { color: var(--ink-gold); }
+.ok-win__no { font: 700 12px/1 var(--ok-font); color: var(--ink-muted); }
+.ok-win__title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ok-win__body { padding: var(--ok-pad) var(--space-3); font-size: var(--ok-body); line-height: 1.45; }
+.ok-win__grip { align-self: flex-end; width: 10px; height: 10px; margin: 0 3px 3px 0;
+  background: linear-gradient(135deg, transparent 50%, var(--ink-comment) 50%); }
+[data-theme="office"] .ok-win__bar { height: 35px; padding: 0 var(--space-3); background: var(--panel-inset); box-shadow: inset 0 -1px 0 var(--frame); font: 400 13px/1 var(--font-office); }
+[data-theme="office"] .ok-win__no { font-weight: 400; color: var(--ink-comment); }
+[data-theme="office"] .ok-win.is-active .ok-win__bar { color: var(--ink); }
+[data-theme="office"] .ok-win.is-active > .ok-win__frame { border-color: var(--frame); box-shadow: var(--shadow-window), 0 0 0 1px var(--frame-focus); }
+[data-theme="office"] .ok-win.is-alert > .ok-win__frame { border-color: var(--alert-hot); box-shadow: var(--shadow-window), var(--glow-fire); }
+[data-theme="office"] .ok-win.is-alert .ok-win__title { color: var(--danger); }
+[data-theme="office"] .ok-win__grip { display: none; }
+
+/* --- Garrison badge + harness scheme ---------------------------------------------------- */
+.ok-badge { display: inline-flex; align-items: center; gap: 4px; font: 700 12px/20px var(--ok-font); padding: 0 6px;
+  background: var(--panel-inset); color: var(--ink); border-radius: var(--ok-radius); box-shadow: var(--bevel-sunken); white-space: nowrap; }
+.ok-badge img { width: 18px; height: 15px; image-rendering: pixelated; }
+.ok-badge.is-alert { color: var(--alert); }
+.ok-badge .busy { color: var(--unit-active); }
+[data-theme="office"] .ok-badge { font-weight: 400; border-radius: 10px; padding: 0 8px; box-shadow: inset 0 0 0 1px var(--frame); background: var(--panel-raised); }
+[data-theme="office"] .ok-badge img { display: none; }
+[data-theme="office"] .ok-badge.is-alert { color: var(--danger); box-shadow: inset 0 0 0 1px var(--alert-hot); }
+.ok-h-claude { color: var(--harness-claude); } .ok-h-agy { color: var(--harness-agy); }
+.ok-h-codex { color: var(--harness-codex); } .ok-h-pipe { color: var(--harness-pipeline); }
+.ok-arrow { color: var(--ink-comment); }
+
+/* --- Header sprites (Camp only) --------------------------------------------------------- */
+/* Every building carries a pixel-art header: a low wide one on its hut card, a wider banner on its opened
+   window. The header is NOT framed: the building stands on the top edge of its card or window, its roof
+   rises over the map ground (grass, snow, ash) behind it, and frames, focus and fire light only the card.
+   Pixel art on a 16px grid, shown at 1× or a whole multiple, never smoothed. Office hides every header. */
+.ok-sprite { display: block; image-rendering: pixelated; image-rendering: crisp-edges; flex: none; }
+.ok-sprite.is-empty { box-sizing: border-box; display: grid; place-items: end center; padding: 4px 6px;
+  background: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.35) 0 8px, transparent 8px 16px);
+  box-shadow: inset 0 0 0 1px var(--ink-comment); font: 600 11px/14px var(--ok-font); color: var(--ink-muted); }
+.ok-sprite.xs { width: 64px; height: 32px; } .ok-sprite.s { width: 80px; height: 40px; }
+.ok-sprite.m { width: 96px; height: 48px; } .ok-sprite.l { width: 112px; height: 56px; }
+.ok-sprite.banner { width: 128px; height: 64px; }
+.ok-sprite.is-empty.xs, .ok-sprite.is-empty.s, .ok-sprite.is-empty.m, .ok-sprite.is-empty.l, .ok-sprite.is-empty.banner { font-size: 9px; line-height: 11px; padding: 2px; place-items: end center; text-align: center; }
+.ok-sprite.tree { width: 16px; height: 24px; } .ok-sprite.bush { width: 16px; height: 12px; } .ok-sprite.mount { width: 32px; height: 24px; }
+.ok-sprite.tree, .ok-sprite.bush, .ok-sprite.mount { padding: 0; font-size: 0; }
+.ok-sprite.icon { width: 32px; height: 32px; padding: 0; } .ok-sprite.res { width: 16px; height: 16px; padding: 0; }
+.ok-sprite.portrait { width: 46px; height: 38px; padding: 0; }
+[data-theme="office"] .ok-sprite, [data-theme="office"] .ok-head { display: none; }
+
+/* The header: transparent, the sprite standing on its bottom edge, which is the card's top edge. A sprite may
+   be taller than its slot: the roof then rises further over the ground. Flames sit on top. */
+.ok-head { position: relative; display: flex; justify-content: center; align-items: flex-end; margin-bottom: -2px; z-index: 1; pointer-events: none; }
+.ok-head > * { pointer-events: auto; }
+.ok-head__fx { position: absolute; inset: 0; pointer-events: none; }
+.ok-flame { position: absolute; font-size: 22px; line-height: 1; animation: ok-flicker .4s steps(1) infinite; }
+@keyframes ok-flicker { 50% { transform: translateY(-2px) scaleX(-1); } }
+@media (prefers-reduced-motion: reduce) { .ok-flame { animation: none; } }
+
+/* The roof of the selected hut or the active window glows softly from behind in its frame's colour. */
+.ok-head > .ok-sprite { transition: filter .15s; }
+.ok-hut.is-selected > .ok-head > .ok-sprite, .ok-win.is-active > .ok-head > .ok-sprite {
+  filter: drop-shadow(0 0 1px var(--frame-focus)) drop-shadow(0 0 6px var(--frame-focus)); }
+.ok-hut.is-alert > .ok-head > .ok-sprite, .ok-win.is-alert > .ok-head > .ok-sprite {
+  filter: drop-shadow(0 0 1px var(--alert)) drop-shadow(0 0 8px var(--alert)); }
+.ok-hut.is-alert.is-hot > .ok-head > .ok-sprite, .ok-win.is-alert.is-hot > .ok-head > .ok-sprite {
+  filter: drop-shadow(0 0 1px var(--alert-hot)) drop-shadow(0 0 8px var(--alert-hot)); }
+
+/* Map ground behind the roofs: one flat `canvas` colour per biome, and 5–7 rare decorations per screen (.ok-doodad: trees and bushes in forest, icy
+   mountains in ice, rocks in void), placed by the app, never under or touching a card. */
+.ok-ground { background: var(--canvas); }
+
+.ok-ground { position: relative; }
+.ok-doodad { position: absolute; z-index: 0; pointer-events: none; }
+[data-theme="office"] .ok-doodad { display: none; }
+.ok-ground > :not(.ok-doodad) { position: relative; z-index: 1; }
+
+/* --- Hut (a building on the town map) --------------------------------------------------- */
+/* .ok-hut stacks the header over .ok-hut__card. Camp: the card is bevelled stone and oak — name plate,
+   status lines, command buttons — and only the card takes the frame, selection and fire.
+   Office: the header is gone and the card is an explorer card. Same markup. */
+.ok-hut { display: inline-flex; flex-direction: column; position: relative; max-width: 100%; }
+.ok-hut.xs { width: 192px; } .ok-hut.s { width: 240px; } .ok-hut.m { width: 288px; } .ok-hut.l { width: 336px; }
+.ok-hut__card { position: relative; display: flex; flex-direction: column; background: var(--panel);
+  border: var(--ok-stroke) solid var(--frame); box-shadow: var(--shadow-window); }
+.ok-hut__label { display: flex; align-items: baseline; gap: 6px; padding: 6px var(--space-2) 2px;
+  font: 400 15px/20px var(--ok-head); color: var(--ink); }
+.ok-hut__label .no { font: 700 12px/20px var(--ok-font); color: var(--ink-muted); }
+.ok-hut__dot { display: none; }
+.ok-hut__lines { margin: 0; padding: 0 var(--space-2) 6px; list-style: none; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
+.ok-hut__acts { display: flex; gap: 4px; padding: 0 var(--space-2) var(--space-2); }
+/* Warcraft 2 selection: gold frame and gold corner brackets round the card (never round the roof). */
+.ok-hut.is-selected .ok-hut__card { border-color: var(--frame-focus); }
+.ok-hut.is-selected .ok-hut__card::after { content: ""; position: absolute; inset: -6px; pointer-events: none; background:
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 0 0 / 12px 2px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 0 0 / 2px 12px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 100% 0 / 12px 2px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 100% 0 / 2px 12px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 0 100% / 12px 2px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 0 100% / 2px 12px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 100% 100% / 12px 2px no-repeat,
+  linear-gradient(var(--frame-focus), var(--frame-focus)) 100% 100% / 2px 12px no-repeat; }
+.ok-hut.is-selected .ok-hut__label { color: var(--ink-gold); }
+/* Fire: the card burns (orange frame and halo, then red); flame sprites climb the roof. */
+.ok-hut.is-alert .ok-hut__card { border-color: var(--alert); box-shadow: var(--glow-fire); background: var(--fire-ground); }
+.ok-hut.is-alert .ok-hut__label { color: var(--alert); }
+.ok-hut.is-alert .ok-hut__lines { color: var(--ink); }
+.ok-hut.is-alert.is-hot .ok-hut__card { border-color: var(--alert-hot); background: var(--fire-ground-hot); }
+.ok-hut.is-alert.is-hot .ok-hut__label { color: var(--alert-hot); }
+
+[data-theme="office"] .ok-hut, [data-theme="office"] .ok-hut[class] { width: 240px; }
+[data-theme="office"] .ok-hut__card { border: 0; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--frame); padding: var(--space-2) var(--space-3); }
+[data-theme="office"] .ok-hut__label { padding: 0; font: 600 13px/20px var(--font-office); }
+[data-theme="office"] .ok-hut__label .no { font: 400 12px/20px var(--font-office); color: var(--ink-comment); }
+[data-theme="office"] .ok-hut__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-comment); margin-left: auto; align-self: center; }
+[data-theme="office"] .ok-hut.is-busy .ok-hut__dot { background: var(--unit-active); }
+[data-theme="office"] .ok-hut__lines { padding: 2px 0 4px; font: 400 12px/18px var(--font-office); }
+[data-theme="office"] .ok-hut__acts { gap: 0; padding: 0; margin-left: -6px; }
+[data-theme="office"] .ok-hut.is-selected .ok-hut__card { box-shadow: inset 0 0 0 1px var(--frame-focus); }
+[data-theme="office"] .ok-hut.is-selected .ok-hut__card::after { display: none; }
+[data-theme="office"] .ok-hut.is-selected .ok-hut__label { color: var(--ink); }
+[data-theme="office"] .ok-hut.is-alert .ok-hut__card { box-shadow: inset 0 0 0 1px var(--alert-hot); background: var(--panel); }
+[data-theme="office"] .ok-hut.is-alert .ok-hut__label { color: var(--danger); }
+[data-theme="office"] .ok-hut.is-alert .ok-hut__lines { color: var(--ink-muted); }
+[data-theme="office"] .ok-hut.is-alert .ok-hut__dot { background: var(--alert-hot); }
+
+/* --- HUD -------------------------------------------------------------------------------- */
+.ok-hud { width: 100%; height: var(--bar-hud); display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); box-sizing: border-box;
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 700 13px/1 var(--ok-font); color: var(--ink); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.ok-hud__brand { font: 400 16px/1 var(--ok-head); color: var(--ink-gold); }
+.ok-hud__ready { color: var(--success); } .ok-hud__halt { color: var(--panel); background: var(--danger); padding: 2px 6px; }
+.ok-hud__fire { color: var(--alert); }
+.ok-hud__spacer { flex: 1; }
+.ok-res { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.ok-res img { width: 16px; height: 16px; image-rendering: pixelated; }
+.ok-res .ok-word { font-weight: 400; color: var(--ink-muted); }
+.ok-res.is-warn { color: var(--warning); } .ok-res.is-over { color: var(--danger); }
+.ok-res.quiet { color: var(--quiet-ink); }
+[data-theme="office"] .ok-hud { height: 30px; gap: var(--space-4); padding: 0 var(--space-3); background: var(--panel-inset); box-shadow: inset 0 -1px 0 var(--frame); font: 400 12px/1 var(--font-office); }
+[data-theme="office"] .ok-hud__brand { font: 600 13px/1 var(--font-office); color: var(--ink); }
+[data-theme="office"] .ok-hud__halt { border-radius: var(--radius-sm); }
+[data-theme="office"] .ok-res img { display: none; }
+
+/* --- Meter (resource / quota bar) -------------------------------------------------------- */
+.ok-meter { width: 100%; display: grid; grid-template-columns: 96px 1fr auto; gap: var(--space-2); align-items: center; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.ok-meter__track { height: 12px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); border-radius: var(--ok-radius); overflow: hidden; padding: 2px; box-sizing: border-box; }
+.ok-meter__fill { display: block; height: 100%; background: var(--meter); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.3); }
+.ok-meter.is-warn .ok-meter__fill { background: var(--warning); }
+.ok-meter.is-over .ok-meter__fill { background: var(--danger); }
+.ok-meter__val { color: var(--ink); font-weight: 700; }
+[data-theme="office"] .ok-meter { font: 400 12px/16px var(--font-office); }
+[data-theme="office"] .ok-meter__track { height: 6px; padding: 0; box-shadow: none; background: var(--panel-raised); border-radius: var(--radius-full); }
+[data-theme="office"] .ok-meter__fill { border-radius: var(--radius-full); box-shadow: none; transition: width .3s ease; }
+[data-theme="office"] .ok-meter__val { font-weight: 400; }
+/* Indeterminate: Camp a striped belt, Office a soft sweeping bar as in VS Code's progress strip. */
+.ok-meter.is-busy .ok-meter__fill { width: 100%; background: repeating-linear-gradient(90deg, var(--meter) 0 12px, var(--panel-raised) 12px 16px); }
+[data-theme="office"] .ok-meter.is-busy .ok-meter__fill { width: 30%; background: var(--frame-focus); animation: ok-sweep 1.4s ease-in-out infinite; }
+@keyframes ok-sweep { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) { .ok-meter.is-busy .ok-meter__fill { animation: none; } }
+
+/* --- War Map (orkspace list) and Menu (F10, option lists) -------------------------------- */
+.ok-list { width: 100%; background: var(--panel); border-top: var(--ok-stroke) solid var(--frame-focus); box-shadow: var(--shadow-window); }
+.ok-list__head { font: 400 16px/30px var(--ok-head); color: var(--ink-gold); padding: 0 var(--space-3); letter-spacing: var(--ok-track); }
+.ok-list__items { list-style: none; margin: 0; padding: var(--space-1) 0; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.ok-item { display: flex; align-items: center; gap: var(--space-2); padding: 3px var(--space-3); font: 14px/20px var(--ok-font); color: var(--ink); cursor: pointer; }
+.ok-item .ok-kbd { min-width: 24px; }
+.ok-item .meta { margin-left: auto; color: var(--ink-muted); font-size: 12px; }
+.ok-item.is-selected { background: var(--selection); font-weight: 700; }
+.ok-item.is-selected .meta { color: var(--ink); }
+.ok-item.is-alert { color: var(--alert); font-weight: 700; }
+.ok-item.is-disabled { color: var(--ink-comment); }
+.ok-list__foot { font: 600 12px/26px var(--ok-font); color: var(--ink-muted); padding: 0 var(--space-3); display: flex; gap: var(--space-3); }
+[data-theme="office"] .ok-list { border-top: 0; box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); overflow: hidden; }
+[data-theme="office"] .ok-list__head { font: 700 11px/30px var(--font-office); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+[data-theme="office"] .ok-list__items { box-shadow: none; background: var(--panel); padding: 0; }
+[data-theme="office"] .ok-item { padding: 0 var(--space-3); font-size: 13px; line-height: 24px; }
+[data-theme="office"] .ok-item .ok-kbd { order: 9; margin-left: var(--space-2); min-width: 0; }
+[data-theme="office"] .ok-item:hover { background: var(--panel-raised); }
+[data-theme="office"] .ok-item.is-selected { background: var(--selection); box-shadow: inset 0 0 0 1px var(--frame-focus); font-weight: 400; }
+[data-theme="office"] .ok-item.is-alert { color: var(--danger); font-weight: 400; }
+[data-theme="office"] .ok-list__foot { font-weight: 400; }
+
+/* --- Tabs ------------------------------------------------------------------------------- */
+.ok-tabs { display: flex; gap: 2px; width: 100%; border-bottom: var(--ok-stroke) solid var(--frame); }
+.ok-tab { font: 700 13px/1 var(--ok-font); text-transform: var(--ok-case); letter-spacing: var(--ok-track); height: var(--ok-control);
+  padding: 0 var(--ok-pad); display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); background: var(--panel-inset); box-shadow: var(--bevel-sunken); cursor: pointer; }
+.ok-tab.is-active { color: var(--ink-gold); background: var(--panel-raised); box-shadow: var(--bevel-raised); }
+[data-theme="office"] .ok-tabs { gap: 0; background: var(--panel-inset); }
+[data-theme="office"] .ok-tab { height: 35px; padding: 0 var(--space-4); font-weight: 400; background: var(--panel-inset); box-shadow: inset -1px 0 0 var(--frame); }
+[data-theme="office"] .ok-tab.is-active { color: var(--ink); background: var(--panel); box-shadow: inset 0 1px 0 var(--frame-focus), inset -1px 0 0 var(--frame); }
+
+/* --- Input ------------------------------------------------------------------------------ */
+.ok-input { width: 100%; height: var(--ok-control); padding: 0 var(--ok-pad); font: 400 14px/1 var(--ok-font); color: var(--ink);
+  background: var(--panel-inset); border: 0; border-radius: var(--ok-radius); box-shadow: var(--bevel-sunken); box-sizing: border-box; }
+.ok-input::placeholder { color: var(--ink-muted); }
+.ok-input:focus, .ok-input.is-focus { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 0; }
+[data-theme="office"] .ok-input { font: 400 13px/1 var(--font-office); padding: 0 var(--space-2); box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .ok-input:focus, [data-theme="office"] .ok-input.is-focus { box-shadow: inset 0 0 0 1px var(--frame-focus); outline: 0; }
+
+/* --- Checkbox / Chip -------------------------------------------------------------------- */
+.ok-check { display: inline-flex; align-items: center; gap: var(--space-2); font: 14px/20px var(--ok-font); color: var(--ink); cursor: pointer; }
+.ok-check i { width: 16px; height: 16px; display: inline-grid; place-items: center; font: 700 12px/1 var(--ok-font); font-style: normal;
+  background: var(--panel-inset); box-shadow: var(--bevel-sunken); color: var(--action); border-radius: var(--ok-radius); }
+[data-theme="office"] .ok-check { font-size: 13px; }
+[data-theme="office"] .ok-check i { border-radius: 3px; box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .ok-check i:not(:empty) { background: var(--frame-focus); color: var(--on-action); box-shadow: none; }
+.ok-chip { font: 600 12px/24px var(--ok-font); padding: 0 var(--space-2); color: var(--ink-muted); background: var(--panel-inset); box-shadow: var(--bevel-sunken); border-radius: var(--ok-radius); cursor: pointer; }
+.ok-chip.is-on { color: var(--ink-gold); background: var(--panel-raised); box-shadow: var(--bevel-raised); }
+[data-theme="office"] .ok-chip { font-weight: 400; padding: 0 var(--space-3); box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-full); }
+[data-theme="office"] .ok-chip.is-on { color: var(--on-action); background: var(--frame-focus); box-shadow: none; }
+
+/* --- Dialog (modal) ---------------------------------------------------------------------- */
+.ok-dialog { width: 100%; background: var(--panel); color: var(--ink); border: var(--ok-frame) solid var(--frame-focus); border-radius: var(--ok-radius-lg);
+  box-shadow: var(--shadow-window); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); box-sizing: border-box; }
+.ok-dialog.is-warn { border-color: var(--warning); } .ok-dialog.is-error { border-color: var(--danger); }
+.ok-dialog__head { display: flex; gap: var(--space-3); align-items: center; }
+.ok-dialog__portrait { width: 46px; height: 38px; image-rendering: pixelated; box-shadow: var(--bevel-sunken); flex: none; }
+.ok-dialog__title { margin: 0; font: 400 26px/30px var(--ok-head); color: var(--ink-gold); }
+.ok-dialog__section { margin: 0; font: 700 12px/16px var(--ok-font); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.ok-dialog__text { margin: 0; line-height: 1.5; }
+.ok-dialog__hint { margin: 0; color: var(--ink-muted); font-size: 12px; }
+.ok-dialog__actions { display: flex; gap: var(--space-2); }
+[data-theme="office"] .ok-dialog { border-color: var(--frame); padding: var(--space-4) var(--space-4) var(--space-3); }
+[data-theme="office"] .ok-dialog__portrait { display: none; }
+[data-theme="office"] .ok-dialog__title { font: 600 16px/24px var(--font-office); color: var(--ink); }
+[data-theme="office"] .ok-dialog__section { font-size: 11px; letter-spacing: .08em; }
+[data-theme="office"] .ok-dialog__actions { justify-content: flex-end; }
+
+/* --- Toast ------------------------------------------------------------------------------ */
+.ok-toast { display: flex; gap: var(--space-2); align-items: flex-start; width: 100%; max-width: 380px; box-sizing: border-box; padding: var(--space-2) var(--space-3);
+  background: var(--panel-raised); box-shadow: var(--bevel-raised), var(--shadow-window); border-radius: var(--ok-radius); font: 14px/20px var(--ok-font); color: var(--ink); }
+.ok-toast__mark { font: 700 14px/20px var(--ok-font); }
+.ok-toast.is-warn .ok-toast__mark { color: var(--warning); } .ok-toast.is-error .ok-toast__mark { color: var(--danger); }
+.ok-toast.is-ok .ok-toast__mark { color: var(--success); }
+[data-theme="office"] .ok-toast { font-size: 13px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--frame), var(--shadow-window); border-radius: var(--radius-md); padding: var(--space-3); }
+
+/* --- Key footer ------------------------------------------------------------------------- */
+.ok-keys { width: 100%; height: var(--bar-hud); display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-2); box-sizing: border-box;
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 600 12px/1 var(--ok-font); color: var(--ink-muted); white-space: nowrap; overflow: hidden; }
+.ok-keys .ok-kbd { margin-right: 4px; }
+[data-theme="office"] .ok-keys { height: 22px; gap: 0; padding: 0; background: var(--frame-focus); color: var(--on-action); box-shadow: none; font: 400 12px/22px var(--font-office); }
+[data-theme="office"] .ok-keys > span { padding: 0 var(--space-2); }
+[data-theme="office"] .ok-keys > span:hover { background: rgba(0, 0, 0, 0.12); }
+[data-theme="office"] .ok-keys .ok-kbd { background: none; box-shadow: none; color: inherit; padding: 0; opacity: .7; }
+
+/* --- Day bar ---------------------------------------------------------------------------- */
+.ok-day { width: 100%; font: 600 11px/14px var(--ok-font); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.ok-day__cells { display: grid; grid-template-columns: repeat(48, 1fr); gap: 1px; height: 18px; padding: 2px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); border-radius: var(--ok-radius); box-sizing: border-box; }
+.ok-day__cells span { background: var(--day); }
+.ok-day__cells .q { background: var(--day-quiet); }
+.ok-day__cells .o { background: var(--day-office); }
+.ok-day__cells .qo { background: linear-gradient(var(--day-quiet) 50%, var(--day-office) 50%); }
+.ok-day__cells .now { box-shadow: 0 -6px 0 -2px var(--ink); }
+.ok-day__ticks { display: flex; justify-content: space-between; margin-top: 4px; }
+[data-theme="office"] .ok-day { font: 400 11px/14px var(--font-office); }
+[data-theme="office"] .ok-day__cells { gap: 0; height: 10px; padding: 0; box-shadow: none; border-radius: var(--radius-full); background: var(--panel-raised); }
+[data-theme="office"] .ok-day__cells span:first-child { border-radius: 5px 0 0 5px; }
+[data-theme="office"] .ok-day__cells span:last-child { border-radius: 0 5px 5px 0; }
+[data-theme="office"] .ok-day__cells .now { box-shadow: none; position: relative; }
+[data-theme="office"] .ok-day__cells .now::after { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+
+/* --- Road and carts --------------------------------------------------------------------- */
+.ok-road { display: flex; align-items: center; width: 100%; height: 28px; position: relative; }
+.ok-road__gate { width: 10px; height: 10px; background: var(--frame-focus); box-shadow: var(--bevel-raised); flex: none; }
+.ok-road__path { flex: 1; height: 8px; background: var(--road); box-shadow: var(--bevel-sunken); position: relative; display: flex; align-items: center; justify-content: space-around; }
+.ok-road.is-bright .ok-road__path { background: var(--road-bright); }
+.ok-road.is-selected .ok-road__path { background: var(--road-selected); }
+.ok-road__label { position: absolute; left: 50%; top: -12px; transform: translateX(-50%); font: 700 11px/16px var(--ok-font); padding: 0 6px; background: var(--road-selected); color: var(--on-action); white-space: nowrap; }
+.ok-cart { width: 14px; height: 12px; background: var(--ink-muted); box-shadow: var(--bevel-raised); }
+.ok-cart img { width: 16px; height: 16px; image-rendering: pixelated; }
+.ok-cart.held { background: var(--cart-held); } .ok-cart.error { background: var(--cart-error); } .ok-cart.filtered { background: var(--cart-filtered); opacity: .6; }
+[data-theme="office"] .ok-road__gate { width: 8px; height: 8px; border-radius: 50%; box-shadow: none; }
+[data-theme="office"] .ok-road__path { height: 2px; border-radius: 1px; box-shadow: none; }
+[data-theme="office"] .ok-road__label { border-radius: var(--radius-full); padding: 0 8px; font: 400 11px/16px var(--font-office); }
+[data-theme="office"] .ok-cart { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 2px var(--canvas); background: var(--road-selected); }
+[data-theme="office"] .ok-cart.held { background: var(--cart-held); } [data-theme="office"] .ok-cart.error { background: var(--cart-error); }
+[data-theme="office"] .ok-cart.filtered { background: var(--cart-filtered); }
+
+/* --- Task board (Task Fields) ------------------------------------------------------------- */
+/* Lanes of cards. Status lanes (To Do, Doing, Done) hold tasks; any other lane holds notes. A card has a
+   title, an optional text and one of five colours. Camp: bevelled plaques tinted with the sticky colour,
+   lanes are sunken fields. Office: GitHub-Projects-like cards on `panel`, the colour as a small square. */
+.ok-board { display: grid; grid-template-columns: repeat(var(--lanes, 4), minmax(0, 1fr)); gap: var(--space-2); width: 100%; align-items: start; }
+.ok-lane { background: var(--panel-inset); box-shadow: var(--bevel-sunken); padding: var(--space-2); display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.ok-lane__head { display: flex; align-items: center; gap: 6px; padding: 0 2px 2px; font: 400 15px/20px var(--ok-head); color: var(--ink-gold); }
+.ok-lane__count { margin-left: auto; font: 700 12px/20px var(--ok-font); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.ok-lane.is-notes .ok-lane__head { color: var(--warning); }
+.ok-lane__add { appearance: none; border: 0; background: none; text-align: left; padding: 4px 2px; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); cursor: pointer; }
+.ok-lane__add:hover { color: var(--ink-gold); }
+
+.ok-card { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px 7px; cursor: grab;
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); color: var(--ink); border-radius: var(--ok-radius); }
+.ok-card[data-color="yellow"] { background: var(--sticky-yellow); } .ok-card[data-color="green"] { background: var(--sticky-green); }
+.ok-card[data-color="blue"] { background: var(--sticky-blue); }     .ok-card[data-color="red"] { background: var(--sticky-red); }
+.ok-card[data-color="purple"] { background: var(--sticky-purple); }
+.ok-card__title { display: flex; align-items: baseline; gap: 6px; font: 700 13px/18px var(--ok-font); }
+.ok-card__sw { display: none; flex: none; width: 10px; height: 10px; border-radius: 2px; align-self: center; }
+[data-color="yellow"] > .ok-card__title .ok-card__sw { background: var(--mark-yellow); } [data-color="green"] > .ok-card__title .ok-card__sw { background: var(--mark-green); }
+[data-color="blue"] > .ok-card__title .ok-card__sw { background: var(--mark-blue); }     [data-color="red"] > .ok-card__title .ok-card__sw { background: var(--mark-red); }
+[data-color="purple"] > .ok-card__title .ok-card__sw { background: var(--mark-purple); }
+.ok-card__check { flex: none; font: 700 12px/18px var(--ok-font); color: var(--success); }
+.ok-card__text { margin: 0; font: 400 12px/16px var(--ok-font); color: var(--ink-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ok-card__meta { display: flex; gap: var(--space-2); align-items: center; margin-top: 2px; font: 600 11px/14px var(--ok-font); color: var(--ink-muted); }
+.ok-card__meta .ok-badge { font-size: 11px; line-height: 16px; }
+.ok-card.is-done .ok-card__title > span:last-child { text-decoration: line-through; color: var(--ink-muted); }
+.ok-card.is-selected { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 1px; }
+.ok-card.is-dragging { transform: rotate(-2deg); box-shadow: var(--bevel-raised), var(--shadow-window); }
+.ok-card.is-alert { outline: var(--ok-stroke) solid var(--alert); }
+
+[data-theme="office"] .ok-board { gap: var(--space-3); }
+[data-theme="office"] .ok-lane { background: transparent; box-shadow: none; padding: 0; gap: var(--space-2); }
+[data-theme="office"] .ok-lane__head { font: 700 11px/24px var(--font-office); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); padding: 0; }
+[data-theme="office"] .ok-lane__count { font: 400 11px/18px var(--font-office); color: var(--ink); background: var(--panel-raised); border-radius: var(--radius-full); padding: 0 7px; margin-left: 0; }
+[data-theme="office"] .ok-lane.is-notes .ok-lane__head { color: var(--ink-muted); }
+[data-theme="office"] .ok-lane__add { font: 400 12px/16px var(--font-office); padding: 4px 6px; border-radius: var(--radius-md); }
+[data-theme="office"] .ok-lane__add:hover { color: var(--ink); background: var(--panel-raised); }
+[data-theme="office"] .ok-card, [data-theme="office"] .ok-card[data-color] { background: var(--panel); box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); padding: var(--space-2) 10px; }
+[data-theme="office"] .ok-card:hover { box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .ok-card__title { font: 600 13px/18px var(--font-office); }
+[data-theme="office"] .ok-card[data-color] .ok-card__sw { display: inline-block; }
+[data-theme="office"] .ok-card__text, [data-theme="office"] .ok-card__meta { font-family: var(--font-office); font-weight: 400; }
+[data-theme="office"] .ok-card.is-selected { outline: 0; box-shadow: inset 0 0 0 1px var(--frame-focus); }
+[data-theme="office"] .ok-card.is-dragging { transform: none; box-shadow: inset 0 0 0 1px var(--frame-focus), var(--shadow-window); }
+[data-theme="office"] .ok-card.is-alert { outline: 0; box-shadow: inset 0 0 0 1px var(--alert-hot); }
+
+/* --- Forge (branches, pull requests, merge) ----------------------------------------------- */
+/* Branch list on the left, the selected branch on the right: its PR, commits and changed files, and the
+   merge. Camp: a sunken ledger and a bevelled detail plate. Office: VS Code's Source Control view. */
+.ok-forge { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-3); width: 100%; align-items: start; }
+.ok-branches { list-style: none; margin: 0; padding: var(--space-1) 0; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.ok-branch { display: flex; align-items: center; gap: 6px; padding: 4px var(--space-2); font: 600 13px/18px var(--ok-font); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.ok-branch__cur { width: 8px; flex: none; color: var(--success); font-size: 10px; }
+.ok-branch__name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ok-branch__stat { margin-left: auto; display: inline-flex; gap: 6px; font: 600 12px/18px var(--ok-font); font-variant-numeric: tabular-nums; flex: none; }
+.ok-add { color: var(--success); } .ok-del { color: var(--danger); } .ok-ab { color: var(--ink-muted); }
+.ok-branch.is-selected { background: var(--selection); }
+.ok-branch.is-selected .ok-ab { color: var(--ink); }
+.ok-branch.is-selected .ok-add, .ok-branch.is-selected .ok-del { color: var(--ink); }
+
+.ok-pr { display: inline-flex; align-items: center; gap: 4px; flex: none; font: 700 11px/16px var(--ok-font); padding: 0 5px;
+  background: var(--panel); box-shadow: var(--bevel-raised); color: var(--success); text-transform: var(--ok-case); letter-spacing: .04em; }
+.ok-pr[data-state="merged"] { color: var(--pr-merged); } .ok-pr[data-state="closed"] { color: var(--danger); } .ok-pr[data-state="draft"] { color: var(--ink-muted); }
+
+.ok-detail { background: var(--panel-raised); box-shadow: var(--bevel-raised); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; box-sizing: border-box; }
+.ok-detail__head { display: flex; align-items: center; gap: var(--space-2); font: 400 17px/22px var(--ok-head); color: var(--ink-gold); }
+.ok-detail__pr { margin: 0; font: 600 13px/18px var(--ok-font); color: var(--ink); }
+.ok-detail__pr a { color: var(--info); text-decoration: none; }
+.ok-detail__meta { margin: 0; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
+.ok-detail__section { margin: var(--space-1) 0 0; font: 700 11px/16px var(--ok-font); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.ok-commits, .ok-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ok-commit { display: flex; gap: var(--space-2); font: 400 13px/18px var(--ok-font); color: var(--ink); }
+.ok-commit code { font: 400 12px/18px var(--font-mono); color: var(--ink-gold); flex: none; }
+.ok-commit .when { margin-left: auto; color: var(--ink-muted); font-size: 12px; flex: none; }
+.ok-file { display: grid; grid-template-columns: minmax(0, 1fr) auto 60px; gap: var(--space-2); align-items: center; font: 400 12px/18px var(--font-mono); color: var(--ink); }
+.ok-file > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ok-file__n { font: 600 12px/18px var(--ok-font); font-variant-numeric: tabular-nums; }
+.ok-file__bar { display: flex; height: 8px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.ok-file__bar i { display: block; height: 100%; } .ok-file__bar .a { background: var(--success); } .ok-file__bar .d { background: var(--danger); }
+.ok-detail__actions { display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-1); flex-wrap: wrap; }
+.ok-detail__result { margin: 0; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
+.ok-detail__result .ok { color: var(--success); } .ok-detail__result .bad { color: var(--danger); }
+
+[data-theme="office"] .ok-forge { gap: 0; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+[data-theme="office"] .ok-branches { background: var(--panel-inset); box-shadow: inset -1px 0 0 var(--frame); padding: var(--space-1) 0; align-self: stretch; }
+[data-theme="office"] .ok-branch { font: 400 13px/22px var(--font-office); padding: 0 var(--space-3); }
+[data-theme="office"] .ok-branch:hover { background: var(--panel-raised); }
+[data-theme="office"] .ok-branch.is-selected { background: var(--selection); box-shadow: inset 0 0 0 1px var(--frame-focus); }
+[data-theme="office"] .ok-branch__stat { font: 400 12px/22px var(--font-office); }
+[data-theme="office"] .ok-pr { font: 400 11px/16px var(--font-office); box-shadow: inset 0 0 0 1px currentColor; background: transparent; border-radius: var(--radius-full); padding: 0 7px; text-transform: none; letter-spacing: 0; }
+[data-theme="office"] .ok-detail { background: var(--panel); box-shadow: none; padding: var(--space-3) var(--space-4); }
+[data-theme="office"] .ok-detail__head { font: 600 15px/22px var(--font-office); color: var(--ink); }
+[data-theme="office"] .ok-detail__pr, [data-theme="office"] .ok-detail__meta, [data-theme="office"] .ok-commit, [data-theme="office"] .ok-detail__result { font-family: var(--font-office); font-weight: 400; }
+[data-theme="office"] .ok-detail__section { font-family: var(--font-office); letter-spacing: .08em; }
+[data-theme="office"] .ok-commit code { color: var(--ink-muted); }
+[data-theme="office"] .ok-file__n { font: 400 12px/18px var(--font-office); }
+[data-theme="office"] .ok-file__bar { height: 6px; box-shadow: none; background: var(--panel-raised); border-radius: var(--radius-full); overflow: hidden; }
+
+/* --- Map (preview helper and app container) ------------------------------------------------ */
+.ok-map { position: relative; width: 100%; height: 260px; }
+:root, [data-theme="camp"] { --ok-forest: block; --ok-ice: none; --ok-void: none; }
+[data-theme="camp-ice"] { --ok-forest: none; --ok-ice: block; --ok-void: none; }
+[data-theme="camp-void"] { --ok-forest: none; --ok-ice: none; --ok-void: block; }
+[data-theme="office"] { --ok-forest: none; --ok-ice: none; --ok-void: none; }
+.only-forest { display: var(--ok-forest); } .only-ice { display: var(--ok-ice); } .only-void { display: var(--ok-void); }
+
+/* --- Road tiles and cart sprites (Camp) ------------------------------------------------------ */
+/* Until the tiles exist, .ok-tileset shows each tile's slot at 2× with its shape, and .ok-cartslot each cart. */
+.ok-tileset { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; }
+.ok-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 600 10px/12px var(--ok-font); color: var(--ink-muted); }
+.ok-tile i { width: 32px; height: 32px; display: grid; place-items: center; font: 400 28px/1 var(--font-mono); font-style: normal; color: var(--road-bright);
+  background: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.35) 0 4px, transparent 4px 8px); box-shadow: inset 0 0 0 1px var(--ink-comment); image-rendering: pixelated; }
+.ok-tile i.cart { color: var(--ink-gold); font-size: 16px; }
+[data-theme="office"] .ok-tileset { display: none; }
+
+/* Tiled road: the 16×16 road tile repeated along the path. The UI sets the state: faint 60%, selected glow. */
+.ok-road__path.is-tiled { height: 16px; background-color: transparent; background-size: 0 0; box-shadow: none; image-rendering: pixelated; }
+.ok-road__path.is-tiled::before { content: ""; position: absolute; inset: 0; background-image: inherit; background-repeat: repeat-x; background-size: auto; image-rendering: pixelated; opacity: .6; z-index: 0; }
+.ok-road__path.is-tiled > * { position: relative; z-index: 1; }
+.ok-road.is-bright .ok-road__path.is-tiled::before, .ok-road.is-selected .ok-road__path.is-tiled::before { opacity: 1; }
+.ok-road.is-bright .ok-road__path.is-tiled { background-color: transparent; }
+.ok-road.is-selected .ok-road__path.is-tiled { background-color: transparent; filter: drop-shadow(0 0 1px var(--road-selected)) drop-shadow(0 0 3px var(--road-selected)); }
+[data-theme="office"] .ok-road__path.is-tiled { background-image: none !important; height: 2px; opacity: 1; filter: none; }
+[data-theme="office"] .ok-road__path.is-tiled::before { display: none; }
+[data-theme="office"] .ok-road .ok-road__path.is-tiled { background-color: var(--road); }
+[data-theme="office"] .ok-road.is-bright .ok-road__path.is-tiled { background-color: var(--road-bright); }
+[data-theme="office"] .ok-road.is-selected .ok-road__path.is-tiled { background-color: var(--road-selected); }
+
+/* Cart sprite: a 20×18 mine cart in side profile. The 16px road tile has its track on rows 4–11; the wheel's bottom sits on row 10, 2px above the track's bottom edge. The UI draws its status. */
+.ok-cart.is-sprite { width: 20px; height: 18px; align-self: flex-end; margin-bottom: 6px; background-color: transparent; background-repeat: no-repeat; background-position: center bottom; box-shadow: none; image-rendering: pixelated; opacity: 1; }
+.ok-cart.is-sprite.held { filter: drop-shadow(1px 0 0 var(--cart-held)) drop-shadow(-1px 0 0 var(--cart-held)) drop-shadow(0 1px 0 var(--cart-held)) drop-shadow(0 -1px 0 var(--cart-held)); }
+.ok-cart.is-sprite.error { filter: drop-shadow(1px 0 0 var(--cart-error)) drop-shadow(-1px 0 0 var(--cart-error)) drop-shadow(0 1px 0 var(--cart-error)) drop-shadow(0 -1px 0 var(--cart-error)); }
+.ok-cart.is-sprite.filtered { opacity: .5; }
+.ok-cart.is-sprite.to-left { transform: scaleX(-1); }
+[data-theme="office"] .ok-cart.is-sprite { background-image: none !important; width: 8px; height: 8px; filter: none; align-self: center; margin-bottom: 0; }
+
+/* --- Town (preview of huts together) ------------------------------------------------------ */
+.ok-town { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-8) var(--space-6); width: 100%; padding: var(--space-2) 0; }
+.ok-town > .ok-doodad { z-index: 0; }
+.ok-town > .ok-hut { z-index: 1; }
+[data-theme="office"] .ok-town { gap: var(--space-3); align-items: flex-start; }
+
+/* Vertical road: the same parts in a column; carts use the front view (is-down), centred on the track. */
+.ok-road.is-vertical { flex-direction: column; width: 28px; height: 220px; }
+.ok-road.is-vertical .ok-road__path { flex: 1; width: 8px; height: auto; flex-direction: column; }
+.ok-road.is-vertical .ok-road__path.is-tiled { width: 16px; height: auto; }
+.ok-road.is-vertical .ok-road__path.is-tiled::before { background-repeat: repeat-y; }
+.ok-road.is-vertical .ok-cart.is-sprite { align-self: center; margin-bottom: 0; }
+[data-theme="office"] .ok-road.is-vertical .ok-road__path, [data-theme="office"] .ok-road.is-vertical .ok-road__path.is-tiled { width: 2px; height: auto; }
+[data-theme="office"] .ok-road.is-vertical .ok-cart.is-sprite { align-self: center; }
+
+/* The ork sprite replaces 🧌: a 16×15 head that sits inside the badge plate. */
+.ok-badge img[data-kind="ork"] { width: 16px; height: 15px; margin: 0; }
+img.ok-sprite.portrait { object-fit: none; object-position: center; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+
+/* Fire sprite: fx/fire.png is a 64×16 strip of 4 frames, played in order. */
+.ok-flame.is-sprite { width: 16px; height: 16px; font-size: 0; background-repeat: no-repeat; background-size: 64px 16px; image-rendering: pixelated; animation: ok-fire .6s steps(4) infinite; }
+@keyframes ok-fire { from { background-position: 0 0; } to { background-position: -64px 0; } }
+@media (prefers-reduced-motion: reduce) { .ok-flame.is-sprite { animation: none; } }
+[data-theme="office"] .ok-flame.is-sprite { display: none; }
+
+/* The chain marker replaces 🪧 in badges: a 16×16 signpost beside the ork. */
+.ok-badge img[data-kind="chain"] { width: 16px; height: 16px; margin: 0; }
+.ok-badge img[data-kind="tier"] { width: 16px; height: 16px; margin: 0; }
