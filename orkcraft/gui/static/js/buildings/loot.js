@@ -10,7 +10,7 @@ import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
-import { askKeeper } from "../keeper.js";
+import { KeeperDialog } from "../keeper.js";
 
 const chosen = signal({});        // building id → {kind: item | file | rejected | stored, key}
 const reworking = signal({});     // building id → the item sent back, while its dialog is open
@@ -59,18 +59,6 @@ function ReworkDialog({ id, data }) {
   </${Dialog}>`;
 }
 
-function RulesDialog({ id, onClose }) {
-  const [request, setRequest] = useState("");
-  const ask = () => askKeeper(id, request).then(onClose);
-  return html`<${Dialog} title="The rules" onCancel=${onClose}
-      text="Say in plain words what may pass by itself and what waits for you; the keeper writes the rules."
-      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" disabled=${!request.trim()} onClick=${ask}>Ask the keeper</button>`}>
-    <textarea class="ok-input gui-textarea" rows="4" placeholder="Hold anything that costs more than $1 or touches src/" value=${request}
-      onInput=${(e) => setRequest(e.target.value)}></textarea>
-  </${Dialog}>`;
-}
-
 function Acts({ id, it }) {
   if (it.status === "rework") return html`<span class="ok-tone-muted">with ${it.source} for rework</span>`;
   return html`<button class="ok-act" onClick=${() => act(id, "accept", { item: it.id }).catch(() => {})}>
@@ -111,7 +99,7 @@ function Head({ id, data }) {
     ${held && html`<button class="ok-act" onClick=${() => act(id, "accept_all").catch(() => {})}><span class="ok-act__label">Accept all</span></button>`}
     ${files && html`<button class="ok-act" onClick=${() => act(id, "accept_files").catch(() => {})}><span class="ok-act__label">Accept files</span></button>`}
     <button class="ok-act" title=${`Review: ${data.review}`} onClick=${() => setRules(true)}><span class="ok-act__label">Rules</span></button>
-    ${rules && html`<${RulesDialog} id=${id} onClose=${() => setRules(false)} />`}
+    ${rules && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setRules(false)} />`}
     <${ReworkDialog} id=${id} data=${data} />
   </div>`;
 }
