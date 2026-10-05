@@ -1,0 +1,21 @@
+{
+  "type": "signpost",
+  "about": "🚏 Signpost: rules, first match wins, send each cart down one of its roads — no model.",
+  "panes": {
+    "rules":   {"about": "the rules one per line, as its keeper wrote them, and the request for new ones", "components": ["list", "text"], "required": true},
+    "test":    {"about": "a text pasted to see the route it would take", "components": ["form"], "required": true},
+    "history": {"about": "the carts that came by, newest first, filtered by route; the unmatched marked", "components": ["table", "list"], "required": true},
+    "cart":    {"about": "the chosen cart: where it came from and what it carried", "components": ["text"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "signpost", "split": "column",
+    "panes": [
+      {"id": "rules", "component": "list", "size": "auto", "font": "mono"},
+      {"id": "test", "component": "form", "size": "auto", "font": "body"},
+      {"split": "row", "size": 1, "panes": [
+        {"id": "history", "component": "table", "size": 3, "font": "body"},
+        {"id": "cart", "component": "text", "size": 2, "font": "mono"}
+      ]}
+    ]
+  }
+}

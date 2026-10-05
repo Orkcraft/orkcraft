@@ -313,6 +313,13 @@ class TownHallWorker(Worker):
         self.changed()
         return report
 
+    def quick_action(self, action_id: str) -> bool:
+        """A quick action asked of the host: Audit is done here; Build is a face's dialog."""
+        if action_id == "hall.audit":
+            self.audit()
+            return True
+        return False
+
     # -- spend and quotas ----------------------------------------------------------------------
 
     def spend(self) -> dict:

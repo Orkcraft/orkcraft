@@ -916,6 +916,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | Chronicles | History |
 | Elder | Advisor |
 | steward | coordinator |
+| keeper | coordinator |
 | Mason & Artisan | Module designer |
 | Warchief | Lead agent |
 | Mason | Data planner |

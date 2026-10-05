@@ -239,11 +239,11 @@ class Call:
     event: str
     title: str
     sound: str
-    played: str             # how: player | bell | muted | quiet | cooldown | none
+    played: str             # how: player | bell | page | muted | quiet | cooldown | none
 
     @property
     def heard(self) -> bool:
-        return self.played in ("player", "bell")
+        return self.played in ("player", "bell", "page")
 
 
 def log(state_dir: Path, call: Call) -> None:

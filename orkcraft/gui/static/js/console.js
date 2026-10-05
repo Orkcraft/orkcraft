@@ -205,7 +205,7 @@ function Inventory({ i, open }) {
 
 function BuildingCommands({ b, i, redo, open }) {
   const run = (name) => command(name, { id: b.id }).then(redo, () => {});
-  const mod = b.page ? typeModule(b.type) : null;          // a type's page may do its own quick actions
+  const mod = b.page ? typeModule(b.type) : null;          // a type may do its quick actions itself (js/types.js)
   const quick = (a) => (mod && mod.quick && mod.quick(b.id, a.id))
     || command("building.quick", { id: b.id, action: a.id }).catch(() => {});
   return html`${(i ? i.quick : []).map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => quick(a)} />`)}

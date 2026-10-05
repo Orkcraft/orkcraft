@@ -7,6 +7,7 @@ import { html } from "./html.js";
 import { town, command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { selectOrk } from "./windows.js";
+import { KeeperJob } from "./keeper.js";
 
 function Field({ label, children }) {
   return html`<label class="gui-field"><span class="ok-font-label">${label}</span>${children}</label>`;
@@ -157,6 +158,7 @@ export function Jobs() {
   const jobs = town.value.jobs || [];
   if (!jobs.length) return null;
   const job = jobs[0];
+  if (job.kind === "keeper") return html`<${KeeperJob} job=${job} />`;
   const drop = () => command("job.drop", { job: job.id }).catch(() => {});
   const accept = () => command("job.accept", { job: job.id }).then((ref) => ref && selectOrk(ref), () => {});
   const title = say(`${JOB_TITLE[job.kind] || "Job"} — ${job.title}`);
