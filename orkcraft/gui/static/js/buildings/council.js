@@ -2,7 +2,8 @@
 // Closed: only the review's state — its cycle, the tally and the spend while it runs, else how it ended,
 // and what waits in line. Command: the members and their verdicts, the document and the last turns;
 // Review, Add member, Answer. Full: the members, the review turn by turn and cycle by cycle, the document
-// with its comments, the report and the past reviews. The worker does it (core/workers/council.py); the
+// with its comments, the report and the past reviews, each a pane of its UI document
+// (design/buildings/council.json). The worker does it (core/workers/council.py); the
 // document opens in Lake, briefs and rules change through the keeper.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
@@ -217,31 +218,33 @@ function History({ id, data }) {
         <span class="ok-tone-muted"> · cycle ${h.cycle} · ${h.spent} · ${h.started}</span></li>`)}</ul></section>`}`;
 }
 
-function Full({ id, data }) {
+/** The head: the review shown (current or past), Stop, the acts; the dialogs live here (the pane is always there). */
+function Head({ id, data }) {
   const shown = past.value[id];
   const r = shown || data.current;
-  return html`<div class="gui-split">
-    <div class="gui-head">
-      ${r ? html`<span class="gui-head__what"><b>${r.title}</b>
-          <span class=${TONE[r.outcome] || "ok-tone-muted"}> · cycle ${r.cycle}/${data.max_cycles} · ${r.outcome_word} · ${r.spent}</span></span>`
-        : html`<span class="gui-head__what ok-tone-muted">No review yet — send a document down a road, or Review.</span>`}
-      ${shown && html`<button class="ok-act" onClick=${() => setIn(past, id, null)}><span class="ok-act__label">Back to the current review</span></button>`}
-      <span class="gui-head__spacer"></span>
-      ${data.busy && html`<button class="ok-act" onClick=${() => act(id, "stop").catch(() => {})}><span class="ok-act__label">Stop</span></button>`}
-      <${Acts} id=${id} data=${data} />
-    </div>
-    <div class="gui-split is-row">
-      <div class="gui-pane" style="flex: 1 1 0"><div>
-        <${Members} id=${id} data=${data} />
-        <${History} id=${id} data=${data} />
-      </div></div>
-      ${r && html`<div class="gui-pane" style="flex: 2 1 0"><${Discussion} data=${shown ? { cycles: [] } : data} r=${r} /></div>
-        <div class="gui-pane" style="flex: 2 1 0"><${Paper} id=${id} r=${r} /></div>`}
-    </div>
+  return html`<div class="gui-head">
+    ${r ? html`<span class="gui-head__what"><b>${r.title}</b>
+        <span class=${TONE[r.outcome] || "ok-tone-muted"}> · cycle ${r.cycle}/${data.max_cycles} · ${r.outcome_word} · ${r.spent}</span></span>`
+      : html`<span class="gui-head__what ok-tone-muted">No review yet — send a document down a road, or Review.</span>`}
+    ${shown && html`<button class="ok-act" onClick=${() => setIn(past, id, null)}><span class="ok-act__label">Back to the current review</span></button>`}
+    <span class="gui-head__spacer"></span>
+    ${data.busy && html`<button class="ok-act" onClick=${() => act(id, "stop").catch(() => {})}><span class="ok-act__label">Stop</span></button>`}
+    <${Acts} id=${id} data=${data} />
     <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
 
+/** The full window by its UI document (design/buildings/council.json). A past review picked in the
+ * history takes the current one's place in the review and the document. */
 export function panes(id, data) {
-  return { main: () => html`<${Full} id=${id} data=${data} />` };
+  const shown = past.value[id];
+  const r = shown || data.current;
+  const none = html`<p class="ok-tone-muted">The review shows here turn by turn, each member's verdict and the steward's decision.</p>`;
+  return {
+    head: () => html`<${Head} id=${id} data=${data} />`,
+    members: () => html`<div><${Members} id=${id} data=${data} /></div>`,
+    history: () => (data.history.length || data.queued.length ? html`<div><${History} id=${id} data=${data} /></div>` : null),
+    review: () => (r ? html`<${Discussion} data=${shown ? { cycles: [] } : data} r=${r} />` : none),
+    document: () => (r ? html`<${Paper} id=${id} r=${r} />` : html`<p class="ok-tone-muted">The document under review shows here, with the clan's comments.</p>`),
+  };
 }

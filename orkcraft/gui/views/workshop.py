@@ -54,7 +54,7 @@ def detail(w) -> dict:
     except ValueError:
         script = str(w.script)
     return {"script": script, "runtime": w.runtime, "layout": w.layout, "schedule": w.schedule,
-            "keeper": bool(w.config.get("steward_prompt")), "running": w.running, "has_cart": w.last_cart is not None,
+            "keeper": bool(w.config.get("steward_prompt")), "keeper_name": w.keeper, "running": w.running, "has_cart": w.last_cart is not None,
             "runs": [_run(w.layout, r) for r in w.runs[:RUNS]],
             "tests": [_run(w.layout, r, True) for r in w.tests], "tested_at": w.tested_at}
 

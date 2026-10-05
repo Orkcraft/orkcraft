@@ -1,0 +1,25 @@
+{
+  "type": "barracks",
+  "about": "🏕️ Barracks: a pool of orks that take tasks; the tasks in lanes by state, the chosen one, a tab per ork with its terminal, and the steward's rules.",
+  "panes": {
+    "head":  {"about": "how many orks work and how many tasks wait, the spend, the steward when it asks; New task, Pause, Answer, Hire an ork", "components": ["status"], "required": true},
+    "lanes": {"about": "the tasks in lanes by state (queue, work, review, done, failed), each with its branch, ork, reworks, cost and PR", "components": ["board"], "required": true},
+    "task":  {"about": "the chosen task: its brief, diff, review notes, the questions and their answers, its files and report", "components": ["text", "markdown"], "required": true},
+    "orks":  {"about": "a tab per ork with its live terminal, its worktree and its recent work", "components": ["terminal", "view"], "required": true},
+    "rules": {"about": "the steward's rules and asking it to change them in plain words, the settings, the foreman's decisions", "components": ["form", "list"]}
+  },
+  "default": {
+    "version": 1, "type": "barracks", "split": "column",
+    "panes": [
+      {"id": "head", "component": "status", "size": "auto", "font": "status"},
+      {"split": "row", "size": 3, "panes": [
+        {"id": "lanes", "component": "board", "size": 3, "font": "body"},
+        {"id": "task", "component": "text", "size": 2, "font": "body"}
+      ]},
+      {"split": "row", "size": 2, "panes": [
+        {"id": "orks", "component": "terminal", "size": 3, "font": "body"},
+        {"id": "rules", "component": "form", "size": 2, "font": "body"}
+      ]}
+    ]
+  }
+}

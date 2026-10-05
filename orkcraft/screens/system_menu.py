@@ -70,7 +70,7 @@ KEY_GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Command Card — Neutral",
         [
-            ("B", "🏗️ Build window (Mason & Artisan)"),
+            ("B", "🏗️ Build: presets, from scratch or the Foreman"),
             ("P", "📜 Window presets catalog"),
             ("S", "🧌 Summon ork / warband"),
             ("T", "🌲 Toggle terrain (Dim / Black)"),

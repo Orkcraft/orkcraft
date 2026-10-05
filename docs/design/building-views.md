@@ -82,7 +82,8 @@ redefines:
   (`core/keeper.py`): the keeper's proposal comes back as a job (the change line by line, its answer —
   about the selection when there is one — then Apply, or Drop; Revert takes it back). `KeeperAsk` is the
   request field a type puts in its views, `KeeperDialog` the same in a dialog. What a type's keeper writes
-  is its whole `config` unless the type registers a part of it (`keeper.register`; the Signpost's `rules`).
+  is its whole `config` unless the type registers a part of it (`keeper.register`; the Signpost's `rules`,
+  the Workshop's script and schedule — its script a file, kept in the same checkpoint).
 
 ## 5. Parallel work
 

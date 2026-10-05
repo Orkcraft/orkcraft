@@ -2,6 +2,7 @@
 rules or settings out — checked against its type, taken by the person, taken back by Revert."""
 from __future__ import annotations
 
+import datetime as dt
 import json
 
 import pytest
@@ -9,7 +10,7 @@ import pytest
 from orkcraft.core import buildings, keeper, runners
 from orkcraft.core.town import Town
 from orkcraft.gui.host import CommandError, Host
-from orkcraft.realm import checkpoint, chronicles
+from orkcraft.realm import checkpoint, chronicles, watch, workshop
 
 
 def _answers(*answers, cost=0.01):
@@ -138,3 +139,61 @@ def test_keeper_ask_says_why_it_will_not(fake_repo, isolated_layout_file, monkey
     assert job["view"]["diff"] == []
     with pytest.raises(CommandError):
         host.command("job.accept", {"job": job["id"]})                            # nothing to apply
+
+
+OLD_SCRIPT = "import json, sys\nprint(len(json.load(sys.stdin)['value']))\n"
+NEW_SCRIPT = "import json, sys\nprint(len(json.load(sys.stdin)['value'].split()))\n"
+
+
+def _workshop(town: Town):
+    workshop.save_script(town.repo_root, "counter", "python", OLD_SCRIPT)
+    return buildings.raise_spec(town, {"id": "counter", "type": "workshop", "title": "Counter", "icon": "🛠️",
+                                       "summary": "counts a cart", "orc": {"name": "Tinker", "role": "keeps the script"},
+                                       "config": {"runtime": "python", "layout": "log", "schedule": "hourly"}})
+
+
+def test_the_workshop_keeper_writes_its_script_and_schedule(fake_repo, isolated_layout_file):
+    town = Town(fake_repo)
+    built = _workshop(town)
+    spec = town.custom_specs[built.id]
+    subject = keeper.subject_of(spec)
+    assert subject.kind == "script and schedule"
+    run = _answers({"value": {"schedule": "every 15m", "script": "def x(:"}, "why": "x"},          # broken: back
+                   {"value": {"schedule": "sometimes", "script": NEW_SCRIPT}, "why": "x"},       # not a schedule: back
+                   {"value": {"schedule": "every 15m", "script": NEW_SCRIPT}, "why": "count words, every 15 minutes",
+                    "answer": "Done."})
+    p = keeper.ask(fake_repo, spec, town.scroll, built.id, "count words, not characters, every 15 minutes", runner=run)
+    assert p.error == "" and p.attempts == 3 and p.kind == "script and schedule"
+    assert p.before == {"schedule": "hourly", "script": OLD_SCRIPT}                  # the script from its file
+    assert "Tinker" in run.prompts[0] and "workshop.alert" in run.prompts[0] and "split()" not in run.prompts[0]
+    assert "script: line 1" in run.prompts[1] and "config: schedule" in run.prompts[2]
+    diff = p.diff(subject)
+    assert ["-", "schedule: hourly"] in diff and ["+", "schedule: every 15m"] in diff
+    assert ["+", "  " + NEW_SCRIPT.splitlines()[1]] in diff and [" ", "script:"] in diff
+    assert keeper.apply(town, built.id, p, "count words") == []
+    w = town.worker(built.id)                       # the worker takes both at once: the spec and the file
+    assert w.schedule == "every 15m" and w.source() == NEW_SCRIPT
+    assert town.custom_specs[built.id]["config"] == {"runtime": "python", "layout": "log", "schedule": "every 15m"}
+    saved = json.loads((fake_repo / ".orkcraft" / "buildings" / f"{built.id}.json").read_text())
+    assert saved["config"]["schedule"] == "every 15m"
+    start = dt.datetime(2026, 1, 1, 12, 0)
+    assert watch.cron_due(w.schedule, start, start + dt.timedelta(minutes=16))
+    assert not watch.cron_due(w.schedule, start, start + dt.timedelta(minutes=5))
+
+
+def test_the_workshop_keeper_may_clear_the_schedule_and_revert_takes_the_script_back(fake_repo, isolated_layout_file,
+                                                                                    monkeypatch):
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    built = _workshop(host.town)
+    host.town.checkpoint("build", built.id, "raised")
+    monkeypatch.setattr(runners, "KEEPER_RUNNER", _answers(
+        {"value": {"schedule": "", "script": NEW_SCRIPT}, "why": "only on carts, words", "answer": "Done."}))
+    job = _wait(host, host.command("keeper.ask", {"id": built.id, "request": "words, and only when a cart comes"}))
+    assert job["state"] == "ready" and ["-", "schedule: hourly"] in job["view"]["diff"]
+    assert host.command("job.accept", {"job": job["id"]}) == "script and schedule"
+    assert "schedule" not in host.town.custom_specs[built.id]["config"]
+    assert host.town.worker(built.id).schedule == "" and workshop.load_script(fake_repo, built.id, "python") == NEW_SCRIPT
+    assert host.command("building.revert", {"id": built.id})
+    assert host.town.custom_specs[built.id]["config"]["schedule"] == "hourly"
+    assert workshop.load_script(fake_repo, built.id, "python") == OLD_SCRIPT

@@ -3,7 +3,8 @@
 
 Each module says what the page draws (`detail(worker)`, plain data), the acts the page may ask of
 the worker (`ACTS`: name → fn(worker, args)), and, when the worker must look again by itself, how
-often (`REFRESH_S` and `refresh(worker)`; the TUI's views run the same timers).
+often (`REFRESH_S` and `refresh(worker)`; the TUI's views run the same timers). A worker that wants
+what only the face knows gets it from `attach(worker, host)`, called once per worker (a Crag's `probe`).
 
     views.of("lake").detail(worker)
     views.of("fields").ACTS["move"](worker, {"card": "t3", "lane": "done"})
