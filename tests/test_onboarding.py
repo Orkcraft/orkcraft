@@ -1,21 +1,19 @@
-"""🧭 Onboarding: orkestration → who you are (and your day) → your AI tools → the town (→ the interview)
-→ camp rules (docs/design/onboarding.md)."""
+"""🧭 Onboarding for an indie maker: your AI tools → your day → the town (docs/design/onboarding.md)."""
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
-from textual.widgets import Button, Checkbox, Input, OptionList, Select, SelectionList
+from textual.widgets import Button, Checkbox, Input, OptionList, Select
 
-from orkcraft import schedule, settings, tools
+from orkcraft import autonomy, schedule, settings, tools
 from orkcraft import app as app_mod
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import intents, interview, town_builder, town_presets
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
-from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
-from orkcraft.screens.onboarding import (IntentStep, ModeStep, PersonStep, QuestionsStep, RaiseBar, ToolsStep,
-                                         XpStep)
+from orkcraft.screens.onboarding import IntentStep, ModeStep, RaiseBar, ToolsStep
 from orkcraft.wm import Window
 
 SIZE = (160, 50)
@@ -38,6 +36,11 @@ def onboard(monkeypatch: pytest.MonkeyPatch) -> None:
     def no_model(prompt, model=None):
         raise RuntimeError("no model in tests")
     monkeypatch.setattr(app_mod, "BUILD_RUNNER", no_model)
+
+
+def _on_github(repo: Path) -> None:
+    subprocess.run(["git", "remote", "add", "origin", "https://github.com/me/thing.git"], cwd=str(repo), check=True,
+                   capture_output=True)
 
 
 async def _settle(pilot, n: int = 6) -> None:
@@ -75,39 +78,19 @@ def _title(app) -> str:
     return str(app.screen.query_one(".build-title").render())
 
 
-async def _xp(app, pilot, level: str = "some") -> None:
-    await _on(pilot, app, XpStep)
-    await _pick(app, pilot, "ob-xp", level)
-    await _press(app, pilot, "ob-next")
-
-
-async def _who(app, pilot, role: str = "aso_manager", industry: str = "gaming", level: str = "some",
-               day: tuple[str, ...] = ()) -> None:
-    await _xp(app, pilot, level)
-    await _on(pilot, app, PersonStep)
-    await _pick(app, pilot, "ob-role", role)
-    await _pick(app, pilot, "ob-industry", industry)
-    for d in day:
-        app.screen.chip(d).action_toggle()
-    await _settle(pilot)
-    await _press(app, pilot, "ob-next")
-
-
 async def _tools_ready(app, pilot) -> None:
     await _until(pilot, lambda: isinstance(app.screen, ToolsStep) and app.screen.detected is not None)
     await _settle(pilot)
 
 
-async def _tools(app, pilot) -> None:
-    await _tools_ready(app, pilot)
-    await _press(app, pilot, "ob-next")
+async def _town_ready(app, pilot) -> None:
+    await _on(pilot, app, IntentStep)
+    await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
 
 
-async def _select(app, pilot, question: str, *ids: str) -> None:
-    lst = app.screen.query_one(f"#ob-q-{question}", SelectionList)
-    for i in ids:
-        lst.select(i)
-    await _settle(pilot)
+def _presets(app) -> list[str]:
+    lst = app.screen.query_one("#ob-presets", OptionList)
+    return [lst.get_option_at_index(i).id for i in range(lst.option_count)]
 
 
 # -- the data -------------------------------------------------------------------------------------
@@ -117,73 +100,48 @@ def test_every_intent_is_a_town_the_builder_would_accept(tmp_path: Path):
         plan, problems = town_builder.check(it.plan, tmp_path, set())
         assert not problems, (it.id, problems)
         assert len(plan.specs) >= 2
-        assert set(it.day) <= {c.id for c in interview.DAY}, it.id
 
 
-def test_every_role_has_intents_a_mascot_and_known_suggestions():
-    sources = {c.id for c in interview.SOURCES}
-    outputs = {c.id for c in interview.OUTPUTS}
-    for r in intents.ROLES:
-        assert len(intents.for_role(r.id)) == 3, r.id
-        assert len({len(line) for line in intents.mascot(r.id)}) == 1
-        assert r.nick and set(r.sources) <= sources and set(r.outputs) <= outputs, r.id
-    for extra in intents.INDUSTRY_SOURCES.values():
-        assert set(extra) <= sources
+def test_the_indie_maker_is_the_one_role_for_now():
+    assert [r.id for r in intents.ROLES] == [intents.FOUNDER]
+    assert [i.id for i in intents.for_role(intents.FOUNDER)] == ["one_skeleton_studio", "inbox_keep", "side_quest"]
+    assert intents.nick(intents.FOUNDER) == "Indie Knight" and "KNIGHT" in "\n".join(intents.mascot("founder"))
+    assert intents.role("aso_manager").id == intents.FOUNDER                     # a profile kept from before
+    assert len({len(line) for line in intents.mascot(intents.FOUNDER)}) == 1
 
 
-def test_who_is_which_mascot():
-    kin = {r.id: r.mascot for r in intents.ROLES}
-    assert kin["engineer"] == kin["qa"] == "orc"                         # orks
-    assert kin["eng_manager"] == kin["product_manager"] == "lich"       # management is undead
-    assert kin["designer"] == kin["game_designer"] == "elf"
-    assert kin["marketing"] == kin["aso_manager"] == "gnome"
-    assert kin["data_analyst"] == "goblin" and kin["founder"] == "knight"
-    assert intents.nick("eng_manager") == "Jira Lich" and intents.nick("founder") == "Indie Knight"
-    assert "ORK" in "\n".join(intents.mascot("engineer"))
+def test_the_stars_come_from_the_project(tmp_path: Path):
+    assert intents.project_fit(tmp_path) == {"side_quest": "★ the project is just starting"}
+    (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").write_text("# notes\n", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "config").write_text('[remote "origin"]\n\turl = git@github.com:me/x.git\n', encoding="utf-8")
+    assert intents.project_fit(tmp_path) == {"one_skeleton_studio": "★ code and CLAUDE.md here",
+                                             "inbox_keep": "★ the project is on GitHub"}
+    assert intents.signs_text(tmp_path) == "code (pyproject.toml), notes for agents (CLAUDE.md), GitHub"
+    assert intents.project_fit(tmp_path / "missing") == {} and intents.project_fit(None) == {}
 
 
-def test_a_day_is_asked_in_the_role_s_words():
-    assert [c.id for c in interview.day_options("engineer")][:3] == ["code", "tests", "deploys"]
-    assert [c.id for c in interview.day_options("designer")][:3] == ["mockups", "design_system", "playtests"]
-    assert [c.id for c in interview.day_options("other")] == [c.id for c in interview.DAY]
-    assert intents.for_role("engineer", ["code", "firefight"])[0].id == "bug_hunt"   # code counts as hands-on
-
-
-def test_the_intents_that_fit_the_day_come_first():
-    assert intents.for_role("aso_manager")[0].id == "keyword_tracker"
-    assert intents.for_role("aso_manager", ["users"])[0].id == "review_desk"
-
-
-def test_the_role_s_common_options_come_first():
-    page = interview.INTERVIEW[0]
-    opts = page.options(page.questions[0], "aso_manager", "gaming")
-    common = [c.id for c, mine in opts if mine]
-    assert common[:3] == ["app_store", "google_play", "aso_tools"] and "analytics" in common
-    assert len(opts) == len(interview.SOURCES)
-    assert [q.id for p in interview.INTERVIEW for q in p.questions] == ["sources", "outputs", "pains"]
+def test_a_folder_with_things_in_it_but_no_code_gets_no_star(tmp_path: Path):
+    for name in ("notes.md", "todo.txt", "ideas", "drafts"):
+        (tmp_path / name).write_text("", encoding="utf-8")
+    assert intents.project_fit(tmp_path) == {}
 
 
 def test_the_summary_is_what_the_operator_said():
-    profile = {"role": intents.OTHER, "role_other": "podcast host", "industry": "media",
-               "day": ["research"], "day_other": "editing all afternoon", "orchestration": "new",
-               "ai_tools": {"claude": {"title": "Claude Code", "like": True, "good": "docs",
-                                       "dislike": True, "weak": "tickets"},
-                            "cursor": {"title": "Cursor", "like": True}}}
-    text = interview.summary(profile, {"sources": ["gdrive"], "sources_other": "Riverside",
-                                       "pains": ["reports_slow"]})
-    assert text.splitlines()[0] == "I am podcast host in Media and content."
-    assert "orkestration: new to it" in text and "Research; editing all afternoon" in text
-    assert "Google Drive / Docs; Riverside" in text and "Reports take hours" in text
-    assert "AI tools I use: Claude Code — 👍 documentation, 👎 tickets; Cursor — 👍." in text
+    text = interview.summary({"role": "founder"}, "  triage GitHub issues and draft release notes. ",
+                             "code (pyproject.toml), GitHub")
+    assert text.splitlines() == ["I am Founder / indie maker, and I already work with AI agents.",
+                                 "In this project: code (pyproject.toml), GitHub.",
+                                 "The town should: triage GitHub issues and draft release notes."]
 
 
 def test_the_profile_is_kept_and_cleaned(tmp_path: Path):
     f = tmp_path / "s.json"
     settings.save(settings.MachineSettings(profile={
-        "role": "qa", "day": ["build", 3], "secret": "x",
-        "ai_tools": {"cursor": {"title": "Cursor", "like": 1, "good": "code", "x": "y"}, "bad": 1}}), f)
-    assert settings.load(f).profile == {"role": "qa", "day": ["build"], "ai_tools": {
-        "cursor": {"title": "Cursor", "like": True, "dislike": False, "good": "code"}}}
+        "role": "founder", "orchestration": "some", "industry": "media", "day": ["build"], "secret": "x",
+        "ai_tools": {"cursor": {"title": "Cursor", "like": 1}}}), f)
+    assert settings.load(f).profile == {"role": "founder"}                       # the old answers are let go
 
 
 def test_other_ai_tools_are_found_on_disk_without_running_them(tmp_path: Path):
@@ -211,7 +169,7 @@ def test_every_webhook_comes_in_through_a_watchtower():
             if r["event"].startswith("watch."):
                 assert types[r["from"]] == "watchtower", (it.id, r)
     assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in town_builder.ADAPT
-    assert "their AI tools" in town_builder.ADAPT
+    assert "what the project shows" in town_builder.ADAPT
 
 
 def test_raising_steps_are_real_work():
@@ -220,22 +178,21 @@ def test_raising_steps_are_real_work():
         "Opening the camp's records", "Installing the 🛡 Warder", "Leaving your order in the Town Hall"]
 
 
-def test_the_order_keeps_the_role_and_the_answers(tmp_path: Path):
+def test_the_order_keeps_the_role(tmp_path: Path):
     assert town_presets.pending_order(tmp_path) is None
-    town_presets.save_order(tmp_path, "  I am ASO manager.  ", "aso_manager", {"sources": ["app_store"]})
+    town_presets.save_order(tmp_path, "  I am Founder / indie maker.  ", "founder")
     order = town_presets.pending_order(tmp_path)
-    assert order["prompt"] == "I am ASO manager." and order["role"] == "aso_manager" and not order["seen"]
-    assert order["answers"] == {"sources": ["app_store"]}
+    assert order["prompt"] == "I am Founder / indie maker." and order["role"] == "founder" and not order["seen"]
     town_presets.mark_order_seen(tmp_path)
     assert town_presets.pending_order(tmp_path)["seen"]
 
 
-def test_the_builder_starts_from_the_role_s_templates(tmp_path: Path):
+def test_the_builder_starts_from_the_templates(tmp_path: Path):
     from tests.test_town_builder import GOOD, _runner
     run = _runner(GOOD)
-    town_builder.plan("I am ASO manager.", tmp_path, set(), run, templates=intents.templates_text("aso_manager"))
-    assert "START FROM A TEMPLATE" in run.calls[0] and "Review War Tent" in run.calls[0]
-    town_builder.plan("I am ASO manager.", tmp_path, set(), run)
+    town_builder.plan("I am an indie maker.", tmp_path, set(), run, templates=intents.templates_text("founder"))
+    assert "START FROM A TEMPLATE" in run.calls[0] and "Inbox Keep" in run.calls[0]
+    town_builder.plan("I am an indie maker.", tmp_path, set(), run)
     assert "START FROM A TEMPLATE" not in run.calls[1]
 
 
@@ -249,194 +206,128 @@ def test_the_mode_cards_show_the_same_rows():
 
 @pytest.mark.asyncio
 async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
+    (fake_repo / "CLAUDE.md").write_text("# notes for agents\n", encoding="utf-8")
+    _on_github(fake_repo)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, XpStep)
-        assert "step 1 of 5" in _title(app) and "orkestration" in _title(app)
-        await _xp(app, pilot, "some")
-
-        await _on(pilot, app, PersonStep)                                        # who, and the day
-        assert "step 2 of 5" in _title(app)
-        await _press(app, pilot, "ob-next")
-        assert "Pick your role" in str(app.screen.query_one("#ob-who-note").render())
-        await _pick(app, pilot, "ob-role", "designer")
-        assert app.screen.chip("mockups")                                        # an elf's day
-        await _pick(app, pilot, "ob-role", "engineer")
-        await _until(pilot, lambda: app.screen.chip("code"))                    # an ork's day
-        assert not str(app.screen.query_one("#ob-who-note").render())
-        assert "Merge Ork" in str(app.screen.query_one("#ob-who-line").render())
-        await _pick(app, pilot, "ob-industry", "fintech")
-        app.screen.chip("code").action_toggle()
-        app.screen.chip("firefight").action_toggle()
-        await _press(app, pilot, "ob-next")
-
         await _tools_ready(app, pilot)                                           # only what is installed
         step = app.screen
-        assert "step 3 of 5" in _title(app)
-        assert step.query("#ob-tool-claude") and not step.query("#ob-tool-agy") and step.query("#ob-like-cursor")
+        assert "step 1 of 3" in _title(app) and "AI tools" in _title(app)
+        assert step.query("#ob-tool-claude") and not step.query("#ob-tool-agy")
+        assert "Cursor" in "".join(str(w.render()) for w in step.query(".ob-tool-name"))
+        assert not step.query("#ob-like-claude") and "👍" not in str(step.query_one(".ob-head").render())
         assert "Antigravity" in str(step.query_one("#ob-tools-missing").render())
         assert step.query_one("#ob-warder", Checkbox).display and step.query_one("#ob-warder", Checkbox).value
-        assert step.query_one("#ob-good-claude", Select).styles.visibility == "hidden"
         step.query_one("#ob-billing-claude", Select).value = "api"
-        step.query_one("#ob-like-claude").action_toggle()
-        await _settle(pilot)
-        assert step.query_one("#ob-good-claude", Select).styles.visibility == "visible"
-        step.query_one("#ob-good-claude", Select).value = "docs"
-        step.query_one("#ob-dislike-cursor").action_toggle()
-        await _settle(pilot)
-        step.query_one("#ob-weak-cursor", Select).value = "tickets"
         await _press(app, pilot, "ob-next")
 
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        await _on(pilot, app, ModeStep)                                          # the day
+        assert "step 2 of 3" in _title(app) and "office hours" in _title(app) and "do not disturb" in _title(app)
+        app.screen.pick("shift")
+        app.screen.query_one("#ob-quiet", Checkbox).value = True
+        await _settle(pilot)
+        assert app.screen.bar.show_office                                        # Shift: the office hours on the bar
+        await _press(app, pilot, "ob-next")
+
+        await _town_ready(app, pilot)
+        assert "step 3 of 3" in _title(app)
+        assert _presets(app) == ["one_skeleton_studio", "inbox_keep", "side_quest", "custom"]
         lst = app.screen.query_one("#ob-presets", OptionList)
-        assert [lst.get_option_at_index(i).id for i in range(lst.option_count)] == [
-            "bug_hunt", "solo_forge", "review_gate", "custom"]
-        assert "★" in str(lst.get_option_at_index(0).prompt) and "triaged" in str(lst.get_option_at_index(0).prompt)
-        assert "Review Gatehouse" in str(lst.get_option_at_index(2).prompt)
-        assert app.screen.query(".ob-buttons #ob-empty")                        # the empty town at the bottom
-        await _press(app, pilot, "ob-back")                                      # Back keeps the tools
+        assert "★" in str(lst.get_option_at_index(0).prompt) and "★" in str(lst.get_option_at_index(1).prompt)
+        assert "★" not in str(lst.get_option_at_index(2).prompt)
+        assert "code and CLAUDE.md here" in str(app.screen.query_one("#ob-blurb").render())
+        assert not app.screen.query_one("#ob-wish", Input).display               # a ready town: no phrase
+        assert "KNIGHT" in str(app.screen.query_one("#ob-mascot").render())
+        assert str(app.screen.query_one("#ob-next", Button).label) == "Build"
+        await _press(app, pilot, "ob-back")                                      # Back keeps the day
+        await _on(pilot, app, ModeStep)
+        assert app.screen.mode == "shift" and app.screen.bar.quiet == schedule.DEFAULT_QUIET
+        await _press(app, pilot, "ob-back")                                      # …and the tools
         await _tools_ready(app, pilot)
         assert app.screen.query_one("#ob-billing-claude", Select).value == "api"
-        assert app.screen.query_one("#ob-like-claude").on
-        assert app.screen.query_one("#ob-good-claude", Select).value == "docs"
         await _press(app, pilot, "ob-next")
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
-        await _pick(app, pilot, "ob-presets", "bug_hunt")
+        await _on(pilot, app, ModeStep)
+        await _press(app, pilot, "ob-next")
+        await _town_ready(app, pilot)
+        await _pick(app, pilot, "ob-presets", "inbox_keep")
         await _press(app, pilot, "ob-next")
 
-        await _on(pilot, app, AutonomyStep)                                      # camp rules
-        assert "step 5 of 5" in _title(app) and "Camp rules" in _title(app)
-        app.screen.query_one(AutonomySlider).set_level(2)
-        app.screen.pick("office")
-        app.screen.query_one("#au-quiet", Checkbox).value = True
-        await _press(app, pilot, "au-next")
-
-        await _until(pilot, lambda: app.scroll.building("fixers") is not None
-                     and any(r.source == "triage" for r in app.scroll.building("fixers").roads)
-                     and not app.query(RaiseBar), n=200)
+        await _until(pilot, lambda: app.scroll.building("sort") is not None and not app.query(RaiseBar), n=200)
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "office" and machine.autonomy == 2
-        assert machine.quiet == schedule.DEFAULT_QUIET
+        assert machine.onboarded and machine.mode == "shift" and machine.quiet == schedule.DEFAULT_QUIET
+        assert machine.autonomy == autonomy.DEFAULT_LEVEL                         # not asked: F10
         assert machine.tools["claude"].billing == "api" and machine.tools["claude"].enabled
-        assert machine.profile == {
-            "orchestration": "some", "role": "engineer", "industry": "fintech", "day": ["code", "firefight"],
-            "ai_tools": {"claude": {"title": "Claude Code", "like": True, "dislike": False, "good": "docs"},
-                         "cursor": {"title": "Cursor", "like": False, "dislike": True, "weak": "tickets"}}}
+        assert machine.profile == {"role": "founder"}
         assert (fake_repo / ".claude" / "settings.json").exists()                # the Warder
         assert town_presets.pending_order(fake_repo) is None                     # no model was asked
 
 
 @pytest.mark.asyncio
-async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard, monkeypatch):
+async def test_none_fits_a_phrase_for_the_builder(fake_repo: Path, onboard, monkeypatch):
     from orkcraft.screens.town_plan import TownPlanReview
     from tests.test_town_builder import GOOD, _runner
     run = _runner(GOOD)
     monkeypatch.setattr(app_mod, "BUILD_RUNNER", run)
+    _on_github(fake_repo)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _xp(app, pilot, "new")
-        await _on(pilot, app, PersonStep)
-        assert not app.screen.query_one("#ob-skip").display                      # a newcomer is walked through
-        await _pick(app, pilot, "ob-role", "aso_manager")
-        await _pick(app, pilot, "ob-industry", "gaming")
-        await _press(app, pilot, "ob-next")
         await _tools_ready(app, pilot)
-        app.screen.query_one("#ob-dislike-claude").action_toggle()
-        await _settle(pilot)
-        app.screen.query_one("#ob-weak-claude", Select).value = "tickets"
         await _press(app, pilot, "ob-next")
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        await _on(pilot, app, ModeStep)
+        await _press(app, pilot, "ob-next")
+        await _town_ready(app, pilot)
         await _pick(app, pilot, "ob-presets", "custom")
+        assert app.screen.query_one("#ob-wish", Input).display
         await _press(app, pilot, "ob-next")
-
-        await _on(pilot, app, QuestionsStep)                                     # comes from, goes to
-        assert app.screen.page.id == "flow" and "step 5 of 7" in _title(app)
-        await _select(app, pilot, "sources", "app_store", "jira")
-        app.screen.query_one("#ob-q-sources-other", Input).value = "AppFollow"
-        await _select(app, pilot, "outputs", "asana")
+        assert "Say in a phrase" in str(app.screen.query_one("#ob-town-note").render())   # a phrase is needed
+        assert isinstance(app.screen, IntentStep)
+        app.screen.query_one("#ob-wish", Input).value = "triage GitHub issues and draft release notes"
         await _press(app, pilot, "ob-next")
-        await _on(pilot, app, QuestionsStep)                                     # what hurts
-        await _select(app, pilot, "pains", "reports_slow", "copy_paste")
-        await _press(app, pilot, "ob-back")                                      # back keeps the answers
-        await _on(pilot, app, QuestionsStep)
-        assert set(app.screen.query_one("#ob-q-sources", SelectionList).selected) == {"app_store", "jira"}
-        await _press(app, pilot, "ob-next")
-        await _on(pilot, app, QuestionsStep)
-        await _select(app, pilot, "pains", "reports_slow")
-        await _press(app, pilot, "ob-next")
-
-        await _on(pilot, app, AutonomyStep)
-        assert not app.screen.query_one("#au-skip").display
-        await _press(app, pilot, "au-next")
 
         await _until(pilot, lambda: isinstance(app.screen, TownPlanReview), n=200)
         order = town_presets.pending_order(fake_repo)
-        assert order["role"] == "aso_manager" and order["answers"]["sources"] == ["app_store", "jira"]
+        assert order["role"] == "founder"
         prompt = run.calls[0]
-        assert "I am ASO manager in Gaming." in prompt and "App Store Connect; Jira; AppFollow" in prompt
-        assert "Results go to: Asana." in prompt and "Reports take hours" in prompt
-        assert "orkestration: new to it" in prompt and "Claude Code — 👎 tickets" in prompt
+        assert "I am Founder / indie maker, and I already work with AI agents." in prompt
+        assert "In this project: code (src), GitHub." in prompt
+        assert "The town should: triage GitHub issues and draft release notes." in prompt
         assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in prompt
-        assert "START FROM A TEMPLATE" in prompt and "Keyword Lookout" in prompt
+        assert "START FROM A TEMPLATE" in prompt and "Inbox Keep" in prompt
 
 
 @pytest.mark.asyncio
 async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "engineer",
-                                                                    "day": ["firefight"]},
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "expert", "role": "engineer"},
                                            tools={**settings.MachineSettings().tools,
                                                   "claude": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        await _town_ready(app, pilot)
         town = app.screen
         assert not town.query(".ob-buttons #ob-back")                            # nothing before it
         assert "step" not in _title(app)                                         # no "step 1 of 1"
         assert town.query_one("#ob-warder", Checkbox).display                    # claude on: here
         assert str(town.query_one("#ob-next", Button).label) == "Build"
-        assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "bug_hunt"
-        town.query_one("#ob-role-browse", Select).value = "designer"             # other roles' towns
-        await _settle(pilot)
-        assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "mockup_grove"
-        assert "ELF" in str(town.query_one("#ob-mascot").render())
+        assert _presets(app)[0] == "one_skeleton_studio"                         # ★ src here
         await _press(app, pilot, "ob-empty")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         assert (fake_repo / ".claude" / "settings.json").exists()
-
-
-@pytest.mark.asyncio
-async def test_an_existing_machine_without_a_profile_is_asked_who_first(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _who(app, pilot, "qa", "fintech")
-        await _on(pilot, app, IntentStep)
-        assert "step 3 of 3" in _title(app)
-        assert settings.load().profile == {}                                     # nothing before the end
-        await _press(app, pilot, "ob-skip")
-        await _until(pilot, lambda: Path(app.config.layout_file).exists())
-        assert settings.load().profile["role"] == "qa"
+        assert settings.load().profile == {"role": "founder"}                    # an older profile, now an indie maker's
 
 
 @pytest.mark.asyncio
 async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
+    settings.save(settings.MachineSettings(onboarded=True, profile={"role": "founder"},
                                            tools={**settings.MachineSettings().tools,
                                                   "agy": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        await _town_ready(app, pilot)
         lst = app.screen.query_one("#ob-presets", OptionList)
         custom = lst.get_option_at_index(lst.option_count - 1)
         assert custom.id == "custom" and custom.disabled and "needs Claude Code" in str(custom.prompt)
         assert "Claude Code" in str(app.screen.query_one("#ob-town-note").render())
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
-        assert "KNIGHT" in str(app.screen.query_one("#ob-mascot").render())
 
 
 @pytest.mark.asyncio
@@ -457,19 +348,16 @@ async def test_the_town_builder_never_calls_claude_code_when_it_is_off(fake_repo
 
 @pytest.mark.asyncio
 async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
+    settings.save(settings.MachineSettings(onboarded=True, profile={"role": "founder"},
                                            tools={**settings.MachineSettings().tools,
                                                   "claude": settings.ToolChoice(enabled=True)}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, IntentStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        await _town_ready(app, pilot)
         app.screen.query_one("#ob-warder", Checkbox).value = False               # the Warder declined
         await _pick(app, pilot, "ob-presets", "custom")
+        app.screen.query_one("#ob-wish", Input).value = "a town for my podcast"
         await _press(app, pilot, "ob-next")
-        for _ in interview.INTERVIEW:
-            await _on(pilot, app, QuestionsStep)
-            await _press(app, pilot, "ob-next")
         await _until(pilot, lambda: town_presets.pending_order(fake_repo) is not None and app.order_burning)
         assert not (fake_repo / ".claude" / "settings.json").exists()
         assert town_presets.pending_order(fake_repo)["role"] == "founder"
@@ -482,84 +370,40 @@ async def test_a_town_in_words_waits_in_the_town_hall(fake_repo: Path, onboard):
 
 
 @pytest.mark.asyncio
-async def test_a_punk_ork_skips_the_interview_and_builds_the_town(fake_repo: Path, onboard):
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, XpStep)
-        assert "Punk ork" in str(app.screen.query_one("#ob-xp", OptionList).get_option_at_index(2).prompt)
-        await _xp(app, pilot, "expert")
-        await _tools_ready(app, pilot)
-        assert "step 2 of 3" in _title(app)
-        await _press(app, pilot, "ob-next")
-        await _on(pilot, app, AutonomyStep)
-        assert "step 3 of 3" in _title(app)
-        await _press(app, pilot, "au-next")
-        await _until(pilot, lambda: Path(app.config.layout_file).exists() and not app.query(RaiseBar), n=200)
-        assert settings.load().profile == {"orchestration": "expert"}
-        assert (fake_repo / ".claude" / "settings.json").exists()                # the Warder, as checked
-        assert town_presets.pending_order(fake_repo) is None
-        planned = {b["key"] for it in intents.INTENTS for b in it.plan["buildings"]} - {"loot"}
-        assert not any(app.scroll.building(k) for k in planned)                  # nothing raised for them
-
-
-@pytest.mark.asyncio
-async def test_a_known_punk_ork_gets_an_empty_town_without_questions(fake_repo: Path, onboard):
-    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "expert"}))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _until(pilot, lambda: Path(app.config.layout_file).exists() and not app.query(RaiseBar), n=200)
-        assert not isinstance(app.screen, (XpStep, IntentStep, ToolsStep))
-        assert not (fake_repo / ".claude" / "settings.json").exists()            # never unasked
-
-
-@pytest.mark.asyncio
 async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _on(pilot, app, XpStep)
+        await _tools_ready(app, pilot)
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "camp" and machine.profile == {}
+        assert machine.onboarded and machine.mode == "camp" and machine.profile == {"role": "founder"}
+        assert machine.tools["claude"].enabled                                   # the CLIs found are kept on
         assert not (fake_repo / ".claude" / "settings.json").exists()
-        assert app.scroll.building("fixers") is None
+        assert app.scroll.building("crew") is None
 
 
 @pytest.mark.asyncio
-async def test_back_goes_to_the_previous_step(fake_repo: Path, onboard):
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _who(app, pilot, "designer", "saas", day=("mockups",))
-        await _tools(app, pilot)
-        await _on(pilot, app, IntentStep)
-        await _press(app, pilot, "ob-back")
-        await _tools_ready(app, pilot)
-        await _press(app, pilot, "ob-back")
-        await _on(pilot, app, PersonStep)
-        await _until(pilot, lambda: app.screen.query_one("#ob-role", OptionList).highlighted is not None)
-        assert onboarding._highlighted_id(app.screen.query_one("#ob-role", OptionList)) == "designer"
-        await _until(pilot, lambda: app.screen.chip("mockups").on)
-        await _press(app, pilot, "ob-back")
-        await _on(pilot, app, XpStep)
-
-
-@pytest.mark.asyncio
-async def test_f10_asks_who_and_the_machine_steps_not_the_town(fake_repo: Path, onboard, monkeypatch):
+async def test_f10_asks_the_tools_and_the_day_not_the_town(fake_repo: Path, onboard, monkeypatch):
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
-        assert not isinstance(app.screen, XpStep)
+        assert not isinstance(app.screen, ToolsStep)
         app.start_onboarding(machine_steps=True, town_step=False)
-        await _who(app, pilot, "data_analyst", "ecommerce")
         await _tools_ready(app, pilot)
+        assert "step 1 of 2" in _title(app)
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # no town: no Warder
         await _press(app, pilot, "ob-next")
-        await _on(pilot, app, AutonomyStep)
-        await _press(app, pilot, "au-next")
+        await _on(pilot, app, ModeStep)
+        assert str(app.screen.query_one("#ob-next", Button).label) == "Done"
+        assert not app.screen.query_one("#ob-cards").display                    # 50 rows: the buttons, not the cards
+        app.screen.pick("office")
+        await _press(app, pilot, "ob-next")
         await _settle(pilot)
-        assert not isinstance(app.screen, (ToolsStep, AutonomyStep, IntentStep))
-        assert settings.load().onboarded and settings.load().profile["role"] == "data_analyst"
+        assert not isinstance(app.screen, (ToolsStep, ModeStep, IntentStep))
+        machine = settings.load()
+        assert machine.onboarded and machine.mode == "office" and machine.profile == {"role": "founder"}
 
 
 def test_no_onboarding_for_a_project_with_a_town(fake_repo: Path, onboard):

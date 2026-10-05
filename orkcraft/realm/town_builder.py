@@ -62,7 +62,7 @@ ADAPT = """
 START FROM A TEMPLATE. These are ready towns for the operator's role, in the answer's own shape. Pick
 the one closest to what they said and adapt it — do not start from nothing:
 {templates}
-Adapt it to the operator's answers above:
+Adapt it to what the operator said above:
 - every data source they named needs a way in. EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER — no
   other building listens for webhooks: a tool that pushes events (Jira, Linear, Asana, the stores,
   monitoring, support desks…) is a Watchtower with its webhook, and so are mail, GitHub and
@@ -71,13 +71,8 @@ Adapt it to the operator's answers above:
 - every place their results go needs a way out: a Catapult to that tool's API (config may name the
   environment variable with its token in token_env), a Loot Vault for files they accept first;
 - every problem they named is answered by a building or a road — say which in its "why";
-- what went wrong with AI before is avoided: keep a person's accept step (Loot Vault) where they
-  distrust the output, prefer rules (Signpost, Mill) over agents where results must not vary;
-- match their experience: new to orkestration → fewer buildings and an accept step before anything
-  leaves;
-- their AI tools: work a tool is liked for (👍 docs, code…) may go to agents in the town; work a tool
-  is weak at (👎 tickets…) gets a person's accept step or a rule (Signpost, Mill) instead of an agent —
-  say so in the "why";
+- what the project shows counts too: code goes through a Forge (tests, then merge), GitHub comes in
+  through a Watchtower;
 - drop the template's buildings that serve nothing they said; keep its names where they still fit.
 """
 

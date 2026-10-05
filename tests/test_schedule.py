@@ -184,7 +184,7 @@ async def test_shift_sits_between_camp_and_office_and_one_is_on(fake_repo: Path)
     from textual.widgets import RadioButton
     settings.save(_machine(onboarded=True))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
+    async with app.run_test(size=(SIZE[0], 56)) as pilot:          # tall enough for the mode cards
         await pilot.pause()
         app.open_day()
         await pilot.pause()

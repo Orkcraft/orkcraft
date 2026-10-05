@@ -5,7 +5,7 @@
     s.mode                           # "camp" | "office" | "shift"
     s.quiet, s.office, s.office_days # 🌙 do-not-disturb and 👔 office hours (schedule.py)
     s.autonomy                       # 0..3: how much the orcs do on their own (autonomy.py)
-    s.profile                        # who the operator is and how their day goes (realm/intents.py)
+    s.profile                        # who the operator is (realm/intents.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, the display mode and the day's schedule:
@@ -31,8 +31,7 @@ MODES = ("camp", "office", "shift")
 LEGACY_MODES = {"immersion": "camp", "plain": "office", "hidden": "office"}   # older names of camp / office
 DEFAULT_MODE = "camp"
 MODE_TITLES = {"camp": "🧌 Camp", "office": "👔 Office", "shift": "🧌/👔 Shift"}
-PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other")
-PROFILE_LISTS = ("day",)
+PROFILE_TEXT = ("role",)          # older keys (orkestration, industry, day, AI tool ratings) are let go
 
 
 def mode_of(value: object) -> str | None:
@@ -56,7 +55,7 @@ class MachineSettings:
     office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
     autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
-    profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, ai_tools
+    profile: dict = field(default_factory=dict)   # role (the indie maker's, for now)
 
     def to_dict(self) -> dict:
         return {
@@ -94,25 +93,10 @@ class MachineSettings:
 
 
 def clean_profile(raw: object) -> dict:
-    """Only the known keys, as strings and lists of strings; {} for anything else."""
+    """Only the known keys, as strings; {} for anything else."""
     if not isinstance(raw, dict):
         return {}
-    out: dict = {k: str(raw[k])[:200] for k in PROFILE_TEXT if isinstance(raw.get(k), str) and raw[k].strip()}
-    for k in PROFILE_LISTS:
-        if isinstance(raw.get(k), list):
-            out[k] = [str(x)[:40] for x in raw[k] if isinstance(x, str)][:20]
-    tools_ = raw.get("ai_tools")
-    if isinstance(tools_, dict):
-        rated = {}
-        for t, r in list(tools_.items())[:20]:
-            if not isinstance(r, dict):
-                continue
-            keep: dict = {k: bool(r.get(k)) for k in ("like", "dislike")}
-            keep.update({k: str(r[k])[:40] for k in ("title", "good", "weak") if isinstance(r.get(k), str) and r[k]})
-            rated[str(t)[:40]] = keep
-        if rated:
-            out["ai_tools"] = rated
-    return out
+    return {k: str(raw[k])[:200] for k in PROFILE_TEXT if isinstance(raw.get(k), str) and raw[k].strip()}
 
 
 def path() -> Path:

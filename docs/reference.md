@@ -709,23 +709,26 @@ the CLI paths.
 Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 (design: [design/onboarding.md](design/onboarding.md)); `ORKCRAFT_ONBOARDING=0` turns it off.
 
-1. **Tools** — `claude`, `agy` and `codex` are looked up on `PATH`; each found one is checked, with its
-   version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
-   `GEMINI_API_KEY` / `OPENAI_API_KEY` is set) — you can change both. No key is stored or read: Codex's
-   login is told only by its `~/.codex/auth.json` being there.
-2. **Autonomy** — a slider of four stops: ⛓️ *Ask me* · 📜 *Morning advice* (default) · 🧭 *Routine on
-   their own* · ⛓️‍💥 *Free orks* (see *Ork autonomy* below).
-3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
-   day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
-4. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
-   💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
-   become an order for the 📜 Town Builder (below). The 🛡 Warder is installed here when `claude`
-   is in use and the box stays checked.
-5. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
+For now onboarding is for an indie maker who already works with AI: no questions about who you
+are, three steps.
+
+1. **Your AI tools** — `claude`, `agy` and `codex` are looked up on `PATH`; each found one is checked,
+   with its version, whether it is logged in and its billing (subscription, or API when
+   `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` is set) — you can change both. Other AI
+   tools found (Cursor, Copilot…) are named. No key is stored or read: Codex's login is told only by
+   its `~/.codex/auth.json` being there. The 🛡 Warder box is here.
+2. **Your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the day bar with
+   🌙 do not disturb (the quiet hours) and, for Shift, 👔 office hours (see *Modes and your day* below).
+3. **Town** — an indie maker's ready town: 🏚 One-Knight Studio · 📨 Inbox Keep · 🧪 Side Quest, ★
+   where the project shows it fits (code or notes for agents · GitHub · a folder just starting); ❓
+   *None fits*: a phrase becomes an order for the 📜 Town Builder (below); or 🏰 an empty town.
+4. **Raising** — the camp's git, the Warder, the buildings and the order, with a progress bar along
    the bottom of the town.
 
-Steps 1–3 are kept per machine in `~/.config/orkcraft/settings.json` and asked once;
-F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults, no Warder.
+Steps 1–2 are kept per machine in `~/.config/orkcraft/settings.json` and asked once; a new project
+on a known machine gets the town step only. F10 → 🧭 Onboarding asks steps 1–2 again. The orks'
+autonomy keeps its default (📜 *Morning advice*); F10 → 🏛 Ork autonomy changes it. Skip anywhere:
+an empty town, defaults, no Warder.
 
 ### 🏛 Ork autonomy
 
@@ -780,7 +783,7 @@ Stewards' changes now get their own checkpoint as well.
 
 ### 📜 The Town Builder
 
-An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole town: one
+An order in words (*None fits* at onboarding) becomes a plan of a whole town: one
 `claude -p` call in an empty folder, like the Foreman, that sees only the order and the building
 catalog. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
 scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
