@@ -1,0 +1,19 @@
+{
+  "type": "pit",
+  "about": "🕳️ The Pit: whatever is dropped or pasted, sorted and sent on — and what became of each drop down the roads.",
+  "panes": {
+    "drop":    {"about": "the drop zone: a file dropped, a link or a text pasted, the clipboard", "components": ["form"], "required": true},
+    "history": {"about": "what was dropped, newest first, with what its chain of processing cost", "components": ["table", "list"], "required": true},
+    "chain":   {"about": "the chosen drop: where its carts arrived and what they left in the other buildings", "components": ["list", "text"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "pit", "split": "column",
+    "panes": [
+      {"id": "drop", "component": "form", "size": "auto", "font": "status"},
+      {"split": "row", "size": 1, "panes": [
+        {"id": "history", "component": "table", "size": 3, "font": "body"},
+        {"id": "chain", "component": "list", "size": 2, "font": "body"}
+      ]}
+    ]
+  }
+}

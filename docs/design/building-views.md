@@ -78,8 +78,11 @@ redefines:
 
 - `openInLake({path | url | text, title, from})` — `js/lake.js`: the document in a tab of the town's Lake
   window (the host's `lake.open`, `gui/views/lake.py`); resolves with the tab's id.
-- `askKeeper(buildingId, request, selection?)` — `js/keeper.js`, over the host's `keeper.ask`; until
-  the keeper lands it says so.
+- `askKeeper(buildingId, request, selection?)` — `js/keeper.js`, over the host's `keeper.ask`
+  (`core/keeper.py`): the keeper's proposal comes back as a job (the change line by line, its answer —
+  about the selection when there is one — then Apply, or Drop; Revert takes it back). `KeeperAsk` is the
+  request field a type puts in its views, `KeeperDialog` the same in a dialog. What a type's keeper writes
+  is its whole `config` unless the type registers a part of it (`keeper.register`; the Signpost's `rules`).
 
 ## 5. Parallel work
 

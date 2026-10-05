@@ -240,11 +240,34 @@ function describe(sel) {
   return "The selection";
 }
 
-function answerText(r) {
-  if (r === null || r === undefined) return "";
-  if (typeof r === "string") return r;
-  for (const key of ["answer", "text", "message", "summary"]) if (typeof r[key] === "string") return r[key];
-  return JSON.stringify(r, null, 2);
+/** What the keeper reads of a selection (core/keeper.py `selection_of`: text, path, title, lines). */
+function forKeeper(sel, doc, title) {
+  const where = { path: doc.path || doc.url || "", title };
+  if (!sel) return { ...where, text: `The whole document: ${doc.path || doc.url || title}` };
+  if (sel.kind === "lines") return { ...where, text: sel.text, lines: [sel.start, sel.end] };
+  if (sel.kind === "area") {
+    const pct = (n) => `${Math.round(n * 100)}%`;
+    return { ...where, text: `An area of the picture: from ${pct(sel.x)} across and ${pct(sel.y)} down, ` +
+                             `${pct(sel.w)} wide and ${pct(sel.h)} high` };
+  }
+  return { ...where, text: sel.text };
+}
+
+/** An ask as its keeper's job stands now (the snapshot's jobs, gui/console.py): asking, answered or failed.
+ *  What a job last said is kept, so the mark still opens it once the job was applied or dropped. */
+const jobsSeen = new Map();       // job id → {state, answer, why}
+
+function stateOf(ask) {
+  if (ask.state === "failed" || !ask.job) return ask;
+  const job = (town.value?.jobs || []).find((j) => j.id === ask.job);
+  if (job) {
+    jobsSeen.set(job.id, job.state === "failed" ? { state: "failed", answer: job.error }
+      : job.state === "ready" ? { state: "answered", answer: job.view?.answer || "", why: job.view?.why || "" }
+      : { state: "asking" });
+  }
+  const seen = jobsSeen.get(ask.job);
+  if (!job && seen && seen.state === "asking") return { ...ask, state: "failed", answer: "Cancelled before it answered." };
+  return { ...ask, ...(seen || { state: "answered" }) };
 }
 
 /** The keeper of the building a document came from: its lead ork's name, else the building's. */
@@ -255,7 +278,8 @@ function keeperOf(from) {
   return { building: say(b.title), name: lead ? lead.name : say(b.title) };
 }
 
-function KeeperMark({ ask, k, style }) {
+function KeeperMark({ ask: asked, k, style }) {
+  const ask = stateOf(asked);
   const keeper = keeperOf(ask.from);
   const name = keeper ? keeper.name : say("keeper");
   const label = ask.state === "asking" ? say(`${name} is working on it`) : ask.state === "failed" ? say(`${name} did not answer`)
@@ -266,17 +290,19 @@ function KeeperMark({ ask, k, style }) {
     onClick=${(ev) => { ev.stopPropagation(); setAsks(k, () => ({ open: ask.id })); }}>${(name || "?").slice(0, 1)}</button>`;
 }
 
-function AnswerDialog({ k, ask, title }) {
+function AnswerDialog({ k, ask: asked, title }) {
+  const ask = stateOf(asked);
   const close = () => setAsks(k, () => ({ open: null }));
-  const drop = () => setAsks(k, (a) => ({ open: null, list: a.list.filter((x) => x.id !== ask.id) }));
+  const drop = () => setAsks(k, (a) => ({ open: null, list: a.list.filter((x) => x.id !== asked.id) }));
   const keeper = keeperOf(ask.from);
   return html`<${Dialog} title=${say(`${keeper ? keeper.name : "The keeper"} — ${title}`)} onCancel=${close}
       actions=${html`<button class="ok-btn" onClick=${drop}>${say("Forget it")}</button>
         <button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
     <p class="ok-font-status ok-tone-muted">${describe(ask.sel)} · ${ask.request}</p>
     ${ask.state === "asking" ? html`<p class="ok-tone-muted">Working on it…</p>`
-      : ask.state === "failed" ? html`<p class="ok-tone-muted">The keeper did not answer.</p>`
-      : html`<pre class="gui-pre gui-orders__context">${ask.answer}</pre>`}
+      : ask.state === "failed" ? html`<p class="ok-tone-muted">${ask.answer || "The keeper did not answer."}</p>`
+      : ask.answer ? html`<div class="gui-prose" dangerouslySetInnerHTML=${{ __html: ask.answer }}></div>`
+      : html`<p class="ok-tone-muted">${ask.why || "The keeper answered with its proposal (Apply or Drop it)."}</p>`}
   </${Dialog}>`;
 }
 
@@ -292,11 +318,9 @@ function AskBar({ k, doc, title }) {
     const ask = { id, sel, request: words, state: "asking", answer: "", from: doc.from };
     setAsks(k, (x) => ({ sel: null, list: [...x.list, ask] }));
     setRequest("");
-    const selection = { ...(sel || { kind: "document" }), document: { path: doc.path, url: doc.url, title } };
-    askKeeper(doc.from, words, selection).then((r) => {
-      const failed = r === null || r === undefined;
-      setAsks(k, (x) => ({ list: x.list.map((m) => (m.id === id ? { ...m, state: failed ? "failed" : "answered", answer: answerText(r) } : m)),
-                           open: failed ? x.open : id }));
+    askKeeper(doc.from, words, forKeeper(sel, doc, title)).then((job) => {
+      // the keeper's proposal and answer come as its job's dialog (js/keeper.js); the mark follows the job
+      setAsks(k, (x) => ({ list: x.list.map((m) => (m.id === id ? { ...m, job, state: job ? "asking" : "failed" } : m)) }));
     });
   }
   const whole = a.list.filter((m) => !m.sel || m.sel.kind === "document");    // asked of the whole document: their marks stand here
