@@ -23,6 +23,9 @@ kept (realm/vault.py), with what its chain cost.
 Under a waiting cart: the files its task committed on its branch (the trail names the worktree and
 the branch), each with its diff or content. `o` opens the highlighted file in the system viewer —
 a file only on the branch is copied out first.
+
+The checkpoint, the decisions and the files are the building's worker's (core/workers/loot.py);
+the view draws the list and the preview, asks for an edit or a reason and holds the keys.
 """
 from __future__ import annotations
 
@@ -36,220 +39,107 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import edits, feedback, gate, generated, jobs, lake, pipes, vault
+from orkcraft.core.workers.loot import LootWorker, label as _label
+from orkcraft.realm import gate, generated, pipes, vault
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
 MARK = {"A": ("+", "green"), "M": ("~", "yellow"), "D": ("−", "red")}
 STATUS = {gate.NEEDS_YOU: ("🔥", "bold red", "needs you"), gate.HELD: ("⏸", "bold yellow", "held"),
           gate.REWORK: ("↩", "cyan", "in rework")}
-EGRESS = ("catapult",)                   # types that send things out of the town
-
-
-def _label(item: gate.Item) -> str:
-    first = item.value.strip().splitlines()[0][:60] if item.value.strip() else ""
-    return item.title or first or item.ref
-
 
 class GeneratorView(TypedView):
     TYPE = "loot"
     BINDINGS = [Binding("a", "accept", "Accept"), Binding("e", "edit", "Edit"), Binding("r", "reject", "Reject / rework"),
                 Binding("d", "drop", "Drop"), Binding("u", "restore", "Restore"), Binding("o", "open", "Open")]
 
-    def __init__(self, *a, **kw) -> None:
-        super().__init__(*a, **kw)
-        self.rows: list[generated.Generated] = []
-        self.stored: list[vault.Stored] = []
-        self.rejected: list[dict] = []
-        self.branches: dict[str, tuple[generated.Branch, list[generated.Generated]]] = {}   # item id → its branch files
-        self.error = ""
-        self._queue: gate.Queue | None = None
+    UI_PANES = {"head": "#gen-head", "queue": "#gen-files", "cart": "#gen-preview-pane"}
+
+    @property
+    def worker(self) -> LootWorker:
+        return super().worker
+
+    # -- the worker's state, as the view's own (tests and other views read these) -------------------
+
+    @property
+    def rows(self) -> list[generated.Generated]:
+        return self.worker.rows
+
+    @property
+    def stored(self) -> list[vault.Stored]:
+        return self.worker.stored
+
+    @property
+    def rejected(self) -> list[dict]:
+        return self.worker.rejected
+
+    @property
+    def branches(self) -> dict:
+        return self.worker.branches
+
+    @property
+    def error(self) -> str:
+        return self.worker.error
 
     @property
     def review(self) -> generated.Review:
-        return generated.Review(self._get_repo_root(), self.state_dir, str(self.config.get("path", "")))
+        return self.worker.review
 
     @property
     def queue(self) -> gate.Queue:
-        if self._queue is None:
-            self._queue = gate.Queue(self.state_dir)
-        return self._queue
+        return self.worker.queue
+
+    def receive(self, payload, title: str, markdown: str) -> None:
+        self.worker.receive(payload, title, markdown)
+
+    def maker(self, item: gate.Item) -> str:
+        return self.worker.maker(item)
+
+    def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
+        self.worker.accept_item(item, value, source)
+
+    def rework_item(self, item: gate.Item, reason: str, tag: str = "") -> str:
+        return self.worker.rework_item(item, reason, tag)
+
+    def burning(self) -> bool:
+        return self.worker.burning()
+
+    def accept(self, rel: str) -> None:
+        self.worker.accept(rel)
+
+    def reject(self, rel: str) -> None:
+        self.worker.reject(rel)
+
+    def status(self) -> str:
+        return self.worker.status()
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="gen-head", classes="typed-head")
         with Horizontal(classes="typed-row"):
             yield OptionList(id="gen-files", classes="typed-list")
-            with VerticalScroll(classes="typed-detail"):
+            with VerticalScroll(classes="typed-detail", id="gen-preview-pane"):
                 yield Static("", id="gen-preview", classes="-as-written")
 
     def on_mount(self) -> None:
+        w = self.worker                  # a cart goes back (or an approval) to the building's view
+        w.rework_back = lambda source, payload: self.app.return_for_rework(source, payload)
+        w.approved_back = lambda source, payload: self.app.return_approved(source, payload)
         self.refresh_data()
         self.set_interval(REFRESH_S, self.refresh_data)
 
-    # -- the checkpoint -----------------------------------------------------------------------------
+    # -- the list ---------------------------------------------------------------------------------
 
-    def receive(self, payload, title: str, markdown: str) -> None:
-        """A cart came by road: it passes by the rules, or waits in the queue."""
-        if payload.kind == pipes.TEXT and markdown and markdown != payload.value:
-            payload = pipes.Payload(payload.kind, markdown, payload.source, payload.mode, payload.title or title,
-                                    payload.trail, payload.ref)
-        back = self.queue.by_ref(payload.ref)
-        why = gate.reasons(payload, self.config, self._rule_context(payload))
-        if back is not None:
-            why = [f"back from rework (round {back.attempts})"] + why
-        if not why:
-            if not self._pass(payload):              # it stays here: someone should read it
-                feedback.await_view(self._get_repo_root(), self.building_id, feedback.maker(payload.trail),
-                                    payload.title or title)
-        else:
-            item = self.queue.arrive(payload, why)
-            self.app.notify(f"{item.title or item.value[:60]} — {'; '.join(why)}", title=f"📦 {self.btype.title}: held")
-        self._changed()
+    def refresh_data(self) -> None:
+        self.worker.refresh()
 
-    def _rule_context(self, payload: pipes.Payload) -> gate.Context:
-        files: list[str] = []
-        wt = gate.worktree_of(payload)
-        if wt and (self._get_repo_root() / wt).is_dir():
-            try:
-                files = [g.path for g in generated.Review(self._get_repo_root() / wt, self.state_dir / "wt").files()]
-            except (RuntimeError, OSError, ValueError):
-                pass
-        if (found := self._branch(payload.trail)) is not None:       # and what it committed on its branch
-            files += [g.path for g in found[1] if g.path not in files]
-        return gate.Context(files, self._leaves_town())
-
-    def _branch(self, trail: tuple) -> tuple[generated.Branch, list[generated.Generated]] | None:
-        """The branch a cart's work was committed on, with its files; None without one (or no git)."""
-        h = gate.branch_of(trail)
-        if h is None or not (wt := self._get_repo_root() / h.worktree).is_dir():
-            return None
-        try:
-            br = generated.Branch(wt, h.branch, h.base or jobs.TaskGit().base_of(self._get_repo_root()))
-            return br, br.files()
-        except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
-            return None
-
-    def _leaves_town(self) -> bool:
-        scroll = getattr(getattr(self, "app", None), "scroll", None)
-        if scroll is None:
-            return False
-        from orkcraft.realm import catalog
-        for b in getattr(scroll, "buildings", ()):
-            spec = getattr(self.app, "custom_specs", {}).get(b.id)
-            t = catalog.type_of(spec) if spec else None
-            if t and t.id in EGRESS and any(r.source == self.building_id and r.event == "loot.passed" for r in b.roads):
-                return True
-        return False
-
-    def _pass(self, payload: pipes.Payload) -> bool:
-        """Carry the cart on, and keep it in the vault (the history of what passed). True when a
-        road took it on."""
-        item = vault.store(self._get_repo_root(), self.building_id, self.state_dir, payload.kind, payload.value,
-                           payload.title, payload.source, trail=payload.trail, ref=payload.ref)
-        went = self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref)
-        return self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref) or went
-
-    def maker(self, item: gate.Item) -> str:
-        """The building whose ork wrote the cart: what the person's decision is about. "" for a cart
-        no ork worked on (a file dropped in a Pit): then the decision teaches nobody."""
-        return feedback.maker(item.trail)
-
-    def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
-        """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
-        before, gave_up = item.value, item.status == gate.NEEDS_YOU
-        self.queue.accept(item, value)
-        payload = item.payload()
-        self._pass(payload)
-        self._judge_accept(item, before, value, source, gave_up)
-        last = payload.trail[-1] if payload.trail else None
-        taker = getattr(self.app, "return_approved", None)
-        if last is not None and last.outcome == gate.APPROVAL and taker is not None and (to := taker(item.source, payload)):
-            self.app.notify(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
-        self._changed()
-
-    def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str,
-                      gave_up: bool = False) -> None:
-        """What accepting says about the maker. Past the rework limit (`gave_up`) the person takes the
-        cart as it is to be done with it: that is no 👍 (the rounds were already 👎), only an edit
-        still says what was wrong."""
-        root, made_by = self._get_repo_root(), self.maker(item)
-        if not made_by:
-            return
-        edit = edits.classify(before, value) if value is not None and item.kind == pipes.TEXT else None
-        if edit is None or edit.kind == edits.SAME:
-            if not gave_up:
-                feedback.signal(root, made_by, True, source, value=before)
-        elif edit.kind == edits.FILLED:
-            if not gave_up:
-                feedback.signal(root, made_by, True, "loot.filled", value=before, note=edit.summary)
-        else:
-            private = lake.personal(value or "")                 # a personal note's text never reaches a model
-            feedback.signal(root, made_by, False, f"loot.{edit.kind}", value=before, note=edit.summary,
-                            tag="format" if edit.kind == edits.RESHAPED else "", edit="" if private else edit.diff)
-            if not private:
-                feedback.signal(root, made_by, True, f"loot.{edit.kind}", value=value, weight=0.0,
-                                note="the person's version: what it should have been")
-
-    def rework_item(self, item: gate.Item, reason: str, tag: str = "") -> str:
-        """Send `item` back with `reason` (`tag`: the chip picked, `feedback.REASONS`); past the limit
-        (or with nobody to take it) it needs you. Returns its status."""
-        tag, kind = (tag, next((k for t, _, k in feedback.REASONS if t == tag), "logic")) if tag else \
-            feedback.reason_tag(reason)
-        made_by = self.maker(item)                                 # "" when no ork made it: nothing is kept
-        feedback.signal(self._get_repo_root(), made_by, False, "loot.rework", value=item.value, note=reason, tag=tag,
-                        kind=kind, blamed=feedback.trail_blame(item.trail, made_by, kind))
-        ok, why = self.queue.can_rework(item, self.config)
-        if not ok:
-            feedback.signal(self._get_repo_root(), made_by, False, "loot.needs_you", value=item.value,
-                            note=f"{why}: {reason}", tag=tag)
-        if ok:
-            self.queue.rework(item, reason)
-            md = gate.rework_markdown(item, reason, self.spec.get("title") or self.btype.title)
-            back = pipes.Payload(pipes.TEXT, md, self.building_id, "loot.rework",
-                                 f"rework: {item.title or item.ref}", item.hops, item.ref)
-            taker = getattr(self.app, "return_for_rework", None)
-            if taker is not None and (to := taker(item.source, back)):
-                self.emit("loot.rework", md, back.title, trail=item.hops, ref=item.ref)
-                self.app.notify(f"sent back to {to} (round {item.attempts}): {reason}", title="📦 Loot")
-                self._changed()
-                return item.status
-            item.attempts -= 1
-            item.notes.pop()
-            why = f"{item.source} cannot take work back"
-        self.queue.needs_you(item, f"{reason} — not sent back: {why}")
-        self.emit("loot.needs_you", f"**{item.title or item.ref}** needs you: {why}\n\n{reason}", item.title,
-                  trail=item.hops, ref=item.ref)
-        self.app.notify(f"{item.title or item.ref}: {why} — it waits for you", title="🔥 Loot", severity="warning")
-        self._changed()
-        return item.status
-
-    def burning(self) -> bool:
-        """A cart waits for the person: the hut burns."""
-        return any(i.status in (gate.HELD, gate.NEEDS_YOU) for i in self.queue.items)
-
-    def _changed(self) -> None:
-        self.refresh_data()
+    def redraw(self) -> None:
+        self._render_list()
         refresh = getattr(getattr(self, "app", None), "refresh_roster", None)
         if callable(refresh):
             try:
                 refresh()
             except Exception:
                 pass
-
-    # -- the list ---------------------------------------------------------------------------------
-
-    def refresh_data(self) -> None:
-        try:
-            self.rows, self.error = self.review.files(), ""
-        except (RuntimeError, OSError, ValueError) as e:
-            self.rows, self.error = [], str(e)[:200]
-        self.stored = vault.stored(self.state_dir)
-        self.branches = {it.id: found for it in self.queue.open() if (found := self._branch(it.hops)) is not None}
-        try:
-            self.rejected = self.review.rejected()
-        except (OSError, ValueError):
-            self.rejected = []
-        self._render_list()
 
     def _render_list(self) -> None:
         try:
@@ -415,9 +305,7 @@ class GeneratorView(TypedView):
         self._update(head + Text(body))
 
     def _names(self) -> dict[str, str]:
-        """Building ids → titles, for the chain line."""
-        scroll = getattr(getattr(self, "app", None), "scroll", None)
-        return {b.id: b.title for b in getattr(scroll, "buildings", ())} if scroll is not None else {}
+        return self.worker.names()
 
     def _branch_file(self, oid: str) -> tuple[generated.Branch, str] | None:
         """`bf:<item>:<path>` → the branch and the file's path on it, while the branch still has it."""
@@ -447,14 +335,6 @@ class GeneratorView(TypedView):
         return out
 
     # -- decisions ----------------------------------------------------------------------------------
-
-    def accept(self, rel: str) -> None:
-        self.review.accept(rel)
-        self.emit("generator.accepted", rel, rel)
-
-    def reject(self, rel: str) -> None:
-        self.review.reject(rel)
-        self.emit("generator.rejected", rel, rel)
 
     def action_accept(self) -> None:
         if (item := self.selected_item()) is not None:
@@ -511,11 +391,7 @@ class GeneratorView(TypedView):
 
     def action_drop(self) -> None:
         if (item := self.selected_item()) is not None:
-            if item.status in (gate.HELD, gate.NEEDS_YOU):
-                feedback.signal(self._get_repo_root(), self.maker(item), False, "loot.dropped", value=item.value,
-                                note=f"dropped: {item.title or item.ref}")
-            self.queue.drop(item)
-            self._changed()
+            self.worker.drop(item)
 
     def action_restore(self) -> None:
         oid = self._highlighted_id()
@@ -523,7 +399,7 @@ class GeneratorView(TypedView):
             return
         r = self.rejected[int(oid[4:])]
         try:
-            self.review.restore(r["path"], r["at"])
+            self.worker.restore(r["path"], r["at"])
             self.app.notify(f"{r['path']} is back", title="📦 Loot")
         except (OSError, ValueError) as e:
             self.app.notify(str(e), title="📦 Restore failed", severity="error")
@@ -557,53 +433,17 @@ class GeneratorView(TypedView):
 
     # -- the hut ----------------------------------------------------------------------------------
 
-    def _queue_lines(self) -> list[str]:
-        q = self.queue
-        held, you = q.count(gate.HELD), q.count(gate.NEEDS_YOU)
-        if not held and not you and not q.count(gate.REWORK):
-            return []
-        parts = [f"{held} held"] + ([f"{you} needs you"] if you else []) + \
-            ([f"{q.count(gate.REWORK)} in rework"] if q.count(gate.REWORK) else [])
-        lines = [" · ".join(parts)]
-        lines += [f"{STATUS[i.status][0]} {_label(i)[:40]}" for i in q.open()[:3]]
-        return lines
-
     def mini_status(self) -> list[str]:
-        if self.error:
-            return [f"⚠ {self.error[:40]}"]
-        queue = self._queue_lines()
-        waiting = [g for g in self.rows if not g.reviewed]
-        stored = [f"📦 {len(self.stored)} stored"] if self.stored else []
-        if not self.rows:
-            return queue + stored or ["nothing generated"]
-        lines = queue + [f"{len(waiting)} to review" if waiting else "all reviewed ✓"] + stored
-        lines += [f"* {g.path.rsplit('/', 1)[-1]}" for g in waiting[:3]]
-        return lines
+        return self.worker.mini_status()
 
     def hut_lines(self, widths: list[int]) -> list[str]:
-        if self.error:
-            return [f"⚠ {self.error[:40]}"]
-        waiting = [g for g in self.rows if not g.reviewed]
-        files = [f"{len(waiting)} files to review" if waiting else "all reviewed ✓" if self.rows else ""]
-        files += [f"* {g.path.rsplit('/', 1)[-1]}" for g in waiting]
-        lines = [ln for ln in self._queue_lines() + files if ln][:6] or ["nothing held"]
-        return lines + [""] * (6 - len(lines)) + [f"passed: {len(self.stored)}"]
+        return self.worker.hut_lines(widths)
 
     def quick_action(self, action_id: str) -> bool:
         if action_id == "loot.accept_all":
-            held = [i for i in self.queue.items if i.status == gate.HELD]
-            for item in held:
-                self.queue.accept(item)
-                self._pass(item.payload())
-                self._judge_accept(item, item.value, None, "loot.accepted_all")
-            self._changed()
-            self.app.notify(f"{len(held)} cart{'s' if len(held) != 1 else ''} passed", title="📦 Loot")
+            self.worker.accept_all()
             return True
-        if action_id != "generator.accept_all":
-            return False
-        waiting = [g.path for g in self.rows if not g.reviewed]
-        for rel in waiting:
-            self.accept(rel)
-        self.refresh_data()
-        self.app.notify(f"{len(waiting)} file{'s' if len(waiting) != 1 else ''} accepted", title="🛠 File Generator")
-        return True
+        if action_id == "generator.accept_all":
+            self.worker.accept_files()
+            return True
+        return False
