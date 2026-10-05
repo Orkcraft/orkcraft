@@ -59,13 +59,14 @@ export function Hut({ b, spot, number, onMoved }) {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
       if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
       moved = true;
+      if (b.pinned) return;                // a pinned hut keeps its place: a drag on it does nothing
       dragging.value = { id: b.id, dx, dy };
     };
     const up = (ev) => {
       ev.currentTarget.removeEventListener("pointermove", move);
       ev.currentTarget.removeEventListener("pointerup", up);
       dragging.value = null;
-      if (moved) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y);
+      if (moved) { if (!b.pinned) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); }
       else openBuilding(b.id);
     };
     e.currentTarget.addEventListener("pointermove", move);

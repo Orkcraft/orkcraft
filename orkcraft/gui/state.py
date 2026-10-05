@@ -55,6 +55,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "id": bs.id, "title": bs.title, "icon": bs.icon,
             "type": catalog.type_of(spec).id if spec else bs.preset_ref or bs.id,
             "hut": list(bs.hut) if bs.hut else None,
+            "pinned": bool(bs.pinned),
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.strip_emoji(x) for x in lines],
             "state": worker.status() if worker is not None else "",

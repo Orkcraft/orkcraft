@@ -5,7 +5,8 @@ import { html } from "./js/html.js";
 import { town, connect } from "./js/link.js";
 import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
-import { Selected, Opened } from "./js/windows.js";
+import { Opened } from "./js/windows.js";
+import { Selected } from "./js/console.js";
 import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
 

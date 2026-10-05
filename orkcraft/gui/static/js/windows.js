@@ -1,6 +1,5 @@
 // A building, three ways, as in the TUI: its hut on the town (the minimal look: the lines its type
-// keeps, gui/state.py), selected (one click: the console at the bottom right, its info, garrison
-// and commands) and open (a click on the selected hut: its whole window over the town). Which one
+// keeps, gui/state.py), selected (one click: the console at the bottom right, js/console.js) and open (a click on the selected hut: its whole window over the town). Which one
 // is shown is the page's own state. Esc steps back: open → selected → nothing.
 import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
@@ -28,11 +27,13 @@ function viewOf(type) {
   return null;
 }
 
-export const opened = signal({ active: null, full: false });     // the selected building; full: open over the town
+// The selected building; `ork`: one of its orks picked in the console; `full`: open over the town.
+export const opened = signal({ active: null, ork: null, full: false });
 
 function select(id, full) {
-  if (opened.value.active !== id) command("building.open", { id }).catch(() => {});
-  opened.value = { active: id, full };
+  const o = opened.value;
+  if (o.active !== id) command("building.open", { id }).catch(() => {});
+  opened.value = { active: id, ork: o.active === id ? o.ork : null, full };
 }
 
 /** A click on a building's hut: the first selects it, a click on the selected one opens it. */
@@ -47,13 +48,18 @@ export function showBuilding(id) {
 }
 
 export function closeBuilding(id) {
-  if (id === undefined || opened.value.active === id) opened.value = { active: null, full: false };
+  if (id === undefined || opened.value.active === id) opened.value = { active: null, ork: null, full: false };
 }
 
-/** Esc: an open building goes back to selected, a selected one lets go. */
+/** An ork of the selected building picked in its garrison (null: back to the building). */
+export function selectOrk(ref) {
+  opened.value = { ...opened.value, ork: ref, full: false };
+}
+
+/** Esc: an open building goes back to selected, a picked ork back to its building, a selected one lets go. */
 export function stepBack() {
   const o = opened.value;
-  opened.value = o.full ? { ...o, full: false } : { active: null, full: false };
+  opened.value = o.full ? { ...o, full: false } : o.ork ? { ...o, ork: null } : { active: null, ork: null, full: false };
 }
 
 // Esc on the page, unless a dialog takes it or the keys go to a field or a terminal.
@@ -70,7 +76,7 @@ effect(() => {
 });
 
 /** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */
-function Badge({ garrison, alert }) {
+export function Badge({ garrison, alert }) {
   if (!garrison.length) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const more = garrison.length - 1;
@@ -121,7 +127,7 @@ function About({ b, t }) {
   </details>`;
 }
 
-function Question({ alert }) {
+export function Question({ alert }) {
   return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
     <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
 }
@@ -154,47 +160,11 @@ function Body({ b, t }) {
   </div>`;
 }
 
-function DemolishButton({ b }) {
+export function DemolishButton({ b }) {
   const [asking, setAsking] = useState(false);
   return html`<button class="ok-act gui-win__demolish" onClick=${() => setAsking(true)}>
     <span class="ok-act__label">Demolish</span></button>
     ${asking && html`<${Demolish} b=${b} onClose=${() => setAsking(false)} />`}`;
-}
-
-/** The commands of the selected building (the TUI's Command Card): one button each. */
-function Commands({ b }) {
-  return html`<div class="gui-console__card">
-    <button class="ok-act" onClick=${() => showBuilding(b.id)}><span class="ok-act__label">Open</span></button>
-    ${b.alert && html`<button class="ok-act" onClick=${() => openOrders(b.alert.id)}>
-      <span class="ok-act__label">Answer</span></button>`}
-    ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
-  </div>`;
-}
-
-/** Selected: the console at the bottom right — what the building says, its garrison, its commands. */
-function Console({ b, t }) {
-  return html`<section class=${cls("ok-win is-active gui-console", { "is-alert": !!b.alert })}
-      aria-label=${b.title}>
-    <div class="ok-win__frame">
-      <div class="ok-win__bar">
-        <span class="ok-win__title">${b.title}</span>
-        <${Badge} garrison=${b.garrison} alert=${b.alert} />
-        <button class="gui-tab__close gui-win__close" title="Let go (Esc)" aria-label="Let go"
-          onClick=${() => closeBuilding()}>×</button>
-      </div>
-      <div class="ok-win__body gui-console__body">
-        <div class="gui-console__info">
-          ${b.alert && html`<${Question} alert=${b.alert} />`}
-          ${b.status_plain.length > 0 && html`<section class="gui-section">
-            ${b.status_plain.map((line, i) => html`<div key=${i} class="ok-font-status">${line}</div>`)}</section>`}
-          <${Roads} b=${b} t=${t} />
-        </div>
-        ${b.garrison.length > 0 && html`<div class="gui-console__garrison">
-          <${Garrison} garrison=${b.garrison} b=${b} /></div>`}
-        <${Commands} b=${b} />
-      </div>
-    </div>
-  </section>`;
 }
 
 /** Open: the building's whole window over the town. */
@@ -215,16 +185,10 @@ function Full({ b, t }) {
   </section>`;
 }
 
-function chosen() {
+export function chosen() {
   const o = opened.value;
   const b = o.active && town.value.buildings.find((x) => x.id === o.active);
   return b ? { b, full: o.full } : null;   // nothing selected, or it was demolished
-}
-
-/** The selected building's console, beside the War Map in the strip over the town's bottom. */
-export function Selected() {
-  const c = chosen();
-  return c && !c.full ? html`<${Console} b=${c.b} t=${town.value} />` : null;
 }
 
 /** The open building, over the whole town. */

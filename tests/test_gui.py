@@ -462,3 +462,33 @@ def test_the_look_is_office_until_asked_otherwise(fake_repo):
     host = Host(fake_repo, auto_commit=False, look="camp")
     assert host.snapshot()["look"] == "camp"
     assert state.look(host.town, "auto") in ("office", "camp") and state.look(host.town, "evil") == "office"
+
+
+def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_file):
+    """What the TUI's console says (screens/console.py), as data: Info, the listens, the Inventory."""
+    host = _host(fake_repo)
+    host.tick()
+    hall = host.command("info", {"id": "town_hall"})
+    json.dumps(hall)
+    assert hall["about"] and hall["goal"] == "balance" and hall["pinned"] is False
+    assert {"runs", "ok", "failed", "results"} <= set(hall["week"])
+    assert [q["id"] for q in hall["quick"]] == ["hall.preset", "hall.scratch"]
+    lead = next(o for o in host.muster.roster.garrison("town_hall") if o.lead)
+    ork = host.command("info", {"id": "town_hall", "ork": lead.ref})
+    json.dumps(ork)
+    assert ork["name"] == lead.name and ork["lead"] and isinstance(ork["tools"], list)
+    with pytest.raises(CommandError):
+        host.command("ork.dismiss", {"id": "town_hall", "ork": lead.ref})      # a steward stays
+    assert host.command("history", {"id": "town_hall"}) == {"events": [], "runs": []}
+
+
+def test_a_pinned_building_keeps_its_place(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    assert host.command("building.pin", {"id": "town_hall"}) is True
+    assert next(b for b in host.snapshot()["buildings"] if b["id"] == "town_hall")["pinned"]
+    with pytest.raises(CommandError):
+        host.command("hut.move", {"id": "town_hall", "x": 0.5, "y": 0.5})
+    assert host.command("history", {"id": "town_hall"})["events"][0]["text"] == "pinned"
+    assert host.command("building.pin", {"id": "town_hall"}) is False
+    host.command("hut.move", {"id": "town_hall", "x": 0.5, "y": 0.5})
+    assert host.command("building.goal", {"id": "town_hall"}) == "quality"
