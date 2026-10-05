@@ -31,13 +31,13 @@ button { font: inherit; color: inherit; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
 .gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
 .gui-town__room > .gui-roads { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.gui-road line { stroke: var(--road); stroke-width: 2; }
+.gui-road polyline { fill: none; stroke: var(--road); stroke-width: 2; stroke-linejoin: miter; }
 .gui-road circle { fill: var(--road); }
 .gui-road .gui-road__in { fill: var(--canvas); stroke: var(--road); stroke-width: 2; }
-.gui-road.is-selected line { stroke: var(--road-selected); }
+.gui-road.is-selected polyline { stroke: var(--road-selected); }
 .gui-road.is-selected circle { fill: var(--road-selected); }
 .gui-road.is-selected .gui-road__in { fill: var(--canvas); stroke: var(--road-selected); }
-.gui-road text { fill: var(--ink-muted); text-anchor: middle; }
+.gui-road text { fill: var(--ink-muted); }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
 /* An opened building: an editor group, its tabs over one window. */
@@ -67,3 +67,59 @@ button.gui-status__item { cursor: pointer; }
 .gui-toasts { position: fixed; right: var(--space-4); bottom: calc(22px + var(--space-4)); z-index: 10;
   display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
 .gui-toasts .ok-toast { cursor: pointer; }
+
+/* A building's window drawn from its UI document (js/layout.js): groups by share, panes by role. */
+.gui-win__body.is-view { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-split { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; min-width: 0; flex: 1 1 0; }
+.gui-split.is-row { flex-direction: row; }
+.gui-pane { min-height: 0; min-width: 0; overflow: auto; display: flex; flex-direction: column; }
+.gui-pane.is-auto { overflow: visible; }
+.gui-pane > * { flex: 1 1 auto; }
+.gui-pane > .gui-pane__title { flex: none; margin: 0 0 var(--space-1); color: var(--ink-muted); }
+.gui-about { flex: none; border-top: var(--ok-stroke, 1px) solid var(--frame); padding-top: var(--space-2); }
+.gui-about > summary { cursor: pointer; color: var(--ink-muted); }
+.gui-alert { margin: 0; flex: none; }
+
+.gui-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); flex: none; }
+.gui-head__spacer { flex: 1; }
+.gui-head__what { overflow: hidden; text-overflow: ellipsis; }
+.gui-head__note { color: var(--ink-muted); }
+.gui-new { color: var(--info); }
+
+.gui-prose { line-height: 1.5; overflow-wrap: anywhere; }
+.gui-prose :is(h1, h2, h3) { font-family: var(--ok-head, inherit); margin: var(--space-4) 0 var(--space-2); }
+.gui-prose :is(pre, code) { font-family: var(--font-mono); font-size: 12px; }
+.gui-prose pre { background: var(--panel-inset); padding: var(--space-2) var(--space-3); overflow: auto; border-radius: var(--ok-radius, 0); }
+.gui-prose a { color: var(--info); }
+.gui-prose table { border-collapse: collapse; }
+.gui-prose :is(td, th) { border: 1px solid var(--frame); padding: var(--space-1) var(--space-2); }
+.gui-pre { margin: 0; font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.gui-diff { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.gui-diff th { text-align: left; color: var(--ink-muted); font-weight: 600; }
+.gui-diff td { vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; padding: 0 var(--space-1); }
+.gui-diff th:nth-child(odd), .gui-diff .gui-diff__mark { width: 1.5em; color: var(--ink-muted); }
+.gui-diff tr.is-del td:nth-child(-n+2), .gui-diff tr.is-mod td:nth-child(-n+2) { color: var(--danger); }
+.gui-diff tr.is-add td:nth-child(n+3), .gui-diff tr.is-mod td:nth-child(n+3) { color: var(--success); }
+.gui-diff tr.is-hunk td { color: var(--info); }
+
+.gui-editor { flex: 1 1 auto; min-height: 240px; resize: none; box-sizing: border-box; width: 100%;
+  font: inherit; color: var(--ink); background: var(--panel-inset); border: 1px solid var(--frame-strong);
+  border-radius: var(--ok-radius, 0); padding: var(--space-2) var(--space-3); }
+.gui-editor:focus { outline: none; border-color: var(--frame-focus); }
+.gui-textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; height: auto; }
+
+.gui-fields { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
+.gui-fields .ok-board { overflow: auto; align-items: start; }
+.gui-fields .ok-card { cursor: grab; }
+.gui-fields .ok-lane__add { cursor: pointer; }
+.gui-fields .ok-lane.gui-drop { box-shadow: inset 0 0 0 1px var(--frame-focus); }
+
+.gui-tree ul { list-style: none; margin: 0 0 var(--space-2); padding: 0 0 0 var(--space-3); }
+.gui-tree summary { cursor: pointer; padding: var(--space-1) 0; }
+.gui-tree__item { cursor: pointer; padding: 2px var(--space-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-tree__item:hover { background: var(--selection); }
+.gui-tree__item.is-selected { background: var(--selection); box-shadow: inset 0 0 0 1px var(--frame-focus); }
+
+.gui-modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+.gui-modal .ok-dialog { width: min(560px, calc(100vw - 32px)); }

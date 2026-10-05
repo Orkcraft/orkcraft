@@ -8,6 +8,11 @@ differs from the last one), toasts as they come, and sends commands back:
     ← {"t": "reply", "id": 7, "ok": true, "result": null}      (or "ok": false, "error": "...")
     ← {"t": "state", "state": {...}}                             (gui/state.py)
     ← {"t": "toast", "message": "...", "title": "...", "severity": "information", "timeout": null}
+    → {"t": "cmd", "id": 8, "name": "watch", "args": {"ids": ["lake"]}}   (the buildings open in the page)
+    ← {"t": "detail", "detail": {"id": "lake", "type": "lake", "ui": {...}, "data": {...}}}
+
+A building's own state (`detail`, gui/views/) goes only to the pages that have it open, when its
+worker says it changed.
 
 The socket takes only the page this server gave out: a random token in its address and an Origin
 of this server, so another page open in a browser cannot drive the town.
@@ -67,7 +72,11 @@ class Server:
         self._stop: asyncio.Event | None = None
         self._last = ""
         self._dirty = False
+        self.watching: dict[ServerConnection, set[str]] = {}
+        self._details: set[str] = set()             # buildings whose detail waits to be sent
+        self._sent: dict[tuple[int, str], str] = {}  # (page, building) → the detail it has
         host.on_change = self._changed
+        host.on_detail = self._detail_changed
         host.on_toast = lambda data: self._send_all({"t": "toast", **data})
 
     @property
@@ -109,13 +118,47 @@ class Server:
         try:
             await ws.send(json.dumps({"t": "state", "state": self.host.snapshot()}, ensure_ascii=False))
             async for raw in ws:
-                await ws.send(json.dumps(self._handle(raw), ensure_ascii=False))
+                await ws.send(json.dumps(self._handle(raw, ws), ensure_ascii=False))
         except ConnectionClosed:
             pass
         finally:
             self.clients.discard(ws)
+            self.watching.pop(ws, None)
+            self._sent = {k: v for k, v in self._sent.items() if k[0] != id(ws)}
 
-    def _handle(self, raw: str | bytes) -> dict:
+    def _watch(self, ws: ServerConnection | None, args: dict) -> list[str]:
+        """The buildings this page has open: each one's detail now, and again when it changes."""
+        ids = [str(x) for x in (args.get("ids") or [])][:50]
+        if ws is not None:
+            self.watching[ws] = set(ids)
+            for bid in ids:
+                self._send_detail(ws, bid, force=True)
+        return ids
+
+    def _send_detail(self, ws: ServerConnection, bid: str, force: bool = False) -> None:
+        detail = self.host.detail(bid)
+        if detail is None:
+            return
+        text = json.dumps({"t": "detail", "detail": detail}, ensure_ascii=False)
+        key = (id(ws), bid)
+        if force or self._sent.get(key) != text:
+            self._sent[key] = text
+            asyncio.ensure_future(self._send(ws, text))
+
+    def _detail_changed(self, bid: str) -> None:
+        if self.loop is None or not any(bid in ids for ids in self.watching.values()):
+            return
+        if not self._details:
+            self.loop.call_later(FLUSH_S, self._flush_details)
+        self._details.add(bid)
+
+    def _flush_details(self) -> None:
+        bids, self._details = self._details, set()
+        for ws, ids in list(self.watching.items()):
+            for bid in bids & ids:
+                self._send_detail(ws, bid)
+
+    def _handle(self, raw: str | bytes, ws: ServerConnection | None = None) -> dict:
         try:
             msg = json.loads(raw)
             cid = msg.get("id")
@@ -124,7 +167,10 @@ class Server:
         if msg.get("t") != "cmd":
             return {"t": "reply", "id": cid, "ok": False, "error": "Not a command"}
         try:
-            result = self.host.command(str(msg.get("name", "")), msg.get("args") or {})
+            name, args = str(msg.get("name", "")), msg.get("args") or {}
+            if not isinstance(args, dict):
+                raise CommandError("Arguments are an object")
+            result = self._watch(ws, args) if name == "watch" else self.host.command(name, args)
             return {"t": "reply", "id": cid, "ok": True, "result": result}
         except CommandError as e:
             return {"t": "reply", "id": cid, "ok": False, "error": str(e)}

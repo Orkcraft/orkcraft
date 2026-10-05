@@ -23,6 +23,7 @@ dependencies = [
     "textual>=8.2",
     "pyte>=0.8",
     "jsonschema>=4.18",
+    "markdown-it-py>=3.0",       # the GUI renders Markdown (Textual brings it too)
 ]
 
 [project.optional-dependencies]

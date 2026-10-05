@@ -1,8 +1,15 @@
 // Opened buildings: Office shows them as an editor group, one tab per building
 // (design-system/components.md: Window, Tabs). Which are open is the page's own state.
-import { signal } from "@preact/signals";
+import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
-import { town, command } from "./link.js";
+import { town, command, details, online } from "./link.js";
+import { Layout } from "./layout.js";
+import * as lake from "./buildings/lake.js";
+import * as fields from "./buildings/fields.js";
+import * as scrolls from "./buildings/scrolls.js";
+
+// The types whose window the GUI draws (gui/views/ on the host); the others show what they are.
+const VIEWS = { lake, fields, scrolls };
 
 export const opened = signal({ ids: [], active: null, max: false });
 
@@ -18,6 +25,12 @@ export function closeBuilding(id) {
   const active = o.active === id ? ids[ids.length - 1] || null : o.active;
   opened.value = { ...o, ids, active, max: ids.length ? o.max : false };
 }
+
+// The host sends an open building's own state, and again when its worker says it changed.
+effect(() => {
+  const ids = opened.value.ids;
+  if (online.value) command("watch", { ids }).catch(() => {});
+});
 
 function toggleMax() {
   opened.value = { ...opened.value, max: !opened.value.max };
@@ -65,7 +78,24 @@ function Garrison({ garrison }) {
   </section>`;
 }
 
+function About({ b, t }) {
+  return html`<details class="gui-about">
+    <summary class="ok-font-heading">About this building</summary>
+    <${Garrison} garrison=${b.garrison} />
+    <${Roads} b=${b} t=${t} />
+  </details>`;
+}
+
 function Body({ b, t }) {
+  const d = details.value[b.id];
+  const view = d && d.data && VIEWS[d.type];
+  if (view) {
+    return html`<div class="ok-win__body gui-win__body is-view">
+      ${b.alert && html`<p class="ok-font-body ok-tone-fire gui-alert">${b.alert.title}</p>`}
+      <${Layout} doc=${d.ui} panes=${view.panes(b.id, d.data)} />
+      <${About} b=${b} t=${t} />
+    </div>`;
+  }
   return html`<div class="ok-win__body gui-win__body">
     ${b.alert && html`<p class="ok-font-body ok-tone-fire">${b.alert.title}</p>`}
     ${b.status_plain.length > 0 && html`<section class="gui-section">

@@ -3,14 +3,16 @@
 // (design-system/components.md: Hut, Road). Positions are the person's: dragging a hut saves its
 // spot as fractions of the room (`hut` in the Town Scroll, the same the TUI reads).
 import { signal } from "@preact/signals";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
+import { plan } from "./roads.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 const sizes = signal({});                  // building id → {w, h} of its card, as drawn
 const room = signal({ w: 1, h: 1 });
+const dragging = signal(null);             // {id, dx, dy}: the hut under the mouse, so its roads follow it
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
 
 // The room never gets smaller than four huts across and three down: a narrower town scrolls, so
@@ -36,27 +38,29 @@ function place(b, i, size) {
   return { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h };
 }
 
-/** Where the segment from a's centre to b's centre leaves rectangle a. */
-function edge(a, b) {
-  const cx = a.x + a.w / 2, cy = a.y + a.h / 2;
-  const dx = b.x + b.w / 2 - cx, dy = b.y + b.h / 2 - cy;
-  if (!dx && !dy) return { x: cx, y: cy };
-  const s = 1 / Math.max(Math.abs(dx) / (a.w / 2 || 1), Math.abs(dy) / (a.h / 2 || 1));
-  return { x: cx + dx * s, y: cy + dy * s };
+// Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
+let planned = { key: "", paths: [] };
+
+function plannedPaths(rects, roads) {
+  const r = room.value;
+  const key = JSON.stringify([rects, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
+  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h) };
+  return planned.paths;
 }
 
 function Roads({ roads, rects }) {
   const r = room.value;
+  const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
+  const active = opened.value.active;
   return html`<svg class="gui-roads" width=${r.w} height=${r.h} aria-hidden="true">
-    ${roads.map((road) => {
-      const a = rects[road.from], b = rects[road.to];
-      if (!a || !b) return null;
-      const p = edge(a, b), q = edge(b, a);
-      const sel = opened.value.active === road.from || opened.value.active === road.to;
-      return html`<g key=${road.id} class=${cls("gui-road", { "is-selected": sel })}>
-        <line x1=${p.x} y1=${p.y} x2=${q.x} y2=${q.y} />
-        <circle cx=${p.x} cy=${p.y} r="3" /><circle cx=${q.x} cy=${q.y} r="4" class="gui-road__in" />
-        ${sel && html`<text x=${(p.x + q.x) / 2} y=${(p.y + q.y) / 2 - 6} class="ok-font-status">${road.label}</text>`}
+    ${plannedPaths(rects, roads).map((p) => {
+      const road = byId[p.id];
+      const sel = active === road.from || active === road.to;
+      const mid = p.points[Math.floor(p.points.length / 2)];
+      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": sel })}>
+        <polyline points=${p.points.map((q) => q.join(",")).join(" ")} />
+        <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
+        ${sel && html`<text x=${mid[0] + 6} y=${mid[1] - 6} class="ok-font-status">${road.label}</text>`}
       </g>`;
     })}
   </svg>`;
@@ -64,7 +68,7 @@ function Roads({ roads, rects }) {
 
 function Hut({ b, spot, number, onMoved }) {
   const ref = useRef(null);
-  const [drag, setDrag] = useState(null);   // {dx, dy} while dragging
+  const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -84,12 +88,12 @@ function Hut({ b, spot, number, onMoved }) {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
       if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
       moved = true;
-      setDrag({ dx, dy });
+      dragging.value = { id: b.id, dx, dy };
     };
     const up = (ev) => {
       ev.currentTarget.removeEventListener("pointermove", move);
       ev.currentTarget.removeEventListener("pointerup", up);
-      setDrag(null);
+      dragging.value = null;
       if (moved) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y);
       else openBuilding(b.id);
     };
@@ -130,7 +134,8 @@ export function Town({ buildings, roads }) {
   buildings.forEach((b, i) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     spots[b.id] = place(b, i, size);
-    rects[b.id] = { ...spots[b.id], ...size };
+    const d = dragging.value && dragging.value.id === b.id ? dragging.value : { dx: 0, dy: 0 };
+    rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, ...size };
   });
 
   function moved(b, x, y) {

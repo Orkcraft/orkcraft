@@ -17,6 +17,7 @@ from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.realm import catalog, modes, pipes
+from orkcraft.scroll import road_key
 
 HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
 
@@ -27,14 +28,15 @@ def _ork(o) -> dict[str, Any]:
 
 
 def _hut_lines(town: Town, building_id: str) -> list[str]:
-    """A building's live status lines (up to three): its worker says them; a type without a worker
-    has none in the GUI yet."""
+    """A building's live status lines (up to three): its worker says them (`mini_status`, else the
+    TUI hut's `hut_lines`); a type without a worker has none in the GUI yet."""
     w = town.workers.get(building_id)
-    lines_of = getattr(w, "hut_lines", None)
-    if lines_of is None:
+    mini, lines_of = getattr(w, "mini_status", None), getattr(w, "hut_lines", None)
+    if mini is None and lines_of is None:
         return []
     try:
-        return [str(x) for x in lines_of(HUT_WIDTHS)][:3]
+        lines = mini() if mini is not None else lines_of(HUT_WIDTHS)
+        return [str(x) for x in lines if str(x).strip()][:3]
     except Exception:          # a status line never takes the town down
         return []
 
@@ -65,13 +67,14 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
 
 
 def roads(town: Town) -> list[dict[str, Any]]:
-    """Every road as an edge: from its source to the building that keeps it (a road is incoming)."""
+    """Every road as an edge: from its source to the building that keeps it (a road is incoming). Its
+    `id` is the town-wide key (`scroll.road_key`): a road's own id is only unique in its building."""
     out = []
     for bs in town.scroll.buildings:
         if bs.demolished:
             continue
         for r in bs.roads:
-            out.append({"id": r.id, "from": r.source, "to": bs.id, "event": r.event,
+            out.append({"id": road_key(bs.id, r.id), "road": r.id, "from": r.source, "to": bs.id, "event": r.event,
                         "label": r.label or pipes.label(r.event), "handler": r.handler or ""})
     return out
 

@@ -1,0 +1,190 @@
+// Where roads run on the town: gates on the huts and orthogonal paths between them, as the TUI
+// lays them (wm/roadmap.py, ported: the page plans them itself, so a road follows a hut while it is
+// dragged). Gates sit on the side of a hut that faces the other end, several on one side spread
+// evenly; paths are A* on a grid of CELL px where a step under a hut costs WINDOW_COST and a turn
+// TURN_COST, so roads keep to the gaps and turn as little as they can.
+
+const CELL = 8;
+const WINDOW_COST = 40;
+const TURN_COST = 3;
+const STEP = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+function toCells(r) {
+  const x = Math.floor(r.x / CELL), y = Math.floor(r.y / CELL);
+  return { x, y, w: Math.max(Math.ceil((r.x + r.w) / CELL) - x, 1), h: Math.max(Math.ceil((r.y + r.h) / CELL) - y, 1) };
+}
+
+/** The side of `a` that faces `b` (cells are square here: no aspect to make up for). */
+export function facingSide(a, b) {
+  const horizontal = b.x >= a.x + a.w ? "right" : b.x + b.w <= a.x ? "left" : "";
+  const vertical = b.y >= a.y + a.h ? "bottom" : b.y + b.h <= a.y ? "top" : "";
+  if (horizontal && vertical) {
+    const gapX = horizontal === "right" ? b.x - (a.x + a.w) : a.x - (b.x + b.w);
+    const gapY = vertical === "bottom" ? b.y - (a.y + a.h) : a.y - (b.y + b.h);
+    return gapX >= gapY ? horizontal : vertical;
+  }
+  if (horizontal || vertical) return horizontal || vertical;
+  const dx = b.x + b.w / 2 - (a.x + a.w / 2), dy = b.y + b.h / 2 - (a.y + a.h / 2);
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "right" : "left";
+  return dy >= 0 ? "bottom" : "top";
+}
+
+function gateCell(g, side, i, k) {
+  if (side === "left" || side === "right") {
+    const span = Math.max(g.h - 2, 1);
+    const y = g.y + 1 + Math.floor((span * (i + 1)) / (k + 1));
+    return [side === "left" ? g.x : g.x + g.w - 1, Math.min(y, g.h > 2 ? g.y + g.h - 2 : g.y)];
+  }
+  const span = Math.max(g.w - 2, 1);
+  const x = g.x + 1 + Math.floor((span * (i + 1)) / (k + 1));
+  return [Math.min(x, g.w > 2 ? g.x + g.w - 2 : g.x), side === "top" ? g.y : g.y + g.h - 1];
+}
+
+function gates(geoms, roads) {
+  const slots = new Map();
+  for (const r of roads) {
+    const a = geoms[r.from], b = geoms[r.to];
+    if (!a || !b) continue;
+    for (const [bid, role, me, other] of [[r.from, "exit", a, b], [r.to, "entry", b, a]]) {
+      const side = facingSide(me, other);
+      // along the side by where the other end lies, so roads do not cross at the hut
+      const key = side === "left" || side === "right" ? other.y + other.h / 2 : other.x + other.w / 2;
+      const slot = `${bid}\u0000${side}`;
+      if (!slots.has(slot)) slots.set(slot, { bid, side, items: [] });
+      slots.get(slot).items.push({ id: r.id, role, key });
+    }
+  }
+  const out = {};
+  for (const { bid, side, items } of slots.values()) {
+    items.sort((p, q) => p.key - q.key || (p.id < q.id ? -1 : p.id > q.id ? 1 : 0) || (p.role < q.role ? -1 : 1));
+    items.forEach((it, i) => {
+      const [x, y] = gateCell(geoms[bid], side, i, items.length);
+      (out[it.id] ||= {})[it.role] = { x, y, side };
+    });
+  }
+  return out;
+}
+
+// A small binary heap of [priority, ...] arrays.
+function push(heap, item) {
+  heap.push(item);
+  let i = heap.length - 1;
+  while (i > 0) {
+    const p = (i - 1) >> 1;
+    if (heap[p][0] <= heap[i][0]) break;
+    [heap[p], heap[i]] = [heap[i], heap[p]];
+    i = p;
+  }
+}
+
+function pop(heap) {
+  const top = heap[0], last = heap.pop();
+  if (heap.length) {
+    heap[0] = last;
+    let i = 0;
+    for (;;) {
+      const l = 2 * i + 1, r = l + 1;
+      let m = i;
+      if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+      if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+      if (m === i) break;
+      [heap[m], heap[i]] = [heap[i], heap[m]];
+      i = m;
+    }
+  }
+  return top;
+}
+
+/** The cheapest orthogonal path of cells from `start` to `end`, both included. */
+export function route(start, end, under, width, height) {
+  const [sx, sy] = start, [ex, ey] = end;
+  if (sx === ex && sy === ey) return [start];
+  const key = (x, y, d) => (y * width + x) * 4 + d;
+  const best = new Map(), came = new Map(), heap = [];
+  for (let d = 0; d < 4; d++) {
+    best.set(key(sx, sy, d), 0);
+    came.set(key(sx, sy, d), -1);
+    push(heap, [Math.abs(ex - sx) + Math.abs(ey - sy), 0, sx, sy, d]);
+  }
+  while (heap.length) {
+    const [, cost, x, y, d] = pop(heap);
+    if (cost > (best.get(key(x, y, d)) ?? Infinity)) continue;
+    if (x === ex && y === ey) {
+      const path = [];
+      for (let k = key(x, y, d); k !== -1; k = came.get(k)) {
+        const cell = Math.floor(k / 4);
+        path.push([cell % width, Math.floor(cell / width)]);
+      }
+      path.reverse();
+      return path.filter((c, i) => i === 0 || c[0] !== path[i - 1][0] || c[1] !== path[i - 1][1]);
+    }
+    for (let nd = 0; nd < 4; nd++) {
+      const nx = x + DIRS[nd][0], ny = y + DIRS[nd][1];
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      const nc = cost + (under[ny * width + nx] ? WINDOW_COST : 1) + (nd !== d ? TURN_COST : 0);
+      const k = key(nx, ny, nd);
+      if (nc < (best.get(k) ?? Infinity)) {
+        best.set(k, nc);
+        came.set(k, key(x, y, d));
+        push(heap, [nc + Math.abs(ex - nx) + Math.abs(ey - ny), nc, nx, ny, nd]);
+      }
+    }
+  }
+  return [start, end];
+}
+
+const centre = ([x, y]) => [x * CELL + CELL / 2, y * CELL + CELL / 2];
+
+/** Where a gate meets its hut, in px: the middle of the hut's edge cell, on the edge itself. */
+function edgePoint(g, rect) {
+  const [cx, cy] = centre([g.x, g.y]);
+  if (g.side === "left") return [rect.x, cy];
+  if (g.side === "right") return [rect.x + rect.w, cy];
+  if (g.side === "top") return [cx, rect.y];
+  return [cx, rect.y + rect.h];
+}
+
+/** Only the corners of an orthogonal polyline. */
+function corners(points) {
+  const out = [];
+  for (const p of points) {
+    if (out.length && out[out.length - 1][0] === p[0] && out[out.length - 1][1] === p[1]) continue;
+    if (out.length >= 2) {
+      const [a, b] = [out[out.length - 2], out[out.length - 1]];
+      if ((a[0] === b[0] && b[0] === p[0]) || (a[1] === b[1] && b[1] === p[1])) out.pop();
+    }
+    out.push(p);
+  }
+  return out;
+}
+
+/** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. */
+export function plan(rects, roads, roomW, roomH) {
+  const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
+  const geoms = {};
+  for (const [id, r] of Object.entries(rects)) geoms[id] = toCells(r);
+  const under = new Uint8Array(width * height);
+  for (const g of Object.values(geoms)) {
+    for (let y = Math.max(g.y, 0); y < Math.min(g.y + g.h, height); y++) {
+      under.fill(1, y * width + Math.max(g.x, 0), y * width + Math.min(g.x + g.w, width));
+    }
+  }
+  const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
+  const all = gates(geoms, roads);
+  const out = [];
+  for (const r of roads) {
+    const g = all[r.id];
+    if (!g || !g.exit || !g.entry) continue;
+    const outside = (gate) => clamp([gate.x + STEP[gate.side][0], gate.y + STEP[gate.side][1]]);
+    const cells = route(outside(g.exit), outside(g.entry), under, width, height);
+    const exit = edgePoint(g.exit, rects[r.from]), entry = edgePoint(g.entry, rects[r.to]);
+    // From the edge straight out along the gate's side, then cell by cell, then straight in.
+    const first = centre(cells[0]), last = centre(cells[cells.length - 1]);
+    const lead = g.exit.side === "left" || g.exit.side === "right" ? [first[0], exit[1]] : [exit[0], first[1]];
+    const tail = g.entry.side === "left" || g.entry.side === "right" ? [last[0], entry[1]] : [entry[0], last[1]];
+    out.push({ id: r.id, exit, entry, side: g.exit.side,
+               points: corners([exit, lead, ...cells.map(centre), tail, entry]) });
+  }
+  return out;
+}

@@ -154,3 +154,138 @@ def test_the_page_says_ork_never_orc():
             visible = re.findall(r">([^<>]*)<", text) + re.findall(r'(?:title|aria-label)="([^"]*)"', text)
             for words in visible:
                 assert not re.search(r"\b[Oo]rcs?\b|[Oo]rchestrat", words), (path.name, words)
+
+
+# -- the buildings' windows (gui/views/) --------------------------------------------------------
+
+def _raised(host: Host, type_id: str, **config) -> str:
+    spec = buildings.type_spec(host.town, type_id)
+    if config:
+        spec["config"] = {**(spec.get("config") or {}), **config}
+    built = buildings.raise_spec(host.town, spec)
+    assert built is not None
+    return built.id
+
+
+def test_markdown_never_carries_markup_or_script():
+    from orkcraft.gui import markdown
+    out = markdown.render("# Hi\n\n<script>alert(1)</script>\n\n[x](javascript:alert(1)) <img src=x onerror=y>")
+    assert "<h1>Hi</h1>" in out and "<script" not in out and "<img" not in out and 'href="javascript' not in out
+
+
+def test_a_building_without_a_gui_view_says_what_it_is(fake_repo):
+    host = _host(fake_repo)
+    d = host.detail("town_hall")
+    assert d["data"] is None and d["ui"]["panes"] and host.detail("nowhere") is None
+    with pytest.raises(CommandError):
+        host.command("act", {"id": "town_hall", "act": "edit"})
+
+
+def test_task_fields_window_is_the_board_and_its_acts_change_the_file(fake_repo):
+    host = _host(fake_repo)
+    bid = _raised(host, "fields")
+    d = host.detail(bid)
+    assert d["type"] == "fields" and [p["id"] for p in d["ui"]["panes"]] == ["board"]
+    assert [ln["id"] for ln in d["data"]["lanes"]][:3] == ["todo", "in_progress", "done"]
+    card = host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "title": " Ship  it ", "body": "now"}})
+    assert card and any(c["title"] == "Ship it" for c in host.detail(bid)["data"]["lanes"][0]["cards"])
+    host.command("act", {"id": bid, "act": "color", "args": {"card": card}})
+    card = host.command("act", {"id": bid, "act": "edit", "args": {"card": card, "title": "Ship it today", "body": ""}})
+    host.command("act", {"id": bid, "act": "move", "args": {"card": card, "lane": "done"}})
+    done = next(ln for ln in host.detail(bid)["data"]["lanes"] if ln["id"] == "done")["cards"]
+    shipped = next(c for c in done if c["id"] == card)
+    assert shipped["title"] == "Ship it today" and shipped["color"] == "yellow"      # the colour stays on an edit
+    assert "🟨 Ship it today" in (fake_repo / "TASKS.md").read_text(encoding="utf-8")
+    host.command("act", {"id": bid, "act": "remove", "args": {"card": card}})
+    assert "Ship it today" not in (fake_repo / "TASKS.md").read_text(encoding="utf-8")
+    for bad in ({"card": "gone"}, {"card": 7}):
+        with pytest.raises(CommandError):
+            host.command("act", {"id": bid, "act": "flip", "args": bad})
+    with pytest.raises(CommandError):
+        host.command("act", {"id": bid, "act": "add", "args": {"title": "   "}})
+
+
+def test_the_lake_window_shows_markdown_and_edits_the_file_in_place(fake_repo):
+    from orkcraft.realm import lake
+    host = _host(fake_repo)
+    bid = _raised(host, "lake")
+    w = host.town.worker(bid)
+    w.show(lake.look(fake_repo, "file", str(fake_repo / "docs" / "notes.md"), "notes"))
+    view = host.detail(bid)["data"]["view"]
+    assert view["kind"] == "markdown" and "<h1>Notes</h1>" in view["html"] and view["editable"]
+    assert host.command("act", {"id": bid, "act": "edit"})
+    editing = host.detail(bid)["data"]["editing"]
+    assert editing["path"] == "docs/notes.md" and editing["text"].startswith("# Notes")
+    text = editing["text"] + "- from the window\n"
+    host.command("act", {"id": bid, "act": "typed", "args": {"text": text}})
+    assert host.detail(bid)["data"]["editing"]["note"] == "● unsaved"
+    assert host.command("act", {"id": bid, "act": "done", "args": {"text": text}})
+    assert host.detail(bid)["data"]["editing"] is None
+    assert (fake_repo / "docs" / "notes.md").read_text(encoding="utf-8").endswith("- from the window\n")
+
+
+def test_the_lake_never_saves_over_a_change_on_disk_unless_asked(fake_repo):
+    from orkcraft.realm import lake
+    host = _host(fake_repo)
+    bid = _raised(host, "lake")
+    path = fake_repo / "docs" / "notes.md"
+    host.town.worker(bid).show(lake.look(fake_repo, "file", str(path), "notes"))
+    host.command("act", {"id": bid, "act": "edit"})
+    path.write_text("# Changed elsewhere\n", encoding="utf-8")
+    assert host.command("act", {"id": bid, "act": "save", "args": {"text": "# Mine\n"}}) is False
+    assert host.detail(bid)["data"]["editing"]["conflict"]
+    assert path.read_text(encoding="utf-8") == "# Changed elsewhere\n"
+    assert host.command("act", {"id": bid, "act": "save", "args": {"text": "# Mine\n", "force": True}})
+    assert path.read_text(encoding="utf-8") == "# Mine\n"
+
+
+def test_the_scroll_dump_window_is_its_tree_and_reads_a_page(fake_repo):
+    host = _host(fake_repo)
+    bid = _raised(host, "scrolls", paths=["docs"], auto_ingest=False)
+    host.tick(now=1e9)                                  # its worker looks at the sources
+    data = host.detail(bid)["data"]
+    assert data["sources"] and any(n["path"] == "docs/notes.md" for b in data["sources"] for n in b["items"])
+    assert data["pending"] >= 1 and "to take in" in data["state_plain"]
+    page = host.command("act", {"id": bid, "act": "read", "args": {"path": "docs/notes.md"}})
+    assert "<h1>Notes</h1>" in page["html"]
+    with pytest.raises(CommandError):
+        host.command("act", {"id": bid, "act": "add_folder", "args": {"path": "no/such/folder"}})
+
+
+@pytest.mark.asyncio
+async def test_an_open_building_gets_its_state_and_again_when_it_changes(fake_repo):
+    host = _host(fake_repo)
+    bid = _raised(host, "fields")
+    server = Server(host)
+    task = await _serving(server)
+    try:
+        async with connect(f"ws://127.0.0.1:{server.port}/ws?t={server.token}", origin=server.origin) as ws:
+            async def until(pred):
+                while True:
+                    msg = json.loads(await asyncio.wait_for(ws.recv(), 5))
+                    if pred(msg):
+                        return msg
+            await ws.send(json.dumps({"t": "cmd", "id": 1, "name": "watch", "args": {"ids": [bid]}}))
+            first = await until(lambda m: m["t"] == "detail")
+            assert first["detail"]["id"] == bid and first["detail"]["data"]["lanes"]
+            await ws.send(json.dumps({"t": "cmd", "id": 2, "name": "act",
+                                      "args": {"id": bid, "act": "add", "args": {"title": "Pushed"}}}))
+            again = await until(lambda m: m["t"] == "detail" and any(
+                c["title"] == "Pushed" for ln in m["detail"]["data"]["lanes"] for c in ln["cards"]))
+            assert again["detail"]["type"] == "fields"
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+def test_every_road_has_a_town_wide_key(fake_repo):
+    """A road's own id is unique only in the building that keeps it; the page plans roads by key."""
+    from orkcraft import scroll
+    host = _host(fake_repo)
+    a, b, c = _raised(host, "fields"), _raised(host, "lake"), _raised(host, "lake")
+    ids = [scroll.subscribe(host.town.scroll, b, a, "tasks.created").id,      # each the first in its building
+           scroll.subscribe(host.town.scroll, c, a, "tasks.created").id]
+    assert ids[0] == ids[1]
+    keys = [r["id"] for r in host.snapshot()["roads"]]
+    assert len(keys) == len(set(keys))
+    assert all(r["id"] == f"{r['to']}:{r['road']}" for r in host.snapshot()["roads"])

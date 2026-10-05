@@ -180,7 +180,10 @@ orkcraft/gui/
   state.py    the snapshot: project, HUD, orkspaces, buildings (spot, status lines, garrison, question), roads
   server.py   websockets: the page, /ds/ (the design system), /roles.css, and /ws
   launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
-  static/     index.html (import map), app.js, js/ (link, chrome, town, windows), office.css
+  views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
+  markdown.py Markdown as HTML, raw HTML off
+  static/     index.html (import map), app.js, js/ (link, chrome, town, windows, layout, dialog),
+              js/buildings/ (one per type the GUI draws), office.css
 ```
 
 - **The protocol.** The host sends a whole snapshot (`gui/state.py`) when the town changes, at most
@@ -193,19 +196,32 @@ orkcraft/gui/
 - **The layout is the design system's.** `office.css` places the components (HUD on top, the War
   Map and the buildings on the left, the town, an editor group of opened buildings on the right,
   the status bar) and uses tokens only.
+- **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
+  panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
+  pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it
+  is the worker's, sent by `gui/views/<type>.py` as a `detail` only to the pages that have the
+  building open (`watch`), again whenever the worker says it changed. Its acts are
+  `{"name": "act", "args": {"id", "act", "args"}}`, each one a call on the worker.
 - **Huts stand where the person put them**: `hut` in the Town Scroll, fractions of the room, the
   same the TUI reads. Dragging a hut saves its spot; a hut without one stands in a grid.
+- **Roads run as in the TUI**: `js/roads.js` is `wm/roadmap.py` ported to the page (gates on the
+  side that faces the other end, spread along it; orthogonal A* paths that keep to the gaps and
+  turn as little as they can), so a road follows a hut while it is dragged. A road is keyed by
+  `scroll.road_key` (`<target>:<road id>`): a road's own id is only unique in its building.
 
 ### Done
 
 - The shell: HUD (Office words for the resources), War Map (switches the orkspace), the building
-  list, the town with huts and roads, an opened building as a tab with its status lines, garrison
+  list, the town with huts and orthogonal roads, an opened building as a tab with its status lines, garrison
   and roads, toasts, Halt All in the status bar.
+
+- The windows of 🌊 Lake (Markdown rendered, a diff side by side, a file edited in place with the
+  same autosave, conflict and judging as the TUI), 🌾 Task Fields (the board: drag a card to a lane,
+  add, open, colour, task ⇄ note, send, delete) and 🗑️ Scroll Dump (the librarian's state, the
+  wiki and its sources as a tree, a page rendered; take in, check, stop, add a folder).
 
 ### Next
 
-1. The windows of 🌊 Lake, 🌾 Task Fields and 🗑️ Scroll Dump, drawn from their UI documents and
-   their workers' state; their acts become commands.
-2. The sessions service in the core and the War Tent's terminals in `xterm.js` (binary frames on
+1. The sessions service in the core and the War Tent's terminals in `xterm.js` (binary frames on
    the same socket); Orders answer an ork's question.
-3. Building, roads and settings from the GUI.
+2. Building, roads and settings from the GUI; the other types' windows as their workers come.

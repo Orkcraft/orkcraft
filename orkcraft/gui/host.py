@@ -9,6 +9,9 @@ with no toolkit at all. Everything here runs on one thread, the server's event l
     host.on_toast = lambda data: ...   # a toast to show
     host.tick()                        # once a second: the roster, the roads, the treasury
     host.command("hut.move", {"id": "lake", "x": 0.4, "y": 0.2})
+    host.on_detail = lambda building_id: ...   # an open building's own state changed
+    host.detail("lake")                # what its window draws (gui/views/)
+    host.command("act", {"id": "lake", "act": "edit"})
 """
 from __future__ import annotations
 
@@ -20,8 +23,9 @@ from orkcraft.core import bus
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
-from orkcraft.gui import state
-from orkcraft.realm import modes
+from orkcraft.design import ui
+from orkcraft.gui import state, views
+from orkcraft.realm import catalog, modes
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
 
@@ -39,13 +43,16 @@ class Host:
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         self.on_change: Callable[[], None] = lambda: None
         self.on_toast: Callable[[dict], None] = lambda data: None
+        self.on_detail: Callable[[str], None] = lambda building_id: None
         self._telemetry_at = 0.0
+        self._refreshed: dict[str, float] = {}     # building id → when its worker last looked again
         self.town.bus.subscribe(bus.ANY, self._event)
         self.commands: dict[str, Callable[[dict], Any]] = {
             "orkspace.select": self._select_orkspace,
             "hut.move": self._move_hut,
             "building.open": self._open_building,
             "halt": self._halt,
+            "act": self._act,
         }
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -63,7 +70,24 @@ class Host:
             data["title_plain"] = modes.strip_emoji(str(data["title"] or ""))
             self.on_toast(data)
             return
+        if event.topic in (bus.WORKER, bus.SPEC, bus.UI) and event.data.get("building"):
+            self.on_detail(str(event.data["building"]))
         self.on_change()
+
+    def type_of(self, building_id: str) -> str:
+        spec = self.town.spec_of(building_id)
+        return catalog.type_of(spec).id if spec else building_id
+
+    def detail(self, building_id: str) -> dict[str, Any] | None:
+        """What a building's window draws: its UI document and, for a type the GUI draws, its worker's
+        state (gui/views/). None for a building that is gone."""
+        bs = self.town.scroll.building(building_id)
+        if bs is None or bs.demolished:
+            return None
+        type_id = self.type_of(building_id)
+        view, worker = views.of(type_id), self.town.worker(building_id)
+        data = view.detail(worker) if view is not None and worker is not None else None
+        return {"id": building_id, "type": type_id, "ui": ui.current(bs, type_id), "data": data}
 
     # -- the clocks ----------------------------------------------------------------------------
 
@@ -77,11 +101,27 @@ class Host:
         if now - self._telemetry_at >= TELEMETRY_REFRESH_S:
             self._telemetry_at = now
             self.treasury.refresh()
+        for bid, w in list(self.town.workers.items()):     # the workers that look again by themselves
+            view = views.of(self.type_of(bid))
+            every = getattr(view, "REFRESH_S", 0)
+            if every and now - self._refreshed.get(bid, -every) >= every:
+                self._refreshed[bid] = now
+                try:
+                    view.refresh(w)
+                except Exception as e:                 # one building's look never stops the clock
+                    self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.muster.rebuild([])
         self.on_change()
 
     def close(self) -> None:
-        """The window closed: stop what runs and keep the scroll."""
+        """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
+        for bid, w in list(self.town.workers.items()):
+            flush = getattr(views.of(self.type_of(bid)), "flush", None)
+            if flush is not None:
+                try:
+                    flush(w)
+                except Exception:
+                    pass
         self.town.halt()
         self.town.save()
 
@@ -122,6 +162,18 @@ class Host:
         bs = self._spec(args)
         w = self.town.worker(bs.id)
         return {"id": bs.id, "has_worker": w is not None}
+
+    def _act(self, args: dict) -> Any:
+        """One of a building's own acts (gui/views/<type>.py `ACTS`), done by its worker."""
+        bs = self._spec(args)
+        view, worker = views.of(self.type_of(bs.id)), self.town.worker(bs.id)
+        fn = (view.ACTS.get(str(args.get("act", ""))) if view is not None and worker is not None else None)
+        if fn is None:
+            raise CommandError(f"{bs.title} cannot {args.get('act')!r} here")
+        try:
+            return fn(worker, dict(args.get("args") or {}))
+        except views.ActError as e:
+            raise CommandError(str(e)) from None
 
     def _halt(self, args: dict) -> int:
         stopped = self.town.halt()

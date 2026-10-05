@@ -6,6 +6,7 @@ import { signal } from "@preact/signals";
 export const town = signal(null);          // the last snapshot (gui/state.py), null until the first
 export const online = signal(false);
 export const toasts = signal([]);          // [{id, message, title, severity}]
+export const details = signal({});         // building id → its window's state (gui/views/), for the open ones
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const pending = new Map();                 // command id → {resolve, reject}
@@ -23,6 +24,11 @@ export function toast(message, severity = "information", title = "", timeout = n
 
 export function dismiss(id) {
   toasts.value = toasts.value.filter((t) => t.id !== id);
+}
+
+/** One of a building's own acts, done by its worker (gui/views/<type>.py ACTS). */
+export function act(id, name, args = {}) {
+  return command("act", { id, act: name, args });
 }
 
 /** Send a command to the host; resolves with its result, rejects with its error (also toasted). */
@@ -45,6 +51,8 @@ export function command(name, args = {}) {
 function receive(msg) {
   if (msg.t === "state") {
     town.value = msg.state;
+  } else if (msg.t === "detail") {
+    details.value = { ...details.value, [msg.detail.id]: msg.detail };
   } else if (msg.t === "toast") {
     // Office drops pictographs: the host sends each text as it is and `_plain`.
     toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout);
