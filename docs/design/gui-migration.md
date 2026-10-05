@@ -8,10 +8,10 @@ would stop all other work, so the move goes in stages. The TUI keeps working the
 | stage | what | state |
 |---|---|---|
 | 0 | where the core lives | decided (§1) |
-| 1 | the logic apart from the interface | the core, the road engine and the first workers stand; what is left is listed in §2 |
+| 1 | the logic apart from the interface | the core, the road engine, the sessions and a worker for every type stand; what is left is listed in §2 |
 | 2 | no file everybody has to touch | done for `app.py` (§3) |
 | 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
-| 4 | Office in the GUI: plain widgets, the same town graph | in progress: the stack is chosen and the shell stands (§5) |
+| 4 | Office in the GUI: plain widgets, the same town graph | in progress: the shell, the Lake window, the keeper and every type three ways stand (§5) |
 | 5 | Camp in the GUI: tiles and sprites in the spirit of Warcraft II | paused |
 
 ## 1. Stage 0 — where the core lives
@@ -75,35 +75,39 @@ terminals. A dialog's *decision* calls a service, and the dialog itself is the f
 chronicle), `core/bus.py`, `core/roads.py`, `core/treasury.py`, `core/buildings.py` (raising a
 spec, Z, goals, 👍 / 👎, the retros' and stewards' proposals, the UI document), `core/night.py`
 (the Elders, the orks' own changes, probation), `core/roster.py` (the garrisons, the questions,
-the deployments), `core/runners.py`, and:
+the deployments), `core/keeper.py` (a building's keeper: plain words in, its rules or settings
+out), `core/runners.py`, and:
 
 - **The road engine** is the `Town`'s (`town.roads`, built by `core/delivery.py`). A cart
   delivered, a handler's result, a run that ended and a cart on the road are core functions that
   record what happened and publish it; `tui/delivery.py` draws them (the 📥 note, the carts, a
   failed run's mark, the coin, the Loot list). `Town.budget_ok` is the 🪙 hook the face sets.
-- **Workers** for 🌊 Lake (`workers/lake.py`: what is shown, the file open in the editor),
-  🌾 Task Fields (`workers/fields.py`: the board, its acts and events) and 🗑️ Scroll Dump
-  (`workers/scrolls.py`: the librarian, the spot-checks, halt). Their views keep the widgets, the
-  keys, the dialogs and the timers; their old names read the worker, so callers did not change.
+- **A worker for every type** (`core/workers/<type>.py`): 🕳️ The Pit, 🗼 Watchtower, 🚏 Signpost,
+  ⚙️ The Mill, 📯 The Horn, 🌾 Task Fields, 🏕️ Barracks, 🪔 Clan Fire, 🥁 War Drum, 🌲 File Forest,
+  🗑️ Scroll Dump, 🌊 Lake, ⚒️ The Forge, 📦 Loot Vault, 🪨 Tally Crag, 🎯 The Catapult, 🏰 Town Hall
+  and 🛠️ Workshop. `workers/lake.py` also keeps the town's one Lake (`TownLake`, its documents in
+  tabs). A cart goes to the building's worker (`core/delivery.py`). The TUI's typed views
+  (`screens/typed/*`) keep the widgets, the keys, the dialogs and the timers and read their worker;
+  their old names read the worker, so callers did not change.
 
 `tests/test_core.py` runs all of it with no app at all.
 
 **Left for stage 1**, the largest first:
 
-1. **Workers for the other types.** A typed view (`screens/typed/*`) of every other type still
-   both draws and does the building's job: `receive` runs or queues work, `halt` stops it, a
-   webhook, a Barracks' orks or a Clan Fire's discussion runs in it, `burning` and `orders_alert`
-   raise fire. Each gets a worker the way the three above did; a delivery goes to the worker when
-   there is one (`delivered` says so), else to the view.
+1. **Workers for the other types.** Done: every type has its worker (above), and the typed views
+   only draw it.
 2. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
    ork, the processes and the roster's view of running sessions are not. Split them into a
    sessions service in the core that keeps the processes, and terminals that draw them (pyte
    today, xterm.js later). Done: `core/sessions.py` runs every session (processes, screens,
    deployment, the report of an ork that went home); the TUI's `Terminal` draws a session with
    pyte and the GUI's with xterm.js.
-3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker,
-   but the TUI's Halt All still walks the views and the War Tent itself. Once every type has a
-   worker and sessions are a service, Halt All is `town.halt()` plus the face's own terminals.
+3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker.
+   Done in the GUI: its Halt All interrupts every session, kills every agent process
+   (`halt.halt_all`) and calls `town.halt()`. The TUI's Halt All interrupts the sessions and kills
+   the processes too, but still walks the open windows (a view's `halt` is its worker's) and does
+   not call `town.halt()`: the road handlers and a worker whose window is closed are not told to
+   stop. Left: the TUI's Halt All as `town.halt()` plus its terminals.
 
 **How it moves:** one domain at a time, with the whole suite green after each. A service lands in
 `core/`, and the TUI's part for that domain calls it instead of doing the work itself. Method
@@ -276,6 +280,26 @@ orkcraft/gui/
   Hall, Sessions (the War Tent) and Limits. The status bar keeps Halt All, Answers and the project.
   The TUI's Hall reads the same worker.
 
+- 🌊 Lake is the town's window, not a building (`TownLake`, `gui/views/lake.py`, `js/lake.js`): one
+  Lake for the whole town, the right half of it or all of it with a click, documents in tabs —
+  Markdown, code, a diff, a picture, a PDF, a web page; code and Markdown edited in place with
+  autosave. Any building opens a document there (`openInLake`). An old scroll's Lake buildings leave
+  the map, and a road into one becomes "open in Lake" on its source.
+
+- The keeper (`core/keeper.py`, the host's `keeper.ask`, `js/keeper.js`): the person says in plain
+  words what a building should do, and its keeper writes its rules or settings (a whole `config`,
+  or the part a type registers: the Signpost's `rules`). Its proposal comes back as a job — the
+  change line by line and its answer — then Apply, or Drop; Revert takes it back. On a selection in
+  Lake the keeper of the building the document came from answers about it.
+
+- Every type three ways — closed, command, full, as [building-views.md](building-views.md) §3 has
+  it — on its own worker, `gui/views/<type>.py` and `js/buildings/<type>.js`: 🕳️ The Pit, 🚏 Signpost
+  and ⚙️ The Mill; 🗼 Watchtower (counters per source, the newest per source, the feed, the intent),
+  📯 The Horn (mute and volume on the card, the page plays the sounds) and 🥁 War Drum; 🌾 Task Fields,
+  🌲 File Forest and 🗑️ Scroll Dump; 🏕️ Barracks (a tab per ork with its terminal) and 🪔 Clan Fire;
+  ⚒️ The Forge, 📦 Loot Vault and 🎯 The Catapult (rules, schema and address through the keeper);
+  🪨 Tally Crag (a dashboard) and 🛠️ Workshop (its runs and Test).
+
 ### Porting a building type
 
 The recipe the three first types followed (🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump); a type is
@@ -308,6 +332,6 @@ found by its files, so a port touches no shared list and parallel ports do not c
 
 1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
    building wizard with the Builder, and a building's settings in its window.
-2. The other types' windows as their workers come (§2, 1).
+2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
 3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
    camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.
