@@ -583,5 +583,5 @@ def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_l
         host.command("lake.open", {"kind": "file", "value": "README.md"})
     lake = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
     assert host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"}) == lake.id
-    with pytest.raises(CommandError):                 # the keeper arrives with its own track
+    with pytest.raises(CommandError):                 # the Town Hall keeps no settings (tests/test_keeper.py)
         host.command("keeper.ask", {"id": "town_hall", "request": "route bugs to the Forge"})
