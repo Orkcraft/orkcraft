@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from textual.widgets import Input, OptionList, Select, SelectionList
 
-import orkcraft.app as app_module
+from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import builders, catalog, masonry, pipes
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview
@@ -102,7 +102,7 @@ async def _open_wizard(app, pilot) -> None:
 
 @pytest.mark.asyncio
 async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", runner_of(TASKS))
+    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of(TASKS))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
@@ -144,7 +144,7 @@ async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
 async def test_review_keeps_problems_on_screen(fake_repo: Path, monkeypatch):
     mail = {"type": "mail", "id": "inbox", "title": "Inbox", "icon": "📨", "orc": {"name": "Raven"},
             "config": {"host": "imap.example.com", "user_env": "U", "password_env": "P"}}
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", runner_of(mail))
+    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of(mail))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
@@ -176,7 +176,7 @@ async def test_review_keeps_problems_on_screen(fake_repo: Path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_wizard_failure_and_custom_paths(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", runner_of("no json here"))
+    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of("no json here"))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)

@@ -123,7 +123,7 @@ async def _until(pilot, cond, tries: int = 60) -> bool:
 
 async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
     """The mechanisms: roster + War Map, Recruiter, Mason & Artisan, steward, Halt All."""
-    import orkcraft.app as app_mod
+    from orkcraft.core import runners
     from orkcraft.demo import features as ft
     from orkcraft.screens.build_flow import BuildPreview
     from orkcraft.screens.orc_flow import RecruitPreview, StewardView
@@ -135,7 +135,7 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
             await pilot.pause()
         shots.append(Path(app.save_screenshot(filename=f"{name}.svg", path=str(out))))
 
-    saved = (app_mod.RECRUIT_RUNNER, app_mod.BUILD_RUNNER, app_mod.STEWARD_RUNNER)
+    saved = (runners.RECRUIT_RUNNER, runners.BUILD_RUNNER, runners.STEWARD_RUNNER)
     try:
         # 1 · every orc of a canvas and which canvases wait for you (❓ on the War Map)
         await pilot.press("f7")
@@ -146,14 +146,14 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
 
         # 2 · the Recruiter: a description becomes a handler, the cheapest kind, with its reason
         await pilot.press("f1")
-        app_mod.RECRUIT_RUNNER = ft.runner_of([ft.RECRUITER_ANSWER])
+        runners.RECRUIT_RUNNER = ft.runner_of([ft.RECRUITER_ANSWER])
         app.recruit_from_prompt("oauth_spire", "when I pick a done task in the Forge, show one line: id and title")
         if await _until(pilot, lambda: isinstance(app.screen, RecruitPreview)):
             await shot("11-recruiter-preview")
             await pilot.press("escape")
 
         # 3 · Mason & Artisan: a window from a prompt, validated as data
-        app_mod.BUILD_RUNNER = ft.runner_of([ft.MASON_ANSWER, ft.ARTISAN_ANSWER])
+        runners.BUILD_RUNNER = ft.runner_of([ft.MASON_ANSWER, ft.ARTISAN_ANSWER])
         app._start_build("CI watch: open feature tasks next to the failing tests")
         if await _until(pilot, lambda: isinstance(app.screen, BuildPreview)):
             await shot("12-mason-artisan-preview")
@@ -161,7 +161,7 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
 
         # 4 · the steward: free metrics find a repetitive agent, the proposed chain is replayed
         ft.seed_steward_examples(root)
-        app_mod.STEWARD_RUNNER = ft.runner_of([ft.STEWARD_PROPOSAL])
+        runners.STEWARD_RUNNER = ft.runner_of([ft.STEWARD_PROPOSAL])
         await pilot.press("f7")
         app.watch_building("dc_loot", interactive=True)
         if await _until(pilot, lambda: isinstance(app.screen, StewardView)):
@@ -175,7 +175,7 @@ async def _features(app, pilot, root: Path, out: Path) -> list[Path]:
         app.action_halt()
         await shot("14-halt-all")
     finally:
-        app_mod.RECRUIT_RUNNER, app_mod.BUILD_RUNNER, app_mod.STEWARD_RUNNER = saved
+        runners.RECRUIT_RUNNER, runners.BUILD_RUNNER, runners.STEWARD_RUNNER = saved
     return shots
 
 

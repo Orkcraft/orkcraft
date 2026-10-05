@@ -21,7 +21,8 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, OptionList, Select, SelectionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import catalog, huts, silhouettes
+from orkcraft.realm import catalog, huts
+from orkcraft.tui import silhouettes
 
 AUTO = "auto"
 

@@ -25,7 +25,8 @@ from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
 from orkcraft.widgets.hut import Hut
-from orkcraft.realm import catalog, modes, silhouettes
+from orkcraft.realm import catalog, modes
+from orkcraft.tui import silhouettes
 from orkcraft.widgets.terrain import Terrain
 from orkcraft.wm import roadmap
 from orkcraft.wm.window import Window
@@ -142,7 +143,9 @@ class Desktop(Container):
         preview_id: str = "preview",
         home_id: str = "board",
         id: str | None = None,
+        town: Any = None,
     ) -> None:
+        self._town = town              # core.Town: it owns the machine's settings; None: the desktop keeps its own
         self.terrain = Terrain(id="terrain")
         super().__init__(self.terrain, *windows, id=id)
         # Known before mount (the taskbar composes before the desktop's children attach).
@@ -166,7 +169,8 @@ class Desktop(Container):
         self.traffic = Traffic(self)
         # Town view: every building a hut, the active one expanded over the map.
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
-        self.machine = settings.load()
+        if town is None:
+            self._machine = settings.load()
         modes.set_current(self.look_mode)
         self.huts: dict[str, Hut] = {}
         self.selected_hut: str | None = None    # a hut picked by a first click, still collapsed
@@ -189,6 +193,18 @@ class Desktop(Container):
             self.renumber_orkspace(self.scroll.active_orkspace_id)
         else:
             self.set_biome(self.biome)
+
+    @property
+    def machine(self) -> settings.MachineSettings:
+        """The machine's settings (settings.py): the town's when there is one."""
+        return self._town.machine if self._town is not None else self._machine
+
+    @machine.setter
+    def machine(self, value: settings.MachineSettings) -> None:
+        if self._town is not None:
+            self._town.machine = value
+        else:
+            self._machine = value
 
     def in_view(self, w: Window | None) -> bool:
         if w is None or not isinstance(w, Window):

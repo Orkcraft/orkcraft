@@ -113,7 +113,8 @@ def test_the_builder_asks_then_offers_three_views():
 async def test_from_scratch_end_to_end(fake_repo: Path, monkeypatch):
     from textual.widgets import Input, RadioButton, TextArea
 
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
+
     from orkcraft.app import OrkcraftApp
     from orkcraft.realm import pipes
     from orkcraft.screens.builder_interview import BlueprintReview, BuilderChat
@@ -127,7 +128,7 @@ async def test_from_scratch_end_to_end(fake_repo: Path, monkeypatch):
             return json.dumps(READY), 0.001
         return json.dumps(BP), 0.02
 
-    monkeypatch.setattr(app_mod, "BUILD_RUNNER", builder)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", builder)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:
         await pilot.pause()

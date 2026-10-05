@@ -23,7 +23,6 @@ SLOT = "§"
 _RUN = re.compile(f"{SLOT}+")
 ELLIPSIS = "…"
 
-
 def clip(text: str, width: int) -> str:
     """Cut to `width` cells, ending with … when something was cut (an emoji is two cells)."""
     from rich.cells import cell_len
@@ -39,11 +38,9 @@ def clip(text: str, width: int) -> str:
         out, used = out + ch, used + w
     return out + ELLIPSIS
 
-
 def _one_line(text: str) -> str:
     """Breaks and tabs become one space; runs of spaces stay (`slack  99+` keeps its column)."""
     return re.sub(r"\s*[\r\n\t\f\v]+\s*", " ", text).strip()
-
 
 def _fill(text: str, width: int, center: bool = False) -> str:
     """Pad `text` to exactly `width` cells (rich's cell width, so emoji do not push the frame out)."""
@@ -52,8 +49,9 @@ def _fill(text: str, width: int, center: bool = False) -> str:
     left = room // 2 if center else 0
     return " " * left + text + " " * (room - left)
 
-
 @dataclass(frozen=True)
+
+
 class Silhouette:
     id: str
     lines: tuple[str, ...]

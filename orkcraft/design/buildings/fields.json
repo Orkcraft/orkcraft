@@ -1,0 +1,13 @@
+{
+  "type": "fields",
+  "about": "🌾 Task Fields: a board of tasks and sticky notes, a column per lane (which lanes show is the board's mode, a setting).",
+  "panes": {
+    "board": {"about": "the lanes side by side, a card per task or note", "components": ["board"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "fields", "split": "column",
+    "panes": [
+      {"id": "board", "component": "board", "size": 1, "font": "body"}
+    ]
+  }
+}

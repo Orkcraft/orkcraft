@@ -233,7 +233,7 @@ async def test_console_height_is_smaller_resizable_and_remembered(fake_repo: Pat
 
 
 @pytest.mark.asyncio
-async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(fake_repo: Path):
+async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(fake_repo: Path, monkeypatch):
     from orkcraft.realm.orcs import Alert
     from orkcraft.screens.orders import AlertModal
 
@@ -241,8 +241,14 @@ async def test_a_question_in_the_garrison_opens_and_the_building_stays_selected(
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         alert = Alert("alt-1", "Which branch?", options=[("1", "main")])
-        orc = next(o for o in app.roster.orcs if o.building == "town_hall")
-        orc.status, orc.alert = "alert", alert
+
+        def ask(roster) -> None:
+            orc = next(o for o in roster.orcs if o.building == "town_hall")
+            orc.status, orc.alert = "alert", alert
+
+        rebuild = app.muster.rebuild                 # the question stays while the roster is rebuilt each second
+        monkeypatch.setattr(app.muster, "rebuild", lambda *a, **k: ask(r := rebuild(*a, **k)) or r)
+        ask(app.roster)
         app.set_focus_state("building", building_id="town_hall")
         await pilot.pause()
         lst = app.screen.query_one("#roster-list", OptionList)

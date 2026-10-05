@@ -44,6 +44,25 @@ _DECISION = re.compile(r"^[\s*#_>`-]*DECISION\b[\s*_`]*:?\s*(approve|rework|ask)
 Runner = Callable[[str, str, str], tuple[str, float | None]]
 
 
+_COMMENT = re.compile(r"<!--.*?-->", re.S)
+
+
+def brief_text(path: Path) -> str:
+    """A brief's text without its template comments; "" when nothing but headings was written."""
+    try:
+        text = _COMMENT.sub("", path.read_text(encoding="utf-8")).strip()
+    except OSError:
+        return ""
+    return text if any(line.strip() and not line.lstrip().startswith("#") for line in text.splitlines()) else ""
+
+
+def simulated(harness: str, prompt: str, model: str) -> tuple[str, None]:
+    """The sandbox: everyone approves and the steward lets it go — no model is called."""
+    if prompt.startswith("You are the steward"):
+        return "DECISION: approve\n\n_(demo — simulated; agents do not run in the sandbox)_", None
+    return "APPROVE — _(demo — simulated)_", None
+
+
 def now_iso() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 

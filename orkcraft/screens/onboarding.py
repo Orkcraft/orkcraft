@@ -33,7 +33,8 @@ from textual.widgets.selection_list import Selection
 
 from orkcraft import schedule, settings, tools
 from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
-from orkcraft.realm import intents, interview, silhouettes
+from orkcraft.realm import intents, interview
+from orkcraft.tui import silhouettes
 from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.build_flow import MODAL_CSS
 

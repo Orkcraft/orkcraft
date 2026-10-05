@@ -88,7 +88,7 @@ def test_settings_and_the_runner(tmp_path: Path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_the_app_raises_clean_buildings_and_stops_blocked_ones(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.council_review import CouncilVerdict
 
@@ -106,7 +106,7 @@ async def test_the_app_raises_clean_buildings_and_stops_blocked_ones(fake_repo: 
         assert "mymill" not in app.custom_specs
         assert [r["decision"] for r in fp.recent(fake_repo)][:2] == ["rejected", "approved"]
 
-        monkeypatch.setattr(app_mod, "FASTPATH_RUNNER",
+        monkeypatch.setattr(runners, "FASTPATH_RUNNER",
                             lambda prompt: ('{"artisan": {"ok": false, "note": "too plain"}}', 0.0))
         assert not app.review_and_raise(dict(CRAG, id="tally2"))
         for _ in range(40):

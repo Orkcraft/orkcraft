@@ -388,17 +388,23 @@ async def test_town_hall_builds_from_a_preset_or_from_scratch_and_audits_from_f1
 
 
 @pytest.mark.asyncio
-async def test_a_waiting_orc_sets_its_hut_on_fire(fake_repo: Path, town):
+async def test_a_waiting_orc_sets_its_hut_on_fire(fake_repo: Path, town, monkeypatch):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
         from orkcraft.realm.orcs import Alert, garrison_badge
         alert = Alert("alt-1", "Clarification needed")
-        app.roster.alerts.append(alert)
-        for o in app.roster.orcs:
-            if o.building == "town_hall":
-                o.status = "alert"
-                o.alert = alert
+
+        def ask(roster) -> None:
+            roster.alerts.append(alert)
+            for o in roster.orcs:
+                if o.building == "town_hall":
+                    o.status = "alert"
+                    o.alert = alert
+
+        rebuild = app.muster.rebuild                 # the question stays while the roster is rebuilt each second
+        monkeypatch.setattr(app.muster, "rebuild", lambda *a, **k: ask(r := rebuild(*a, **k)) or r)
+        ask(app.roster)
         for w in app.desktop.windows:
             w.set_badge(garrison_badge(app.roster.garrison(w.window_id)))
             if (hut := app.desktop.huts.get(w.window_id)) is not None:

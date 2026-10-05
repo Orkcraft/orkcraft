@@ -2,11 +2,9 @@
 
     kind_icon("chain") == "🪧"; kind_icon("agent") == "🧌"; kind_icon("hybrid") == "🪧🧌"
     scheme_plain([{"role": "write", "harness": "agy"}, {"role": "review", "harness": "claude"}]) == "✦→✻"
-    scheme_text(steps)   # the same as a rich Text: Claude orange, agy blue, Codex green, pipelines magenta
+    scheme_parts(steps)  # (text, style) pairs: Claude orange, agy blue, Codex green, pipelines magenta
 """
 from __future__ import annotations
-
-from rich.text import Text
 
 KIND_ICONS = {"chain": "🪧", "script": "🪧", "agent": "🧌", "hybrid": "🪧🧌"}
 OLD_ICONS = {"🗿": "🪧", "🗿🧌": "🪧🧌"}     # a scroll saved before the 🪧 keeps loading with it
@@ -50,13 +48,6 @@ def scheme_parts(harness: list[dict] | None, kind: str = "agent") -> list[tuple[
 
 def scheme_plain(harness: list[dict] | None, kind: str = "agent") -> str:
     return "".join(t for t, _ in scheme_parts(harness, kind))
-
-
-def scheme_text(harness: list[dict] | None, kind: str = "agent") -> Text:
-    t = Text()
-    for text, style in scheme_parts(harness, kind):
-        t.append(text, style=style)
-    return t
 
 
 def scheme_long(harness: list[dict] | None, kind: str = "agent") -> str:
