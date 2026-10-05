@@ -30,13 +30,13 @@ def _report(**extra) -> dict:
 
 @pytest.mark.asyncio
 async def test_the_weekly_report_is_checked_ticked_and_applied(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft import scroll as ts
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.weekly_modal import WeeklyReportModal
 
     prompts = []
-    monkeypatch.setattr(app_mod, "WEEKLY_RUNNER", lambda p: (prompts.append(p) or json.dumps(_report()), 1.2))
+    monkeypatch.setattr(runners, "WEEKLY_RUNNER", lambda p: (prompts.append(p) or json.dumps(_report()), 1.2))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:
         await pilot.pause()
@@ -80,7 +80,7 @@ def test_a_broken_answer_is_an_error(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_the_audit_removes_and_adds_buildings_then_offers_a_restart(fake_repo: Path, monkeypatch):
-    from orkcraft import app as app_mod
+    from orkcraft.core import runners
     from orkcraft.app import OrkcraftApp
     from orkcraft.screens.dialogs import Confirm
     from orkcraft.screens.weekly_modal import WeeklyReportModal
@@ -92,7 +92,7 @@ async def test_the_audit_removes_and_adds_buildings_then_offers_a_restart(fake_r
         {"title": "No hall", "why": "x", "change": "remove_building", "building": "town_hall"},
         {"title": "A workshop", "why": "x", "change": "add_building", "building": "ws", "type": "workshop"}]}
     prompts = []
-    monkeypatch.setattr(app_mod, "WEEKLY_RUNNER", lambda p: (prompts.append(p) or json.dumps(answer), 0.5))
+    monkeypatch.setattr(runners, "WEEKLY_RUNNER", lambda p: (prompts.append(p) or json.dumps(answer), 0.5))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:
         await pilot.pause()

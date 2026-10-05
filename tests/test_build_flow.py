@@ -8,7 +8,7 @@ import time
 import pytest
 from textual.widgets import DataTable, Input, Static, TextArea
 
-from orkcraft import app as app_module
+from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import builders, chronicles, masonry
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview, BuildProgress
@@ -91,7 +91,7 @@ async def test_build_flow_success_raises_window(fake_repo: Path, monkeypatch):
             return (_mason_answer(GOOD), 0.02)
         return (json.dumps(GOOD), 0.03)
 
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", fake_runner)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", fake_runner)
 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
@@ -155,7 +155,7 @@ async def test_build_flow_failure_shows_errors(fake_repo: Path, monkeypatch):
             return (_mason_answer(bad_spec), 0.01)
         return (json.dumps(bad_spec), 0.01)
 
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", bad_runner)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", bad_runner)
 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
@@ -242,7 +242,7 @@ async def test_ui_stays_responsive_while_building(fake_repo: Path, monkeypatch):
             return (_mason_answer(GOOD), 0.01)
         return (json.dumps(GOOD), 0.01)
 
-    monkeypatch.setattr(app_module, "BUILD_RUNNER", slow_runner)
+    monkeypatch.setattr(runners, "BUILD_RUNNER", slow_runner)
 
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:

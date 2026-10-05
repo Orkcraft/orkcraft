@@ -140,7 +140,9 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 ```
 orkcraft/
-  app.py, cli.py     the app and the command line
+  app.py, cli.py     the app (it composes tui/) and the command line
+  core/              the town without a face: state, services, the bus (no Textual)
+  tui/               the app's parts, one domain each: roads, sessions, council, retros…
   wm/                the window manager: town, huts, roads, ghost
   screens/           modals and the typed views of every building (screens/typed/)
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
