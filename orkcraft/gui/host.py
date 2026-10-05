@@ -28,7 +28,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import state, views
+from orkcraft.gui import builder, state, views
 from orkcraft import schedule
 from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
@@ -74,6 +74,12 @@ class Host:
             "term.forget": lambda a: self.sessions.forget(self._word(a, "key")),
             "orders.answer": self._answer,
             "orders.follow": self._follow,
+            "town.catalog": lambda a: builder.catalog_types(),
+            "town.build": lambda a: self._building(builder.build, a),
+            "town.demolish": lambda a: self._building(builder.demolish, a),
+            "roads.choices": lambda a: self._building(builder.road_choices, a),
+            "roads.lay": lambda a: self._building(builder.lay_road, a),
+            "roads.remove": lambda a: self._building(builder.remove_road, a),
         }
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -91,6 +97,8 @@ class Host:
             data["title_plain"] = modes.strip_emoji(str(data["title"] or ""))
             self.on_toast(data)
             return
+        if event.topic == bus.ROADS:                   # the roads changed: the scroll keeps them
+            self.town.save()
         if event.topic in (bus.WORKER, bus.SPEC, bus.UI) and event.data.get("building"):
             self.on_detail(str(event.data["building"]))
         self.on_change()
@@ -278,6 +286,12 @@ class Host:
             raise CommandError("Not one of its answers")
         self.refresh_roster()
         return True
+
+    def _building(self, fn, args: dict) -> Any:
+        try:
+            return fn(self, args)
+        except builder.BuildError as e:
+            raise CommandError(str(e)) from None
 
     def _follow(self, args: dict) -> bool:
         """The person follows the Elders' advice on a question: their key, sent as the person's own answer."""

@@ -239,6 +239,14 @@ orkcraft/gui/
   Orders with its option marked, and Follow the Elders sends it as the person's answer (at ⛓️‍💥 Free
   orks they answer themselves, as in the TUI).
 
+- Changing the town (`gui/builder.py` over `core/buildings.py` and `core/roads.py`): Build raises a
+  building from the catalog with its defaults; Demolish in a window takes it down (the Town Hall
+  always stands); a road is pulled out of a hut's `+` handle onto another hut and laid with one of
+  the events it may carry; a road clicked shows what it is and is taken up from there.
+
 ### Next
 
-1. Building, roads and settings from the GUI; the other types' windows as their workers come.
+1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
+   building wizard with the Builder, and a building's settings in its window.
+2. The other types' windows as their workers come (§2, 1).
+3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites.

@@ -6,6 +6,7 @@ import { town, online, toasts, command, dismiss } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
 import { newSession, HALL } from "./tent.js";
+import { building } from "./build.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -73,6 +74,7 @@ export function StatusBar() {
   const t = town.value;
   return html`<footer class="ok-keys gui-status">
     <button class="gui-status__item" onClick=${() => command("halt")}>Halt All</button>
+    <button class="gui-status__item" onClick=${() => { building.value = true; }}>Build</button>
     <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
     <button class="gui-status__item" onClick=${() => newSession("claude")}>Add agent</button>
     <button class="gui-status__item" onClick=${() => openBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>

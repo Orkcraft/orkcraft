@@ -9,6 +9,8 @@ import * as fields from "./buildings/fields.js";
 import * as scrolls from "./buildings/scrolls.js";
 import { WarTent, HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
+import { Demolish } from "./build.js";
+import { useState } from "preact/hooks";
 
 // The types whose window the GUI draws (gui/views/ on the host); the others show what they are.
 const VIEWS = { lake, fields, scrolls };
@@ -123,6 +125,13 @@ function Body({ b, t }) {
   </div>`;
 }
 
+function DemolishButton({ b }) {
+  const [asking, setAsking] = useState(false);
+  return html`<button class="ok-act gui-win__demolish" onClick=${() => setAsking(true)}>
+    <span class="ok-act__label">Demolish</span></button>
+    ${asking && html`<${Demolish} b=${b} onClose=${() => setAsking(false)} />`}`;
+}
+
 export function Windows() {
   const t = town.value;
   const o = opened.value;
@@ -146,6 +155,7 @@ export function Windows() {
         <div class="ok-win__bar" onDblClick=${toggleMax}>
           <span class="ok-win__title">${b.title}</span>
           <${Badge} garrison=${b.garrison} alert=${b.alert} />
+          ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
         </div>
         <${Body} b=${b} t=${t} />
       </div>

@@ -57,6 +57,23 @@ def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Buildi
     return building
 
 
+def demolish(town: Town, building_id: str) -> bool:
+    """A building comes down: it leaves the town (its spec and its chronicle stay, so it can be
+    raised again), what it runs stops. The Town Hall always stands. False when nothing came down."""
+    from orkcraft.realm.buildings import TOWN_HALL
+    bs = town.scroll.building(building_id)
+    if bs is None or bs.demolished or building_id == TOWN_HALL:
+        return False
+    worker = town.workers.get(building_id)
+    if worker is not None:
+        worker.halt()
+    bs.demolished = True
+    town.record(building_id, "building_demolished")
+    town.publish(bus.ROADS)
+    town.save()
+    return True
+
+
 def log_build_request(town: Town, prompt: str, result: Any) -> None:
     """Every build request (a builder's or the Town Builder's result), kept in `.orkcraft/build-requests.jsonl`."""
     record: dict[str, Any] = {

@@ -395,3 +395,46 @@ def test_the_elders_advise_in_quiet_hours_and_the_person_follows(fake_repo, monk
     assert asked["advice"] == {"key": "1", "why": "runs the tests", "warn": ""}
     assert host.command("orders.follow", {"id": "term:t1"})
     assert sent == [("t1", b"1")]
+
+
+# -- changing the town (gui/builder.py) -----------------------------------------------------------
+
+def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    types = host.command("town.catalog")
+    assert {"lake", "fields", "scrolls"} <= {t["id"] for t in types}
+    assert not {"town_hall", "workshop", "custom"} & {t["id"] for t in types}       # never offered
+    bid = host.command("town.build", {"type": "lake"})
+    assert bid in {b["id"] for b in host.snapshot()["buildings"]} and host.town.workers.get(bid) is not None
+    assert bid in host.town.scroll.active_orkspace.buildings
+    with pytest.raises(CommandError):
+        host.command("town.build", {"type": "town_hall"})
+    with pytest.raises(CommandError):
+        host.command("town.demolish", {"id": "town_hall"})                         # it always stands
+    assert host.command("town.demolish", {"id": bid})
+    assert bid not in {b["id"] for b in host.snapshot()["buildings"]}
+    assert host.town.scroll.building(bid).demolished
+    saved = json.loads(isolated_layout_file.read_text(encoding="utf-8"))
+    assert next(b for b in saved["buildings"] if b["id"] == bid).get("demolished")
+    with pytest.raises(CommandError):
+        host.command("town.demolish", {"id": bid})                                 # already down
+
+
+def test_a_road_is_laid_from_its_choices_and_taken_up(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    src = host.command("town.build", {"type": "signpost"})
+    dst = host.command("town.build", {"type": "lake"})
+    host.town.custom_specs[src]["config"] = {"rules": ["view: *"]}
+    choices = host.command("roads.choices", {"from": src, "to": dst})
+    assert choices and all(c["label"] for c in choices)
+    with pytest.raises(CommandError):
+        host.command("roads.lay", {"from": src, "to": dst, "event": "lake.viewed"})    # not one it may carry
+    key = host.command("roads.lay", {"from": src, "to": dst, "event": choices[0]["event"],
+                                     "handler": choices[0]["handler"]})
+    assert key in {r["id"] for r in host.snapshot()["roads"]}
+    saved = json.loads(isolated_layout_file.read_text(encoding="utf-8"))
+    assert next(b for b in saved["buildings"] if b["id"] == dst)["roads"]
+    assert host.command("roads.remove", {"key": key})
+    assert key not in {r["id"] for r in host.snapshot()["roads"]}
+    with pytest.raises(CommandError):
+        host.command("roads.remove", {"key": key})
