@@ -43,8 +43,24 @@ def before_commit(root: Path, now: dt.datetime) -> None:
 def after_commit(root: Path, now: dt.datetime) -> None:
     """The branches are there: each building's state, and the web folder's changes."""
     for seed in (pit, watchtower, signpost, mills, horn, fields, forest, barracks, council, loot, crag,
-                 catapult, workshop, town_hall, sessions):
+                 catapult, workshop, town_hall, sessions, ledger):
         seed(root, now)
+
+
+def ledger(root: Path, now: dt.datetime) -> None:
+    """The runs of the buildings whose history is seeded here, in the ledger Info reads."""
+    from orkcraft.realm import metrics
+    for bid, runs in (("brief", ((1440, "done", 0.0), (600, "error", 0.0), (300, "done", 0.0), (40, "done", 0.0))),
+                      ("notes_mill", ((280, "done", 0.03), (160, "error", 0.0), (11, "done", 0.04), (3, "error", 0.02))),
+                      ("counter", ((500, "done", 0.0), (300, "done", 0.0), (180, "error", 0.0), (95, "done", 0.0),
+                                   (60, "done", 0.0), (12, "done", 0.0))),
+                      ("launcher", ((1500, "done", 0.0), (280, "error", 0.0), (270, "done", 0.0), (10, "done", 0.0))),
+                      ("crossroads", tuple((300 - i * 40, "done", 0.0) for i in range(7))),
+                      ("gate_pit", ((310, "done", 0.0), (95, "done", 0.0), (12, "done", 0.0))),
+                      ("drop", ((240, "done", 0.0), (185, "done", 0.0), (40, "done", 0.04)))):
+        for minutes, outcome, cost in runs:
+            metrics.record_run(root, bid, outcome, cost, int(cost * 40000) or None,
+                               now=now - dt.timedelta(minutes=minutes))
 
 
 # -- 1. intake and routing ------------------------------------------------------------------------------
@@ -175,7 +191,12 @@ def mills(root: Path, now: dt.datetime) -> None:
                    {"step": "replace: (?i)release notes for (v[0-9.]+): => \\1 — ", "out": "release notes draft"},
                    {"step": "agent: rewrite as three short bullet points for the changelog",
                     "error": "the agent answered nothing: the text names no version"}], outcome="error", failed=3),
-              job("notes_mill", 3, 11, text, steps(text), cost=0.04, agent=1)):
+              job("notes_mill", 3, 11, text, steps(text), cost=0.04, agent=1),
+              job("notes_mill", 4, 3, "release notes for v0.2.1: the Lake as a window",
+                  [{"step": "grep: (?i)release", "out": "release notes for v0.2.1: the Lake as a window"},
+                   {"step": "replace: (?i)release notes for (v[0-9.]+): => \\1 — ", "out": "v0.2.1 — the Lake as a window"},
+                   {"step": "agent: rewrite as three short bullet points for the changelog",
+                    "error": "the agent's answer was not a list"}], outcome="error", failed=3, cost=0.02, agent=1)):
         notes.append(j)
 
 
@@ -453,11 +474,12 @@ def loot(root: Path, now: dt.datetime) -> None:
                                   (camp("Grub", 7000, 0.21, "feature/login", 200),)), ["cost $0.21 over $0.20"],
                     now=at(190))
     q.rework(item, "too long: keep it to the endpoints", now=at(180))
-    for m, kind, value, title, source in ((900, "text", "## v0.1.9\n\n- the parser hotfix", "v0.1.9 notes", "council"),
-                                          (600, "file", "README.md", "README.md", "camp"),
-                                          (300, "text", "Badges: CI, PyPI", "README badges", "camp")):
+    for m, kind, value, title, source, orc, tok, cost in (
+            (900, "text", "## v0.1.9\n\n- the parser hotfix", "v0.1.9 notes", "council", "Grub", 5200, 0.14),
+            (600, "file", "README.md", "README.md", "camp", "Mogka", 1900, 0.03),
+            (300, "text", "Badges: CI, PyPI", "README badges", "camp", "Snaga", 800, 0.02)):
         vault.store(root, "outputs", sd, kind, value, title, source, now=at(m),
-                    trail=(camp("Snaga", 800, 0.02, "feature/login", m + 20),))
+                    trail=(camp(orc, tok, cost, "feature/login", m + 20),))
 
 
 def crag(root: Path, now: dt.datetime) -> None:
@@ -508,7 +530,7 @@ def workshop(root: Path, now: dt.datetime) -> None:
             (12, "release notes for v0.2: the Town Hall, typed buildings, roofs", 0,
              '{"words": 11, "lines": 1, "first": "release"}', "")):
         ws.log(sd, ws.Run(_iso(now - dt.timedelta(minutes=m)), "pit.text", "gate_pit", inp, code, out, err,
-                          40 + m % 30, "it asked: nothing was pasted — skip empty carts" if code == 3 else ""))
+                          40 + m % 30, ""))
 
 
 def town_hall(root: Path, now: dt.datetime) -> None:
