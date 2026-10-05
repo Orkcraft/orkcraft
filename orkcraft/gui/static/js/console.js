@@ -1,5 +1,6 @@
 // The console of a selected building, as the TUI's (screens/console.py), in the strip at the bottom
-// right. Info holds what every building and ork shares: 👍 / 👎, the goal, pin, revert, recruit,
+// right, as two windows: Info (with the garrison) between the War Map and the Command Card. Info
+// holds what every building and ork shares: 👍 / 👎, the goal, pin, revert, recruit,
 // redesign, demolish, an ork's orders and dismiss, why it is here, what it spent, its history, who it
 // listens to (each road's handler, removing it). Beside it the garrison; an ork picked there turns it
 // into the ork's Inventory (its models, the tools of its latest runs). The Command Card holds what
@@ -231,6 +232,7 @@ function Console({ b, orkRef }) {
   const open = (kind, x = "") => setDialog(typeof x === "string" ? { kind, tool: x } : { kind, road: x });
   const close = () => setDialog(null);
   return html`<section class=${cls("ok-win is-active gui-console", { "is-alert": !!b.alert })} aria-label=${b.title}>
+    <div class="ok-head is-banner"></div>
     <div class="ok-win__frame">
       <div class="ok-win__bar">
         <span class="ok-win__title">${b.title}${o ? html`<span class="ok-tone-muted"> · ${o.name}</span>` : ""}</span>
@@ -239,16 +241,11 @@ function Console({ b, orkRef }) {
           onClick=${() => closeBuilding()}>×</button>
       </div>
       <div class="ok-win__body gui-console__body">
-        <div class="gui-console__main">
-          ${b.alert && !o && html`<${Question} alert=${b.alert} />`}
-          ${!i ? html`<p class="ok-font-status ok-tone-muted">Looking…</p>`
-            : o ? html`<${OrkInfo} b=${b} o=${o} i=${i} redo=${redo} open=${open} />`
-                : html`<${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />`}
-          ${o ? i && html`<${Inventory} i=${i} open=${open} />` : html`<${GarrisonList} b=${b} />`}
-        </div>
-        <div class="gui-console__card" aria-label="Commands">
-          ${o ? html`<${OrkCommands} b=${b} o=${o} i=${i} />` : html`<${BuildingCommands} b=${b} i=${i} />`}
-        </div>
+        ${b.alert && !o && html`<${Question} alert=${b.alert} />`}
+        ${!i ? html`<p class="ok-font-status ok-tone-muted">Looking…</p>`
+          : o ? html`<${OrkInfo} b=${b} o=${o} i=${i} redo=${redo} open=${open} />`
+              : html`<${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />`}
+        ${o ? i && html`<${Inventory} i=${i} open=${open} />` : html`<${GarrisonList} b=${b} />`}
       </div>
     </div>
     ${dialog && dialog.kind === "dislike" && html`<${DislikeDialog} b=${b} onClose=${close} onDone=${redo} />`}
@@ -261,6 +258,14 @@ function Console({ b, orkRef }) {
     ${dialog && dialog.kind === "handler" && html`<${HandlerDialog} road=${dialog.road} onClose=${close} onDone=${redo} />`}
     ${dialog && dialog.kind === "orders" && i && o && html`<${OrdersDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
     ${dialog && dialog.kind === "model" && i && o && html`<${ModelDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
+  </section>
+  <section class="ok-win gui-card" aria-label="Command Card">
+    <div class="ok-win__frame">
+      <div class="ok-win__bar"><span class="ok-win__title">Commands</span></div>
+      <div class="ok-win__body gui-card__body">
+        ${o ? html`<${OrkCommands} b=${b} o=${o} i=${i} />` : html`<${BuildingCommands} b=${b} i=${i} />`}
+      </div>
+    </div>
   </section>`;
 }
 
