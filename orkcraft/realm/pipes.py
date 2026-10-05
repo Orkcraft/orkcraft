@@ -78,6 +78,7 @@ class Hop:
     branch: str = ""
     outcome: str = ""
     at: str = ""
+    base: str = ""                # what the branch was cut from: Loot lists the files of base...branch
 
     def as_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items() if v not in (None, "")}
@@ -95,10 +96,11 @@ class Payload:
 
 
 def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,
-        worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None) -> Hop:
+        worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None,
+        base: str = "") -> Hop:
     return Hop(building, orc, kind, int(tokens) if tokens is not None else None,
                float(cost) if cost is not None else None, worktree, branch, outcome,
-               (now or dt.datetime.now()).isoformat(timespec="seconds"))
+               (now or dt.datetime.now()).isoformat(timespec="seconds"), base)
 
 
 def merge_trails(*trails: tuple[Hop, ...]) -> tuple[Hop, ...]:

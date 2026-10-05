@@ -26,12 +26,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=1.0"]
+dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3"]
 browser = ["playwright>=1.45"]              # the Catapult's browser mode
 
 [project.urls]
-Homepage = "https://github.com/VadimSidoryk/orkcraft"
-Issues = "https://github.com/VadimSidoryk/orkcraft/issues"
+Homepage = "https://github.com/Orkcraft/orkcraft"
+Issues = "https://github.com/Orkcraft/orkcraft/issues"
 
 [project.scripts]
 orkcraft = "orkcraft.cli:main"

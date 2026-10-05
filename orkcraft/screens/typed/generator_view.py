@@ -19,8 +19,15 @@ Below the queue: the changed files of the working tree (or of its `path`), * for
 `a` accepts the highlighted file, `r` rejects it (rolled back, its content kept under
 `.orkcraft/generator/<id>/rejected/`), `u` brings a rejected file back. Then what passed and was
 kept (realm/vault.py), with what its chain cost.
+
+Under a waiting cart: the files its task committed on its branch (the trail names the worktree and
+the branch), each with its diff or content. `o` opens the highlighted file in the system viewer —
+a file only on the branch is copied out first.
 """
 from __future__ import annotations
+
+import subprocess
+from pathlib import Path
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -29,7 +36,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import edits, feedback, gate, generated, lake, pipes, vault
+from orkcraft.realm import edits, feedback, gate, generated, jobs, lake, pipes, vault
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
@@ -47,13 +54,14 @@ def _label(item: gate.Item) -> str:
 class GeneratorView(TypedView):
     TYPE = "loot"
     BINDINGS = [Binding("a", "accept", "Accept"), Binding("e", "edit", "Edit"), Binding("r", "reject", "Reject / rework"),
-                Binding("d", "drop", "Drop"), Binding("u", "restore", "Restore")]
+                Binding("d", "drop", "Drop"), Binding("u", "restore", "Restore"), Binding("o", "open", "Open")]
 
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
         self.rows: list[generated.Generated] = []
         self.stored: list[vault.Stored] = []
         self.rejected: list[dict] = []
+        self.branches: dict[str, tuple[generated.Branch, list[generated.Generated]]] = {}   # item id → its branch files
         self.error = ""
         self._queue: gate.Queue | None = None
 
@@ -106,7 +114,20 @@ class GeneratorView(TypedView):
                 files = [g.path for g in generated.Review(self._get_repo_root() / wt, self.state_dir / "wt").files()]
             except (RuntimeError, OSError, ValueError):
                 pass
+        if (found := self._branch(payload.trail)) is not None:       # and what it committed on its branch
+            files += [g.path for g in found[1] if g.path not in files]
         return gate.Context(files, self._leaves_town())
+
+    def _branch(self, trail: tuple) -> tuple[generated.Branch, list[generated.Generated]] | None:
+        """The branch a cart's work was committed on, with its files; None without one (or no git)."""
+        h = gate.branch_of(trail)
+        if h is None or not (wt := self._get_repo_root() / h.worktree).is_dir():
+            return None
+        try:
+            br = generated.Branch(wt, h.branch, h.base or jobs.TaskGit().base_of(self._get_repo_root()))
+            return br, br.files()
+        except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
+            return None
 
     def _leaves_town(self) -> bool:
         scroll = getattr(getattr(self, "app", None), "scroll", None)
@@ -137,8 +158,13 @@ class GeneratorView(TypedView):
         """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
         before, gave_up = item.value, item.status == gate.NEEDS_YOU
         self.queue.accept(item, value)
-        self._pass(item.payload())
+        payload = item.payload()
+        self._pass(payload)
         self._judge_accept(item, before, value, source, gave_up)
+        last = payload.trail[-1] if payload.trail else None
+        taker = getattr(self.app, "return_approved", None)
+        if last is not None and last.outcome == gate.APPROVAL and taker is not None and (to := taker(item.source, payload)):
+            self.app.notify(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
         self._changed()
 
     def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str,
@@ -218,6 +244,7 @@ class GeneratorView(TypedView):
         except (RuntimeError, OSError, ValueError) as e:
             self.rows, self.error = [], str(e)[:200]
         self.stored = vault.stored(self.state_dir)
+        self.branches = {it.id: found for it in self.queue.open() if (found := self._branch(it.hops)) is not None}
         try:
             self.rejected = self.review.rejected()
         except (OSError, ValueError):
@@ -237,7 +264,7 @@ class GeneratorView(TypedView):
         else:
             q = f"{len(open_items)} in the queue · " if open_items else ""
             head.update(Text(f"{q}{waiting} files to review in {scope} · a accept · e edit · r reject / rework · d drop · "
-                             "u restore", style="dim"))
+                             "u restore · o open", style="dim"))
         keep = self._highlighted_id()
         lst.clear_options()
         ids: list[str] = []
@@ -257,6 +284,13 @@ class GeneratorView(TypedView):
                 row.append(f"  {it.source}" + (f" · {spent}" if spent else "")
                            + (f" · ↩{it.attempts}" if it.attempts else ""), style="dim")
                 add(Option(row, id=f"q:{it.id}"))
+                if it.id in self.branches:
+                    for g in self.branches[it.id][1]:
+                        mark, style = MARK.get(g.change, ("~", "yellow"))
+                        sub = Text(no_wrap=True, overflow="ellipsis")
+                        sub.append(f"   {mark} ", style=style)
+                        sub.append(g.path)
+                        add(Option(sub, id=f"bf:{it.id}:{g.path}"))
         if self.rows and open_items:
             add(Option(Text(f"── files · {len(self.rows)}", style="bold dim"), disabled=True))
         for g in self.rows:
@@ -324,6 +358,15 @@ class GeneratorView(TypedView):
                 self._preview_item(item)
         elif oid.startswith("stored:"):
             self._preview_stored(int(oid[7:]))
+        elif oid.startswith("bf:"):
+            if (found := self._branch_file(oid)) is not None:
+                br, rel = found
+                head = Text(f"{rel} — on {br.branch}\n\n", style="bold")
+                try:
+                    text = br.preview(rel)
+                except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as e:
+                    text = str(e)
+                self._update(head + self._styled(text))
         elif oid.startswith("rej:"):
             r = self.rejected[int(oid[4:])]
             self._update(Text(f"{r['path']} — rejected {r['at']}\nu brings it back\n", style="bold"))
@@ -347,6 +390,10 @@ class GeneratorView(TypedView):
             out.append(f"{chain}\n", style="dim")
         if item.worktree:
             out.append(f"worktree: {item.worktree}\n", style="dim")
+        if item.id in self.branches:
+            br, files = self.branches[item.id]
+            out.append(f"{len(files)} file{'s' if len(files) != 1 else ''} on {br.branch} — listed below, "
+                       "o opens the highlighted one\n", style="dim")
         for n in item.notes:
             out.append(f"↩ {n}\n", style="cyan")
         out.append("\n")
@@ -372,11 +419,22 @@ class GeneratorView(TypedView):
         scroll = getattr(getattr(self, "app", None), "scroll", None)
         return {b.id: b.title for b in getattr(scroll, "buildings", ())} if scroll is not None else {}
 
+    def _branch_file(self, oid: str) -> tuple[generated.Branch, str] | None:
+        """`bf:<item>:<path>` → the branch and the file's path on it, while the branch still has it."""
+        _, iid, rel = oid.split(":", 2)
+        found = self.branches.get(iid)
+        return (found[0], rel) if found is not None and any(g.path == rel for g in found[1]) else None
+
     def _preview(self, rel: str) -> None:
         try:
             text = self.review.preview(rel)
         except (RuntimeError, OSError, ValueError) as e:
             text = str(e)
+        self._update(self._styled(text))
+
+    @staticmethod
+    def _styled(text: str) -> Text:
+        """A diff in colour; anything else as it is."""
         out = Text()
         is_diff = text.startswith("diff --git")
         for line in text.splitlines():
@@ -386,7 +444,7 @@ class GeneratorView(TypedView):
                          "green" if line.startswith("+") else "red" if line.startswith("-") else
                          "cyan" if line.startswith("@@") else "")
             out.append(line + "\n", style=style)
-        self._update(out)
+        return out
 
     # -- decisions ----------------------------------------------------------------------------------
 
@@ -470,6 +528,32 @@ class GeneratorView(TypedView):
         except (OSError, ValueError) as e:
             self.app.notify(str(e), title="📦 Restore failed", severity="error")
         self.refresh_data()
+
+    def file_to_open(self) -> Path | None:
+        """The highlighted file on disk: a branch's file copied out first; None when it is not a file."""
+        oid = self._highlighted_id() or ""
+        root = self._get_repo_root()
+        if oid.startswith("bf:"):
+            found = self._branch_file(oid)
+            return found[0].export(found[1]) if found is not None else None
+        if oid.startswith("stored:"):
+            return root / self.stored[int(oid[7:])].path
+        if oid.startswith("rej:"):
+            return Path(self.rejected[int(oid[4:])]["kept"])
+        if oid.startswith("q:"):
+            item = self.queue.get(oid[2:])
+            return root / item.value if item is not None and item.kind == pipes.FILE else None
+        return generated._inside(root, oid) if oid else None
+
+    def action_open(self) -> None:
+        try:
+            path = self.file_to_open()
+            if path is None or not path.is_file():
+                self.app.notify("highlight a file to open", title="📦 Loot")
+                return
+            generated.open_file(path)
+        except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as e:
+            self.app.notify(str(e), title="📦 Open failed", severity="error")
 
     # -- the hut ----------------------------------------------------------------------------------
 

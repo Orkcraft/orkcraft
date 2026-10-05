@@ -33,7 +33,7 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gitinfo, jobs, pipes, roads
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, pipes, roads
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
@@ -72,11 +72,13 @@ class RunOutcome:
     pr: str = ""
     pr_note: str = ""
     scope: str = ""                                      # local: no pull request · external: reviewed and sent
+    files: list[str] = field(default_factory=list)       # what the branch changed
 
 
 class PoolView(TypedView):
     TYPE = "barracks"
     TAKES_REWORK = True
+    APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
     steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost)
@@ -205,6 +207,10 @@ class PoolView(TypedView):
     # -- tasks in -----------------------------------------------------------------------------------
 
     def receive(self, payload, title: str, markdown: str) -> None:
+        draft = self._draft_of(payload.ref) if payload.mode.endswith("rework") else None
+        if draft is not None:                   # a Loot or a Clan Fire sent the draft back: what to change
+            self.answer(draft.id, markdown or payload.value or "the review sent it back")
+            return
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
         title = payload.title or first
@@ -335,6 +341,8 @@ class PoolView(TypedView):
             out.text, out.cost, out.tokens = text, out.cost + (cost or 0.0), out.tokens + (tokens or 0)
             out.session = session or out.session
 
+        if task.publish:                         # the approved post: no branch, no review — the operator decided
+            git = None
         try:
             if git is not None:
                 git.prepare(workdir, task.branch, task.base)
@@ -354,7 +362,9 @@ class PoolView(TypedView):
                         "finish as before.", out.session)
                 else:                            # no session to go back to: the whole briefing with the answers
                     run(self._prompt(task, orc, True, True, extra_qa=out.qa), "")
-            if not out.asked:
+            if not out.asked and task.publish:
+                out.accepted = True
+            elif not out.asked:
                 self._call(self._mark, task.id, "reviewing")
                 self._review(task, workdir, git, cancel, out)
         except InterruptedError:
@@ -398,14 +408,15 @@ class PoolView(TypedView):
         """The tests first (cheap and strict), then the steward reads the diff; accepted → the PR — for code
         and documents that go out. A local document (a meeting's prep, notes for the operator) gets no PR."""
         meeting = self._meeting(task)
+        draft = bool(bk.publish_of(out.text)[2])          # a post prepared for a service: the report is the work
         diff, tests, files, commits = "", "", [], 0
         if git is not None:
             commits, diff = git.diff(workdir, task.base, task.branch)
-            files = bk.changed_files(diff)
-            if commits == 0 and not meeting:
+            files = out.files = bk.changed_files(diff)
+            if commits == 0 and not meeting and not draft:
                 out.accepted, out.notes = False, "nothing was committed on the branch — commit your work"
                 return
-        rule = bk.scope_rule(files, meeting)
+        rule = bk.scope_rule(files, meeting) or (bk.EXTERNAL if draft else "")
         cmd = str(self.config.get("test_cmd") or "") if git is not None and commits and rule != bk.LOCAL else ""
         if cmd:
             passed, tail = git.test(workdir, cmd, cancel)
@@ -432,6 +443,11 @@ class PoolView(TypedView):
         sent_back = f"## {self.keeper}, the steward, sent it back\n\n{task.feedback}" if task.feedback else ""
         ask = ("If you cannot go on without a decision, stop and end your answer with one line `QUESTION: …`; "
                f"{self.keeper}, the steward, will answer.")
+        if task.publish:                 # the approved draft goes out
+            intro = [] if task.warm else [
+                f"You are {orc.name}, one of several agents of a barracks.",
+                f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else ""]
+            return "\n\n".join(p for p in intro + [bk.publish_prompt(task), ask] if p)
         qa = task.qa + (extra_qa or [])
         decisions = "## Decisions so far\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in qa) if qa else ""
         if task.warm:                    # the session already holds the briefing, the rules and the earlier work
@@ -446,7 +462,7 @@ class PoolView(TypedView):
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
-                 decisions, sent_back, ask,
+                 decisions, sent_back, ask, bk.OUTSIDE_RULE,
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
                  "no pull request." if self._meeting(task) else "",
                  "Finish with a short Markdown report: what you changed, what is left."]
@@ -457,7 +473,8 @@ class PoolView(TypedView):
     def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
-                                                       task.cost_usd, orc.worktree, task.branch, outcome),)
+                                                       task.cost_usd, orc.worktree, task.branch, outcome,
+                                                       base=task.base),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state
@@ -491,18 +508,26 @@ class PoolView(TypedView):
                       trail=self._trail(task, orc, "error"), ref=task.ref)
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks")
+        elif ok and not task.publish and (draft := bk.publish_of(out.text))[2]:
+            task.files = out.files or task.files
+            self._wants_approval(task, orc, *draft)
         elif ok:
+            published = task.publish
             task.status, task.pr, task.feedback, task.scope = "done", out.pr, "", out.scope
+            task.files = out.files or task.files
+            task.draft, task.publish = "", ""
             gist = next((ln.strip(" #*") for ln in out.text.splitlines() if ln.strip(" #*")), "")[:160]
             orc.recent = (orc.recent + [f"{task.title} — {gist}" if gist else task.title])[-bk.KEEP_RECENT:]
             local = out.scope == bk.LOCAL
-            st.log(bk.Decision(bk.now_iso(), task.id, "accept", orc.name,
-                               ("local, no pull request: " if local else "") + (out.notes or "accepted")))
+            st.log(bk.Decision(bk.now_iso(), task.id, "publish" if published else "accept", orc.name,
+                               f"posted to {task.target or 'its place'} after the operator's approval" if published
+                               else ("local, no pull request: " if local else "") + (out.notes or "accepted")))
             where = f"\n\n_pull request:_ {out.pr}" if out.pr else (f"\n\n_branch:_ `{task.branch}`" if task.branch else "")
-            note = " (a local document: no pull request)" if local else \
+            note = f" (published to {task.target or 'its place'} after your approval)" if published else \
+                " (a local document: no pull request)" if local else \
                 (f" ({out.pr_note})" if out.pr_note and not out.pr else "")
-            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}", task.title,
-                      trail=self._trail(task, orc, "done"), ref=task.ref)
+            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}"
+                      + self._files_md(task), task.title, trail=self._trail(task, orc, "done"), ref=task.ref)
         else:
             self._rework(task, orc, out.notes)
         on_run = getattr(self.app, "on_handler_run", None)
@@ -534,11 +559,52 @@ class PoolView(TypedView):
         self._ask(task, f"Rejected after {reworks} reworks. Last notes: {notes[:500]}\n\nWhat should {orc.name} do?",
                   "rejected")
 
-    def _ask(self, task: bk.PoolTask, question: str, why: str) -> None:
+    def _files_md(self, task: bk.PoolTask) -> str:
+        if not task.files:
+            return ""
+        on = f" on `{task.branch}`" if task.branch else ""
+        return f"\n\n## Files{on}\n\n" + "\n".join(f"- `{f}`" for f in task.files)
+
+    def _draft_of(self, ref: str) -> bk.PoolTask | None:
+        """The task whose draft waits for approval under this `ref`."""
+        return next((t for t in self.state.tasks if ref and t.ref == ref and t.status == "asked" and t.draft), None)
+
+    def _wants_approval(self, task: bk.PoolTask, orc: bk.PoolOrc, report: str, target: str, draft: str) -> None:
+        """The orc prepared something to go out: nothing is posted until the operator approves it — here (🔥)
+        or in a Loot that `pool.question` runs through (accept → it is posted, rework → what to change)."""
+        task.target, task.draft = target, draft
+        md = (f"**{task.title}** — {orc.name} wants to publish to {target or 'a service'} and waits for your "
+              f"approval (accept: it is posted as below, your edits included · send back: what to change)\n\n"
+              f"{report.strip()}{self._files_md(task)}\n\n## To publish\n\nPUBLISH: {target}\n\n{draft}")
+        self._ask(task, f"Publish to {target or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
+                  trail=self._trail(task, orc, self.APPROVAL))
+
+    def approved(self, payload: pipes.Payload) -> bool:
+        """A Loot accepted a waiting draft (perhaps edited there): the orc posts it. False when none waits."""
+        task = self._draft_of(payload.ref)
+        if task is None:
+            return False
+        _report, target, draft = bk.publish_of(payload.value)
+        self._publish(task, draft or task.draft, target or task.target, "accepted in the review")
+        return True
+
+    def _publish(self, task: bk.PoolTask, draft: str, target: str, how: str) -> None:
+        st = self.state
+        task.publish, task.target, task.draft, task.question = draft, target, "", ""
+        task.status, task.wait_for = "queued", task.orc
+        st.tasks.remove(task)
+        st.queue.insert(0, task)
+        st.log(bk.Decision(bk.now_iso(), task.id, "approve", task.orc, f"{how}: publish to {target or 'its place'}"))
+        self._pump()
+        st.save()
+        self._render_list()
+
+    def _ask(self, task: bk.PoolTask, question: str, why: str, markdown: str = "", trail: tuple = ()) -> None:
         st = self.state
         task.status, task.question = "asked", question
         st.log(bk.Decision(bk.now_iso(), task.id, "ask", task.orc, f"{why}: {question[:200]}"))
-        self.emit("pool.question", f"**{task.title}** — {why}:\n\n{question}", task.title)
+        self.emit("pool.question", markdown or f"**{task.title}** — {why}:\n\n{question}", task.title,
+                  trail=trail, ref=task.ref)
         try:
             self.app.notify(f"{task.title}: {question[:160]}", title=f"🔥 {self.keeper} asks")
         except Exception:
@@ -551,6 +617,11 @@ class PoolView(TypedView):
         task = task or next(iter(self.state.asked), None)
         if task is None:
             return False
+        if task.draft:
+            self.app.push_screen(TextPrompt(f"📤 {task.orc} wants to publish to {task.target or 'a service'} — {task.title}",
+                                            placeholder="Enter: publish it as is · or write what to change",
+                                            help=task.draft[:1500]), lambda text: self.answer(task.id, text))
+            return True
         self.app.push_screen(TextPrompt(f"🔥 {self.keeper} asks — {task.title}", placeholder="your answer",
                                         help=task.question), lambda text: self.answer(task.id, text))
         return True
@@ -560,7 +631,22 @@ class PoolView(TypedView):
         steward proposes it as a rule."""
         st = self.state
         task = st.task(task_id)
-        if not text or task is None or task.status != "asked":
+        if text is None or task is None or task.status != "asked":
+            return
+        if task.draft:                              # a draft waits: nothing typed approves it, else what to change
+            if not text.strip() or text.strip().lower() in bk.APPROVE:
+                self._publish(task, task.draft, task.target, "the operator approved")
+                return
+            task.feedback, task.draft, task.question = f"Do not post it yet. Change the draft: {text.strip()}", "", ""
+            task.status, task.wait_for = "queued", task.orc
+            st.tasks.remove(task)
+            st.queue.insert(0, task)
+            st.log(bk.Decision(bk.now_iso(), task.id, "rework", task.orc, f"draft sent back: {text.strip()[:200]}"))
+            self._pump()
+            st.save()
+            self._render_list()
+            return
+        if not text:
             return
         question = task.question.split("\n\n")[0]
         task.qa.append([question, text.strip(), "operator"])
@@ -734,8 +820,23 @@ class PoolView(TypedView):
                  f"✓{done} ✗{failed}", f"spent: ${st.spent:.2f}", f"status: {state}"]
         return ([f"🔥 {self.keeper} asks"] + lines[:5]) if st.asked else lines
 
+    def new_task(self, answer: str | None) -> bk.PoolTask | None:
+        """✍ New task: the operator writes to the barracks directly — the title, then the brief (the title
+        alone when it is empty)."""
+        title, _, brief = (answer or "").partition("\t")
+        title, brief = title.strip(), brief.strip()
+        if not title and not brief:
+            return None
+        return self.add_task(title or brief.splitlines()[0][:60], brief or title)
+
     def quick_action(self, action_id: str) -> bool:
         st = self.state
+        if action_id == "pool.task":
+            self.app.push_screen(TextPrompt("✍ New task for the barracks", placeholder="the task's title",
+                                            fields=(("the brief: what to do, where, what done looks like", ""),),
+                                            help="Enter goes to the next line, then sends the task to the foreman"),
+                                 self.new_task)
+            return True
         if action_id == "pool.hire":
             if st.asked:                     # the steward's question comes first
                 return self.ask_operator()

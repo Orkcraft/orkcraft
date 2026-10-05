@@ -372,12 +372,12 @@ async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake
         for name, maker in (("daily.md", "brief"), ("other.md", "scribe")):
             app.deliver_payload("insight", pipes.Payload(pipes.FILE, name, maker, "mill.done", name,
                                                          (pipes.hop(maker, "w", "agent"),)))
-            for _ in range(40):
+            for _ in range(400):
                 await pilot.pause(0.05)
                 if view.view is not None and view.view.path.endswith(name):
                     break
         view.show_value("file", str(fake_repo / "daily.md"), "daily")
-        for _ in range(40):
+        for _ in range(400):
             await pilot.pause(0.05)
             if view.view is not None and view.view.path.endswith("daily.md"):
                 break
@@ -393,11 +393,12 @@ async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake
         view.action_leave_edit()
         assert len(feedback.incidents(fake_repo)) == 1
         view.show_value("file", str(fake_repo / "other.md"), "other")
-        for _ in range(40):
+        for _ in range(400):
             await pilot.pause(0.05)
             if view.view is not None and view.view.path.endswith("other.md"):
                 break
         view.action_edit()
+        assert view.draft is not None and view.draft.path.endswith("other.md")
         view.query_one("#lake-edit").load_text("something else\nentirely")
         monkeypatch.setattr(lake_view, "JUDGE_IDLE_S", 10_000)
     # the app closed with the editor open

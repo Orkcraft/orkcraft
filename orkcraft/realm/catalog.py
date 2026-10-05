@@ -164,12 +164,16 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "each ork with its model and task, the queue, the reviews, 🔥 when the steward asks you",
         "the steward (rules, questions for you), the orks, the queue, the tasks with their PRs and the decisions",
         events=(_e("pool.assigned", "task assigned", TEXT, "a task went to an ork (new, follow-up or rework)"),
-                _e("pool.done", "task accepted", TEXT, "the steward accepted a task: the report and its pull request"),
+                _e("pool.done", "task accepted", TEXT, "the steward accepted a task (or an approved post went out): the report, the files and "
+                  "its pull request"),
                 _e("pool.failed", "task failed", TEXT, "a task failed or was rejected after its reworks"),
-                _e("pool.question", "question for you", TEXT, "the steward needs the operator's answer"),
+                _e("pool.question", "question for you", TEXT, "the steward needs the operator's answer, or an ork's draft to post "
+                  "(Jira, Confluence…) waits for approval: the draft, the report and the files; through a "
+                  "Loot, accept lets the ork post it and rework sends it back"),
                 _e("pool.idle", "queue empty", TEXT, "every task is done, the orks are idle")),
         actions=(_a("pool.hire", "Hire / answer", "+", "answer the steward's question when it asks, else hire an ork"),
-                 _a("pool.pause", "Pause / resume", "⏸", "stop or resume taking tasks")),
+                 _a("pool.pause", "Pause / resume", "⏸", "stop or resume taking tasks"),
+                 _a("pool.task", "New task", "✍", "write a task straight to the barracks: a title and a brief")),
         config={"max_orcs": (int, (1, 10), False), "budget_usd": (float, (0, 200), False),
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
@@ -563,7 +567,8 @@ TAKES: dict[str, str] = {
     "fields": "anything: the cart becomes a card — a task in To Do (a note in `notes` mode); its title, else "
               "its first line, the rest its text → tasks.created / notes.created",
     "barracks": "anything: the cart becomes a task for an ork (the title names it, the text is the brief); "
-                "its steward reviews the work → pool.done (with the pull request) / pool.failed",
+                "its steward reviews the work → pool.done (with the pull request) / pool.failed; a post for a service is "
+                "drafted first and waits for your approval as pool.question",
     "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
                "(let go) or team.rework (sent back straight to the Barracks that wrote it), team.artifact_ready "
                "(the report)",

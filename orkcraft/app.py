@@ -1716,6 +1716,15 @@ class OrkcraftApp(App[int]):
                 return bid
         return ""
 
+    def return_approved(self, source_id: str, payload: pipes.Payload) -> str:
+        """A Loot accepted a draft its maker holds back until approved (a Barracks ork's post to Jira…): the
+        maker is told directly, like a rework. Its id, or "" when nobody waited for it."""
+        for bid in [source_id] + [h.building for h in reversed(payload.trail) if h.building != source_id]:
+            approved = getattr(self._custom_view(bid), "approved", None)
+            if callable(approved) and approved(payload):
+                return bid
+        return ""
+
     def _loot_burning(self) -> list[str]:
         """Loot buildings with a cart waiting for the person (they burn like an orc waiting for orders)."""
         out = []

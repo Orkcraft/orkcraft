@@ -65,6 +65,7 @@ QUESTION = re.compile(r"^\s*\**\s*QUESTION\b\s*:?\s*(.+)", re.I | re.S | re.M)
 ACCEPT = re.compile(r"^\s*\**\s*ACCEPT\b", re.I)
 REWORK = re.compile(r"^\s*\**\s*REWORK\b\s*:?\s*", re.I)
 ANSWER = re.compile(r"^\s*\**\s*ANSWER\b\s*:?\s*(.+)", re.I | re.S)
+PUBLISH = re.compile(r"^\s*\**\s*PUBLISH\b\**\s*:\s*(.*)$", re.I | re.M)
 SCOPE = re.compile(r"^\s*\**\s*SCOPE\b\s*:?\s*\**\s*(local|external)\b", re.I | re.M)
 DOC_SUFFIXES = (".md", ".markdown", ".txt", ".rst", ".adoc", ".org")
 LOCAL, EXTERNAL = "local", "external"      # a task's scope: no pull request / reviewed and sent as a PR
@@ -117,7 +118,8 @@ class PoolTask:
     text: str
     key: str = ""
     arrived: str = ""
-    status: str = "queued"          # queued | working | reviewing | asked | done | failed
+    status: str = "queued"          # queued | working | reviewing | asked | done | failed (asked: a question,
+    #                                 or a draft waiting for the operator's approval)
     orc: str = ""
     wait_for: str = ""              # a follow-up waiting for this orc
     result: str = ""
@@ -137,6 +139,10 @@ class PoolTask:
     scope: str = ""                 # local (no pull request) | external (reviewed, sent as a PR); "" not yet
     ref: str = ""                   # the thing worked on (a cart's ref), kept through rework rounds
     trail: list = field(default_factory=list)   # the hops before it arrived (pipes.Hop dicts)
+    files: list[str] = field(default_factory=list)  # what its branch changed
+    target: str = ""                # where its draft goes out (Jira, Confluence…): the `PUBLISH:` line
+    draft: str = ""                 # what goes out, waiting for the operator's approval
+    publish: str = ""               # the approved version: the orc posts it on its next run
 
 
 @dataclass
@@ -169,6 +175,31 @@ def question_of(text: str) -> str:
     """The orc's `QUESTION: …` when it stopped to ask, else ""."""
     m = QUESTION.search(text or "")
     return m.group(1).strip() if m else ""
+
+
+def publish_of(text: str) -> tuple[str, str, str]:
+    """(report, target, draft) when the orc prepared something to go out — a `PUBLISH: <where>` line and,
+    below it, exactly what to post; else (text, "", "")."""
+    m = PUBLISH.search(text or "")
+    if m is None:
+        return text, "", ""
+    return text[:m.start()].rstrip(), m.group(1).strip(" *"), text[m.end():].strip()
+
+
+APPROVE = frozenset({"yes", "y", "ok", "approve", "approved", "publish", "go", "да", "ок", "ага", "постить"})
+OUTSIDE_RULE = ("Never act outside this repository yourself: do not post, send or change anything in Jira, Confluence, "
+                "Slack, mail or any other service. When the task asks for that, prepare it instead: end your answer "
+                "with one line `PUBLISH: <where>` (e.g. `PUBLISH: Jira, project APP, a new Bug`) and below it exactly "
+                "what goes out — the title, the fields, the text. The operator approves it first; then you post it.")
+
+
+def publish_prompt(task: PoolTask) -> str:
+    return "\n\n".join(p for p in [
+        f"## Approved: {task.title}",
+        f"The operator approved what you prepared. Post it now to {task.target or 'where the task says'}, exactly as "
+        "below (it may have been edited) — nothing more, nothing else. Then answer with a short report: where it "
+        "went, with a link or an id.",
+        f"PUBLISH: {task.target}" if task.target else "", task.publish] if p)
 
 
 def changed_files(diff: str) -> list[str]:
@@ -238,6 +269,8 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         f"## Tests\n\n{tests}" if tests else "",
         f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```" if diff.strip()
         else "## The diff\n\n(nothing committed: the report is the document)",
+        "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
+        "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "
         "`REWORK: …` with what exactly to fix.",
         "" if scope else
