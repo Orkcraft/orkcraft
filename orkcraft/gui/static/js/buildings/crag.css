@@ -1,0 +1,41 @@
+/* 🪨 Tally Crag: charts carved on the design system's tokens only (design-system/tokens.css). */
+.crag-thumbs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1) var(--space-2); }
+.crag-thumb { display: flex; flex-direction: column; min-width: 0; }
+.crag-thumb__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
+.crag-thumb svg { width: 100%; height: 22px; display: block; }
+
+.crag-chart { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.crag-chart__plot { position: relative; flex: 1 1 auto; height: 96px; min-height: 64px; background: var(--panel-inset);
+  border-radius: var(--radius-sm); overflow: hidden; }
+.crag-chart__plot svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.crag-chart__labels { display: flex; justify-content: space-between; color: var(--ink-comment); }
+.crag-bar { fill: var(--meter); }
+.crag-bar.is-warn { fill: var(--warning); }
+.crag-bar.is-crit { fill: var(--danger); }
+.crag-line { stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.crag-line.is-warn { stroke: var(--warning); }
+.crag-line.is-crit { stroke: var(--danger); }
+
+.crag-front { display: flex; flex-direction: column; gap: var(--space-1); height: 100%; min-height: 120px; }
+.crag-front .crag-chart { flex: 1 1 auto; }
+.crag-head { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+.crag-head__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crag-head__now { margin-left: auto; white-space: nowrap; }
+.crag-dots { display: flex; gap: var(--space-1); justify-content: center; color: var(--ink-comment); }
+.crag-dots .is-front { color: var(--frame-focus); }
+
+.crag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); align-content: start; }
+.crag-tile { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); min-height: 170px;
+  background: var(--panel); border: 1px solid var(--frame); border-radius: var(--radius-md); }
+.crag-tile.is-warn { border-color: var(--warning); }
+.crag-tile.is-crit { border-color: var(--danger); }
+.crag-tile .crag-chart { flex: 1 1 auto; }
+.crag-tile__foot { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; color: var(--ink-muted); }
+.crag-show { cursor: pointer; }
+.crag-ask { display: flex; gap: var(--space-2); flex: 1 1 320px; min-width: 0; }
+.crag-ask .ok-input { flex: 1 1 auto; min-width: 0; }
+.crag-meters { display: flex; flex-direction: column; gap: var(--space-1); }
+.crag-thumb svg { background: var(--panel-inset); border-radius: var(--radius-sm); }
+.crag-front .crag-chart__plot { height: 160px; }
+.crag-ask .ok-act { flex: none; white-space: nowrap; }
+.crag-window.is-chosen { padding: 0 var(--space-1); border-bottom: 1px solid var(--frame-focus); }

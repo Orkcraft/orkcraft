@@ -194,14 +194,23 @@ class Console:
         self.host.refresh_roster()
         return ok
 
-    def quick(self, args: dict) -> bool:
-        """One of the type's quick actions (the Command Card). Its handler comes with the type's own
-        view; until then the person is told so, never left with a silent button."""
+    def quick(self, args: dict) -> Any:
+        """One of the type's quick actions (the Command Card): its view's act of the same id
+        (gui/views/<type>.py `ACTS`); until a type has one the person is told so, never left with a
+        silent button."""
         bs = self._spec(args)
         t = catalog.type_of(self.town.spec_of(bs.id))
         act = t.action(str(args.get("action") or ""))
         if act is None:
             raise ConsoleError(f"{bs.title} has no such action")
+        from orkcraft.gui import views
+        view, worker = views.of(t.id), self.town.worker(bs.id)
+        fn = getattr(view, "ACTS", {}).get(act.id) if worker is not None else None
+        if fn is not None:
+            try:
+                return fn(worker, {})
+            except views.ActError as e:
+                raise ConsoleError(str(e)) from None
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
         return False
 
