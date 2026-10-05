@@ -21,6 +21,7 @@ const dialogs = signal({});        // building id → {kind: "task" | "answer" |
 const STATE = { queued: "queued", working: "working", reviewing: "in review", asked: "asks you", done: "done", failed: "failed" };
 const TONE = { asked: "ok-tone-fire", failed: "ok-tone-error", done: "ok-tone-ok", reviewing: "ok-tone-wait", working: "ok-tone-wait" };
 
+const SHOWN = 4;                  // orks the Command Card lists (the rest: +N more)
 const setIn = (sig, id, value) => { sig.value = { ...sig.value, [id]: value }; };
 const openDialog = (id, d) => setIn(dialogs, id, d);
 const closeDialog = (id) => setIn(dialogs, id, null);
@@ -133,16 +134,18 @@ function OrkRow({ id, o, onClick }) {
 /** Command: the orks, the queue's top and the main buttons. */
 export function preview(id, data) {
   const queue = data.tasks.filter((t) => t.lane === "queue");
+  const more = data.orks.length - SHOWN;
   return html`<div class="gui-section">
     ${data.asked.length > 0 && html`<p class="ok-tone-fire gui-alert">${data.keeper} asks — ${data.asked[0].title}</p>`}
+    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
     <ul class="gui-rows">
-      ${data.orks.map((o) => html`<${OrkRow} key=${o.name} id=${id} o=${o} onClick=${() => openOrk(id, o)} />`)}
+      ${data.orks.slice(0, SHOWN).map((o) => html`<${OrkRow} key=${o.name} id=${id} o=${o} onClick=${() => openOrk(id, o)} />`)}
+      ${more > 0 && html`<li class="ok-tone-muted">+${more} more — Open</li>`}
       ${!data.orks.length && html`<li class="ok-tone-muted">No orks yet — a task hires one</li>`}
     </ul>
     <div class="ok-tone-muted">Queue ${queue.length}${data.paused ? " · paused" : ""}</div>
     <ul class="gui-rows">${queue.slice(0, 3).map((t) => html`<li key=${t.id}>· ${t.title}
       ${t.wait_for && html`<span class="ok-tone-muted"> · ${t.reworks ? "rework for" : "waits for"} ${t.wait_for}</span>`}</li>`)}</ul>
-    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
     <${Dialogs} id=${id} data=${data} />
   </div>`;
 }

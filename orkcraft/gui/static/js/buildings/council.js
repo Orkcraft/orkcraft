@@ -22,6 +22,7 @@ const TONE = { approve: "ok-tone-ok", changes: "ok-tone-wait", veto: "ok-tone-er
                ask: "ok-tone-fire", approved: "ok-tone-ok", asked: "ok-tone-fire", error: "ok-tone-error",
                running: "ok-tone-wait", budget: "ok-tone-wait" };
 
+const SHOWN = 4;                  // members the Command Card lists (the rest: +N more)
 const setIn = (sig, id, value) => { sig.value = { ...sig.value, [id]: value }; };
 const firstLine = (text) => (text || "").split("\n").find((l) => l.trim()) || "";
 
@@ -110,9 +111,12 @@ function Member({ m }) {
 /** Command: the members (role, tier, veto, verdict now), the document under review and the last turns. */
 export function preview(id, data) {
   const r = data.current;
+  const more = data.members.length - SHOWN;
   return html`<div class="gui-section">
     ${r && r.outcome === "asked" && html`<p class="ok-tone-fire gui-alert">The steward asks: ${firstLine(r.question).slice(0, 160)}</p>`}
-    <ul class="gui-rows">${data.members.map((m) => html`<${Member} key=${m.role} m=${m} />`)}
+    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
+    <ul class="gui-rows">${data.members.slice(0, SHOWN).map((m) => html`<${Member} key=${m.role} m=${m} />`)}
+      ${more > 0 && html`<li class="ok-tone-muted">+${more} more</li>`}
       ${!data.members.length && html`<li class="ok-tone-muted">No members yet — Add member</li>`}</ul>
     ${r ? html`<div class="gui-head">
         <span class="gui-head__what gui-link" title=${say("Open it in Lake")} onClick=${() => openDoc(id, r)}><b>${r.title}</b></span>
@@ -122,7 +126,6 @@ export function preview(id, data) {
         <span class="ok-tone-muted"> · ${firstLine(t.text).slice(0, 100)}</span></li>`)}</ul>`
       : html`<p class="ok-tone-muted">No review yet — send a document down a road, or Review.</p>`}
     ${data.queued.length > 0 && html`<div class="ok-tone-muted">${data.queued.length} queued</div>`}
-    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
     <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
