@@ -14,6 +14,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import masonry, pipes, shelves, steward, wiki
+from orkcraft.core.workers.scrolls import ScrollsWorker
 from orkcraft.screens.typed.knowledge_view import KnowledgeView
 
 
@@ -147,7 +148,7 @@ async def test_ingest_commit_people_and_review(fake_repo: Path, monkeypatch):
     git(fake_repo, "commit", "-qm", "handbook")
     assert masonry.save_spec(fake_repo, spec(sources=[".", "git:HEAD:docs"], model="sonnet", review_sample=5)) == []
     librarian = Librarian()
-    monkeypatch.setattr(KnowledgeView, "work_runner", librarian)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", librarian)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     for ev in ("wiki.updated", "wiki.linted", "wiki.review"):
         ts.subscribe(app.scroll, "town_hall", "dump", ev)
@@ -238,14 +239,14 @@ async def test_a_failing_source_is_not_gone(fake_repo: Path, monkeypatch, tmp_pa
 
 @pytest.mark.asyncio
 async def test_auto_ingest_waits_for_the_sources_to_settle(fake_repo: Path, monkeypatch):
-    from orkcraft.screens.typed import knowledge_view
+    from orkcraft.core.workers import scrolls
     monkeypatch.setenv("ORKCRAFT_WIKI_AUTO", "1")
-    monkeypatch.setattr(knowledge_view, "SETTLE_S", 3600)
+    monkeypatch.setattr(scrolls, "SETTLE_S", 3600)
     assert masonry.save_spec(fake_repo, spec(wiki="kb", topic="codebase", commit=False)) == []
     for bad in ("../outside", "/tmp/x", ""):
         assert masonry.save_spec(fake_repo, {**spec(wiki=bad), "id": "dump2"})
     librarian = Librarian()
-    monkeypatch.setattr(KnowledgeView, "work_runner", librarian)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", librarian)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
@@ -253,7 +254,7 @@ async def test_auto_ingest_waits_for_the_sources_to_settle(fake_repo: Path, monk
         dump.refresh_data()
         assert dump.pending and not librarian.calls                        # not settled yet
         (fake_repo / "kb" / "pages" / "how-to").mkdir(parents=True)
-        monkeypatch.setattr(knowledge_view, "SETTLE_S", 0)
+        monkeypatch.setattr(scrolls, "SETTLE_S", 0)
         dump.refresh_data()
         await settle(pilot, dump)
         assert len(librarian.calls) == 1 and librarian.calls[0][1] == fake_repo / "kb"
@@ -319,8 +320,8 @@ async def test_the_council_spot_checks(fake_repo: Path, monkeypatch):
             return "DECISION: approve\n\nrelease.md: OK", 0.02
         return "APPROVE — release.md: OK", 0.01
 
-    monkeypatch.setattr(KnowledgeView, "work_runner", Librarian())
-    monkeypatch.setattr(KnowledgeView, "review_runner", staticmethod(members))
+    monkeypatch.setattr(ScrollsWorker, "work_runner", Librarian())
+    monkeypatch.setattr(ScrollsWorker, "review_runner", staticmethod(members))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()

@@ -118,7 +118,6 @@ class TasksView(TypedView):
     def refresh_data(self) -> None:
         """A look at the file (a hand edit is seen here); the worker redraws the board."""
         self.worker.refresh()
-        self.redraw()
 
     def redraw(self) -> None:
         self._render_list()
