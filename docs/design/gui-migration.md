@@ -232,7 +232,8 @@ orkcraft/gui/
   building, its Info window and its Command Card window at the right.
 
 - A building three ways, as in the TUI: its hut (the status lines its type keeps); selected (one
-  click: its Info, a square window half the window high, and its Command Card beside it); open (a click on the selected hut, or Open:
+  click: its Command Card, a square window half the window high, at the right, and its Info in the
+  room up to the War Map); open (a click on the selected hut, or Open:
   its whole window over the town). Esc steps back; a click on the bare town lets go.
 
 - The console: **Info** holds what every building and ork shares — 👍 / 👎 (what went wrong: the

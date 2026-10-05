@@ -23,7 +23,7 @@ button { font: inherit; color: inherit; }
    square at the left; its list scrolls) and, while a building is selected, its Info and Command Card
    windows at the right.
    It shares the town's grid area, so it stays put while the town scrolls. The strip is 50% of the
-   window's height: Info takes all of it, as wide as tall, while a building is selected; the
+   window's height: the Command Card takes all of it, as wide as tall, and Info the room up to the War Map; the
    War Map 60% of it, about 30% (STRIP in js/town.js keeps the huts above it). */
 .gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
   display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
@@ -48,12 +48,12 @@ button { font: inherit; color: inherit; }
 .gui-road text { fill: var(--ink-muted); }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
-/* A selected building, as the TUI's console: Info (and the garrison, or an ork's Inventory) in a square
-   window between the War Map and the Command Card, its own narrow window at the right (js/console.js). */
-.gui-console { flex: none; height: 100%; aspect-ratio: 1; width: auto; margin-left: auto; min-width: 0; }
+/* A selected building, as the TUI's console: Info (and the garrison, or an ork's Inventory) fills the
+   room between the War Map and the Command Card, a square window at the right (js/console.js). */
+.gui-console { flex: 1; height: 100%; min-width: 0; }
 .gui-console > .ok-win__frame, .gui-card > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-console__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); }
-.gui-card { flex: none; height: 100%; width: 180px; min-width: 0; }
+.gui-card { flex: none; height: 100%; aspect-ratio: 1; width: auto; min-width: 0; }
 .gui-card__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); }
 .gui-card__body .ok-act { justify-content: flex-start; }
 .gui-card__body .gui-win__demolish { margin-left: 0; }
