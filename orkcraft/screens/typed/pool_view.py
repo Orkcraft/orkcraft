@@ -27,6 +27,7 @@ PR_CHECK_S = worker_mod.PR_CHECK_S
 
 class PoolView(TypedView):
     TYPE = "barracks"
+    UI_PANES = {"head": "#pool-head"}       # the TUI keeps its orks' list and the detail as they are
     TAKES_REWORK = True
 
     def __init__(self, *a, **kw) -> None:

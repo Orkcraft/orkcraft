@@ -34,6 +34,7 @@ _title_of = worker_mod.title_of
 
 class TeamView(TypedView):
     TYPE = "council"
+    UI_PANES = {"head": "#team-head", "review": "#team-turns", "document": "#team-read-pane"}   # members, history: the view itself
 
     @property
     def worker(self) -> CouncilWorker:
@@ -118,7 +119,7 @@ class TeamView(TypedView):
         yield Static("", id="team-head", classes="typed-head")
         with Horizontal(classes="typed-row"):
             yield OptionList(id="team-turns", classes="typed-list")
-            with VerticalScroll(classes="typed-detail"):
+            with VerticalScroll(classes="typed-detail", id="team-read-pane"):
                 yield Markdown("", id="team-read")
 
     def refresh_data(self) -> None:
