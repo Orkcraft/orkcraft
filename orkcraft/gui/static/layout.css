@@ -14,16 +14,19 @@ button { font: inherit; color: inherit; }
   grid-template-rows: auto minmax(0, 1fr) 22px;
   grid-template-areas: "hud" "town" "status";
 }
-.gui--open { grid-template-columns: minmax(0, 1fr) minmax(360px, 44%); grid-template-areas: "hud hud" "town group" "status status"; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
 .gui-hud__project { color: var(--ink-muted); }
 
-/* The War Map: the orkspaces in a small square over the town's bottom-left corner, as in the TUI.
-   It shares the town's grid area, so it stays put while the town scrolls; its list scrolls. */
-.gui-warmap { grid-area: town; align-self: end; justify-self: start; z-index: 4;
-  width: 220px; height: 220px; margin: var(--space-3); display: flex; flex-direction: column; }
+/* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
+   square at the left; its list scrolls) and, while a building is selected, its console at the right.
+   It shares the town's grid area, so it stays put while the town scrolls. Its height is STRIP in
+   js/town.js, which keeps the huts above it. */
+.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 30%; min-height: 180px; box-sizing: border-box;
+  display: flex; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
+.gui-strip > * { pointer-events: auto; }
+.gui-warmap { flex: none; height: 100%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
 .gui-warmap > .ok-list__head { flex: none; }
 .gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
 .gui-warmap .ok-item { cursor: pointer; }
@@ -43,12 +46,18 @@ button { font: inherit; color: inherit; }
 .gui-road text { fill: var(--ink-muted); }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
-/* An opened building: an editor group, its tabs over one window. */
-.gui-group { grid-area: group; display: flex; flex-direction: column; min-width: 0; min-height: 0;
-  background: var(--panel); box-shadow: inset 1px 0 0 var(--frame); }
-.gui-group.is-max { position: fixed; inset: 30px 0 22px 0; z-index: 5; }
-.gui-tabs { flex: none; overflow-x: auto; }
-.gui-tabs .ok-tab { cursor: pointer; gap: var(--space-2); }
+/* A selected building: its console in the strip — info, garrison and commands side by side. */
+.gui-console { flex: 1; min-width: 0; margin-left: auto; max-width: 960px; }
+.gui-console > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
+.gui-console__body { flex: 1; min-height: 0; display: flex; gap: var(--space-4); }
+.gui-console__info { flex: 1 1 auto; min-width: 0; overflow: auto; }
+.gui-console__garrison { flex: 0 1 280px; min-width: 0; overflow: auto; }
+.gui-console__card { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); overflow: auto; }
+.gui-console__card .gui-win__demolish { margin-left: 0; }
+.gui-win__close { margin-left: var(--space-2); }
+
+/* An open building: its whole window over the town. */
+.gui-full { grid-area: town; z-index: 6; min-width: 0; min-height: 0; }
 .gui-tab__close { border: 0; background: none; padding: 0 var(--space-1); cursor: pointer; color: var(--ink-muted); line-height: 1; }
 .gui-tab__close:hover { color: var(--ink); }
 .gui-win { flex: 1; min-height: 0; }

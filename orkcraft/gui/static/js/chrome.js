@@ -3,7 +3,7 @@
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss } from "./link.js";
-import { openBuilding } from "./windows.js";
+import { showBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
 import { newSession, HALL } from "./tent.js";
 import { building } from "./build.js";
@@ -62,7 +62,7 @@ export function StatusBar() {
     <button class="gui-status__item" onClick=${() => { building.value = true; }}>Build</button>
     <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
     <button class="gui-status__item" onClick=${() => newSession("claude")}>Add agent</button>
-    <button class="gui-status__item" onClick=${() => openBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
+    <button class="gui-status__item" onClick=${() => showBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
     <span class="gui-status__spacer"></span>
     <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
   </footer>`;

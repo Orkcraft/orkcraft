@@ -1,5 +1,7 @@
-// Opened buildings: Office shows them as an editor group, one tab per building
-// (design-system/components.md: Window, Tabs). Which are open is the page's own state.
+// A building, three ways, as in the TUI: its hut on the town (the minimal look: the lines its type
+// keeps, gui/state.py), selected (one click: the console at the bottom right, its info, garrison
+// and commands) and open (a click on the selected hut: its whole window over the town). Which one
+// is shown is the page's own state. Esc steps back: open → selected → nothing.
 import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online } from "./link.js";
@@ -26,30 +28,46 @@ function viewOf(type) {
   return null;
 }
 
-export const opened = signal({ ids: [], active: null, max: false });
+export const opened = signal({ active: null, full: false });     // the selected building; full: open over the town
 
+function select(id, full) {
+  if (opened.value.active !== id) command("building.open", { id }).catch(() => {});
+  opened.value = { active: id, full };
+}
+
+/** A click on a building's hut: the first selects it, a click on the selected one opens it. */
 export function openBuilding(id) {
   const o = opened.value;
-  opened.value = { ...o, ids: o.ids.includes(id) ? o.ids : [...o.ids, id], active: id };
-  command("building.open", { id }).catch(() => {});
+  select(id, o.active === id);
+}
+
+/** Open a building over the town straight away (the War Tent, a session to show). */
+export function showBuilding(id) {
+  select(id, true);
 }
 
 export function closeBuilding(id) {
-  const o = opened.value;
-  const ids = o.ids.filter((x) => x !== id);
-  const active = o.active === id ? ids[ids.length - 1] || null : o.active;
-  opened.value = { ...o, ids, active, max: ids.length ? o.max : false };
+  if (id === undefined || opened.value.active === id) opened.value = { active: null, full: false };
 }
 
-// The host sends an open building's own state, and again when its worker says it changed.
-effect(() => {
-  const ids = opened.value.ids;
-  if (online.value) command("watch", { ids }).catch(() => {});
+/** Esc: an open building goes back to selected, a selected one lets go. */
+export function stepBack() {
+  const o = opened.value;
+  opened.value = o.full ? { ...o, full: false } : { active: null, full: false };
+}
+
+// Esc on the page, unless a dialog takes it or the keys go to a field or a terminal.
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !opened.value.active || document.querySelector(".gui-modal")) return;
+  if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
+  stepBack();
 });
 
-function toggleMax() {
-  opened.value = { ...opened.value, max: !opened.value.max };
-}
+// The host sends the selected building's own state, and again when its worker says it changed.
+effect(() => {
+  const id = opened.value.active;
+  if (online.value) command("watch", { ids: id ? [id] : [] }).catch(() => {});
+});
 
 /** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */
 function Badge({ garrison, alert }) {
@@ -143,33 +161,74 @@ function DemolishButton({ b }) {
     ${asking && html`<${Demolish} b=${b} onClose=${() => setAsking(false)} />`}`;
 }
 
-export function Windows() {
-  const t = town.value;
-  const o = opened.value;
-  const byId = Object.fromEntries(t.buildings.map((b) => [b.id, b]));
-  const ids = o.ids.filter((id) => byId[id]);
-  if (!ids.length) return null;
-  const b = byId[o.active] || byId[ids[0]];
-  const hot = b.alert && b.alert.waited >= 30;
-  return html`<section class=${cls("gui-group", { "is-max": o.max })}>
-    <div class="ok-tabs gui-tabs">
-      ${ids.map((id) => html`<span key=${id} class=${cls("ok-tab", { "is-active": id === b.id })}
-          onClick=${() => { opened.value = { ...o, active: id }; }}>
-        ${byId[id].title}${byId[id].alert ? html` <span class="ok-word">?</span>` : ""}
-        <button class="gui-tab__close" title="Close" aria-label="Close"
-          onClick=${(e) => { e.stopPropagation(); closeBuilding(id); }}>×</button>
-      </span>`)}
-    </div>
-    <div class=${cls("ok-win is-active gui-win", { "is-alert": !!b.alert, "is-hot": hot })}>
-      <div class="ok-head is-banner"></div>
-      <div class="ok-win__frame">
-        <div class="ok-win__bar" onDblClick=${toggleMax}>
-          <span class="ok-win__title">${b.title}</span>
-          <${Badge} garrison=${b.garrison} alert=${b.alert} />
-          ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
+/** The commands of the selected building (the TUI's Command Card): one button each. */
+function Commands({ b }) {
+  return html`<div class="gui-console__card">
+    <button class="ok-act" onClick=${() => showBuilding(b.id)}><span class="ok-act__label">Open</span></button>
+    ${b.alert && html`<button class="ok-act" onClick=${() => openOrders(b.alert.id)}>
+      <span class="ok-act__label">Answer</span></button>`}
+    ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
+  </div>`;
+}
+
+/** Selected: the console at the bottom right — what the building says, its garrison, its commands. */
+function Console({ b, t }) {
+  return html`<section class=${cls("ok-win is-active gui-console", { "is-alert": !!b.alert })}
+      aria-label=${b.title}>
+    <div class="ok-win__frame">
+      <div class="ok-win__bar">
+        <span class="ok-win__title">${b.title}</span>
+        <${Badge} garrison=${b.garrison} alert=${b.alert} />
+        <button class="gui-tab__close gui-win__close" title="Let go (Esc)" aria-label="Let go"
+          onClick=${() => closeBuilding()}>×</button>
+      </div>
+      <div class="ok-win__body gui-console__body">
+        <div class="gui-console__info">
+          ${b.alert && html`<${Question} alert=${b.alert} />`}
+          ${b.status_plain.length > 0 && html`<section class="gui-section">
+            ${b.status_plain.map((line, i) => html`<div key=${i} class="ok-font-status">${line}</div>`)}</section>`}
+          <${Roads} b=${b} t=${t} />
         </div>
-        <${Body} b=${b} t=${t} />
+        ${b.garrison.length > 0 && html`<div class="gui-console__garrison">
+          <${Garrison} garrison=${b.garrison} b=${b} /></div>`}
+        <${Commands} b=${b} />
       </div>
     </div>
   </section>`;
+}
+
+/** Open: the building's whole window over the town. */
+function Full({ b, t }) {
+  const hot = b.alert && b.alert.waited >= 30;
+  return html`<section class=${cls("ok-win is-active gui-win gui-full", { "is-alert": !!b.alert, "is-hot": hot })}>
+    <div class="ok-head is-banner"></div>
+    <div class="ok-win__frame">
+      <div class="ok-win__bar" onDblClick=${stepBack}>
+        <span class="ok-win__title">${b.title}</span>
+        <${Badge} garrison=${b.garrison} alert=${b.alert} />
+        ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
+        <button class="gui-tab__close gui-win__close" title="Back to the town (Esc)" aria-label="Back to the town"
+          onClick=${stepBack}>×</button>
+      </div>
+      <${Body} b=${b} t=${t} />
+    </div>
+  </section>`;
+}
+
+function chosen() {
+  const o = opened.value;
+  const b = o.active && town.value.buildings.find((x) => x.id === o.active);
+  return b ? { b, full: o.full } : null;   // nothing selected, or it was demolished
+}
+
+/** The selected building's console, beside the War Map in the strip over the town's bottom. */
+export function Selected() {
+  const c = chosen();
+  return c && !c.full ? html`<${Console} b=${c.b} t=${town.value} />` : null;
+}
+
+/** The open building, over the whole town. */
+export function Opened() {
+  const c = chosen();
+  return c && c.full ? html`<${Full} b=${c.b} t=${town.value} />` : null;
 }
