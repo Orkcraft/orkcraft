@@ -75,6 +75,7 @@ TERMS: tuple[Term, ...] = (
     _t("chronicles", "Chronicles", "History"),
     _t("elders", "Elder", "Advisor", "Elders", "Advisors"),
     _t("steward", "steward", "coordinator", "stewards", "coordinators"),
+    _t("keeper", "keeper", "coordinator", "keepers", "coordinators"),     # a building's steward, asked in plain words
     _t("builders", "Mason & Artisan", "Module designer"),
     # -- the Town Hall's own orks -------------------------------------------------------------------
     _t("orc.mason", "Mason", "Data planner"),
