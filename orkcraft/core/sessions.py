@@ -16,8 +16,8 @@ A reader thread per session feeds its screen and hands each chunk to the town's 
 (`town.call`). A session that ends publishes `SESSION`; a deployed ork's ends sends its report down
 the roads that take `on_task`, as the TUI's War Tent did.
 
-The TUI still runs its own terminals (`widgets/terminal.py`); moving it onto this service is the
-next step of stage 1 (docs/design/gui-migration.md §2).
+Both faces run on it: the TUI's terminals (`widgets/terminal.py`) draw a session's screen with
+pyte, the GUI's with xterm.js.
 """
 from __future__ import annotations
 
@@ -112,8 +112,10 @@ class Sessions:
     # -- opening one ----------------------------------------------------------------------------
 
     def open(self, key: str, command: list[str], harness: str, title: str,
-             env: dict[str, str] | None = None, ticket: str | None = None, ork: str = "") -> Session:
-        """Run `command` on a PTY as session `key` (one that still runs is kept as it is)."""
+             env: dict[str, str] | None = None, ticket: str | None = None, ork: str = "",
+             cwd: str | None = None, size: tuple[int, int] | None = None) -> Session:
+        """Run `command` on a PTY as session `key` (one that still runs is kept as it is). `cwd`:
+        where (default: the active orkspace's worktree); `size`: (cols, rows) to start at."""
         s = self.live.get(key)
         if s is not None and s.running:
             return s
@@ -121,7 +123,9 @@ class Sessions:
         if self.town.run_id:                 # 🪙 / 🪵: the hook tags the session with this run and terminal
             merged["ORKCRAFT_RUN"] = self.town.run_id
             merged["ORKCRAFT_TERMINAL"] = key
-        s = Session(key, list(command), harness, title, str(self.cwd()), merged, ticket, ork)
+        s = Session(key, list(command), harness, title, cwd or str(self.cwd()), merged, ticket, ork)
+        if size is not None:
+            s.screen.resize(max(int(size[1]), 5), max(int(size[0]), 20))
         self.live[key] = s
         self._start(s)
         self.town.publish(bus.SESSION, key=key, state="opened")
@@ -147,7 +151,7 @@ class Sessions:
         self.open(found.key, command, found.harness, found.title or found.short_id, ork=ork)
         return found.key
 
-    def deploy(self, ork_ref: str, muster, treasury, first_message: str = "") -> str | None:
+    def deploy(self, ork_ref: str, muster, treasury, first_message: str = "", ticket: str | None = None) -> str | None:
         """A garrison ork's session: its running one (the message typed into it), else a new one on its
         orders. None, said why, when supply or gold is out or its harness cannot be deployed."""
         town = self.town
@@ -163,8 +167,8 @@ class Sessions:
             return running.key
         budget = town.scroll.budget
         if muster.roster.active >= budget.supply_max_workers:
-            town.toast(f"Supply {muster.roster.active}/{budget.supply_max_workers}: stop a session first",
-                       title="Not enough food", severity="warning")
+            town.toast(f"🥩 Supply {muster.roster.active}/{budget.supply_max_workers}: build more farms first "
+                       "(stop a session in the War Tent)", title="Not enough food", severity="warning")
             return None
         if treasury.exhausted():
             return None
@@ -181,7 +185,8 @@ class Sessions:
             return None
         self._seq += 1
         key = f"deploy:{ork_ref}:{self._seq}"
-        self.open(key, command, harness, f"{m_spec.name} · {b_spec.title}", env={"ORKCRAFT_ORC": ork_ref}, ork=ork_ref)
+        self.open(key, command, harness, f"{m_spec.name} · {b_spec.title}", env={"ORKCRAFT_ORC": ork_ref},
+                  ticket=ticket, ork=ork_ref)
         muster.deployments[key] = ork_ref
         town.record(b_id, "orc_deployed", orc=m_spec.name, harness=harness)
         return key

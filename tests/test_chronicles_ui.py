@@ -271,23 +271,17 @@ async def test_unit_chronicles_empty(fake_repo: Path, isolated_layout_file: Path
 
 @pytest.mark.asyncio
 async def test_deploy_passes_orc_env(fake_repo: Path, monkeypatch: pytest.MonkeyPatch, isolated_layout_file: Path):
-    """5. C deploy passes ORKCRAFT_ORC (monkeypatch app.chat.deploy and assert the env)."""
+    """5. C deploy passes ORKCRAFT_ORC (spy on the core's session opening, core/sessions.py)."""
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     deploy_calls = []
 
-    def spy_deploy(key_prefix, command, harness, title, env=None):
-        deploy_calls.append({
-            "key_prefix": key_prefix,
-            "command": command,
-            "harness": harness,
-            "title": title,
-            "env": env,
-        })
-        return "deploy:test:1"
+    def spy_open(key, command, harness, title, env=None, ticket=None, ork="", cwd=None, size=None):
+        deploy_calls.append({"key": key, "command": command, "harness": harness, "title": title,
+                             "env": env, "ork": ork})
 
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
-        monkeypatch.setattr(app.chat, "deploy", spy_deploy)
+        monkeypatch.setattr(app.tent, "open", spy_open)
 
         await pilot.press("2")
         await pilot.pause()
@@ -315,3 +309,4 @@ async def test_deploy_passes_orc_env(fake_repo: Path, monkeypatch: pytest.Monkey
 
         assert len(deploy_calls) == 1
         assert deploy_calls[0]["env"] == {"ORKCRAFT_ORC": "town_hall/coder"}
+        assert deploy_calls[0]["ork"] == "town_hall/coder" and deploy_calls[0]["key"].startswith("deploy:town_hall/coder:")

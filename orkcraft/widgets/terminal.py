@@ -1,4 +1,9 @@
-"""A terminal inside a Textual widget: a child process on a PTY, rendered with pyte.
+"""A terminal inside a Textual widget: an ork's session (core/sessions.py), drawn with pyte.
+
+The process, its PTY and its screen are the core's (the GUI draws the same sessions with
+xterm.js); the widget opens its session on mount, draws the session's screen, and sends it keys,
+pastes and its size. The app passes what the session prints and when it ends (`output`,
+`finished`).
 
 Every key goes to the process — Claude Code's and agy's own TUIs (polls, buttons,
 `/model`, `/goal`, …) work as in a real terminal — except the keys in
@@ -6,13 +11,6 @@ Every key goes to the process — Claude Code's and agy's own TUIs (polls, butto
 """
 from __future__ import annotations
 
-import asyncio
-import fcntl
-import os
-import pty
-import signal
-import struct
-import termios
 import time
 
 import pyte
@@ -115,116 +113,75 @@ class Terminal(Widget, can_focus=True):
         self.command = command
         self.cwd = cwd
         self.extra_env = env or {}
-        self.screen_ = pyte.Screen(80, 24)
-        self.stream = pyte.ByteStream(self.screen_)
-        self.pid: int | None = None
-        self.fd: int | None = None
-        self.exit_code: int | None = None
-        self.running = False
-        self.last_output = time.monotonic()
+        self.key = ""                         # the session's key in the War Tent (ChatView sets it)
+        self.harness, self.title = "claude", ""
+        self.session = None                   # core.sessions.Session, once opened
+        self._placeholder = pyte.Screen(80, 24)
 
-    # -- process ------------------------------------------------------------------------
+    # -- the session --------------------------------------------------------------------
+
+    @property
+    def screen_(self) -> pyte.Screen:
+        return self.session.screen if self.session is not None else self._placeholder
+
+    @property
+    def running(self) -> bool:
+        return self.session is not None and self.session.running
+
+    @property
+    def exit_code(self) -> int | None:
+        return self.session.exit_code if self.session is not None else None
+
+    @property
+    def last_output(self) -> float:
+        return self.session.last_output if self.session is not None else time.monotonic()
+
+    @property
+    def pid(self) -> int | None:
+        return self.session.pid if self.session is not None else None
+
+    def _sessions(self):
+        return getattr(self.app, "tent", None)
 
     def on_mount(self) -> None:
         self.call_after_refresh(self.start)
 
     def start(self) -> None:
-        if self.pid is not None:
+        if self.session is not None:
+            return
+        tent = self._sessions()
+        if tent is None:
             return
         cols, rows = max(self.size.width, 20), max(self.size.height, 5)
-        self.screen_.resize(rows, cols)
-        env = {**os.environ, "TERM": "xterm-256color", "COLORTERM": "truecolor", **self.extra_env}
-        pid, fd = pty.fork()
-        if pid == 0:  # child
-            try:
-                if self.cwd:
-                    os.chdir(self.cwd)
-                os.execvpe(self.command[0], self.command, env)
-            except Exception as e:  # exec failed: show why, then leave
-                os.write(2, f"orkcraft: cannot run {self.command[0]}: {e}\r\n".encode())
-            os._exit(127)
-        self.pid, self.fd = pid, fd
-        self.running = True
-        self._set_winsize(rows, cols)
-        os.set_blocking(fd, False)
-        asyncio.get_running_loop().add_reader(fd, self._on_readable)
-
-    def _set_winsize(self, rows: int, cols: int) -> None:
-        if self.fd is not None:
-            try:
-                fcntl.ioctl(self.fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
-            except OSError:
-                pass
-
-    def _on_readable(self) -> None:
-        assert self.fd is not None
-        try:
-            data = os.read(self.fd, 65536)
-        except BlockingIOError:
-            return
-        except OSError:
-            data = b""
-        if not data:
-            self._finish()
-            return
-        self.stream.feed(data)
-        self.last_output = time.monotonic()
+        key = self.key or self.id or f"term:{id(self)}"
+        ork = self.extra_env.get("ORKCRAFT_ORC", "")
+        self.session = tent.open(key, self.command, self.harness, self.title, env=self.extra_env,
+                                 ork=ork, cwd=self.cwd, size=(cols, rows))
         self.refresh()
 
-    def _finish(self) -> None:
-        if not self.running:
-            return
-        self.running = False
-        if self.fd is not None:
-            try:
-                asyncio.get_running_loop().remove_reader(self.fd)
-            except Exception:
-                pass
-            try:
-                os.close(self.fd)
-            except OSError:
-                pass
-        code = None
-        if self.pid is not None:
-            # EOF usually means the child is gone; never block the UI waiting for it.
-            for _ in range(20):
-                try:
-                    pid, status = os.waitpid(self.pid, os.WNOHANG)
-                except ChildProcessError:
-                    break
-                if pid:
-                    code = os.waitstatus_to_exitcode(status)
-                    break
-                time.sleep(0.01)
-        self.exit_code = code
-        self.stream.feed(f"\r\n\x1b[2m[process exited{'' if code is None else f' with {code}'}]\x1b[0m".encode())
+    def output(self) -> None:
+        """The session printed something: draw it again."""
+        self.refresh()
+
+    def finished(self, code: int | None) -> None:
+        """The session ended."""
         self.refresh()
         self.post_message(self.Exited(self, code))
 
     def write(self, data: bytes) -> None:
-        if self.running and self.fd is not None:
-            try:
-                os.write(self.fd, data)
-            except OSError:
-                pass
+        tent = self._sessions()
+        if tent is not None and self.session is not None:
+            tent.write(self.session.key, data)
 
     def interrupt(self) -> bool:
         """Ctrl+C for the CLI: cancels its current turn / tool call, keeps the session."""
-        if self.running and self.pid is not None:
-            try:
-                os.kill(self.pid, signal.SIGINT)
-                return True
-            except ProcessLookupError:
-                pass
-        return False
+        tent = self._sessions()
+        return bool(tent is not None and self.session is not None and tent.interrupt(self.session.key))
 
     def stop(self) -> None:
-        if self.running and self.pid is not None:
-            try:
-                os.kill(self.pid, signal.SIGHUP)
-            except ProcessLookupError:
-                pass
-            self._finish()
+        tent = self._sessions()
+        if tent is not None and self.session is not None:
+            tent.stop(self.session.key)
 
     def on_unmount(self) -> None:
         self.stop()
@@ -251,15 +208,9 @@ class Terminal(Widget, can_focus=True):
         event.stop()
 
     def on_resize(self, event: events.Resize) -> None:
-        cols, rows = max(event.size.width, 20), max(event.size.height, 5)
-        if (rows, cols) != (self.screen_.lines, self.screen_.columns):
-            self.screen_.resize(rows, cols)
-            self._set_winsize(rows, cols)
-            if self.pid is not None and self.running:
-                try:
-                    os.kill(self.pid, signal.SIGWINCH)
-                except ProcessLookupError:
-                    pass
+        tent = self._sessions()
+        if tent is not None and self.session is not None:
+            tent.resize(self.session.key, event.size.width, event.size.height)
 
     # -- rendering ------------------------------------------------------------------------
 
@@ -267,6 +218,12 @@ class Terminal(Widget, can_focus=True):
         return container.height
 
     def render_line(self, y: int) -> Strip:
+        if self.session is not None:            # the core's reader thread feeds this screen
+            with self.session.lock:
+                return self._render_line(y)
+        return self._render_line(y)
+
+    def _render_line(self, y: int) -> Strip:
         screen = self.screen_
         if y >= screen.lines:
             return Strip.blank(self.size.width)
@@ -292,4 +249,6 @@ class Terminal(Widget, can_focus=True):
 
     def text_lines(self) -> list[str]:
         """Plain screen contents (tests, debugging)."""
-        return [line.rstrip() for line in self.screen_.display]
+        if self.session is not None:
+            return self.session.text_lines()
+        return [line.rstrip() for line in self._placeholder.display]

@@ -25,6 +25,7 @@ from orkcraft.wm import Desktop, Taskbar, Window
 from orkcraft.core import bus
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
+from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.tui.base import delegate
@@ -161,6 +162,8 @@ class OrkcraftApp(
         self.treasury = Treasury(self.core)
         self.muster = Muster(self.core)     # the roster: every ork, their questions
         self.night = Night(self.core)       # quiet hours: the Elders and the orks' own changes
+        self.tent = Sessions(self.core)     # the orks' CLI sessions (the War Tent draws them)
+        self.tent.on_output = self._session_output
         self._wire_bus()
         self.selected_node: str | None = None
         self._hushed = False                 # the orcs at work: no toasts, no dialogs (the ledger tells)
@@ -214,6 +217,7 @@ class OrkcraftApp(
         on(bus.HUD, lambda e: self.refresh_hud())
         on(bus.SPEC, lambda e: self._spec_changed(e.data["building"], e.data["spec"], e.data.get("refresh", False)))
         on(bus.UI, lambda e: self._ui_changed(e.data["building"], e.data["ui"]))
+        on(bus.SESSION, self._session_changed)
         self._wire_delivery()
 
     def get_default_screen(self) -> Screen:

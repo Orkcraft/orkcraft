@@ -98,8 +98,9 @@ the deployments), `core/runners.py`, and:
 2. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
    ork, the processes and the roster's view of running sessions are not. Split them into a
    sessions service in the core that keeps the processes, and terminals that draw them (pyte
-   today, xterm.js later). The service stands (`core/sessions.py`) and the GUI runs on it; the
-   TUI's War Tent still runs its own terminals and moves onto it next.
+   today, xterm.js later). Done: `core/sessions.py` runs every session (processes, screens,
+   deployment, the report of an ork that went home); the TUI's `Terminal` draws a session with
+   pyte and the GUI's with xterm.js.
 3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker,
    but the TUI's Halt All still walks the views and the War Tent itself. Once every type has a
    worker and sessions are a service, Halt All is `town.halt()` plus the face's own terminals.
@@ -236,7 +237,5 @@ orkcraft/gui/
 
 ### Next
 
-1. The TUI onto `core/sessions.py` (stage 1, item 2): its terminals draw the core's sessions with
-   pyte, so `deploy_resident`, the task report and Halt All live in one place.
-2. The Elders' advice in Orders (quiet hours run in the GUI's host).
-3. Building, roads and settings from the GUI; the other types' windows as their workers come.
+1. The Elders' advice in Orders (quiet hours run in the GUI's host).
+2. Building, roads and settings from the GUI; the other types' windows as their workers come.

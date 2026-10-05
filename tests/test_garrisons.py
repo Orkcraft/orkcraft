@@ -186,7 +186,7 @@ async def test_dismiss_coder_and_keep_smith(fake_repo: Path, isolated_layout_fil
 async def test_deploy_coder(fake_repo: Path, monkeypatch: pytest.MonkeyPatch, isolated_layout_file: Path):
     """5. C on Coder with deploy_command replaced as above → app.deployments has one entry, the War Tent has
     that terminal, Coder shows deployed, the Warband group does not list that terminal, roster.active == 1."""
-    monkeypatch.setattr("orkcraft.tui.sessions.deploy_command", lambda harness, prompt: ["cat"])
+    monkeypatch.setattr("orkcraft.sources.sessions.deploy_command", lambda harness, prompt: ["cat"])  # the core deploys (core/sessions.py)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()

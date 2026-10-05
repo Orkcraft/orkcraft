@@ -203,6 +203,7 @@ class ChatView(Container):
             cwd = session_cwd() if callable(session_cwd) else self.app.repo_root  # type: ignore[attr-defined]
             term = Terminal(command, cwd=str(cwd), env=merged_env,  # type: ignore[attr-defined]
                             id=f"term-{self._term_seq}")
+            term.key, term.harness, term.title = key, harness, title      # the core's session (core/sessions.py)
             self.terminals[key] = term
             self.meta[key] = (harness, title, self.node_id)
             switcher.mount(term)
@@ -228,6 +229,12 @@ class ChatView(Container):
         key = f"{key_prefix}:{self._deploy_count}"
         self._show(key, command, harness, title, env=env)
         return key
+
+    def show_session(self, key: str) -> None:
+        """A session the core already runs (a deployed ork), in a terminal of its own."""
+        s = self.app.tent.get(key)  # type: ignore[attr-defined]
+        if s is not None:
+            self._show(key, s.command, s.harness, s.title)
 
     def open_for_node(self, node_id: str) -> None:
         """Preview / card `o`: the node's latest resumable session, else a new Claude session."""
