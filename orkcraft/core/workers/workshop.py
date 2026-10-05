@@ -61,6 +61,13 @@ class WorkshopWorker(Worker):
     def script(self) -> Path:
         return workshop.script_path(self.repo_root, self.building_id, self.runtime)
 
+    @property
+    def keeper(self) -> str:
+        """Its keeper's name: the one who writes its script and schedule from plain words (core/keeper.py)."""
+        bs = self.town.scroll.building(self.building_id) if self.town.scroll is not None else None
+        lead = bs.garrison.steward if bs is not None else None
+        return lead.name if lead is not None else self.btype.orc
+
     def source(self) -> str:
         return workshop.load_script(self.repo_root, self.building_id, self.runtime)
 
