@@ -237,6 +237,7 @@ class OrkcraftApp(
             preview_id="",
             home_id="loot",
             id="desktop",
+            town=self.core,
         )
         self.mode = mode_for(self.size.width)
         console = Console(id="console")

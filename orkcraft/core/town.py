@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from orkcraft import scroll
+from orkcraft import scroll, settings
 from orkcraft.config import Config, find_project_root
 from orkcraft.core import bus as b
 from orkcraft.realm import catalog, checkpoint, chronicles, masonry, pipes
@@ -43,6 +43,7 @@ class Town:
         else:
             self.graph = None
         self.bus = b.Bus()
+        self.machine = settings.load()      # this machine's settings: you, your tools, your day (settings.py)
         self.saver: Callable[[], bool] | None = None
         self.buildings: list[Building] = registry()
         specs, self.mason_problems = masonry.load_specs(self.repo_root)
