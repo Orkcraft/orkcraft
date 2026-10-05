@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Sprite</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<style>html,body{margin:0;height:100%} body{background:#000}</style></head>
+<body>
+<div class="ok-split stack">
+<section class="ok-stage" data-theme="camp"><span class="ok-mode">Camp · forest</span>
+<div class="ok-row" style="align-items:flex-end">
+  <div class="ok-sprite is-empty xs">XS 64×32</div><div class="ok-sprite is-empty s">S 80×40</div><div class="ok-sprite is-empty m">M 96×48</div><div class="ok-sprite is-empty l">L 112×56</div>
+</div>
+<div class="ok-row" style="align-items:flex-end"><div class="ok-sprite is-empty banner">window 128×64</div></div>
+<div class="ok-row" style="align-items:flex-end">
+  <div class="ok-sprite is-empty tree">tree</div><div class="ok-sprite is-empty bush">bush</div><div class="ok-sprite is-empty mount">mountain</div><span style="color:var(--ink-muted);font-size:12px">decorations</span>
+  <div class="ok-sprite is-empty icon"></div><span style="color:var(--ink-muted);font-size:12px">command 32</span>
+  <div class="ok-sprite is-empty res"></div><span style="color:var(--ink-muted);font-size:12px">resource 16</span>
+  <img class="ok-sprite portrait" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAYCAYAAADkgu3FAAAFW0lEQVR4nI2W3XNWVxXGf2vtkwClRoY6aiWVEJLzJiRhaiolpOiFA/mikgo0w4WOFmXqgOOFM1r9D+ydzjid1kgVdRyFzhSa8mHTNradlqjpWGy++r4hMQ5lqmOtxY82vGev5cV5k4pBZN+cM3uv9ay993rWs7Zwg6N5/6cdAHdEwQQSU8Z//oTciH9yvcXGfTu9KgQiGV27pnDJUFHwgHmGksDK3R48cP7o49cNeM3F1oFej5rRvbuIuGE4uCLquDu31n4E9wx34c8X3wJNGDlbQCTwyo9PXBNz2WRhoNtXpwnbmydQIoYjgAuIA56w9ta1JAHEFBNHRXnj9b/x0lQT/5w1pn52ahnuVROb9vd5dWp8Mi2icoVKUhAV3BwQTECkmg98cA0h5O7u8KdLf8EyRbSakacamfjJk3LNQIWBXn9famxPi3iIgOUGAu6+ZGoooopGcHNEAFGiRMQFQTECzz9bz/lHn1rC18UfzwCPmGR4VHAFFLcEPFQIkKCuYLkdorg4TkQMxBUc3I3kwwkt+3f5In4CsOkzXb6iVehomMM98OxQirmACOIGEvKzuOKSsWPPNNGVp0/UEzQADqKIKDEu0HXPHB1NJZ6ZWc9VgVY2VXF5ukysd0anG0nfWEVLoQExx1FUFJOM8ekS6w+NE81xh539JS4N3k5rISV6RLwKAhw/uYKyRNak1TQN9Pj0sbOSFPb0uISMo/dt574jZW4qRNrSJnq+tI7Ojq8C8NLoI7jD5NfmMBckOJgz/8hm2tMCPfc30LHlfkSEF158iB79KA8+cJravhlGihtp27fLk6iOi4NAkATEIGT/mT6MiKkhYrjYIk9QqnExoiy8xy7N8s2IgpbBI2VRpGFPt9e0Oge0hts7NvPFwV+xqrmK215YxTe/3UcMkeHBIr+fnGXDoVfIJFai51S/+HA77U0Fdh68Dc8UCcKDD5yl9vNFhk/V8dODn+Cz33+ORCTPg5gh2b84eqCT/Y+ewzrf4TvfGsIIRIO6w+NkxPcKQx11qDs4zu9+YJz/xjRKZHLNu3zqC/M8eWIdX/9YDcK7CIKk+/r8pk3GOxPCl1tWsnVLG6B87kejdPe/RhIcxHMZWryzpcowQBFX1PMNlz0wcrKWw2230H5HystjF/je+GUk3dvjNS3QmV6gfqaNJEL7to2YJRz84SgxGN2759GlIIuiJLkkkNfc8KmNkCWAc6jlZj6+pYnR35YYnHibqAEp7O3x1S1wVzrH04/Xcqj1/YByx9YUscCLY3MMTryJuJFzRiA4RoJ6BiJEzzjccgt33tnMpYuvs27dhxgbK/HdV9+m6+55fjlUR4IY4sqZoTp27P4DDw1VYS58hRKbt6YcmforZb1C790zBK/CdVFgBYiIRyDw8EmB8Crtm5s4cORlXAwV4zdz6/McARTu7fHVmxR3466GEjHCyOk6nISd/SUEw1wYK20ACUTJZdIdtjVcAIm4BZ55ogGRjB3985QXhNHZAn8vLXDh2LAIQLqvy1FhdbOQkLG1oYQjiHiuqlLJj+XEEAFc8coXN5CVnJveQOfGWcwj5/5Yzz/GE4rHz8pV6t28t9eNjJtbqpBKwrelk6hFTJXF/C8bJuCB56eb6Wx8jbHZeoTAm5Mw+9iZJY9lrum9fR7DAmvT6py+FQvH2dY4kytDPgEe+HWpnigBdQEvc7lUDRGKx09fux/9dzBXpaaQEbRyY4BYRNC8IcpifSVIpYbemjE8E2aPnVmGe90HReNAr2vixCsOiRLImYZTaXCex0sci0bxF8P/E++GnkrN/b3uK7TiIHilyScI0Yypx07/X5x/A252bYt6DWn6AAAAAElFTkSuQmCC" width="26" height="24" alt=""><span style="color:var(--ink-muted);font-size:12px">portrait 46×38 (the ork)</span>
+</div>
+</section>
+</div>
+</body></html>
