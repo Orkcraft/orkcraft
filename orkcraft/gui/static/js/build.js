@@ -1,32 +1,50 @@
-// Changing the town: raising a building from the catalog, laying a road between two buildings and
-// taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
+// Changing the town: Build (the Warchief asked, or a building raised from the catalog), laying a road
+// between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, say } from "./link.js";
+import { town, command, act, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { HandlerDialog } from "./acts.js";
-import { openBuilding, closeBuilding } from "./windows.js";
+import { opened, openBuilding, closeBuilding } from "./windows.js";
+
+const HALL = "town_hall";                          // the Warchief's hall (js/buildings/town_hall.js)
 
 export const building = signal(false);            // the Build dialog is open
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
 export const pickedRoad = signal(null);            // the road key the person clicked
 
+/** Build, in one (docs/design/building-views.md §3, Town Hall): say what you need — the Warchief points
+ *  at the building that does it (its chat offers to build it) — or pick one of the catalog, by what it is for. */
 export function BuildDialog() {
   const [types, setTypes] = useState(null);
-  const close = () => { building.value = false; };
+  const [need, setNeed] = useState("");
+  const close = () => { building.value = false; setNeed(""); };
   useEffect(() => { if (building.value && types === null) command("town.catalog").then(setTypes, () => setTypes([])); },
             [building.value]);
   if (!building.value) return null;
   const raise = (t) => command("town.build", { type: t.id }).then((id) => { close(); openBuilding(id); }, () => {});
-  return html`<${Dialog} title="Build" text=${say("A building straight from the catalog, with its defaults; its settings live in its window.")}
+  const ask = () => need.trim() && act(HALL, "ask", { text: `What should I build? ${need.trim()}` })
+    .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
+  const groups = [];
+  for (const t of types || []) {
+    if (!groups.length || groups[groups.length - 1][0] !== t.intent) groups.push([t.intent, []]);
+    groups[groups.length - 1][1].push(t);
+  }
+  return html`<${Dialog} title="Build" text=${say("Say what you need, or pick a building; its settings live in its window.")}
       onCancel=${close} actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>`}>
+    <div class="gui-form__row">
+      <input class="ok-input" autofocus placeholder=${say("What do you need? e.g. sort my inbox into tasks")}
+        value=${need} onInput=${(e) => setNeed(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && ask()} />
+      <button class="ok-btn primary" style="flex:none" disabled=${!need.trim()} onClick=${ask}>${say("Ask the Warchief")}</button>
+    </div>
     ${types === null ? html`<p class="ok-tone-muted">Looking…</p>` : html`<ul class="gui-catalog">
-      ${types.map((t) => html`<li key=${t.id} class="gui-catalog__item" onClick=${() => raise(t)}>
-        <b>${say(t.title)}</b>${t.agentic ? html` <span class="ok-word ok-tone-muted">agents</span>` : ""}
-        <div class="ok-font-status ok-tone-muted">${t.summary}</div>
-        ${t.sends.length > 0 && html`<div class="ok-font-status">sends: ${t.sends.join(" · ")}</div>`}
-      </li>`)}</ul>`}
+      ${groups.map(([intent, list]) => html`<li key=${intent} class="ok-font-heading ok-tone-muted">${intent}</li>
+        ${list.map((t) => html`<li key=${t.id} class="gui-catalog__item" onClick=${() => raise(t)}>
+          <b>${say(t.title)}</b>${t.agentic ? html` <span class="ok-word ok-tone-muted">agents</span>` : ""}
+          <div class="ok-font-status ok-tone-muted">${t.summary}</div>
+          ${t.sends.length > 0 && html`<div class="ok-font-status">sends: ${t.sends.join(" · ")}</div>`}
+        </li>`)}`)}</ul>`}
   </${Dialog}>`;
 }
 

@@ -122,7 +122,7 @@ class Town:
         if building_id in self.workers:
             return self.workers[building_id]
         from orkcraft.core import workers
-        spec = self.custom_specs.get(building_id)
+        spec = self.spec_of(building_id)            # a built-in (the Town Hall) wears its catalog type
         cls = workers.registry().get(workers.type_id(spec)) if spec else None
         if cls is None:
             return None

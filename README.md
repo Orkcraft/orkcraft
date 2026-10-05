@@ -84,8 +84,8 @@ a commit in the camp's own git, so it can be undone.
 
 ![The Town Hall: the Council, ratings, proposals](docs/img/town-hall.png)
 
-- **📜 Preset** — pick what you need, name it, place it with a ghost that follows the mouse. No model call.
-- **🛠 New** — talk to the **Builder**: it asks what the building should do, offers three views, and
+- **🏗 Build → 📜 Preset** — pick what you need, name it, place it with a ghost that follows the mouse. No model call.
+- **🏗 Build → 🛠 New** — talk to the **Builder**: it asks what the building should do, offers three views, and
   writes a **script** (a model only where a script cannot do the job). The blueprint is previewed,
   reviewed by the Council and run on mock carts in a sandbox before you approve it.
 

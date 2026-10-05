@@ -652,6 +652,9 @@ def ensure_presets(scroll: TownScroll, presets: Presets) -> list[str]:
             if b is not None and (b.preset_ref.startswith("core:") or b.preset_ref.startswith("legacy:")):
                 b.title = p.get("title", b.title)
                 b.icon = p.get("icon", b.icon)
+                lead = b.garrison.steward          # a resident renamed (Chieftain → Warchief): its id stays
+                if lead is not None and lead.name in p.get("was", ()):
+                    lead.name = p.get("orc", lead.name)
             continue
         b = building_from_preset(pid, presets)
         b.demolished = True

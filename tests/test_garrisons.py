@@ -46,8 +46,8 @@ def test_garrison_badge():
 @pytest.mark.asyncio
 async def test_recruit_garrison_member(fake_repo: Path, isolated_layout_file: Path):
     """2. Building state on the Forge → R → modal → name 'Coder', role 'tickets', orders 'take T1001'
-    → the scroll file has 2 Forge orcs; the Forge badge contains Chieftain+1; the roster lists
-    [1] … Chieftain and [2] … Coder."""
+    → the scroll file has 2 Forge orcs; the Forge badge contains Warchief+1; the roster lists
+    [1] … Warchief and [2] … Coder."""
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -73,17 +73,17 @@ async def test_recruit_garrison_member(fake_repo: Path, isolated_layout_file: Pa
         b_chat = next(b for b in data["buildings"] if b["id"] == "town_hall")
         assert len(garrison_orcs(b_chat)) == 2
         member_names = [m["name"] for m in garrison_orcs(b_chat)]
-        assert "Chieftain" in member_names and "Coder" in member_names
+        assert "Warchief" in member_names and "Coder" in member_names
 
-        # The Forge badge contains Chieftain+1
+        # The Forge badge contains Warchief+1
         chat_win = app.desktop.get_window("town_hall")
-        assert "Chieftain+1" in chat_win.badge
+        assert "Warchief+1" in chat_win.badge
 
-        # The roster lists [1] … Chieftain and [2] … Coder
+        # The roster lists [1] … Warchief and [2] … Coder
         roster = app.screen.query_one("#clan-roster", ClanRoster)
         roster_list = roster.query_one("#roster-list", OptionList)
         prompts = [str(roster_list.get_option_at_index(i).prompt) for i in range(roster_list.option_count)]
-        assert any("[1]" in p and "Chieftain" in p for p in prompts)
+        assert any("[1]" in p and "Warchief" in p for p in prompts)
         assert any("[2]" in p and "Coder" in p for p in prompts)
 
 
@@ -136,7 +136,7 @@ async def test_select_coder_and_edit_trigger(fake_repo: Path, isolated_layout_fi
 
 @pytest.mark.asyncio
 async def test_dismiss_coder_and_keep_smith(fake_repo: Path, isolated_layout_file: Path):
-    """4. D on Coder removes it; D on Chieftain notifies and keeps him."""
+    """4. D on Coder removes it; D on Warchief notifies and keeps it."""
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -165,21 +165,21 @@ async def test_dismiss_coder_and_keep_smith(fake_repo: Path, isolated_layout_fil
         data = json.loads(isolated_layout_file.read_text(encoding="utf-8"))
         b_chat = next(b for b in data["buildings"] if b["id"] == "town_hall")
         assert len(garrison_orcs(b_chat)) == 1
-        assert garrison_orcs(b_chat)[0]["name"] == "Chieftain"
+        assert garrison_orcs(b_chat)[0]["name"] == "Warchief"
 
-        # Select Chieftain (1 in Building state)
+        # Select Warchief (1 in Building state)
         roster_list.focus()
         await pilot.press("1")
         await pilot.pause()
         assert app.focus_state.mode == "unit"
 
-        # D on Chieftain notifies and keeps him
+        # D on Warchief notifies and keeps it
         await pilot.press("D")
         await pilot.pause()
         data2 = json.loads(isolated_layout_file.read_text(encoding="utf-8"))
         b_chat2 = next(b for b in data2["buildings"] if b["id"] == "town_hall")
         assert len(garrison_orcs(b_chat2)) == 1
-        assert garrison_orcs(b_chat2)[0]["name"] == "Chieftain"
+        assert garrison_orcs(b_chat2)[0]["name"] == "Warchief"
 
 
 @pytest.mark.asyncio

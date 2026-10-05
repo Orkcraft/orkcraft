@@ -269,6 +269,13 @@ orkcraft/gui/
   always stands); a road is pulled out of a hut's `+` handle onto another hut and laid with one of
   the events it may carry; a road clicked shows what it is and is taken up from there.
 
+- 🏰 The Town Hall as the town's way in (`core/workers/town_hall.py`, `gui/views/town_hall.py`,
+  `js/buildings/town_hall.js`): its hut is Build (in one: say what you need, or pick from the
+  catalog by what it is for) and Ask me anything; its Command Card the Warchief's chat (a building
+  it names is built on a click), the live sessions, the audit, spend and quotas; its window the tabs
+  Hall, Sessions (the War Tent) and Limits. The status bar keeps Halt All, Answers and the project.
+  The TUI's Hall reads the same worker.
+
 ### Porting a building type
 
 The recipe the three first types followed (🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump); a type is

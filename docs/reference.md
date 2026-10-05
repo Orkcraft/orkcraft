@@ -104,7 +104,7 @@ Buildings (keys `1`–`9`):
 | # | Building | Resident | Shows |
 |---|---|---|---|
 | 1 | 📦 Artifacts | Quartermaster | `./loot/` artifacts and wiki notes |
-| 2 | 🏰 Town Hall | Chieftain | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy quota) |
+| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
 Every other building is built from the catalog of typed buildings (below) or by Mason & Artisan.
@@ -139,8 +139,9 @@ spread over the width — and keep the spot you drag them to.
 - **Calm console**: in the town the console floats over the map's bottom edge instead
   of taking rows from it. With nothing selected only the War Map shows (bottom left — a 🔥 on an
   orkspace tells you an ork there waits for orders) and the **🏰 Town Hall** (bottom right, on
-  every canvas, never moved or demolished) with its two buttons: **📜 Preset** (pick what you need,
-  name it, place it) and **🛠 New** (build from scratch with the Builder); `B` opens the whole build menu. Select a building, an ork or a road and the
+  every canvas, never moved or demolished) with its two buttons: **🏗 Build**, one way in — a 📜 preset
+  (pick what you need, name it, place it) or 🛠 new from scratch with the Builder — and **🔍 Audit**;
+  `B` opens the same build menu. Select a building, an ork or a road and the
   garrison and Command Card slide in; `esc` hides them. The huts live above the calm strip, so
   nothing on the map moves; the open building shrinks to stay clear of the console.
 - **Garrison, Info, chat**: the garrison lists names and states only (⚙ busy, 💤 idle,
@@ -463,7 +464,7 @@ starts from a fresh default scroll.
 Everything that changes the camp goes through the Town Hall and its own git:
 
 ```
-🏰 Town Hall: [📜 Preset] [🛠 New]
+🏰 Town Hall: [🏗 Build: 📜 preset · 🛠 new] [🔍 Audit]
 📜 preset: what you need → name, icon, settings ───────────────────────────┐
 🛠 new: talk with the Builder (questions, three views, carts, events, timer) │
         → a script-first blueprint → 🏛 Council + 🧪 sandbox + 🖼 preview /   ▼
@@ -484,8 +485,11 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   security: sudo, `curl | sh`, `rm -rf /`, secrets, the network), ⛏ Peon (worktrees, permissions,
   cache). Rules first — a rule's block stops it and says why; then one `claude -p --model haiku`
   call whose objections you may override. Reviews: `.orkcraft/council/reviews.jsonl`, the Town Hall.
-- **The Town Hall's hut** has two buttons — 📜 Preset and 🛠 New (also `[` / `]`); the audit, the
-  clean-up and the settings live in F10. Two towers, a pediment over the round window of the Elders,
+- **The Town Hall's hut** has two buttons — 🏗 Build (a preset or new from scratch) and 🔍 Audit
+  (also `[` / `]`); the clean-up and the settings live in F10. Its steward is the **Warchief**
+  (Office: *Lead agent*; a scroll of old names it the Chieftain and keeps its id). In the GUI the hut
+  is the town's way in: Build and **Ask me anything** — a question to the Warchief, whose chat is the
+  Town Hall's Command Card (it names a building of the catalog when one fits, and builds it on a click). Two towers, a pediment over the round window of the Elders,
   columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
   hours), 📜 advice waits for you, ⏳ tonight's questions are used up, 💤 at rest by day, nothing at
   ⛓️ Ask me. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
@@ -913,6 +917,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | Elder | Advisor |
 | steward | coordinator |
 | Mason & Artisan | Module designer |
+| Warchief | Lead agent |
 | Mason | Data planner |
 | Artisan | Layout designer |
 | Warder | Security reviewer |

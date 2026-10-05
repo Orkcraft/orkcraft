@@ -1,12 +1,10 @@
 // The Office chrome around the town: the HUD (title bar), the War Map (the orkspaces, a small
-// block over the town's bottom-left corner, as in the TUI), the status bar and the toasts. Markup and classes are the design system's
+// block over the town's bottom-left corner, as in the TUI), the status bar (Halt All, Answers, the
+// project; Build and the sessions are the Town Hall's) and the toasts. Markup and classes are the design system's
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
-import { showBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
-import { newSession, HALL } from "./tent.js";
-import { building } from "./build.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -59,10 +57,7 @@ export function StatusBar() {
   const t = town.value;
   return html`<footer class="ok-keys gui-status">
     <button class="gui-status__item" onClick=${() => command("halt")}>Halt All</button>
-    <button class="gui-status__item" onClick=${() => { building.value = true; }}>Build</button>
     <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
-    <button class="gui-status__item" onClick=${() => newSession("claude")}>Add agent</button>
-    <button class="gui-status__item" onClick=${() => showBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
     <span class="gui-status__spacer"></span>
     <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
   </footer>`;

@@ -323,7 +323,7 @@ async def test_calm_town_shows_the_war_map_and_the_town_hall(fake_repo: Path, to
         assert not app.screen.query(BUILD_BUTTON_QUERY)                # the Town Hall took its place
         hall = desk.huts["town_hall"]
         assert hall.fixed and hall.geom.x + hall.geom.w == desk.size.width   # pinned bottom right
-        assert "Preset" in str(hall.render()) and "New" in str(hall.render())   # T1108: two ways to build
+        assert "Build" in str(hall.render()) and "Audit" in str(hall.render())   # Build in one, and Audit
         assert not app.screen.query_one("#taskbar").display
         assert desk.size.height == SIZE[1] - 2                       # the town has the whole height
         spots = _hut_geoms(app)
@@ -356,20 +356,27 @@ async def test_town_hall_builds_from_a_preset_or_from_scratch_and_audits_from_f1
         await _settle(pilot)
         hall = app.desktop.huts["town_hall"]
         spot = hall.geom
-        assert [aid for _, _, aid in hall._buttons] == ["hall.preset", "hall.scratch"]   # T1108: two ways to build
-        bx = next(x0 for x0, _, aid in hall._buttons if aid == "hall.preset")
-        await pilot.click(hall, offset=(bx, hall.geom.h - 1))     # 📜 Preset on the hut
+        assert [aid for _, _, aid in hall._buttons] == ["hall.build", "hall.audit"]   # Build in one, and Audit
+        bx = next(x0 for x0, _, aid in hall._buttons if aid == "hall.build")
+        await pilot.click(hall, offset=(bx, hall.geom.h - 1))     # 🏗 Build on the hut: presets or from scratch
         await _settle(pilot)
-        assert isinstance(app.screen, PresetsModal)
-        await pilot.press("escape")
-        await _settle(pilot)
-        nx = next(x0 for x0, _, aid in hall._buttons if aid == "hall.scratch")
-        await pilot.click(hall, offset=(nx, hall.geom.h - 1))     # 🛠 New on the hut
+        assert "Build" in str(app.screen.query_one("#road-title").render())
+        await pilot.press("down", "enter")                             # from scratch: the Builder asks
         await _settle(pilot)
         from orkcraft.screens.builder_interview import BuilderChat
         assert isinstance(app.screen, BuilderChat)
         await pilot.press("escape")
         await _settle(pilot)
+        await pilot.press("B")                                         # the key opens the same menu
+        await _settle(pilot)
+        assert "Build" in str(app.screen.query_one("#road-title").render())
+        await pilot.press("escape")
+        await _settle(pilot)
+        ax = next(x0 for x0, _, aid in hall._buttons if aid == "hall.audit")
+        await pilot.click(hall, offset=(ax, hall.geom.h - 1))     # 🔍 Audit on the hut
+        await _settle(pilot)
+        assert (fake_repo / ".orkcraft" / "audit" / "latest.json").exists()
+        (fake_repo / ".orkcraft" / "audit" / "latest.json").unlink()
         await pilot.press("B")                                         # the key opens the whole menu
         await _settle(pilot)
         assert "Build" in str(app.screen.query_one("#road-title").render())
@@ -445,7 +452,7 @@ async def test_orc_chat_keeps_the_town_still_and_the_open_building_clear(fake_re
         chat_win = app.desktop.get_window("town_hall")
         await pilot.press(str(chat_win.number))
         await _settle(pilot)
-        app.set_focus_state("unit", orc_key_val="orc:resident:town_hall/chieftain")
+        app.set_focus_state("unit", orc_key_val="orc:resident:town_hall/warchief")
         await _settle(pilot)
         chat = app.screen.query_one(OrcChat)
         assert chat.display and chat_win.region.right <= chat.region.x       # the window steps aside

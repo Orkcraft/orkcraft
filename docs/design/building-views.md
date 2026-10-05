@@ -70,7 +70,7 @@ the shell never has a list of types to edit.
 |---|---|---|
 | core | `core/workers/<type>.py` | the worker: state and acts, no face (a `Worker` with its `TYPE` registers itself) |
 | host | `gui/views/<type>.py` | `card(worker)` → small JSON for **closed** (in every snapshot, keep it tiny); `detail(worker)` → what **command** and **full** draw (sent while the building is selected or open); `ACTS`; `REFRESH_S` / `refresh` |
-| page | `gui/static/js/buildings/<type>.js` | `card(b)` → the inside of the hut card from `b.card`; `preview(id, data)` → the top of the Command Card; `panes(id, data)` → the full window's panes by its UI document |
+| page | `gui/static/js/buildings/<type>.js` | `card(b)` → the inside of the hut card from `b.card`; `preview(id, data)` → the top of the Command Card; `panes(id, data)` → the full window's panes by its UI document; `quick(id, action)` → its quick actions done in the page (true), else the host's |
 
 A hook a type does not export falls back: `card` → the status lines (`status_plain`), `preview` → no
 preview (the buttons only), `panes` → the window's old body. Shared helpers a type calls but never

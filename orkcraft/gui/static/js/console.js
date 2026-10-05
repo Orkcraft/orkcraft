@@ -15,7 +15,7 @@ import { typeModule } from "./types.js";
 import { opened, chosen, showBuilding, closeBuilding, selectOrk, DemolishButton } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
-import { laying, pickedRoad, building as buildOpen } from "./build.js";
+import { laying, pickedRoad } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { RecruitDialog, OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
 
@@ -205,8 +205,9 @@ function Inventory({ i, open }) {
 
 function BuildingCommands({ b, i, redo, open }) {
   const run = (name) => command(name, { id: b.id }).then(redo, () => {});
-  const quick = (a) => (a.id === "hall.preset" ? (buildOpen.value = true)
-                                               : command("building.quick", { id: b.id, action: a.id }).catch(() => {}));
+  const mod = b.page ? typeModule(b.type) : null;          // a type's page may do its own quick actions
+  const quick = (a) => (mod && mod.quick && mod.quick(b.id, a.id))
+    || command("building.quick", { id: b.id, action: a.id }).catch(() => {});
   return html`${(i ? i.quick : []).map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => quick(a)} />`)}
     ${b.alert && html`<${Act} label=${say("Answer")} onClick=${() => openOrders(b.alert.id)} />`}
     <${Act} label=${say("Open")} title=${say("Its whole window (or click its hut again)")} onClick=${() => showBuilding(b.id)} />

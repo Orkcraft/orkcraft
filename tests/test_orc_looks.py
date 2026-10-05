@@ -24,9 +24,9 @@ def test_scheme_parts_and_badges():
     styles = [st for _, st in looks.scheme_parts(pair)]
     assert styles[0] == looks.HARNESS_STYLE["agy"] and styles[-1] == looks.HARNESS_STYLE["claude"]
     assert looks.scheme_long(pair) == "write: agy → review: claude"
-    lead = Orc("Chieftain", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
+    lead = Orc("Warchief", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
     scribe = Orc("Scribe", "digest", RESIDENT, kind="chain")
-    assert garrison_badge([lead, scribe]) == "🧌 Chieftain+1 ✻ 🔨 💤"
+    assert garrison_badge([lead, scribe]) == "🧌 Warchief+1 ✻ 🔨 💤"
     assert scribe.badge == "🪧 Scribe 🔨 💤"
 
 
@@ -51,10 +51,10 @@ async def test_roster_by_roads_and_unit_card(fake_repo: Path):
         await _settle(pilot)
         app.refresh_roster()
         await _settle(pilot)
-        assert "🧌 Chieftain+1 ✻" in chat.badge
+        assert "🧌 Warchief+1 ✻" in chat.badge
         lst = app.screen.query_one("#roster-list", OptionList)
         rows = [str(lst.get_option_at_index(i).prompt) for i in range(lst.option_count)]
-        assert rows[0] == "[1] ★ Chieftain ✻ 💤" and rows[1] == "[2] Scribe 🪧 💤"
+        assert rows[0] == "[1] ★ Warchief ✻ 💤" and rows[1] == "[2] Scribe 🪧 💤"
         assert len(rows) == 2
         lst.focus()
         await pilot.press("2")                       # the 2nd orc, not the 2nd row
@@ -142,7 +142,7 @@ async def test_w_watches_and_applies_a_ready_demotion(fake_repo: Path, monkeypat
         lst.focus()
         await pilot.press("1")
         await _settle(pilot)
-        assert app.focus_state.orc_key.endswith("town_hall/chieftain")
+        assert app.focus_state.orc_key.endswith("town_hall/warchief")
         await pilot.press("W")
         for _ in range(40):
             await pilot.pause(0.05)
@@ -165,7 +165,7 @@ async def test_scheduled_steward_runs_in_the_background(fake_repo: Path, monkeyp
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line")
     ts.subscribe(app.scroll, "town_hall", "loot", "on_selection_change", handler="seer")
-    ts.update_orc(app.scroll, "town_hall", "chieftain", trigger={"type": "cron", "expression": "* * * * *"})
+    ts.update_orc(app.scroll, "town_hall", "warchief", trigger={"type": "cron", "expression": "* * * * *"})
     _examples(fake_repo)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)

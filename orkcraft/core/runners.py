@@ -9,3 +9,4 @@ STEWARD_RUNNER = None
 FASTPATH_RUNNER = None    # tests put a fake light model for the Council's Fast Path here
 OPTIMIZE_RUNNER = None    # … and for the Building retro's proposals
 WEEKLY_RUNNER = None      # … and for the Town retro
+WARCHIEF_RUNNER = None    # … and for the Warchief's answers in the Town Hall (core/workers/town_hall.py)

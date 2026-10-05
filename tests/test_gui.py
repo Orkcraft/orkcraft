@@ -175,8 +175,12 @@ def test_markdown_never_carries_markup_or_script():
 
 def test_a_building_without_a_gui_view_says_what_it_is(fake_repo):
     host = _host(fake_repo)
-    d = host.detail("town_hall")
+    loot = host.town.scroll.building("loot")
+    loot.demolished = False                     # a built-in with no worker and no view of its own yet
+    d = host.detail("loot")
     assert d["data"] is None and d["ui"]["panes"] and host.detail("nowhere") is None
+    with pytest.raises(CommandError):
+        host.command("act", {"id": "loot", "act": "edit"})
     with pytest.raises(CommandError):
         host.command("act", {"id": "town_hall", "act": "edit"})
 
@@ -472,7 +476,7 @@ def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_
     json.dumps(hall)
     assert hall["about"] and hall["goal"] == "balance" and hall["pinned"] is False
     assert {"runs", "ok", "failed", "results"} <= set(hall["week"])
-    assert [q["id"] for q in hall["quick"]] == ["hall.preset", "hall.scratch"]
+    assert [q["id"] for q in hall["quick"]] == ["hall.build", "hall.audit"]       # Build in one, and Audit
     lead = next(o for o in host.muster.roster.garrison("town_hall") if o.lead)
     ork = host.command("info", {"id": "town_hall", "ork": lead.ref})
     json.dumps(ork)
@@ -574,7 +578,7 @@ def test_a_type_draws_its_closed_card_from_its_view(fake_repo, isolated_layout_f
     assert fields["page"] and fields["card"]["error"] == "" and fields["card"]["lanes"]
     assert {"label", "count", "new"} <= set(fields["card"]["lanes"][0])
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
-    assert hall["card"] is None and hall["page"] is False
+    assert hall["page"] and hall["card"] == {"news": [], "warchief": "Warchief"}     # nothing happens: Build, Ask
 
 
 def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_layout_file):
@@ -585,3 +589,45 @@ def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_l
     assert host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"}) == lake.id
     with pytest.raises(CommandError):                 # the keeper arrives with its own track
         host.command("keeper.ask", {"id": "town_hall", "request": "route bugs to the Forge"})
+
+
+def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, monkeypatch):
+    """docs/design/building-views.md §3: closed — Build and Ask me anything, or what happens; command —
+    the Warchief's chat, the sessions, the audit, spend and quotas; full — Hall, Sessions, Limits."""
+    import time
+
+    from orkcraft.core import runners
+
+    monkeypatch.setattr(runners, "WARCHIEF_RUNNER", lambda prompt: ("Raise a **Task Fields**.\nBUILD: fields", 0.0))
+    host = _host(fake_repo)
+    hall = next(b for b in host.snapshot()["buildings"] if b["id"] == "town_hall")
+    assert hall["page"] and hall["has_worker"] and hall["card"]["news"] == []
+    d = host.detail("town_hall")
+    json.dumps(d)
+    data = d["data"]
+    assert data["warchief"] == "Warchief" and data["chat"] == [] and data["thinking"] is False
+    assert {"agents", "audit", "proposals", "elders", "reviews", "board"} <= set(data["hall"])
+    assert data["spend"]["level"] == "ok" and isinstance(data["limits"], list)
+    with pytest.raises(CommandError):
+        host.command("act", {"id": "town_hall", "act": "ask", "args": {"text": "  "}})
+    host.command("act", {"id": "town_hall", "act": "ask", "args": {"text": "Where do my tasks go?"}})
+    for _ in range(300):
+        chat = host.detail("town_hall")["data"]["chat"]
+        if len(chat) == 2:
+            break
+        time.sleep(0.01)
+    you, chief = chat
+    assert you["text"] == "Where do my tasks go?" and "<strong>Task Fields</strong>" in chief["html"]
+    assert chief["suggest"] == "fields" and chief["suggest_title"] == "Task Fields" and "BUILD" not in chief["html"]
+    summary = host.command("act", {"id": "town_hall", "act": "audit"})
+    assert "Warder" in summary and host.detail("town_hall")["data"]["hall"]["audit"]["ts"]
+    host.command("act", {"id": "town_hall", "act": "limits"})
+    for _ in range(300):
+        if host.detail("town_hall")["data"]["limits"]:
+            break
+        time.sleep(0.01)
+    assert "disabled" in host.detail("town_hall")["data"]["limits"][0]["error"]     # ORKCRAFT_LIMITS=0
+    host.command("act", {"id": "town_hall", "act": "forget"})
+    assert host.detail("town_hall")["data"]["chat"] == []
+    types = host.command("town.catalog")
+    assert types[0]["intent"].startswith("Take in") and all(t["intent"] for t in types)
