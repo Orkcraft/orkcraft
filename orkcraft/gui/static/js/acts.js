@@ -4,7 +4,7 @@
 // Recruiter's handler to hire, the Council's notes, the steward's findings and proposals.
 import { useEffect, useState } from "preact/hooks";
 import { html } from "./html.js";
-import { town, command } from "./link.js";
+import { town, command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { selectOrk } from "./windows.js";
 
@@ -28,19 +28,19 @@ export function RecruitDialog({ b, tiers, onClose }) {
   const ask = () => command("building.recruit_ask", { id: b.id, prompt }).then(onClose, () => {});
   const hire = () => command("building.recruit", { id: b.id, name, role, orders, tier })
     .then((ref) => { onClose(); selectOrk(ref); }, () => {});
-  return html`<${Dialog} title=${`Recruit an ork — ${b.title}`} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn" disabled=${!name.trim()} onClick=${hire}>Recruit by hand</button>
-        <button class="ok-btn primary" disabled=${!prompt.trim()} onClick=${ask}>Ask the Recruiter</button>`}>
+  return html`<${Dialog} title=${say(`Recruit an ork — ${b.title}`)} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn" disabled=${!name.trim()} onClick=${hire}>${say("Recruit by hand")}</button>
+        <button class="ok-btn primary" disabled=${!prompt.trim()} onClick=${ask}>${say("Ask the Recruiter")}</button>`}>
     <div class="gui-form">
-      <${Field} label="What should it do? The Recruiter picks chain → script → agent">
-        <input class="ok-input" autofocus value=${prompt} placeholder="e.g. when a task in the Forge is done, show its id and title"
+      <${Field} label=${say("What should it do? The Recruiter picks chain → script → agent")}>
+        <input class="ok-input" autofocus value=${prompt} placeholder=${say("e.g. when a task in the Forge is done, show its id and title")}
           onInput=${(e) => setPrompt(e.target.value)} /></${Field}>
-      <p class="ok-font-status ok-tone-muted">…or an agent by hand:</p>
-      <${Field} label="Name"><input class="ok-input" value=${name} placeholder="e.g. Coder" onInput=${(e) => setName(e.target.value)} /></${Field}>
-      <${Field} label="Role"><input class="ok-input" value=${role} placeholder="e.g. tickets, testing" onInput=${(e) => setRole(e.target.value)} /></${Field}>
-      <${Field} label="Orders"><input class="ok-input" value=${orders} placeholder="e.g. keep an eye on T1001" onInput=${(e) => setOrders(e.target.value)} /></${Field}>
-      <${Field} label="Tier"><${Select} value=${tier} options=${tiers} onChange=${setTier} /></${Field}>
+      <p class="ok-font-status ok-tone-muted">${say("…or an agent by hand:")}</p>
+      <${Field} label=${say("Name")}><input class="ok-input" value=${name} placeholder=${say("e.g. Coder")} onInput=${(e) => setName(e.target.value)} /></${Field}>
+      <${Field} label=${say("Role")}><input class="ok-input" value=${role} placeholder=${say("e.g. tickets, testing")} onInput=${(e) => setRole(e.target.value)} /></${Field}>
+      <${Field} label=${say("Standing orders")}><input class="ok-input" value=${orders} placeholder=${say("e.g. keep an eye on T1001")} onInput=${(e) => setOrders(e.target.value)} /></${Field}>
+      <${Field} label=${say("Tier")}><${Select} value=${tier} options=${tiers} onChange=${setTier} /></${Field}>
     </div>
   </${Dialog}>`;
 }
@@ -55,18 +55,18 @@ export function OrdersDialog({ b, i, onClose, onDone }) {
   const save = () => command("ork.orders", { id: b.id, ork: i.ref, orders, trigger: { type: kind, expression: expr },
                                              ...(handlerTier && tier !== i.steps[0].tier ? { tier } : {}) })
     .then(() => { onClose(); onDone(); }, () => {});
-  return html`<${Dialog} title=${`Orders — ${i.name}`} text=${i.about_plain} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" onClick=${save}>Save orders</button>`}>
+  return html`<${Dialog} title=${say(`Standing orders — ${i.name}`)} text=${i.about_plain} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${save}>${say("Save")}</button>`}>
     <div class="gui-form">
-      <${Field} label="Orders (context for this ork's work)">
+      <${Field} label=${say("Standing orders (context for this ork's work)")}>
         <textarea class="ok-input gui-textarea" rows="3" value=${orders} onInput=${(e) => setOrders(e.target.value)}
-          placeholder="e.g. keep an eye on T1092 and nudge me before 06:00"></textarea></${Field}>
-      <${Field} label="Trigger"><div class="gui-form__row">
+          placeholder=${say("e.g. keep an eye on T1092 and nudge me before 06:00")}></textarea></${Field}>
+      <${Field} label=${say("Trigger")}><div class="gui-form__row">
         <${Select} value=${kind} options=${i.triggers} onChange=${setKind} />
         ${kind !== "on_demand" && html`<input class="ok-input" value=${expr} onInput=${(e) => setExpr(e.target.value)}
           placeholder=${kind === "cron" ? "*/15 * * * *" : "/path"} />`}</div></${Field}>
-      ${handlerTier && html`<${Field} label="Tier"><${Select} value=${tier} options=${i.tiers} onChange=${setTier} /></${Field}>`}
+      ${handlerTier && html`<${Field} label=${say("Tier")}><${Select} value=${tier} options=${i.tiers} onChange=${setTier} /></${Field}>`}
     </div>
   </${Dialog}>`;
 }
@@ -76,9 +76,9 @@ export function ModelDialog({ b, i, onClose, onDone }) {
   const [steps, setSteps] = useState(i.steps.map((s) => ({ harness: s.harness, tier: s.tier })));
   const set = (n, key, v) => setSteps(steps.map((s, k) => (k === n ? { ...s, [key]: v } : s)));
   const save = () => command("ork.model", { id: b.id, ork: i.ref, steps }).then(() => { onClose(); onDone(); }, () => {});
-  return html`<${Dialog} title=${`${i.name} — model and tier`} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" onClick=${save}>Save</button>`}>
+  return html`<${Dialog} title=${say(`${i.name} — model and tier`)} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${save}>${say("Save")}</button>`}>
     <div class="gui-form">${i.steps.map((s, n) => html`<${Field} key=${n} label=${s.role}>
       ${s.editable ? html`<div class="gui-form__row">
           <${Select} value=${steps[n].harness} options=${i.harnesses.map((h) => [h, h])} onChange=${(v) => set(n, "harness", v)} />
@@ -91,12 +91,12 @@ export function ModelDialog({ b, i, onClose, onDone }) {
 export function RedesignDialog({ b, onClose }) {
   const [request, setRequest] = useState("");
   const send = () => command("building.redesign", { id: b.id, request }).then(onClose, () => {});
-  return html`<${Dialog} title=${`Redesign — ${b.title}`} text="What should change in its window? Its steward redraws it."
-      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
+  return html`<${Dialog} title=${say(`Redesign — ${b.title}`)} text=${say("What should change in its window? Its steward redraws it.")}
+      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
         <button class="ok-btn" onClick=${() => command("building.redesign", { id: b.id, request: "default" }).then(onClose, () => {})}>
-          Its own layout</button>
-        <button class="ok-btn primary" disabled=${!request.trim()} onClick=${send}>Ask the steward</button>`}>
-    <input class="ok-input" autofocus value=${request} placeholder="e.g. the tree narrower, the page larger"
+          ${say("Its own layout")}</button>
+        <button class="ok-btn primary" disabled=${!request.trim()} onClick=${send}>${say("Ask the steward")}</button>`}>
+    <input class="ok-input" autofocus value=${request} placeholder=${say("e.g. the tree narrower, the page larger")}
       onInput=${(e) => setRequest(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && request.trim() && send()} />
   </${Dialog}>`;
 }
@@ -106,10 +106,10 @@ export function HandlerDialog({ road, onClose, onDone }) {
   const [h, setH] = useState(null);
   useEffect(() => { command("road.handlers", { key: road.key }).then(setH, () => setH({ current: "", handlers: [] })); }, [road.key]);
   const pick = (handler) => command("road.handler", { key: road.key, handler }).then(() => { onClose(); onDone(); }, () => {});
-  return html`<${Dialog} title=${`Handler — ${road.title} · ${road.label}`} text="Who takes what this road brings?"
-      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>`}>
-    ${h === null ? html`<p class="ok-tone-muted">Looking…</p>` : html`<div class="gui-orders__options">
-      <button class="ok-btn" disabled=${!h.current} onClick=${() => pick("")}>Plain (no ork)</button>
+  return html`<${Dialog} title=${say(`Handler — ${road.title} · ${road.label}`)} text=${say("Who takes what this road brings?")}
+      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>`}>
+    ${h === null ? html`<p class="ok-tone-muted">${say("Looking…")}</p>` : html`<div class="gui-orders__options">
+      <button class="ok-btn" disabled=${!h.current} onClick=${() => pick("")}>${say("Plain (no ork)")}</button>
       ${h.handlers.map(([id, label]) => html`<button key=${id} class="ok-btn" disabled=${id === h.current}
         onClick=${() => pick(id)}>${label}</button>`)}</div>`}
   </${Dialog}>`;
@@ -139,14 +139,14 @@ function ReportView({ job, v }) {
     ${v.ts && html`<p class="ok-font-status ok-tone-muted">Watched ${v.ts}${v.cost ? ` · cost ${v.cost}` : ""}</p>`}
     <h3 class="ok-font-heading">${job.kind === "redesign" ? "Asked" : "Findings"}</h3>
     ${v.findings.length ? html`<ul class="gui-rows">${v.findings.map((f, k) => html`<li key=${k}>${f}</li>`)}</ul>`
-      : html`<p class="ok-font-status ok-tone-muted">Nothing found: it runs as it should.</p>`}
-    <h3 class="ok-font-heading">Proposals</h3>
+      : html`<p class="ok-font-status ok-tone-muted">${say("Nothing found: it runs as it should.")}</p>`}
+    <h3 class="ok-font-heading">${say("Proposals")}</h3>
     ${v.proposals.length ? html`<ul class="gui-rows">${v.proposals.map((p) => html`<li key=${p.index}>
         <b>${p.type}</b>${p.replay && html` <span class="ok-tone-muted">· ${p.replay}</span>`}
-        ${p.ready && html` <button class="ok-act" onClick=${() => apply(p.index)}><span class="ok-act__label">Apply</span></button>`}
+        ${p.ready && html` <button class="ok-act" onClick=${() => apply(p.index)}><span class="ok-act__label">${say("Apply")}</span></button>`}
         <div class="ok-font-status ok-tone-muted">${p.why}</div>
         ${p.outline && html`<div class="ok-font-status">${p.outline}</div>`}</li>`)}</ul>`
-      : html`<p class="ok-font-status ok-tone-muted">No proposals.</p>`}
+      : html`<p class="ok-font-status ok-tone-muted">${say("No proposals.")}</p>`}
   </div>`;
 }
 
@@ -159,15 +159,15 @@ export function Jobs() {
   const job = jobs[0];
   const drop = () => command("job.drop", { job: job.id }).catch(() => {});
   const accept = () => command("job.accept", { job: job.id }).then((ref) => ref && selectOrk(ref), () => {});
-  const title = `${JOB_TITLE[job.kind] || "Job"} — ${job.title}`;
+  const title = say(`${JOB_TITLE[job.kind] || "Job"} — ${job.title}`);
   if (job.state === "running") {
     return html`<${Dialog} title=${title} text=${job.text} onCancel=${drop}
-      actions=${html`<button class="ok-btn" onClick=${drop}>Cancel</button>`}>
-      <p class="ok-font-status ok-tone-muted">This calls a model; it takes a moment.</p></${Dialog}>`;
+      actions=${html`<button class="ok-btn" onClick=${drop}>${say("Cancel")}</button>`}>
+      <p class="ok-font-status ok-tone-muted">${say("This calls a model; it takes a moment.")}</p></${Dialog}>`;
   }
   if (job.state === "failed") {
     return html`<${Dialog} title=${title} text=${job.error} onCancel=${drop} warn
-      actions=${html`<button class="ok-btn primary" onClick=${drop}>Close</button>`} />`;
+      actions=${html`<button class="ok-btn primary" onClick=${drop}>${say("Close")}</button>`} />`;
   }
   if (job.kind === "recruit") {
     const blocked = job.view.blocked;
@@ -177,6 +177,6 @@ export function Jobs() {
       <${RecruitView} v=${job.view} /></${Dialog}>`;
   }
   return html`<${Dialog} title=${title} onCancel=${drop}
-      actions=${html`<button class="ok-btn primary" onClick=${drop}>Close</button>`}>
+      actions=${html`<button class="ok-btn primary" onClick=${drop}>${say("Close")}</button>`}>
     <${ReportView} job=${job} v=${job.view} /></${Dialog}>`;
 }

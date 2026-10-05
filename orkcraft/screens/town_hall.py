@@ -22,7 +22,7 @@ BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "l
 LAMPS = {"advice": ("📜", "advice waits for you — ! opens it"), "watch": ("🌙", "on watch: they read the questions"),
          "full": ("⏳", "tonight's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
          "off": ("", "off — autonomy is ⛓️ Ask me")}
-LAMPS_HIDDEN = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
+LAMPS_OFFICE = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
 ELDERS_SHOWN = 8
 
 
@@ -172,8 +172,8 @@ class TownHallView(Container):
     def lamp(self) -> str:
         app = self.app
         state = app.elders_state() if hasattr(app, "elders_state") else "off"
-        if modes.hidden():
-            return LAMPS_HIDDEN.get(state, "")
+        if modes.office():
+            return LAMPS_OFFICE.get(state, "")
         return LAMPS.get(state, LAMPS["off"])[0]
 
     # -- the hut ----------------------------------------------------------------------------------

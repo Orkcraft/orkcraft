@@ -100,8 +100,8 @@ class Host:
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
             data = {k: event.data.get(k) for k in ("message", "title", "severity", "timeout")}
-            data["message_plain"] = modes.strip_emoji(str(data["message"] or ""))
-            data["title_plain"] = modes.strip_emoji(str(data["title"] or ""))
+            data["message_plain"] = modes.text(str(data["message"] or ""), modes.OFFICE)
+            data["title_plain"] = modes.text(str(data["title"] or ""), modes.OFFICE)
             self.on_toast(data)
             return
         if event.topic == bus.ROADS:                   # the roads changed: the scroll keeps them

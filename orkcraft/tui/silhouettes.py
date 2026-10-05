@@ -19,6 +19,8 @@ import textwrap
 from functools import lru_cache
 from dataclasses import dataclass, field
 
+from orkcraft.realm import lexicon
+
 SLOT = "§"
 _RUN = re.compile(f"{SLOT}+")
 ELLIPSIS = "…"
@@ -288,7 +290,8 @@ def _border_right(line: str, i: int) -> int:
 @lru_cache(maxsize=256)
 def plain(sil: Silhouette) -> Silhouette:
     """The boring look: just a frame, with the same slots. Roofs, sails, trees, arms and waves go;
-    what stays is the box, the rows of text and the lines between them (the Lake's pane headers)."""
+    what stays is the box, the rows of text and the lines between them (the Lake's pane headers). The
+    headings speak the office's words (`realm/lexicon.py`): THE TOWN HALL reads THE CONTROL PANEL."""
     keep = [i for i, ln in enumerate(sil.lines) if SLOT in ln]
     if not keep:
         return sil
@@ -307,7 +310,8 @@ def plain(sil: Silhouette) -> Silhouette:
         rows.append("".join(row))
     w = right - left + 1
     out = ["┌" + "─" * (w - 2) + "┐"] + rows + ["└" + "─" * (w - 2) + "┘"]
-    return Silhouette(sil.id + "-plain", tuple(out), head=sil.head, fallback=sil.fallback, pad=sil.pad,
+    head = tuple(lexicon.office_words(h) for h in sil.head)
+    return Silhouette(sil.id + "-plain", tuple(out), head=head, fallback=sil.fallback, pad=sil.pad,
                       center=sil.center, caption=sil.caption, body=(w, len(out)), grow=sil.grow)
 
 

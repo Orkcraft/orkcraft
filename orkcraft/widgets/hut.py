@@ -6,10 +6,10 @@ two quick-action buttons. A click on a button runs that action; a click elsewher
 building, a second click expands it; a drag moves the hut (the town keeps the spot).
 
 The frame takes the colour of the biome, so the rules for that are CSS; only the text carries
-styles of its own. An orc waiting for an answer sets the hut on fire (immersion, `realm/modes.py`):
+styles of its own. An orc waiting for an answer sets the hut on fire (the camp, `realm/modes.py`):
 the building — its frame, text and ground — flickers orange (the name and the buttons only take
 the colour, not the ground), turns red when the
-question is left waiting, then the roof turns to 🔥 bit by bit. In the hidden mode only its frame
+question is left waiting, then the roof turns to 🔥 bit by bit. In the office mode only its frame
 and its name turn red.
 """
 from __future__ import annotations
@@ -29,10 +29,10 @@ from orkcraft.realm.orcs import ALERT_ICON
 from orkcraft.tui.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
-QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire (hidden look: modes.QUESTION)
+QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire (office look: modes.QUESTION)
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d", "#b31b0f")   # orange ↔ amber, then red ↔ dark red
-ALERT_RED = "#ef4444"                                   # the hidden mode: a waiting hut is only red
+ALERT_RED = "#ef4444"                                   # the office mode: a waiting hut is only red
 FIRE_GROUND = ("#3a1c06", "#420d07")                    # the burning building's ground: orange, red
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
@@ -68,7 +68,7 @@ class Hut(Widget):
     Desktop Hut.-alert.-flame {{ color: {FIRE[2]}; }}
     Desktop Hut.-alert.-burning {{ color: {FIRE[1]}; text-style: bold; }}
     Desktop Hut.-alert.-burning.-flame {{ color: {FIRE[3]}; }}
-    Desktop.-hidden Hut.-alert {{ color: {ALERT_RED}; text-style: bold; }}
+    Desktop.-office Hut.-alert {{ color: {ALERT_RED}; text-style: bold; }}
     Desktop Hut.-rally-target {{ color: $success; text-style: bold; }}
     """
 
@@ -96,7 +96,7 @@ class Hut(Widget):
         self.base = sil or DEFAULT_SIL         # the silhouette as its type draws it
         self.sil = self.base                  # …grown to the content, for the types that grow
         self.rows = 0
-        self.plain = False                    # the hidden look: just frames
+        self.plain = False                    # the office look: just frames
         self.quiet = False                    # 🌙 quiet hours: no fire, ❓ instead
         self.alert_since: float | None = None  # when the orc started waiting for an answer
         self.burnt = 0.0                      # share of the roof on fire
@@ -125,7 +125,7 @@ class Hut(Widget):
 
     def _shown_title(self) -> str:
         """The name as the look wears it; in quiet hours a waiting orc adds ❓, since nothing burns."""
-        title = modes.strip_emoji(self.title) if self.plain else self.title
+        title = modes.text(self.title, modes.OFFICE) if self.plain else self.title
         mark = modes.QUESTION if self.plain else QUIET_ALERT
         return f"{title} {mark}" if self.quiet and ALERT_ICON in self.badge else title
 
@@ -165,7 +165,7 @@ class Hut(Widget):
         self._relabel()
 
     def update_fire(self, now: float | None = None) -> None:
-        """How far the fire got: orange, then red, then the roof burns (immersion only, never in quiet hours)."""
+        """How far the fire got: orange, then red, then the roof burns (the camp only, never in quiet hours)."""
         stage, burnt = "", 0.0
         if self.alert_since is not None and not self.plain and not self.quiet:
             stage, burnt = modes.fire_stage((modes.now() if now is None else now) - self.alert_since)
@@ -250,7 +250,7 @@ class Hut(Widget):
 
     @property
     def on_fire(self) -> bool:
-        """An orc waits for an answer: the whole card takes the fire's colour (the hidden mode's red)."""
+        """An orc waits for an answer: the whole card takes the fire's colour (the office mode's red)."""
         return self.alert_since is not None
 
     def fire_style(self) -> str | None:
@@ -267,7 +267,7 @@ class Hut(Widget):
     def fire_ground(self) -> str | None:
         """The ground under the building itself (its box, not the name, the roof or the buttons)."""
         if not self.on_fire or self.plain:
-            return None                       # the hidden mode: only the frame turns red
+            return None                       # the office mode: only the frame turns red
         return FIRE_GROUND[1] if self.has_class("-burning") else FIRE_GROUND[0]
 
     def render(self) -> Text:
@@ -275,14 +275,14 @@ class Hut(Widget):
         fire = self.fire_style()
         bg = self.fire_ground()
         ground = f"{fire} on {bg}" if fire and bg else fire
-        inside = None if self.plain else fire       # the hidden mode reddens the frame (and the name), not the text
+        inside = None if self.plain else fire       # the office mode reddens the frame (and the name), not the text
         box = max(min((y for y, _, _ in self.sil.slots), default=1) - 1, 0)   # the box's top row
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
             text.append(" " * pad + line + "\n", style=fire or NAME_STYLE)
         left = (w - self.sil.width) // 2
-        status = [modes.strip_emoji(ln) for ln in self.status] if self.plain else self.status
+        status = [modes.text(ln, modes.OFFICE) for ln in self.status] if self.plain else self.status
         rows = self._burning(self.sil.draw(status))
         for n, row in enumerate(rows):
             text.append(" " * left)

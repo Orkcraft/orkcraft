@@ -63,7 +63,7 @@ class AlertModal(ModalScreen[str | None]):
 
 
 def _title(count: str) -> str:
-    return f"Awaiting an answer{count}" if modes.hidden() else f"❓ Awaiting Orders{count}"
+    return f"Awaiting an answer{count}" if modes.office() else f"❓ Awaiting Orders{count}"
 
 
 class AwaitingOrdersModal(AlertModal):
@@ -146,7 +146,7 @@ class AwaitingOrdersModal(AlertModal):
         title_label.update(_title(f" ({count})" if count > 1 else ""))
 
         target_label = self.query_one("#order-target", Label)
-        if modes.hidden():
+        if modes.office():
             prefix = f"{who}: " if who else f"{modes.QUESTION} "
         else:
             prefix = f"🧌 {who}: " if who else "❓ "

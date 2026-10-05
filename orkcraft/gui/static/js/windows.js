@@ -3,7 +3,7 @@
 // is shown is the page's own state. Esc steps back: open → selected → nothing.
 import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
-import { town, command, details, online } from "./link.js";
+import { town, command, details, online, say } from "./link.js";
 import { Layout } from "./layout.js";
 import { WarTent, HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
@@ -89,7 +89,7 @@ export function Badge({ garrison, alert }) {
 }
 
 function Roads({ b, t }) {
-  const titles = Object.fromEntries(t.buildings.map((x) => [x.id, x.title]));
+  const titles = Object.fromEntries(t.buildings.map((x) => [x.id, say(x.title)]));
   const incoming = t.roads.filter((r) => r.to === b.id);
   const outgoing = t.roads.filter((r) => r.from === b.id);
   if (!incoming.length && !outgoing.length) return null;
@@ -97,9 +97,9 @@ function Roads({ b, t }) {
     <span class="ok-font-label">${titles[other] || other}</span>
     <span class="ok-font-status ok-tone-muted"> · ${r.label}${r.handler ? ` · ${r.handler}` : ""}</span></li>`;
   return html`<section class="gui-section">
-    ${incoming.length > 0 && html`<h3 class="ok-font-heading">Roads in</h3>
+    ${incoming.length > 0 && html`<h3 class="ok-font-heading">${say("Roads in")}</h3>
       <ul class="gui-rows">${incoming.map((r) => row(r, r.from))}</ul>`}
-    ${outgoing.length > 0 && html`<h3 class="ok-font-heading">Roads out</h3>
+    ${outgoing.length > 0 && html`<h3 class="ok-font-heading">${say("Roads out")}</h3>
       <ul class="gui-rows">${outgoing.map((r) => row(r, r.to))}</ul>`}
   </section>`;
 }
@@ -107,7 +107,7 @@ function Roads({ b, t }) {
 function Garrison({ garrison, b }) {
   if (!garrison.length) return null;
   return html`<section class="gui-section">
-    <h3 class="ok-font-heading">Garrison</h3>
+    <h3 class="ok-font-heading">${say("Garrison")}</h3>
     <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
       <span class="ok-font-label">${o.name}</span>
       ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
@@ -121,7 +121,7 @@ function Garrison({ garrison, b }) {
 
 function About({ b, t }) {
   return html`<details key=${b.id} class="gui-about">
-    <summary class="ok-font-heading">About this building</summary>
+    <summary class="ok-font-heading">${say("About this building")}</summary>
     <${Garrison} garrison=${b.garrison} b=${b} />
     <${Roads} b=${b} t=${t} />
   </details>`;
@@ -174,10 +174,10 @@ function Full({ b, t }) {
     <div class="ok-head is-banner"></div>
     <div class="ok-win__frame">
       <div class="ok-win__bar" onDblClick=${stepBack}>
-        <span class="ok-win__title">${b.title}</span>
+        <span class="ok-win__title">${say(b.title)}</span>
         <${Badge} garrison=${b.garrison} alert=${b.alert} />
         ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
-        <button class="gui-tab__close gui-win__close" title="Back to the town (Esc)" aria-label="Back to the town"
+        <button class="gui-tab__close gui-win__close" title=${say("Back to the town (Esc)")} aria-label=${say("Back to the town")}
           onClick=${stepBack}>×</button>
       </div>
       <${Body} b=${b} t=${t} />

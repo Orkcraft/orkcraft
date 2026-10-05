@@ -27,7 +27,9 @@ from orkcraft.gui import info
 from orkcraft.realm import builders, catalog, chronicles, fastpath, modes, pipes, recruiter, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
-plain = modes.strip_emoji
+def plain(text: str) -> str:
+    """What Office shows of a label: its words, no emoji (modes.text, realm/lexicon.py)."""
+    return modes.text(text, modes.OFFICE)
 
 
 class ConsoleError(Exception):

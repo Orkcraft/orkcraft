@@ -16,7 +16,7 @@ from orkcraft.widgets.office import OfficeStatic
 from orkcraft.wm import Desktop
 
 from orkcraft.tui.base import (ORC_CHAT_PCT, BUILDING_CONSOLE_MIN_H, WARMAP_FLOAT_W, mode_for)
-from orkcraft.tui.text import strip_rich
+from orkcraft.tui.text import office_rich
 
 
 class LayoutMixin:
@@ -43,7 +43,7 @@ class LayoutMixin:
         self._apply_mode()
 
     def wear_mode(self) -> None:
-        """The mode changed (immersion ↔ hidden): everything outside the town follows it."""
+        """The mode changed (camp ↔ office): everything outside the town follows it."""
         self._hud.update_hud()
         self._taskbar.refresh_items()
         self.refresh_bindings()                  # the footer recomposes in the mode's words
@@ -53,9 +53,9 @@ class LayoutMixin:
             self._console.refresh_state(self.focus_state, self.roster)
 
     def notify(self, message, *, title: str = "", **kwargs) -> None:  # type: ignore[override]
-        if modes.hidden():                       # the office: no emoji in the toasts either
-            message = strip_rich(message) if not isinstance(message, str) else modes.strip_emoji(message)
-            title = modes.strip_emoji(title)
+        if modes.office():                       # the office: its words and no emoji in the toasts too
+            message = office_rich(message) if not isinstance(message, str) else modes.text(message)
+            title = modes.text(title)
         super().notify(message, title=title, **kwargs)
 
     def _save_screenshot(self) -> None:

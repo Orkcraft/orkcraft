@@ -7,6 +7,7 @@ import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying } from "./build.js";
+import { say } from "./link.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
@@ -80,9 +81,9 @@ export function Hut({ b, spot, number, onMoved }) {
       onPointerDown=${down}>
     <div class="ok-head"></div>
     <div class="ok-hut__card">
-      <button class="gui-hut__road" title="Pull a road to another building" aria-label="Pull a road"
+      <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}>+</button>
-      <span class="ok-hut__label"><span class="no">${number}</span>${b.title}
+      <span class="ok-hut__label"><span class="no">${number}</span>${say(b.title)}
         ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}<span class="ok-hut__dot"></span></span>
       ${b.status_plain.length > 0 && html`<ul class="ok-hut__lines">
         ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>`}

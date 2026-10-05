@@ -3,7 +3,8 @@
 Pure functions over a `core.Town` and its roster. The host sends a fresh snapshot whenever the town
 changes; the page keeps it in signals, so only what changed is drawn again. Nothing here picks the
 look: the page drops pictographs and words resources the Office way (`modes.RESOURCES`), and a
-text that may carry emoji comes twice, as it is and `_plain` (`modes.strip_emoji`).
+text that may carry emoji comes twice, as it is and `_plain` (in Office's words, without emoji:
+`modes.text`). `words` is the glossary (`realm/lexicon.py`) the page says its own labels in.
 
     snapshot(town, muster, treasury)   # {"project", "hud", "orkspaces", "buildings", "roads", "alerts"}
 """
@@ -16,7 +17,7 @@ from orkcraft import schedule
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
-from orkcraft.realm import catalog, modes, pipes
+from orkcraft.realm import catalog, lexicon, modes, pipes
 from orkcraft.scroll import road_key
 
 HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
@@ -57,7 +58,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "hut": list(bs.hut) if bs.hut else None,
             "pinned": bool(bs.pinned),
             "status": (lines := _hut_lines(town, bs.id)),
-            "status_plain": [modes.strip_emoji(x) for x in lines],
+            "status_plain": [modes.text(x, modes.OFFICE) for x in lines],
             "state": worker.status() if worker is not None else "",
             "garrison": [_ork(o) for o in garrison],
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
@@ -98,7 +99,7 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "supply": muster.roster.active, "supply_max": town.scroll.budget.supply_max_workers,
         "alerts": len(muster.roster.alerts),
         "hour": (hour := schedule.status(town.machine)),
-        "hour_plain": modes.strip_emoji(hour),
+        "hour_plain": modes.text(hour, modes.OFFICE),
         "quiet": schedule.quiet_now(town.machine),
     }
 
@@ -151,6 +152,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "demo": bool(town.demo),
         "look": look(town, look_choice),
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
+        "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,
         "orkspaces": orkspaces(town, muster),
         "buildings": buildings(town, muster),

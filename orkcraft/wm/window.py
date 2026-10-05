@@ -133,7 +133,7 @@ class Window(Container):
     def _update_title(self) -> None:
         """` N · Title 📌 ⛶ ── [ 🚩 ──► 🔮 Scrying Spire ] ──── [ 🧌 Smith+1 🔨 💤 ] `"""
         marks = (" 📌" if self.pinned else "") + (" ⛶" if self.restore is not None else "")
-        if modes.hidden():
+        if modes.office():
             marks = (" pinned" if self.pinned else "") + (" max" if self.restore is not None else "")
         left = f" {self.number} · {modes.text(self.window_title)}{marks} "
         title = Text(left)

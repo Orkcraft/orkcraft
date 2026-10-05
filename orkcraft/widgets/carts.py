@@ -1,7 +1,7 @@
 """Carts on roads and coin flashes (roads v2).
 
 A cart is a real event only — one `roads.Cart` from the engine — travelling from the exit gate
-to the entry gate along the road's cells. In immersion it is a rock 🪨 (two cells), in the hidden
+to the entry gate along the road's cells. In the camp it is a rock 🪨 (two cells), in the office
 mode a small square ■ (`realm/modes.py`). Its colour (the rock's ground) is the cargo's status:
 
     sent / delivered   the road's brown, arrives and vanishes
@@ -47,8 +47,8 @@ ROCK_STYLE = {"filtered": "on #4a4a4a", "held": "on #8a6d0b", "error": "on #7f1d
 
 
 def cart_look(status: str) -> Text:
-    """The cart as the current mode draws it: 🪨 (immersion) or ■ (hidden)."""
-    if modes.hidden():
+    """The cart as the current mode draws it: 🪨 (camp) or ■ (office)."""
+    if modes.office():
         return Text(modes.SQUARE, style=STYLE.get(status, STYLE["sent"]))
     return Text(modes.ROCK, style=ROCK_STYLE.get(status, ""))
 
@@ -68,11 +68,11 @@ class CartSprite(Static):
         super().__init__(cart_look(status), markup=False, classes="road-cart")
         self.cart = cart
         self.status = status
-        self.styles.width = 1 if modes.hidden() else 2
+        self.styles.width = 1 if modes.office() else 2
 
     def set_status(self, status: str) -> None:
         self.status = status
-        self.styles.width = 1 if modes.hidden() else 2
+        self.styles.width = 1 if modes.office() else 2
         self.update(cart_look(status))
 
     def on_click(self, event: events.Click) -> None:
@@ -188,7 +188,7 @@ class Traffic:
         p = self.desktop.road_paths.get(key)
         if p is None:
             return
-        label = f"×{n}" if modes.hidden() else f"🛒×{n}"
+        label = f"×{n}" if modes.office() else f"🛒×{n}"
         ox, oy = p.entry.outside
         x = ox - len(label) - 1 if p.entry.side == "left" else ox + 1 if p.entry.side == "right" else ox
         y = oy - 1 if p.entry.side in ("left", "right") else oy

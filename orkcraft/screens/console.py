@@ -440,7 +440,7 @@ class ClanRoster(Vertical):
         asks = o.alert.id not in seen if o.alert is not None else o.status == "alert"
         t.append(f"[{number}] ", style="dim")
         if asks:
-            t.append(modes.QUESTION if modes.hidden() else "❓", style="bold black on yellow")
+            t.append(modes.QUESTION if modes.office() else "❓", style="bold black on yellow")
             t.append(" ")
         t.append("★ " if o.lead else "", style=name_style)
         _append_tier(t, o)

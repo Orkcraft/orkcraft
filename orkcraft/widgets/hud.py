@@ -2,7 +2,7 @@
 
 The corner follows the tools' billing (settings.py): `[⏳ claude 38%]` for subscriptions, 🪙 for an API.
 
-In the hidden look (`realm/modes.py`) the same values stand in words, without the game:
+In the office look (`realm/modes.py`) the same values stand in words, without the game:
 `[ Orkcraft v0.1 ]──[ Menu (F10) · Stop all: READY ]   … [Quota claude 38%] [Spend $— / $20.00] [Context — / 128k] [Agents n/max]`.
 
 The menu and Halt All share one segment: a click opens the system menu, whose first item is
@@ -116,16 +116,16 @@ class Hud(Static):
 
     def update_hud(self) -> None:
         r = self.resources
-        hidden = modes.hidden()
+        office = modes.office()
         left = Text()
-        left.append("[ Orkcraft " if hidden else "[ 🧌 Orkcraft ", style="bold")
+        left.append("[ Orkcraft " if office else "[ 🧌 Orkcraft ", style="bold")
         left.append(f"v{'.'.join(__version__.split('.')[:2])} ", style="dim")
         left.append("]")
         left.append("──")
         narrow = self.size.width < 130
         halt_style = "bold green" if self.halt == "READY" else "bold reverse red"
         start = cell_len(left.plain)
-        if hidden:
+        if office:
             left.append("[ F10 · Stop: " if narrow else "[ Menu (F10) · Stop all: ", style="bold")
         else:
             left.append("[ ⚙️ F10 · 🛑 " if narrow else "[ ⚙️ Menu (F10) · 🛑 ", style="bold")
@@ -136,7 +136,7 @@ class Hud(Static):
             left.append("──")
             astart = cell_len(left.plain)
             icon = modes.alert_icon()
-            wait = "awaiting an answer" if hidden else "awaiting orders"
+            wait = "awaiting an answer" if office else "awaiting orders"
             left.append(f"[ {icon} {r.alerts} ]" if narrow else f"[ {icon} {r.alerts} {wait} ]", style="bold yellow")
             self._alerts_span = (astart, cell_len(left.plain))
         else:
@@ -151,7 +151,7 @@ class Hud(Static):
         if r.hour:
             right.append(f"[{r.hour}] ", style="#b48ead" if "🌙" in r.hour else "dim")
         if not narrow:
-            right.append(f"{'' if hidden else '⛏ '}commit {'ON' if r.commit else 'OFF'} ", style="dim")
+            right.append(f"{'' if office else '⛏ '}commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}
         if r.quota:
             right.append(f"[{modes.resource('quota')} {r.quota}]", style=levels.get(r.quota_level, ""))
