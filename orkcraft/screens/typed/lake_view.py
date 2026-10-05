@@ -10,6 +10,13 @@ which saves by itself every `autosave` seconds while there are changes and whene
 `ctrl+s` saves at once, `Esc` saves and goes back to the view. A file changed on disk meanwhile is
 never overwritten by an autosave: the Lake says so, and `ctrl+s` writes your text over it. Leaving
 the editor after a save sends `lake.saved` with the file.
+
+An ork's file (a cart with a trail) is kept as the ork made it (`lake.Origins`). When the person
+leaves the editor, their text is compared with the ork's (`realm/edits.py`): filling it in — a
+daily note the ork laid out and the person writes into — says nothing against the ork; fixing it,
+changing its format or rewriting it is a 👎 for the building that made it (`feedback.signal`), with
+the edit unless the file is personal. A file that came and was never opened for a day is a light 👎
+too (`feedback.await_view`; opening this Lake sees it).
 """
 from __future__ import annotations
 
@@ -26,7 +33,7 @@ from textual.containers import VerticalScroll
 from textual.timer import Timer
 from textual.widgets import Markdown, Static, TextArea
 
-from orkcraft.realm import jobs, lake
+from orkcraft.realm import feedback, jobs, lake
 from orkcraft.screens.typed.base import TypedView
 
 STYLE = {"-": ("red", ""), "+": ("", "green"), "~": ("red", "green"), "@": ("bold cyan", "bold cyan"), " ": ("", "")}
@@ -69,6 +76,13 @@ class LakeView(TypedView):
             self._render_view()
 
     def receive(self, payload, title: str, markdown: str) -> None:
+        made_by = feedback.maker(payload.trail)          # only what an ork worked on is the ork's
+        if made_by:
+            if payload.kind == "file":
+                path = Path(payload.value)
+                path = path if path.is_absolute() else self._get_repo_root() / path
+                lake.Origins(self.state_dir).remember(str(path), made_by, jobs.now_iso())
+            feedback.await_view(self._get_repo_root(), self.building_id, made_by, payload.title or title)
         self.show_value(payload.kind, payload.value, payload.title or title)
 
     def show_value(self, kind: str, value: str, title: str = "") -> None:
@@ -189,12 +203,26 @@ class LakeView(TypedView):
                 self.app.notify(f"{self._file_name()} changed on disk: ctrl+s writes your text over it",
                                 title="🌊 Lake", severity="warning")
             return
-        path, saved = self.draft.path, self.saved_any
+        path, saved, text = self.draft.path, self.saved_any, self.draft.text
         self._close_editor()
         if saved:
+            self._judge(path, text)
             self.emit("lake.saved", self._rel(path), f"edited: {self._file_name(path)}")
         if reload and self.view is not None and self.view.path == path:     # the view shows what is on disk now
             self.show_value("file", path, self.view.title)
+
+    def _judge(self, path: str, text: str) -> None:
+        """What the person's edit of an ork's file says about the ork (filling it in says nothing)."""
+        judged = lake.Origins(self.state_dir).judge(path, text)
+        if judged is None:
+            return
+        made_by, edit = judged
+        if edit.kind in ("touched", "reshaped", "rewritten"):
+            private = lake.personal(text)                # a personal note's text never reaches a model
+            feedback.signal(self._get_repo_root(), made_by, False, f"lake.{edit.kind}",
+                            value=self._rel(path),
+                            note=f"{self._rel(path)}: {edit.summary}", tag="format" if edit.kind == "reshaped" else "",
+                            edit="" if private else edit.diff)
 
     def _close_editor(self) -> None:
         if self._autosave is not None:

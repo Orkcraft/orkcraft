@@ -57,3 +57,66 @@ class DislikeModal(ModalScreen[tuple[str, str] | None]):
             self.action_pick("logic")
         else:
             self.action_cancel()
+
+
+class ReworkModal(ModalScreen[tuple[str, str] | None]):
+    """↩ Why does the cart go back? A chip (1–6, or a click) picks the reason and moves to the note;
+    Enter sends it — the chip alone is enough, a note alone too. Dismisses (tag, reason) or None."""
+    BINDINGS = [Binding("escape", "cancel", "Cancel")] + \
+        [Binding(str(i), f"pick('{tag}')", show=False) for i, (tag, _, _) in enumerate(feedback.REASONS, 1)]
+    DEFAULT_CSS = MODAL_CSS.format(cls="ReworkModal", border_color="$warning", title_color="$warning") + """
+    ReworkModal .rework-chips { height: auto; }
+    ReworkModal .rework-chips Button { min-width: 10; margin-right: 1; }
+    """
+    AUTO_FOCUS = "#rework-wrong"            # 1–6 pick at once; Tab reaches the note
+
+    def __init__(self, title: str, help: str = "") -> None:
+        super().__init__()
+        self.heading, self.help, self.tag = title, help, ""
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(self.heading, classes="build-title")
+            if self.help:
+                yield Static(Text(self.help, style="dim"), classes="build-text")
+            chips = list(feedback.REASONS)
+            for row in (chips[:3], chips[3:]):
+                with Horizontal(classes="rework-chips"):
+                    for tag, label, _ in row:
+                        yield Button(f"{chips.index((tag, label, _)) + 1} · {label}", id=f"rework-{tag}")
+            yield Input(placeholder="what to fix (optional with a reason picked) — Enter sends", id="rework-note")
+            with Horizontal():
+                yield Button("Send back", variant="warning", id="rework-send")
+                yield Button("Cancel", id="rework-cancel")
+
+    def reason(self) -> str:
+        note = self.query_one("#rework-note", Input).value.strip()
+        label = next((lbl for t, lbl, _ in feedback.REASONS if t == self.tag), "")
+        return f"{label}: {note}" if label and note else (label or note)
+
+    def action_pick(self, tag: str) -> None:
+        self.tag = tag
+        for t, _, _ in feedback.REASONS:
+            self.query_one(f"#rework-{t}", Button).variant = "warning" if t == tag else "default"
+        self.query_one("#rework-note", Input).focus()
+
+    def action_send(self) -> None:
+        if reason := self.reason():
+            self.dismiss((self.tag, reason))
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        event.stop()
+        self.action_send()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        bid = event.button.id or ""
+        if bid == "rework-cancel":
+            self.action_cancel()
+        elif bid == "rework-send":
+            self.action_send()
+        elif bid.startswith("rework-"):
+            self.action_pick(bid[len("rework-"):])

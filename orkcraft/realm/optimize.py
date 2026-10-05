@@ -184,7 +184,10 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
                          pressure.describe(use, camp), goal(bid), **extra)
 
     def disliked(bid: str, since: str) -> int:
-        return sum(1 for i in incidents if i.building == bid and i.ts >= since)
+        """👎 since `since`, counting what the operator did with its results by weight: a quiet
+        signal alone is not a dislike (`feedback.ENOUGH`)."""
+        w = feedback.disliked(repo_root, bid, since, incidents)
+        return int(w / feedback.ENOUGH + 1e-9)
 
     # 💎 the operator disliked it this week
     gems = [b for b, g in goals.items() if g == "quality" and goal(b) == "quality"]
@@ -200,17 +203,25 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
             break
         mine = checkpoint.history(repo_root, bid, limit=1)
         changed = mine[0].at[:19] if mine else ""
-        likes = sum(1 for r in feedback.references(repo_root, bid, 1000) if str(r.get("ts", "")) > changed)
+        likes = int(feedback.liked(repo_root, bid, changed) / feedback.ENOUGH + 1e-9)
         dislikes = disliked(bid, today) if goal(bid) == "balance" else 0
         if likes and not dislikes:
             continue
         return cand(bid, likes, dislikes)
     # 💎 failing, or never rated
     for bid in sorted(gems, key=lambda b: failures.get(b, 0), reverse=True):
-        never = not feedback.references(repo_root, bid, 1) and not any(i.building == bid for i in incidents)
+        never = feedback.liked(repo_root, bid) + feedback.disliked(repo_root, bid, "", incidents) < feedback.ENOUGH - 1e-9
         if failures.get(bid) or never:
             return cand(bid, 0, 0, failures=failures.get(bid, 0), rated=not never)
     return None
+
+
+def _incident_line(i: feedback.Incident) -> str:
+    """An incident for the Council: how it was told (a 👎, a cart sent back, a file reshaped…), the
+    note, the output and, when the operator edited it, what they changed."""
+    how = "" if i.source == feedback.EXPLICIT else f" [{i.source}{' · ' + i.tag if i.tag else ''}]"
+    line = f"- {i.kind}{how}: {i.note or '(no note)'} · output: {i.output[:200]}"
+    return line + (f"\n  the operator's edit:\n  " + i.edit[:600].replace("\n", "\n  ") if i.edit else "")
 
 
 def run_logs(repo_root: Path, building: str, limit: int = 5) -> list[str]:
@@ -326,8 +337,7 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
                          actions="\n".join(ACTION_TEXT[a] for a in cand.actions), names="|".join(cand.actions),
                          runs="\n".join(run_logs(repo_root, cand.building)) or "- none kept",
                          references="\n".join(f"- {r.get('value', '')[:400]}" for r in refs) or "- none yet",
-                         incidents="\n".join(f"- {i.kind}: {i.note or '(no note)'} · output: {i.output[:200]}"
-                                             for i in incs) or "- none")
+                         incidents="\n".join(_incident_line(i) for i in incs) or "- none")
     result, total, problems = Result(), None, []
     for _ in range(attempts):
         prompt = base + ("\n\nYOUR LAST ANSWER WAS REJECTED:\n" + "\n".join(f"- {p}" for p in problems) if problems else "")

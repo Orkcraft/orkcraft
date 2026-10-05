@@ -33,13 +33,14 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, jobs, pipes, roads
+from orkcraft.realm import daybook, feedback, gitinfo, jobs, pipes, roads
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗"}
 STEWARD = "steward"
+PR_CHECK_S = 600                  # how often the pull requests of done tasks are looked at
 
 
 def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
@@ -79,6 +80,7 @@ class PoolView(TypedView):
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
     steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost)
     git = None                    # and the task's git (jobs.TaskGit)
+    pr_reader = None              # and `gh` (gitinfo.pull_requests: head branch → PR)
 
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
@@ -125,6 +127,49 @@ class PoolView(TypedView):
             yield OptionList(id="pool-orcs", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
                 yield Static("", id="pool-detail")
+
+    def on_mount(self) -> None:                           # TypedView's on_mount runs too (Textual walks the MRO)
+        self.set_timer(30, self.check_prs)                # what happened while the camp was closed
+        self.set_interval(PR_CHECK_S, self.check_prs)
+
+    # -- what became of the pull requests -----------------------------------------------------------
+
+    def check_prs(self) -> None:
+        """Look (off the UI thread) at the pull requests of done tasks not settled yet."""
+        if self.simulated or not any(t.status == "done" and t.pr and not t.pr_state for t in self.state.tasks):
+            return
+        reader, repo, app = type(self).pr_reader or gitinfo.pull_requests, self._get_repo_root(), self.app
+
+        def work() -> None:
+            prs = reader(repo)
+            if prs:
+                try:
+                    app.call_from_thread(self.settle_prs, prs)
+                except Exception:
+                    pass
+
+        threading.Thread(target=work, daemon=True, name=f"prs-{self.building_id}").start()
+
+    def settle_prs(self, prs: dict) -> int:
+        """A pull request merged is a 👍 for this Barracks, one closed without merging a 👎 — what the
+        operator thought of the work, without pressing anything. Returns how many were settled."""
+        by_url = {getattr(pr, "url", ""): pr for pr in prs.values()}
+        settled = 0
+        for task in self.state.tasks:
+            if task.status != "done" or not task.pr or task.pr_state:
+                continue
+            pr = by_url.get(task.pr) or prs.get(task.branch)
+            state = str(getattr(pr, "state", "")).upper()
+            if state not in ("MERGED", "CLOSED"):
+                continue
+            task.pr_state, settled = state, settled + 1
+            good = state == "MERGED"
+            feedback.signal(self._get_repo_root(), self.building_id, good, "pr.merged" if good else "pr.closed",
+                            value=task.result or task.title,
+                            note=f"{task.title}: pull request {'merged' if good else 'closed without merging'} {task.pr}")
+        if settled:
+            self.state.save()
+        return settled
 
     def refresh_data(self) -> None:
         self.state            # loads once; a restart puts interrupted work back in the queue …

@@ -116,7 +116,9 @@ def camp_text(repo_root: Path, scroll, specs: dict[str, dict], audit_report=None
         sc = scores.get(b.id, {})
         goal = getattr(b, "aim", "balance")
         lines.append(f"## {b.id} — {b.title} ({kind}) · goal: {GOALS.get(goal, goal)} · week: {runs} runs, {tok} tokens, ${cost:.2f} · "
-                     f"👍 {sc.get('likes', 0)} 👎 {sc.get('dislikes', 0)} penalty {sc.get('penalty', 0)}")
+                     f"👍 {sc.get('likes', 0)} 👎 {sc.get('dislikes', 0)} penalty {sc.get('penalty', 0)}"
+                     + (f" · by what the operator did: liked {sc.get('liked', 0):g}, disliked {sc.get('disliked', 0):g} "
+                        f"({', '.join(f'{k} {v:+g}' for k, v in sorted(sc['by'].items()))})" if sc.get("by") else ""))
         if spec and spec.get("config"):
             lines.append("settings: " + json.dumps(spec["config"], ensure_ascii=False)[:800])
         for r in b.roads:
@@ -132,7 +134,8 @@ def camp_text(repo_root: Path, scroll, specs: dict[str, dict], audit_report=None
     incs = feedback.incidents(repo_root, 10)
     if incs:
         lines.append("\n## incidents (👎)")
-        lines += [f"- {i.building} · {i.kind}: {i.note or '(no note)'}" for i in incs]
+        lines += [f"- {i.building} · {i.kind}" + ("" if i.source == feedback.EXPLICIT else f" ({i.source}, ×{i.weight:g})")
+                  + f": {i.note or '(no note)'}" for i in incs]
     if audit_report is not None:
         lines.append("\n## the rules audit")
         lines += [f"- {f.agent}: {f.text}" for f in audit_report.findings[:20]]

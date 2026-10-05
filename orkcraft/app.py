@@ -96,6 +96,7 @@ ROSTER_REFRESH_S = 1.0
 HUT_REFRESH_S = 5.0      # status lines of the huts in the town view
 SCHEDULE_TICK_S = 30.0   # Shift switches Office on and off, quiet hours begin and end
 PROBATION_CHECK_S = 300.0  # how often the orcs' changes on probation are looked at
+RETRO_KINDS = ("auto-improve", "weekly")   # checkpoints a retro made: Z on one of them is a 👎 for it
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low
@@ -452,6 +453,8 @@ class OrkcraftApp(App[int]):
             self.focus_state = FocusState("neutral", None, None)
         elif mode == "building":
             self.focus_state = FocusState("building", building_id=building_id, orc_key=None)
+            if building_id and getattr(self, "repo_root", None) is not None:
+                feedback.viewed(self.repo_root, building_id)     # what waited there was seen
         elif mode == "unit":
             if not building_id and orc_key_val:
                 orc = next((o for o in self.roster.orcs if orc_key(o) == orc_key_val), None)
@@ -676,6 +679,7 @@ class OrkcraftApp(App[int]):
         if self.demo or (self._probation_at and time.monotonic() - self._probation_at < PROBATION_CHECK_S):
             return
         self._probation_at = time.monotonic()
+        feedback.sweep_unseen(self.repo_root, now)      # results nobody opened for a day
         reverted = []
         for change in evolution.on_probation(self.repo_root):
             reason = evolution.verdict(self.repo_root, change, now)
@@ -721,6 +725,8 @@ class OrkcraftApp(App[int]):
                 change = next((c for c in evolution.load(self.repo_root) if c.id == picked), None)
                 if change is not None and change.status in ("probation", "kept", "stuck"):
                     if self.revert_change(change, "taken back by you", seen=True):
+                        feedback.signal(self.repo_root, change.building, False, "revert", value=change.summary,
+                                        note=f"the operator took back the orks' change: {change.summary}")
                         self.notify(f"{titles.get(change.building, change.building)}: {change.summary}",
                                     title="↩ Taken back")
 
@@ -1188,7 +1194,7 @@ class OrkcraftApp(App[int]):
                     self._console.focus_roster()
             elif key == "Z":
                 if b_id:
-                    self.revert_building(b_id)
+                    self.revert_by_you(b_id)
             elif key == "K":
                 if b_id:
                     self.like_building(b_id)
@@ -3191,7 +3197,18 @@ class OrkcraftApp(App[int]):
     def action_revert_building(self) -> None:
         bid = self.focus_state.building_id if self.focus_state.mode == "building" else None
         if bid:
-            self.revert_building(bid)
+            self.revert_by_you(bid)
+
+    def revert_by_you(self, building_id: str) -> bool:
+        """Z by the operator: the building goes back; when what is taken back was a retro's change
+        (`RETRO_KINDS`), that is what they think of it — a 👎 the next retro reads."""
+        last = checkpoint.history(self.repo_root, building_id, 1)
+        if not self.revert_building(building_id):
+            return False
+        if last and last[0].message.split("(", 1)[0] in RETRO_KINDS:
+            feedback.signal(self.repo_root, building_id, False, "revert", value=last[0].message,
+                            note=f"the operator took back: {last[0].message}")
+        return True
 
     def revert_building(self, building_id: str) -> bool:
         """Z: this building back to its previous checkpoint — its files, incoming roads and garrison;

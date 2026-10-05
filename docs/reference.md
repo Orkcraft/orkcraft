@@ -197,7 +197,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has a Clan Fire spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser. A text file on disk (Markdown, code, a patch) is edited in place: `e` or ✎ opens the editor — fix the text, leave your notes in it; it saves by itself every `autosave` seconds (default 5) while there are changes and whenever the editor loses focus (another window, another building); `ctrl+s` saves at once, `Esc` saves and goes back to the view. A file changed on disk meanwhile is never overwritten by an autosave: the head says ⚠ and `ctrl+s` writes your text over it. Line endings and the file's mode stay as they were | `lake.viewed`, `lake.saved` (the edited file, once you leave the editor) |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
-| 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; accept, send back for rework (≤ 3 rounds, then 🔥 needs you), restore rejected files; the chain's tokens and cost | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
+| 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; accept, ✎ edit and accept, send back for rework with a reason (≤ 3 rounds, then 🔥 needs you), restore rejected files; the chain's tokens and cost; every decision teaches the building that made the cart | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
@@ -470,6 +470,7 @@ Everything that changes the camp goes through the Town Hall and its own git:
         ▶ emulation → approve, or reject back into the talk   👻 a grey ghost in the middle follows
                                                                the mouse; a click builds, Esc cancels
 👍 K / 👎 F on a building ─► references · incidents · penalties (upstream for broken inputs)
+what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a Lake's reshaped file · PR merged / closed · Z · unopened
 🔧 Building retro · 🗓 Town retro ─► apply with one click ─► checkpoint in .orkcraft/.git ─► Z reverts
 ```
 
@@ -509,6 +510,17 @@ Everything that changes the camp goes through the Town Hall and its own git:
   result as a reference — up to three are shown to its agents and steward prompt. `F` asks what went wrong:
   broken inputs penalise its suppliers along the roads that delivered this session (1, ½, ¼ by
   hop); its own logic penalises only it. Either way an incident is kept (`.orkcraft/feedback/`).
+- **What you do with results counts too** (`feedback.signal`; design: `docs/design/native-feedback.md`).
+  Each thing you do is a 👍 or 👎 with a weight — a button weighs 1, a quiet signal less, and the
+  retros and probation act only once they add up to 1: in a 📦 Loot Vault ✓ accepted as it was
+  (0.34; ✓ Accept all 0.1), ✎ edited and accepted — only added to 👍 0.34, fixed 👎 0.34, the format
+  changed 👎 0.5, rewritten 👎 0.75, your version kept as an example — ↩ sent back (👎 0.5, with
+  the reason's chip; "what came in was wrong" blames the hops before the maker along the cart's
+  trail), past the rework limit or dropped (👎 0.5); in a 🌊 Lake an ork's file you fixed (0.2),
+  reformatted or rewritten (0.5) — filling it in (a daily note you write into) says nothing, and a
+  personal note's text is never kept; a Barracks pull request merged 👍 1 or closed 👎 1; `Z` on a
+  retro's change 👎 1; a result left in a Lake or a Loot and not opened for a day 👎 0.1. The Town
+  Hall shows the weight of what you did beside the buttons; incidents say how they were told.
 - **The Council's duties** also cover prompts (🛡 injections, leaks, secret files, "ignore previous
   instructions", writers asked to push or delete), the load on you (🎨 too many events, settings,
   roads, buildings on a canvas) and housekeeping (⛏ F10 → 🧹 rotates big logs, removes the state of

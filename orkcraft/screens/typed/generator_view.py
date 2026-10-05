@@ -2,9 +2,18 @@
 
 A cart that arrives is checked against the building's rules: it passes at once (`loot.passed`
 carries it on, it is kept in the vault) or it is held in the queue. On a held cart `a` accepts it
-(it passes), `r` asks for a reason and sends it back to its source for rework — after
-`max_rework` rounds it stays here as *needs you* — and `d` drops it. A held cart sets the hut on
-🔥 like an orc waiting for orders.
+(it passes), `e` lets the person edit a text cart and accept their version, `r` asks for a reason
+(a chip and a note) and sends it back to its source for rework — after `max_rework` rounds it
+stays here as *needs you* — and `d` drops it. A held cart sets the hut on 🔥 like an ork waiting
+for orders.
+
+Every decision is also what the person thinks of the building that made the cart (the last hop
+of its trail), kept by `feedback.signal`: accepted as it was is a light 👍; accepted after an edit
+is read by `realm/edits.py` — only added to is a 👍 too, fixed, reformatted or rewritten is a 👎
+with the edit, the person's version kept as an example; sent back, dropped or past the rework
+limit is a 👎, and a reason of "what came in was wrong" blames the hops before the maker. A cart
+that passed by the rules and goes nowhere waits to be read: nobody opening this Loot for a day
+is a light 👎 (`feedback.await_view`).
 
 Below the queue: the changed files of the working tree (or of its `path`), * for not reviewed;
 `a` accepts the highlighted file, `r` rejects it (rolled back, its content kept under
@@ -20,7 +29,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import gate, generated, pipes, vault
+from orkcraft.realm import edits, feedback, gate, generated, pipes, vault
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
@@ -37,7 +46,7 @@ def _label(item: gate.Item) -> str:
 
 class GeneratorView(TypedView):
     TYPE = "loot"
-    BINDINGS = [Binding("a", "accept", "Accept"), Binding("r", "reject", "Reject / rework"),
+    BINDINGS = [Binding("a", "accept", "Accept"), Binding("e", "edit", "Edit"), Binding("r", "reject", "Reject / rework"),
                 Binding("d", "drop", "Drop"), Binding("u", "restore", "Restore")]
 
     def __init__(self, *a, **kw) -> None:
@@ -81,7 +90,9 @@ class GeneratorView(TypedView):
         if back is not None:
             why = [f"back from rework (round {back.attempts})"] + why
         if not why:
-            self._pass(payload)
+            if not self._pass(payload):              # it stays here: someone should read it
+                feedback.await_view(self._get_repo_root(), self.building_id,
+                                    feedback.maker(payload.trail, payload.source), payload.title or title)
         else:
             item = self.queue.arrive(payload, why)
             self.app.notify(f"{item.title or item.value[:60]} — {'; '.join(why)}", title=f"📦 {self.btype.title}: held")
@@ -109,22 +120,51 @@ class GeneratorView(TypedView):
                 return True
         return False
 
-    def _pass(self, payload: pipes.Payload) -> None:
-        """Carry the cart on, and keep it in the vault (the history of what passed)."""
+    def _pass(self, payload: pipes.Payload) -> bool:
+        """Carry the cart on, and keep it in the vault (the history of what passed). True when a
+        road took it on."""
         item = vault.store(self._get_repo_root(), self.building_id, self.state_dir, payload.kind, payload.value,
                            payload.title, payload.source, trail=payload.trail, ref=payload.ref)
-        self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref)
-        self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref)
+        went = self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref)
+        return self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref) or went
 
-    def accept_item(self, item: gate.Item, value: str | None = None) -> None:
+    def maker(self, item: gate.Item) -> str:
+        """The building that made the cart: what the person's decision is about."""
+        return feedback.maker(item.trail, item.source)
+
+    def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
+        """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
+        before = item.value
         self.queue.accept(item, value)
         self._pass(item.payload())
+        self._judge_accept(item, before, value, source)
         self._changed()
 
-    def rework_item(self, item: gate.Item, reason: str) -> str:
-        """Send `item` back with `reason`; past the limit (or with nobody to take it) it needs you.
-        Returns its status."""
+    def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str) -> None:
+        root, made_by = self._get_repo_root(), self.maker(item)
+        edit = edits.classify(before, value) if value is not None and item.kind == pipes.TEXT else None
+        if edit is None or edit.kind == edits.SAME:
+            feedback.signal(root, made_by, True, source, value=before)
+        elif edit.kind == edits.FILLED:
+            feedback.signal(root, made_by, True, "loot.filled", value=before, note=edit.summary)
+        else:
+            feedback.signal(root, made_by, False, f"loot.{edit.kind}", value=before, note=edit.summary,
+                            tag="format" if edit.kind == edits.RESHAPED else "", edit=edit.diff)
+            feedback.signal(root, made_by, True, f"loot.{edit.kind}", value=value, weight=0.0,
+                            note="the person's version: what it should have been")
+
+    def rework_item(self, item: gate.Item, reason: str, tag: str = "") -> str:
+        """Send `item` back with `reason` (`tag`: the chip picked, `feedback.REASONS`); past the limit
+        (or with nobody to take it) it needs you. Returns its status."""
+        tag, kind = (tag, next((k for t, _, k in feedback.REASONS if t == tag), "logic")) if tag else \
+            feedback.reason_tag(reason)
+        made_by = self.maker(item)
+        feedback.signal(self._get_repo_root(), made_by, False, "loot.rework", value=item.value, note=reason, tag=tag,
+                        kind=kind, blamed=feedback.trail_blame(item.trail, made_by, kind))
         ok, why = self.queue.can_rework(item, self.config)
+        if not ok:
+            feedback.signal(self._get_repo_root(), made_by, False, "loot.needs_you", value=item.value,
+                            note=f"{why}: {reason}", tag=tag)
         if ok:
             self.queue.rework(item, reason)
             md = gate.rework_markdown(item, reason, self.spec.get("title") or self.btype.title)
@@ -185,7 +225,7 @@ class GeneratorView(TypedView):
             head.update(Text(f"⚠ {self.error}", style="yellow"))
         else:
             q = f"{len(open_items)} in the queue · " if open_items else ""
-            head.update(Text(f"{q}{waiting} files to review in {scope} · a accept · r reject / rework · d drop · "
+            head.update(Text(f"{q}{waiting} files to review in {scope} · a accept · e edit · r reject / rework · d drop · "
                              "u restore", style="dim"))
         keep = self._highlighted_id()
         lst.clear_options()
@@ -359,20 +399,37 @@ class GeneratorView(TypedView):
             self.accept(rel)
             self.refresh_data()
 
+    def action_edit(self) -> None:
+        """✎ The person's version of a held text cart: saving accepts it."""
+        item = self.selected_item()
+        if item is None or item.status == gate.REWORK:
+            return
+        if item.kind != pipes.TEXT:
+            self.app.notify("only a text cart is edited here", title="📦 Loot")
+            return
+        from orkcraft.screens.dialogs import TextBlock
+
+        def done(text: str | None) -> None:
+            if text is not None and self.queue.get(item.id) is item and item.status in gate.OPEN:
+                self.accept_item(item, text)
+
+        self.app.push_screen(TextBlock(f"✎ {item.title or item.ref}", item.value,
+                                       help="ctrl+s accepts your version and sends it on · Esc cancels"), done)
+
     def action_reject(self) -> None:
         if (item := self.selected_item()) is not None:
             if item.status != gate.HELD:
                 self.app.notify("only a held cart goes back for rework; accept or drop this one",
                                 title="📦 Loot")
                 return
-            from orkcraft.screens.dialogs import TextPrompt
+            from orkcraft.screens.feedback_modal import ReworkModal
 
-            def done(reason: str | None) -> None:
-                if reason and reason.strip():
-                    self.rework_item(item, reason.strip())
+            def done(answer: tuple[str, str] | None) -> None:
+                if answer and answer[1].strip():
+                    self.rework_item(item, answer[1].strip(), answer[0])
 
-            self.app.push_screen(TextPrompt(f"↩ Send back to {item.source}", placeholder="what to fix",
-                                            help=f"round {item.attempts + 1}"), done)
+            self.app.push_screen(ReworkModal(f"↩ Send back to {item.source} — why?", help=f"round {item.attempts + 1}"),
+                                 done)
             return
         rel = self.selected_path()
         if not rel:
@@ -385,6 +442,9 @@ class GeneratorView(TypedView):
 
     def action_drop(self) -> None:
         if (item := self.selected_item()) is not None:
+            if item.status in (gate.HELD, gate.NEEDS_YOU):
+                feedback.signal(self._get_repo_root(), self.maker(item), False, "loot.dropped", value=item.value,
+                                note=f"dropped: {item.title or item.ref}")
             self.queue.drop(item)
             self._changed()
 
@@ -440,6 +500,7 @@ class GeneratorView(TypedView):
             for item in held:
                 self.queue.accept(item)
                 self._pass(item.payload())
+                self._judge_accept(item, item.value, None, "loot.accepted_all")
             self._changed()
             self.app.notify(f"{len(held)} cart{'s' if len(held) != 1 else ''} passed", title="📦 Loot")
             return True

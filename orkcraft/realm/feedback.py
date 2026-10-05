@@ -8,9 +8,17 @@
           logic   the building itself got it wrong → only it is penalised
         either way an incident is written (`incidents.jsonl`) with the output and the note
 
+Most of what the operator thinks is never pressed as 👍 / 👎: it is in what they do with a result.
+`signal` keeps those too — an accepted, edited, sent-back or dropped cart in a Loot, the format of
+an ork's file changed in a Lake, a pull request merged or closed, a change taken back with `Z`, a
+result nobody opened. Each has a `source` and a `weight` (`WEIGHTS`): a 👍 / 👎 weighs 1, a quiet
+signal less, so that one of them alone never moves a retro. A good one is a reference, a bad one
+an incident, like the buttons'; readers add the weights (`liked`, `disliked`) and act from `ENOUGH`.
+
 Everything lives in `.orkcraft/feedback/`: the last output of every building (what is rated), the
-references, the incidents and `scores.json` ({building: {likes, dislikes, penalty}}), which the
-self-improvement of stages 8–9 reads.
+references, the incidents and `scores.json` ({building: {likes, dislikes, penalty, liked,
+disliked, by}}: the buttons pressed, the penalty, the weighted sums and the weight by source),
+which the retros read.
 """
 from __future__ import annotations
 
@@ -24,6 +32,41 @@ OUT_KEEP = 2000
 CASCADE = (1.0, 0.5, 0.25)          # the penalty by hop upstream
 KINDS = {"inputs": "the inputs were broken — what came in was wrong",
          "logic": "its own logic was wrong — the inputs were fine"}
+EXPLICIT = "explicit"
+# What a signal weighs, by what the operator did (a 👍 / 👎 weighs 1).
+WEIGHTS = {
+    EXPLICIT: 1.0,
+    "loot.accepted": 0.34,         # a held cart accepted as it was
+    "loot.accepted_all": 0.1,      # … with ✓ Accept all, many at once
+    "loot.filled": 0.34,           # accepted after only adding to it
+    "loot.touched": 0.34,          # accepted after small fixes
+    "loot.reshaped": 0.5,          # accepted after changing its format
+    "loot.rewritten": 0.75,        # accepted after rewriting it
+    "loot.rework": 0.5,            # sent back with a reason
+    "loot.needs_you": 0.5,         # the rework rounds did not fix it
+    "loot.dropped": 0.5,           # thrown away
+    "lake.touched": 0.2,           # an ork's file: small fixes
+    "lake.reshaped": 0.5,          # … its format changed
+    "lake.rewritten": 0.5,         # … rewritten
+    "pr.merged": 1.0,              # its pull request merged
+    "pr.closed": 1.0,              # … closed without merging
+    "revert": 1.0,                 # a change of the orks taken back with Z
+    "usage.ignored": 0.1,          # a result nobody opened in IGNORED_AFTER
+}
+# How a signal reads in the Town Hall and the retros.
+LABELS = {EXPLICIT: "👍 / 👎", "loot.accepted": "accepted in a Loot", "loot.accepted_all": "accepted with all",
+          "loot.filled": "filled in and accepted", "loot.touched": "fixed and accepted",
+          "loot.reshaped": "reformatted and accepted", "loot.rewritten": "rewritten and accepted",
+          "loot.rework": "sent back", "loot.needs_you": "rework did not fix it", "loot.dropped": "dropped in a Loot",
+          "lake.touched": "fixed in a Lake", "lake.reshaped": "reformatted in a Lake", "lake.rewritten": "rewritten in a Lake",
+          "pr.merged": "pull request merged", "pr.closed": "pull request closed", "revert": "taken back with Z",
+          "usage.ignored": "nobody opened it"}
+ENOUGH = 1.0                       # the weight from which readers treat signals as a 👍 / 👎
+# Why a cart goes back, offered as chips (the reason is still free text): the tag, the label, and
+# whether it blames the inputs (the hops before the maker) or the maker's own logic.
+REASONS = (("wrong", "did the wrong thing", "logic"), ("incomplete", "incomplete", "logic"),
+           ("format", "wrong format or style", "logic"), ("facts", "facts are wrong", "logic"),
+           ("inputs", "what came in was wrong", "inputs"), ("cost", "too expensive for what it is", "logic"))
 
 
 @dataclass
@@ -34,6 +77,10 @@ class Incident:
     note: str
     output: str
     blamed: dict[str, float] = field(default_factory=dict)
+    source: str = EXPLICIT       # what the operator did (WEIGHTS)
+    weight: float = 1.0
+    tag: str = ""                # a reason chip (REASONS)
+    edit: str = ""               # the person's edit of the output, as a diff
 
 
 def _dir(root: Path) -> Path:
@@ -163,12 +210,23 @@ def scores(root: Path) -> dict[str, dict]:
         return {}
 
 
+def _weighed(changes: dict[str, dict[str, float]], building: str, source: str, weight: float, good: bool) -> None:
+    row = changes.setdefault(building, {})
+    row["liked" if good else "disliked"] = row.get("liked" if good else "disliked", 0) + weight
+    row[f"by.{source}"] = row.get(f"by.{source}", 0) + (weight if good else -weight)
+
+
 def _bump(root: Path, changes: dict[str, dict[str, float]]) -> dict[str, dict]:
+    """Add `changes` to the scores; a `by.<source>` key goes into the row's `by` (the weight by source)."""
     data = scores(root)
     for bid, delta in changes.items():
         row = data.setdefault(bid, {"likes": 0, "dislikes": 0, "penalty": 0.0})
         for k, v in delta.items():
-            row[k] = round(row.get(k, 0) + v, 3)
+            if k.startswith("by."):
+                by = row.setdefault("by", {})
+                by[k[3:]] = round(by.get(k[3:], 0) + v, 3)
+            else:
+                row[k] = round(row.get(k, 0) + v, 3)
     path = _dir(root) / "scores.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -182,7 +240,9 @@ def like(root: Path, building: str, out: dict | None = None) -> dict | None:
     if out is None:
         return None
     _append(_dir(root) / building / "references.jsonl", {"ts": _now(), **out})
-    _bump(root, {building: {"likes": 1}})
+    changes = {building: {"likes": 1}}
+    _weighed(changes, building, EXPLICIT, 1.0, True)
+    _bump(root, changes)
     return out
 
 
@@ -199,6 +259,7 @@ def dislike(root: Path, scroll, building: str, kind: str, note: str = "", out: d
     blamed = blame(root, scroll, building, kind)
     changes: dict[str, dict[str, float]] = {b: {"penalty": p} for b, p in blamed.items()}
     changes.setdefault(building, {})["dislikes"] = 1
+    _weighed(changes, building, EXPLICIT, 1.0, False)
     _bump(root, changes)
     out = (out if out is not None else last_output(root, building)) or {}
     incident = Incident(_now(), building, kind, note.strip()[:1000], str(out.get("value", ""))[:OUT_KEEP], blamed)
@@ -217,17 +278,162 @@ def incidents(root: Path, limit: int = 20) -> list[Incident]:
 
 
 def rated_since(root: Path, ts: str) -> bool:
-    """Did the operator press 👍 or 👎 on anything since `ts` (an ISO time)?"""
-    if any(str(i.ts) >= ts for i in incidents(root, 1000)):
-        return True
+    """Did the operator rate anything since `ts` (an ISO time) — a 👍 / 👎, or what they did with
+    results weighing as much (`ENOUGH`)?"""
+    total = sum(i.weight for i in incidents(root, 1000) if str(i.ts) >= ts)
     for path in _dir(root).glob("*/references.jsonl"):
-        if any(str(r.get("ts", "")) >= ts for r in _tail(path, 50)):
-            return True
-    return False
+        total += sum(_weight(r) for r in _tail(path, 200) if str(r.get("ts", "")) >= ts)
+    return total >= ENOUGH - 1e-9
+
+
+def _weight(ref: dict) -> float:
+    try:
+        return float(ref.get("weight", 1.0))
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def liked(root: Path, building: str, since: str = "") -> float:
+    """The weight of what was liked of `building` since `since`: 👍 1 each, quiet signals less."""
+    return round(sum(_weight(r) for r in references(root, building, 1000) if str(r.get("ts", "")) > since), 3)
+
+
+def disliked(root: Path, building: str, since: str = "", rows: list[Incident] | None = None) -> float:
+    """The weight of the incidents of `building` since `since` (`rows`: incidents already read)."""
+    rows = rows if rows is not None else incidents(root, 1000)
+    return round(sum(i.weight for i in rows if i.building == building and i.ts >= since), 3)
 
 
 def references(root: Path, building: str, limit: int = 5) -> list[dict]:
     return _tail(_dir(root) / building / "references.jsonl", limit)
+
+
+# -- what the operator does with results ----------------------------------------------------------
+
+def _hops(trail) -> list[str]:
+    """The buildings of a trail of `pipes.Hop`s or their dicts, in order."""
+    return [h.building if hasattr(h, "building") else str((h or {}).get("building", "")) for h in trail or ()]
+
+
+def maker(trail, fallback: str = "") -> str:
+    """The building that made a cart: the last hop of its trail, else `fallback` (its source)."""
+    return next((b for b in reversed(_hops(trail)) if b), fallback)
+
+
+def trail_blame(trail, made_by: str, kind: str) -> dict[str, float]:
+    """Who pays, read from the cart's own trail rather than the session's roads: the maker for its
+    logic; for broken inputs the buildings before it, the nearest first, by `CASCADE`."""
+    if kind != "inputs":
+        return {made_by: 1.0}
+    hops = _hops(trail)
+    if made_by in hops:
+        hops = hops[:len(hops) - 1 - hops[::-1].index(made_by)]        # what came before its last hop
+    before: list[str] = []
+    for b in reversed(hops):
+        if b and b != made_by and b not in before:
+            before.append(b)
+    return {b: CASCADE[i] for i, b in enumerate(before[:len(CASCADE)])} or {made_by: 1.0}
+
+
+def signal(root: Path, building: str, good: bool, source: str, value: str | None = None, note: str = "",
+           tag: str = "", kind: str = "logic", blamed: dict[str, float] | None = None, edit: str = "",
+           weight: float | None = None) -> Incident | dict | None:
+    """What the operator did with a result of `building`, kept like a 👍 / 👎 of `WEIGHTS[source]`:
+    a good one is a reference (`value`, else its last result), a bad one an incident whose penalty,
+    `blamed` (default: the building), is scaled by the weight. None when there is nothing to keep."""
+    if not building:
+        return None
+    w = float(weight if weight is not None else WEIGHTS.get(source, 0.5))
+    if value is None:
+        value = str((last_output(root, building) or {}).get("value", ""))
+    changes: dict[str, dict[str, float]] = {}
+    if good:
+        if not value:
+            return None
+        ref = {"ts": _now(), "event": source, "value": str(value)[:OUT_KEEP], "source": source, "weight": w}
+        if note:
+            ref["note"] = note[:1000]
+        _append(_dir(root) / building / "references.jsonl", ref)
+        _weighed(changes, building, source, w, True)
+        _bump(root, changes)
+        return ref
+    shares = blamed or {building: 1.0}
+    penalties = {b: round(p * w, 3) for b, p in shares.items()}
+    for b, p in penalties.items():
+        changes.setdefault(b, {})["penalty"] = p
+    _weighed(changes, building, source, w, False)
+    _bump(root, changes)
+    incident = Incident(_now(), building, kind if kind in KINDS else "logic", note.strip()[:1000],
+                        str(value)[:OUT_KEEP], penalties, source, w, tag, edit[:OUT_KEEP])
+    _append(_dir(root) / "incidents.jsonl", asdict(incident))
+    return incident
+
+
+def reason_tag(text: str) -> tuple[str, str]:
+    """(tag, kind) of a reason that starts with a chip's label (`REASONS`); ("", "logic") otherwise."""
+    low = (text or "").strip().lower()
+    for tag, label, kind in REASONS:
+        if low.startswith(label) or low.startswith(f"[{tag}]"):
+            return tag, kind
+    return "", "logic"
+
+
+# -- results nobody opened ------------------------------------------------------------------------
+
+VIEWS = "views.json"
+IGNORED_AFTER = dt.timedelta(hours=24)
+VIEWS_KEEP = 200
+
+
+def _views(root: Path) -> list[dict]:
+    try:
+        rows = json.loads((_dir(root) / VIEWS).read_text(encoding="utf-8"))
+        return rows if isinstance(rows, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def _save_views(root: Path, rows: list[dict]) -> None:
+    try:
+        path = _dir(root) / VIEWS
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(rows[-VIEWS_KEEP:], ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def await_view(root: Path, viewer: str, made_by: str, title: str = "") -> None:
+    """A result of `made_by` is waiting in `viewer` (a Lake, a Loot's store) for the operator to look."""
+    if not viewer or not made_by or made_by == viewer:
+        return
+    rows = _views(root)
+    rows.append({"ts": _now(), "viewer": viewer, "by": made_by, "title": str(title)[:120]})
+    _save_views(root, rows)
+
+
+def viewed(root: Path, viewer: str) -> int:
+    """The operator opened `viewer`: what waited there was seen. Returns how many."""
+    rows = _views(root)
+    left = [r for r in rows if r.get("viewer") != viewer]
+    if len(left) != len(rows):
+        _save_views(root, left)
+    return len(rows) - len(left)
+
+
+def sweep_unseen(root: Path, now: dt.datetime | None = None) -> list[dict]:
+    """Results that waited longer than `IGNORED_AFTER` and were never opened: a light 👎 each
+    (`usage.ignored`) on the building that made them. Returns them."""
+    now = now or dt.datetime.now()
+    edge = (now - IGNORED_AFTER).isoformat(timespec="seconds")
+    rows = _views(root)
+    old = [r for r in rows if str(r.get("ts", "")) < edge]
+    if not old:
+        return []
+    _save_views(root, [r for r in rows if str(r.get("ts", "")) >= edge])
+    for r in old:
+        signal(root, str(r.get("by", "")), False, "usage.ignored", value=str(r.get("title", "")),
+               note=f"nobody opened it in {r.get('viewer')} for a day")
+    return old
 
 
 # -- an orc's own 👍 / 👎 ----------------------------------------------------------------------------
