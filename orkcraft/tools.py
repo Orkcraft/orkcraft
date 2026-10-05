@@ -122,7 +122,7 @@ class Other:
     id: str
     title: str
     bins: tuple[str, ...] = ()            # on PATH
-    paths: tuple[str, ...] = ()           # under the home folder (~), or absolute; a glob is allowed
+    paths: tuple[str, ...] = ()           # under the home folder (~) or /Applications; a glob is allowed
 
 
 OTHERS: tuple[Other, ...] = (
@@ -137,14 +137,25 @@ OTHERS: tuple[Other, ...] = (
 )
 
 
-def detect_others(which: Callable[[str], str | None] = shutil.which, home: Path | None = None) -> list[Other]:
-    """The other AI tools installed here: a binary on PATH or their folder on disk. Runs nothing."""
+APPS = Path("/Applications")
+
+
+def detect_others(which: Callable[[str], str | None] = shutil.which, home: Path | None = None,
+                  apps: Path | None = None) -> list[Other]:
+    """The other AI tools installed here: a binary on PATH or their folder on disk. Runs nothing.
+
+    `home` stands for `~` and `apps` for `/Applications`, so a test never sees this machine's apps."""
     home = Path.home() if home is None else home
+    apps = APPS if apps is None else apps
     found = []
     for o in OTHERS:
         hit = any(which(b) for b in o.bins)
         for raw in o.paths if not hit else ():
-            p = Path(raw.replace("~", str(home), 1)) if raw.startswith("~") else Path(raw)
+            p = Path(raw)
+            if raw.startswith("~"):
+                p = Path(raw.replace("~", str(home), 1))
+            elif p.is_relative_to(APPS):
+                p = apps / p.relative_to(APPS)
             if "*" in p.name:
                 hit = p.parent.is_dir() and any(p.parent.glob(p.name))
             else:
