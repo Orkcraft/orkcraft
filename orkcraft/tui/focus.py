@@ -4,7 +4,6 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
-
 from textual import events
 
 from orkcraft import scroll

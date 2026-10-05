@@ -39,6 +39,7 @@ COLOR_STYLE = {"🟨": "on #3b3416", "🟩": "on #18301c", "🟦": "on #142a3d",
 
 class TasksView(TypedView):
     TYPE = "fields"
+    UI_PANES = {"board": "#tasks-board"}
     BINDINGS = [Binding("n", "new", "New card"), Binding("less_than_sign", "move(-1)", "◀ Move"),
                 Binding("greater_than_sign", "move(1)", "Move ▶"), Binding("e", "open", "Open"),
                 Binding("enter", "open", "Open", show=False), Binding("c", "color", "Colour"),

@@ -40,7 +40,7 @@ orkcraft = "orkcraft.cli:main"
 include = ["orkcraft*"]
 
 [tool.setuptools.package-data]
-orkcraft = ["schemas/*.json"]
+orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

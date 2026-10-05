@@ -35,6 +35,7 @@ EVENTS: dict[str, tuple[str, str]] = {
     "road_changed": ("🔀", "road from {source}: handler → {handler}"),
     "steward_report": ("🔎", "steward: {findings} finding(s), {proposals} proposal(s)"),
     "proposal_applied": ("✅", "applied: {what}"),
+    "ui_changed": ("🎨", "a new layout of its window ({by})"),
     "card_moved": ("🗂", "{id} → {to}"),
     "card_created": ("🆕", "{id} created"),
     "card_archived": ("🗄", "{id} archived"),

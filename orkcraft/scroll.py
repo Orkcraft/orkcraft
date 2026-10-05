@@ -189,6 +189,7 @@ class BuildingSpec:
     chronicles: dict = field(default_factory=lambda: {"enabled": True})
     actions: list[dict] = field(default_factory=list)
     garrison: Garrison = field(default_factory=Garrison)
+    ui: dict | None = None            # its UI document (schemas/building-ui.v1.json); None: its type's default
 
     @property
     def preset_id(self) -> str:
@@ -325,6 +326,7 @@ class TownScroll:
                 actions=list(b.get("actions") or []),
                 garrison=Garrison(OrcSpec(**g["steward"]) if g.get("steward") else None,
                                   [OrcSpec(**m) for m in g.get("handlers", [])]),
+                ui=b.get("ui") if isinstance(b.get("ui"), dict) else None,
             ))
         orkspaces = [
             Orkspace(

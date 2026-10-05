@@ -170,6 +170,9 @@ class StewardView(ModalScreen[int | None]):
                 t.append(f"  replay {rep.get('exact', 0)}/{rep.get('total', 0)} exact · agrees {rep.get('score', 0):.0%}",
                          style="green" if ready else "yellow")
             t.append(f"\n   {p.get('why', '')}", style="dim")
+            if p.get("type") == "ui" and isinstance(p.get("ui"), dict):
+                from orkcraft.design import ui
+                t.append(f"\n   {ui.outline(p['ui'])}")
             lst.add_option(Option(t, id=str(i) if ready and p.get("type") != "note" else None,
                                   disabled=not ready or p.get("type") == "note"))
         if not lst.option_count:

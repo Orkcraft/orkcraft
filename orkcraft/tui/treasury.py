@@ -4,12 +4,9 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
-
-
 from orkcraft import schedule
 from orkcraft.core import treasury
 from orkcraft.widgets.hud import Resources
-
 
 
 class TreasuryMixin:

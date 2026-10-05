@@ -116,7 +116,7 @@ class OrkcraftApp(
         Binding("K", "command_card('K')", "Like", show=False),
         Binding("F", "command_card('F')", "Dislike", show=False),
         Binding("C", "command_card('C')", "Chat / Orders", show=False),
-        Binding("D", "command_card('D')", "Dismiss", show=False),
+        Binding("D", "command_card('D')", "Dismiss / Redesign", show=False),
         Binding("H", "command_card('H')", "Halt", show=False),
         Binding("W", "command_card('W')", "Watch (steward)", show=False),
         # Custom building action keys (free keys)
@@ -216,6 +216,7 @@ class OrkcraftApp(
         on(bus.HALL, lambda e: self._refresh_hall())
         on(bus.HUD, lambda e: self.refresh_hud())
         on(bus.SPEC, lambda e: self._spec_changed(e.data["building"], e.data["spec"], e.data.get("refresh", False)))
+        on(bus.UI, lambda e: self._ui_changed(e.data["building"], e.data["ui"]))
 
     def get_default_screen(self) -> Screen:
         # The desktop focuses the home building itself; Textual's auto focus would pick the first

@@ -4,8 +4,6 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
-
-
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
 from orkcraft.realm import audit, fastpath, catalog, chronicles, pipes
@@ -26,7 +24,6 @@ from orkcraft.screens.system_menu import (
     QuitConfirm,
     SystemMenu,
 )
-
 
 
 class CommandsMixin:
@@ -165,6 +162,9 @@ class CommandsMixin:
             elif key == "F":
                 if b_id:
                     self.dislike_building(b_id)
+            elif key == "D":
+                if b_id:
+                    self.redesign_building(b_id)
             elif b_id and any(a.get("key") == key for a in self.custom_specs.get(b_id, {}).get("actions", [])):
                 self.action_custom_action(key)
         elif mode == "road":

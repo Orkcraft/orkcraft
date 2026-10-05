@@ -8,9 +8,9 @@ would stop all other work, so the move goes in stages. The TUI keeps working the
 | stage | what | state |
 |---|---|---|
 | 0 | where the core lives | decided (§1) |
-| 1 | the logic apart from the interface | in progress (§2) |
-| 2 | no file everybody has to touch | in progress (§3) |
-| 3 | the design system and the building's UI as JSON | in progress (§4) |
+| 1 | the logic apart from the interface | the core stands; what is left is listed in §2 |
+| 2 | no file everybody has to touch | done for `app.py` (§3) |
+| 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
 | 4 | Office in the GUI: plain widgets, the same town graph | paused |
 | 5 | Camp in the GUI: tiles and sprites in the spirit of Warcraft II | paused |
 
@@ -65,6 +65,28 @@ What the core owns:
 What stays in the face: dialogs and their flow, focus, keys, layout, windows, huts, carts,
 terminals. A dialog's *decision* calls a service, and the dialog itself is the face's.
 
+**Moved so far:** `core/town.py` (the state, save, checkpoint, chronicle), `core/bus.py`,
+`core/roads.py`, `core/treasury.py`, `core/buildings.py` (raising a spec, Z, goals, 👍 / 👎, the retros'
+and stewards' proposals, the UI document), `core/night.py` (the Elders, the orks' own changes,
+probation), `core/runners.py`. `tests/test_core.py` runs them with no app at all.
+
+**Left for stage 1**, the largest first:
+
+1. **A building's work lives in its Textual view.** A typed view (`screens/typed/*`) both draws
+   and does the building's job: `receive` runs or queues work, `halt` stops it, a webhook or a
+   librarian runs in it, `burning` and `orders_alert` raise fire. Each type gets a worker in the
+   core (`core/workers/<type>.py`) that owns this. The view then only draws the worker's state and
+   calls its acts. Start with the types the GUI shows first: Lake, Task Fields, Scroll Dump.
+2. **The road engine** (`realm/roads.Engine`) is built by the app with callbacks into views. It
+   moves to the `Town` once deliveries go to workers rather than views.
+3. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
+   ork, Halt All and the roster's view of running sessions are not. Split them into a sessions
+   service in the core that keeps the processes, and terminals that draw them (pyte today,
+   xterm.js later).
+4. **The roster** (`refresh_roster`) mixes building the roster with badges on windows. Building
+   the roster goes to the core, and the badges stay in the face.
+5. `desktop.machine` (the machine's settings) belongs to the `Town`, not to the window manager.
+
 **How it moves:** one domain at a time, with the whole suite green after each. A service lands in
 `core/`, and the TUI's part for that domain calls it instead of doing the work itself. Method
 names on `OrkcraftApp` stay, so tests and views that call `app.add_road(...)` keep working.
@@ -87,17 +109,21 @@ conflicted there. Now:
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
 See [`docs/design-system.md`](../design-system.md) for the rules (written for people and for the
-orks that rebuild buildings). The short version:
+orks that rebuild buildings). Shipped: `design/tokens.json`, `schemas/building-ui.v1.json`,
+contracts for 🌊 Lake, 🌾 Task Fields and 🗑️ Scroll Dump, the document kept per building in the Town
+Scroll, `D` 🎨 (the steward redesigns from a wish), and the TUI drawing it (`tui/ui_apply.py`). Next:
+a contract for each remaining type as its view is split into named panes. The short version:
 
 - **Tokens, not values.** Font roles (`title`, `body`, `mono`, `status`, `label`), colour roles
   (`ok`, `wait`, `fire`, `muted`, `accent`, the harness colours), spacing steps. Camp and Office
   are two themes over the same roles. The TUI maps a font role to a text style (bold, dim, …),
   and the GUI maps it to a real font.
 - **One building, one UI document.** Every building has a UI document (`building-ui.v1`):
-  panes of components bound to the building's data, laid out in rows and columns by ratio. The
-  built-in buildings ship theirs (`orkcraft/design/buildings/*.json`). A custom building's
-  layout is its spec's panes. A steward that rebuilds a building's UI edits that document, and
-  the validator checks it.
+  panes of components laid out in rows and columns by share. Each type ships a default in its
+  contract (`orkcraft/design/buildings/*.json`), and a building's own document lives in its Town
+  Scroll entry (`ui`). A steward that rebuilds a building's UI writes that document, and the
+  validator checks it against the contract. A Mason & Artisan custom building keeps its layout in
+  its spec's panes.
 - **Components are a closed list** (`list`, `table`, `counter`, `markdown`, `editor`, `board`,
   `diff`, `tree`, `terminal`, `chart`, `form`, `log`). Each face renders each component in its
   own way. Nothing in the document is code, a raw colour or a font name.

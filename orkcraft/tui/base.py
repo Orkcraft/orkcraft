@@ -25,13 +25,14 @@ HALT_RESET_S = 4.0
 
 ACTIVE_COMMAND_KEYS = {
     "neutral": {"B", "P", "S", "T", "G"},
-    "building": {"R", "L", "Y", "U", "P", "M", "X", "Z", "K", "F"},
+    "building": {"R", "L", "Y", "U", "P", "M", "X", "Z", "K", "F", "D"},
     "unit": {"C", "L", "T", "D", "H", "W"},
     "road": {"H", "U"},
 }
 
-
 @dataclass
+
+
 class FocusState:
     mode: str = "neutral"  # "neutral" | "building" | "unit" | "road"
     building_id: str | None = None

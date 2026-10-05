@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-
 from orkcraft.realm import blueprint, fastpath, builders, catalog, masonry, pipes
 from orkcraft.tui import silhouettes
 from orkcraft.realm.buildings import TOWN_HALL

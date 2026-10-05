@@ -1,0 +1,19 @@
+{
+  "type": "scrolls",
+  "about": "🗑️ Scroll Dump: the wiki its ork keeps — the tree of pages and the page that is open.",
+  "panes": {
+    "head": {"about": "the librarian's state: what waits to be taken in, what runs, the last note", "components": ["status"], "required": true},
+    "tree": {"about": "the wiki's pages, folder by folder", "components": ["tree"], "required": true},
+    "page": {"about": "the open page, rendered", "components": ["markdown", "text"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "scrolls", "split": "column",
+    "panes": [
+      {"id": "head", "component": "status", "size": "auto", "font": "status"},
+      {"split": "row", "size": 1, "panes": [
+        {"id": "tree", "component": "tree", "size": 2, "font": "body"},
+        {"id": "page", "component": "markdown", "size": 3, "font": "body"}
+      ]}
+    ]
+  }
+}

@@ -19,7 +19,7 @@ ROADS = "roads"      # the roads changed: save the scroll, redraw them
 ROSTER = "roster"    # the orks or their questions changed
 HALL = "hall"        # the Town Hall's lists changed (ratings, proposals, the Council's log)
 SPEC = "spec"        # building, spec: a custom building's spec changed (its view takes the new one)
-RAISED = "raised"    # building: a new custom building stands in the scroll; a face opens its view
+UI = "ui"            # building, ui: a building's UI document changed (its view lays itself out again)
 HUD = "hud"          # the treasury or the clock changed
 
 SEVERITIES = ("information", "warning", "error")

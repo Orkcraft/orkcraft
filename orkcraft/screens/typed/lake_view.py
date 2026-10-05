@@ -36,6 +36,7 @@ AUTOSAVE_S = 5
 
 class LakeView(TypedView):
     TYPE = "lake"
+    UI_PANES = {"head": "#lake-head", "view": "#lake-scroll", "editor": "#lake-edit"}
     opener = None                  # tests catch the browser here
     fetcher = None                 # and the network
     BINDINGS = [Binding("e", "edit", "Edit"),

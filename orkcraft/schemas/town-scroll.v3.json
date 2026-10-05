@@ -506,6 +506,10 @@
             "$ref": "#/$defs/road"
           },
           "description": "Incoming roads: what this building receives, from whom, filtered at the source, and which handler works on it."
+        },
+        "ui": {
+          "description": "Its UI document (building-ui.v1.json: panes of components, roles only); missing: its type's default.",
+          "anyOf": [{"type": "object"}, {"type": "null"}]
         }
       }
     },

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 from orkcraft.realm import halt, chronicles, pipes
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.town_hall import TownHallView

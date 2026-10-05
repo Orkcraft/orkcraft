@@ -17,7 +17,6 @@ from orkcraft.widgets.carts import CartClicked
 from orkcraft.wm import Desktop
 
 
-
 class DeliveryMixin:
     def on_desktop_payload_emitted(self, message: Desktop.PayloadEmitted) -> None:
         if not self._windows_alive():
@@ -47,6 +46,12 @@ class DeliveryMixin:
             reload = getattr(view, "refresh_data", None) if refresh else None
             if reload is not None:
                 reload()
+
+    def _ui_changed(self, building_id: str, doc: dict) -> None:
+        """A building's UI document changed (a redesign, a revert): its view lays itself out again."""
+        apply_ui = getattr(self._custom_view(building_id), "apply_ui", None)
+        if apply_ui is not None:
+            apply_ui(doc)
 
     def _custom_view(self, building_id: str):
         w = self.desktop.get_window(building_id)

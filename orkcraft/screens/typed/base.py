@@ -25,6 +25,9 @@ STATE_ROOT = Path(".orkcraft")
 class TypedView(CustomBuildingView):
     TYPE = ""
     TAKES_REWORK = False      # a delivered cart is work it redoes (a Loot checkpoint may send one back)
+    # Which widget draws each pane of its UI contract (design/buildings/<type>.json): pane id → CSS
+    # selector inside the view. A type without a contract is one pane, `main`: the view itself.
+    UI_PANES: dict[str, str] = {}
 
     DEFAULT_CSS = """
     TypedView .typed-list { width: 2fr; height: 1fr; border: round $surface-lighten-1; }
@@ -81,9 +84,24 @@ class TypedView(CustomBuildingView):
 
     def on_mount(self) -> None:
         self.refresh_data()
+        self.apply_ui()
 
     def refresh_data(self) -> None:
         pass
+
+    def ui_document(self) -> dict:
+        """Its UI document: what the Town Scroll keeps for it, else its type's default."""
+        from orkcraft.design import ui
+        town = getattr(getattr(self, "app", None), "scroll", None)
+        return ui.current(town.building(self.building_id) if town is not None else None, self.btype.id)
+
+    def apply_ui(self, doc: dict | None = None) -> None:
+        """Lay the window out as its UI document says (docs/design-system.md)."""
+        from orkcraft.tui import ui_apply
+        try:
+            ui_apply.apply(self, doc or self.ui_document(), self.UI_PANES)
+        except Exception:      # a layout never takes a building down: it keeps the one it had
+            pass
 
     def restart(self) -> None:
         """After the weekly self-audit changed it: pick up the new settings."""

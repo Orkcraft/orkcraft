@@ -88,6 +88,7 @@ KEY_GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
             ("Z", "Revert building to its previous checkpoint"),
             ("K", "👍 Its last result is good (a reference)"),
             ("F", "👎 Its last result is bad: broken inputs or its logic"),
+            ("D", "🎨 Redesign its window: say what to change, the steward rewrites the layout"),
         ],
     ),
     (

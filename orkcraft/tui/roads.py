@@ -4,15 +4,12 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
-
-
 from orkcraft import scroll
 from orkcraft.realm import fastpath, pipes
 from orkcraft.screens.road_rule_modal import RoadRuleModal
 from orkcraft.screens.road_modal import PLAIN, RULE, RoadHandlerModal, SubscribeModal
 from orkcraft.core import roads as core_roads
 from orkcraft.scroll import split_key
-
 
 
 class RoadsMixin:

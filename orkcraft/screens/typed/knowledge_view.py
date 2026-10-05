@@ -56,6 +56,7 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
 
 class KnowledgeView(TypedView):
     TYPE = "scrolls"
+    UI_PANES = {"head": "#kb-head", "tree": "#kb-tree", "page": "#kb-page"}
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     review_runner = None          # and the Council members' calls (realm/team.py Runner)
     BINDINGS = [Binding("i", "ingest", "Ingest"), Binding("l", "lint", "Lint"), Binding("x", "stop", "Stop")]
@@ -127,7 +128,7 @@ class KnowledgeView(TypedView):
         yield Static("", id="kb-head", classes="typed-head")
         with Horizontal(classes="typed-row"):
             yield Tree("Wiki", id="kb-tree", classes="typed-list")
-            with VerticalScroll(classes="typed-detail"):
+            with VerticalScroll(classes="typed-detail", id="kb-page"):
                 yield Markdown("", id="kb-note")
 
     def on_mount(self) -> None:

@@ -8,7 +8,6 @@ import copy
 import functools
 import datetime as dt
 
-
 from orkcraft import scroll
 from orkcraft.realm import audit, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, builders, steward
 from orkcraft.screens.proposal_modal import ProposalModal

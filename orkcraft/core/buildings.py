@@ -6,6 +6,7 @@ changes the camp happens here and is published: `ROADS`, `ROSTER`, `HALL`, `SPEC
 """
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import json
 from typing import Any
@@ -14,6 +15,7 @@ from orkcraft import scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
 from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, workshop
+from orkcraft.design import ui as design_ui
 from orkcraft.realm.buildings import Building, custom_building
 
 GOAL_WORDS = {"thrift": "the retros will make it cheaper",
@@ -100,6 +102,9 @@ def revert(town: Town, building_id: str) -> bool:
         current.roads = [r for r in old.roads if r.source in known]
         current.garrison, current.actions = old.garrison, old.actions
         current.title, current.icon = old.title, old.icon
+        if current.ui != old.ui:
+            current.ui = old.ui
+            town.publish(bus.UI, building=building_id, ui=ui_of(town, building_id))
     if spec is not None:
         spec = catalog.migrate(spec)
         town.custom_specs[building_id] = spec
@@ -229,9 +234,44 @@ def apply_steward(town: Town, building_id: str, data: dict, index: int, by: str)
         return None
     town.publish(bus.ROADS)
     town.publish(bus.ROSTER)
+    if proposal.get("type") == "ui":
+        town.publish(bus.UI, building=building_id, ui=ui_of(town, building_id))
     town.record(building_id, "proposal_applied", what=what)
     sha = town.checkpoint("auto-improve", building_id, f"steward: {what[:60]}") or ""
     evolution.record(town.repo_root, evolution.Change(
         building_id, str(proposal.get("type")), "steward", what, str(proposal.get("why") or "")[:200], by=by,
         sha=sha, key=f"steward:{building_id}:{data.get('ts', '')}:{index}"))
     return what
+
+
+# -- the building's UI document (docs/design-system.md) -----------------------------------------------
+
+def ui_type(town: Town, building_id: str) -> str:
+    """The type whose UI contract a building follows: its catalog type, else (a built-in without one)
+    its own id."""
+    spec = town.spec_of(building_id)
+    return catalog.type_of(spec).id if spec else building_id
+
+
+def ui_of(town: Town, building_id: str) -> dict:
+    """Its UI document as it stands: what the scroll keeps, else its type's default."""
+    return design_ui.current(town.scroll.building(building_id), ui_type(town, building_id))
+
+
+def set_ui(town: Town, building_id: str, doc: dict | None, by: str = "you", why: str = "") -> list[str]:
+    """A new UI document for the building (None: back to its type's default) — checked against its
+    type's contract, kept in the scroll, a checkpoint `ui(<id>)` (Z takes it back). [] or the problems."""
+    b = town.scroll.building(building_id)
+    if b is None:
+        return [f"no building {building_id!r}"]
+    if doc is not None:
+        problems = design_ui.validate(doc, design_ui.contract(ui_type(town, building_id)))
+        if problems:
+            return problems
+    b.ui = copy.deepcopy(doc) if doc is not None else None
+    town.publish(bus.UI, building=building_id, ui=ui_of(town, building_id))
+    sha = town.checkpoint("ui", building_id, (why or "a new layout")[:60])
+    town.record(building_id, "ui_changed", by=by)
+    evolution.record(town.repo_root, evolution.Change(building_id, "ui", "steward" if by != "you" else "you",
+                                                     "a new layout", why[:200], by=by, sha=sha or ""))
+    return []

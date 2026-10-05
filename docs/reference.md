@@ -509,6 +509,10 @@ Everything that changes the camp goes through the Town Hall and its own git:
   result as a reference — up to three are shown to its agents and steward prompt. `F` asks what went wrong:
   broken inputs penalise its suppliers along the roads that delivered this session (1, ½, ¼ by
   hop); its own logic penalises only it. Either way an incident is kept (`.orkcraft/feedback/`).
+- **🎨 `D` on a building**: say what should change in its window; its steward rewrites the
+  building's UI document (panes, sizes, font and colour roles — never raw values), checked against
+  the type's contract. `Enter` keeps it as a checkpoint `ui(<id>)`, `Z` takes it back, and `default`
+  restores the type's own layout. See [docs/design-system.md](design-system.md).
 - **The Council's duties** also cover prompts (🛡 injections, leaks, secret files, "ignore previous
   instructions", writers asked to push or delete), the load on you (🎨 too many events, settings,
   roads, buildings on a canvas) and housekeeping (⛏ F10 → 🧹 rotates big logs, removes the state of

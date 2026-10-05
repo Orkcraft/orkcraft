@@ -58,6 +58,7 @@ BUILDING_ACTIONS = [
     ("Z", "[Z] ↶ Revert to Previous Checkpoint"),
     ("K", "[K] 👍 Good Result (a Reference)"),
     ("F", "[F] 👎 Bad Result — What Went Wrong?"),
+    ("D", "[D] 🎨 Redesign its Window (Steward)"),
 ]
 
 ROAD_ACTIONS = [

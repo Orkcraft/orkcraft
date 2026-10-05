@@ -8,7 +8,6 @@ import copy
 import datetime as dt
 from typing import Any, Callable
 
-
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
 from orkcraft.realm import fastpath, builders, chronicles, recruiter, steward
@@ -268,3 +267,56 @@ class GarrisonMixin:
                         title="🎒 Model")
 
         self.push_screen(OrcModelModal(member.name, member.harness), done)
+
+    def redesign_building(self, building_id: str) -> None:
+        """D 🎨: say what should change in the building's window; its steward rewrites the UI document
+        (one model call, checked against the type's contract), you see it, Enter keeps it, Z takes it back.
+        `default` puts the type's own layout back without a model call."""
+        title = self._title_of(building_id)
+
+        def asked(request: str | None) -> None:
+            if request is None:
+                return
+            if request.strip().lower() in ("default", "reset"):
+                problems = core_buildings.set_ui(self.core, building_id, None, by="you", why="back to the default layout")
+                self.notify("\n".join(problems) if problems else "the type's own layout again",
+                            title=f"🎨 {title}", severity="error" if problems else "information")
+                return
+            if self.gold_exhausted():
+                return
+            snapshot = copy.deepcopy(self.scroll)
+            type_id = core_buildings.ui_type(self.core, building_id)
+            self.push_screen(OrcProgress("🎨 The steward is redrawing the window…"))
+
+            def _worker() -> None:
+                report = steward.redesign(self.repo_root, snapshot, building_id, type_id, request,
+                                          runner=runners.STEWARD_RUNNER or builders.claude_runner)
+                self.call_from_thread(self._on_redesigned, building_id, report, request)
+
+            self.run_worker(_worker, thread=True, name=f"redesign-{building_id}")
+
+        self.push_screen(TextPrompt(f"🎨 {title} — what should change in its window?",
+                                    placeholder="e.g. the tree narrower, the page larger · default: its own layout"),
+                         asked)
+
+    def _on_redesigned(self, building_id: str, report: steward.StewardReport, request: str = "") -> None:
+        if isinstance(self.screen, OrcProgress):
+            self.screen.dismiss(None)
+        title = self._title_of(building_id)
+        if not report.proposals:
+            why = report.error or "; ".join(report.errors[:3]) or "no layout came back"
+            self.notify(why, title=f"🎨 {title}: not redesigned", severity="warning")
+            return
+        data = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "escalated": True, "cost_usd": report.cost_usd,
+                "findings": [{"kind": "wish", "summary": request.strip()[:200]}] if request.strip() else [],
+                "proposals": [p.to_dict() for p in report.proposals]}
+
+        def done(index: int | None) -> None:
+            if index is None:
+                return
+            p = data["proposals"][index]
+            problems = core_buildings.set_ui(self.core, building_id, p["ui"], by="steward", why=p.get("why", ""))
+            self.notify("\n".join(problems) if problems else "✅ a new layout — Z on it takes it back",
+                        title=f"🎨 {title}", severity="error" if problems else "information")
+
+        self.push_screen(StewardView(title, data), done)

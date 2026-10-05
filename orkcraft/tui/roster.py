@@ -6,14 +6,12 @@ from __future__ import annotations
 
 import time
 
-
 from orkcraft.realm import pipes
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.realm.orcs import ALERT_ICON, Alert, garrison_badge
 from orkcraft.realm.roster import build_roster, worker_infos
 from orkcraft.screens.town_hall import TownHallView
 from orkcraft.screens.orders import AwaitingOrdersModal
-
 
 
 class RosterMixin:

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-
 from orkcraft.realm import fastpath
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.council_review import CouncilProgress, CouncilVerdict

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 from orkcraft import scroll
 from orkcraft.realm.orcs import Orc
 from orkcraft.screens.console import orc_key
@@ -15,7 +14,6 @@ from orkcraft.screens.orders import AwaitingOrdersModal
 from orkcraft.realm import worktrees
 from orkcraft.screens.worktree_modal import WorktreeModal
 from orkcraft.wm import Desktop
-
 
 
 class OrkspacesMixin:
