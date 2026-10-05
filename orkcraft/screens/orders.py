@@ -46,9 +46,9 @@ class AlertModal(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label(Text(f"❓ {self.who + ': ' if self.who else ''}{self.alert.title}"), classes="order-title")
+            yield Label(Text(f"❓ {self.who + ': ' if self.who else ''}{self.alert.title}"), classes="order-title -as-written")
             if self.alert.context:
-                yield Static(Text("\n".join(self.alert.context[-10:])), classes="order-context")
+                yield Static(Text("\n".join(self.alert.context[-10:])), classes="order-context -as-written")
             for key, label in self.alert.options:
                 yield Button(f"[{key}] {label}", id=f"opt-{key}", variant="primary" if key == "1" else "default")
             yield Static("press the number · esc closes without answering", classes="order-hint")
@@ -121,8 +121,8 @@ class AwaitingOrdersModal(AlertModal):
                 prefix = f"{w}: " if w else ""
                 lst.add_option(Option(f"[{i}] {prefix}{a.title}", id=f"alert-opt-{i-1}"))
             yield lst
-            yield Label("", id="order-target", classes="order-question")
-            yield Static("", id="order-context", classes="order-context")
+            yield Label("", id="order-target", classes="order-question -as-written")
+            yield Static("", id="order-context", classes="order-context -as-written")
             yield Static("", id="order-advice", markup=False)
             with Horizontal(id="order-actions"):
                 pass

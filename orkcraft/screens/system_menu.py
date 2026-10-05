@@ -12,6 +12,8 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, OptionList, Static
 from textual.widgets.option_list import Option
 
+from orkcraft.realm import modes
+
 
 MENU_ITEMS: list[tuple[str, str]] = [
     ("halt", "🛑 Halt All Operations"),
@@ -153,12 +155,12 @@ def _format_column(groups: list[tuple[str, list[tuple[str, str]]]]) -> Group:
     for idx, (title, rows) in enumerate(groups):
         if idx > 0:
             parts.append(Text(""))
-        parts.append(Text(f"── {title} ──", style="bold yellow"))
+        parts.append(Text(f"── {modes.text(title)} ──", style="bold yellow"))     # a Rich table: the mode's words here
         grid = Table.grid(padding=(0, 1))
         grid.add_column(style="bold cyan", no_wrap=True)
         grid.add_column(overflow="fold")
         for key, desc in rows:
-            grid.add_row(Text(key), Text(desc))
+            grid.add_row(Text(key), Text(modes.text(desc)))
         parts.append(grid)
     return Group(*parts)
 

@@ -73,8 +73,14 @@ TERMS: tuple[Term, ...] = (
     _t("building_retro", "Building retro", "Module review"),
     _t("chronicles", "Chronicles", "History"),
     _t("elders", "Elder", "Advisor", "Elders", "Advisors"),
-    _t("steward", "Steward", "Coordinator", "Stewards", "Coordinators"),
-    _t("mason", "Mason & Artisan", "Layout designer"),
+    _t("steward", "steward", "coordinator", "stewards", "coordinators"),
+    _t("builders", "Mason & Artisan", "Module designer"),
+    # -- the Town Hall's own orks -------------------------------------------------------------------
+    _t("orc.mason", "Mason", "Data planner"),
+    _t("orc.artisan", "Artisan", "Layout designer"),
+    _t("orc.warder", "Warder", "Security reviewer"),
+    _t("orc.pathfinder", "Pathfinder", "Usability reviewer"),
+    _t("orc.treasurer", "Treasurer", "Cost reviewer"),
     _t("council_word", "Council", "Review board"),
     _t("clan", "clan", "team"),
     # -- building types (catalog ids) ---------------------------------------------------------------
@@ -119,14 +125,17 @@ TERMS: tuple[Term, ...] = (
 
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
-         "catapult": ("Catapult",), "loot_vault": ("Loot",), "town_hall": ("Town hall",)}
+         "catapult": ("Catapult",), "town_hall": ("Town hall",)}
 
 # Whole phrases first: where a word for word would read wrong ("an orkspace" → "a workspace"). The
-# camp is the town, but Camp alone is the mode's name and stays.
-_PHRASES = {"the camp": "the project", "an orkspace": "a workspace", "Punk ork": "Expert", "an ork": "an agent", "Into the pit": "To the inbox",
-            "the Elders' advice": "the advisors' advice", "Not enough food": "No agent slots left",
-            "Treasury empty": "Budget spent", "Halt All Operations": "Stop all", "Awaiting Orders":
-            "Awaiting an answer"}
+# camp is the town, but Camp alone is the mode's name and stays; so does the F10 line that tells what
+# the Camp looks like (it is about the camp, in any mode).
+_PHRASES = {"the camp": "the project", "an orkspace": "a workspace", "Punk ork": "Expert", "an ork": "an agent",
+            "Into the pit": "To the inbox", "the Elders' advice": "the advisors' advice",
+            "Not enough food": "No agent slots left", "Treasury empty": "Budget spent",
+            "Halt All Operations": "Stop all", "Halt All": "Stop all", "Awaiting Orders": "Awaiting an answer",
+            "WAR MAP (Orkspaces)": "WORKSPACES", "War Map (Orkspaces)": "Workspaces",
+            "the town of orks: ASCII, fire, gold and lumber": "the town of orks: ASCII, fire, gold and lumber"}
 
 _BY_KEY = {t.key: t for t in TERMS}
 
@@ -170,8 +179,9 @@ def _alternation() -> str:
     return "|".join(re.escape(n) for n in sorted(set(names), key=len, reverse=True))
 
 
-# A name stands alone: not inside another word (`ork` in `work` or in `Orkcraft`, `town` in `downtown`).
-_WORD = re.compile(rf"(?<![\w-])(?:{_alternation()})(?![\w-])")
+# A name stands alone: not inside another word (`ork` in `work` or in `Orkcraft`, `town` in `downtown`)
+# nor in a path (`./loot/`, `loot/screenshots`, `src/roads.py`): those name files, not concepts.
+_WORD = re.compile(rf"(?<![\w\-/\\.])(?:{_alternation()})(?![\w\-/\\]|\.\w)")
 
 
 def _swap(m: re.Match) -> str:

@@ -24,7 +24,7 @@ def strip_rich(value):
     if not isinstance(value, Text):
         return value
     plain = value.plain
-    if plain.strip() in modes._WORDS or re.search(r"[👍👎]\s*\d", plain):
+    if plain.strip() in modes._WORDS or re.search(r"[👍👎]", plain):
         return Text(modes.strip_emoji(plain), style=value.style)
     cuts = []
     for m in modes._EMOJI.finditer(plain):

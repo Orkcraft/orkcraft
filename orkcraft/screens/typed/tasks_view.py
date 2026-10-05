@@ -140,7 +140,8 @@ class TasksView(TypedView):
             return False
         board.remove_children()
         for ln in lanes:
-            col = Vertical(Label(ln.label, id=f"tasks-label-{ln.id}"), OptionList(id=f"tasks-{ln.id}"),
+            col = Vertical(Label(ln.label, id=f"tasks-label-{ln.id}", classes="-as-written"),
+                           OptionList(id=f"tasks-{ln.id}", classes="-as-written"),
                            classes="tasks-col" + (" notes-col" if ln.kind == NOTE else ""))
             board.mount(col)
         self._shown = ids

@@ -168,7 +168,7 @@ class BuilderChat(ModalScreen[dict | None]):
             yield Static("🛠 FROM SCRATCH · talk with the Builder — a script does the work, a model only where it must",
                          classes="iv-title", markup=False)
             with VerticalScroll(id="chat-log"):
-                yield Static("", id="chat-text")
+                yield Static("", id="chat-text", classes="-as-written")
             with Vertical(id="chat-ready"):
                 yield Label("Pick a view", classes="iv-section")
                 yield Horizontal(id="chat-views")
@@ -346,7 +346,7 @@ class BlueprintReview(ModalScreen[tuple[str, object] | None]):
                     yield Label("🖼 Preview — how it will show a result", classes="iv-section")
                     yield Static("", id="bp-preview")
                     yield Label("▶ Emulation [ctrl+e] — the carts arriving, one by one", classes="iv-section")
-                    yield Static("", id="bp-emulate")
+                    yield Static("", id="bp-emulate", classes="-as-written")
                     yield Input(placeholder="try your own cart: type its value, Enter runs it in the sandbox",
                                 id="bp-try")
                     yield Label("🧪 Sandbox — the mock carts", classes="iv-section")

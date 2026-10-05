@@ -46,7 +46,7 @@ class OrcChat(Vertical):
     def compose(self) -> ComposeResult:
         yield Static("", id="orc-chat-title", markup=False)
         with VerticalScroll(id="orc-chat-scroll"):
-            yield Static("", id="orc-chat-log", markup=False)
+            yield Static("", id="orc-chat-log", markup=False, classes="-as-written")
         yield Static("Earlier sessions — Enter reopens", id="orc-chat-history-title", markup=False)
         yield OptionList(id="orc-chat-history")
         yield Input(id="orc-chat-input")

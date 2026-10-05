@@ -82,6 +82,8 @@ def _color(value: str) -> str | None:
 class Terminal(Widget, can_focus=True):
     """Runs `command` on a PTY. Posts `Terminal.Exited` when the process ends."""
 
+    DEFAULT_CLASSES = "-as-written"          # what the program prints stays as printed, in any mode
+
     DEFAULT_CSS = """
     Terminal {
         width: 100%;

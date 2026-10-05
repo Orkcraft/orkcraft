@@ -88,7 +88,7 @@ class WorkshopView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="ws-runs", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="ws-out")
+                yield Static("", id="ws-out", classes="-as-written")
 
     def on_mount(self) -> None:
         import datetime as dt
