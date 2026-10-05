@@ -66,6 +66,11 @@ LABELS = {EXPLICIT: "👍 / 👎", "loot.accepted": "accepted in a Loot", "loot.
           "lake.touched": "fixed in a Lake", "lake.reshaped": "reformatted in a Lake", "lake.rewritten": "rewritten in a Lake",
           "pr.merged": "pull request merged", "pr.closed": "pull request closed", "revert": "taken back with Z",
           "usage.ignored": "nobody opened it"}
+# What says the result was bad, not that it was not needed: a result nobody opened is about use
+# (the Town retro may remove the building), never a reason to spend more on its quality.
+NOT_QUALITY = frozenset({"usage.ignored"})
+STRONG = frozenset({EXPLICIT, "pr.merged"})     # likes that shield a building from a thrift retro
+AUTHOR_KINDS = frozenset({"agent", "hybrid", "task"})   # hops that write; a team reviews, a chain or script carries
 ENOUGH = 1.0                       # the weight from which readers treat signals as a 👍 / 👎
 # Why a cart goes back, offered as chips (the reason is still free text): the tag, the label, and
 # whether it blames the inputs (the hops before the maker) or the maker's own logic.
@@ -227,8 +232,10 @@ def scores(root: Path) -> dict[str, dict]:
 
 
 def _weighed(changes: dict[str, dict[str, float]], building: str, source: str, weight: float, good: bool) -> None:
+    """`liked` / `disliked` as the readers count them (a result nobody opened is in `by` only)."""
     row = changes.setdefault(building, {})
-    row["liked" if good else "disliked"] = row.get("liked" if good else "disliked", 0) + weight
+    if source not in NOT_QUALITY:
+        row["liked" if good else "disliked"] = row.get("liked" if good else "disliked", 0) + weight
     row[f"by.{source}"] = row.get(f"by.{source}", 0) + (weight if good else -weight)
 
 
@@ -297,7 +304,7 @@ def incidents(root: Path, limit: int = 20) -> list[Incident]:
 def rated_since(root: Path, ts: str) -> bool:
     """Did the operator rate anything since `ts` (an ISO time) — a 👍 / 👎, or what they did with
     results weighing as much (`ENOUGH`)?"""
-    total = sum(i.weight for i in incidents(root, 1000) if str(i.ts) >= ts)
+    total = sum(i.weight for i in incidents(root, 1000) if str(i.ts) >= ts and i.source not in NOT_QUALITY)
     for path in _dir(root).glob("*/references.jsonl"):
         total += sum(_weight(r) for r in _tail(path, 200) if str(r.get("ts", "")) >= ts)
     return total >= ENOUGH - 1e-9
@@ -310,26 +317,48 @@ def _weight(ref: dict) -> float:
         return 1.0
 
 
-def liked(root: Path, building: str, since: str = "") -> float:
-    """The weight of what was liked of `building` since `since`: 👍 1 each, quiet signals less."""
-    return round(sum(_weight(r) for r in references(root, building, 1000) if str(r.get("ts", "")) > since), 3)
+def liked(root: Path, building: str, since: str = "", strong: bool = False) -> float:
+    """The weight of what was liked of `building` since `since`: 👍 1 each, quiet signals less;
+    `strong`: only 👍 and merged pull requests (`STRONG`)."""
+    return round(sum(_weight(r) for r in references(root, building, 1000) if str(r.get("ts", "")) > since
+                     and (not strong or r.get("source", EXPLICIT) in STRONG)), 3)
 
 
-def disliked(root: Path, building: str, since: str = "", rows: list[Incident] | None = None) -> float:
+def disliked(root: Path, building: str, since: str = "", rows: list[Incident] | None = None,
+             quality: bool = False) -> float:
     """What the incidents since `since` weigh on `building` — the ones told about it for its own
     logic, and its part of the cascade when it fed broken inputs to another (`Incident.share`;
-    `rows`: incidents already read)."""
+    `rows`: incidents already read).
+    A result nobody opened is not a dislike (`NOT_QUALITY`); `quality`: nor is "too expensive" —
+    the reasons to make a 💎 building better, which spends more, are about what it made, not its cost."""
     rows = rows if rows is not None else incidents(root, 1000)
-    return round(sum(i.share(building) for i in rows if i.ts >= since), 3)
+    return round(sum(i.share(building) for i in rows if i.ts >= since and i.source not in NOT_QUALITY
+                     and not (quality and i.tag == "cost")), 3)
 
 
 def blaming(root: Path, building: str, since: str = "", limit: int = 1000) -> list[Incident]:
-    """The incidents since `since` that weigh on `building`, newest first."""
-    return [i for i in incidents(root, limit) if i.ts >= since and i.blames(building)]
+    """The incidents since `since` that weigh on `building`, newest first (not results nobody opened)."""
+    return [i for i in incidents(root, limit) if i.ts >= since and i.blames(building) and i.source not in NOT_QUALITY]
 
 
 def references(root: Path, building: str, limit: int = 5) -> list[dict]:
     return _tail(_dir(root) / building / "references.jsonl", limit)
+
+
+def _rank(ref: dict) -> int:
+    """How good an example a reference is: the operator's own version or a 👍 first, a merged pull
+    request next, a quiet acceptance last."""
+    source = ref.get("source", EXPLICIT)
+    if source == EXPLICIT or (source.startswith("loot.") and _weight(ref) == 0):
+        return 0
+    return 1 if source in STRONG else 2
+
+
+def examples(root: Path, building: str, limit: int = 3) -> list[dict]:
+    """The references to show an ork's prompt as what good looks like: the best kind first, the
+    newest within a kind — so a stream of quiet acceptances never pushes out a 👍 or a correction."""
+    rows = references(root, building, 200)                      # newest first
+    return sorted(rows, key=_rank)[:limit]
 
 
 # -- what the operator does with results ----------------------------------------------------------
@@ -339,9 +368,19 @@ def _hops(trail) -> list[str]:
     return [h.building if hasattr(h, "building") else str((h or {}).get("building", "")) for h in trail or ()]
 
 
+def _kinds(trail) -> list[str]:
+    return [h.kind if hasattr(h, "kind") else str((h or {}).get("kind", "")) for h in trail or ()]
+
+
 def maker(trail, fallback: str = "") -> str:
-    """The building that made a cart: the last hop of its trail, else `fallback` (its source)."""
-    return next((b for b in reversed(_hops(trail)) if b), fallback)
+    """The building that wrote a cart: the last hop of its trail that writes (an agent, a hybrid, a
+    War Tent task) — not a Clan Fire that reviewed it or a chain that carried it after — else its
+    last hop, else `fallback`. A cart with no trail was made by no ork: "" unless `fallback`."""
+    hops, kinds = _hops(trail), _kinds(trail)
+    for b, k in zip(reversed(hops), reversed(kinds)):
+        if b and k in AUTHOR_KINDS:
+            return b
+    return next((b for b in reversed(hops) if b), fallback)
 
 
 def trail_blame(trail, made_by: str, kind: str) -> dict[str, float]:

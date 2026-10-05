@@ -15,8 +15,9 @@ An ork's file (a cart with a trail) is kept as the ork made it (`lake.Origins`).
 leaves the editor, their text is compared with the ork's (`realm/edits.py`): filling it in — a
 daily note the ork laid out and the person writes into — says nothing against the ork; fixing it,
 changing its format or rewriting it is a 👎 for the building that made it (`feedback.signal`), with
-the edit unless the file is personal. A file that came and was never opened for a day is a light 👎
-too (`feedback.await_view`; opening this Lake sees it).
+the edit unless the file is personal. A file git tracks unchanged since the last commit was only
+pointed at, not written: it is not the ork's. A file that came and was never opened for a day
+counts as unused (`feedback.await_view`; opening this Lake sees it).
 """
 from __future__ import annotations
 

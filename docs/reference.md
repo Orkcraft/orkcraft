@@ -520,7 +520,10 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   trail), past the rework limit or dropped (👎 0.5); in a 🌊 Lake an ork's file you fixed (0.2),
   reformatted or rewritten (0.5) — filling it in (a daily note you write into) says nothing, and a
   personal note's text is never kept; a Barracks pull request merged 👍 1 or closed 👎 1; `Z` on a
-  retro's change 👎 1; a result left in a Lake or a Loot and not opened for a day 👎 0.1. The Town
+  retro's change 👎 1. The ork that wrote a cart is the one judged (a Clan Fire or a chain after it
+  is not). A result left in a Lake or a Loot and not opened for a day counts as unused (0.1, for the
+  Town retro), never as a dislike; nor does "too expensive" make a 💎 building richer. Only a 👍 or a
+  merged pull request spares a building its thrift turn. The Town
   Hall shows the weight of what you did beside the buttons; incidents say how they were told.
 - **The Council's duties** also cover prompts (🛡 injections, leaks, secret files, "ignore previous
   instructions", writers asked to push or delete), the load on you (🎨 too many events, settings,

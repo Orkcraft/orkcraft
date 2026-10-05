@@ -183,18 +183,20 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
         return Candidate(bid, use.tokens, round(costs.get(bid, 0.0), 4), likes, dislikes, round(use.share, 4),
                          pressure.describe(use, camp), goal(bid), **extra)
 
-    def disliked(bid: str, since: str) -> int:
+    def disliked(bid: str, since: str, quality: bool = False) -> int:
         """👎 since `since`, counting what the operator did with its results by weight: a quiet
-        signal alone is not a dislike (`feedback.ENOUGH`)."""
-        w = feedback.disliked(repo_root, bid, since, incidents)
+        signal alone is not a dislike (`feedback.ENOUGH`). `quality`: "too expensive" is not a reason
+        to make it better and spend more."""
+        w = feedback.disliked(repo_root, bid, since, incidents, quality)
         return int(w / feedback.ENOUGH + 1e-9)
 
     # 💎 the operator disliked it this week
     gems = [b for b, g in goals.items() if g == "quality" and goal(b) == "quality"]
     week_ts = week.isoformat(timespec="seconds")
-    hurt = sorted((b for b in gems if disliked(b, week_ts)), key=lambda b: disliked(b, week_ts), reverse=True)
+    hurt = sorted((b for b in gems if disliked(b, week_ts, True)), key=lambda b: disliked(b, week_ts, True),
+                  reverse=True)
     if hurt:
-        return cand(hurt[0], 0, disliked(hurt[0], week_ts))
+        return cand(hurt[0], 0, disliked(hurt[0], week_ts, True))
     # 🪙 / ⚖️ by the share and pressure
     for bid in sorted(camp.buildings, key=lambda b: (camp.buildings[b].weight, camp.buildings[b].tokens), reverse=True):
         if goal(bid) == "quality":
@@ -203,7 +205,9 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
             break
         mine = checkpoint.history(repo_root, bid, limit=1)
         changed = mine[0].at[:19] if mine else ""
-        likes = int(feedback.liked(repo_root, bid, changed) / feedback.ENOUGH + 1e-9)
+        # only a 👍 or a merged pull request shields it: a cart accepted as it was says it is good
+        # enough, which is when spending less is safe to try ("keep what was liked")
+        likes = int(feedback.liked(repo_root, bid, changed, strong=True) / feedback.ENOUGH + 1e-9)
         dislikes = disliked(bid, today) if goal(bid) == "balance" else 0
         if likes and not dislikes:
             continue
@@ -332,7 +336,7 @@ def check(data: dict, ps: list[Part], building: str, repo_root: Path, runtime: s
 def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.Runner = builders.claude_runner,
             runtime: str = "python", mocks: list[dict] | None = None, attempts: int = 2) -> Result:
     """One Council call (a second with its problems). Never raises."""
-    refs = feedback.references(repo_root, cand.building, 3)
+    refs = feedback.examples(repo_root, cand.building, 3)
     incs = feedback.blaming(repo_root, cand.building, limit=200)[:3]
     base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, use=cand.use or "the most of the camp",
                          reason=cand.reason, goal=GOAL_TEXT.get(cand.goal, ""), parts=_parts_text(ps),

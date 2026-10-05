@@ -571,7 +571,7 @@ class Engine:
         env = {**self._run_env, "ORKCRAFT_ORC": f"{b.id}/{orc.id}"}
         text, error, outcome, total, tokens = previous, "", "done", None, None
         from orkcraft.realm import feedback
-        liked = [str(r.get("value", "")) for r in feedback.references(self.repo_root, b.id, 3)]
+        liked = [str(r.get("value", "")) for r in feedback.examples(self.repo_root, b.id, 3)]
         try:
             for step in orc.harness or ts.DEFAULT_HARNESS:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)

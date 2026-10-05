@@ -247,6 +247,21 @@ def personal(text: str) -> bool:
     return bool(m and re.search(r"^subtype:\s*personal\s*$", m.group(1), re.M))
 
 
+def committed_unchanged(path: str) -> bool:
+    """The file is tracked by git and has no change since the last commit (False outside git)."""
+    p = Path(path)
+    try:
+        tracked = subprocess.run(["git", "-C", str(p.parent), "ls-files", "--error-unmatch", "--", p.name],
+                                 capture_output=True, text=True, timeout=5)
+        if tracked.returncode != 0:
+            return False
+        dirty = subprocess.run(["git", "-C", str(p.parent), "status", "--porcelain", "--", p.name],
+                               capture_output=True, text=True, timeout=5)
+        return dirty.returncode == 0 and not dirty.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 class Origins:
     """The files orks brought to this Lake, as they were when they came: `remember` on arrival,
     `judge` after the person saved an edit. The comparison is always with the ork's own text, so
@@ -272,12 +287,14 @@ class Origins:
             pass
 
     def remember(self, path: str, maker: str, at: str) -> None:
-        """An ork's file arrived: keep its text as the ork made it."""
+        """An ork's file arrived: keep its text as the ork made it. A file git knows and nobody
+        changed since the last commit was not written by this ork — it only pointed at it (a
+        document of the operator's): it is not kept, so editing it says nothing about the ork."""
         try:
             text = read_for_edit(path).text
         except ValueError:
             return
-        if not maker or len(text) > ORIGIN_LIMIT:
+        if not maker or len(text) > ORIGIN_LIMIT or committed_unchanged(path):
             return
         data = self._load()
         data[str(Path(path).resolve())] = {"maker": maker, "text": text, "judged": "same", "at": at}

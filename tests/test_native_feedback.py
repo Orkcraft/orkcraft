@@ -83,6 +83,36 @@ def test_broken_inputs_weigh_on_the_suppliers_not_on_the_building(tmp_path: Path
     assert "fed it broken inputs" in optimize._incident_line(feedback.blaming(tmp_path, "mill")[0], "mill")
 
 
+def test_the_maker_is_the_ork_that_wrote_not_the_one_that_reviewed_or_carried():
+    trail = (pipes.hop("pit"), pipes.hop("camp", "grub", "agent"), pipes.hop("fire", "clan", "team"),
+             pipes.hop("grinder", "miller", "script"))
+    assert feedback.maker(trail) == "camp"
+    assert feedback.maker((pipes.hop("grinder", "miller", "chain"),)) == "grinder"   # nobody wrote: the last hop
+    assert feedback.maker(()) == "" and feedback.maker((), "pit") == "pit"
+    assert feedback.trail_blame(trail, "camp", "inputs") == {"pit": 1.0}
+
+
+def test_examples_put_corrections_and_likes_before_quiet_acceptances(tmp_path: Path):
+    feedback.like(tmp_path, "brief", {"event": "x", "value": "liked by hand"})
+    feedback.signal(tmp_path, "brief", True, "loot.reshaped", value="the operator's version", weight=0.0)
+    feedback.signal(tmp_path, "brief", True, "pr.merged", value="merged")
+    for n in range(5):
+        feedback.signal(tmp_path, "brief", True, "loot.accepted", value=f"accepted {n}")
+    assert [r["value"] for r in feedback.examples(tmp_path, "brief")] == \
+        ["the operator's version", "liked by hand", "merged"]
+    assert feedback.liked(tmp_path, "brief", strong=True) == 2.0              # 👍 and the merge shield it
+    assert feedback.liked(tmp_path, "brief") == 3.7
+
+
+def test_too_expensive_is_no_reason_to_spend_more_on_quality(tmp_path: Path):
+    feedback.signal(tmp_path, "gem", False, "loot.rework", value="x", tag="cost", note="too expensive for what it is")
+    feedback.signal(tmp_path, "gem", False, "loot.rework", value="x", tag="cost")
+    assert feedback.disliked(tmp_path, "gem") == 1.0 and feedback.disliked(tmp_path, "gem", quality=True) == 0
+    from orkcraft.realm import metrics
+    metrics.record_run(tmp_path, "gem", "done", 0.01, 10, now=dt.datetime.now() - dt.timedelta(hours=1))
+    assert optimize.leader(tmp_path, goals={"gem": "quality"}) is None     # 💎 is not enriched for costing much
+
+
 def test_a_result_nobody_opened_for_a_day(tmp_path: Path):
     feedback.await_view(tmp_path, "lake", "brief", "Monday brief")
     feedback.await_view(tmp_path, "vault", "digest", "Digest")
@@ -90,7 +120,10 @@ def test_a_result_nobody_opened_for_a_day(tmp_path: Path):
     assert feedback.sweep_unseen(tmp_path) == []                             # not a day yet
     later = dt.datetime.now() + dt.timedelta(hours=25)
     [gone] = feedback.sweep_unseen(tmp_path, later)
-    assert gone["by"] == "digest" and feedback.disliked(tmp_path, "digest") == 0.1
+    assert gone["by"] == "digest" and feedback.incidents(tmp_path)[0].source == "usage.ignored"
+    assert feedback.disliked(tmp_path, "digest") == 0                        # not opened is not bad: it is unused
+    assert feedback.scores(tmp_path)["digest"]["by"] == {"usage.ignored": -0.1}
+    assert "disliked" not in feedback.scores(tmp_path)["digest"]
     assert feedback.sweep_unseen(tmp_path, later) == []                      # counted once
 
 
@@ -145,9 +178,20 @@ async def test_what_the_person_does_in_a_loot_teaches_the_maker(fake_repo: Path,
         view.receive(cart("garbage 2", trail, "D"), "Docs", "garbage 2")
         assert view.rework_item(item, "still wrong") == gate.NEEDS_YOU    # max_rework 1: past the limit
         assert [i.source for i in feedback.incidents(fake_repo, 2)] == ["loot.needs_you", "loot.rework"]
+        liked = feedback.liked(fake_repo, "camp")
+        view.accept_item(item)                                               # taken as it is after the rounds
+        assert feedback.liked(fake_repo, "camp") == liked                    # … is no 👍
+
+        view.receive(cart("again", trail, "E"), "Docs", "again")
+        item = view.queue.open()[0]
         monkeypatch.setattr(view, "selected_item", lambda: item)
         view.action_drop()                                                   # d: thrown away
         assert feedback.incidents(fake_repo, 1)[0].source == "loot.dropped"
+
+        before = len(feedback.incidents(fake_repo, 100))
+        view.receive(cart("a file you dropped"), "Docs", "a file you dropped")   # no ork worked on it
+        view.rework_item(view.queue.open()[0], "wrong")
+        assert len(feedback.incidents(fake_repo, 100)) == before            # teaches nobody
 
 
 @pytest.mark.asyncio
@@ -197,6 +241,20 @@ def test_a_lake_judges_an_ork_s_file_against_the_ork_s_own_text(tmp_path: Path):
     assert origins.judge(str(f), filled.replace("## Plan", "## Today ")) is None  # judged once
     assert origins.judge(str(tmp_path / "other.md"), "x") is None                # not an ork's file
     assert lake.personal("---\nsubtype: personal\n---\n# me") and not lake.personal("# me")
+
+
+def test_a_committed_file_an_ork_only_pointed_at_is_not_its_own(fake_repo: Path):
+    import subprocess
+    (fake_repo / "notes.md").write_text("# my notes\n")
+    subprocess.run(["git", "-C", str(fake_repo), "add", "notes.md"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(fake_repo), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "n"],
+                   check=True, capture_output=True)
+    origins = lake.Origins(fake_repo / ".orkcraft" / "lake")
+    origins.remember(str(fake_repo / "notes.md"), "brief", "2026-10-05T09:00:00")
+    assert origins.judge(str(fake_repo / "notes.md"), "# Notes, renamed\n") is None
+    (fake_repo / "fresh.md").write_text("# made by an ork\n")                # untracked: the ork's
+    origins.remember(str(fake_repo / "fresh.md"), "brief", "2026-10-05T09:00:00")
+    assert origins.judge(str(fake_repo / "fresh.md"), "# renamed\n")[1].kind == edits.REWRITTEN
 
 
 @pytest.mark.asyncio

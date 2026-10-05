@@ -93,7 +93,7 @@ a commit in the camp's own git, so it can be undone.
 - **You teach it by working.** What you do with a result counts as well, with a smaller weight: a cart
   accepted, edited or sent back in a 📦 Loot, an ork's file whose format you changed in a 🌊 Lake
   (filling it in does not count against it), a pull request merged or closed, a change taken back
-  with `Z`, a result nobody opened.
+  with `Z` — and a result nobody opens tells the Town retro the building may be unused.
 - **Retros, never automatic.** Daily, the 🔧 Building retro proposes one change for the building
   that eats most of the camp and of your limit and that you are unhappy with; weekly, the 🗓 Town
   retro has a heavy model (`opus`) audit the whole camp. Nothing

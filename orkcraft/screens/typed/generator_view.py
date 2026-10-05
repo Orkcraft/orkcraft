@@ -13,7 +13,7 @@ is read by `realm/edits.py` — only added to is a 👍 too, fixed, reformatted 
 with the edit, the person's version kept as an example; sent back, dropped or past the rework
 limit is a 👎, and a reason of "what came in was wrong" blames the hops before the maker. A cart
 that passed by the rules and goes nowhere waits to be read: nobody opening this Loot for a day
-is a light 👎 (`feedback.await_view`).
+counts as unused (`feedback.await_view`). A cart no ork worked on (no trail) teaches nobody.
 
 Below the queue: the changed files of the working tree (or of its `path`), * for not reviewed;
 `a` accepts the highlighted file, `r` rejects it (rolled back, its content kept under
@@ -29,7 +29,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import edits, feedback, gate, generated, pipes, vault
+from orkcraft.realm import edits, feedback, gate, generated, lake, pipes, vault
 from orkcraft.screens.typed.base import TypedView
 
 REFRESH_S = 10.0
@@ -91,8 +91,8 @@ class GeneratorView(TypedView):
             why = [f"back from rework (round {back.attempts})"] + why
         if not why:
             if not self._pass(payload):              # it stays here: someone should read it
-                feedback.await_view(self._get_repo_root(), self.building_id,
-                                    feedback.maker(payload.trail, payload.source), payload.title or title)
+                feedback.await_view(self._get_repo_root(), self.building_id, feedback.maker(payload.trail),
+                                    payload.title or title)
         else:
             item = self.queue.arrive(payload, why)
             self.app.notify(f"{item.title or item.value[:60]} — {'; '.join(why)}", title=f"📦 {self.btype.title}: held")
@@ -129,36 +129,47 @@ class GeneratorView(TypedView):
         return self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref) or went
 
     def maker(self, item: gate.Item) -> str:
-        """The building that made the cart: what the person's decision is about."""
-        return feedback.maker(item.trail, item.source)
+        """The building whose ork wrote the cart: what the person's decision is about. "" for a cart
+        no ork worked on (a file dropped in a Pit): then the decision teaches nobody."""
+        return feedback.maker(item.trail)
 
     def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
         """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
-        before = item.value
+        before, gave_up = item.value, item.status == gate.NEEDS_YOU
         self.queue.accept(item, value)
         self._pass(item.payload())
-        self._judge_accept(item, before, value, source)
+        self._judge_accept(item, before, value, source, gave_up)
         self._changed()
 
-    def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str) -> None:
+    def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str,
+                      gave_up: bool = False) -> None:
+        """What accepting says about the maker. Past the rework limit (`gave_up`) the person takes the
+        cart as it is to be done with it: that is no 👍 (the rounds were already 👎), only an edit
+        still says what was wrong."""
         root, made_by = self._get_repo_root(), self.maker(item)
+        if not made_by:
+            return
         edit = edits.classify(before, value) if value is not None and item.kind == pipes.TEXT else None
         if edit is None or edit.kind == edits.SAME:
-            feedback.signal(root, made_by, True, source, value=before)
+            if not gave_up:
+                feedback.signal(root, made_by, True, source, value=before)
         elif edit.kind == edits.FILLED:
-            feedback.signal(root, made_by, True, "loot.filled", value=before, note=edit.summary)
+            if not gave_up:
+                feedback.signal(root, made_by, True, "loot.filled", value=before, note=edit.summary)
         else:
+            private = lake.personal(value or "")                 # a personal note's text never reaches a model
             feedback.signal(root, made_by, False, f"loot.{edit.kind}", value=before, note=edit.summary,
-                            tag="format" if edit.kind == edits.RESHAPED else "", edit=edit.diff)
-            feedback.signal(root, made_by, True, f"loot.{edit.kind}", value=value, weight=0.0,
-                            note="the person's version: what it should have been")
+                            tag="format" if edit.kind == edits.RESHAPED else "", edit="" if private else edit.diff)
+            if not private:
+                feedback.signal(root, made_by, True, f"loot.{edit.kind}", value=value, weight=0.0,
+                                note="the person's version: what it should have been")
 
     def rework_item(self, item: gate.Item, reason: str, tag: str = "") -> str:
         """Send `item` back with `reason` (`tag`: the chip picked, `feedback.REASONS`); past the limit
         (or with nobody to take it) it needs you. Returns its status."""
         tag, kind = (tag, next((k for t, _, k in feedback.REASONS if t == tag), "logic")) if tag else \
             feedback.reason_tag(reason)
-        made_by = self.maker(item)
+        made_by = self.maker(item)                                 # "" when no ork made it: nothing is kept
         feedback.signal(self._get_repo_root(), made_by, False, "loot.rework", value=item.value, note=reason, tag=tag,
                         kind=kind, blamed=feedback.trail_blame(item.trail, made_by, kind))
         ok, why = self.queue.can_rework(item, self.config)

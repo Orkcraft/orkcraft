@@ -14,10 +14,13 @@ operator teaches the orks without thinking about it.
 
 ## 2. Signals
 
-`feedback.signal(root, building, good, source, …)` keeps one, about the building that **made**
-the result — the last hop of the cart's trail (`feedback.maker`), not the building that carried
-it on. A good signal is a reference (as 👍), a bad one an incident (as 👎). Each has a `source`
-and a weight (`feedback.WEIGHTS`):
+`feedback.signal(root, building, good, source, …)` keeps one, about the building whose ork
+**wrote** the result (`feedback.maker`): the last hop of the cart's trail that writes — an agent, a
+hybrid, a War Tent task — not a Clan Fire that reviewed it after, nor a Mill's chain or a Signpost
+that carried it on (a trail with no writing hop: its last hop). A cart with no trail was made by no
+ork (a file dropped in a Pit): what the operator does with it teaches nobody. A good signal is a
+reference (as 👍), a bad one an incident (as 👎). Each has a `source` and a weight
+(`feedback.WEIGHTS`):
 
 | Where | What the operator did | Signal | Weight |
 |---|---|---|---|
@@ -36,7 +39,7 @@ and a weight (`feedback.WEIGHTS`):
 | 🏕 Barracks | the pull request merged | 👍 | 1 |
 | | … closed without merging | 👎 | 1 |
 | `Z` | took back a retro's change (`auto-improve`, `weekly`) | 👎 | 1 |
-| anywhere | a result left in a Lake or a Loot, not opened for a day | 👎 | 0.1 |
+| anywhere | a result left in a Lake or a Loot, not opened for a day | *unused* (§5) | 0.1 |
 | 👍 / 👎 | the buttons, the Town retro's survey | 👍 / 👎 | 1 |
 
 What is **not** a signal:
@@ -44,7 +47,9 @@ What is **not** a signal:
 - a cart that passed a Loot by its rules — nobody looked, so nobody approved (counting it would
   teach the orks to slip past the rules);
 - 🛑 Halt All — it stops the whole camp, there is nobody to blame;
-- `Z` on the operator's own change — they undo themselves, not an ork.
+- `Z` on the operator's own change — they undo themselves, not an ork;
+- accepting a cart past the rework limit as it is — the operator gives up on it, that is no 👍 (the
+  rounds were already 👎s); an edit then still says what was wrong.
 
 ## 3. Reading an edit (`realm/edits.py`)
 
@@ -67,10 +72,13 @@ again tomorrow stays `filled`; a line the operator wrote and later deleted is th
 and a file is judged again only when it gets worse for the ork (`filled` → `reshaped` →
 `rewritten`), so saving five times is one signal. A file with `subtype: personal` in its front matter
 keeps no text with the incident, only the summary: a personal note never reaches a model.
+A file git tracks with no change since the last commit is not kept on arrival: an ork that only
+pointed at a document of the operator's did not write it, and editing it says nothing about the ork.
 
 In a **Loot**, `e` opens a held text cart; ctrl+s accepts the operator's version. A bad edit keeps
 two things: the incident with the diff (what was wrong) and the operator's version as a reference
-of weight 0 (what it should have been) — the pair the Council's `enrich` needs.
+of weight 0 (what it should have been) — the pair the Council's `enrich` needs. A personal note
+keeps neither text.
 
 ## 4. Who is blamed
 
@@ -101,17 +109,32 @@ headings`; the incident keeps the chip as its `tag`.
 now the weighted sums `liked` / `disliked` and `by` — the weight by source, signed. Incidents and
 references carry `source` and `weight` (old ones read as `explicit`, 1).
 
-Everything that acted on "a 👎" acts on weight now, from `feedback.ENOUGH` (1):
+Everything that acted on "a 👎" acts on weight now, from `feedback.ENOUGH` (1). Two kinds of
+signal are kept apart from quality, because they would push the retros the wrong way:
 
-- **🔧 Building retro** (`optimize.leader`): a 💎 building is "disliked this week" from a weight of 1,
-  a ⚖️ one "disliked today" the same; "liked since its change" likewise; "never rated" is less than 1
-  of either. So two carts sent back are a 👎, one quiet acceptance is not a 👍.
+- **a result nobody opened** (`NOT_QUALITY`) says the building may be unused, not that its work is
+  bad; making a 💎 building "better" for it would spend more on something nobody reads. It is not
+  in `disliked`, probation or the survey — only in the weight by source, where the 🗓 Town retro
+  sees it (and may remove the building);
+- **"too expensive"** (the ↩ chip `cost`) is a 👎 for a 🪙 / ⚖️ building (a thrift retro is
+  what it asks for), never a reason to enrich a 💎 one.
+
+And quiet acceptances are evidence a result is *good enough*, not a shield:
+
+- **🔧 Building retro** (`optimize.leader`): a 💎 building is "disliked this week" from a weight of 1
+  (without `cost`), a ⚖️ one "disliked today" the same; "never rated" is less than 1 of either. A
+  🪙 / ⚖️ building skips its thrift turn only for a 👍 or a merged pull request since its change
+  (`liked(strong=True)`): carts accepted as they were are exactly when spending less is safe to try,
+  and the thrift prompt keeps them as "what was liked".
 - **Probation** (`evolution.verdict`): a change of the orks goes back when what the operator did
   since adds up to a 👎 — one reshaped file alone does not take it back; a reshape and a rework do.
 - **🗓 Town retro**: the survey is skipped when the week's signals weigh 1 or more (the operator
   told the camp enough by working); the report shows each building's weight by source.
 - **The Council's prompt** lists incidents with how they were told (`[loot.reshaped · format]`) and
   the operator's edit under them.
+- **Examples in the orks' prompts** (`feedback.examples`, read by agents on roads, Workshops and the
+  Council): the operator's own versions and 👍 first, merged pull requests next, quiet acceptances
+  last — newest first within each — so a stream of accepted carts never pushes the best examples out.
 - **The Town Hall** shows the weight of what the operator did beside the buttons, and how each
   incident was told.
 
@@ -124,8 +147,21 @@ Everything that acted on "a 👎" acts on weight now, from `feedback.ENOUGH` (1)
 4. Weights: `source` and `weight` on incidents and references, `liked` / `disliked` / `by` in the
    scores; the retros, probation, the survey and the Town Hall read them. *(done)*
 5. Results nobody opened: a cart that stays in a Lake or a Loot waits (`feedback.await_view`);
-   selecting that building sees it; after a day it is a light 👎 (`sweep_unseen`, with the
+   selecting that building sees it; after a day it is counted as unused (`sweep_unseen`, with the
    probation check). *(done)*
+
+## 7. Known limits
+
+- **Seen means selected.** A result counts as seen when its building is selected; one read on the
+  hut or an open window without selecting it counts as not opened. That is why it weighs 0.1 and
+  never counts as a dislike.
+- **The writer takes the blame for what carried it on.** A Mill's chain that broke the format after
+  an agent wrote the text: the agent is blamed, unless the operator says the inputs were wrong.
+- **A closed pull request may be a duplicate** or superseded, not a bad one; it still weighs 1.
+- **The Lake judges when the editor is left** (Esc, another cart arriving); text saved by autosave
+  and never left — the app closed in the editor — is not judged.
+- **A file brought to a Lake again** is the ork's again: its text then, the operator's notes in it
+  included, is what later edits are compared with.
 
 Later: commits the operator added on top of an ork's pull request before merging (a measure of how
 much it needed fixing); a merged branch reverted within a week; ✎ edit in the Clan Fire.
