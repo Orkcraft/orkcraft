@@ -1,0 +1,1117 @@
+{
+ "made": "2026-10-05 20:39",
+ "url": "http://127.0.0.1:53115/",
+ "buildings": [
+  {
+   "id": "todo",
+   "title": "Task board",
+   "type": "fields",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-todo-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-todo-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-todo-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-todo-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "warn",
+     "view": "command",
+     "text": "preview: text overlaps: “Write the Barracks docs / Town Hall audit”"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "lane card titles are cut mid-word with no ellipsis (\"Plan the v0.2 relea\", \"Renew the dor\")"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Commands window — the shared commands (Revert, Redesign window) are cut off at the bottom"
+    },
+    {
+     "level": "eye",
+     "view": "all",
+     "text": "the keeper's name is the Camp word (Taskmaster) in the Office look; the lexicon has Task manager"
+    }
+   ]
+  },
+  {
+   "id": "days",
+   "title": "Calendar",
+   "type": "war_drum",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-days-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-days-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-days-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-days-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Info says \"1 results\""
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "the \"doc\" pills have a doubled outline"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "the \"—\" placeholder under the weekend days sits left of the column"
+    }
+   ]
+  },
+  {
+   "id": "notes",
+   "title": "Wiki",
+   "type": "scrolls",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-notes-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-notes-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-notes-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-notes-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "\"3 pages ·2 sources\" — no space after the dot; the folder count (3) disagrees with the 11 entries listed"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "a stray \"people's\" label after \"Releases\""
+    },
+    {
+     "level": "eye",
+     "view": "command vs full",
+     "text": "the same acts have two names (Ingest / Lint / Add base vs Take in / Check the wiki / Add a folder)"
+    }
+   ]
+  },
+  {
+   "id": "tree",
+   "title": "File tree",
+   "type": "forest",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-tree-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-tree-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-tree-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-tree-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "app/ and assets/ are folded; the spec opens the top folders"
+    },
+    {
+     "level": "eye",
+     "view": "command, full",
+     "text": "raw git codes \"M\" and \"??\" as the change marks"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Send looks active while no file is picked"
+    }
+   ]
+  },
+  {
+   "id": "drop",
+   "title": "Inbox",
+   "type": "pit",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-drop-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-drop-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-drop-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-drop-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "map",
+     "text": "the road label \"on_drop\" is half under the Daily Brief card"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "rows without a chain say \"0 stops\" and no cost; the spec wants each chain's cost and what it left"
+    }
+   ]
+  },
+  {
+   "id": "post",
+   "title": "External listeners",
+   "type": "watchtower",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-post-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-post-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-post-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-post-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "closed",
+     "text": "\"+4 more 4\" repeats a number; three sources show before \"+N more\" where four fit"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "the figma row wraps, so from / title / time no longer line up"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Check now is missing (the spec lists Open new, Read all, Check now)"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "\"jira is failing: jira: 401…\" says jira twice; \"all 11\" while 13 rows are listed"
+    }
+   ]
+  },
+  {
+   "id": "brief",
+   "title": "Daily Brief",
+   "type": "mill",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-brief-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-brief-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-brief-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-brief-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "run rows show raw ⏎ glyphs and Markdown (###, **) and wrap over each other; the last row is clipped"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "no step chain and no Edit steps — one cut-off raw `script: python3 -c …` pill"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "dates wrap onto two lines; input and output are raw Markdown in monospace; no per-run cost, no queue"
+    }
+   ]
+  },
+  {
+   "id": "town_hall",
+   "title": "Control panel",
+   "type": "town_hall",
+   "orkspace": "My Day",
+   "closed": [
+    {
+     "file": "shots/my-day-town-hall-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/my-day-town-hall-map.jpg",
+     "caption": "Closed: on the map of My Day"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/my-day-town-hall-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/my-day-town-hall-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "warn",
+     "view": "full",
+     "text": "text overlaps: “✗ 10-05 20:39 building fetcher — mill st / ABOUT THIS MODULE”"
+    },
+    {
+     "level": "eye",
+     "view": "closed",
+     "text": "only Build and the audit line — the spec's \"Ask me anything\" field is missing once there is news"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Sessions say \"Barracks\" (Camp word); the Sessions / Audit / Limits lines sit under the input with no spacing"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "Camp words in the audit and the fast path (Signpost, Barracks, carts, Chief, Mason, Warder, Peon); \"Release hook: Release hook:\" doubled; \"1 pending\" against \"2 waiting\""
+    }
+   ]
+  },
+  {
+   "id": "branches",
+   "title": "Branches & PRs",
+   "type": "forge",
+   "orkspace": "Agent Yard",
+   "closed": [
+    {
+     "file": "shots/agent-yard-branches-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/agent-yard-branches-map.jpg",
+     "caption": "Closed: on the map of Agent Yard"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/agent-yard-branches-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/agent-yard-branches-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Run tests is missing and the branch rows show no test state (spec: branches with PR, tests and changes)"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "no test output anywhere; Commands window cut off at the bottom"
+    }
+   ]
+  },
+  {
+   "id": "camp",
+   "title": "Agent pool",
+   "type": "barracks",
+   "orkspace": "Agent Yard",
+   "closed": [
+    {
+     "file": "shots/agent-yard-camp-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/agent-yard-camp-map.jpg",
+     "caption": "Closed: on the map of Agent Yard"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/agent-yard-camp-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/agent-yard-camp-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "closed",
+     "text": "\"active 0/4\" while the full window says \"3/4 agents\"; \"✓2 ✗1\" here, \"2 ✓ 1 ✗\" on the Review board"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "the ork rows show no task (spec: tier, task, state)"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "the branch on a card breaks mid-word (\"feature/pricing-\" / \"page\"); keeper \"Grunts asks\" is a Camp word"
+    }
+   ]
+  },
+  {
+   "id": "council",
+   "title": "Review board",
+   "type": "council",
+   "orkspace": "Agent Yard",
+   "closed": [
+    {
+     "file": "shots/agent-yard-council-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/agent-yard-council-map.jpg",
+     "caption": "Closed: on the map of Agent Yard"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/agent-yard-council-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/agent-yard-council-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Answer is missing (spec: Review, Add member, Answer); the document under review shows only its title"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "\"Architect approves ·\" ends on a separator; members and turns run together"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "an expanded turn with no content; \"(empty)\" orphaned on its own line; the Ask placeholder is clipped"
+    }
+   ]
+  },
+  {
+   "id": "outputs",
+   "title": "Review gate",
+   "type": "loot",
+   "orkspace": "Agent Yard",
+   "closed": [
+    {
+     "file": "shots/agent-yard-outputs-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/agent-yard-outputs-map.jpg",
+     "caption": "Closed: on the map of Agent Yard"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/agent-yard-outputs-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/agent-yard-outputs-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "closed",
+     "text": "\"1 need you\" (needs); \"3 to review\" while the full window says \"Queue · 4\""
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "\"Fix the parser\" offers only Accept, no Rework; sources say Barracks / Clan Fire (Camp words)"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "file rows start with a raw \"*\"; the \"↩1\" mark is unexplained"
+    }
+   ]
+  },
+  {
+   "id": "crag",
+   "title": "Metrics",
+   "type": "crag",
+   "orkspace": "Agent Yard",
+   "closed": [
+    {
+     "file": "shots/agent-yard-crag-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/agent-yard-crag-map.jpg",
+     "caption": "Closed: on the map of Agent Yard"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/agent-yard-crag-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/agent-yard-crag-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "map, full",
+     "text": "\"Busy orks\" / \"2 orks\" in the Office look; black blocks inside the thumbnail bars"
+    },
+    {
+     "level": "eye",
+     "view": "command, full",
+     "text": "\"4.04 $\" here, \"$1.21\" elsewhere; \"80.6 % used\"; the Tokens chart names buildings by id (camp, council)"
+    }
+   ]
+  },
+  {
+   "id": "gate_pit",
+   "title": "Inbox",
+   "type": "pit",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-gate-pit-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-gate-pit-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-gate-pit-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-gate-pit-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "raw event ids (mill.done, catapult.fired) and doubled names (\"Release notes Release notes\")"
+    }
+   ]
+  },
+  {
+   "id": "crossroads",
+   "title": "Router",
+   "type": "signpost",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-crossroads-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-crossroads-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-crossroads-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-crossroads-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "closed",
+     "text": "\"routed 5\" and \"unmatched 2\" are totals, not one counter per outgoing road as the spec asks"
+    },
+    {
+     "level": "eye",
+     "view": "command, full",
+     "text": "the card says \"unmatched\" (green), the list \"no rule\" in yellow — the colour of \"notes\""
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "the raw id \"pit.text\" in the detail line"
+    }
+   ]
+  },
+  {
+   "id": "notes_mill",
+   "title": "Release notes",
+   "type": "mill",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-notes-mill-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-notes-mill-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-notes-mill-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-notes-mill-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "map",
+     "text": "the road label \"on_notes\" sits on the Release hook's title"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Edit steps is missing; the step chain does not mark the failing step"
+    },
+    {
+     "level": "eye",
+     "view": "command, full",
+     "text": "results are raw JSON with \\n escapes; history dates wrap; no queue; every source says \"road\""
+    }
+   ]
+  },
+  {
+   "id": "launcher",
+   "title": "Release hook",
+   "type": "catapult",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-launcher-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-launcher-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-launcher-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-launcher-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "Scout is missing (spec: Fire, Dry run, Scout)"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "the schema error shows twice; closed \"1 loaded\" gives no sign the load fails the schema"
+    }
+   ]
+  },
+  {
+   "id": "counter",
+   "title": "Word Count",
+   "type": "workshop",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-counter-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-counter-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-counter-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-counter-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "warn",
+     "view": "command",
+     "text": "preview: text cut: “{\"words\": 11, \"lines\": 1, \"first\": \"release\"}”"
+    },
+    {
+     "level": "warn",
+     "view": "command",
+     "text": "preview: text cut: “{\"words\": 3, \"lines\": 1, \"first\": \"release\"}”"
+    },
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "run rows are raw JSON cut with \"…\""
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "raw ids \"pit.text from gate_pit\"; the header reads \"python · layout card\""
+    }
+   ]
+  },
+  {
+   "id": "gate_horn",
+   "title": "Sound alerts",
+   "type": "horn",
+   "orkspace": "Gates",
+   "closed": [
+    {
+     "file": "shots/gates-gate-horn-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/gates-gate-horn-map.jpg",
+     "caption": "Closed: on the map of Gates"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/gates-gate-horn-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/gates-gate-horn-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command, full",
+     "text": "sources named in Camp words (Signpost, The Pit) in the Office look"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "every row's audio file is the same sounds/ping.mp3; a large gap before the log"
+    }
+   ]
+  },
+  {
+   "id": "lib_tasks",
+   "title": "Task board",
+   "type": "fields",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-lib-tasks-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-lib-tasks-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-lib-tasks-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-lib-tasks-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "the first card is cut mid-word (\"Show the price ta\")"
+    }
+   ]
+  },
+  {
+   "id": "code_wiki",
+   "title": "Code Wiki",
+   "type": "scrolls",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-code-wiki-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-code-wiki-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-code-wiki-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-code-wiki-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "map",
+     "text": "the road label \"with_the_map\" is a raw event id and overlaps the Task board card"
+    },
+    {
+     "level": "eye",
+     "view": "full",
+     "text": "\"5 pages ·2 sources\"; the tree header says \"code:src\"; content pages are indented under \"The wiki's rules\""
+    }
+   ]
+  },
+  {
+   "id": "team_wiki",
+   "title": "Team Wiki",
+   "type": "scrolls",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-team-wiki-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-team-wiki-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-team-wiki-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-team-wiki-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "id": "design_wiki",
+   "title": "Design Wiki",
+   "type": "scrolls",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-design-wiki-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-design-wiki-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-design-wiki-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-design-wiki-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": []
+  },
+  {
+   "id": "lib_camp",
+   "title": "Agent pool",
+   "type": "barracks",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-lib-camp-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-lib-camp-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-lib-camp-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-lib-camp-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "\"No agents yet — a task hires one\" next to a keeper in the Agents panel"
+    }
+   ]
+  },
+  {
+   "id": "lib_council",
+   "title": "Wiki Review board",
+   "type": "council",
+   "orkspace": "Library",
+   "closed": [
+    {
+     "file": "shots/library-lib-council-closed.png",
+     "caption": "Closed: the card"
+    },
+    {
+     "file": "shots/library-lib-council-map.jpg",
+     "caption": "Closed: on the map of Library"
+    }
+   ],
+   "command": [
+    {
+     "file": "shots/library-lib-council-command.jpg",
+     "caption": "Command: selected — Info, garrison, Command Card"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/library-lib-council-full.jpg",
+     "caption": "Full: the window"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "command",
+     "text": "the members leave out the Coordinator the full window lists"
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "id": "lake",
+   "title": "Lake",
+   "type": "lake (window)",
+   "orkspace": "the town",
+   "closed": [],
+   "command": [
+    {
+     "file": "shots/lake-half.jpg",
+     "caption": "Half: two documents in tabs"
+    }
+   ],
+   "full": [
+    {
+     "file": "shots/lake-full.jpg",
+     "caption": "Full"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "half",
+     "text": "the request field says no module brought the document, though the wiki page has one"
+    }
+   ]
+  },
+  {
+   "id": "answers",
+   "title": "Answers",
+   "type": "the orks' questions",
+   "orkspace": "the town",
+   "closed": [],
+   "command": [],
+   "full": [
+    {
+     "file": "shots/answers.jpg",
+     "caption": "The questions that wait for the person"
+    }
+   ],
+   "problems": [
+    {
+     "level": "eye",
+     "view": "dialog",
+     "text": "the agents are named \"Peon #1\" / \"Peon #2\" (Camp word); the second question is cut with no ellipsis"
+    }
+   ]
+  }
+ ],
+ "maps": [
+  {
+   "file": "shots/map-my-day.jpg",
+   "caption": "My Day"
+  },
+  {
+   "file": "shots/map-agent-yard.jpg",
+   "caption": "Agent Yard"
+  },
+  {
+   "file": "shots/map-gates.jpg",
+   "caption": "Gates"
+  },
+  {
+   "file": "shots/map-library.jpg",
+   "caption": "Library"
+  }
+ ],
+ "errors": []
+}

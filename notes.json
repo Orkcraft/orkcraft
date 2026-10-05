@@ -1,0 +1,103 @@
+{
+  "todo": [
+    "command: lane card titles are cut mid-word with no ellipsis (\"Plan the v0.2 relea\", \"Renew the dor\")",
+    "command: Commands window — the shared commands (Revert, Redesign window) are cut off at the bottom",
+    "all: the keeper's name is the Camp word (Taskmaster) in the Office look; the lexicon has Task manager"
+  ],
+  "days": [
+    "command: Info says \"1 results\"",
+    "command: the \"doc\" pills have a doubled outline",
+    "full: the \"—\" placeholder under the weekend days sits left of the column"
+  ],
+  "notes": [
+    "full: \"3 pages ·2 sources\" — no space after the dot; the folder count (3) disagrees with the 11 entries listed",
+    "full: a stray \"people's\" label after \"Releases\"",
+    "command vs full: the same acts have two names (Ingest / Lint / Add base vs Take in / Check the wiki / Add a folder)"
+  ],
+  "tree": [
+    "command: app/ and assets/ are folded; the spec opens the top folders",
+    "command, full: raw git codes \"M\" and \"??\" as the change marks",
+    "command: Send looks active while no file is picked"
+  ],
+  "drop": [
+    "map: the road label \"on_drop\" is half under the Daily Brief card",
+    "full: rows without a chain say \"0 stops\" and no cost; the spec wants each chain's cost and what it left"
+  ],
+  "post": [
+    "closed: \"+4 more 4\" repeats a number; three sources show before \"+N more\" where four fit",
+    "command: the figma row wraps, so from / title / time no longer line up",
+    "command: Check now is missing (the spec lists Open new, Read all, Check now)",
+    "full: \"jira is failing: jira: 401…\" says jira twice; \"all 11\" while 13 rows are listed"
+  ],
+  "brief": [
+    "command: run rows show raw ⏎ glyphs and Markdown (###, **) and wrap over each other; the last row is clipped",
+    "command: no step chain and no Edit steps — one cut-off raw `script: python3 -c …` pill",
+    "full: dates wrap onto two lines; input and output are raw Markdown in monospace; no per-run cost, no queue"
+  ],
+  "town_hall": [
+    "closed: only Build and the audit line — the spec's \"Ask me anything\" field is missing once there is news",
+    "command: Sessions say \"Barracks\" (Camp word); the Sessions / Audit / Limits lines sit under the input with no spacing",
+    "full: Camp words in the audit and the fast path (Signpost, Barracks, carts, Chief, Mason, Warder, Peon); \"Release hook: Release hook:\" doubled; \"1 pending\" against \"2 waiting\""
+  ],
+  "branches": [
+    "command: Run tests is missing and the branch rows show no test state (spec: branches with PR, tests and changes)",
+    "full: no test output anywhere; Commands window cut off at the bottom"
+  ],
+  "camp": [
+    "closed: \"active 0/4\" while the full window says \"3/4 agents\"; \"✓2 ✗1\" here, \"2 ✓ 1 ✗\" on the Review board",
+    "command: the ork rows show no task (spec: tier, task, state)",
+    "full: the branch on a card breaks mid-word (\"feature/pricing-\" / \"page\"); keeper \"Grunts asks\" is a Camp word"
+  ],
+  "council": [
+    "command: Answer is missing (spec: Review, Add member, Answer); the document under review shows only its title",
+    "command: \"Architect approves ·\" ends on a separator; members and turns run together",
+    "full: an expanded turn with no content; \"(empty)\" orphaned on its own line; the Ask placeholder is clipped"
+  ],
+  "outputs": [
+    "closed: \"1 need you\" (needs); \"3 to review\" while the full window says \"Queue · 4\"",
+    "command: \"Fix the parser\" offers only Accept, no Rework; sources say Barracks / Clan Fire (Camp words)",
+    "full: file rows start with a raw \"*\"; the \"↩1\" mark is unexplained"
+  ],
+  "crag": [
+    "map, full: \"Busy orks\" / \"2 orks\" in the Office look; black blocks inside the thumbnail bars",
+    "command, full: \"4.04 $\" here, \"$1.21\" elsewhere; \"80.6 % used\"; the Tokens chart names buildings by id (camp, council)"
+  ],
+  "lib_tasks": ["command: the first card is cut mid-word (\"Show the price ta\")"],
+  "code_wiki": [
+    "map: the road label \"with_the_map\" is a raw event id and overlaps the Task board card",
+    "full: \"5 pages ·2 sources\"; the tree header says \"code:src\"; content pages are indented under \"The wiki's rules\""
+  ],
+  "lib_camp": ["command: \"No agents yet — a task hires one\" next to a keeper in the Agents panel"],
+  "lib_council": ["command: the members leave out the Coordinator the full window lists"],
+  "gate_pit": [
+    "full: raw event ids (mill.done, catapult.fired) and doubled names (\"Release notes Release notes\")"
+  ],
+  "crossroads": [
+    "closed: \"routed 5\" and \"unmatched 2\" are totals, not one counter per outgoing road as the spec asks",
+    "command, full: the card says \"unmatched\" (green), the list \"no rule\" in yellow — the colour of \"notes\"",
+    "full: the raw id \"pit.text\" in the detail line"
+  ],
+  "notes_mill": [
+    "map: the road label \"on_notes\" sits on the Release hook's title",
+    "command: Edit steps is missing; the step chain does not mark the failing step",
+    "command, full: results are raw JSON with \\n escapes; history dates wrap; no queue; every source says \"road\""
+  ],
+  "counter": [
+    "command: run rows are raw JSON cut with \"…\"",
+    "full: raw ids \"pit.text from gate_pit\"; the header reads \"python · layout card\""
+  ],
+  "gate_horn": [
+    "command, full: sources named in Camp words (Signpost, The Pit) in the Office look",
+    "full: every row's audio file is the same sounds/ping.mp3; a large gap before the log"
+  ],
+  "launcher": [
+    "command: Scout is missing (spec: Fire, Dry run, Scout)",
+    "full: the schema error shows twice; closed \"1 loaded\" gives no sign the load fails the schema"
+  ],
+  "answers": [
+    "dialog: the agents are named \"Peon #1\" / \"Peon #2\" (Camp word); the second question is cut with no ellipsis"
+  ],
+  "lake": [
+    "half: the request field says no module brought the document, though the wiki page has one"
+  ]
+}
