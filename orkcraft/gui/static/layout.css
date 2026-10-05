@@ -21,12 +21,13 @@ button { font: inherit; color: inherit; }
 
 /* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
    square at the left; its list scrolls) and, while a building is selected, its console at the right.
-   It shares the town's grid area, so it stays put while the town scrolls. Its height is STRIP in
-   js/town.js, which keeps the huts above it. */
-.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 30%; min-height: 180px; box-sizing: border-box;
-  display: flex; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
+   It shares the town's grid area, so it stays put while the town scrolls. The War Map takes 30% of
+   the town's height (STRIP in js/town.js keeps the huts above it); the console, twice as tall and as
+   wide as tall, rises over the town while a building is selected. */
+.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 60%; min-height: 360px; box-sizing: border-box;
+  display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
 .gui-strip > * { pointer-events: auto; }
-.gui-warmap { flex: none; height: 100%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
+.gui-warmap { flex: none; height: 50%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
 .gui-warmap > .ok-list__head { flex: none; }
 .gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
 .gui-warmap .ok-item { cursor: pointer; }
@@ -46,13 +47,13 @@ button { font: inherit; color: inherit; }
 .gui-road text { fill: var(--ink-muted); }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
-/* A selected building: its console in the strip — info, garrison and commands side by side. */
-.gui-console { flex: 1; min-width: 0; margin-left: auto; max-width: 960px; }
+/* A selected building: its console in the strip, a square — its commands on top, then what it says and its garrison. */
+.gui-console { flex: none; height: 100%; aspect-ratio: 1; width: auto;
+  margin-left: auto; min-width: 0; }
 .gui-console > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
-.gui-console__body { flex: 1; min-height: 0; display: flex; gap: var(--space-4); }
-.gui-console__info { flex: 1 1 auto; min-width: 0; overflow: auto; }
-.gui-console__garrison { flex: 0 1 280px; min-width: 0; overflow: auto; }
-.gui-console__card { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); overflow: auto; }
+.gui-console__body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: auto; }
+.gui-console__info, .gui-console__garrison { flex: none; min-width: 0; }
+.gui-console__card { order: -1; flex: none; display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .gui-console__card .gui-win__demolish { margin-left: 0; }
 .gui-win__close { margin-left: var(--space-2); }
 
