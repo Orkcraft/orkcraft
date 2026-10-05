@@ -75,7 +75,8 @@ def _listens(town: Town, building_id: str) -> list[dict[str, Any]]:
     for road in ts.incoming(scroll, building_id):
         src = scroll.building(road.source)
         orc = target.garrison.handler(road.handler) if target is not None and road.handler else None
-        out.append({"from": road.source, "title": src.title if src else road.source,
+        out.append({"key": ts.road_key(building_id, road.id), "from": road.source,
+                    "title": src.title if src else road.source,
                     "label": road.label or pipes.label(road.event),
                     "handler": orc.name if orc is not None else "",
                     "tier": tiers.orc_tier(orc.harness, orc.kind) or "" if orc is not None else ""})
@@ -126,7 +127,7 @@ def ork(town: Town, muster: Muster, ref: str) -> dict[str, Any] | None:
         "likes": int(scores.get("likes", 0)), "dislikes": int(scores.get("dislikes", 0)),
         "deployed": bool(orc.session), "session": orc.session,
         "garrison": orc.category == RESIDENT,
-        "models": [{"tier": tier or "", "tier_label": tiers.label(tier) if tier else "", "model": model}
+        "models": [{"tier": tier or "", "tier_label": modes.strip_emoji(tiers.label(tier)) if tier else "", "model": model}
                    for tier, model in inventory.models_of(orc, live)],
         "tools": [{"tool": u.name, "name": inventory.short_tool(u.name), "count": u.count}
                   for u in inventory.recent_tools(town.repo_root, orc)],

@@ -183,10 +183,13 @@ orkcraft/gui/
   server.py   websockets: the page, /ds/ (the design system), /roles.css, and /ws
   launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
   (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
+  info.py     what the console says of a selected building or ork: Info, listens, the Inventory
+  console.py  the console's acts (👍 / 👎, goal, pin, revert, recruit, orders, model, roads) and its
+              jobs: the Recruiter, the Council, the steward's watch and a redesign, in threads
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
-              layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
+              console, acts, layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
               draws, loaded when one opens), layout.css (every look), office.css, camp.css
 ```
 
@@ -197,9 +200,9 @@ orkcraft/gui/
   emoji comes twice, as it is and `_plain`, for Office.
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
-- **The layout is the design system's.** `layout.css` places the components (HUD on top, the War
-  Map and the buildings on the left, the town, an editor group of opened buildings on the right,
-  the status bar) and uses tokens only.
+- **The layout is the design system's.** `layout.css` places the components (HUD on top, the town,
+  over its bottom the War Map at the left and the selected building's console at the right, an open
+  building over the whole town, the status bar) and uses tokens only.
 - **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
   panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
   pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it
@@ -223,9 +226,24 @@ orkcraft/gui/
 
 ### Done
 
-- The shell: HUD (Office words for the resources), War Map (switches the orkspace), the building
-  list, the town with huts and orthogonal roads, an opened building as a tab with its status lines, garrison
-  and roads, toasts, Halt All in the status bar.
+- The shell: HUD (Office words for the resources), the town with huts and orthogonal roads, toasts,
+  Halt All in the status bar. The strip over the town's bottom is the TUI's console: the War Map
+  (the orkspaces only, a small square at the left, its list scrolls) and the selected building's
+  console at the right.
+
+- A building three ways, as in the TUI: its hut (the status lines its type keeps); selected (one
+  click: its console, a square half the window high); open (a click on the selected hut, or Open:
+  its whole window over the town). Esc steps back; a click on the bare town lets go.
+
+- The console: **Info** holds what every building and ork shares — 👍 / 👎 (what went wrong: the
+  inputs or its logic), the goal, Pin (a pinned hut is not dragged), Revert, Recruit (the Recruiter,
+  then the Council; or by hand), Redesign (its steward redraws the window), Demolish, why it is here,
+  what it spent, the week's runs, History, and who it listens to (each road's handler, removing it,
+  Listen). Beside it the garrison; an ork picked there shows its Info (orders and trigger, 👍 / 👎,
+  dismiss) and its 🎒 Inventory (model and tier per step, the tools of its latest runs). The
+  **Command Card** holds what only this building or ork does: open its window, answer its question,
+  its type's quick actions, deploy, halt, the steward's Watch now and its report. A model call runs
+  as a job (`jobs` in the snapshot) the page shows until the person takes it or lets it go.
 
 - The windows of 🌊 Lake (Markdown rendered, a diff side by side, a file edited in place with the
   same autosave, conflict and judging as the TUI), 🌾 Task Fields (the board: drag a card to a lane,

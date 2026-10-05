@@ -20,7 +20,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from orkcraft.core import buildings as core_buildings
 from orkcraft.core import bus
 from orkcraft.core import runners
 from orkcraft.core.night import Night
@@ -29,9 +28,9 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, info, state, views
-from orkcraft import schedule, scroll
-from orkcraft.realm import catalog, chronicles, elders, fastpath, halt, modes
+from orkcraft.gui import builder, console, state, views
+from orkcraft import schedule
+from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
@@ -82,23 +81,10 @@ class Host:
             "roads.choices": lambda a: self._building(builder.road_choices, a),
             "roads.lay": lambda a: self._building(builder.lay_road, a),
             "roads.remove": lambda a: self._building(builder.remove_road, a),
-            # The console of a selected building or ork: Info (what is common to all) and the
-            # Command Card's own acts, as the TUI's (screens/console.py).
-            "info": self._info,
-            "history": lambda a: info.history(self.town, self.muster, self._spec(a).id, str(a.get("ork") or ""),
-                                              str(a.get("tool") or "")),
-            "building.like": lambda a: core_buildings.like(self.town, self._spec(a).id),
-            "building.dislike_context": self._dislike_context,
-            "building.dislike": self._dislike,
-            "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id),
-            "building.pin": self._pin,
-            "building.revert": self._revert,
-            "building.quick": self._quick,
-            "ork.like": lambda a: self._rate_ork(a, True),
-            "ork.dislike": lambda a: self._rate_ork(a, False),
-            "ork.dismiss": self._dismiss,
-            "ork.halt": self._halt_ork,
         }
+        # The console of a selected building or ork (gui/console.py): Info, the garrison, the jobs.
+        self.console = console.Console(self)
+        self.commands.update(self.console.commands())
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
                 self.town.worker(bs.id)
@@ -106,8 +92,10 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
+        snap = state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
                               look_choice=self.look)
+        snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
+        return snap
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
@@ -218,7 +206,10 @@ class Host:
         fn = self.commands.get(name)
         if fn is None:
             raise CommandError(f"Unknown command: {name}")
-        return fn(dict(args or {}))
+        try:
+            return fn(dict(args or {}))
+        except console.ConsoleError as e:
+            raise CommandError(str(e)) from None
 
     def _spec(self, args: dict):
         bs = self.town.scroll.building(str(args.get("id", "")))
@@ -246,100 +237,6 @@ class Host:
         bs.hut = [round(min(max(x, 0.0), 1.0), 4), round(min(max(y, 0.0), 1.0), 4)]
         self.town.save()
         self.on_change()
-
-    def _info(self, args: dict) -> dict | None:
-        """What the console's Info says of a building, or of one of its orks (`ork`: its ref)."""
-        bs = self._spec(args)
-        ref = args.get("ork")
-        if ref:
-            return info.ork(self.town, self.muster, str(ref))
-        return info.building(self.town, self.muster, bs.id)
-
-    def _dislike_context(self, args: dict) -> dict:
-        last, cascade = core_buildings.dislike_context(self.town, self._spec(args).id)
-        return {"last": modes.strip_emoji(last)[:2000], "cascade": [[modes.strip_emoji(title), share] for title, share in cascade]}
-
-    def _dislike(self, args: dict) -> None:
-        """👎: what went wrong — broken inputs (its suppliers pay) or its own logic."""
-        kind = str(args.get("kind") or "logic")
-        core_buildings.dislike(self.town, self._spec(args).id, kind if kind in ("inputs", "logic") else "logic",
-                               str(args.get("note") or "")[:2000])
-
-    def _pin(self, args: dict) -> bool:
-        """📌 A pinned building keeps its place: its hut is not dragged (the TUI keeps its window's)."""
-        bs = self._spec(args)
-        bs.pinned = not bs.pinned
-        self.town.save()
-        try:
-            chronicles.record(self.town.repo_root, self.town.scroll, bs.id, "pinned" if bs.pinned else "unpinned")
-        except OSError:
-            pass
-        self.town.toast(f"{bs.title} {'pinned' if bs.pinned else 'unpinned'}", title="Pin")
-        self.on_change()
-        return bs.pinned
-
-    def _revert(self, args: dict) -> bool:
-        ok = core_buildings.revert(self.town, self._spec(args).id)
-        self.refresh_roster()
-        return ok
-
-    def _quick(self, args: dict) -> bool:
-        """One of the type's quick actions (the Command Card). Its handler comes with the type's own
-        view; until then the person is told so, never left with a silent button."""
-        bs = self._spec(args)
-        spec = self.town.spec_of(bs.id)
-        t = catalog.type_of(spec)
-        act = t.action(str(args.get("action") or ""))
-        if act is None:
-            raise CommandError(f"{bs.title} has no such action")
-        self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
-        return False
-
-    def _ork(self, args: dict):
-        orc = info.find_ork(self.muster, self._word(args, "ork"))
-        if orc is None:
-            raise CommandError("That ork is gone")
-        return orc
-
-    def _rate_ork(self, args: dict, good: bool) -> None:
-        """👍 / 👎 on a garrison ork's own work (its building's results are rated on the building)."""
-        orc = self._ork(args)
-        if "/" not in orc.ref:
-            raise CommandError(f"{orc.name}: only a garrison ork is rated")
-        b_id, orc_id = orc.ref.split("/", 1)
-        core_buildings.rate_orc(self.town, b_id, orc_id, orc.name, good, str(args.get("note") or "")[:2000])
-
-    def _dismiss(self, args: dict) -> None:
-        orc = self._ork(args)
-        if "/" not in orc.ref:
-            raise CommandError("Only a garrison ork is dismissed")
-        if orc.session and (s := self.sessions.live.get(orc.session)) is not None and s.running:
-            raise CommandError("Halt it first")
-        b_id, orc_id = orc.ref.split("/", 1)
-        try:
-            scroll.dismiss_orc(self.town.scroll, b_id, orc_id)
-        except ValueError as e:
-            raise CommandError(str(e)) from None
-        self.town.save()
-        try:
-            chronicles.record(self.town.repo_root, self.town.scroll, b_id, "orc_dismissed", orc=orc.name)
-        except OSError:
-            pass
-        self.refresh_roster()
-
-    def _halt_ork(self, args: dict) -> bool:
-        orc = self._ork(args)
-        term = info.terminal_of(orc)
-        if not term or not self.sessions.interrupt(term):
-            self.town.toast("nothing to halt", title="Halt")
-            return False
-        if orc.building:
-            try:
-                chronicles.record(self.town.repo_root, self.town.scroll, orc.building, "orc_halted", orc=orc.name)
-            except OSError:
-                pass
-        self.town.toast(f"Halted {orc.name}", title="Halt")
-        return True
 
     def _open_building(self, args: dict) -> dict:
         bs = self._spec(args)

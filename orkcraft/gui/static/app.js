@@ -7,6 +7,7 @@ import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
 import { Opened } from "./js/windows.js";
 import { Selected } from "./js/console.js";
+import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
 
@@ -28,6 +29,7 @@ function App() {
     <${StatusBar} />
     <${Toasts} />
     <${Orders} />
+    <${Jobs} />
     <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />

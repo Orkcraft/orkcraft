@@ -492,3 +492,73 @@ def test_a_pinned_building_keeps_its_place(fake_repo, isolated_layout_file):
     assert host.command("building.pin", {"id": "town_hall"}) is False
     host.command("hut.move", {"id": "town_hall", "x": 0.5, "y": 0.5})
     assert host.command("building.goal", {"id": "town_hall"}) == "quality"
+
+
+def _wait(host, jid, states=("ready", "verdict", "failed")):
+    import time
+    for _ in range(100):
+        job = host.console.jobs.get(jid)
+        if job is None or job["state"] in states:
+            return job
+        time.sleep(0.05)
+    raise AssertionError(f"job {jid} still {host.console.jobs[jid]['state']}")
+
+
+def test_the_console_recruits_by_hand_and_sets_orders_and_model(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    ref = host.command("building.recruit", {"id": "town_hall", "name": "Coder", "role": "tickets", "tier": "laborer"})
+    assert ref == "town_hall/coder"
+    ork = host.command("info", {"id": "town_hall", "ork": ref})
+    assert ork["uses_model"] and ork["steps"][0]["tier"] == "laborer" and ork["triggers"]
+    host.command("ork.orders", {"id": "town_hall", "ork": ref, "orders": "watch T1",
+                                "trigger": {"type": "cron", "expression": "*/15 * * * *"}})
+    member = host.town.scroll.building("town_hall").garrison.orc("coder")
+    assert member.orders == "watch T1" and member.trigger == {"type": "cron", "expression": "*/15 * * * *"}
+    host.command("ork.model", {"id": "town_hall", "ork": ref, "steps": [{"harness": "claude", "tier": "elder"}]})
+    assert host.command("info", {"id": "town_hall", "ork": ref})["steps"][0]["tier"] == "elder"
+    with pytest.raises(CommandError):
+        host.command("ork.orders", {"id": "town_hall", "ork": ref, "trigger": {"type": "whenever"}})
+    host.command("ork.dismiss", {"id": "town_hall", "ork": ref})
+    assert host.town.scroll.building("town_hall").garrison.orc("coder") is None
+
+
+def test_the_recruiter_and_the_council_run_as_jobs(fake_repo, isolated_layout_file, monkeypatch):
+    from orkcraft.core import runners
+    good = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",
+            "chain": [{"op": "template", "md": "done {id}"}],
+            "roads": [{"from": "loot", "event": "on_selection_change", "filter": {"node_status": ["done"]}}]}
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda prompt: (json.dumps(good), 0.05))
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", None)
+    host = _host(fake_repo)
+    host.town.demo = True                            # the Council by its rules only
+    jid = host.command("building.recruit_ask", {"id": "town_hall", "prompt": "show finished tasks"})
+    assert host.snapshot()["jobs"][0]["id"] == jid
+    job = _wait(host, jid)
+    assert job["state"] == "ready" and job["view"]["name"] == "Crier" and job["view"]["roads"]
+    host.command("job.accept", {"job": jid})
+    job = _wait(host, jid)
+    if job is not None and job["state"] == "verdict":       # notes only: the person hires anyway
+        host.command("job.accept", {"job": jid})
+    assert host.town.scroll.building("town_hall").garrison.handler("crier") is not None
+    assert jid not in host.console.jobs
+    key = next(r["key"] for r in host.command("info", {"id": "town_hall"})["listens"])
+    assert host.command("road.handlers", {"key": key})["current"] == "crier"
+
+
+def test_a_redesign_runs_as_a_job_and_its_layout_is_taken(fake_repo, isolated_layout_file, monkeypatch):
+    from orkcraft.core import runners
+    from orkcraft.design import ui
+    host = _host(fake_repo)
+    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
+    good = ui.default("lake")
+    good["panes"][1]["size"] = 5
+    monkeypatch.setattr(runners, "STEWARD_RUNNER",
+                        lambda p: (json.dumps({"proposals": [{"type": "ui", "ui": good, "why": "a bigger page"}]}), 0.01))
+    jid = host.command("building.redesign", {"id": built.id, "request": "a bigger page"})
+    job = _wait(host, jid)
+    assert job["state"] == "ready" and job["view"]["proposals"][0]["ready"]
+    host.command("job.accept", {"job": jid, "index": 0})
+    assert host.town.scroll.building(built.id).ui == good
+    assert host.command("building.redesign", {"id": built.id, "request": "default"}) is None
+    with pytest.raises(CommandError):
+        host.command("ork.report", {"id": built.id})            # not watched yet

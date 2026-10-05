@@ -83,7 +83,7 @@ export function Hut({ b, spot, number, onMoved }) {
       <button class="gui-hut__road" title="Pull a road to another building" aria-label="Pull a road"
         onPointerDown=${(e) => pull(e, b)}>+</button>
       <span class="ok-hut__label"><span class="no">${number}</span>${b.title}
-        ${b.alert && html` <span class="ok-word">?</span>`}<span class="ok-hut__dot"></span></span>
+        ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}<span class="ok-hut__dot"></span></span>
       ${b.status_plain.length > 0 && html`<ul class="ok-hut__lines">
         ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>`}
     </div>
