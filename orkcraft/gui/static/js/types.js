@@ -5,6 +5,7 @@
 //   card(b)          the inside of its hut card on the town (closed), from `b.card`
 //   preview(id, d)   the top of the Command Card while it is selected (command), from its detail
 //   panes(id, d)     the panes of its whole window, by its UI document (full)
+//   quick            {action id: fn(id)}: what its quick actions on the Command Card do
 //
 // A type that exports none of them still draws: its status lines, the buttons only, the old body.
 import { signal } from "@preact/signals";

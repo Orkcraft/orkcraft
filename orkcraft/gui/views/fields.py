@@ -93,6 +93,14 @@ def _remove(w, args: dict) -> None:
     w.remove(_card(w, args).id)
 
 
+def _add_lane(w, args: dict) -> str:
+    """A new folder of notes (a lane of its own); its id, "" when it was not made (the worker said why)."""
+    name = " ".join(text(args, "name", 200).split())
+    if not name:
+        raise ActError("A folder of notes needs a name")
+    return w.add_lane(name)
+
+
 def _seen(w, args: dict) -> None:
     if w.cards:
         w.mark_seen()
@@ -100,4 +108,4 @@ def _seen(w, args: dict) -> None:
 
 
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
-        "remove": _remove, "seen": _seen}
+        "remove": _remove, "seen": _seen, "add_lane": _add_lane}
