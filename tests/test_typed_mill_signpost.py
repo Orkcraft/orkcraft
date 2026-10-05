@@ -9,7 +9,8 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, horn, masonry, mill, roads, signpost, silhouettes
+from orkcraft.realm import catalog, horn, masonry, mill, roads, signpost
+from orkcraft.tui import silhouettes
 from orkcraft.realm.pipes import Payload
 from orkcraft.screens.dialogs import TextBlock
 from orkcraft.screens.typed.mill_view import MillView

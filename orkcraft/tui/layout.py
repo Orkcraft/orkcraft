@@ -16,6 +16,7 @@ from orkcraft.widgets.office import OfficeStatic
 from orkcraft.wm import Desktop
 
 from orkcraft.tui.base import (ORC_CHAT_PCT, BUILDING_CONSOLE_MIN_H, WARMAP_FLOAT_W, mode_for)
+from orkcraft.tui.text import strip_rich
 
 
 class LayoutMixin:
@@ -53,7 +54,7 @@ class LayoutMixin:
 
     def notify(self, message, *, title: str = "", **kwargs) -> None:  # type: ignore[override]
         if modes.hidden():                       # the office: no emoji in the toasts either
-            message = modes.strip_rich(message) if not isinstance(message, str) else modes.strip_emoji(message)
+            message = strip_rich(message) if not isinstance(message, str) else modes.strip_emoji(message)
             title = modes.strip_emoji(title)
         super().notify(message, title=title, **kwargs)
 

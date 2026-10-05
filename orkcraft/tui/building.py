@@ -10,7 +10,8 @@ from typing import Any, Callable
 
 
 from orkcraft import scroll
-from orkcraft.realm import blueprint, fastpath, builders, catalog, chronicles, masonry, silhouettes, pipes
+from orkcraft.realm import blueprint, fastpath, builders, catalog, chronicles, masonry, pipes
+from orkcraft.tui import silhouettes
 from orkcraft.realm.buildings import TOWN_HALL, custom_building
 from orkcraft.widgets.hut import footprint
 from orkcraft.screens.build_flow import BuildFailed, BuildPreview, BuildProgress

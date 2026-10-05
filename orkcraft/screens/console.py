@@ -17,6 +17,7 @@ from orkcraft.scroll import GOAL_ICONS, GOAL_TITLES
 from orkcraft.realm import modes
 from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
 from orkcraft.realm.orcs import ALERT_ICON, BUILDER, COUNCIL, RESIDENT, WORKER, Orc
+from orkcraft.tui.text import scheme_text
 
 if TYPE_CHECKING:
     from orkcraft.app import FocusState
@@ -108,7 +109,7 @@ def unit_details(app, orc: Orc) -> Text:
     t.append(f"{'Steward' if orc.lead else 'Handler'} · {looks.KIND_LABELS.get(orc.kind, orc.kind)}")
     if orc.tier_icon:
         t.append(f" · {tiers.label(orc.tier)}", style=tiers.TIER_STYLES.get(orc.tier or "", ""))
-    scheme = looks.scheme_text(orc.harness, orc.kind)
+    scheme = scheme_text(orc.harness, orc.kind)
     if scheme.plain:
         t.append("  ")
         t.append(scheme)
@@ -443,7 +444,7 @@ class ClanRoster(Vertical):
         t.append("★ " if o.lead else "", style=name_style)
         _append_tier(t, o)
         t.append(o.name, style="bold yellow" if asks else name_style)
-        scheme = looks.scheme_text(o.harness, o.kind)
+        scheme = scheme_text(o.harness, o.kind)
         if scheme.plain:
             t.append(" ")
             t.append(scheme)

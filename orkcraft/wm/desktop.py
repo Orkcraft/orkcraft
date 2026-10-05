@@ -25,7 +25,8 @@ from orkcraft.widgets.carts import FPS as CART_FPS, Traffic
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.widgets.ghost import Ghost
 from orkcraft.widgets.hut import Hut
-from orkcraft.realm import catalog, modes, silhouettes
+from orkcraft.realm import catalog, modes
+from orkcraft.tui import silhouettes
 from orkcraft.widgets.terrain import Terrain
 from orkcraft.wm import roadmap
 from orkcraft.wm.window import Window

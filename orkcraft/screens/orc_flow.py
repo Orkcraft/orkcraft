@@ -14,6 +14,7 @@ from textual.widgets.option_list import Option
 from orkcraft.realm import looks, pipes
 from orkcraft.realm.recruiter import RecruitResult
 from orkcraft.screens.build_flow import MODAL_CSS
+from orkcraft.tui.text import scheme_text
 
 
 class OrcProgress(ModalScreen[None]):
@@ -59,7 +60,7 @@ class RecruitPreview(ModalScreen[bool]):
         cost = f"${self.result.cost_usd:.2f}" if self.result.cost_usd is not None else "—"
         head = Text()
         head.append(f"{looks.kind_icon(kind)} {orc.get('name', '?')}", style="bold")
-        scheme = looks.scheme_text(orc.get("harness"), kind)
+        scheme = scheme_text(orc.get("harness"), kind)
         if scheme.plain:
             head.append("  ")
             head.append(scheme)

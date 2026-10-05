@@ -27,6 +27,7 @@ from orkcraft.sources import telemetry
 from orkcraft.widgets.hud import Hud
 from orkcraft.widgets.office import OfficeFooter
 from orkcraft.wm import Desktop, Taskbar, Window
+from orkcraft.tui.views import make_view
 # Re-exported: tests and older callers import these from orkcraft.app.
 from orkcraft.tui.base import (  # noqa: F401
     STEWARD_CHECK_S, FULL_MIN_COLS, COMPACT_MIN_COLS, ROSTER_REFRESH_S, HUT_REFRESH_S, SCHEDULE_TICK_S,
@@ -244,7 +245,7 @@ class OrkcraftApp(
     def compose(self) -> ComposeResult:
         desktop = Desktop(
             *(
-                Window(b.factory(), window_id=b.id, title=b.label, number=n)
+                Window(make_view(b), window_id=b.id, title=b.label, number=n)
                 for n, b in enumerate(self.buildings, 1)
             ),
             scroll=self.scroll,

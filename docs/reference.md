@@ -128,7 +128,7 @@ Roads and carts run between the huts.
 | panorama, 60 wide | 🌊 Lake of Insight: two panes, the diff and what it is |
 
 A view fills the slots with `hut_lines(widths)` (else its three `mini_status` lines); the shapes
-are in `realm/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
+are in `tui/silhouettes.py`. New huts are laid out on shelves — rows filled left to right, each
 spread over the width — and keep the spot you drag them to.
 
 - Click a hut → it is selected: the hut lights up and the console below turns to that building,
