@@ -306,6 +306,9 @@ class WatchtowerWorker(Worker):
 
     def refresh_data(self) -> None:
         """Check now: the mailbox, GitHub and the feeds, in a thread."""
+        if self.simulated:
+            self._simulated_look()
+            return
         if self._looking or not ({"mail", "github", *watch.FEEDS} & set(self.sources)):
             self.changed()
             return
@@ -327,6 +330,17 @@ class WatchtowerWorker(Worker):
             self.town.call(self.apply, look, gh, looks)
 
         self._thread(work, "watch-look")
+
+    def _simulated_look(self) -> None:
+        """The demo asks no server: the signals stay as the sandbox left them, and a source fails
+        only as its state says (`simulated_errors`: source or `feed:<line>` → why)."""
+        sim = self._state().get("simulated_errors") or {}
+        for key in [k for k in self.errors if k in ("mail", "github", "look") or k.startswith("feed:")]:
+            del self.errors[key]
+        self.errors.update({str(k): str(v) for k, v in sim.items()})
+        self.look = mailbox.Look(unread=len(self.unread("mail")), error=str(sim.get("mail", "")))
+        self._looking, self.checked = False, watch.now_iso()[11:16]
+        self.changed()
 
     def _failed(self, problem: str) -> None:
         self._looking = False

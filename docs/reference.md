@@ -570,7 +570,11 @@ touched). Data is simulated; chains run for real, agents show a prepared last re
 call a model. `--demo-reset` rebuilds it; `--demo-screens OUT` walks F1–F8 headless and saves
 SVG + PNG screenshots. `--demo-set managers` opens a second sandbox (default
 `~/.orkcraft-demo-managers`) with the engineering-manager 1on1-Prep canvas; `--demo-set dashboard`
-one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real git repository.
+one with every building type the catalog builds (My Day, Agent Yard, Gates, Library) in a real git
+repository, each with a few days of state: tasks, a calendar around the hour it was built, signals
+(the Watchtower asks no server: one feed fails on purpose), routes, mill runs, PRs as `gh` would
+list them, a conflict, orks with questions on their screens. `orkcraft gui --demo` opens this set
+by default (`~/.orkcraft-demo-dashboard`). A sandbox of an older demo is built again by itself.
 
 ## Orks: steward, handlers, Recruiter
 

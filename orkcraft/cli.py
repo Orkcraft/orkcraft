@@ -42,8 +42,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--demo", nargs="?", const="", default=None, metavar="DIR",
                         help="Open the showcase sandbox: simulated data (default ~/.orkcraft-demo)")
     parser.add_argument("--demo-reset", action="store_true", help="Rebuild the showcase sandbox")
-    parser.add_argument("--demo-set", choices=("main", "managers", "dashboard"), default="main",
-                        help="Which showcase: main (8 roles, F1–F8), managers (1on1 prep) or dashboard (typed buildings)")
+    parser.add_argument("--demo-set", choices=("main", "managers", "dashboard"), default=None,
+                        help="Which showcase: main (8 roles, F1–F8; the TUI's default), managers (1on1 prep) or "
+                             "dashboard (every building type with its state; the GUI's default)")
     parser.add_argument("--demo-screens", type=Path, default=None, metavar="OUT",
                         help="With --demo: walk F1–F8 headless and save screenshots to OUT")
 
@@ -98,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.demo is not None:
         from orkcraft import demo
+        if args.demo_set is None:          # the GUI draws the typed buildings; the TUI's showcase is the 8 roles
+            args.demo_set = "dashboard" if args.subcommand == "gui" else "main"
         try:
             root = demo.build(Path(args.demo) if args.demo else demo.default_dir(args.demo_set),
                               reset=args.demo_reset, set_name=args.demo_set)

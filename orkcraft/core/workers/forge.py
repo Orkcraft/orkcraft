@@ -7,8 +7,9 @@ conflicts or red tests `forge.conflict`. A cart naming a branch is a merge order
 with `confirm` on, it waits for the person's yes (`asking`). `test(branch)` runs the tests alone.
 
 The branch the person looks at (`picked`) has its commits and files read at once and its pull
-request's comments fetched from GitHub (`gh`) in a thread. Every merge is kept (`merges`), so a
-branch shows its conflicts and how they were settled.
+request's comments fetched from GitHub (`gh`) in a thread. Every merge is kept (`merges`, and in
+`merges.jsonl` across restarts), so a branch shows its conflicts and how they were settled. In the
+demo `gh` is never asked: its answers are the sandbox's recording (`gh.json`).
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ import shutil
 import subprocess
 import threading
 import time
+from dataclasses import asdict
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
@@ -61,6 +63,23 @@ def pr_comments(repo: Path, number: int, runner=subprocess.run) -> list[dict] | 
     return sorted(rows, key=lambda x: x["at"])
 
 
+def recorded_gh(path: Path):
+    """A `gh` that answers from a recording, `{"prs": [<pr list rows>], "views": {"<n>": <pr view>}}`:
+    the demo's, which never goes to GitHub."""
+    def run(args: list[str], **_kw) -> subprocess.CompletedProcess:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        if args[1:3] == ["pr", "list"]:
+            return subprocess.CompletedProcess(args, 0, json.dumps(data.get("prs") or []), "")
+        view = (data.get("views") or {}).get(args[3]) if args[1:3] == ["pr", "view"] else None
+        if view is None:
+            return subprocess.CompletedProcess(args, 1, "", "not recorded")
+        return subprocess.CompletedProcess(args, 0, json.dumps(view), "")
+    return run
+
+
 class ForgeWorker(Worker):
     TYPE = "forge"
     merger = staticmethod(forge.merge)            # tests swap the merge here
@@ -85,7 +104,30 @@ class ForgeWorker(Worker):
     # -- its life -------------------------------------------------------------------------------
 
     def start(self) -> None:
+        self.merges = self._kept_merges()
+        self.last_merge = self.merges[-1][1] if self.merges else None
         self.refresh()
+
+    @property
+    def gh(self):
+        """Who answers for GitHub: a test's runner, the demo's recording, else the real `gh` (None)."""
+        if type(self).pr_runner is not None:
+            return type(self).pr_runner
+        return recorded_gh(self.state_dir / "gh.json") if self.simulated else None
+
+    def _kept_merges(self) -> list[tuple[str, forge.Result]]:
+        out = []
+        try:
+            lines = (self.state_dir / "merges.jsonl").read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return out
+        for line in lines[-MERGES:]:
+            try:
+                row = json.loads(line)
+                out.append((str(row["at"]), forge.Result(**row["result"])))
+            except (ValueError, KeyError, TypeError):
+                continue
+        return out
 
     @property
     def base(self) -> str:
@@ -99,11 +141,11 @@ class ForgeWorker(Worker):
         if self._looking:
             return
         self._looking = True
-        repo, base = self.repo_root, str(self.config.get("base", ""))
+        repo, base, gh = self.repo_root, str(self.config.get("base", "")), self.gh
 
         def work() -> None:
             try:
-                snap = gitinfo.snapshot(repo, base)
+                snap = gitinfo.snapshot(repo, base, **({"pr_runner": gh} if gh else {}))
             except Exception as e:           # the look ends, the building stays
                 snap = gitinfo.Snapshot(base or "main", error=str(e)[:200])
             self.town.call(self.apply_snapshot, snap)
@@ -158,7 +200,7 @@ class ForgeWorker(Worker):
             self.commits, self.files = [], []
 
     def fetch_comments(self, name: str, number: int) -> None:
-        repo, runner = self.repo_root, type(self).pr_runner
+        repo, runner = self.repo_root, self.gh
 
         def work() -> None:
             got = pr_comments(repo, number, *([runner] if runner else []))
@@ -244,7 +286,14 @@ class ForgeWorker(Worker):
     def merged(self, res: forge.Result) -> None:
         self.merging = ""
         self.last_merge = res
-        self.merges = (self.merges + [(time.strftime("%Y-%m-%d %H:%M"), res)])[-MERGES:]
+        at = time.strftime("%Y-%m-%d %H:%M")
+        self.merges = (self.merges + [(at, res)])[-MERGES:]
+        try:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
+            with (self.state_dir / "merges.jsonl").open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"at": at, "result": asdict(res)}) + "\n")
+        except OSError:
+            pass
         if res.tests:
             self.tests[res.branch] = {"ok": res.error != "tests failed", "output": res.tests, "at": time.strftime("%H:%M")}
         if res.ok:

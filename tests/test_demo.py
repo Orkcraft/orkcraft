@@ -140,10 +140,11 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
     specs, spec_problems = masonry.load_specs(root)
     assert spec_problems == [] and len(specs) == 24 and all(s.get("type") for s in specs)
     from orkcraft.realm import catalog
-    assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom"}   # the 16 camp buildings and a Workshop (T1108)
+    # every type the catalog builds; Lake is the town's window, not a building
+    assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom", "lake"}
     branches = subprocess.run(["git", "branch", "--format=%(refname:short)"], cwd=root, capture_output=True,
                               text=True).stdout.split()
-    assert sorted(branches) == ["feature/login", "fix/parser", "main"]
+    assert sorted(branches) == ["docs/barracks", "feature/login", "feature/pricing-page", "fix/parser", "main"]
 
     calls = []
     monkeypatch.setattr(roads, "run_agent", lambda *a, **k: calls.append(a) or ("x", 1.0, None))
@@ -157,14 +158,16 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
         for _ in range(10):
             await pilot.pause(0.05)
         git = app.desktop.get_window("branches").query_one(GitView)
-        assert git.snap is not None and {b.name for b in git.snap.branches} == {"main", "feature/login", "fix/parser"}
+        assert git.snap is not None and {b.name for b in git.snap.branches} == {
+            "main", "feature/login", "fix/parser", "feature/pricing-page", "docs/barracks"}
         gen = app.desktop.get_window("outputs").query_one(GeneratorView)
-        assert {g.path for g in gen.rows} == {"docs/release-notes.md", "src/billing.py"}
+        assert {g.path for g in gen.rows} == {"docs/release-notes.md", "src/billing.py", "web/index.html",
+                                              "web/styles.css", "web/pricing.html"}
         team = app.desktop.get_window("council").query_one(TeamView)
         seeded = [d for d in team.history if d.title == "v0.2 release plan"]          # the Barracks' resumed work
         assert [(d.outcome, d.cycle) for d in seeded] == [("approved", 2), ("rework", 1)]   # may be reviewed since
         camp = app.desktop.get_window("camp").query_one(PoolView)
-        assert [o.name for o in camp.state.orcs] == ["Grub", "Mogka"]
+        assert [o.name for o in camp.state.orcs] == ["Grub", "Mogka", "Snaga"]
         camp.add_task("Write the changelog", "Write the changelog for v0.2")     # simulated work, no model
         for _ in range(60):
             await pilot.pause(0.05)
