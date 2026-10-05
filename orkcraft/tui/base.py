@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from orkcraft.core.night import PROBATION_CHECK_S  # noqa: F401 (re-exported: how often probation is looked at)
+
 STEWARD_CHECK_S = 60.0
 
 FULL_MIN_COLS = 140     # ≥ 140: Full RTS — console + windows
@@ -12,7 +14,6 @@ COMPACT_MIN_COLS = 100  # 100–139: Compact — console + windows; < 100: Minim
 ROSTER_REFRESH_S = 1.0
 HUT_REFRESH_S = 5.0      # status lines of the huts in the town view
 SCHEDULE_TICK_S = 30.0   # Shift switches Office on and off, quiet hours begin and end
-PROBATION_CHECK_S = 300.0  # how often the orcs' changes on probation are looked at
 FIRE_FLICKER_S = 0.4     # a hut whose orc waits for orders burns
 ORC_CHAT_REFRESH_S = 0.5  # the orc's chat mirrors its live session
 ORC_CHAT_PCT = 45        # the chat column rises to this share of the screen; the rest stays low

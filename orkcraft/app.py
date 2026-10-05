@@ -16,7 +16,6 @@ from orkcraft.realm import feedback, roads
 from orkcraft.realm.buildings import Building
 from orkcraft.realm.roster import Roster
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, Console
-from orkcraft.realm import elders
 from orkcraft.env import getenv
 from orkcraft import schedule
 from orkcraft.screens.orc_chat import OrcChat
@@ -25,6 +24,7 @@ from orkcraft.widgets.hud import Hud
 from orkcraft.widgets.office import OfficeFooter
 from orkcraft.wm import Desktop, Taskbar, Window
 from orkcraft.core import bus
+from orkcraft.core.night import Night
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.tui.base import delegate
@@ -159,22 +159,12 @@ class OrkcraftApp(
         self.core = Town(repo_root, auto_commit, layout_file, reset_layout, demo)
         self.core.saver = lambda: self.desktop.save()        # the desktop records what it laid out first
         self.treasury = Treasury(self.core)
+        self.night = Night(self.core)       # quiet hours: the Elders and the orks' own changes
         self._wire_bus()
         self.selected_node: str | None = None
         self.roster = Roster()
         self.dismissed: set[str] = set()
-        # 🏛 The Elders' advice on the orcs' questions, left in quiet hours (realm/elders.py).
-        self.advice: dict[str, elders.Decision] = {}         # by question mark (elders.mark)
-        self._elders_seen: set[str] = set()
-        self._elders_busy = False
-        self._elders_count = 0
-        self._quiet_since: str | None = None
-        # 🔧 The orcs' own self-improvement in quiet hours (realm/evolution.py).
         self._hushed = False                 # the orcs at work: no toasts, no dialogs (the ledger tells)
-        self._evolve_busy = False
-        self._evolve_tried: set[str] = set()
-        self._evolve_count = 0
-        self._probation_at = 0.0          # 0: never looked yet
         self.worktree_marks: dict[str, str] = {}
         self.deployments: dict[str, str] = {}
         self._watching: set[str] = set()
@@ -205,6 +195,15 @@ class OrkcraftApp(
     run_id = delegate("core", "run_id")
     telemetry = delegate("core", "telemetry")
     snapshot = delegate("core", "snapshot")
+    advice = delegate("night", "advice")
+    _elders_seen = delegate("night", "elders_seen")
+    _elders_busy = delegate("night", "elders_busy")
+    _elders_count = delegate("night", "elders_count")
+    _quiet_since = delegate("night", "quiet_since")
+    _evolve_busy = delegate("night", "evolve_busy")
+    _evolve_tried = delegate("night", "evolve_tried")
+    _evolve_count = delegate("night", "evolve_count")
+    _probation_at = delegate("night", "probation_at")
 
     def _wire_bus(self) -> None:
         """What the core publishes, shown the Textual way (core/bus.py)."""
