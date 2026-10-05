@@ -21,13 +21,13 @@ button { font: inherit; color: inherit; }
 
 /* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
    square at the left; its list scrolls) and, while a building is selected, its console at the right.
-   It shares the town's grid area, so it stays put while the town scrolls. The strip is 40% of the
+   It shares the town's grid area, so it stays put while the town scrolls. The strip is 50% of the
    window's height: the console takes all of it, as wide as tall, while a building is selected; the
-   War Map three quarters of it, about 30% (STRIP in js/town.js keeps the huts above it). */
-.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 40vh; min-height: 240px; box-sizing: border-box;
+   War Map 60% of it, about 30% (STRIP in js/town.js keeps the huts above it). */
+.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
   display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
 .gui-strip > * { pointer-events: auto; }
-.gui-warmap { flex: none; height: 75%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
+.gui-warmap { flex: none; height: 60%; aspect-ratio: 1; width: auto; display: flex; flex-direction: column; }
 .gui-warmap > .ok-list__head { flex: none; }
 .gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
 .gui-warmap .ok-item { cursor: pointer; }
