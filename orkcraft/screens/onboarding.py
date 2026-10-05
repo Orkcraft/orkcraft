@@ -507,7 +507,8 @@ class IntentStep(ModalScreen[dict | str | None]):
                     yield OptionList(id="ob-presets")
                     yield Static("", id="ob-blurb", markup=False)
                 yield Static("", id="ob-mascot", classes="ob-mascot", markup=False)
-            yield Checkbox("Install the 🛡 Warder (recommended) — edits .claude/settings.json",
+            yield Checkbox("Install the 🛡 Warder (recommended) — edits .claude/settings.json "
+                           "(and .codex/hooks.json with Codex)",
                            value=self.choice.get("warder", True), id="ob-warder")
             yield Static("", id="ob-town-note", classes="ob-note", markup=False)
             yield Horizontal(
@@ -664,7 +665,8 @@ class ToolsStep(ModalScreen[dict | str | None]):
             yield Static("tool".ljust(24) + "paid by".ljust(17) + "👍 👎  what for", classes="ob-head")
             yield Vertical(id="ob-tools-list")
             yield Static("", id="ob-tools-missing", markup=False)
-            yield Checkbox("Install the 🛡 Warder in this project (recommended) — edits .claude/settings.json",
+            yield Checkbox("Install the 🛡 Warder in this project (recommended) — edits .claude/settings.json "
+                           "(and .codex/hooks.json with Codex)",
                            value=self.warder, id="ob-warder")
             yield Static("", id="ob-tools-note", classes="ob-note", markup=False)
             yield _nav(self.can_back)

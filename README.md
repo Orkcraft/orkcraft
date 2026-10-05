@@ -12,8 +12,9 @@ to each other along **roads**. The HUD shows what you spend. Agents never pop di
 needs you it sets its hut on fire 🔥 and waits for your orders.
 
 Orkcraft is a [Textual](https://textual.textualize.io/) app. It works in any git project and talks to
-models only through the CLIs you already have — [Claude Code](https://claude.com/claude-code) (`claude`) and
-Google Antigravity (`agy`) — so there are no API keys to configure.
+models only through the CLIs you already have — [Claude Code](https://claude.com/claude-code) (`claude`),
+Google Antigravity (`agy`) and [OpenAI Codex](https://github.com/openai/codex) (`codex`) — so there are no API
+keys to configure.
 
 ![The town: a Pit and a Totem feed a Lake, a Catapult and a Workshop](docs/img/town.png)
 
@@ -38,8 +39,8 @@ orkcraft hooks install             # session log + the Warder guard in .claude/s
 orkcraft                           # open the town
 ```
 
-You need Python 3.11+ and git. Optional: `claude` and/or `agy` on your `PATH` (agents and the
-Builder), `gh` (GitHub events in the Watchtower).
+You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
+Builder needs `claude`), `gh` (GitHub events in the Watchtower).
 
 Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
 `Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent, script and browser).
@@ -96,12 +97,13 @@ a commit in the camp's own git, so it can be undone.
 
 ## Safety
 
-- **Your CLIs, your login.** Models are called as `claude -p …` / `agy --print …`. Orkcraft has no
+- **Your CLIs, your login.** Models are called as `claude -p …` / `agy --print …` / `codex exec …`. Orkcraft has no
   API keys, accounts or servers, and sends nothing anywhere on its own. A building talks to the
   network only if you configure it to (Watchtower, Catapult, Lake with a URL).
-- **🛡 Warder** is a Claude Code `PreToolUse` hook (`orkcraft hooks install`): it denies catastrophic or
+- **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkcraft hooks install`): it denies catastrophic or
   secret-leaking calls (`rm -rf /`, `curl … | sh`, reading `.env` / `.ssh`, force-push…) and asks
-  about destructive ones. It guards Claude Code sessions only — `agy` has no such hook.
+  about destructive ones (Codex cannot ask yet, so there it denies and says why). Codex runs a project's
+  hooks once you trust them with `/hooks`. `agy` has no such hook.
 - **Scripts** run as `python3 -I` or `bash` with no shell interpolation and a timeout; the Builder's
   sandbox uses an empty folder and a bare environment. Handler scripts run only after review and are
   held again if the file changes.
@@ -119,7 +121,7 @@ Inside the project it runs in, orkcraft keeps only local state (add these to you
 - `.orkcraft/` — logs, sessions, per-building state and **the camp's own git** (branch `camp`) that
   tracks building specs, scripts and blueprints; `Z` reads it. It is separate from your project's history.
 
-Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_LIMITS=0`,
+Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_CODEX_BIN`, `ORKCRAFT_LIMITS=0`,
 `ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council and the
 Elders' limits are set in the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
 
@@ -144,7 +146,7 @@ orkcraft/
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
                      feedback, optimize, weekly, checkpoint, housekeeping…
   quota/             claude / agy quota readers (answered locally, no quota spent)
-  sources/ hooks/    sessions, telemetry, limits; the Claude Code hooks
+  sources/ hooks/    sessions, telemetry, limits; the Claude Code and Codex hooks
   demo/              the showcase sandbox
 ```
 

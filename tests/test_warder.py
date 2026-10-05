@@ -136,3 +136,38 @@ def test_heredoc_bodies_are_data_not_commands():
 ])
 def test_rewriting_warder_from_a_shell_asks(cmd, want):
     assert bash(cmd) == want, cmd
+
+
+# -- Codex: apply_patch names its files, and Codex cannot ask ----------------------------------------------
+
+@pytest.mark.parametrize("patch, want", [
+    ("*** Begin Patch\n*** Update File: src/app.py\n@@\n-a\n+b\n*** End Patch", None),
+    ("*** Begin Patch\n*** Add File: /repo/.env\n+TOKEN=x\n*** End Patch", "deny"),
+    ("*** Begin Patch\n*** Update File: notes.md\n*** Move to: keys/server.pem\n*** End Patch", "deny"),
+    ("*** Begin Patch\n*** Delete File: ~/.ssh/config\n*** End Patch", "deny"),
+    (f"*** Begin Patch\n*** Update File: {warder.REPO / '.codex' / 'hooks.json'}\n@@\n-x\n+y\n*** End Patch", "ask"),
+])
+def test_codex_patches(patch, want):
+    v = warder.judge("apply_patch", {"command": patch}, CWD)
+    assert (v[0] if v else None) == want, (patch, v)
+
+
+def test_codex_cannot_ask_so_warder_denies_and_says_why(tmp_path):
+    log = tmp_path / "warder.jsonl"
+
+    def run(harness: str, payload: dict) -> dict:
+        proc = subprocess.run(
+            [sys.executable, "-c",
+             f"import importlib.util,sys; s=importlib.util.spec_from_file_location('w', {str(HOOK)!r}); "
+             f"w=importlib.util.module_from_spec(s); s.loader.exec_module(w); w.LOG=__import__('pathlib').Path({str(log)!r}); "
+             f"sys.argv=['warder', {harness!r}]; sys.exit(w.main())"],
+            input=json.dumps(payload), capture_output=True, text=True, timeout=10, cwd=tmp_path)
+        return json.loads(proc.stdout)["hookSpecificOutput"]
+
+    reset = {"tool_name": "Bash", "tool_input": {"command": "git reset --hard"}}
+    assert run("claude", reset)["permissionDecision"] == "ask"
+    codex = run("codex", reset)
+    assert codex["permissionDecision"] == "deny" and "Codex cannot ask" in codex["permissionDecisionReason"]
+    patch = {"tool_name": "apply_patch", "tool_input": {"command": "*** Begin Patch\n*** Add File: .env\n+A=1\n"}}
+    assert run("codex", patch)["permissionDecision"] == "deny"
+    assert json.loads(log.read_text().splitlines()[-1])["subject"] == ".env"      # the file, not the whole patch

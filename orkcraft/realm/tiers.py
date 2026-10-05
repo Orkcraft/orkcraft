@@ -1,8 +1,8 @@
 """Orc tiers: how heavy a model an orc thinks with.
 
-    🔮 elder     the heavy models: opus, gemini pro
-    ⚔ warrior    the middle: sonnet, gemini flash with high reasoning
-    ⛏ laborer    the light ones: haiku, gemini flash with low reasoning
+    🔮 elder     the heavy models: opus, gemini pro, gpt astra
+    ⚔ warrior    the middle: sonnet, gemini flash with high reasoning, gpt sol
+    ⛏ laborer    the light ones: haiku, gemini flash with low reasoning, gpt luna
 
 A harness step picks its tier (`{"role": "run", "harness": "claude", "tier": "elder"}`) and the
 model follows from the harness; a step may name its `model` outright, and the tier is read from
@@ -18,21 +18,23 @@ TIER_STYLES = {"elder": "bold #c084fc", "warrior": "bold #f87171", "laborer": "#
 MODELS = {
     "claude": {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     "agy": {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},
+    "codex": {"elder": "gpt-6-astra", "warrior": "gpt-6.1-sol", "laborer": "gpt-6-luna"},
 }
 # What a step runs on when it names neither: agy's own default is flash-high.
 DEFAULT_MODEL = {"agy": MODELS["agy"]["warrior"]}
 
 
 def tier_of_model(model: str) -> str | None:
-    """opus / gemini pro → elder; sonnet / flash-high → warrior; haiku / flash-low → laborer."""
+    """opus / gemini pro / gpt astra → elder; sonnet / flash-high / gpt sol → warrior;
+    haiku / flash-low / gpt luna → laborer."""
     m = (model or "").lower()
     if not m:
         return None
-    if "opus" in m or "fable" in m or ("gemini" in m and "pro" in m):
+    if "opus" in m or "fable" in m or ("gemini" in m and "pro" in m) or ("gpt" in m and "astra" in m):
         return "elder"
-    if "haiku" in m or ("flash" in m and ("low" in m or "lite" in m)):
+    if "haiku" in m or ("flash" in m and ("low" in m or "lite" in m)) or ("gpt" in m and "luna" in m):
         return "laborer"
-    if "sonnet" in m or "flash" in m:
+    if "sonnet" in m or "flash" in m or ("gpt" in m and ("sol" in m or "terra" in m)):
         return "warrior"
     return None
 

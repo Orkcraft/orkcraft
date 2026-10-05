@@ -1,8 +1,9 @@
-"""Claude Code and agy sessions, and which tickets they worked on.
+"""Claude Code, agy and Codex sessions, and which tickets they worked on.
 
 Sources, merged by (harness, session id):
 - `<repo>/.orkcraft/sessions.jsonl` — written by `scripts/session_hook.py` from the
-  Claude / agy hooks; the only source that knows tickets reliably.
+  Claude / agy / Codex hooks; the only source that knows tickets reliably, and the only
+  one for Codex (its own session store has no project folder to filter by).
 - Claude Code transcripts `~/.claude/projects/<repo path with / → ->/*.jsonl`
   (title = first human prompt; tickets = `[[T…]]` / `T1234` in human prompts).
 - agy conversations `~/.gemini/antigravity-cli/brain/<conversation-id>/`.
@@ -24,6 +25,7 @@ from orkcraft.env import getenv
 
 HARNESS_CLAUDE = "claude"
 HARNESS_AGY = "agy"
+HARNESS_CODEX = "codex"
 HARNESS_CLAUDE_WEB = "claude-web"
 _TICKET = re.compile(r"\b(T\d{4,})\b")
 _SUBJECT_ID = re.compile(r"^\w+\(([CTP]\d+)\)")
@@ -55,7 +57,7 @@ class Session:
 
     @property
     def resumable(self) -> bool:
-        return self.harness in (HARNESS_CLAUDE, HARNESS_AGY)
+        return self.harness in (HARNESS_CLAUDE, HARNESS_AGY, HARNESS_CODEX)
 
     @property
     def short_id(self) -> str:
@@ -237,28 +239,31 @@ def resume_command(session: Session) -> list[str] | None:
         return [claude_bin(), "--resume", session.id]
     if session.harness == HARNESS_AGY:
         return [agy_bin(), "--conversation", session.id]
+    if session.harness == HARNESS_CODEX:
+        return [codex_bin(), "resume", session.id]
     return None
 
 
 def new_command(harness: str) -> list[str]:
-    return [claude_bin()] if harness == HARNESS_CLAUDE else [agy_bin()]
+    return [{HARNESS_AGY: agy_bin, HARNESS_CODEX: codex_bin}.get(harness, claude_bin)()]
 
 
 def deploy_command(harness: str, prompt: str) -> list[str] | None:
     """An interactive session that starts on `prompt` (a garrison orc's orders), or None.
 
-    Claude takes the first prompt as a positional argument. agy's interactive mode has no
-    documented way to do that yet, so there is no agy deployment (None). The prompt goes in as
+    Claude and Codex take the first prompt as a positional argument. agy's interactive mode has
+    no documented way to do that yet, so there is no agy deployment (None). The prompt goes in as
     one argv item (no shell) and never starts with "-", so it cannot be read as a flag.
     """
-    if harness != HARNESS_CLAUDE:
+    if harness not in (HARNESS_CLAUDE, HARNESS_CODEX):
         return None
+    cli = new_command(harness)
     prompt = prompt.strip()
     if not prompt:
-        return [claude_bin()]
+        return cli
     if prompt.startswith("-"):
         prompt = "Orders: " + prompt
-    return [claude_bin(), prompt]
+    return cli + [prompt]
 
 
 def claude_bin() -> str:
@@ -267,3 +272,7 @@ def claude_bin() -> str:
 
 def agy_bin() -> str:
     return getenv("AGY_BIN") or "agy"
+
+
+def codex_bin() -> str:
+    return getenv("CODEX_BIN") or "codex"

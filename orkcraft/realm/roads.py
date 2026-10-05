@@ -16,7 +16,8 @@ Rules (docs/design/roads-and-orcs.md):
   `ORKCRAFT_RUN`).
 - Scripts (and so hybrids) are in the spec but do not run yet: their carts are `held`.
 - Agents run only while the 🪙 budget allows (`budget_ok`), in the repository with read-only
-  tools (Claude) or in an empty temp dir (agy). A pipeline harness is not wired yet.
+  tools (Claude) or a read-only sandbox (Codex), or in an empty temp dir (agy). A pipeline harness
+  is not wired yet.
 - Callbacks may come from worker threads: pass `call` to marshal them (Textual:
   `call_from_thread`).
 """
@@ -95,6 +96,8 @@ CLAUDE_READ_ONLY = ["--allowedTools", "Read,Grep,Glob",
                     "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"]
 CLAUDE_READ_WEB = ["--allowedTools", "Read,Grep,Glob,WebSearch,WebFetch",        # 🪔 Clan Fire reviewers
                    "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit"]
+CODEX_WEB = {False: 'web_search="disabled"', True: 'web_search="live"'}   # Codex searches by default
+IN_REPO = ("claude", "codex")    # harnesses that read the repository; agy works in an empty folder
 
 
 @dataclass(frozen=True)
@@ -209,6 +212,20 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     return "\n\n".join(parts)
 
 
+def codex_cmd(sandbox: str, model: str = "", web: bool = False, resume: str = "") -> list[str]:
+    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout, in the folder it is
+    started in. The sandbox goes in as config: `exec resume` takes no `--sandbox`."""
+    return [os.environ.get("ORKCRAFT_CODEX_BIN", "codex"), "exec", *(["resume", resume] if resume else []), "-",
+            "--json", "--skip-git-repo-check", "-c", f'sandbox_mode="{sandbox}"', "-c", CODEX_WEB[web],
+            *(["--model", model] if model else [])]
+
+
+def harness_stdin(harness: str, prompt: str) -> str | None:
+    """What goes on stdin: Codex reads its prompt there (no argv limit, never taken for a flag);
+    the others take it as an argument."""
+    return prompt if harness == "codex" else None
+
+
 def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "", web: bool = False) -> list[str]:
     if harness == "claude":
         return [os.environ.get("ORKCRAFT_CLAUDE_BIN", "claude"), "-p", prompt, "--output-format", "json",
@@ -216,6 +233,8 @@ def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "", web:
     if harness == "agy":
         return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or AGY_MODEL,
                 "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
+    if harness == "codex":
+        return codex_cmd("read-only", model, web)
     raise RuntimeError(f"harness {harness!r} is not wired yet (pipelines come later)")
 
 
@@ -244,19 +263,80 @@ def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
     return out, None, None
 
 
+def _codex_events(stdout: str) -> list[dict]:
+    events = []
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    return events
+
+
+def codex_result_of(stdout: str) -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, session) of `codex exec --json`: the last agent message, the tokens of
+    every turn (cached input is part of the input) and the thread id. Codex prints no price: the
+    cost is None, never $0."""
+    text, tokens, session = "", None, ""
+    for event in _codex_events(stdout):
+        kind, item, usage = event.get("type"), event.get("item"), event.get("usage")
+        if kind == "thread.started":
+            session = str(event.get("thread_id") or "")
+        elif kind == "item.completed" and isinstance(item, dict) and item.get("type") == "agent_message":
+            text = str(item.get("text") or "")
+        elif kind == "turn.completed" and isinstance(usage, dict):
+            vals = [usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)]
+            tokens = (tokens or 0) + sum(vals) if vals else tokens
+    return text.strip(), None, tokens, session
+
+
+def codex_error(stdout: str) -> str:
+    """Why a `codex exec --json` run failed, from its events ("" when they do not say)."""
+    for event in reversed(_codex_events(stdout)):
+        error = event.get("error")
+        if event.get("type") == "turn.failed" and isinstance(error, dict) and error.get("message"):
+            return str(error["message"])
+        if event.get("type") == "error" and event.get("message"):
+            return str(event["message"])
+    return ""
+
+
+def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
+             wait: Callable[[subprocess.Popen], None]) -> tuple[int, str, str]:
+    """(exit code, stdout, stderr) of one harness call. Its output goes to temporary files, so a
+    long answer or a stream of events never fills a pipe while `wait` polls the process."""
+    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
+        try:
+            proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.PIPE if stdin is not None else None,
+                                    stdout=out, stderr=err, text=True, start_new_session=True)
+        except FileNotFoundError as e:
+            raise RuntimeError(f"{cmd[0]} not found") from e
+        if stdin is not None:
+            try:
+                proc.stdin.write(stdin)
+                proc.stdin.close()
+            except (BrokenPipeError, OSError):
+                pass
+        wait(proc)
+        out.seek(0)
+        err.seek(0)
+        return proc.returncode, out.read(), err.read()
+
+
+def failure(harness: str, code: int, stdout: str, stderr: str) -> str:
+    why = (codex_error(stdout) if harness == "codex" else "") or (stderr or stdout).strip()
+    return f"{harness} exited with {code}: {why[:300]}"
+
+
 def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
               cancel: threading.Event, model: str = "", web: bool = False) -> tuple[str, float | None, int | None]:
     """One harness step. Claude reads the repository (read-only tools, plus web search and fetch
-    when `web`); agy works in an empty temp dir. Raises RuntimeError on failure, InterruptedError
-    when `cancel` is set."""
-    with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
-        workdir = repo_root if harness == "claude" else Path(scratch)
-        cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
-        try:
-            proc = subprocess.Popen(cmd, cwd=workdir, env={**os.environ, **env}, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, text=True, start_new_session=True)
-        except FileNotFoundError as e:
-            raise RuntimeError(f"{cmd[0]} not found") from e
+    when `web`), Codex too (a read-only sandbox, live web search when `web`); agy works in an
+    empty temp dir. Raises RuntimeError on failure, InterruptedError when `cancel` is set."""
+
+    def wait(proc: subprocess.Popen) -> None:
         deadline = time.monotonic() + AGENT_TIMEOUT_S
         with halt.running(proc):                       # 🛑 Halt All kills it: Halted
             while proc.poll() is None:
@@ -269,10 +349,14 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
                     if cancel.is_set():
                         raise InterruptedError("restarted by a new event")
                     raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
-            stdout, stderr = proc.communicate()
-    if proc.returncode != 0:
-        raise RuntimeError(f"{harness} exited with {proc.returncode}: {(stderr or stdout).strip()[:300]}")
-    result = _result_of(stdout)
+
+    with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
+        workdir = repo_root if harness in IN_REPO else Path(scratch)
+        cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
+        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **env}, harness_stdin(harness, prompt), wait)
+    if code != 0:
+        raise RuntimeError(failure(harness, code, stdout, stderr))
+    result = codex_result_of(stdout)[:3] if harness == "codex" else _result_of(stdout)
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
     return result

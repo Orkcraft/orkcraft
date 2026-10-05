@@ -676,8 +676,8 @@
         },
         "harness": {
           "type": "string",
-          "pattern": "^(claude|agy|pipeline:[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\\.json)$",
-          "description": "claude, agy, or pipeline:<repo-relative spec> of an agy_chain multi-agent system."
+          "pattern": "^(claude|agy|codex|pipeline:[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\\.json)$",
+          "description": "claude, agy, codex, or pipeline:<repo-relative spec> of an agy_chain multi-agent system."
         },
         "tier": {
           "enum": [
@@ -685,7 +685,7 @@
             "warrior",
             "laborer"
           ],
-          "description": "How heavy a model: elder (opus, gemini pro), warrior (sonnet, flash high), laborer (haiku, flash low)."
+          "description": "How heavy a model: elder (opus, gemini pro, gpt astra), warrior (sonnet, flash high, gpt sol), laborer (haiku, flash low, gpt luna)."
         },
         "model": {
           "type": "string",

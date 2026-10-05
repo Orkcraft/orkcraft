@@ -10,7 +10,8 @@ from orkcraft.widgets.hud import Hud, Resources
 
 
 def _run(cmd, **_):
-    return subprocess.CompletedProcess(cmd, 0, stdout={"claude": "2.1.4 (Claude Code)\n", "agy": "agy v1.3.0\n"}
+    return subprocess.CompletedProcess(cmd, 0, stdout={"claude": "2.1.4 (Claude Code)\n", "agy": "agy v1.3.0\n",
+                                                       "codex": "codex-cli 0.160.0\n"}
                                        .get(Path(cmd[0]).name, ""), stderr="")
 
 
@@ -25,7 +26,7 @@ def test_found_tools_with_versions_and_logins(tmp_path: Path):
     assert got["claude"].found and got["claude"].version == "2.1.4"
     assert got["claude"].logged_in and got["claude"].billing == "subscription"
     assert got["agy"].found and got["agy"].version == "1.3.0" and got["agy"].logged_in is None
-    assert not got["codex"].found and got["codex"].summary() == "coming soon"
+    assert not got["codex"].found and got["codex"].summary() == "not found — npm i -g @openai/codex"
 
 
 def test_an_api_key_means_api_billing(tmp_path: Path):
@@ -39,6 +40,18 @@ def test_oauth_account_in_claude_json(tmp_path: Path):
     (tmp_path / ".claude.json").write_text(json.dumps({"oauthAccount": {"emailAddress": "a@b"}}), encoding="utf-8")
     claude = tools.detect(_which({"claude"}), _run, env={}, home=tmp_path)[0]
     assert claude.logged_in and claude.billing == "subscription"
+
+
+def test_codex_is_found_and_its_login_seen_without_reading_it(tmp_path: Path):
+    codex = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={}, home=tmp_path)}["codex"]
+    assert codex.found and codex.version == "0.160.0" and codex.logged_in is None
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "auth.json").write_text("not even json", encoding="utf-8")   # never parsed
+    codex = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={}, home=tmp_path)}["codex"]
+    assert codex.logged_in and codex.billing == "subscription" and codex.summary() == "found · v0.160.0 · logged in"
+    api = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={"OPENAI_API_KEY": "x"}, home=tmp_path)}
+    assert api["codex"].billing == "api"
+    assert "codex" not in {o.id for o in tools.OTHERS}            # led now, not only asked about
 
 
 def test_missing_tools_say_how_to_get_them(tmp_path: Path):

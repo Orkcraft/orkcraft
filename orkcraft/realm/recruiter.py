@@ -31,6 +31,7 @@ MAX_ATTEMPTS = 3
 PROMPT_LIMIT = 2000
 SCRIPT_LIMIT = 20_000
 
+HARNESS_NAMES = {"claude": "Claude", "agy": "agy", "codex": "Codex"}
 RECRUITER = """You are the Recruiter of orkcraft, a terminal harness over a Markdown knowledge graph where
 windows ("buildings") pass events to each other along roads. The operator wants a new handler orc
 for the building {building_id} ({building_title}). A handler works on incoming roads: it keeps the
@@ -56,9 +57,9 @@ KINDS — pick the FIRST that can do the job and explain in "why" what a cheaper
    Field names are lowercase letters and _ only.
 2. "script": a small Python script (stdin: JSON list of records, stdout: Markdown); give its source in
    "script_source". It will not run until the operator reviews it.
-3. "agent": a Claude / agy session with "orders" (its prompt) and a "harness" scheme: a list of steps
-   {{"role":"run|plan|write|review","harness":"claude|agy"}}, e.g. [{{"role":"run","harness":"claude"}}] or
-   [{{"role":"write","harness":"agy"}},{{"role":"review","harness":"claude"}}].
+3. "agent": a {harness_names} session with "orders" (its prompt) and a "harness" scheme: a list of steps
+   {{"role":"run|plan|write|review","harness":"{harness_choice}"}}, e.g. [{{"role":"run","harness":"claude"}}] or
+   [{{"role":"write","harness":"agy"}},{{"role":"review","harness":"claude"}}]. Only these harnesses are here.
    Each step takes a "tier", the lightest that will do: "laborer" (haiku / gemini flash low: sorting,
    summaries, routine checks), "warrior" (sonnet / gemini flash high: most coding and writing), "elder"
    (opus / gemini pro: hard reasoning, architecture, reviews that matter).
@@ -197,10 +198,10 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
 
 
 def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: builders.Runner = builders.claude_runner,
-            max_attempts: int = MAX_ATTEMPTS, road=None) -> RecruitResult:
+            max_attempts: int = MAX_ATTEMPTS, road=None, harnesses: tuple[str, ...] = ("claude", "agy")) -> RecruitResult:
     """Ask the Recruiter until its handler passes the contract or the attempts run out. Never raises.
     `road` (source, event): a road with a rule — exactly that road, and no agent for a rule that
-    needs no judgement."""
+    needs no judgement. `harnesses`: the CLIs this machine runs, the only ones it may pick."""
     rule = request.strip()[:PROMPT_LIMIT]
     request = rule + (ROAD_RULE.format(roads="; ".join(f'{{"from": "{s}", "event": "{e}"}}' for s, e in _wanted(road)))
                       if road else "")
@@ -211,7 +212,9 @@ def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: build
     total: float | None = None
     for _ in range(max_attempts):
         prompt = RECRUITER.format(request=request, building_id=building_id, building_title=spec.title,
-                                  catalog=catalog(scroll, building_id), feedback=_feedback(attempts))
+                                  catalog=catalog(scroll, building_id), feedback=_feedback(attempts),
+                                  harness_names=" / ".join(HARNESS_NAMES.get(h, h) for h in harnesses),
+                                  harness_choice="|".join(harnesses))
         try:
             text, cost = runner(prompt)
         except RuntimeError as e:

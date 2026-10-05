@@ -32,7 +32,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   `[ ⚙️ Menu (F10) · 🛑 READY ]`: a click opens the system menu (Halt All is its item `[1]`),
   and it shows the halt state (`HALTED — n stopped`).
 - **🛑 Halt All** — `space` (in neutral state when the focused widget does not use space) or
-  `ctrl+p` (always, even inside a terminal): interrupts every running Claude / agy session
+  `ctrl+p` (always, even inside a terminal): interrupts every running Claude / agy / Codex session
   (SIGINT — the CLI cancels its turn, the session stays) and stops everything else the camp runs —
   road agents, Barracks orks and their steward, a Clan Fire review, the wiki's librarian, Mill and
   Workshop scripts, tests, a Catapult's browser and scouts, every model call (`realm/halt.py` kills
@@ -58,14 +58,14 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   subscribes **this** building to another one: possible sources highlight, press the source's number,
   then pick the event and the handler (or plain). `U` removes the building's only incoming road.
   `preferences.roads = "off"` hides the gap roads (gates stay). Plain roads still show on the source frame as `[ 🚩 ──► <target> ]` (selection pipe) or `[ 🚩 ⏹──► <target> ]` (task-completed pipe), positioned after the title and before the garrison badge. On selection change, selected nodes or Loot files are routed to the receiver (e.g. Scrying Spire 🔮); on task completed, finished deployment sessions deliver reports to Scrying Spire or Loot Chest 📦 (`./loot/pipes/`).
-- **Passive alerts ❓ & Awaiting Orders (`!` / HUD click)**: a session showing a numbered menu or confirmation prompt (Claude's / agy's permission and question prompts) and tickets with open `## Clarification Needed` for the human turn their ork ❓ and increment the HUD `[ ❓ N awaiting orders ]` badge. Nothing pops up automatically:
+- **Passive alerts ❓ & Awaiting Orders (`!` / HUD click)**: a session showing a numbered menu or confirmation prompt (Claude's / agy's / Codex's permission and question prompts; a Codex menu is answered with the digit and Enter) and tickets with open `## Clarification Needed` for the human turn their ork ❓ and increment the HUD `[ ❓ N awaiting orders ]` badge. Nothing pops up automatically:
   - Clicking `[ ❓ N awaiting orders ]` in the HUD or pressing `!` opens the **Awaiting Orders** modal (`AwaitingOrdersModal`).
   - Displays all pending questions to the user in a list (`#orders-list`), showing the origin unit/ticket, the full question, and context lines.
   - Numbered keys `1`..`9` or `y`/`n` answer the currently selected question immediately; action buttons also support mouse clicks.
   - `T` jumps straight into the session terminal in the War Tent; `C` opens the node card.
   - Answering dispatches input back to the agent session or updates the ticket, advances to the next pending order, and cleanly closes when all questions are resolved (`Esc` cancels).
-  - **Question Interception from Claude & AGY**:
-    1. *Real-time Terminal PTY Screen Scraping (`detect_prompt`)*: Claude Code and AGY run in virtual pseudo-terminals (`pyte` on PTY). When output goes quiet for 1.0s (`PROMPT_IDLE_S`), Orkcraft scans recent screen lines for numbered option menus (`1.`, `1)`, `[1]`, `(1)`, `1 -`) and yes/no confirmation dialogs (`[y/N]`, `(y/n)`). This intercepts tool execution approvals, question tools, and CLI confirmations without requiring modifications to the underlying agent binaries.
+  - **Question Interception from Claude, AGY & Codex**:
+    1. *Real-time Terminal PTY Screen Scraping (`detect_prompt`)*: Claude Code, AGY and Codex run in virtual pseudo-terminals (`pyte` on PTY). When output goes quiet for 1.0s (`PROMPT_IDLE_S`), Orkcraft scans recent screen lines for numbered option menus (`1.`, `1)`, `[1]`, `(1)`, `1 -`) and yes/no confirmation dialogs (`[y/N]`, `(y/n)`). This intercepts tool execution approvals, question tools, and CLI confirmations without requiring modifications to the underlying agent binaries.
     2. *Tool & Hook Interception*: AGY's `ask_question` tool invocations and Claude CLI turns record structured parameters in transcripts (`transcript.jsonl` / `sessions.jsonl`), enabling extraction of rich question metadata.
     3. *Warder Security Interceptions*: Guardrail denials from `warder.jsonl` create operator review alerts.
 - **Unit Frame**: every building shows its garrison on the top-right border
@@ -86,7 +86,8 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 - **Roads** (`realm/roads.py`): events leave a building only through its outgoing roads and their
   source filters; plain roads deliver at once, chain handlers rerun on every event with the latest
   payload of each of their roads, agent handlers wait for a quiet period and restart on new data
-  (Claude read-only in the repo, agy in an empty sandbox dir, within the 🪙 budget). Personal nodes
+  (Claude read-only in the repo, Codex in the repo in its read-only sandbox with web search off unless asked
+  for, agy in an empty sandbox dir, within the 🪙 budget). Personal nodes
   never reach a model. Script handlers run once reviewed (`python3 -I`, the records as JSON on stdin) and are held again when the file changes. Build requests from
   `[B] Build Window` queue in `.orkcraft/build-requests.jsonl` for Mason & Artisan (stage 4).
 - **⚙️ System Menu (`F10`)**: opens `⚙️ SYSTEM & CLAN OPERATIONS` (`[1-6]` action, `Esc` cancels):
@@ -103,7 +104,7 @@ Buildings (keys `1`–`9`):
 | # | Building | Resident | Shows |
 |---|---|---|---|
 | 1 | 📦 Artifacts | Quartermaster | `./loot/` artifacts and wiki notes |
-| 2 | 🏰 Town Hall | Chieftain | its agents and the last audit · Sessions (live Claude / agy terminals) · Limits (claude / agy quota) |
+| 2 | 🏰 Town Hall | Chieftain | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
 Every other building is built from the catalog of typed buildings (below) or by Mason & Artisan.
@@ -145,7 +146,7 @@ spread over the width — and keep the spot you drag them to.
 - **Garrison, Info, chat**: the garrison lists names and states only (⚙ busy, 💤 idle,
   🔥 waiting). The **Info** column next to it tells in up to three sentences what the selected
   ork, building or road does — put together from the scroll and the roster, no model call — its
-  models (C Claude, A agy, P script, 🪧 a free chain, ● the live session's model) and what it cost
+  models (✻ Claude, ✦ agy, ⌬ Codex, P script, 🪧 a free chain, ● the live session's model) and what it cost
   (🪙 $ and 🪵 tokens from the handler's run log, the live session's spend from telemetry; "no data
   yet" when unknown). Picking an ork keeps the garrison and lights the ork. A burning ork opens
   its question at once; any other garrison ork or live session opens its **chat**: a tall
@@ -397,7 +398,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   calls naming its folder, ≥3 in a week) and no road brings it, the steward of that building
   proposes, without a model: the wiki's `knowledge.chunks` into the building, and the building's
   own sources routed through the wiki — then each task arrives with the wiki's map.
-- The librarian runs on `harness` (`claude`, default, or `agy` — agy's sandbox sees only the
+- The librarian runs on `harness` (`claude`, default, `codex`, or `agy` — agy's sandbox sees only the
   wiki's folder, so give it snapshot sources) with `model`. Nothing is written before the first
   ingest.
 - The sources are strings: `docs` (or `fs:docs`) a folder of Markdown notes, `code:src` a folder of
@@ -550,10 +551,11 @@ one with the 15 camp buildings (My Day, Agent Yard, Gates, Library) in a real gi
 ## Orks: steward, handlers, Recruiter
 
 - **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
-  harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `P` a pipeline (magenta), e.g. `✦→✻` (agy
+  harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `⌬` Codex (green), `P` a pipeline (magenta), e.g. `✦→✻` (agy
   writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
-  gemini pro), ⚔ **warrior** (sonnet, gemini flash high), ⛏ **laborer** (haiku, gemini flash low).
+  gemini pro, gpt-6-astra), ⚔ **warrior** (sonnet, gemini flash high, gpt-6.1-sol), ⛏ **laborer** (haiku,
+  gemini flash low, gpt-6-luna).
   A harness step takes a `tier` and the model follows from its harness
   (`{"role": "run", "harness": "claude", "tier": "elder"}` runs `claude --model opus`); a step's own
   `model` wins and its tier is read from it. An ork shows its heaviest step's icon before its name
@@ -626,10 +628,10 @@ answered locally, no quota spent), refreshed every 10 minutes; `ORKCRAFT_LIMITS=
 
 ## Sessions (Town Hall)
 
-`o` (anywhere) opens the selected node's latest Claude Code / agy session in the
+`o` (anywhere) opens the selected node's latest Claude Code / agy / Codex session in the
 Town Hall's **Sessions** tab (the War Tent of old), or starts a new Claude session for it. There: `enter` resumes
-the highlighted session (`claude --resume <id>`, `agy --conversation <id>`), `n` /
-`a` start a new Claude / agy session, `A` switches between the node's sessions and
+the highlighted session (`claude --resume <id>`, `agy --conversation <id>`, `codex resume <id>`), `n` /
+`a` / `c` start a new Claude / agy / Codex session, `A` switches between the node's sessions and
 all sessions, `x` stops the shown one. The terminal is the real CLI on a PTY, so
 its interface — polls, option lists, permission prompts, `/model`, `/goal` —
 works as usual; every key goes to it except `F1`–`F8` (orkspaces), `F9` / `shift+F9` (cycle window), `F10` (menu) and `F12` (back to
@@ -638,7 +640,9 @@ running when you switch.
 
 Where sessions come from:
 - `.orkcraft/sessions.jsonl` (gitignored), written by the session hook (`orkcraft hooks install`,
-  module `orkcraft.hooks.session`): Claude Code — `.claude/settings.json` (SessionStart, UserPromptSubmit);
+  module `orkcraft.hooks.session`, into the project the session works in): Claude Code —
+  `.claude/settings.json` (SessionStart, UserPromptSubmit); Codex — `.codex/hooks.json` (the same events,
+  run once trusted with `/hooks`; the only source of Codex sessions, whose own store keeps no project folder);
   agy — `.agents/hooks.json` (PreInvocation, Stop; agy 1.1.x reads only
   `~/.gemini/config/hooks.json`, copy the entries there). Tickets come from
   `$ORKCRAFT_TICKET` (set when orkcraft opens a session for a node) and `[[T…]]` in prompts.
@@ -648,7 +652,7 @@ Where sessions come from:
   the browser).
 
 The node card lists its sessions (links are clickable in terminals with OSC 8);
-Preview shows how many there are. `ORKCRAFT_CLAUDE_BIN` / `ORKCRAFT_AGY_BIN` override
+Preview shows how many there are. `ORKCRAFT_CLAUDE_BIN` / `ORKCRAFT_AGY_BIN` / `ORKCRAFT_CODEX_BIN` override
 the CLI paths.
 
 ## Gold 🪙 and Lumber 🪵
@@ -670,7 +674,7 @@ the CLI paths.
   source URL and date), including cache-write TTLs, fast mode and `inference_geo: "us"`. They are
   **API-equivalent estimates**, not a bill: Claude Pro / Max plans don't charge per token, and
   Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
-  price (agy sessions, unknown models) — it is never counted as $0.
+  price (agy and Codex sessions, unknown models) — it is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
   shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71%]`, read by the
@@ -694,7 +698,9 @@ the CLI paths.
   shell). Here-document bodies are data and are not judged. Every deny / ask lands in
   `.orkcraft/warder.jsonl` (tokens redacted) and puts ❓ on Warder in the Council — `1`
   acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code
-  only (agy has no documented pre-tool hook); hooks load when a Claude Code session starts.
+  and Codex (agy has no documented pre-tool hook); hooks load when a session starts. For Codex it is
+  in `.codex/hooks.json` with `apply_patch` among its tools (the files are read from the patch), runs
+  once trusted with `/hooks`, and turns an ask into a deny that says why — Codex cannot ask yet.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 
@@ -703,9 +709,10 @@ the CLI paths.
 Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 (design: [design/onboarding.md](design/onboarding.md)); `ORKCRAFT_ONBOARDING=0` turns it off.
 
-1. **Tools** — `claude` and `agy` are looked up on `PATH`; each found one is checked, with its
+1. **Tools** — `claude`, `agy` and `codex` are looked up on `PATH`; each found one is checked, with its
    version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
-   `GEMINI_API_KEY` is set) — you can change both. `codex` is listed as coming soon. No key is stored.
+   `GEMINI_API_KEY` / `OPENAI_API_KEY` is set) — you can change both. No key is stored or read: Codex's
+   login is told only by its `~/.codex/auth.json` being there.
 2. **Autonomy** — a slider of four stops: ⛓️ *Ask me* · 📜 *Morning advice* (default) · 🧭 *Routine on
    their own* · ⛓️‍💥 *Free orks* (see *Ork autonomy* below).
 3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
@@ -744,9 +751,10 @@ Autonomy comes from three places:
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at
   *Free orks* also `acceptEdits` and the usual project commands, with `git push` asked and
-  `rm -rf`, force pushes, `sudo` and `.env` denied — and how to start agy
-  (`agy --mode accept-edits --sandbox` at *Free orks*). 📋 (or `c` / `g`) puts the Claude snippet or
-  the agy command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
+  `rm -rf`, force pushes, `sudo` and `.env` denied — how to start agy
+  (`agy --mode accept-edits --sandbox` at *Free orks*) and Codex (`codex --sandbox workspace-write
+  --ask-for-approval on-request` from *Routine on their own*). 📋 (or `c` / `g` / `o`) puts the Claude
+  snippet, the agy or the Codex command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
 
 #### 🔧 Self-improvement by the orks
 

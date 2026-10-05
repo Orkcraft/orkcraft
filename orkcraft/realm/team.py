@@ -31,7 +31,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import tiers
+from orkcraft import scroll as ts
+from orkcraft.realm import roads, tiers
 
 DEFAULT_MEMBERS = ("Product manager:claude", "Architect:claude")
 DEFAULT_CYCLES = 3
@@ -71,7 +72,7 @@ def parse_member(entry: str) -> Member | None:
     role, _, rest = str(entry).partition(":")
     harness, _, model = rest.partition(":")
     role, harness = role.strip(), (harness.strip() or "claude")
-    if not role or harness not in ("claude", "agy"):
+    if not role or harness not in ts.HARNESSES:
         return None
     return Member(role, harness, tiers.resolve(harness, model.strip()))   # `Critic:claude:elder` → opus
 
@@ -256,7 +257,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         if i in d.reviewed:
             continue
         path, text = brief_of(m)
-        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=m.harness != "claude"))
+        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=m.harness not in roads.IN_REPO))
         if got is None:
             return _end(d)
         verdict, body = parse_verdict(got[0])
@@ -267,7 +268,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         d.reviewed.append(i)
 
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
-                                                             inline=steward.harness != "claude"))
+                                                             inline=steward.harness not in roads.IN_REPO))
     if got is None:
         return _end(d)
     decision, body = parse_decision(got[0])

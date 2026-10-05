@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.sources.sessions import agy_bin, claude_bin
+from orkcraft.sources.sessions import agy_bin, claude_bin, codex_bin
 
 VERSION_TIMEOUT_S = 5
 
@@ -36,7 +36,7 @@ class Tool:
 TOOLS: tuple[Tool, ...] = (
     Tool("claude", "Claude Code", "npm i -g @anthropic-ai/claude-code", "claude  (then /login)"),
     Tool("agy", "Antigravity", "see antigravity.google", "agy login"),
-    Tool("codex", "OpenAI Codex", "npm i -g @openai/codex", "codex login", available=False),
+    Tool("codex", "OpenAI Codex", "npm i -g @openai/codex", "codex login"),
 )
 
 
@@ -68,7 +68,7 @@ class ToolStatus:
 
 
 def _bin(tool_id: str) -> str:
-    return {"claude": claude_bin, "agy": agy_bin}.get(tool_id, lambda: tool_id)()
+    return {"claude": claude_bin, "agy": agy_bin, "codex": codex_bin}.get(tool_id, lambda: tool_id)()
 
 
 def _version(path: str, run: Callable) -> str:
@@ -98,6 +98,15 @@ def _agy_login(env: dict, home: Path) -> tuple[bool | None, str]:
     return None, "subscription"
 
 
+def _codex_login(env: dict, home: Path) -> tuple[bool | None, str]:
+    if env.get("OPENAI_API_KEY") or env.get("CODEX_API_KEY"):
+        return True, "api"
+    codex_home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else home / ".codex"
+    if (codex_home / "auth.json").is_file():          # only that it is there: what it holds is never read
+        return True, "subscription"
+    return None, "subscription"
+
+
 def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = subprocess.run,
            env: dict | None = None, home: Path | None = None) -> list[ToolStatus]:
     env = dict(os.environ) if env is None else env
@@ -108,7 +117,7 @@ def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = su
         if tool.available and (path := which(_bin(tool.id))):
             status.found, status.path = True, path
             status.version = _version(path, run)
-            login = {"claude": _claude_login, "agy": _agy_login}.get(tool.id)
+            login = {"claude": _claude_login, "agy": _agy_login, "codex": _codex_login}.get(tool.id)
             if login is not None:
                 status.logged_in, status.billing = login(env, home)
         out.append(status)
@@ -131,7 +140,6 @@ OTHERS: tuple[Other, ...] = (
                                             "~/.config/github-copilot")),
     Other("chatgpt", "ChatGPT app", ("chatgpt",), ("/Applications/ChatGPT.app", "~/AppData/Local/Programs/ChatGPT")),
     Other("gemini", "Gemini CLI", ("gemini",), ("~/.gemini",)),
-    Other("codex", "OpenAI Codex", ("codex",), ("~/.codex",)),
     Other("aider", "Aider", ("aider",), ()),
     Other("windsurf", "Windsurf", ("windsurf",), ("/Applications/Windsurf.app", "~/.codeium/windsurf")),
 )

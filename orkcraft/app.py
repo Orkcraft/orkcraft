@@ -878,7 +878,7 @@ class OrkcraftApp(App[int]):
                     checkpoint.ensure(self.repo_root)
                 elif "Warder" in label:
                     from orkcraft.hooks import install as hooks_install
-                    hooks_install.install(self.repo_root)
+                    hooks_install.install_all(self.repo_root)
                 elif "order" in label:
                     town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("role", ""),
                                             choice.get("answers") or {})
@@ -1508,7 +1508,8 @@ class OrkcraftApp(App[int]):
 
     def deploy_resident(self, orc, first_message: str = "", show_tent: bool = True) -> str | None:
         """C on a garrison orc (and the orc's chat line): its running session, else a new Claude
-        session with its orders — and, from the chat, the operator's first message."""
+        session (Codex for an orc whose first step runs on it) with its orders — and, from the
+        chat, the operator's first message."""
         b_id, orc_id = orc.ref.split("/", 1) if "/" in orc.ref else (orc.building or "", "")
         b_spec = self.scroll.building(b_id) if b_id else None
         m_spec = next((m for m in b_spec.garrison.members if m.id == orc_id), None) if b_spec else None
@@ -1537,16 +1538,18 @@ class OrkcraftApp(App[int]):
             prompt += f" Orders: {orders_text}"
         if first_message:
             prompt += f"\n\nThe operator says: {first_message}"
-        command = deploy_command("claude", prompt)
+        first = (m_spec.harness[0].get("harness") if m_spec and m_spec.harness else "") or "claude"
+        harness = first if first == "codex" else "claude"      # agy has no deployment: its orcs deploy as Claude
+        command = deploy_command(harness, prompt)
         if command is None:
             self.notify("agy deployment is not supported yet — open an agy session in the War Tent", title="Deploy",
                         severity="warning")
             return None
-        chat_key = self.chat.deploy(f"deploy:{b_id}/{orc_id}", command, "claude", f"{orc.name} · {b_title}",
+        chat_key = self.chat.deploy(f"deploy:{b_id}/{orc_id}", command, harness, f"{orc.name} · {b_title}",
                                     env={"ORKCRAFT_ORC": f"{b_id}/{orc_id}"})
         self.deployments[chat_key] = f"{b_id}/{orc_id}"
         try:
-            chronicles.record(self.repo_root, self.scroll, b_id, "orc_deployed", orc=orc.name, harness="claude")
+            chronicles.record(self.repo_root, self.scroll, b_id, "orc_deployed", orc=orc.name, harness=harness)
         except OSError:
             pass
         if show_tent:
@@ -1899,6 +1902,11 @@ class OrkcraftApp(App[int]):
 
     # -- recruiter and steward -----------------------------------------------------------------
 
+    def harnesses(self) -> tuple[str, ...]:
+        """The agent CLIs this machine runs (onboarding's tools); Claude and agy when none is chosen."""
+        enabled = tuple(t for t, c in self.desktop.machine.tools.items() if c.enabled and t in scroll.HARNESSES)
+        return enabled or ("claude", "agy")
+
     def recruit_from_prompt(self, building_id: str, prompt: str, road=None,
                             on_rejected: Callable[[str], Any] | None = None) -> None:
         """R → a description → the Recruiter (one Claude call per attempt, in a thread) → preview."""
@@ -1910,7 +1918,7 @@ class OrkcraftApp(App[int]):
 
         def _worker() -> None:
             result = recruiter.recruit(prompt, snapshot, building_id, runner=RECRUIT_RUNNER or builders.claude_runner,
-                                       road=road)
+                                       road=road, harnesses=self.harnesses())
             self.call_from_thread(self._on_recruited, building_id, prompt, result, on_rejected)
 
         self.run_worker(_worker, thread=True, name="recruiter")
@@ -2541,8 +2549,10 @@ class OrkcraftApp(App[int]):
 
     def answer_alert(self, alert: Alert, key: str) -> None:
         if alert.source == "terminal":
-            # Claude / agy menus take digits directly; yes/no or input prompts take newline
-            to_send = key if key.isdigit() else f"{key}\r"
+            # Claude / agy menus take digits directly; Codex's want Enter after one, as yes/no
+            # or input prompts do
+            harness = self.chat.meta.get(alert.ref, ("",))[0]
+            to_send = key if key.isdigit() and harness != "codex" else f"{key}\r"
             self.chat.send(alert.ref, to_send.encode())
             self.desktop.focus_window(self._sessions_window())  # type: ignore[arg-type]
             self.chat.show_terminal(alert.ref)

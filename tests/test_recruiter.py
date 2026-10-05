@@ -118,3 +118,12 @@ def test_runner_failure_is_reported():
     result = recruiter.recruit("x", ts.default_scroll(PRESETS), "scrying", runner=boom)
     assert not result.ok and result.error == "Claude Code CLI not found"
     assert recruiter.recruit("x", ts.default_scroll(PRESETS), "ghost").error == "unknown building 'ghost'"
+
+
+def test_the_recruiter_offers_only_the_harnesses_of_this_machine():
+    runner, prompts = scripted(CHAIN_ANSWER)
+    recruiter.recruit("digest", ts.default_scroll(PRESETS), "scrying", runner=runner, harnesses=("claude", "codex"))
+    assert '"harness":"claude|codex"' in prompts[0] and "a Claude / Codex session" in prompts[0]
+    runner, prompts = scripted(CHAIN_ANSWER)
+    recruiter.recruit("digest", ts.default_scroll(PRESETS), "scrying", runner=runner)
+    assert '"harness":"claude|agy"' in prompts[0]

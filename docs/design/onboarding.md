@@ -73,7 +73,7 @@ Stored: `profile.orchestration`, `role`, `role_other`, `industry`, `industry_oth
 
 Only what is installed, one row each — found in the background since the first step
 (`tools.detect` for the CLIs orkcraft leads, `tools.detect_others` for the rest: Cursor, GitHub
-Copilot, the ChatGPT app, Gemini CLI, Codex, Aider, Windsurf — a binary on PATH or their folder on
+Copilot, the ChatGPT app, Gemini CLI, Aider, Windsurf — a binary on PATH or their folder on
 disk; nothing is run, no key is read).
 
 ```
@@ -156,5 +156,5 @@ then, on a bar of its own, an intent's buildings one by one and its roads
 - Real connectors for the named sources and outputs (Jira, Figma, Asana…) as building types,
   instead of webhooks and the Catapult.
 - A follow-up question from the Builder when the answers contradict each other.
-- `codex` support; picking each building's model from the 👍 / 👎 (today the Builder only reads them).
+- Picking each building's model from the 👍 / 👎 (today the Builder only reads them).
 - Day chips per industry, not only per role.

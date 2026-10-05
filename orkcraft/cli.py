@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # orkcraft tui
     subparsers.add_parser("tui", help="Launch interactive Textual TUI (default)")
-    hooks_p = subparsers.add_parser("hooks", help="Claude Code hooks: session log and the Warder guard")
+    hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
 
     args = parser.parse_args(argv)
@@ -44,11 +44,16 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
         try:
-            path = (hooks_install.install if args.action == "install" else hooks_install.uninstall)(root)
+            paths = (hooks_install.install_all if args.action == "install" else hooks_install.uninstall_all)(root)
         except ValueError as e:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
-        print(f"{args.action}ed: {path}" if path else "nothing to uninstall")
+        for path in paths:
+            print(f"{args.action}ed: {path}")
+        if args.action == "install" and any(p.parent.name == ".codex" for p in paths):
+            print(hooks_install.CODEX_TRUST)
+        if not paths:
+            print("nothing to uninstall")
         return 0
 
     if args.demo is not None:

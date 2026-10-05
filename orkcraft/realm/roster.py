@@ -14,6 +14,7 @@ from orkcraft.scroll import OrcSpec
 from orkcraft.realm.council import warder_events
 from orkcraft.sources.agents import collect_agents
 
+WORKER_NAMES = {"agy": "Grunt", "codex": "Goblin"}   # a War Tent session's ork, by harness (Claude: Peon)
 # A CLI that printed nothing for this long while showing a numbered menu is waiting.
 PROMPT_IDLE_S = 1.0
 COUNCIL_SYSTEM = "watchers"
@@ -105,7 +106,7 @@ def _warder_watch(repo_root: Path, council: list[Orc], dismissed: set[str]) -> N
 
 
 def _worker(w: WorkerInfo, n: int) -> Orc:
-    orc = Orc(f"{'Grunt' if w.harness == 'agy' else 'Peon'} #{n}", f"{w.harness} session", WORKER,
+    orc = Orc(f"{WORKER_NAMES.get(w.harness, 'Peon')} #{n}", f"{w.harness} session", WORKER,
               Trigger(), "busy" if w.running else "idle",
               task=(f"{w.ticket} · " if w.ticket else "") + (w.title or w.harness), ref=w.key)
     if w.running and w.idle_s >= PROMPT_IDLE_S:

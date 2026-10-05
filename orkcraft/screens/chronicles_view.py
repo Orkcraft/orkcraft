@@ -17,7 +17,7 @@ from orkcraft.sources.telemetry import fmt_tokens
 from orkcraft.realm import chronicles, pipes
 from orkcraft.realm.orcs import Orc, RESIDENT, WORKER
 from orkcraft.sources import transcripts
-from orkcraft.sources.sessions import HARNESS_AGY, Session, collect_sessions, sessions_for_orc
+from orkcraft.sources.sessions import HARNESS_CLAUDE, Session, collect_sessions, sessions_for_orc
 
 
 class BuildingChronicles(ModalScreen[None]):
@@ -311,7 +311,7 @@ class UnitChronicles(ModalScreen[None]):
         return run is not None and any(st.tool == self.tool for st in run.steps)
 
     def _get_run(self, session: Session) -> transcripts.Run | None:
-        if session.harness == HARNESS_AGY or not session.transcript:
+        if session.harness != HARNESS_CLAUDE or not session.transcript:     # only Claude's transcripts are read
             return None
         t_path = session.transcript
         if t_path not in self._runs_cache:
