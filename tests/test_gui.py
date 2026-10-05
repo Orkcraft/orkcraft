@@ -206,37 +206,101 @@ def test_task_fields_window_is_the_board_and_its_acts_change_the_file(fake_repo)
 
 
 def test_the_lake_window_shows_markdown_and_edits_the_file_in_place(fake_repo):
-    from orkcraft.realm import lake
     host = _host(fake_repo)
-    bid = _raised(host, "lake")
-    w = host.town.worker(bid)
-    w.show(lake.look(fake_repo, "file", str(fake_repo / "docs" / "notes.md"), "notes"))
-    view = host.detail(bid)["data"]["view"]
+    tab = host.command("lake.open", {"kind": "file", "value": "docs/notes.md", "from": "town_hall"})
+    doc = host.command("lake.doc", {"tab": tab})
+    view = doc["view"]
     assert view["kind"] == "markdown" and "<h1>Notes</h1>" in view["html"] and view["editable"]
-    assert host.command("act", {"id": bid, "act": "edit"})
-    editing = host.detail(bid)["data"]["editing"]
-    assert editing["path"] == "docs/notes.md" and editing["text"].startswith("# Notes")
+    assert doc["from"] == "town_hall" and doc["path"] == "docs/notes.md" and doc["editing"] is None
+    assert host.command("lake.open", {"kind": "file", "value": str(fake_repo / "docs" / "notes.md")}) == tab   # one tab a file
+    assert host.command("lake.act", {"tab": tab, "act": "edit"})
+    editing = host.command("lake.doc", {"tab": tab})["editing"]
+    assert editing["path"] == "docs/notes.md" and editing["text"].startswith("# Notes") and editing["markdown"]
     text = editing["text"] + "- from the window\n"
-    host.command("act", {"id": bid, "act": "typed", "args": {"text": text}})
-    assert host.detail(bid)["data"]["editing"]["note"] == "● unsaved"
-    assert host.command("act", {"id": bid, "act": "done", "args": {"text": text}})
-    assert host.detail(bid)["data"]["editing"] is None
+    host.command("lake.act", {"tab": tab, "act": "typed", "args": {"text": text}})
+    assert host.command("lake.doc", {"tab": tab})["editing"]["note"] == "● unsaved"
+    assert host.snapshot()["lake"]["tabs"][0]["note"] == "● unsaved"
+    assert host.command("lake.act", {"tab": tab, "act": "autosave", "args": {"text": text}})
     assert (fake_repo / "docs" / "notes.md").read_text(encoding="utf-8").endswith("- from the window\n")
+    assert host.command("lake.act", {"tab": tab, "act": "done", "args": {"text": text}})
+    doc = host.command("lake.doc", {"tab": tab})
+    assert doc["editing"] is None and "from the window" in doc["view"]["html"]
+    assert host.command("lake.close", {"tab": tab}) and host.snapshot()["lake"]["tabs"] == []
+    with pytest.raises(CommandError):
+        host.command("lake.doc", {"tab": tab})
 
 
 def test_the_lake_never_saves_over_a_change_on_disk_unless_asked(fake_repo):
-    from orkcraft.realm import lake
     host = _host(fake_repo)
-    bid = _raised(host, "lake")
-    path = fake_repo / "docs" / "notes.md"
-    host.town.worker(bid).show(lake.look(fake_repo, "file", str(path), "notes"))
-    host.command("act", {"id": bid, "act": "edit"})
-    path.write_text("# Changed elsewhere\n", encoding="utf-8")
-    assert host.command("act", {"id": bid, "act": "save", "args": {"text": "# Mine\n"}}) is False
-    assert host.detail(bid)["data"]["editing"]["conflict"]
-    assert path.read_text(encoding="utf-8") == "# Changed elsewhere\n"
-    assert host.command("act", {"id": bid, "act": "save", "args": {"text": "# Mine\n", "force": True}})
-    assert path.read_text(encoding="utf-8") == "# Mine\n"
+    path = fake_repo / "src" / "app.py"
+    tab = host.command("lake.open", {"kind": "file", "value": "src/app.py"})
+    editing = host.command("lake.doc", {"tab": tab})["editing"]          # code opens in its editor
+    assert editing and editing["text"] == "print('hello')\n" and not editing["markdown"]
+    path.write_text("print('elsewhere')\n", encoding="utf-8")
+    assert host.command("lake.act", {"tab": tab, "act": "save", "args": {"text": "print('mine')\n"}}) is False
+    assert host.command("lake.doc", {"tab": tab})["editing"]["conflict"]
+    assert host.command("lake.close", {"tab": tab, "text": "print('mine')\n"}) is False     # nothing is lost
+    assert path.read_text(encoding="utf-8") == "print('elsewhere')\n"
+    assert host.command("lake.act", {"tab": tab, "act": "save", "args": {"text": "print('mine')\n", "force": True}})
+    assert path.read_text(encoding="utf-8") == "print('mine')\n"
+    assert host.command("lake.close", {"tab": tab})
+
+
+def test_the_lake_shows_pictures_pdfs_pages_and_text(fake_repo):
+    import base64
+    host = _host(fake_repo)
+    png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+    (fake_repo / "docs" / "dot.png").write_bytes(png)
+    (fake_repo / "docs" / "paper.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
+    pic = host.command("lake.doc", {"tab": host.command("lake.open", {"kind": "file", "value": "docs/dot.png"})})
+    assert pic["view"]["kind"] == "image" and base64.b64decode(pic["view"]["media"]["data"]) == png
+    assert pic["view"]["media"]["type"] == "image/png" and not pic["view"]["editable"]
+    pdf = host.command("lake.doc", {"tab": host.command("lake.open", {"kind": "file", "value": "docs/paper.pdf"})})
+    assert pdf["view"]["kind"] == "pdf" and pdf["view"]["media"]["type"] == "application/pdf"
+    page = host.command("lake.doc", {"tab": host.command("lake.open", {"kind": "text", "value": " https://example.com/x "})})
+    assert page["view"]["kind"] == "web" and page["url"] == "https://example.com/x"      # never fetched: the page shows it
+    note = host.command("lake.doc", {"tab": host.command("lake.open", {"kind": "text", "value": "# Plan\n\n- one",
+                                                                        "title": "plan"})})
+    assert note["view"]["kind"] == "markdown" and not note["view"]["editable"]
+    json.dumps(host.snapshot())
+    with pytest.raises(CommandError):
+        host.command("lake.open", {"kind": "file", "value": "/etc/passwd"})            # the project's own files only
+    with pytest.raises(CommandError):
+        host.command("lake.open", {"kind": "file", "value": "docs/../../outside.md"})
+    with pytest.raises(CommandError):
+        host.command("lake.open", {"kind": "branch", "value": "main"})
+    with pytest.raises(CommandError):
+        host.command("lake.act", {"tab": "t1", "act": "rm"})
+
+
+def test_an_old_scroll_s_lake_leaves_the_map_and_its_road_opens_in_lake(fake_repo, isolated_layout_file):
+    """A Town Scroll from before: a Lake building with a road into it from Task Fields and one out of it."""
+    from orkcraft import scroll
+    from orkcraft.core.town import Town
+    checkpoint.ensure(fake_repo)
+    old = Town(fake_repo, auto_commit=False)
+    src = buildings.raise_spec(old, buildings.type_spec(old, "fields")).id
+    lake = buildings.raise_spec(old, buildings.type_spec(old, "lake")).id
+    after = buildings.raise_spec(old, buildings.type_spec(old, "fields")).id
+    scroll.subscribe(old.scroll, lake, src, "tasks.created")
+    scroll.subscribe(old.scroll, after, lake, "lake.viewed")
+    assert old.save()
+    saved = json.loads(isolated_layout_file.read_text(encoding="utf-8"))
+    assert not next(b for b in saved["buildings"] if b["id"] == lake).get("demolished")
+
+    host = _host(fake_repo)                                          # the GUI opens the old scroll
+    bs = host.town.scroll.building(lake)
+    assert bs.demolished and lake not in {b["id"] for b in host.snapshot()["buildings"]}
+    assert not bs.roads and not host.town.scroll.building(after).roads
+    assert host.town.scroll.building(src).open_in_lake == ["tasks.created"]
+    saved = json.loads(isolated_layout_file.read_text(encoding="utf-8"))   # kept so
+    assert next(b for b in saved["buildings"] if b["id"] == lake).get("demolished")
+    assert not any(r["to"] == lake or r["from"] == lake for r in host.snapshot()["roads"])
+
+    host.town.emit_typed(src, "tasks.created", "# Ship it\n\n- today", "Ship it")
+    tabs = host.snapshot()["lake"]["tabs"]
+    assert [(t["title"], t["from"]) for t in tabs] == [("Ship it", src)]
+    assert _host(fake_repo).town.scroll.building(lake).demolished          # and stays off the map
 
 
 def test_the_scroll_dump_window_is_its_tree_and_reads_a_page(fake_repo):
@@ -282,7 +346,7 @@ def test_every_road_has_a_town_wide_key(fake_repo):
     """A road's own id is unique only in the building that keeps it; the page plans roads by key."""
     from orkcraft import scroll
     host = _host(fake_repo)
-    a, b, c = _raised(host, "fields"), _raised(host, "lake"), _raised(host, "lake")
+    a, b, c = _raised(host, "fields"), _raised(host, "fields"), _raised(host, "fields")
     ids = [scroll.subscribe(host.town.scroll, b, a, "tasks.created").id,      # each the first in its building
            scroll.subscribe(host.town.scroll, c, a, "tasks.created").id]
     assert ids[0] == ids[1]
@@ -402,9 +466,11 @@ def test_the_elders_advise_in_quiet_hours_and_the_person_follows(fake_repo, monk
 def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     types = host.command("town.catalog")
-    assert {"lake", "fields", "scrolls"} <= {t["id"] for t in types}
-    assert not {"town_hall", "workshop", "custom"} & {t["id"] for t in types}       # never offered
-    bid = host.command("town.build", {"type": "lake"})
+    assert {"fields", "scrolls"} <= {t["id"] for t in types}
+    assert not {"town_hall", "workshop", "custom", "lake"} & {t["id"] for t in types}   # never offered
+    with pytest.raises(CommandError):
+        host.command("town.build", {"type": "lake"})                               # the town's window
+    bid = host.command("town.build", {"type": "fields"})
     assert bid in {b["id"] for b in host.snapshot()["buildings"]} and host.town.workers.get(bid) is not None
     assert bid in host.town.scroll.active_orkspace.buildings
     with pytest.raises(CommandError):
@@ -423,12 +489,12 @@ def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolate
 def test_a_road_is_laid_from_its_choices_and_taken_up(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     src = host.command("town.build", {"type": "signpost"})
-    dst = host.command("town.build", {"type": "lake"})
+    dst = host.command("town.build", {"type": "fields"})
     host.town.custom_specs[src]["config"] = {"rules": ["view: *"]}
     choices = host.command("roads.choices", {"from": src, "to": dst})
     assert choices and all(c["label"] for c in choices)
     with pytest.raises(CommandError):
-        host.command("roads.lay", {"from": src, "to": dst, "event": "lake.viewed"})    # not one it may carry
+        host.command("roads.lay", {"from": src, "to": dst, "event": "tasks.created"})  # not one it may carry
     key = host.command("roads.lay", {"from": src, "to": dst, "event": choices[0]["event"],
                                      "handler": choices[0]["handler"]})
     assert key in {r["id"] for r in host.snapshot()["roads"]}
@@ -579,9 +645,9 @@ def test_a_type_draws_its_closed_card_from_its_view(fake_repo, isolated_layout_f
 
 def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
-    with pytest.raises(CommandError):                 # no Lake in this town yet
-        host.command("lake.open", {"kind": "file", "value": "README.md"})
-    lake = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
-    assert host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"}) == lake.id
+    with pytest.raises(CommandError):                 # nothing to open
+        host.command("lake.open", {"kind": "file", "value": ""})
+    tab = host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"})
+    assert [t["id"] for t in host.snapshot()["lake"]["tabs"]] == [tab]          # no Lake building needed
     with pytest.raises(CommandError):                 # the Town Hall keeps no settings (tests/test_keeper.py)
         host.command("keeper.ask", {"id": "town_hall", "request": "route bugs to the Forge"})

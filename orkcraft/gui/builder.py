@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import buildings, roads
-from orkcraft.realm import catalog, modes
+from orkcraft.realm import catalog, lake, modes
 
 
 class BuildError(Exception):
@@ -21,7 +21,7 @@ class BuildError(Exception):
 
 def catalog_types() -> list[dict[str, Any]]:
     """Every type a building can be raised from, as the wizard lists them."""
-    hidden = catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | {catalog.DEFAULT_TYPE}
+    hidden = catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | lake.WINDOW_TYPES | {catalog.DEFAULT_TYPE}
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
              "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6]}
             for t in catalog.TYPES.values() if t.id not in hidden]
@@ -39,6 +39,8 @@ def build(host, args: dict) -> str:
     orkspace; it is committed in the camp's own git as the TUI's presets are."""
     town = host.town
     spec = buildings.type_spec(town, _id(args, "type"))
+    if spec is not None and spec.get("type") in lake.WINDOW_TYPES:
+        raise BuildError("Lake is the town's window, not a building: a document's mark opens it")
     if spec is None:
         raise BuildError("That type cannot be raised here")
     hut = args.get("hut")
