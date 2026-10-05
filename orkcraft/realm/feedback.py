@@ -15,6 +15,11 @@ result nobody opened. Each has a `source` and a `weight` (`WEIGHTS`): a 👍 / �
 signal less, so that one of them alone never moves a retro. A good one is a reference, a bad one
 an incident, like the buttons'; readers add the weights (`liked`, `disliked`) and act from `ENOUGH`.
 
+A 👎 weighs on whoever is to blame (`Incident.blamed`): for its own logic the building it was told
+about; for broken inputs its suppliers — 1, ½, ¼ by hop, times the signal's weight — and not the
+building itself, which only passed on what it got. The retros and probation read it that way, so a
+supplier that keeps breaking what comes after it is the one they look at.
+
 Everything lives in `.orkcraft/feedback/`: the last output of every building (what is rated), the
 references, the incidents and `scores.json` ({building: {likes, dislikes, penalty, liked,
 disliked, by}}: the buttons pressed, the penalty, the weighted sums and the weight by source),
@@ -81,6 +86,17 @@ class Incident:
     weight: float = 1.0
     tag: str = ""                # a reason chip (REASONS)
     edit: str = ""               # the person's edit of the output, as a diff
+
+    def share(self, building: str) -> float:
+        """What this incident weighs on `building`: its part of the blame. For broken inputs that is
+        the suppliers', by the cascade, and not the building it was told about; with nobody blamed
+        (no supplier known) the building itself pays."""
+        if self.blamed:
+            return float(self.blamed.get(building, 0.0))
+        return self.weight if building == self.building else 0.0
+
+    def blames(self, building: str) -> bool:
+        return self.share(building) > 0
 
 
 def _dir(root: Path) -> Path:
@@ -256,10 +272,11 @@ def blame(root: Path, scroll, building: str, kind: str) -> dict[str, float]:
 def dislike(root: Path, scroll, building: str, kind: str, note: str = "", out: dict | None = None) -> Incident:
     """👎 with the questionnaire's answer: the penalties and an incident (on its last result, or `out`)."""
     kind = kind if kind in KINDS else "logic"
-    blamed = blame(root, scroll, building, kind)
+    blamed = blame(root, scroll, building, kind) or {building: 1.0}     # nobody feeds it: only it pays
     changes: dict[str, dict[str, float]] = {b: {"penalty": p} for b, p in blamed.items()}
     changes.setdefault(building, {})["dislikes"] = 1
-    _weighed(changes, building, EXPLICIT, 1.0, False)
+    for b, p in blamed.items():                                          # the 👎 weighs on whoever is to blame
+        _weighed(changes, b, EXPLICIT, p, False)
     _bump(root, changes)
     out = (out if out is not None else last_output(root, building)) or {}
     incident = Incident(_now(), building, kind, note.strip()[:1000], str(out.get("value", ""))[:OUT_KEEP], blamed)
@@ -299,9 +316,16 @@ def liked(root: Path, building: str, since: str = "") -> float:
 
 
 def disliked(root: Path, building: str, since: str = "", rows: list[Incident] | None = None) -> float:
-    """The weight of the incidents of `building` since `since` (`rows`: incidents already read)."""
+    """What the incidents since `since` weigh on `building` — the ones told about it for its own
+    logic, and its part of the cascade when it fed broken inputs to another (`Incident.share`;
+    `rows`: incidents already read)."""
     rows = rows if rows is not None else incidents(root, 1000)
-    return round(sum(i.weight for i in rows if i.building == building and i.ts >= since), 3)
+    return round(sum(i.share(building) for i in rows if i.ts >= since), 3)
+
+
+def blaming(root: Path, building: str, since: str = "", limit: int = 1000) -> list[Incident]:
+    """The incidents since `since` that weigh on `building`, newest first."""
+    return [i for i in incidents(root, limit) if i.ts >= since and i.blames(building)]
 
 
 def references(root: Path, building: str, limit: int = 5) -> list[dict]:
@@ -361,7 +385,7 @@ def signal(root: Path, building: str, good: bool, source: str, value: str | None
     penalties = {b: round(p * w, 3) for b, p in shares.items()}
     for b, p in penalties.items():
         changes.setdefault(b, {})["penalty"] = p
-    _weighed(changes, building, source, w, False)
+        _weighed(changes, b, source, p, False)
     _bump(root, changes)
     incident = Incident(_now(), building, kind if kind in KINDS else "logic", note.strip()[:1000],
                         str(value)[:OUT_KEEP], penalties, source, w, tag, edit[:OUT_KEEP])

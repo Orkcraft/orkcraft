@@ -154,11 +154,12 @@ def verdict(root: Path, change: Change, now: dt.datetime | None = None) -> str |
     share of its runs since that is higher than in as long a stretch before (with two failures at least)."""
     now = now or dt.datetime.now()
     at = dt.datetime.fromisoformat(change.ts)
-    since = [i for i in feedback.incidents(Path(root), 200) if i.building == change.building and i.ts >= change.ts]
-    if sum(i.weight for i in since) >= feedback.ENOUGH - 1e-9:          # quiet signals add up to a 👎
+    since = feedback.blaming(Path(root), change.building, change.ts, 200)   # its own, and broken inputs it fed on
+    if sum(i.share(change.building) for i in since) >= feedback.ENOUGH - 1e-9:   # quiet signals add up to a 👎
         inc = since[0]
         how = "👎" if inc.source == feedback.EXPLICIT else f"👎 ({inc.source})"
-        return f"{how} at {inc.ts[11:16]}" + (f": {inc.note[:60]}" if inc.note else "")
+        via = f" downstream at {inc.building}" if inc.building != change.building else ""
+        return f"{how}{via} at {inc.ts[11:16]}" + (f": {inc.note[:60]}" if inc.note else "")
     span = max(now - at, dt.timedelta(hours=1))
     rows = [r for r in metrics._read(Path(root) / metrics.LEDGER, at - span) if r.get("building") == change.building]
     after = [r for r in rows if r["_at"] >= at]

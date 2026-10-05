@@ -135,6 +135,7 @@ def camp_text(repo_root: Path, scroll, specs: dict[str, dict], audit_report=None
     if incs:
         lines.append("\n## incidents (👎)")
         lines += [f"- {i.building} · {i.kind}" + ("" if i.source == feedback.EXPLICIT else f" ({i.source}, ×{i.weight:g})")
+                  + (f" → blamed: {', '.join(f'{b} {p:g}' for b, p in i.blamed.items())}" if i.blamed else "")
                   + f": {i.note or '(no note)'}" for i in incs]
     if audit_report is not None:
         lines.append("\n## the rules audit")

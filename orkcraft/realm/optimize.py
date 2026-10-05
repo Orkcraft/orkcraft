@@ -216,11 +216,13 @@ def leader(repo_root: Path, now: dt.datetime | None = None, limits=None, provide
     return None
 
 
-def _incident_line(i: feedback.Incident) -> str:
+def _incident_line(i: feedback.Incident, building: str = "") -> str:
     """An incident for the Council: how it was told (a 👎, a cart sent back, a file reshaped…), the
-    note, the output and, when the operator edited it, what they changed."""
+    note, the output and, when the operator edited it, what they changed. One about a building
+    downstream says so: `building` fed it what was wrong."""
     how = "" if i.source == feedback.EXPLICIT else f" [{i.source}{' · ' + i.tag if i.tag else ''}]"
-    line = f"- {i.kind}{how}: {i.note or '(no note)'} · output: {i.output[:200]}"
+    via = f" (downstream, at {i.building}: this building fed it broken inputs)" if building and i.building != building else ""
+    line = f"- {i.kind}{how}{via}: {i.note or '(no note)'} · output: {i.output[:200]}"
     return line + (f"\n  the operator's edit:\n  " + i.edit[:600].replace("\n", "\n  ") if i.edit else "")
 
 
@@ -331,13 +333,13 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
             runtime: str = "python", mocks: list[dict] | None = None, attempts: int = 2) -> Result:
     """One Council call (a second with its problems). Never raises."""
     refs = feedback.references(repo_root, cand.building, 3)
-    incs = [i for i in feedback.incidents(repo_root, 20) if i.building == cand.building][:3]
+    incs = feedback.blaming(repo_root, cand.building, limit=200)[:3]
     base = PROMPT.format(tokens=cand.tokens, cost=cand.cost, use=cand.use or "the most of the camp",
                          reason=cand.reason, goal=GOAL_TEXT.get(cand.goal, ""), parts=_parts_text(ps),
                          actions="\n".join(ACTION_TEXT[a] for a in cand.actions), names="|".join(cand.actions),
                          runs="\n".join(run_logs(repo_root, cand.building)) or "- none kept",
                          references="\n".join(f"- {r.get('value', '')[:400]}" for r in refs) or "- none yet",
-                         incidents="\n".join(_incident_line(i) for i in incs) or "- none")
+                         incidents="\n".join(_incident_line(i, cand.building) for i in incs) or "- none")
     result, total, problems = Result(), None, []
     for _ in range(attempts):
         prompt = base + ("\n\nYOUR LAST ANSWER WAS REJECTED:\n" + "\n".join(f"- {p}" for p in problems) if problems else "")

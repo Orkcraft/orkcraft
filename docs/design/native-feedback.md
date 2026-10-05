@@ -79,6 +79,17 @@ was wrong" — the buildings before the maker in the cart's own trail pay, the n
 same cascade as 👎 (1, ½, ¼), scaled by the weight. The trail is what actually happened to that
 cart; the session's roads (what 👎 uses) are only a guess at it.
 
+The blame is what the retros read, not the building the incident was told about
+(`Incident.share`, `feedback.disliked`, `feedback.blaming`): a cart sent back for broken inputs
+weighs nothing on its maker, which passed on what it got, and 0.5 / 0.25 on the two buildings
+before it. So the 🔧 Building retro picks the supplier that keeps breaking what comes after it,
+probation takes back a supplier's change when what it fed is disliked downstream, and the Council
+sees those incidents marked "downstream, at X: this building fed it broken inputs". A 👎 for broken
+inputs on a building nobody feeds falls on the building itself. The other quiet signals (an edit,
+a drop, a pull request, `Z`, a result nobody opened) blame only the maker: what the operator did
+does not say the inputs were wrong, and spreading the blame by default would have the retros fix
+buildings that work.
+
 The ↩ dialog offers six reasons as chips (`feedback.REASONS`: did the wrong thing · incomplete ·
 wrong format or style · facts are wrong · what came in was wrong · too expensive), `1`–`6` or a
 click, and a note. The reason that goes back to the source reads `wrong format or style: no

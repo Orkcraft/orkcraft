@@ -509,7 +509,8 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
 - **👍 / 👎** sit beside the steward in the console (or `K` / `F`). 👍 keeps a building's last
   result as a reference — up to three are shown to its agents and steward prompt. `F` asks what went wrong:
   broken inputs penalise its suppliers along the roads that delivered this session (1, ½, ¼ by
-  hop); its own logic penalises only it. Either way an incident is kept (`.orkcraft/feedback/`).
+  hop) and weighs on them, not on it, in the retros and probation; its own logic penalises only it.
+  Either way an incident is kept (`.orkcraft/feedback/`).
 - **What you do with results counts too** (`feedback.signal`; design: `docs/design/native-feedback.md`).
   Each thing you do is a 👍 or 👎 with a weight — a button weighs 1, a quiet signal less, and the
   retros and probation act only once they add up to 1: in a 📦 Loot Vault ✓ accepted as it was

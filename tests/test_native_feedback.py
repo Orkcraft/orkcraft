@@ -10,7 +10,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import checkpoint, edits, evolution, feedback, gate, gitinfo, lake, masonry, pipes
+from orkcraft.realm import checkpoint, edits, evolution, feedback, gate, gitinfo, lake, masonry, optimize, pipes
 from orkcraft.screens.typed.generator_view import GeneratorView
 
 SIZE = (200, 46)
@@ -62,6 +62,25 @@ def test_broken_inputs_are_blamed_along_the_cart_s_own_trail():
     assert feedback.trail_blame((), "barracks", "inputs") == {"barracks": 1.0}     # nobody before it
     assert feedback.reason_tag("what came in was wrong: the ticket was empty") == ("inputs", "inputs")
     assert feedback.reason_tag("meh") == ("", "logic")
+
+
+def test_broken_inputs_weigh_on_the_suppliers_not_on_the_building(tmp_path: Path):
+    trail = (pipes.hop("pit"), pipes.hop("mill"), pipes.hop("brief"))
+    feedback.signal(tmp_path, "brief", False, "loot.rework", value="x", kind="inputs",
+                    blamed=feedback.trail_blame(trail, "brief", "inputs"))
+    assert feedback.disliked(tmp_path, "brief") == 0                         # it passed on what it got
+    assert (feedback.disliked(tmp_path, "mill"), feedback.disliked(tmp_path, "pit")) == (0.5, 0.25)
+    assert [i.building for i in feedback.blaming(tmp_path, "mill")] == ["brief"]
+    assert feedback.scores(tmp_path)["mill"]["by"] == {"loot.rework": -0.5}
+    feedback.dislike(tmp_path, None, "alone", "inputs")                      # nobody feeds it: it pays itself
+    assert feedback.disliked(tmp_path, "alone") == 1.0
+    # the mill's change on probation goes back when what it fed adds up to a 👎
+    change = evolution.Change("mill", "shrink", "daily", "shorter prompt", ts="2000-01-01T00:00:00")
+    assert evolution.verdict(tmp_path, change, dt.datetime(2000, 1, 2)) is None
+    feedback.signal(tmp_path, "brief", False, "loot.rework", value="y", kind="inputs",
+                    blamed=feedback.trail_blame(trail, "brief", "inputs"))
+    assert "downstream at brief" in evolution.verdict(tmp_path, change, dt.datetime(2000, 1, 2))
+    assert "fed it broken inputs" in optimize._incident_line(feedback.blaming(tmp_path, "mill")[0], "mill")
 
 
 def test_a_result_nobody_opened_for_a_day(tmp_path: Path):
