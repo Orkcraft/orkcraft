@@ -235,6 +235,25 @@ class TaskList:
             raise KeyError(card_id)
         return card
 
+    def add_lane(self, name: str) -> Lane:
+        """A new, empty lane of notes: a `## <name>` in the file, a folder in a tasks folder. A lane
+        that is there already is returned as it is; a status lane's name is refused."""
+        name = " ".join(name.split())
+        lid = slug(name).lstrip("_-")
+        if column_of(name) or not re.search(r"[^\W_]", name) or not lid:
+            raise ValueError(f"“{name}” is not a name for a lane of notes")
+        if self.is_folder:
+            folder = self._lane_folder(lid)
+            folder.mkdir(parents=True, exist_ok=True)
+            return next(ln for ln in self.lanes() if ln.id == lid)
+        head, lanes, cards = self._read_file()
+        have = next((ln for ln in lanes if ln.id == lid), None)
+        if have is not None:
+            return have
+        lanes.append(Lane(lid, name))
+        self._write_file(head, lanes, cards)
+        return lanes[-1]
+
     def add(self, title: str, lane: str = "todo", body: str = "") -> Task:
         """A new card at the end of `lane` (a status for a task; any other name — a lane of notes)."""
         title = " ".join(title.split())
