@@ -49,10 +49,7 @@ class OrkspacesMixin:
 
     def questions_of(self, orkspace_id: str) -> list[Orc]:
         """The orcs of an orkspace's buildings that wait for an answer, the longest waiting first."""
-        self._note_alerts()
-        asking = [o for o in self.roster.orcs if o.alert is not None and o.building
-                  and (ork := self.scroll.orkspace_of(o.building)) is not None and ork.id == orkspace_id]
-        return sorted(asking, key=lambda o: self.alert_first_seen.get(o.alert.id, float("inf")))   # stable
+        return self.muster.questions_of(orkspace_id)
 
     def questions_on_arrival(self, orkspace_id: str) -> None:
         """Arriving on an orkspace with questions: the first one opens at once, its building and its orc

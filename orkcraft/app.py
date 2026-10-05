@@ -14,7 +14,6 @@ from textual.binding import Binding
 
 from orkcraft.realm import feedback, roads
 from orkcraft.realm.buildings import Building
-from orkcraft.realm.roster import Roster
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, Console
 from orkcraft.env import getenv
 from orkcraft import schedule
@@ -25,6 +24,7 @@ from orkcraft.widgets.office import OfficeFooter
 from orkcraft.wm import Desktop, Taskbar, Window
 from orkcraft.core import bus
 from orkcraft.core.night import Night
+from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.tui.base import delegate
@@ -159,14 +159,12 @@ class OrkcraftApp(
         self.core = Town(repo_root, auto_commit, layout_file, reset_layout, demo)
         self.core.saver = lambda: self.desktop.save()        # the desktop records what it laid out first
         self.treasury = Treasury(self.core)
+        self.muster = Muster(self.core)     # the roster: every ork, their questions
         self.night = Night(self.core)       # quiet hours: the Elders and the orks' own changes
         self._wire_bus()
         self.selected_node: str | None = None
-        self.roster = Roster()
-        self.dismissed: set[str] = set()
         self._hushed = False                 # the orcs at work: no toasts, no dialogs (the ledger tells)
         self.worktree_marks: dict[str, str] = {}
-        self.deployments: dict[str, str] = {}
         self._watching: set[str] = set()
         # Roads: events from a source building to the receivers' plain deliveries and handlers.
         self.roads = roads.Engine(
@@ -195,6 +193,10 @@ class OrkcraftApp(
     run_id = delegate("core", "run_id")
     telemetry = delegate("core", "telemetry")
     snapshot = delegate("core", "snapshot")
+    roster = delegate("muster", "roster")
+    dismissed = delegate("muster", "dismissed")
+    deployments = delegate("muster", "deployments")
+    alert_first_seen = delegate("muster", "alert_first_seen")
     advice = delegate("night", "advice")
     _elders_seen = delegate("night", "elders_seen")
     _elders_busy = delegate("night", "elders_busy")
@@ -249,7 +251,6 @@ class OrkcraftApp(
         self._orc_chat = OrcChat(id="orc-chat")
         self._orc_chat.display = False
         self._console_signature: tuple = ()
-        self.alert_first_seen: dict[str, float] = {}   # alert id → when the roster first had it
         self.seen_alerts: set[str] = set()     # questions the operator opened from the garrison (no ❓ there)
         yield self._hud
         yield desktop
