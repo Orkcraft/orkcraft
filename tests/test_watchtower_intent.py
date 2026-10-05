@@ -12,6 +12,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import fastpath, feeds, lookout, masonry, watch
+from orkcraft.core.workers.watchtower import WatchtowerWorker
 from orkcraft.screens.typed.watchtower_view import WatchtowerView
 
 
@@ -67,7 +68,7 @@ def tower(fake_repo: Path, monkeypatch):
         spec = {"id": "tower", "title": "Watchtower", "icon": "🗼", "orc": {"name": "Lookout"}, "type": "watchtower",
                 "config": config}
         assert masonry.save_spec(fake_repo, spec) == []
-        monkeypatch.setattr(WatchtowerView, "gh_runner", staticmethod(
+        monkeypatch.setattr(WatchtowerWorker, "gh_runner", staticmethod(
             lambda cmd, **kw: SimpleNamespace(returncode=0, stdout="[]", stderr="")))
         app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
         for ev in ("watch.webhook", "watch.comment", "watch.mention", "watch.github"):
@@ -86,7 +87,7 @@ async def settle(pilot, until, n: int = 60):
 @pytest.mark.asyncio
 async def test_one_tower_lets_through_what_the_intent_asks(tower, monkeypatch):
     asked: list[str] = []
-    monkeypatch.setattr(WatchtowerView, "judge_runner", staticmethod(keeper("crashes", asked)))
+    monkeypatch.setattr(WatchtowerWorker, "judge_runner", staticmethod(keeper("crashes", asked)))
     app = tower({"github": "me/app", "intent": "user feedback about the app"})
     async with app.run_test(size=(200, 46)) as pilot:
         view = app.desktop.get_window("tower").query_one(WatchtowerView)
@@ -108,7 +109,7 @@ async def test_one_tower_lets_through_what_the_intent_asks(tower, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_without_a_model_everything_passes(tower, monkeypatch):
-    monkeypatch.setattr(WatchtowerView, "judge_runner", None)
+    monkeypatch.setattr(WatchtowerWorker, "judge_runner", None)
     monkeypatch.setattr(fastpath, "light_runner", lambda root: None)
     app = tower({"github": "me/app", "intent": "anything urgent"})
     async with app.run_test(size=(200, 46)) as pilot:
@@ -134,7 +135,7 @@ async def test_each_thing_once_errors_per_line_and_names_in_webhooks(tower, monk
     monkeypatch.setenv("T_S1", "xoxp-1")
     monkeypatch.setenv("T_S2", "xoxp-2")
     feeds.SLACK_NAMES.clear()
-    monkeypatch.setattr(WatchtowerView, "feed_opener", staticmethod(Opener(
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", staticmethod(Opener(
         {"users.info": {"ok": True, "user": {"name": "ann", "profile": {"display_name": "Ann"}}}})))
     app = tower({"github": "me/app", "feeds": ["slack: token=T_S1 channels=C1", "slack: token=T_S2 channels=C1"]})
     async with app.run_test(size=(200, 46)) as pilot:
