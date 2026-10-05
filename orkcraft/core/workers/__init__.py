@@ -134,5 +134,6 @@ class Worker:
 
 def registry() -> dict[str, type[Worker]]:
     """The type id → its worker's class (types not here keep their work in their views)."""
+    from orkcraft.core.workers.fields import FieldsWorker
     from orkcraft.core.workers.lake import LakeWorker
-    return {w.TYPE: w for w in (LakeWorker,)}
+    return {w.TYPE: w for w in (FieldsWorker, LakeWorker)}
