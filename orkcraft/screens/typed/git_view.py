@@ -45,7 +45,7 @@ class GitView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="git-branches", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="git-detail", markup=False)
+                yield Static("", id="git-detail", markup=False, classes="-as-written")
 
     def on_mount(self) -> None:
         self.refresh_data()

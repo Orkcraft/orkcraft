@@ -68,7 +68,7 @@ class ChangesModal(ModalScreen[str | None]):
             for c in self.changes:
                 lst.add_option(Option(row(c, self.titles.get(c.building, c.building)), id=c.id))
             yield lst
-            yield Static("", id="ch-detail", markup=False)
+            yield Static("", id="ch-detail", markup=False, classes="-as-written")
             yield Static("Each change has its own checkpoint. On probation for 24 h: a 👎 on the building or more "
                          "failed runs take it back by itself.", classes="build-hint")
             with Horizontal(classes="ch-buttons"):

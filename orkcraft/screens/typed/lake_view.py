@@ -60,7 +60,7 @@ class LakeView(TypedView):
     def compose_body(self) -> ComposeResult:
         yield Static("", id="lake-head", classes="typed-head")
         with VerticalScroll(id="lake-scroll"):
-            yield Static("", id="lake-plain")
+            yield Static("", id="lake-plain", classes="-as-written")
             yield Markdown("", id="lake-md")
         yield TextArea("", id="lake-edit", soft_wrap=True)
 

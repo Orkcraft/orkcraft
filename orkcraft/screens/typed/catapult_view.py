@@ -117,7 +117,7 @@ class CatapultView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="cat-shots", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="cat-detail", markup=False)
+                yield Static("", id="cat-detail", markup=False, classes="-as-written")
 
     def on_mount(self) -> None:
         self._migrate_single_page()

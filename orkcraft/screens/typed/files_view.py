@@ -56,7 +56,7 @@ class FilesView(TypedView):
                 root = self._get_repo_root()
             yield _Tree(str(root), id="ft-tree", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="ft-preview", markup=False)
+                yield Static("", id="ft-preview", markup=False, classes="-as-written")
 
     def on_mount(self) -> None:
         self.refresh_data()

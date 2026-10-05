@@ -252,7 +252,7 @@ class UnitChronicles(ModalScreen[None]):
                         markup=False,
                     )
                     with VerticalScroll(id="step-detail-scroll"):
-                        yield Static("", id="step-detail", markup=False)
+                        yield Static("", id="step-detail", markup=False, classes="-as-written")
             yield Static(
                 "[Enter] Expand step   [D] Diff to Spire   [R] Resume in War Tent   [Esc / q] Close",
                 id="unit-chronicles-footer",

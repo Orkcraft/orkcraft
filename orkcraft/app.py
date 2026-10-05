@@ -28,6 +28,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
+from orkcraft.tui import wording
 from orkcraft.tui.base import delegate
 from orkcraft.tui.views import make_view
 # Re-exported: tests and older callers import these from orkcraft.app.
@@ -155,6 +156,7 @@ class OrkcraftApp(
         reset_layout: bool = False,
         demo: bool = False,
     ) -> None:
+        wording.install()                    # in the Office every label says the Office's words
         super().__init__()
         # The town without a face (core/town.py): the project, its Town Scroll, specs and treasury.
         self.core = Town(repo_root, auto_commit, layout_file, reset_layout, demo)

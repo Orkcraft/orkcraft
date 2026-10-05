@@ -80,7 +80,7 @@ class GeneratorView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="gen-files", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="gen-preview")
+                yield Static("", id="gen-preview", classes="-as-written")
 
     def on_mount(self) -> None:
         self.refresh_data()

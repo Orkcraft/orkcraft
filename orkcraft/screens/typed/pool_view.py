@@ -129,7 +129,7 @@ class PoolView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="pool-orcs", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="pool-detail")
+                yield Static("", id="pool-detail", classes="-as-written")
 
     def on_mount(self) -> None:                           # TypedView's on_mount runs too (Textual walks the MRO)
         self.set_timer(30, self.check_prs)                # what happened while the camp was closed

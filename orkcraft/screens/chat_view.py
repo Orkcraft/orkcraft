@@ -110,7 +110,7 @@ class ChatView(Container):
         with Horizontal():
             with Vertical(id="chat-side"):
                 yield Static("", id="chat-scope")
-                yield OptionList(id="chat-sessions")
+                yield OptionList(id="chat-sessions", classes="-as-written")   # the sessions' own titles
                 yield Static(
                     Text("enter resume · n new Claude · a new agy · c new Codex\nA all/node · x stop · F12 leave terminal",
                          style="dim"),

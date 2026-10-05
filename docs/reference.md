@@ -868,9 +868,10 @@ the code: it says `camp` and `office` (`modes.CAMP`, `modes.OFFICE`, `modes.offi
 The opened building's own view keeps what its data says.
 
 **Words.** Every concept has a Camp name and an Office name (`orkcraft/realm/lexicon.py`): the camp
-is a game, the office a work tool. In Office the interface — window titles, huts and their
-headings, the War Map and the roster, the footer, the F10 menu, toasts and the GUI's labels — says
-the Office name. What people and agents wrote (cards, notes, chats) stays as written.
+is a game, the office a work tool. In Office the whole interface says the Office name and drops its
+emoji — labels, buttons, tabs, lists, dialogs, huts, the console, the footer, toasts, and in the GUI
+the text of every template — while paths (`./loot/`) and what people and agents wrote (cards,
+notes, chats, terminals, file previews, an ork's question) stay as written.
 
 | Camp | Office |
 |---|---|
@@ -909,8 +910,13 @@ the Office name. What people and agents wrote (cards, notes, chats) stays as wri
 | Building retro | Module review |
 | Chronicles | History |
 | Elder | Advisor |
-| Steward | Coordinator |
-| Mason & Artisan | Layout designer |
+| steward | coordinator |
+| Mason & Artisan | Module designer |
+| Mason | Data planner |
+| Artisan | Layout designer |
+| Warder | Security reviewer |
+| Pathfinder | Usability reviewer |
+| Treasurer | Cost reviewer |
 | Council | Review board |
 | clan | team |
 | The Pit | Inbox |

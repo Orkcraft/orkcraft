@@ -25,7 +25,8 @@ export function say(text) {
   if (saying.words !== t.words) {
     const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     saying = { words: t.words, to: new Map(t.words),
-               re: new RegExp(`(?<![\\p{L}\\p{N}_-])(?:${t.words.map(([w]) => esc(w)).join("|")})(?![\\p{L}\\p{N}_-])`, "gu") };
+               // as lexicon._WORD: not inside a word nor a path (./loot/, src/roads.py)
+               re: new RegExp(`(?<![\\p{L}\\p{N}_\\-/\\\\.])(?:${t.words.map(([w]) => esc(w)).join("|")})(?![\\p{L}\\p{N}_\\-/\\\\]|\\.[\\p{L}\\p{N}_])`, "gu") };
   }
   return String(text).replace(saying.re, (w) => saying.to.get(w) ?? w);
 }

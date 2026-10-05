@@ -70,3 +70,42 @@ def test_the_gui_gets_every_spelling():
     table = dict(lexicon.table())
     assert table["Watchtower"] == "External listeners" and table["orks"] == "agents" and table["Orks"] == "Agents"
     assert table["ROADS"] == "LINKS"
+
+
+def test_a_path_is_not_a_concept():
+    say = lexicon.office_words
+    assert say("./loot/ and loot/screenshots, src/roads.py") == "./loot/ and loot/screenshots, src/roads.py"
+    assert say("the loot.") == "the output."
+
+
+@pytest.mark.asyncio
+async def test_every_widget_says_the_office_words_but_what_was_written_stays():
+    from textual.app import App
+    from textual.widgets import Button, OptionList, Static
+    from orkcraft.tui import wording
+
+    wording.install()
+
+    class Probe(App):
+        def compose(self):
+            yield Static("🧌 Garrison of the Barracks", id="label")
+            yield Button("Spawn Ork", id="button")
+            yield OptionList("Save Town Scroll", id="options")
+            yield Static("my notes about the Barracks", id="note", classes=wording.AS_WRITTEN)
+
+    app = Probe()
+    async with app.run_test() as pilot:
+        shown = lambda sel: app.query_one(sel)._render().plain if not isinstance(app.query_one(sel), Static) \
+            else app.query_one(sel).visual.plain
+        assert shown("#label") == "🧌 Garrison of the Barracks"
+        modes.set_current(modes.OFFICE)
+        wording.rewear(app)
+        await pilot.pause()
+        assert shown("#label") == "Agents of the Agent pool"
+        assert "Add agent" in shown("#button")
+        assert "Project file" in str(app.query_one("#options").render_line(0).text)
+        assert shown("#note") == "my notes about the Barracks"
+        modes.set_current(modes.CAMP)
+        wording.rewear(app)
+        await pilot.pause()
+        assert shown("#label") == "🧌 Garrison of the Barracks" and "Spawn Ork" in shown("#button")

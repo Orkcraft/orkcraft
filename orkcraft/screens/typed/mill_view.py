@@ -63,7 +63,7 @@ class MillView(TypedView):
         with Horizontal(classes="typed-row"):
             yield OptionList(id="mill-runs", classes="typed-list")
             with VerticalScroll(classes="typed-detail"):
-                yield Static("", id="mill-out", markup=False)
+                yield Static("", id="mill-out", markup=False, classes="-as-written")
 
     def refresh_data(self) -> None:
         self.runs = self.log.read()

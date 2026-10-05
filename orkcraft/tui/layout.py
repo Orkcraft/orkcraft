@@ -16,6 +16,7 @@ from orkcraft.widgets.office import OfficeStatic
 from orkcraft.wm import Desktop
 
 from orkcraft.tui.base import (ORC_CHAT_PCT, BUILDING_CONSOLE_MIN_H, WARMAP_FLOAT_W, mode_for)
+from orkcraft.tui import wording
 from orkcraft.tui.text import office_rich
 
 
@@ -47,8 +48,7 @@ class LayoutMixin:
         self._hud.update_hud()
         self._taskbar.refresh_items()
         self.refresh_bindings()                  # the footer recomposes in the mode's words
-        for widget in self.query(OfficeStatic):
-            widget.rewear()
+        wording.rewear(self)                     # every label, button and dialog in the mode's words
         if getattr(self, "_console", None) is not None:
             self._console.refresh_state(self.focus_state, self.roster)
 

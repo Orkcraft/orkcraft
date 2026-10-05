@@ -80,6 +80,7 @@ def strip_emoji(text: str) -> str:
     if _EMOJI.sub("", out).strip() == "" and out.strip() in _WORDS:     # a bare 👍 button reads +1
         return _WORDS[out.strip()]
     out = re.sub(r"👍\s*(?=\d)", "+", re.sub(r"👎\s*(?=\d)", "−", out))   # `👍 3 👎 1` → `+3 −1`
+    out = out.replace("👍", "+1").replace("👎", "-1")       # `👍 / 👎 of the stewards` → `+1 / -1 of …`
     out = _EMOJI.sub("", out)
     out = re.sub(r"(?<=\S) {2,}(?=\S)", " ", out)          # a removed icon leaves no double gap
     out = re.sub(r"([\[(]) +", r"\1", out)
