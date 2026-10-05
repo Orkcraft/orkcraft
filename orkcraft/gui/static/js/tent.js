@@ -6,7 +6,7 @@ import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command } from "./link.js";
 import { Terminal } from "./terminal.js";
-import { openBuilding } from "./windows.js";
+import { showBuilding } from "./windows.js";
 
 export const HALL = "town_hall";
 export const tentKey = signal(null);       // the session the War Tent shows
@@ -17,7 +17,7 @@ const MARK = { claude: "✻", agy: "✦", codex: "⌬" };
 /** Show a session in the War Tent (it opens the Town Hall). */
 export function showSession(key) {
   tentKey.value = key;
-  openBuilding(HALL);
+  showBuilding(HALL);
 }
 
 export function newSession(harness) {

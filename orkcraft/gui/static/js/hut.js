@@ -60,13 +60,14 @@ export function Hut({ b, spot, number, onMoved }) {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
       if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
       moved = true;
+      if (b.pinned) return;                // a pinned hut keeps its place: a drag on it does nothing
       dragging.value = { id: b.id, dx, dy };
     };
     const up = (ev) => {
       ev.currentTarget.removeEventListener("pointermove", move);
       ev.currentTarget.removeEventListener("pointerup", up);
       dragging.value = null;
-      if (moved) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y);
+      if (moved) { if (!b.pinned) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); }
       else openBuilding(b.id);
     };
     e.currentTarget.addEventListener("pointermove", move);
@@ -83,7 +84,7 @@ export function Hut({ b, spot, number, onMoved }) {
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}>+</button>
       <span class="ok-hut__label"><span class="no">${number}</span>${say(b.title)}
-        ${b.alert && html` <span class="ok-word">?</span>`}<span class="ok-hut__dot"></span></span>
+        ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}<span class="ok-hut__dot"></span></span>
       ${b.status_plain.length > 0 && html`<ul class="ok-hut__lines">
         ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>`}
     </div>

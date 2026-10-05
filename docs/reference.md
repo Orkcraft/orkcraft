@@ -897,6 +897,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | War Horn | Stop all |
 | War Tent | Terminals |
 | Orders | Answers |
+| Standing orders | Instructions |
 | Awaiting Orders | Awaiting an answer |
 | Garrison | Agents |
 | Spawn Ork | Add agent |

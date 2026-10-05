@@ -6,12 +6,12 @@ import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say } from "./link.js";
-import { opened } from "./windows.js";
+import { opened, closeBuilding } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad } from "./build.js";
 import { Hut, sizes, dragging, pulling } from "./hut.js";
 
-const room = signal({ w: 1, h: 1 });
+const room = signal({ w: 1, h: 1, strip: 0 });
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
 
 // The room never gets smaller than four huts across and three down: a narrower town scrolls, so
@@ -19,10 +19,12 @@ const dropped = signal({});                // building id → {x, y}: where a hu
 const MIN_ROOM = { w: 1080, h: 600 };
 const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
+const STRIP = 0.21, STRIP_MIN = 126;         // the War Map's share of the window (layout.css .gui-strip): no hut under it
 
-/** The room a hut's spot is a fraction of: the canvas less the hut and the margins. */
+/** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the strip. */
 function free(size) {
-  return { w: Math.max(room.value.w - size.w - 2 * MARGIN, 1), h: Math.max(room.value.h - size.h - 2 * MARGIN, 1) };
+  const r = room.value;
+  return { w: Math.max(r.w - size.w - 2 * MARGIN, 1), h: Math.max(r.h - size.h - 2 * MARGIN - r.strip, 1) };
 }
 
 /** A hut without a spot of its own: a grid of four across, as fractions like a spot of its own. */
@@ -75,8 +77,9 @@ export function Town({ buildings, roads }) {
   useLayoutEffect(() => {
     const el = ref.current;
     const measure = () => {
-      const r = { w: Math.max(el.clientWidth, MIN_ROOM.w), h: Math.max(el.clientHeight, MIN_ROOM.h) };
-      if (r.w !== room.value.w || r.h !== room.value.h) room.value = r;
+      const r = { w: Math.max(el.clientWidth, MIN_ROOM.w), h: Math.max(el.clientHeight, MIN_ROOM.h),
+                  strip: Math.max(Math.round(window.innerHeight * STRIP), STRIP_MIN) };
+      if (r.w !== room.value.w || r.h !== room.value.h || r.strip !== room.value.strip) room.value = r;
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -104,8 +107,10 @@ export function Town({ buildings, roads }) {
     command("hut.move", { id: b.id, x: fx, y: fy }).then(() => setTimeout(forget, 300), forget);
   }
 
+  // A click on the bare town lets the selected building go, as in the TUI.
+  const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road")) closeBuilding(); };
   const shown = new Set(buildings.map((b) => b.id));
-  return html`<main ref=${ref} class="ok-ground gui-town">
+  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
       <${Roads} roads=${roads.filter((r) => shown.has(r.from) && shown.has(r.to))} rects=${rects} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}

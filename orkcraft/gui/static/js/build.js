@@ -5,6 +5,7 @@ import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
+import { HandlerDialog } from "./acts.js";
 import { openBuilding, closeBuilding } from "./windows.js";
 
 export const building = signal(false);            // the Build dialog is open
@@ -52,19 +53,23 @@ export function RoadDialog() {
   </${Dialog}>`;
 }
 
-/** The road the person clicked: what it is, and taking it up. */
+/** The road the person clicked: what it is, its handler and taking it up (the TUI's road console: H, U). */
 export function RoadBar() {
   const key = pickedRoad.value;
   const t = town.value;
+  const [handling, setHandling] = useState(false);
   const road = key && t.roads.find((r) => r.id === key);
   if (!road) return null;
   const titles = Object.fromEntries(t.buildings.map((b) => [b.id, say(b.title)]));
   return html`<div class="gui-roadbar ok-toast">
     <span><b>${titles[road.from] || road.from}</b> → <b>${titles[road.to] || road.to}</b> · ${road.label}${road.handler ? ` · ${road.handler}` : ""}</span>
+    <button class="ok-act" onClick=${() => setHandling(true)}><span class="ok-act__label">${say("Handler")}</span></button>
     <button class="ok-act" onClick=${() => command("roads.remove", { key }).then(() => { pickedRoad.value = null; }, () => {})}>
       <span class="ok-act__label">Remove</span></button>
     <button class="ok-act" onClick=${() => { pickedRoad.value = null; }}><span class="ok-act__label">Close</span></button>
-  </div>`;
+  </div>
+  ${handling && html`<${HandlerDialog} road=${{ key, title: titles[road.from] || road.from, label: road.label }}
+    onClose=${() => setHandling(false)} onDone=${() => {}} />`}`;
 }
 
 export function Demolish({ b, onClose }) {

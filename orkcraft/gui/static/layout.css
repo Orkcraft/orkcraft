@@ -10,21 +10,29 @@ button { font: inherit; color: inherit; }
 .gui {
   height: 100%;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) 22px;
-  grid-template-areas: "hud hud" "side town" "status status";
+  grid-template-areas: "hud" "town" "status";
 }
-.gui--open { grid-template-columns: 260px minmax(0, 1fr) minmax(360px, 44%); grid-template-areas: "hud hud hud" "side town group" "status status status"; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
 .gui-hud__project { color: var(--ink-muted); }
 
-/* The sidebar: the War Map over the buildings of the orkspace. */
-.gui-side { grid-area: side; display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto;
-  background: var(--panel); box-shadow: inset -1px 0 0 var(--frame); }
-.gui-side .ok-list { box-shadow: none; }
-.gui-side .ok-item { cursor: pointer; }
+/* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
+   block at the left, 240px wide; its list scrolls) and, while a building is selected, its Info, its garrison and
+   its Command Card, as the TUI's console.
+   It shares the town's grid area, so it stays put while the town scrolls. The strip is 50% of the
+   window's height: the Command Card takes all of it, as wide as tall; Info and the garrison
+   are as tall as the War Map: 42% of it, about 21% (STRIP in js/town.js keeps the huts above it). */
+.gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
+  display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
+.gui-strip > * { pointer-events: auto; }
+.gui-warmap { flex: none; height: 42%; width: 240px; display: flex; flex-direction: column; }
+.gui-warmap .ok-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-warmap > .ok-list__head { flex: none; }
+.gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
+.gui-warmap .ok-item { cursor: pointer; }
 
 /* The town: huts where the person put them, roads under them. */
 .gui-town { grid-area: town; position: relative; overflow: auto; }
@@ -41,12 +49,42 @@ button { font: inherit; color: inherit; }
 .gui-road text { fill: var(--ink-muted); }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
-/* An opened building: an editor group, its tabs over one window. */
-.gui-group { grid-area: group; display: flex; flex-direction: column; min-width: 0; min-height: 0;
-  background: var(--panel); box-shadow: inset 1px 0 0 var(--frame); }
-.gui-group.is-max { position: fixed; inset: 30px 0 22px 0; z-index: 5; }
-.gui-tabs { flex: none; overflow-x: auto; }
-.gui-tabs .ok-tab { cursor: pointer; gap: var(--space-2); }
+/* A selected building, as the TUI's console (js/console.js): Info fills the room after the War Map and
+   is as tall as it; the garrison (or an ork's Inventory) a narrow column as tall; the Command Card a
+   square window at the right, half the window high. */
+.gui-console { flex: 1; height: 42%; min-width: 0; }
+.gui-roster { flex: none; width: 220px; height: 42%; min-width: 0; }
+.gui-card { flex: none; height: 100%; aspect-ratio: 1; width: auto; min-width: 0; }
+:is(.gui-console, .gui-roster, .gui-card) > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
+.gui-console__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-card .gui-console__body { align-items: stretch; }
+.gui-card .ok-act { justify-content: flex-start; }
+.gui-card .gui-win__demolish { margin-left: 0; }
+.gui-card__sep { width: 100%; border: 0; border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
+.gui-info__row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.gui-info__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-info__row .gui-win__demolish { margin-left: 0; }
+.gui-info__row .gui-link b { text-decoration: underline dotted; }
+.gui-info__about { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.gui-console__sep { padding: var(--space-1) 0 0; }
+.gui-console__row.is-static { cursor: default; }
+.gui-console__row.is-static:hover { background: none; }
+.gui-info { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-console__row { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-console__row:hover { background: var(--selection); }
+.gui-console__row.is-alert { color: var(--danger); }
+.gui-history { max-height: 50vh; overflow: auto; }
+.gui-form { display: flex; flex-direction: column; gap: var(--space-2); max-height: 60vh; overflow: auto; }
+.gui-form > p { margin: 0; }
+.gui-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-form__row { display: flex; gap: var(--space-2); }
+.gui-form__row > * { flex: 1; min-width: 0; }
+
+.gui-history > h3 { margin: var(--space-2) 0 var(--space-1); color: var(--ink-muted); }
+.gui-win__close { margin-left: var(--space-2); }
+
+/* An open building: its whole window over the town. */
+.gui-full { grid-area: town; z-index: 6; min-width: 0; min-height: 0; }
 .gui-tab__close { border: 0; background: none; padding: 0 var(--space-1); cursor: pointer; color: var(--ink-muted); line-height: 1; }
 .gui-tab__close:hover { color: var(--ink); }
 .gui-win { flex: 1; min-height: 0; }
@@ -155,7 +193,7 @@ button.gui-status__item { cursor: pointer; }
 .gui-hut:hover .gui-hut__road, .gui-hut__road:focus-visible { opacity: 1; }
 .gui-road__hit { stroke: transparent !important; stroke-width: 10; fill: none; pointer-events: stroke; cursor: pointer; }
 .gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 6 4; }
-.gui-roadbar { position: fixed; left: 50%; bottom: calc(22px + var(--space-4)); transform: translateX(-50%); z-index: 9;
+.gui-roadbar { position: fixed; left: 50%; top: calc(30px + var(--space-3)); transform: translateX(-50%); z-index: 9;   /* clear of the console */
   display: flex; align-items: center; gap: var(--space-3); }
 .gui-catalog { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; display: grid; gap: var(--space-2); }
 .gui-catalog__item { cursor: pointer; padding: var(--space-2) var(--space-3); border: 1px solid var(--frame);

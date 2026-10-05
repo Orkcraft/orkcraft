@@ -43,6 +43,7 @@ def test_the_office_says_the_interface_in_its_words():
     assert say("No buildings in this orkspace yet.") == "No modules in this workspace yet."
     assert say("New in an orkspace") == "New in a workspace"
     assert say("Audit the camp") == "Audit the project"
+    assert say("Standing orders & trigger") == "Instructions & trigger"
 
 
 def test_a_word_inside_another_and_the_mode_names_stay():

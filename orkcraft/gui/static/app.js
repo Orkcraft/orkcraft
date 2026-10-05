@@ -3,9 +3,11 @@
 import { render } from "preact";
 import { html } from "./js/html.js";
 import { town, connect } from "./js/link.js";
-import { Hud, WarMap, BuildingList, StatusBar, Toasts } from "./js/chrome.js";
+import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
-import { Windows, opened } from "./js/windows.js";
+import { Opened } from "./js/windows.js";
+import { Selected } from "./js/console.js";
+import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
 
@@ -19,16 +21,15 @@ function App() {
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
   ids.add(HALL);                                         // the Town Hall stands on every canvas
   const buildings = t.buildings.filter((b) => ids.has(b.id));
-  const standing = new Set(t.buildings.map((b) => b.id));       // a demolished building's tab is gone
-  const open = opened.value.ids.some((id) => standing.has(id));
-  return html`<div class=${open ? "gui gui--open" : "gui"}>
+  return html`<div class="gui">
     <${Hud} />
-    <aside class="gui-side"><${WarMap} /><${BuildingList} buildings=${buildings} /></aside>
     <${Town} buildings=${buildings} roads=${t.roads} />
-    <${Windows} />
+    <div class="gui-strip"><${WarMap} /><${Selected} /></div>
+    <${Opened} />
     <${StatusBar} />
     <${Toasts} />
     <${Orders} />
+    <${Jobs} />
     <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />

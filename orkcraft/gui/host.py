@@ -28,7 +28,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, state, views
+from orkcraft.gui import builder, console, state, views
 from orkcraft import schedule
 from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
@@ -82,6 +82,9 @@ class Host:
             "roads.lay": lambda a: self._building(builder.lay_road, a),
             "roads.remove": lambda a: self._building(builder.remove_road, a),
         }
+        # The console of a selected building or ork (gui/console.py): Info, the garrison, the jobs.
+        self.console = console.Console(self)
+        self.commands.update(self.console.commands())
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
                 self.town.worker(bs.id)
@@ -89,8 +92,10 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
+        snap = state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
                               look_choice=self.look)
+        snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
+        return snap
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
@@ -201,7 +206,10 @@ class Host:
         fn = self.commands.get(name)
         if fn is None:
             raise CommandError(f"Unknown command: {name}")
-        return fn(dict(args or {}))
+        try:
+            return fn(dict(args or {}))
+        except console.ConsoleError as e:
+            raise CommandError(str(e)) from None
 
     def _spec(self, args: dict):
         bs = self.town.scroll.building(str(args.get("id", "")))
@@ -220,6 +228,8 @@ class Host:
     def _move_hut(self, args: dict) -> None:
         """A hut dragged on the town: its spot as fractions of the canvas, the person's own."""
         bs = self._spec(args)
+        if bs.pinned:
+            raise CommandError(f"{bs.title} is pinned — unpin it in its Info to move it")
         try:
             x, y = float(args["x"]), float(args["y"])
         except (KeyError, TypeError, ValueError):

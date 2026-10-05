@@ -183,10 +183,13 @@ orkcraft/gui/
   server.py   websockets: the page, /ds/ (the design system), /roles.css, and /ws
   launch.py   `orkcraft gui`: the server on a thread, the window on the main thread (macOS wants it)
   (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
+  info.py     what the console says of a selected building or ork: Info, listens, the Inventory
+  console.py  the console's acts (👍 / 👎, goal, pin, revert, recruit, orders, model, roads) and its
+              jobs: the Recruiter, the Council, the steward's watch and a redesign, in threads
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
-              layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
+              console, acts, layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
               draws, loaded when one opens), layout.css (every look), office.css, camp.css
 ```
 
@@ -197,9 +200,9 @@ orkcraft/gui/
   emoji comes twice, as it is and `_plain`, for Office.
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
-- **The layout is the design system's.** `layout.css` places the components (HUD on top, the War
-  Map and the buildings on the left, the town, an editor group of opened buildings on the right,
-  the status bar) and uses tokens only.
+- **The layout is the design system's.** `layout.css` places the components (HUD on top, the town,
+  over its bottom the War Map at the left and the selected building's console at the right, an open
+  building over the whole town, the status bar) and uses tokens only.
 - **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
   panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
   pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it
@@ -223,9 +226,27 @@ orkcraft/gui/
 
 ### Done
 
-- The shell: HUD (Office words for the resources), War Map (switches the orkspace), the building
-  list, the town with huts and orthogonal roads, an opened building as a tab with its status lines, garrison
-  and roads, toasts, Halt All in the status bar.
+- The shell: HUD (Office words for the resources), the town with huts and orthogonal roads, toasts,
+  Halt All in the status bar. The strip over the town's bottom is the TUI's console: the War Map
+  (the orkspaces only, a small block at the left, about a fifth of the window high; its list scrolls) and, for the selected
+  building, its Info, its garrison (or a picked ork's Inventory) and its Command Card, laid out as
+  the TUI's console.
+
+- A building three ways, as in the TUI: its hut (the status lines its type keeps); selected (one
+  click: Info in the room after the War Map and its garrison beside it, both as tall as the War Map,
+  then its Command Card, a square window half the window high, at the right); open (a click on the selected hut, or Open:
+  its whole window over the town). Esc steps back; a click on the bare town lets go.
+
+- The console, as the TUI's: **Info** — the name with Good / Bad (what went wrong: the inputs or
+  its logic) / its goal / Demolish, why it is here (three lines), one line of what it spent and its
+  runs with History, one line of who it listens to with Listen (a road there picks it: its handler,
+  removing it). An ork's Info: Good / Bad / Dismiss, why it is here, its spend with History. The
+  **garrison** beside it; an ork picked there turns it into its 🎒 **Inventory** (model and tier per
+  step, a click changes them; the tools of its latest runs). The **Command Card**: the type's own
+  actions, Answer, Open, then the commands the TUI keeps on keys — Recruit (the Recruiter, then the
+  Council; or by hand), Pin (a pinned hut is not dragged), Revert, Redesign; for an ork Deploy,
+  Orders & trigger, Halt, the steward's Watch now and its report. A model call runs
+  as a job (`jobs` in the snapshot) the page shows until the person takes it or lets it go.
 
 - The windows of 🌊 Lake (Markdown rendered, a diff side by side, a file edited in place with the
   same autosave, conflict and judging as the TUI), 🌾 Task Fields (the board: drag a card to a lane,

@@ -1,9 +1,9 @@
-// The Office chrome around the town: the HUD (title bar), the War Map and the building list
-// (sidebar), the status bar and the toasts. Markup and classes are the design system's
+// The Office chrome around the town: the HUD (title bar), the War Map (the orkspaces, a small
+// block over the town's bottom-left corner, as in the TUI), the status bar and the toasts. Markup and classes are the design system's
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
-import { opened, openBuilding } from "./windows.js";
+import { showBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
 import { newSession, HALL } from "./tent.js";
 import { building } from "./build.js";
@@ -41,8 +41,8 @@ export function Hud() {
 
 export function WarMap() {
   const t = town.value;
-  return html`<nav class="ok-list gui-warmap">
-    <div class="ok-list__head">War Map</div>
+  return html`<nav class="ok-list gui-warmap" aria-label=${say("Orkspaces")}>
+    <div class="ok-list__head">${say("War Map")}</div>
     <ul class="ok-list__items">
       ${t.orkspaces.map((o) => html`<li key=${o.id}
           class=${cls("ok-item", { "is-selected": o.id === t.active_orkspace, "is-alert": o.questions > 0 })}
@@ -55,21 +55,6 @@ export function WarMap() {
   </nav>`;
 }
 
-export function BuildingList({ buildings }) {
-  const active = opened.value.active;
-  return html`<nav class="ok-list gui-buildings">
-    <div class="ok-list__head">${say("Buildings")}</div>
-    <ul class="ok-list__items">
-      ${buildings.map((b) => html`<li key=${b.id}
-          class=${cls("ok-item", { "is-selected": b.id === active, "is-alert": !!b.alert })}
-          onClick=${() => openBuilding(b.id)}>
-        ${say(b.title)}<span class="meta">${b.alert ? html`<span class="ok-word">?</span>`
-                                               : b.state && html`<span class="ok-word">${b.state.toLowerCase()}</span>`}</span>
-      </li>`)}
-    </ul>
-  </nav>`;
-}
-
 export function StatusBar() {
   const t = town.value;
   return html`<footer class="ok-keys gui-status">
@@ -77,7 +62,7 @@ export function StatusBar() {
     <button class="gui-status__item" onClick=${() => { building.value = true; }}>Build</button>
     <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
     <button class="gui-status__item" onClick=${() => newSession("claude")}>Add agent</button>
-    <button class="gui-status__item" onClick=${() => openBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
+    <button class="gui-status__item" onClick=${() => showBuilding(HALL)}>Sessions${t.sessions.length ? ` (${t.sessions.filter((s) => s.running).length})` : ""}</button>
     <span class="gui-status__spacer"></span>
     <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
   </footer>`;
