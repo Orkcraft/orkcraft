@@ -8,9 +8,8 @@ import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
-import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
-import { askKeeper } from "../keeper.js";
+import { KeeperDialog } from "../keeper.js";
 
 const picked = signal({});        // building id → the shot's `at` shown in full
 const pictures = new Map();       // path → data URL, fetched once
@@ -83,7 +82,6 @@ function ShotLine({ s }) {
 
 function Head({ id, data }) {
   const [asking, setAsking] = useState(false);
-  const [request, setRequest] = useState("");
   return html`<${Asking} id=${id} data=${data} />
   <div class="gui-head">
     <span class="gui-head__what">${say(target(data))}${data.state && html` · <span class=${data.login ? "ok-tone-fire" : "ok-tone-wait"}>${say(data.state)}</span>`}</span>
@@ -95,14 +93,8 @@ function Head({ id, data }) {
     <button class="ok-act" onClick=${() => setAsking(true)}><span class="ok-act__label">Schema and address</span></button>
   </div>
   <div class="gui-head"><${Confirm} id=${id} data=${data} /></div>
-  ${asking && html`<${Dialog} title="The schema and the address" onCancel=${() => setAsking(false)}
-      text=${`Now: ${data.method} ${data.url || "no address"} · schema ${data.schema || "none"}. Say what should change; the keeper writes it.`}
-      actions=${html`<button class="ok-btn" onClick=${() => setAsking(false)}>Cancel</button>
-        <button class="ok-btn primary" disabled=${!request.trim()}
-          onClick=${() => askKeeper(id, request).then(() => setAsking(false))}>Ask the keeper</button>`}>
-    <textarea class="ok-input gui-textarea" rows="4" placeholder="Send releases to the staging API; the version is required"
-      value=${request} onInput=${(e) => setRequest(e.target.value)}></textarea>
-  </${Dialog}>`}`;
+  ${asking && html`<${KeeperDialog} id=${id} title=${`The schema and the address — now ${data.method} ${data.url || "no address"}, schema ${data.schema || "none"}`}
+    onClose=${() => setAsking(false)} />`}`;
 }
 
 function Load({ data }) {
