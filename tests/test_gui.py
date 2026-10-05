@@ -562,3 +562,26 @@ def test_a_redesign_runs_as_a_job_and_its_layout_is_taken(fake_repo, isolated_la
     assert host.command("building.redesign", {"id": built.id, "request": "default"}) is None
     with pytest.raises(CommandError):
         host.command("ork.report", {"id": built.id})            # not watched yet
+
+
+def test_a_type_draws_its_closed_card_from_its_view(fake_repo, isolated_layout_file):
+    """docs/design/building-views.md §4: `card(worker)` goes in every snapshot; a type with a page says so."""
+    host = _host(fake_repo)
+    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields"))
+    host.town.worker(built.id)
+    snap = host.snapshot()
+    fields = next(b for b in snap["buildings"] if b["id"] == built.id)
+    assert fields["page"] and fields["card"]["error"] == "" and fields["card"]["lanes"]
+    assert {"label", "count", "new"} <= set(fields["card"]["lanes"][0])
+    hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
+    assert hall["card"] is None and hall["page"] is False
+
+
+def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    with pytest.raises(CommandError):                 # no Lake in this town yet
+        host.command("lake.open", {"kind": "file", "value": "README.md"})
+    lake = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
+    assert host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"}) == lake.id
+    with pytest.raises(CommandError):                 # the keeper arrives with its own track
+        host.command("keeper.ask", {"id": "town_hall", "request": "route bugs to the Forge"})

@@ -9,23 +9,11 @@ import { WarTent, HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useState } from "preact/hooks";
+import { typeModule } from "./types.js";
 
-// A type's window is `buildings/<type>.js`, loaded the first time one is open: the host draws
-// a type when `gui/views/<type>.py` exists (its detail carries data); a new type is one new file here.
-const views = signal({});                  // type → its module (false: it has none)
-const loading = new Set();
-
-function viewOf(type) {
-  const have = views.value[type];
-  if (have !== undefined || !/^[a-z_]+$/.test(type)) return have || null;
-  if (!loading.has(type)) {
-    loading.add(type);
-    import(`./buildings/${type}.js`).then(
-      (m) => { views.value = { ...views.value, [type]: m }; },
-      () => { views.value = { ...views.value, [type]: false }; });
-  }
-  return null;
-}
+// A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
+// `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
+const viewOf = (type) => typeModule(type);
 
 // The selected building; `ork`: one of its orks picked in the console; `full`: open over the town.
 export const opened = signal({ active: null, ork: null, full: false });

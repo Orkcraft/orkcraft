@@ -10,7 +10,8 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, say } from "./link.js";
+import { town, command, details, say } from "./link.js";
+import { typeModule } from "./types.js";
 import { opened, chosen, showBuilding, closeBuilding, selectOrk, DemolishButton } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
@@ -231,6 +232,16 @@ function OrkCommands({ b, o, open }) {
     <${Act} label=${say("Back")} title=${say("Back to the building (Esc)")} onClick=${() => selectOrk(null)} />`;
 }
 
+/** The command view: the top of the Command Card is the type's cut-down main screen, `preview(id, data)`
+ * from its detail (js/types.js; docs/design/building-views.md); a type without one shows its buttons only. */
+function Preview({ b }) {
+  const mod = b.page ? typeModule(b.type) : null;
+  const d = details.value[b.id];
+  if (!mod || !mod.preview || !d || !d.data) return null;
+  return html`<div class="gui-card__preview">${mod.preview(b.id, d.data)}</div>
+    <hr class="gui-card__sep" />`;
+}
+
 function Window({ cls: c, title, label, onClose, children }) {
   return html`<section class=${`ok-win ${c}`} aria-label=${label || title}>
     <div class="ok-win__frame">
@@ -261,6 +272,7 @@ function Console({ b, orkRef }) {
     ${o ? i && html`<${Inventory} i=${i} open=${open} />` : html`<${GarrisonList} b=${b} />`}
   </${Window}>
   <${Window} cls="gui-card" title=${say("Commands")} label=${say("Command Card")}>
+    ${!o && html`<${Preview} b=${b} />`}
     ${o ? html`<${OrkCommands} b=${b} o=${o} open=${open} />` : html`<${BuildingCommands} b=${b} i=${i} redo=${redo} open=${open} />`}
   </${Window}>
   ${dialog && dialog.kind === "dislike" && html`<${DislikeDialog} b=${b} onClose=${close} onDone=${redo} />`}

@@ -5,7 +5,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act } from "../link.js";
+import { act, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 
 const selected = signal({});       // building id → card id
@@ -95,6 +95,15 @@ function Board({ id, data }) {
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && !dialog.remove && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
   </div>`;
+}
+
+/** Closed: a counter per lane, `*` on a lane with unseen cards (docs/design/building-views.md). */
+export function card(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.error) return html`<span class="ok-tone-fire">${c.error}</span>`;
+  return html`<div class="gui-counters">${c.lanes.map((l) => html`<span key=${l.label} class="gui-counter">
+    <span class="ok-tone-muted">${say(l.label)}</span> <b>${l.count}</b>${l.new ? "*" : ""}</span>`)}</div>`;
 }
 
 export function panes(id, data) {

@@ -13,6 +13,21 @@ def refresh(w) -> None:
     w.refresh()
 
 
+def card(w) -> dict:
+    """Closed (docs/design/building-views.md): a counter per lane, with `new` when one holds unseen cards;
+    in notes mode the note folders."""
+    if w.error:
+        return {"error": w.error[:60], "lanes": []}
+    seen = w.seen()
+    lanes = []
+    for ln in w.visible_lanes():
+        if (w.mode == "notes") != (ln.kind == tasklist.NOTE):
+            continue
+        rows = [c for c in w.cards if c.column == ln.id]
+        lanes.append({"label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows)})
+    return {"error": "", "lanes": lanes}
+
+
 def detail(w) -> dict:
     seen = w.seen()
     lanes = []

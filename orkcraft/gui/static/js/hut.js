@@ -1,12 +1,14 @@
-// A building as it stands on the town (design-system/components.md: Hut): its card, its live lines,
-// its question, and the mouse on it — a press opens it, a drag moves it, the + handle pulls a road
-// out of it. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
+// A building as it stands on the town, closed (design-system/components.md: Hut;
+// docs/design/building-views.md): its name above the card, inside only its type's live status (the
+// type's `card(b)`, else its status lines), and the mouse on it — a press opens it, a drag moves
+// it, the + handle pulls a road out of it. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
 // card under its header sprite), never in how the town places them.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying } from "./build.js";
+import { typeModule } from "./types.js";
 import { say } from "./link.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
@@ -36,6 +38,14 @@ function pull(e, b) {
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
   move(e);
+}
+
+/** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
+function Card({ b }) {
+  const mod = b.page ? typeModule(b.type) : null;
+  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b)}</div>`;
+  return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">
+    ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
 export function Hut({ b, spot, number, onMoved }) {
@@ -80,13 +90,13 @@ export function Hut({ b, spot, number, onMoved }) {
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag })}
       onPointerDown=${down}>
     <div class="ok-head"></div>
+    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>${say(b.title)}
+      ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}</span>
     <div class="ok-hut__card">
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}>+</button>
-      <span class="ok-hut__label"><span class="no">${number}</span>${say(b.title)}
-        ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}<span class="ok-hut__dot"></span></span>
-      ${b.status_plain.length > 0 && html`<ul class="ok-hut__lines">
-        ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>`}
+      <span class="ok-hut__dot gui-hut__dot"></span>
+      <${Card} b=${b} />
     </div>
   </div>`;
 }
