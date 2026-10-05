@@ -64,12 +64,16 @@ def _matches(path: str, globs: list[str]) -> bool:
                or path.startswith(g.rstrip("*").rstrip("/") + "/") for g in globs)
 
 
-CLEAN = ("", "done", "approved", "rework")   # a Clan Fire's verdict is how its review ended, not a failure
+APPROVAL = "approval"                         # a hop's outcome: a draft waits for the person before it goes out
+CLEAN = ("", "done", "approved", "rework", APPROVAL)   # a Clan Fire's verdict is how its review ended, not a failure
 
 
 def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) -> list[str]:
     """Why a cart is held; empty when it passes."""
     ctx = ctx or Context()
+    last = payload.trail[-1] if payload.trail else None
+    if last is not None and last.outcome == APPROVAL:       # its maker waits for the person: never waved through
+        return [f"{last.building} waits for your approval before it goes out"]
     mode = str(config.get("review") or "rules")
     if mode == "never":
         return []
@@ -140,6 +144,11 @@ def _now(now: dt.datetime | None = None) -> str:
 def worktree_of(payload: pipes.Payload) -> str:
     """The worktree the cart's work happened in: the latest hop that names one."""
     return next((h.worktree for h in reversed(payload.trail) if h.worktree), "")
+
+
+def branch_of(trail: tuple[pipes.Hop, ...]) -> pipes.Hop | None:
+    """The latest hop that names both a worktree and a branch: where the cart's files were committed."""
+    return next((h for h in reversed(trail) if h.worktree and h.branch), None)
 
 
 class Queue:
