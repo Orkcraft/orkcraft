@@ -6,7 +6,7 @@ import re
 
 from rich.text import Text
 
-from orkcraft.realm import looks, modes
+from orkcraft.realm import lexicon, looks, modes
 
 
 def scheme_text(harness: list[dict] | None, kind: str = "agent") -> Text:
@@ -42,3 +42,28 @@ def strip_rich(value):
     if at < len(plain):
         out.append_text(value[at:])
     return out
+
+
+def office_words(value):
+    """A rich Text in the office's words (`realm/lexicon.py`), each word keeping the style of the one it
+    replaces; a str as `lexicon.office_words`; anything else as it is."""
+    if isinstance(value, str):
+        return lexicon.office_words(value)
+    if not isinstance(value, Text):
+        return value
+    found = lexicon.spans(value.plain)
+    if not found:
+        return value
+    out, at = Text(style=value.style, end=value.end, no_wrap=value.no_wrap, overflow=value.overflow), 0
+    for a, b, word in found:
+        out.append_text(value[at:a])
+        styles = [s.style for s in value[a:b].spans]
+        out.append(word, style=styles[0] if styles else "")
+        at = b
+    out.append_text(value[at:])
+    return out
+
+
+def office_rich(value):
+    """What the office shows of a label: in its words and without emoji (`modes.text` for rich Text)."""
+    return strip_rich(office_words(value))

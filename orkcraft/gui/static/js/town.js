@@ -5,7 +5,7 @@
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command } from "./link.js";
+import { command, say } from "./link.js";
 import { opened } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad } from "./build.js";
@@ -110,6 +110,6 @@ export function Town({ buildings, roads }) {
       <${Roads} roads=${roads.filter((r) => shown.has(r.from) && shown.has(r.to))} rects=${rects} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}
     </div>
-    ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">No buildings in this orkspace yet.</p>`}
+    ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;
 }

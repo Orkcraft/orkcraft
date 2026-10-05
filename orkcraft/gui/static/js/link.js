@@ -16,6 +16,20 @@ let nextId = 1;
 
 const TOAST_S = { information: 5, warning: 8, error: 10 };
 
+// The town's words in the look on screen (realm/lexicon.py): Camp says them as they are, Office in
+// its own — say("🗼 Watchtower") is "🗼 External listeners", say("Garrison") "Agents" there.
+let saying = { words: null, re: null, to: null };
+export function say(text) {
+  const t = town.value;
+  if (!text || !t || t.look !== "office" || !t.words?.length) return text;
+  if (saying.words !== t.words) {
+    const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    saying = { words: t.words, to: new Map(t.words),
+               re: new RegExp(`(?<![\\p{L}\\p{N}_-])(?:${t.words.map(([w]) => esc(w)).join("|")})(?![\\p{L}\\p{N}_-])`, "gu") };
+  }
+  return String(text).replace(saying.re, (w) => saying.to.get(w) ?? w);
+}
+
 export function toast(message, severity = "information", title = "", timeout = null) {
   const id = nextId++;
   toasts.value = [...toasts.value, { id, message, title, severity }].slice(-5);

@@ -9,8 +9,8 @@ Orkcraft runs many coding agents in one project as a real-time strategy game. Th
 
 | Look | Theme ids | References | Feel |
 |---|---|---|---|
-| **Camp** (immersion) | `camp` (forest, the default), `camp-ice`, `camp-void` | Warcraft 2 × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
-| **Office** (hidden) | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites. Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
+| **Camp** | `camp` (forest, the default), `camp-ice`, `camp-void` | Warcraft 2 × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
+| **Office** | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites, every concept by its Office name (`realm/lexicon.py`). Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
 
 **Shift** is not a third look. It is Office during office hours on office days and Camp at other times, so the app swaps `data-theme` at runtime.
 

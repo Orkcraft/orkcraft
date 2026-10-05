@@ -851,10 +851,11 @@ F10 → *Camp* (default), *Office* or *Shift*, kept per machine as `mode` in
 `~/.config/orkcraft/settings.json` (`$ORKCRAFT_SETTINGS_FILE` overrides the path; the old names
 `immersion` / `hidden` / `plain` still load as camp / office). A project may override it with
 `preferences.mode` in `.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's
-override. The data is the same in every mode; only the look changes (`orkcraft/realm/modes.py`): Camp
-wears the immersion look, Office the hidden one.
+override. The data is the same in every mode; only the look and the words change
+(`orkcraft/realm/modes.py`). The old names `immersion` and `hidden` of the two looks are gone from
+the code: it says `camp` and `office` (`modes.CAMP`, `modes.OFFICE`, `modes.office()`).
 
-| | 🧌 Camp (immersion) | 👔 Office (hidden) |
+| | 🧌 Camp | 👔 Office |
 |---|---|---|
 | Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
 | Agents | orks 🧌 / 🪧 in the frame | nothing, or `busy` while one works |
@@ -866,12 +867,95 @@ wears the immersion look, Office the hidden one.
 
 The opened building's own view keeps what its data says.
 
+**Words.** Every concept has a Camp name and an Office name (`orkcraft/realm/lexicon.py`): the camp
+is a game, the office a work tool. In Office the interface — window titles, huts and their
+headings, the War Map and the roster, the footer, the F10 menu, toasts and the GUI's labels — says
+the Office name. What people and agents wrote (cards, notes, chats) stays as written.
+
+| Camp | Office |
+|---|---|
+| ork | agent |
+| orkspace | workspace |
+| orkestration | coordination |
+| orkestrate | coordinate |
+| town | project |
+| building | module |
+| hut | tile |
+| road | link |
+| cart | message |
+| ghost | preview |
+| loot | output |
+| biome | background |
+| terrain | background |
+| gold | spend |
+| lumber | context |
+| meat | agent slots |
+| food | agent slots |
+| Treasury | Budget |
+| War Map | Workspaces |
+| War Horn | Stop all |
+| War Tent | Terminals |
+| Orders | Answers |
+| Awaiting Orders | Awaiting an answer |
+| Garrison | Agents |
+| Spawn Ork | Add agent |
+| Recruit | Add agent |
+| Recruiter | Agent setup |
+| Raise | Set up |
+| Raising the town | Setting up the project |
+| Town Scroll | Project file |
+| Town Builder | Project planner |
+| Town retro | Weekly review |
+| Building retro | Module review |
+| Chronicles | History |
+| Elder | Advisor |
+| Steward | Coordinator |
+| Mason & Artisan | Layout designer |
+| Council | Review board |
+| clan | team |
+| The Pit | Inbox |
+| Watchtower | External listeners |
+| Signpost | Router |
+| The Mill | Transformer |
+| The Horn | Sound alerts |
+| Task Fields | Task board |
+| Barracks | Agent pool |
+| Clan Fire | Review board |
+| War Drum | Calendar |
+| File Forest | File tree |
+| Scroll Dump | Wiki |
+| Lake of Insight | Inspector |
+| The Forge | Branches & PRs |
+| Loot Vault | Review gate |
+| Tally Crag | Metrics |
+| The Catapult | Publisher |
+| Town Hall | Control panel |
+| Workshop | Script |
+| Scavenger | Sorter |
+| Lookout | Listener |
+| Grot Pointa | Router |
+| Miller | Transformer |
+| Hornblower | Notifier |
+| Taskmaster | Task manager |
+| Grunt | Worker |
+| Chieftain | Reviewer |
+| Drummer | Scheduler |
+| Woodcutter | File picker |
+| Scroll Scrapper | Wiki writer |
+| Seer | Inspector |
+| Smith | Merger |
+| Quartermaster | Gatekeeper |
+| Crag Carver | Metrics agent |
+| Loader | Publisher |
+| Tinker | Script runner |
+| Peon | Worker |
+
 **Questions on another orkspace.** Its War Map row takes the question's colour (fire orange in
-immersion, red when hidden) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
+Camp, red in Office) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
 its questions at once, the one waiting longest first (↑↓ for the rest); behind the dialog the building
 of that question is selected and the ork who asked it is picked in the garrison.
-- **🧌 Camp** — the immersion look all day.
-- **👔 Office** — the hidden look all day.
+- **🧌 Camp** — the game look all day.
+- **👔 Office** — the work-tool look all day, in Office words.
 - **🧌/👔 Shift** — Office in office hours on office days (default 09:00–18:00, Mon–Fri; a span past
   midnight belongs to the day it started), Camp the rest of the time. The town switches by itself
   (checked every 30 s) and the HUD says `[👔 office till 18:00]`.

@@ -15,7 +15,7 @@ from orkcraft.realm import modes
 
 
 def _theme() -> str:
-    return "office" if modes.hidden() else "camp"
+    return modes.current()
 
 
 def _along_row(widget: Widget) -> bool:

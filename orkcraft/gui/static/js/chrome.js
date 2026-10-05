@@ -2,7 +2,7 @@
 // (sidebar), the status bar and the toasts. Markup and classes are the design system's
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
-import { town, online, toasts, command, dismiss } from "./link.js";
+import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
 import { newSession, HALL } from "./tent.js";
@@ -47,7 +47,7 @@ export function WarMap() {
       ${t.orkspaces.map((o) => html`<li key=${o.id}
           class=${cls("ok-item", { "is-selected": o.id === t.active_orkspace, "is-alert": o.questions > 0 })}
           onClick=${() => o.id !== t.active_orkspace && command("orkspace.select", { id: o.id })}>
-        ${o.hotkey && html`<span class="ok-kbd">${o.hotkey.toUpperCase()}</span>`}${o.name}
+        ${o.hotkey && html`<span class="ok-kbd">${o.hotkey.toUpperCase()}</span>`}${say(o.name)}
         <span class="meta">${o.questions > 0 ? html`<span class="ok-word">?</span>`
                                               : html`<span class="ok-word">${o.biome}</span>`}</span>
       </li>`)}
@@ -58,12 +58,12 @@ export function WarMap() {
 export function BuildingList({ buildings }) {
   const active = opened.value.active;
   return html`<nav class="ok-list gui-buildings">
-    <div class="ok-list__head">Buildings</div>
+    <div class="ok-list__head">${say("Buildings")}</div>
     <ul class="ok-list__items">
       ${buildings.map((b) => html`<li key=${b.id}
           class=${cls("ok-item", { "is-selected": b.id === active, "is-alert": !!b.alert })}
           onClick=${() => openBuilding(b.id)}>
-        ${b.title}<span class="meta">${b.alert ? html`<span class="ok-word">?</span>`
+        ${say(b.title)}<span class="meta">${b.alert ? html`<span class="ok-word">?</span>`
                                                : b.state && html`<span class="ok-word">${b.state.toLowerCase()}</span>`}</span>
       </li>`)}
     </ul>
