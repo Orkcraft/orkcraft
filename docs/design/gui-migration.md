@@ -8,7 +8,7 @@ would stop all other work, so the move goes in stages. The TUI keeps working the
 | stage | what | state |
 |---|---|---|
 | 0 | where the core lives | decided (§1) |
-| 1 | the logic apart from the interface | the core stands; what is left is listed in §2 |
+| 1 | the logic apart from the interface | the core, the road engine and the first workers stand; what is left is listed in §2 |
 | 2 | no file everybody has to touch | done for `app.py` (§3) |
 | 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
 | 4 | Office in the GUI: plain widgets, the same town graph | paused |
@@ -57,35 +57,52 @@ What the core owns:
   remove, change the handler, what a source can send), the treasury (spend, limits, HUD texts),
   feedback (👍 / 👎), checkpoints and revert. Quiet hours work (the Elders, the orks'
   self-improvement and probation) and raising a building from a checked spec are services too.
-- **The bus** (`core/bus.py`): topics such as `toast`, `roads`, `roster`, `hall`, `spec` and
-  `hud`. A service never shows anything. It publishes, and each face decides how to show it.
+- **The bus** (`core/bus.py`): topics such as `toast`, `roads`, `roster`, `hall`, `spec`, `hud`,
+  and what roads carry: `delivered`, `output`, `cart`, `run`, `loot`, and `worker` (a building's
+  worker changed its state). A service never shows anything. It publishes, and each face decides
+  how to show it.
+- **Workers** (`core/workers/`): a building's job without its face, one per building, made by
+  `Town.worker(id)` the first time it is asked for. A worker keeps the building's state and does
+  its acts (`receive`, `halt`, `status`, `emit`, `save_config`); its view draws that state again
+  on `worker` and calls the acts. Slow work runs in the worker's threads and comes back through
+  `Town.call`, the hook a face sets to reach its own thread (the TUI's UI thread).
 - **Runner seams** (`core/runners.py`): the model calls tests replace (`BUILD_RUNNER`,
   `ELDERS_RUNNER`, …), in one place for every face.
 
 What stays in the face: dialogs and their flow, focus, keys, layout, windows, huts, carts,
 terminals. A dialog's *decision* calls a service, and the dialog itself is the face's.
 
-**Moved so far:** `core/town.py` (the state, save, checkpoint, chronicle), `core/bus.py`,
-`core/roads.py`, `core/treasury.py`, `core/buildings.py` (raising a spec, Z, goals, 👍 / 👎, the retros'
-and stewards' proposals, the UI document), `core/night.py` (the Elders, the orks' own changes,
-probation), `core/runners.py`. `tests/test_core.py` runs them with no app at all.
+**Moved so far:** `core/town.py` (the state, the machine's settings, save, checkpoint,
+chronicle), `core/bus.py`, `core/roads.py`, `core/treasury.py`, `core/buildings.py` (raising a
+spec, Z, goals, 👍 / 👎, the retros' and stewards' proposals, the UI document), `core/night.py`
+(the Elders, the orks' own changes, probation), `core/roster.py` (the garrisons, the questions,
+the deployments), `core/runners.py`, and:
+
+- **The road engine** is the `Town`'s (`town.roads`, built by `core/delivery.py`). A cart
+  delivered, a handler's result, a run that ended and a cart on the road are core functions that
+  record what happened and publish it; `tui/delivery.py` draws them (the 📥 note, the carts, a
+  failed run's mark, the coin, the Loot list). `Town.budget_ok` is the 🪙 hook the face sets.
+- **Workers** for 🌊 Lake (`workers/lake.py`: what is shown, the file open in the editor),
+  🌾 Task Fields (`workers/fields.py`: the board, its acts and events) and 🗑️ Scroll Dump
+  (`workers/scrolls.py`: the librarian, the spot-checks, halt). Their views keep the widgets, the
+  keys, the dialogs and the timers; their old names read the worker, so callers did not change.
+
+`tests/test_core.py` runs all of it with no app at all.
 
 **Left for stage 1**, the largest first:
 
-1. **A building's work lives in its Textual view.** A typed view (`screens/typed/*`) both draws
-   and does the building's job: `receive` runs or queues work, `halt` stops it, a webhook or a
-   librarian runs in it, `burning` and `orders_alert` raise fire. Each type gets a worker in the
-   core (`core/workers/<type>.py`) that owns this. The view then only draws the worker's state and
-   calls its acts. Start with the types the GUI shows first: Lake, Task Fields, Scroll Dump.
-2. **The road engine** (`realm/roads.Engine`) is built by the app with callbacks into views. It
-   moves to the `Town` once deliveries go to workers rather than views.
-3. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
-   ork, Halt All and the roster's view of running sessions are not. Split them into a sessions
-   service in the core that keeps the processes, and terminals that draw them (pyte today,
-   xterm.js later).
-4. **The roster** (`refresh_roster`) mixes building the roster with badges on windows. Building
-   the roster goes to the core, and the badges stay in the face.
-5. `desktop.machine` (the machine's settings) belongs to the `Town`, not to the window manager.
+1. **Workers for the other types.** A typed view (`screens/typed/*`) of every other type still
+   both draws and does the building's job: `receive` runs or queues work, `halt` stops it, a
+   webhook, a Barracks' orks or a Clan Fire's discussion runs in it, `burning` and `orders_alert`
+   raise fire. Each gets a worker the way the three above did; a delivery goes to the worker when
+   there is one (`delivered` says so), else to the view.
+2. **Sessions and terminals**: the War Tent's terminals (pyte) are the face's, but deploying an
+   ork, the processes and the roster's view of running sessions are not. Split them into a
+   sessions service in the core that keeps the processes, and terminals that draw them (pyte
+   today, xterm.js later).
+3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker,
+   but the TUI's Halt All still walks the views and the War Tent itself. Once every type has a
+   worker and sessions are a service, Halt All is `town.halt()` plus the face's own terminals.
 
 **How it moves:** one domain at a time, with the whole suite green after each. A service lands in
 `core/`, and the TUI's part for that domain calls it instead of doing the work itself. Method
