@@ -165,6 +165,7 @@ class Walk:
         for _ in range(3):
             if not self.page.locator(".gui-full, section.gui-card").count():
                 return
+            self.page.evaluate("document.activeElement && document.activeElement.blur()")  # a terminal keeps Esc
             self.page.keyboard.press("Escape")
             self.wait(300)
 
