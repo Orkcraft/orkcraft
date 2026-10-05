@@ -192,10 +192,18 @@ export function preview(id, data) {
 }
 
 /** The type's quick actions on the Command Card (realm/catalog.py): New task, New note. */
-export const quick = {
+const QUICK = {
   "tasks.new": (id) => { asking.value = { id, lane: "todo", kind: "task" }; },
   "notes.new": (id) => { asking.value = { id, lane: noteLane(id), kind: "note" }; },
 };
+
+/** Does one of its quick actions (js/types.js); true when it did. */
+export function quick(id, action) {
+  const f = QUICK[action];
+  if (!f) return false;
+  f(id);
+  return true;
+}
 
 function noteLane(id) {
   const d = details.value[id];

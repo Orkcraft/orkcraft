@@ -1,0 +1,21 @@
+{
+  "type": "mill",
+  "about": "⚙️ The Mill: changes what arrives, step by step, and keeps every run.",
+  "panes": {
+    "steps": {"about": "the steps as a chain, the one the last run failed at marked", "components": ["list"], "required": true},
+    "runs":  {"about": "the runs, newest first, with what their agent steps cost", "components": ["table", "list"], "required": true},
+    "run":   {"about": "the chosen run: its input, then what every step made of it", "components": ["text"], "required": true},
+    "queue": {"about": "the carts waiting to be milled (shown only while some wait)", "components": ["list"], "dynamic": true}
+  },
+  "default": {
+    "version": 1, "type": "mill", "split": "column",
+    "panes": [
+      {"id": "steps", "component": "list", "size": "auto", "font": "mono"},
+      {"split": "row", "size": 1, "panes": [
+        {"id": "runs", "component": "table", "size": 2, "font": "body"},
+        {"id": "run", "component": "text", "size": 3, "font": "mono"}
+      ]},
+      {"id": "queue", "component": "list", "size": "auto", "font": "status"}
+    ]
+  }
+}
