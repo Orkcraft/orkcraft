@@ -19,7 +19,7 @@ const dropped = signal({});                // building id → {x, y}: where a hu
 const MIN_ROOM = { w: 1080, h: 600 };
 const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
-const STRIP = 0.3, STRIP_MIN = 180;         // the strip over the town's bottom (layout.css .gui-strip): no hut under it
+const STRIP = 0.3, STRIP_MIN = 180;         // the War Map's share of the window (layout.css .gui-strip): no hut under it
 
 /** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the strip. */
 function free(size) {
@@ -78,7 +78,7 @@ export function Town({ buildings, roads }) {
     const el = ref.current;
     const measure = () => {
       const r = { w: Math.max(el.clientWidth, MIN_ROOM.w), h: Math.max(el.clientHeight, MIN_ROOM.h),
-                  strip: Math.max(Math.round(el.clientHeight * STRIP), STRIP_MIN) };
+                  strip: Math.max(Math.round(window.innerHeight * STRIP), STRIP_MIN) };
       if (r.w !== room.value.w || r.h !== room.value.h || r.strip !== room.value.strip) room.value = r;
     };
     measure();
