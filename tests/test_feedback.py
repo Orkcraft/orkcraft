@@ -35,7 +35,8 @@ def test_like_keeps_a_reference_and_dislike_writes_an_incident(tmp_path: Path):
     assert inc.blamed == {"mill": 1.0} and inc.output == "42 words" and inc.note == "the paste was cut"
     feedback.dislike(tmp_path, scroll, "report", "logic")
     s = feedback.scores(tmp_path)
-    assert s["report"] == {"likes": 1, "dislikes": 2, "penalty": 1.0} and s["mill"]["penalty"] == 1.0
+    assert s["report"] == {"likes": 1, "dislikes": 2, "penalty": 1.0, "liked": 1.0, "disliked": 2.0,
+                           "by": {"explicit": -1.0}} and s["mill"]["penalty"] == 1.0
     assert [i.kind for i in feedback.incidents(tmp_path)] == ["logic", "inputs"]
 
 
