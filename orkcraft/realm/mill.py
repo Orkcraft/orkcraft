@@ -42,6 +42,7 @@ from typing import Any, Callable
 from orkcraft.realm import chains, jobs
 
 MAX_RECORDS = 5000
+TRACE_LIMIT = 4000                # what a run keeps of each step's output (`run_full(trace=…)`)
 STEP_NAMES = ("lines", "grep", "drop", "replace", "trim", "lower", "dedupe", "csv", "json", "extract", "pick",
               "sort", "limit", "filter", "count", "to_json", "template", "join", "script", "agent")
 MODEL_STEPS = ("agent",)
@@ -295,18 +296,25 @@ def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str], agent:
     raise ValueError(name)
 
 
-def default_agent(repo_root: Path, cancel: threading.Event, model: str = "") -> Agent:
-    """A read-only Claude (it may read the repository, never change it) as the `agent:` step."""
+def default_agent(repo_root: Path, cancel: threading.Event, model: str = "",
+                  spent: Callable[[float | None], None] | None = None) -> Agent:
+    """A read-only Claude (it may read the repository, never change it) as the `agent:` step; `spent`
+    hears what each call cost (None when the CLI does not say)."""
     from orkcraft.realm import roads
 
     def ask(what: str, text: str) -> str:
-        return roads.run_agent("claude", agent_prompt(what, text), repo_root, {}, cancel, model)[0].strip()
+        out, cost, _ = roads.run_agent("claude", agent_prompt(what, text), repo_root, {}, cancel, model)
+        if spent is not None:
+            spent(cost)
+        return out.strip()
     return ask
 
 
 def run_full(steps: list[str], text: str, repo_root: Path | None = None, cancel: threading.Event | None = None,
-             agent: Agent | None = None, env: list[str] | tuple[str, ...] = ()) -> Result:
-    """Every step in order; never raises — a failing step is the result's error, with what came before it."""
+             agent: Agent | None = None, env: list[str] | tuple[str, ...] = (),
+             trace: list[dict] | None = None) -> Result:
+    """Every step in order; never raises — a failing step is the result's error, with what came before it.
+    `trace` gets each step's output (`{"step", "out"}`, cut to TRACE_LIMIT) or its error (`{"step", "error"}`)."""
     cancel = cancel or threading.Event()
     root = repo_root or Path.cwd()
     agent = agent or default_agent(root, cancel)
@@ -325,7 +333,12 @@ def run_full(steps: list[str], text: str, repo_root: Path | None = None, cancel:
             name, arg = parse(step)
             v = _step(name, arg, v, script, counted)
         except Exception as e:  # a failing step is the run's result, never a crash
+            if trace is not None:
+                trace.append({"step": str(step), "error": str(e)[:TRACE_LIMIT]})
             return Result(_text(v), None, f"step {i} ({str(step)[:40]}): {e}", used[0])
+        if trace is not None:
+            out = _text(v)
+            trace.append({"step": str(step), "out": out[:TRACE_LIMIT] + ("…" if len(out) > TRACE_LIMIT else "")})
     return Result(_text(v), v if isinstance(v, list) else None, "", used[0])
 
 

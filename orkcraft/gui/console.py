@@ -202,6 +202,9 @@ class Console:
         act = t.action(str(args.get("action") or ""))
         if act is None:
             raise ConsoleError(f"{bs.title} has no such action")
+        quick = getattr(self.town.worker(bs.id), "quick_action", None)      # a worker that does it
+        if quick is not None and quick(act.id):
+            return True
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
         return False
 
