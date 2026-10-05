@@ -14,18 +14,19 @@ def refresh(w) -> None:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): a counter per lane, with `new` when one holds unseen cards;
-    in notes mode the note folders."""
+    """Closed (docs/design/building-views.md): a counter per status lane, then the note folders with
+    theirs (`notes`), each `new` when it holds unseen cards; in notes mode only the folders."""
     if w.error:
-        return {"error": w.error[:60], "lanes": []}
+        return {"error": w.error[:60], "lanes": [], "notes": []}
     seen = w.seen()
-    lanes = []
+    lanes, notes = [], []
     for ln in w.visible_lanes():
-        if (w.mode == "notes") != (ln.kind == tasklist.NOTE):
-            continue
         rows = [c for c in w.cards if c.column == ln.id]
-        lanes.append({"label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows)})
-    return {"error": "", "lanes": lanes}
+        count = {"label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows)}
+        (notes if ln.kind == tasklist.NOTE else lanes).append(count)
+    if w.mode == "notes":
+        lanes, notes = notes, []
+    return {"error": "", "lanes": lanes, "notes": notes}
 
 
 def detail(w) -> dict:
