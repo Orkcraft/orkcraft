@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import json
 import threading
-from pathlib import Path
 
 from textual import events
 
 from orkcraft import scroll
-from orkcraft.realm import feedback, metrics, catalog, chronicles, pipes, roads
+from orkcraft.core import bus, delivery
+from orkcraft.realm import pipes, roads
 from orkcraft.screens.custom_view import CustomBuildingView
 from orkcraft.widgets.carts import CartClicked
 from orkcraft.wm import Desktop
@@ -85,9 +85,7 @@ class DeliveryMixin:
 
     def _payload_markdown(self, payload: pipes.Payload) -> tuple[str, str]:
         """(title, markdown) of what a road carries, for a custom building's 📥 pane."""
-        if payload.kind == pipes.FILE:
-            return pipes.read_file_payload(self.repo_root, payload.value)
-        return payload.title or "report", payload.value
+        return delivery.markdown_of(self.core, payload)
 
     def on_paste(self, event: events.Paste) -> None:
         """A file dragged onto the terminal while a Drop Zone is selected is a drop."""
@@ -99,48 +97,11 @@ class DeliveryMixin:
 
     def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
                    trail: tuple = (), ref: str = "") -> bool:
-        """A typed building sends one of its events: only when a road carries it (with the trail of
-        what it passes on, when it gives one)."""
-        spec = self.custom_specs.get(building_id)
-        ev = catalog.type_of(spec).event(event_id) if spec else None
-        if ev is not None:
-            feedback.record_output(self.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
-        if ev is None or self.scroll is None or not scroll.has_outgoing(self.scroll, building_id, event_id):
-            return False
-        self.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref))
-        return True
+        """A typed building sends one of its events (core/delivery.py)."""
+        return self.core.emit_typed(building_id, event_id, value, title, trail, ref)
 
     def deliver_payload(self, target_id: str, payload: pipes.Payload, title: str = "", markdown: str = "") -> None:
-        feedback.record_delivery(self.repo_root, target_id, payload.source)            # the session's graph
-        view = self._custom_view(target_id)
-        if view is not None:
-            t, md = (title, markdown) if markdown else self._payload_markdown(payload)
-            src = self.scroll.building(payload.source) if self.scroll is not None else None
-            view.show_incoming(f"{src.title if src else payload.source} → {t}", md, payload.trail, payload.ref)
-            receive = getattr(view, "receive", None)
-            if receive is not None:
-                receive(payload, t, md)
-        if target_id == "loot":
-            if payload.kind == pipes.TEXT:
-                t = title or payload.title
-                md = markdown or payload.value
-                path = pipes.write_loot(self.repo_root, payload.source, t, md)
-                loot_win = self.desktop.get_window("loot")
-                if loot_win is not None:
-                    try:
-                        from orkcraft.screens.loot_view import LootView
-                        loot_view = loot_win.query_one(LootView)
-                        loot_view.refresh_view()
-                    except Exception:
-                        pass
-                self.notify(f"📦 report saved: loot/pipes/{path.name}", title="Loot")
-        try:
-            src_spec = self.scroll.building(payload.source) if self.scroll is not None else None
-            src_title = src_spec.title if src_spec and src_spec.title else payload.source
-            chronicles.record(self.repo_root, self.scroll, target_id, "payload_received",
-                              kind=payload.kind, source=src_title)
-        except OSError:
-            pass
+        self.core.deliver(target_id, payload, title, markdown)
 
     def _call_on_ui(self, fn, *args) -> None:
         """Road engine callbacks come from agent threads too; Textual widgets live on the UI thread."""
@@ -153,36 +114,14 @@ class DeliveryMixin:
             pass  # the app is shutting down
 
     def payload_meta(self, payload: pipes.Payload) -> dict:
-        """Type / status / subtype of the Markdown item a payload names (the source filter and the
-        personal guard). Only the showcase sandbox indexes items; elsewhere the dict is empty and road
-        filters on node_type / node_status do not match."""
-        if self.graph is None:
-            return {}
-        ident = payload.value if payload.kind == pipes.NODE else ""
-        if payload.kind == pipes.FILE and payload.value.endswith(".md"):
-            ident = Path(payload.value).stem
-        entity = self.graph.get_entity(ident) if ident else None
-        if entity is None:
-            return {}
-        return {"type": entity.type, "status": entity.status, "title": entity.title,
-                "subtype": "personal" if entity.is_personal else entity.subtype}
+        return delivery.meta(self.core, payload)
 
     def deliver_handler_output(self, target_id: str, orc: scroll.OrcSpec, title: str, markdown: str,
                                trail: tuple = (), ref: str = "") -> None:
-        """A handler's result: shown by a receiver that renders text, otherwise kept as a Loot report.
-        `trail` is every hop the result went through, the handler's own last."""
-        if not self._windows_alive():
-            return
-        view = self._custom_view(target_id)
-        if view is not None:
-            view.show_incoming(title, markdown, tuple(trail), ref)
-        else:
-            path = pipes.write_loot(self.repo_root, target_id, title, markdown)
-            self.notify(f"📦 {title}: loot/pipes/{path.name}", title="Handler")
+        delivery.output(self.core, target_id, orc, title, markdown, trail, ref)
 
-    def on_road_cart(self, cart: roads.Cart) -> None:
-        if self._windows_alive():
-            self.desktop.traffic.launch(cart)
+    def on_handler_run(self, run: roads.HandlerRun) -> None:
+        delivery.ran(self.core, run)
 
     def on_cart_clicked(self, message: CartClicked) -> None:
         cart = message.cart
@@ -192,24 +131,54 @@ class DeliveryMixin:
         detail = f" — {cart.detail}" if getattr(cart, "detail", "") else ""
         self.notify(f"🛒 {cart.status}: {what}{detail}", title=f"Cart · {cart.source} → {cart.target}")
 
-    def on_handler_run(self, run: roads.HandlerRun) -> None:
-        if run.outcome in ("done", "error"):         # every run of the camp, for the Tally Crag
-            try:
-                metrics.record_run(self.repo_root, run.target, run.outcome, run.cost_usd, run.tokens)
-            except OSError:
-                pass
+    # -- what the core publishes, drawn (core/bus.py) -------------------------------------------------
+
+    def _wire_delivery(self) -> None:
+        on = self.core.bus.subscribe
+        on(bus.DELIVERED, lambda e: self._show_delivered(**e.data))
+        on(bus.OUTPUT, lambda e: self._show_output(**e.data))
+        on(bus.CART, lambda e: self._show_cart(e.data["cart"]))
+        on(bus.RUN, lambda e: self._show_run(e.data["run"], e.data["name"]))
+        on(bus.LOOT, lambda e: self._refresh_loot())
+
+    def _show_delivered(self, building: str, payload: pipes.Payload, title: str, markdown: str, label: str,
+                        worker: bool) -> None:
+        """A cart arrived: the view notes it; a view whose type has no worker yet takes it itself."""
+        view = self._custom_view(building)
+        if view is None:
+            return
+        view.show_incoming(label, markdown, payload.trail, payload.ref)
+        receive = None if worker else getattr(view, "receive", None)
+        if receive is not None:
+            receive(payload, title, markdown)
+
+    def _show_output(self, building: str, orc: str, title: str, markdown: str, trail: tuple = (),
+                     ref: str = "") -> None:
+        if not self._windows_alive():
+            return
+        view = self._custom_view(building)
+        if view is not None:
+            view.show_incoming(title, markdown, tuple(trail), ref)
+
+    def _show_cart(self, cart: roads.Cart) -> None:
+        if self._windows_alive():
+            self.desktop.traffic.launch(cart)
+
+    def _show_run(self, run: roads.HandlerRun, name: str) -> None:
         if self._windows_alive():
             if run.outcome == "error":
                 self.desktop.traffic.mark_error(run.target, list(run.roads))
             if run.cost_usd:
                 self.desktop.traffic.flash_coin(run.target)
-        b_spec = self.scroll.building(run.target) if self.scroll is not None else None
-        orc = b_spec.garrison.orc(run.orc_id) if b_spec else None
-        name = orc.name if orc else run.orc_id
-        try:
-            chronicles.record(self.repo_root, self.scroll, run.target, "handler_ran", by=name, orc=name,
-                              outcome=run.outcome, roads=len(run.roads))
-        except OSError:
-            pass
         if run.outcome == "error" and self.is_running:
             self.notify(f"{name}: {run.error}", title="Handler", severity="warning")
+
+    def _refresh_loot(self) -> None:
+        loot_win = self.desktop.get_window("loot") if self._windows_alive() else None
+        if loot_win is None:
+            return
+        try:
+            from orkcraft.screens.loot_view import LootView
+            loot_win.query_one(LootView).refresh_view()
+        except Exception:
+            pass

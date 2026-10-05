@@ -1,7 +1,8 @@
 """The bus: how the core tells a face what changed. A service never shows anything itself, it
 publishes. Each face subscribes and decides how to show it: a toast, a redrawn road, a refreshed
 hall. Payloads are plain data (strings, numbers, lists, dicts), so a daemon can later carry them
-over a socket unchanged.
+over a socket unchanged (`DELIVERED`, `CART` and `RUN` still carry the realm's dataclasses; they
+become dicts when the socket comes).
 
     bus.subscribe(TOAST, lambda e: show(e.data["message"]))
     bus.publish(TOAST, message="🛤 Pit → Lake", title="Roads")
@@ -21,6 +22,12 @@ HALL = "hall"        # the Town Hall's lists changed (ratings, proposals, the Co
 SPEC = "spec"        # building, spec: a custom building's spec changed (its view takes the new one)
 UI = "ui"            # building, ui: a building's UI document changed (its view lays itself out again)
 HUD = "hud"          # the treasury or the clock changed
+DELIVERED = "delivered"  # building, payload, title, markdown, label, worker: a cart arrived (worker: one took it)
+OUTPUT = "output"    # building, orc, title, markdown, trail, ref: a handler's result for a custom building
+CART = "cart"        # cart: a cart set off along a road (or was held)
+RUN = "run"          # run, name: a handler or a building's own agent finished
+LOOT = "loot"        # path, source: a report was kept in Loot
+WORKER = "worker"    # building: a building's worker changed its state (its view draws it again)
 
 SEVERITIES = ("information", "warning", "error")
 

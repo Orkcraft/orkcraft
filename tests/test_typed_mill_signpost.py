@@ -135,8 +135,8 @@ async def test_the_signpost_routes_into_the_mill(fake_repo: Path, monkeypatch):
         signpost_view = app.desktop.get_window("crossroads").query_one(SignpostView)
         mill_view = app.desktop.get_window("grinder").query_one(MillView)
         delivered = []
-        real_deliver = app.deliver_payload
-        monkeypatch.setattr(app, "deliver_payload", lambda t, p, *a: delivered.append((t, p.title)) or real_deliver(t, p, *a))
+        real_deliver = app.core.deliver
+        monkeypatch.setattr(app.core, "deliver", lambda t, p, *a: delivered.append((t, p.title)) or real_deliver(t, p, *a))
         signpost_view.receive(P(LOG), "log", LOG)                           # → route errors → the mill
         signpost_view.receive(P("all good"), "ok", "all good")               # → route rest: no road takes it
         for _ in range(40):
@@ -173,7 +173,7 @@ async def test_the_mill_queues_every_cart_and_flat_maps_records(fake_repo: Path,
         app.add_road("sink", "grinder", "mill.item", None)
         mill_view = app.desktop.get_window("grinder").query_one(MillView)
         delivered = []
-        monkeypatch.setattr(app, "deliver_payload", lambda t, p, *a: delivered.append((t, p.mode, p.value)))
+        monkeypatch.setattr(app.core, "deliver", lambda t, p, *a: delivered.append((t, p.mode, p.value)))
         for text in ("a\nb", "c", "d\ne\nf"):                       # three carts while the first still mills
             mill_view.receive(P(text), "cart", text)
         assert mill_view.running and len(mill_view.queue) == 2

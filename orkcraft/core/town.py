@@ -11,7 +11,7 @@ from typing import Any, Callable
 
 from orkcraft import scroll, settings
 from orkcraft.config import Config, find_project_root
-from orkcraft.core import bus as b
+from orkcraft.core import bus as b, delivery
 from orkcraft.realm import catalog, checkpoint, chronicles, masonry, pipes
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.sources import telemetry
@@ -76,6 +76,12 @@ class Town:
         self.run_id = telemetry.new_run_id()
         self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
         self.snapshot = telemetry.Snapshot()
+        # How a callback from another thread reaches the face (the TUI hops to its UI thread); the
+        # road engine and the workers call back through it. Alone, the town calls straight away.
+        self.call: Callable[..., Any] = lambda fn, *a: fn(*a)
+        self.budget_ok: Callable[[], bool] = lambda: not self.demo      # may a model call start (🪙)
+        self.workers: dict[str, Any] = {}          # building id → its worker (core/workers), made when first asked
+        self.roads = delivery.engine(self)          # roads: events into deliveries and handler runs
 
     # -- telling the faces -----------------------------------------------------------------------
 
@@ -105,6 +111,30 @@ class Town:
         """Ids a new building may not take: loaded buildings and every building the scroll remembers
         (a custom building whose spec file was deleted still has its scroll entry)."""
         return {x.id for x in self.buildings} | {x.id for x in self.scroll.buildings}
+
+    # -- the buildings' work -----------------------------------------------------------------------
+
+    def worker(self, building_id: str | None):
+        """The building's worker (core/workers), made the first time it is asked for; None for a
+        building whose type has none yet (its view still does the work)."""
+        if not building_id:
+            return None
+        return self.workers.get(building_id)
+
+    def deliver(self, target_id: str, payload, title: str = "", markdown: str = "") -> None:
+        """A cart arrives in `target_id` (core/delivery.py)."""
+        delivery.deliver(self, target_id, payload, title, markdown)
+
+    def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
+                   trail: tuple = (), ref: str = "") -> bool:
+        """A typed building sends one of its events down the roads that carry it."""
+        return delivery.emit(self, building_id, event_id, value, title, trail, ref)
+
+    def halt(self) -> int:
+        """Stop what the town runs: the road handlers and every worker's own work (queues wait).
+        How many workers had something to stop."""
+        self.roads.stop()
+        return sum(int(w.halt() or 0) for w in list(self.workers.values()))
 
     # -- the acts every service needs ------------------------------------------------------------
 

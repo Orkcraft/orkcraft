@@ -12,7 +12,7 @@ from textual.screen import Screen
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 
-from orkcraft.realm import feedback, roads
+from orkcraft.realm import feedback
 from orkcraft.realm.buildings import Building
 from orkcraft.screens.console import CONSOLE_DEFAULT_PCT, Console
 from orkcraft.env import getenv
@@ -166,15 +166,9 @@ class OrkcraftApp(
         self._hushed = False                 # the orcs at work: no toasts, no dialogs (the ledger tells)
         self.worktree_marks: dict[str, str] = {}
         self._watching: set[str] = set()
-        # Roads: events from a source building to the receivers' plain deliveries and handlers.
-        self.roads = roads.Engine(
-            lambda: self.scroll, self.repo_root,
-            deliver=lambda target_id, payload: self.deliver_payload(target_id, payload),
-            on_output=self.deliver_handler_output, on_run=self.on_handler_run, meta=self.payload_meta,
-            on_cart=self.on_road_cart,
-            budget_ok=lambda: not self.demo and not self.gold_exhausted(), call=self._call_on_ui,
-            run_env={"ORKCRAFT_RUN": self.run_id},
-        )
+        # Roads (core/delivery.py): the engine is the town's; its callbacks reach the UI thread.
+        self.core.call = self._call_on_ui
+        self.core.budget_ok = lambda: not self.demo and not self.gold_exhausted()
         self.focus_state = FocusState("neutral")
         self.mode = "full"
         self._console_forced: bool | None = None  # user toggle in Compact / Minimal / Full
@@ -193,6 +187,7 @@ class OrkcraftApp(
     run_id = delegate("core", "run_id")
     telemetry = delegate("core", "telemetry")
     snapshot = delegate("core", "snapshot")
+    roads = delegate("core", "roads")
     roster = delegate("muster", "roster")
     dismissed = delegate("muster", "dismissed")
     deployments = delegate("muster", "deployments")
@@ -219,6 +214,7 @@ class OrkcraftApp(
         on(bus.HUD, lambda e: self.refresh_hud())
         on(bus.SPEC, lambda e: self._spec_changed(e.data["building"], e.data["spec"], e.data.get("refresh", False)))
         on(bus.UI, lambda e: self._ui_changed(e.data["building"], e.data["ui"]))
+        self._wire_delivery()
 
     def get_default_screen(self) -> Screen:
         # The desktop focuses the home building itself; Textual's auto focus would pick the first
@@ -311,9 +307,3 @@ class OrkcraftApp(
             self.desktop.save()
         except Exception:
             pass
-
-
-
-
-
-
