@@ -76,6 +76,9 @@ class Console:
             "ork.report": self.report,
             "job.accept": self.accept,
             "job.drop": self.drop,
+            # Shared by every type (docs/design/building-views.md §4): stubs until tracks L and K land.
+            "lake.open": self.lake_open,
+            "keeper.ask": self.keeper_ask,
         }
 
     # -- helpers --------------------------------------------------------------------------------------
@@ -201,6 +204,27 @@ class Console:
             raise ConsoleError(f"{bs.title} has no such action")
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
         return False
+
+    # -- Lake and the keeper: what every type calls --------------------------------------------------
+
+    def lake_open(self, args: dict) -> str:
+        """A document opened in Lake: shown in the town's Lake building (the Lake window replaces this)."""
+        kind = str(args.get("kind") or "text")
+        value = self._text(args, "value", 2_000_000)
+        if kind not in ("file", "text") or not value:
+            raise ConsoleError("Nothing to open")
+        lake = next((b for b in self.town.scroll.buildings if not b.demolished
+                     and catalog.type_of(self.town.spec_of(b.id)).id == "lake"), None)
+        worker = self.town.worker(lake.id) if lake is not None else None
+        if worker is None:
+            raise ConsoleError("Lake opens documents once the Lake window is here — no Lake in this town yet")
+        worker.show_value(kind, value, self._text(args, "title", 200))
+        return lake.id
+
+    def keeper_ask(self, args: dict) -> None:
+        """A building's keeper asked in plain words: arrives with the keeper (track K)."""
+        self._spec(args)
+        raise ConsoleError("The keeper takes requests soon — for now Redesign and the orks' orders")
 
     # -- the garrison ---------------------------------------------------------------------------------
 

@@ -39,6 +39,13 @@ button { font: inherit; color: inherit; }
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
 .gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
+/* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). */
+.gui-hut__title { padding: 0 var(--space-1) var(--space-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-hut .ok-hut__card { min-height: 28px; }
+.gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
+.gui-hut__body { min-width: 0; padding-right: var(--space-3); }
+.gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+.gui-counter { white-space: nowrap; }
 .gui-town__room > .gui-roads { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .gui-road polyline { fill: none; stroke: var(--road); stroke-width: 2; stroke-linejoin: miter; }
 .gui-road circle { fill: var(--road); }
@@ -61,6 +68,7 @@ button { font: inherit; color: inherit; }
 .gui-card .ok-act { justify-content: flex-start; }
 .gui-card .gui-win__demolish { margin-left: 0; }
 .gui-card__sep { width: 100%; border: 0; border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
+.gui-card__preview { flex: none; min-height: 0; max-height: 60%; overflow: auto; }
 .gui-info__row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
 .gui-info__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-info__row .gui-win__demolish { margin-left: 0; }

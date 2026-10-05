@@ -189,7 +189,7 @@ orkcraft/gui/
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
-              console, acts, layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
+              console, acts, types, lake, keeper, layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
               draws, loaded when one opens), layout.css (every look), office.css, camp.css
 ```
 
@@ -203,6 +203,9 @@ orkcraft/gui/
 - **The layout is the design system's.** `layout.css` places the components (HUD on top, the town,
   over its bottom the War Map at the left and the selected building's console at the right, an open
   building over the whole town, the status bar) and uses tokens only.
+- **A building three ways.** Closed (its hut card), command (the Command Card's preview) and full (its
+  window): what each type shows in each, the hooks a type keeps (`card`, `preview`, `panes`) and how
+  the work is split across branches — [building-views.md](building-views.md).
 - **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
   panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
   pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it

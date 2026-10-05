@@ -11,16 +11,19 @@ text that may carry emoji comes twice, as it is and `_plain` (in Office's words,
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import Any
 
 from orkcraft import schedule
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
+from orkcraft.gui import views
 from orkcraft.realm import catalog, lexicon, modes, pipes
 from orkcraft.scroll import road_key
 
 HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
+PAGES = Path(__file__).parent / "static" / "js" / "buildings"     # a type's own page code: <type>.js
 
 
 def _ork(o) -> dict[str, Any]:
@@ -42,6 +45,19 @@ def _hut_lines(town: Town, building_id: str) -> list[str]:
         return []
 
 
+def _card(type_id: str, worker) -> Any:
+    """What a type's hut card shows (closed), from its view's `card(worker)`: small JSON, in every
+    snapshot. None for a type without one (the card shows the status lines)."""
+    view = views.of(type_id) if worker is not None else None
+    card = getattr(view, "card", None)
+    if card is None:
+        return None
+    try:
+        return card(worker)
+    except Exception:          # a card never takes the town down
+        return None
+
+
 def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
     out = []
     for bs in town.scroll.buildings:
@@ -54,7 +70,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
         worker = town.workers.get(bs.id)
         out.append({
             "id": bs.id, "title": bs.title, "icon": bs.icon,
-            "type": catalog.type_of(spec).id if spec else bs.preset_ref or bs.id,
+            "type": (type_id := catalog.type_of(spec).id if spec else bs.preset_ref or bs.id),
             "hut": list(bs.hut) if bs.hut else None,
             "pinned": bool(bs.pinned),
             "status": (lines := _hut_lines(town, bs.id)),
@@ -64,6 +80,8 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,
+            "card": _card(type_id, worker),
+            "page": (PAGES / f"{type_id}.js").is_file(),
         })
     return out
 
