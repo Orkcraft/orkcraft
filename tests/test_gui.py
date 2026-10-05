@@ -453,7 +453,7 @@ def test_a_type_registers_itself_by_its_files():
         if path.stem != "__init__":
             assert path.stem in found, f"gui/views/{path.name} without a worker"
             assert (srv.STATIC / "js" / "buildings" / f"{path.stem}.js").is_file(), f"no js/buildings/{path.stem}.js"
-    assert views.of("pit") is None and views.of("../server") is None
+    assert views.of("no_such_type") is None and views.of("../server") is None
 
 
 def test_the_look_is_office_until_asked_otherwise(fake_repo):
@@ -583,5 +583,5 @@ def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_l
         host.command("lake.open", {"kind": "file", "value": "README.md"})
     lake = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
     assert host.command("lake.open", {"kind": "file", "value": "README.md", "title": "readme"}) == lake.id
-    with pytest.raises(CommandError):                 # the keeper arrives with its own track
+    with pytest.raises(CommandError):                 # the Town Hall keeps no settings (tests/test_keeper.py)
         host.command("keeper.ask", {"id": "town_hall", "request": "route bugs to the Forge"})
