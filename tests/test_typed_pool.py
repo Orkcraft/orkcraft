@@ -145,6 +145,7 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
         assert "follow-up" in crew.calls[2]["prompt"]
         assert [p.mode for p in sent].count("pool.done") == 1
         assert "pool/camp/t1001" in next(p.value for p in sent if p.mode == "pool.done")   # the task's branch
+        assert "## Files on `pool/camp/t1001`" in next(p.value for p in sent if p.mode == "pool.done")
 
         crew.calls[1]["gate"].set()                                      # Mogka frees → takes T1003
         assert await _until(pilot, lambda: len(crew.calls) == 4)

@@ -56,6 +56,8 @@ that matching, not a language of their own.
 - **Reminders** — a held cart sets the hut on 🔥 like an ork waiting for an answer: orange, red,
   then the roof burns (`realm/modes.py`), respecting quiet hours; `!` (🔥 Orders) lists it.
 
+**A draft waiting for approval.** A cart whose last hop ended `approval` (a Barracks ork's post to Jira or Confluence, sent as `pool.question`) is always held, whatever the rules. ✓ accept also tells its maker directly (`app.return_approved`), and the ork posts the accepted text, edits included; ✗ reject sends the draft back with the reason.
+
 Carts are matched across rework rounds by `Payload.ref` (§4), so the attempt counter survives the
 round trip through the source. A cart that comes back is always held again, whatever the rules.
 

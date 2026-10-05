@@ -118,7 +118,12 @@ class GeneratorView(TypedView):
 
     def accept_item(self, item: gate.Item, value: str | None = None) -> None:
         self.queue.accept(item, value)
-        self._pass(item.payload())
+        payload = item.payload()
+        self._pass(payload)
+        last = payload.trail[-1] if payload.trail else None
+        taker = getattr(self.app, "return_approved", None)
+        if last is not None and last.outcome == gate.APPROVAL and taker is not None and (to := taker(item.source, payload)):
+            self.app.notify(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
         self._changed()
 
     def rework_item(self, item: gate.Item, reason: str) -> str:
