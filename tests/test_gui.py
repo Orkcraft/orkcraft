@@ -699,6 +699,35 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
     assert types[0]["intent"].startswith("Take in") and all(t["intent"] for t in types)
 
 
+def test_a_tally_crag_charts_busy_orks_and_quotas_through_the_host(fake_repo, isolated_layout_file, monkeypatch):
+    """core/workers/crag.py `probe`: the GUI host hands it the roster's busy orks, every Barracks'
+    working orks and the quotas the Town Hall read, as the TUI's view does."""
+    from types import SimpleNamespace
+
+    from orkcraft.realm import metrics
+    from orkcraft.realm.roster import Roster
+    from orkcraft.sources.limits import Limit
+
+    host = _host(fake_repo)
+    bid = host.command("town.build", {"type": "crag"})
+    host.tick()
+    w = host.town.worker(bid)
+    assert w.probe is not None
+    monkeypatch.setattr(Roster, "active", property(lambda self: 2))
+    barracks = SimpleNamespace(TYPE="barracks", state=SimpleNamespace(
+        orcs=[SimpleNamespace(status="working"), SimpleNamespace(status="idle")]))
+    monkeypatch.setitem(host.town.workers, "barracks_x", barracks)
+    host.town.worker("town_hall").limits = [Limit("claude", "", "5h session", 0.25, None),
+                                            Limit("agy", "pro", "weekly", None, None, "no answer")]
+    assert w.probe() == {"orcs": 3, "limits": [("claude 5h session", 75.0)]}
+    w.save_config({"charts": [metrics.chart_line(metrics.Chart("orcs", orientation="horizontal")),
+                              metrics.chart_line(metrics.Chart("limits", orientation="horizontal"))]})
+    w.tick()
+    orcs, limits = host.detail(bid)["data"]["charts"]
+    assert orcs["source"] == "orcs" and orcs["now"] == 3
+    assert limits["source"] == "limits" and ["claude 5h session", 75.0] in limits["parts"]
+
+
 def test_the_task_board_card_counts_the_note_folders_too(fake_repo, isolated_layout_file):
     """Closed: the status lanes' counters, then the note folders with theirs (building-views.md §3)."""
     host = _host(fake_repo)

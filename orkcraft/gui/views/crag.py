@@ -15,6 +15,24 @@ def refresh(w) -> None:
     w.tick()
 
 
+def attach(w, host) -> None:
+    """The host hands the worker what only the face knows (the worker's `probe`), as the TUI's view does."""
+    w.probe = lambda: probe(host)
+
+
+def probe(host) -> dict:
+    """Busy orks (the roster's, and every Barracks' working orks) and the quotas the Town Hall read
+    (`% used`): the TUI's `CragView.probe`, from what the GUI host has."""
+    busy = host.muster.roster.active
+    for other in list(host.town.workers.values()):
+        if getattr(other, "TYPE", "") == "barracks":
+            busy += sum(1 for o in other.state.orcs if o.status == "working")
+    hall = host.town.workers.get("town_hall")
+    limits = [(f"{x.provider} {x.group or x.window}", (1 - x.remaining) * 100)
+              for x in getattr(hall, "limits", None) or () if x.remaining is not None]
+    return {"orcs": busy, "limits": limits}
+
+
 def _values(s: metrics.Series, c: metrics.Chart) -> list[float]:
     return [v for _, v in s.buckets] if c.orientation == "vertical" and s.buckets else [v for _, v in s.parts]
 
