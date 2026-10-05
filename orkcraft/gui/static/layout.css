@@ -10,21 +10,23 @@ button { font: inherit; color: inherit; }
 .gui {
   height: 100%;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) 22px;
-  grid-template-areas: "hud hud" "side town" "status status";
+  grid-template-areas: "hud" "town" "status";
 }
-.gui--open { grid-template-columns: 260px minmax(0, 1fr) minmax(360px, 44%); grid-template-areas: "hud hud hud" "side town group" "status status status"; }
+.gui--open { grid-template-columns: minmax(0, 1fr) minmax(360px, 44%); grid-template-areas: "hud hud" "town group" "status status"; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
 .gui-hud__project { color: var(--ink-muted); }
 
-/* The sidebar: the War Map over the buildings of the orkspace. */
-.gui-side { grid-area: side; display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto;
-  background: var(--panel); box-shadow: inset -1px 0 0 var(--frame); }
-.gui-side .ok-list { box-shadow: none; }
-.gui-side .ok-item { cursor: pointer; }
+/* The War Map: the orkspaces in a small square over the town's bottom-left corner, as in the TUI.
+   It shares the town's grid area, so it stays put while the town scrolls; its list scrolls. */
+.gui-warmap { grid-area: town; align-self: end; justify-self: start; z-index: 4;
+  width: 220px; height: 220px; margin: var(--space-3); display: flex; flex-direction: column; }
+.gui-warmap > .ok-list__head { flex: none; }
+.gui-warmap > .ok-list__items { flex: 1; min-height: 0; overflow-y: auto; }
+.gui-warmap .ok-item { cursor: pointer; }
 
 /* The town: huts where the person put them, roads under them. */
 .gui-town { grid-area: town; position: relative; overflow: auto; }

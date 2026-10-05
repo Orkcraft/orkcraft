@@ -1,9 +1,9 @@
-// The Office chrome around the town: the HUD (title bar), the War Map and the building list
-// (sidebar), the status bar and the toasts. Markup and classes are the design system's
+// The Office chrome around the town: the HUD (title bar), the War Map (the orkspaces, a small
+// block over the town's bottom-left corner, as in the TUI), the status bar and the toasts. Markup and classes are the design system's
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss } from "./link.js";
-import { opened, openBuilding } from "./windows.js";
+import { openBuilding } from "./windows.js";
 import { openOrders } from "./orders.js";
 import { newSession, HALL } from "./tent.js";
 import { building } from "./build.js";
@@ -41,7 +41,7 @@ export function Hud() {
 
 export function WarMap() {
   const t = town.value;
-  return html`<nav class="ok-list gui-warmap">
+  return html`<nav class="ok-list gui-warmap" aria-label="Orkspaces">
     <div class="ok-list__head">War Map</div>
     <ul class="ok-list__items">
       ${t.orkspaces.map((o) => html`<li key=${o.id}
@@ -50,21 +50,6 @@ export function WarMap() {
         ${o.hotkey && html`<span class="ok-kbd">${o.hotkey.toUpperCase()}</span>`}${o.name}
         <span class="meta">${o.questions > 0 ? html`<span class="ok-word">?</span>`
                                               : html`<span class="ok-word">${o.biome}</span>`}</span>
-      </li>`)}
-    </ul>
-  </nav>`;
-}
-
-export function BuildingList({ buildings }) {
-  const active = opened.value.active;
-  return html`<nav class="ok-list gui-buildings">
-    <div class="ok-list__head">Buildings</div>
-    <ul class="ok-list__items">
-      ${buildings.map((b) => html`<li key=${b.id}
-          class=${cls("ok-item", { "is-selected": b.id === active, "is-alert": !!b.alert })}
-          onClick=${() => openBuilding(b.id)}>
-        ${b.title}<span class="meta">${b.alert ? html`<span class="ok-word">?</span>`
-                                               : b.state && html`<span class="ok-word">${b.state.toLowerCase()}</span>`}</span>
       </li>`)}
     </ul>
   </nav>`;

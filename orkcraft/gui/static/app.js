@@ -3,7 +3,7 @@
 import { render } from "preact";
 import { html } from "./js/html.js";
 import { town, connect } from "./js/link.js";
-import { Hud, WarMap, BuildingList, StatusBar, Toasts } from "./js/chrome.js";
+import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
 import { Windows, opened } from "./js/windows.js";
 import { Orders } from "./js/orders.js";
@@ -23,8 +23,8 @@ function App() {
   const open = opened.value.ids.some((id) => standing.has(id));
   return html`<div class=${open ? "gui gui--open" : "gui"}>
     <${Hud} />
-    <aside class="gui-side"><${WarMap} /><${BuildingList} buildings=${buildings} /></aside>
     <${Town} buildings=${buildings} roads=${t.roads} />
+    <${WarMap} />
     <${Windows} />
     <${StatusBar} />
     <${Toasts} />
