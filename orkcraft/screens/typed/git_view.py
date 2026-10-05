@@ -8,10 +8,12 @@ off the UI thread; between two looks it sends `git.commit`, `git.pr_opened`, `gi
 the base (realm/forge.py) without asking — `c` in the open building turns on a confirmation
 first (the `confirm` setting). Success sends `forge.merged`; conflicts or red tests send
 `forge.conflict` (a road can take them to the Council). No CI here.
+
+The looks, the tests and the merge are the building's worker's (core/workers/forge.py); the view
+draws the branches, asks before a merge and holds the keys and the timer.
 """
 from __future__ import annotations
 
-import threading
 import webbrowser
 
 from rich.text import Text
@@ -21,6 +23,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
+from orkcraft.core.workers.forge import ForgeWorker
 from orkcraft.realm import forge, gitinfo
 from orkcraft.screens.dialogs import Confirm
 from orkcraft.screens.typed.base import TypedView
@@ -30,21 +33,49 @@ REFRESH_S = 30.0
 
 class GitView(TypedView):
     TYPE = "forge"
+    UI_PANES = {"head": "#git-head", "branches": "#git-branches", "detail": "#git-detail-pane", "settings": "#git-head"}
     BINDINGS = [Binding("c", "toggle_confirm", "Confirm merges on/off")]
-    merger = staticmethod(forge.merge)            # tests swap the merge here
 
     def __init__(self, *a, **kw) -> None:
         super().__init__(*a, **kw)
-        self.snap: gitinfo.Snapshot | None = None
-        self.merging = ""
-        self.last_merge: forge.Result | None = None
-        self._looking = False
+        self._asked = ""
+
+    @property
+    def worker(self) -> ForgeWorker:
+        return super().worker
+
+    # -- the worker's state, as the view's own (tests and other views read these) -------------------
+
+    @property
+    def snap(self) -> gitinfo.Snapshot | None:
+        return self.worker.snap
+
+    @property
+    def merging(self) -> str:
+        return self.worker.merging
+
+    @property
+    def last_merge(self) -> forge.Result | None:
+        return self.worker.last_merge
+
+    @property
+    def base(self) -> str:
+        return self.worker.base
+
+    def apply_snapshot(self, snap: gitinfo.Snapshot) -> None:
+        self.worker.apply_snapshot(snap)
+
+    def receive(self, payload, title: str, markdown: str) -> None:
+        self.worker.receive(payload, title, markdown)
+
+    def status(self) -> str:
+        return self.worker.status()
 
     def compose_body(self) -> ComposeResult:
         yield Static("", id="git-head", classes="typed-head")
         with Horizontal(classes="typed-row"):
             yield OptionList(id="git-branches", classes="typed-list")
-            with VerticalScroll(classes="typed-detail"):
+            with VerticalScroll(classes="typed-detail", id="git-detail-pane"):
                 yield Static("", id="git-detail", markup=False, classes="-as-written")
 
     def on_mount(self) -> None:
@@ -54,24 +85,16 @@ class GitView(TypedView):
     # -- looking --------------------------------------------------------------------------------------
 
     def refresh_data(self) -> None:
-        if self._looking:
-            return
-        self._looking = True
-        self.run_worker(self._look, thread=True, exclusive=True, group="git-look")
+        self.worker.refresh()
 
-    def _look(self) -> None:
-        snap = gitinfo.snapshot(self._get_repo_root(), str(self.config.get("base", "")))
-        try:
-            self.app.call_from_thread(self.apply_snapshot, snap)
-        except Exception:
-            self._looking = False
-
-    def apply_snapshot(self, snap: gitinfo.Snapshot) -> None:
-        self._looking = False
-        for event_id, text in gitinfo.changes(self.snap, snap):
-            self.emit(event_id, text, text.split(":", 1)[0])
-        self.snap = snap
+    def redraw(self) -> None:
         self._render_list()
+        asking = self.worker.asking
+        if asking and asking != self._asked:          # a road brought a branch: ask before merging it
+            self._asked = asking
+            self._confirm(asking, lambda yes: self.worker.merge(asking) if yes else self.worker.decline())
+        elif not asking:
+            self._asked = ""
 
     def _render_list(self) -> None:
         snap = self.snap
@@ -137,7 +160,7 @@ class GitView(TypedView):
         if b.name != snap.base:
             t.append(f"{b.ahead} ahead, {b.behind} behind {snap.base}; {b.files} files {b.change}\n", style="dim")
         t.append("\n")
-        t.append(gitinfo.detail(self._get_repo_root(), snap.base, b.name))
+        t.append(gitinfo.detail(self.worker.repo_root, snap.base, b.name))
         try:
             self.query_one("#git-detail", Static).update(t)
         except Exception:
@@ -146,46 +169,17 @@ class GitView(TypedView):
     # -- the hut ----------------------------------------------------------------------------------
 
     def mini_status(self) -> list[str]:
-        snap = self.snap
-        if snap is None:
-            return ["⎇ looking…"]
-        if snap.error:
-            return [f"⚠ {snap.error[:40]}"]
-        rows = [b for b in snap.branches if b.name != snap.base] or snap.branches
-        lines = [f"⚒ merging {self.merging}…"] if self.merging else []
-        if self.last_merge is not None and not self.merging:
-            m = self.last_merge
-            lines.append(f"✓ {m.branch} merged" if m.ok else f"✗ {m.branch}: {m.error}")
-        for b in rows[:4]:
-            bits = [b.name]
-            if b.pr is not None:
-                bits.append(b.pr.badge)
-            if b.files:
-                bits.append(b.change)
-            lines.append(" ".join(bits))
-        return lines or ["no branches"]
+        return self.worker.mini_status()
 
     def hut_lines(self, widths: list[int]) -> list[str]:
-        snap = self.snap
-        if snap is None:
-            return ["⎇ looking…"]
-        if snap.error:
-            return [f"⚠ {snap.error[:40]}"]
-        rows = [b for b in snap.branches if b.name != snap.base]
-        prs = sum(1 for b in snap.branches if b.pr is not None)
-        last = ("merging " + self.merging + "…" if self.merging else
-                "—" if self.last_merge is None else
-                f"✓ {self.last_merge.branch}" if self.last_merge.ok else f"✗ {self.last_merge.branch}")
-        gate = "CONFIRM" if self.config.get("confirm") else "OPEN"
-        test = "set" if self.config.get("test_cmd") else "none"
-        return [f"base: {snap.base}", f"branches: {len(rows)} · PRs: {prs}", f"tests: {test}",
-                f"last: {last}", f"changes: {rows[0].change if rows and rows[0].files else '—'}", f"gate: {gate}"]
+        return self.worker.hut_lines(widths)
 
     # -- the merge ----------------------------------------------------------------------------
 
-    @property
-    def base(self) -> str:
-        return self.snap.base if self.snap else str(self.config.get("base") or "main")
+    def _confirm(self, branch: str, done) -> None:
+        tests = self.config.get("test_cmd")
+        self.app.push_screen(Confirm(f"⚒ Squash-merge {branch} into {self.base}?",
+                                     f"tests first: {tests}" if tests else "no test command set"), done)
 
     def merge(self, branch: str) -> bool:
         """Test and squash-merge `branch` into the base — at once, or after a yes when `confirm` is on."""
@@ -196,50 +190,9 @@ class GitView(TypedView):
             self.app.notify(f"{branch} is the base", title="⚒️ The Forge")
             return False
         if self.config.get("confirm"):
-            tests = self.config.get("test_cmd")
-            self.app.push_screen(Confirm(f"⚒ Squash-merge {branch} into {self.base}?",
-                                         f"tests first: {tests}" if tests else "no test command set"),
-                                 lambda yes: self._merge(branch) if yes else None)
+            self._confirm(branch, lambda yes: self.worker.merge(branch) if yes else None)
             return True
-        self._merge(branch)
-        return True
-
-    def _merge(self, branch: str) -> None:
-        self.merging = branch
-        self._render_list()
-        repo, base, tests, app = self._get_repo_root(), self.base, str(self.config.get("test_cmd") or ""), self.app
-        merger = type(self).merger
-
-        def work() -> None:
-            try:
-                res = merger(repo, branch, base, tests)
-            except Exception as e:  # git trouble of every kind ends this merge, not the app
-                res = forge.Result(False, branch, base, error=str(e)[:300])
-            try:
-                app.call_from_thread(self.merged, res)
-            except Exception:
-                self.merging = ""
-
-        threading.Thread(target=work, daemon=True, name=f"forge-{self.building_id}").start()
-
-    def merged(self, res: forge.Result) -> None:
-        self.merging = ""
-        self.last_merge = res
-        if res.ok:
-            self.emit("forge.merged", res.text(), f"{res.branch} → {res.base}")
-            self.app.notify(f"{res.branch} → {res.base} {res.commit[:8]}", title="⚒️ Merged")
-        else:
-            self.emit("forge.conflict", res.text(), f"{res.branch}: {res.error}")
-            self.app.notify(res.error, title=f"⚒️ {res.branch} not merged", severity="warning")
-        self.refresh_data()
-
-    def receive(self, payload, title: str, markdown: str) -> None:
-        """A cart naming a branch is a merge order (e.g. from a Barracks' pool.done)."""
-        names = {b.name for b in self.snap.branches} if self.snap else set()
-        text = f"{payload.title}\n{payload.value}"
-        branch = next((n for n in sorted(names, key=len, reverse=True) if n != self.base and n in text), None)
-        if branch:
-            self.merge(branch)
+        return self.worker.merge(branch)
 
     def action_toggle_confirm(self) -> None:
         if self.save_config({"confirm": not self.config.get("confirm")}):
@@ -256,7 +209,7 @@ class GitView(TypedView):
         if action_id != "git.open_pr":
             return False
         name = self.selected_branch()
-        b = next((x for x in self.snap.branches if x.name == name), None) if self.snap and name else None
+        b = self.worker.branch(name) if name else None
         if b is None or b.pr is None or not b.pr.url:
             self.app.notify(f"{name or 'this branch'}: no pull request to open", title="⎇ Git")
             return True
