@@ -13,8 +13,8 @@ Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
   (`orkcraft/hooks/warder.py`, `scripts/warder_hook.py`, `.claude/settings*.json`);
 - nothing — everything else goes through Claude Code's normal permission flow.
 
-Every deny / ask is appended to `.orkcraft/warder.jsonl` (redacted, cut to 160 chars) so the
-Warder orc in orkcraft shows ❓ with the reason. An internal error never blocks a tool call (the
+Every deny / ask is appended to `.orkcraft/warder.jsonl` of the project the session works in
+(redacted, cut to 160 chars) so the Warder orc in orkcraft shows ❓ with the reason. An internal error never blocks a tool call (the
 error is logged) — a guard must not brick the sessions it guards. Standard library only.
 agy has no documented pre-tool hook, so Warder guards Claude Code sessions only.
 """
@@ -47,7 +47,19 @@ def main_repo(root: Path) -> Path:
     return root
 
 
-LOG = main_repo(REPO) / ".orkcraft" / "warder.jsonl"
+def project_of(cwd: str) -> Path | None:
+    """The git checkout a session works in (the main repository for a worktree), or None outside one."""
+    try:
+        here = Path(cwd).resolve()
+    except (OSError, RuntimeError):
+        return None
+    for folder in (here, *here.parents):
+        if (folder / ".git").exists():
+            return main_repo(folder)
+    return None
+
+
+LOG = main_repo(REPO) / ".orkcraft" / "warder.jsonl"      # a session outside any git project
 EXCERPT = 160
 
 DENY, ASK = "deny", "ask"
@@ -273,10 +285,12 @@ def redact(text: str) -> str:
     return text if len(text) <= EXCERPT else text[: EXCERPT - 1] + "…"
 
 
-def log(entry: dict) -> None:
+def log(entry: dict, cwd: Path | None = None) -> None:
+    project = project_of(str(cwd)) if cwd else None
+    path = project / ".orkcraft" / "warder.jsonl" if project else LOG
     try:
-        LOG.parent.mkdir(parents=True, exist_ok=True)
-        with LOG.open("a", encoding="utf-8") as f:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except OSError:
         pass
@@ -297,7 +311,8 @@ def main() -> int:
     decision, reason = verdict
     subject = tool_input.get("command") or next(iter(_paths_of(tool_input)), "")
     log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": decision, "tool": tool,
-         "reason": reason, "subject": redact(str(subject)), "session": str(payload.get("session_id") or "")[:64]})
+         "reason": reason, "subject": redact(str(subject)), "session": str(payload.get("session_id") or "")[:64]},
+        cwd)
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": decision,
         "permissionDecisionReason": f"🛡️ Warder: {reason}",

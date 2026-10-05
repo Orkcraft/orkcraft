@@ -83,21 +83,32 @@ def _run(payload: dict, tmp_path: Path, monkeypatch) -> tuple[str, list[dict]]:
          f"import importlib.util,sys; s=importlib.util.spec_from_file_location('w', {str(HOOK)!r}); "
          f"w=importlib.util.module_from_spec(s); s.loader.exec_module(w); w.LOG=__import__('pathlib').Path({str(log)!r}); "
          "sys.exit(w.main())"],
-        input=json.dumps(payload), capture_output=True, text=True, timeout=10)
+        input=json.dumps(payload), capture_output=True, text=True, timeout=10, cwd=tmp_path)   # outside any project
     assert proc.returncode == 0
     entries = [json.loads(l) for l in log.read_text().splitlines()] if log.exists() else []
     return proc.stdout, entries
 
 
 def test_hook_protocol_deny_logs_and_allow_is_silent(tmp_path, monkeypatch):
-    out, entries = _run({"tool_name": "Bash", "tool_input": {"command": "cat .env"}, "cwd": str(CWD),
-                         "session_id": "s1"}, tmp_path, monkeypatch)
+    out, entries = _run({"tool_name": "Bash", "tool_input": {"command": "cat .env"}, "session_id": "s1"},
+                        tmp_path, monkeypatch)
     decision = json.loads(out)["hookSpecificOutput"]
     assert decision["hookEventName"] == "PreToolUse" and decision["permissionDecision"] == "deny"
     assert decision["permissionDecisionReason"].startswith("🛡️ Warder:")
     assert entries[-1]["decision"] == "deny" and entries[-1]["subject"] == "cat .env"
     out, entries2 = _run({"tool_name": "Bash", "tool_input": {"command": "ls"}}, tmp_path, monkeypatch)
     assert out == "" and len(entries2) == len(entries)
+
+
+def test_the_log_lands_in_the_project_the_session_works_in(tmp_path, monkeypatch):
+    project = tmp_path / "project"
+    (project / ".git").mkdir(parents=True)
+    (project / "src").mkdir()
+    _run({"tool_name": "Bash", "tool_input": {"command": "cat .env"}, "cwd": str(project / "src")},
+         tmp_path, monkeypatch)
+    entry = json.loads((project / ".orkcraft" / "warder.jsonl").read_text().splitlines()[-1])
+    assert entry["decision"] == "deny"
+    assert not (tmp_path / "warder.jsonl").exists()          # not the fallback beside the hook
 
 
 def test_hook_never_blocks_on_garbage(tmp_path, monkeypatch):

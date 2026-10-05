@@ -5,7 +5,8 @@
     python3 -m orkcraft.hooks.session agy      # .agents/hooks.json hooks
 
 Reads the hook payload (JSON) on stdin and appends one line to
-`<repo>/.orkcraft/sessions.jsonl` (gitignored: sessions live on this machine):
+`<repo>/.orkcraft/sessions.jsonl` of the project the session works in, found from its `cwd`
+(gitignored: sessions live on this machine):
 
     {"ts", "harness", "event", "session", "tickets", "cwd", "transcript", "prompt", "orc"?, "run"?, "terminal"?}
 
@@ -42,7 +43,19 @@ def main_repo(root: Path) -> Path:
     return root
 
 
-LOG = main_repo(REPO) / ".orkcraft" / "sessions.jsonl"
+def project_of(cwd: str) -> Path | None:
+    """The git checkout a session works in (the main repository for a worktree), or None outside one."""
+    try:
+        here = Path(cwd).resolve()
+    except (OSError, RuntimeError):
+        return None
+    for folder in (here, *here.parents):
+        if (folder / ".git").exists():
+            return main_repo(folder)
+    return None
+
+
+LOG = main_repo(REPO) / ".orkcraft" / "sessions.jsonl"      # a session outside any git project
 _TICKET = re.compile(r"\b(T\d{4,})\b")
 _ORC = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}/[a-z0-9][a-z0-9_-]{0,63}$")
 _RUN = re.compile(r"^[0-9a-f]{32}$")
@@ -93,8 +106,10 @@ def record(harness: str, payload: dict, env: dict | None = None) -> dict | None:
         entry["run"] = run
         if _TERMINAL.match(terminal):
             entry["terminal"] = terminal
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
+    project = project_of(cwd) if cwd else None
+    log = project / ".orkcraft" / "sessions.jsonl" if project else LOG
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     return entry
 
