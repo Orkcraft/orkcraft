@@ -47,3 +47,4 @@ orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json", "desig
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["browser: drives the GUI in Chromium (tests/test_gui_browser.py); skipped without Playwright or Chromium"]
