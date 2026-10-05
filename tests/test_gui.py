@@ -366,3 +366,32 @@ async def test_a_terminal_gets_its_session_as_binary_frames(fake_repo, tmp_path,
         host.sessions.close()
         server.stop()
         await asyncio.wait_for(task, 10)
+
+
+def test_the_elders_advise_in_quiet_hours_and_the_person_follows(fake_repo, monkeypatch):
+    import json as _json
+    import time
+    from orkcraft import schedule, settings
+    from orkcraft.core import runners
+    from orkcraft.realm.orcs import Alert
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: True)
+    monkeypatch.setattr(runners, "ELDERS_RUNNER", lambda prompt, model=None: (_json.dumps({"answer": "1", "why": "runs the tests"}), 0.001))
+    host = _host(fake_repo)
+    alert = Alert(id="term:t1", title="Do you want to proceed?", context=["Bash command", "  pytest -q"],
+                  options=[("1", "Yes"), ("3", "No, and tell Claude what to do differently (esc)")],
+                  source="terminal", ref="t1")
+    host.muster.rebuild = lambda *a, **k: host.muster.roster      # the question stays on the board
+    host.muster.roster.alerts = [alert]
+    sent = []
+    host.sessions.write = lambda key, data: sent.append((key, data)) or True
+    host._night()
+    for _ in range(100):
+        if host.night.advice_for(alert) is not None:
+            break
+        time.sleep(0.02)
+    assert sent == []                                              # advice only: the person answers
+    asked = next(a for a in host.snapshot()["alerts"] if a["id"] == "term:t1")
+    assert asked["advice"] == {"key": "1", "why": "runs the tests", "warn": ""}
+    assert host.command("orders.follow", {"id": "term:t1"})
+    assert sent == [("t1", b"1")]

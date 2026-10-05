@@ -15,18 +15,22 @@ with no toolkit at all. Everything here runs on one thread, the server's event l
 """
 from __future__ import annotations
 
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
+from orkcraft.core import runners
+from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
 from orkcraft.gui import state, views
-from orkcraft.realm import catalog, halt, modes
+from orkcraft import schedule
+from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
@@ -43,6 +47,8 @@ class Host:
         self.treasury = Treasury(self.town)
         self.muster = Muster(self.town)
         self.sessions = Sessions(self.town)
+        self.night = Night(self.town)               # quiet hours: the Elders' advice on the orks' questions
+        self.night.restore()
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         self.on_change: Callable[[], None] = lambda: None
         self.on_toast: Callable[[dict], None] = lambda data: None
@@ -67,6 +73,7 @@ class Host:
             "term.stop": lambda a: self.sessions.stop(self._word(a, "key")),
             "term.forget": lambda a: self.sessions.forget(self._word(a, "key")),
             "orders.answer": self._answer,
+            "orders.follow": self._follow,
         }
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -75,7 +82,7 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions)
+        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night)
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
@@ -124,6 +131,40 @@ class Host:
                     view.refresh(w)
                 except Exception as e:                 # one building's look never stops the clock
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
+        self.refresh_roster()
+        self._night()
+
+    # -- 🏛 quiet hours: the Elders (core/night.py), as the TUI's night does ------------------------
+
+    def _night(self) -> None:
+        machine = self.town.machine
+        quiet = schedule.quiet_now(machine)
+        if self.night.tick(quiet):
+            words = self.night.morning_words(self.muster.roster.alerts)
+            if words:
+                self.town.toast(".\n".join(words) + ".", title="While you were away, the Elders", timeout=15)
+            self.night.morning()
+        alert = self.night.next_question(self.muster.roster.alerts, quiet, machine.autonomy)
+        if alert is None:
+            return
+        who = self.muster.who().get(alert.id, "")
+        repo = self.town.repo_root
+
+        def work() -> None:
+            runner = runners.ELDERS_RUNNER or fastpath.light_runner(repo)
+            decision = elders.judge(alert, runner, elders.limits(repo)[1])
+            self.town.call(self._judged, alert, who, decision)
+
+        threading.Thread(target=work, daemon=True, name="elders").start()
+
+    def _judged(self, alert, who: str, decision) -> None:
+        """The advice is kept for the person, or (⛓️‍💥 Free orks, still quiet, the same question waits)
+        their key goes to the session."""
+        machine = self.town.machine
+        send = self.night.judged(alert, decision, who, self.muster.roster.alerts, schedule.quiet_now(machine),
+                                 machine.autonomy)
+        if send is not None:
+            self.sessions.write(alert.ref, send.encode())
         self.refresh_roster()
 
     def refresh_roster(self) -> None:
@@ -237,6 +278,14 @@ class Host:
             raise CommandError("Not one of its answers")
         self.refresh_roster()
         return True
+
+    def _follow(self, args: dict) -> bool:
+        """The person follows the Elders' advice on a question: their key, sent as the person's own answer."""
+        alert = self.muster.alert(self._word(args, "id"))
+        advice = self.night.advice_for(alert) if alert is not None else None
+        if advice is None or advice.key is None:
+            raise CommandError("No advice waits on that question")
+        return self._answer({"id": alert.id, "key": advice.key})
 
     def _halt(self, args: dict) -> int:
         """🛑 Halt All: every session interrupted, every agent process killed, the buildings' work stopped."""

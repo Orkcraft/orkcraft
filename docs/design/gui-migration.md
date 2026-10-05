@@ -235,7 +235,10 @@ orkcraft/gui/
   with its orders (Deploy in its building's window), interrupt, stop; Orders answer the orks'
   questions; Halt All interrupts the sessions and kills every agent process too.
 
+- The Elders in quiet hours: the host runs `core/night.py` as the TUI does; their advice shows in
+  Orders with its option marked, and Follow the Elders sends it as the person's answer (at ⛓️‍💥 Free
+  orks they answer themselves, as in the TUI).
+
 ### Next
 
-1. The Elders' advice in Orders (quiet hours run in the GUI's host).
-2. Building, roads and settings from the GUI; the other types' windows as their workers come.
+1. Building, roads and settings from the GUI; the other types' windows as their workers come.

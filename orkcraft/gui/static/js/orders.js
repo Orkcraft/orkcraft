@@ -30,14 +30,22 @@ export function Orders() {
   return html`<${Dialog} title=${`Awaiting an answer (${alerts.length})`} onCancel=${close}
       actions=${html`
         ${a.source === "terminal" && html`<button class="ok-btn" onClick=${() => { close(); showSession(a.ref); }}>Open its terminal</button>`}
+        ${a.advice && html`<button class="ok-btn primary" onClick=${() => command("orders.follow", { id: a.id }).then(() => {
+          if (alerts.length <= 1) close();
+        }, () => {})}>Follow the Elders</button>`}
         <button class="ok-btn" onClick=${close}>Later</button>`}>
     ${alerts.length > 1 && html`<ul class="ok-list__items gui-orders__list">${alerts.map((x) => html`<li key=${x.id}
         class=${cls("ok-item", { "is-selected": x.id === a.id, "is-alert": x.waited >= 30 })}
         onClick=${() => { picked.value = x.id; }}>${x.who || "Alert"}<span class="meta">${x.title.slice(0, 40)}</span></li>`)}</ul>`}
     <p class="ok-dialog__text"><b>${a.who ? `${a.who}: ` : ""}</b>${a.title}</p>
     ${a.context.length > 0 && html`<pre class="gui-pre gui-orders__context">${a.context.join("\n")}</pre>`}
+    ${a.advice && html`<p class="ok-dialog__hint gui-orders__advice">
+      <b>The Elders advise ${a.advice.key}. ${(a.options.find(([k]) => k === a.advice.key) || ["", ""])[1]}</b>
+      ${a.advice.why && ` — ${a.advice.why}`}
+      ${a.advice.warn && html`<br /><span class="ok-tone-wait">⚠ ${a.advice.warn}</span>`}</p>`}
     <div class="gui-orders__options">
-      ${a.options.map(([key, label]) => html`<button key=${key} class="ok-btn" onClick=${() => answer(key)}>
+      ${a.options.map(([key, label]) => html`<button key=${key}
+          class=${a.advice && a.advice.key === key ? "ok-btn is-focus" : "ok-btn"} onClick=${() => answer(key)}>
         <span class="ok-kbd">${key}</span> ${label}</button>`)}
     </div>
   </${Dialog}>`;

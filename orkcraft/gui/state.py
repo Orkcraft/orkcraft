@@ -116,7 +116,12 @@ def sessions(live) -> list[dict[str, Any]]:
              "exit_code": s.exit_code, "ork": s.ork, "ticket": s.ticket or ""} for s in live.live.values()]
 
 
-def alerts(town: Town, muster: Muster) -> list[dict[str, Any]]:
+def _advice(night, alert) -> dict[str, Any] | None:
+    d = night.advice_for(alert) if night is not None else None
+    return {"key": d.key, "why": modes.strip_emoji(d.why), "warn": modes.strip_emoji(d.warn)} if d else None
+
+
+def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
     """The questions that wait for the person (Orders), the longest waiting first."""
     who = muster.who()
     found = list(muster.roster.alerts)
@@ -127,12 +132,12 @@ def alerts(town: Town, muster: Muster) -> list[dict[str, Any]]:
     by_alert = {o.alert.id: o.building for o in muster.roster.orcs if o.alert is not None and o.building}
     return [{"id": a.id, "title": modes.strip_emoji(a.title), "context": list(a.context[-12:]),
              "options": [[k, modes.strip_emoji(label)] for k, label in a.options], "source": a.source, "ref": a.ref,
-             "who": who.get(a.id, ""), "building": by_alert.get(a.id, ""),
+             "who": who.get(a.id, ""), "building": by_alert.get(a.id, ""), "advice": _advice(night, a),
              "waited": round(now - muster.alert_first_seen.get(a.id, now), 1)} for a in found]
 
 
 def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
-             live=None) -> dict[str, Any]:
+             live=None, night=None) -> dict[str, Any]:
     return {
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
@@ -145,5 +150,5 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "roads": roads(town),
         "hud": hud(town, muster, treasury, limits),
         "sessions": sessions(live),
-        "alerts": alerts(town, muster),
+        "alerts": alerts(town, muster, night),
     }
