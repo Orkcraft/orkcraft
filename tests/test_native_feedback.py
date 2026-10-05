@@ -391,7 +391,7 @@ async def test_the_lake_judges_an_edit_left_alone_and_one_the_app_closed_on(fake
         view._autosave_tick()                                       # … judged once
         [inc] = feedback.incidents(fake_repo)
         assert (inc.building, inc.source) == ("brief", "lake.reshaped")
-        view.action_leave_edit()
+        view.action_leave_edit(reload=False)        # a reload of daily.md would race other.md in
         assert len(feedback.incidents(fake_repo)) == 1
         view.show_value("file", str(fake_repo / "other.md"), "other")
         for _ in range(400):
