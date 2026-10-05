@@ -100,7 +100,7 @@ class Worker:
 
     def changed(self) -> None:
         """Its state changed: the faces draw it again."""
-        self.town.call(self.town.publish, bus.WORKER, building=self.building_id)
+        self.town.call(lambda: self.town.publish(bus.WORKER, building=self.building_id))
 
     def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "") -> bool:
         """Send `event_id` (one its building declares) down the roads. True when a road took it."""
@@ -134,4 +134,5 @@ class Worker:
 
 def registry() -> dict[str, type[Worker]]:
     """The type id → its worker's class (types not here keep their work in their views)."""
-    return {}
+    from orkcraft.core.workers.lake import LakeWorker
+    return {w.TYPE: w for w in (LakeWorker,)}
