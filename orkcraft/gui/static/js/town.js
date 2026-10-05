@@ -6,16 +6,13 @@ import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command } from "./link.js";
-import { opened, openBuilding } from "./windows.js";
+import { opened } from "./windows.js";
 import { plan } from "./roads.js";
-import { laying, pickedRoad } from "./build.js";
+import { pickedRoad } from "./build.js";
+import { Hut, sizes, dragging, pulling } from "./hut.js";
 
-const DRAG_PX = 4;                         // a press that moves less is a click
-const sizes = signal({});                  // building id → {w, h} of its card, as drawn
 const room = signal({ w: 1, h: 1 });
-const dragging = signal(null);             // {id, dx, dy}: the hut under the mouse, so its roads follow it
-const dropped = signal({});
-const pulling = signal(null);              // {from, x, y}: a road being pulled out of a hut, to the pointer                // building id → {x, y}: where a hut was dropped, till the town says so
+const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
 
 // The room never gets smaller than four huts across and three down: a narrower town scrolls, so
 // huts placed as fractions never pile up when a window opens beside it.
@@ -71,82 +68,6 @@ function Roads({ roads, rects }) {
       x1=${rects[pulling.value.from].x + rects[pulling.value.from].w} y1=${rects[pulling.value.from].y + rects[pulling.value.from].h / 2}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
   </svg>`;
-}
-
-/** A road pulled out of a hut's handle: where the pointer lets go over another hut, it goes there. */
-function pull(e, b) {
-  if (e.button !== 0) return;
-  e.stopPropagation();
-  e.preventDefault();
-  const room = e.currentTarget.closest(".gui-town__room");
-  const at = (ev) => {
-    const r = room.getBoundingClientRect();
-    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
-  };
-  const move = (ev) => { pulling.value = { from: b.id, ...at(ev) }; };
-  const up = (ev) => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    pulling.value = null;
-    const hut = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".gui-hut");
-    const to = hut && hut.dataset.id;
-    if (to && to !== b.id) laying.value = { from: b.id, to };
-  };
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", up);
-  move(e);
-}
-
-function Hut({ b, spot, number, onMoved }) {
-  const ref = useRef(null);
-  const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const w = el.offsetWidth, h = el.offsetHeight;
-    const old = sizes.value[b.id];
-    if (!old || old.w !== w || old.h !== h) sizes.value = { ...sizes.value, [b.id]: { w, h } };
-  });
-  const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
-  const hot = b.alert && b.alert.waited >= 30;
-
-  function down(e) {
-    if (e.button !== 0) return;
-    const start = { x: e.clientX, y: e.clientY };
-    let moved = false;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const move = (ev) => {
-      const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
-      if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
-      moved = true;
-      dragging.value = { id: b.id, dx, dy };
-    };
-    const up = (ev) => {
-      ev.currentTarget.removeEventListener("pointermove", move);
-      ev.currentTarget.removeEventListener("pointerup", up);
-      dragging.value = null;
-      if (moved) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y);
-      else openBuilding(b.id);
-    };
-    e.currentTarget.addEventListener("pointermove", move);
-    e.currentTarget.addEventListener("pointerup", up);
-  }
-
-  const x = spot.x + (drag ? drag.dx : 0), y = spot.y + (drag ? drag.dy : 0);
-  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag })}
-      onPointerDown=${down}>
-    <div class="ok-head"></div>
-    <div class="ok-hut__card">
-      <button class="gui-hut__road" title="Pull a road to another building" aria-label="Pull a road"
-        onPointerDown=${(e) => pull(e, b)}>+</button>
-      <span class="ok-hut__label"><span class="no">${number}</span>${b.title}
-        ${b.alert && html` <span class="ok-word">?</span>`}<span class="ok-hut__dot"></span></span>
-      ${b.status_plain.length > 0 && html`<ul class="ok-hut__lines">
-        ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>`}
-    </div>
-  </div>`;
 }
 
 export function Town({ buildings, roads }) {

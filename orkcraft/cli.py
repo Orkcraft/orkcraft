@@ -54,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     gui_p = subparsers.add_parser("gui", help="Open the town in a window (Office look; pip install 'orkcraft[gui]')")
     gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
+    gui_p.add_argument("--look", choices=("office", "camp", "auto"), default="office",
+                       help="Office (default), Camp (in the making) or auto (your mode and hours)")
     gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
                        help="Open the showcase sandbox in the window")
     hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
@@ -111,7 +113,8 @@ def main(argv: list[str] | None = None) -> int:
             launch = _gui()
             if launch is None:
                 return 1
-            return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port)
+            return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port,
+                              look=args.look)
         OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True).run()
         return 0
 
@@ -126,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         launch = _gui()
         if launch is None:
             return 1
-        return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port)
+        return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port, look=args.look)
 
     # Default: launch TUI
     reset = args.reset_layout

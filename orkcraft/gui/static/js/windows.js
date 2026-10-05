@@ -4,16 +4,27 @@ import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online } from "./link.js";
 import { Layout } from "./layout.js";
-import * as lake from "./buildings/lake.js";
-import * as fields from "./buildings/fields.js";
-import * as scrolls from "./buildings/scrolls.js";
 import { WarTent, HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useState } from "preact/hooks";
 
-// The types whose window the GUI draws (gui/views/ on the host); the others show what they are.
-const VIEWS = { lake, fields, scrolls };
+// A type's window is `buildings/<type>.js`, loaded the first time one is open: the host draws
+// a type when `gui/views/<type>.py` exists (its detail carries data); a new type is one new file here.
+const views = signal({});                  // type → its module (false: it has none)
+const loading = new Set();
+
+function viewOf(type) {
+  const have = views.value[type];
+  if (have !== undefined || !/^[a-z_]+$/.test(type)) return have || null;
+  if (!loading.has(type)) {
+    loading.add(type);
+    import(`./buildings/${type}.js`).then(
+      (m) => { views.value = { ...views.value, [type]: m }; },
+      () => { views.value = { ...views.value, [type]: false }; });
+  }
+  return null;
+}
 
 export const opened = signal({ ids: [], active: null, max: false });
 
@@ -106,7 +117,7 @@ function Body({ b, t }) {
     </div>`;
   }
   const d = details.value[b.id];
-  const view = d && d.data && VIEWS[d.type];
+  const view = d && d.data && viewOf(d.type);
   if (view) {
     return html`<div class="ok-win__body gui-win__body is-view">
       ${b.alert && html`<${Question} alert=${b.alert} />`}

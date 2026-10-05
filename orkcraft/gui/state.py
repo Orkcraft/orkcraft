@@ -102,9 +102,15 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
     }
 
 
-def look(town: Town) -> str:
-    """The look the page wears (`office` or `camp`): Shift is Office in office hours (schedule.py).
-    The GUI draws Office only so far, so the page keeps `office` until Camp lands."""
+LOOKS = ("office", "camp", "auto")
+
+
+def look(town: Town, choice: str = "office") -> str:
+    """The look the page wears (`office` or `camp`). `auto` follows the machine's mode, Shift being
+    Office in office hours (schedule.py); the GUI opens in Office until Camp (stage 5) is done, and
+    `orkcraft gui --look camp` opens Camp to work on it."""
+    if choice != "auto":
+        return choice if choice in LOOKS else "office"
     return "office" if schedule.plain_now(town.machine) else "camp"
 
 
@@ -137,12 +143,12 @@ def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
 
 
 def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
-             live=None, night=None) -> dict[str, Any]:
+             live=None, night=None, look_choice: str = "office") -> dict[str, Any]:
     return {
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
-        "look": look(town),
+        "look": look(town, look_choice),
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
         "active_orkspace": town.scroll.active_orkspace_id,
         "orkspaces": orkspaces(town, muster),

@@ -95,7 +95,7 @@ def test_the_demo_flag_never_swallows_the_gui_subcommand(monkeypatch, tmp_path: 
 
     class Launch:
         @staticmethod
-        def run(root, auto_commit, layout, demo=False, browser=False, port=0):
+        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
             opened.append((root, demo, browser))
             return 0
 

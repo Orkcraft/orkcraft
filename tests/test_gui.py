@@ -438,3 +438,27 @@ def test_a_road_is_laid_from_its_choices_and_taken_up(fake_repo, isolated_layout
     assert key not in {r["id"] for r in host.snapshot()["roads"]}
     with pytest.raises(CommandError):
         host.command("roads.remove", {"key": key})
+
+
+def test_a_type_registers_itself_by_its_files():
+    """A worker, its GUI view and its page module are found by their names: porting a type touches
+    no shared list (docs/design/gui-migration.md, "Porting a building type")."""
+    from orkcraft.core import workers
+    from orkcraft.gui import views
+    found = workers.registry()
+    assert {"lake", "fields", "scrolls"} <= set(found)
+    for type_id in found:
+        assert views.of(type_id) is not None, f"{type_id}: a worker without gui/views/{type_id}.py"
+    for path in (srv.STATIC.parent / "views").glob("*.py"):
+        if path.stem != "__init__":
+            assert path.stem in found, f"gui/views/{path.name} without a worker"
+            assert (srv.STATIC / "js" / "buildings" / f"{path.stem}.js").is_file(), f"no js/buildings/{path.stem}.js"
+    assert views.of("pit") is None and views.of("../server") is None
+
+
+def test_the_look_is_office_until_asked_otherwise(fake_repo):
+    from orkcraft.gui import state
+    assert _host(fake_repo).snapshot()["look"] == "office"
+    host = Host(fake_repo, auto_commit=False, look="camp")
+    assert host.snapshot()["look"] == "camp"
+    assert state.look(host.town, "auto") in ("office", "camp") and state.look(host.town, "evil") == "office"

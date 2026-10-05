@@ -42,8 +42,9 @@ class CommandError(Exception):
 
 class Host:
     def __init__(self, repo_root: Path | None = None, auto_commit: bool | None = None,
-                 layout_file: Path | None = None, demo: bool = False) -> None:
+                 layout_file: Path | None = None, demo: bool = False, look: str = "office") -> None:
         self.town = Town(repo_root, auto_commit, layout_file, demo=demo)
+        self.look = look                            # office | camp | auto (gui/state.py `look`)
         self.treasury = Treasury(self.town)
         self.muster = Muster(self.town)
         self.sessions = Sessions(self.town)
@@ -88,7 +89,8 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night)
+        return state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
+                              look_choice=self.look)
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:

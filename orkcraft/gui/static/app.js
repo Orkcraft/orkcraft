@@ -14,7 +14,7 @@ import { HALL } from "./js/tent.js";
 function App() {
   const t = town.value;
   if (!t) return html`<div class="gui-loading ok-font-body">Opening the town…</div>`;
-  document.documentElement.dataset.theme = "office";     // Camp comes later (docs/design/gui-migration.md)
+  document.documentElement.dataset.theme = t.look;      // office | camp (orkcraft gui --look; Shift by the hour)
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
   ids.add(HALL);                                         // the Town Hall stands on every canvas

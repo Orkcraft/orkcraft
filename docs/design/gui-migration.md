@@ -185,8 +185,9 @@ orkcraft/gui/
   (core/sessions.py: the orks' CLIs on PTYs, a pyte screen and a backlog each, for every face)
   views/      per type with a worker: what its window shows (`detail`), its acts (`ACTS`), its timer
   markdown.py Markdown as HTML, raw HTML off
-  static/     index.html (import map), app.js, js/ (link, chrome, town, windows, layout, dialog),
-              js/buildings/ (one per type the GUI draws), office.css
+  static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
+              layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
+              draws, loaded when one opens), layout.css (every look), office.css, camp.css
 ```
 
 - **The protocol.** The host sends a whole snapshot (`gui/state.py`) when the town changes, at most
@@ -196,7 +197,7 @@ orkcraft/gui/
   emoji comes twice, as it is and `_plain`, for Office.
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
-- **The layout is the design system's.** `office.css` places the components (HUD on top, the War
+- **The layout is the design system's.** `layout.css` places the components (HUD on top, the War
   Map and the buildings on the left, the town, an editor group of opened buildings on the right,
   the status bar) and uses tokens only.
 - **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
@@ -244,9 +245,38 @@ orkcraft/gui/
   always stands); a road is pulled out of a hut's `+` handle onto another hut and laid with one of
   the events it may carry; a road clicked shows what it is and is taken up from there.
 
+### Porting a building type
+
+The recipe the three first types followed (🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump); a type is
+found by its files, so a port touches no shared list and parallel ports do not collide.
+
+1. **The worker** — `orkcraft/core/workers/<type>.py`: a `Worker` subclass with `TYPE = "<type>"`
+   (the catalog id). Move into it everything the view does that is not drawing: its state, its
+   acts, its threads (results come back through `self.town.call`), `receive`, `halt`, `status`,
+   `mini_status` / `hut_lines`, and `self.changed()` whenever its state changes. No Textual, no
+   Rich (`tests/test_architecture.py`). It registers itself.
+2. **The TUI view** — `orkcraft/screens/typed/<type>_view.py` keeps its widgets, keys, dialogs and
+   timers, and reads and calls the worker (`self.worker`); its old attribute names read the worker,
+   so callers and tests keep working. It draws again on `WORKER` (see `lake_view.py`).
+3. **The contract** — `orkcraft/design/buildings/<type>.json`: the panes the window has, the
+   components each may wear and the default document (`design/ui.py`). Name the panes in the TUI
+   view's `UI_PANES`.
+4. **The GUI's side** — `orkcraft/gui/views/<type>.py`: `detail(worker)` (plain data the page
+   draws, Markdown rendered by `gui/markdown.py`, emoji also as `_plain`), `ACTS` (each a call on the
+   worker, its arguments checked with `views.text`, a refusal raised as `ActError`), and
+   `REFRESH_S` / `refresh(worker)` when the view looked again on a timer.
+5. **The page** — `orkcraft/gui/static/js/buildings/<type>.js`: `panes(id, data)` returning one
+   function per pane id of the contract; acts are `act(id, name, args)`. Use the design system's
+   markup and classes, the roles' classes for fonts and tones, and the words of Office (no
+   pictographs; `ok-ico` for what Camp may show).
+6. **Tests** — the worker without an app (`tests/test_core.py`), the TUI's tests unchanged and green,
+   and `detail` and every act through the host (`tests/test_gui.py`). Then look at it in the page:
+   `orkcraft gui --demo --browser`.
+
 ### Next
 
 1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
    building wizard with the Builder, and a building's settings in its window.
 2. The other types' windows as their workers come (§2, 1).
-3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites.
+3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
+   camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.

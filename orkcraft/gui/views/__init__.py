@@ -1,4 +1,5 @@
-"""What the GUI shows of a building inside its window, one module per type with a worker.
+"""What the GUI shows of a building inside its window, one module per type with a worker
+(`<type id>.py`, found by its name).
 
 Each module says what the page draws (`detail(worker)`, plain data), the acts the page may ask of
 the worker (`ACTS`: name → fn(worker, args)), and, when the worker must look again by itself, how
@@ -17,8 +18,16 @@ class ActError(Exception):
 
 
 def of(type_id: str) -> ModuleType | None:
-    from orkcraft.gui.views import fields, lake, scrolls
-    return {"lake": lake, "fields": fields, "scrolls": scrolls}.get(type_id)
+    """The module of `gui/views/<type id>.py`, or None: a type's window comes to the GUI with one new
+    file, no list to edit."""
+    import importlib
+    import importlib.util
+    if not type_id.isidentifier():
+        return None
+    name = f"{__name__}.{type_id}"
+    if importlib.util.find_spec(name) is None:
+        return None
+    return importlib.import_module(name)
 
 
 def text(args: dict, key: str, limit: int = 2_000_000) -> str:
