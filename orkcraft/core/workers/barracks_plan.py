@@ -8,10 +8,11 @@ A task that arrives is judged before any ork takes it:
               `plan` (stages, parallel parts) → the steward plans it on the goal's tier (`Goal.plan`).
               A short task with no steps (`plans.clearly_simple`) is never planned: not trivial, it goes
               to one ork of the tier the building's goal names, reviewed
-    planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent of subtasks: each a task here of
-              its own (`parent`, `sub`), with its tier, its persona, the files it touches and the parts it
-              waits for. A part starts when what it waits for is merged and nothing running touches its
-              files; accepted, its branch is merged into the parent's (`git merge-tree`, no checkout).
+    planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent
+              of subtasks: each a task here of its own (`parent`, `sub`), with its tier, its persona, the
+              files it touches and the parts it waits for. A part starts when what it waits for is
+              merged and nothing running touches its files; accepted, its branch is merged into the
+              parent's (`git merge-tree`, no checkout).
               When every part is in, the steward looks at the whole against the request: ACCEPT → one
               pull request; `REWORK: <part>: …` → that part goes back to its ork, `REWORK: new: …` → a
               new part; past `max_reworks` → 🔥 the operator.
