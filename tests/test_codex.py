@@ -46,6 +46,46 @@ def test_the_real_events_give_the_last_message_the_tokens_and_the_thread():
     assert roads.codex_result_of("not json\n") == ("", None, None, "")
 
 
+RESUMED = Path(__file__).parent / "fixtures" / "codex_exec_resumed.jsonl"
+ROLLOUT = Path(__file__).parent / "fixtures" / "codex_rollout.jsonl"
+THREAD = "01a10872-003f-76b1-84f2-bc6657c93545"
+
+
+def test_turn_usage_is_a_running_total_so_the_last_one_counts():
+    text, _, tokens, session = roads.codex_result_of(RESUMED.read_text(encoding="utf-8"))
+    assert text == "done again" and session == THREAD
+    assert tokens == 52000 + 450                                # not 40300 + 52450: each turn repeats the ones before
+    assert roads.codex_result_of(RESUMED.read_text(encoding="utf-8"), before=34612 + 121)[2] == 52450 - 34733
+    assert roads.codex_result_of(FIXTURE.read_text(encoding="utf-8"), before=10 ** 9)[2] == 0
+
+
+def _codex_home(tmp_path: Path) -> Path:
+    day = tmp_path / "codex-home" / "sessions" / "2026" / "10" / "05"
+    day.mkdir(parents=True)
+    (day / f"rollout-2026-10-05T09-00-00-{THREAD}.jsonl").write_text(ROLLOUT.read_text(encoding="utf-8"),
+                                                                      encoding="utf-8")
+    return tmp_path / "codex-home"
+
+
+def test_a_threads_total_so_far_comes_from_its_rollout(tmp_path):
+    env = {"CODEX_HOME": str(_codex_home(tmp_path))}
+    assert roads.codex_thread_total(THREAD, env) == 34612 + 121      # the last total; a null `info` is skipped
+    assert roads.codex_thread_total("another-thread", env) == 0
+    assert roads.codex_thread_total("", env) == 0
+
+
+def test_a_resumed_codex_run_counts_only_its_own_tokens(tmp_path, monkeypatch):
+    fake_codex(tmp_path, monkeypatch)                     # its one turn reports a running total of 12
+    day = _codex_home(tmp_path) / "sessions" / "2026" / "10" / "05"
+    (day / f"rollout-2026-10-05T09-00-00-{THREAD}.jsonl").write_text(json.dumps(
+        {"type": "event_msg", "payload": {"type": "token_count", "info": {
+            "total_token_usage": {"input_tokens": 4, "cached_input_tokens": 0, "output_tokens": 1}}}}) + "\n",
+        encoding="utf-8")
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))
+    assert jobs.run_work("codex", "go on", tmp_path, threading.Event(), resume=THREAD)[2] == 12 - 5
+    assert jobs.run_work("codex", "start", tmp_path, threading.Event())[2] == 12
+
+
 def test_a_failed_turn_says_why():
     out = json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}})
     assert roads.codex_error(out) == "usage limit reached"

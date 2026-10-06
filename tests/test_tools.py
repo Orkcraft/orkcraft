@@ -42,15 +42,58 @@ def test_oauth_account_in_claude_json(tmp_path: Path):
     assert claude.logged_in and claude.billing == "subscription"
 
 
-def test_codex_is_found_and_its_login_seen_without_reading_it(tmp_path: Path):
-    codex = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={}, home=tmp_path)}["codex"]
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _codex(tmp_path: Path, env: dict | None = None, run=_run) -> tools.ToolStatus:
+    return {t.id: t for t in tools.detect(_which({"codex"}), run, env=env or {}, home=tmp_path)}["codex"]
+
+
+def _auth(tmp_path: Path, text: str) -> None:
+    (tmp_path / ".codex").mkdir(exist_ok=True)
+    (tmp_path / ".codex" / "auth.json").write_text(text, encoding="utf-8")
+
+
+def _login_status(line: str, code: int = 0):
+    def run(cmd, **kw):
+        if cmd[1:] == ["login", "status"]:
+            return subprocess.CompletedProcess(cmd, code, stdout="", stderr=line + "\n")
+        return _run(cmd, **kw)
+    return run
+
+
+def test_codex_billing_is_what_its_auth_json_holds(tmp_path: Path):
+    codex = _codex(tmp_path)
     assert codex.found and codex.version == "0.160.0" and codex.logged_in is None
-    (tmp_path / ".codex").mkdir()
-    (tmp_path / ".codex" / "auth.json").write_text("not even json", encoding="utf-8")   # never parsed
-    codex = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={}, home=tmp_path)}["codex"]
+    _auth(tmp_path, (FIXTURES / "codex_auth_chatgpt.json").read_text(encoding="utf-8"))
+    codex = _codex(tmp_path)
     assert codex.logged_in and codex.billing == "subscription" and codex.summary() == "found · v0.160.0 · logged in"
-    api = {t.id: t for t in tools.detect(_which({"codex"}), _run, env={"OPENAI_API_KEY": "x"}, home=tmp_path)}
-    assert api["codex"].billing == "api"
+    for fixture in ("codex_auth_apikey.json", "codex_auth_legacy_apikey.json"):    # `login --with-api-key`: same file
+        _auth(tmp_path, (FIXTURES / fixture).read_text(encoding="utf-8"))
+        codex = _codex(tmp_path)
+        assert codex.logged_in and codex.billing == "api" and "API key" in codex.summary(), fixture
+        assert "sk-" not in codex.summary()
+
+
+def test_only_codex_api_key_makes_codex_api_billed(tmp_path: Path):
+    _auth(tmp_path, (FIXTURES / "codex_auth_chatgpt.json").read_text(encoding="utf-8"))
+    assert _codex(tmp_path, {"OPENAI_API_KEY": "x"}).billing == "subscription"     # `codex exec` ignores it
+    assert _codex(tmp_path, {"CODEX_API_KEY": "x"}).billing == "api"
+
+
+def test_codex_login_status_tells_when_auth_json_cannot(tmp_path: Path):
+    _auth(tmp_path, "not even json")
+    codex = _codex(tmp_path, run=_login_status("Logged in using an API key - sk-proj-***ABCDE"))
+    assert codex.logged_in and codex.billing == "api"
+    codex = _codex(tmp_path, run=_login_status("Logged in using ChatGPT"))
+    assert codex.logged_in and codex.billing == "subscription"
+    (tmp_path / ".codex" / "auth.json").unlink()                                   # a keyring login: no file
+    assert _codex(tmp_path, run=_login_status("Not logged in", 1)).logged_in is False
+    assert _codex(tmp_path, run=_login_status("Logged in using ChatGPT")).billing == "subscription"
+    assert _codex(tmp_path).logged_in is None                                      # it says nothing: unknown
+
+
+def test_codex_is_only_led():
     assert "codex" not in {o.id for o in tools.OTHERS}            # led now, not only asked about
 
 

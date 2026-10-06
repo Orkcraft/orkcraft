@@ -217,24 +217,25 @@ function Limits({ id, data }) {
   </div>`;
 }
 
-function Full({ id, data }) {
+function Tabs() {
   const tab = hallTab.value;
   const live = town.value.sessions.filter((s) => s.running).length;
   const pick = (name) => () => { hallTab.value = name; };
-  return html`<div class="gui-split">
-    <div class="ok-tabs" role="tablist">
-      <button class=${cls("ok-tab", { "is-active": tab === "hall" })} role="tab" onClick=${pick("hall")}>Hall</button>
-      <button class=${cls("ok-tab", { "is-active": tab === "sessions" })} role="tab" onClick=${pick("sessions")}>Sessions${live ? ` (${live})` : ""}</button>
-      <button class=${cls("ok-tab", { "is-active": tab === "limits" })} role="tab" onClick=${pick("limits")}>Limits</button>
-    </div>
-    <div class="gui-split" style="overflow:auto">
-      ${tab === "sessions" ? html`<${WarTent} />`
-        : tab === "limits" ? html`<${Limits} id=${id} data=${data} />`
-        : html`<${Hall} id=${id} h=${data.hall} />`}
-    </div>
+  return html`<div class="ok-tabs" role="tablist">
+    <button class=${cls("ok-tab", { "is-active": tab === "hall" })} role="tab" onClick=${pick("hall")}>Hall</button>
+    <button class=${cls("ok-tab", { "is-active": tab === "sessions" })} role="tab" onClick=${pick("sessions")}>Sessions${live ? ` (${live})` : ""}</button>
+    <button class=${cls("ok-tab", { "is-active": tab === "limits" })} role="tab" onClick=${pick("limits")}>Limits</button>
   </div>`;
 }
 
+/** Full: the tab strip and one pane per tab (design/buildings/town_hall.json); only the open tab's
+ *  pane shows, the others are dynamic panes that hide themselves. */
 export function panes(id, data) {
-  return { main: () => html`<${Full} id=${id} data=${data} />` };
+  const tab = hallTab.value;
+  return {
+    tabs: () => html`<${Tabs} />`,
+    hall: () => (tab === "hall" ? html`<${Hall} id=${id} h=${data.hall} />` : null),
+    sessions: () => (tab === "sessions" ? html`<${WarTent} />` : null),
+    limits: () => (tab === "limits" ? html`<${Limits} id=${id} data=${data} />` : null),
+  };
 }
