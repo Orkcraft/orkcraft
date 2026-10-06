@@ -740,3 +740,29 @@ def test_the_task_board_card_counts_the_note_folders_too(fake_repo, isolated_lay
     card = next(b for b in host.snapshot()["buildings"] if b["id"] == built.id)["card"]
     assert [l["label"] for l in card["lanes"]][:3] == ["To Do", "In Progress", "Done"]
     assert any(n["count"] == 1 for n in card["notes"])
+
+
+def test_the_hud_quota_shows_what_the_town_hall_read(fake_repo, isolated_layout_file):
+    """The HUD's quota is the used share of each subscription's tightest window the Town Hall read,
+    not a dash, as the TUI's `_quota_text`."""
+    from orkcraft.sources.limits import Limit
+
+    host = _host(fake_repo)
+    for t, c in host.town.machine.tools.items():
+        c.enabled, c.billing = t in ("claude", "agy"), "subscription"
+    host.town.worker("town_hall").limits = [Limit("claude", "", "5h session", 0.25, None),
+                                            Limit("claude", "", "weekly", 0.6, None),
+                                            Limit("agy", "pro", "weekly", None, None, "no answer")]
+    assert host.snapshot()["hud"]["quota"] == "claude 75% · agy —"
+
+
+def test_the_hud_counts_working_agents_of_all_the_keepers_too(fake_repo, isolated_layout_file):
+    """Agents: the orks at work of every ork in the town; a new building's keeper counts at once."""
+    host = _host(fake_repo)
+    host.tick()
+    before = host.snapshot()["hud"]
+    host.command("town.build", {"type": "crag"})
+    host.tick()
+    after = host.snapshot()["hud"]
+    assert after["agents"] == before["agents"] + 1
+    assert after["agents_working"] == 0
