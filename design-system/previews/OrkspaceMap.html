@@ -51,6 +51,21 @@
   .om-dots i { width: 4px; height: 4px; background: var(--ink); }
   .om-dots i.w { background: var(--ink-gold); }
   .om-fog { color: var(--ink-muted); }
+  /* "under attack": rings from the land's ■, the land flashes, an arrow at the frame's edge when it is out of sight */
+  .om-ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 5; }
+  .om-ping::before { content: ""; position: absolute; outline: 2px solid var(--ping, var(--alert)); animation: om-ping .9s steps(6) both;
+    animation-delay: inherit; }
+  .om-ping.hot { --ping: var(--alert-hot); }
+  @keyframes om-ping { from { left: -4px; top: -4px; width: 8px; height: 8px; opacity: 1; }
+                       to { left: -30px; top: -30px; width: 60px; height: 60px; opacity: .1; } }
+  .om-band.is-hit { animation: om-hit .3s steps(2) 4; }
+  @keyframes om-hit { 50% { filter: brightness(1.7); } }
+  .om-edge { position: absolute; left: 8px; right: 8px; height: 0; z-index: 3; pointer-events: none; text-align: center;
+    font: 700 12px/12px var(--ok-font); color: var(--ping, var(--alert)); text-shadow: 1px 1px 0 var(--bevel-lo); animation: om-hit .3s steps(2) 6; }
+  .om-edge.hot { --ping: var(--alert-hot); }
+  .om-edge.up { top: 10px; } .om-edge.down { bottom: 22px; }
+  @media (prefers-reduced-motion: reduce) {
+    .om-ping { display: none; } .om-band.is-hit, .om-edge { animation: none; } .om-band.is-hit { filter: brightness(1.4); } }
   .om-fog:hover .om-name { color: var(--ink); }
   .note { position: absolute; z-index: 1; left: 300px; bottom: 64px; max-width: 420px; font-size: 12px; color: var(--ink-comment); }
   .note kbd { font: 600 11px var(--ok-font); color: var(--ink-muted); }
@@ -59,6 +74,7 @@
 <div class="town" id="town">
   <div class="bar"><span><b>Orkspace map</b> — a prototype</span><span class="sp"></span>
     <span id="where"></span>
+    <button id="ask">Attack: a question</button><button id="fail">Attack: a failure</button>
     <button id="panel">Building panel</button><button id="more">+ 4 orkspaces</button><button id="reset">Reset</button></div>
   <div class="huts" id="huts"></div>
   <aside class="panel"><h3>The Forge</h3>Work · Info — a building's panel takes the right of the town; the map keeps its corner.</aside>
@@ -75,6 +91,7 @@ const BIOMES = {            // the map's ground, and the land's fill on the orks
   ice:    { ground: "#0c1622", land: "#263c52" },
   dust:   { ground: "#2a2014", land: "#5a462a" },
   void:   { ground: "#0e0c14", land: "#2c263c" },
+  lava:   { ground: "#161212", land: "#342c2a" },   // basalt, never red: red is the fire's (war-map.md §3.4)
 };
 const ORDER = Object.keys(BIOMES);
 const FOG = "#221e16";
@@ -201,6 +218,33 @@ function render() {
   town();
 }
 
+// -- "your orks are under attack": once, when something new needs you in an orkspace you are not in ----
+let attacks = 0;
+function attack(hot) {
+  const others = spaces.filter((s) => s.id !== open);
+  if (!others.length) return;
+  const s = others[attacks++ % others.length];
+  s.questions += 1;
+  render();
+  const land = document.getElementById("land"), view = document.getElementById("view");
+  const band = document.querySelector(`.om-band[data-id="${s.id}"]`);
+  const ask = band.querySelector(".om-ask"), L = land.getBoundingClientRect(), r = ask.getBoundingClientRect();
+  const x = r.left - L.left + 4, y = r.top - L.top + 4;
+  for (let i = 0; i < 3; i++) {
+    const p = el("span", "om-ping" + (hot ? " hot" : ""));
+    p.style.left = `${x}px`; p.style.top = `${y}px`; p.style.animationDelay = `${i * 0.45}s`;
+    land.append(p); setTimeout(() => p.remove(), 1000 + i * 450);
+  }
+  band.classList.add("is-hit"); setTimeout(() => band.classList.remove("is-hit"), 1300);
+  // out of sight in the scrolled map: an arrow at the frame's edge says where
+  const frame = document.querySelector(".om");
+  frame.querySelectorAll(".om-edge").forEach((e) => e.remove());
+  if (y < view.scrollTop || y > view.scrollTop + 240) {
+    const e = el("span", "om-edge " + (y < view.scrollTop ? "up" : "down") + (hot ? " hot" : ""), y < view.scrollTop ? "▲ " + s.name : "▼ " + s.name);
+    frame.append(e); setTimeout(() => e.remove(), 4000);
+  }
+}
+
 function focusId(id) { const b = document.querySelector(`.om-band[data-id="${id}"]`); if (b) b.focus({ preventScroll: true }); }
 
 function add(name) {
@@ -246,6 +290,9 @@ function biomeSprite(type, biome) {
       if (near(d, i, G) || near(d, i, DG)) { paint(i, IV); const j = at(x, y + 1); if (y + 1 < h && (near(d, j, G))) paint(j, IV); }
       break;
     }
+  } else if (biome === "lava") {               // basalt walls, a dull ember glow at the foot
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3]) { if (near(d, i, G)) paint(i, [0x5e, 0x56, 0x52]); else if (near(d, i, DG)) paint(i, [0x3c, 0x36, 0x34]); }
+    for (let x = 0; x < w; x++) { const i = at(x, h - 1); if (d[i + 3] && x % 6 < 2) paint(i, [0x8a, 0x2a, 0x10]); }
   } else if (biome === "dust" || biome === "void") {
     const [a, b] = biome === "dust" ? [[0xa8, 0xa0, 0x5c], [0x7a, 0x70, 0x40]] : [[0x8e, 0x88, 0xa8], [0x5e, 0x58, 0x7a]];
     for (let i = 0; i < d.length; i += 4) if (d[i + 3]) { if (near(d, i, G)) paint(i, a); else if (near(d, i, DG)) paint(i, b); }
@@ -269,6 +316,8 @@ let left = Object.keys(SPRITES).length;
 for (const [t, src] of Object.entries(SPRITES)) {
   const img = new Image(); img.onload = () => { loaded[t] = img; if (--left === 0) town(); }; img.src = src;
 }
+document.getElementById("ask").onclick = () => attack(false);
+document.getElementById("fail").onclick = () => attack(true);
 document.getElementById("panel").onclick = () => document.getElementById("town").classList.toggle("has-panel");
 document.getElementById("more").onclick = () => { for (let i = 0; i < 4; i++) add(); };
 document.getElementById("reset").onclick = reset;

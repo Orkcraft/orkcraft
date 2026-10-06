@@ -13,6 +13,7 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 | 1 | the biomes: five grounds, the huts drawn for each (§3) | |
 | 2 | the War Map: the orkspaces as lands in a framed square, the open one large (§2) | |
 | 3 | the map's fog at the foot makes a new orkspace; right click changes a land's biome (§2.4) | |
+| 4 | "under attack": the map calls you to another orkspace (§2.5) | |
 | later | the biome's doodads on the town's ground (sprites.md, Decorations) | |
 
 ![The prototype: the War Map at the bottom left, the town in the open orkspace's biome (ice)](../img/war-map/town.png)
@@ -107,11 +108,35 @@ art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Works
 - **One orkspace**: a single land fills the map above the fog. It is a map from the first day, and
   the fog shows where it grows.
 
+### 2.5 Under attack
+
+![The rings from ops's ■, three beats; at the right, a failure in red](../img/war-map/attack.png)
+
+When something new needs the operator in an orkspace **other than the open one**, the map calls, as
+a strategy game's minimap does when your units are attacked:
+
+- **Rings** of 2 px leave the land's ■ and widen in six steps (8 → 60 px, 0.9 s), three of them
+  0.45 s apart; the land flashes four times. Then it rests: the ■ stays and blinks as a hut's fire
+  does.
+- **What calls**: a new question of an ork there (`--alert`, orange), a failed or escalated run
+  (`--alert-hot`, red). Nothing else: no finished work, no carts, no growth.
+- **Out of sight** (the map scrolled, §2.2): an arrow at the frame's edge, "▼ ops", blinks instead.
+- **Once per event**, never again for the same question. At most one call per land in 30 s; a burst
+  of questions is one call.
+- **Never for the open orkspace**: there the hut's own fire already says it.
+- **Quiet hours** (`realm/awake.py`): no rings, only the steady ■; the operator is asleep and the
+  orks wait.
+- `prefers-reduced-motion`: no rings, a steady brighter land.
+- **No sound** by default. A short horn ("Your orks are under attack") could be a Settings switch,
+  off unless turned on.
+
+The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
+
 ## 3. The biomes
 
 ![Five biomes, the huts changed by code, nothing redrawn](../img/war-map/biomes.png)
 
-### 3.1 Five
+### 3.1 Five, and lava
 
 | biome | the town's ground | the land on the map | the huts |
 |---|---|---|---|
@@ -120,6 +145,7 @@ art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Works
 | **ice** | `#0c1622` | `#263c52` | snow: the two top pixels of every edge that faces the sky go ivory |
 | **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
 | **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
+| **lava** | `#161212` | `#342c2a` | basalt, embers at the foot (§3.4) |
 
 - **One flat colour per biome**, dark and low in saturation, as sprites.md has it: the cards, their
   text, the gold and the fire must read on all five.
@@ -131,19 +157,37 @@ art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Works
 The 19 buildings are **not redrawn** per biome. `tools/biomes.py` makes the four variants from each
 flat sprite: a palette swap (dust, void) and a few pixels added by rule (snow on ice, sand on dust).
 It writes `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`) beside today's
-`header.png`, which stays dirt's and forest's. That is 76 files, all made by the script, so they are
+`header.png`, which stays dirt's and forest's. That is 76 files (95 with lava), all made by the script, so they are
 clean pixels; a CSS filter at run time would smear the palette. `js/icons.js` `headerSprite(type,
 biome)` picks the file. The prototype does the same on a canvas, to try the rules live.
 
 - The agents' heads and the Warchief stay green in every biome: they are the clan, not the place.
 - Void takes the green off the buildings. That is accepted: the clan stays green.
 
+### 3.4 Lava, a sixth
+
+![dirt, a red lava, and lava as basalt: a quiet hut, a burning one, a land with its call](../img/war-map/lava.png)
+
+Lava can be a sixth biome, **on one condition: it is never red.** Red and orange are the fire's: a
+burning hut's card (`--fire-ground`), its glow, the ■ and the rings of §2.5. On a red ground (the
+middle row) a burning hut barely differs from a quiet one, and the call weakens. So lava is
+**basalt**:
+
+| | |
+|---|---|
+| the town's ground | `#161212`, a cold near-black |
+| the land on the map | `#342c2a` |
+| the huts | the greens to basalt greys (`#5e5652`, `#3c3634`); a dull ember (`#8a2a10`, darker than any alert) in every sixth pair of pixels along the foot |
+
+It reads as volcanic by the grey stone and the embers, and leaves the colour of fire to fire. With
+six biomes, §3.3's "any but its neighbour's" has five to choose from. The prototype has it.
+
 ### 3.3 Who picks it
 
 - A **new orkspace** gets the first biome no orkspace has. When all five are taken, it gets any biome
   but its upper neighbour's, so two lands that touch never share a colour.
 - **Right click → Biome ▸** changes it. It is stored in the Town Scroll, `orkspaces[].biome`, which
-  exists already (`scroll.BIOMES = ("void", "forest", "ice")`; it gains `"dirt"` and `"dust"`).
+  exists already (`scroll.BIOMES = ("void", "forest", "ice")`; it gains `"dirt"`, `"dust"` and `"lava"`).
 
 ## 4. With the growth of buildings
 
@@ -154,7 +198,8 @@ snow, so on ice the flag's cloth gets a 1 px dark edge. The gold of III reads ev
 
 | | why | how |
 |---|---|---|
-| the fire on **dust** | a warm ground under orange fire | a burning hut and ■ on a dust land |
+| the fire on **dust** and **lava** | a warm or dark ground under orange fire | a burning hut and ■ on those lands |
+| the call (§2.5) | loud enough to see, calm enough to keep | "Attack: …" in the prototype, with a building panel open |
 | a flag on **ice** | ivory on snow (§4) | a level I flag on an ice roof |
 | the map beside an open panel | the panel takes the town's right half | "Building panel" in the prototype: the map keeps its corner and the town's huts move left |
 | seven and eight orkspaces | the scroll inside the frame | "+ 4 orkspaces" |
