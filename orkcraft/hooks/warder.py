@@ -20,7 +20,9 @@ Codex edits files with `apply_patch`: the files it touches are read from the pat
 Every deny / ask is appended to `.orkcraft/warder.jsonl` of the project the session works in
 (redacted, cut to 160 chars) so the Warder orc in orkcraft shows ❓ with the reason. An internal error never blocks a tool call (the
 error is logged) — a guard must not brick the sessions it guards. Standard library only.
-agy has no documented pre-tool hook, so Warder guards Claude Code and Codex sessions only.
+Warder guards Claude Code and Codex sessions only. agy reads a `PreToolUse` hook from `.agents/hooks.json`
+and `~/.gemini/config/hooks.json` too, but orkcraft does not install one for it yet
+(docs/design/agy-guard.md).
 """
 from __future__ import annotations
 

@@ -276,6 +276,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         assert step.query("#ob-tool-claude") and not step.query("#ob-tool-agy") and step.query("#ob-like-cursor")
         assert "Antigravity" in str(step.query_one("#ob-tools-missing").render())
         assert step.query_one("#ob-warder", Checkbox).display and step.query_one("#ob-warder", Checkbox).value
+        assert "does not guard agy yet" in str(step.query_one("#ob-warder-agy").render())   # says agy is unguarded
         assert step.query_one("#ob-good-claude", Select).styles.visibility == "hidden"
         step.query_one("#ob-billing-claude", Select).value = "api"
         step.query_one("#ob-like-claude").action_toggle()
@@ -397,6 +398,7 @@ async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
         assert not town.query(".ob-buttons #ob-back")                            # nothing before it
         assert "step" not in _title(app)                                         # no "step 1 of 1"
         assert town.query_one("#ob-warder", Checkbox).display                    # claude on: here
+        assert town.query_one("#ob-warder-agy").display and "--sandbox" in str(town.query_one("#ob-warder-agy").render())
         assert str(town.query_one("#ob-next", Button).label) == "Build"
         assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "bug_hunt"
         town.query_one("#ob-role-browse", Select).value = "designer"             # other roles' towns
@@ -436,6 +438,7 @@ async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard)
         assert custom.id == "custom" and custom.disabled and "needs Claude Code" in str(custom.prompt)
         assert "Claude Code" in str(app.screen.query_one("#ob-town-note").render())
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
+        assert not app.screen.query_one("#ob-warder-agy").display
         assert "KNIGHT" in str(app.screen.query_one("#ob-mascot").render())
 
 
