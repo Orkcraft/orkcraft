@@ -67,16 +67,32 @@ function open(id, it) {
   else openInLake({ path: it.value, title: it.title, from: id });
 }
 
-// -- closed: the whole card is the drop zone ------------------------------------------------------------
+// -- closed: the whole card is the drop zone, only an icon in it ---------------------------------------
+// A tray with an arrow over it; while a file is held over the card the arrow drops into the tray, the
+// tray lights up and the card's edge turns to the focus colour (pit.css): it takes the file.
+
+const sheet = new URL("./pit.css", import.meta.url).href;
+if (!document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
+}
+
+function TrayIcon() {
+  return html`<svg class="gui-pit__icon" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+    <path class="gui-pit__arrow" d="M16 3v13M10.5 10.5 16 16l5.5-5.5" />
+    <path class="gui-pit__tray" d="M4 18v8.5h24V18M4 18h6.5l2 3.5h7l2-3.5H28" />
+  </svg>`;
+}
 
 function DropCard({ b }) {
   const ref = useRef(null);
   const [over, setOver] = useState(false);
   useDropZone(ref, b.id, setOver, ".gui-hut");
   return html`<div ref=${ref} class=${cls("gui-pit__zone", { "is-over": over })}
-      style=${over ? "box-shadow: inset 0 0 0 1px var(--frame-focus)" : ""}
       title=${say("Drop a file, a link or a text on the card")}>
-    <span class=${over ? "ok-tone-accent" : "ok-tone-muted"}>drag & drop</span></div>`;
+    <${TrayIcon} /></div>`;
 }
 
 export function card(b) {
@@ -145,8 +161,8 @@ function Chain({ id, data }) {
     <div class="ok-detail__actions">
       <button class="ok-act" onClick=${() => open(id, it)}><span class="ok-act__label">Open in Lake</span></button></div>
     <p class="ok-detail__section">Where it went</p>
-    ${!it.followed ? html`<p class="ok-tone-muted">Dropped before the Pit followed its carts.</p>`
-      : !it.stops.length ? html`<p class="ok-tone-muted">No road took it yet — lay one from the Pit.</p>`
+    ${!it.followed ? html`<p class="ok-tone-muted">Dropped before its carts were followed.</p>`
+      : !it.stops.length ? html`<p class="ok-tone-muted">No road took it yet — lay one from this building.</p>`
       : html`<ul class="ok-list__items gui-rows">${it.stops.map((s, n) => html`<li key=${n} class="ok-item"
           title=${say("Open what arrived in Lake")}
           onClick=${() => (s.kind === "file" ? openInLake({ path: s.value, title: s.title, from: s.building })
