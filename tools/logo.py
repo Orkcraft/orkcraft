@@ -87,12 +87,28 @@ def grid_image(grid: list[str], colours: dict[str, str], k: int) -> Image.Image:
 
 
 def sprites(out: pathlib.Path) -> None:
-    """The agent's head and its states for the GUI (design-system/sprites/orks/)."""
+    """The agent's head and its states for the GUI (design-system/sprites/orks/), and the Warchief's."""
     out.mkdir(parents=True, exist_ok=True)
     for name in STATES:
         grid = state_grid(name)
         grid_image(grid, SPRITE_COLOURS, 2).save(out / f"{name}.png")
         grid_image(grid, SPRITE_COLOURS, 4).save(out / f"{name}@2x.png")
+    for name, grid in warchief_grids().items():
+        grid_image(grid, SPRITE_COLOURS, 2).save(out / f"{name}.png")
+        grid_image(grid, SPRITE_COLOURS, 4).save(out / f"{name}@2x.png")
+
+
+# The Warchief: the ork's head under a gold crown (docs/design/growth.md §8), two rows over the 12×8 grid.
+# The crown marks the role, it is never earned. Waiting, the crown's points burn instead of the ork's flame.
+CROWN = ["...Y.YY.Y...", "...YYYYYY..."]
+CROWN_BURNING = ["...O.OO.O...", "...YYYYYY..."]
+
+
+def warchief_grids() -> dict[str, list[str]]:
+    return {"warchief": CROWN + state_grid("ork"),
+            "warchief-idle": CROWN + state_grid("ork-idle"),
+            "warchief-busy": CROWN + state_grid("ork-busy"),
+            "warchief-waiting": CROWN_BURNING + state_grid("ork")}
 
 
 CELL = 10  # SVG units per pixel of the grid
