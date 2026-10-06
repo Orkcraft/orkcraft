@@ -163,7 +163,9 @@ button { font: inherit; color: inherit; }
   background: none; color: var(--ink-muted); font: inherit; font-size: .9em; cursor: pointer; }
 .gui-steward__model:hover { color: var(--ink); background: var(--selection); }
 .gui-steward { display: flex; flex-direction: column; gap: var(--space-1); }
-.gui-steward__settings { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.gui-steward__settings { display: grid; grid-template-columns: auto 1fr; align-items: center; justify-items: start;
+  gap: var(--space-1) var(--space-2); }
+.gui-steward__setting { white-space: nowrap; }
 .gui-steps { display: inline-flex; border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); overflow: hidden; }
 .gui-steps__one { display: inline-grid; place-items: center; padding: 1px 6px; border: 0; background: none;
   color: var(--ink-muted); font: inherit; font-size: .85em; cursor: pointer; }

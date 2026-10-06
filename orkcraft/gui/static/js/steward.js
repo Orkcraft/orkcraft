@@ -3,8 +3,8 @@
 // tasks, realm/steward.py USES) — and its body
 // what the steward keeps and does:
 //
-//   settings   one row: the goal its retros aim at (three steps), how freely it applies their changes
-//              (as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
+//   settings   two rows, each named: the goal its retros aim at (three steps), how freely it applies their changes
+//              (Freedom: as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
 //   commands   one row: Watch, Report, Redesign, Revert while there is a checkpoint
 //   listens    the roads into the building, one line each with its handler (an agent, a script, a chain)
 //              and what it does now; a click edits the handler's prompt, opens its script in Lake, or
@@ -65,8 +65,10 @@ export function StewardModels({ b, i, onClose, onDone }) {
   </${Dialog}>`;
 }
 
+/** One setting's row: its name, then its steps. */
 function Steps({ label, title, children }) {
-  return html`<span class="gui-steps" role="group" aria-label=${label} title=${title}>${children}</span>`;
+  return html`<span class="gui-steward__setting ok-font-label ok-tone-muted" title=${title}>${label}</span>
+    <span class="gui-steps" role="group" aria-label=${label} title=${title}>${children}</span>`;
 }
 
 function Goal({ b, i, redo }) {
