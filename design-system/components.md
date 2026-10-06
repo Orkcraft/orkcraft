@@ -156,7 +156,7 @@ The resource strip along the top of the town: the brand, the menu, the halt stat
 **Office.** A VS Code title bar: flat `panel-inset` with a bottom hairline, the UI face, each word before its value, and no icons.
 
 ## Hut
-A building as it stands on the town map, collapsed. In Camp it is a card with the building's header sprite on top. In Office it is an explorer card. Clicking it opens the building as a Window, which carries the wide banner version of the same art.
+A building as it stands on the town map, collapsed. In Camp it is a card with the building's header sprite on top. In Office it is an explorer card with the same sprite at two thirds of the size, standing at its left. Clicking it opens the building as a Window, which carries the wide banner version of the same art.
 
 **Markup**
 - `.ok-hut` holds, in order:

@@ -89,11 +89,12 @@ button { font: inherit; color: inherit; }
 .gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
 .gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .gui-hut__pin:hover { color: var(--ink); background: var(--selection); }
-.gui-hut__pin.is-off { color: var(--frame-focus); }
-/* A drag on a pinned hut: its pin (or its `pinned`) turns red for a moment (js/hut.js warnPinned). */
-.gui-hut__pin.is-warn, .gui-hut__pinned.is-warn { color: var(--danger); animation: gui-pin-warn .4s ease-out 2; }
+.gui-hut__pin.is-on { color: var(--frame-focus); }
+.gui-hut__pin.is-on > svg { fill: currentColor; }
+/* A drag on a pinned hut: its pin turns red for a moment (js/hut.js warnPinned). */
+.gui-hut__pin.is-warn { color: var(--danger); animation: gui-pin-warn .4s ease-out 2; }
 @keyframes gui-pin-warn { 50% { transform: scale(1.35); } }
-@media (prefers-reduced-motion: reduce) { .gui-hut__pin.is-warn, .gui-hut__pinned.is-warn { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__pin.is-warn { animation: none; } }
 .gui-hut__title { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
 .gui-hut__title .ok-badge { flex: none; }
 .gui-hut__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

@@ -10,7 +10,7 @@ Orkcraft runs many coding agents in one project as a real-time strategy game. Th
 | Look | Theme ids | References | Feel |
 |---|---|---|---|
 | **Camp** | `camp` (forest, the default), `camp-ice`, `camp-void` | Warcraft 2 × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
-| **Office** | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites, every concept by its Office name (`realm/lexicon.py`). Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
+| **Office** | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites but the huts' buildings (smaller, at the left), every concept by its Office name (`realm/lexicon.py`). Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
 
 **One design system in the GUI.** The GUI's Office now wears the Camp theme too (`data-theme="camp"`):
 the bevels, the gold, Almendra and Titillium, the agents' heads, the HUD's resource sprites. What stays
@@ -156,7 +156,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
   - Resources now have sprites: an hourglass (quota), coins (spend), logs (context) and meat (agents), in `icons/res-*.png`.
   - Orks: the chain or script has its signpost sprite (`icons/chain.png`). The agent ork already has its sprite (`orks/ork.png`, 24×16, the ork mark's head) and no longer uses 🧌.
   - Status is the ork's face: `orks/ork-idle.png` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its head.
-- **Office: no emoji and no sprites** (`modes.strip_emoji`).
+- **Office: no emoji and no sprites** (`modes.strip_emoji`), but for a hut's building: its header sprite at two thirds of Camp's size, at the card's left (`office.css`).
   - Words in `<span class="ok-word">` replace pictographs: Quota, Spend, Context, Agents, `busy`, `?`.
   - Icon buttons become text actions.
   - Status is a coloured dot next to a word.

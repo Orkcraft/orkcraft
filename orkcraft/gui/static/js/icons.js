@@ -31,7 +31,7 @@ export function TypeIcon({ type }) {
     <path d=${PATHS[type] || PATHS.custom} /></svg>`;
 }
 
-/** The type's header sprite for Camp (design-system/sprites/buildings/<type>/header.png). */
+/** The type's header sprite, Camp's and Office's (design-system/sprites/buildings/<type>/header.png). */
 export function headerSprite(type) {
   const name = type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
   return `/ds/sprites/buildings/${name}/header.png`;

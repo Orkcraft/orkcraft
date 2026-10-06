@@ -1,10 +1,16 @@
 /* What only Office adds to the layout (layout.css), scoped to [data-look="office"]. Office wears the Camp
    design system (data-theme="camp": bevels, gold, the faces, the agents' heads) on its own plain dark
-   ground, with no building sprites, its roads as a block diagram and its own words
+   ground, its building sprites smaller and at the card's left, its roads as a block diagram and its own words
    (docs/design/gui-design-system.md). */
 [data-look="office"] { --canvas: #1a1813; --terrain: #1a1813; --road: #8f8166; --road-bright: #7a6e55;
   --road-selected: #e8b94a; --road-live: #6aa84f; }
 [data-look="office"] .ok-head { display: none; }
+
+/* A hut keeps its building, two thirds of Camp's size, standing at the card's left over its name. */
+[data-look="office"] .gui-hut > .ok-head { display: flex; justify-content: flex-start; padding-left: var(--space-3); }
+[data-look="office"] .gui-hut__sprite { zoom: calc(2 / 3); }
+/* Its garrison's ork, in the badge on the card, at the same two thirds. */
+[data-look="office"] .gui-hut .ok-badge img[data-kind="ork"] { zoom: calc(2 / 3); }
 
 /* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
    road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;

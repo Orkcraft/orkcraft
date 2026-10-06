@@ -182,7 +182,7 @@ def test_the_town_hall_is_the_warchiefs_line_in_office(page):
     pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
 
 
-def test_huts_stand_pinned_until_unpinned(page):
+def test_huts_move_until_the_person_pins_them(page):
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
     hut = _hut(pg, bid)
@@ -191,8 +191,17 @@ def test_huts_stand_pinned_until_unpinned(page):
     assert hut.locator(".gui-pit__icon").is_visible()           # the Pit's card: only its tray
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
+    sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
+    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__sprite`).complete",
+                         arg=bid, timeout=WAIT_MS)
+    s, c = sprite.bounding_box(), card.bounding_box()           # Office: its building, smaller, at the card's left
+    assert s["width"] < 68 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
     pin, name = title.locator(".gui-hut__pin").bounding_box(), title.locator(".gui-hut__name").bounding_box()
     assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
+    assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
+    hut.locator(".gui-hut__pin").click()
+    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
+                         arg=bid, timeout=WAIT_MS)
     start = hut.bounding_box()
     pg.mouse.move(start["x"] + 30, start["y"] + start["height"] - 10)
     pg.mouse.down()
@@ -204,9 +213,10 @@ def test_huts_stand_pinned_until_unpinned(page):
                          arg=bid, timeout=4_000)                 # for a moment
     pg.keyboard.press("Escape")
     hut.locator(".gui-hut__pin").click()
-    assert "is-free" in hut.get_attribute("class")
-    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
-                         arg=bid, timeout=8_000)                 # five seconds alone pin it again
+    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
+                         arg=bid, timeout=WAIT_MS)
+    pg.wait_for_timeout(6_000)
+    assert "is-free" in hut.get_attribute("class")              # and stays free: nothing pins it again by itself
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 

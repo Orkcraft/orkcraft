@@ -1,10 +1,10 @@
 // A building as it stands on the town, closed (design-system/components.md: Hut;
 // docs/design/building-views.md): its name above the card, inside only its type's live status (the
 // type's `card(b)`, else its status lines), and the mouse on it — a press opens it, a drag moves
-// it, the + handle pulls a road out of it. Every hut stands pinned: the pin at the right of its name
-// unpins it, so a drag moves it, and five seconds without a move pin it again. Before the name a
-// spinner while it works and, in Office, its type's icon; in Camp its type's header sprite stands
-// between the name and the card. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
+// it, the + handle pulls a road out of it. A hut moves freely until the person pins it: the pin at the
+// right of its name pins it in place (in the Town Scroll, as from its Info) and unpins it. Before the name a
+// spinner while it works and, in Office, its type's icon; its type's header sprite stands over the
+// card (in Office two thirds of the size, at the card's left). One look's huts differ only in what this draws (Office: an explorer card; Camp: the
 // card under its header sprite), never in how the town places them.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
@@ -14,17 +14,14 @@ import { laying, demolishing } from "./build.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule } from "./types.js";
-import { town, say } from "./link.js";
+import { town, say, command } from "./link.js";
 import { TypeIcon, headerSprite } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
-const IDLE_MS = 5000;                      // an unpinned hut left alone this long is pinned again
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
 export const dragging = signal(null);      // {id, dx, dy}: the hut under the mouse, so its roads follow it
 export const pulling = signal(null);       // {from, x, y}: a road being pulled out of a hut, to the pointer
-export const unpinned = signal({});        // building id → true while a drag may move it
-const idle = new Map();                    // building id → the timer that pins it again
 const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
 const warned = signal({});                 // building id → true while its pin says it holds the hut
 const warnings = new Map();                // building id → the timer that lets the pin go back
@@ -40,35 +37,19 @@ function warnPinned(id) {
   }, WARN_MS));
 }
 
-function pinAgain(id) {
-  clearTimeout(idle.get(id));
-  idle.delete(id);
-  const { [id]: _, ...rest } = unpinned.value;
-  unpinned.value = rest;
-}
-
-/** Keeps a hut unpinned for another IDLE_MS. */
-function stir(id) {
-  clearTimeout(idle.get(id));
-  idle.set(id, setTimeout(() => pinAgain(id), IDLE_MS));
-}
-
 function togglePin(e, id) {
   e.stopPropagation();
-  if (unpinned.value[id]) { pinAgain(id); return; }
-  unpinned.value = { ...unpinned.value, [id]: true };
-  stir(id);
+  command("building.pin", { id });
 }
 
 /** The pin by a hut's name: on, the hut keeps its place; off, a drag moves it. */
 function PinButton({ b }) {
-  const off = !!unpinned.value[b.id];
-  const label = off ? say("Pin it in place") : say("Unpin to move it");
-  return html`<button class=${cls("gui-hut__pin", { "is-off": off, "is-warn": !!warned.value[b.id] })} title=${label} aria-label=${label} aria-pressed=${off}
+  const on = !!b.pinned;
+  const label = on ? say("Unpin to move it") : say("Pin it in place");
+  return html`<button class=${cls("gui-hut__pin", { "is-on": on, "is-warn": !!warned.value[b.id] })} title=${label} aria-label=${label} aria-pressed=${on}
       onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => togglePin(e, b.id)}>
     <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
       <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
-      ${off && html`<path d="M2.5 2.5l11 11" />`}
     </svg></button>`;
 }
 
@@ -110,7 +91,7 @@ function hutMenu(e, b) {
     "-",
     { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
-    b.id !== CORNER && !b.pinned && { label: unpinned.value[b.id] ? "Pin it in place" : "Unpin to move it",
+    b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
     b.id !== CORNER && "-",
     b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
@@ -148,7 +129,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
     ro.observe(ref.current);
     return () => ro.disconnect();
   }, [b.id]);
-  const free = !!unpinned.value[b.id] && !b.pinned && b.id !== CORNER;   // pinned in the scroll, or the Hall: never moves
+  const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
   const office = town.value.look === "office";
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
@@ -164,14 +145,13 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       if (!moved && !free) warnPinned(b.id);
       moved = true;
       if (!free) return;                   // a pinned hut keeps its place: a drag on it does nothing
-      stir(b.id);
       dragging.value = { id: b.id, dx, dy };
     };
     const up = (ev) => {
       ev.currentTarget.removeEventListener("pointermove", move);
       ev.currentTarget.removeEventListener("pointerup", up);
       dragging.value = null;
-      if (moved) { if (free) { stir(b.id); onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
+      if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
       else openBuilding(b.id);
     };
     e.currentTarget.addEventListener("pointermove", move);
@@ -187,15 +167,15 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${office && html`<${TypeIcon} type=${b.type} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Badge} garrison=${b.garrison} alert=${b.alert} />
-      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class=${cls("ok-word ok-tone-muted gui-hut__pinned", { "is-warn": !!warned.value[b.id] })}>pinned</span>`}
-      ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
+      ${b.alert && html`<span class="ok-word">?</span>`}
+      ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
-    ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
-      draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}
+    <div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
+      draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
     <div class="ok-hut__card">
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

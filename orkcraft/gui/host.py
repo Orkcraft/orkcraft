@@ -305,7 +305,7 @@ class Host:
         if bs.id == "town_hall":
             raise CommandError("The Town Hall stands in its corner")
         if bs.pinned:
-            raise CommandError(f"{bs.title} is pinned — unpin it in its Info to move it")
+            raise CommandError(f"{bs.title} is pinned — unpin it to move it")
         try:
             x, y = float(args["x"]), float(args["y"])
         except (KeyError, TypeError, ValueError):
