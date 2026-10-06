@@ -290,10 +290,10 @@ button.gui-status__item { cursor: pointer; }
 
 /* Camp: roads are road tiles (js/roadtiles.js); the lines stay only to be clicked, the gates are tiles too. */
 .gui-tiles { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.gui-tiles__road { opacity: .6; }
+.gui-tiles__road { opacity: .85; }
 .gui-tiles__road.is-bright, .gui-tiles__road.is-picked { opacity: 1; }
 .gui-tiles__road.is-picked { filter: drop-shadow(0 0 1px var(--road-selected)) drop-shadow(0 0 1px var(--road-selected)); }
-.gui-tiles__road.is-return { opacity: .45; }
-.gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .8; }
-.gui-tile { position: absolute; width: 16px; height: 16px; background-size: 16px 16px; image-rendering: pixelated; }
+.gui-tiles__road.is-return { opacity: .6; }
+.gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .9; }
+.gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
 [data-theme="camp"] .gui-road polyline:not(.gui-road__hit), [data-theme="camp"] .gui-road circle { visibility: hidden; }
