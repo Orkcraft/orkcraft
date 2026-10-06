@@ -1,8 +1,8 @@
 // Office only: the Control panel (the Town Hall) is no hut on the town but an advisor pinned at the
-// strip's right end — the ork in a tie, gold under the mouse — with the hall's closed card over it at
+// strip's bottom right — the ork in a tie, gold under the mouse — with the hall's closed card over it at
 // the left, as a speech bubble without a name (its `card(b)`, js/buildings/town_hall.js). A press on
-// the advisor selects the hall, as a press on its hut does in Camp. While another building's console
-// fills the strip the bubble shows only under the mouse.
+// the advisor selects the hall, as a press on its hut does in Camp. While a building is selected its
+// Command Card stands over the advisor (layout.css .gui-advisor).
 import { html, cls } from "./html.js";
 import { town, say } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
