@@ -17,8 +17,8 @@ SIZE = (1440, 900)
 
 
 def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_file: Path | None = None,
-        demo: bool = False, browser: bool = False, port: int = 0, look: str = "office") -> int:
-    server = Server(Host(repo_root, auto_commit, layout_file, demo=demo, look=look), port)
+        demo: bool = False, browser: bool = False, port: int = 0) -> int:
+    server = Server(Host(repo_root, auto_commit, layout_file, demo=demo), port)
     thread = server.start_thread()
     if not browser:
         try:

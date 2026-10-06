@@ -1,7 +1,7 @@
-/* The GUI's own layout, the same in every look: where the design system's components stand in the
+/* The GUI's own layout: where the design system's components stand in the
    window. Only tokens (design-system/tokens.css) and the component knobs: no colour or font of its
    own. The components themselves (huts, windows, lists, the HUD) are design-system/components.css;
-   what one look adds goes in office.css or camp.css, scoped to its data-look (both wear data-theme camp). */
+   what the Office look adds goes in office.css, scoped to data-look="office" (on data-theme camp). */
 
 html, body, #app { height: 100%; margin: 0; }
 body { background: var(--canvas); color: var(--ink); font-family: var(--ok-font, var(--font-office)); overflow: hidden; }
@@ -329,7 +329,6 @@ button { font: inherit; color: inherit; }
 .gui-cart { position: absolute; left: 0; top: 0; offset-rotate: 0deg; offset-anchor: 10px 50%; display: flex; align-items: center;
   gap: 4px; animation-name: gui-cart-go; animation-timing-function: linear; animation-fill-mode: both; }
 .gui-cart.is-back { animation-name: gui-cart-back; }
-.gui-cart__sprite { width: 20px; height: 18px; image-rendering: pixelated; flex: none; }
 /* Office: an event travels as a small stack of gold (the Spend icon at half size), glowing; held it glows red, turned back it greys. */
 .gui-cart:has(.gui-cart__gold) { offset-anchor: 4px 50%; }
 .gui-cart__gold { width: 8px; height: 8px; flex: none;   /* half the icon: smoothed down, a nearest pick loses its rims */
@@ -352,15 +351,6 @@ button { font: inherit; color: inherit; }
 /* Camp: a typed building's card keeps its text off the frame (Office's cards have their own padding). */
 [data-theme="camp"] .gui-hut .gui-hut__body { padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2); }
 
-/* Camp: roads are road tiles (js/roadtiles.js); the lines stay only to be clicked, the gates are tiles too. */
-.gui-tiles { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.gui-tiles__road { opacity: .85; }
-.gui-tiles__road.is-bright, .gui-tiles__road.is-picked { opacity: 1; }
-.gui-tiles__road.is-picked { filter: drop-shadow(0 0 1px var(--road-selected)) drop-shadow(0 0 1px var(--road-selected)); }
-.gui-tiles__road.is-return { opacity: .6; }
-.gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .9; }
-.gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
-[data-look="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-look="camp"] .gui-road circle { visibility: hidden; }
 .gui-settings p::first-letter { text-transform: uppercase; }
 
 /* A card in the Warchief's chat (js/buildings/town_hall.js Card): who has the work, what came of it, the choice. */

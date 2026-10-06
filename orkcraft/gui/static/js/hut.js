@@ -3,13 +3,12 @@
 // type's `card(b)`, else its status lines), and the mouse on it — a press opens it, a drag moves
 // it, the + handle pulls a road out of it. A hut moves freely until the person pins it: the pin at the
 // right of its name pins it in place (in the Town Scroll, as from its Info) and unpins it. Before the name a
-// spinner while it works and, in Office, its type's icon; its type's header sprite stands over the
-// card (in Office four ninths of the size, at the card's left). One look's huts differ only in what this draws (Office: an explorer card; Camp: the
-// card under its header sprite), never in how the town places them.
+// spinner while it works and its type's icon; its type's header sprite stands over the card's left
+// (office.css: four ninths of the sprite's size), and the garrison's lead is its ork's head alone.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { opened, openBuilding, Badge } from "./windows.js";
+import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
@@ -98,7 +97,7 @@ function hutMenu(e, b) {
   ]);
 }
 
-/** Office: the garrison's lead as its head alone, no framed name (it is in the tooltip and the Info). */
+/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info). */
 function Keeper({ garrison, alert }) {
   if (!garrison.length) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
@@ -140,7 +139,6 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
     return () => ro.disconnect();
   }, [b.id]);
   const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
-  const office = town.value.look === "office";
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
 
@@ -174,9 +172,9 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
   // meet that box.
   const title = html`<span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
-      ${office && html`<${TypeIcon} type=${b.type} />`}
+      <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
-      ${office ? html`<${Keeper} garrison=${b.garrison} alert=${b.alert} />` : html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
+      <${Keeper} garrison=${b.garrison} alert=${b.alert} />
       ${b.alert && html`<span class="ok-word">?</span>`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}

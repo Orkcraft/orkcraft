@@ -18,14 +18,10 @@ import { WarchiefLine } from "./js/warchief.js";
 function App() {
   const t = town.value;
   if (!t) return html`<div class="gui-loading ok-font-body">Opening the town…</div>`;
-  // Both looks wear the Camp design system; Office keeps its words, its ground, its roads and no
-  // building sprites (office.css, scoped to data-look).
-  document.documentElement.dataset.theme = "camp";
-  document.documentElement.dataset.look = t.look;       // office | camp (orkcraft gui --look; Shift by the hour)
+  // One look, Office, on the Camp design system (index.html: data-theme camp, data-look office; office.css).
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
-  if (t.look === "office") ids.delete(HALL);             // Office: the Warchief's line is the hall's way in
-  else ids.add(HALL);                                    // Camp: the Town Hall stands on every canvas
+  ids.delete(HALL);                                      // the Warchief's line is the hall's way in
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />

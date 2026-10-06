@@ -544,12 +544,11 @@ def test_a_type_registers_itself_by_its_files():
     assert views.of("no_such_type") is None and views.of("../server") is None
 
 
-def test_the_look_is_office_until_asked_otherwise(fake_repo):
-    from orkcraft.gui import state
-    assert _host(fake_repo).snapshot()["look"] == "office"
-    host = Host(fake_repo, auto_commit=False, look="camp")
-    assert host.snapshot()["look"] == "camp"
-    assert state.look(host.town, "auto") in ("office", "camp") and state.look(host.town, "evil") == "office"
+def test_the_gui_has_one_look_office(fake_repo):
+    assert _host(fake_repo).snapshot()["look"] == "office"          # the phone still reads it (docs/design/mobile.md)
+    from orkcraft import cli
+    with pytest.raises(SystemExit):
+        cli.main(["gui", "--look", "camp"])                         # no Camp to ask for
 
 
 def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_file):

@@ -45,9 +45,8 @@ class CommandError(Exception):
 
 class Host:
     def __init__(self, repo_root: Path | None = None, auto_commit: bool | None = None,
-                 layout_file: Path | None = None, demo: bool = False, look: str = "office") -> None:
+                 layout_file: Path | None = None, demo: bool = False) -> None:
         self.town = Town(repo_root, auto_commit, layout_file, demo=demo)
-        self.look = look                            # office | camp | auto (gui/state.py `look`)
         self.treasury = Treasury(self.town)
         self.muster = Muster(self.town)
         self.sessions = Sessions(self.town)
@@ -111,7 +110,7 @@ class Host:
 
     def snapshot(self) -> dict[str, Any]:
         snap = state.snapshot(self.town, self.muster, self.treasury, self.limits(), live=self.sessions,
-                              night=self.night, look_choice=self.look)
+                              night=self.night)
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         return snap

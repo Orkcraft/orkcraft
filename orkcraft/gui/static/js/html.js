@@ -31,7 +31,7 @@ function officeStrings(strings) {
 
 export function html(strings, ...values) {
   const t = town.value;
-  if (!t || t.look !== "office" || !t.words?.length) return raw(strings, ...values);
+  if (!t || !t.words?.length) return raw(strings, ...values);
   let words = worded.get(strings);
   if (!words) { words = officeStrings(strings); worded.set(strings, words); }
   return raw(words, ...values);

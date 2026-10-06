@@ -16,12 +16,12 @@ let nextId = 1;
 
 const TOAST_S = { information: 5, warning: 8, error: 10 };
 
-// The town's words in the look on screen (realm/lexicon.py): Camp says them as they are, Office in
-// its own — say("🗼 Watchtower") is "🗼 External listeners", say("Garrison") "Agents" there.
+// The town's words as the page says them (realm/lexicon.py): the code's Camp words in Office's —
+// say("🗼 Watchtower") is "🗼 External listeners", say("Garrison") "Agents".
 let saying = { words: null, re: null, to: null };
 export function say(text) {
   const t = town.value;
-  if (!text || !t || t.look !== "office" || !t.words?.length) return text;
+  if (!text || !t || !t.words?.length) return text;
   if (saying.words !== t.words) {
     const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     saying = { words: t.words, to: new Map(t.words),
@@ -84,10 +84,8 @@ function receive(msg) {
   } else if (msg.t === "detail") {
     details.value = { ...details.value, [msg.detail.id]: msg.detail };
   } else if (msg.t === "toast") {
-    // Office drops pictographs and says Office words: the host sends each text as it is and `_plain`; Camp keeps it.
-    const camp = town.value && town.value.look === "camp";
-    toast(camp ? msg.message : msg.message_plain ?? msg.message, msg.severity || "information",
-          camp ? msg.title ?? "" : msg.title_plain ?? msg.title ?? "", msg.timeout);
+    // The page drops pictographs and says Office words: the host sends each text as it is and `_plain`.
+    toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout);
   } else if (msg.t === "reply") {
     const p = pending.get(msg.id);
     if (!p) return;

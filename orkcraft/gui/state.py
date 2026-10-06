@@ -1,8 +1,8 @@
 """What the GUI shows of the town, as plain data: one snapshot the page draws from.
 
 Pure functions over a `core.Town` and its roster. The host sends a fresh snapshot whenever the town
-changes; the page keeps it in signals, so only what changed is drawn again. Nothing here picks the
-look: the page drops pictographs and words resources the Office way (`modes.RESOURCES`), and a
+changes; the page keeps it in signals, so only what changed is drawn again. The page has one look,
+Office (`look` stays in the snapshot for the phone, docs/design/mobile.md): it drops pictographs and words resources the Office way (`modes.RESOURCES`), and a
 text that may carry emoji comes twice, as it is and `_plain` (in Office's words, without emoji:
 `modes.text`). `words` is the glossary (`realm/lexicon.py`) the page says its own labels in.
 
@@ -155,18 +155,6 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
     }
 
 
-LOOKS = ("office", "camp", "auto")
-
-
-def look(town: Town, choice: str = "office") -> str:
-    """The look the page wears (`office` or `camp`). `auto` follows the machine's mode, Shift being
-    Office in office hours (schedule.py); the GUI opens in Office until Camp (stage 5) is done, and
-    `orkcraft gui --look camp` opens Camp to work on it."""
-    if choice != "auto":
-        return choice if choice in LOOKS else "office"
-    return "office" if schedule.plain_now(town.machine) else "camp"
-
-
 def sessions(live) -> list[dict[str, Any]]:
     """The War Tent: every session this run opened."""
     if live is None:
@@ -196,12 +184,12 @@ def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
 
 
 def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
-             live=None, night=None, look_choice: str = "office") -> dict[str, Any]:
+             live=None, night=None) -> dict[str, Any]:
     return {
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
-        "look": look(town, look_choice),
+        "look": "office",
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
         "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,

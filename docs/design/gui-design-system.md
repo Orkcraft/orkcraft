@@ -15,8 +15,13 @@ Orkcraft runs many coding agents in one project as a real-time strategy game. Th
 **One design system in the GUI.** The GUI's Office now wears the Camp theme too (`data-theme="camp"`):
 the bevels, the gold, Almendra and Titillium, the agents' heads, the HUD's resource sprites. What stays
 Office is set by `data-look="office"` (`gui/static/office.css`): its plain dark ground (`canvas`
-`#1a1813`), no building sprites on the huts, the roads as a block diagram, the dimming, and every word by
-its Office name. The `office` theme described below is what the design system's own previews still show.
+`#1a1813`), the huts' building sprites small at the card's left, the roads as a block diagram, the
+dimming, and every word by its Office name. The `office` theme described below is what the design
+system's own previews still show.
+
+**The GUI has one look, Office.** Its Camp look (road tiles, mine carts, the sideways gates,
+`camp.css`, `orkcraft gui --look camp`) was dropped; Camp below is the design system's theme and the
+deprecated TUI's mode.
 
 **Shift** is not a third look. It is Office during office hours on office days and Camp at other times, so the app swaps `data-theme` at runtime.
 

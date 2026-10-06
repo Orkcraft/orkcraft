@@ -184,7 +184,6 @@ export function Panel() {
   const activeDoc = docs.find((t) => t.id === l.active) || docs[docs.length - 1];
   return html`<section ref=${measured} class=${cls("ok-win is-active gui-win gui-panel", { "is-full": o.full, "is-alert": !!(b && b.alert), "is-hot": !!hot })}
       aria-label=${b ? say(b.title) : say("Lake")}>
-    <div class="ok-head is-banner"></div>
     <div class="ok-win__frame">
       <div class="ok-win__bar" onDblClick=${toggleFull}>
         ${b && html`<span class="ok-win__no">${town.value.buildings.indexOf(b) + 1}</span>`}

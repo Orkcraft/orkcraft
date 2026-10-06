@@ -182,7 +182,7 @@ version:
 | the window | `pywebview`: the system's own web view (WKWebView on macOS), so no browser ships with it. `orkcraft gui --browser` opens the same page in a tab |
 | between the page and the core | one WebSocket on 127.0.0.1: snapshots and toasts out, commands in. It is the daemon's boundary from §1 already |
 | the page | Preact + htm + `@preact/signals` as ES modules from `gui/static/vendor/` (~26 KB, no build step, no Node) |
-| the first look | Office; Camp is stage 5 |
+| the look | Office, the only one: the GUI's Camp look was dropped (Camp stays the code's words and the deprecated TUI's mode) |
 | the first buildings | the War Map, the HUD, 🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump (they have workers and contracts), Orders and toasts; the other types follow their workers (§2, 1) |
 | terminals | the sessions service (§2, 2) is built for the GUI: processes and PTYs in the core, `xterm.js` in the page |
 | two faces at once | no: one face owns a project at a time until the daemon comes (§1) |
@@ -208,7 +208,7 @@ orkcraft/gui/
   markdown.py Markdown as HTML, raw HTML off
   static/     index.html (import map), app.js, js/ (link, chrome, town, hut, roads, windows,
               console, acts, types, lake, keeper, layout, dialog, tent, orders, build, terminal), js/buildings/ (one per type the GUI
-              draws, loaded when one opens), layout.css (every look), office.css, camp.css
+              draws, loaded when one opens), layout.css, office.css
 ```
 
 - **The protocol.** The host sends a whole snapshot (`gui/state.py`) when the town changes, at most
@@ -353,7 +353,7 @@ found by its files, so a port touches no shared list and parallel ports do not c
 1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
    building wizard with the Builder, and a building's settings in its window.
 2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
-3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
-   camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.
+3. ~~Camp (stage 5).~~ Dropped: the GUI keeps one look, Office (on the Camp design system), and
+   `orkcraft gui --look` is gone. The snapshot keeps `look: "office"` for the phone.
 4. A phone over the same host: glance, Orders, the Pit, the Warchief, Halt All, pushes —
    [mobile.md](mobile.md); stage 0 (`gui/mobile.py`, `GET /api/version`) stands.

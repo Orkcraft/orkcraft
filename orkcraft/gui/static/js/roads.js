@@ -45,14 +45,13 @@ function gateCell(g, side, i, k) {
   return [Math.min(x, g.w > 2 ? g.x + g.w - 2 : g.x), side === "top" ? g.y : g.y + g.h - 1];
 }
 
-function gates(geoms, roads, sideways = false) {
+function gates(geoms, roads) {
   const slots = new Map();
   for (const r of roads) {
     const a = geoms[r.from], b = geoms[r.to];
     if (!a || !b) continue;
     for (const [bid, role, me, other] of [[r.from, "exit", a, b], [r.to, "entry", b, a]]) {
-      // Camp: roads meet a card on its left or right edge (its name and sprite stand above it)
-      const side = sideways ? (other.x + other.w / 2 >= me.x + me.w / 2 ? "right" : "left") : facingSide(me, other);
+      const side = facingSide(me, other);
       // along the side by where the other end lies, so roads do not cross at the hut
       const key = side === "left" || side === "right" ? other.y + other.h / 2 : other.x + other.w / 2;
       const slot = `${bid}\u0000${side}`;
@@ -167,9 +166,9 @@ function corners(points) {
 }
 
 /** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. `ports` (default the
- *  huts themselves) are where gates sit — Camp's huts carry a sprite over their card, and roads meet the card;
+ *  huts themselves) are where gates sit — a hut carries its building's sprite over its card, and roads meet the card;
  *  the huts whole stay what the roads go round. */
-export function plan(rects, roads, roomW, roomH, ports = rects, sideways = false) {
+export function plan(rects, roads, roomW, roomH, ports = rects) {
   const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
   const geoms = {};
   for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r);
@@ -180,7 +179,7 @@ export function plan(rects, roads, roomW, roomH, ports = rects, sideways = false
     }
   }
   const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
-  const all = gates(geoms, roads, sideways);
+  const all = gates(geoms, roads);
   const taken = new Uint8Array(width * height);
   const out = [];
   for (const r of roads) {

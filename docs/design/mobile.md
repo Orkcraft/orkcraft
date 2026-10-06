@@ -146,7 +146,7 @@ Lake's tabs, jobs or the glossary.
 
 ## 4. Office and Camp on the phone
 
-The phone follows the snapshot's `look`, as the page does, and the same rules hold
+The phone follows the snapshot's `look` (the GUI sends `office` only now), as the page does, and the same rules hold
 ([CLAUDE.md](../../CLAUDE.md)): every text a person reads says **ork** / **orks** and
 **orkestration**, in Camp; in Office it says the Office word of `lexicon.TERMS`. The host already
 sends what may carry emoji twice, as it is and `_plain` (`title_plain`, `hour_plain`; the toasts'
