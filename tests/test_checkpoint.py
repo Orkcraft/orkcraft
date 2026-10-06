@@ -55,6 +55,20 @@ def test_history_and_building_before_see_one_building(tmp_path: Path):
     assert cpt.building_before(tmp_path / "nowhere", "a") is None
 
 
+
+def test_can_revert_only_with_an_earlier_checkpoint_that_had_the_building(tmp_path: Path):
+    assert not cpt.can_revert(tmp_path / "nowhere", "a")
+    _spec(tmp_path, "a", n=1)
+    cpt.commit(tmp_path, "create", "a", "raised")
+    assert not cpt.can_revert(tmp_path, "a")                   # its first checkpoint: nothing before it
+    _spec(tmp_path, "b", n=1)
+    cpt.commit(tmp_path, "create", "b", "raised")
+    assert not cpt.can_revert(tmp_path, "b")                   # the checkpoint before did not have it
+    _spec(tmp_path, "a", n=2)
+    cpt.commit(tmp_path, "update", "a", "n=2")
+    assert cpt.can_revert(tmp_path, "a")
+
+
 @pytest.mark.asyncio
 async def test_revert_puts_one_building_back_and_leaves_the_others(fake_repo: Path):
     from orkcraft.app import OrkcraftApp

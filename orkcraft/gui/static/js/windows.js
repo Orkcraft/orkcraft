@@ -115,6 +115,14 @@ function About({ b, t }) {
   </details>`;
 }
 
+/** The window's last row: About this building (a view's), Demolish at the bottom right. */
+function Foot({ b, children }) {
+  return html`<div class="gui-win__foot">
+    ${children || html`<span class="gui-head__spacer"></span>`}
+    ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
+  </div>`;
+}
+
 export function Question({ alert }) {
   return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
     <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
@@ -127,7 +135,7 @@ function Body({ b, t }) {
     return html`<div class="ok-win__body gui-win__body is-view">
       ${b.alert && html`<${Question} alert=${b.alert} />`}
       <${Layout} doc=${d.ui} panes=${view.panes(b.id, d.data)} />
-      <${About} b=${b} t=${t} />
+      <${Foot} b=${b}><${About} b=${b} t=${t} /></${Foot}>
     </div>`;
   }
   return html`<div class="ok-win__body gui-win__body">
@@ -138,6 +146,7 @@ function Body({ b, t }) {
       This building's own view is not in the window yet; it works in the TUI meanwhile.</p>`}
     <${Garrison} garrison=${b.garrison} b=${b} />
     <${Roads} b=${b} t=${t} />
+    <${Foot} b=${b} />
   </div>`;
 }
 
@@ -157,7 +166,6 @@ function Full({ b, t }) {
       <div class="ok-win__bar" onDblClick=${stepBack}>
         <span class="ok-win__title">${say(b.title)}</span>
         <${Badge} garrison=${b.garrison} alert=${b.alert} />
-        ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
         <button class="gui-tab__close gui-win__close" title=${say("Back to the town (Esc)")} aria-label=${say("Back to the town")}
           onClick=${stepBack}>×</button>
       </div>

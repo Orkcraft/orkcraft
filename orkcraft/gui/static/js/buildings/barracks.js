@@ -1,6 +1,6 @@
 // 🏕 Barracks: the orks and their tasks, three ways (docs/design/building-views.md §3). Closed: how many
 // work, the queue, the tally and the spend, the steward first when it asks. Command: the orks (a click
-// opens the ork's terminal), the queue's top, New task / Pause / Answer. Full: the tasks in lanes by
+// opens the ork's terminal), the queue's top, a New task written in place, Pause / Answer. Full: the tasks in lanes by
 // state with the chosen one beside them, a tab per ork with its terminal, the rules and settings, each a
 // pane of its UI document (design/buildings/barracks.json). The worker does it all (core/workers/barracks.py); documents open in Lake, the rules change through the
 // keeper.
@@ -41,18 +41,31 @@ export function openOrk(id, ork) {
 // -- dialogs ------------------------------------------------------------------------------------------
 
 function TaskDialog({ id, onClose }) {
-  const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");
-  const send = () => act(id, "task", { title, brief }).then(onClose, () => {});
-  return html`<${Dialog} title=${say("New task for the barracks")} text=${say("The foreman gives it to an ork: a free one, the one that did its earlier part, or a new one.")}
+  const send = () => act(id, "task", { brief }).then(onClose, () => {});
+  return html`<${Dialog} title=${say("New task for the barracks")} text=${say("The foreman gives it to an ork: a free one, the one that did its earlier part, or a new one. Its first words become its title.")}
       onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" disabled=${!title.trim() && !brief.trim()} onClick=${send}>Send it</button>`}>
-    <p class="ok-dialog__section">Title</p>
-    <input class="ok-input" value=${title} autofocus onInput=${(e) => setTitle(e.target.value)} />
-    <p class="ok-dialog__section">The brief: what to do, where, what done looks like</p>
-    <textarea class="ok-input gui-textarea" rows="6" value=${brief} onInput=${(e) => setBrief(e.target.value)}></textarea>
+        <button class="ok-btn primary" disabled=${!brief.trim()} onClick=${send}>Send it</button>`}>
+    <textarea class="ok-input gui-textarea" rows="8" value=${brief} autofocus placeholder=${say("What to do, where, what done looks like")}
+      onInput=${(e) => setBrief(e.target.value)}></textarea>
   </${Dialog}>`;
+}
+
+/** The command view's New task: the brief written in place, no window and no title (its first words are one). */
+function NewTask({ id }) {
+  const [brief, setBrief] = useState("");
+  const send = () => {                     // cleared once sent, unless the next one is already being written
+    const sent = brief;
+    if (sent.trim()) act(id, "task", { brief: sent }).then(() => setBrief((now) => (now === sent ? "" : now)), () => {});
+  };
+  const keys = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } };
+  return html`<div class="gui-newtask">
+    <textarea class="ok-input gui-textarea" rows="6" value=${brief}
+      placeholder=${say("New task: what to do, where, what done looks like (Ctrl+Enter sends it)")}
+      onInput=${(e) => setBrief(e.target.value)} onKeyDown=${keys}></textarea>
+    <div class="ok-row"><button class="ok-btn primary" disabled=${!brief.trim()} onClick=${send}>Send it</button></div>
+  </div>`;
 }
 
 function AnswerDialog({ id, data, task, onClose }) {
@@ -98,8 +111,8 @@ function Dialogs({ id, data }) {
   return task ? html`<${AnswerDialog} key=${task.id} id=${id} data=${data} task=${task} onClose=${close} />` : null;
 }
 
-function Acts({ id, data }) {
-  return html`<button class="ok-act" onClick=${() => openDialog(id, { kind: "task" })}><span class="ok-act__label">New task</span></button>
+function Acts({ id, data, inline }) {
+  return html`${!inline && html`<button class="ok-act" onClick=${() => openDialog(id, { kind: "task" })}><span class="ok-act__label">New task</span></button>`}
     <button class="ok-act" onClick=${() => act(id, "pause").catch(() => {})}>
       <span class="ok-act__label">${data.paused ? "Resume" : "Pause"}</span></button>
     ${data.asked.length > 0 && html`<button class="ok-act" onClick=${() => openDialog(id, { kind: "answer" })}>
@@ -137,7 +150,8 @@ export function preview(id, data) {
   const more = data.orks.length - SHOWN;
   return html`<div class="gui-section">
     ${data.asked.length > 0 && html`<p class="ok-tone-fire gui-alert">${data.keeper} asks — ${data.asked[0].title}</p>`}
-    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
+    <${NewTask} id=${id} />
+    <div class="ok-row"><${Acts} id=${id} data=${data} inline /></div>
     <ul class="gui-rows">
       ${data.orks.slice(0, SHOWN).map((o) => html`<${OrkRow} key=${o.name} id=${id} o=${o} onClick=${() => openOrk(id, o)} />`)}
       ${more > 0 && html`<li class="ok-tone-muted">+${more} more — Open</li>`}
