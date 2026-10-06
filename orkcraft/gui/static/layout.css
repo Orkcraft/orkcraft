@@ -330,10 +330,11 @@ button { font: inherit; color: inherit; }
   gap: 4px; animation-name: gui-cart-go; animation-timing-function: linear; animation-fill-mode: both; }
 .gui-cart.is-back { animation-name: gui-cart-back; }
 .gui-cart__sprite { width: 20px; height: 18px; image-rendering: pixelated; flex: none; }
-.gui-cart__dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cart); flex: none;
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 10px 2px var(--road-selected); }
-.gui-cart.is-held .gui-cart__dot { background: var(--cart-held); }
-.gui-cart.is-back .gui-cart__dot { background: var(--cart-filtered); }
+/* Office: an event travels as a stack of gold (the Spend icon), glowing; held it glows red, turned back it greys. */
+.gui-cart__gold { width: 16px; height: 16px; image-rendering: pixelated; flex: none;
+  filter: drop-shadow(0 0 1px var(--canvas)) drop-shadow(0 0 5px var(--road-selected)); }
+.gui-cart.is-held .gui-cart__gold { filter: drop-shadow(0 0 1px var(--canvas)) drop-shadow(0 0 5px var(--cart-held)); }
+.gui-cart.is-back .gui-cart__gold { filter: grayscale(1) opacity(.7); }
 .gui-cart__label { position: absolute; right: 0; top: calc(100% + 10px); max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
   background: var(--road-selected); color: var(--on-action); border-radius: var(--radius-sm); }
 [data-theme="office"] .gui-cart__label { border-radius: var(--radius-full); }
