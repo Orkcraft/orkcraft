@@ -125,8 +125,9 @@ conflicted there. Now:
   `self.<method>` calls between them still work.
 - **Rule of thumb:** a module over ~600 lines is split by domain before a feature is added to it.
   A new feature goes into its domain's module, or into a new one, never into `app.py`.
-- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/onboarding.py`,
-  `screens/console.py`.
+- `screens/onboarding.py` is now a package, one module per part: `common`, `person`, `town`,
+  `machine`, `raising`, `flow`.
+- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/console.py`.
 
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
