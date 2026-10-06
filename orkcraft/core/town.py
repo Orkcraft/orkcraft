@@ -148,6 +148,11 @@ class Town:
         self.roads.stop()
         return sum(int(w.halt() or 0) for w in list(self.workers.values()))
 
+    def close(self) -> int:
+        """The app closes: like `halt`, but no worker is left paused that the operator did not pause."""
+        self.roads.stop()
+        return sum(int(w.close() or 0) for w in list(self.workers.values()))
+
     # -- the acts every service needs ------------------------------------------------------------
 
     def save(self) -> bool:

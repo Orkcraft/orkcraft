@@ -240,7 +240,7 @@ class Host:
                     pass
         lake_view.flush_town(self.town.lake)
         self.sessions.close()
-        self.town.halt()
+        self.town.close()
         self.town.save()
 
     # -- the page's commands -------------------------------------------------------------------

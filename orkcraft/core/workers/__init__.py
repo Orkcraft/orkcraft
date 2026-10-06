@@ -92,6 +92,11 @@ class Worker:
         """🛑 Halt All: stop its own work (queues wait). How many things it stopped."""
         return 0
 
+    def close(self) -> int:
+        """The window closes: stop its own work like 🛑 Halt All, but leave nothing paused that the
+        operator did not pause — the next launch takes up the work again. How many things it stopped."""
+        return self.halt()
+
     def status(self) -> str:
         """One word for its state (WORKING, ERROR, …); "" when it has nothing to say."""
         return ""

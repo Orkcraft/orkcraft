@@ -821,6 +821,10 @@ class BarracksWorker(PlanMixin, Worker):
         self.changed()
         return running
 
+    def close(self) -> int:
+        """The window closes: every orc and the steward stop, the barracks keeps its own ⏸ / ▶."""
+        return self.stop()
+
     # -- the hut ----------------------------------------------------------------------------------
 
     def mini_status(self) -> list[str]:
