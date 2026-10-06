@@ -186,7 +186,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       ${office && html`<${TypeIcon} type=${b.type} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
-      ${!office && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
+      <${Badge} garrison=${b.garrison} alert=${b.alert} />
       ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class=${cls("ok-word ok-tone-muted gui-hut__pinned", { "is-warn": !!warned.value[b.id] })}>pinned</span>`}
       ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}

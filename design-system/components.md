@@ -7,7 +7,7 @@ A garrison badge: who lives in a building, which harnesses run it and what it is
 
 **Markup**
 - `.ok-badge` holds, in order:
-  - The kind: the 24×20 ork head (the ork mark), in its state: `orks/ork.png` at rest, `ork-idle` asleep with its eyes shut (was 💤), `ork-busy` with a drop of sweat (was ⚙), `ork-waiting` with a flame on its head (was 🔥). The base ork head (`orks/ork.png`, `<img class="ok-sprite" data-kind="ork">`) for an agent, the 16×16 signpost (`icons/chain.png`, `data-kind="chain"`, was 🪧) for a chain or script, and both for a hybrid. It sits inside the plate. Office hides the sprite and shows the name alone.
+  - The kind: the 24×16 ork head (the ork mark), in its state: `orks/ork.png` at rest, `ork-idle` asleep with its eyes shut (was 💤), `ork-busy` with a drop of sweat (was ⚙), `ork-waiting` with a flame on its head (was 🔥). The base ork head (`orks/ork.png`, `<img class="ok-sprite" data-kind="ork">`) for an agent, the 16×16 signpost (`icons/chain.png`, `data-kind="chain"`, was 🪧) for a chain or script, and both for a hybrid. It sits inside the plate. Office hides the sprite and shows the name alone.
   - The name.
   - The harness scheme: `ok-h-claude` ✻, `ok-h-agy` ✦, `ok-h-codex` ⌬ or `ok-h-pipe` P, with steps joined by `ok-arrow` →. A scheme longer than three steps is written `first→last·N`.
 - States: `is-alert`. Tiers are coloured with `tier-*` and carry their 16×16 icon (`icons/tier-elder.png` an orb, `tier-warrior` crossed swords, `tier-laborer` a pickaxe; `data-kind="tier"`), which Office hides.
@@ -275,7 +275,7 @@ The slots that Camp pixel art fills: each building's header and banner, map deco
 | Decoration | `tree`, `bush`, `mount` | 16×24, 16×12, 32×24 at most | `doodad-s`, `doodad-l` | the map ground, 5–7 per screen |
 | Command icon | `icon` | 32×32 | `icon-command` | building actions |
 | Resource icon | `res` | 16×16 | `icon-resource` | HUD resources and carts |
-| Ork | `data-kind="ork"` | 24×20 | `ork-w`, `ork-h` | badges, the roster, the War Map: everywhere 🧌 stood |
+| Ork | `data-kind="ork"` | 24×16 | `ork-w`, `ork-h` | badges, the roster, the War Map: everywhere 🧌 stood |
 | Portrait | `portrait` | 46×38 | `portrait-w`, `portrait-h` | the selected ork (`orks/ork-portrait.png`, 26×24 centred) and the Builder |
 
 **Headers**

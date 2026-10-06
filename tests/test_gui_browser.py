@@ -433,7 +433,7 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     modal.wait_for(state="hidden", timeout=WAIT_MS)
     roster.locator(".gui-steward__model").click()                   # the steward's models, task by task
     modal.wait_for(state="visible", timeout=WAIT_MS)
-    labels = modal.locator(".gui-field .ok-font-label").all_inner_texts()
+    labels = modal.locator(".gui-field .ok-font-label").all_text_contents()   # as written: Camp sets labels in capitals
     assert labels[:3] == ["Watch: findings and proposals", "Redesign the window", "Rules and settings"]
     modal.locator("select").first.select_option("laborer")
     modal.get_by_role("button", name="Save", exact=True).click()

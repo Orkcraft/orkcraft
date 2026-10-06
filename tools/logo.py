@@ -16,8 +16,8 @@ Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`)
 - `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`.
 
 The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` and its
-states (`ork-idle` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its head) on a 12×10 grid
-(two rows over the head for the state's mark), drawn at 2× (24×20) and 4× (`@2x`), and `ork-portrait`,
+states (`ork-idle` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its crown), each on the
+head's own 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`), and `ork-portrait`,
 the head at 3× in the 46×38 portrait slot.
 
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
@@ -57,26 +57,24 @@ PALETTES = {
 
 W, H = len(GRID[0]), len(GRID)
 
-# The agent's states: what changes on the head, and what stands in the two rows over it.
-# z sleep, S sweat, O and Y the flame (alert orange, gold core), d shut eyes.
+# The agent's states, drawn inside the head's own 12×8 grid so the sprite fits a badge's plate:
+# d shut eyes and z a sleep mark over the right ear, S a drop of sweat past it, O and Y a flame
+# (alert orange, gold core) on the crown.
 STATES = {
-    "ork": ["", ""],
-    "ork-idle": ["..........z.", "........z..."],
-    "ork-busy": ["", "..........S."],
-    "ork-waiting": [".....YY.....", "....OYYO...."],
+    "ork": {},
+    "ork-idle": {(10, 0): "z"},
+    "ork-busy": {(10, 0): "S", (10, 1): "S"},
+    "ork-waiting": {(4, 0): "O", (5, 0): "Y", (6, 0): "Y", (7, 0): "O"},
 }
 SPRITE_COLOURS = {"F": "#6ca420", "D": "#1a2816", "T": "#e8e0c8", "d": "#3f6b14",
                   "z": "#e8e0c8", "S": "#9fd3ff", "O": "#ff8c1a", "Y": "#f2c66d"}
 
 
 def state_grid(name: str) -> list[str]:
-    top = [row or "." * W for row in STATES[name]]
-    head = list(GRID)
-    if name == "ork-idle":                       # asleep: the eyes shut into the face
-        head = [row.replace("D", "d") for row in head]
-    if name == "ork-busy":                       # a drop of sweat runs down past the right ear
-        head[0] = head[0][:10] + "S" + head[0][11:]
-    return top + head
+    head = [list(row.replace("D", "d") if name == "ork-idle" else row) for row in GRID]
+    for (x, y), c in STATES[name].items():
+        head[y][x] = c
+    return ["".join(row) for row in head]
 
 
 def grid_image(grid: list[str], colours: dict[str, str], k: int) -> Image.Image:

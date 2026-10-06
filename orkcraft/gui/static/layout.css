@@ -1,7 +1,7 @@
 /* The GUI's own layout, the same in every look: where the design system's components stand in the
    window. Only tokens (design-system/tokens.css) and the component knobs: no colour or font of its
    own. The components themselves (huts, windows, lists, the HUD) are design-system/components.css;
-   what one look adds goes in office.css or camp.css, scoped to its data-theme. */
+   what one look adds goes in office.css or camp.css, scoped to its data-look (both wear data-theme camp). */
 
 html, body, #app { height: 100%; margin: 0; }
 body { background: var(--canvas); color: var(--ink); font-family: var(--ok-font, var(--font-office)); overflow: hidden; }
@@ -357,7 +357,7 @@ button { font: inherit; color: inherit; }
 .gui-tiles__road.is-return { opacity: .6; }
 .gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .9; }
 .gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
-[data-theme="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-theme="camp"] .gui-road circle { visibility: hidden; }
+[data-look="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-look="camp"] .gui-road circle { visibility: hidden; }
 .gui-settings p::first-letter { text-transform: uppercase; }
 
 /* A card in the Warchief's chat (js/buildings/town_hall.js Card): who has the work, what came of it, the choice. */

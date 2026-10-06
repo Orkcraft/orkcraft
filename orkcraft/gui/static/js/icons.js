@@ -47,5 +47,5 @@ export function OrkHead({ o, alert }) {
   }
   const state = alert ? "ork-waiting" : ORK_STATE[o.status] || "ork";
   return html`<img class="ok-sprite" data-kind="ork" src=${`/ds/sprites/orks/${state}.png`}
-    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width="24" height="20" alt="" />`;
+    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width="24" height="16" alt="" />`;
 }
