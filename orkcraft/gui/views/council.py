@@ -26,7 +26,7 @@ def card(w) -> dict:
     """Closed (docs/design/building-views.md): `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews, else the last
     outcome; `N queued`."""
     d = w.current
-    out = {"state": "none", "queued": len(w.waiting)}
+    out = {"state": "none", "queued": len(w.waiting), "triage": bool(w.routes), "of": len(w.team)}
     if d is None:
         return out
     out.update({"state": "running" if d.outcome == "running" else d.outcome, "cycle": d.cycle, "max": w.max_cycles,

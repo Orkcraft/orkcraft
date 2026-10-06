@@ -88,12 +88,14 @@ function Acts({ id, data }) {
 
 // -- closed ------------------------------------------------------------------------------------------
 
-/** Closed: `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews, else how the last one ended; `N queued`. */
+/** Closed: `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews (a triage: `reading · 2 of 3 have spoken`), else how
+ * the last one ended; `N queued`. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   return html`<div>
     ${c.state === "none" ? html`<div class="ok-tone-muted">no review yet</div>`
+      : c.state === "running" && c.triage ? html`<div>reading · ${c.ok + c.no} of ${c.of} have spoken</div>`
       : c.state === "running" ? html`<div>cycle ${c.cycle}/${c.max} · ${c.ok} ✓ ${c.no} ✗ · ${c.spent}</div>`
       : html`<div class=${TONE[c.state] || ""}>${c.outcome}${c.route ? ` → ${c.route}` : ""}</div>`}
     ${c.queued > 0 && html`<div>${c.queued} queued</div>`}
