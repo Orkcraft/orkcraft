@@ -70,7 +70,7 @@ def detail(w) -> dict:
         "hall": _plain(w.hall()),
         "spend": w.spend(),
         "limits": [{"provider": x.provider, "what": " ".join(p for p in (x.window, x.group) if p and p != "—"),
-                    "remaining": x.remaining, "error": x.error or "",
+                    "remaining": x.remaining, "error": x.error or "", "note": x.note,
                     "reset": x.reset.strftime("%a %H:%M") if x.reset else ""} for x in w.limits or ()],
         "limits_at": w.limits_at.strftime("%H:%M") if w.limits_at else "",
         "reading_limits": w.reading_limits or w.limits is None,

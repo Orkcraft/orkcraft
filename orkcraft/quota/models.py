@@ -15,3 +15,4 @@ class QuotaStatus:
     remaining_fraction: Optional[float]
     reset_time: Optional[datetime]
     error: Optional[str] = None
+    note: str = ""  # what the window is read from or as of: a plan, credits, `as of Tue 14:02`

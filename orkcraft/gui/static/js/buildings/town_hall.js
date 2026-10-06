@@ -210,7 +210,7 @@ function Limits({ id, data }) {
           ? html`<p key=${i} class="ok-font-status ok-tone-muted">${x.provider}: ${x.error || "no data"}</p>`
           : html`<${Meter} key=${i} label=${`${x.provider} ${x.what}`} part=${x.remaining}
               level=${x.remaining <= 0.2 ? "over" : x.remaining <= 0.5 ? "warn" : "ok"}
-              value=${`${Math.round(x.remaining * 100)}% left${x.reset ? ` · resets ${x.reset}` : ""}`} />`)
+              value=${`${Math.round(x.remaining * 100)}% left${x.reset ? ` · resets ${x.reset}` : ""}${x.note ? ` · ${x.note}` : ""}`} />`)
         : html`<p class="ok-font-status ok-tone-muted">${data.reading_limits ? say("Reading the quotas…") : say("No quotas reported.")}</p>`}
     </${Section}>
   </div>`;

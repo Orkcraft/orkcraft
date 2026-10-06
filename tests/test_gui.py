@@ -699,6 +699,33 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
     assert types[0]["intent"].startswith("Take in") and all(t["intent"] for t in types)
 
 
+
+def test_the_town_hall_limits_show_codex_beside_claude_and_agy(fake_repo, isolated_layout_file, codex_limits):
+    """⏳ Limits in the GUI: a Codex row per window, with its plan; an API-key Codex says so in one row."""
+    import time
+
+    def read() -> list[dict]:
+        host.command("act", {"id": "town_hall", "act": "limits"})
+        for _ in range(300):
+            data = host.detail("town_hall")["data"]
+            if not data["reading_limits"] and data["limits"]:
+                return data["limits"]
+            time.sleep(0.01)
+        raise AssertionError("the limits were never read")
+
+    codex_limits()
+    host = _host(fake_repo)
+    limits = read()
+    assert [x["provider"] for x in limits] == ["claude", "agy", "codex", "codex", "codex"]
+    five, week, astra = limits[2:]
+    assert (five["what"], five["remaining"], five["note"], five["error"]) == ("5h", 0.62, "plus · credits 120", "")
+    assert week["what"] == "weekly" and astra["what"] == "gpt-6-astra 5h"
+    assert "codex 10% left" in host.town.worker("town_hall").lowest()
+    codex_limits(billing="api")
+    codex = [x for x in read() if x["provider"] == "codex"]
+    assert codex == [{"provider": "codex", "what": "", "remaining": None, "error": "API key — no plan windows",
+                      "note": "", "reset": ""}]
+
 def test_a_tally_crag_charts_busy_orks_and_quotas_through_the_host(fake_repo, isolated_layout_file, monkeypatch):
     """core/workers/crag.py `probe`: the GUI host hands it the roster's busy orks, every Barracks'
     working orks and the quotas the Town Hall read, as the TUI's view does."""
