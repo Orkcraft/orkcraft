@@ -9,7 +9,8 @@ report goes to `loot/` as `team.artifact_ready`. When the steward asks, the buil
 takes the person's answer. Documents that arrive mid-review wait in line.
 
 A clan that routes (`routes`, e.g. `["human", "agent"]`: triage) names who takes an approved document on,
-and it goes on as `team.routed` with that route too: each road out may wait for one route.
+and it goes on as `team.routed` with that route too: each road out may wait for one route. When the
+steward names a time (`WHEN:`), the document goes on after a `When:` line (a War Drum adds the event).
 
 In the sandbox no model runs: the clan answers from `simulated.json` in the state folder when the demo
 wrote one (realm/team.py `scripted`), else everyone approves.
@@ -245,7 +246,7 @@ class CouncilWorker(Worker):
             if d.outcome == "approved":
                 self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
                 if d.route:                                # who takes it on: each road waits for its route
-                    self.emit("team.routed", d.doc, d.task or d.title, trail=trail, ref=ref, route=d.route)
+                    self.emit("team.routed", tm.routed_text(d), d.task or d.title, trail=trail, ref=ref, route=d.route)
             else:
                 back = tm.rework_markdown(d, self.max_cycles)
                 self.emit("team.rework", back, d.title, trail=trail, ref=ref)

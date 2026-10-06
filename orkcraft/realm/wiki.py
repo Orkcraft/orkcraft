@@ -504,6 +504,30 @@ def context(root: Path, repo_root: Path, task: str = "") -> str:
     return head + (f"**Task:** {task}\n\n" if task else "") + index
 
 
+_WORD = re.compile(r"[A-Za-z][A-Za-z0-9-]{3,}")
+_COMMON = frozenset("that this with from have will about what when where which there their them they your "
+                    "were been into over just like some more than then also only each every page pages".split())
+
+
+def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
+    """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
+    none that shares none."""
+    words = {w.lower() for w in _WORD.findall(task or "")} - _COMMON
+    scored = []
+    for n in notes:
+        if not is_page(n.path):
+            continue
+        try:
+            text = (repo_root / n.path).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        have = {w.lower() for w in _WORD.findall(f"{n.title} {text}")}
+        hits = len(words & have)
+        if hits:
+            scored.append((-hits, n.path, n))
+    return [n for *_, n in sorted(scored)[:limit]]
+
+
 # -- after the orc ------------------------------------------------------------------------------------
 
 def restore(root: Path, before: dict[str, str]) -> list[str]:

@@ -6,7 +6,9 @@ a backlog that has settled for `SETTLE_S` is taken in by itself (`auto_ingest`).
 `lint()` run the librarian in a thread (`running` says which); `finish` puts back the pages
 people own, commits the wiki, logs the job, sends `wiki.updated` / `wiki.linted` and asks for a
 spot-check: by the Clan Fire named in `council`, else as `wiki.review`. `halt()` stops it all.
-A cart of a verdict lands in reviews.md; any other cart is a task, sent on as `knowledge.chunks`.
+A cart of a verdict lands in reviews.md; any other cart is a task, sent on as `knowledge.chunks`
+with the wiki's map and the pages that matter most for it (`lend`) — also when a Barracks that
+reads it first (`notes`) hands it a task directly. What it lent last shows on its card for a while.
 """
 from __future__ import annotations
 
@@ -26,6 +28,7 @@ from orkcraft.sources import lore
 
 SETTLE_S = 25.0                 # the sources must stay as they are this long before an ingest starts by itself
 REVIEW_SAMPLE = 2
+LENT_PAGES = 3                  # the pages a task gets named first
 REVIEW_CYCLES, REVIEW_BUDGET = 2, 1.0      # a spot-check is short, whatever the Clan Fire's own limits
 REVIEW_BRIEF = ("This is a spot-check of wiki pages its librarian just wrote: approve when every page is fine, "
                 "else send it back with what is wrong per page and how to fix it — short. Never ask the operator.")
@@ -62,6 +65,7 @@ class ScrollsWorker(Worker):
         self._prints: wiki.Fingerprints | None = None
         self._cancel: threading.Event | None = None
         self._review_cancel: threading.Event | None = None
+        self.lent: dict = {}                     # the last task it gave notes to: {task, pages, by, at}
 
     # -- what it reads and where it writes ------------------------------------------------------
 
@@ -428,9 +432,23 @@ class ScrollsWorker(Worker):
         if payload.mode in VERDICT_EVENTS:
             self.record_verdict(markdown or payload.value, payload.title or title)
             return
+        self.lend(payload)
+
+    def lend(self, payload, by: str = "") -> bool:
+        """A task gets the wiki's map and the pages that matter most for it, sent on as `knowledge.chunks`
+        under the task's own title and ref; `by` is the building that asked (a Barracks that reads it
+        first). True when a road took it."""
         task = f"{payload.title} {payload.value}".strip()[:500]
-        self.emit("knowledge.chunks", wiki.context(self.wiki_root, self.repo_root, task), task[:80],
-                  trail=payload.trail, ref=payload.ref)
+        found = wiki.relevant(self.repo_root, self.pages, task, LENT_PAGES)
+        context = wiki.context(self.wiki_root, self.repo_root, task)
+        if found:
+            context += "\n\n**Notes for this task — read these first:**\n" + \
+                "\n".join(f"- `{n.path}` — {n.title}" for n in found)
+        self.lent = {"task": (payload.title or task)[:80], "pages": [n.title for n in found], "by": by,
+                     "at": time.time()}
+        self.changed()
+        return self.emit("knowledge.chunks", context, (payload.title or task)[:80], trail=payload.trail,
+                         ref=payload.ref)
 
     # -- the hut --------------------------------------------------------------------------------
 

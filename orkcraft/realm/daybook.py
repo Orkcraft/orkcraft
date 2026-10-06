@@ -7,7 +7,10 @@ a URL calendar is never written. Parsing is `sources/ics.py`.
 
 A meeting is named on the roads by a short id, `meet_id` (its UID and start, so each occurrence of
 a recurring meeting has its own), carried as a `[meet:<id>]` tag that `meet_tag` finds again in
-whatever comes back.
+whatever comes back, and as the cart's `ref` (`<building>:<id>`) that a return road follows home.
+
+A cart that names a time in a `When:` line (`When: tomorrow 11:00, 30 min` — what a Clan Fire that
+routes writes when its steward says `WHEN:`) is an event to add: `find_when` reads it.
 """
 from __future__ import annotations
 
@@ -24,6 +27,9 @@ WEEK_DAYS = 7
 DEFAULT_LEAD = dt.timedelta(hours=2)
 _LEAD = re.compile(r"(\d+)\s*([dhm])")
 _MEET = re.compile(r"\[meet:([0-9a-f]{6,32})\]")
+_WHEN_LINE = re.compile(r"^[\s*#_>`-]*when\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`.]*$", re.I | re.M)
+_WHEN = re.compile(r"(tomorrow|today|\d{4}-\d{2}-\d{2})?[\s,]*(?:at\s+)?(\d{1,2}:\d{2})"
+                   r"(?:[\s,·;-]+(\d{1,4})\s*(?:min|minutes|m)\b)?", re.I)
 
 
 @dataclass
@@ -183,3 +189,19 @@ def parse_when(text: str, today: dt.date) -> dt.datetime:
         day, t = dt.date.fromisoformat(t[:10]), t[10:].strip()
     h, _, m = (t or "09:00").partition(":")
     return dt.datetime.combine(day, dt.time(int(h), int(m or 0)))
+
+
+def find_when(text: str, today: dt.date) -> tuple[dt.datetime, int] | None:
+    """The time a cart names in a `When:` line — `tomorrow 11:00, 30 min`, `2026-10-08 14:00`,
+    `today 9:30` — as (start, minutes; 30 when it says none), or None when it names none."""
+    line = _WHEN_LINE.search(text or "")
+    m = _WHEN.search(line.group(1)) if line else None
+    if not m:
+        return None
+    day = (m.group(1) or "").lower()
+    try:
+        start = parse_when(f"{'' if day == 'today' else day} {m.group(2)}".strip(), today)
+    except ValueError:
+        return None
+    minutes = int(m.group(3) or 30)
+    return start, min(max(minutes, 5), 24 * 60)

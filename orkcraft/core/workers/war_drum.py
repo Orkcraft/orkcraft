@@ -6,15 +6,22 @@
 `[meet:<id>]`; `upcoming.json` remembers which went), the day's digest goes out once at `day_starts`
 as `calendar.day_schedule`, and every `RELOAD_S` the calendar is loaded again.
 
-A cart that comes back with the tag is the meeting's document (`docs.json`): a file it names, else
-its Markdown kept in `docs/<id>.md`. `open_doc` sends it as `calendar.doc_opened` when a road carries
-that; otherwise the face shows it in Lake. `prepare` sends `meeting soon` for a meeting at once, and
-`add` puts an event in the calendar it may write (its own when the calendar is a URL).
+`meeting soon` is titled by the meeting, carries its `[meet:<id>]` tag in its text and the ref
+`<building>:<id>`. A cart that comes back with the tag, or under that ref (by a return road), is the
+meeting's document (`docs.json`): a file it names, else its Markdown kept in `docs/<id>.md`, and the
+first link it gives. `open_doc` sends it as `calendar.doc_opened` when a road carries that; otherwise
+the face shows it in Lake. `prepare` sends `meeting soon` for a meeting at once, and `add` puts an
+event in the calendar it may write (its own when the calendar is a URL).
+
+Any other cart that names a time in a `When:` line (a Clan Fire's `team.routed` for a meeting) is an
+event to add, titled as the cart is (realm/daybook.py `find_when`). With `prepare_new`, an event added
+by a road or by New event is sent as `meeting soon` at once, so its document is asked for right away.
 
 Over the meetings it lays the town's schedules and its limits (realm/drumbeat.py): `jobs()` are the
 scheduled runs of every standing building, `limits()` the 🪙 spend and 🪵 context limits with ≈ when
 each is reached at the burn rate it samples on every tick (`burn.jsonl`; the demo's is seeded, as
-agents never run there), and `beats(until)` all three on one timeline.
+agents never run there), and `beats(until)` all three on one timeline — or only the kinds `beats` names (a calendar of meetings alone:
+`["meeting"]`).
 """
 from __future__ import annotations
 
@@ -32,6 +39,8 @@ RELOAD_S = 300.0
 HUT_BEATS = 7                                       # timeline rows on the TUI's hut
 DOC = "📄"
 _PATH = re.compile(r"`([^`\n]+\.[A-Za-z0-9]{1,8})`")
+_HEAD = re.compile(r"\A\s*\*\*[^\n]*\*\* — [^\n]*\n+")       # a Barracks report's `**Task** — who did it`
+_LINK = re.compile(r"https?://[^\s)>\]`*]+")
 
 
 class WarDrumWorker(Worker):
@@ -133,10 +142,21 @@ class WarDrumWorker(Worker):
         except OSError:
             return False
 
+    @property
+    def kinds(self) -> tuple[str, ...]:
+        """What its timeline lays over the meetings (`beats`: meeting, schedule, limit; default all three)."""
+        got = self.config.get("beats")
+        kinds = tuple(k for k in drumbeat.KINDS if not got or k in got)
+        return kinds or drumbeat.KINDS
+
     def jobs(self) -> list[drumbeat.Job]:
+        if "schedule" not in self.kinds:
+            return []
         return drumbeat.jobs(self.town.scroll, self.town.custom_specs)
 
     def limits(self) -> list[drumbeat.Limit]:
+        if "limit" not in self.kinds:
+            return []
         rows = drumbeat.read_samples(self.burn_file, None if self.simulated else self.town.run_id)
         budget = self.town.scroll.budget
         return drumbeat.limits(rows, budget.gold_session_limit_usd, budget.lumber_context_limit_tokens, self.clock())
@@ -197,8 +217,10 @@ class WarDrumWorker(Worker):
             self._save("digest.json", {"day": now.date().isoformat()})
 
     def send_upcoming(self, e) -> bool:
-        tag = f"[meet:{daybook.meet_id(e)}]"
-        return self.emit("calendar.event_upcoming", f"{daybook.line(e)} ({e.day:%a %d}) {tag}", f"{e.summary} {tag}")
+        """`meeting soon` for `e`: titled by it, its tag in the text, its ref `<building>:<meeting id>`."""
+        mid = daybook.meet_id(e)
+        return self.emit("calendar.event_upcoming", f"{daybook.line(e)} ({e.day:%a %d}) [meet:{mid}]", e.summary,
+                         ref=f"{self.building_id}:{mid}")
 
     def prepare(self, e=None) -> str:
         """📄 Prepare doc: `meeting soon` for `e` (else the meeting on now or next) at once. What went
@@ -217,19 +239,25 @@ class WarDrumWorker(Worker):
         return self.docs().get(daybook.meet_id(e))
 
     def receive(self, payload, title: str, markdown: str) -> None:
-        """A meeting's document came back: a cart tagged `[meet:<id>]`."""
-        mid = daybook.meet_tag(payload.title) or daybook.meet_tag(title) or daybook.meet_tag(payload.value)
+        """A meeting's document came back (a cart tagged `[meet:<id>]` or under the meeting's ref); else a
+        cart that names a time is an event to add."""
+        own = f"{self.building_id}:"
+        mid = (payload.ref[len(own):] if payload.ref.startswith(own) else "") or daybook.meet_tag(payload.title) \
+            or daybook.meet_tag(title) or daybook.meet_tag(payload.value)
         if not mid:
+            self._event_from(payload, title, markdown)
             return
         repo = self.repo_root
         path = payload.value if payload.kind == "file" else self._named_file(repo, payload.value)
         if not path:
             doc = self.state_dir / "docs" / f"{mid}.md"
             doc.parent.mkdir(parents=True, exist_ok=True)
-            doc.write_text(markdown or payload.value, encoding="utf-8")
+            doc.write_text(_HEAD.sub("", markdown or payload.value, count=1), encoding="utf-8")
             path = shelves.rel_to(repo, doc)
         docs = self.docs()
-        docs[mid] = {"path": path, "title": title or payload.title, "at": self.clock().isoformat(timespec="seconds")}
+        link = next(iter(_LINK.findall(f"{payload.value}\n{markdown}")), "")
+        docs[mid] = {"path": path, "title": title or payload.title, "at": self.clock().isoformat(timespec="seconds"),
+                     "link": link.rstrip(".,;:")}
         self._save("docs.json", docs)
         self.changed()
 
@@ -253,15 +281,38 @@ class WarDrumWorker(Worker):
 
     # -- adding ---------------------------------------------------------------------------------
 
-    def add(self, title: str, when: str, minutes: int = 30) -> dt.datetime:
-        """A new event; ValueError / OSError when it cannot be (a bad time, a file it cannot write)."""
+    @property
+    def prepare_new(self) -> bool:
+        return bool(self.config.get("prepare_new"))
+
+    def add(self, title: str, when: str | dt.datetime, minutes: int = 30) -> dt.datetime:
+        """A new event; ValueError / OSError when it cannot be (a bad time, a file it cannot write). With
+        `prepare_new`, its document is asked for at once."""
         title = " ".join(str(title).split())
         if not title:
             raise ValueError("an event needs a title")
-        start = daybook.parse_when(when, self.clock().date())
+        start = when if isinstance(when, dt.datetime) else daybook.parse_when(when, self.clock().date())
         daybook.add_event(self.writable, title, start, int(minutes or 30))
         self.refresh()
+        if self.prepare_new:
+            e = next((x for x in self.day.events if x.summary == title and x.start == start), None)
+            if e is not None:
+                self.send_upcoming(e)
         return start
+
+    def _event_from(self, payload, title: str, markdown: str) -> None:
+        """A cart that names a time (`When: tomorrow 11:00, 30 min`) becomes an event, titled as the cart."""
+        found = daybook.find_when(f"{payload.value}\n{markdown}", self.clock().date())
+        name = (payload.title or title).strip()
+        if found is None or not name:
+            return
+        start, minutes = found
+        if any(e.summary == name and e.start == start for e in self.day.events):
+            return                                       # the same cart twice: one event
+        try:
+            self.add(name, start, minutes)
+        except (ValueError, OSError) as e:
+            self.toast(f"{name[:60]}: {e}", title="🥁 Not added", severity="warning")
 
     # -- the hut --------------------------------------------------------------------------------
 

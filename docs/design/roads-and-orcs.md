@@ -144,6 +144,32 @@ today's garrison lead becomes the steward; other members become agent handlers w
   person sees it on the road before its building acts — `tools/landing_flow.py` films with it. The
   GUI draws every cart moving from gate to gate (`js/town.js`), a filtered one turning back.
 
+## 5b. A meeting and its brief (implemented)
+
+- **A time on a route.** A Clan Fire that routes may also have its steward name a time (`WHEN: tomorrow
+  11:00, 30 min`, realm/team.py): the routed document then begins with a `When:` line.
+- **A cart that names a time is an event.** A War Drum that gets a cart with a `When:` line (and no
+  meeting of its own) adds the event, titled as the cart (`daybook.find_when`); `calendar.event_added`
+  goes out as for any new event. With `prepare_new`, a new event asks for its document at once
+  (`calendar.event_upcoming`, titled by the meeting, its ref `<drum>:<meeting id>`).
+- **The brief comes home by a return road.** A Barracks' `pool.done` keeps the task's ref, so a return
+  road back to the War Drum (`{"returns": true}`) carries the brief to that meeting: its document (the
+  report without the `**Task** — who` line) and the first link it gives. The event wears a `📄 doc` pill
+  on the closed card and in the Command Card. The `[meet:<id>]` tag stays in the cart's text only, so
+  titles read clean; a cart without the ref (past a Signpost) still finds the meeting by the tag.
+- **Notes read first.** A Barracks with `notes: ["<scroll dump>"]` hands a new task to that Scroll Dump
+  directly (no road back, so no loop); it sends the task on as `knowledge.chunks` — the wiki's map and
+  the pages that share the most words with the task (`wiki.relevant`) — and the ork starts when that
+  cart arrives. The Scroll Dump's card says what it read and for which task for a while.
+- **Signs.** A road named in words (a kebab-case label, `new-meeting`, `prepare-a-brief`) wears its name
+  as a sign, as a road that waits for routes does. A `pool.done` cart reads as what came of the task (the
+  report's first line), not the task.
+- A War Drum's `beats: ["meeting"]` keeps its timeline to the meetings (no scheduled runs, no limits).
+- The demo's Meetings (F6, `demo/meetings.py`) plays it: Inbox → Triage (a risk analyst, a tone reader, a
+  productivity pulse) → "new meeting" → Calendar → "prepare a brief" → Agents at work, which read Notes
+  first ("with the notes") → "brief ready" to Results and "the brief" back to the Calendar.
+  `tools/landing_flow.py --flow meeting` films it.
+
 ## 6. Open for later
 
 - `on_stream` roads and which receiver consumes a raw stream.

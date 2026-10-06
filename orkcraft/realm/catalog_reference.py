@@ -46,8 +46,10 @@ TAKES: dict[str, str] = {
                "(the report); a clan that routes also sends what it let go as team.routed with who takes it on",
     "scrolls": "a task (the cart's title and text): goes on with the wiki's map → knowledge.chunks; a Clan Fire's "
                "verdict lands in reviews.md",
-    "war_drum": "a cart tagged [meet:<id>] (e.g. Barracks' pool.done for its event_upcoming): the meeting's "
-                "document → calendar.doc_opened when opened",
+    "war_drum": "a cart tagged [meet:<id>] or under a meeting's ref (e.g. Barracks' pool.done for its "
+                "event_upcoming, on a return road): the meeting's document and its link → calendar.doc_opened when "
+                "opened; any other cart with a `When:` line (a triage's team.routed for a meeting): a new event, "
+                "titled as the cart → calendar.event_added",
     "lake": "a file, a diff, Markdown, a branch or a URL: shows it",
     "forge": "a cart naming one of the repository's branches (e.g. Barracks' pool.done): tests it and "
              "squash-merges it into the base",
@@ -154,6 +156,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
         "steward": "`harness[:model]` of the steward that answers and reviews (default claude)",
         "base": "the branch each task is cut from and its pull request targets (default the current one)",
+        "notes": "Scroll Dumps a task reads first, e.g. [\"notes\"]: the task goes to them and comes back with the "
+                 "pages that matter (knowledge.chunks on a road from them) before an ork takes it",
     },
     "council": {
         "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
@@ -164,7 +168,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "budget_usd": "the most one review may spend, in USD (default 2)",
         "moderator": "`harness[:model]` of the steward (default claude)",
         "routes": "who it may route what it lets go to, e.g. [\"human\", \"agent\"] (triage): the steward names "
-                  "one, team.routed carries it and each road out may wait for one route",
+                  "one, team.routed carries it and each road out may wait for one route; when the steward "
+                  "also names a time (WHEN:), the document goes on after a `When:` line (a War Drum adds the event)",
         "goal": "an older debate's setting: read as the steward's brief when steward_prompt is empty",
         "max_rounds": "an older debate's setting; still loads, not used",
     },
@@ -172,6 +177,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "ics": "an .ics file in the project or an https URL (+ adds events to its own file)",
         "day_starts": "when calendar.day_schedule goes out, HH:MM (default 08:00)",
         "lead": "how long before a meeting calendar.event_upcoming goes out, e.g. 2h, 1d, 1h30m (default 2h)",
+        "prepare_new": "true: a new event (by a road or New event) sends calendar.event_upcoming at once, so its "
+                       "document is prepared right away",
+        "beats": "what the timeline shows: [\"meeting\", \"schedule\", \"limit\"] (default all three); "
+                 "[\"meeting\"] for a calendar of meetings alone",
     },
     "forest": {"path": "the folder to show (default the project)"},
     "scrolls": {

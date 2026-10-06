@@ -162,7 +162,7 @@ async def test_upcoming_goes_once_lead_before_and_not_again_after_a_restart(fake
         view.tick()
         ups = [p for p in sent if p.mode == "calendar.event_upcoming"]
         mid = daybook.meet_id(view.day.events[0])
-        assert len(ups) == 1 and ups[0].title == f"1:1 Ann [meet:{mid}]"
+        assert len(ups) == 1 and ups[0].title == "1:1 Ann" and ups[0].ref == f"days:{mid}"
         assert f"[meet:{mid}]" in ups[0].value and ups[0].value.startswith("14:00–14:30 1:1 Ann")
 
     clock["now"] = at(11, 30)                                       # a restart, its window covering 12:00 again
