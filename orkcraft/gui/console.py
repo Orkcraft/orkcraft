@@ -1,5 +1,5 @@
 """The console's acts for the GUI: what the TUI's console and Command Card do to a selected building
-or ork (screens/console.py, tui/garrison.py, tui/council.py), as the host's commands.
+or ork (screens/console/, tui/garrison.py, tui/council.py), as the host's commands.
 
 Quick ones answer at once (👍 / 👎, the goal, pin, revert, recruit by hand, orders, model, dismiss,
 halt, the roads it listens to). The ones that call a model — the Recruiter, the Council's Fast Path,

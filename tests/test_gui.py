@@ -537,7 +537,7 @@ def test_the_look_is_office_until_asked_otherwise(fake_repo):
 
 
 def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_file):
-    """What the TUI's console says (screens/console.py), as data: Info, the listens, the Inventory."""
+    """What the TUI's console says (screens/console/), as data: Info, the listens, the Inventory."""
     host = _host(fake_repo)
     host.tick()
     hall = host.command("info", {"id": "town_hall"})

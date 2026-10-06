@@ -130,7 +130,9 @@ conflicted there. Now:
   mode), `wm/town_view.py` (huts and the ghost), `wm/roads.py` (roads, traffic, rally mode).
 - `screens/onboarding.py` is now a package, one module per part: `common`, `person`, `town`,
   `machine`, `raising`, `flow`.
-- Next in line, when they are touched anyway: `screens/console.py`.
+- `screens/console/` is split by part: `cards.py` (what Info says, as text), `warmap.py`,
+  `info.py`, `garrison.py` (the Clan Roster and the Inventory), `command_card.py`, and the
+  `Console` itself in `__init__.py`, which still exports every name.
 
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
