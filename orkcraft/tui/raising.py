@@ -47,7 +47,8 @@ class RaisingMixin:
                     checkpoint.ensure(self.repo_root)
                 elif "Warder" in label:
                     from orkcraft.hooks import install as hooks_install
-                    hooks_install.install_all(self.repo_root)
+                    checked = self.desktop.machine.agy_warder_checked   # agy's hook only once checked live
+                    hooks_install.install_all(self.repo_root, agy=None if checked else False)
                 elif "order" in label:
                     town_presets.save_order(self.repo_root, choice.get("prompt", ""), choice.get("role", ""),
                                             choice.get("answers") or {})

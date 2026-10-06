@@ -600,3 +600,35 @@ async def test_the_focused_mode_radio_keeps_its_label(fake_repo: Path, monkeypat
         camp.focus()
         await _settle(pilot)
         assert camp.region.height == 1
+
+
+def test_the_warder_line_claims_agy_only_once_checked_live():
+    from orkcraft.screens.onboarding.common import AGY_GUARDED, AGY_UNGUARDED, agy_warder_line
+    by_id = {t.id: t for t in tools.TOOLS}
+
+    def agy(version: str = "", found: bool = True) -> list[tools.ToolStatus]:
+        return [tools.ToolStatus(by_id["agy"], found=found, version=version)]
+
+    assert agy_warder_line(False, agy("1.2.17")) == AGY_UNGUARDED                   # the default, whatever agy is
+    assert agy_warder_line(True, None) == AGY_UNGUARDED                             # not looked yet
+    assert agy_warder_line(True, agy("1.2.17")) == AGY_GUARDED
+    old = agy_warder_line(True, agy("1.1.11"))
+    assert "cannot guard agy 1.1.11" in old and "1.1.12 or later" in old and "--sandbox" in old
+    assert "not installed" in agy_warder_line(True, agy(found=False))
+    assert "does not say its version" in agy_warder_line(True, agy(""))
+
+
+@pytest.mark.asyncio
+async def test_a_checked_agy_hook_is_claimed_on_the_tools_step(fake_repo: Path, onboard, monkeypatch):
+    settings.save(settings.MachineSettings(agy_warder_checked=True))
+    by_id = {t.id: t for t in tools.TOOLS}
+    found = [tools.ToolStatus(by_id["claude"], found=True, path="/usr/bin/claude", version="2.1.4", logged_in=True),
+             tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.1.9"),
+             tools.ToolStatus(by_id["codex"])]
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: found)
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _who(app, pilot, "qa", "fintech")
+        await _tools_ready(app, pilot)
+        line = str(app.screen.query_one("#ob-warder-agy").render())
+        assert "cannot guard agy 1.1.9" in line and "1.1.12 or later" in line

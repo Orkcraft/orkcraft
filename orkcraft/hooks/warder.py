@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""🛡️ Warder — the Council's security orc, as a Claude Code and Codex PreToolUse hook.
+"""🛡️ Warder — the Council's security orc, as a Claude Code, Codex and agy PreToolUse hook.
 
     .claude/settings.json → hooks.PreToolUse → python3 -m orkcraft.hooks.warder        (`orkcraft hooks install`)
     .codex/hooks.json     → hooks.PreToolUse → python3 -m orkcraft.hooks.warder codex
+    .agents/hooks.json    → orkcraft.PreToolUse → python3 -m orkcraft.hooks.warder agy
 
 Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
 
@@ -17,12 +18,15 @@ Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
 
 Codex edits files with `apply_patch`: the files it touches are read from the patch itself.
 
+agy sends `toolCall.name` / `toolCall.args` (camelCase, no `cwd`): `run_command`'s `CommandLine` is
+judged as a Bash command, the file tools by the paths in their arguments, in `args.Cwd` or else
+`workspacePaths[0]`. The answer is `{"decision": "deny" | "ask", "reason": …}`, or `{}` when there
+is nothing to say — never `allow`, which agy ignores in headless runs (agy issue #1053), so the hook
+only ever restricts. The same rules judge every harness (docs/design/agy-guard.md).
+
 Every deny / ask is appended to `.orkcraft/warder.jsonl` of the project the session works in
 (redacted, cut to 160 chars) so the Warder orc in orkcraft shows ❓ with the reason. An internal error never blocks a tool call (the
 error is logged) — a guard must not brick the sessions it guards. Standard library only.
-Warder guards Claude Code and Codex sessions only. agy reads a `PreToolUse` hook from `.agents/hooks.json`
-and `~/.gemini/config/hooks.json` too, but orkcraft does not install one for it yet
-(docs/design/agy-guard.md).
 """
 from __future__ import annotations
 
@@ -76,7 +80,8 @@ SECRET_GLOBS = ("*.pem", "*.key", "*.p12", "*.pfx", "*.keystore", "*.jks")
 SECRET_DIRS = (".ssh", ".gnupg")
 ENV_OK = (".env.example", ".env.sample", ".env.template", ".env.dist")
 SELF = ("orkcraft/hooks/warder.py", "scripts/warder_hook.py", ".claude/settings.json", ".claude/settings.local.json",
-        ".codex/hooks.json", ".codex/config.toml")
+        ".codex/hooks.json", ".codex/config.toml", ".agents/hooks.json")
+AGY_GLOBAL = Path.home() / ".gemini" / "config" / "hooks.json"   # agy's hooks for every folder, headless steps' too
 # Programs that may name a secret file without reading it.
 HARMLESS = {"ls", "stat", "test", "[", "file", "realpath", "dirname", "basename", "echo"}
 _TOKEN = re.compile(r"(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{8,}|xox[a-z]-[A-Za-z0-9-]{8,}|AKIA[A-Z0-9]{12,}"
@@ -179,10 +184,19 @@ def _is_self(token: str, cwd: Path) -> bool:
     piece = token.lstrip(">").strip()
     if not piece or not _PATHLIKE.match(piece):
         return False
+    return self_name(cwd / os.path.expanduser(piece)) is not None
+
+
+def self_name(path: Path) -> str | None:
+    """How Warder names one of its own files, or None for any other file."""
     try:
-        return (cwd / piece).resolve().relative_to(REPO).as_posix() in SELF
-    except (ValueError, OSError):
-        return False
+        resolved = path.resolve()
+        if resolved == AGY_GLOBAL.resolve():
+            return "~/.gemini/config/hooks.json"
+        rel = resolved.relative_to(REPO).as_posix()
+    except (ValueError, OSError, RuntimeError):
+        return None
+    return rel if rel in SELF else None
 
 
 def _danger_target(target: str, cwd: Path) -> bool:
@@ -288,13 +302,35 @@ def judge(tool_name: str, tool_input: dict, cwd: Path) -> tuple[str, str] | None
             return DENY, f"{p} looks like a secret (keys, tokens, .env) — Warder keeps it out of sessions"
     if tool_name in ("Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"):
         for p in paths:
-            try:
-                rel = (cwd / p).resolve().relative_to(REPO).as_posix() if p else ""
-            except (ValueError, OSError):
-                continue
-            if rel in SELF:
-                return ASK, f"{rel} configures Warder itself"
+            if p and (name := self_name(cwd / os.path.expanduser(p))):
+                return ASK, f"{name} configures Warder itself"
     return None
+
+
+# agy's tools, as the Claude Code tool judged in their place (unknown ones keep their name: paths only).
+AGY_TOOLS = {"run_command": "Bash", "view_file": "Read", "list_dir": "Read", "grep_search": "Read",
+             "write_to_file": "Write", "edit_file": "Edit", "replace_file_content": "Edit",
+             "multi_replace_file_content": "MultiEdit"}
+
+
+def _agy_paths(args: dict) -> list[str]:
+    """The file paths in an agy tool's arguments (`TargetFile`, `AbsolutePath`, `SearchPath`, …),
+    never their content."""
+    return [v for k, v in args.items() if isinstance(v, str) and v and "content" not in k.lower()
+            and ("path" in k.lower() or "file" in k.lower() or "dir" in k.lower())]
+
+
+def from_agy(payload: dict) -> tuple[str, dict, Path]:
+    """An agy hook payload as (tool, tool_input, cwd) in Claude Code's shape."""
+    call = payload.get("toolCall") if isinstance(payload.get("toolCall"), dict) else {}
+    args = call.get("args") if isinstance(call.get("args"), dict) else {}
+    name = str(call.get("name") or "")
+    roots = [w for w in payload.get("workspacePaths") or [] if isinstance(w, str) and w]
+    cwd = Path(str(args.get("Cwd") or (roots[0] if roots else "") or os.getcwd()))
+    tool = AGY_TOOLS.get(name, name)
+    if tool == "Bash":
+        return tool, {"command": str(args.get("CommandLine") or "")}, cwd
+    return tool, {f"path{i}": p for i, p in enumerate(_agy_paths(args))}, cwd
 
 
 def redact(text: str) -> str:
@@ -315,16 +351,22 @@ def log(entry: dict, cwd: Path | None = None) -> None:
 
 def main() -> int:
     harness = sys.argv[1] if len(sys.argv) > 1 else "claude"
+    agy = harness == "agy"
     try:
         payload = json.loads(sys.stdin.read() or "{}")
-        tool = str(payload.get("tool_name") or "")
-        tool_input = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
-        cwd = Path(str(payload.get("cwd") or os.getcwd()))
+        if agy:
+            tool, tool_input, cwd = from_agy(payload)
+        else:
+            tool = str(payload.get("tool_name") or "")
+            tool_input = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
+            cwd = Path(str(payload.get("cwd") or os.getcwd()))
         verdict = judge(tool, tool_input, cwd)
     except Exception as e:  # never block on our own bug — but leave a trace
         log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": "error", "reason": redact(repr(e))})
-        return 0
+        verdict = None
     if verdict is None:
+        if agy:
+            print("{}")                                   # agy reads every hook's stdout as its answer
         return 0
     decision, reason = verdict
     if decision == ASK and harness == "codex":           # Codex parses "ask" but does not support it yet
@@ -334,8 +376,12 @@ def main() -> int:
     else:
         subject = tool_input.get("command") or next(iter(_paths_of(tool_input)), "")
     log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": decision, "tool": tool,
-         "reason": reason, "subject": redact(str(subject)), "session": str(payload.get("session_id") or "")[:64]},
+         "reason": reason, "subject": redact(str(subject)),
+         "session": str(payload.get("conversationId" if agy else "session_id") or "")[:64]},
         cwd)
+    if agy:                                               # deny or ask only: agy ignores a hook's allow (#1053)
+        print(json.dumps({"decision": decision, "reason": f"🛡️ Warder: {reason}"}, ensure_ascii=False))
+        return 0
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": decision,
         "permissionDecisionReason": f"🛡️ Warder: {reason}",

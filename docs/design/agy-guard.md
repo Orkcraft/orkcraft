@@ -1,7 +1,8 @@
 # Design — guarding agy as Claude Code is guarded
 
 Status: research note, written 2026-10-06, for the roadmap item *Research: guarding agy as Claude
-Code is guarded*. No code changed. agy could not be installed here (its installer and docs at
+Code is guarded*. §7 is built (`warder.py agy`, `hooks install`, the version gate) but stays
+unclaimed in onboarding until the smoke test of §8 passes on a live agy. agy could not be installed here (its installer and docs at
 antigravity.google are blocked by this machine's network), so nothing below was tried on a live agy.
 Each claim is marked **[v]** verified, with its source, or **[u]** unverified.
 
@@ -24,7 +25,7 @@ Sources:
 - War Tent sessions: plain `agy`, `agy --conversation <id>` (`sources/sessions.py`).
 - `agy -p /usage --output-format json` for ⏳ Limits (`quota/agy_quota.py`).
 - The session hook already speaks agy's hook format (`hooks/session.py agy`, `.agents/hooks.json`,
-  `PreInvocation` / `Stop`, prints `{}`), but `orkcraft hooks install` does not write it.
+  `PreInvocation` / `Stop`, prints `{}`); `orkcraft hooks install` writes it since §8.
 - No agy version is pinned. These flags need **1.1.12 or later**: `--mode` was ignored in `-p`
   runs before 1.1.12, `--output-format` arrived in 1.1.8, and `--sandbox` in print mode was fixed
   in 1.0.6 and 1.1.18 [v CL].
@@ -173,3 +174,41 @@ chosen tools, the step adds this plain sentence:
 
 Also, outside this item: add `conversation` to `elders._WIDENS`, and correct the hook lines in
 `docs/reference.md` and `warder.py`'s docstring ("agy has no documented pre-tool hook").
+
+## 8. Smoke test on a live agy
+
+Built: `python -m orkcraft.hooks.warder agy`, the `orkcraft` entry `hooks install` merges into
+`.agents/hooks.json` (and, after asking, into `~/.gemini/config/hooks.json`), and the 1.1.12 gate.
+Rechecked before building, 2026-10-06: agy's changelog at `274d81b` (1.2.17) still says what §1–§2
+quote. Issue #1053, the docs at antigravity.google and the engine wheel were not reachable from
+the build machine either, so the payload and answer format still rest on ENG and #1053 as read
+for this note. Onboarding keeps saying "does not guard agy yet" until someone runs these steps on a
+machine with agy 1.1.12 or later and a Google sign-in or `GEMINI_API_KEY`:
+
+1. `agy --version` says 1.1.12 or later.
+2. In a scratch git repository: `orkcraft hooks install --agy-global`. `.agents/hooks.json` and
+   `~/.gemini/config/hooks.json` each hold an `orkcraft` entry beside whatever was there; `agy -p /hooks`
+   lists its `PreToolUse`, `PreInvocation` and `Stop` hooks (the last two list their handlers without
+   a `matcher` group, as ENG describes for events that are not tool calls: if agy drops them, wrap
+   them as `PreToolUse` is). Open `agy` there once and trust the folder; one prompt adds a line to
+   `.orkcraft/sessions.jsonl`.
+3. Payload: add a second entry that only logs, `{"probe": {"PreToolUse": [{"matcher": "*", "hooks":
+   [{"type": "command", "command": "cat >> /tmp/agy-hook.jsonl; echo {}"}]}]}}`, then
+   `agy -p "list the files here, then read README.md" --output-format json`. `/tmp/agy-hook.jsonl`
+   shows `toolCall.name`, `toolCall.args` (the path keys of `view_file` / `list_dir`) and
+   `workspacePaths`. If a file tool's path key has no "path", "file" or "dir" in it, add it to
+   `warder._agy_paths`. Remove the probe.
+4. Deny, headless: `agy -p "run: rm -rf .git" --mode accept-edits --sandbox --output-format json`.
+   The JSON lists the call under `denied_actions`, `.git` is still there, and
+   `.orkcraft/warder.jsonl` has a `deny` line with `"tool": "Bash"`.
+5. Deny, a file tool: `echo X=1 > .env`, then `agy -p "show me what .env holds" --output-format json`.
+   The read is denied and logged.
+6. Ask, interactive: in `agy`, ask it to run `git reset --hard`. agy shows its `Run this command?`
+   menu with a `Reason:` line naming the 🛡️ Warder; answering no leaves the work as it was.
+7. Headless step outside the project: from an empty temp folder,
+   `agy -p "run: git push --force" --output-format json`: denied by the global entry.
+8. `orkcraft hooks uninstall`: both files keep every entry but `orkcraft`.
+
+All eight pass → set `"agy_warder_checked": true` in the machine settings, `~/.config/orkcraft/settings.json` (the onboarding then says
+the Warder guards agy and installs its hook while raising a town), note the agy version tested
+here, and change the default once a second machine agrees.

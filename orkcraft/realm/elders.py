@@ -48,7 +48,7 @@ ADVICE_KEEP_H = 24               # advice older than this is not restored after 
 # An option that widens permissions beyond this one question is never the Elders' to advise.
 _WIDENS = re.compile(r"\balways\b|don'?t ask|do not ask|never ask|\ball\b|\bevery|\bauto(matic(ally)?)?\b|"
                      r"\bauto-?(accept|approve|edit)|\bbypass|\bskip|\bpermanent|\bremember|"
-                     r"for (this|the|all) (session|project|directory|folder|repo|repository)|from now on", re.I)
+                     r"for (this|the|all) (session|conversation|project|directory|folder|repo|repository)|from now on", re.I)
 _YES = re.compile(r"^(yes|y|allow|approve|proceed|continue|ok|okay|run it|accept|go ahead)\b", re.I)
 _NO = re.compile(r"^(no|n|deny|reject|decline|cancel|abort|stop|don'?t)\b", re.I)
 # What a menu puts before an option's words: a cursor, a bullet, its number ("❯ 1. Yes", "2) No").
