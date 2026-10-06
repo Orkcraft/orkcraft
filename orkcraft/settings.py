@@ -57,6 +57,9 @@ class MachineSettings:
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
     autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
     profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, ai_tools
+    # The 🛡 Warder's agy hook was checked on a live agy here (docs/design/agy-guard.md, smoke test):
+    # only then does onboarding say the Warder guards agy and install its hook. Off until someone does.
+    agy_warder_checked: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -68,6 +71,7 @@ class MachineSettings:
             "office_days": list(self.office_days),
             "autonomy": self.autonomy,
             "profile": self.profile,
+            "agy_warder_checked": self.agy_warder_checked,
         }
 
     @classmethod
@@ -90,6 +94,7 @@ class MachineSettings:
         level = data.get("autonomy", 1)
         s.autonomy = level if isinstance(level, int) and not isinstance(level, bool) and 0 <= level <= 3 else 1
         s.profile = clean_profile(data.get("profile"))
+        s.agy_warder_checked = data.get("agy_warder_checked") is True
         return s
 
 

@@ -722,11 +722,17 @@ the CLI paths.
   dropping stashes, `sudo`, dumping the environment, and any edit of Warder itself (also from a
   shell). Here-document bodies are data and are not judged. Every deny / ask lands in
   `.orkcraft/warder.jsonl` (tokens redacted) and puts ❓ on Warder in the Council — `1`
-  acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code
-  and Codex; agy reads a `PreToolUse` hook from `.agents/hooks.json` and `~/.gemini/config/hooks.json`,
-  but orkcraft does not install one for it yet ([agy-guard](design/agy-guard.md)); hooks load when a session starts. For Codex it is
+  acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code,
+  Codex and agy with the same rules; hooks load when a session starts. For Codex it is
   in `.codex/hooks.json` with `apply_patch` among its tools (the files are read from the patch), runs
   once trusted with `/hooks`, and turns an ask into a deny that says why — Codex cannot ask yet.
+  For agy (1.1.12 or later) it is the `orkcraft` entry of `.agents/hooks.json` on `run_command` and the
+  file tools, read once agy trusts the folder; it answers only deny or ask, never allow (agy ignores
+  a hook's allow in headless runs). agy's headless steps run in a temp folder and read only
+  `~/.gemini/config/hooks.json`, which `orkcraft hooks install` writes only after asking
+  (`--agy-global` / `--no-agy-global` answer for it). Onboarding says the Warder guards agy only once
+  its hook was checked on a live agy (`agy_warder_checked` in the machine settings,
+  [agy-guard](design/agy-guard.md) §8).
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 
@@ -838,7 +844,9 @@ The order lives in `.orkcraft/town/order.json`; every plan request is logged in
 - `orkcraft` — open the town in the current git project (the root is found by `.orkcraft.json`
   or `.git`); `--repo PATH` for another one.
 - `orkcraft hooks install` / `uninstall` — add (or remove) the session log and the Warder guard
-  to the project's `.claude/settings.json`; other hooks and settings stay as they are.
+  to the project's `.claude/settings.json` (and `.codex/hooks.json` with Codex, `.agents/hooks.json` with
+  agy 1.1.12 or later; for agy's headless steps `~/.gemini/config/hooks.json` after asking); other hooks
+  and settings stay as they are, and uninstall removes only orkcraft's entries.
 - `orkcraft feedback calibrate [--days N]` — how far each quiet feedback signal (an accepted cart, an
   edited file, a closed pull request…) agrees with the 👍 / 👎 pressed near it, and the weight it has
   earned; it changes nothing (docs/design/native-feedback.md §8).

@@ -14,7 +14,7 @@ from orkcraft import schedule, settings, tools
 from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
 from orkcraft.realm import interview
 from orkcraft.tui import silhouettes
-from orkcraft.screens.onboarding.common import AGY_UNGUARDED, NARROW, _buttons, _css, _nav, _title
+from orkcraft.screens.onboarding.common import AGY_UNGUARDED, NARROW, agy_warder_line, _buttons, _css, _nav, _title
 from orkcraft.screens.onboarding.person import Chip
 
 
@@ -154,6 +154,7 @@ class ToolsStep(ModalScreen[dict | str | None]):
         elif missing:
             text = "Not found: " + " · ".join(missing)
         self.query_one("#ob-tools-missing", Static).update(text)
+        self.query_one("#ob-warder-agy", Static).update(agy_warder_line(self.machine.agy_warder_checked, statuses))
 
     @on(Chip.Toggled)
     def _rated(self, event: Chip.Toggled) -> None:
