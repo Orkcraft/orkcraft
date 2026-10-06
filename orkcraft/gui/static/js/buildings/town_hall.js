@@ -120,6 +120,16 @@ export function preview(id, data) {
 
 // -- full: Hall, Sessions, Limits --------------------------------------------------------------------
 
+/** Apply or say no to a retro's proposal; an unanswered one may be applied by the orks (its building's
+ * autonomy, docs/design/retros-and-goals.md §3). */
+function Answer({ onApply, onNo, no }) {
+  const run = (f) => f().catch(() => {});
+  return html`<span class="gui-answer"><button class="ok-act" title=${say("Apply it: a checkpoint, Revert takes it back")}
+      onClick=${() => run(onApply)}><span class="ok-act__label">${say("Apply")}</span></button>
+    <button class="ok-act" title=${say("Not this one: the orks will not apply it either")} onClick=${() => run(onNo)}>
+      <span class="ok-act__label">${no}</span></button></span>`;
+}
+
 function Section({ title, children, extra }) {
   return html`<section class="gui-section">
     <div class="gui-head"><h3 class="ok-font-heading">${title}</h3><span class="gui-head__spacer"></span>${extra}</div>
@@ -165,10 +175,17 @@ function Hall({ id, h }) {
     <${Section} title=${say("Proposals")} extra=${html`<span class="ok-font-status ok-tone-muted">${h.pending} pending</span>`}>
       <${Rows} items=${h.proposals} empty=${say("No proposals yet — the Building retro makes them.")}
         row=${(p, i) => html`<li key=${i} class="ok-font-body">${MARK[p.status] || "·"} ${p.ts} <b>${titles[p.building] || p.building}</b>
-          · ${p.action} ${p.target}<span class="ok-font-status ok-tone-muted"> — ${p.why}</span></li>`} />
+          · ${p.action} ${p.target}<span class="ok-font-status ok-tone-muted"> — ${p.why}</span>
+          ${p.status === "pending" && html` <${Answer} onApply=${() => act(id, "proposal", { id: p.id, choice: "apply" })}
+            onNo=${() => act(id, "proposal", { id: p.id, choice: "dismiss" })} no=${say("Dismiss")} />`}</li>`} />
       <p class="ok-font-status ok-tone-muted">${say("Town retro")}: ${h.weekly
         ? `${h.weekly.ts.slice(0, 10)} · ${h.weekly.items} items, ${h.weekly.applied} applied${h.weekly.waiting ? `, ${h.weekly.waiting} waiting` : ""}`
         : say("not run yet — Sunday 05:00")}</p>
+      ${h.weekly && h.weekly.rows.length > 0 && html`<ul class="gui-rows">${h.weekly.rows.map((x) => html`<li key=${x.n} class="ok-font-body">
+        · ${x.building && titles[x.building] ? html`<b>${titles[x.building]}</b>: ` : ""}${x.title}
+        <span class="ok-font-status ok-tone-muted"> — ${x.why}</span>
+        <${Answer} onApply=${() => act(id, "weekly", { n: x.n, choice: "apply" })}
+          onNo=${() => act(id, "weekly", { n: x.n, choice: "decline" })} no=${say("Decline")} /></li>`)}</ul>`}
     </${Section}>
     <${Section} title=${say("The Elders")}>
       <${Rows} items=${h.elders} empty=${say("Nothing judged yet — they read the orks' questions in quiet hours.")}

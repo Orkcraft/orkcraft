@@ -253,7 +253,8 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
-    roster.get_by_text("Redesign window").wait_for(state="visible", timeout=WAIT_MS)
+    roster.get_by_role("button", name="Redesign", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    assert roster.bounding_box()["height"] == info.bounding_box()["height"]          # as tall as Info
     assert info.get_by_role("button", name="Balance", exact=True).count() == 0     # the goal is the steward's now
     title = roster.locator(".ok-win__title").inner_text()
     assert "★" in title and "idle" in title                                        # its window: the steward's name, status
@@ -263,15 +264,17 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     pg.wait_for_function("() => [...document.querySelectorAll('.gui-roster .gui-steps__one')].find((e) => e.textContent === 'Quality')"
                          ".classList.contains('is-on')", timeout=WAIT_MS)
     assert server_building(pg, bid)["goal"] == "quality"
-    roster.get_by_text("as the project").wait_for(state="visible", timeout=WAIT_MS)
+    town_step = roster.locator(".gui-steps__one.is-as-town")
+    assert "is-on" in town_step.get_attribute("class")              # as the town, until one is picked
     clock = roster.locator(".gui-steps__one.is-icon").nth(1)
     clock.click()                                                  # 🕰 lit, no longer as the town
     pg.wait_for_function("() => document.querySelectorAll('.gui-steps__one.is-icon')[1].classList.contains('is-on')",
                          timeout=WAIT_MS)
-    assert roster.get_by_text("as the project").count() == 0
+    assert "is-on" not in town_step.get_attribute("class")
     assert server_building(pg, bid)["autonomy"] == "clock"
     clock.click()                                                  # the lit one again: as the town
-    roster.get_by_text("as the project").wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_function("() => document.querySelector('.gui-steps__one.is-as-town').classList.contains('is-on')",
+                         timeout=WAIT_MS)
     assert card.get_by_text("Redesign window").count() == 0 and card.get_by_text("Revert").count() == 0
     brief = card.locator(".gui-newtask textarea")
     brief.wait_for(state="visible", timeout=WAIT_MS)

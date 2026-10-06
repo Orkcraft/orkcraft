@@ -168,7 +168,7 @@ class Night:
         report = weekly.latest(root)
         if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
             for item in report.items:
-                if item.applicable and item.n not in report.applied:
+                if item.applicable and item.n not in report.applied and item.n not in report.declined:
                     key = (f"w{report.ts[:10]}-{item.n}" if item.change in optimize.ACTIONS
                            else f"weekly:{report.ts}:{item.n}")
                     out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,

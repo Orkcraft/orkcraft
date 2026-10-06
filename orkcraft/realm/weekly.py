@@ -84,6 +84,7 @@ class Report:
     model: str = ""
     cost_usd: float | None = None
     applied: list[int] = field(default_factory=list)
+    declined: list[int] = field(default_factory=list)   # items the operator said no to: never applied by the orks
     restart: bool = False
     surveyed: bool = False                        # the Town retro's survey was shown (realm/retro.py)
 

@@ -97,4 +97,36 @@ def _limits(w, args: dict) -> None:
     w.read_limits()
 
 
-ACTS = {"ask": _ask, "forget": _forget, "audit": _audit, "limits": _limits}
+def _proposal(w, args: dict) -> bool:
+    """The Building retro's proposal: Apply (a checkpoint, Revert takes it back) or Dismiss."""
+    from orkcraft.core import buildings as core_buildings
+    from orkcraft.realm import optimize
+    p = next((x for x in optimize.pending(w.repo_root) if x.id == text(args, "id", 100)), None)
+    if p is None:
+        raise ActError("That proposal was answered already")
+    if text(args, "choice", 20) == "dismiss":
+        p.status = "dismissed"
+        optimize.save(w.repo_root, p)
+        w.changed()
+        return True
+    return core_buildings.apply_proposal(w.town, p, by="you")
+
+
+def _weekly(w, args: dict) -> bool:
+    """One item of the Town retro: Apply (checked again first) or Decline (never applied, by the orks either)."""
+    from orkcraft.core import retros
+    from orkcraft.realm import weekly
+    report = weekly.latest(w.repo_root)
+    try:
+        n = int(args.get("n"))
+    except (TypeError, ValueError):
+        raise ActError("Which item?") from None
+    if report is None or not any(i.n == n for i in report.items):
+        raise ActError("That item is gone")
+    if text(args, "choice", 20) == "decline":
+        retros.decline_weekly_item(w.town, report, n)
+        return True
+    return retros.apply_weekly_item(w.town, report, n)
+
+
+ACTS = {"ask": _ask, "forget": _forget, "audit": _audit, "limits": _limits, "proposal": _proposal, "weekly": _weekly}
