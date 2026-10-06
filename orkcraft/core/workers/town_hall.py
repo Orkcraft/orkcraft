@@ -282,9 +282,11 @@ class TownHallWorker(Worker):
                       "how": "" if i.source == feedback.EXPLICIT else feedback.LABELS.get(i.source, i.source),
                       "blamed": ", ".join(f"{b} −{p:g}" for b, p in i.blamed.items())}
                      for i in feedback.incidents(repo, 5)]
-        proposals = [{"ts": _when(p.ts), "building": p.building, "action": p.action, "target": p.target,
+        proposals = [{"id": p.id, "ts": _when(p.ts), "building": p.building, "action": p.action, "target": p.target,
                       "why": p.why[:50], "status": p.status} for p in optimize.proposals(repo)[:4]]
         wk = weekly.latest(repo)
+        waiting = [{"n": i.n, "title": i.title[:80], "why": i.why[:80], "building": i.building, "change": i.change}
+                   for i in (wk.items if wk else []) if i.applicable and i.n not in wk.applied and i.n not in wk.declined]
         return {
             "order": str(order["prompt"])[:300] if order else "",
             "builders": [{"icon": i, "name": n, "role": r} for i, n, r in BUILDERS],
@@ -295,7 +297,7 @@ class TownHallWorker(Worker):
             "reviews": reviews, "board": board, "incidents": incidents, "proposals": proposals,
             "pending": len(optimize.pending(repo)),
             "weekly": {"ts": wk.ts, "items": len(wk.items), "applied": len(wk.applied),
-                       "waiting": sum(1 for i in wk.items if i.applicable and i.n not in wk.applied)} if wk else None,
+                       "waiting": len(waiting), "rows": waiting} if wk else None,
         }
 
     def audit(self) -> audit.Report:

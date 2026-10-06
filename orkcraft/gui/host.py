@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, console, mobile, state, views
+from orkcraft.gui import builder, console, mobile, nightly, state, views
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import catalog, elders, fastpath, halt, modes
@@ -53,6 +53,7 @@ class Host:
         self.sessions = Sessions(self.town)
         self.night = Night(self.town)               # quiet hours: the Elders' advice on the orks' questions
         self.night.restore()
+        self.nightly = nightly.Nightly(self)       # …the retros and the orks' own changes (gui/nightly.py)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
         # slowly enough that a person sees each cart on its road before its building acts (tools/landing_flow.py).
@@ -183,16 +184,21 @@ class Host:
         self.refresh_roster()
         self._night()
 
-    # -- 🏛 quiet hours: the Elders (core/night.py), as the TUI's night does ------------------------
+    # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
 
     def _night(self) -> None:
         machine = self.town.machine
         quiet = schedule.quiet_now(machine)
-        if self.night.tick(quiet):
+        morning = self.night.tick(quiet)
+        if morning:
             words = self.night.morning_words(self.muster.roster.alerts)
             if words:
                 self.town.toast(".\n".join(words) + ".", title="While you were away, the Elders", timeout=15)
             self.night.morning()
+        try:
+            self.nightly.tick(quiet, morning)
+        except Exception as e:                     # the night's work never stops the clock
+            self.town.toast(f"{type(e).__name__}: {e}", title="Quiet hours", severity="error")
         alert = self.night.next_question(self.muster.roster.alerts, quiet, machine.autonomy)
         if alert is None:
             return

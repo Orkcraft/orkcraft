@@ -101,6 +101,11 @@ key in the Info panel).
   applied in the next quiet hours; unchained, in the next quiet hours. Whatever the step, a removal or
   a note stays advice, and every self-applied change still passes the Council, gets its checkpoint and
   24 h of probation (`evolution.may_apply`, `Night.candidates`).
+- **Both faces run the night.** The TUI (tui/night.py, tui/retros.py) and the GUI's host (gui/nightly.py
+  over core/retros.py): the retros when `optimize_at` / `weekly_at` are due, the orks' changes in quiet
+  hours, probation, the list of their changes when quiet hours end. In the GUI the Town Hall answers
+  the proposals: Apply or Dismiss a Building retro's, Apply or Decline a Town retro's item (a declined
+  one is never applied by the orks either; `Report.declined`). A removal stays the TUI's, which asks first.
 
 ## 4. The Town retro survey (`realm/retro.py`)
 
