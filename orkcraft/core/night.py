@@ -2,7 +2,7 @@
 orks' own improvements of the camp with their probation (realm/evolution.py).
 
 When the Elders read a question is the autonomy level's (autonomy.waits): ⛓️ chains — in quiet hours,
-for advice only; ⏳ timer — once it has waited the timer, at once in quiet hours, and they answer;
+for advice only; 🕰 on the clock — once it has waited its minutes, at once in quiet hours, and they answer;
 ⛓️‍💥 free orks — at once, and they answer.
 
 `Night` keeps what the hours remember (the advice, the questions already judged, tonight's counts)
@@ -18,11 +18,12 @@ import time
 
 from orkcraft import autonomy
 from orkcraft.core.town import Town
-from orkcraft.realm import elders, evolution, fastpath, optimize, steward, weekly
+from orkcraft.realm import awake, elders, evolution, fastpath, optimize, steward, weekly
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.realm.orcs import Alert
 
 PROBATION_CHECK_S = 300.0  # how often the orks' changes on probation are looked at
+AWAKE_NOTE_S = 60.0        # how often an hour the operator is around is noted (realm/awake.py)
 
 
 class Night:
@@ -40,11 +41,16 @@ class Night:
         self.evolve_tried: set[str] = set()
         self.evolve_count = 0
         self.probation_at = 0.0          # 0: never looked yet
+        self.awake_at = 0.0              # when the operator's being around was last noted (monotonic)
 
     # -- the hours ------------------------------------------------------------------------------
 
     def tick(self, quiet: bool, now: dt.datetime | None = None) -> bool:
-        """Quiet hours begin or go on (remembered from when); True when they just ended — the morning."""
+        """Quiet hours begin or go on (remembered from when); True when they just ended — the morning.
+        Outside them, the camp open, the operator is around: noted once a minute (realm/awake.py)."""
+        if not quiet and not self.town.demo and time.monotonic() - self.awake_at >= AWAKE_NOTE_S:
+            self.awake_at = time.monotonic()
+            awake.note(self.town.repo_root, now)
         if quiet and self.quiet_since is None:
             self.quiet_since = (now or dt.datetime.now()).isoformat(timespec="seconds")
             return False
@@ -114,7 +120,7 @@ class Night:
 
     def judged(self, alert: Alert, decision: elders.Decision, who: str, alerts: list[Alert], quiet: bool,
                level: int) -> str | None:
-        """The Elders' answer is in. From ⏳ timer (autonomy.answers) they answer themselves: the key to
+        """The Elders' answer is in. From 🕰 on the clock (autonomy.answers) they answer themselves: the key to
         send is returned — only while the very same question still waits, and never when the Warder
         flagged the screen (⚠: that advice is the operator's to follow). Otherwise the advice is kept for
         the operator and None is returned. Logged either way."""
@@ -143,10 +149,12 @@ class Night:
 
     # -- 🔧 the orks improve the camp themselves ------------------------------------------------
 
-    def _freedom(self, c: dict) -> str | None:
-        """The autonomy that rules a change: the Town Hall's for the Town retro's, else its building's."""
+    def rules(self, c: dict, level: int) -> autonomy.Rules:
+        """What rules a change: the Town Hall's for the Town retro's, else its building's — its own level
+        and rebuild wait, else the town's (`level` and the machine's wait)."""
         b = self.town.scroll.building(TOWN_HALL if c["source"] == "weekly" else c["building"])
-        return b.autonomy if b is not None else None
+        m = self.town.machine
+        return autonomy.rules_of(b, level, m.autonomy_wait, m.rebuild_wait)
 
     def candidates(self, level: int) -> list[dict]:
         """What the daily proposal, the latest weekly report and the stewards left, that this level (or
@@ -174,7 +182,8 @@ class Night:
                 out.append({"key": f"steward:{b.id}:{data.get('ts', '')}:{i}", "change": str(prop.get("type")),
                             "source": "steward", "building": b.id, "data": data, "index": i,
                             "made": str(data.get("ts") or "")})
-        return [c for c in out if evolution.may_apply(c["change"], level, self._freedom(c), c["made"])
+        root = self.town.repo_root
+        return [c for c in out if evolution.may_apply(c["change"], self.rules(c, level), awake.hours_since(root, c["made"]))
                 and c["key"] not in done and c["key"] not in self.evolve_tried]
 
     def subject(self, c: dict) -> fastpath.Subject:

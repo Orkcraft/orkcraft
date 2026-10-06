@@ -68,6 +68,13 @@ class PlanMixin:
         return camp
 
     @property
+    def rules(self) -> autonomy.Rules:
+        """Its autonomy: its own level and waits (its steward's window), else the town's."""
+        m = self.town.machine
+        return autonomy.rules_of(self.town.scroll.building(self.building_id), m.autonomy, m.autonomy_wait,
+                                 m.rebuild_wait)
+
+    @property
     def plans_on(self) -> bool:
         """The steward plans hard tasks (config `plan`, on by default); never in the sandbox."""
         return self.config.get("plan", True) is not False and not self.simulated
@@ -251,17 +258,17 @@ class PlanMixin:
 
     def _persona_waits(self, kid: bk.PoolTask, p: personas.Persona) -> None:
         """A part whose new persona is not approved yet: at once at ⛓️‍💥 (and ⏳ in quiet hours), else 🔥."""
-        machine = self.town.machine
-        if autonomy.waits(machine.autonomy, schedule.quiet_now(machine), machine.autonomy_wait) == 0:
+        machine, rules = self.town.machine, self.rules
+        if autonomy.waits(rules.level, schedule.quiet_now(machine), rules.wait) == 0:
             self._approve_persona(p.name, "the orks took it (autonomy)", advance=False)
             self._release(kid)
             return
-        kid.persona_waits, kid.waits_since = p.name, time.time()
-        timer = autonomy.waits(machine.autonomy, False, machine.autonomy_wait)
+        kid.persona_waits = p.name
+        timer = autonomy.waits(rules.level, False, rules.wait)
         when = f" — approved by itself in {timer:.0f} min" if timer else ""
         self._ask(kid, f"New persona `{p.name}` ({p.tier}) for “{kid.title}”{when}:\n\n{p.prompt}\n\nApprove it "
                   "(Enter or yes), write a better one, or `no` to run this part without a persona.",
-                  f"{self.keeper} wrote a new persona")
+                  f"{self.keeper} wrote a new persona", kind="persona")
 
     def _approve_persona(self, name: str, how: str, prompt: str = "", advance: bool = True) -> None:
         """The persona is approved (`prompt`: the operator's own); every part that waited for it goes on."""
@@ -278,22 +285,85 @@ class PlanMixin:
             for pid in dict.fromkeys(t.parent for t in self.state.tasks if t.parent):
                 self._advance(self.state.task(pid))
 
-    def tick_personas(self, now: float | None = None) -> bool:
-        """⏳ The timer ran out (or quiet hours began) for a persona that waits: the orks approve it."""
-        machine = self.town.machine
-        minutes = autonomy.waits(machine.autonomy, schedule.quiet_now(machine), machine.autonomy_wait)
+    def tick_asks(self, now: float | None = None) -> bool:
+        """🕰 What waited for the operator its minutes (at once in quiet hours, or unchained): the orks decide —
+        a new persona is approved, a question the steward answers itself, a task sent back too often is
+        closed as failed. A draft to post outside always waits for the operator."""
+        rules = self.rules
+        minutes = autonomy.waits(rules.level, schedule.quiet_now(self.town.machine), rules.wait)
         if minutes is None:
             return False
         now = time.time() if now is None else now
-        due = {t.persona_waits for t in self.state.tasks
-               if t.persona_waits and t.status == "asked" and now - t.waits_since >= minutes * 60}
-        for name in sorted(due):
-            self._approve_persona(name, f"nobody answered in {minutes:.0f} min" if minutes else "quiet hours")
+        due = [t for t in self.state.tasks if t.status == "asked" and now - t.waits_since >= minutes * 60
+               and (t.ask_kind or ("persona" if t.persona_waits else "")) in ("question", "rejected", "persona")]
+        why = f"nobody answered in {minutes:.0f} min" if minutes else "the orks decide at once (autonomy)"
+        for name in sorted({t.persona_waits for t in due if t.persona_waits}):
+            self._approve_persona(name, why)
+        for t in due:
+            if t.persona_waits:
+                continue
+            if t.ask_kind == "rejected":
+                self._give_up(t, why)
+            else:
+                self._steward_decides(t, why)
         if due:
             self._pump()
             self.state.save()
             self.changed()
         return bool(due)
+
+
+    def _give_up(self, task: bk.PoolTask, why: str) -> None:
+        """A task sent back too often that nobody answered: closed as failed, with what was wrong."""
+        st = self.state
+        last = task.question.split("Last notes: ", 1)[-1].split("\n\n")[0][:300]
+        task.status, task.question, task.ask_kind = "failed", "", ""
+        task.error = f"sent back too often and {why}: closed by {self.keeper}. Last notes: {last}"
+        st.log(bk.Decision(bk.now_iso(), task.id, "close", task.orc, task.error[:300]))
+        if task.parent:
+            self._advance(st.task(task.parent))
+            return
+        orc = st.orc(task.orc)
+        trail = self._plan_trail(task, "error") if task.plan or orc is None else self._trail(task, orc, "error")
+        self.emit("pool.failed", f"**{task.title}** — {task.error}", task.title, trail=trail, ref=task.ref)
+
+    def _steward_decides(self, task: bk.PoolTask, why: str) -> None:
+        """A question nobody answered: the steward decides it by its rules; when it cannot, the task is closed."""
+        task.ask_kind = "deciding"
+        question = task.question.split("\n\n")[0]
+        prompt = bk.steward_question_prompt(self.keeper, self.orders, task, question) + (
+            f"\n\nThe operator was asked and {why}: decide it yourself now, by your rules and good practice. "
+            "`ASK` is not possible — answer `ANSWER: …`.")
+        cancel = threading.Event()
+        self._cancels[f"decide:{task.id}"] = cancel
+
+        def work() -> None:
+            from orkcraft.core.workers.barracks import RunOutcome
+            out = RunOutcome()
+            answer = ""
+            try:
+                answer = bk.steward_answer_of(self._steward(prompt, self.repo_root, cancel, out, "answer"))
+            except Exception:  # a steward that cannot answer closes the task, never the barracks
+                answer = ""
+            self._call(self._decided, task.id, answer, why, out)
+
+        threading.Thread(target=work, daemon=True, name=f"decide-{self.building_id}-{task.id}").start()
+
+    def _decided(self, task_id: str, answer: str, why: str, out) -> None:
+        st = self.state
+        self._cancels.pop(f"decide:{task_id}", None)
+        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        task = st.task(task_id)
+        if task is None or task.status != "asked":          # the operator answered meanwhile
+            return
+        if answer:
+            self.answer(task.id, answer, who=self.keeper)
+            return
+        task.ask_kind = "rejected"
+        self._give_up(task, f"{why} and {self.keeper} could not decide")
+        self._pump()
+        st.save()
+        self.changed()
 
     def _persona_answer(self, task: bk.PoolTask, text: str) -> None:
         """The operator on a new persona: Enter / yes approves it, `no` drops it from this part, anything
@@ -423,7 +493,7 @@ class PlanMixin:
         parent.status = "planned"
         if parent.attempts > limit:
             self._ask(parent, f"The whole was sent back {parent.attempts - 1} times. Last notes: {notes[:500]}\n\n"
-                      "What should be done? Your answer becomes a new part.", "rejected")
+                      "What should be done? Your answer becomes a new part.", "rejected", kind="rejected")
             return
         sub, why = plans.rework_of(notes, [k.sub for k in kids])
         st.log(bk.Decision(bk.now_iso(), parent.id, "rework", why=f"{parent.attempts}/{limit}: "

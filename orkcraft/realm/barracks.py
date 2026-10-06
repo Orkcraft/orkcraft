@@ -163,7 +163,9 @@ class PoolTask:
     touches: list[str] = field(default_factory=list)  # a subtask: the files it changes
     cheaper_ok: bool = False
     persona_waits: str = ""         # a new persona that waits for approval before this subtask runs
-    waits_since: float = 0.0        # …since then (epoch seconds): the autonomy level says how long
+    waits_since: float = 0.0        # asked the operator since then (epoch seconds): the autonomy says how long
+    ask_kind: str = ""              # what it asks: question | rejected | persona | draft (never decided by the orks)
+    retried: bool = False           # a crashed run was tried once more already
 
 
 @dataclass

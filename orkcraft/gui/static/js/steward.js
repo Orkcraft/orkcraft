@@ -28,9 +28,9 @@ const CHAIN = html`<rect x="1" y="5" width="8" height="6" rx="3" /><rect x="7" y
 const CLOCK = html`<circle cx="8" cy="8" r="6" /><path d="M8 4.5V8l2.5 1.5" />`;
 const BROKEN = html`<rect x="0.5" y="5" width="6.5" height="6" rx="3" /><rect x="9" y="5" width="6.5" height="6" rx="3" />
   <path d="M8 1.5v2M8 12.5v2M5.5 2.5l1 1.5M10.5 2.5l-1 1.5" />`;
-const FREEDOMS = [["chains", CHAIN, "In chains", "Its steward only proposes; nothing changes without you"],
-                  ["clock", CLOCK, "On the clock", "Its steward proposes; what you leave unanswered for a day it applies in quiet hours"],
-                  ["free", BROKEN, "Unchained", "Its steward applies its changes in the next quiet hours"]];
+const FREEDOMS = [["chains", CHAIN, "In chains", "Its questions and its changes wait for you"],
+                  ["clock", CLOCK, "On the clock", "A question waits for you some minutes, a change the hours you are around — then the steward decides"],
+                  ["free", BROKEN, "Unchained", "Its steward decides at once and applies its changes in the next quiet hours"]];
 const GOALS = [["thrift", "Thrift", "Fewer tokens, keeping what was liked"],
                ["balance", "Balance", "Cheaper where it is liked, better where it is not"],
                ["quality", "Quality", "Better results; it may spend more"]];
@@ -81,14 +81,32 @@ function Goal({ b, i, redo }) {
 function Freedom({ b, i, redo }) {
   const set = (value) => command("building.autonomy", { id: b.id, value }).then(redo, () => {});
   const retro = b.id === HALL ? "the Town retro (weekly)" : "its Building retro (daily)";
-  return html`<${Steps} label=${say("Freedom")} title=${say(`Freedom: how freely ${retro} applies its changes`)}>
-    <button class=${cls("gui-steps__one is-town", { "is-on": !i.autonomy })} aria-pressed=${!i.autonomy}
+  return html`<${Steps} label=${say("Freedom")} title=${say(`Freedom: how freely its steward decides and ${retro} applies its changes`)}>
+    <button class=${cls("gui-steps__one is-as-town", { "is-on": !i.autonomy })} aria-pressed=${!i.autonomy}
         title=${say(`As the town: its autonomy (${i.town_autonomy})`)} onClick=${() => i.autonomy && set("")}>${say("town")}</button>
     ${FREEDOMS.map(([v, icon, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one is-icon", { "is-on": i.autonomy === v })}
         aria-pressed=${i.autonomy === v} title=${`${say("Freedom")}: ${say(name)} — ${say(hint)}`} aria-label=${say(name)}
         onClick=${() => set(i.autonomy === v ? "" : v)}>
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${icon}</svg></button>`)}
   </${Steps}>`;
+}
+
+/** 🕰 How long its questions and its changes wait for you, on the clock; the lit one again goes back to the town's. */
+function Waits({ b, i, redo }) {
+  const w = i.waits;
+  if (!w || !w.clock) return null;
+  const set = (key, value) => command("building.waits", { id: b.id, question: w.question, rebuild: w.rebuild, [key]: value })
+    .then(redo, () => {});
+  const row = (key, label, title, choices, own, town, unit) => html`<span class="gui-steward__wait" title=${say(title)}>
+    <span class="ok-tone-muted">${say(label)}</span>
+    <${Steps} label=${say(label)} title=${say(title)}>
+    ${choices.map((v) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": (own || town) === v, "is-town": !own && town === v })}
+        aria-pressed=${own === v} title=${say(own ? "" : "as the town")} onClick=${() => set(key, own === v ? 0 : v)}>${v}${say(unit)}</button>`)}
+  </${Steps}></span>`;
+  return html`${row("question", "questions", "How long a question waits for you before the steward decides", w.questions,
+                    w.question, w.town_question, "m")}
+    ${row("rebuild", "changes", "How many hours you are around (the camp open, not quiet hours) a change waits before it is applied in quiet hours",
+          w.rebuilds, w.rebuild, w.town_rebuild, "h")}`;
 }
 
 function Command({ label, title, onClick }) {
@@ -178,7 +196,8 @@ function OnItsOwn({ b, i, open }) {
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
-    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
+    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} />
+      <${Waits} b=${b} i=${i} redo=${redo} /></div>
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
     <${Listens} b=${b} i=${i} open=${open} />
     <${OnItsOwn} b=${b} i=${i} open=${open} />

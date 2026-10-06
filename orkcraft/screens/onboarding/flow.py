@@ -45,6 +45,7 @@ class Onboarding:
         self.picked: dict[str, settings.ToolChoice] | None = None
         self.autonomy = self.machine.autonomy
         self.autonomy_wait = self.machine.autonomy_wait
+        self.rebuild_wait = self.machine.rebuild_wait
         self.warder = True
         self.day: dict | None = None
         self.ask_person = machine_steps or not self.profile.get("orchestration") or (
@@ -122,7 +123,7 @@ class Onboarding:
         else:
             enabled = tuple(t for t, c in {**self.machine.tools, **(self.picked or {})}.items() if c.enabled)
             screen = AutonomyStep(self.autonomy, enabled or ("claude", "agy"), step=self.step, look=self.machine,
-                                  wait=self.autonomy_wait)
+                                  wait=self.autonomy_wait, rebuild=self.rebuild_wait)
         self.app.push_screen(screen, done)
         if self.novice and name != XP:
             self.app.call_after_refresh(hide_skip, screen)
@@ -170,6 +171,7 @@ class Onboarding:
         elif name == RULES:
             self.autonomy = int(result.get("autonomy", self.autonomy))
             self.autonomy_wait = int(result.get("autonomy_wait", self.autonomy_wait))
+            self.rebuild_wait = int(result.get("rebuild_wait", self.rebuild_wait))
             self.day = {"mode": result.get("mode", self.machine.mode), "quiet": result.get("quiet"),
                         "office": self.machine.office, "office_days": self.machine.office_days}
         self.i += 1
@@ -191,7 +193,7 @@ class Onboarding:
         tools_ = dict(self.machine.tools)
         tools_.update(self.picked or {})
         machine = replace(machine, tools=tools_, onboarded=True, autonomy=self.autonomy,
-                          autonomy_wait=self.autonomy_wait)
+                          autonomy_wait=self.autonomy_wait, rebuild_wait=self.rebuild_wait)
         if not self.machine.onboarded and day is None:
             machine.mode = settings.DEFAULT_MODE
         desktop = getattr(self.app, "desktop", None)

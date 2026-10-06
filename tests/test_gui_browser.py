@@ -264,7 +264,7 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     pg.wait_for_function("() => [...document.querySelectorAll('.gui-roster .gui-steps__one')].find((e) => e.textContent === 'Quality')"
                          ".classList.contains('is-on')", timeout=WAIT_MS)
     assert server_building(pg, bid)["goal"] == "quality"
-    town_step = roster.locator(".gui-steps__one.is-town")
+    town_step = roster.locator(".gui-steps__one.is-as-town")
     assert "is-on" in town_step.get_attribute("class")              # as the town, until one is picked
     clock = roster.locator(".gui-steps__one.is-icon").nth(1)
     clock.click()                                                  # 🕰 lit, no longer as the town
@@ -273,7 +273,7 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     assert "is-on" not in town_step.get_attribute("class")
     assert server_building(pg, bid)["autonomy"] == "clock"
     clock.click()                                                  # the lit one again: as the town
-    pg.wait_for_function("() => document.querySelector('.gui-steps__one.is-town').classList.contains('is-on')",
+    pg.wait_for_function("() => document.querySelector('.gui-steps__one.is-as-town').classList.contains('is-on')",
                          timeout=WAIT_MS)
     assert card.get_by_text("Redesign window").count() == 0 and card.get_by_text("Revert").count() == 0
     brief = card.locator(".gui-newtask textarea")

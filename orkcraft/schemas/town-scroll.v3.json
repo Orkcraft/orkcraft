@@ -434,7 +434,15 @@
         },
         "autonomy": {
           "enum": ["chains", "clock", "free"],
-          "description": "How its retro's changes land (the Town Hall's: the Town retro's): proposed only, applied when unanswered for a day, applied at once (missing: as the town's autonomy)."
+          "description": "How freely it decides (autonomy.py, one rule with the town's): its questions and its retro's changes (the Town Hall's: the Town retro's) wait for the operator, wait their time, or are decided at once (missing: as the town's autonomy)."
+        },
+        "question_wait": {
+          "type": "integer", "minimum": 1, "maximum": 60,
+          "description": "On the clock: minutes a question waits for the operator before the orks decide (missing: as the town)."
+        },
+        "rebuild_wait": {
+          "type": "integer", "minimum": 1, "maximum": 48,
+          "description": "On the clock: hours the operator is around that a change of it waits before it is applied in quiet hours (missing: as the town)."
         },
         "bounds": {
           "$ref": "#/$defs/bounds"

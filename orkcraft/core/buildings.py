@@ -11,7 +11,7 @@ import datetime as dt
 import json
 from typing import Any
 
-from orkcraft import scroll
+from orkcraft import autonomy, scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
 from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, workshop
@@ -21,9 +21,10 @@ from orkcraft.realm.buildings import Building, custom_building
 GOAL_WORDS = {"thrift": "the retros will make it cheaper",
               "balance": "cheaper where it is liked, better where it is not",
               "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}
-FREEDOM_WORDS = {"chains": "its steward only proposes; nothing changes without you",
-                 "clock": "its steward proposes; what you leave unanswered for a day it applies in quiet hours",
-                 "free": "its steward applies its changes in the next quiet hours",
+FREEDOM_WORDS = {"chains": "its questions and its changes wait for you",
+                 "clock": "a question waits for you some minutes, a change the hours you are around — then the "
+                          "steward decides (of the changes, only what makes it cheaper)",
+                 "free": "its steward decides at once and applies its changes in the next quiet hours",
                  None: "as the town's autonomy"}
 
 
@@ -156,8 +157,9 @@ def cycle_goal(town: Town, building_id: str, goal: str = "") -> str | None:
 
 
 def set_autonomy(town: Town, building_id: str, freedom: str | None) -> str | None:
-    """⛓️ chains / 🕰 clock / ⛓️‍💥 free: how freely its steward applies its retro's changes (the Town Hall's:
-    the Town retro's); None (or anything else) is as the town's autonomy. What it is now."""
+    """⛓️ chains / 🕰 clock / ⛓️‍💥 free: how freely its steward decides its questions and applies its
+    retro's changes (the Town Hall's: the Town retro's); None (or anything else) is as the town's
+    autonomy (autonomy.py: one rule for both). What it is now."""
     b = town.scroll.building(building_id)
     if b is None:
         return None
@@ -311,3 +313,19 @@ def set_ui(town: Town, building_id: str, doc: dict | None, by: str = "you", why:
     evolution.record(town.repo_root, evolution.Change(building_id, "ui", "steward" if by != "you" else "you",
                                                      "a new layout", why[:200], by=by, sha=sha or ""))
     return []
+
+
+def set_waits(town: Town, building_id: str, question: int | None = None, rebuild: int | None = None) -> dict:
+    """🕰 its own waits: minutes a question waits for the operator, hours (the operator around) a change
+    waits; None (or 0) is as the town's. What they are now, the town's in place of unset ones."""
+    b = town.scroll.building(building_id)
+    if b is None:
+        return {}
+    b.question_wait = autonomy.wait_of(question) if question else None
+    b.rebuild_wait = autonomy.rebuild_of(rebuild) if rebuild else None
+    town.save()
+    rules = autonomy.rules_of(b, town.machine.autonomy, town.machine.autonomy_wait, town.machine.rebuild_wait)
+    town.toast(f"{town.title_of(building_id)}: a question waits {rules.wait} min, a change {rules.rebuild} h you are "
+               "around", title="🕰 On the clock")
+    return {"question": rules.wait, "rebuild": rules.rebuild, "own_question": b.question_wait,
+            "own_rebuild": b.rebuild_wait}

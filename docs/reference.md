@@ -493,8 +493,8 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   is the town's way in: Build and **Ask me anything** — a question to the Warchief, whose chat is the
   Town Hall's Command Card (it names a building of the catalog when one fits, and builds it on a click). Two towers, a pediment over the round window of the Elders,
   columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
-  hours, or by day from ⏳ Timer), 📜 advice waits for you, 🔚 today's questions are used up, 💤 at
-  rest by day at ⛓️ Chains. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
+  hours, or by day from 🕰 On the clock), 📜 advice waits for you, 🔚 today's questions are used up, 💤 at
+  rest by day in ⛓️ chains. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
   you, ⚠ flagged by the Warder.
 - **From scratch** is a conversation: the Builder asks until it knows what the building does, offers
   three views, the carts it takes, the events it sends and an optional timer; a rejected blueprint
@@ -741,7 +741,7 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
    `GEMINI_API_KEY` / `CODEX_API_KEY` is set) — you can change both. No key is stored: Codex's login is
    told by which kind its `~/.codex/auth.json` holds (a ChatGPT login or an API key; the key itself is
    never used), or else by `codex login status`. `OPENAI_API_KEY` does not count: `codex exec` ignores it.
-2. **Autonomy** — a slider of three stops: ⛓️ *Chains* · ⏳ *Timer* (default) · ⛓️‍💥 *Free orks*
+2. **Autonomy** — a slider of three stops: ⛓️ *In chains* · 🕰 *On the clock* (default) · ⛓️‍💥 *Unchained*
    (see *Ork autonomy* below).
 3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
    day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
@@ -757,22 +757,25 @@ F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults,
 
 ### 🏛 Ork autonomy
 
-How much the orks do on their own (`autonomy` in the machine settings, F10 → 🏛 Ork autonomy).
-One rule for every decision the orks could take for you — an agent's question, a new persona of a
-Barracks, a self-improvement:
+How much the orks do on their own (`autonomy` in the machine settings, F10 → 🏛 Ork autonomy; a
+building may have its own under its steward, else it follows the town's — one rule for both). Two kinds
+of decision, each with its own wait:
 
-| Level | A decision |
-|---|---|
-| ⛓️ Chains | waits for you |
-| ⏳ Timer (default) | waits `autonomy_wait` minutes (5, 7 or 10 — picked under the slider), then the orks take it; in 🌙 quiet hours they do not wait |
-| ⛓️‍💥 Free orks | the orks take it at once; you see the list of what they did |
+| Level | A question (an agent's, a steward's 🔥, a new persona) | A rebuild (a change of a building or the town) |
+|---|---|---|
+| ⛓️ In chains | waits for you | waits for your click |
+| 🕰 On the clock (default) | waits `autonomy_wait` minutes (7; 5, 7, 15 or 30 under the slider), then the orks decide; in 🌙 quiet hours no wait | waits `rebuild_wait` hours you are around (12; 6, 12 or 24) — the camp open, outside quiet hours — then a change that makes it cheaper is applied in the next quiet hours |
+| ⛓️‍💥 Unchained | the orks decide at once | any change, in the next quiet hours |
 
-The level is kept as a word (`chains` / `timer` / `free`); a settings file of the four old stops loads
-never bolder than it was: *Ask me* and *Morning advice* → Chains, *Routine* → Timer, *Free orks* → Free
-orks. Autonomy comes from three places:
+When the orks decide a question: the Elders send their one-time yes, a new persona is approved, a
+Barracks' steward answers the question itself by its rules, and a task sent back too often is closed as
+failed with its last notes. A draft to post outside the camp always waits for you; a crashed run is
+tried once more by itself. The level is kept as a word (`chains` / `clock` / `free`); older values load
+never bolder than they were: *Ask me* and *Morning advice* → In chains, *Routine* and `timer` → On the
+clock, *Free orks* → Unchained. Autonomy comes from three places:
 
-- **The Elders' advice** (at *Chains*, in 🌙 quiet hours; from *Timer* once a question has waited the
-  timer): the Elders of the Town Hall read each permission question of a claude / agy session and
+- **The Elders' advice** (*In chains*, in 🌙 quiet hours; *On the clock*, once a question has waited its
+  minutes): the Elders of the Town Hall read each permission question of a claude / agy session and
   leave advice. The Warder's rules come
   first — what they block (secrets, sudo, `curl | sh`, `rm -rf /`…) gets no advice and no model call;
   what they only warn about (the network, a push, a backtick) goes to the model with the Warder's note,
@@ -783,29 +786,30 @@ orks. Autonomy comes from three places:
   most `elders_per_night` questions a day (40, counted from the end of quiet hours), never past the 🪙 budget — their own calls count in
   it; every judgement is in `.orkcraft/council/elders.jsonl`, and a restart brings back the advice of
   the last day and tonight's count from it. The Town Hall lists them.
-- **The Elders' answers** (from *Timer*): the Elders send that one-time yes or no to the agent
+- **The Elders' answers** (from *On the clock*): the Elders send that one-time yes or no to the agent
   themselves — only if the very same question still waits, and never a ⚠ advice. What the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
   and the morning toast counts them.
-- **The agents' own permission settings** (from *Timer* up): the step shows what to
+- **The agents' own permission settings** (from *On the clock* up): the step shows what to
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at
   *Free orks* also `acceptEdits` and the usual project commands, with `git push` asked and
   `rm -rf`, force pushes, `sudo` and `.env` denied — how to start agy
   (`agy --mode accept-edits --sandbox` at *Free orks*) and Codex (`codex --sandbox workspace-write
-  --ask-for-approval on-request` from *Timer*). 📋 (or `c` / `g` / `o`) puts the Claude
+  --ask-for-approval on-request` from *On the clock*). 📋 (or `c` / `g` / `o`) puts the Claude
   snippet, the agy or the Codex command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
 
 #### 🔧 Self-improvement by the orks
 
-The Building retro, the Town retro and the stewards keep proposing as before; at *Chains* every
-proposal waits for your click. From *Timer*, in 🌙 quiet hours, the orks apply what their level
-allows themselves — silence never makes the camp spend more, so the timer allows only the cheaper half (`realm/evolution.py`), one change at a time, at most 10 a
+The Building retro, the Town retro and the stewards keep proposing as before; *in chains* every
+proposal waits for your click. *On the clock*, a proposal left unanswered for the hours you were around
+is applied by the orks in 🌙 quiet hours — silence never makes the camp spend more, so the clock allows
+only the cheaper half (`realm/evolution.py`), one change at a time, at most 10 a
 night, never past the 🪙 budget:
 
 | Level | The orks apply |
 |---|---|
-| ⏳ Timer | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
-| ⛓️‍💥 Free orks | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
+| 🕰 On the clock | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
+| ⛓️‍💥 Unchained | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
 | never | removing a road or a building, notes — those stay proposals |
 
 Every change still passes its own checks, then the Council's review with no block, objection or

@@ -130,28 +130,33 @@ async def test_a_crashing_agent_fails_its_task_only(fake_repo: Path, monkeypatch
         assert await _until(pilot, lambda: len(crew.calls) == 2)
         st = view.state
 
-        crew.finish(0, RuntimeError("claude exited with 1: rate limited " + "x" * 500))
-        assert await _until(pilot, lambda: len(crew.calls) == 3)                      # Grub takes T2003 anyway
+        crash = RuntimeError("claude exited with 1: rate limited " + "x" * 500)
+        crew.finish(0, crash)
+        assert await _until(pilot, lambda: len(crew.calls) == 3)                      # a crash is tried once more
+        assert "T2001" in crew.calls[2]["prompt"] and any(d.action == "retry" for d in st.decisions())
+        assert not any(p.mode == "pool.failed" for p in sent)
+        crew.finish(2, crash)
+        assert await _until(pilot, lambda: len(crew.calls) == 4)                      # Grub takes T2003 anyway
         failed = next(t for t in st.tasks if t.key == "T2001")
         assert failed.status == "failed" and failed.error.startswith("claude exited with 1")
         assert len(failed.error) == 300                                               # cut, not the whole log
         grub = st.orc("Grub")
-        assert grub.failed == 1 and grub.done == 0 and st.task(grub.task).key == "T2003"
+        assert grub.failed == 2 and grub.done == 0 and st.task(grub.task).key == "T2003"
         assert st.orc("Mogka").status == "working"                                    # the other orc never noticed
         fail = next(p for p in sent if p.mode == "pool.failed")
         assert "rate limited" in fail.value and "Grub" in fail.value
         assert runs[-1].outcome == "error" and "rate limited" in runs[-1].error
 
         crew.finish(1)
-        crew.finish(2)
+        crew.finish(3)
         assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs))
-        assert st.stats["claude:haiku"]["runs"] == 3 and st.stats["claude:haiku"]["ok"] == 2
+        assert st.stats["claude:haiku"]["runs"] == 4 and st.stats["claude:haiku"]["ok"] == 2
         assert "✗ T2001 — Grub" in str(view.query_one("#pool-detail").render())
 
         _arrive(app, "T2001")                                                          # a retry goes back to Grub
-        assert await _until(pilot, lambda: len(crew.calls) == 4)
-        assert st.orc("Grub").status == "working" and crew.calls[3]["resume"] == "s3"
-        crew.finish(3)
+        assert await _until(pilot, lambda: len(crew.calls) == 5)
+        assert st.orc("Grub").status == "working" and crew.calls[4]["resume"] == "s4"
+        crew.finish(4)
         assert await _until(pilot, lambda: st.orc("Grub").status == "idle")
 
 

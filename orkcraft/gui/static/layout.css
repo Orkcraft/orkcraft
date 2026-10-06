@@ -165,6 +165,7 @@ button { font: inherit; color: inherit; }
 .gui-steps__one + .gui-steps__one { border-left: 1px solid var(--frame); }
 .gui-steps__one:hover { background: var(--selection); color: var(--ink); }
 .gui-steps__one.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
+.gui-steward__wait { display: inline-flex; align-items: center; gap: 4px; font-size: .9em; }
 .gui-steward__commands { display: flex; flex-wrap: wrap; gap: 0 var(--space-1); }
 .gui-steward__group { border-top: 1px solid var(--frame); padding-top: 2px; }
 .gui-steward__group > summary { display: flex; align-items: center; gap: var(--space-1); cursor: pointer; color: var(--ink-muted);

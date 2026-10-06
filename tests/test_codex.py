@@ -209,8 +209,8 @@ def test_the_autonomy_guide_says_how_to_start_codex():
     from orkcraft import autonomy
     assert autonomy.codex_command(autonomy.CHAINS) == "" and "nothing to change" in autonomy.codex_line(autonomy.CHAINS)
     assert autonomy.codex_command(autonomy.FREE) == "codex --sandbox workspace-write --ask-for-approval on-request"
-    assert "Codex: start it with" in autonomy.guide(autonomy.TIMER, ("claude", "codex"))
-    assert "Antigravity" not in autonomy.guide(autonomy.TIMER, ("codex",))
+    assert "Codex: start it with" in autonomy.guide(autonomy.CLOCK, ("claude", "codex"))
+    assert "Antigravity" not in autonomy.guide(autonomy.CLOCK, ("codex",))
 
 
 @pytest.mark.asyncio
