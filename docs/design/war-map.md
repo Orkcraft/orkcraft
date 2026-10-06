@@ -1,6 +1,7 @@
 # Design — the War Map: the orkspaces as a framed map, and the biomes back
 
-Status: design notes, written 2026-10-06; nothing is in the GUI yet. A working prototype is
+Status: design notes, written 2026-10-06; stages 1–4 are in the GUI (`js/warmap.js`, `realm/biomes.py`,
+`gui/growth.py`, the huts by `tools/growth_sprites.py`). The first prototype is still
 `design-system/previews/OrkspaceMap.html`. Open it in a browser: click, ↑ / ↓, right click for the
 next biome (the GUI will have a menu, §2.4), Delete, the fog for `+ Orkspace`, "+ 4 orkspaces",
 "Building panel". Builds on the
@@ -10,13 +11,25 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 
 | stage | what | state |
 |---|---|---|
-| 1 | the biomes: five grounds, the huts drawn for each (§3) | |
-| 2 | the War Map: the orkspaces as lands in a framed square, the open one large (§2) | |
-| 3 | the map's fog at the foot makes a new orkspace; right click changes a land's biome (§2.4) | |
-| 4 | "under attack": the map calls you to another orkspace (§2.5) | |
+| 1 | the biomes: six grounds, the huts drawn for each (§3) | done |
+| 2 | the War Map: the orkspaces as lands in a framed square, the open one large (§2) | done |
+| 3 | the map's fog at the foot makes a new orkspace; right click changes a land's biome (§2.4) | done |
+| 4 | "under attack": the map calls you to another orkspace (§2.5) | done |
 | later | the biome's doodads on the town's ground (sprites.md, Decorations) | |
 
 ![The prototype: the War Map at the bottom left, the town in the open orkspace's biome (ice)](../img/war-map/town.png)
+
+## As built
+
+- **Names are white** (the ink) on every land, the open one too: a dark or gold name does not read on
+  six grounds. The open land is told by its gold bar, its height and its status line.
+- **The call** rings for a new question in an orkspace that is not open, at most once in 30 s a land,
+  never in quiet hours; failures do not call yet (the snapshot has no failures per orkspace).
+- **The old default** is spread once per camp (`realm/biomes.settle`, marked `meta.biomes`): the first
+  orkspace on "forest" becomes dirt (today's look), the others take the free biomes; biomes chosen on
+  purpose stay (§6, the recommended way).
+- **Rename, Biome, Remove** are the land's right click (`orkspace.rename`, `orkspace.biome`,
+  `orkspace.remove`; a land with buildings is not removed).
 
 ## 1. Why
 

@@ -13,6 +13,15 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
 - `orks/ork.png`, `ork-idle.png`, `ork-busy.png`, `ork-waiting.png` (24×16): the ork, the ork mark's flat
   head (`../logo/`), and its states, drawn by `tools/logo.py` (`js/icons.js` `OrkHead`): eyes shut and a
   sleep mark; a pale-blue drop of sweat; a flame on the crown.
+- `orks/warchief*.png` (24×20): the Warchief, the ork's head under a gold crown, and its states (the crown's
+  points burn while it waits), drawn by `tools/logo.py` (`js/icons.js` `WarchiefHead`; docs/design/growth.md §8).
+- `buildings/<type>/header-<biome>.png`: each header redrawn by `tools/growth_sprites.py` for ice (snow), dust
+  (dry olive, sand), void (ashen violet) and lava (basalt, embers); dirt and forest wear `header.png`
+  (`js/icons.js` `headerSprite`; docs/design/war-map.md §3).
+- `flags/<goal>-<level>.png`: the goal flag on a hut's roof at levels I–III, gold at III (`js/icons.js`
+  `HutSprite`, its anchor per type in `FLAG_AT`; docs/design/growth.md §5).
+- `mascots/<kin>-<stage>.png` (24×22): the operator's mascot, seven kins in four stages, on the ork mark's grid
+  (`js/icons.js` `MascotHead`; docs/design/growth.md §7).
 - `icons/res-quota.png`, `res-gold.png`, `res-lumber.png`, `res-meat.png` (16×16): the HUD resources, an
   hourglass, a stack of coins, two crossed logs and meat on the bone (`js/chrome.js`; the gold also rides
   on carts, `js/town.js`).

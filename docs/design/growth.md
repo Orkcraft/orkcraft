@@ -1,7 +1,8 @@
 # Design — growth: buildings that mature, a mascot that grows, a crowned Warchief
 
-Status: design notes, written 2026-10-06; nothing is implemented. The sketches in `docs/img/growth/`
-are drawn from the real sprites but are drafts, not final art. Builds on the goals and retros
+Status: design notes, written 2026-10-06; stages 1–5 are implemented (`realm/growth.py`,
+`gui/growth.py`, `tools/growth_sprites.py`, the crown in `tools/logo.py`). The sketches in
+`docs/img/growth/` came first; the sprites in `design-system/sprites/` are the ones shown. Builds on the goals and retros
 (docs/design/retros-and-goals.md), the 👍 / 👎 and quiet signals of `realm/feedback.py`, the orks'
 changes and their probation (`realm/evolution.py`), the profile of the onboarding
 (docs/design/onboarding.md §3) and the flat sprite set (docs/design/building-sprites.md). Wording: ork,
@@ -14,12 +15,27 @@ no Camp-only jokes (mascot names, the Warchief's address).
 
 | stage | what | state |
 |---|---|---|
-| 1 | the feedback loop closed: "your 👎 led to this" (§3) | |
-| 2 | a building's level I–III and its goal flag on the roof (§4, §5) | |
-| 3 | the Info panel's large header with the level (§6) | |
-| 4 | the Warchief's crown (§8) | |
-| 5 | the operator's mascot grows, in the head of Settings, with milestones (§7) | |
+| 1 | the feedback loop closed: "your 👎 led to this" (§3) | done |
+| 2 | a building's level I–III and its goal flag on the roof (§4, §5) | done |
+| 3 | the Info panel's large header with the level (§6) | done |
+| 4 | the Warchief's crown (§8) | done |
+| 5 | the operator's mascot grows, in the head of Settings, with deeds (§7) | done |
 | later | what a level unlocks by goal (§4.4); temporary moods of the mascot (§7.5) | |
+
+## As built
+
+- **Words.** A building's level is its **Renown** (Office: *Maturity*), shown as "💎 II"; the
+  operator's milestones are **deeds** (Office: *milestones*); the goal flag is a **banner** (Office: *goal
+  mark*); the mascot is the Office's *avatar* (`realm/lexicon.py`).
+- **The clock.** `gui/growth.py` settles once a minute, and at the next tick after a rating, a change
+  of the orks or a road (`bus.HALL`, `bus.ROADS`). The first look on a machine records the deeds and the
+  stage already reached without saying them.
+- **News** waits in `.orkcraft/growth.json` and is said by the Warchief's line after an ork's question
+  and before the spend: a click opens the building's Info (a level, a loop) or Settings (a stage, a deed),
+  ✕ marks it seen. At most one loop a day.
+- **The stage marks** are shared by the kins: a dark-green band (2), ivory horns (3), and at 4 the eyes
+  glow gold and a gold gem sits on the band. Never a crown.
+- **Stored** per machine as `settings.growth`: `{"stage": 1–4, "deeds": {id: date}}`.
 
 ## 1. Why
 
@@ -238,8 +254,8 @@ the camp's rules:
   is a link that opens Settings on the portrait. The Warchief's address (§7.4) keeps it present
   between visits.
 - **A new stage** glows softly the first time Settings opens after it. There is no dialog.
-- **Stored** per machine in `~/.config/orkcraft/settings.json` → `profile.stage`, the highest stage
-  reached in any camp, and `profile.milestones`: the operator, not the project.
+- **Stored** per machine in `~/.config/orkcraft/settings.json` → `growth.stage`, the highest stage
+  reached in any camp, and `growth.deeds`: the operator, not the project.
 - 🧭 Onboarding, to change the role and so the mascot, is a link under the portrait.
 
 ### 7.3.1 Milestones
@@ -251,6 +267,7 @@ A row of small marks under the portrait, each what the camp **learned**, never a
 | 🏰 | First town | a town is raised |
 | 🛤 | First road | two buildings joined by a road |
 | 👍 | First reference | a result kept as what good looks like |
+| 🗳 | A week of ratings | three buildings rated in one week (stage 2) |
 | 🔁 | It learned | an orks' change kept after probation |
 | 🚩 | Mature | a building at III |
 | ⛓️‍💥 | Trusted | a building unchained |
@@ -310,8 +327,10 @@ New pairs in `realm/lexicon.py` `TERMS` (Camp word in code, Office word shown wi
 | `level` | Level | Maturity |
 | `goal_flag` | Banner | Goal mark |
 | `mascot` | Mascot | Profile |
-| `mascot.stage` | Stage | Stage |
-| `milestone` | Milestone | Milestone |
+| `renown` | Renown | Maturity |
+| `banner` | banner | goal mark |
+| `deed` | deed | milestone |
+| `fog_of_war` | fog of war | new workspace |
 | `growth.next` | Next | To reach the next level |
 
 Mascot names and the Warchief's address are Camp words only.

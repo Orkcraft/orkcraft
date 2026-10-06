@@ -38,3 +38,7 @@ and cut at `--scale 2` so its buildings come out the same size), `--preview` wri
 Parts closer than three pixels (a ring of stones) make one building.
 
 Office shows no building sprites; its huts are the same cards without the header.
+
+Two things are added to a sprite and never drawn into it: the goal flag on its roof (docs/design/growth.md §5;
+gold at level III, the one exception to a single gold accent) and its biome (`header-<biome>.png`, made from
+the flat one by `tools/growth_sprites.py`; docs/design/war-map.md §3).
