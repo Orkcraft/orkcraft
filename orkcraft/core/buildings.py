@@ -21,6 +21,10 @@ from orkcraft.realm.buildings import Building, custom_building
 GOAL_WORDS = {"thrift": "the retros will make it cheaper",
               "balance": "cheaper where it is liked, better where it is not",
               "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}
+FREEDOM_WORDS = {"chains": "its steward only proposes; nothing changes without you",
+                 "clock": "its steward proposes; what you leave unanswered for a day it applies in quiet hours",
+                 "free": "its steward applies its changes in the next quiet hours",
+                 None: "as the town's autonomy"}
 
 
 # -- raising ---------------------------------------------------------------------------------------
@@ -147,6 +151,19 @@ def cycle_goal(town: Town, building_id: str) -> str | None:
     town.toast(f"{town.title_of(building_id)}: {GOAL_WORDS[goal]}",
                title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
     return goal
+
+
+def set_autonomy(town: Town, building_id: str, freedom: str | None) -> str | None:
+    """⛓️ chains / 🕰 clock / ⛓️‍💥 free: how freely its steward applies its retro's changes (the Town Hall's:
+    the Town retro's); None (or anything else) is as the town's autonomy. What it is now."""
+    b = town.scroll.building(building_id)
+    if b is None:
+        return None
+    b.autonomy = freedom if freedom in scroll.FREEDOMS else None
+    town.save()
+    title = f"{scroll.FREEDOM_ICONS[b.autonomy]} {scroll.FREEDOM_TITLES[b.autonomy]}" if b.autonomy else "As the town"
+    town.toast(f"{town.title_of(building_id)}: {FREEDOM_WORDS[b.autonomy]}", title=title)
+    return b.autonomy
 
 
 def like(town: Town, building_id: str) -> bool:

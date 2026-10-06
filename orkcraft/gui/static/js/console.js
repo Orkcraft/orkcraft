@@ -1,9 +1,10 @@
 // The console of a selected building, laid out as the TUI's (screens/console.py): to the right of the
 // War Map, Info (UnitInfo), the garrison or a picked ork's Inventory (ClanRoster), the Command Card.
-// Info as in the TUI: the name with Good / Bad / its goal / Pin / Demolish (an ork's: Good / Bad / Dismiss),
+// Info as in the TUI: the name with Good / Bad / Pin / Demolish (an ork's: Good / Bad / Dismiss),
 // why it is here, one line of what it spent and its runs with History, one line of who it listens to
 // with Listen (a road there picks it: its handler, removing it). The garrison keeps the steward's own
-// commands under it: Redesign window, and Revert while there is a checkpoint to go back to. The Command
+// settings and commands under it: the goal its retros aim at, how freely it applies their changes (the
+// Town Hall's: the Town retro's), Redesign window, and Revert while there is a checkpoint. The Command
 // Card: Answer, Open, then the type's own actions at the bottom; for an ork Deploy, Orders & trigger,
 // Halt, the steward's Watch now and Report. The data
 // is the host's (gui/info.py, gui/console.py), asked while selected; the dialogs that change a
@@ -135,8 +136,6 @@ function BuildingInfo({ b, i, redo, open }) {
     <${Row} text=${html`<b>${say(b.title)}</b>`}>
       <${Act} label=${say("Good")} title=${say("Its last result becomes a reference")} onClick=${() => run("building.like")} />
       <${Act} label=${say("Bad")} title=${say("What went wrong?")} onClick=${() => open("dislike")} />
-      <${Act} label=${i.goal_title} title=${say("What the retros improve it towards: Thrift → Balance → Quality")}
-        onClick=${() => run("building.goal")} />
       <${Act} label=${say(i.pinned ? "Unpin" : "Pin")} title=${say("A pinned building keeps its place on the town")}
         onClick=${() => run("building.pin")} />
       ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
@@ -176,11 +175,42 @@ function OrkInfo({ b, o, i, redo, open }) {
 
 // -- the garrison and an ork's Inventory: the TUI's middle column (ClanRoster) ---------------------------
 
-/** The steward's own commands, a submenu under it in the garrison: Redesign window, and Revert while
- * the building has a checkpoint to go back to. */
+// Chains, a clock, broken chains: drawn, as the pin is (js/hut.js), since ⛓️‍💥 is missing from many fonts.
+const CHAIN = html`<rect x="1" y="5" width="8" height="6" rx="3" /><rect x="7" y="5" width="8" height="6" rx="3" />`;
+const CLOCK = html`<circle cx="8" cy="8" r="6" /><path d="M8 4.5V8l2.5 1.5" />`;
+const BROKEN = html`<rect x="0.5" y="5" width="6.5" height="6" rx="3" /><rect x="9" y="5" width="6.5" height="6" rx="3" />
+  <path d="M8 1.5v2M8 12.5v2M5.5 2.5l1 1.5M10.5 2.5l-1 1.5" />`;
+const FREEDOMS = [["chains", CHAIN, "In chains", "Its steward only proposes; nothing changes without you"],
+                  ["clock", CLOCK, "On the clock", "Its steward proposes; what you leave unanswered for a day it applies in quiet hours"],
+                  ["free", BROKEN, "Unchained", "Its steward applies its changes in the next quiet hours"]];
+
+/** How freely the steward applies its retro's changes (the Town Hall's: the Town retro's): three steps;
+ * the lit one again goes back to the town's autonomy. */
+function Freedom({ b, i, redo }) {
+  const set = (value) => command("building.autonomy", { id: b.id, value }).then(redo, () => {});
+  const retro = b.id === HALL ? "the Town retro (weekly)" : "its Building retro (daily)";
+  return html`<li class="gui-console__sub gui-freedom" title=${say(`How freely ${retro} applies its changes`)}>
+    ↳ ${say("Freedom")}
+    <span class="gui-freedom__steps" role="group" aria-label=${say("Freedom")}>
+      ${FREEDOMS.map(([v, icon, name, hint]) => html`<button key=${v} class=${cls("gui-freedom__step", { "is-on": i.autonomy === v })}
+          aria-pressed=${i.autonomy === v} title=${`${say(name)}: ${say(hint)}`}
+          aria-label=${say(name)} onClick=${() => set(i.autonomy === v ? "" : v)}>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${icon}</svg></button>`)}
+    </span>
+    ${!i.autonomy && html`<span class="ok-tone-muted gui-freedom__town" title=${say(`The town's autonomy (${i.town_autonomy}), until one is picked`)}>
+      ${say("as the town")}</span>`}
+  </li>`;
+}
+
+/** The steward's own settings and commands, a submenu under it in the garrison: the goal, its
+ * freedom, Redesign window, and Revert while the building has a checkpoint to go back to. */
 function StewardCommands({ b, i, redo, open }) {
   const revert = () => command("building.revert", { id: b.id }).then(redo, () => {});
-  return html`<li class="gui-console__row gui-console__sub" title=${say("Its steward redraws its window")}
+  const goal = () => command("building.goal", { id: b.id }).then(redo, () => {});
+  return html`${i && html`<li class="gui-console__row gui-console__sub" onClick=${goal}
+      title=${say("What the retros improve it towards: Thrift → Balance → Quality")}>↳ ${say("Goal")}: ${say(i.goal_title)}</li>
+    <${Freedom} b=${b} i=${i} redo=${redo} />`}
+    <li class="gui-console__row gui-console__sub" title=${say("Its steward redraws its window")}
       onClick=${() => open("redesign")}>↳ ${say("Redesign window")}</li>
     ${b.id !== HALL && i && i.can_revert && html`<li class="gui-console__row gui-console__sub"
       title=${say("Back to its previous checkpoint")} onClick=${revert}>↳ ${say("Revert")}</li>`}`;

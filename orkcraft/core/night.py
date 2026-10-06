@@ -15,6 +15,7 @@ import time
 from orkcraft import autonomy
 from orkcraft.core.town import Town
 from orkcraft.realm import elders, evolution, fastpath, optimize, steward, weekly
+from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.realm.orcs import Alert
 
 PROBATION_CHECK_S = 300.0  # how often the orks' changes on probation are looked at
@@ -127,14 +128,20 @@ class Night:
 
     # -- 🔧 the orks improve the camp themselves ------------------------------------------------
 
+    def _freedom(self, c: dict) -> str | None:
+        """The autonomy that rules a change: the Town Hall's for the Town retro's, else its building's."""
+        b = self.town.scroll.building(TOWN_HALL if c["source"] == "weekly" else c["building"])
+        return b.autonomy if b is not None else None
+
     def candidates(self, level: int) -> list[dict]:
-        """What the daily proposal, the latest weekly report and the stewards left, that this level
-        lets the orks apply themselves and that was not applied or tried yet."""
+        """What the daily proposal, the latest weekly report and the stewards left, that this level (or
+        the building's own autonomy) lets the orks apply themselves and that was not applied or tried yet."""
         root = self.town.repo_root
         done = evolution.applied_keys(root)
         out: list[dict] = []
         for p in optimize.pending(root):
-            out.append({"key": p.id, "change": p.action, "source": "daily", "building": p.building, "proposal": p})
+            out.append({"key": p.id, "change": p.action, "source": "daily", "building": p.building, "proposal": p,
+                        "made": p.ts})
         report = weekly.latest(root)
         if report is not None and dt.datetime.fromisoformat(report.ts) > dt.datetime.now() - dt.timedelta(days=7):
             for item in report.items:
@@ -142,7 +149,7 @@ class Night:
                     key = (f"w{report.ts[:10]}-{item.n}" if item.change in optimize.ACTIONS
                            else f"weekly:{report.ts}:{item.n}")
                     out.append({"key": key, "change": item.change, "source": "weekly", "building": item.building,
-                                "report": report, "item": item})
+                                "report": report, "item": item, "made": report.ts})
         for b in self.town.scroll.buildings:
             data = steward.load_report(root, b.id)
             for i, prop in enumerate((data or {}).get("proposals") or []):
@@ -150,8 +157,9 @@ class Night:
                 if prop.get("type") == "demote" and not replay.get("ready"):
                     continue
                 out.append({"key": f"steward:{b.id}:{data.get('ts', '')}:{i}", "change": str(prop.get("type")),
-                            "source": "steward", "building": b.id, "data": data, "index": i})
-        return [c for c in out if evolution.allowed(c["change"], level)
+                            "source": "steward", "building": b.id, "data": data, "index": i,
+                            "made": str(data.get("ts") or "")})
+        return [c for c in out if evolution.may_apply(c["change"], level, self._freedom(c), c["made"])
                 and c["key"] not in done and c["key"] not in self.evolve_tried]
 
     def subject(self, c: dict) -> fastpath.Subject:
@@ -204,7 +212,7 @@ class Night:
         """The next change the orks may try tonight, with what the Council will look at; the one
         returned is taken (tried, the orks busy until `changed`)."""
         if (self.town.demo or self.evolve_busy or not quiet or self.evolve_count >= evolution.MAX_PER_NIGHT
-                or level < 2 or exhausted):
+                or exhausted):                          # the level, and each building's autonomy: `candidates`
             return None
         candidates = self.candidates(level)
         if not candidates:

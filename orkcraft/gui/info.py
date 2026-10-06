@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from orkcraft import autonomy
 from orkcraft import scroll as ts
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
@@ -84,6 +85,13 @@ def _listens(town: Town, building_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def _town_autonomy(town: Town) -> str:
+    """The town's autonomy level, which a building without its own follows: `📜 Morning advice`."""
+    level = getattr(town.machine, "autonomy", autonomy.DEFAULT_LEVEL)
+    lv = next((x for x in autonomy.LEVELS if x.n == level), autonomy.LEVELS[autonomy.DEFAULT_LEVEL])
+    return f"{lv.icon} {lv.title}"
+
+
 def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
     bs = town.scroll.building(building_id)
     if bs is None or bs.demolished:
@@ -104,6 +112,8 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
         "pinned": bool(bs.pinned),
         "can_revert": checkpoint.can_revert(town.repo_root, building_id),
+        "autonomy": bs.autonomy or "",
+        "town_autonomy": _town_autonomy(town),
         "listens": _listens(town, building_id),
         "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
                  [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
