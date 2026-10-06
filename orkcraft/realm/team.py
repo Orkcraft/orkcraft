@@ -17,6 +17,12 @@ is a file (`roles/<role>.md` in the building's state folder), so it may be as lo
 needs; the steward's is the building's short `steward_prompt` plus `steward.md` there. Claude reads the
 document and the briefs from disk; agy, which works in an empty folder, gets them in its prompt.
 
+A clan that **routes** (`routes`: `["human", "agent"]`) also decides who takes the document on: the
+steward's approval names one route (`ROUTE: agent`), and the document goes on as `team.routed` with
+it — a road from the Clan Fire may wait for one route, as a Signpost's do. An approval without a route
+goes to the operator. Triage is the usual use: a mail or a message, read by a risk analyst, a tone
+reader and a priority checker, goes to the person or to the agents.
+
 `members` are `Role:harness[:model]` — `Architect:claude`, `Marketing:agy:gemini-3.1-pro-high`. A runner
 is `(harness, prompt, model) → (text, cost)`; tests pass a fake one.
 """
@@ -40,6 +46,8 @@ DEFAULT_BUDGET = 2.0
 INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read our files)
 _VERDICT = re.compile(r"^[\s*#_>`-]*(APPROVE|CHANGES|VETO)\b[\s*_`]*:?\s*", re.I)
 _DECISION = re.compile(r"^[\s*#_>`-]*DECISION\b[\s*_`]*:?\s*(approve|rework|ask)\b[\s*_`.:-]*", re.I)
+_ROUTE = re.compile(r"^[\s*#_>`-]*ROUTE\b[\s*_`]*:?[\s*_`]*([A-Za-z0-9_-]{1,32})[\s*_`.]*$", re.I | re.M)
+_ROLE = re.compile(r"^You are (.+?) in a clan")
 
 Runner = Callable[[str, str, str], tuple[str, float | None]]
 
@@ -61,6 +69,35 @@ def simulated(harness: str, prompt: str, model: str) -> tuple[str, None]:
     if prompt.startswith("You are the steward"):
         return "DECISION: approve\n\n_(demo — simulated; agents do not run in the sandbox)_", None
     return "APPROVE — _(demo — simulated)_", None
+
+
+def scripted(script: dict, wait: Callable[[float], bool] | None = None) -> Runner:
+    """The sandbox's clan with its lines written beforehand (no model is called): `script` is
+    `{"members": {role: [rule…]}, "steward": [rule…]}`, a rule `{"match": regex, "say": text, "seconds": s}`.
+    The first rule of the speaker whose `match` is found in its prompt (the title, the document) says
+    `say`, after `seconds` (`wait(s)` → True when the review was stopped); no rule → `simulated`."""
+    members = {str(k).lower(): v for k, v in (script.get("members") or {}).items()}
+
+    def runner(harness: str, prompt: str, model: str) -> tuple[str, None]:
+        if prompt.startswith("You are the steward"):
+            rules = script.get("steward") or []
+        else:
+            m = _ROLE.match(prompt)
+            rules = members.get(m.group(1).lower(), []) if m else []
+        for rule in rules if isinstance(rules, list) else []:
+            try:
+                hit = re.search(str(rule.get("match") or ""), prompt, re.I | re.S)
+            except re.error:
+                hit = None
+            if hit is None:
+                continue
+            seconds = float(rule.get("seconds") or 0)
+            if seconds > 0 and wait is not None and wait(seconds):
+                raise InterruptedError("stopped")
+            return str(rule.get("say") or ""), None
+        return simulated(harness, prompt, model)
+
+    return runner
 
 
 def now_iso() -> str:
@@ -129,6 +166,7 @@ class Discussion:
     outcome: str = "running"        # running | approved | rework | asked | budget | error | stopped
     reviewed: list[int] = field(default_factory=list)       # members (by place) who reviewed
     decision: str = ""              # the steward's comments (rework), note (approve) or question (ask)
+    route: str = ""                 # who takes it on, when the clan routes (one of its `routes`)
     spent: float = 0.0
     error: str = ""
     turns: list[Turn] = field(default_factory=list)
@@ -196,7 +234,28 @@ def review_prompt(d: Discussion, me: Member, team: list[Member], brief_path: str
     return "\n\n".join(p for p in parts if p)
 
 
-def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: int, inline: bool = False) -> str:
+def routes_of(config: dict) -> list[str]:
+    """The routes a clan that routes chooses from (`routes`), as road filters spell them."""
+    out = []
+    for r in config.get("routes") or []:
+        r = re.sub(r"[^a-z0-9_-]+", "-", str(r).strip().lower()).strip("-")[:32]
+        if r and r not in out:
+            out.append(r)
+    return out
+
+
+def parse_route(text: str, routes: list[str] | tuple[str, ...]) -> tuple[str, str]:
+    """(the route the steward named — one of `routes` — or "", its answer without the ROUTE line)."""
+    m = _ROUTE.search(text or "")
+    if not m:
+        return "", text
+    rest = (text[:m.start()] + text[m.end():]).strip()
+    route = m.group(1).lower()
+    return (route if route in routes else ""), rest
+
+
+def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: int, inline: bool = False,
+                  routes: list[str] | tuple[str, ...] = ()) -> str:
     reviews = "\n\n".join(f"### {t.role} — {t.verdict.upper()}{f' ({t.note})' if t.note else ''}\n\n{t.text}"
                           for t in d.reviews()) or "_no reviews_"
     rules = [f"This is cycle {d.cycle} of at most {max_cycles} for this document."]
@@ -217,6 +276,9 @@ def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: i
                  "most important first;\n"
                  "- ask: the question for the operator, with the options you see.\n"
                  "Follow your brief on when to let it go and when to show it to the operator.")
+    if routes:
+        parts.append(f"When you approve, name who takes it on in a second line `ROUTE: <one of {', '.join(routes)}>`, "
+                     "as your brief says.")
     return "\n\n".join(p for p in parts if p)
 
 
@@ -243,8 +305,10 @@ BriefOf = Callable[[Member], tuple[str, str]]          # member → (repo-relati
 
 def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max_cycles: int, budget: float,
         runner: Runner, on_turn: Callable[[Discussion, Turn], None] | None = None,
-        cancel: threading.Event | None = None, brief_of: BriefOf | None = None) -> Discussion:
-    """Run (or resume after the operator answered) until the steward decides, or it stops."""
+        cancel: threading.Event | None = None, brief_of: BriefOf | None = None,
+        routes: list[str] | tuple[str, ...] = ()) -> Discussion:
+    """Run (or resume after the operator answered) until the steward decides, or it stops. A clan that
+    routes (`routes`) names who takes an approved document on (`d.route`)."""
     cancel = cancel or threading.Event()
     brief_of = brief_of or (lambda _m: ("", ""))
 
@@ -287,11 +351,17 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         d.reviewed.append(i)
 
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
-                                                             inline=steward.harness not in roads.IN_REPO))
+                                                             inline=steward.harness not in roads.IN_REPO,
+                                                             routes=routes))
     if got is None:
         return _end(d)
     decision, body = parse_decision(got[0])
     note = ""
+    if routes:
+        d.route, body = parse_route(body, routes)
+        if decision == "approve" and not d.route:
+            decision, note = "ask", "no route named"
+            body = f"The steward let it go but named no route. Who takes it on: {', '.join(routes)}?\n\n{body}".strip()
     vetoed = [t.role for t in d.reviews() if t.verdict == "veto"]
     if decision == "approve" and vetoed:
         decision, note = "rework", f"vetoed by {', '.join(vetoed)}"
@@ -338,8 +408,9 @@ def cycle_of(history: list[Discussion], title: str) -> int:
 
 def report_markdown(d: Discussion, team: list[Member]) -> str:
     verdicts = " · ".join(f"{t.role}: {t.verdict}" for t in d.reviews())
+    route = f" → {d.route}" if d.route else ""
     head = (f"# 🔥 {d.title}\n\n_Clan: {', '.join(f'{m.role} ({m.label})' for m in team)} · cycle {d.cycle} · "
-            f"{d.outcome} · ${d.spent:.2f}_\n\n{verdicts}")
+            f"{d.outcome}{route} · ${d.spent:.2f}_\n\n{verdicts}")
     body = "\n\n".join(f"## {t.role} — {t.verdict}{f' ({t.note})' if t.note else ''}\n\n{t.text}"
                        for t in d.turns if t.kind != "answer")
     answers = "".join(f"\n\n> **Operator:** {a}" for a in d.answers())

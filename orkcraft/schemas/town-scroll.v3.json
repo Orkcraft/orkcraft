@@ -664,7 +664,11 @@
             "type": "string",
             "pattern": "^[a-z0-9_-]{1,32}$"
           },
-          "description": "From a Signpost: only these routes (T1107; the Totem's of old)."
+          "description": "From a Signpost or a Clan Fire that routes: only these routes (T1107; the Totem's of old)."
+        },
+        "returns": {
+          "type": "boolean",
+          "description": "A return road: it carries a cart only back to the building its ref names (the result of work that building sent out). It never makes new work there, so it is not counted as a loop."
         }
       }
     },

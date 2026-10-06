@@ -34,14 +34,16 @@ TAKES: dict[str, str] = {
                 "(else signpost.unmatched)",
     "mill": "text, or a file (its content): runs the steps on it → mill.done / mill.failed",
     "horn": "anything: plays the sound its table picks for that source and event",
-    "fields": "anything: the cart becomes a card — a task in To Do (a note in `notes` mode); its title, else "
-              "its first line, the rest its text → tasks.created / notes.created",
+    "fields": "anything: the cart becomes a card — a task in To Do (a note in `notes` mode; one of your to-dos "
+              "when its route is in mine_routes); its title, else its first line, the rest its text → tasks.created / "
+              "notes.created. A cart about one of its own cards (a Barracks' pool.assigned / pool.done / pool.failed "
+              "on a return road) moves that card: In Progress with the ork, Done with the result, back to To Do",
     "barracks": "anything: the cart becomes a task for an ork (the title names it, the text is the brief); "
                 "its steward reviews the work → pool.done (with the pull request) / pool.failed; a post for a service is "
                 "drafted first and waits for your approval as pool.question",
     "council": "a document (text or a file, usually a Barracks result): the clan reviews it → team.approved "
                "(let go) or team.rework (sent back straight to the Barracks that wrote it), team.artifact_ready "
-               "(the report)",
+               "(the report); a clan that routes also sends what it let go as team.routed with who takes it on",
     "scrolls": "a task (the cart's title and text): goes on with the wiki's map → knowledge.chunks; a Clan Fire's "
                "verdict lands in reviews.md",
     "war_drum": "a cart tagged [meet:<id>] (e.g. Barracks' pool.done for its event_upcoming): the meeting's "
@@ -136,6 +138,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                 "per lane of notes (default TASKS.md)",
         "mode": "board (default: every lane), tasks (the three status lanes, a kanban) or notes (a wall of stickers)",
         "lanes": "lanes of notes that are always there, e.g. [\"Ideas\", \"Questions\"]",
+        "mine_routes": "routes whose carts become your own to-dos instead of tasks for the orks, e.g. [\"human\"] "
+                       "(a Clan Fire that triages names the route)",
+        "send_new": "true: every new task goes down the roads as it is (tasks.sent), as if s were pressed — "
+                    "a Barracks takes it and its results come back to the card on a return road",
     },
     "barracks": {
         "max_orcs": "how many orks work at once (default 3)",
@@ -157,6 +163,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "max_cycles": "reworks of one document before the operator decides (default 3)",
         "budget_usd": "the most one review may spend, in USD (default 2)",
         "moderator": "`harness[:model]` of the steward (default claude)",
+        "routes": "who it may route what it lets go to, e.g. [\"human\", \"agent\"] (triage): the steward names "
+                  "one, team.routed carries it and each road out may wait for one route",
         "goal": "an older debate's setting: read as the steward's brief when steward_prompt is empty",
         "max_rounds": "an older debate's setting; still loads, not used",
     },

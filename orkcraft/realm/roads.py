@@ -37,7 +37,7 @@ from typing import Any, Callable
 
 from orkcraft import scroll as ts
 from orkcraft.realm import chains, halt, pipes, tiers
-from orkcraft.realm.pipes import FILE, NODE, TEXT, Payload
+from orkcraft.realm.pipes import FILE, NODE, Payload
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 60
@@ -144,8 +144,11 @@ class HandlerState:
 
 # -- the source filter ------------------------------------------------------------------------------
 
-def passes(flt: dict, payload: Payload, meta: dict) -> tuple[bool, str]:
-    """(passes, reason). Keys that do not apply to the payload's kind are ignored."""
+def passes(flt: dict, payload: Payload, meta: dict, target: str = "") -> tuple[bool, str]:
+    """(passes, reason). Keys that do not apply to the payload's kind are ignored. `target`: the building
+    the road leads to (a return road carries only what its `ref` names it for)."""
+    if flt.get("returns") and target and not payload.ref.startswith(f"{target}:"):
+        return False, "not its own work"
     if flt.get("exclude_personal") and meta.get("subtype") == "personal":
         return False, "personal node"
     if payload.kind == NODE:
@@ -159,8 +162,10 @@ def passes(flt: dict, payload: Payload, meta: dict) -> tuple[bool, str]:
     if payload.mode == "on_task_completed" and flt.get("outcome"):
         if (meta.get("outcome") or "unknown") not in flt["outcome"]:
             return False, f"outcome {meta.get('outcome') or 'unknown'}"
-    if flt.get("route") and payload.mode == "signpost.routed" and payload.title not in flt["route"]:
-        return False, f"route {payload.title or '?'}"
+    if flt.get("route") and (payload.route or payload.mode == "signpost.routed"):
+        route = payload.route or payload.title          # a Signpost's cart is titled by its route
+        if route not in flt["route"]:
+            return False, f"route {route or '?'}"
     if flt.get("match"):
         hay = f"{payload.title}\n{payload.value}"[: chains.FIELD_CHARS]
         if re.search(flt["match"], hay) is None:
@@ -396,8 +401,10 @@ class Engine:
                  agent_runner: AgentRunner = run_agent,
                  call: Callable[..., Any] | None = None,
                  clock: Callable[[], float] = time.monotonic,
-                 run_env: dict | None = None) -> None:
+                 run_env: dict | None = None,
+                 travel: Callable[[], float] | None = None) -> None:
         self._scroll, self.repo_root = scroll, repo_root
+        self._travel = travel or (lambda: 0.0)   # seconds a cart is on a plain road before it arrives (0: at once)
         self._deliver, self._on_output, self._meta = deliver, on_output, meta or (lambda p: {})
         self._on_cart, self._on_run, self._budget_ok = on_cart, on_run, budget_ok
         self._agent_runner, self._clock = agent_runner, clock
@@ -444,7 +451,7 @@ class Engine:
                 continue
             flt = road.filter
             info = resolve() if _needs_meta(flt, payload) else (cache or {})
-            ok, why = passes(flt, payload, info)
+            ok, why = passes(flt, payload, info, target.id)
             orc = target.garrison.handler(road.handler) if road.handler else None
             if ok and orc is not None and orc.uses_model and resolve().get("subtype") == "personal":
                 ok, why = False, "personal node never goes to a model"
@@ -452,7 +459,7 @@ class Engine:
                 carts.append(self._cart(road, target.id, FILTERED, payload, why, now))
                 continue
             if orc is None:
-                self._call(self._deliver, target.id, payload)
+                self._arrive(target.id, payload)
                 carts.append(self._cart(road, target.id, DELIVERED, payload, "", now))
                 continue
             with self._lock:
@@ -624,6 +631,20 @@ class Engine:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except (OSError, TypeError, ValueError):
             pass
+
+    def _arrive(self, target_id: str, payload: Payload) -> None:
+        """A plain road's cart reaches its building — at once, or after the travel time the face asked for
+        (so a person sees it on the road before the building acts on it)."""
+        try:
+            wait = float(self._travel() or 0.0)
+        except (TypeError, ValueError):
+            wait = 0.0
+        if wait <= 0:
+            self._call(self._deliver, target_id, payload)
+            return
+        timer = threading.Timer(wait, self._call, (self._deliver, target_id, payload))
+        timer.daemon = True
+        timer.start()
 
     def _cart(self, road: ts.Road, target: str, status: str, payload: Payload, detail: str, now: float) -> Cart:
         cart = Cart(road.id, road.source, target, status, payload, detail, now)

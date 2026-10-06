@@ -474,6 +474,15 @@ class WatchtowerWorker(Worker):
         self.refresh_data()
         self.tick()
 
+    def simulate(self, source: str, title: str, body: str = "") -> watch.Signal | None:
+        """The sandbox only (no server is asked there): a mail or a message arrives as if its source had
+        sent it — kept, shown and sent down the roads like any new signal. None outside the sandbox."""
+        if not self.simulated or source not in ICON or not title.strip():
+            return None
+        sig = watch.Signal(watch.now_iso(), source, title.strip(), body.strip(), f"sim-{time.time_ns()}")
+        self.add_signal(sig)
+        return sig
+
     # -- what is failing, and why ----------------------------------------------------------------
 
     def failing(self, source: str) -> bool:

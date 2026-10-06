@@ -8,11 +8,18 @@ rework loop needs no road back, which would close a loop) and down its roads —
 report goes to `loot/` as `team.artifact_ready`. When the steward asks, the building burns and `reply`
 takes the person's answer. Documents that arrive mid-review wait in line.
 
+A clan that routes (`routes`, e.g. `["human", "agent"]`: triage) names who takes an approved document on,
+and it goes on as `team.routed` with that route too: each road out may wait for one route.
+
+In the sandbox no model runs: the clan answers from `simulated.json` in the state folder when the demo
+wrote one (realm/team.py `scripted`), else everyone approves.
+
 Briefs live in the building's state folder: `steward.md` (beside `steward_prompt`) and `roles/<role>.md`
 per member — written as empty templates when a member joins, so you know where to put the knowledge.
 """
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
@@ -71,6 +78,19 @@ class CouncilWorker(Worker):
     @property
     def busy(self) -> bool:
         return self._busy
+
+    @property
+    def routes(self) -> list[str]:
+        """Who it may route an approved document to (none: it only approves)."""
+        return tm.routes_of(self.config)
+
+    def sandbox_runner(self, cancel: threading.Event) -> tm.Runner:
+        """The sandbox's clan: its lines from `simulated.json` (what the demo wrote), else everyone approves."""
+        try:
+            script = json.loads((self.state_dir / "simulated.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return tm.simulated
+        return tm.scripted(script if isinstance(script, dict) else {}, cancel.wait)
 
     # -- the briefs ---------------------------------------------------------------------------------
 
@@ -187,9 +207,9 @@ class CouncilWorker(Worker):
         self._busy, self._cancel = True, threading.Event()
         cancel = self._cancel
         repo, env = self.repo_root, {"ORKCRAFT_ORC": f"{self.building_id}/clan"}
-        runner = type(self).runner or (tm.simulated if self.simulated else
+        runner = type(self).runner or (self.sandbox_runner(cancel) if self.simulated else
                                        (lambda h, p, m: roads.run_agent(h, p, repo, env, cancel, m, web=True)[:2]))
-        steward, veto, cycles, budget = self.steward(), self.veto, self.max_cycles, self.budget
+        steward, veto, cycles, budget, routes = self.steward(), self.veto, self.max_cycles, self.budget, self.routes
         briefs = {m.role: self.brief_of(m) for m in team}
 
         def on_turn(_d: tm.Discussion, _t: tm.Turn) -> None:
@@ -198,7 +218,7 @@ class CouncilWorker(Worker):
         def work() -> None:
             try:
                 tm.run(d, team, steward, veto, cycles, budget, runner, on_turn, cancel,
-                       lambda m: briefs.get(m.role, ("", "")))
+                       lambda m: briefs.get(m.role, ("", "")), routes=routes)
             except Exception as e:  # the town goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:
@@ -224,12 +244,15 @@ class CouncilWorker(Worker):
             self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
             if d.outcome == "approved":
                 self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
+                if d.route:                                # who takes it on: each road waits for its route
+                    self.emit("team.routed", d.doc, d.title, trail=trail, ref=ref, route=d.route)
             else:
                 back = tm.rework_markdown(d, self.max_cycles)
                 self.emit("team.rework", back, d.title, trail=trail, ref=ref)
                 self._send_back(source, pipes.Payload(pipes.TEXT, back, self.building_id, "team.rework", d.title,
                                                       trail, ref))
-            self.toast(f"{d.title[:60]}: {OUTCOME[d.outcome]}", title=f"{ICON} Clan Fire")
+            self.toast(f"{d.title[:60]}: {OUTCOME[d.outcome]}" + (f" → {d.route}" if d.route else ""),
+                       title=f"{ICON} Clan Fire")
         elif d.outcome == "asked":
             self.toast(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
         if d.outcome != "asked":
@@ -311,7 +334,7 @@ class CouncilWorker(Worker):
         elif d is not None and d.outcome == "running":
             lines.append(f"C{d.cycle}/{self.max_cycles} {self.tally(d)} ${d.spent:.2f}".strip())
         elif d is not None:
-            lines.append(OUTCOME.get(d.outcome, d.outcome))
+            lines.append(OUTCOME.get(d.outcome, d.outcome) + (f" → {d.route}" if d.route else ""))
         if self.waiting:
             lines.append(f"{len(self.waiting)} queued")
         return lines
@@ -330,7 +353,8 @@ class CouncilWorker(Worker):
         elif d.outcome == "running":
             lines += [f"cycle: {d.cycle}/{self.max_cycles}", f"reviews: {self.tally(d) or '…'}"]
         else:
-            lines += [f"last: {OUTCOME.get(d.outcome, d.outcome)}", f"cycle: {d.cycle}/{self.max_cycles}"]
+            lines += [f"last: {OUTCOME.get(d.outcome, d.outcome)}" + (f" → {d.route}" if d.route else ""),
+                      f"cycle: {d.cycle}/{self.max_cycles}"]
         if self.waiting:
             lines.append(f"queued: {len(self.waiting)}")
         return lines

@@ -140,7 +140,7 @@ def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
     card = _card(host, bid)["card"]
     assert card["state"] == "asked" and card["cycle"] == 1 and card["max"] == 3 and card["ok"] == 1 and card["no"] == 0
     d = host.detail(bid)["data"]
-    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "approve",
+    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "approve", "says": "fine",
                              "brief": d["members"][0]["brief"], "briefed": False}]
     r = d["current"]
     assert r["title"] == "Launch plan" and r["question"].startswith("Ship on Friday?") and "<h1>Launch plan</h1>" in r["doc_html"]
