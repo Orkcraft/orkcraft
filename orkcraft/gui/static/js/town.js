@@ -68,10 +68,10 @@ function lifts(full) {
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
 let planned = { key: "", paths: [] };
 
-function plannedPaths(rects, roads, ports = rects) {
+function plannedPaths(rects, roads, ports = rects, sideways = false) {
   const r = room.value;
-  const key = JSON.stringify([rects, ports, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
-  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h, ports) };
+  const key = JSON.stringify([rects, ports, sideways, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
+  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h, ports, sideways) };
   return planned.paths;
 }
 
@@ -187,15 +187,15 @@ function labelSpot(points) {
 // The arrowheads Office puts at a road's entry, one per colour a road can wear (layout.css picks one).
 const HEADS = [["gui-road-head", "--road"], ["gui-road-head-live", "--road-live"], ["gui-road-head-selected", "--road-selected"]];
 
-function Roads({ roads, rects, ports, tints = {} }) {
+function Roads({ roads, rects, ports, sideways, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const active = opened.value.active;
   const bend = snapshot.value && snapshot.value.look === "office" ? BEND_PX : 0;
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
-    <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8"
-      markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 8 4 L 0 8 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
-    ${plannedPaths(rects, roads, ports).map((p) => {
+    <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
+      markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
+    ${plannedPaths(rects, roads, ports, sideways).map((p) => {
       const road = byId[p.id];
       const out = active === road.from, into = active === road.to;
       const d = pathOf(p.points, bend);
@@ -251,9 +251,8 @@ export function Town({ buildings, roads }) {
     spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
     const d = dragging.value && dragging.value.id === b.id ? dragging.value : { dx: 0, dy: 0 };
     rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, w: size.w, h: size.h };
-    // Camp: a road meets the card's frame under the sprite, not the sprite (Office's hut is its card)
-    ports[b.id] = camp && size.ch ? { x: rects[b.id].x, y: rects[b.id].y + (size.top || 0), w: size.w, h: size.ch }
-                                  : rects[b.id];
+    // A road meets the card's frame: in Camp under the sprite, in Office the card that holds the name
+    ports[b.id] = size.ch ? { x: rects[b.id].x, y: rects[b.id].y + (size.top || 0), w: size.w, h: size.ch } : rects[b.id];
   });
 
   function moved(b, x, y) {
@@ -273,8 +272,7 @@ export function Town({ buildings, roads }) {
   const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road")) closeBuilding(); };
   const shown = new Set(buildings.map((b) => b.id));
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
-  const gatesOn = camp ? ports : rects;               // Office: the hut is its card
-  const paths = plannedPaths(rects, here, gatesOn);
+  const paths = plannedPaths(rects, here, ports, camp);   // Camp: roads meet a card on its sides
   const snap = snapshot.value;
   // With a building selected, Office dims every hut that is neither it nor at the other end of one of its roads.
   const active = opened.value.active;
@@ -283,7 +281,7 @@ export function Town({ buildings, roads }) {
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
       ${camp && html`<${RoadTiles} paths=${paths} roads=${here} />`}
-      <${Roads} roads=${here} rects=${rects} ports=${gatesOn}
+      <${Roads} roads=${here} rects=${rects} ports=${ports} sideways=${camp}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} onMoved=${moved} />`)}
       <${Signs} paths=${paths} roads=${here} />

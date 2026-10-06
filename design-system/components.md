@@ -185,7 +185,8 @@ A building as it stands on the town map, collapsed. In Camp it is a card with th
   - No flicker under `prefers-reduced-motion` or in 🌙 quiet hours, where a ❓ follows the name instead.
 
 **Office (VS Code)**
-- A 240px card on `panel-raised` with a 1px `hut-frame` and `radius-md`, so it keeps its box on the map. No header.
+- A 240px card on `panel-raised` with a 1px `hut-frame` and `radius-md`, so it keeps its box on the map. No header: the name heads the card over a `frame` hairline, so a block is one box and its roads meet that box.
+- The hut's number and pin show on hover, focus or selection only.
 - A status dot on the right: grey when idle, `alert-hot` when waiting.
 - Busy is a 2px `meter` strip sweeping along the card's foot (still under `prefers-reduced-motion`), never gold: gold is selection only.
 - Text actions.
@@ -245,7 +246,7 @@ A subscription between two buildings, with carts (events) travelling from the ex
 - The straight tile (`roads/straight.png`, rotated by the app for vertical roads), the dead end (`roads/end.png`), the crossing (`roads/cross.png`; the app cuts tees from it), the exit gate (`roads/gate-out.png`: the road's rounded start with a gold arrow post pointing along it), the entry gate (`roads/gate-in.png`: the rounded end with a gold ring post) and the mine cart's side and front views exist; the tile set above shows the tiles at 2×. A road that leads nowhere (its target building was removed) ends in the dead-end tile instead of an entry gate. Only the corner is still to come.
 
 **Office**
-- The town reads as a block diagram: 2px lines, an exit dot and a filled arrowhead at the entry.
+- The town reads as a block diagram: 2px lines, an exit dot and a filled 10px arrowhead at the entry, both on the card's frame.
 - A plain road (no handler) is dashed in `road`. A road a handler works on is solid in `road-live` (moss green).
 - Every road carries its label, in `ink-muted` on a `canvas` halo, at the middle of its longest straight run.
 - Bends turn on `radius-md` (4px). Where roads cross, the later one's `canvas` halo breaks the one below.

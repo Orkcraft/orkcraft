@@ -127,7 +127,7 @@ export function card(b) {
   if (!c) return null;
   return html`<div>
     ${c.asks && html`<div class="ok-tone-fire">${c.asks} asks</div>`}
-    <div>active ${c.active}/${c.max} · queue ${c.queue}${c.paused ? html` · <span class="ok-tone-wait">paused</span>` : ""}</div>
+    <div>active ${c.active}/${c.max} · queue ${c.queue}${c.paused ? html` · <span class="ok-tone-wait">⚠ paused</span>` : ""}</div>
     <div>✓${c.done} ✗${c.failed} · ${c.spent}</div>
   </div>`;
 }
@@ -283,7 +283,7 @@ function Rules({ id, data }) {
 function Head({ id, data }) {
   const queue = data.tasks.filter((t) => t.lane === "queue").length;
   return html`<div class="gui-head">
-    <span class="gui-head__what">${data.paused && html`<span class="ok-tone-wait">paused · </span>`}
+    <span class="gui-head__what">${data.paused && html`<span class="ok-tone-wait">⚠ paused · </span>`}
       ${data.orks.length}/${data.max} orks · ${queue} queued · ${data.spent}${data.budget ? ` of ${data.budget}` : ""}</span>
     ${data.asked.length > 0 && html`<span class="ok-tone-fire">${data.keeper} asks (${data.asked.length})</span>`}
     <span class="gui-head__spacer"></span>

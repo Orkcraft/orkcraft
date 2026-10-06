@@ -167,7 +167,7 @@ function corners(points) {
 /** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. `ports` (default the
  *  huts themselves) are where gates sit — Camp's huts carry a sprite over their card, and roads meet the card;
  *  the huts whole stay what the roads go round. */
-export function plan(rects, roads, roomW, roomH, ports = rects) {
+export function plan(rects, roads, roomW, roomH, ports = rects, sideways = false) {
   const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
   const geoms = {};
   for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r);
@@ -178,7 +178,7 @@ export function plan(rects, roads, roomW, roomH, ports = rects) {
     }
   }
   const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
-  const all = gates(geoms, roads, ports !== rects);
+  const all = gates(geoms, roads, sideways);
   const taken = new Uint8Array(width * height);
   const out = [];
   for (const r of roads) {
