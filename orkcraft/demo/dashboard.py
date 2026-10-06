@@ -16,6 +16,8 @@ and JSON straight out through the Catapult (checked against a schema; the sandbo
 Workshop built from scratch counts the words of every paste with its approved script; the Horn
 sounds a chime for every paste, a horn for every route the Signpost takes and a ding for what no
 rule matched. (No Lake building: Lake is the town's window.)
+F5 Front Desk — mail and Slack are triaged by a Clan Fire that routes: what needs you lands in your
+to-dos, the rest becomes a task an ork in the Barracks does by itself (demo/front_desk.py).
 The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / 👎 with an incident,
 a self-improvement proposal and a weekly report.
 
@@ -29,7 +31,7 @@ import datetime as dt
 import subprocess
 from pathlib import Path
 
-from orkcraft.demo import seeds
+from orkcraft.demo import front_desk, seeds
 
 SEL = "on_selection_change"
 TODAY = dt.date.today()
@@ -243,7 +245,9 @@ LIBRARY = {
     },
 }
 
-DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY]
+from orkcraft.demo.front_desk import FRONT_DESK  # noqa: E402  (its own module: the triage flow)
+
+DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY, FRONT_DESK]
 
 
 # -- the repository and the seeded state ----------------------------------------------------------------
@@ -279,6 +283,7 @@ def prepare(root: Path) -> None:
     _seed_ledger(root)
     _seed_pipeline(root)
     seeds.after_commit(root, now)
+    front_desk.prepare(root, now)
 
 
 WIKI_PAGES = {
