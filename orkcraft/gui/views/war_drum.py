@@ -1,5 +1,6 @@
 """🥁 War Drum in the GUI: the day by the hour and the week, the chosen meeting with its document,
-and the calendar's settings. The work (loading, the clock, documents, adding) is the worker's
+and the calendar's settings — with the town's scheduled runs and ≈ when its limits are reached laid
+over the meetings (realm/drumbeat.py). The work (loading, the clock, documents, adding) is the worker's
 (core/workers/war_drum.py); a meeting's document opens in Lake on the page (openInLake)."""
 from __future__ import annotations
 
@@ -7,10 +8,11 @@ import datetime as dt
 
 from orkcraft.core.workers.war_drum import TICK_S
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import daybook
+from orkcraft.realm import daybook, drumbeat
 
 REFRESH_S = TICK_S             # the clock: what starts, what comes soon, the digest; a reload every 5 min
-CARD = 3                       # meetings on the closed card
+CARD = 6                       # beats (meetings, scheduled runs, limits) on the closed card
+STRIP_H = 12                   # hours the closed card's strip spans from now
 
 
 def refresh(w) -> None:
@@ -37,30 +39,61 @@ def _event(w, e, docs: dict, now: dt.datetime, cur) -> dict:
     }
 
 
+def _beat(b: drumbeat.Beat, now: dt.datetime, docs: dict | None = None) -> dict:
+    """A beat for the page: the words are the page's (by `kind`), the title as written."""
+    return {"kind": b.kind, "tone": b.tone, "at": _hm(b.at), "day": "" if b.at.date() == now.date() else f"{b.at:%a}",
+            "date": b.at.date().isoformat(), "min": _minutes(b.at), "title": b.title[:60], "ref": b.ref,
+            "detail": b.detail, "approx": b.approx, "now": b.now, "reached": b.reached, "more": b.more,
+            "doc": bool(docs) and b.kind == "meeting" and b.ref in docs}
+
+
+def _limit(lim: drumbeat.Limit, now: dt.datetime) -> dict:
+    unit = "/h"
+    return {"what": lim.what, "value": drumbeat.amount(lim.what, lim.value), "limit": drumbeat.amount(lim.what, lim.limit),
+            "share": round(lim.share, 3), "rate": drumbeat.amount(lim.what, lim.rate) + unit if lim.rate > 0 else "",
+            "at": _hm(lim.at), "day": f"{lim.at:%a %d}" if lim.at and lim.at.date() != now.date() else "", "reached": lim.reached, "who": lim.who,
+            "known": lim.limit > 0}
+
+
 def card(w) -> dict:
-    """Closed: the day's first three meetings still to come or under way."""
+    """Closed: the next beats of all three kinds (meetings, scheduled runs, ≈ limits) and a strip of
+    the next `STRIP_H` hours with each beat's mark."""
     now = w.clock()
-    cur, _, left = daybook.now_and_next(w.day.events, now)
+    _, _, left = daybook.now_and_next(w.day.events, now)
     docs = w.docs()
-    ahead = [e for e in w.today() if not e.all_day and (daybook._end(e) or e.start) > now]
-    return {"meetings": [{"at": _hm(e.start), "title": e.summary[:60], "now": e is cur,
-                          "doc": daybook.meet_id(e) in docs} for e in ahead[:CARD]],
-            "more": max(len(ahead) - CARD, 0), "error": bool(w.day.errors)}
+    beats = w.beats(now + dt.timedelta(days=1))
+    span = dt.timedelta(hours=STRIP_H)
+    strip: list[dict] = []
+    for b in beats:
+        mark = {"kind": b.kind, "tone": b.tone, "pos": round((max(b.at, now) - now) / span, 3), "approx": b.approx}
+        if b.at < now + span and not any(m["kind"] == b.kind and abs(m["pos"] - mark["pos"]) < 0.02 for m in strip):
+            strip.append(mark)                  # one mark where two of a kind fall together
+    return {"beats": [_beat(b, now, docs) for b in drumbeat.ahead(beats, CARD)], "strip": strip, "hours": STRIP_H,
+            "now": _hm(now), "left": left, "error": bool(w.day.errors)}
 
 
 def detail(w) -> dict:
     now = w.clock()
     cur, nxt, left = daybook.now_and_next(w.day.events, now)
     docs = w.docs()
+    limits = w.limits()
+    week = w.week_beats(limits)
+    beats = [b for day in week.values() for b in day]
     days = []
     for d in range(daybook.WEEK_DAYS):
         day = now.date() + dt.timedelta(days=d)
         days.append({"date": day.isoformat(), "label": "Today" if d == 0 else f"{day:%a %d %b}",
-                     "events": [_event(w, e, docs, now, cur) for e in w.day.events if e.day == day]})
+                     "events": [_event(w, e, docs, now, cur) for e in w.day.events if e.day == day],
+                     "beats": [_beat(b, now) for b in week[day]]})
     return {
         "date": f"{now:%A %d %B}", "now_min": now.hour * 60 + now.minute,
         "current": daybook.meet_id(cur) if cur else "", "next": daybook.meet_id(nxt) if nxt else "", "left": left,
         "errors": list(w.day.errors), "days": days,
+        "limits": [_limit(x, now) for x in limits],
+        "jobs": [{"title": j.title, "expr": j.expr, "what": j.what, "ref": j.ref, "count": j.count,
+                  "next": _beat(b, now) if (b := next((x for x in beats if x.kind == "schedule" and x.title == j.title
+                                                       and x.ref == j.ref), None)) else None}
+                 for j in w.jobs()],
         "settings": {"ics": w.configured, "day_starts": str(w.config.get("day_starts") or ""),
                      "lead": str(w.config.get("lead") or ""), "writes_to": w.writable.name},
     }

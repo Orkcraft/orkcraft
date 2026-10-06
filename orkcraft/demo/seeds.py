@@ -273,6 +273,21 @@ def war_drum(root: Path, now: dt.datetime) -> None:
     kept = {daybook.meet_id(e): {"path": by_uid[e.uid], "title": e.summary, "at": _iso(now)}
             for e in events if e.uid in by_uid}
     _json(state_dir(root, "war_drum", "days") / "docs.json", kept)
+    war_drum_burn(root, now)
+
+
+def war_drum_burn(root: Path, now: dt.datetime, building: str = "days") -> None:
+    """What the War Drum sampled of the run so far (agents never run in the demo): spend climbing
+    towards the $5 limit and a Barracks session's context towards 128k, so it can say ≈ when each is
+    reached."""
+    rows = []
+    for i in range(18):
+        minutes = 172 - i * 10
+        hours = (172 - minutes) / 60
+        rows.append({"at": _iso(now - dt.timedelta(minutes=minutes)), "run": "demo",
+                     "spent": round(0.38 + 0.78 * hours + (0.03 if i % 3 == 1 else 0.0), 2),
+                     "ctx": int(18432 + 25600 * hours), "who": "camp/Grunt 2"})
+    _jsonl(state_dir(root, "war_drum", building) / "burn.jsonl", rows)
 
 
 def web(root: Path, now: dt.datetime) -> None:
