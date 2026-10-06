@@ -1,6 +1,10 @@
 """Quiet hours, without a face: the Elders' advice on the orks' questions (realm/elders.py) and the
 orks' own improvements of the camp with their probation (realm/evolution.py).
 
+When the Elders read a question is the autonomy level's (autonomy.waits): ⛓️ chains — in quiet hours,
+for advice only; ⏳ timer — once it has waited the timer, at once in quiet hours, and they answer;
+⛓️‍💥 free orks — at once, and they answer.
+
 `Night` keeps what the hours remember (the advice, the questions already judged, tonight's counts)
 and decides what goes next. The face runs the model calls on its worker threads, sends an answer
 into a terminal, and shows the morning's words.
@@ -28,6 +32,7 @@ class Night:
         self.elders_seen: set[str] = set()
         self.elders_busy = False
         self.elders_count = 0
+        self.asked_at: dict[str, float] = {}     # when a question was first seen waiting (monotonic), by mark
         self.quiet_since: str | None = None
         # 🔧 The orks' own self-improvement.
         self.evolve_busy = False
@@ -67,27 +72,37 @@ class Night:
         return d if d is not None and d.advised else None
 
     def elders_state(self, alerts: list[Alert], quiet: bool, level: int) -> str:
-        """The lamp on the Town Hall: `advice` (some waits for you), `watch` (quiet hours, they read the
-        questions), `rest` (by day), `off` (autonomy ⛓️ Ask me), `full` (tonight's questions are used up)."""
+        """The lamp on the Town Hall: `advice` (some waits for you), `watch` (they read the questions),
+        `rest` (⛓️ chains by day), `full` (today's questions are used up)."""
         if any(self.advice_for(a) is not None for a in alerts):
             return "advice"
-        if not autonomy.advises(level):
-            return "off"
-        if not quiet:
+        if not quiet and level <= autonomy.CHAINS:
             return "rest"
         return "full" if self.elders_count >= elders.limits(self.town.repo_root)[0] else "watch"
 
-    def next_question(self, alerts: list[Alert], quiet: bool, level: int) -> Alert | None:
-        """One question at a time goes to the Elders: quiet hours, autonomy from 1, budget left. The
-        one returned is taken: marked judged, counted, the Elders busy until `judged`."""
+    def ripe(self, alert: Alert, quiet: bool, level: int, wait: int, now: float) -> bool:
+        """Has this question waited long enough for the Elders to read it, at this level?"""
+        if level <= autonomy.CHAINS:
+            return quiet                                   # advice only, while the operator is away
+        minutes = autonomy.waits(level, quiet, wait)
+        return minutes is not None and now - self.asked_at.get(elders.mark(alert), now) >= minutes * 60
+
+    def next_question(self, alerts: list[Alert], quiet: bool, level: int, wait: int = autonomy.DEFAULT_WAIT,
+                      now: float | None = None) -> Alert | None:
+        """One question at a time goes to the Elders, once it is ripe for the level (`ripe`), with the
+        night's count and the budget left. The one returned is taken: marked judged, counted, the
+        Elders busy until `judged`."""
         town = self.town
-        if (town.demo or self.elders_busy or not quiet or not autonomy.advises(level)
-                or self.elders_count >= elders.limits(town.repo_root)[0]):
+        now = time.monotonic() if now is None else now
+        waiting = {elders.mark(a) for a in alerts if elders.qualifies(a)}
+        self.asked_at = {m: self.asked_at.get(m, now) for m in waiting}     # forget the answered ones
+        if town.demo or self.elders_busy or self.elders_count >= elders.limits(town.repo_root)[0]:
             return None
         budget = town.scroll.budget.gold_session_limit_usd
         if budget > 0 and town.snapshot.spent_usd >= budget:
             return None
-        pending = [a for a in alerts if elders.qualifies(a) and elders.mark(a) not in self.elders_seen]
+        pending = [a for a in alerts if elders.qualifies(a) and elders.mark(a) not in self.elders_seen
+                   and self.ripe(a, quiet, level, wait, now)]
         if not pending:
             return None
         alert = pending[0]
@@ -98,14 +113,14 @@ class Night:
 
     def judged(self, alert: Alert, decision: elders.Decision, who: str, alerts: list[Alert], quiet: bool,
                level: int) -> str | None:
-        """The Elders' answer is in. At ⛓️‍💥 Free orks (autonomy.answers) they answer themselves: the key to
-        send is returned — only while it is still quiet and the very same question still waits, and never
-        when the Warder flagged the screen (⚠: that advice is the operator's to follow). Otherwise the
-        advice is kept for the operator and None is returned. Logged either way."""
+        """The Elders' answer is in. From ⏳ timer (autonomy.answers) they answer themselves: the key to
+        send is returned — only while the very same question still waits, and never when the Warder
+        flagged the screen (⚠: that advice is the operator's to follow). Otherwise the advice is kept for
+        the operator and None is returned. Logged either way."""
         self.elders_busy = False
         mark = elders.mark(alert)
         send = None
-        if (decision.advised and not decision.warn and autonomy.answers(level) and quiet
+        if (decision.advised and not decision.warn and autonomy.answers(level)
                 and any(elders.mark(a) == mark for a in alerts)):
             key = decision.key or ""
             send = key if key.isdigit() else f"{key}\r"
@@ -204,7 +219,7 @@ class Night:
         """The next change the orks may try tonight, with what the Council will look at; the one
         returned is taken (tried, the orks busy until `changed`)."""
         if (self.town.demo or self.evolve_busy or not quiet or self.evolve_count >= evolution.MAX_PER_NIGHT
-                or level < 2 or exhausted):
+                or level < autonomy.TIMER or exhausted):
             return None
         candidates = self.candidates(level)
         if not candidates:

@@ -1,6 +1,6 @@
 # Design — the Barracks plans its work; three levels of autonomy
 
-Status: design notes, written 2026-10-06; nothing of it is implemented yet. Builds on the Barracks
+Status: design notes, written 2026-10-06; §2 is implemented, the rest is under way. Builds on the Barracks
 (`realm/barracks.py`, `core/workers/barracks.py`), the tiers (`realm/tiers.py`), the building goals
 (docs/design/retros-and-goals.md §3) and the autonomy slider (`autonomy.py`, docs/design/onboarding.md §6).
 
@@ -24,7 +24,7 @@ Deciding more on their own needs a clearer autonomy model, so the slider shrinks
 | A decision (an agent's question, a new persona, a self-improvement) | waits for the operator 🔥 | waits `autonomy_wait` minutes (default 7, 5–10), then the orks decide | the orks decide at once; the operator sees the list afterwards |
 | In quiet hours | waits for the operator | no wait: nobody is there to answer | at once |
 | The Elders | advise; the operator follows with one key | answer when the timer runs out | answer at once |
-| Self-improvement (`evolution.py`) | proposals wait for a click | after the timer: only what makes a building cheaper or simpler (shrink, chain, demote, run policy, filter) | also what spends more or adds: script, enrich, new road, setting, building |
+| Self-improvement (`evolution.py`, still in quiet hours only) | proposals wait for a click | only what makes a building cheaper or simpler (shrink, chain, demote, run policy, filter) | also what spends more or adds: script, enrich, new road, setting, building |
 | The agents' own permissions (📋 guide) | unchanged | today's 🧭 Routine block | today's ⛓️‍💥 Free block |
 
 The same at every level, never relaxed by a timer: what the Warder's rules block waits for the

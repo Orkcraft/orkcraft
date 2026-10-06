@@ -123,28 +123,41 @@ def test_without_a_model_there_is_no_advice():
 
 
 def test_the_levels_and_the_guide():
-    assert [lvl.n for lvl in autonomy.LEVELS] == [0, 1, 2, 3]
-    assert not autonomy.advises(0) and all(autonomy.advises(n) for n in (1, 2, 3))
-    assert [autonomy.answers(n) for n in range(4)] == [False, False, False, True]
-    assert autonomy.claude_settings(0) is None and autonomy.claude_settings(1) is None
-    two, three = autonomy.claude_settings(2), autonomy.claude_settings(3)
-    assert "Bash(pytest *)" in two["permissions"]["allow"] and "defaultMode" not in two["permissions"]
-    assert three["permissions"]["defaultMode"] == "acceptEdits"
-    assert "Bash(git push *)" in three["permissions"]["ask"] and "Bash(rm -rf *)" in three["permissions"]["deny"]
-    for n in range(4):
+    assert [lvl.n for lvl in autonomy.LEVELS] == [autonomy.CHAINS, autonomy.TIMER, autonomy.FREE] == [0, 1, 2]
+    assert [autonomy.answers(n) for n in range(3)] == [False, True, True]
+    assert autonomy.claude_settings(0) is None
+    timer, free = autonomy.claude_settings(1), autonomy.claude_settings(2)
+    assert "Bash(pytest *)" in timer["permissions"]["allow"] and "defaultMode" not in timer["permissions"]
+    assert free["permissions"]["defaultMode"] == "acceptEdits"
+    assert "Bash(git push *)" in free["permissions"]["ask"] and "Bash(rm -rf *)" in free["permissions"]["deny"]
+    for n in range(3):
         text = autonomy.guide(n)
         assert "bypassPermissions" not in text and "dangerously" not in text
-        assert ("answer routine questions for you" in text) == (n == 3)
-    assert autonomy.agy_command(3) == "agy --mode accept-edits --sandbox" and autonomy.agy_command(2) == ""
-    assert "agy" not in autonomy.guide(2, ("claude",)).lower()
+        assert ("answer a routine question for you" in text) == (n == 1)
+        assert ("answer routine questions for you at once" in text) == (n == 2)
+    assert autonomy.agy_command(2) == "agy --mode accept-edits --sandbox" and autonomy.agy_command(1) == ""
+    assert "agy" not in autonomy.guide(1, ("claude",)).lower()
+
+
+def test_how_long_a_decision_waits():
+    assert autonomy.waits(autonomy.CHAINS, quiet=False) is None and autonomy.waits(autonomy.CHAINS, quiet=True) is None
+    assert autonomy.waits(autonomy.TIMER, quiet=False, minutes=5) == 5 and autonomy.waits(autonomy.TIMER, quiet=True) == 0
+    assert autonomy.waits(autonomy.FREE, quiet=False) == 0
+    assert [autonomy.wait_of(v) for v in (3, 7, 12, "x", None)] == [5, 7, 10, 7, 7]
 
 
 def test_autonomy_is_kept_in_the_machine_settings(tmp_path: Path):
     f = tmp_path / "s.json"
-    settings.save(settings.MachineSettings(autonomy=3), f)
-    assert settings.load(f).autonomy == 3
+    settings.save(settings.MachineSettings(autonomy=autonomy.FREE, autonomy_wait=10), f)
+    data = json.loads(f.read_text(encoding="utf-8"))
+    assert data["autonomy"] == "free" and data["autonomy_wait"] == 10           # a word: never read as an old number
+    assert settings.load(f).autonomy == autonomy.FREE and settings.load(f).autonomy_wait == 10
     f.write_text('{"autonomy": 9}', encoding="utf-8")
-    assert settings.load(f).autonomy == 1
+    assert settings.load(f).autonomy == autonomy.DEFAULT_LEVEL == autonomy.TIMER
+    # the four old stops load never bolder than they were
+    for old, new in ((0, "chains"), (1, "chains"), (2, "timer"), (3, "free")):
+        f.write_text(json.dumps({"autonomy": old}), encoding="utf-8")
+        assert settings.load(f).autonomy == autonomy.WORDS.index(new)
 
 
 @pytest.fixture
@@ -162,7 +175,7 @@ async def _until(pilot, cond, n: int = 60) -> None:
 
 @pytest.mark.asyncio
 async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
@@ -186,7 +199,7 @@ async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, qui
 
 @pytest.mark.asyncio
 async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=3, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.FREE, quiet=schedule.DEFAULT_QUIET))
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
@@ -218,7 +231,7 @@ async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monk
 
 @pytest.mark.asyncio
 async def test_a_question_that_changed_meanwhile_is_not_answered(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=3, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.FREE, quiet=schedule.DEFAULT_QUIET))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
@@ -231,8 +244,9 @@ async def test_a_question_that_changed_meanwhile_is_not_answered(fake_repo: Path
 
 
 @pytest.mark.asyncio
-async def test_level_zero_judges_nothing(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=0, quiet=schedule.DEFAULT_QUIET))
+async def test_chains_by_day_judge_nothing(fake_repo: Path, monkeypatch):
+    monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: False)
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     calls: list = []
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
@@ -246,7 +260,7 @@ async def test_level_zero_judges_nothing(fake_repo: Path, quiet, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_follow_all_answers_only_the_advised(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
@@ -266,7 +280,7 @@ async def test_follow_all_answers_only_the_advised(fake_repo: Path, quiet, monke
 
 @pytest.mark.asyncio
 async def test_follow_all_skips_the_flagged_advice(fake_repo: Path, quiet, monkeypatch):
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
@@ -288,7 +302,7 @@ async def test_follow_all_skips_the_flagged_advice(fake_repo: Path, quiet, monke
 async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_repo: Path, quiet, monkeypatch):
     from orkcraft.realm.buildings import TOWN_HALL
     from orkcraft.screens.town_hall import TownHallView
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     a = _alert()
     elders.log(fake_repo, a, elders.Decision("1", "runs the tests", "model", 0.001), who="Grunt")
     calls: list = []
@@ -310,3 +324,41 @@ async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_r
         assert view.hut_lines([4, 24])[0] == "📜"
         app.roster.alerts = []
         assert app.elders_state() == "watch" and view.lamp() == "🌙"
+
+
+@pytest.mark.asyncio
+async def test_by_day_the_timer_lets_a_question_wait_for_the_operator_first(fake_repo: Path, monkeypatch):
+    monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: False)
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.TIMER, autonomy_wait=5))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.pause()
+        alert = _alert()
+        night = app.night
+        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1000.0) is None     # just asked
+        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1299.0) is None     # still the operator's
+        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1300.0) is alert    # the timer ran out
+        night.elders_busy = False
+        other = _alert("pytest -q --lf")
+        assert night.next_question([other], True, autonomy.TIMER, 5, now=2000.0) is other     # quiet: no wait
+        assert app.elders_state() == "watch"
+
+
+@pytest.mark.asyncio
+async def test_the_slider_picks_the_minutes_of_the_timer():
+    from textual.app import App
+
+    from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
+
+    step = AutonomyStep(level=autonomy.TIMER, tools=("claude",), standalone=True, wait=5)
+    async with App().run_test(size=(120, 50)) as pilot:
+        pilot.app.push_screen(step)
+        await pilot.pause()
+        assert step.query_one("#au-wait").display and step.query_one("#au-wait-5").value
+        step.query_one("#au-wait-10").value = True
+        await pilot.pause()
+        assert step.result() == {"autonomy": autonomy.TIMER, "autonomy_wait": 10}
+        assert not step.query_one("#au-wait-5").value
+        step.query_one(AutonomySlider).set_level(autonomy.CHAINS)
+        await pilot.pause()
+        assert not step.query_one("#au-wait").display                     # chains: no timer to pick

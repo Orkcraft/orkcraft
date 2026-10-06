@@ -1,13 +1,14 @@
-"""🏛 How much the orcs do on their own: a slider of four stops and the guide for the agents' settings.
+"""🏛 How much the orks do on their own: a slider of three stops and the guide for the agents' settings.
 
-    AutonomyStep(level, tools, standalone=False)   F10 → 🏛 Ork autonomy
-        dismisses {"autonomy": n}, "back", "skip" or None
+    AutonomyStep(level, tools, standalone=False, wait=7)   F10 → 🏛 Ork autonomy
+        dismisses {"autonomy": n, "autonomy_wait": minutes}, "back", "skip" or None
     AutonomyStep(level, tools, look=machine)       onboarding's camp rules: the look and the quiet
-        hours below the slider; dismisses {"autonomy", "mode", "quiet"}
+        hours below the slider; dismisses {"autonomy", "autonomy_wait", "mode", "quiet"}
 
-The stops are autonomy.LEVELS. At 0 nothing is judged; from 1 the Elders leave advice in quiet hours;
-from 2 the guide shows what to paste into Claude Code's settings and how to start agy (the snippet
-can be copied here); at 3 the Elders also answer routine questions themselves in quiet hours.
+The stops are autonomy.LEVELS: ⛓️ chains — decisions wait for the operator, the Elders only advise in
+quiet hours; ⏳ timer — they wait the minutes picked under the slider, then the orks decide; ⛓️‍💥 free
+orks — at once. From ⏳ the guide shows what to paste into Claude Code's settings and how to start
+agy and Codex (the snippet can be copied here).
 """
 from __future__ import annotations
 
@@ -27,6 +28,7 @@ from orkcraft.screens.build_flow import MODAL_CSS
 TRACK = 60                         # cells between the first and the last stop
 STOPS = [round(i * TRACK / (len(autonomy.LEVELS) - 1)) for i in range(len(autonomy.LEVELS))]
 TRACK_COLOR = "#c99a3e"
+WAITS = (autonomy.MIN_WAIT, autonomy.DEFAULT_WAIT, autonomy.MAX_WAIT)   # ⏳ the minutes to pick from
 
 
 class AutonomySlider(Widget, can_focus=True):
@@ -122,6 +124,10 @@ class AutonomyStep(ModalScreen[dict | str | None]):
     AutonomyStep #au-modes RadioButton { width: auto; height: 1; border: none; padding: 0; margin-right: 3;
                                          background: transparent; }
     AutonomyStep #au-modes RadioButton:focus { text-style: bold; border: none; }
+    AutonomyStep #au-wait { height: auto; margin-top: 0; }
+    AutonomyStep #au-wait RadioButton { width: auto; height: 1; border: none; padding: 0; margin-right: 3;
+                                        background: transparent; }
+    AutonomyStep #au-wait RadioButton:focus { text-style: bold; border: none; }
     AutonomyStep #au-quiet { height: 1; border: none; padding: 0; background: transparent; margin-top: 1; }
     AutonomyStep .ob-buttons { height: auto; margin-top: 1; align-horizontal: right; }
     AutonomyStep .ob-buttons Button { margin-left: 1; }
@@ -131,9 +137,11 @@ class AutonomyStep(ModalScreen[dict | str | None]):
                   "office": "just frames — nothing to explain over a shoulder"}
 
     def __init__(self, level: int = autonomy.DEFAULT_LEVEL, tools: tuple[str, ...] = ("claude", "agy"),
-                 standalone: bool = False, step: str = "", look: settings.MachineSettings | None = None) -> None:
+                 standalone: bool = False, step: str = "", look: settings.MachineSettings | None = None,
+                 wait: int | None = None) -> None:
         super().__init__()
         self.level = level
+        self.wait = autonomy.wait_of(wait if wait is not None else look.autonomy_wait if look is not None else None)
         self.tools = tools
         self.standalone = standalone
         self.step = step
@@ -149,6 +157,9 @@ class AutonomyStep(ModalScreen[dict | str | None]):
             with Horizontal(id="au-row"):
                 yield AutonomySlider(self.level, id="au-slider")
             yield Static("", id="au-level")
+            with Horizontal(id="au-wait"):
+                for m in WAITS:
+                    yield RadioButton(f"⏳ {m} min", value=self.wait == m, id=f"au-wait-{m}")
             with Vertical(id="au-guide-box"):
                 yield Label("The agents' own settings", classes="au-head")
                 if "claude" in self.tools:
@@ -196,15 +207,27 @@ class AutonomyStep(ModalScreen[dict | str | None]):
                     b.value = on_
         self.query_one("#au-mode-hint", Static).update(self.MODE_HINTS.get(mode, ""))
 
+    def pick_wait(self, minutes: int) -> None:
+        self.wait = minutes
+        for b in self.query("#au-wait RadioButton").results(RadioButton):
+            on_ = b.id == f"au-wait-{minutes}"
+            if b.value != on_:
+                with b.prevent(RadioButton.Changed):
+                    b.value = on_
+
     @on(RadioButton.Changed)
     def _mode(self, event: RadioButton.Changed) -> None:
         event.stop()
-        mode = (event.radio_button.id or "").removeprefix("au-mode-")
+        bid = event.radio_button.id or ""
+        if bid.startswith("au-wait-"):
+            self.pick_wait(int(bid.removeprefix("au-wait-")) if event.value else self.wait)
+            return
+        mode = bid.removeprefix("au-mode-")
         if mode in settings.MODES:
             self.pick(mode if event.value else self.mode)          # a second click keeps it on
 
     def result(self) -> dict:
-        out: dict = {"autonomy": self.level}
+        out: dict = {"autonomy": self.level, "autonomy_wait": self.wait}
         if self.look is not None:
             out["mode"] = self.mode
             out["quiet"] = schedule.DEFAULT_QUIET if self.query_one("#au-quiet", Checkbox).value else None
@@ -218,7 +241,8 @@ class AutonomyStep(ModalScreen[dict | str | None]):
         t.append(lvl.questions + "\n")
         t.append("🔧 Improvements: ", style="bold")
         t.append(lvl.improves)
-        if autonomy.LEVELS[self.level].n >= 2:
+        self.query_one("#au-wait").display = self.level == autonomy.TIMER
+        if self.level >= autonomy.TIMER:
             t.append("\n   Each goes through ", style="dim")
             t.append(autonomy.SAFEGUARDS, style="dim")
         self.query_one("#au-level", Static).update(t)

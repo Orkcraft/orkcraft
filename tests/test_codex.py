@@ -207,9 +207,10 @@ async def test_a_codex_menu_is_answered_with_enter(fake_repo: Path):
 
 def test_the_autonomy_guide_says_how_to_start_codex():
     from orkcraft import autonomy
-    assert autonomy.codex_command(1) == "" and "nothing to change" in autonomy.codex_line(1)
-    assert autonomy.codex_command(3) == "codex --sandbox workspace-write --ask-for-approval on-request"
-    assert "Codex: start it with" in autonomy.guide(2, ("claude", "codex")) and "Antigravity" not in autonomy.guide(2, ("codex",))
+    assert autonomy.codex_command(autonomy.CHAINS) == "" and "nothing to change" in autonomy.codex_line(autonomy.CHAINS)
+    assert autonomy.codex_command(autonomy.FREE) == "codex --sandbox workspace-write --ask-for-approval on-request"
+    assert "Codex: start it with" in autonomy.guide(autonomy.TIMER, ("claude", "codex"))
+    assert "Antigravity" not in autonomy.guide(autonomy.TIMER, ("codex",))
 
 
 @pytest.mark.asyncio
@@ -219,7 +220,7 @@ async def test_the_autonomy_step_has_a_codex_line_to_copy():
 
     from orkcraft.screens.autonomy import AutonomyStep
 
-    step = AutonomyStep(level=2, tools=("claude", "codex"))
+    step = AutonomyStep(level=1, tools=("claude", "codex"))
     async with App().run_test(size=(120, 50)) as pilot:
         pilot.app.push_screen(step)
         await pilot.pause()

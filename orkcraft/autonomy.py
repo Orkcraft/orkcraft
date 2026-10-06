@@ -1,27 +1,41 @@
-"""How much the orcs do on their own (design: docs/design/onboarding.md, the autonomy step).
+"""How much the orks do on their own (design: docs/design/barracks-planning.md §2, the onboarding step).
 
-    LEVELS[machine.autonomy]          0 ask me · 1 morning advice · 2 routine on their own · 3 free orcs
-    advises(level)                    the Elders judge the questions in quiet hours (realm/elders.py)
-    answers(level)                    …and answer them themselves (⛓️‍💥 Free orcs only)
+    LEVELS[machine.autonomy]          0 ⛓️ chains · 1 ⏳ timer · 2 ⛓️‍💥 free orks
+    waits(level, quiet, minutes)      how long a decision waits for the operator before the orks take
+                                      it: None never (chains), 0 at once, else minutes
+    answers(level)                    the orks (the Elders, the stewards) may decide themselves at all
+    of(value)                         a stored value → a level: the words, and the old 0..3 numbers
     claude_snippet(level)             what to paste into Claude Code's settings for this level (📋)
     agy_command(level)                how to start agy for this level (📋)
     codex_command(level)              how to start Codex for this level (📋)
 
-Autonomy comes from three places:
-- **advice** (from 📜) — in quiet hours the Elders read the questions and advise; the operator
-  follows the advice with one key in the morning;
-- **the Elders' answers** (⛓️‍💥 only) — in quiet hours they send their one-time yes or no themselves;
-  what the Warder's rules stop, and anything they would not advise, still waits for the operator;
-- **the agents' own permission settings** (from 🧭) — what Claude Code, agy and Codex may do without
-  asking, which the operator sets with the guide below. The 🛡 Warder hook still denies the dangerous
-  commands in Claude Code and Codex sessions whatever the settings allow.
+One rule for every decision the orks could take for the operator — an agent's question (the Elders,
+realm/elders.py), a new persona of a Barracks, a self-improvement (realm/evolution.py):
+
+- **⛓️ Chains** — it waits for the operator. The Elders only advise, in quiet hours; the operator
+  follows the advice with one key.
+- **⏳ Timer** — it waits `autonomy_wait` minutes (5–10), then the orks decide; in quiet hours nobody
+  is there to answer, so they do not wait. Silence never makes the camp spend more: of the
+  self-improvements, only what makes a building cheaper or simpler.
+- **⛓️‍💥 Free orks** — the orks decide at once; the operator sees the list afterwards.
+
+At every level: what the Warder's rules block waits for the operator, only a one-time yes is sent
+(never "always"), a removal is never the orks', and every change has the Council, a checkpoint and
+probation. The agents' own permission settings (what Claude Code, agy and Codex do without asking)
+follow the level too — the operator sets them with the guide below; the 🛡 Warder hook still denies
+the dangerous commands whatever they allow.
 """
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 
-DEFAULT_LEVEL = 1
+CHAINS, TIMER, FREE = 0, 1, 2
+WORDS = ("chains", "timer", "free")
+DEFAULT_LEVEL = TIMER
+# The old four stops, never bolder than they were: ask me and morning advice wait, routine has a timer.
+OLD_NUMBERS = {0: CHAINS, 1: CHAINS, 2: TIMER, 3: FREE}
+DEFAULT_WAIT, MIN_WAIT, MAX_WAIT = 7, 5, 10       # ⏳ minutes
 
 
 @dataclass(frozen=True)
@@ -29,24 +43,20 @@ class Level:
     n: int
     icon: str
     title: str
-    questions: str       # what happens to the agents' questions
-    improves: str        # what the orcs do about improving the camp (realm/evolution.py)
+    questions: str       # what happens to the agents' questions and the stewards' new personas
+    improves: str        # what the orks do about improving the camp (realm/evolution.py)
 
 
 LEVELS: tuple[Level, ...] = (
-    Level(0, "⛓️", "Ask me",
-          "every question waits for you; nothing is judged while you are away.",
+    Level(CHAINS, "⛓️", "Chains",
+          "every decision waits for you; in quiet hours the 🏛 Elders leave advice, `a` follows it.",
           "proposals wait for your click."),
-    Level(1, "📜", "Morning advice",
-          "in quiet hours the 🏛 Elders read them and leave advice; in the morning `a` follows it.",
-          "proposals wait for your click."),
-    Level(2, "🧭", "Routine on their own",
-          "agents run the routine without asking (their settings, 📋 below); the Elders advise on the rest.",
+    Level(TIMER, "⏳", "Timer",
+          "a decision waits for you a few minutes, then the orks take it; in quiet hours they do not wait.",
           "in quiet hours the orks apply what makes a building cheaper or simpler — a shorter prompt, an "
           "agent made a chain, a run policy, a road filter."),
-    Level(3, "⛓️‍💥", "Free orks",
-          "in quiet hours the Elders answer routine ones themselves (a one-time yes or no, never 'always'); "
-          "the risky ones wait for you.",
+    Level(FREE, "⛓️‍💥", "Free orks",
+          "the orks decide at once; you see the list of what they did.",
           "also a script instead of an agent, a richer prompt for a ⚖️ / 💎 building, a new plain road, a setting, "
           "a building from the catalog. "
           "Never a removal."),
@@ -55,6 +65,42 @@ LEVELS: tuple[Level, ...] = (
 # What every self-applied change goes through, shown under the levels that apply changes.
 SAFEGUARDS = ("the Council's review, a checkpoint each (Z takes it back), 24 h on probation — a 👎 or more "
               "failed runs take it back by itself — and the list of changes after quiet hours.")
+
+
+def of(value: object) -> int:
+    """A stored value → a level: "chains" / "timer" / "free", an old number 0..3, else the default."""
+    if isinstance(value, str) and value in WORDS:
+        return WORDS.index(value)
+    if isinstance(value, int) and not isinstance(value, bool) and value in OLD_NUMBERS:
+        return OLD_NUMBERS[value]
+    return DEFAULT_LEVEL
+
+
+def word(level: int) -> str:
+    return WORDS[max(0, min(len(WORDS) - 1, level))]
+
+
+def wait_of(value: object) -> int:
+    """⏳ minutes, within MIN_WAIT..MAX_WAIT."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return int(max(MIN_WAIT, min(MAX_WAIT, value)))
+    return DEFAULT_WAIT
+
+
+def waits(level: int, quiet: bool, minutes: int = DEFAULT_WAIT) -> float | None:
+    """How many minutes a decision waits for the operator before the orks take it; None: it waits for
+    the operator, however long. In quiet hours nobody is there, so ⏳ does not wait."""
+    if level <= CHAINS:
+        return None
+    if level >= FREE or quiet:
+        return 0
+    return float(minutes)
+
+
+def answers(level: int) -> bool:
+    """May the orks decide anything for the operator at all (after the wait)?"""
+    return level >= TIMER
+
 
 CLAUDE_FILE = ".claude/settings.local.json"      # this project, only you (not committed)
 CLAUDE_FILE_ALL = "~/.claude/settings.json"       # every project on this machine
@@ -69,22 +115,14 @@ _ASK = ["Bash(git push *)", "Bash(rm *)", "Bash(git reset *)", "Bash(git rebase 
 _DENY = ["Bash(git push --force *)", "Bash(rm -rf *)", "Bash(sudo *)", "Read(./.env)", "Read(./.env.*)"]
 
 
-def advises(level: int) -> bool:
-    return level >= 1
-
-
-def answers(level: int) -> bool:
-    return level >= 3
-
-
 def claude_settings(level: int) -> dict | None:
     """The permission block for Claude Code at this level; None when nothing is to be changed."""
-    if level < 2:
+    if level < TIMER:
         return None
-    perms: dict = {"allow": list(_ROUTINE) + (list(_FREE) if level >= 3 else []), "ask": list(_ASK),
+    perms: dict = {"allow": list(_ROUTINE) + (list(_FREE) if level >= FREE else []), "ask": list(_ASK),
                    "deny": list(_DENY)}
     out: dict = {"permissions": perms}
-    if level >= 3:
+    if level >= FREE:
         out["permissions"]["defaultMode"] = "acceptEdits"
     return out
 
@@ -96,13 +134,13 @@ def claude_snippet(level: int) -> str:
 
 def agy_command(level: int) -> str:
     """How to start agy at this level, or "" when it stays as it is."""
-    return "agy --mode accept-edits --sandbox" if level >= 3 else ""
+    return "agy --mode accept-edits --sandbox" if level >= FREE else ""
 
 
 def codex_command(level: int) -> str:
-    """How to start Codex at this level, or "" when it stays as it is: from 🧭 it works in its sandbox
+    """How to start Codex at this level, or "" when it stays as it is: from ⏳ it works in its sandbox
     (the project, no network) without asking and asks only to step out of it."""
-    return "codex --sandbox workspace-write --ask-for-approval on-request" if level >= 2 else ""
+    return "codex --sandbox workspace-write --ask-for-approval on-request" if level >= TIMER else ""
 
 
 def claude_line(level: int) -> str:
@@ -112,15 +150,15 @@ def claude_line(level: int) -> str:
 
 
 def agy_line(level: int) -> str:
-    if level < 2:
+    if level < TIMER:
         return "nothing to change — it asks before it acts."
-    if level == 2:
+    if level == TIMER:
         return "keeps asking (no per-command allow list known); the Elders advise."
     return f"start it with `{agy_command(level)}` (check `agy --help`)."
 
 
 def codex_line(level: int) -> str:
-    if level < 2:
+    if level < TIMER:
         return "nothing to change — it asks before it acts."
     return f"start it with `{codex_command(level)}`: it works in its sandbox and asks only to leave it."
 
@@ -140,9 +178,12 @@ def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
         lines.append(f"Codex: {codex_line(level)}")
         if codex_command(level):
             lines.append(f"    {codex_command(level)}")
-    if answers(level):
-        lines.append("In quiet hours the 🏛 Elders answer routine questions for you (a one-time yes or no); "
+    if level >= FREE:
+        lines.append("The 🏛 Elders answer routine questions for you at once (a one-time yes or no); "
                      "every answer is in .orkcraft/council/elders.jsonl. Move the slider down to stop it.")
+    elif answers(level):
+        lines.append("The 🏛 Elders answer a routine question for you when it has waited the timer — at once in "
+                     "quiet hours (a one-time yes or no); every answer is in .orkcraft/council/elders.jsonl.")
     else:
         lines.append("Orkcraft never presses yes for an agent at this level: the Elders only advise.")
     return "\n".join(lines)

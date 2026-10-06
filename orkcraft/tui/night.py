@@ -169,8 +169,9 @@ class NightMixin:
         return self.night.advice_for(alert)
 
     def _elders_consider(self) -> None:
-        """One question at a time goes to the Elders: quiet hours, autonomy from 1, budget left."""
-        alert = self.night.next_question(self.roster.alerts, self.desktop.quiet, self.desktop.machine.autonomy)
+        """One question at a time goes to the Elders, once it is ripe for the autonomy level (core/night.py)."""
+        alert = self.night.next_question(self.roster.alerts, self.desktop.quiet, self.desktop.machine.autonomy,
+                                         self.desktop.machine.autonomy_wait)
         if alert is not None:
             self._elders_work(alert, self._alert_who_map().get(alert.id, ""))
 
@@ -181,8 +182,8 @@ class NightMixin:
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
-        """The Elders' advice is kept for the operator, or — at ⛓️‍💥 Free orcs, while it is still quiet and the
-        same question waits — their key goes to the agent (core/night.py `judged`)."""
+        """The Elders' advice is kept for the operator, or — from ⏳ timer, while the same question waits —
+        their key goes to the agent (core/night.py `judged`)."""
         send = self.night.judged(alert, decision, who, self.roster.alerts, self.desktop.quiet,
                                  self.desktop.machine.autonomy)
         if send is not None:
@@ -204,18 +205,19 @@ class NightMixin:
         return True
 
     def open_autonomy(self) -> None:
-        """F10 → 🏛 Orc autonomy: the slider and the guide for the agents' own settings."""
+        """F10 → 🏛 Ork autonomy: the slider and the guide for the agents' own settings."""
         machine = self.desktop.machine
         tools_ = tuple(t for t, c in machine.tools.items() if c.enabled) or ("claude", "agy")
 
         def done(result: dict | str | None) -> None:
             if isinstance(result, dict):
                 machine.autonomy = int(result.get("autonomy", machine.autonomy))
+                machine.autonomy_wait = autonomy.wait_of(result.get("autonomy_wait", machine.autonomy_wait))
                 settings.save(machine)
                 lvl = autonomy.LEVELS[machine.autonomy]
                 self.notify(f"❓ {lvl.questions}\n🔧 {lvl.improves}", title=f"{lvl.icon} {lvl.title}")
 
-        self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True), done)
+        self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True, wait=machine.autonomy_wait), done)
 
     def open_day(self) -> None:
         """F10 → 🕰 Your day: the mode, the quiet hours and the office hours, on the day bar."""
