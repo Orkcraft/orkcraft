@@ -885,7 +885,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | orkestration | coordination |
 | orkestrate | coordinate |
 | town | project |
-| building | module |
+| building | block |
 | hut | tile |
 | road | link |
 | cart | message |
@@ -913,12 +913,12 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | Town Scroll | Project file |
 | Town Builder | Project planner |
 | Town retro | Weekly review |
-| Building retro | Module review |
+| Building retro | Block review |
 | Chronicles | History |
 | Elder | Advisor |
 | steward | coordinator |
 | keeper | coordinator |
-| Mason & Artisan | Module designer |
+| Mason & Artisan | Block designer |
 | Warchief | Lead agent |
 | Mason | Data planner |
 | Artisan | Layout designer |
