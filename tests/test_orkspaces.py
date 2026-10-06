@@ -278,7 +278,7 @@ async def test_hud_shows_budget_from_scroll(fake_repo: Path, isolated_layout_fil
         hud_str = str(app.screen.query_one("#hud", Hud).render())
         assert "$— / $5.00" in hud_str
         assert "— / 64k" in hud_str  # 65536 tokens = 64k
-        assert "🥩 0/7" in hud_str
+        assert "🥩 0/" in hud_str  # working / all agents; the cap no longer shows
 
 
 @pytest.mark.asyncio
