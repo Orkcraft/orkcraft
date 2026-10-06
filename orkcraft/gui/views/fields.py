@@ -1,4 +1,5 @@
-"""🌾 Task Fields in the GUI: the board as lanes of cards. Every act is the worker's
+"""🌾 Task Fields in the GUI: one board, three parts — the orks' tasks as lanes of cards (a kanban), the
+person's own to-dos (a checklist) and the notes (ideas, questions). Every act is the worker's
 (core/workers/fields.py): it changes the board file and sends what changed down the roads."""
 from __future__ import annotations
 
@@ -7,26 +8,41 @@ from orkcraft.realm import tasklist
 
 REFRESH_S = 10.0              # as the TUI: a hand edit of the board file shows within this
 COLORS = {"🟨": "yellow", "🟩": "green", "🟦": "blue", "🟥": "red", "🟪": "purple"}
+TOP = 2                       # titles a part shows on the closed card
 
 
 def refresh(w) -> None:
     w.refresh()
 
 
+def _short(title: str) -> str:
+    return tasklist.plain(title)[:60]
+
+
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): a counter per status lane, then the note folders with
-    theirs (`notes`), each `new` when it holds unseen cards; in notes mode only the folders."""
+    """Closed (docs/design/building-views.md): a counter per status lane with its top cards, then the
+    note folders with theirs (`notes`), each `new` when it holds unseen cards; in notes mode only the
+    folders. In board mode also the person's open to-dos (`todos`) and the latest notes (`ideas`)."""
     if w.error:
-        return {"error": w.error[:60], "lanes": [], "notes": []}
+        return {"error": w.error[:60], "lanes": [], "notes": [], "todos": None, "ideas": None}
     seen = w.seen()
     lanes, notes = [], []
     for ln in w.visible_lanes():
         rows = [c for c in w.cards if c.column == ln.id]
-        count = {"label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows)}
+        count = {"id": ln.id, "label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows),
+                 "top": [_short(c.title) for c in rows[:TOP]] if ln.id != "done" else []}
         (notes if ln.kind == tasklist.NOTE else lanes).append(count)
     if w.mode == "notes":
         lanes, notes = notes, []
-    return {"error": "", "lanes": lanes, "notes": notes}
+    todos = ideas = None
+    if w.shows_todos:
+        mine = w.todos
+        open_ = [c for c in mine if not c.checked]
+        todos = {"open": len(open_), "count": len(mine), "top": [_short(c.title) for c in open_[:TOP + 1]]}
+        latest = w.notes[::-1]
+        ideas = {"count": len(latest), "new": any(c.id not in seen for c in latest),
+                 "top": [_short(c.title) for c in latest[:TOP + 1]]}
+    return {"error": "", "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas}
 
 
 def detail(w) -> dict:
@@ -37,7 +53,14 @@ def detail(w) -> dict:
                   "body": c.body, "kind": c.kind, "new": c.id not in seen}
                  for c in w.cards if c.column == ln.id]
         lanes.append({"id": ln.id, "label": ln.label, "kind": ln.kind, "cards": cards})
-    return {"mode": w.mode, "error": w.error, "lanes": lanes}
+    todos = None
+    if w.shows_todos:
+        lane = w.todo_lane()
+        todos = {"id": lane.id, "label": lane.label,
+                 "cards": [{"id": c.id, "title": tasklist.plain(c.title), "color": COLORS.get(c.color, ""),
+                            "body": c.body, "kind": c.kind, "done": c.checked, "new": c.id not in seen}
+                           for c in w.todos]}
+    return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos}
 
 
 def _card(w, args: dict) -> tasklist.Task:
@@ -72,6 +95,15 @@ def _edit(w, args: dict) -> str:
     if not w.edit(card.id, title, text(args, "body", 20_000).rstrip()):
         return ""
     return next((c.id for c in w.cards if c.column == card.column and c.title == title), "")
+
+
+def _check(w, args: dict) -> bool:
+    done = args.get("done")
+    return w.check(_card(w, args).id, None if done is None else bool(done))
+
+
+def _mine(w, args: dict) -> bool:
+    return w.to_mine(_card(w, args).id)
 
 
 def _color(w, args: dict) -> bool:
@@ -109,4 +141,4 @@ def _seen(w, args: dict) -> None:
 
 
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
-        "remove": _remove, "seen": _seen, "add_lane": _add_lane}
+        "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine}
