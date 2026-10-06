@@ -136,7 +136,7 @@ function Carts({ paths, carts, travel, camp }) {
           style=${`offset-path: path("${d}"); animation-duration: ${back ? SHORT_TRIP_S : trip}s; animation-delay: ${delayOf(c)}`}>
         ${camp ? html`<img class="gui-cart__sprite" src="/ds/sprites/carts/minecart@2x.png" width="20" height="18" alt="" />`
                : html`<img class="gui-cart__gold" src="/ds/sprites/icons/res-gold.png" srcset="/ds/sprites/icons/res-gold@2x.png 2x"
-                   width="16" height="16" alt="" />`}
+                   width="8" height="8" alt="" />`}
         ${c.title && !back && html`<span class="gui-cart__label ok-font-status">${say(c.title)}</span>`}
       </div>`;
     })}

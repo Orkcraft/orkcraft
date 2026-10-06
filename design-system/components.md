@@ -252,7 +252,7 @@ A subscription between two buildings, with carts (events) travelling from the ex
 - Bends turn on `radius-md` (4px). Where roads cross, the later one's `canvas` halo breaks the one below.
 - Roads that would share a path take lanes of their own, one cell (8px) apart.
 - With a building selected, its roads out turn `road-selected` (gold), its roads in keep their colour, and every other road dims to 40%.
-- Carts are stacks of gold (`icons/res-gold.png`, the Spend icon) glowing gold, red while held, grey when turned back, with a pill label.
+- Carts are small stacks of gold (`icons/res-gold.png`, the Spend icon, at 8px) glowing gold, red while held, grey when turned back, with a pill label.
 - A road runs straight out of its gate and into the other for up to 48px before it turns, so it never bends right at a building.
 
 **Motion.** Carts move at about 8 fps. More than six on one road collapse into a counter (×N).
