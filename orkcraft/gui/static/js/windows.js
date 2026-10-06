@@ -15,6 +15,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView } from "./console.js";
+import { OrkHead } from "./icons.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
 // `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
@@ -104,6 +105,7 @@ export function Badge({ garrison, alert }) {
   const more = garrison.length - 1;
   const busy = garrison.some((o) => o.status === "busy");
   return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
+    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
     ${lead.name}${more > 0 ? `+${more}` : ""}
     ${lead.scheme && html` <span class="gui-scheme">${lead.scheme}</span>`}
     ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
@@ -185,6 +187,7 @@ export function Panel() {
     <div class="ok-head is-banner"></div>
     <div class="ok-win__frame">
       <div class="ok-win__bar" onDblClick=${toggleFull}>
+        ${b && html`<span class="ok-win__no">${town.value.buildings.indexOf(b) + 1}</span>`}
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
         ${b && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
         <span class="gui-head__spacer"></span>

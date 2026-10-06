@@ -17,6 +17,7 @@ import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
+import { OrkHead } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -207,7 +208,7 @@ function Garrison({ garrison, b }) {
   return html`<section class="gui-section">
     <h3 class="ok-font-heading">${say("Garrison")}</h3>
     <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
-      <button class="gui-link ok-font-label" title=${say("The ork itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(o.ref)}>${o.name}</button>
+      <${OrkHead} o=${o} /> <button class="gui-link ok-font-label" title=${say("The ork itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(o.ref)}>${o.name}</button>
       ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
       <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
       ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>

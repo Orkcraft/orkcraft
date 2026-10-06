@@ -17,6 +17,7 @@ button { font: inherit; color: inherit; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
+.gui-hud__mark { display: block; image-rendering: pixelated; }
 .gui-hud__project { color: var(--ink-muted); }
 /* The project's name opens the town's settings (js/settings.js); Halt All stands where Ready was. */
 .gui-hud__menu, .gui-hud__stop { padding: 1px var(--space-2); border: 1px solid transparent; border-radius: var(--radius-sm, 0);
@@ -93,7 +94,8 @@ button { font: inherit; color: inherit; }
 .gui-hut__pin.is-warn, .gui-hut__pinned.is-warn { color: var(--danger); animation: gui-pin-warn .4s ease-out 2; }
 @keyframes gui-pin-warn { 50% { transform: scale(1.35); } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__pin.is-warn, .gui-hut__pinned.is-warn { animation: none; } }
-.gui-hut__title { display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-1) var(--space-1); white-space: nowrap; }
+.gui-hut__title { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+.gui-hut__title .ok-badge { flex: none; }
 .gui-hut__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .gui-type-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; color: var(--ink-muted); }
 .gui-hut.is-selected .gui-type-icon { color: var(--frame-focus); }
@@ -370,3 +372,11 @@ button { font: inherit; color: inherit; }
 .gui-card-plan .gui-rows > li { padding: 2px 0; }
 .gui-card-order__acts { display: flex; gap: var(--space-2); }
 .gui-card-order__acts:empty { display: none; }
+/* Camp, as the design system draws it (design-system/components.md): every resource says its word beside
+   its sprite, section headings are gold, the agents show their heads (js/icons.js OrkHead) and an open
+   window carries its building's sprite over its frame. */
+[data-theme^="camp"] .ok-res .ok-word { display: inline; margin-right: 2px; }
+[data-theme^="camp"] .gui-win__body .ok-font-heading:not([class*="ok-tone-"]) { color: var(--ink-gold); }
+.gui-rows .ok-sprite, .ok-item .meta .ok-sprite { vertical-align: middle; image-rendering: pixelated; }
+.ok-item .meta .ok-sprite { margin-right: 2px; }
+.gui-win__banner { display: block; image-rendering: pixelated; }
