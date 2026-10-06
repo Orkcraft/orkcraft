@@ -81,7 +81,7 @@ FRONT_DESK = {
     ],
     # The flow reads left to right: the inbox, triage, the board; the agents and their results below, clear of the
     # Command Card (bottom right) so a frame can show both.
-    "huts": {POST: (0.0, 0.17), TRIAGE: (0.3, 0.17), BOARD: (0.76, 0.0), CAMP: (0.46, 0.7), LOOT: (0.22, 0.7)},
+    "huts": {POST: (0.0, 0.2), TRIAGE: (0.44, 0.2), BOARD: (0.92, 0.0), CAMP: (0.5, 0.74), LOOT: (0.0, 0.74)},
     "layout": [(0.0, 0.0, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46), (0.7, 0.0, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
                (0.7, 0.54, 0.3, 0.46)],
     "roads": [

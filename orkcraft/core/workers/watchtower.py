@@ -29,6 +29,7 @@ import json
 import os
 import queue
 import re
+import textwrap
 import threading
 import time
 from dataclasses import asdict
@@ -44,6 +45,7 @@ READ_KEEP = 1000                                        # read marks remembered
 RAW_KEEP = 20000                                        # a raw webhook's body, as kept
 ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 LABEL = {"webhook": "hooks", "confluence": "confl"}     # six cells on the hut
+PREVIEW_W = 14                                          # a hut this wide previews the newest message
 ORDER = ("mail", "slack", "jira", "confluence", "figma", "github", "webhook", "cron")
 
 
@@ -520,14 +522,34 @@ class WatchtowerWorker(Worker):
         more = (len(rest), count(sum(len(self.unread(s)) for s in rest))) if rest else None
         return out, more
 
+    def newest(self) -> watch.Signal | None:
+        """The newest signal kept (one the Lookout let through, or any when no intent is asked)."""
+        return next((s for s in self.signals if s.kept is not False), None)
+
     def hut_lines(self, widths: list[int]) -> list[str]:
-        """What is new per source, ten cells a line — `gmail    3`, `slack  99+`; ERR when it fails."""
-        if not self.sources:
-            return ["no source", "yet", "", ""]
+        """A narrow hut: what is new per source, a line each — `gmail    3`, `slack  99+`; ERR when it fails.
+        A wide one (PREVIEW_W cells or more): the counters on one line, then a preview of the newest
+        message — `✉ Dana Reyes: Can we move Thursday's…` — over the rows left, cut with an ellipsis."""
         rows = len(widths) or 4
         width = widths[0] if widths else 10
-        shown, more = self.counters(rows)
-        lines = [f"{label[:width - 4]:<{width - 4}}{n:>4}" for label, n in shown]
-        if more:
-            lines.append(f"+{more[0]} more"[:width - 4].ljust(width - 4) + f"{more[1]:>4}")
-        return lines + [""] * (rows - len(lines))
+        if not self.sources:
+            return ["no source", "yet"] + [""] * max(rows - 2, 0)
+        if width < PREVIEW_W:
+            shown, more = self.counters(rows)
+            lines = [f"{label[:width - 4]:<{width - 4}}{n:>4}" for label, n in shown]
+            if more:
+                lines.append(f"+{more[0]} more"[:width - 4].ljust(width - 4) + f"{more[1]:>4}")
+            return lines + [""] * (rows - len(lines))
+        shown, more = self.counters(len(self.shown()))
+        status = " ".join(f"{label} {n}" for label, n in shown)
+        lines = [status if len(status) <= width else status[:width - 1] + "…"]
+        sig = self.newest()
+        if sig is not None:
+            words = f"{ICON.get(sig.source, '·')} {sig.at[11:16]} {' '.join(sig.title.split())}"
+            wrapped = textwrap.wrap(words, width) or [""]
+            left = max(rows - 1, 1)
+            if len(wrapped) > left:                         # cut cleanly: the last line that fits ends in …
+                wrapped = wrapped[:left]
+                wrapped[-1] = wrapped[-1][:width - 1].rstrip() + "…"
+            lines += wrapped
+        return lines[:rows] + [""] * (rows - len(lines))

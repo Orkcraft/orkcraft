@@ -272,7 +272,7 @@ button.gui-status__item { cursor: pointer; }
   box-shadow: 0 0 0 2px var(--canvas), 0 0 10px 2px var(--road-selected); }
 .gui-cart.is-held .gui-cart__dot { background: var(--cart-held); }
 .gui-cart.is-back .gui-cart__dot { background: var(--cart-filtered); }
-.gui-cart__label { position: absolute; left: 0; bottom: calc(100% + 3px); max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
+.gui-cart__label { position: absolute; right: 0; bottom: calc(100% + 3px); max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
   background: var(--road-selected); color: var(--on-action); border-radius: var(--radius-sm); }
 [data-theme="office"] .gui-cart__label { border-radius: var(--radius-full); }
 @keyframes gui-cart-go { 0% { offset-distance: 0%; opacity: 0; } 6% { opacity: 1; } 94% { offset-distance: 100%; opacity: 1; }
@@ -282,5 +282,5 @@ button.gui-status__item { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .gui-cart { animation-timing-function: steps(8); } }
 
 /* Camp draws a command as its icon; a command that has none yet says its word instead of an empty tile. */
-[data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: 30px; padding: 0 var(--space-2); font-size: 14px; }
+[data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: auto; min-height: 28px; padding: var(--space-1) var(--space-2); font-size: 14px; line-height: 1.2; }
 [data-theme="camp"] .ok-act:not(:has(img)) .ok-act__label { display: inline; }

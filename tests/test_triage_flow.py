@@ -220,3 +220,26 @@ def test_only_the_sandbox_makes_messages_up(fake_repo, isolated_layout_file):
     host = Host(fake_repo, auto_commit=False)
     tower = buildings.raise_spec(host.town, buildings.type_spec(host.town, "watchtower")).id
     assert host.town.worker(tower).simulate("mail", "Ann: hi") is None
+
+
+# -- the Inbox's card previews the newest message ----------------------------------------------------------
+
+def test_the_watchtower_card_previews_the_newest_message(tmp_path: Path):
+    from orkcraft.gui.views import watchtower as view
+    root = demo.build(tmp_path / "dash", set_name="dashboard")
+    host = Host(root, False, root / ".orkcraft.json", demo=True)
+    try:
+        host.town.call = lambda fn, *a: fn(*a)
+        tower = host.town.worker(fd.POST)
+        tower.simulate(**fd.MAIL)
+        card = view.card(tower)
+        assert [s["label"] for s in card["sources"]] == ["gmail", "slack"]
+        newest = card["latest"][0]
+        assert (newest["from"], newest["fresh"]) == ("Dana Reyes", True)
+        assert newest["title"].startswith("Can we move Thursday") and len(card["latest"]) == 1
+        lines = tower.hut_lines([16] * 3)                     # the TUI's wide hut: the counters, the preview
+        assert lines[0] == "gmail 1 slack 0" and lines[1].startswith("✉ ") and "Dana" in lines[1]
+        assert len(lines) == 3 and lines[2].endswith("…") and all(len(x) <= 16 for x in lines)
+        assert tower.hut_lines([10] * 4)[:2] == ["gmail    1", "slack    0"]      # a narrow hut: the counters only
+    finally:
+        host.close()
