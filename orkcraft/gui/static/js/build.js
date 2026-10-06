@@ -48,26 +48,44 @@ export function BuildDialog() {
   </${Dialog}>`;
 }
 
+/** A road in words, both ways in: + Listen on the receiver ({to, among}: the steward picks the source) and an
+ *  arrow drawn from one building to another ({from, to}). Say what it should listen to and what to do with
+ *  it — the steward offers roads (gui/road_planner.py, a job); picking by hand waits folded below. */
 export function RoadDialog() {
   const pair = laying.value;
   const [choices, setChoices] = useState(null);
+  const [words, setWords] = useState("");
   useEffect(() => {
     setChoices(null);
-    if (pair) command("roads.choices", { from: pair.from, to: pair.to }).then(setChoices, () => setChoices([]));
+    if (pair && pair.from) command("roads.choices", { from: pair.from, to: pair.to }).then(setChoices, () => setChoices([]));
   }, [pair && pair.from, pair && pair.to]);
+  useEffect(() => setWords(""), [pair && pair.to]);
   if (!pair) return null;
   const close = () => { laying.value = null; };
   const titles = Object.fromEntries(town.value.buildings.map((b) => [b.id, say(b.title)]));
   const lay = (c) => command("roads.lay", { from: pair.from, to: pair.to, event: c.event, handler: c.handler })
     .then(close, () => {});
-  return html`<${Dialog} title=${`${say("Road")}: ${titles[pair.from]} → ${titles[pair.to]}`}
-      text=${say("What the road carries, and who takes it at the other end.")} onCancel=${close}
-      actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>`}>
-    ${choices === null ? html`<p class="ok-tone-muted">Looking…</p>`
+  const find = () => words.trim() && command("roads.plan", { to: pair.to, from: pair.from || "", prompt: words.trim(),
+    among: pair.among || null }).then(close, () => {});
+  const sources = (pair.among || []).filter((id) => id !== pair.to && titles[id]);
+  const title = pair.from ? `${say("Road")}: ${titles[pair.from]} → ${titles[pair.to]}` : say(`Listen — ${titles[pair.to]}`);
+  return html`<${Dialog} title=${title} text=${pair.from ? say("What should the road carry, and what should happen to it?")
+      : say("What should it listen to, and what should happen to it?")} onCancel=${close}
+      actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>
+        <button class="ok-btn primary" disabled=${!words.trim()} onClick=${find}>Find the road</button>`}>
+    <textarea class="ok-input gui-textarea" rows="3" autofocus value=${words} onInput=${(e) => setWords(e.target.value)}
+      onKeyDown=${(e) => e.key === "Enter" && (e.ctrlKey || e.metaKey) && find()}
+      placeholder=${say("e.g. listen to unread messages and make to-dos of them")}></textarea>
+    <details class="gui-road__manual">
+      <summary class="ok-font-label ok-tone-muted">${pair.from ? "Pick the event by hand" : "Pick the building by hand"}</summary>
+      ${!pair.from ? html`<ul class="gui-catalog">${sources.map((id) => html`<li key=${id} class="gui-catalog__item"
+          onClick=${() => { laying.value = { ...pair, from: id }; }}><b>${titles[id]}</b></li>`)}</ul>`
+      : choices === null ? html`<p class="ok-tone-muted">Looking…</p>`
       : !choices.length ? html`<p class="ok-tone-muted">${say("No plain road fits")} from ${titles[pair.from]} to ${titles[pair.to]}.
-          A road an ork handles by a rule (Listen with a prompt) is laid in the TUI for now.</p>`
+          Describe it above: an ork will handle it by a rule.</p>`
       : html`<div class="gui-orders__options">${choices.map((c) => html`<button key=${c.event + (c.handler || "")}
           class="ok-btn" onClick=${() => lay(c)}>${c.label}</button>`)}</div>`}
+    </details>
   </${Dialog}>`;
 }
 

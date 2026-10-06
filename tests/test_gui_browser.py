@@ -407,3 +407,36 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { autonomy: 'clock', wait: 7 }))")
     modal.get_by_role("button", name="Close", exact=True).click()
     modal.wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeypatch):
+    """+ Listen opens the road in words (picking by hand folded below); the steward's offer is laid by a click."""
+    import json
+    from orkcraft.core import runners
+    pg = page
+    link = "import('/static/js/link.js')"
+    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
+    tower, fields = call("town.build", {"type": "watchtower"}), call("town.build", {"type": "fields"})
+    monkeypatch.setattr(runners, "ROAD_RUNNER", lambda p: (json.dumps({"options": [
+        {"from": tower, "event": "mail.received", "match": "(?i)unread", "say": "When unread mail comes, a to-do"}]}), 0.01))
+    _hut(pg, fields).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, fields).locator(".gui-hut__title").click()
+    _command(pg)
+    pg.locator(".gui-roster .gui-steward__group summary button").first.click()          # + Listen
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    manual = modal.locator("details.gui-road__manual")
+    assert manual.count() == 1 and manual.get_attribute("open") is None                 # by hand: folded
+    modal.locator("textarea").fill("listen to unread messages and make to-dos of them")
+    modal.locator("button.primary").click()
+    pg.locator(".gui-modal", has_text="When unread mail comes").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-modal .ok-act").first.click()
+    for _ in range(50):
+        listens = server_building(pg, fields)["listens"]
+        if listens:
+            break
+        pg.wait_for_timeout(100)
+    assert listens and tower in json.dumps(listens)
+    for bid in (tower, fields):
+        call("town.demolish", {"id": bid})

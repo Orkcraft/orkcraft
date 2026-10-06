@@ -19,11 +19,17 @@ class RecruiterMixin:
         prompt = self._text(args, "prompt")
         if not prompt:
             raise ConsoleError("Describe what the ork should do")
+        return self._recruit(bs.id, prompt)
+
+    def _recruit(self, building_id: str, prompt: str, road: list[tuple[str, str]] | None = None) -> str:
+        """`road` [(source, event)]: a road with a rule — the handler is made for exactly those roads."""
         self._budget()
         snapshot, harnesses = copy.deepcopy(self.town.scroll), self.harnesses()
-        work = lambda: recruiter.recruit(prompt, snapshot, bs.id, runner=runners.RECRUIT_RUNNER or builders.claude_runner,
+        work = lambda: recruiter.recruit(prompt, snapshot, building_id,  # noqa: E731
+                                         runner=runners.RECRUIT_RUNNER or builders.claude_runner, road=road,
                                          harnesses=harnesses)
-        return self._job("recruit", bs.id, "The Recruiter is choosing chain → script → agent…", work, self._recruited)
+        return self._job("recruit", building_id, "The Recruiter is choosing chain → script → agent…", work,
+                         self._recruited)
 
     def _recruited(self, job: dict, result: recruiter.RecruitResult) -> None:
         if not result.ok:

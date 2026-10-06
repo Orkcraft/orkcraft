@@ -11,6 +11,7 @@ from textual.widgets.option_list import Option
 
 PLAIN = "-"   # option id of "no handler"
 RULE = "+rule"   # a road with a rule: the Recruiter makes its handler
+WORDS = "+words"   # a road in words: the receiver's steward finds it (realm/road_planner.py)
 
 
 class _PickModal(ModalScreen):
@@ -79,3 +80,15 @@ class RoadHandlerModal(_PickModal):
         options = [(PLAIN, ("● " if current is None else "  ") + "plain (no handler)")]
         options += [(hid, ("● " if hid == current else "  ") + label) for hid, label in handlers]
         super().__init__(f"🔀 HANDLER · {road_title}", options, "[Enter] Pick   [Esc] Cancel")
+
+
+class RoadPlanModal(_PickModal):
+    """The roads the steward offers for what was said: (say, how) rows. Dismisses the index, or None."""
+
+    def __init__(self, source_title: str, target_title: str, options: list[tuple[str, str]], cost: str = "") -> None:
+        super().__init__(f"💬 ROAD · {source_title} → {target_title}",
+                         [(str(i), f"{say}\n   {how}") for i, (say, how) in enumerate(options)],
+                         "[Enter] Lay it   [Esc] Cancel" + (f"   · {cost}" if cost else ""))
+
+    def result_for(self, option_id: str):
+        return int(option_id) if option_id.isdigit() else None

@@ -265,6 +265,8 @@ button.gui-status__item { cursor: pointer; }
   border-radius: var(--ok-radius, 0); padding: var(--space-2) var(--space-3); }
 .gui-editor:focus { outline: none; border-color: var(--frame-focus); }
 .gui-textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; height: auto; }
+.gui-road__manual { margin-top: var(--space-2); }
+.gui-road__manual > summary { cursor: pointer; }
 
 .gui-fields { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
 .gui-fields .ok-board { overflow: auto; align-items: start; }
