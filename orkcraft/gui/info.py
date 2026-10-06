@@ -2,7 +2,7 @@
 is here, what it spent, its 👍 / 👎, who it listens to) and an ork's 🎒 Inventory (its models and the
 tools of its latest runs).
 
-The TUI's console builds the same from the same realm functions (`screens/console.py`: Info,
+The TUI's console builds the same from the same realm functions (`screens/console/`: Info,
 garrison, Inventory); here they are data for the page, with no toolkit. A text that may carry emoji
 comes twice, as it is and `_plain`, for Office. The page asks for it (`info`) while something is
 selected, so the files it reads (the journal, the scores, the transcripts) are read for one only.

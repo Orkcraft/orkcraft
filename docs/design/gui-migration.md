@@ -125,8 +125,10 @@ conflicted there. Now:
   `self.<method>` calls between them still work.
 - **Rule of thumb:** a module over ~600 lines is split by domain before a feature is added to it.
   A new feature goes into its domain's module, or into a new one, never into `app.py`.
-- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/onboarding.py`,
-  `screens/console.py`.
+- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/onboarding.py`.
+- `screens/console/` is split by part: `cards.py` (what Info says, as text), `warmap.py`,
+  `info.py`, `garrison.py` (the Clan Roster and the Inventory), `command_card.py`, and the
+  `Console` itself in `__init__.py`, which still exports every name.
 
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
