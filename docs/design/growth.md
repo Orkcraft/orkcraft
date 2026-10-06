@@ -7,13 +7,18 @@ changes and their probation (`realm/evolution.py`), the profile of the onboardin
 (docs/design/onboarding.md §3) and the flat sprite set (docs/design/building-sprites.md). Wording: ork,
 orkestration (CLAUDE.md).
 
+**One look.** The GUI has one look, Office in Camp's theme (gui-design-system.md: the sprites, the
+agents' heads and the gold stay). Everything here is drawn in that look. "Office" below means only
+the **Office words** (`modes.OFFICE`, `say()`): the same art, the concepts by their Office names, and
+no Camp-only jokes (mascot names, the Warchief's address).
+
 | stage | what | state |
 |---|---|---|
 | 1 | the feedback loop closed: "your 👎 led to this" (§3) | |
 | 2 | a building's level I–III and its goal flag on the roof (§4, §5) | |
 | 3 | the Info panel's large header with the level (§6) | |
 | 4 | the Warchief's crown (§8) | |
-| 5 | the operator's mascot grows, in the HUD's corner (§7) | |
+| 5 | the operator's mascot grows, in the head of Settings, with milestones (§7) | |
 | later | what a level unlocks by goal (§4.4); temporary moods of the mascot (§7.5) | |
 
 ## 1. Why
@@ -46,13 +51,13 @@ and let the **operator's mascot grow** with the camp (§7).
    punishment, and people leave a tool that punishes them. What a level allows can still be taken
    back as it is today (probation reverts a change; autonomy stays the operator's to set).
 3. **Calm.** There are no XP bars, no numbers on the map, no "Level up!" dialogs and no confetti.
-   Growth shows where a picture already is (the hut's header, the HUD's corner) and in one line in
-   the Warchief's line. Only Orders burns in the HUD.
+   Growth shows where a picture already is (the hut's header, the head of Settings) and in one line
+   in the Warchief's line. The HUD gets nothing new; only Orders burns there.
 4. **One art system.** Growth is drawn by **adding** a few pixels to the existing sprites, never by
    redrawing them: the same five colours, the same pixel. Overlays are drawn from code grids (like
    `tools/logo.py`), so they come out identical every time and never drift the way an image model does.
-5. **The Office shows the same facts in words:** a level is a line in Info, and there is no flag, no
-   crown and no mascot art.
+5. **Office words say the same facts plainly:** the art stays (it is the one look), the words change:
+   *Level* is *Maturity*, the mascot's name is its role ("Engineering manager · stage 3").
 
 ## 3. The feedback loop closed
 
@@ -161,7 +166,7 @@ A small flag on the roof of the hut's header sprite. It is the only mark of grow
 - **Gold at III is a deliberate exception** to "one gold accent per building"
   (building-sprites.md), because the gold flag is the reward. That rule gets a line about it.
 - **None (level 0)** shows no flag, whatever the goal.
-- **The Office** shows no flag; Info says the level (§6).
+- **With Office words** the flag stays; its tooltip says "Maturity 2 / 3 · Goal: Quality".
 
 ![A mixed town, at about the app's size](../img/growth/flags-town.png)
 
@@ -178,7 +183,7 @@ What Info gets:
   This is the 128×64 "Window" size that sprites.md already plans.
 - Beside it, one line: **"The Forge · 💎 II"**, and below it one line on the next level: "Next: 2 more
   kept changes, and a month without a revert".
-- In the Office, only the two lines: "Maturity: 2 / 3 · Goal: Quality".
+- With Office words the lines read "Maturity: 2 / 3 · Goal: Quality".
 
 ## 7. The operator's mascot
 
@@ -203,33 +208,64 @@ it, the way the ork's states do (sleep mark, sweat, flame):
 
 - **The top stage is never a crown.** The crown is the Warchief's (§8). Each kin has its own top
   mark: glowing eyes and a staff for the lich, a horned war helm for the ork, and so on.
-- **The names** keep the onboarding's humour (Jira Lich, Night King). They are Camp words and get
-  Office pairs only where the Office shows them at all (§7.4).
+- **The names** keep the onboarding's humour (Jira Lich, Night King). They are Camp words; with Office
+  words the stage is named by the role and its number ("Engineering manager · stage 3").
 - **Art cost:** 7 heads + about 3 stage marks per kin, all from code grids. Start with two kins
   (undead and orks) and 3 stages. The others show a shared stage mark until drawn.
 
-### 7.3 Where it lives
+### 7.3 Where it lives: the head of Settings
 
-- **The HUD's top right corner**, after the resources, behind a thin divider. To its left are the
-  camp's resources, to its right is the operator. The size is that of a resource icon. There is no
-  text and no number next to it; the stage and its name are in the tooltip ("Jira Lich · stage 3").
-- **A click opens the profile card:** role and mascot from the onboarding, the stage, what the next one
-  takes ("2 buildings at II"), and 🧭 Onboarding to change the role. The profile has no place in the
-  GUI today; this is it.
-- It **never burns or blinks**. In the HUD only Orders burns.
-- It is **not at the left**, next to the product's mark: three heads in a row (the mark, the
-  Warchief, the operator) would blur who is who.
-- **A new stage** shows once: the mascot glows softly for a moment, and the Warchief says one line
-  (§7.4). No dialog.
+The mascot has **no place in the HUD**. It heads the Settings dialog (opened from `project ▾`), above
+the camp's rules:
+
+```
+┌ Settings ─────────────────────────────────────────┐
+│ [portrait 48×32]  Jira Lich · stage 3             │
+│                   Next: three buildings at III    │
+│ 🏰 🛤 🔁 🚩 ░ ░ ░   milestones; grey ones ahead    │
+├─ Camp: orkcraft ──────────────────────────────────┤
+│ Autonomy: ⛓️ In chains · 🕰 On the clock · …       │
+│ …                                                 │
+└───────────────────────────────────────────────────┘
+```
+
+- **The portrait** is the head at 4× (48×32), `image-rendering: pixelated`, with the name, the stage
+  and one line on the next stage.
+- **The two parts are told apart:** the head is the operator (per machine), and below it a divider
+  names the camp ("Camp: orkcraft") whose rules follow. Otherwise a new project would seem to start the
+  operator from nothing.
+- **Seen rarely, so it is announced.** A new stage is said once in the Warchief's line, and that line
+  is a link that opens Settings on the portrait. The Warchief's address (§7.4) keeps it present
+  between visits.
+- **A new stage** glows softly the first time Settings opens after it. There is no dialog.
 - **Stored** per machine in `~/.config/orkcraft/settings.json` → `profile.stage`, the highest stage
-  reached in any camp. The mascot is the operator, not the project.
+  reached in any camp, and `profile.milestones`: the operator, not the project.
+- 🧭 Onboarding, to change the role and so the mascot, is a link under the portrait.
+
+### 7.3.1 Milestones
+
+A row of small marks under the portrait, each what the camp **learned**, never a count:
+
+| | milestone | when |
+|---|---|---|
+| 🏰 | First town | a town is raised |
+| 🛤 | First road | two buildings joined by a road |
+| 👍 | First reference | a result kept as what good looks like |
+| 🔁 | It learned | an orks' change kept after probation |
+| 🚩 | Mature | a building at III |
+| ⛓️‍💥 | Trusted | a building unchained |
+| 🌙 | A night's work | the orks worked in quiet hours and their changes were kept |
+
+- **About ten, no more.** No "×100", no streaks, no comparison with anyone.
+- **The ones not reached** show as grey silhouettes with a hint ("Join two buildings with a road"), so
+  the row also points at what Orkcraft can do that the operator has not tried.
+- With Office words they are a plain list, "Milestones".
 
 ### 7.4 How the Warchief addresses the operator
 
-In Camp, the Warchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge asks for
-a decision." It is one line of wording with no art, so growth shows in the conversation too. The
-Office has no address and no mascot art: a neutral circle with the role's icon opens the same profile
-card, and the stage is a line in it.
+With Camp words, the Warchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge
+asks for a decision." It is one line of wording with no art, so growth shows in the conversation too.
+With Office words there is no address.
 
 ### 7.5 Later: moods
 
@@ -261,23 +297,24 @@ leader. It is the **role's mark, not a reward**: always there, never grown.
 - Points of any kind: for Apply, for reviews, for logins.
 - A rank separate from the mascot.
 - Separate sprites per level or per goal (114 drawings, and the style would drift).
-- XP bars, numbers on the map, level-up dialogs.
+- XP bars, numbers on the map, level-up dialogs, the mascot in the HUD.
 - Detailed paintings in Info.
 - Anything in the TUI: it is deprecated (calm-town.md §9). All of this is GUI only.
 
 ## 10. Words
 
-New pairs in `realm/lexicon.py` `TERMS` (Camp word in code, Office word shown in the Office):
+New pairs in `realm/lexicon.py` `TERMS` (Camp word in code, Office word shown with Office words):
 
 | key | Camp | Office |
 |---|---|---|
 | `level` | Level | Maturity |
-| `goal_flag` | Banner | — (not shown) |
+| `goal_flag` | Banner | Goal mark |
 | `mascot` | Mascot | Profile |
-| `mascot.stage` | Stage | — (not shown) |
+| `mascot.stage` | Stage | Stage |
+| `milestone` | Milestone | Milestone |
 | `growth.next` | Next | To reach the next level |
 
-Mascot names and the Warchief's address are Camp only.
+Mascot names and the Warchief's address are Camp words only.
 
 ## 11. Metrics
 
