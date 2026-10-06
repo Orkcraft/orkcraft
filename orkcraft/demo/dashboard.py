@@ -18,6 +18,9 @@ sounds a chime for every paste, a horn for every route the Signpost takes and a 
 rule matched. (No Lake building: Lake is the town's window.)
 F5 Front Desk — mail and Slack are triaged by a Clan Fire that routes: what needs you lands in your
 to-dos, the rest becomes a task an ork in the Barracks does by itself (demo/front_desk.py).
+F6 Meetings — a mail that asks to meet is triaged into an event in the War Drum, which asks for its
+brief at once; an ork writes it from the Scroll Dump's notes, and the brief comes back to the event
+and goes on to the Loot Vault (demo/meetings.py).
 The Town Hall shows the T1108 pipeline seeded: the Council's reviews, 👍 / 👎 with an incident,
 a self-improvement proposal and a weekly report.
 
@@ -31,7 +34,7 @@ import datetime as dt
 import subprocess
 from pathlib import Path
 
-from orkcraft.demo import front_desk, seeds
+from orkcraft.demo import front_desk, meetings, seeds
 
 SEL = "on_selection_change"
 TODAY = dt.date.today()
@@ -247,8 +250,9 @@ LIBRARY = {
 }
 
 from orkcraft.demo.front_desk import FRONT_DESK  # noqa: E402  (its own module: the triage flow)
+from orkcraft.demo.meetings import MEETINGS  # noqa: E402  (its own module: a meeting and its brief)
 
-DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY, FRONT_DESK]
+DASHBOARD_SCENARIOS = [MY_DAY, AGENT_YARD, GATES, LIBRARY, FRONT_DESK, MEETINGS]
 
 
 # -- the repository and the seeded state ----------------------------------------------------------------
@@ -267,6 +271,7 @@ def prepare(root: Path) -> None:
     now = dt.datetime.now().replace(microsecond=0)
     _seed_wikis(root)
     seeds.before_commit(root, now)
+    meetings.seed_files(root, now)
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "demo: the town is founded")
     for branch, path, lines, msg in (("feature/login", "src/login.py", 42, "login form with validation"),
@@ -285,6 +290,7 @@ def prepare(root: Path) -> None:
     _seed_pipeline(root)
     seeds.after_commit(root, now)
     front_desk.prepare(root, now)
+    meetings.prepare(root, now)
 
 
 WIKI_PAGES = {
