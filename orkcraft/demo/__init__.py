@@ -125,6 +125,8 @@ def make_scroll(scenarios: list[dict] = SCENARIOS) -> ts.TownScroll:
         for spec, frac in zip(sc["buildings"], sc.get("layout") or QUADRANTS):
             b = ts.add_custom_building(scroll, spec, ork.id)
             b.frac = list(frac)
+            if spec["id"] in sc.get("huts", {}):          # a spot of its own on the GUI's town (fractions)
+                b.hut = list(sc["huts"][spec["id"]])
         ork.active_building = sc["buildings"][0]["id"]
         for target, handlers in sc.get("handlers", {}).items():
             for h in handlers:

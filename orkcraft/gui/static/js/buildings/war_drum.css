@@ -1,0 +1,52 @@
+/* 🥁 War Drum (js/buildings/war_drum.js): meetings, scheduled runs and ≈ limits on one timeline.
+   Each kind by its role (.ok-tone-*) and its mark, never a colour of its own; tokens only
+   (design-system/tokens.css). Every rule is scoped to this building: its hut is the one that holds
+   a .gui-drum card. */
+
+/* Closed: a card at least a fifth of the screen high and about half as wide again (≈ 3:2), so the
+   next hours read as a timeline. */
+.gui-town__room > .gui-hut.ok-hut[class]:has(.gui-drum) { width: max(340px, 32vh); max-width: none; }
+.gui-hut:has(.gui-drum) .ok-hut__card { min-height: 20vh; }
+.gui-hut:has(.gui-drum) .gui-hut__body { display: flex; flex: 1; flex-direction: column; }
+
+.gui-drum { display: flex; flex: 1; flex-direction: column; gap: var(--space-1); min-width: 0; padding-top: var(--space-1); }
+/* The strip: three lanes over one line of hours — meetings nearest it, runs above, limits on top. */
+.gui-drum__strip { position: relative; height: 34px; margin: 0 var(--space-2); border-bottom: 1px solid var(--frame); }
+.gui-drum__tick { position: absolute; bottom: 0; width: 1px; height: 5px; background: var(--frame); }
+.gui-drum__mark { position: absolute; bottom: 2px; transform: translateX(-50%); line-height: 1; font-weight: 700; }
+.gui-drum__mark.is-schedule { bottom: 12px; }
+.gui-drum__mark.is-limit { bottom: 22px; }
+.gui-drum__scale { display: flex; justify-content: space-between; margin: 0 var(--space-2); font-size: .85em; line-height: 1.1; }
+
+.gui-drum__beats { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-drum__beat { display: flex; gap: var(--space-2); align-items: baseline; min-width: 0; padding: 1px var(--space-1);
+  white-space: nowrap; }
+.gui-drum__beat.is-now .gui-drum__title { font-weight: 700; }
+.gui-drum__beat.is-pick { cursor: pointer; }
+.gui-drum__beat.is-pick:hover { background: var(--panel-raised); }
+.gui-drum__beat.is-selected { background: var(--selection); }
+.gui-drum__beat.is-past { color: var(--ink-muted); }
+.gui-drum__beat.is-past .gui-drum__title { color: var(--ink-muted); }
+.gui-drum__beat .ok-chip { flex: none; }
+/* An estimate leans: the ≈ moments of the limits. */
+.gui-drum__beat.is-limit .gui-drum__when, .gui-drum__beat.is-limit .gui-drum__title, .gui-drum__est { font-style: italic; }
+.gui-drum__glyph { flex: none; width: 1em; text-align: center; }
+.gui-drum__when { flex: none; min-width: 3.2em; font-variant-numeric: tabular-nums; }
+.gui-drum__title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.gui-drum__beat.is-limit .gui-drum__title, .gui-drum__beat.is-schedule .gui-drum__title { color: inherit; }
+.gui-drum__meta { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink-muted);
+  font-size: .9em; }
+.gui-drum__legend { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin: auto 0 0; padding: var(--space-1) var(--space-1) 0;
+  font-size: .85em; }
+.gui-drum__legend > span { white-space: nowrap; }
+
+/* The limits: name, a bar of how much is used, where it stands, ≈ when it is reached. */
+.gui-drum__limits { list-style: none; margin: var(--space-1) 0 0; padding: var(--space-1) 0 0; border-top: 1px solid var(--frame); }
+.gui-drum__limits > li { display: flex; gap: var(--space-2); align-items: center; padding: 1px var(--space-1); white-space: nowrap; }
+.gui-drum__name { flex: none; min-width: 7em; }
+.gui-drum__bar { flex: 0 0 64px; height: 6px; background: var(--panel-inset); border: 1px solid var(--frame); }
+.gui-drum__bar > span { display: block; height: 100%; background: currentColor; }
+.gui-drum__amount { flex: none; color: var(--ink); font-variant-numeric: tabular-nums; }
+.gui-drum__chip { cursor: default; }
+.gui-drum__hour { flex-wrap: wrap; row-gap: var(--space-1); }
+.gui-drum__hour .ok-chip { white-space: nowrap; }

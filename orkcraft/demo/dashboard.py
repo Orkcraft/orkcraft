@@ -97,6 +97,9 @@ MY_DAY = {
         typed("brief", "mill", "Daily Brief", "⚙️", "Miller", "turns what arrives into a brief", "thatch",
               steps=[f"script: {BRIEF}"]),
     ],
+    # the War Drum's tall card (a fifth of the screen) stands over the Watchtower's spot: the tower goes down a row;
+    # the Task board's wide card reaches past a third of the town: the drum steps right of it
+    "huts": {"post": (1 / 3, 1.0), "days": (0.4, 0.0)},
     "layout": [(0.0, 0.0, 0.32, 0.46), (0.34, 0.0, 0.32, 0.46), (0.68, 0.0, 0.32, 0.46),
                (0.0, 0.54, 0.24, 0.46), (0.26, 0.54, 0.16, 0.46), (0.44, 0.54, 0.26, 0.46), (0.72, 0.54, 0.28, 0.46)],
     "roads": [
@@ -165,7 +168,7 @@ GATES = {
         typed("launcher", "catapult", "Release hook", "🎯", "Loader", "sends releases out", "flag",
               url="https://example.com/hooks/release", schema="demo/release.schema.json", method="POST"),
         typed("counter", "workshop", "Word Count", "🔢", "Tinker", "counts the words of every paste",
-              runtime="python", layout="card", inputs=["gate_pit:pit.text"]),
+              runtime="python", layout="card", inputs=["gate_pit:pit.text"], schedule="every 3h"),
         typed("gate_horn", "horn", "The Horn", "📯", "Hornblower", "sounds what comes in",
               sounds=["pit.text: chime", "crossroads/signpost.routed: horn", "*: ding"], quiet="23:00-07:00",
               cooldown=5),

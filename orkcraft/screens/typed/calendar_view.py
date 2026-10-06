@@ -15,6 +15,10 @@ else its Markdown kept in `docs/<id>.md`. The meeting then shows 📄, and Enter
 document as `calendar.doc_opened` — along its road, or straight to a Lake of Insight when none
 carries it.
 
+Over the meetings lie the town's scheduled runs (↻) and ≈ when its limits are reached at the present
+burn rate (realm/drumbeat.py): the head says the limits, the week each day's runs and limits, the hut
+the next of all three.
+
 The work — loading, the clock, the documents, adding — is the building's worker's
 (core/workers/war_drum.py); the view draws the day and the week and holds the dialog.
 """
@@ -29,9 +33,27 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.core.workers.war_drum import DOC, TICK_S, WarDrumWorker
-from orkcraft.realm import catalog, daybook
+from orkcraft.design import tokens
+from orkcraft.realm import catalog, daybook, drumbeat, modes
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
+
+
+def _tone(tone: str) -> str:
+    """A colour role as the terminal draws it in the look on screen (design/tokens.json)."""
+    try:
+        return tokens.color(tone, modes.current())
+    except KeyError:
+        return ""
+
+
+def _beat(b: drumbeat.Beat) -> str:
+    """A run or a limit in the week: `↻ 05:00 Watchtower · daily 05:00`, `≈ 17:40 gold limit · $2.60 / $5.00`."""
+    if b.kind == "schedule":
+        return f"{drumbeat.MARK['schedule']} {b.at:%H:%M} {b.title} · {b.detail}"
+    if b.reached:
+        return f"{drumbeat.MARK['limit']} now {b.title} limit reached · {b.detail}"
+    return f"{drumbeat.MARK['limit']} {b.at:%H:%M} {b.title} limit (estimate) · {b.detail}"
 
 
 class CalendarView(TypedView):
@@ -154,6 +176,13 @@ class CalendarView(TypedView):
         if nxt:
             bits.append(f"next {daybook.when(nxt)[:5]}: {nxt.summary}")
         bits.append(f"{left} left today")
+        limits = w.limits()
+        for lim in limits:
+            if lim.reached:
+                bits.append(f"{lim.what} limit reached")
+            elif lim.at is not None:
+                when = f"{lim.at:%H:%M}" if lim.at.date() == now.date() else f"{lim.at:%a %H:%M}"
+                bits.append(f"≈{when} {lim.what} limit")
         if w.day.errors:
             bits.append("⚠ " + "; ".join(w.day.errors)[:80])
         if not w.configured and not w.day.events:
@@ -170,14 +199,18 @@ class CalendarView(TypedView):
                                          overflow="ellipsis"), id=f"e{i}"))
         if keep is not None and keep < len(self._rows):
             today.highlighted = keep
+        by_day = w.week_beats(limits)
         t = Text()
         for d in range(daybook.WEEK_DAYS):
             day = now.date() + dt.timedelta(days=d)
             evs = [e for e in w.day.events if e.day == day]
+            marks = by_day.get(day, [])
             t.append(f"{'Today' if d == 0 else f'{day:%a %d %b}'}\n", style="bold")
             for e in evs:
                 t.append(f"  {w.mark(e, docs)}{daybook.line(e)}\n")
-            if not evs:
+            for b in marks:
+                t.append(f"  {_beat(b)}\n", style=_tone(b.tone))
+            if not evs and not marks:
                 t.append("  —\n", style="dim")
         week.update(t)
 
