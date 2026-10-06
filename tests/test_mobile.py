@@ -46,7 +46,7 @@ def test_a_phone_may_answer_drop_ask_and_halt_but_not_build_or_type(fake_repo, i
 
 def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
-    buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields"))
+    board = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
     host.tick()
     full, snap = host.snapshot(), host.command("mobile.snapshot")
     json.dumps(snap)
@@ -58,7 +58,7 @@ def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated
     assert "roads" not in snap and "words" not in snap and "orkspaces" not in snap
     assert host.command("mobile.snapshot", {"since": snap["rev"]}) == {"v": mobile.API, "rev": snap["rev"],
                                                                        "same": True}
-    host.command("hut.move", {"id": "town_hall", "x": 0.1, "y": 0.1})     # where a hut stands: not a phone's
+    host.command("hut.move", {"id": board, "x": 0.1, "y": 0.1})           # where a hut stands: not a phone's
     assert host.command("mobile.snapshot", {"since": snap["rev"]})["same"]
     assert host.command("mobile.snapshot", {"since": "older"})["buildings"]
 

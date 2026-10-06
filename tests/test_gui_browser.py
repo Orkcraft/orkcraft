@@ -257,3 +257,44 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     pg.keyboard.press("Escape")
     pg.keyboard.press("Escape")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
+    pg = page
+    link = "import('/static/js/link.js')"
+    ids = {}
+    for t, x, y in (("fields", 0.0, 0.0), ("pit", 0.02, 0.8), ("war_drum", 0.6, 0.0), ("mill", 0.65, 0.8)):
+        ids[t] = pg.evaluate(f"t => {link}.then(m => m.command('town.build', {{ type: t }}))", t)
+        pg.evaluate(f"a => {link}.then(m => m.command('hut.move', {{ id: a[0], x: a[1], y: a[2] }}))", [ids[t], x, y])
+    pg.keyboard.press("Escape")
+    def box(t):
+        return _hut(pg, ids[t]).bounding_box()
+
+    def words(hut):
+        return ["".join(s.replace("✓", "").split()) for s in hut.locator(".gui-parts__one").all_inner_texts()]
+
+    for bid in ids.values():
+        _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_timeout(500)
+    before = {t: box(t) for t in ids}
+    fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
+    assert words(fields) == ["Agenttasks", "Myto-dos", "Notes"]        # every part shown, in Office words
+    assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
+    fields.locator(".gui-parts__one", has_text="Agent tasks").click()
+    fields.locator(".gui-parts__one", has_text="Notes").click()
+    drum.locator(".gui-parts__one", has_text="meetings").click()
+    pg.wait_for_timeout(500)
+    assert pg.locator(".gui-console").is_hidden()                     # a checkbox never opens the hut
+    assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
+    after = {t: box(t) for t in ids}
+    shrunk = before["fields"]["height"] - after["fields"]["height"]
+    assert shrunk > 40 and after["fields"]["y"] == before["fields"]["y"]
+    assert abs(before["pit"]["y"] - after["pit"]["y"] - shrunk) <= 1   # the hut under it moved up as much
+    assert after["war_drum"]["height"] <= before["war_drum"]["height"]
+    pg.reload()
+    pg.wait_for_selector(".gui-hut", timeout=WAIT_MS)
+    pg.wait_for_timeout(800)
+    assert _hut(pg, ids["fields"]).locator(".gui-fhut__part").count() == 1   # kept in this browser
+    assert abs(box("pit")["y"] - after["pit"]["y"]) <= 2
+    for bid in ids.values():
+        pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)

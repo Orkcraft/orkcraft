@@ -84,8 +84,10 @@ function receive(msg) {
   } else if (msg.t === "detail") {
     details.value = { ...details.value, [msg.detail.id]: msg.detail };
   } else if (msg.t === "toast") {
-    // Office drops pictographs: the host sends each text as it is and `_plain`.
-    toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout);
+    // Office drops pictographs and says Office words: the host sends each text as it is and `_plain`; Camp keeps it.
+    const camp = town.value && town.value.look === "camp";
+    toast(camp ? msg.message : msg.message_plain ?? msg.message, msg.severity || "information",
+          camp ? msg.title ?? "" : msg.title_plain ?? msg.title ?? "", msg.timeout);
   } else if (msg.t === "reply") {
     const p = pending.get(msg.id);
     if (!p) return;

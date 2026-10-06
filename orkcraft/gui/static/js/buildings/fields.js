@@ -4,25 +4,30 @@
 // it, double-click it to open it; the selected card's acts sit over the board; a to-do is ticked off
 // by its box. The Command Card shows a small board: the status lanes with their top cards (a drag
 // works there too), the open to-dos and the lanes of notes folded to counters. The closed card shows
-// all three parts at a glance. The worker writes the board file (core/workers/fields.py).
+// all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
+// board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
 import { Dialog } from "../dialog.js";
+import { PartToggles, shown, hidden } from "../parts.js";
 
 const selected = signal({});       // building id → card id
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from the Command Card
 const TOP = 3;                     // cards a lane shows in the Command Card
+// The closed card's three parts, each one the person may hide (js/parts.js).
+const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My chores" }, { key: "scribbles", label: "Scribbles" }];
 
 // Every rule is this building's own: the closed card (`.gui-fhut`, and the hut that holds one) stands
 // larger than other huts — about a fifth of the window high — so its three parts read at a glance.
 const CSS = `
 .gui-town__room > .gui-hut.ok-hut[class]:has(.gui-fhut) { width: clamp(340px, 26vw, 460px); max-width: none; }
-.gui-hut .ok-hut__card:has(.gui-fhut) { min-height: 20vh; box-sizing: border-box; }
+.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded)) { min-height: 20vh; box-sizing: border-box; }
 .gui-hut__body:has(> .gui-fhut) { flex: 1 1 auto; display: flex; }
-.gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr;
+.gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
   gap: var(--space-2) var(--space-3); min-width: 0; }
+.gui-fhut > .gui-parts { grid-column: 1 / -1; }
 .gui-fhut__part { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .gui-fhut__part--work { grid-column: 1 / -1; }
 .gui-fhut__part--solo { grid-column: 1 / -1; }
@@ -234,7 +239,8 @@ const mark = (m, t, i) => html`<span key=${i} class="gui-fhut__item"><span class
 
 /** Closed: a counter per status lane, then the note folders with theirs; `*` on one with unseen cards
  * (docs/design/building-views.md). In board mode the three parts: the orks' lanes with what is in work
- * and next, the person's open to-dos, the latest notes. In notes mode only the folders. */
+ * and next, the person's open to-dos, the latest notes, a checkbox over them hiding any one. In notes
+ * mode only the folders. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
@@ -249,22 +255,25 @@ export function card(b) {
   const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, 1));
   const next = c.lanes.filter((l) => l.id === "todo").flatMap((l) => l.top).slice(0, 2 - doing.length);
   const t = c.todos, idea = c.ideas;
-  return html`<div class="gui-fhut">
-    <section class="gui-fhut__part gui-fhut__part--work">
+  const on = (part) => shown(b.id, part);
+  const lower = ["chores", "scribbles"].filter(on).length;
+  return html`<div class=${cls("gui-fhut", { "is-folded": hidden(b.id).length > 0 })}>
+    <${PartToggles} id=${b.id} parts=${PARTS} />
+    ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
       <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
       ${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}
       ${!doing.length && !next.length && html`<span class="ok-tone-muted">nothing to do</span>`}
-    </section>
-    <section class="gui-fhut__part">
+    </section>`}
+    ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My chores</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
       ${t.top.map((x, i) => mark("☐", x, i))}
       ${!t.top.length && html`<span class="ok-tone-muted">${t.count ? "all done ✓" : "none yet"}</span>`}
-    </section>
-    <section class="gui-fhut__part">
+    </section>`}
+    ${on("scribbles") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">Scribbles</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
       ${idea.top.map((x, i) => mark("✎", x, i))}
       ${!idea.top.length && html`<span class="ok-tone-muted">none yet</span>`}
-    </section>
+    </section>`}
   </div>`;
 }
 

@@ -159,8 +159,10 @@ SIGNPOST = _make("signpost", ["    /\\    ",
 # The Totem's look, kept for a building of its own to come (the Signpost took over its routing).
 TOTEM = _make("totem", ["  ┌────┐  ", "  │■  ■│  ", "┌─┤ §§ ├─┐", "└─┤§§§§├─┘", "  └────┘  "],
               head=("||",), pad=0, center=True, body=(10, 5))
-WATCHTOWER = _make("watchtower", ["     /\\     ", "   _/  \\_   ", " _/______\\_ ", "┌──────────┐"]
-                   + _rows("│", 4, 12) + ["└──────────┘"], pad=0, body=(12, 6))
+# The Watchtower's hut is wide enough for a preview: the counters on one line, the newest message under them.
+WATCHTOWER = _make("watchtower", ["       /\\       ", "     _/  \\_     ", "   _/______\\_   ",
+                                  "┌────────────────┐"] + _rows("│", 3, 18) + ["└────────────────┘"],
+                   pad=0, body=(18, 5))
 
 # -- the production and staff halls (18 wide, seven text rows) ------------------------------------
 

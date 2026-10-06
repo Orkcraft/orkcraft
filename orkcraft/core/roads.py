@@ -27,6 +27,9 @@ def choices(town: Town, source_id: str, target_id: str) -> list[tuple[str, str |
         from orkcraft.realm import signpost
         out = [(f"signpost.routed#{r}", None, f"plain · route {r}")
                for r in signpost.routes((spec.get("config") or {}).get("rules") or [])] + out
+    if spec is not None and catalog.type_of(spec).id == "council":       # a clan that routes: one road per route
+        from orkcraft.realm import team
+        out = [(f"team.routed#{r}", None, f"plain · route {r}") for r in team.routes_of(spec.get("config") or {})] + out
     for orc in tgt.garrison.handlers:
         for ev in pipes.road_events(source_id, target_id, has_garrison, handler=True):
             out.append((ev, orc.id, f"{orc.avatar} {orc.name} ({orc.kind}) · {pipes.label(ev)}"))
