@@ -18,6 +18,13 @@ button { font: inherit; color: inherit; }
 
 .gui-hud { grid-area: hud; }
 .gui-hud__project { color: var(--ink-muted); }
+/* The project's name opens the town's settings (js/settings.js); Halt All stands where Ready was. */
+.gui-hud__menu, .gui-hud__stop { padding: 1px var(--space-2); border: 1px solid transparent; border-radius: var(--radius-sm, 0);
+  background: none; font: inherit; cursor: pointer; }
+.gui-hud__menu:hover { color: var(--ink); border-color: var(--frame); background: var(--selection); }
+.gui-hud__stop { color: var(--danger); }
+.gui-hud__stop:hover { color: var(--panel); background: var(--danger); }
+.gui-settings .gui-steps { align-self: flex-start; }
 
 /* The strip over the town's bottom edge, as the TUI's console: the War Map (the orkspaces, a small
    block at the left, 240px wide; its list scrolls) and, while a building is selected, its Info, its garrison and
@@ -165,7 +172,6 @@ button { font: inherit; color: inherit; }
 .gui-steps__one + .gui-steps__one { border-left: 1px solid var(--frame); }
 .gui-steps__one:hover { background: var(--selection); color: var(--ink); }
 .gui-steps__one.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
-.gui-steward__wait { display: inline-flex; align-items: center; gap: 4px; font-size: .9em; }
 .gui-steward__commands { display: flex; flex-wrap: wrap; gap: 0 var(--space-1); }
 .gui-steward__group { border-top: 1px solid var(--frame); padding-top: 2px; }
 .gui-steward__group > summary { display: flex; align-items: center; gap: var(--space-1); cursor: pointer; color: var(--ink-muted);
@@ -354,3 +360,4 @@ button.gui-status__item { cursor: pointer; }
 .gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .9; }
 .gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
 [data-theme="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-theme="camp"] .gui-road circle { visibility: hidden; }
+.gui-settings p::first-letter { text-transform: uppercase; }

@@ -382,3 +382,28 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     pg.keyboard.press("Escape")
     for bid in (src, dst):
         call("town.demolish", {"id": bid})
+
+
+def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(page):
+    """The project's name opens the town's settings: its autonomy and, on the clock, its two waits;
+    Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
+    pg = page
+    hud, status = pg.locator(".gui-hud"), pg.locator(".gui-status")
+    assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1
+    assert status.get_by_role("button", name="Stop all", exact=True).count() == 0 and hud.get_by_text("Ready").count() == 0
+    hud.locator(".gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    lit = lambda: modal.locator(".gui-steps__one.is-on").all_inner_texts()        # noqa: E731
+    assert any("On the clock" in t or "Apply if unanswered" in t for t in lit()) and "7 min" in lit()
+    modal.get_by_role("button", name="15 min", exact=True).click()
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-modal .gui-steps__one.is-on')].some((e) => e.textContent === '15 min')",
+                         timeout=WAIT_MS)
+    steps = modal.locator(".gui-field").first.locator(".gui-steps__one")
+    steps.nth(2).click()                                            # unchained: no waits to set
+    pg.wait_for_function("() => !document.querySelector('.gui-modal').textContent.includes('15 min')", timeout=WAIT_MS)
+    settings = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings'))")
+    assert settings["autonomy"] == "free" and settings["wait"] == 15
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { autonomy: 'clock', wait: 7 }))")
+    modal.get_by_role("button", name="Close", exact=True).click()
+    modal.wait_for(state="hidden", timeout=WAIT_MS)
