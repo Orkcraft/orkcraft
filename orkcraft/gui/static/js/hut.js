@@ -1,7 +1,8 @@
 // A building as it stands on the town, closed (design-system/components.md: Hut;
 // docs/design/building-views.md): its name above the card, inside only its type's live status (the
 // type's `card(b)`, else its status lines), and the mouse on it — a press opens it, a drag moves
-// it, the + handle pulls a road out of it. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
+// it, the + handle pulls a road out of it. Every hut stands pinned: the pin by its name unpins it, so
+// a drag moves it, and five seconds without a move pin it again. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
 // card under its header sprite), never in how the town places them.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
@@ -12,9 +13,44 @@ import { typeModule } from "./types.js";
 import { say } from "./link.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
+const IDLE_MS = 5000;                      // an unpinned hut left alone this long is pinned again
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
 export const dragging = signal(null);      // {id, dx, dy}: the hut under the mouse, so its roads follow it
 export const pulling = signal(null);       // {from, x, y}: a road being pulled out of a hut, to the pointer
+export const unpinned = signal({});        // building id → true while a drag may move it
+const idle = new Map();                    // building id → the timer that pins it again
+
+function pinAgain(id) {
+  clearTimeout(idle.get(id));
+  idle.delete(id);
+  const { [id]: _, ...rest } = unpinned.value;
+  unpinned.value = rest;
+}
+
+/** Keeps a hut unpinned for another IDLE_MS. */
+function stir(id) {
+  clearTimeout(idle.get(id));
+  idle.set(id, setTimeout(() => pinAgain(id), IDLE_MS));
+}
+
+function togglePin(e, id) {
+  e.stopPropagation();
+  if (unpinned.value[id]) { pinAgain(id); return; }
+  unpinned.value = { ...unpinned.value, [id]: true };
+  stir(id);
+}
+
+/** The pin by a hut's name: on, the hut keeps its place; off, a drag moves it. */
+function PinButton({ b }) {
+  const off = !!unpinned.value[b.id];
+  const label = off ? say("Pin it in place") : say("Unpin to move it");
+  return html`<button class=${cls("gui-hut__pin", { "is-off": off })} title=${label} aria-label=${label} aria-pressed=${off}
+      onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => togglePin(e, b.id)}>
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
+      ${off && html`<path d="M2.5 2.5l11 11" />`}
+    </svg></button>`;
+}
 
 /** A road pulled out of a hut's handle: where the pointer lets go over another hut, it goes there. */
 function pull(e, b) {
@@ -58,6 +94,7 @@ export function Hut({ b, spot, number, onMoved }) {
     const old = sizes.value[b.id];
     if (!old || old.w !== w || old.h !== h) sizes.value = { ...sizes.value, [b.id]: { w, h } };
   });
+  const free = !!unpinned.value[b.id] && !b.pinned;     // a building pinned in the town scroll never moves
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
 
@@ -70,14 +107,15 @@ export function Hut({ b, spot, number, onMoved }) {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
       if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
       moved = true;
-      if (b.pinned) return;                // a pinned hut keeps its place: a drag on it does nothing
+      if (!free) return;                   // a pinned hut keeps its place: a drag on it does nothing
+      stir(b.id);
       dragging.value = { id: b.id, dx, dy };
     };
     const up = (ev) => {
       ev.currentTarget.removeEventListener("pointermove", move);
       ev.currentTarget.removeEventListener("pointerup", up);
       dragging.value = null;
-      if (moved) { if (!b.pinned) onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); }
+      if (moved) { if (free) { stir(b.id); onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
       else openBuilding(b.id);
     };
     e.currentTarget.addEventListener("pointermove", move);
@@ -87,10 +125,11 @@ export function Hut({ b, spot, number, onMoved }) {
   const x = spot.x + (drag ? drag.dx : 0), y = spot.y + (drag ? drag.dy : 0);
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag })}
+                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag,
+                                        "is-free": free })}
       onPointerDown=${down}>
     <div class="ok-head"></div>
-    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>${say(b.title)}
+    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>${!b.pinned && html`<${PinButton} b=${b} />`}${say(b.title)}
       ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}</span>
     <div class="ok-hut__card">
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

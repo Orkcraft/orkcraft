@@ -24,10 +24,38 @@ button { font: inherit; color: inherit; }
    its Command Card, as the TUI's console.
    It shares the town's grid area, so it stays put while the town scrolls. The strip is 50% of the
    window's height: the Command Card takes all of it, as wide as tall; Info and the garrison
-   are as tall as the War Map: 42% of it, about 21% (STRIP in js/town.js keeps the huts above it). */
+   are as tall as the War Map: 42% of it, about 21% (STRIP in js/town.js keeps the huts above it).
+   The windows stand edge to edge as one panel: no gap, their shared edges drawn once, square where
+   they meet. */
 .gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
-  display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3); pointer-events: none; }
+  display: flex; align-items: flex-end; gap: 0; padding: var(--space-3); pointer-events: none; }
 .gui-strip > * { pointer-events: auto; }
+.gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list) { margin-left: calc(-1 * var(--ok-frame, 1px)); }
+.gui-strip > :is(.ok-win, .ok-list):has(+ :is(.ok-win, .ok-list)),
+.gui-strip > :is(.ok-win, .ok-list):has(+ :is(.ok-win, .ok-list)) > .ok-win__frame { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list),
+.gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list) > .ok-win__frame { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.gui-strip > .ok-win.is-active { z-index: 1; }   /* its focus edge over the neighbour's */
+
+/* Office: the Control panel, pinned at the strip's right end (js/advisor.js): the ork in a tie, gold
+   under the mouse, its card over it at the left as a speech bubble. */
+.gui-advisor { flex: none; position: relative; margin-left: auto; padding-left: var(--space-3); align-self: flex-end; }
+.gui-advisor__face { display: block; position: relative; padding: var(--space-1); border: 1px solid transparent; background: none;
+  border-radius: var(--radius-full, 50%); cursor: pointer; transition: box-shadow .15s ease-out, border-color .15s ease-out; }
+.gui-advisor__face > img { display: block; image-rendering: pixelated; }
+.gui-advisor__face:is(:hover, :focus-visible), .gui-advisor.is-selected .gui-advisor__face {
+  border-color: var(--ink-gold); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink-gold) 45%, transparent), 0 0 18px var(--ink-gold); outline: none; }
+.gui-advisor__face:hover > img { filter: drop-shadow(0 0 4px var(--ink-gold)); }
+.gui-advisor__ask { position: absolute; top: 0; right: 0; }
+.gui-advisor__bubble { position: absolute; right: calc(50% + var(--space-2)); bottom: calc(100% - var(--space-2)); width: max-content;
+  min-width: 220px; max-width: 320px; box-sizing: border-box; padding: var(--space-2) var(--space-3); background: var(--panel);
+  color: var(--ink); border: 1px solid var(--frame); border-radius: var(--radius-md, 0);
+  box-shadow: var(--shadow-window); }
+.gui-advisor__bubble::after { content: ""; position: absolute; right: 10px; bottom: -6px; width: 10px; height: 10px;
+  background: var(--panel); border-right: 1px solid var(--frame); border-bottom: 1px solid var(--frame); transform: rotate(45deg); }
+.gui-advisor.is-alert .gui-advisor__bubble { border-color: var(--alert-hot); }
+.gui-advisor.is-quiet .gui-advisor__bubble { display: none; }
+.gui-advisor.is-quiet:hover .gui-advisor__bubble, .gui-advisor.is-quiet:focus-within .gui-advisor__bubble { display: block; }
 .gui-warmap { flex: none; height: 42%; width: 240px; display: flex; flex-direction: column; }
 .gui-warmap .ok-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-warmap > .ok-list__head { flex: none; }
@@ -39,7 +67,15 @@ button { font: inherit; color: inherit; }
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
 .gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
-/* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). */
+/* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js), and
+   the card is as wide as what it holds, within bounds. */
+.gui-town__room > .gui-hut.ok-hut[class] { width: max-content; min-width: 120px; max-width: 320px; }
+.gui-town__room > .gui-hut.is-free { cursor: grab; }
+.gui-hut__pin { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: var(--space-1); padding: 0;
+  vertical-align: -3px; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
+.gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.gui-hut__pin:hover { color: var(--ink); background: var(--selection); }
+.gui-hut__pin.is-off { color: var(--frame-focus); }
 .gui-hut__title { padding: 0 var(--space-1) var(--space-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
