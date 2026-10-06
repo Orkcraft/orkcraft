@@ -3,12 +3,14 @@
 // tasks, realm/steward.py USES) — and its body
 // what the steward keeps and does:
 //
-//   settings   the goal its retros aim at (three steps), how freely it applies their changes (the Town
-//              Hall's: the Town retro's), docs/design/retros-and-goals.md §3
-//   commands   Watch now, Report, Redesign window, Revert while there is a checkpoint
-//   listens    the roads into the building, each with its handler (an agent, a script, a chain) and what
-//              it does now; a click edits the handler's prompt, opens its script in Lake, or picks a
-//              plain road; › opens the ork itself; + Listen lays a new road
+//   settings   one row: the goal its retros aim at (three steps), how freely it applies their changes
+//              (as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
+//   commands   one row: Watch, Report, Redesign, Revert while there is a checkpoint
+//   listens    the roads into the building, one line each with its handler (an agent, a script, a chain)
+//              and what it does now; a click edits the handler's prompt, opens its script in Lake, or
+//              picks a plain road; › opens the ork itself; + Listen lays a new road
+//
+// As tall as Info: every line is one line, its whole text in its tooltip.
 //   on its own the handlers no road feeds: on a schedule or when asked
 //
 // The data is the building's `info` (gui/info.py: steward, listens, others, goal, autonomy).
@@ -64,49 +66,48 @@ export function StewardModels({ b, i, onClose, onDone }) {
 }
 
 function Steps({ label, title, children }) {
-  return html`<div class="gui-steward__row" title=${title}>
-    <span class="gui-steward__label">${label}</span>
-    <span class="gui-steps" role="group" aria-label=${label}>${children}</span></div>`;
+  return html`<span class="gui-steps" role="group" aria-label=${label} title=${title}>${children}</span>`;
 }
 
 function Goal({ b, i, redo }) {
   const set = (value) => command("building.goal", { id: b.id, value }).then(redo, () => {});
-  return html`<${Steps} label=${say("Goal")} title=${say("What the retros improve it towards")}>
+  return html`<${Steps} label=${say("Goal")} title=${say("Goal: what the retros improve it towards")}>
     ${GOALS.map(([v, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": i.goal === v })}
-        aria-pressed=${i.goal === v} title=${say(hint)} onClick=${() => i.goal !== v && set(v)}>${say(name)}</button>`)}
+        aria-pressed=${i.goal === v} title=${`${say("Goal")}: ${say(name)} — ${say(hint)}`} onClick=${() => i.goal !== v && set(v)}>${say(name)}</button>`)}
   </${Steps}>`;
 }
 
-/** How freely the steward applies its retro's changes; the lit step again goes back to the town's. */
+/** How freely the steward applies its retro's changes: as the town's (lit when none is picked), or its own. */
 function Freedom({ b, i, redo }) {
   const set = (value) => command("building.autonomy", { id: b.id, value }).then(redo, () => {});
   const retro = b.id === HALL ? "the Town retro (weekly)" : "its Building retro (daily)";
-  return html`<${Steps} label=${say("Freedom")} title=${say(`How freely ${retro} applies its changes`)}>
+  return html`<${Steps} label=${say("Freedom")} title=${say(`Freedom: how freely ${retro} applies its changes`)}>
+    <button class=${cls("gui-steps__one is-town", { "is-on": !i.autonomy })} aria-pressed=${!i.autonomy}
+        title=${say(`As the town: its autonomy (${i.town_autonomy})`)} onClick=${() => i.autonomy && set("")}>${say("town")}</button>
     ${FREEDOMS.map(([v, icon, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one is-icon", { "is-on": i.autonomy === v })}
-        aria-pressed=${i.autonomy === v} title=${`${say(name)}: ${say(hint)}`} aria-label=${say(name)}
+        aria-pressed=${i.autonomy === v} title=${`${say("Freedom")}: ${say(name)} — ${say(hint)}`} aria-label=${say(name)}
         onClick=${() => set(i.autonomy === v ? "" : v)}>
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${icon}</svg></button>`)}
-  </${Steps}>
-  ${!i.autonomy && html`<div class="ok-tone-muted gui-steward__note" title=${say(`The town's autonomy (${i.town_autonomy}), until one is picked`)}>
-    ${say("as the town")}</div>`}`;
+  </${Steps}>`;
 }
 
 function Command({ label, title, onClick }) {
-  return html`<li class="gui-console__row" title=${title || label} onClick=${onClick}>${label}</li>`;
+  return html`<button class="ok-act" title=${title || label} onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
 }
 
+/** The steward's commands in one row: Watch, Report, Redesign, Revert (while there is a checkpoint). */
 function Commands({ b, i, redo, open }) {
   const s = i.steward;
   const revert = () => command("building.revert", { id: b.id }).then(redo, () => {});
-  return html`<ul class="gui-rows gui-steward__commands">
-    ${s && html`<${Command} label=${say("Watch now")} title=${say("Its steward looks at the building: free metrics, a model only on findings")}
+  return html`<div class="gui-steward__commands">
+    ${s && html`<${Command} label=${say("Watch")} title=${say("Watch now: its steward looks at the building, free metrics, a model only on findings")}
         onClick=${() => command("ork.watch", { id: b.id, ork: s.ref }).catch(() => {})} />
       <${Command} label=${say("Report")} title=${say("The steward's last findings and proposals")}
         onClick=${() => command("ork.report", { id: b.id }).catch(() => {})} />`}
-    <${Command} label=${say("Redesign window")} title=${say("Its steward redraws its window")} onClick=${() => open("redesign")} />
+    <${Command} label=${say("Redesign")} title=${say("Redesign window: its steward redraws its window")} onClick=${() => open("redesign")} />
     ${b.id !== HALL && i.can_revert && html`<${Command} label=${say("Revert")} title=${say("Back to its previous checkpoint")}
       onClick=${revert} />`}
-  </ul>`;
+  </div>`;
 }
 
 /** What a click on a handler does: an agent's prompt, a script in Lake, a chain's ork. */
@@ -122,10 +123,13 @@ function editTitle(h) {
   return say("The ork: its chain");
 }
 
+function handlerText(h) {
+  return `${say(h.name)} · ${say(h.kind_label)}${h.tier ? ` · ${h.tier}` : ""} · ${h.status}`;
+}
+
 function Handler({ h }) {
-  return html`<span class="gui-steward__who"><b>${say(h.name)}</b>
-    <span class="ok-tone-muted"> · ${say(h.kind_label)}${h.tier ? ` · ${h.tier}` : ""}</span>
-    <span class=${cls("gui-steward__status", { "ok-tone-wait": h.status === "busy", "ok-tone-fire": h.status === "alert" })}> · ${h.status}</span></span>`;
+  return html`<b>${say(h.name)}</b><span class="ok-tone-muted"> · ${say(h.kind_label)}${h.tier ? ` · ${h.tier}` : ""}</span><span
+    class=${cls({ "ok-tone-wait": h.status === "busy", "ok-tone-fire": h.status === "alert" })}> · ${h.status}</span>`;
 }
 
 function More({ h }) {
@@ -133,21 +137,28 @@ function More({ h }) {
     onClick=${(e) => { e.stopPropagation(); selectOrk(h.ref); }}>›</button>`;
 }
 
+/** One road in, on one line: where from, what it carries, who takes it (its whole text in the tooltip). */
+function Road({ b, l, open }) {
+  const from = `◂ ${say(l.title)} · ${l.label}`;
+  if (!l.by) {
+    return html`<li class="gui-console__row gui-steward__road" title=${`${from} → ${say("plain")}: ${say("pick it to give it a handler or remove it")}`}
+        onClick=${() => { pickedRoad.value = l.key; }}>
+      <span class="gui-steward__line">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label} → ${say("plain")}</span></span></li>`;
+  }
+  return html`<li class="gui-console__row gui-steward__road" title=${`${from} → ${handlerText(l.by)}. ${editTitle(l.by)}`}
+      onClick=${() => edit(b, l.by, open)}>
+    <span class="gui-steward__line">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label}</span> → <${Handler} h=${l.by} /></span>
+    <${More} h=${l.by} /></li>`;
+}
+
 function Listens({ b, i, open }) {
   return html`<details class="gui-steward__group" open>
-    <summary class="ok-font-label">${say("Listens")} <span class="ok-tone-muted">${i.listens.length}</span></summary>
+    <summary class="ok-font-label">${say("Listens")} <span class="ok-tone-muted">${i.listens.length}</span>
+      <button class="gui-steward__add" title=${say("A road from another building into this one")}
+        onClick=${(e) => { e.preventDefault(); open("listen"); }}>+ ${say("Listen")}</button></summary>
     <ul class="gui-rows">
-      ${i.listens.map((l) => l.by
-        ? html`<li key=${l.key} class="gui-console__row gui-steward__road" title=${editTitle(l.by)} onClick=${() => edit(b, l.by, open)}>
-            <span class="gui-steward__from">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label}</span></span>
-            <span class="gui-steward__to">→ <${Handler} h=${l.by} /><${More} h=${l.by} /></span></li>`
-        : html`<li key=${l.key} class="gui-console__row gui-steward__road" title=${say("A plain road: pick it to give it a handler or remove it")}
-            onClick=${() => { pickedRoad.value = l.key; }}>
-            <span class="gui-steward__from">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label}</span></span>
-            <span class="gui-steward__to ok-tone-muted">→ ${say("plain")}</span></li>`)}
+      ${i.listens.map((l) => html`<${Road} key=${l.key} b=${b} l=${l} open=${open} />`)}
       ${!i.listens.length && html`<li class="ok-font-status ok-tone-muted">${say("Listens to nobody yet")}</li>`}
-      <li class="gui-console__row" title=${say("A road from another building into this one")} onClick=${() => open("listen")}>
-        + ${say("Listen")}</li>
     </ul>
   </details>`;
 }
@@ -156,9 +167,10 @@ function OnItsOwn({ b, i, open }) {
   if (!i.others.length) return null;
   return html`<details class="gui-steward__group" open>
     <summary class="ok-font-label">${say("By schedule or by hand")} <span class="ok-tone-muted">${i.others.length}</span></summary>
-    <ul class="gui-rows">${i.others.map((h) => html`<li key=${h.ref} class="gui-console__row" title=${editTitle(h)}
-        onClick=${() => edit(b, h, open)}><${Handler} h=${h} />
-      <span class="ok-tone-muted"> · ${h.trigger.replace("_", " ")}</span><${More} h=${h} /></li>`)}</ul>
+    <ul class="gui-rows">${i.others.map((h) => html`<li key=${h.ref} class="gui-console__row gui-steward__own"
+        title=${`${handlerText(h)} · ${h.trigger.replace("_", " ")}. ${editTitle(h)}`} onClick=${() => edit(b, h, open)}>
+      <span class="gui-steward__line"><${Handler} h=${h} /><span class="ok-tone-muted"> · ${h.trigger.replace("_", " ")}</span></span>
+      <${More} h=${h} /></li>`)}</ul>
   </details>`;
 }
 
@@ -166,7 +178,7 @@ function OnItsOwn({ b, i, open }) {
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
-    <section class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></section>
+    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
     <${Listens} b=${b} i=${i} open=${open} />
     <${OnItsOwn} b=${b} i=${i} open=${open} />
