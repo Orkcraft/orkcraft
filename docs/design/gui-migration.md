@@ -138,9 +138,13 @@ conflicted there. Now:
 
 See [`docs/design-system.md`](../design-system.md) for the rules (written for people and for the
 orks that rebuild buildings). Shipped: `design/tokens.json`, `schemas/building-ui.v1.json`,
-contracts for 🌊 Lake, 🌾 Task Fields and 🗑️ Scroll Dump, the document kept per building in the Town
-Scroll, `D` 🎨 (the steward redesigns from a wish), and the TUI drawing it (`tui/ui_apply.py`). Next:
-a contract for each remaining type as its view is split into named panes. The short version:
+a contract for every type of the catalog (`design/buildings/<type>.json`; the retired Custom keeps the
+one-pane `main`), the document kept per building in the Town Scroll, `D` 🎨 (the steward redesigns
+from a wish), and the TUI drawing it (`tui/ui_apply.py`). The last two were 🌲 File Forest (the head
+and the tree, with small previews) and 🏰 Town Hall (the tab strip and a pane per tab, Hall, Sessions
+and Limits, only the open one shown). Next: a pane split further where a view grows a part people
+would lay out on their own (the File Forest's text preview stays the TUI's own for now). The short
+version:
 
 - **Tokens, not values.** Font roles (`title`, `body`, `mono`, `status`, `label`), colour roles
   (`ok`, `wait`, `fire`, `muted`, `accent`, the harness colours), spacing steps. Camp and Office

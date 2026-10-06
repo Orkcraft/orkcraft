@@ -28,6 +28,7 @@ class _Tree(DirectoryTree):
 
 class FilesView(TypedView):
     TYPE = "forest"
+    UI_PANES = {"head": "#ft-head", "tree": "#ft-tree"}     # the preview beside it stays the TUI's own
     opener = None                       # tests catch the "open in the OS" call here
 
     @property

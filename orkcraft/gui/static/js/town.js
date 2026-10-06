@@ -11,6 +11,7 @@ import { plan } from "./roads.js";
 import { pickedRoad } from "./build.js";
 import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
 import { RoadTiles } from "./roadtiles.js";
+import { lost } from "./parts.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
@@ -42,6 +43,24 @@ function place(b, i, size) {
   if (dropped.value[b.id]) return dropped.value[b.id];
   const [fx, fy] = b.hut || defaultSpot(i);
   return { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h };
+}
+
+const SIDE_PX = 8;                          // a hut whose top is this close over another's bottom still stands under it
+
+/** How far each hut is lifted: a hut with parts hidden (js/parts.js) lost some height, and every hut
+ * under it — its sides overlapping, its top below the other's full bottom — moves up with it, as much
+ * as the least lifted hut over it allows, so none rides onto another. `full`: id → {x, y, w, h, lost}. */
+function lifts(full) {
+  const ids = Object.keys(full).sort((a, b) => full[a].y - full[b].y);
+  const up = {};
+  for (const id of ids) {
+    const b = full[id];
+    if (id === CORNER) { up[id] = 0; continue; }   // the Hall keeps its corner
+    const over = ids.filter((o) => o !== id && up[o] !== undefined && full[o].x < b.x + b.w && b.x < full[o].x + full[o].w
+                                   && full[o].y + full[o].h <= b.y + SIDE_PX);
+    up[id] = over.length ? Math.min(...over.map((o) => up[o] + full[o].lost)) : 0;
+  }
+  return up;
 }
 
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
@@ -172,11 +191,23 @@ export function Town({ buildings, roads }) {
     return () => ro.disconnect();
   }, []);
 
-  const spots = {}, rects = {}, ports = {};
   const camp = !!snapshot.value && snapshot.value.look === "camp";
-  buildings.forEach((b, i) => {
+  // A hut stands where its full height (every part shown) would put it; the huts under one with parts
+  // hidden are lifted by what it lost.
+  const fullSize = (b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
-    spots[b.id] = place(b, i, size);
+    return { ...size, h: size.h + lost(b.id, size.h) };
+  };
+  const full = {};
+  buildings.forEach((b, i) => {
+    const size = fullSize(b);
+    full[b.id] = { ...place(b, i, size), w: size.w, h: size.h, lost: size.h - (sizes.value[b.id] || size).h };
+  });
+  const up = lifts(full);
+  const spots = {}, rects = {}, ports = {};
+  buildings.forEach((b) => {
+    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
     const d = dragging.value && dragging.value.id === b.id ? dragging.value : { dx: 0, dy: 0 };
     rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, w: size.w, h: size.h };
     // Camp: a road meets the card's frame under the sprite, not the sprite (Office's hut is its card)
@@ -185,7 +216,8 @@ export function Town({ buildings, roads }) {
   });
 
   function moved(b, x, y) {
-    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    y += up[b.id] || 0;                     // the spot kept is the one it stands at unlifted
+    const size = fullSize(b);
     const f = free(size);
     const fx = Math.min(Math.max((x - MARGIN) / f.w, 0), 1), fy = Math.min(Math.max((y - MARGIN) / f.h, 0), 1);
     dropped.value = { ...dropped.value, [b.id]: { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h } };

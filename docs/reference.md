@@ -741,8 +741,9 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
 
 1. **Tools** — `claude`, `agy` and `codex` are looked up on `PATH`; each found one is checked, with its
    version, whether it is logged in and its billing (subscription, or API when `ANTHROPIC_API_KEY` /
-   `GEMINI_API_KEY` / `OPENAI_API_KEY` is set) — you can change both. No key is stored or read: Codex's
-   login is told only by its `~/.codex/auth.json` being there.
+   `GEMINI_API_KEY` / `CODEX_API_KEY` is set) — you can change both. No key is stored: Codex's login is
+   told by which kind its `~/.codex/auth.json` holds (a ChatGPT login or an API key; the key itself is
+   never used), or else by `codex login status`. `OPENAI_API_KEY` does not count: `codex exec` ignores it.
 2. **Autonomy** — a slider of four stops: ⛓️ *Ask me* · 📜 *Morning advice* (default) · 🧭 *Routine on
    their own* · ⛓️‍💥 *Free orks* (see *Ork autonomy* below).
 3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
@@ -890,7 +891,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | orkestration | coordination |
 | orkestrate | coordinate |
 | town | project |
-| building | module |
+| building | block |
 | hut | tile |
 | road | link |
 | cart | message |
@@ -918,12 +919,12 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | Town Scroll | Project file |
 | Town Builder | Project planner |
 | Town retro | Weekly review |
-| Building retro | Module review |
+| Building retro | Block review |
 | Chronicles | History |
 | Elder | Advisor |
 | steward | coordinator |
 | keeper | coordinator |
-| Mason & Artisan | Module designer |
+| Mason & Artisan | Block designer |
 | Warchief | Lead agent |
 | Mason | Data planner |
 | Artisan | Layout designer |

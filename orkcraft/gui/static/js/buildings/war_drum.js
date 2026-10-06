@@ -1,15 +1,17 @@
 // 🥁 War Drum: the day's rhythm from a calendar (core/workers/war_drum.py), with the town's scheduled
 // runs and ≈ when its limits are reached laid over the meetings (realm/drumbeat.py). Each kind wears
 // its role (`b.tone`) and its mark: ▪ meeting, ↻ scheduled run, ≈ limit (an estimate). Closed: the
-// next beats of all three kinds over a strip of the next hours; command: today's beats, now marked, a
-// meeting's document a click away, the limits; full: today by the hour and the week with all three,
-// the chosen meeting, the settings. A meeting's document opens in Lake.
+// next beats of all three kinds over a strip of the next hours, a checkbox per kind hiding it there;
+// command: today's beats, now marked, a meeting's document a click away, the limits; full: today by
+// the hour and the week with all three, the chosen meeting, the settings. A meeting's document opens in Lake.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, toast } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
+import { PartToggles, shown, hidden } from "../parts.js";
+
 
 const sheet = new URL("./war_drum.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -110,22 +112,26 @@ function Strip({ c }) {
   <div class="gui-drum__scale ok-tone-muted"><span>${say("now")} ${c.now}</span><span>+${c.hours}h</span></div>`;
 }
 
-/** What the marks mean — only when the timeline holds more than meetings (`beats`). */
-function Legend({ kinds }) {
-  if (kinds && kinds.length < 2) return null;
-  return html`<p class="gui-drum__legend ok-tone-muted"><span><span class="ok-tone-text">▪</span> meetings</span><span><span
-    class="ok-tone-accent">↻</span> schedules</span><span><span class="ok-tone-wait">≈</span> limits, estimated</span></p>`;
-}
+/** The closed card's kinds, each one the person may hide (js/parts.js); the checkboxes are its legend. */
+const KINDS = [
+  { key: "meeting", label: "meetings", mark: MARK.meeting, tone: "text" },
+  { key: "schedule", label: "schedules", mark: MARK.schedule, tone: "accent" },
+  { key: "limit", label: "limits", mark: MARK.limit, tone: "wait", title: "limits, estimated" },
+];
 
-/** Closed: the next beats of all three kinds (meetings, scheduled runs, ≈ limits) over a strip of the next hours. */
+/** Closed: the next beats of the kinds shown (meetings, scheduled runs, ≈ limits) over a strip of the
+ * next hours; a checkbox over them hides a kind. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  return html`<div class="gui-drum">
-    <${Strip} c=${c} />
-    ${c.beats.length ? html`<ul class="gui-drum__beats">${c.beats.map((x) => html`<${Beat} key=${beatKey(x)} b=${x} />`)}</ul>`
+  const kinds = KINDS.filter((k) => !c.kinds || c.kinds.includes(k.key));   // its `beats`: a calendar may hold meetings alone
+  const on = (x) => shown(b.id, x.kind);
+  const beats = c.beats.filter(on);
+  return html`<div class=${cls("gui-drum", { "is-folded": hidden(b.id).length > 0 })}>
+    ${kinds.length > 1 && html`<${PartToggles} id=${b.id} parts=${kinds} />`}
+    <${Strip} c=${{ ...c, strip: c.strip.filter(on) }} />
+    ${beats.length ? html`<ul class="gui-drum__beats">${beats.map((x) => html`<${Beat} key=${beatKey(x)} b=${x} />`)}</ul>`
       : html`<p class="ok-tone-muted">${c.error ? "the calendar cannot be read" : "nothing ahead"}</p>`}
-    <${Legend} kinds=${c.kinds} />
   </div>`;
 }
 

@@ -135,15 +135,17 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of an agent working in `workdir`."""
     cmd = work_cmd(harness, prompt, workdir, model, resume)
-    code, out, err = roads.run_proc(cmd, workdir, {**os.environ, **(env or {})}, roads.harness_stdin(harness, prompt),
+    run_env = {**os.environ, **(env or {})}
+    before = roads.codex_thread_total(resume, run_env) if harness == "codex" and resume else 0
+    code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s))
     if code != 0:
         raise RuntimeError(roads.failure(harness, code, out, err))
     if harness == "codex":
-        text, cost, tokens, session = roads.codex_result_of(out)
+        text, cost, tokens, session = roads.codex_result_of(out, before)
     else:
         (text, cost, tokens), session = roads._result_of(out), session_of(out)
-    if not telemetry.charged({**os.environ, **(env or {})}):
+    if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker")
     return text, cost, tokens, session
 
