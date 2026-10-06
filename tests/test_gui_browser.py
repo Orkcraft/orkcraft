@@ -255,12 +255,18 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
     roster.get_by_text("Redesign window").wait_for(state="visible", timeout=WAIT_MS)
     assert info.get_by_role("button", name="Balance", exact=True).count() == 0     # the goal is the steward's now
-    roster.get_by_text("Goal: Balance").click()
-    roster.get_by_text("Goal: Quality").wait_for(state="visible", timeout=WAIT_MS)
+    title = roster.locator(".ok-win__title").inner_text()
+    assert "★" in title and "idle" in title                                        # its window: the steward's name, status
+    assert info.get_by_text("Listen", exact=True).count() == 0                     # the roads are the steward's too
+    roster.get_by_text("Listens to nobody yet").wait_for(state="visible", timeout=WAIT_MS)
+    roster.get_by_role("button", name="Quality", exact=True).click()
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-roster .gui-steps__one')].find((e) => e.textContent === 'Quality')"
+                         ".classList.contains('is-on')", timeout=WAIT_MS)
+    assert server_building(pg, bid)["goal"] == "quality"
     roster.get_by_text("as the project").wait_for(state="visible", timeout=WAIT_MS)
-    clock = roster.locator(".gui-freedom__step").nth(1)
+    clock = roster.locator(".gui-steps__one.is-icon").nth(1)
     clock.click()                                                  # 🕰 lit, no longer as the town
-    pg.wait_for_function("() => document.querySelectorAll('.gui-freedom__step')[1].classList.contains('is-on')",
+    pg.wait_for_function("() => document.querySelectorAll('.gui-steps__one.is-icon')[1].classList.contains('is-on')",
                          timeout=WAIT_MS)
     assert roster.get_by_text("as the project").count() == 0
     assert server_building(pg, bid)["autonomy"] == "clock"
@@ -326,3 +332,40 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     assert abs(box("pit")["y"] - after["pit"]["y"]) <= 2
     for bid in ids.values():
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
+
+
+def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(page):
+    """Its head is the steward; each road in with its handler (the Pit takes no plain one); a click on an agent's edits its prompt,
+    › opens the ork; an ork no road feeds is listed on its own."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
+    src, dst = call("town.build", {"type": "forge"}), call("town.build", {"type": "pit"})
+    coder = call("building.recruit", {"id": dst, "name": "Coder", "role": "reads tickets", "orders": "Read the ticket."})
+    call("building.recruit", {"id": dst, "name": "Sweeper", "role": "tidies", "orders": "Tidy up."})
+    choices = call("roads.choices", {"from": src, "to": dst})
+    by_coder = next(c for c in choices if c.get("handler") == coder.split("/", 1)[1])
+    call("roads.lay", {"from": src, "to": dst, "event": by_coder["event"], "handler": by_coder["handler"]})
+    _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, dst).locator(".gui-hut__title").click()
+    _command(pg)
+    roster = pg.locator(".gui-roster")
+    roads = roster.locator(".gui-steward__road")
+    roads.first.wait_for(state="visible", timeout=WAIT_MS)
+    assert roads.count() == 1                                        # the Pit takes only roads to an ork
+    assert "Coder" in roads.first.inner_text() and "agent" in roads.first.inner_text()
+    own = roster.locator(".gui-steward__group", has_text="By schedule or by hand")
+    assert "Sweeper" in own.inner_text()
+    roads.filter(has_text="Coder").click()                          # its prompt
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Coder" in modal.inner_text() and modal.locator("textarea").first.input_value() == "Read the ticket."
+    pg.keyboard.press("Escape")
+    modal.wait_for(state="hidden", timeout=WAIT_MS)
+    roads.filter(has_text="Coder").locator(".gui-steward__more").click()     # › the ork itself
+    roster.locator(".ok-win__title", has_text="Inventory").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.keyboard.press("Escape")
+    for bid in (src, dst):
+        call("town.demolish", {"id": bid})
