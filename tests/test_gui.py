@@ -447,7 +447,7 @@ def test_the_elders_advise_in_quiet_hours_and_the_person_follows(fake_repo, monk
     from orkcraft import schedule, settings
     from orkcraft.core import runners
     from orkcraft.realm.orcs import Alert
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=1, quiet=schedule.DEFAULT_QUIET))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=0, quiet=schedule.DEFAULT_QUIET))
     monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: True)
     monkeypatch.setattr(runners, "ELDERS_RUNNER", lambda prompt, model=None: (_json.dumps({"answer": "1", "why": "runs the tests"}), 0.001))
     host = _host(fake_repo)

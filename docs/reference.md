@@ -191,7 +191,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | a board of cards in `TASKS.md` or a folder: tasks in To Do / In Progress / Done, sticky notes in lanes of their own (Ideas, Questions…); `mode`: `board` · `tasks` · `notes`; `n` `<` `>` `e` `c` `t` `s` `d` `N` (below); a cart becomes a card | `tasks.created`, `tasks.status_changed`, `notes.created`, `tasks.sent` |
-| 🏕️ Barracks | Grunts | tasks (a cart, or one you write with ✍ New task: a title and a brief), each on its own branch: a follow-up goes to the ork who did the earlier part, a new one to an idle or newly hired ork (provider and model by record); related work resumes the ork's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request — for code (always) and documents that go out; an ork never posts to a service itself (Jira, Confluence, Slack…): it drafts the post under a `PUBLISH: <where>` line, and `pool.question` carries the draft, the report and the files — 🔥 Enter publishes it (or type what to change), and through a 📦 Loot the cart is always held: accept lets the ork post it (your edits included), rework sends it back; `pool.done` then brings the report, the files and the link; a local document (a War Drum meeting's prep, or what the steward marks `SCOPE: local`) gets no PR and needs no commit when it is a meeting's | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
+| 🏕️ Barracks | Grunts | tasks (a cart, or one you write with ✍ New task: a title and a brief), each on its own branch. The steward judges a task first (docs/design/barracks-planning.md): a simple one goes whole to one ork of the light tier the building's goal names (🪙/⚖️ a laborer, 💎 a warrior); a hard one is planned (an elder plans) into parts — each with its tier, its persona, the files it touches and the parts it waits for — that run in parallel, are merged into the task's branch and reviewed as a whole against your request, with one pull request; the plan is estimated in $ and tokens and trimmed to the budget and to what is left of the quota (a tight quota makes the barracks thrifty). Nobody hires by hand: a follow-up goes to the ork who did the earlier part, a new task to an idle ork of its tier and persona or a newly hired one; a try sent back goes up one tier (laborer → warrior → elder); a new persona the steward writes waits as your autonomy says; related work resumes the ork's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request — for code (always) and documents that go out; an ork never posts to a service itself (Jira, Confluence, Slack…): it drafts the post under a `PUBLISH: <where>` line, and `pool.question` carries the draft, the report and the files — 🔥 Enter publishes it (or type what to change), and through a 📦 Loot the cart is always held: accept lets the ork post it (your edits included), rework sends it back; `pool.done` then brings the report, the files and the link; a local document (a War Drum meeting's prep, or what the steward marks `SCOPE: local`) gets no PR and needs no commit when it is a meeting's | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
 | 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review queue | `team.approved`, `team.rework`, `team.artifact_ready` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
@@ -493,8 +493,8 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   is the town's way in: Build and **Ask me anything** — a question to the Warchief, whose chat is the
   Town Hall's Command Card (it names a building of the catalog when one fits, and builds it on a click). Two towers, a pediment over the round window of the Elders,
   columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
-  hours), 📜 advice waits for you, ⏳ tonight's questions are used up, 💤 at rest by day, nothing at
-  ⛓️ Ask me. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
+  hours, or by day from ⏳ Timer), 📜 advice waits for you, 🔚 today's questions are used up, 💤 at
+  rest by day at ⛓️ Chains. The Hall tab lists what the Elders judged lately: ↪ answered, 📜 advised, · left to
   you, ⚠ flagged by the Warder.
 - **From scratch** is a conversation: the Builder asks until it knows what the building does, offers
   three views, the carts it takes, the events it sends and an optional timer; a rejected blueprint
@@ -741,8 +741,8 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
    `GEMINI_API_KEY` / `CODEX_API_KEY` is set) — you can change both. No key is stored: Codex's login is
    told by which kind its `~/.codex/auth.json` holds (a ChatGPT login or an API key; the key itself is
    never used), or else by `codex login status`. `OPENAI_API_KEY` does not count: `codex exec` ignores it.
-2. **Autonomy** — a slider of four stops: ⛓️ *Ask me* · 📜 *Morning advice* (default) · 🧭 *Routine on
-   their own* · ⛓️‍💥 *Free orks* (see *Ork autonomy* below).
+2. **Autonomy** — a slider of three stops: ⛓️ *Chains* · ⏳ *Timer* (default) · ⛓️‍💥 *Free orks*
+   (see *Ork autonomy* below).
 3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
    day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
 4. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
@@ -758,42 +758,53 @@ F10 → 🧭 Onboarding asks them again. Skip anywhere: an empty town, defaults,
 ### 🏛 Ork autonomy
 
 How much the orks do on their own (`autonomy` in the machine settings, F10 → 🏛 Ork autonomy).
-Autonomy comes from three places:
+One rule for every decision the orks could take for you — an agent's question, a new persona of a
+Barracks, a self-improvement:
 
-- **The Elders' advice** (from *Morning advice* up): in 🌙 quiet hours the Elders of the Town Hall
-  read each permission question of a claude / agy session and leave advice. The Warder's rules come
+| Level | A decision |
+|---|---|
+| ⛓️ Chains | waits for you |
+| ⏳ Timer (default) | waits `autonomy_wait` minutes (5, 7 or 10 — picked under the slider), then the orks take it; in 🌙 quiet hours they do not wait |
+| ⛓️‍💥 Free orks | the orks take it at once; you see the list of what they did |
+
+The level is kept as a word (`chains` / `timer` / `free`); a settings file of the four old stops loads
+never bolder than it was: *Ask me* and *Morning advice* → Chains, *Routine* → Timer, *Free orks* → Free
+orks. Autonomy comes from three places:
+
+- **The Elders' advice** (at *Chains*, in 🌙 quiet hours; from *Timer* once a question has waited the
+  timer): the Elders of the Town Hall read each permission question of a claude / agy session and
+  leave advice. The Warder's rules come
   first — what they block (secrets, sudo, `curl | sh`, `rm -rf /`…) gets no advice and no model call;
   what they only warn about (the network, a push, a backtick) goes to the model with the Warder's note,
   and that advice carries a ⚠. Then the Council's light model (`haiku`) may advise a **one-time** yes
   or a no, never an option that widens permissions ("don't ask again", "allow all edits"); options are
   read from their words, cursor and number aside. In the morning *Orders* (`!`) shows the advice: `a`
   follows it, `A` follows it on every advised question but the ⚠ ones; the rest wait as before. At
-  most `elders_per_night` questions a night (40), never past the 🪙 budget — their own calls count in
+  most `elders_per_night` questions a day (40, counted from the end of quiet hours), never past the 🪙 budget — their own calls count in
   it; every judgement is in `.orkcraft/council/elders.jsonl`, and a restart brings back the advice of
   the last day and tonight's count from it. The Town Hall lists them.
-- **The Elders' answers** (*Free orks* only): in quiet hours the Elders send that one-time yes or no
-  to the agent themselves — only if the very same question still waits and it is still quiet, and
-  never a ⚠ advice. What the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
+- **The Elders' answers** (from *Timer*): the Elders send that one-time yes or no to the agent
+  themselves — only if the very same question still waits, and never a ⚠ advice. What the rules stop, or the model would not advise, waits for you. The log marks each answer `sent`,
   and the morning toast counts them.
-- **The agents' own permission settings** (from *Routine on their own* up): the step shows what to
+- **The agents' own permission settings** (from *Timer* up): the step shows what to
   paste into Claude Code's `.claude/settings.local.json` (this project) or `~/.claude/settings.json`
   (every project) — an allow list for reading, editing the project, its tests and read-only git; at
   *Free orks* also `acceptEdits` and the usual project commands, with `git push` asked and
   `rm -rf`, force pushes, `sudo` and `.env` denied — how to start agy
   (`agy --mode accept-edits --sandbox` at *Free orks*) and Codex (`codex --sandbox workspace-write
-  --ask-for-approval on-request` from *Routine on their own*). 📋 (or `c` / `g` / `o`) puts the Claude
+  --ask-for-approval on-request` from *Timer*). 📋 (or `c` / `g` / `o`) puts the Claude
   snippet, the agy or the Codex command on the clipboard. The 🛡 Warder hook still denies the dangerous whatever the settings allow.
 
 #### 🔧 Self-improvement by the orks
 
-The Building retro, the Town retro and the stewards keep proposing as before; up to *Morning
-advice* every proposal waits for your click. From *Routine on their own*, in 🌙 quiet hours, the orks
-apply what their level allows themselves (`realm/evolution.py`), one change at a time, at most 10 a
+The Building retro, the Town retro and the stewards keep proposing as before; at *Chains* every
+proposal waits for your click. From *Timer*, in 🌙 quiet hours, the orks apply what their level
+allows themselves — silence never makes the camp spend more, so the timer allows only the cheaper half (`realm/evolution.py`), one change at a time, at most 10 a
 night, never past the 🪙 budget:
 
 | Level | The orks apply |
 |---|---|
-| 🧭 Routine on their own | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
+| ⏳ Timer | what makes a building cheaper or simpler: a shorter prompt, an agent made a chain, a steward's demotion (proved on recorded runs), a run policy, a road filter |
 | ⛓️‍💥 Free orks | also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎 building, a new plain road, a building's setting, a building from the catalog |
 | never | removing a road or a building, notes — those stay proposals |
 

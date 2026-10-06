@@ -4,7 +4,8 @@
     s.tools["claude"].billing        # "subscription" | "api"
     s.mode                           # "camp" | "office" | "shift"
     s.quiet, s.office, s.office_days # 🌙 do-not-disturb and 👔 office hours (schedule.py)
-    s.autonomy                       # 0..3: how much the orcs do on their own (autonomy.py)
+    s.autonomy                       # 0 ⛓️ chains · 1 ⏳ timer · 2 ⛓️‍💥 free orks (autonomy.py)
+    s.autonomy_wait                  # ⏳ minutes a decision waits for the operator (5..10)
     s.profile                        # who the operator is and how their day goes (realm/intents.py)
     settings.save(s)
 
@@ -21,7 +22,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from orkcraft import schedule
+from orkcraft import autonomy as autonomy_, schedule
 from orkcraft.env import getenv
 from orkcraft.schedule import Span
 
@@ -55,7 +56,8 @@ class MachineSettings:
     quiet: Span | None = None     # 🌙 do-not-disturb hours; None = off
     office: Span = schedule.DEFAULT_OFFICE                      # 👔 Shift: office hours…
     office_days: tuple[int, ...] = schedule.DEFAULT_OFFICE_DAYS  # …on these days (0 = Monday)
-    autonomy: int = 1             # 0 ask me · 1 morning advice · 2 routine · 3 free orcs (autonomy.py)
+    autonomy: int = autonomy_.DEFAULT_LEVEL   # 0 chains · 1 timer · 2 free orks; kept as a word (autonomy.py)
+    autonomy_wait: int = autonomy_.DEFAULT_WAIT   # ⏳ minutes
     profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, ai_tools
 
     def to_dict(self) -> dict:
@@ -66,7 +68,8 @@ class MachineSettings:
             "quiet": self.quiet.to_dict() if self.quiet else None,
             "office": self.office.to_dict(),
             "office_days": list(self.office_days),
-            "autonomy": self.autonomy,
+            "autonomy": autonomy_.word(self.autonomy),
+            "autonomy_wait": self.autonomy_wait,
             "profile": self.profile,
         }
 
@@ -87,8 +90,8 @@ class MachineSettings:
         days = data.get("office_days")
         if isinstance(days, list):
             s.office_days = tuple(sorted({d for d in days if isinstance(d, int) and 0 <= d <= 6}))
-        level = data.get("autonomy", 1)
-        s.autonomy = level if isinstance(level, int) and not isinstance(level, bool) and 0 <= level <= 3 else 1
+        s.autonomy = autonomy_.of(data.get("autonomy"))
+        s.autonomy_wait = autonomy_.wait_of(data.get("autonomy_wait"))
         s.profile = clean_profile(data.get("profile"))
         return s
 

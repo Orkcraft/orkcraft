@@ -82,6 +82,9 @@ class LimitsView(VerticalScroll):
 
     def _set_limits(self, limits: list[Limit]) -> None:
         self.limits = limits
+        core = getattr(self.app, "core", None)      # the town keeps the last read for its workers (the Barracks)
+        if core is not None:
+            core.limits = list(limits)
         self.updated = dt.datetime.now()
         self.refresh_view()
         refresh_hud = getattr(self.app, "refresh_hud", None)

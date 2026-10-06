@@ -199,7 +199,8 @@ class Host:
             self.nightly.tick(quiet, morning)
         except Exception as e:                     # the night's work never stops the clock
             self.town.toast(f"{type(e).__name__}: {e}", title="Quiet hours", severity="error")
-        alert = self.night.next_question(self.muster.roster.alerts, quiet, machine.autonomy)
+        alert = self.night.next_question(self.muster.roster.alerts, quiet, machine.autonomy,
+                                         machine.autonomy_wait)
         if alert is None:
             return
         who = self.muster.who().get(alert.id, "")
@@ -213,8 +214,8 @@ class Host:
         threading.Thread(target=work, daemon=True, name="elders").start()
 
     def _judged(self, alert, who: str, decision) -> None:
-        """The advice is kept for the person, or (⛓️‍💥 Free orks, still quiet, the same question waits)
-        their key goes to the session."""
+        """The advice is kept for the person, or (from ⏳ timer, the same question still waits) their key
+        goes to the session."""
         machine = self.town.machine
         send = self.night.judged(alert, decision, who, self.muster.roster.alerts, schedule.quiet_now(machine),
                                  machine.autonomy)

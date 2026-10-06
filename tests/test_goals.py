@@ -92,7 +92,7 @@ def test_enrich_is_longer_within_the_ceiling():
     thrift = optimize.GOAL_ACTIONS["thrift"]
     assert "action: one of" in optimize.check({"action": "enrich", "target": "orc:seer", "prompt": better}, ps, "x",
                                               root, actions=thrift)[1][0]
-    assert not evolution.allowed("enrich", 2) and evolution.allowed("enrich", 3)
+    assert not evolution.allowed("enrich", 1) and evolution.allowed("enrich", 2)          # ⏳ timer never spends more
 
 
 def test_the_council_hears_the_goal(tmp_path: Path):

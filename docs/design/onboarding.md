@@ -121,7 +121,7 @@ is reviewed and raised; Later leaves the order burning 🔥 in the Town Hall.
 
 ## 6. Camp rules
 
-The ork autonomy slider (⛓️ Ask me · 📜 Morning advice · 🧭 Routine · ⛓️‍💥 Free orks, with what
+The ork autonomy slider (⛓️ Chains · ⏳ Timer · ⛓️‍💥 Free orks — docs/design/barracks-planning.md §2 — with what
 each means and the agents' own settings to copy) and, below it, the look — 🧌 Camp · 👔 Office ·
 🧌/👔 Shift — and 🌙 quiet hours 23:00–08:00 on or off. The hours themselves and the office days
 are F10 → 🕰 Your day (the day bar); the slider alone is F10 → 🏛 Ork autonomy.

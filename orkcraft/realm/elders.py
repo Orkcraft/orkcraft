@@ -6,10 +6,11 @@
     elders.restore(repo_root, night)     # after a restart: the advice still to follow, tonight's judged marks
     elders.limits(repo_root)             # (questions a night, screen lines read) from the Council's settings
 
-What happens with the advice depends on the operator's autonomy level (autonomy.py): up to 🧭 the
-Elders only advise and the operator follows the advice with one key in the morning (Orders → `a`,
-or `A` for all); at ⛓️‍💥 Free orcs they answer themselves in quiet hours — their key goes to the agent
-(app._elders_done), and the log says `sent`.
+What happens with the advice depends on the operator's autonomy level (autonomy.py): at ⛓️ Chains
+the Elders only advise, in quiet hours, and the operator follows the advice with one key (Orders →
+`a`, or `A` for all); from ⏳ Timer they answer themselves once the question has waited the timer (at
+once in quiet hours, and at once at ⛓️‍💥 Free orks) — their key goes to the agent (core/night.py
+`judged`), and the log says `sent`.
 
 Only an agent's own question qualifies: a permission menu in a claude / agy session (an `Alert` with
 source "terminal"). The Elders are conservative by design:
@@ -18,7 +19,7 @@ source "terminal"). The Elders are conservative by design:
    sudo, `curl | sh`, `rm -rf /`…) gets no advice — the question waits for the operator as it is; no
    model is asked. What they only *warn* about (the network, a push, a backtick) goes to the model with
    the Warder's note; the advice then carries a ⚠ and is never sent by the Elders themselves, even at
-   ⛓️‍💥 Free orcs — the operator reads the note and decides.
+   ⛓️‍💥 Free orks — the operator reads the note and decides.
 2. **Only a one-time yes** may be advised: options like "Yes, and don't ask again", "allow all edits"
    or "always" are never advised. Options are read from their labels ("❯ 1. Yes" as well as "Yes").
 3. **The light model judges** (the Council's Fast Path model, haiku by default) between that one-time
@@ -188,7 +189,7 @@ def judge(alert: Alert, runner: fastpath.Runner | None, context_lines: int = CON
 
 
 def log(repo_root: Path, alert: Alert, decision: Decision, who: str = "", sent: bool = False) -> None:
-    """One judgement; `sent`: the Elders' key went to the agent (⛓️‍💥 Free orcs)."""
+    """One judgement; `sent`: the Elders' key went to the agent (from ⏳ Timer)."""
     path = Path(repo_root) / LOG
     record = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "who": who, "question": alert.title[:200],
               "options": dict(alert.options), "mark": mark(alert), **asdict(decision), "sent": sent}

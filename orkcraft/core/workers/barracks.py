@@ -1,8 +1,10 @@
 """🏕 Barracks' work: the steward runs incoming tasks with a pool of orcs and judges their work.
 
-A cart that arrives is a task — the unit of work. The foreman's rules (realm/barracks.py) give it
-to the orc that did the earlier part (a follow-up), to an idle orc, to a newly hired one (picking
-its provider and model), or queue it. Orcs are only a pool of agents: each has a worktree of its
+A cart that arrives is a task — the unit of work. The steward judges it first (core/workers/
+barracks_plan.py): a simple one goes whole to an ork of the light tier the building's goal names, a
+hard one is planned into parts that run in parallel and are merged into one branch. The foreman's
+rules (realm/barracks.py) give a task to the orc that did the earlier part (a follow-up), to an idle
+orc of its tier and persona, to a newly hired one, or queue it; nobody hires by hand. Orcs are only a pool of agents: each has a worktree of its
 own, and every task gets its own branch `pool/<building>/<task>` cut from a fresh base there.
 
 The steward — the building's own orc — keeps the rules (`orders`) and judges:
@@ -38,11 +40,13 @@ from pathlib import Path
 
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, pipes, roads, steward, tiers
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, steward, tiers
 
 ICON = {"idle": "💤", "working": "⚒"}
-TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗"}
+TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
+             "planning": "🧭", "planned": "🧭", "blocked": "⏸"}
 PR_FIRST_S = 30                   # the first look at the pull requests: what happened while the camp was closed
 PR_CHECK_S = 600                  # how often the pull requests of done tasks are looked at
 DUPLICATE_LABELS = frozenset({"duplicate", "superseded"})   # a closed pull request so labelled is no 👎
@@ -119,7 +123,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(Worker):
+class BarracksWorker(PlanMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
@@ -134,6 +138,7 @@ class BarracksWorker(Worker):
         self.bk: bk.Barracks | None = None
         self._cancels: dict[str, threading.Event] = {}
         self._pumped = False
+        self._merge_lock = threading.Lock()     # one part at a time is merged into its parent's branch
         self._prs_at = time.monotonic() - PR_CHECK_S + PR_FIRST_S
 
     # -- what it is -----------------------------------------------------------------------------
@@ -177,7 +182,9 @@ class BarracksWorker(Worker):
         if self._pumped:
             return
         self._pumped = True
-        self.state
+        st = self.state
+        for parent in [t for t in st.tasks if t.plan and t.status == "planned"]:
+            self._advance(parent)
         self._pump()
         self.state.save()
 
@@ -190,7 +197,14 @@ class BarracksWorker(Worker):
         return "BUSY" if any(o.status == "working" for o in st.orcs) else ""
 
     def tick(self, now: float | None = None) -> None:
-        """Now and then: what became of the pull requests of done tasks."""
+        """Now and then: a persona whose timer ran out; what waits in the queue with nobody on it (an orc that
+        could not be hired is tried again); what became of the pull requests of done tasks."""
+        self.tick_personas()
+        st = self.state
+        if st.queue and not st.paused and not any(o.status == "working" for o in st.orcs):
+            self._pump()
+            st.save()
+            self.changed()
         now = time.monotonic() if now is None else now
         if now - self._prs_at >= PR_CHECK_S:
             self._prs_at = now
@@ -305,14 +319,16 @@ class BarracksWorker(Worker):
             task.decided = f"{d.action}: {d.why}"
             st.log(d)
             return
+        if not st.paused and not self._triaged(task):    # the steward plans it first
+            return
         d = self.foreman.decide(task, st.orcs, [t for t in st.queue if t is not task], st.spent, st.paused)
         task.decided = f"{d.action}: {d.why}"
         st.log(d)
-        if d.action in ("follow-up", "reuse"):
+        if d.action in ("follow-up", "reuse", "retier"):
             self._assign(task, st.orc(d.orc), d.action)
         elif d.action == "hire":
             harness, model, _ = self.foreman.choose_model(task)
-            orc = self.hire(d.orc, harness, model)
+            orc = self.hire(d.orc, harness, model, task.persona)
             if orc is not None:
                 self._assign(task, orc, "new")
         elif d.action == "wait":
@@ -323,12 +339,15 @@ class BarracksWorker(Worker):
         st, f = self.state, self.foreman
         if st.paused:
             return
+        for q in [q for q in st.queue if not q.wait_for]:     # judged before any orc takes it
+            if q in st.queue and not self.out_of_gold():
+                self._triaged(q)
         for o in st.orcs:
             if o.status != "idle" or not st.queue:
                 continue
             if f.over_budget(st.spent):
                 return
-            nxt = f.next_for(o, st.queue)
+            nxt = f.next_for(o, st.queue, room=len(st.orcs) < f.max_orcs)
             if nxt is not None:
                 st.log(bk.Decision(bk.now_iso(), nxt.id, "follow-up" if nxt.wait_for else "reuse", o.name,
                                    f"{o.name} is free" + (" — its follow-up" if nxt.wait_for else "")))
@@ -337,9 +356,9 @@ class BarracksWorker(Worker):
             if q in st.queue and len(st.orcs) < f.max_orcs and not f.over_budget(st.spent):
                 self._dispatch(q)
 
-    def hire(self, name: str, harness: str, model: str) -> bk.PoolOrc | None:
+    def hire(self, name: str, harness: str, model: str, persona: str = "") -> bk.PoolOrc | None:
         st = self.state
-        orc = bk.PoolOrc(name, harness, model, hired=bk.now_iso())
+        orc = bk.PoolOrc(name, harness, model, hired=bk.now_iso(), persona=persona)
         if self.worktrees and not self.simulated:          # the sandbox describes worktrees, it does not make them
             maker = type(self).worktree_maker or jobs.add_worktree
             try:
@@ -349,22 +368,6 @@ class BarracksWorker(Worker):
                 return None
             orc.worktree = str(path)
         st.orcs.append(orc)
-        return orc
-
-    def hire_by_hand(self) -> bk.PoolOrc | None:
-        """A new orc without a task (the foreman picks its model); None when the pool is full."""
-        st, f = self.state, self.foreman
-        if len(st.orcs) >= f.max_orcs:
-            self.toast(f"already {len(st.orcs)}/{f.max_orcs} orks", title="🏕 Barracks")
-            return None
-        name = next((n for n in bk.NAMES if n not in {o.name for o in st.orcs}), f"Ork{len(st.orcs) + 1}")
-        harness, model, why = f.choose_model(bk.PoolTask("", "", ""))
-        orc = self.hire(name, harness, model)
-        if orc is not None:
-            st.log(bk.Decision(bk.now_iso(), "", "hire", name, f"hired by hand; {why}"))
-            self._pump()
-        st.save()
-        self.changed()
         return orc
 
     def pause(self) -> bool:
@@ -392,6 +395,13 @@ class BarracksWorker(Worker):
             st.tasks.append(task)
         foreman = self.foreman
         follow = how == "follow-up"
+        if task.tier and orc.tier != task.tier:           # the task's tier: the orc thinks with its model now
+            model = foreman.model_for(orc.harness, task.tier)
+            if model is not None:
+                st.log(bk.Decision(bk.now_iso(), task.id, "retier", orc.name, f"{orc.label} → {orc.harness}:{model}"))
+                orc.model = model
+        if task.persona and orc.persona != task.persona:  # a new role: a fresh session
+            orc.persona, orc.session, orc.session_tasks = task.persona, "", 0
         related = follow or foreman.related(task, orc)
         task.warm = related and foreman.can_resume(orc)
         orc.status, orc.task = "working", task.id
@@ -479,14 +489,17 @@ class BarracksWorker(Worker):
             task.status = status
             self.changed()
 
-    def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome, use: str = "review") -> str:
-        """One model call of the steward's: `use` is its task (answer | review), whose tier its spec may set
-        (realm/steward.py); else the model of its `steward` setting."""
+    def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome,
+                 use: str = "review", tier: str = plans.REVIEW_TIER) -> str:
+        """One model call of the steward's: `use` is its task (plan | answer | review | final), whose tier its
+        spec may set (realm/steward.py); else the model of its `steward` setting, else `tier`'s."""
         harness, model = bk.parse_provider(str(self.config.get("steward") or "claude"))
         scroll = getattr(self.town, "scroll", None)
-        tier = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
-        if tier:
-            model = tiers.resolve(harness, tier)
+        chosen = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
+        if chosen:
+            model = tiers.resolve(harness, chosen)
+        elif not model:
+            model = tiers.MODELS.get(harness, {}).get(tier, "")
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:
@@ -524,6 +537,16 @@ class BarracksWorker(Worker):
                 out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
                 return
             tests = f"`{cmd}` passes"
+        if task.parent:                                   # a part: no pull request of its own
+            if self.goal.sub_review:
+                verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, bk.LOCAL),
+                                        workdir, cancel, out)
+                out.accepted, out.notes = bk.verdict_of(verdict)
+            else:                                         # 🪙 thrift: the tests are the review
+                out.accepted, out.notes = True, tests or "no tests to run"
+            if out.accepted and git is not None and commits and task.base:
+                self._merge_part(task, out)
+            return
         verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule),
                                 workdir, cancel, out)
         out.accepted, out.notes = bk.verdict_of(verdict)
@@ -556,7 +579,9 @@ class BarracksWorker(Worker):
                 sent_back,
                 f"Your branch is now `{task.branch}`." if task.branch else "",
                 "Same rules as before: commit on your branch, then a short Markdown report."] if p)
+        persona = personas.load(self.state_dir, orc.persona) if orc.persona else None
         parts = [f"You are {orc.name}, one of several agents working in parallel, each in its own git worktree.",
+                 f"## Who you are: {persona.name}\n\n{persona.prompt}" if persona is not None else "",
                  f"Work on the branch `{task.branch}` (it is checked out)." if task.branch else "",
                  "Do the task below in this directory. Commit your work on the branch with a clear message; do not "
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
@@ -604,10 +629,15 @@ class BarracksWorker(Worker):
             st.log(bk.Decision(bk.now_iso(), task.id, "answer", orc.name, f"{q} → {a}"))
         if out.error:
             task.status = "failed"
-            self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title,
-                      trail=self._trail(task, orc, "error"), ref=task.ref)
+            if task.parent:                               # the whole fails when nothing else runs (_advance)
+                st.log(bk.Decision(bk.now_iso(), task.id, "failed", orc.name, f"part `{task.sub}`: {out.error}"))
+            else:
+                self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title,
+                          trail=self._trail(task, orc, "error"), ref=task.ref)
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks")
+        elif ok and task.parent:
+            self._part_done(task, orc, out)
         elif ok and not task.publish and (draft := bk.publish_of(out.text))[2]:
             task.files = out.files or task.files
             self._wants_approval(task, orc, *draft)
@@ -635,6 +665,8 @@ class BarracksWorker(Worker):
                                                      outcome="done" if ok else "error", markdown=out.text,
                                                      error=out.error or ("" if ok else out.notes),
                                                      cost_usd=out.cost or None))
+        if task.parent:
+            self._advance(st.task(task.parent))
         self._pump()
         if not st.queue and all(o.status == "idle" for o in st.orcs):
             self.emit("pool.idle", "every task is done" + (f"; {len(st.asked)} wait for you" if st.asked else ""),
@@ -650,6 +682,12 @@ class BarracksWorker(Worker):
         st.log(bk.Decision(bk.now_iso(), task.id, "rework", orc.name, f"{reworks + 1}/{limit}: {notes[:200]}"
                            if reworks < limit else f"rejected after {reworks} reworks: {notes[:200]}"))
         if reworks < limit:
+            heavier = plans.up(task.tier or orc.tier or "")
+            if heavier and self.config.get("escalate", True) is not False and \
+                    self.foreman.model_for(orc.harness, heavier) is not None:
+                st.log(bk.Decision(bk.now_iso(), task.id, "escalate", orc.name,
+                                   f"{task.tier or orc.tier} → {heavier}: a failed try goes up one tier"))
+                task.tier = heavier
             st.tasks.remove(task)
             task.status, task.wait_for = "queued", orc.name
             st.queue.insert(0, task)
@@ -716,6 +754,11 @@ class BarracksWorker(Worker):
         task = st.task(task_id)
         if text is None or task is None or task.status != "asked":
             return ""
+        if task.persona_waits:                      # a new persona waits for its approval
+            self._persona_answer(task, text)
+            return ""
+        if task.plan:                               # the whole was sent back too often: the operator's word
+            return self._plan_answer(task, text) if text.strip() else ""
         if task.draft:                              # a draft waits: nothing typed approves it, else what to change
             if not text.strip() or text.strip().lower() in bk.APPROVE:
                 self._publish(task, task.draft, task.target, "the operator approved")

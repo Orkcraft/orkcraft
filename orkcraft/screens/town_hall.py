@@ -20,8 +20,8 @@ from orkcraft.screens.limits_view import LimitsView
 
 # The Elders' lamp on the hut (app.elders_state) and its word in the Hall.
 LAMPS = {"advice": ("📜", "advice waits for you — ! opens it"), "watch": ("🌙", "on watch: they read the questions"),
-         "full": ("⏳", "tonight's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
-         "off": ("", "off — autonomy is ⛓️ Ask me")}
+         "full": ("🔚", "today's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
+         "off": ("", "off")}
 LAMPS_OFFICE = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
 
 

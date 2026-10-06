@@ -6,11 +6,12 @@
     evolution.verdict(root, change, now)     on probation: a reason to take it back, or None
 
 The Building retro (daily), the Town retro (weekly) and the stewards keep proposing as before. In 🌙 quiet
-hours, at 🧭 Routine and above, the orcs apply what their level allows:
+hours (nobody to wait for: autonomy.waits), from ⏳ Timer, the orks apply what their level allows —
+silence never makes the camp spend more:
 
-    🧭 Routine (2)    changes that make a building cheaper or simpler: shrink a prompt, an agent made a
+    ⏳ Timer (1)      changes that make a building cheaper or simpler: shrink a prompt, an agent made a
                       chain, a steward's demotion (proved on recorded runs), a run policy, a road filter
-    ⛓️‍💥 Free orcs (3)  also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎
+    ⛓️‍💥 Free orks (2)  also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎
                       building (it spends more), a new plain road, a building's setting, a building
                       from the catalog
     never             removing a road or a building, notes — those stay advice
@@ -37,6 +38,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from orkcraft import autonomy
 from orkcraft.realm import feedback, metrics
 
 LEDGER = Path(".orkcraft") / "evolution" / "changes.jsonl"
@@ -45,9 +47,10 @@ MAX_PER_NIGHT = 10
 FAILED = ("error", "failed", "fail")
 
 # The lowest autonomy level at which the orcs may apply a kind of change themselves.
+_T, _F = autonomy.TIMER, autonomy.FREE
 LEVEL_FOR: dict[str, int] = {
-    "shrink": 2, "chain": 2, "demote": 2, "set_run": 2, "filter": 2,
-    "script": 3, "enrich": 3, "new_road": 3, "set_config": 3, "add_building": 3,
+    "shrink": _T, "chain": _T, "demote": _T, "set_run": _T, "filter": _T,
+    "script": _F, "enrich": _F, "new_road": _F, "set_config": _F, "add_building": _F,
 }
 NEVER = ("remove_road", "remove_building", "note")
 

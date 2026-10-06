@@ -265,6 +265,46 @@ class TaskGit:
         else:
             _ok(_git(workdir, "checkout", "-B", branch, ref))
 
+    def cut(self, repo_root: Path, branch: str, base: str) -> None:
+        """A planned task's branch, which its parts are merged into: cut from the freshest `base` (origin's,
+        when there is one), kept when it is there already."""
+        if _git(repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{branch}").returncode == 0:
+            return
+        ref = base
+        if self._has_origin(repo_root) and _git(repo_root, "fetch", "origin", base).returncode == 0:
+            ref = f"origin/{base}"
+        _ok(_git(repo_root, "branch", branch, ref))
+
+    def merge(self, repo_root: Path, into: str, branch: str, message: str) -> tuple[bool, str]:
+        """Merge `branch` into `into` without checking either out (`git merge-tree`, git 2.38+): (merged,
+        the conflicting files or why not). `into` moves only when nobody moved it meanwhile."""
+        old = _ok(_git(repo_root, "rev-parse", f"refs/heads/{into}"))
+        if _git(repo_root, "merge-base", "--is-ancestor", branch, into).returncode == 0:
+            return True, "already merged"
+        tree = _git(repo_root, "merge-tree", "--write-tree", "--name-only", into, branch)
+        if tree.returncode != 0:
+            lines = tree.stdout.strip().splitlines()
+            if tree.returncode == 1 and lines:
+                files = [ln for ln in lines[1:] if ln and not ln.startswith(("Auto-merging", "CONFLICT"))]
+                return False, "conflicts in " + ", ".join(dict.fromkeys(files)) if files else "conflicts"
+            return False, (tree.stderr or tree.stdout).strip()[:300] or "git merge-tree failed"
+        oid = tree.stdout.strip().splitlines()[0]
+        commit = _ok(_git(repo_root, "commit-tree", oid, "-p", into, "-p", branch, "-m", message))
+        _ok(_git(repo_root, "update-ref", f"refs/heads/{into}", commit, old))
+        return True, "merged"
+
+    def check(self, repo_root: Path, branch: str, command: str, cancel: threading.Event,
+              where: Path) -> tuple[bool, str]:
+        """The tests on `branch` as it is (the merged parts), in a worktree of the steward's own at `where`."""
+        if not (where / ".git").exists():
+            where.parent.mkdir(parents=True, exist_ok=True)
+            _ok(_git(repo_root, "worktree", "add", "--detach", str(where), branch))
+        else:
+            if _git(where, "status", "--porcelain").stdout.strip():
+                _git(where, "stash", "push", "--include-untracked", "-m", "orkcraft: leftovers")
+            _ok(_git(where, "checkout", "--detach", branch))
+        return self.test(where, command, cancel)
+
     def diff(self, workdir: Path, base: str, branch: str) -> tuple[int, str]:
         """(commits, diff) of the branch since it left the base."""
         ref = f"origin/{base}" if _git(workdir, "rev-parse", "--verify", "--quiet", f"origin/{base}").returncode == 0 \

@@ -154,8 +154,8 @@ async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo
         for c in crew.calls[2:]:
             c["gate"].set()
         assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs) and not st.queue)
-        assert sum(o.done for o in st.orcs) == 4 and st.stats["claude"]["runs"] + st.stats.get(
-            f"agy:{bk.AGY_CODE}", {"runs": 0})["runs"] == 4
+        assert sum(o.done for o in st.orcs) == 4 and st.stats["claude:haiku"]["runs"] + st.stats.get(
+            "agy:gemini-3.8-flash-low", {"runs": 0})["runs"] == 4
         decisions = [d.action for d in st.decisions()]
         assert {"hire", "queue", "wait", "follow-up", "reuse"} <= set(decisions)
 

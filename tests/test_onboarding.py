@@ -308,7 +308,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
 
         await _on(pilot, app, AutonomyStep)                                      # camp rules
         assert "step 5 of 5" in _title(app) and "Camp rules" in _title(app)
-        app.screen.query_one(AutonomySlider).set_level(2)
+        app.screen.query_one(AutonomySlider).set_level(1)
         app.screen.pick("office")
         app.screen.query_one("#au-quiet", Checkbox).value = True
         await _press(app, pilot, "au-next")
@@ -317,7 +317,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
                      and any(r.source == "triage" for r in app.scroll.building("fixers").roads)
                      and not app.query(RaiseBar), n=200)
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "office" and machine.autonomy == 2
+        assert machine.onboarded and machine.mode == "office" and machine.autonomy == 1
         assert machine.quiet == schedule.DEFAULT_QUIET
         assert machine.tools["claude"].billing == "api" and machine.tools["claude"].enabled
         assert machine.profile == {

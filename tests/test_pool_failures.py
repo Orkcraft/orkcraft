@@ -112,7 +112,7 @@ async def test_three_orcs_work_at_once_and_the_rest_queue(fake_repo: Path, monke
             crew.finish(i)
         assert await _until(pilot, lambda: not st.queue and all(o.status == "idle" for o in st.orcs))
         assert crew.peak == 3 and len(crew.calls) == 6
-        assert sum(o.done for o in st.orcs) == 6 and st.stats["claude"] == {"runs": 6, "ok": 6, "cost": 0.6, "tokens": 600}
+        assert sum(o.done for o in st.orcs) == 6 and st.stats["claude:haiku"] == {"runs": 6, "ok": 6, "cost": 0.6, "tokens": 600}
         modes = [p.mode for p in sent]
         assert modes.count("pool.assigned") == 6 and modes.count("pool.done") == 6 and modes.count("pool.idle") == 1
 
@@ -145,7 +145,7 @@ async def test_a_crashing_agent_fails_its_task_only(fake_repo: Path, monkeypatch
         crew.finish(1)
         crew.finish(2)
         assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs))
-        assert st.stats["claude"]["runs"] == 3 and st.stats["claude"]["ok"] == 2
+        assert st.stats["claude:haiku"]["runs"] == 3 and st.stats["claude:haiku"]["ok"] == 2
         assert "✗ T2001 — Grub" in str(view.query_one("#pool-detail").render())
 
         _arrive(app, "T2001")                                                          # a retry goes back to Grub
@@ -195,7 +195,7 @@ async def test_no_worktree_no_orc_and_the_task_is_not_lost(fake_repo: Path, monk
         assert st.orcs == [] and crew.calls == []
         assert [t.key for t in st.queue] == ["T4001"]                                  # still waiting, not dropped
 
-        assert view.quick_action("pool.hire")                                          # hiring by hand picks it up
+        view.worker.tick()                                                             # the next tick tries again
         assert await _until(pilot, lambda: len(crew.calls) == 1)
         assert st.orcs[0].branch and st.task(st.orcs[0].task).key == "T4001"
         crew.finish(0)
@@ -283,7 +283,7 @@ async def test_related_work_resumes_the_session_and_sends_only_the_task(fake_rep
         assert crew.calls[3]["resume"] == "" and "recent work" not in crew.calls[3]["prompt"]
         crew.finish(3)
         assert await _until(pilot, lambda: st.orcs[0].status == "idle")
-        assert st.orcs[0].tokens == 400 and st.stats["claude"]["tokens"] == 400
+        assert st.orcs[0].tokens == 400 and st.stats["claude:haiku"]["tokens"] == 400
         assert "♻" in str(view.query_one("#pool-detail").render())
 
 

@@ -2,7 +2,7 @@
   "type": "barracks",
   "about": "🏕️ Barracks: a pool of orks that take tasks; the tasks in lanes by state, the chosen one, a tab per ork with its terminal, and the steward's rules.",
   "panes": {
-    "head":  {"about": "how many orks work and how many tasks wait, the spend, the steward when it asks; New task, Pause, Answer, Hire an ork", "components": ["status"], "required": true},
+    "head":  {"about": "how many orks work and how many tasks wait, the spend, the steward when it asks; New task, Pause, Answer", "components": ["status"], "required": true},
     "lanes": {"about": "the tasks in lanes by state (queue, work, review, done, failed), each with its branch, ork, reworks, cost and PR", "components": ["board"], "required": true},
     "task":  {"about": "the chosen task: its brief, diff, review notes, the questions and their answers, its files and report", "components": ["text", "markdown"], "required": true},
     "orks":  {"about": "a tab per ork with its live terminal, its worktree and its recent work", "components": ["terminal", "view"], "required": true},
