@@ -13,6 +13,7 @@ import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
 
 import { HALL } from "./js/tent.js";
+import { Advisor } from "./js/advisor.js";
 
 function App() {
   const t = town.value;
@@ -20,12 +21,14 @@ function App() {
   document.documentElement.dataset.theme = t.look;      // office | camp (orkcraft gui --look; Shift by the hour)
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
-  ids.add(HALL);                                         // the Town Hall stands on every canvas
+  const office = t.look === "office";
+  if (office) ids.delete(HALL);                          // Office: the Control panel is the pinned advisor
+  else ids.add(HALL);                                    // Camp: the Town Hall stands on every canvas
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />
     <${Town} buildings=${buildings} roads=${t.roads} />
-    <div class="gui-strip"><${WarMap} /><${Selected} /></div>
+    <div class="gui-strip"><${WarMap} /><${Selected} />${office && html`<${Advisor} />`}</div>
     <${Opened} />
     <${LakeWindow} />
     <${StatusBar} />

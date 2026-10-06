@@ -86,7 +86,7 @@ def page(gui):
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     pg.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
     pg.goto(server.url)
-    pg.wait_for_selector(f'.gui-hut[data-id="{TOWN_HALL}"]', timeout=WAIT_MS)
+    pg.wait_for_selector(".gui-advisor__face", timeout=WAIT_MS)   # Office: the Control panel is the advisor
     yield pg
     pg.wait_for_timeout(300)                    # what a refresh after the last step draws
     pg.close()
@@ -142,7 +142,7 @@ def _three_ways(pg, bid: str, has_view: bool = True) -> None:
 def test_every_type_built_draws_three_ways(page, type_id):
     pg = page
     before = set(pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)"))
-    _hut(pg, TOWN_HALL).locator("button", has_text="Build").click()
+    pg.locator(".gui-advisor__bubble").get_by_role("button", name="Build", exact=True).click()
     items = pg.locator(".gui-catalog__item")
     items.first.wait_for(state="visible", timeout=WAIT_MS)
     assert items.count() == len(TYPES)
@@ -158,8 +158,40 @@ def test_every_type_built_draws_three_ways(page, type_id):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)     # the next one stands where this one stood
 
 
-def test_the_town_hall_draws_three_ways(page):
-    _three_ways(page, TOWN_HALL)
+def test_the_town_hall_is_the_pinned_advisor_in_office(page):
+    pg = page
+    assert _hut(pg, TOWN_HALL).count() == 0                     # no hut of it on the town
+    bubble = pg.locator(".gui-advisor__bubble")
+    assert bubble.is_visible() and not bubble.locator(".gui-hut__title").count()   # its card, no name
+    face = pg.locator(".gui-advisor__face")
+    face.click()                                                # selected: Info, the garrison, Commands
+    _command(pg)
+    face.click()                                                # a click on it selected opens it
+    _full(pg, True)
+    pg.keyboard.press("Escape")
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-console").wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def test_huts_stand_pinned_until_unpinned(page):
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    hut = _hut(pg, bid)
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    assert hut.locator(".gui-pit__icon").is_visible()           # the Pit's card: only its tray
+    start = hut.bounding_box()
+    pg.mouse.move(start["x"] + 30, start["y"] + start["height"] - 10)
+    pg.mouse.down()
+    pg.mouse.move(start["x"] + 130, start["y"] + start["height"] + 40, steps=5)
+    pg.mouse.up()
+    assert hut.bounding_box()["x"] == start["x"]                 # pinned: a drag does nothing
+    pg.keyboard.press("Escape")
+    hut.locator(".gui-hut__pin").click()
+    assert "is-free" in hut.get_attribute("class")
+    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
+                         arg=bid, timeout=8_000)                 # five seconds alone pin it again
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
 def test_the_lake_window_shows_text_markdown_and_code(page):
