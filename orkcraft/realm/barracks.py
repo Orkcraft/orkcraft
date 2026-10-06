@@ -154,6 +154,7 @@ class PoolTask:
     draft: str = ""                 # what goes out, waiting for the operator's approval
     publish: str = ""               # the approved version: the orc posts it on its next run
     tier: str = ""                  # the tier it wants (realm/tiers.py); "" — whatever the ork has
+    kind: str = ""                  # the triage (realm/plans.py): trivial | single | plan; "" not sorted
     persona: str = ""               # the persona it wants (realm/personas.py)
     # A planned task (realm/plans.py): the parent keeps the plan, its subtasks point back at it.
     plan: list[dict] = field(default_factory=list)   # the parent's subtasks as planned (plans.Sub dicts)

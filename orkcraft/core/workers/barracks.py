@@ -549,6 +549,13 @@ class BarracksWorker(PlanMixin, Worker):
             if out.accepted and git is not None and commits and task.base:
                 self._merge_part(task, out)
             return
+        if task.kind == plans.TRIVIAL and not task.feedback and not self.goal.review_trivial:
+            out.accepted, out.notes = True, tests or "trivial: no review"   # the tests, when there are, were it
+            out.scope = rule or (bk.EXTERNAL if commits else bk.LOCAL)
+            if git is not None and commits and out.scope == bk.EXTERNAL:
+                body = f"{task.text}\n\n---\n\n{out.text}\n\n_Trivial: not reviewed by {self.keeper}_"
+                out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
+            return
         verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule),
                                 workdir, cancel, out)
         out.accepted, out.notes = bk.verdict_of(verdict)

@@ -64,26 +64,42 @@ A steward has no goal of its own: it works towards its building's goal (`buildin
 | Parallel subtasks at most | 2 | `max_orcs` | `max_orcs` |
 | A subtask's review | the tests only | the tests + a warrior read | the tests + a warrior read |
 | The final review | warrior | elder | elder |
+| A task worth a plan is planned by | warrior | warrior | elder |
+| A trivial task's review | the tests only | the tests only | the tests + a warrior read |
 
-The plan itself is always made by an elder: a wrong plan costs more than everything after it. The
+The plan is made on the goal's tier, never below a warrior: a wrong plan costs more than everything
+after it, but most plans do not need the heaviest model — 💎 quality keeps the elder. The
 Building retro may propose changes to the steward's planning orders and to its personas' prompts
 (shrink / enrich), as for any other part, within its goal's actions.
 
 ## 4. The flow
 
 ```
-task ─▶ triage ─┬─ simple ─▶ a light ork (warm session if related) ─▶ tests (+ review) ─▶ PR
-                └─ hard ───▶ plan (graph) ─▶ subtasks in parallel ─▶ each reviewed ─▶ merged
-                                                                     into the task's branch
-                                                                     ─▶ final review ─▶ one PR
+task ─▶ sort (laborer) ─┬─ trivial ─▶ a light ork at once ─▶ tests ─▶ done / PR
+                        ├─ single ──▶ one ork of the sorted tier (the Foreman: reuse or hire)
+                        │             ─▶ tests + review ─▶ PR
+                        └─ plan ────▶ plan (warrior+) ─▶ subtasks in parallel ─▶ each reviewed
+                                      ─▶ merged into the task's branch ─▶ final review ─▶ one PR
 ```
 
-### 4.1 Triage: rules first, then the steward
+### 4.1 Triage: a light sort first, a plan only when it is worth one
 
-Rules decide when they are sure (free, instant): a follow-up of a ticket, a short text naming one
-file, a docs typo → **simple**; a long brief with several tickets, sections or "and then" steps →
-**hard**. Otherwise one elder call of the steward, which answers either `SIMPLE` or a plan. The
-steward's planning orders are a part of the building like its other orders, so a retro can tune them.
+A follow-up, a rework or an approved post goes to the ork that knows it, with no model call. Every
+other task gets the steward's **sort** on a laborer (`plans.TRIAGE_TIER`, one short call; its model is
+the steward's *Sort the tasks* setting): `{"kind": "trivial" | "single" | "plan", "tier", "why"}`.
+
+- **trivial** — a small clear job (a question, a lookup, a rename, a typo): one light ork runs it at
+  once; the steward does not read it after — its tests do, when there are (💎 quality reads it too).
+- **single** — one agent's job that needs thought: one ork of the tier the sort names (the Foreman
+  reuses an idle ork that knows the work or hires one on that tier's model), then the usual review.
+- **plan** — stages, or parts that can run in parallel: the steward plans it on the goal's tier
+  (`Goal.plan`), and may still answer `SIMPLE`.
+
+A short text with no steps (`plans.clearly_simple`) is never planned: the sort only tells a trivial one
+from the rest, which runs on the goal's simple tier and is reviewed. A sort that does not parse is
+treated as `plan` (as before the sort existed). A light sort that is wrong costs little: a task it took
+for trivial and that fails its tests is reworked one tier up and read by the steward from then on.
+The steward's planning orders are a part of the building like its other orders, so a retro can tune them.
 
 ### 4.2 The plan
 

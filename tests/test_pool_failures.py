@@ -421,7 +421,8 @@ async def test_failing_tests_send_it_back_without_asking_the_model(fake_repo: Pa
         assert await _until(pilot, _calls_done(crew, 1))
         crew.finish(0)
         assert await _until(pilot, _calls_done(crew, 2))
-        assert "FAILED test_login" in crew.calls[1]["prompt"] and steward.prompts == []
+        assert "FAILED test_login" in crew.calls[1]["prompt"]
+        assert [p for p in steward.prompts if "SORT the task" not in p] == []          # its sort only: no review
         crew.finish(1)
         assert await _until(pilot, lambda: view.state.tasks[0].status == "asked")
 
@@ -474,7 +475,8 @@ async def test_the_steward_answers_from_its_rules_or_asks_the_operator(fake_repo
         assert await _until(pilot, _calls_done(crew, 1))
         crew.finish_with(0, "Looked around.\nQUESTION: which database?")
         assert await _until(pilot, _calls_done(crew, 2))                               # answered by the steward
-        assert "The database is PostgreSQL" in steward.prompts[0] and "which database?" in steward.prompts[0]
+        asked = [p for p in steward.prompts if "SORT the task" not in p]
+        assert "The database is PostgreSQL" in asked[0] and "which database?" in asked[0]
         assert "answers your question: PostgreSQL" in crew.calls[1]["prompt"] and crew.calls[1]["resume"] == "s1"
         crew.finish_with(1, "QUESTION: which colour for the admin badge?")              # not in the rules
         task = st.tasks[0]

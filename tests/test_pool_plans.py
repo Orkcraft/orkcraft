@@ -171,7 +171,7 @@ async def test_a_simple_task_goes_whole_to_a_light_ork(fake_repo: Path, monkeypa
         assert not any("PLAN the task" in p for p in s.prompts)              # the rules were sure: no plan
         crew.finish(0)
         assert await _until(pilot, lambda: any(p.mode == "pool.done" for p in sent))
-        assert s.models == ["sonnet"]                                         # a warrior reads a simple task
+        assert s.models == ["haiku", "sonnet"]          # a laborer sorts it, a warrior reads a simple task
 
 
 @pytest.mark.asyncio
@@ -190,7 +190,7 @@ async def test_a_hard_task_is_planned_run_in_parallel_merged_and_reviewed_whole(
         parent = next(t for t in st.tasks if t.plan)
         assert parent.status == "planned" and parent.branch == f"pool/camp/{parent.id}"
         assert git.cuts == [(parent.branch, "main")]
-        assert s.models[0] == "opus"                                          # an elder plans
+        assert s.models[:2] == ["haiku", "sonnet"]      # a laborer sorts it, a warrior plans (⚖️ balance)
         assert sorted(o.label for o in st.orcs) == ["claude:haiku", "claude:opus"]
         kids = {k.sub: k for k in view.worker.children(parent)}
         assert kids["docs"].status == "blocked" and kids["api"].base == parent.branch
@@ -577,3 +577,64 @@ async def test_a_building_has_its_own_freedom_and_waits(fake_repo: Path, monkeyp
         assert (again.autonomy, again.question_wait, again.rebuild_wait) == ("clock", 15, 6)
         assert core_buildings.set_waits(app.core, "camp", 0, None)["own_question"] is None
         assert b.question_wait is None and view.worker.rules.wait == 5          # back to the town's
+
+
+# -- the triage --------------------------------------------------------------------------------------
+
+def test_a_sort_is_read_and_checked():
+    t = plans.parse_triage('ok: {"kind": "single", "tier": "elder", "why": "tricky locking"}')
+    assert (t.kind, t.tier, t.why) == ("single", "elder", "tricky locking")
+    assert plans.parse_triage('{"kind": "single", "tier": "huge"}').tier == "warrior"      # an unknown tier
+    assert plans.parse_triage('{"kind": "plan", "tier": "elder"}').tier == ""
+    assert plans.parse_triage("ACCEPT") is None and plans.parse_triage('{"kind": "maybe"}') is None
+    assert [plans.goal_of(g).plan for g in ("thrift", "balance", "quality")] == ["warrior", "warrior", "elder"]
+
+
+@pytest.mark.asyncio
+async def test_a_trivial_task_runs_at_once_on_a_light_ork_and_skips_the_review(fake_repo: Path, monkeypatch,
+                                                                                steward, git):
+    s = steward(sorts=['{"kind": "trivial", "why": "a lookup"}'])
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        view.worker.new_task("Find what is known about Shakira", "")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        assert view.state.orcs[0].label == "claude:haiku"
+        crew.finish(0)
+        assert await _until(pilot, lambda: any(p.mode == "pool.done" for p in sent))
+        task = view.state.tasks[0]
+        assert task.kind == "trivial" and task.status == "done"
+        assert s.models == ["haiku"] and len(s.prompts) == 1                  # sorted, never reviewed nor planned
+
+
+@pytest.mark.asyncio
+async def test_a_single_task_goes_to_one_ork_of_the_sorted_tier_and_is_reviewed(fake_repo: Path, monkeypatch,
+                                                                              steward, git):
+    s = steward(sorts=['{"kind": "single", "tier": "elder", "why": "tricky"}'])
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _hard(view)
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        assert view.state.orcs[0].label == "claude:opus" and view.state.tasks[0].kind == "single"
+        assert not any("PLAN the task" in p for p in s.prompts)
+        crew.finish(0)
+        assert await _until(pilot, lambda: any(p.mode == "pool.done" for p in sent))
+        assert s.models == ["haiku", "sonnet"]                                 # sorted, then read
+
+
+@pytest.mark.asyncio
+async def test_quality_reads_even_a_trivial_task(fake_repo: Path, monkeypatch, steward, git):
+    s = steward(sorts=['{"kind": "trivial"}'])
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    app.scroll.building("camp").goal = "quality"
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        view.worker.new_task("Fix the typo in the README title", "")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        crew.finish(0)
+        assert await _until(pilot, lambda: any(p.mode == "pool.done" for p in sent))
+        assert len(s.prompts) == 2 and view.state.orcs[0].label == "claude:sonnet"     # 💎: a warrior, reviewed
