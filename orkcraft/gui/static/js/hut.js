@@ -88,7 +88,7 @@ function Card({ b }) {
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
-export function Hut({ b, spot, number, onMoved }) {
+export function Hut({ b, spot, number, dim = false, onMoved }) {
   const ref = useRef(null);
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
@@ -143,7 +143,7 @@ export function Hut({ b, spot, number, onMoved }) {
   const x = spot.x + (drag ? drag.dx : 0), y = spot.y + (drag ? drag.dy : 0);
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag,
+                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free })}
       onPointerDown=${down}>
     <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
