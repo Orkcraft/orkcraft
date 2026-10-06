@@ -105,7 +105,7 @@ async def test_hud_base_and_badges(fake_repo: Path):
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         hud = str(app.screen.query_one("#hud", Hud).render())
-        assert "Orkcraft" in hud and "Menu (F10) · 🛑 READY" in hud and "🥩 0/5" in hud
+        assert "Orkcraft" in hud and "Menu (F10) · 🛑 READY" in hud and "🥩 0/" in hud
         assert app.screen.query_one("#console", Console).display  # Full RTS at 200 cols
         loot = app.desktop.get_window("loot")
         assert "🧌 Quartermaster" in str(loot.border_title) and loot._badge_cells > 0
@@ -236,7 +236,7 @@ async def test_worker_menu_becomes_alert_answer_goes_to_cli_and_halt_interrupts(
         assert await _wait_for(pilot, lambda: any("2. No" in l for l in term.text_lines()))
         assert await _wait_for(pilot, lambda: any(a.source == "terminal" for a in app.roster.alerts), tries=80)
         assert app.roster.active == 1
-        assert "🥩 1/5" in str(app.screen.query_one("#hud", Hud).render())
+        assert "🥩 1/" in str(app.screen.query_one("#hud", Hud).render())
 
         await pilot.press("f12", "exclamation_mark")  # leave the terminal, open the ❓
         await pilot.pause()

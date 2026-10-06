@@ -98,11 +98,17 @@ class Host:
     # -- what the page sees --------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
-        snap = state.snapshot(self.town, self.muster, self.treasury, live=self.sessions, night=self.night,
-                              look_choice=self.look)
+        snap = state.snapshot(self.town, self.muster, self.treasury, self.limits(), live=self.sessions,
+                              night=self.night, look_choice=self.look)
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         return snap
+
+    def limits(self) -> list:
+        """The last quota reads the Town Hall made (its worker reads them again every 10 min), for the
+        HUD's quota as the TUI's `_limits`; [] until it has read them."""
+        hall = self.town.workers.get("town_hall")
+        return list(getattr(hall, "limits", None) or [])
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
