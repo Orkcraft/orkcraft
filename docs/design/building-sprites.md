@@ -7,7 +7,7 @@ ork touch (tusks, horns, bones) on each. They replace the Warcraft 2 headers one
 | sheet | buildings | state |
 |---|---|---|
 | 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done |
-| 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | |
+| 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done |
 | 3 | File Forest, Tally Crag, Custom | |
 
 ## Making a sheet
@@ -33,6 +33,8 @@ Plain #1a1813 background. Modern, iconic, sober, readable at 32px — brand icon
 Then cut it: `python tools/sheet.py SHEET <the eight types in reading order>` finds each building,
 reads it cell by cell onto the palette, makes the ground around it transparent and writes
 `design-system/sprites/buildings/<type>/header.png` at 3× (and `@2x` at 6×). `--cell` is the sheet's
-pixel in screen pixels (about 16.6 on a 2000-wide sheet), `--preview` writes them side by side.
+pixel in screen pixels (about 16.6 on a 2000-wide sheet; the second sheet was drawn finer, about 11,
+and cut at `--scale 2` so its buildings come out the same size), `--preview` writes them side by side.
+Parts closer than three pixels (a ring of stones) make one building.
 
 Office shows no building sprites; its huts are the same cards without the header.

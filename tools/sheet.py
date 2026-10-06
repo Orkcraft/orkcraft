@@ -32,8 +32,9 @@ def nearest(p: tuple[int, int, int]) -> str:
     return min(PALETTE, key=lambda k: sum((a - b) ** 2 for a, b in zip(p, PALETTE[k])))
 
 
-def boxes(im: Image.Image, ground: tuple[int, int, int]) -> list[tuple[int, int, int, int]]:
-    """Each building's box: rows of buildings split by empty bands, buildings by empty columns."""
+def boxes(im: Image.Image, ground: tuple[int, int, int], gap: float = 0) -> list[tuple[int, int, int, int]]:
+    """Each building's box: rows of buildings split by empty bands, buildings by empty columns. Parts
+    closer than `gap` pixels (the stones of a ring, the posts of a fence) make one building."""
     w, h = im.size
     px = im.load()
     empty = lambda p: sum(abs(a - b) for a, b in zip(p, ground)) < 70
@@ -56,7 +57,11 @@ def boxes(im: Image.Image, ground: tuple[int, int, int]) -> list[tuple[int, int,
                 while x < w and cols[x]:
                     x += 1
                 ys = [yy for yy in range(y0, y1) if any(not empty(px[xx, yy]) for xx in range(left, x, 3))]
-                out.append((left, ys[0], x, ys[-1] + 1))
+                part = (left, ys[0], x, ys[-1] + 1)
+                if out and out[-1][1] < y1 and part[0] - out[-1][2] < gap and out[-1][3] > y0:
+                    last = out.pop()
+                    part = (last[0], min(last[1], part[1]), part[2], max(last[3], part[3]))
+                out.append(part)
             x += 1
     return out
 
@@ -107,7 +112,7 @@ def main() -> None:
     ap.add_argument("--preview", type=pathlib.Path, help="also write every sprite side by side here")
     a = ap.parse_args()
     im = Image.open(a.sheet).convert("RGB")
-    found = boxes(im, im.getpixel((4, 4)))
+    found = boxes(im, im.getpixel((4, 4)), gap=3 * a.cell)
     if len(found) != len(a.types):
         raise SystemExit(f"{len(found)} buildings on the sheet, {len(a.types)} types given")
     shown = []
