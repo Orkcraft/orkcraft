@@ -67,6 +67,9 @@ MY_DAY = {
                     "- [ ] Answer Ann about the offsite\n- [ ] 🟥 Renew the domain\n  expires on the 12th\n\n"
                     "## In Progress\n- [ ] Write the Barracks docs\n\n## Done\n"
                     "- [x] Town Hall audit\n- [x] Git building\n\n"
+                    "## My to-dos\n- [ ] Call the accountant about Q3\n- [ ] Review Ann's pricing draft\n"
+                    "  before Thursday's sync\n- [ ] Book the train to the offsite\n- [x] Pay the hosting invoice\n"
+                    "- [x] Reply to the design agency\n\n"
                     "## Ideas\n- 🟨 A calendar roof\n  the War Drum's hut shows the next meeting\n"
                     "- 🟩 Mail digests at 05:00\n  one page, before the stand-up\n"
                     "- 🟦 Ask the clan about pricing\n",
@@ -195,7 +198,12 @@ LIBRARY = {
     "nodes": [],
     "files": {
         "LIBRARY_TASKS.md": "# Tasks\n\n## To Do\n- [ ] Show the price tag in the new accent colour\n"
-                            "- [ ] Add yearly billing\n\n## In Progress\n\n## Done\n",
+                            "- [ ] Add yearly billing\n\n## In Progress\n- [ ] Document the checkout flow\n\n"
+                            "## Done\n- [x] Sync the design tokens\n\n"
+                            "## My to-dos\n- [ ] Read the checkout study notes\n- [ ] Approve the accent colour\n"
+                            "- [x] Invite Lee to the design wiki\n\n"
+                            "## Ideas\n- 🟨 A wiki page per component\n  generated from design/components.md\n"
+                            "- 🟦 Weekly digest of new decisions\n",
         "design/components.md": "# Components (exported from the design file)\n\n## PriceTag\nAmount and currency; "
                                 "variants: default, discounted (old price struck through), large.\n\n## CheckoutButton\n"
                                 "Primary action; disabled while the payment is pending.\n",

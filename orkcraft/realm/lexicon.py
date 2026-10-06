@@ -86,6 +86,10 @@ TERMS: tuple[Term, ...] = (
     _t("orc.treasurer", "Treasurer", "Cost reviewer"),
     _t("council_word", "Council", "Review board"),
     _t("clan", "clan", "team"),
+    # -- the Task Fields' three parts (one board: the orks' kanban, the person's checklist, the notes) ---
+    _t("ork_work", "Ork work", "Agent tasks"),
+    _t("chore", "chore", "to-do", "chores", "to-dos"),             # a to-do of the person's own
+    _t("scribble", "scribble", "note", "scribbles", "notes"),       # an idea or a note on the board
     # -- building types (catalog ids) ---------------------------------------------------------------
     _t("pit", "The Pit", "Drop file here"),
     _t("watchtower", "Watchtower", "External listeners", "Watchtowers", "External listeners"),
