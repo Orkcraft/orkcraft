@@ -137,10 +137,10 @@ function Listens({ b, i, open }) {
   return html`<details class="gui-steward__group" open>
     <summary class="ok-font-label">${say("Listens")} <span class="ok-tone-muted">${i.listens.length}</span></summary>
     <ul class="gui-rows">
-      ${i.listens.map((l) => l.orc
-        ? html`<li key=${l.key} class="gui-console__row gui-steward__road" title=${editTitle(l.orc)} onClick=${() => edit(b, l.orc, open)}>
+      ${i.listens.map((l) => l.by
+        ? html`<li key=${l.key} class="gui-console__row gui-steward__road" title=${editTitle(l.by)} onClick=${() => edit(b, l.by, open)}>
             <span class="gui-steward__from">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label}</span></span>
-            <span class="gui-steward__to">→ <${Handler} h=${l.orc} /><${More} h=${l.orc} /></span></li>`
+            <span class="gui-steward__to">→ <${Handler} h=${l.by} /><${More} h=${l.by} /></span></li>`
         : html`<li key=${l.key} class="gui-console__row gui-steward__road" title=${say("A plain road: pick it to give it a handler or remove it")}
             onClick=${() => { pickedRoad.value = l.key; }}>
             <span class="gui-steward__from">◂ ${say(l.title)} <span class="ok-tone-muted">${l.label}</span></span>

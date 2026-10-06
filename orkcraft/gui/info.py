@@ -97,7 +97,7 @@ def _listens(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any
                     "label": road.label or pipes.label(road.event),
                     "handler": orc.name if orc is not None else "",
                     "tier": tiers.orc_tier(orc.harness, orc.kind) or "" if orc is not None else "",
-                    "orc": _handler(town, muster, building_id, orc) if orc is not None else None})
+                    "by": _handler(town, muster, building_id, orc) if orc is not None else None})
     return out
 
 
