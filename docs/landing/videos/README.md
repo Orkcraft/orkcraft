@@ -1,6 +1,6 @@
 # Landing videos
 
-Filmed with `tools/landing_flow.py` (branch `claude/landing-flow`) from the demo's Front Desk orkspace, 1440×900 at 2×.
+Filmed with `tools/landing_flow.py` from the demo's Front Desk orkspace, 1440×900 at 2×.
 
 | File | Look | What happens |
 |---|---|---|
