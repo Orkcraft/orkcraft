@@ -1,7 +1,7 @@
-// The console's dialogs that change a garrison or a window, as the TUI's (screens/garrison_modal.py,
-// screens/orders.py, screens/orc_flow.py): recruit (the Recruiter or by hand), an ork's orders and
-// model, a road's handler, a redesign — and the jobs a model call makes (gui/console.py): the
-// Recruiter's handler to hire, the Council's notes, the steward's findings and proposals.
+// The console's dialogs that change a garrison or a window, as the TUI's (screens/orders.py,
+// screens/orc_flow.py): an ork's orders and model, a road's handler, a redesign — and the jobs a
+// model call makes (gui/console.py): the Recruiter's handler to hire, the Council's notes, the
+// steward's findings and proposals.
 import { useEffect, useState } from "preact/hooks";
 import { html } from "./html.js";
 import { town, command, say } from "./link.js";
@@ -17,33 +17,6 @@ function Select({ value, options, onChange }) {
   return html`<select class="ok-input" value=${value} onChange=${(e) => onChange(e.target.value)}>
     ${options.map(([v, label]) => html`<option key=${v} value=${v} selected=${v === value}>${label}</option>`)}
   </select>`;
-}
-
-/** R: describe the ork for the Recruiter (chain → script → agent), or recruit an agent by hand. */
-export function RecruitDialog({ b, tiers, onClose }) {
-  const [prompt, setPrompt] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [orders, setOrders] = useState("");
-  const [tier, setTier] = useState("warrior");
-  const ask = () => command("building.recruit_ask", { id: b.id, prompt }).then(onClose, () => {});
-  const hire = () => command("building.recruit", { id: b.id, name, role, orders, tier })
-    .then((ref) => { onClose(); selectOrk(ref); }, () => {});
-  return html`<${Dialog} title=${say(`Recruit an ork — ${b.title}`)} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
-        <button class="ok-btn" disabled=${!name.trim()} onClick=${hire}>${say("Recruit by hand")}</button>
-        <button class="ok-btn primary" disabled=${!prompt.trim()} onClick=${ask}>${say("Ask the Recruiter")}</button>`}>
-    <div class="gui-form">
-      <${Field} label=${say("What should it do? The Recruiter picks chain → script → agent")}>
-        <input class="ok-input" autofocus value=${prompt} placeholder=${say("e.g. when a task in the Forge is done, show its id and title")}
-          onInput=${(e) => setPrompt(e.target.value)} /></${Field}>
-      <p class="ok-font-status ok-tone-muted">${say("…or an agent by hand:")}</p>
-      <${Field} label=${say("Name")}><input class="ok-input" value=${name} placeholder=${say("e.g. Coder")} onInput=${(e) => setName(e.target.value)} /></${Field}>
-      <${Field} label=${say("Role")}><input class="ok-input" value=${role} placeholder=${say("e.g. tickets, testing")} onInput=${(e) => setRole(e.target.value)} /></${Field}>
-      <${Field} label=${say("Standing orders")}><input class="ok-input" value=${orders} placeholder=${say("e.g. keep an eye on T1001")} onInput=${(e) => setOrders(e.target.value)} /></${Field}>
-      <${Field} label=${say("Tier")}><${Select} value=${tier} options=${tiers} onChange=${setTier} /></${Field}>
-    </div>
-  </${Dialog}>`;
 }
 
 /** T: an ork's orders and trigger, and a handler's tier. */

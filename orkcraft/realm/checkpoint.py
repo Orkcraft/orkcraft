@@ -141,6 +141,24 @@ def building_before(root: Path, building: str) -> tuple[str, dict | None, dict |
     return parent, spec, entry, files
 
 
+def can_revert(root: Path, building: str) -> bool:
+    """Whether `revert` has somewhere to go: an earlier checkpoint that already had the building —
+    `building_before` without reading its files. Never raises."""
+    try:
+        mine = history(root, building, limit=1)
+        if not mine:
+            return False
+        parent = _git(root, "rev-parse", "--verify", "--quiet", f"{mine[0].sha}^", check=False).stdout.strip()
+        if not parent:
+            return False
+        if _git(root, "cat-file", "-e", f"{parent}:buildings/{building}.json", check=False).returncode == 0:
+            return True
+        snap = _show(root, parent, SNAPSHOT.as_posix())
+        return bool(snap) and any(b.get("id") == building for b in json.loads(snap).get("buildings", []))
+    except (ValueError, AttributeError, OSError, subprocess.SubprocessError):
+        return False
+
+
 def restore_files(root: Path, building: str, spec: dict | None, files: dict[str, str]) -> None:
     """Put the building's own files back as they were (a spec it did not have yet is removed)."""
     folder = root / DIR

@@ -78,6 +78,16 @@ def _simulated_steward(harness, prompt, workdir, cancel, model):
     return "ACCEPT\n_(demo — simulated review)_", None
 
 
+TITLE_WORDS = 4                 # a task written without a title is named by its brief's first words
+
+
+def title_from(brief: str) -> str:
+    """`Fix the login page` from `fix the login page: it hangs on …` — its first few words, no trailing
+    punctuation."""
+    title = " ".join(brief.split()[:TITLE_WORDS]).rstrip(".,:;!?—-")[:60]
+    return title[:1].upper() + title[1:] or "Task"
+
+
 @dataclass
 class RunOutcome:
     """What one run of an orc came to, judged by the steward — made in the orc's thread, applied on the town's."""
@@ -282,11 +292,11 @@ class BarracksWorker(Worker):
 
     def new_task(self, title: str, brief: str = "") -> bk.PoolTask | None:
         """✍ New task: the operator writes to the barracks directly — the title and the brief (the title
-        alone when it is empty)."""
+        alone when it is empty; without a title, the brief's first words are one)."""
         title, brief = title.strip(), brief.strip()
         if not title and not brief:
             return None
-        return self.add_task(title or brief.splitlines()[0][:60], brief or title)
+        return self.add_task(title or title_from(brief), brief or title)
 
     def _dispatch(self, task: bk.PoolTask) -> None:
         st = self.state

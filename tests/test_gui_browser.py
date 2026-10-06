@@ -223,6 +223,42 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
     lake.wait_for(state="visible", timeout=WAIT_MS)
 
 
+def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
+    """Pin is in Info, nothing recruits, the steward's Redesign window is under it in the garrison, the
+    Barracks takes a New task in place (its first words its title), Demolish is at the window's bottom."""
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
+    _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    _command(pg)
+    info, roster, card = pg.locator(".gui-console"), pg.locator(".gui-roster"), pg.locator(".gui-card")
+    info.get_by_role("button", name="Pin", exact=True).or_(info.get_by_role("button", name="Unpin", exact=True)).wait_for()
+    assert card.get_by_role("button", name="Pin", exact=True).count() == 0
+    assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
+    assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
+    roster.get_by_text("Redesign window").wait_for(state="visible", timeout=WAIT_MS)
+    assert card.get_by_text("Redesign window").count() == 0 and card.get_by_text("Revert").count() == 0
+    brief = card.locator(".gui-newtask textarea")
+    brief.wait_for(state="visible", timeout=WAIT_MS)
+    card.get_by_role("button", name="Pause", exact=True).click()
+    brief.fill("tidy the readme headings and nothing else")
+    card.locator(".gui-newtask").get_by_role("button", name="Send it").click()
+    pg.wait_for_function("() => document.querySelector('.gui-newtask textarea').value === ''", timeout=WAIT_MS)
+    assert pg.locator(".gui-modal").count() == 0                  # no window opened for it
+    card.get_by_text("Tidy the readme headings").wait_for(state="visible", timeout=WAIT_MS)
+    card.get_by_role("button", name="Open", exact=True).click()
+    _full(pg, True)
+    full = pg.locator(".gui-full")
+    assert full.locator(".ok-win__bar .gui-win__demolish").count() == 0
+    foot = full.locator(".gui-win__foot")
+    demolish, about = foot.locator(".gui-win__demolish").bounding_box(), foot.locator(".gui-about").bounding_box()
+    assert demolish["x"] > about["x"] and abs(demolish["y"] - about["y"]) < 20     # one row, Demolish at its right
+    pg.keyboard.press("Escape")
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"

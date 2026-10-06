@@ -194,3 +194,10 @@ async def test_new_task_is_written_to_the_barracks_directly(fake_repo: Path, mon
         assert view.new_task(None) is None and view.new_task(" \t ") is None     # Esc or nothing typed
         only = view.new_task("Rename the README title\t")                         # no brief: the title is it
         assert (only.title, only.text) == ("Rename the README title", "Rename the README title")
+
+
+def test_a_task_without_a_title_is_named_by_its_first_words():
+    from orkcraft.core.workers.barracks import title_from
+    assert title_from("fix the login page: it hangs on Safari") == "Fix the login page"
+    assert title_from("  Ship it.\n") == "Ship it"
+    assert title_from("") == "Task"

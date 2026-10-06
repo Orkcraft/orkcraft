@@ -137,6 +137,8 @@ button { font: inherit; color: inherit; }
 .gui-console__row { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-console__row:hover { background: var(--selection); }
 .gui-console__row.is-alert { color: var(--danger); }
+.gui-console__sub { padding-left: var(--space-3); color: var(--ink-muted); }
+.gui-newtask { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
 .gui-history { max-height: 50vh; overflow: auto; }
 .gui-form { display: flex; flex-direction: column; gap: var(--space-2); max-height: 60vh; overflow: auto; }
 .gui-form > p { margin: 0; }
@@ -179,7 +181,9 @@ button.gui-status__item { cursor: pointer; }
 .gui-pane.is-auto { overflow: visible; }
 .gui-pane > * { flex: 1 1 auto; }
 .gui-pane > .gui-pane__title { flex: none; margin: 0 0 var(--space-1); color: var(--ink-muted); }
-.gui-about { flex: none; border-top: var(--ok-stroke, 1px) solid var(--frame); padding-top: var(--space-2); }
+.gui-win__foot { flex: none; display: flex; align-items: flex-start; gap: var(--space-2);
+  border-top: var(--ok-stroke, 1px) solid var(--frame); padding-top: var(--space-2); }
+.gui-about { flex: 1; min-width: 0; }
 .gui-about > summary { cursor: pointer; color: var(--ink-muted); }
 .gui-alert { margin: 0; flex: none; }
 
