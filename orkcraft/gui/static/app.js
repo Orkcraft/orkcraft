@@ -13,6 +13,7 @@ import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
 
 import { HALL } from "./js/tent.js";
+import { SettingsDialog } from "./js/settings.js";
 import { Advisor } from "./js/advisor.js";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
     <${LakeWindow} />
     <${StatusBar} />
     <${Toasts} />
+    <${SettingsDialog} />
     <${Orders} />
     <${Jobs} />
     <${BuildDialog} />

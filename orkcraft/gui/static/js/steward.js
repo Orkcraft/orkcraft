@@ -91,24 +91,6 @@ function Freedom({ b, i, redo }) {
   </${Steps}>`;
 }
 
-/** 🕰 How long its questions and its changes wait for you, on the clock; the lit one again goes back to the town's. */
-function Waits({ b, i, redo }) {
-  const w = i.waits;
-  if (!w || !w.clock) return null;
-  const set = (key, value) => command("building.waits", { id: b.id, question: w.question, rebuild: w.rebuild, [key]: value })
-    .then(redo, () => {});
-  const row = (key, label, title, choices, own, town, unit) => html`<span class="gui-steward__wait" title=${say(title)}>
-    <span class="ok-tone-muted">${say(label)}</span>
-    <${Steps} label=${say(label)} title=${say(title)}>
-    ${choices.map((v) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": (own || town) === v, "is-town": !own && town === v })}
-        aria-pressed=${own === v} title=${say(own ? "" : "as the town")} onClick=${() => set(key, own === v ? 0 : v)}>${v}${say(unit)}</button>`)}
-  </${Steps}></span>`;
-  return html`${row("question", "questions", "How long a question waits for you before the steward decides", w.questions,
-                    w.question, w.town_question, "m")}
-    ${row("rebuild", "changes", "How many hours you are around (the camp open, not quiet hours) a change waits before it is applied in quiet hours",
-          w.rebuilds, w.rebuild, w.town_rebuild, "h")}`;
-}
-
 function Command({ label, title, onClick }) {
   return html`<button class="ok-act" title=${title || label} onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
 }
@@ -196,8 +178,7 @@ function OnItsOwn({ b, i, open }) {
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
-    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} />
-      <${Waits} b=${b} i=${i} redo=${redo} /></div>
+    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
     <${Listens} b=${b} i=${i} open=${open} />
     <${OnItsOwn} b=${b} i=${i} open=${open} />

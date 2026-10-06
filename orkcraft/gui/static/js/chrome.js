@@ -1,10 +1,12 @@
-// The Office chrome around the town: the HUD (title bar), the War Map (the orkspaces, a small
-// block over the town's bottom-left corner, as in the TUI), the status bar (Halt All, Answers, the
-// project; Build and the sessions are the Town Hall's) and the toasts. Markup and classes are the design system's
+// The Office chrome around the town: the HUD (title bar: the project's name opens the town's settings,
+// js/settings.js; Halt All), the War Map (the orkspaces, a small block over the town's bottom-left
+// corner, as in the TUI), the status bar (Answers, the project's folder; Build and the sessions are the
+// Town Hall's) and the toasts. Markup and classes are the design system's
 // (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
+import { settingsOpen } from "./settings.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -21,9 +23,10 @@ export function Hud() {
   const words = t.resources;
   return html`<header class="ok-hud gui-hud">
     <span class="ok-hud__brand">Orkcraft</span>
-    <span class="gui-hud__project">${t.project}${t.demo ? " · demo" : ""}</span>
+    <button class="gui-hud__project gui-hud__menu" title=${say("Settings: how freely the orks decide, how long they wait")}
+      onClick=${() => { settingsOpen.value = true; }}>${t.project}${t.demo ? " · demo" : ""} ▾</button>
     ${online.value
-      ? html`<span class="ok-hud__ready">Ready</span>`
+      ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Halt All</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     ${hud.alerts > 0 && html`<button class="ok-hud__fire gui-link" onClick=${() => openOrders()}>
       ${hud.alerts} awaiting an answer</button>`}
@@ -56,7 +59,6 @@ export function WarMap() {
 export function StatusBar() {
   const t = town.value;
   return html`<footer class="ok-keys gui-status">
-    <button class="gui-status__item" onClick=${() => command("halt")}>Halt All</button>
     <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
     <span class="gui-status__spacer"></span>
     <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
