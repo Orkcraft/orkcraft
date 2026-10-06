@@ -2,6 +2,11 @@
 
 _The detailed reference. Start with the [README](../README.md). Old `MGTUI_*` / `ORCRAFT_*` environment variables (from the project's earlier names) still work as fallbacks for `ORKCRAFT_*`._
 
+> [!NOTE]
+> The screens, keys and console below are the **terminal UI's**, which is deprecated (`orkcraft tui`). The
+> window (`orkcraft`) is a calm town: the map, one panel on the right, the Warchief's line —
+> [design/calm-town.md](design/calm-town.md). The buildings, roads, orks, files and settings below are the same in both.
+
 A terminal harness and orkestrator for multi-agent work in any git project, in an
 RTS (Warcraft) metaphor, built to cut the operator's cognitive load: windows are
 **buildings** with a resident **ork**, agents are the **clan**, the HUD shows

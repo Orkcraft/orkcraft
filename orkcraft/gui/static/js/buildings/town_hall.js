@@ -8,11 +8,15 @@ import { html, cls } from "../html.js";
 import { act, command, town, say } from "../link.js";
 import { openBuilding } from "../windows.js";
 import { building as buildOpen } from "../build.js";
-import { WarTent, hallTab } from "../tent.js";
+import { WarTent, hallTab, HALL } from "../tent.js";
+import { fill } from "../warchief.js";
+
+/** Change, on a plan: the person goes on talking, and the Warchief asks the Town Builder again. */
+const changePlan = () => fill("Change the plan: ");
 
 const keep = (e) => e.stopPropagation();          // a press on a control is not a press on the hut
 
-/** A question for the Warchief (Camp's hut asks it); his answer comes in the town's line and the hall's Chat. */
+/** A question for the Warchief (Camp's hut asks it); its answer comes in the town's line and the hall's Chat. */
 export function askWarchief(id, text) {
   return act(id, "ask", { text }).then(() => true, () => false);
 }
@@ -56,6 +60,57 @@ export function quick(id, action) {
 
 // -- the Warchief's chat ---------------------------------------------------------------------------
 
+// -- the Warchief's cards: the work it gave a specialist (core/warchief.py) ----------------------------
+
+const STEP = { working: "…", done: "✓", failed: "✗" };
+const HAS = { road: "Road planner", recruit: "Recruiter", keeper: "keeper" };
+
+function cardAct(c, choice) {
+  return act(HALL, "card", { card: c.id, choice }).catch(() => {});
+}
+
+function Steps({ c }) {
+  if (!c.steps || !c.steps.length) return null;
+  return html`<ul class="gui-card-steps ok-font-status">${c.steps.map((s, i) => html`<li key=${i}
+      class=${cls("", { "ok-tone-wait": s.state === "working", "ok-tone-error": s.state === "failed" })}>
+    ${say(s.who)} ${s.state === "working" ? say("is on it") : s.state === "done" ? say("done") : say("could not")} ${STEP[s.state] || ""}</li>`)}</ul>`;
+}
+
+function PlanList({ plan }) {
+  return html`<div class="gui-card-plan">
+    ${plan.title && html`<b>${plan.title}</b>`}${plan.summary && html` <span class="ok-tone-muted">${plan.summary}</span>`}
+    <ul class="gui-rows">${plan.buildings.map((x, i) => html`<li key=${i}>${say(x.title)}
+      ${x.why && html`<span class="ok-font-status ok-tone-muted"> · ${x.why}</span>`}</li>`)}</ul>
+    ${plan.roads.length > 0 && html`<ul class="gui-rows ok-font-status">${plan.roads.map((r, i) => html`<li key=${i}>
+      ${say(r.from)} → ${say(r.to)} <span class="ok-tone-muted">· ${r.event}</span></li>`)}</ul>`}
+  </div>`;
+}
+
+/** A card in the Warchief's chat: who has the work, what came of it, and what the person decides. */
+export function Card({ c }) {
+  const live = c.state === "ready" || c.state === "working" || c.state === "sent";
+  const btn = (label, choice, primary = false) => html`<button class=${cls("ok-btn", { primary })}
+      onClick=${() => cardAct(c, choice)}>${say(label)}</button>`;
+  return html`<div class=${cls("gui-card-order", { [`is-${c.state}`]: true })}>
+    <${Steps} c=${c} />
+    ${c.kind === "build" && html`<p class="ok-font-body">${say(c.type_title)}${c.state === "done" ? html` <span class="ok-tone-muted">· ${say("built")}</span>` : ""}</p>`}
+    ${c.plan && html`<${PlanList} plan=${c.plan} />`}
+    ${HAS[c.kind] && html`<p class="ok-font-status">→ ${say(HAS[c.kind])}${c.building_title ? html` · <b>${say(c.building_title)}</b>` : ""}:
+      ${c.order}${c.state === "sent" ? html`<br /><span class="ok-tone-muted">${say("Its offer opens when it is ready; nothing changes before you take it.")}</span>` : ""}</p>`}
+    ${c.cost && html`<p class="ok-font-status ok-tone-muted">${c.cost}</p>`}
+    ${(c.notes || []).map((n, i) => html`<p key=${i} class="ok-font-status ok-tone-wait">⚠ ${n}</p>`)}
+    ${c.error && html`<p class="ok-font-status ok-tone-error">${say(c.error)}</p>`}
+    ${c.state === "dropped" && html`<p class="ok-font-status ok-tone-muted">${say("Cancelled.")}</p>`}
+    ${c.state === "undone" && html`<p class="ok-font-status ok-tone-muted">${say("Taken back.")}</p>`}
+    <div class="gui-card-order__acts">
+      ${c.state === "ready" && btn("Build", "build", true)}
+      ${c.state === "ready" && c.kind === "plan" && html`<button class="ok-btn" onClick=${() => changePlan()}>${say("Change")}</button>`}
+      ${live && btn("Cancel", "cancel")}
+      ${c.state === "done" && btn("Undo", "undo")}
+    </div>
+  </div>`;
+}
+
 export function Message({ m, name }) {
   if (m.who === "you") {
     return html`<li class="ok-font-body"><span class="ok-font-label ok-tone-muted">You: </span>${m.text}</li>`;
@@ -63,6 +118,7 @@ export function Message({ m, name }) {
   return html`<li class=${cls("ok-font-body", { "ok-tone-error": m.error })}>
     <span class="ok-font-label">${say(name)}:</span>
     <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: m.html }}></div>
+    ${m.card && html`<${Card} c=${m.card} />`}
     ${m.suggest && html`<button class="ok-act" onClick=${() => raise(m.suggest, m.asked)}>
       <span class="ok-act__label">${say(`Build ${m.suggest_title}`)}</span></button>`}
   </li>`;

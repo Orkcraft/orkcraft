@@ -4,10 +4,12 @@
   Council's Fast Path, 👍 / 👎 of the stewards, the retros' proposals — plain data each face draws
   (the TUI's `screens/town_hall.py`, the GUI's `gui/views/town_hall.py`). `audit()` runs the hall's
   three agents over the town (rules, no model call) and sends `hall.audit_done` down its roads.
-- **The Warchief** (`ask(text)`): the hall's lead ork answers the person in a chat — what the town
-  is, what to build, how — one model call per question in a thread (`runners.WARCHIEF_RUNNER`, else
-  the Claude CLI). When a building of the catalog answers what they want, its answer names it
-  (`suggest`) and a face offers to build it. The chat is kept in `chat.jsonl`.
+- **The Warchief** (`ask(text, about)`): the hall's lead ork answers the person in a chat — what the
+  town is, what to build, how — one model call per question in a thread (`runners.WARCHIEF_RUNNER`,
+  else the Claude CLI). It does not build: an answer that asks for work gives it to a specialist and
+  carries a card (core/warchief.py): the Town Builder's plan (made here, in a thread, then the Council's
+  rules), one building of the catalog, or a face's job (a road, an ork, a keeper's change, `bus.ORDER`).
+  A card is answered by `card_act` (build, cancel, undo). The chat is kept in `chat.jsonl`.
 - **Limits**: spend against the run's budget, and the claude / agy quotas read in a thread every
   `LIMITS_REFRESH_S` (`read_limits()`).
 
@@ -23,7 +25,9 @@ import re
 import threading
 
 from orkcraft import scroll as ts
-from orkcraft.core import runners
+from orkcraft.core import buildings as core_buildings
+from orkcraft.core import bus, runners, warchief
+from orkcraft.core import roads as core_roads
 from orkcraft.core.workers import Worker
 from orkcraft.realm import audit, catalog, elders, fastpath, feedback, optimize, pipes, town_presets, weekly
 from orkcraft.sources.limits import Limit, fetch_limits
@@ -34,7 +38,6 @@ CHAT_KEPT = 60                  # messages the chat keeps
 CONTEXT_TURNS = 8               # of them, what the Warchief reads again with a new question
 ASK_LIMIT = 4000                # characters of one question
 LIMITS_REFRESH_S = 10 * 60      # as the TUI's Limits
-BUILD_LINE = re.compile(r"^\s*BUILD:\s*([a-z_]+)\s*$", re.M)
 
 # The hall's own agents that are not the audit's: they build (realm/masonry.py).
 BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "lays out its panes and hut"))
@@ -52,9 +55,7 @@ The town now ({project}):
 The buildings that can be built (type id — what it does):
 {catalog}
 
-When one building of that list is what the person should build next, end your answer with one line
-`BUILD: <type id>`; otherwise leave that line out. Never invent a type.
-{history}
+{orders}{history}
 The person asks: {question}"""
 
 
@@ -78,6 +79,7 @@ class TownHallWorker(Worker):
         self.limits: list[Limit] | None = None
         self.limits_at: dt.datetime | None = None
         self.reading_limits = False
+        self._plans: dict = {}                # card id → the Town Builder's plan it holds (town_builder.TownPlan)
         self.order_waits = False              # what the hut says, read again by `look()`, not per snapshot
         self.serious = 0
         self._asked = 0                       # which question the answer that comes back is for
@@ -104,8 +106,9 @@ class TownHallWorker(Worker):
         lead = bs.garrison.steward if bs is not None else None
         return lead.name if lead is not None else catalog.TYPES[TOWN_HALL].orc
 
-    def ask(self, text: str) -> str:
-        """A question for the Warchief: "" when it is asked, else why not."""
+    def ask(self, text: str, about: list[str] | None = None) -> str:
+        """A question for the Warchief (`about`: the buildings the person points at): "" when it is
+        asked, else why not."""
         text = (text or "").strip()[:ASK_LIMIT]
         if not text:
             return "Ask the Warchief something"
@@ -113,14 +116,14 @@ class TownHallWorker(Worker):
             return f"{self.warchief} is still answering"
         self._say("you", text)
         if self.simulated:
-            answer, suggest = self._demo_answer(text)
-            self._say("warchief", answer, suggest=suggest)
+            answer, type_id = self._demo_answer(text)
+            self._say("warchief", answer, card=warchief.card({"kind": "build", "type": type_id}) if type_id else None)
             return ""
         if self.out_of_gold("the Warchief's answer"):
             self._say("warchief", "The budget of this run is spent — raise it, and ask again.", error=True)
             return ""
         self._asked += 1
-        asked, prompt = self._asked, self._prompt(text)
+        asked, prompt = self._asked, self._prompt(text, about or [])
         self.thinking = True
         self.changed()
 
@@ -141,12 +144,14 @@ class TownHallWorker(Worker):
         if asked != self._asked or not self.thinking:
             return                              # forgotten or halted meanwhile
         self.thinking = False
-        suggest = ""
-        found = BUILD_LINE.findall(answer)
-        if found and not error:
-            answer = BUILD_LINE.sub("", answer).strip()
-            suggest = found[-1] if found[-1] in {t.id for t in buildable()} else ""
-        self._say("warchief", answer, suggest=suggest, error=error)
+        order = None
+        if not error:
+            live = {b.id for b in self.town.scroll.buildings if not b.demolished}
+            answer, order = warchief.parse(answer, {t.id for t in buildable()}, live)
+        c = warchief.card(order) if order else None
+        self._say("warchief", answer or "(no answer)", card=c, error=error)
+        if c is not None:
+            self._start(c)
 
     def forget(self) -> None:
         """A fresh chat (the file goes too)."""
@@ -169,13 +174,142 @@ class TownHallWorker(Worker):
     def status(self) -> str:
         return "WORKING" if self.thinking else ""
 
-    def _say(self, who: str, text: str, suggest: str = "", error: bool = False) -> None:
+    # -- the Warchief's cards: the specialists' work (core/warchief.py) -------------------------------
+
+    def _start(self, c: dict) -> None:
+        """A new card's work: the plan in a thread, a face's job on the bus, a building at once when unchained."""
+        if c["kind"] == "plan":
+            self._plan(c)
+        elif c["kind"] in warchief.FACE_KINDS:
+            self.town.publish(bus.ORDER, kind=c["kind"], building=c["building"], source=c.get("source", ""),
+                              order=c["order"], card=c["id"])
+        elif c["kind"] == "build" and self._unchained():
+            self.card_act(c["id"], "build")
+
+    def _unchained(self) -> bool:
+        from orkcraft import autonomy
+        return self.town.machine.autonomy == autonomy.FREE
+
+    def _plan(self, c: dict) -> None:
+        if self.simulated:
+            self._set_card(c["id"], state="failed", error="The demo calls no model: the Town Builder plans for real only",
+                           steps=[{"who": "Town Builder", "state": "failed"}])
+            return
+        if self.out_of_gold("the Town Builder's plan"):
+            self._set_card(c["id"], state="failed", error="The budget of this run is spent",
+                           steps=[{"who": "Town Builder", "state": "failed"}])
+            return
+        from orkcraft.realm import builders, town_builder
+        repo, taken, order = self.repo_root, self.town.taken_ids(), c["order"]
+
+        def work() -> None:
+            try:
+                plan = town_builder.plan(order, repo, taken, runners.BUILD_RUNNER or builders.claude_runner)
+            except Exception as e:             # never raises, but a town never falls over a plan
+                plan = town_builder.TownPlan(error=str(e))
+            self.town.call(self._planned, c["id"], plan)
+
+        threading.Thread(target=work, daemon=True, name="warchief-plan").start()
+
+    def _planned(self, card_id: str, plan) -> None:
+        c = self._card(card_id)
+        if c is None or c["state"] != "working":
+            return                              # forgotten or let go meanwhile
+        if not plan.ok:
+            self._set_card(card_id, state="failed", error=plan.error or "No plan came", steps=[{"who": "Town Builder", "state": "failed"}])
+            return
+        blocks, warns = warchief.review(self.town, plan.specs, runners.FASTPATH_RUNNER)
+        steps = [{"who": "Town Builder", "state": "done"}, {"who": "Council", "state": "failed" if blocks else "done"}]
+        titles = {s["id"]: s.get("title", s["id"]) for s in plan.specs}
+        shown = {"title": plan.title, "summary": plan.summary,
+                 "buildings": [{"title": s.get("title", s["id"]), "type": catalog.type_of(s).id, "why": plan.whys.get(s["id"], "")}
+                               for s in plan.specs],
+                 "roads": [{"from": titles.get(r.source, r.source), "to": titles.get(r.target, r.target), "event": r.event}
+                           for r in plan.roads]}
+        self._plans[card_id] = plan
+        cost = f"${plan.cost_usd:.2f}" if plan.cost_usd is not None else ""
+        if blocks:
+            self._set_card(card_id, state="failed", steps=steps, plan=shown, cost=cost,
+                           error="The Council stopped it: " + "; ".join(blocks[:3]))
+            return
+        self._set_card(card_id, state="ready", steps=steps, plan=shown, cost=cost, notes=warns[:4])
+        if self._unchained():
+            self.card_act(card_id, "build")
+
+    def card_act(self, card_id: str, choice: str) -> bool:
+        """A card answered: build (raise what it holds), cancel, undo (take down what it raised)."""
+        c = self._card(card_id)
+        if c is None:
+            return False
+        if choice == "cancel" and c["state"] in ("ready", "working", "sent"):
+            self._plans.pop(card_id, None)
+            self._set_card(card_id, state="dropped")
+            return True
+        if choice == "build" and c["state"] == "ready":
+            made = self._raise(c)
+            if made is None:
+                return False
+            self._set_card(card_id, state="done", made=made)
+            return True
+        if choice == "undo" and c["state"] == "done":
+            for key in c.get("made", {}).get("roads", []):
+                core_roads.remove(self.town, key)
+            for bid in c.get("made", {}).get("buildings", []):
+                core_buildings.demolish(self.town, bid)
+            self._set_card(card_id, state="undone")
+            return True
+        return False
+
+    def card_failed(self, card_id: str, error: str) -> None:
+        """A face could not start the job an order asked for."""
+        c = self._card(card_id)
+        if c is not None:
+            self._set_card(card_id, state="failed", error=error[:300],
+                           steps=[{**s, "state": "failed"} for s in c.get("steps", [])])
+
+    def _raise(self, c: dict) -> dict | None:
+        """What a card holds stands in the town: one building of the catalog, or a plan's buildings and roads."""
+        if c["kind"] == "build":
+            spec = core_buildings.type_spec(self.town, c["type"])
+            built = core_buildings.raise_spec(self.town, spec) if spec is not None else None
+            if built is None:
+                return None
+            self.town.record(built.id, "building_raised", by=self.warchief)
+            self.town.publish(bus.ROADS)
+            return {"buildings": [built.id], "roads": []}
+        plan = self._plans.pop(c["id"], None)
+        if plan is None:
+            self._set_card(c["id"], state="failed", error="The plan was lost when the town closed: ask again")
+            return None
+        made: dict[str, list[str]] = {"buildings": [], "roads": []}
+        for spec in plan.specs:
+            built = core_buildings.raise_spec(self.town, spec)
+            if built is not None:
+                made["buildings"].append(built.id)
+        for r in plan.roads:
+            road = core_roads.lay(self.town, r.target, r.source, r.subscription, None, quiet=True)
+            if road is not None:
+                made["roads"].append(f"{r.target}:{road.id}")
+        self.town.checkpoint("create", "camp", f"town: {plan.title or 'the Warchief’s plan'}")
+        self.town.toast(f"{len(made['buildings'])} buildings · {len(made['roads'])} roads",
+                        title=f"🏰 {plan.title or 'The plan'} stands")
+        return made
+
+    def _card(self, card_id: str) -> dict | None:
+        return next((m["card"] for m in self.chat if isinstance(m.get("card"), dict) and m["card"].get("id") == card_id), None)
+
+    def _set_card(self, card_id: str, **changes) -> None:
+        c = self._card(card_id)
+        if c is None:
+            return
+        c.update(changes)
+        self._save_chat(self.chat)
+        self.changed()
+
+    def _say(self, who: str, text: str, card: dict | None = None, error: bool = False) -> None:
         msg = {"who": who, "text": text, "ts": dt.datetime.now().isoformat(timespec="seconds")}
-        if suggest:
-            msg["suggest"] = suggest
-            asked = next((m["text"] for m in reversed(self.chat) if m.get("who") == "you"), "")
-            if asked:
-                msg["asked"] = asked            # what the person wanted: the building is named after it
+        if card:
+            msg["card"] = card
         if error:
             msg["error"] = True
         chat = (self.chat + [msg])[-CHAT_KEPT:]
@@ -195,6 +329,10 @@ class TownHallWorker(Worker):
             except ValueError:
                 continue
             if isinstance(msg, dict) and msg.get("who") in ("you", "warchief") and isinstance(msg.get("text"), str):
+                c = msg.get("card")
+                if isinstance(c, dict) and c.get("state") in ("working", "sent") or (
+                        isinstance(c, dict) and c.get("kind") == "plan" and c.get("state") == "ready"):
+                    c.update(state="failed", error="The town closed before it was done: ask again")
                 out.append(msg)
         return out
 
@@ -218,13 +356,14 @@ class TownHallWorker(Worker):
             lines += [f"  road from {r.source} ({r.event})" for r in bs.roads]
         return lines or ["- (no buildings yet)"]
 
-    def _prompt(self, question: str) -> str:
+    def _prompt(self, question: str, about: list[str] | None = None) -> str:
         turns = self.chat[:-1][-CONTEXT_TURNS:]             # the question itself is the last
         history = "".join(f"\n{'Person' if m['who'] == 'you' else 'You'}: {m['text'][:1500]}" for m in turns)
         return PROMPT.format(
             project=self.town.scroll.meta.get("project_name") or self.repo_root.name,
             town="\n".join(self.town_lines()[:200]),
             catalog="\n".join(f"- {t.id} — {t.title}: {t.summary}" for t in buildable()),
+            orders=warchief.PROMPT.format(about=warchief.about_text(self.town, about or [])),
             history=f"\nThe conversation so far:{history}\n" if history else "", question=question)
 
     def _demo_answer(self, question: str) -> tuple[str, str]:

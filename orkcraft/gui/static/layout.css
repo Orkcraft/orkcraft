@@ -357,3 +357,16 @@ button { font: inherit; color: inherit; }
 .gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
 [data-theme="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-theme="camp"] .gui-road circle { visibility: hidden; }
 .gui-settings p::first-letter { text-transform: uppercase; }
+
+/* A card in the Warchief's chat (js/buildings/town_hall.js Card): who has the work, what came of it, the choice. */
+.gui-card-order { margin-top: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--frame);
+  border-left: 3px solid var(--frame-focus); border-radius: var(--radius-sm, 0); background: var(--panel-inset);
+  display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-card-order > p { margin: 0; }
+.gui-card-order.is-failed { border-left-color: var(--danger); }
+.gui-card-order.is-done { border-left-color: var(--success); }
+.gui-card-order:is(.is-dropped, .is-undone) { border-left-color: var(--frame); opacity: .7; }
+.gui-card-steps { list-style: none; margin: 0; padding: 0; }
+.gui-card-plan .gui-rows > li { padding: 2px 0; }
+.gui-card-order__acts { display: flex; gap: var(--space-2); }
+.gui-card-order__acts:empty { display: none; }

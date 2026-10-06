@@ -14,7 +14,7 @@ go to the GUI only, and the TUI gets fixes until it is removed.
 | 1 | the logic apart from the interface | the core, the road engine, the sessions and a worker for every type stand; what is left is listed in §2 |
 | 2 | no file everybody has to touch | done for `app.py` (§3) |
 | 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
-| 4 | Office in the GUI: plain widgets, the same town graph | in progress: the shell, the Lake window, the keeper and every type three ways stand (§5) |
+| 4 | Office in the GUI: plain widgets, the same town graph | in progress: the shell, Lake, the keeper and every type stand; the calm town replaced the console ([calm-town.md](calm-town.md)) |
 | 5 | Camp in the GUI: tiles and sprites in the spirit of Warcraft II | paused |
 
 ## 1. Stage 0 — where the core lives
@@ -218,12 +218,12 @@ orkcraft/gui/
   emoji comes twice, as it is and `_plain`, for Office.
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
-- **The layout is the design system's.** `layout.css` places the components (HUD on top, the town,
-  over its bottom the War Map at the left and the selected building's console at the right, an open
-  building over the whole town, the status bar) and uses tokens only.
-- **A building three ways.** Closed (its hut card), command (the Command Card's preview) and full (its
-  window): what each type shows in each, the hooks a type keeps (`card`, `preview`, `panes`) and how
-  the work is split across branches — [building-views.md](building-views.md).
+- **The layout is the design system's.** `layout.css` places the components (HUD on top, the town, the
+  panel over its right half, the orkspaces and the Warchief's line at its foot — [calm-town.md](calm-town.md))
+  and uses tokens only.
+- **A building, closed and open.** Closed (its hut card) and open in the panel (Work, Info): what each
+  type shows, the hooks a type keeps (`card`, `panes`, `quick`) and how the work is split across
+  branches — [building-views.md](building-views.md).
 - **A building's window is its UI document.** `js/layout.js` lays out the document's groups and
   panes as written (rows or columns by share, `auto` panes as tall as their content) and gives each
   pane its font and tone classes; `js/buildings/<type>.js` fills each pane id. The state behind it
@@ -246,6 +246,12 @@ orkcraft/gui/
   `scroll.road_key` (`<target>:<road id>`): a road's own id is only unique in its building.
 
 ### Done
+
+- **The calm town** ([calm-town.md](calm-town.md)), over what is listed after it: the console, the status
+  bar, the advisor and Build went; a building opens in one panel on the right with Lake's documents
+  (Work, Info, the documents' tabs); the orkspaces at the bottom left; the right click; the Warchief's
+  line (`/` commands, `@` names, hints) and his cards, the work he gives the Town Builder, the road
+  planner, the Recruiter and the keepers (`core/warchief.py`). What follows is how it was before.
 
 - The shell: HUD (Office words for the resources), the town with huts and orthogonal roads, toasts,
   Halt All in the status bar. The strip over the town's bottom is the TUI's console: the War Map

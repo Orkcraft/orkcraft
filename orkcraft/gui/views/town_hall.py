@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime as dt
 
+from orkcraft.core import warchief
 from orkcraft.core.workers.town_hall import LIMITS_REFRESH_S, buildable
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
@@ -39,13 +40,15 @@ def card(w) -> dict:
     return {"news": news, "warchief": w.warchief}
 
 
-def _message(m: dict, titles: dict[str, str]) -> dict:
+def _message(m: dict, titles: dict[str, str], buildings: dict[str, str]) -> dict:
     out = {"who": m["who"], "ts": str(m.get("ts", ""))[11:16], "error": bool(m.get("error"))}
     if m["who"] == "warchief":
         out["html"] = markdown.render(m["text"])
     else:
         out["text"] = m["text"]
-    if m.get("suggest") in titles:
+    if isinstance(m.get("card"), dict):                 # the work he gave a specialist (core/warchief.py)
+        out["card"] = _plain(warchief.public(m["card"], buildings))
+    if m.get("suggest") in titles:                       # an older answer's building to build
         out["suggest"], out["suggest_title"] = m["suggest"], titles[m["suggest"]]
         out["asked"] = str(m.get("asked") or "")
     return out
@@ -64,9 +67,10 @@ def _plain(value):
 
 def detail(w) -> dict:
     titles = {t.id: t.title for t in buildable()}
+    buildings = {b.id: b.title for b in w.town.scroll.buildings}
     return {
         "warchief": w.warchief,
-        "chat": [_message(m, titles) for m in w.chat[-SHOWN:]],
+        "chat": [_message(m, titles, buildings) for m in w.chat[-SHOWN:]],
         "thinking": w.thinking,
         "hall": _plain(w.hall()),
         "spend": w.spend(),
@@ -80,9 +84,18 @@ def detail(w) -> dict:
 
 
 def _ask(w, args: dict) -> None:
-    problem = w.ask(text(args, "text", 8000))
+    about = [str(x)[:200] for x in args.get("about") or [] if isinstance(x, str)][:8]
+    problem = w.ask(text(args, "text", 8000), about)
     if problem:
         raise ActError(problem)
+
+
+def _card(w, args: dict) -> bool:
+    """A card of the Warchief's answered: build, cancel or undo."""
+    choice = text(args, "choice", 20)
+    if choice not in ("build", "cancel", "undo") or not w.card_act(text(args, "card", 100), choice):
+        raise ActError("That card has moved on")
+    return True
 
 
 def _forget(w, args: dict) -> None:
@@ -129,4 +142,4 @@ def _weekly(w, args: dict) -> bool:
     return retros.apply_weekly_item(w.town, report, n)
 
 
-ACTS = {"ask": _ask, "forget": _forget, "audit": _audit, "limits": _limits, "proposal": _proposal, "weekly": _weekly}
+ACTS = {"ask": _ask, "card": _card, "forget": _forget, "audit": _audit, "limits": _limits, "proposal": _proposal, "weekly": _weekly}

@@ -1,5 +1,11 @@
 # A building three ways — closed, command, full
 
+> [!NOTE]
+> Since [calm-town.md](calm-town.md) a building is two ways in the GUI: **closed** (its hut) and **open** in
+> the panel on the right — its **Work** (what *full* was, by its UI document) and its **Info** (what every
+> building shares, its quick actions among them). The command view, the Command Card and the types'
+> `preview` went; a type's hooks are `card`, `panes`, `quick`. The rules of §2 and the types of §3 stand.
+
 What every building shows in the GUI, agreed type by type, and how the work is split so that several
 sessions can build it at once. The TUI's typed views (`screens/typed/*`) are where the behaviour comes
 from; this is what the GUI makes of it. Camp words here; the Office says them in its own
@@ -34,8 +40,8 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
 - **Old scrolls.** A Lake building in a Town Scroll leaves the map when the scroll loads; a road into it
   becomes "open in Lake" on its source.
 - **Custom (panes)** leaves the catalog.
-- The status bar keeps Halt All, Answers and the project path; Build, Add agent and Sessions go to the
-  Town Hall.
+- The HUD keeps Halt All and Answers; Build is the Warchief's (`/build`, or his card), Sessions the Town
+  Hall's (calm-town.md §1).
 
 ## 3. Type by type
 
@@ -70,10 +76,10 @@ the shell never has a list of types to edit.
 |---|---|---|
 | core | `core/workers/<type>.py` | the worker: state and acts, no face (a `Worker` with its `TYPE` registers itself) |
 | host | `gui/views/<type>.py` | `card(worker)` → small JSON for **closed** (in every snapshot, keep it tiny); `detail(worker)` → what **command** and **full** draw (sent while the building is selected or open); `ACTS`; `REFRESH_S` / `refresh` |
-| page | `gui/static/js/buildings/<type>.js` | `card(b)` → the inside of the hut card from `b.card`; `preview(id, data)` → the top of the Command Card; `panes(id, data)` → the full window's panes by its UI document; `quick(id, action)` → its quick actions done in the page (true), else the host's |
+| page | `gui/static/js/buildings/<type>.js` | `card(b)` → the inside of the hut card from `b.card`; `panes(id, data)` → its Work tab's panes by its UI document; `quick(id, action)` → its quick actions (in its Info) done in the page (true), else the host's |
 
-A hook a type does not export falls back: `card` → the status lines (`status_plain`), `preview` → no
-preview (the buttons only), `panes` → the window's old body. Shared helpers a type calls but never
+A hook a type does not export falls back: `card` → the status lines (`status_plain`), `panes` → its
+status lines in Work. Shared helpers a type calls but never
 redefines:
 
 - `openInLake({path | url | text, title, from})` — `js/lake.js`: the document in a tab of the town's Lake

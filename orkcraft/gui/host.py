@@ -129,11 +129,29 @@ class Host:
             data["title_plain"] = modes.text(str(data["title"] or ""), modes.OFFICE)
             self.on_toast(data)
             return
+        if event.topic == bus.ORDER:                   # the Warchief gave a specialist work: the console runs it
+            self._order(event.data)
         if event.topic == bus.ROADS:                   # the roads changed: the scroll keeps them
             self.town.save()
         if event.topic in (bus.WORKER, bus.SPEC, bus.UI) and event.data.get("building"):
             self.on_detail(str(event.data["building"]))
         self.on_change()
+
+    def _order(self, data: dict) -> None:
+        """An order of the Warchief's (core/warchief.py) as the console's job: the road planner, the
+        Recruiter, a keeper. Its offer opens on the page when ready; a refusal goes back on his card."""
+        kind, bid, words = data.get("kind"), str(data.get("building") or ""), str(data.get("order") or "")
+        try:
+            if kind == "road":
+                self.console.road_plan({"to": bid, "from": data.get("source") or "", "prompt": words})
+            elif kind == "recruit":
+                self.console.recruit_ask({"id": bid, "prompt": words})
+            elif kind == "keeper":
+                self.console.keeper_ask({"id": bid, "request": words})
+        except Exception as e:                     # ConsoleError, CommandError: said on the card
+            hall = self.town.worker("town_hall")
+            if hall is not None:
+                hall.card_failed(str(data.get("card") or ""), str(e))
 
     def type_of(self, building_id: str) -> str:
         spec = self.town.spec_of(building_id)

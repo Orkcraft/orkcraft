@@ -170,10 +170,11 @@ def test_the_hall_is_its_worker_s_and_the_warchief_answers(fake_repo: Path, monk
     assert w.ask("Where do my bugs go?") == ""
     _answered(w, 2)
     assert "Where do my bugs go?" in asked[0] and "fields — Task Fields" in asked[0] and "town_hall" in asked[0]
+    assert 'DO: <one JSON object>' in asked[0]                         # he delegates, he does not build
     you, chief = w.chat[-2:]
     assert you == {**you, "who": "you", "text": "Where do my bugs go?"}
-    assert chief["who"] == "warchief" and chief["text"] == "A board keeps them." and chief["suggest"] == "fields"
-    assert chief["asked"] == "Where do my bugs go?"
+    assert chief["who"] == "warchief" and chief["text"] == "A board keeps them."
+    assert chief["card"]["kind"] == "build" and chief["card"]["type"] == "fields"      # an older BUILD line still reads
     assert w.ask("And then?") == ""
     _answered(w, 4)
     assert "The conversation so far" in asked[1] and "A board keeps them." in asked[1]
@@ -192,6 +193,6 @@ def test_the_warchief_of_the_sandbox_answers_from_the_catalog(fake_repo: Path):
     town.demo = True
     w = town.worker(TOWN_HALL)
     assert w.ask("I want a board for tasks and notes") == ""
-    assert not w.thinking and w.chat[-1]["suggest"] == "fields" and "demo" in w.chat[-1]["text"]
+    assert not w.thinking and w.chat[-1]["card"]["type"] == "fields" and "demo" in w.chat[-1]["text"]
     w.read_limits()
     assert w.lowest() == ["claude 62% left", "agy 40% left"]

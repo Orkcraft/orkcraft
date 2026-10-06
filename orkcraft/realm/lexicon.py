@@ -71,6 +71,7 @@ TERMS: tuple[Term, ...] = (
     _t("raising", "Raising the town", "Setting up the project"),
     _t("town_scroll", "Town Scroll", "Project file", "Town Scrolls", "Project files"),
     _t("town_builder", "Town Builder", "Project planner"),
+    _t("road_planner", "Road planner", "Link planner"),          # lays a road from words (realm/road_planner.py)
     _t("town_retro", "Town retro", "Weekly review"),
     _t("building_retro", "Building retro", "Block review"),
     _t("retro_freedom", "Freedom", "Autonomy"),                    # how freely a steward applies its retro's changes

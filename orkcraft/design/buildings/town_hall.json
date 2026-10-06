@@ -10,7 +10,7 @@
       "required": true
     },
     "chat": {
-      "about": "the Chat tab: the whole conversation with the Warchief, his cards and the field to ask",
+      "about": "the Chat tab: the whole conversation with the Warchief, its cards and the field to ask",
       "components": [
         "list",
         "text"

@@ -4,9 +4,12 @@
 //   empty    hints over it that follow the town's state, by rules, no model (`hints`)
 //   /word    the commands, completed as typed; one runs at once, with no model (`COMMANDS`)
 //   @name    names a building; the building open in the panel stands in the line as a chip already
-//   words    go to the Warchief (core/workers/town_hall.py `ask`); his answer unrolls over the line, the
-//            last few messages, and his whole chat is the Town Hall's Chat tab
+//   words    go to the Warchief (core/workers/town_hall.py `ask`); its answer unrolls over the line, the
+//            last few messages, and its whole chat is the Town Hall's Chat tab
 //
+// Its cards (the work it gave a specialist: a plan, a building, a road, an ork, a change) stand in its
+// answers, Build / Cancel / Undo on them (js/buildings/town_hall.js `Card`, core/warchief.py). A press over
+// the line never takes the focus from the field, so what it shows stays put under the mouse.
 // While it is left alone the line says what wants a decision first: an ork's question (§8).
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -231,14 +234,25 @@ function Thread({ data }) {
   </ul>`;
 }
 
-/** What wants a decision first, while the line is left alone: an ork's question. Always mounted: a part
- *  before the field that comes and goes would move the field, and a moved field loses its focus. */
+/** What wants a decision first, while the line is left alone: an ork's question, else the spend at its
+ *  limit. Always mounted: a part before the field that comes and goes would move the field, and a moved
+ *  field loses its focus. */
 function Speaks({ hidden }) {
-  const a = town.value.alerts[0];
-  if (!a || hidden) return null;
-  return html`<button class="gui-warchief__speaks ok-font-status ok-tone-fire" title=${a.title}
-      onPointerDown=${(e) => e.preventDefault()} onClick=${() => openOrders(a.id)}>
-    ❓ ${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></button>`;
+  const t = town.value;
+  const a = t.alerts[0];
+  if (hidden) return null;
+  if (a) {
+    return html`<button class="gui-warchief__speaks ok-font-status ok-tone-fire" title=${a.title}
+        onPointerDown=${(e) => e.preventDefault()} onClick=${() => openOrders(a.id)}>
+      ❓ ${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></button>`;
+  }
+  const level = t.hud.gold_level;
+  if (t.hud.show_gold && (level === "warn" || level === "over")) {
+    return html`<button class="gui-warchief__speaks ok-font-status ok-tone-wait" title=${say("Ask where the gold goes")}
+        onPointerDown=${(e) => e.preventDefault()} onClick=${() => ask("Where does the gold go, and what can spend less?", []).catch(() => {})}>
+      ⚠ ${say(level === "over" ? "Spend is over its limit" : "Spend is near its limit")} (${t.hud.gold}) · <u>${say("where does it go?")}</u></button>`;
+  }
+  return null;
 }
 
 export function WarchiefLine() {
@@ -324,7 +338,8 @@ export function WarchiefLine() {
   const name = data ? data.warchief : say("Warchief");
   const thread = !!data && (focused || !!shown || data.thinking);
   return html`<div class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
-    ${focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over">
+    ${focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
+        onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>
       <div class="ok-win__frame"><div class="ok-win__body">
         ${thread && html`<${Thread} data=${data} />`}
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}

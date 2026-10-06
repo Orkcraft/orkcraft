@@ -703,8 +703,16 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
         time.sleep(0.01)
     you, chief = chat
     assert you["text"] == "Where do my tasks go?" and "<strong>Task Fields</strong>" in chief["html"]
-    assert chief["suggest"] == "fields" and chief["suggest_title"] == "Task Fields" and "BUILD" not in chief["html"]
-    assert chief["asked"] == "Where do my tasks go?"                       # what its Build names the building after
+    card = chief["card"]
+    assert card["kind"] == "build" and card["type_title"] == "Task Fields" and "BUILD" not in chief["html"]
+    assert card["state"] in ("ready", "done")                                # done at once when the town is unchained
+    if card["state"] == "ready":
+        host.command("act", {"id": "town_hall", "act": "card", "args": {"card": card["id"], "choice": "build"}})
+    card = host.detail("town_hall")["data"]["chat"][-1]["card"]
+    assert card["state"] == "done" and card["made"] == ["Task Fields"]
+    host.command("act", {"id": "town_hall", "act": "card", "args": {"card": card["id"], "choice": "undo"}})
+    with pytest.raises(CommandError):                                        # once undone, nothing more to do
+        host.command("act", {"id": "town_hall", "act": "card", "args": {"card": card["id"], "choice": "undo"}})
     summary = host.command("act", {"id": "town_hall", "act": "audit"})
     assert "Warder" in summary and host.detail("town_hall")["data"]["hall"]["audit"]["ts"]
     host.command("act", {"id": "town_hall", "act": "limits"})

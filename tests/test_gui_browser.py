@@ -504,3 +504,22 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
     assert listens and tower in json.dumps(listens)
     for bid in (tower, fields):
         call("town.demolish", {"id": bid})
+
+
+def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, monkeypatch):
+    """A line in words goes to the Warchief; his answer's card (core/warchief.py) raises the building on Build
+    and takes it down on Undo, over the line, without the panel."""
+    from orkcraft.core import runners
+    pg = page
+    monkeypatch.setattr(runners, "WARCHIEF_RUNNER", lambda p: ('A drop box takes them.\nDO: {"build": "pit"}', 0.01))
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { autonomy: 'clock' }))")
+    before = pg.locator(".gui-hut").count()
+    _line(pg, "where do I put the files people send me?")
+    card = pg.locator(".gui-warchief__over .gui-card-order").last
+    card.wait_for(state="visible", timeout=WAIT_MS)
+    assert "DO:" not in pg.locator(".gui-warchief__thread").inner_text()
+    card.get_by_role("button", name="Build", exact=True).click()
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=before, timeout=WAIT_MS)
+    assert pg.locator(".gui-panel").count() == 0                       # the town changed, the panel did not open
+    card.get_by_role("button", name="Undo", exact=True).click()
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length === n", arg=before, timeout=WAIT_MS)
