@@ -73,6 +73,10 @@ TERMS: tuple[Term, ...] = (
     _t("town_builder", "Town Builder", "Project planner"),
     _t("town_retro", "Town retro", "Weekly review"),
     _t("building_retro", "Building retro", "Block review"),
+    _t("retro_freedom", "Freedom", "Autonomy"),                    # how freely a steward applies its retro's changes
+    _t("freedom.chains", "In chains", "Propose only"),
+    _t("freedom.clock", "On the clock", "Apply if unanswered"),
+    _t("freedom.free", "Unchained", "Apply at once"),
     _t("chronicles", "Chronicles", "History"),
     _t("elders", "Elder", "Advisor", "Elders", "Advisors"),
     _t("steward", "steward", "coordinator", "stewards", "coordinators"),

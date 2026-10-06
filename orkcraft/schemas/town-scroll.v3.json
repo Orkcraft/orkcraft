@@ -425,6 +425,10 @@
           "enum": ["thrift", "balance", "quality"],
           "description": "What the retros improve it towards: fewer tokens, both, better results (missing: balance)."
         },
+        "autonomy": {
+          "enum": ["chains", "clock", "free"],
+          "description": "How its retro's changes land (the Town Hall's: the Town retro's): proposed only, applied when unanswered for a day, applied at once (missing: as the town's autonomy)."
+        },
         "bounds": {
           "$ref": "#/$defs/bounds"
         },

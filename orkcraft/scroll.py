@@ -35,6 +35,11 @@ SCHEMA_URL = "https://orkcraft.dev/schemas/town-scroll.v3.json"
 GOALS = ("thrift", "balance", "quality")
 GOAL_ICONS = {"thrift": "🪙", "balance": "⚖️", "quality": "💎"}
 GOAL_TITLES = {"thrift": "Thrift", "balance": "Balance", "quality": "Quality"}
+# How freely a building's steward applies its retro's changes (realm/evolution.py `may_apply`); the
+# Town Hall's sets the Town retro's. None: as the town's autonomy level (autonomy.py).
+FREEDOMS = ("chains", "clock", "free")
+FREEDOM_ICONS = {"chains": "⛓️", "clock": "🕰", "free": "⛓️‍💥"}
+FREEDOM_TITLES = {"chains": "In chains", "clock": "On the clock", "free": "Unchained"}
 VERSION = "0.3.0"
 BIOMES = ("void", "forest", "ice")
 ROAD_EVENTS = ("on_selection_change", "on_task_completed", "on_stream")
@@ -182,6 +187,7 @@ class BuildingSpec:
     pinned: bool = False
     demolished: bool = False
     goal: str | None = None           # thrift | balance | quality — what the retros aim at; None = balance
+    autonomy: str | None = None       # chains | clock | free — how its retro's changes land; None = as the town
     bounds: dict | None = None        # {"x","y","width","height"} in canvas cells
     frac: list[float] | None = None   # fractional slot, follows canvas resizes
     hut: list[float] | None = None    # town view: the hut's spot, fractions of the canvas room
@@ -322,6 +328,7 @@ class TownScroll:
                 id=b["id"], preset_ref=b["preset_ref"], title=b["title"], icon=b.get("icon", ""),
                 pinned=bool(b.get("pinned", False)), demolished=bool(b.get("demolished", False)),
                 goal=b.get("goal") if b.get("goal") in GOALS else None,
+                autonomy=b.get("autonomy") if b.get("autonomy") in FREEDOMS else None,
                 bounds=b.get("bounds"), frac=b.get("frac"), hut=b.get("hut"), min_size=b.get("min_size"),
                 roads=[Road.from_dict(r) for r in b.get("roads", [])],
                 chronicles=b.get("chronicles") or {"enabled": True},

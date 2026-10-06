@@ -54,6 +54,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
             "building.dislike_context": self.dislike_context,
             "building.dislike": self.dislike,
             "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id),
+            "building.autonomy": lambda a: core_buildings.set_autonomy(self.town, self._spec(a).id,
+                                                                       str(a.get("value") or "") or None),
             "building.pin": self.pin,
             "building.revert": self.revert,
             "building.quick": self.quick,

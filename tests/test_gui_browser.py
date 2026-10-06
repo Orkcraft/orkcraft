@@ -93,6 +93,11 @@ def page(gui):
     assert not errors, "\n".join(errors)
 
 
+def server_building(pg, bid: str) -> dict:
+    """What the host's `info` says of a building now."""
+    return pg.evaluate("id => import('/static/js/link.js').then(m => m.command('info', { id }))", bid)
+
+
 def _hut(pg, bid: str):
     return pg.locator(f'.gui-hut[data-id="{bid}"]')
 
@@ -227,7 +232,7 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
 
 
 def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
-    """Pin is in Info, nothing recruits, the steward's Redesign window is under it in the garrison, the
+    """👍 / 👎 in Info and no Pin, nothing recruits, the steward's Redesign window is under it in the garrison, the
     Barracks takes a New task in place (its first words its title), Demolish is at the window's bottom."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
@@ -243,11 +248,24 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     top = pg.evaluate("([x, y]) => document.elementsFromPoint(x, y).map((e) => e.closest('.gui-card, .gui-advisor'))"
                       ".find(Boolean).className", list(mid))           # under the toasts, the card before the advisor
     assert "gui-card" in top
-    info.get_by_role("button", name="Pin", exact=True).or_(info.get_by_role("button", name="Unpin", exact=True)).wait_for()
-    assert card.get_by_role("button", name="Pin", exact=True).count() == 0
+    info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]          # a like, a dislike, their counts
+    assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
     roster.get_by_text("Redesign window").wait_for(state="visible", timeout=WAIT_MS)
+    assert info.get_by_role("button", name="Balance", exact=True).count() == 0     # the goal is the steward's now
+    roster.get_by_text("Goal: Balance").click()
+    roster.get_by_text("Goal: Quality").wait_for(state="visible", timeout=WAIT_MS)
+    roster.get_by_text("as the project").wait_for(state="visible", timeout=WAIT_MS)
+    clock = roster.locator(".gui-freedom__step").nth(1)
+    clock.click()                                                  # 🕰 lit, no longer as the town
+    pg.wait_for_function("() => document.querySelectorAll('.gui-freedom__step')[1].classList.contains('is-on')",
+                         timeout=WAIT_MS)
+    assert roster.get_by_text("as the project").count() == 0
+    assert server_building(pg, bid)["autonomy"] == "clock"
+    clock.click()                                                  # the lit one again: as the town
+    roster.get_by_text("as the project").wait_for(state="visible", timeout=WAIT_MS)
     assert card.get_by_text("Redesign window").count() == 0 and card.get_by_text("Revert").count() == 0
     brief = card.locator(".gui-newtask textarea")
     brief.wait_for(state="visible", timeout=WAIT_MS)

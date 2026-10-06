@@ -32,6 +32,17 @@ def test_the_goal_is_kept_in_the_town_scroll(tmp_path: Path):
     assert [b.aim for b in back.buildings] == ["quality", "balance", "balance"]
 
 
+def test_a_buildings_autonomy_is_kept_in_the_town_scroll(tmp_path: Path):
+    presets = {i: {"title": i.upper(), "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"} for i in "ab"}
+    s = ts.default_scroll(presets, raised=["a", "b"])
+    s.building("a").autonomy = "clock"
+    data = s.to_dict()
+    assert ts.validate(data) == [] and data["buildings"][0]["autonomy"] == "clock" and "autonomy" not in data["buildings"][1]
+    assert ts.validate({**data, "buildings": [{**data["buildings"][0], "autonomy": "wild"}, data["buildings"][1]]})
+    back = ts.TownScroll.from_dict({**data, "buildings": [data["buildings"][0], {**data["buildings"][1], "autonomy": "x"}]})
+    assert [b.autonomy for b in back.buildings] == ["clock", None]
+
+
 def test_a_quality_building_the_operator_disliked_comes_first(tmp_path: Path):
     _spend(tmp_path, "heavy", 9000)
     _spend(tmp_path, "gem", 10)
