@@ -113,7 +113,7 @@ button { font: inherit; color: inherit; }
 .gui-card .ok-act { justify-content: flex-start; }
 .gui-card .gui-win__demolish { margin-left: 0; }
 .gui-card__sep { width: 100%; border: 0; border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
-.gui-card__preview { flex: none; min-height: 0; max-height: 60%; overflow: auto; }
+.gui-card__preview { flex: none; min-height: 0; max-height: 72%; overflow: auto; }
 .gui-info__row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
 .gui-info__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-info__row .gui-win__demolish { margin-left: 0; }

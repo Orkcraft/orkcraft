@@ -148,7 +148,7 @@ function Triage({ id, data }) {
       <span class=${m.says ? TONE[m.verdict] || "" : "ok-tone-muted"}> · ${m.says || say("reading…")}</span></li>`)}</ul>
     ${decided ? html`<p><b>${say("Steward")}</b> <b class=${TONE[r.outcome] || ""}>${r.route ? `→ ${r.route}` : r.outcome_word}</b>${
         r.task ? html` · <b>${r.task}</b>` : ""}</p>
-        <p class="ok-tone-muted">${firstLine(decided.text).slice(0, 140)}</p>`
+        <p>${r.when && html`<b>${r.when}</b> · `}<span class="ok-tone-muted">${firstLine(decided.text).slice(0, 140)}</span></p>`
       : html`<p class="ok-tone-muted">${say("The steward decides when every member has spoken.")}</p>`}
     ${data.queued.length > 0 && html`<div class="ok-tone-muted">${data.queued.length} queued</div>`}
     <${Dialogs} id=${id} data=${data} />

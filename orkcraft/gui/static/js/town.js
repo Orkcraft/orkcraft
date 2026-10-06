@@ -118,7 +118,7 @@ function Carts({ paths, carts, travel, camp }) {
   </div>`;
 }
 
-/** Signs on the roads that wait for a route (a Signpost's, a Clan Fire's that routes): always shown. */
+/** Signs on the roads that wait for a route (a Signpost's, a Clan Fire's that routes) or are named in words: always shown. */
 function Signs({ paths, roads }) {
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const signed = paths.filter((p) => byId[p.id] && byId[p.id].sign);

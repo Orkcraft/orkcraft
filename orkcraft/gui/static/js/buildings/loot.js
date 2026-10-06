@@ -218,7 +218,8 @@ function Cart({ id, data }) {
   return html`<p class="ok-tone-muted">Pick a cart, a file or what passed.</p>`;
 }
 
-/** Closed: `N to review` or `all reviewed ✓`, `passed: N` and what the waiting carts cost. */
+/** Closed: what came of the newest cart that passed; `N to review` or `all reviewed ✓`, `passed: N` and
+ * what the waiting carts cost. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
@@ -226,11 +227,10 @@ export function card(b) {
   const first = c.to_review
     ? html`<b>${c.to_review}</b> to review${c.needs_you ? html` · <span class="ok-tone-fire">${c.needs_you} need you</span>` : ""}`
     : c.files ? html`<b>${c.files}</b> files to review` : html`all reviewed <span class="ok-tone-ok">✓</span>`;
-  return html`<div>${first}</div>
+  return html`${c.latest && html`<div class="ok-tone-ok"><b>✓ ${c.latest}</b></div>`}<div>${first}</div>
     <div>passed: <b>${c.passed}</b>${c.cost && html` · <span class="ok-tone-wait">${c.cost}</span> waiting`}</div>`;
 }
 
-/** Command: the queue with Accept / Rework per cart; a click on a cart opens it in Lake. */
 const URL_RE = /(https?:\/\/[^\s)>\]]+)/;
 
 /** A line with its links as links. */
@@ -239,11 +239,14 @@ function linked(text) {
     ? html`<a key=${i} class="gui-link" href=${part} target="_blank" rel="noopener">${part}</a>` : part));
 }
 
+/** Command: what waits for you (Accept / Rework per cart), then what passed lately — when nothing
+ * waits and something passed, only that. */
 export function preview(id, data) {
   const open = data.queue.slice(0, 5);
+  const quiet = !open.length && (data.delivered || []).length > 0;
   return html`<div class="gui-section">
-    <div class="ok-font-status ok-tone-muted">${headLine(data)}</div>
-    ${open.length ? html`<ul class="gui-rows">${open.map((it) => html`<li key=${it.id} class="ok-font-status">
+    ${!quiet && html`<div class="ok-font-status ok-tone-muted">${headLine(data)}</div>`}
+    ${quiet ? "" : open.length ? html`<ul class="gui-rows">${open.map((it) => html`<li key=${it.id} class="ok-font-status">
         <span class=${cls("gui-link", { "ok-tone-fire": it.status === "needs_you" })} title="Open in Lake" onClick=${() => openCart(id, it)}>
           ${MARK[it.status]} ${it.label}</span>
         <span class="ok-tone-muted"> · ${it.source}${it.spent && ` · ${it.spent}`}</span>

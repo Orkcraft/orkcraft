@@ -42,8 +42,8 @@ function prepare(id, e) {
 
 function DocMark({ id, e }) {
   if (!e.doc) return null;
-  return html`<button class="ok-chip" title=${say(`Open ${e.doc} in Lake`)}
-    onClick=${(ev) => { ev.stopPropagation(); openDoc(id, e); }}>doc</button>`;
+  return html`<button class="ok-chip is-on gui-drum__doc" title=${say(`Open ${e.doc} in Lake`)}
+    onClick=${(ev) => { ev.stopPropagation(); openDoc(id, e); }}>📄 doc</button>`;
 }
 
 function NewEvent({ id }) {
@@ -93,7 +93,8 @@ function Beat({ b }) {
       title=${b.approx ? say(ESTIMATE) : b.detail}>
     <span class="gui-drum__glyph" aria-hidden="true">${MARK[b.kind]}</span>
     <b class="gui-drum__when">${beatWhen(b)}</b>
-    <span class="gui-drum__title">${beatTitle(b)}${b.doc ? html` <span class="ok-word ok-tone-muted">doc</span>` : ""}</span>
+    <span class="gui-drum__title">${beatTitle(b)}</span>
+    ${b.doc && html`<span class="ok-chip is-on gui-drum__doc" title=${say("Its document is ready")}>📄 doc</span>`}
     <span class="gui-drum__meta">${beatMeta(b)}</span></li>`;
 }
 
@@ -109,7 +110,9 @@ function Strip({ c }) {
   <div class="gui-drum__scale ok-tone-muted"><span>${say("now")} ${c.now}</span><span>+${c.hours}h</span></div>`;
 }
 
-function Legend() {
+/** What the marks mean — only when the timeline holds more than meetings (`beats`). */
+function Legend({ kinds }) {
+  if (kinds && kinds.length < 2) return null;
   return html`<p class="gui-drum__legend ok-tone-muted"><span><span class="ok-tone-text">▪</span> meetings</span><span><span
     class="ok-tone-accent">↻</span> schedules</span><span><span class="ok-tone-wait">≈</span> limits, estimated</span></p>`;
 }
@@ -122,7 +125,7 @@ export function card(b) {
     <${Strip} c=${c} />
     ${c.beats.length ? html`<ul class="gui-drum__beats">${c.beats.map((x) => html`<${Beat} key=${beatKey(x)} b=${x} />`)}</ul>`
       : html`<p class="ok-tone-muted">${c.error ? "the calendar cannot be read" : "nothing ahead"}</p>`}
-    <${Legend} />
+    <${Legend} kinds=${c.kinds} />
   </div>`;
 }
 
@@ -176,11 +179,13 @@ function Limits({ d }) {
       : l.at ? `≈ ${l.day} ${l.at}`.replace("  ", " ") : say("not at this rate")}</span></li>`)}</ul>`;
 }
 
-/** Command: today's meetings, scheduled runs and limits, now highlighted; the limits under them. */
+/** Command: today's meetings, scheduled runs and limits, now highlighted, then tomorrow's; the limits under them. */
 export function preview(id, d) {
   return html`<div class="gui-rows">
     <p class="ok-tone-muted">${d.date} · ${d.left} left today${d.errors.length ? html` · <span class="ok-tone-wait">⚠ ${d.errors[0]}</span>` : ""}</p>
     <${DayRows} id=${id} day=${d.days[0]} once=${true} />
+    ${d.days[1] && d.days[1].events.length > 0 && html`<p class="ok-list__head">Tomorrow</p>
+      <${DayRows} id=${id} day=${d.days[1]} once=${true} />`}
     <${Limits} d=${d} />
     ${adding.value[id] && html`<${NewEvent} id=${id} />`}
   </div>`;

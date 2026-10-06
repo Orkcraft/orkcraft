@@ -10,6 +10,8 @@ text that may carry emoji comes twice, as it is and `_plain` (in Office's words,
 """
 from __future__ import annotations
 
+import re
+
 import time
 from pathlib import Path
 from typing import Any
@@ -97,15 +99,25 @@ def roads(town: Town) -> list[dict[str, Any]]:
             flt = r.filter or {}
             out.append({"id": road_key(bs.id, r.id), "road": r.id, "from": r.source, "to": bs.id, "event": r.event,
                         "label": r.label or pipes.label(r.event), "handler": r.handler or "",
-                        "sign": sign(r) if flt.get("route") else "", "returns": bool(flt.get("returns"))})
+                        "sign": sign(r) if flt.get("route") or "-" in (r.label or "") else "", "returns": bool(flt.get("returns"))})
     return out
 
 
 def sign(road) -> str:
-    """What the sign on a road that waits for routes says: its label in words (`task-for-human` →
-    `task for human`), else its routes."""
+    """What the sign on a road says — one that waits for routes, or one named in words (a kebab-case label,
+    `new-meeting`): its label in words (`task-for-human` → `task for human`), else its routes."""
     words = (road.label or ", ".join(str(x) for x in (road.filter or {}).get("route") or [])).replace("-", " ")
     return words.replace("_", " ").strip()
+
+
+def outcome(report: str) -> str:
+    """What a Barracks' report says came of the task: its first line after `**Task** — who did it`."""
+    for ln in (report or "").splitlines():
+        ln = ln.strip()
+        if not ln or re.match(r"^\*\*.*\*\* — ", ln):
+            continue
+        return ln.strip(" #*")[:80]
+    return ""
 
 
 CART_SHOWN_S = 12.0           # a cart stays in the snapshot this long after it left (the page animates it)
@@ -126,6 +138,8 @@ def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
         spec = town.custom_specs.get(c.source)
         if spec is not None and catalog.type_of(spec).id == "watchtower":
             title = subject(title)                   # the Inbox's card says who sent it and where from
+        elif c.payload.mode == "pool.done":
+            title = outcome(c.payload.value) or title  # done work reads as what came of it
         out.append({"id": f"{road_key(c.target, c.road_id)}@{c.at:.3f}", "road": road_key(c.target, c.road_id),
                     "status": c.status, "title": modes.strip_emoji(title)[:80], "age": round(age, 2)})
     return out

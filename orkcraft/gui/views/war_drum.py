@@ -35,7 +35,7 @@ def _event(w, e, docs: dict, now: dt.datetime, cur) -> dict:
         "calendar": e.calendar, "all_day": e.all_day, "start": _hm(e.start), "end": _hm(end) if end and end.date() == e.day else "",
         "from_min": _minutes(e.start), "to_min": _minutes(end) if end and end.date() == e.day else 24 * 60,
         "when": daybook.when(e), "now": e is cur, "past": bool(end and end <= now),
-        "doc": doc["path"] if doc else "",
+        "doc": doc["path"] if doc else "", "link": doc.get("link", "") if doc else "",
     }
 
 
@@ -56,12 +56,12 @@ def _limit(lim: drumbeat.Limit, now: dt.datetime) -> dict:
 
 
 def card(w) -> dict:
-    """Closed: the next beats of all three kinds (meetings, scheduled runs, ≈ limits) and a strip of
-    the next `STRIP_H` hours with each beat's mark."""
+    """Closed: the next beats of all three kinds (meetings, scheduled runs, ≈ limits) up to the end of
+    tomorrow, and a strip of the next `STRIP_H` hours with each beat's mark."""
     now = w.clock()
     _, _, left = daybook.now_and_next(w.day.events, now)
     docs = w.docs()
-    beats = w.beats(now + dt.timedelta(days=1))
+    beats = w.beats(dt.datetime.combine(now.date() + dt.timedelta(days=2), dt.time()))
     span = dt.timedelta(hours=STRIP_H)
     strip: list[dict] = []
     for b in beats:
@@ -69,7 +69,7 @@ def card(w) -> dict:
         if b.at < now + span and not any(m["kind"] == b.kind and abs(m["pos"] - mark["pos"]) < 0.02 for m in strip):
             strip.append(mark)                  # one mark where two of a kind fall together
     return {"beats": [_beat(b, now, docs) for b in drumbeat.ahead(beats, CARD)], "strip": strip, "hours": STRIP_H,
-            "now": _hm(now), "left": left, "error": bool(w.day.errors)}
+            "now": _hm(now), "left": left, "error": bool(w.day.errors), "kinds": list(w.kinds)}
 
 
 def detail(w) -> dict:

@@ -50,3 +50,5 @@
 .gui-drum__chip { cursor: default; }
 .gui-drum__hour { flex-wrap: wrap; row-gap: var(--space-1); }
 .gui-drum__hour .ok-chip { white-space: nowrap; }
+/* A meeting's document: a pill beside it, the same in the closed card and the Command Card. */
+.ok-chip.gui-drum__doc { flex: none; padding: 0 var(--space-2); line-height: 1.4; font-size: .85em; white-space: nowrap; }

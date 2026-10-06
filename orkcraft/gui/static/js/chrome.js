@@ -22,9 +22,7 @@ export function Hud() {
   return html`<header class="ok-hud gui-hud">
     <span class="ok-hud__brand">Orkcraft</span>
     <span class="gui-hud__project">${t.project}${t.demo ? " · demo" : ""}</span>
-    ${online.value
-      ? html`<span class="ok-hud__ready">Ready</span>`
-      : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
+    ${!online.value && html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     ${hud.alerts > 0 && html`<button class="ok-hud__fire gui-link" onClick=${() => openOrders()}>
       ${hud.alerts} awaiting an answer</button>`}
     <span class="ok-hud__spacer"></span>
