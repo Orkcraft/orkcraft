@@ -60,6 +60,7 @@ TERMS: tuple[Term, ...] = (
     _t("war_horn", "War Horn", "Stop all"),
     _t("war_tent", "War Tent", "Terminals"),
     _t("orders", "Orders", "Answers"),
+    _t("war_raven", "War Raven", "Phone", "War Ravens", "Phones"),   # a phone paired with the town (docs/design/mobile.md)
     _t("standing_orders", "Standing orders", "Instructions"),       # what an ork is told to do
     _t("awaiting_orders", "Awaiting Orders", "Awaiting an answer"),
     _t("garrison", "Garrison", "Agents"),
