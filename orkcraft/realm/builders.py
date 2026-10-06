@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import halt, huts, masonry
+from orkcraft.realm import halt, huts, masonry, naming
 from orkcraft.sources import telemetry
 from orkcraft.sources.sessions import claude_bin
 
@@ -43,7 +43,7 @@ OPERATOR REQUEST:
 {catalog}
 {feedback}
 Answer with ONE JSON object and nothing else:
-{{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, max 40 chars>", "icon": "<one emoji>",
+{{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, at most 4 words>", "icon": "<one emoji>",
   "summary": "<one sentence>", "orc": {{"name": "<a fitting ork name>", "role": "<what it watches>"}},
   "data": [{{"name": "<snake_case>", "source": "<a catalog source>", "params": {{...catalog params only...}}}}]}}
 Use 1-6 data entries. Paths are relative to the repository root; never absolute, never outside it."""
@@ -181,6 +181,7 @@ def build(request: str, repo_root: Path, existing_ids: set[str] | frozenset[str]
             attempt.errors = ["Artisan's answer had no JSON object"]
         else:
             spec.pop("version", None)
+            spec["title"] = naming.clip(spec.get("title", "")) or naming.from_prompt(request, "New building")
             attempt.errors = masonry.validate_spec(spec, repo_root, existing_ids)
         attempts.append(attempt)
         if not attempt.errors:
@@ -202,7 +203,7 @@ OPERATOR REQUEST:
 BUILDING TYPES (choose only from these; every event, quick action and config key must be the type's own):
 {catalog}
 
-Prefill it so the operator only has to confirm: a plain functional title (no fantasy), one emoji icon,
+Prefill it so the operator only has to confirm: a plain functional title of at most 4 words (no fantasy), one emoji icon,
 a resident ork (a fitting ork name and what it watches), the size (XS S M L — the type's default unless
 the request says otherwise), the events this building should send (the ones the request needs; all when
 unsure), up to two quick actions that matter most on the map, and the type's config filled from the
@@ -250,6 +251,7 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
             attempt.errors = ["the answer had no JSON object"]
         else:
             spec.pop("version", None)
+            spec["title"] = naming.clip(spec.get("title", "")) or naming.from_prompt(request, "New building")
             if type_id:
                 spec["type"] = type_id                 # the operator's pick wins over the model's
             if not spec.get("type") or spec["type"] in catalog.RETIRED_TYPES:   # custom (panes) left the catalog

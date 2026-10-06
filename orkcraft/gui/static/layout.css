@@ -71,12 +71,21 @@ button { font: inherit; color: inherit; }
    the card is as wide as what it holds, within bounds. */
 .gui-town__room > .gui-hut.ok-hut[class] { width: max-content; min-width: 120px; max-width: 320px; }
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
-.gui-hut__pin { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: var(--space-1); padding: 0;
-  vertical-align: -3px; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
+.gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
 .gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .gui-hut__pin:hover { color: var(--ink); background: var(--selection); }
 .gui-hut__pin.is-off { color: var(--frame-focus); }
-.gui-hut__title { padding: 0 var(--space-1) var(--space-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-hut__title { display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-1) var(--space-1); white-space: nowrap; }
+.gui-hut__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gui-type-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; color: var(--ink-muted); }
+.gui-hut.is-selected .gui-type-icon { color: var(--frame-focus); }
+.gui-hut__spin { flex: none; width: 10px; height: 10px; box-sizing: border-box; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--unit-active) 30%, transparent); border-top-color: var(--unit-active);
+  animation: gui-spin .8s linear infinite; }
+@keyframes gui-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__spin { animation-duration: 2.4s; } }
+.gui-hut > .ok-head { margin-top: var(--space-1); }
+.gui-hut__sprite { -webkit-user-drag: none; }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }

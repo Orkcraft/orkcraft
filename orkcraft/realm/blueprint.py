@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import builders, workshop
+from orkcraft.realm import builders, naming, workshop
 
 MAX_ATTEMPTS = 3
 SCRIPT_LIMIT = 20_000
@@ -50,7 +50,7 @@ Its own timer: when it should also run without a cart, give "schedule" (`every 1
 Also write 2-4 realistic mock carts that exercise the script (one of them an edge case).
 {feedback}
 Answer with ONE JSON object and nothing else:
-{{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, max 32 chars>", "icon": "<one emoji>",
+{{"id": "<snake_case, 2-32 chars>", "title": "<plain functional title, at most 4 words>", "icon": "<one emoji>",
   "summary": "<one sentence>", "runtime": "python|bash", "script": "<the whole script>",
   "steward_prompt": "", "steward_why": "", "schedule": "", "mocks": [{{"event": "...", "source": "...", "title": "", "value": "..."}}]}}"""
 
@@ -111,6 +111,7 @@ def problems(bp: dict, taken: set[str] | frozenset[str] = frozenset()) -> list[s
 def normalise(bp: dict, interview: dict) -> dict:
     out = {k: bp.get(k) for k in ("id", "title", "icon", "summary", "runtime", "script", "steward_prompt",
                                    "steward_why", "mocks", "schedule")}
+    out["title"] = naming.clip(str(out.get("title") or "")) or naming.from_prompt(str(interview.get("purpose") or ""), "Script")
     out["icon"] = str(out.get("icon") or "🛠️")[:4]
     out["summary"] = str(out.get("summary") or interview.get("purpose", ""))[:200]
     out["steward_prompt"] = str(out.get("steward_prompt") or "").strip()
