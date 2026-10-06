@@ -156,20 +156,24 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
   }
 
   const x = spot.x + (drag ? drag.dx : 0), y = spot.y + (drag ? drag.dy : 0);
+  // Camp: the name plate stands over the header sprite. Office: it heads the card, so a block on the
+  // map is one box and its roads meet that box.
+  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
+      ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
+      ${office && html`<${TypeIcon} type=${b.type} />`}
+      <span class="gui-hut__name">${say(b.title)}</span>
+      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class=${cls("ok-word ok-tone-muted gui-hut__pinned", { "is-warn": !!warned.value[b.id] })}>pinned</span>`}
+      ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free })}
       onPointerDown=${down}>
-    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
-      ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
-      ${office && html`<${TypeIcon} type=${b.type} />`}
-      <span class="gui-hut__name">${say(b.title)}</span>
-      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class=${cls("ok-word ok-tone-muted gui-hut__pinned", { "is-warn": !!warned.value[b.id] })}>pinned</span>`}
-      ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>
+    ${!office && title}
     ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
       draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}
     <div class="ok-hut__card">
+      ${office && title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}>+</button>
       <span class="ok-hut__dot gui-hut__dot"></span>

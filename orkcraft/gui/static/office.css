@@ -29,3 +29,12 @@
 
 /* Gold is selection only: the working spinner turns the meter's tan. */
 [data-theme="office"] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
+
+/* A hut is one box: its name heads the card over a hairline, the status dot stays in the corner. The
+   number and the pin show on hover, focus or selection only (an unpinned or warned pin stays). */
+[data-theme="office"] .ok-hut__card > .gui-hut__title { padding: 0 var(--space-4) var(--space-1) 0; margin-bottom: var(--space-1);
+  border-bottom: 1px solid var(--frame); }
+[data-theme="office"] .gui-hut__title .no, [data-theme="office"] .gui-hut__pin:not(.is-off):not(.is-warn) { opacity: 0; transition: opacity .1s; }
+[data-theme="office"] .gui-hut:is(:hover, :focus-within, .is-selected) :is(.gui-hut__title .no, .gui-hut__pin) { opacity: 1; }
+[data-theme="office"] .gui-hut__pin:focus-visible { opacity: 1; }
+[data-theme="office"] .gui-hut__dot { top: 14px; }           /* on the name's line */
