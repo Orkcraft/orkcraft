@@ -7,7 +7,7 @@ ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one
 | sheet | buildings | state |
 |---|---|---|
 | 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done (redrawn, cut at `--cell 11 --scale 2`) |
-| 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done |
+| 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done (redrawn, cut at `--cell 16.6 --scale 2`) |
 | 3 | File Forest, Tally Crag, Custom | done (`--cell 16.6 --scale 2`) |
 
 ## Making a sheet
