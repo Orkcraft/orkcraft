@@ -128,7 +128,9 @@ conflicted there. Now:
   taskbar; its domains are mixins beside it: `wm/layout.py` (orkspaces, saving, biome),
   `wm/focus.py` (z-order, focus, the preview link), `wm/arrange.py` (window operations and window
   mode), `wm/town_view.py` (huts and the ghost), `wm/roads.py` (roads, traffic, rally mode).
-- Next in line, when they are touched anyway: `screens/onboarding.py`, `screens/console.py`.
+- `screens/onboarding.py` is now a package, one module per part: `common`, `person`, `town`,
+  `machine`, `raising`, `flow`.
+- Next in line, when they are touched anyway: `screens/console.py`.
 
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
