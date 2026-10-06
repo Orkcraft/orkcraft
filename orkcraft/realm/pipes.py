@@ -110,6 +110,7 @@ class Payload:
     title: str = ""
     trail: tuple[Hop, ...] = field(default=(), compare=False)
     ref: str = ""        # the thing worked on, stable across hops and rework rounds
+    route: str = field(default="", compare=False)   # who takes it on, as a Clan Fire that routes decided
 
 
 def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,

@@ -20,3 +20,6 @@ venv/
 
 # tools/gallery.py writes its page here
 /gallery/
+
+# tools/landing_flow.py writes its frames and videos here
+/landing-flow/

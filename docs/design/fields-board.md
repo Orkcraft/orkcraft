@@ -101,12 +101,40 @@ The events every building and ready town already use (`tasks.*`) mean what they 
 fire for notes. A cart that arrives becomes a card — its title (else its first line) and the rest
 of what it carries as the text.
 
+### 5a. What comes by road: a to-do or a task, and the work coming back
+
+Implemented: `core/workers/fields.py` (`receive`, `update_own`), `realm/roads.py` (`passes`), tests in
+`tests/test_triage_flow.py`.
+
+| a cart… | becomes | set by |
+|---|---|---|
+| with a route named in `mine_routes` (`["human"]`) | one of the person's to-dos (`## My to-dos`), new to them | the board's `mine_routes` |
+| any other | a task in To Do (a note in `notes` mode), as before | — |
+| naming one of this board's cards (`ref` = `<board>:<card id>`), on `*.assigned` / `*.done` / `*.failed` | no new card: that card moves — In Progress with who works it, Done with the result, back to To Do with why | the cart's `ref` |
+
+The route is the one a **Clan Fire that routes** gave (`routes: ["human", "agent"]`, `team.routed`; the
+road from it waits for one route, `{"route": ["human"]}`, as a Signpost's roads do). The mechanism is
+the cart's route, not the road: two roads into one board need no handler of their own, and a road
+from a Signpost or anything else that names routes works the same.
+
+`send_new: true` sends every new task down the roads as it is (`tasks.sent`, its text and its `ref`), as
+if `s` were pressed — the board hands its tasks to a Barracks without anyone pressing a key.
+
+**The result comes back by a return road.** Fields → Barracks → Fields is a loop, and the scroll refuses
+loops. A road whose filter says `{"returns": true}` is a *return road*: it carries a cart only to the
+building its `ref` names (`passes` drops the rest as "not its own work"), and the board updates that
+card instead of making new work — so it is not counted as a loop (`scroll_roads._road_edges`,
+`scroll_checks.validate`). The Barracks' `pool.assigned`, `pool.done` and `pool.failed` carry the task's
+`ref`, which is the card's when the board sent it. The GUI draws a return road dashed.
+
+The demo's Front Desk (F5, `demo/front_desk.py`) shows it all: Inbox → Triage → "task for human" (a
+to-do) / "task for agent" (a task → Agents at work → In Progress → Done, the outcome on to Results).
+
 ## 6. Next
 
-- **The result comes back to the card.** A card sent to a Barracks or a Clan Fire could get the
-  pull request, the report or the verdict attached and move itself (to Done, or "Needs rework").
-  It cannot come by road — Fields → Barracks → Fields closes a loop — so it needs the direct
-  delivery a Loot rework uses (`app.return_for_rework`), matched by the card's `ref`.
+- **A Clan Fire's verdict back on the card.** A Barracks' result comes back by a return road (§5a); a
+  card sent to a Clan Fire could get its verdict the same way once `team.*` carries the card's `ref`
+  through a review ("Needs rework" as a lane of its own).
 - **Group by another field** (assignee, priority) for boards that are not about status.
 - **Links between cards** (`→ dark-mode`) and a due date, shown on the hut when one is near.
 - **A "wall" layout** for `notes` mode: cards of one size in a grid instead of lanes. Free 2D

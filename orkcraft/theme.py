@@ -27,7 +27,7 @@ BIOMES: dict[str, Biome] = {
     ),
     "forest": Biome(
         name="forest",
-        canvas="#0a130c",
+        canvas="#172a0a",
         glyphs=("·", ",", '"', "↟"),
         terrain="#1f3823",
         window_bg="#0e1611",

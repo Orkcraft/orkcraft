@@ -102,9 +102,12 @@ class Worker:
         """Its state changed: the faces draw it again."""
         self.town.call(lambda: self.town.publish(bus.WORKER, building=self.building_id))
 
-    def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "") -> bool:
-        """Send `event_id` (one its building declares) down the roads. True when a road took it."""
-        return bool(self.town.emit_typed(self.building_id, event_id, value, title, tuple(trail), ref))
+    def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "",
+             route: str = "") -> bool:
+        """Send `event_id` (one its building declares) down the roads. True when a road took it; `route`
+        names who takes it on (a road that waits for routes takes only its own)."""
+        args = (route,) if route else ()
+        return bool(self.town.emit_typed(self.building_id, event_id, value, title, tuple(trail), ref, *args))
 
     def toast(self, message: str, title: str = "", severity: str = "information",
               timeout: float | None = None) -> None:

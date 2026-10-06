@@ -5,8 +5,20 @@ lanes, a kanban), the person's own to-dos (a checklist, `My to-dos`) and the not
 `refresh()` reads the board (the face calls it on a timer: a hand edit of the file is seen
 there) and sends `tasks.created` / `tasks.status_changed` for a task, `notes.created` for a note.
 The acts (add, move, edit, colour, flip, check, send, remove) change the file and send the same events
-for what they changed; the person's to-dos send none (they are not the orks' work). A cart is a new card. The hut's * marks what is new since the board was
-last looked at (`seen.json`).
+for what they changed; the person's to-dos send none (they are not the orks' work). The hut's * marks what is new
+since the board was last looked at (`seen.json`).
+
+What comes by road:
+
+    a cart                 a new task in To Do (a note in `notes` mode)
+    … routed to the person a new to-do of the person's own, when its route is one of `mine_routes` (a Clan Fire
+                           that triages: `["human"]`)
+    … about its own card   a cart whose `ref` names one of this board's cards (a Barracks' result on a return
+                           road) moves that card: `*.assigned` → In Progress with who works it, `*.done` → Done
+                           with the result, `*.failed` → back to To Do with why
+
+`send_new`: every new task goes down the roads as it is (`tasks.sent`, its text and ref), as if `s` were
+pressed — a Barracks takes it, and its results come back to the card.
 """
 from __future__ import annotations
 
@@ -120,12 +132,14 @@ class FieldsWorker(Worker):
         self._last = list(self.cards)
         self.changed()
 
-    def _sync(self) -> None:
-        """Reload after its own change, without sending again what was just sent."""
+    def _sync(self, seen: bool = True) -> None:
+        """Reload after its own change, without sending again what was just sent. `seen`: the person made
+        the change (nothing on the board is new to them); a cart's card stays new till they look."""
         store = self.store
         self.lanes, self.cards = store.lanes(), store.load()
         self._last = list(self.cards)
-        self.mark_seen()
+        if seen:
+            self.mark_seen()
         self.changed()
 
     def announce(self, event_id: str, card: tasklist.Task, detail: str) -> None:
@@ -133,23 +147,25 @@ class FieldsWorker(Worker):
             self.emit(event_id, card_text(card), tasklist.plain(card.title), ref=self.ref(card))
         else:
             self.emit(event_id, card.id, f"{tasklist.plain(card.title)} · {detail}")
+        if event_id == "tasks.created" and card.column == "todo" and self.config.get("send_new"):
+            self.emit("tasks.sent", card_text(card), tasklist.plain(card.title), ref=self.ref(card))
 
     def ref(self, card: tasklist.Task) -> str:
         return f"{self.building_id}:{card.id}"
 
     # -- acts -----------------------------------------------------------------------------------
 
-    def add(self, title: str, lane: str = "todo", body: str = "") -> tasklist.Task | None:
+    def add(self, title: str, lane: str = "todo", body: str = "", seen: bool = True) -> tasklist.Task | None:
         try:
             card = self.store.add(title, lane, body)
         except (OSError, ValueError) as e:
             self.toast(str(e), title=TITLE, severity="error")
             return None
+        self._sync(seen)                  # first: what the roads bring back about it finds it on the board
         if card.kind == TASK:
             self.announce("tasks.created", card, LABELS[card.column])
         elif card.kind == NOTE:
             self.announce("notes.created", card, card.column)
-        self._sync()
         return card
 
     def add_lane(self, name: str) -> str:
@@ -163,8 +179,11 @@ class FieldsWorker(Worker):
         return lane.id
 
     def receive(self, payload, title: str, markdown: str) -> None:
-        """A cart is a new card — a task in To Do (a note in `notes` mode): its title, else its first
-        line; the rest of what it carries is the card's text."""
+        """A cart is a new card — a task in To Do (a note in `notes` mode; a to-do of the person's when its
+        route is one of `mine_routes`): its title, else its first line; the rest of what it carries is the
+        card's text. A cart about one of its own cards (its `ref`) moves that card instead."""
+        if self.update_own(payload, markdown):
+            return
         lines = (markdown or str(payload.value or "")).splitlines()
         first_i = next((i for i, ln in enumerate(lines) if ln.strip(" #*-")), None)
         first = " ".join(lines[first_i].strip(" #*-").split()) if first_i is not None else ""
@@ -173,7 +192,35 @@ class FieldsWorker(Worker):
             return
         rest = lines[first_i + 1:] if first_i is not None and first == name else lines
         lane = self.visible_lanes()[0].id if self.mode == "notes" else "todo"
-        self.add(name, lane, "\n".join(rest).strip()[:2000])
+        if payload.route and payload.route in [str(r).strip().lower() for r in self.config.get("mine_routes") or []]:
+            lane = MINE
+        self.add(name, lane, "\n".join(rest).strip()[:2000], seen=False)
+
+    def update_own(self, payload, markdown: str = "") -> bool:
+        """A cart about one of this board's cards (its `ref` is `<this building>:<card id>`): the work on it
+        started, ended or failed elsewhere — the card moves and says so. False when the cart names none."""
+        prefix = f"{self.building_id}:"
+        ref = str(getattr(payload, "ref", "") or "")
+        what = str(payload.mode or "").rsplit(".", 1)[-1]
+        if not ref.startswith(prefix) or what not in ("assigned", "done", "failed"):
+            return False
+        card = self.card(ref[len(prefix):])
+        if card is None:
+            return True                       # its card is gone from the board: nothing to move, nothing to add
+        text = (markdown or str(payload.value or "")).strip()
+        if what == "assigned":
+            who = text.split(" ← ", 1)[0].strip()
+            body, lane = (f"⚒ {who} is on it" if who else card.body), "in_progress"
+        elif what == "done":
+            body, lane = result_of(text), "done"
+        else:
+            body, lane = f"✗ {result_of(text)}", "todo"
+        if card.kind != TASK:
+            return True                       # a card that is no task any more stays where the person put it
+        self.edit(card.id, card.title, body[:2000])
+        if card.column != lane:
+            self.move(card.id, lane)
+        return True
 
     def move(self, card_id: str, column: str) -> bool:
         card = self.card(card_id)
@@ -317,6 +364,15 @@ class FieldsWorker(Worker):
         lines.append(f"Scribbles {len(notes)}{star}" if notes else "Scribbles: none yet")
         lines += [f"✎ {tasklist.plain(t.title)}" for t in notes[::-1][:2]]
         return lines
+
+
+def result_of(text: str) -> str:
+    """What a result says, without its first line when that only names the task and who did it
+    (`**Title** — Grub (claude)`)."""
+    lines = text.strip().splitlines()
+    if lines and lines[0].startswith("**") and " — " in lines[0]:
+        lines = lines[1:]
+    return "\n".join(lines).strip() or text.strip()
 
 
 def card_text(card: tasklist.Task) -> str:

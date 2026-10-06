@@ -52,7 +52,8 @@ def _road_edges(scroll: TownScroll) -> dict[str, set[str]]:
     edges: dict[str, set[str]] = {}
     for b in scroll.buildings:
         for r in b.roads:
-            edges.setdefault(r.source, set()).add(b.id)
+            if not (r.filter or {}).get("returns"):         # a return road brings results back: no loop
+                edges.setdefault(r.source, set()).add(b.id)
     return edges
 
 
@@ -81,7 +82,8 @@ def subscribe(scroll: TownScroll, target_id: str, source_id: str, event: str = "
         if (r.source, r.event, r.handler, r.filter) == (source_id, event, handler, flt):
             raise ValueError(f"{dst.title} already has this road from {src.title}")
     edges = _road_edges(scroll)
-    edges.setdefault(source_id, set()).add(target_id)
+    if not flt.get("returns"):                        # a return road brings results back: it closes no loop
+        edges.setdefault(source_id, set()).add(target_id)
     if _cycle(edges) is not None:
         raise ValueError(f"{src.title} → {dst.title} would close a loop of roads")
     short = event.replace(".", "_") if "." in event else event.removeprefix("on_").split("_")[0]   # typed: mail_received

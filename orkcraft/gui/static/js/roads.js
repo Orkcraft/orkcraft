@@ -41,13 +41,14 @@ function gateCell(g, side, i, k) {
   return [Math.min(x, g.w > 2 ? g.x + g.w - 2 : g.x), side === "top" ? g.y : g.y + g.h - 1];
 }
 
-function gates(geoms, roads) {
+function gates(geoms, roads, sideways = false) {
   const slots = new Map();
   for (const r of roads) {
     const a = geoms[r.from], b = geoms[r.to];
     if (!a || !b) continue;
     for (const [bid, role, me, other] of [[r.from, "exit", a, b], [r.to, "entry", b, a]]) {
-      const side = facingSide(me, other);
+      // Camp: roads meet a card on its left or right edge (its name and sprite stand above it)
+      const side = sideways ? (other.x + other.w / 2 >= me.x + me.w / 2 ? "right" : "left") : facingSide(me, other);
       // along the side by where the other end lies, so roads do not cross at the hut
       const key = side === "left" || side === "right" ? other.y + other.h / 2 : other.x + other.w / 2;
       const slot = `${bid}\u0000${side}`;
@@ -159,31 +160,33 @@ function corners(points) {
   return out;
 }
 
-/** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. */
-export function plan(rects, roads, roomW, roomH) {
+/** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. `ports` (default the
+ *  huts themselves) are where gates sit — Camp's huts carry a sprite over their card, and roads meet the card;
+ *  the huts whole stay what the roads go round. */
+export function plan(rects, roads, roomW, roomH, ports = rects) {
   const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
   const geoms = {};
-  for (const [id, r] of Object.entries(rects)) geoms[id] = toCells(r);
+  for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r);
   const under = new Uint8Array(width * height);
-  for (const g of Object.values(geoms)) {
+  for (const g of Object.values(rects).map(toCells)) {
     for (let y = Math.max(g.y, 0); y < Math.min(g.y + g.h, height); y++) {
       under.fill(1, y * width + Math.max(g.x, 0), y * width + Math.min(g.x + g.w, width));
     }
   }
   const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
-  const all = gates(geoms, roads);
+  const all = gates(geoms, roads, ports !== rects);
   const out = [];
   for (const r of roads) {
     const g = all[r.id];
     if (!g || !g.exit || !g.entry) continue;
     const outside = (gate) => clamp([gate.x + STEP[gate.side][0], gate.y + STEP[gate.side][1]]);
     const cells = route(outside(g.exit), outside(g.entry), under, width, height);
-    const exit = edgePoint(g.exit, rects[r.from]), entry = edgePoint(g.entry, rects[r.to]);
+    const exit = edgePoint(g.exit, ports[r.from]), entry = edgePoint(g.entry, ports[r.to]);
     // From the edge straight out along the gate's side, then cell by cell, then straight in.
     const first = centre(cells[0]), last = centre(cells[cells.length - 1]);
     const lead = g.exit.side === "left" || g.exit.side === "right" ? [first[0], exit[1]] : [exit[0], first[1]];
     const tail = g.entry.side === "left" || g.entry.side === "right" ? [last[0], entry[1]] : [entry[0], last[1]];
-    out.push({ id: r.id, exit, entry, side: g.exit.side,
+    out.push({ id: r.id, exit, entry, side: g.exit.side, entrySide: g.entry.side,
                points: corners([exit, lead, ...cells.map(centre), tail, entry]) });
   }
   return out;

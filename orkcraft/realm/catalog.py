@@ -143,7 +143,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "fields", "Task Fields", "🌾", "M",
         "a board of cards: tasks for the orks in To Do / In Progress / Done, your own to-dos (a checklist) "
-        "and sticky notes in lanes of their own (Ideas, Questions…); a note becomes a task by moving into a status lane",
+        "and sticky notes in lanes of their own (Ideas, Questions…); a note becomes a task by moving into a status lane. "
+        "A cart is a new card: a task, or one of your to-dos when its route is one of `mine_routes`; the result of "
+        "a task it sent (a Barracks' `pool.assigned` / `pool.done` on a return road) moves that card",
         "counts per status, the task in work, your open to-dos, the latest notes, * when something is new",
         "the lanes, your to-dos and the notes; add, move, open, tick off, colour and send cards",
         events=(_e("tasks.status_changed", "task moved", NODE, "a task changed its status (from → to)"),
@@ -154,7 +156,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("notes.new", "New note", "🗒", "add a sticky note"),
                  _a("todos.new", "New chore", "☐", "add a to-do of your own")),
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
-                "lanes": (list, None, False)},
+                "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",
@@ -182,16 +184,18 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "council", "Clan Fire", "🪔", "M",
         "the clan reviews a document from every side (PM, architect, marketing…); the steward lets it go, "
-        "sends it back for rework or asks you",
+        "sends it back for rework or asks you; a clan that routes (triage) also says who takes it on — you or an agent",
         "the clan and who holds a veto, 🔥 when the steward asks", "each review, the steward's decision, the report",
         events=(_e("team.approved", "approved", TEXT, "the steward let the document go: the document as it is"),
                 _e("team.rework", "rework", TEXT, "sent back: the steward's comments, each review, the document"),
-                _e("team.artifact_ready", "review report", FILE, "the full review: every verdict and the decision")),
+                _e("team.artifact_ready", "review report", FILE, "the full review: every verdict and the decision"),
+                _e("team.routed", "routed", TEXT, "a clan that routes let it go and named who takes it on: the document "
+                   "and its route (a road may wait for one route)")),
         actions=(_a("team.add", "Add member", "+", "add a member: role and model; its brief is a file"),
                  _a("team.start", "Review", "▶", "review a document (a path or text), or answer the steward")),
         config={"steward_prompt": (str, None, False), "members": (list, None, False), "veto": (list, None, False),
                 "max_cycles": (int, (1, 10), False), "budget_usd": (float, (0, 100), False),
-                "moderator": (str, None, False),
+                "moderator": (str, None, False), "routes": (list, None, False),
                 "goal": (str, None, False), "max_rounds": (int, (1, 20), False)},     # the old debate's; kept loading
         art="great_hall", orc="Chieftains", agentic=True),
     BuildingType(

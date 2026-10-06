@@ -129,7 +129,8 @@ def validate(data: dict[str, Any]) -> list[str]:
             if key in seen:
                 errors.append(f"{where}: the same road twice")
             seen.add(key)
-            edges.setdefault(r["from"], set()).add(b["id"])
+            if not (r.get("filter") or {}).get("returns"):     # a return road brings results back: no loop
+                edges.setdefault(r["from"], set()).add(b["id"])
     if (hit := _cycle(edges)) is not None:
         errors.append(f"roads form a loop through {hit!r}")
     return errors

@@ -5,7 +5,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, say, town } from "../link.js";
 import { askKeeper } from "../keeper.js";
 
 const source = signal({});         // building id → the source whose feed shows ("" all)
@@ -13,15 +13,36 @@ const tab = signal({});            // building id → "signals" | "settings"
 
 const read = (id, key) => act(id, "read", { key }).catch(() => {});
 
-/** Closed: a counter per source — `gmail 3`, `slack 99+`, `jira ERR`; more than four fold into `+N more`. */
+const sheet = new URL("./watchtower.css", import.meta.url).href;
+if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
+}
+const ICON = { mail: "✉", github: "🐙", cron: "⏰", webhook: "🪝", slack: "💬", jira: "🎫", confluence: "📄", figma: "🎨" };
+
+/** Closed: a counter per source — `gmail 3`, `slack 99+`, `jira ERR`; more than four fold into `+N more` —
+ *  then a preview of the newest message (source, from, subject, time), marked when it just arrived. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   if (!c.sources.length) return html`<span class="ok-tone-muted">no source yet</span>`;
-  return html`<div class="gui-counters">
-    ${c.sources.map((s) => html`<span key=${s.label} class="gui-counter">
-      <span class="ok-tone-muted">${s.label}</span> <b class=${cls("", { "ok-tone-error": s.n === "ERR" })}>${s.n}</b></span>`)}
-    ${c.more && html`<span class="gui-counter"><span class="ok-tone-muted">+${c.more.count} more</span> <b>${c.more.n}</b></span>`}
+  const camp = town.value && town.value.look === "camp";
+  return html`<div class="gui-tower">
+    <div class="gui-counters">
+      ${c.sources.map((s) => html`<span key=${s.label} class="gui-counter">
+        <span class="ok-tone-muted">${s.label}</span> <b class=${cls("", { "ok-tone-error": s.n === "ERR" })}>${s.n}</b></span>`)}
+      ${c.more && html`<span class="gui-counter"><span class="ok-tone-muted">+${c.more.count} more</span> <b>${c.more.n}</b></span>`}
+    </div>
+    <ul class="gui-tower__latest">
+      ${(c.latest || []).map((s) => html`<li key=${s.key} class=${cls("gui-tower__msg", { "is-fresh": s.fresh, "is-read": s.read })}>
+        <span class="gui-tower__src ok-tone-muted">${camp && ICON[s.source] && !s.title.startsWith(ICON[s.source]) ? `${ICON[s.source]} ` : ""}${s.label}</span>
+        <span class="gui-tower__what">${s.from && html`<b>${s.from}</b> `}${s.title}</span>
+        <span class="gui-tower__at ok-tone-muted">${s.at}</span>
+      </li>`)}
+      ${!(c.latest || []).length && html`<li class="ok-tone-muted">${say("Nothing came in yet")}</li>`}
+    </ul>
   </div>`;
 }
 

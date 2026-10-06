@@ -1,7 +1,7 @@
 /* Generated from tokens.json. Set data-theme on a root element: camp, camp-ice, camp-void or office. */
 
 :root, [data-theme="camp"] {
-  --canvas: #0a130c;
+  --canvas: #172a0a;
   --terrain: #1f3823;
   --panel: #1f1a12;
   --panel-inset: #120f0a;

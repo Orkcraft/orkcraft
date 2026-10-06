@@ -4,6 +4,7 @@ and the sources' settings with the intent. The listening is the worker's
 schedule every 30 s, a look every 2 min)."""
 from __future__ import annotations
 
+import datetime as dt
 import re
 
 from orkcraft.gui import markdown
@@ -13,6 +14,8 @@ from orkcraft.realm import watch
 REFRESH_S = 1.0
 CARD_ROWS = 4                   # counters on the closed card; more sources fold into `+N more`
 LATEST = 5                      # the newest per source on the Command Card
+CARD_LATEST = 1                 # the newest signal the closed card previews
+FRESH_S = 90                    # a signal this young is marked as just arrived
 _FROM = re.compile(r"^(@ )?(.{1,48}?): (.+)$", re.S)     # `Ann: Lunch?`, `@ ann in #dev: hi`
 
 
@@ -27,19 +30,39 @@ def _who(title: str, source: str = "mail") -> tuple[str, str]:
     return (m.group(2), m.group(3)) if m else ("", title)
 
 
+def subject(title: str) -> str:
+    """What a signal's cart is about, without its source and sender: `slack · Sam in #team: Hi?` → `Hi?`."""
+    rest = re.sub(r"^(?:" + "|".join(watch.FEEDS) + r") · ", "", title or "")
+    return _who(rest, "mail")[1] or rest
+
+
 def _signal(w, s) -> dict:
     who, title = _who(s.title, s.source)
     return {"key": s.key, "source": s.source, "label": w.label(s.source), "at": s.at[:16].replace("T", " "),
             "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why}
 
 
+def _fresh(at: str, now: dt.datetime) -> bool:
+    try:
+        return 0 <= (now - dt.datetime.fromisoformat(at)).total_seconds() <= FRESH_S
+    except ValueError:
+        return False
+
+
 def card(w) -> dict:
-    """Closed: what is new per source (`gmail 3`, `slack 99+`, `jira ERR`), more than four → `+N more`."""
+    """Closed: what is new per source (`gmail 3`, `slack 99+`, `jira ERR`), more than four → `+N more`; then
+    the newest signals kept (source, from, title, time), the one that just arrived marked `fresh`."""
     if not w.sources:
-        return {"sources": [], "more": None}
+        return {"sources": [], "more": None, "latest": []}
     shown, more = w.counters(CARD_ROWS)
+    now = dt.datetime.now()
+    latest = []
+    for s in [x for x in w.signals if x.kept is not False][:CARD_LATEST]:
+        who, title = _who(s.title, s.source)
+        latest.append({"key": s.key, "source": s.source, "label": w.label(s.source), "from": who, "title": title,
+                       "at": s.at[11:16], "read": s.read, "fresh": _fresh(s.at, now)})
     return {"sources": [{"label": label, "n": n} for label, n in shown],
-            "more": {"count": more[0], "n": more[1]} if more else None}
+            "more": {"count": more[0], "n": more[1]} if more else None, "latest": latest}
 
 
 def detail(w) -> dict:
@@ -100,4 +123,12 @@ def _intent(w, args: dict) -> bool:
     return True
 
 
-ACTS = {"read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}
+def _simulate(w, args: dict) -> str:
+    """The sandbox only: a mail or a message arrives as its source would send it (a film or a walk-through)."""
+    sig = w.simulate(text(args, "source", 20), text(args, "title", 300), text(args, "body", 4000))
+    if sig is None:
+        raise ActError("Only the demo makes messages up")
+    return sig.key
+
+
+ACTS = {"simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

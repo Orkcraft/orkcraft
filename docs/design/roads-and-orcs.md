@@ -131,6 +131,19 @@ The first sketch, for reference:
 Migration from v2: the building-level `rally_point` becomes a plain road subscribed by its target;
 today's garrison lead becomes the steward; other members become agent handlers without roads.
 
+## 5a. Routes, return roads and cart travel (implemented)
+
+- **Routes.** A Signpost's rules or a Clan Fire that routes (`routes`, its steward's `ROUTE: <name>`)
+  give a cart a route (`Payload.route`; a Signpost's cart is also titled by it). A road with
+  `{"route": [...]}` takes only those; the GUI shows such a road's label as a sign on it, always.
+- **Return roads.** `{"returns": true}`: the cart goes only to the building its `ref` names, which
+  updates the work it sent out instead of starting new work — so a return road is not counted as a
+  loop (docs/design/fields-board.md §5a).
+- **Cart travel.** The road engine can hold a plain road's cart for the time the face asks
+  (`Town.cart_travel_s`; the GUI reads `ORKCRAFT_CART_TRAVEL_S`, default 0) before it arrives, so a
+  person sees it on the road before its building acts — `tools/landing_flow.py` films with it. The
+  GUI draws every cart moving from gate to gate (`js/town.js`), a filtered one turning back.
+
 ## 6. Open for later
 
 - `on_stream` roads and which receiver consumes a raw stream.

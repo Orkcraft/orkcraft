@@ -94,8 +94,40 @@ def roads(town: Town) -> list[dict[str, Any]]:
         if bs.demolished:
             continue
         for r in bs.roads:
+            flt = r.filter or {}
             out.append({"id": road_key(bs.id, r.id), "road": r.id, "from": r.source, "to": bs.id, "event": r.event,
-                        "label": r.label or pipes.label(r.event), "handler": r.handler or ""})
+                        "label": r.label or pipes.label(r.event), "handler": r.handler or "",
+                        "sign": sign(r) if flt.get("route") else "", "returns": bool(flt.get("returns"))})
+    return out
+
+
+def sign(road) -> str:
+    """What the sign on a road that waits for routes says: its label in words (`task-for-human` →
+    `task for human`), else its routes."""
+    words = (road.label or ", ".join(str(x) for x in (road.filter or {}).get("route") or [])).replace("-", " ")
+    return words.replace("_", " ").strip()
+
+
+CART_SHOWN_S = 12.0           # a cart stays in the snapshot this long after it left (the page animates it)
+
+
+def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
+    """The carts that left lately: on which road, what they carry, how long ago, how long the road takes
+    (`travel`; the page draws each moving from gate to gate). A filtered one turns back at the source."""
+    from orkcraft.gui.views.watchtower import subject
+    engine = getattr(town, "roads", None)
+    now = time.monotonic() if now is None else now
+    out = []
+    for c in list(getattr(engine, "carts", []) or [])[-40:]:
+        age = now - c.at
+        if age < 0 or age > CART_SHOWN_S:
+            continue
+        title = c.payload.title or ""
+        spec = town.custom_specs.get(c.source)
+        if spec is not None and catalog.type_of(spec).id == "watchtower":
+            title = subject(title)                   # the Inbox's card says who sent it and where from
+        out.append({"id": f"{road_key(c.target, c.road_id)}@{c.at:.3f}", "road": road_key(c.target, c.road_id),
+                    "status": c.status, "title": modes.strip_emoji(title)[:80], "age": round(age, 2)})
     return out
 
 
@@ -176,6 +208,8 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "orkspaces": orkspaces(town, muster),
         "buildings": buildings(town, muster),
         "roads": roads(town),
+        "carts": carts(town),
+        "travel": float(getattr(town, "cart_travel_s", 0.0) or 0.0),
         "hud": hud(town, muster, treasury, limits),
         "sessions": sessions(live),
         "alerts": alerts(town, muster, night),
