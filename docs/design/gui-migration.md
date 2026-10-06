@@ -103,11 +103,10 @@ out), `core/runners.py`, and:
    deployment, the report of an ork that went home); the TUI's `Terminal` draws a session with
    pyte and the GUI's with xterm.js.
 3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker.
-   Done in the GUI: its Halt All interrupts every session, kills every agent process
-   (`halt.halt_all`) and calls `town.halt()`. The TUI's Halt All interrupts the sessions and kills
-   the processes too, but still walks the open windows (a view's `halt` is its worker's) and does
-   not call `town.halt()`: the road handlers and a worker whose window is closed are not told to
-   stop. Left: the TUI's Halt All as `town.halt()` plus its terminals.
+   Done in both faces: Halt All interrupts every session, kills every agent process
+   (`halt.halt_all`) and calls `town.halt()`, so a worker whose window is closed stops too. The
+   TUI also cancels the terminals it runs agents in; its toast says how many sessions, processes
+   and buildings were stopped.
 
 **How it moves:** one domain at a time, with the whole suite green after each. A service lands in
 `core/`, and the TUI's part for that domain calls it instead of doing the work itself. Method
