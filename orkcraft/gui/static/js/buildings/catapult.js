@@ -14,7 +14,7 @@ import { KeeperDialog } from "../keeper.js";
 const picked = signal({});        // building id → the shot's `at` shown in full
 const pictures = new Map();       // path → data URL, fetched once
 
-/** The quick actions on the Command Card (catalog: Fire, Dry run, Scout). */
+/** The quick actions in its Info (catalog: Fire, Dry run, Scout). */
 export function quick(id, action) {
   const name = { "catapult.fire": "fire", "catapult.dry_run": "dry_run", "catapult.scout": "scout" }[action];
   if (!name) return false;
@@ -170,25 +170,6 @@ export function card(b) {
   const c = b.card;
   if (!c) return null;
   return html`<div>${c.browser && html`<i class="ok-ico">🌐 </i>`}<span class=${`ok-tone-${c.tone}`}>${say(c.line)}</span></div>`;
-}
-
-/** Command: what is loaded and what it waits for, the schema check, the last three shots, the browser's step. */
-export function preview(id, data) {
-  return html`<div class="gui-section">
-    <${Asking} id=${id} data=${data} />
-    <div class="ok-font-status ok-tone-muted">${say(target(data))}</div>
-    <div class="ok-font-status"><${Waits} data=${data} />${data.queued > 0 && ` · ${data.queued} queued`}</div>
-    <div class="ok-font-status"><${Check} data=${data} /></div>
-    ${data.state && html`<div class=${cls("ok-font-status", { "ok-tone-fire": !!data.login, "ok-tone-wait": !data.login })}>${say(data.state)}</div>`}
-    ${data.progress && html`<div class="ok-font-status">filling ${data.step} (${data.progress})</div>`}
-    ${data.shots.length > 0 && html`<ul class="gui-rows">${data.shots.slice(0, 3).map((s) => html`<li key=${s.at} class="ok-font-status">
-      <${ShotLine} s=${s} /></li>`)}</ul>`}
-    <div class="ok-detail__actions">
-      ${data.mode === "browser" && html`<button class="ok-act" onClick=${() => act(id, "scout").catch(() => {})}><span class="ok-act__label">Scout</span></button>`}
-      ${data.login && html`<button class="ok-act" onClick=${() => act(id, "login").catch(() => {})}><span class="ok-act__label">Log in</span></button>`}
-      <${Confirm} id=${id} data=${data} />
-    </div>
-  </div>`;
 }
 
 export function panes(id, data) {

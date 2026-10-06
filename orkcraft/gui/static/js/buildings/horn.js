@@ -78,7 +78,7 @@ export function card(b) {
   return b.card ? html`<${HornCard} b=${b} />` : null;
 }
 
-/** The Command Card's quick actions, done here: Test plays everything else, Mute flips it. */
+/** Its Info's quick actions, done here: Test plays everything else, Mute flips it. */
 export function quick(id, action) {
   if (action === "horn.test") { act(id, "test", { event: "*" }).catch(() => {}); return true; }
   if (action === "horn.mute") { act(id, "mute").catch(() => {}); return true; }
@@ -94,27 +94,6 @@ function Calls({ calls }) {
   return html`<ul class="ok-list__items">${calls.map((c, i) => html`<li key=${i} class=${cls("ok-item", { "is-disabled": !c.heard })}>
     <span>${c.sound}</span><span>${c.title || c.event}</span>
     <span class="meta">${c.heard ? "" : `${say("kept quiet")}: ${say(c.why)} · `}${c.from} · ${when(c.at)}</span></li>`)}</ul>`;
-}
-
-function Rows({ id, rows, picked, onPick }) {
-  return html`<ul class="ok-list__items">${rows.map((r) => {
-    const key = `${r.source}/${r.event}`;
-    return html`<li key=${key} class=${cls("ok-item", { "is-selected": picked === key })}
-        title=${say("Click: the next sound, played")}
-        onClick=${() => { if (onPick) onPick(key); act(id, "cycle", { source: r.source, event: r.event }).catch(() => {}); }}>
-      <b>${r.file ? r.sound.split("/").pop() : r.sound}</b>
-      <span>${say(r.label)}</span>${r.event !== "*" && html`<span class="meta">${r.from}</span>`}</li>`;
-  })}</ul>`;
-}
-
-/** Command: road or event → sound (a click moves to the next and plays it), the last calls. */
-export function preview(id, d) {
-  return html`<div class="gui-rows">
-    ${d.rows.length === 1 && html`<p class="ok-tone-muted">No road comes here yet: pull one from another building's +.</p>`}
-    <${Rows} id=${id} rows=${d.rows} />
-    <p class="ok-list__head">Last calls</p>
-    <${Calls} calls=${d.calls.slice(0, 5)} />
-  </div>`;
 }
 
 function Settings({ id, d }) {

@@ -7,7 +7,6 @@ import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
-import { Dialog } from "../dialog.js";
 import { askKeeper } from "../keeper.js";
 import { openInLake } from "../lake.js";
 
@@ -59,13 +58,6 @@ function TestBox({ id, data }) {
   </div>`;
 }
 
-function TestDialog({ id, data, onClose }) {
-  return html`<${Dialog} title="Test the rules" text="Paste a text: the rules say where it would go. Nothing is sent."
-      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>Close</button>`}>
-    <${TestBox} id=${id} data=${data} />
-  </${Dialog}>`;
-}
-
 function KeeperBox({ id, onDone }) {
   const [request, setRequest] = useState("");
   const ask = () => askKeeper(id, request).then((r) => { if (r !== null) { setRequest(""); onDone && onDone(); } });
@@ -77,13 +69,6 @@ function KeeperBox({ id, onDone }) {
       <span class="ok-act__label">Ask the keeper</span></button>
       <span class="ok-tone-muted">The keeper writes the rules; you see them here and test them.</span></div>
   </div>`;
-}
-
-function KeeperDialog({ id, onClose }) {
-  return html`<${Dialog} title="Rules — ask the keeper" onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>Close</button>`}>
-    <${KeeperBox} id=${id} onDone=${onClose} />
-  </${Dialog}>`;
 }
 
 // -- command -----------------------------------------------------------------------------------------------
@@ -104,28 +89,6 @@ function Carts({ id, data, rows, onPick, sel = -1 }) {
       class=${cls("ok-item", { "is-selected": n === sel })} onClick=${() => onPick(n)}>
     <span class="ok-tone-muted">${when(h.at)}</span> → <${Route} data=${data} route=${h.route} />
     <span class="gui-head__what">${h.title}</span><span class="meta">${h.source_title}</span></li>`)}</ul>`;
-}
-
-function Command({ id, data }) {
-  const [dialog, setDialog] = useState("");
-  const close = () => setDialog("");
-  const rows = data.history.slice(0, 5).map((h, n) => ({ h, n }));
-  return html`<div class="ok-font-status">
-    <${Rules} data=${data} max=${6} />
-    <p class="ok-detail__section">Last carts</p>
-    <${Carts} id=${id} data=${data} rows=${rows}
-      onPick=${(n) => { const h = data.history[n]; openInLake({ text: h.value, title: h.title, from: id }); }} />
-    <div class="gui-head">
-      <button class="ok-act" onClick=${() => setDialog("test")}><span class="ok-act__label">Test</span></button>
-      <button class="ok-act" onClick=${() => setDialog("keeper")}><span class="ok-act__label">Rules — ask the keeper</span></button>
-    </div>
-    ${dialog === "test" && html`<${TestDialog} id=${id} data=${data} onClose=${close} />`}
-    ${dialog === "keeper" && html`<${KeeperDialog} id=${id} onClose=${close} />`}
-  </div>`;
-}
-
-export function preview(id, data) {
-  return html`<${Command} id=${id} data=${data} />`;
 }
 
 // -- full ------------------------------------------------------------------------------------------------------

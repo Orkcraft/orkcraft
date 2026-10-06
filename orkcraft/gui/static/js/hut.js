@@ -10,7 +10,9 @@ import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
-import { laying } from "./build.js";
+import { laying, demolishing } from "./build.js";
+import { openMenu } from "./menu.js";
+import { mention } from "./warchief.js";
 import { typeModule } from "./types.js";
 import { town, say } from "./link.js";
 import { TypeIcon, headerSprite } from "./icons.js";
@@ -94,6 +96,27 @@ function pull(e, b) {
   move(e);
 }
 
+/** The right click on a hut: its building's menu (docs/design/calm-town.md §3). */
+function hutMenu(e, b) {
+  const t = town.value;
+  const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
+  const here = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
+  here.add(CORNER);
+  const among = t.buildings.filter((x) => x.id !== b.id && here.has(x.id)).map((x) => x.id);
+  const name = say(b.title);
+  openMenu(e, [
+    { label: "Open", hint: "click", run: () => openBuilding(b.id, "work") },
+    { label: "Info", run: () => openBuilding(b.id, "info") },
+    "-",
+    { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
+    { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
+    b.id !== CORNER && !b.pinned && { label: unpinned.value[b.id] ? "Pin it in place" : "Unpin to move it",
+      run: () => togglePin({ stopPropagation() {} }, b.id) },
+    b.id !== CORNER && "-",
+    b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
+  ]);
+}
+
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 function Card({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
@@ -168,7 +191,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free })}
-      onPointerDown=${down}>
+      onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
     ${!office && title}
     ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
       draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}

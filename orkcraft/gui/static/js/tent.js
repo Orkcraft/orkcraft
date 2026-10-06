@@ -10,7 +10,7 @@ import { showBuilding } from "./windows.js";
 
 export const HALL = "town_hall";
 export const tentKey = signal(null);       // the session the War Tent shows
-export const hallTab = signal("hall");     // the Town Hall's tab open: hall | sessions | limits
+export const hallTab = signal("chat");     // the Town Hall's tab open: chat | hall | sessions | limits
 
 const HARNESSES = [["claude", "Claude"], ["codex", "Codex"], ["agy", "agy"]];
 const MARK = { claude: "✻", agy: "✦", codex: "⌬" };

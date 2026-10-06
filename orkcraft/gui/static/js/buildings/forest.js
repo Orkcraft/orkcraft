@@ -122,11 +122,6 @@ export function card(b) {
     ${c.picked && html`<div><i class="ok-ico">🎯</i><span class="ok-word">target:</span> ${c.picked}</div>`}`;
 }
 
-/** Command: the top of the tree (folders open in place), the changed marked, a click picks; Send. */
-export function preview(id, data) {
-  return html`<div class="gui-forest"><${Head} id=${id} data=${data} /><${Tree} id=${id} data=${data} media=${false} /></div>`;
-}
-
 /** Full: the head and the tree, with small previews of images and video (design/buildings/forest.json). */
 export function panes(id, data) {
   return {
@@ -135,7 +130,7 @@ export function panes(id, data) {
   };
 }
 
-/** The type's quick actions on the Command Card (realm/catalog.py). */
+/** The type's quick actions in its Info (realm/catalog.py). */
 const QUICK = { "files.open": (id) => act(id, "open").catch(() => {}) };
 
 /** Does one of its quick actions (js/types.js); true when it did. */

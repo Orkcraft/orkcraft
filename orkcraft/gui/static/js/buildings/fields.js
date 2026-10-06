@@ -2,8 +2,7 @@
 // lanes of cards (a kanban), the person's own to-dos (a checklist) and the notes (ideas, questions) in
 // lanes of their own. The mouse does it all: drag a card to another lane or part, click it to select
 // it, double-click it to open it; the selected card's acts sit over the board; a to-do is ticked off
-// by its box. The Command Card shows a small board: the status lanes with their top cards (a drag
-// works there too), the open to-dos and the lanes of notes folded to counters. The closed card shows
+// by its box. The closed card shows
 // all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
 // board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
@@ -14,8 +13,7 @@ import { Dialog } from "../dialog.js";
 import { PartToggles, shown, hidden } from "../parts.js";
 
 const selected = signal({});       // building id → card id
-const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from the Command Card
-const TOP = 3;                     // cards a lane shows in the Command Card
+const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
 // The closed card's three parts, each one the person may hide (js/parts.js).
 const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My chores" }, { key: "scribbles", label: "Scribbles" }];
 
@@ -136,7 +134,7 @@ function Lane({ id, lane, sel, onOpen, onAdd }) {
 }
 
 /** The person's checklist: a box ticks a to-do off, a click selects it, a double-click opens it; a card
- * dropped here becomes a to-do. `top` cuts it (the Command Card). */
+ * dropped here becomes a to-do. `top` cuts it. */
 function Todos({ id, todos, sel, onOpen, top }) {
   const [over, drop] = useDrop(id, todos.id);
   const [title, setTitle] = useState("");
@@ -232,6 +230,7 @@ function Board({ id, data }) {
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
     ${dialog && !dialog.remove && !dialog.folder && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
+    <${Asking} id=${id} data=${data} />
   </div>`;
 }
 
@@ -277,27 +276,7 @@ export function card(b) {
   </div>`;
 }
 
-function MiniLane({ id, lane, top }) {
-  const [over, drop] = useDrop(id, lane.id);
-  const more = lane.cards.length - top;
-  return html`<section class=${cls("ok-lane", { "is-notes": lane.kind === "note", "gui-drop": over })} ...${drop}>
-    <header class="ok-lane__head">${lane.label}<span class="ok-lane__count">${lane.cards.length}</span></header>
-    ${lane.cards.slice(0, top).map((c) => html`<div key=${c.id} class=${cls("ok-card", { "is-done": lane.id === "done" })}
-        data-color=${c.color || undefined} draggable="true" title=${c.title} onDragStart=${dragCard(c.id)}>
-      <div class="ok-card__title"><i class="ok-card__sw"></i><span>${c.title}</span>
-        ${c.new && html`<span class="ok-word gui-new"> new</span>`}</div>
-    </div>`)}
-    ${more > 0 && html`<span class="ok-font-status ok-tone-muted">+${more} more</span>`}
-  </section>`;
-}
-
-function Folded({ id, lane }) {
-  const [over, drop] = useDrop(id, lane.id);
-  return html`<span class=${cls("ok-chip", { "gui-drop": over })} title=${say(`${lane.label}: drop a card here`)} ...${drop}>
-    ${lane.label} <b>${lane.cards.length}</b>${lane.cards.some((c) => c.new) ? "*" : ""}</span>`;
-}
-
-/** The New task / New note / New chore asked from the Command Card's quick actions. */
+/** The New task / New note / New chore asked from its Info's quick actions. */
 function Asking({ id, data }) {
   const a = asking.value;
   if (!a || a.id !== id) return null;
@@ -306,31 +285,7 @@ function Asking({ id, data }) {
   return html`<${CardDialog} id=${id} lane=${lane} onClose=${() => { asking.value = null; }} />`;
 }
 
-/** Command: a small board — the status lanes with their top cards (drag between them works); below, the
- * open to-dos (ticked off here) and the lanes of notes folded to counters (a card dropped on one goes
- * there). In notes mode, the notes. */
-export function preview(id, data) {
-  if (data.error) return html`<p class="ok-tone-fire">⚠ ${data.error}</p>`;
-  const tasks = data.lanes.filter((ln) => ln.kind === "task");
-  const shown = tasks.length ? tasks : data.lanes;
-  const folded = tasks.length ? data.lanes.filter((ln) => ln.kind !== "task") : [];
-  const top = data.todos ? 2 : TOP;
-  const chips = folded.length > 0 && html`<div class="gui-fields__folded">
-      ${folded.map((ln) => html`<${Folded} key=${ln.id} id=${id} lane=${ln} />`)}</div>`;
-  return html`<div class="gui-fields gui-fields--mini">
-    <div class="ok-board" style=${`--lanes:${shown.length}`}>
-      ${shown.map((ln) => html`<${MiniLane} key=${ln.id} id=${id} lane=${ln} top=${top} />`)}
-    </div>
-    ${data.todos ? html`<div class="gui-fields__lower">
-        <section class="gui-fields__part"><span class="ok-font-label">My chores</span>
-          <${Todos} id=${id} todos=${data.todos} top=${3} /></section>
-        <section class="gui-fields__part"><span class="ok-font-label">Scribbles</span>${chips}</section>
-      </div>` : chips}
-    <${Asking} id=${id} data=${data} />
-  </div>`;
-}
-
-/** The type's quick actions on the Command Card (realm/catalog.py): New task, New note, New chore. */
+/** The type's quick actions in its Info (realm/catalog.py): New task, New note, New chore. */
 const QUICK = {
   "tasks.new": (id) => { asking.value = { id, lane: "todo", kind: "task" }; },
   "notes.new": (id) => { asking.value = { id, lane: noteLane(id), kind: "note" }; },

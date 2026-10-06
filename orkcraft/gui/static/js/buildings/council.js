@@ -23,9 +23,7 @@ const TONE = { approve: "ok-tone-ok", changes: "ok-tone-wait", veto: "ok-tone-er
                ask: "ok-tone-fire", approved: "ok-tone-ok", asked: "ok-tone-fire", error: "ok-tone-error",
                running: "ok-tone-wait", budget: "ok-tone-wait" };
 
-const SHOWN = 4;                  // members the Command Card lists (the rest: +N more)
 const setIn = (sig, id, value) => { sig.value = { ...sig.value, [id]: value }; };
-const firstLine = (text) => (text || "").split("\n").find((l) => l.trim()) || "";
 
 function openDoc(id, r) {
   return openInLake(r.doc_path ? { path: r.doc_path, title: r.title, from: id } : { text: r.doc, title: r.title, from: id });
@@ -102,58 +100,8 @@ export function card(b) {
 
 // -- command -----------------------------------------------------------------------------------------
 
-function Member({ m }) {
-  return html`<li><b>${m.role}</b>${m.tier && html` <span class="ok-tone-muted">${m.tier}</span>`}
-    ${m.veto && html` <span class="ok-word">veto</span>`}
-    <span class="ok-tone-muted"> · ${m.label}</span>
-    ${m.verdict && html` · <span class=${TONE[m.verdict] || ""}>${VERDICT[m.verdict] || m.verdict}</span>`}</li>`;
-}
-
 /** Where a routed review went: `→ human`. */
 const routed = (r) => (r && r.route ? ` → ${r.route}` : "");
-
-/** Command: the members (role, tier, veto, verdict now), the document under review and the last turns. */
-export function preview(id, data) {
-  if (data.routes && data.routes.length && data.current) return html`<${Triage} id=${id} data=${data} />`;
-  const r = data.current;
-  const more = data.members.length - SHOWN;
-  return html`<div class="gui-section">
-    ${r && r.outcome === "asked" && html`<p class="ok-tone-fire gui-alert">The steward asks: ${firstLine(r.question).slice(0, 160)}</p>`}
-    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
-    <ul class="gui-rows">${data.members.slice(0, SHOWN).map((m) => html`<${Member} key=${m.role} m=${m} />`)}
-      ${more > 0 && html`<li class="ok-tone-muted">+${more} more</li>`}
-      ${!data.members.length && html`<li class="ok-tone-muted">No members yet — Add member</li>`}</ul>
-    ${r ? html`<div class="gui-head">
-        <span class="gui-head__what gui-link" title=${say("Open it in Lake")} onClick=${() => openDoc(id, r)}><b>${r.title}</b></span>
-        <span class=${cls("gui-head__note", { [TONE[r.outcome] || ""]: true })}>cycle ${r.cycle}/${data.max_cycles} · ${r.outcome_word}${routed(r)} · ${r.spent}</span></div>
-      <ul class="gui-rows">${r.turns.slice(-3).map((t, i) => html`<li key=${i}><b>${t.role}</b>
-        <span class=${TONE[t.verdict] || "ok-tone-muted"}> ${VERDICT[t.verdict] ?? t.verdict}</span>
-        <span class="ok-tone-muted"> · ${firstLine(t.text).slice(0, 100)}</span></li>`)}</ul>`
-      : html`<p class="ok-tone-muted">No review yet — send a document down a road, or Review.</p>`}
-    ${data.queued.length > 0 && html`<div class="ok-tone-muted">${data.queued.length} queued</div>`}
-    <${Dialogs} id=${id} data=${data} />
-  </div>`;
-}
-
-/** Command, for a clan that routes (triage): what came in, what each member found, and who takes it on. */
-function Triage({ id, data }) {
-  const r = data.current;
-  const decided = r.turns.filter((t) => t.kind === "decide").slice(-1)[0];
-  return html`<div class="gui-section">
-    ${r.outcome === "asked" && html`<p class="ok-tone-fire gui-alert">The steward asks: ${firstLine(r.question).slice(0, 160)}</p>`}
-    <div class="ok-row"><${Acts} id=${id} data=${data} /></div>
-    <div class="gui-head"><span class="gui-head__what gui-link" title=${say("Open it in Lake")} onClick=${() => openDoc(id, r)}>
-      <b>${r.title}</b></span></div>
-    <ul class="gui-rows">${data.members.slice(0, SHOWN + 2).map((m) => html`<li key=${m.role}><b>${m.role}</b>
-      <span class=${m.says ? TONE[m.verdict] || "" : "ok-tone-muted"}> · ${m.says || say("reading…")}</span></li>`)}</ul>
-    ${decided ? html`<p><b>${say("Steward")}</b> <b class=${TONE[r.outcome] || ""}>${r.route ? `→ ${r.route}` : r.outcome_word}</b>${
-        r.task ? html` · <b>${r.task}</b>` : ""}</p>
-        <p class="ok-tone-muted">${firstLine(decided.text).slice(0, 140)}</p>`
-      : html`<p class="ok-tone-muted">${say("The steward decides when every member has spoken.")}</p>`}
-    ${data.queued.length > 0 && html`<div class="ok-tone-muted">${data.queued.length} queued</div>`}
-    <${Dialogs} id=${id} data=${data} />
-  </div>`;
-}
 
 // -- full --------------------------------------------------------------------------------------------
 

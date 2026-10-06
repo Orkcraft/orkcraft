@@ -1,17 +1,16 @@
-// The console of a selected building, laid out as the TUI's (screens/console.py): to the right of the
-// War Map, Info (UnitInfo), the steward's window (js/steward.js) or a picked ork's Inventory, the Command
-// Card. Info: the name with 👍 / 👎 and their counts, Demolish (an ork's: 👍 / 👎 / Dismiss), why it is
-// here, one line of what it spent and its runs with History. The steward's window: its goal and freedom,
-// its commands, the roads it listens to with their handlers. The Command Card: Answer, Open, then the
-// type's own actions at the bottom; for an ork Deploy, Orders & trigger, Halt, the steward's Watch now and
-// Report. The data is the host's (gui/info.py, gui/console.py), asked while selected; the dialogs that
-// change a garrison and the model calls' jobs are js/acts.js.
+// A building's Info in the town's panel (js/windows.js, docs/design/calm-town.md §2), in the order it is
+// needed: its name with 👍 / 👎, why it is here and its runs with History; its own quick actions; its
+// garrison (Deploy, Its session); its steward (goal and Freedom, Watch, Report, Redesign, the roads it
+// listens to with their handlers, js/steward.js); its roads out; Demolish at the bottom. An ork picked in the
+// garrison shows here with ← back: its Info, its models and tools, its commands (Deploy, Standing orders,
+// Halt). The data is the host's (gui/info.py, gui/console.py), asked while open; the dialogs that change
+// a garrison and the model calls' jobs are js/acts.js.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, details, say } from "./link.js";
+import { town, command, say } from "./link.js";
 import { typeModule } from "./types.js";
-import { opened, chosen, showBuilding, closeBuilding, selectOrk, DemolishButton } from "./windows.js";
+import { selectOrk, DemolishButton } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { laying } from "./build.js";
@@ -139,7 +138,6 @@ function BuildingInfo({ b, i, redo, open }) {
     <${Row} text=${html`<b>${say(b.title)}</b>`}>
       <${Thumb} up count=${i.likes} title=${say("Good: its last result becomes a reference")} onClick=${() => run("building.like")} />
       <${Thumb} count=${i.dislikes} title=${say("Bad: what went wrong?")} onClick=${() => open("dislike")} />
-      ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
     </${Row}>
     <p class="ok-font-body gui-info__about">${i.about_plain}</p>
     <${Row} text=${say(runs)} title=${runs}>
@@ -186,22 +184,53 @@ function Inventory({ i, open }) {
   </ul>`;
 }
 
-// -- the Command Card: the building's own actions first, then its commands (the TUI's keys) ------------
+// -- the garrison and the roads out -------------------------------------------------------------------
 
-function BuildingCommands({ b, i }) {
+function Roads({ b, t }) {
+  const titles = Object.fromEntries(t.buildings.map((x) => [x.id, say(x.title)]));
+  const incoming = t.roads.filter((r) => r.to === b.id);
+  const outgoing = t.roads.filter((r) => r.from === b.id);
+  if (!incoming.length && !outgoing.length) return null;
+  const row = (r, other) => html`<li key=${r.id}>
+    <span class="ok-font-label">${titles[other] || other}</span>
+    <span class="ok-font-status ok-tone-muted"> · ${r.label}${r.handler ? ` · ${r.handler}` : ""}</span></li>`;
+  return html`<section class="gui-section">
+    ${incoming.length > 0 && html`<h3 class="ok-font-heading">${say("Roads in")}</h3>
+      <ul class="gui-rows">${incoming.map((r) => row(r, r.from))}</ul>`}
+    ${outgoing.length > 0 && html`<h3 class="ok-font-heading">${say("Roads out")}</h3>
+      <ul class="gui-rows">${outgoing.map((r) => row(r, r.to))}</ul>`}
+  </section>`;
+}
+
+function Garrison({ garrison, b }) {
+  if (!garrison.length) return null;
+  return html`<section class="gui-section">
+    <h3 class="ok-font-heading">${say("Garrison")}</h3>
+    <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
+      <button class="gui-link ok-font-label" title=${say("The ork itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(o.ref)}>${o.name}</button>
+      ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
+      <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
+      ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>
+        <span class="ok-act__label">${o.session ? "Its session" : "Deploy"}</span></button>`}
+      ${o.role && html`<div class="ok-font-status ok-tone-muted">${o.role}</div>`}
+    </li>`)}</ul>
+  </section>`;
+}
+
+// -- the building's own quick actions (the TUI's keys of its type) --------------------------------------
+
+function Quick({ b, i }) {
   const mod = b.page ? typeModule(b.type) : null;          // a type may do its quick actions itself (js/types.js)
   const quick = (a) => (mod && mod.quick && mod.quick(b.id, a.id))
     || command("building.quick", { id: b.id, action: a.id }).catch(() => {});
-  const own = i ? i.quick : [];
-  return html`${b.alert && html`<${Act} label=${say("Answer")} onClick=${() => openOrders(b.alert.id)} />`}
-    <${Act} label=${say("Open")} title=${say("Its whole window (or click its hut again)")} onClick=${() => showBuilding(b.id)} />
-    ${own.length > 0 && html`<hr class="gui-card__sep" />
-      ${own.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => quick(a)} />`)}`}`;
+  if (!i || !i.quick.length) return null;
+  return html`<div class="gui-info__acts">${i.quick.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => quick(a)} />`)}</div>`;
 }
 
 function OrkCommands({ b, o, open }) {
   const agent = o.kind === "agent" || o.kind === "hybrid";
-  return html`${o.status === "alert" && b.alert && html`<${Act} label=${say("Resolve alert")} onClick=${() => openOrders(b.alert.id)} />`}
+  return html`<div class="gui-info__acts">
+    ${o.status === "alert" && b.alert && html`<${Act} label=${say("Resolve alert")} onClick=${() => openOrders(b.alert.id)} />`}
     ${agent && html`<${Act} label=${o.session ? "Open session" : "Deploy"} onClick=${() => deploy(o.ref)} />`}
     <${Act} label=${say("Standing orders & trigger")} title=${say("What it is told to do, and when it starts")} onClick=${() => open("orders")} />
     <${Act} label=${say("Halt")} onClick=${() => command("ork.halt", { id: b.id, ork: o.ref }).catch(() => {})} />
@@ -209,22 +238,11 @@ function OrkCommands({ b, o, open }) {
       onClick=${() => command("ork.watch", { id: b.id, ork: o.ref }).catch(() => {})} />
       <${Act} label=${say("Report")} title=${say("The steward's last findings and proposals")}
       onClick=${() => command("ork.report", { id: b.id }).catch(() => {})} />`}
-    <hr class="gui-card__sep" />
-    <${Act} label=${say("Back")} title=${say("Back to the building (Esc)")} onClick=${() => selectOrk(null)} />`;
-}
-
-/** The command view: the top of the Command Card is the type's cut-down main screen, `preview(id, data)`
- * from its detail (js/types.js; docs/design/building-views.md); a type without one shows its buttons only. */
-function Preview({ b }) {
-  const mod = b.page ? typeModule(b.type) : null;
-  const d = details.value[b.id];
-  if (!mod || !mod.preview || !d || !d.data) return null;
-  return html`<div class="gui-card__preview">${mod.preview(b.id, d.data)}</div>
-    <hr class="gui-card__sep" />`;
+  </div>`;
 }
 
 /** The prompt (standing orders and trigger) or the models of any ork of the building, picked from the
- * steward's window: its own info is asked first. */
+ * steward's part: its own info is asked first. */
 function OrkDialog({ b, ref, which, onClose }) {
   const [i, setI] = useState(null);
   useEffect(() => { command("info", { id: b.id, ork: ref }).then(setI, onClose); }, [b.id, ref]);
@@ -234,55 +252,65 @@ function OrkDialog({ b, ref, which, onClose }) {
     : html`<${OrdersDialog} b=${b} i=${i} onClose=${onClose} onDone=${done} />`;
 }
 
-function Window({ cls: c, title, label, onClose, children }) {
-  return html`<section class=${`ok-win ${c}`} aria-label=${label || title}>
-    <div class="ok-win__frame">
-      <div class="ok-win__bar"><span class="ok-win__title">${title}</span>
-        ${onClose && html`<button class="gui-tab__close gui-win__close" title=${say("Let go (Esc)")} aria-label=${say("Let go")}
-          onClick=${onClose}>×</button>`}</div>
-      <div class="ok-win__body gui-console__body">${children}</div>
-    </div>
-  </section>`;
+/** The dialogs a part of Info opens, by `dialog.kind`. */
+function Dialogs({ b, o, i, dialog, close, redo }) {
+  if (!dialog) return null;
+  const k = dialog.kind;
+  return html`
+    ${k === "dislike" && html`<${DislikeDialog} b=${b} onClose=${close} onDone=${redo} />`}
+    ${k === "ork-bad" && o && html`<${NoteDialog} title=${say(`Bad work — ${o.name}`)} onClose=${close}
+      onSend=${(note) => command("ork.dislike", { id: b.id, ork: o.ref, note }).then(() => { close(); redo(); }, () => {})} />`}
+    ${k === "history" && html`<${HistoryDialog} b=${b} ork=${o} tool=${dialog.tool} onClose=${close} />`}
+    ${k === "listen" && html`<${ListenDialog} b=${b} onClose=${close} />`}
+    ${k === "redesign" && html`<${RedesignDialog} b=${b} onClose=${close} />`}
+    ${k === "steward-models" && i && i.steward && html`<${StewardModels} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
+    ${(k === "ork-orders" || k === "ork-model") && html`<${OrkDialog} key=${dialog.tool}
+      b=${b} ref=${dialog.tool} which=${k === "ork-model" ? "model" : "orders"} onClose=${close} />`}
+    ${k === "orders" && i && o && html`<${OrdersDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
+    ${k === "model" && i && o && html`<${ModelDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}`;
 }
 
-function Console({ b, orkRef }) {
-  const o = orkRef ? b.garrison.find((x) => x.ref === orkRef) : null;
-  const ork = o ? o.ref : null;
-  const i = useInfo(b.id, ork);
+function useDialog(key) {
   const [dialog, setDialog] = useState(null);         // {kind, tool, road}
-  useEffect(() => setDialog(null), [b.id, ork]);
-  const redo = () => ask(b.id, ork, true);
+  useEffect(() => setDialog(null), [key]);
   const open = (kind, x = "") => setDialog(typeof x === "string" ? { kind, tool: x } : { kind, road: x });
-  const close = () => setDialog(null);
-  return html`<${Window} cls=${cls("is-active gui-console", { "is-alert": !!b.alert })} title=${say("Info")} label=${say(`Info — ${b.title}`)}
-      onClose=${() => closeBuilding()}>
-    ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`
-      : o ? html`<${OrkInfo} b=${b} o=${o} i=${i} redo=${redo} open=${open} />`
-          : html`<${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />`}
-  </${Window}>
-  <${Window} cls=${cls("gui-roster", { "gui-steward-win": !o })} title=${o ? say("Inventory") : html`<${StewardTitle} i=${i} open=${open} />`}
-      label=${say(o ? "Inventory" : "Steward")}>
-    ${o ? i && html`<${Inventory} i=${i} open=${open} />` : html`<${StewardWindow} b=${b} i=${i} redo=${redo} open=${open} />`}
-  </${Window}>
-  <${Window} cls="gui-card" title=${say("Commands")} label=${say("Command Card")}>
-    ${!o && html`<${Preview} b=${b} />`}
-    ${o ? html`<${OrkCommands} b=${b} o=${o} open=${open} />` : html`<${BuildingCommands} b=${b} i=${i} />`}
-  </${Window}>
-  ${dialog && dialog.kind === "dislike" && html`<${DislikeDialog} b=${b} onClose=${close} onDone=${redo} />`}
-  ${dialog && dialog.kind === "ork-bad" && o && html`<${NoteDialog} title=${say(`Bad work — ${o.name}`)} onClose=${close}
-    onSend=${(note) => command("ork.dislike", { id: b.id, ork: o.ref, note }).then(() => { close(); redo(); }, () => {})} />`}
-  ${dialog && dialog.kind === "history" && html`<${HistoryDialog} b=${b} ork=${o} tool=${dialog.tool} onClose=${close} />`}
-  ${dialog && dialog.kind === "listen" && html`<${ListenDialog} b=${b} onClose=${close} />`}
-  ${dialog && dialog.kind === "redesign" && html`<${RedesignDialog} b=${b} onClose=${close} />`}
-  ${dialog && dialog.kind === "steward-models" && i && i.steward && html`<${StewardModels} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
-  ${dialog && (dialog.kind === "ork-orders" || dialog.kind === "ork-model") && html`<${OrkDialog} key=${dialog.tool}
-    b=${b} ref=${dialog.tool} which=${dialog.kind === "ork-model" ? "model" : "orders"} onClose=${close} />`}
-  ${dialog && dialog.kind === "orders" && i && o && html`<${OrdersDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
-  ${dialog && dialog.kind === "model" && i && o && html`<${ModelDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}`;
+  return [dialog, open, () => setDialog(null)];
 }
 
-/** The selected building's console, beside the War Map in the strip over the town's bottom. */
-export function Selected() {
-  const c = chosen();
-  return c && !c.full ? html`<${Console} b=${c.b} orkRef=${opened.value.ork} />` : null;
+/** Info: the building, its quick actions, its garrison, its steward, its roads out, Demolish. */
+export function InfoTab({ b }) {
+  const i = useInfo(b.id, null);
+  const [dialog, open, close] = useDialog(b.id);
+  const redo = () => ask(b.id, null, true);
+  const t = town.value;
+  return html`<div class="ok-win__body gui-win__body gui-info-tab">
+    ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
+      <${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />
+      <${Quick} b=${b} i=${i} />
+      <${Garrison} garrison=${b.garrison} b=${b} />
+      <section class="gui-section gui-steward-part">
+        <h3 class="ok-font-heading"><${StewardTitle} i=${i} open=${open} /></h3>
+        <${StewardWindow} b=${b} i=${i} redo=${redo} open=${open} />
+      </section>
+      <${Roads} b=${b} t=${t} />
+      ${b.id !== HALL && html`<div class="gui-win__foot"><span class="gui-head__spacer"></span><${DemolishButton} b=${b} /></div>`}`}
+    <${Dialogs} b=${b} o=${null} i=${i} dialog=${dialog} close=${close} redo=${redo} />
+  </div>`;
+}
+
+/** An ork of the building, picked in its garrison or the steward's part: ← back to the building. */
+export function OrkView({ b, orkRef }) {
+  const o = b.garrison.find((x) => x.ref === orkRef);
+  const i = useInfo(b.id, o.ref);
+  const [dialog, open, close] = useDialog(o.ref);
+  const redo = () => ask(b.id, o.ref, true);
+  return html`<div class="ok-win__body gui-win__body gui-info-tab">
+    <button class="gui-link gui-info__back" onClick=${() => selectOrk(null)}>← ${say(b.title)}</button>
+    ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
+      <${OrkInfo} b=${b} o=${o} i=${i} redo=${redo} open=${open} />
+      <${OrkCommands} b=${b} o=${o} open=${open} />
+      <section class="gui-section"><h3 class="ok-font-heading">${say("Inventory")}</h3>
+        <${Inventory} i=${i} open=${open} /></section>`}
+    <${Dialogs} b=${b} o=${o} i=${i} dialog=${dialog} close=${close} redo=${redo} />
+  </div>`;
 }

@@ -21,7 +21,6 @@ const dialogs = signal({});        // building id → {kind: "task" | "answer" |
 const STATE = { queued: "queued", working: "working", reviewing: "in review", asked: "asks you", done: "done", failed: "failed" };
 const TONE = { asked: "ok-tone-fire", failed: "ok-tone-error", done: "ok-tone-ok", reviewing: "ok-tone-wait", working: "ok-tone-wait" };
 
-const SHOWN = 4;                  // orks the Command Card lists (the rest: +N more)
 const setIn = (sig, id, value) => { sig.value = { ...sig.value, [id]: value }; };
 const openDialog = (id, d) => setIn(dialogs, id, d);
 const closeDialog = (id) => setIn(dialogs, id, null);
@@ -52,7 +51,7 @@ function TaskDialog({ id, onClose }) {
   </${Dialog}>`;
 }
 
-/** The command view's New task: the brief written in place, no window and no title (its first words are one). */
+/** New task, at the top of its Work: the brief written in place, no window and no title (its first words are one). */
 function NewTask({ id }) {
   const [brief, setBrief] = useState("");
   const send = () => {                     // cleared once sent, unless the next one is already being written
@@ -61,7 +60,7 @@ function NewTask({ id }) {
   };
   const keys = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } };
   return html`<div class="gui-newtask">
-    <textarea class="ok-input gui-textarea" rows="6" value=${brief}
+    <textarea class="ok-input gui-textarea" rows="3" value=${brief}
       placeholder=${say("New task: what to do, where, what done looks like (Ctrl+Enter sends it)")}
       onInput=${(e) => setBrief(e.target.value)} onKeyDown=${keys}></textarea>
     <div class="ok-row"><button class="ok-btn primary" disabled=${!brief.trim()} onClick=${send}>Send it</button></div>
@@ -133,36 +132,6 @@ export function card(b) {
 }
 
 // -- command -----------------------------------------------------------------------------------------
-
-function OrkRow({ id, o, onClick }) {
-  return html`<li class="gui-console__row" title=${say("Its terminal")} onClick=${onClick}>
-    <b>${o.name}</b>${o.tier && html` <span class="ok-tone-muted">${o.tier}</span>`}
-    <span class="ok-tone-muted"> · </span>
-    ${o.task ? html`<span class=${TONE[o.task.status] || ""}>${o.task.status === "reviewing" ? "in review: " : ""}${o.task.title}</span>`
-      : html`<span class="ok-tone-muted">idle · ✓${o.done} ✗${o.failed}</span>`}
-    ${o.asks && html` <span class="ok-word ok-tone-fire">?</span>`}
-  </li>`;
-}
-
-/** Command: the orks, the queue's top and the main buttons. */
-export function preview(id, data) {
-  const queue = data.tasks.filter((t) => t.lane === "queue");
-  const more = data.orks.length - SHOWN;
-  return html`<div class="gui-section">
-    ${data.asked.length > 0 && html`<p class="ok-tone-fire gui-alert">${data.keeper} asks — ${data.asked[0].title}</p>`}
-    <${NewTask} id=${id} />
-    <div class="ok-row"><${Acts} id=${id} data=${data} inline /></div>
-    <ul class="gui-rows">
-      ${data.orks.slice(0, SHOWN).map((o) => html`<${OrkRow} key=${o.name} id=${id} o=${o} onClick=${() => openOrk(id, o)} />`)}
-      ${more > 0 && html`<li class="ok-tone-muted">+${more} more — Open</li>`}
-      ${!data.orks.length && html`<li class="ok-tone-muted">No orks yet — the steward hires them for the tasks</li>`}
-    </ul>
-    <div class="ok-tone-muted">Queue ${queue.length}${data.paused ? " · paused" : ""}</div>
-    <ul class="gui-rows">${queue.slice(0, 3).map((t) => html`<li key=${t.id}>· ${t.title}
-      ${t.wait_for && html`<span class="ok-tone-muted"> · ${t.reworks ? "rework for" : "waits for"} ${t.wait_for}</span>`}</li>`)}</ul>
-    <${Dialogs} id=${id} data=${data} />
-  </div>`;
-}
 
 // -- full --------------------------------------------------------------------------------------------
 
@@ -310,7 +279,7 @@ function Orks({ id, data }) {
 /** The full window by its UI document (design/buildings/barracks.json). */
 export function panes(id, data) {
   return {
-    head: () => html`<${Head} id=${id} data=${data} />`,
+    head: () => html`<div class="gui-split"><${Head} id=${id} data=${data} /><${NewTask} id=${id} /></div>`,
     lanes: () => html`<${Lanes} id=${id} data=${data} />`,
     task: () => html`<${TaskDetail} id=${id} data=${data} />`,
     orks: () => html`<${Orks} id=${id} data=${data} />`,

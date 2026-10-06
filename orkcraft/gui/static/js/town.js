@@ -5,12 +5,14 @@
 // Road). Positions are the person's: dragging a hut saves its spot as fractions of the room (`hut`
 // in the Town Scroll, the same the TUI reads).
 import { signal } from "@preact/signals";
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
-import { opened, closeBuilding } from "./windows.js";
+import { opened, closeBuilding, panelShown, panelWidth } from "./windows.js";
 import { plan } from "./roads.js";
-import { pickedRoad } from "./build.js";
+import { pickedRoad, building as buildOpen } from "./build.js";
+import { openMenu } from "./menu.js";
+import { settingsOpen } from "./settings.js";
 import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
 import { RoadTiles } from "./roadtiles.js";
 import { lost } from "./parts.js";
@@ -23,9 +25,10 @@ const dropped = signal({});                // building id → {x, y}: where a hu
 const MIN_ROOM = { w: 1080, h: 600 };
 const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
-const STRIP = 0.21, STRIP_MIN = 126;         // the War Map's share of the window (layout.css .gui-strip): no hut under it
+const STRIP = 64;                          // the town's foot (the orkspaces, the Warchief's line, layout.css .gui-foot): no hut under it
+const DEFAULT_SIZE = { w: 240, h: 64 };     // a hut not drawn yet
 
-/** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the strip. */
+/** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the foot. */
 function free(size) {
   const r = room.value;
   return { w: Math.max(r.w - size.w - 2 * MARGIN, 1), h: Math.max(r.h - size.h - 2 * MARGIN - r.strip, 1) };
@@ -38,9 +41,9 @@ function defaultSpot(i) {
 
 function place(b, i, size) {
   const f = free(size);
-  if (b.id === CORNER) {                       // the Hall: the bottom-right corner, where Office's advisor stands —
-    const r = room.value;                       // under the strip, which covers it while a building is selected
-    return { x: Math.max(r.w - size.w - MARGIN, 0), y: Math.max(r.h - size.h - MARGIN, 0) };
+  if (b.id === CORNER) {                       // Camp's Hall: the bottom-right corner, over the town's foot
+    const r = room.value;
+    return { x: Math.max(r.w - size.w - MARGIN, 0), y: Math.max(r.h - size.h - MARGIN - r.strip, 0) };
   }
   if (dropped.value[b.id]) return dropped.value[b.id];
   const [fx, fy] = b.hut || defaultSpot(i);
@@ -217,13 +220,48 @@ function Roads({ roads, rects, ports, sideways, tints = {} }) {
   </svg>`;
 }
 
+/** A spot on the room as the fractions a hut keeps (`hut` in the Town Scroll): where Build here raises one. */
+function spotAt(x, y) {
+  const f = free(DEFAULT_SIZE);
+  return [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
+}
+
+/** The right click on the bare town: Build here, the town's settings. */
+function bareMenu(e) {
+  if (e.target.closest(".gui-hut, .gui-road")) return;
+  const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
+  const hut = spotAt(e.clientX - r.left, e.clientY - r.top);
+  openMenu(e, [
+    { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
+    { label: "Settings", run: () => { settingsOpen.value = true; } },
+  ]);
+}
+
+/** The panel covers the town's right part: the room grows by as much, so the open building and the
+ *  buildings its roads reach can be scrolled into the part left, and they are. */
+function useCamera(el, rects, here, panelW) {
+  const active = opened.value.active;
+  useEffect(() => {
+    if (!el || !active || !rects[active] || !panelW) return;
+    const near = here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])).filter((id) => rects[id]);
+    const boxes = [active, ...near].map((id) => rects[id]);
+    const left = Math.min(...boxes.map((x) => x.x)), right = Math.max(...boxes.map((x) => x.x + x.w));
+    const seen = el.clientWidth - panelW;
+    const a = rects[active];
+    // all of them when they fit, else the building itself, in the middle of the part left
+    const [from, to] = right - left <= seen - 2 * MARGIN ? [left, right] : [a.x, a.x + a.w];
+    if (from >= el.scrollLeft + MARGIN && to <= el.scrollLeft + seen - MARGIN) return;
+    el.scrollTo({ left: Math.max((from + to) / 2 - seen / 2, 0), behavior: "smooth" });
+  }, [active, panelW]);
+}
+
 export function Town({ buildings, roads }) {
   const ref = useRef(null);
+  const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
   useLayoutEffect(() => {
     const el = ref.current;
     const measure = () => {
-      const r = { w: Math.max(el.clientWidth, MIN_ROOM.w), h: Math.max(el.clientHeight, MIN_ROOM.h),
-                  strip: Math.max(Math.round(window.innerHeight * STRIP), STRIP_MIN) };
+      const r = { w: Math.max(el.clientWidth, MIN_ROOM.w), h: Math.max(el.clientHeight, MIN_ROOM.h), strip: STRIP };
       if (r.w !== room.value.w || r.h !== room.value.h || r.strip !== room.value.strip) room.value = r;
     };
     measure();
@@ -278,8 +316,9 @@ export function Town({ buildings, roads }) {
   const active = opened.value.active;
   const near = new Set(active ? here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])) : []);
   const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
-  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
-    <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
+  useCamera(ref.current, rects, here, panelW);
+  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${bareMenu}>
+    <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${room.value.h}px`}>
       ${camp && html`<${RoadTiles} paths=${paths} roads=${here} />`}
       <${Roads} roads=${here} rects=${rects} ports=${ports} sideways=${camp}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />

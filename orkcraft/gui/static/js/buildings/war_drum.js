@@ -132,7 +132,7 @@ export function card(b) {
   </div>`;
 }
 
-/** The Command Card's quick actions, done here: New event opens its dialog, Prepare doc the chosen meeting's. */
+/** Its Info's quick actions, done here: New event opens its dialog, Prepare doc the chosen meeting's. */
 export function quick(id, action) {
   if (action === "calendar.new") { adding.value = { ...adding.value, [id]: true }; return true; }
   if (action === "calendar.prepare") {
@@ -144,7 +144,7 @@ export function quick(id, action) {
 }
 
 /** A day's beats in time order: the meetings (a click picks one, its document a click away), the
- * scheduled runs and the limits reached that day. `once`: a job's first run only (the Command Card). */
+ * scheduled runs and the limits reached that day. `once`: a job's first run only. */
 function DayRows({ id, day, once = false }) {
   const seen = new Set();
   const beats = day.beats.filter((b) => {
@@ -180,16 +180,6 @@ function Limits({ d }) {
     <span class="gui-drum__amount">${l.value} / ${l.limit}</span>
     <span class="gui-drum__meta">${l.rate ? `${l.rate} · ` : ""}${l.reached ? say("reached")
       : l.at ? `≈ ${l.day} ${l.at}`.replace("  ", " ") : say("not at this rate")}</span></li>`)}</ul>`;
-}
-
-/** Command: today's meetings, scheduled runs and limits, now highlighted; the limits under them. */
-export function preview(id, d) {
-  return html`<div class="gui-rows">
-    <p class="ok-tone-muted">${d.date} · ${d.left} left today${d.errors.length ? html` · <span class="ok-tone-wait">⚠ ${d.errors[0]}</span>` : ""}</p>
-    <${DayRows} id=${id} day=${d.days[0]} once=${true} />
-    <${Limits} d=${d} />
-    ${adding.value[id] && html`<${NewEvent} id=${id} />`}
-  </div>`;
 }
 
 function Head({ id, d }) {

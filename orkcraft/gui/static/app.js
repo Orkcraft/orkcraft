@@ -1,20 +1,19 @@
-// The Orkcraft GUI, Office look: the town over the core (gui/server.py), drawn with the design
-// system's markup (design-system/components.md). Preact + signals, no build step.
+// The Orkcraft GUI: the town over the core (gui/server.py), drawn with the design system's markup
+// (design-system/components.md). Preact + signals, no build step. A calm town (docs/design/calm-town.md):
+// the HUD, the map, the panel on the right, the orkspaces at the bottom left and the Warchief's line.
 import { render } from "preact";
 import { html } from "./js/html.js";
 import { town, connect } from "./js/link.js";
-import { Hud, WarMap, StatusBar, Toasts } from "./js/chrome.js";
+import { Hud, Orkspaces, Toasts } from "./js/chrome.js";
 import { Town } from "./js/town.js";
-import { Opened } from "./js/windows.js";
-import { LakeWindow } from "./js/lake.js";
-import { Selected } from "./js/console.js";
+import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
-import { BuildDialog, RoadDialog, RoadBar } from "./js/build.js";
-
+import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog } from "./js/settings.js";
-import { Advisor } from "./js/advisor.js";
+import { Menu } from "./js/menu.js";
+import { WarchiefLine } from "./js/warchief.js";
 
 function App() {
   const t = town.value;
@@ -22,17 +21,15 @@ function App() {
   document.documentElement.dataset.theme = t.look;      // office | camp (orkcraft gui --look; Shift by the hour)
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
-  const office = t.look === "office";
-  if (office) ids.delete(HALL);                          // Office: the Control panel is the pinned advisor
+  if (t.look === "office") ids.delete(HALL);             // Office: the Warchief's line is the hall's way in
   else ids.add(HALL);                                    // Camp: the Town Hall stands on every canvas
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />
     <${Town} buildings=${buildings} roads=${t.roads} />
-    <div class="gui-strip"><${WarMap} /><${Selected} />${office && html`<${Advisor} />`}</div>
-    <${Opened} />
-    <${LakeWindow} />
-    <${StatusBar} />
+    <div class="gui-foot" style=${`margin-right:${panelShown() && !opened.value.full ? panelWidth.value : 0}px`}>
+      <${Orkspaces} /><${WarchiefLine} /></div>
+    <${Panel} />
     <${Toasts} />
     <${SettingsDialog} />
     <${Orders} />
@@ -40,6 +37,8 @@ function App() {
     <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />
+    <${DemolishAsked} />
+    <${Menu} />
   </div>`;
 }
 

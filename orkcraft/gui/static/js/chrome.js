@@ -1,8 +1,8 @@
-// The Office chrome around the town: the HUD (title bar: the project's name opens the town's settings,
-// js/settings.js; Halt All), the War Map (the orkspaces, a small block over the town's bottom-left
-// corner, as in the TUI), the status bar (Answers, the project's folder; Build and the sessions are the
-// Town Hall's) and the toasts. Markup and classes are the design system's
-// (design-system/components.md: Hud, WarMap, KeyFooter, Toast).
+// The chrome around the town (docs/design/calm-town.md §1): the HUD (the project's name opens the town's
+// settings, js/settings.js; Halt All; the orks' questions, Orders; the treasury), the orkspaces at the
+// town's bottom left (`+ Orkspace` alone while there is one, their list with + once there are more) and
+// the toasts. Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
+import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
@@ -28,8 +28,8 @@ export function Hud() {
     ${online.value
       ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Halt All</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
-    ${hud.alerts > 0 && html`<button class="ok-hud__fire gui-link" onClick=${() => openOrders()}>
-      ${hud.alerts} awaiting an answer</button>`}
+    <button class=${cls("gui-hud__orders gui-link", { "ok-hud__fire": hud.alerts > 0 })} title=${say("The orks' questions")}
+      onClick=${() => openOrders()}>${say("Orders")}${hud.alerts > 0 ? ` (${hud.alerts})` : ""}</button>
     <span class="ok-hud__spacer"></span>
     ${hud.hour_plain && html`<span class=${cls("ok-res", { quiet: hud.quiet })}>${hud.hour_plain}</span>`}
     ${hud.quota && html`<${Resource} word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
@@ -40,29 +40,33 @@ export function Hud() {
   </header>`;
 }
 
-export function WarMap() {
-  const t = town.value;
-  return html`<nav class="ok-list gui-warmap" aria-label=${say("Orkspaces")}>
-    <div class="ok-list__head">${say("War Map")}</div>
-    <ul class="ok-list__items">
-      ${t.orkspaces.map((o) => html`<li key=${o.id}
-          class=${cls("ok-item", { "is-selected": o.id === t.active_orkspace, "is-alert": o.questions > 0 })}
-          onClick=${() => o.id !== t.active_orkspace && command("orkspace.select", { id: o.id })}>
-        ${o.hotkey && html`<span class="ok-kbd">${o.hotkey.toUpperCase()}</span>`}${say(o.name)}
-        <span class="meta">${o.questions > 0 ? html`<span class="ok-word">?</span>`
-                                              : html`<span class="ok-word">${o.biome}</span>`}</span>
-      </li>`)}
-    </ul>
-  </nav>`;
+/** A new orkspace: its name, then the town goes to it. */
+function NewOrkspace({ onDone }) {
+  const [name, setName] = useState("");
+  const make = () => name.trim() && command("orkspace.new", { name: name.trim() }).then(onDone, () => {});
+  return html`<span class="gui-orkspaces__new">
+    <input class="ok-input" autofocus placeholder=${say("Orkspace name")} value=${name} aria-label=${say("Orkspace name")}
+      onInput=${(e) => setName(e.target.value)}
+      onKeyDown=${(e) => { if (e.key === "Enter") make(); else if (e.key === "Escape") onDone(); }} />
+  </span>`;
 }
 
-export function StatusBar() {
+/** The orkspaces, bottom left: `+ Orkspace` while there is one, their list with + once there are more. */
+export function Orkspaces() {
   const t = town.value;
-  return html`<footer class="ok-keys gui-status">
-    <button class="gui-status__item" onClick=${() => openOrders()}>Answers${t.alerts.length ? ` (${t.alerts.length})` : ""}</button>
-    <span class="gui-status__spacer"></span>
-    <span class="gui-status__item" title=${t.repo}>${t.repo}</span>
-  </footer>`;
+  const [adding, setAdding] = useState(false);
+  const many = t.orkspaces.length > 1;
+  const add = adding ? html`<${NewOrkspace} onDone=${() => setAdding(false)} />`
+    : html`<button class="ok-btn gui-orkspaces__add" title=${say("A new orkspace: another town of this project")}
+        aria-label=${say("New orkspace")} onClick=${() => setAdding(true)}>+${many ? "" : html` ${say("Orkspace")}`}</button>`;
+  return html`<nav class="gui-orkspaces" aria-label=${say("Orkspaces")}>
+    ${many && t.orkspaces.map((o) => html`<button key=${o.id}
+        class=${cls("ok-btn gui-orkspaces__one", { "is-selected": o.id === t.active_orkspace, "is-alert": o.questions > 0 })}
+        aria-pressed=${o.id === t.active_orkspace}
+        onClick=${() => o.id !== t.active_orkspace && command("orkspace.select", { id: o.id })}>
+      ${say(o.name)}${o.questions > 0 && html` <span class="ok-word">?</span>`}</button>`)}
+    ${add}
+  </nav>`;
 }
 
 export function Toasts() {

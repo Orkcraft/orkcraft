@@ -1,6 +1,5 @@
 // 🗑️ Scroll Dump: the librarian's state, the wiki and its sources as a tree, and the page open,
-// rendered (core/workers/scrolls.py does the work). A page's mark opens it in Lake; the Command Card
-// shows the librarian's state and the last changed pages.
+// rendered (core/workers/scrolls.py does the work). A page's mark opens it in Lake.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -116,27 +115,7 @@ export function card(b) {
       ${c.running ? `${c.running}…` : c.pending ? `${c.pending} pending` : "nothing pending"}</div>`;
 }
 
-/** Command: the librarian's state, the last changed pages (each opens in Lake); Add base. Ingest and
- * Lint are the type's quick actions, below. */
-export function preview(id, data) {
-  return html`<div class="gui-scrolls">
-    <div class="gui-head">
-      <span class=${cls("gui-head__what", { "ok-tone-error": data.error, "ok-tone-wait": !!data.running })}>
-        <b>${data.topic}</b> · ${data.pages_count} page${data.pages_count === 1 ? "" : "s"} · ${data.state_plain}</span>
-      <span class="gui-head__spacer"></span>
-      ${data.running && html`<button class="ok-act" onClick=${() => act(id, "stop")}><span class="ok-act__label">Stop</span></button>`}
-      <button class="ok-act" onClick=${() => { adding.value = id; }}><span class="ok-act__label">Add base</span></button>
-    </div>
-    ${data.note && html`<p class="ok-font-status ok-tone-muted">${data.note}</p>`}
-    ${data.recent.length ? html`<ul class="gui-scrolls__recent">${data.recent.map((p) => html`<li key=${p.path}>
-        <span class="gui-tree__item" title=${p.path} onClick=${() => toLake(id, p.path, p.title)}>${p.title}</span>
-        <span class="ok-font-status ok-tone-muted">${ago(p.mtime)}</span></li>`)}</ul>`
-      : html`<p class="ok-tone-muted">No pages yet — Ingest makes them.</p>`}
-    <${Adding} id=${id} />
-  </div>`;
-}
-
-/** The type's quick actions on the Command Card (realm/catalog.py). */
+/** The type's quick actions in its Info (realm/catalog.py). */
 const QUICK = {
   "wiki.ingest": (id) => act(id, "ingest").catch(() => {}),
   "wiki.lint": (id) => act(id, "lint").catch(() => {}),

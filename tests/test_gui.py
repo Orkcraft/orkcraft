@@ -56,6 +56,17 @@ def test_a_hut_moved_keeps_its_spot_in_the_scroll(fake_repo, isolated_layout_fil
         host.command("rm -rf", {})
 
 
+def test_a_new_orkspace_is_named_and_the_town_goes_to_it(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    before = len(host.town.scroll.orkspaces)
+    oid = host.command("orkspace.new", {"name": "Billing"})
+    assert len(host.town.scroll.orkspaces) == before + 1
+    assert host.town.scroll.active_orkspace_id == oid and host.snapshot()["active_orkspace"] == oid
+    assert host.command("orkspace.new", {"name": "Billing"}) != oid             # a second of the name gets its own id
+    with pytest.raises(CommandError):
+        host.command("orkspace.new", {"name": ""})
+
+
 def test_halt_all_says_what_it_stopped(fake_repo):
     host = _host(fake_repo)
     toasts = []

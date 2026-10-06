@@ -3,10 +3,9 @@
 // Card, and in the full window. The script is edited in Lake; its keeper rewrites the script and the
 // schedule from plain words (core/keeper.py, docs/design/building-views.md §2).
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
-import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 
@@ -19,7 +18,6 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
 }
 
 const chosen = signal({});         // building id → the run picked in the full window (its `at`)
-const seenTests = {};              // building id → the Test whose log was already shown (`tested_at`)
 const SENT = { "workshop.done": "done", "workshop.alert": "alert", "workshop.failed": "failed" };
 
 const tone = (r) => (r.outcome === "failed" ? "ok-tone-error" : r.outcome === "done" ? "ok-tone-ok" : "ok-tone-wait");
@@ -72,21 +70,6 @@ function TestLog({ data }) {
   </div>`;
 }
 
-/** Test's log in a dialog, when a Test ran while the Command Card is up. */
-function TestDialog({ id, data }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (seenTests[id] === undefined) seenTests[id] = data.tested_at;      // an older Test is not news
-    else if (data.tested_at && data.tested_at !== seenTests[id]) { seenTests[id] = data.tested_at; setOpen(true); }
-  }, [id, data.tested_at]);
-  if (!open) return null;
-  const close = () => setOpen(false);
-  return html`<${Dialog} title=${say("Test — the mock carts in the sandbox")} onCancel=${close}
-      actions=${html`<button class="ok-btn primary" onClick=${close}>Close</button>`}>
-    <div class="ws-scroll"><${TestLog} data=${data} /></div>
-  </${Dialog}>`;
-}
-
 /** The request to its keeper: the script or the schedule, in plain words. */
 function Ask({ id, data, onDone }) {
   const [request, setRequest] = useState("");
@@ -105,13 +88,6 @@ function Ask({ id, data, onDone }) {
   </div>`;
 }
 
-function AskDialog({ id, data, onClose }) {
-  return html`<${Dialog} title=${`${say("Ask")} ${data.keeper_name || say("the keeper")} ${say("to change the script or schedule")}`}
-      onCancel=${onClose} actions=${html`<button class="ok-btn" onClick=${onClose}>Close</button>`}>
-    <${Ask} id=${id} data=${data} onDone=${onClose} />
-  </${Dialog}>`;
-}
-
 /** Closed: the last run (✓ / ✗ / → keeper) and its schedule (docs/design/building-views.md). */
 export function card(b) {
   const c = b.card;
@@ -121,27 +97,6 @@ export function card(b) {
       : html`<span class="ok-tone-muted">${say("waiting for a cart")}</span>`;
   return html`<div class="ws-card">${last}
     <span class="ok-tone-muted">${c.schedule ? `${say("schedule")} ${c.schedule}` : say("no schedule")}</span></div>`;
-}
-
-/** Command: the last runs (time, code, what went out) and the last result cut down; Run and Test are
- * the type's quick actions below. */
-export function preview(id, data) {
-  return html`<${Command} id=${id} data=${data} />`;
-}
-
-function Command({ id, data }) {
-  const [asking, setAsking] = useState(false);
-  const last = data.runs[0];
-  return html`<div class="ws-card">
-    ${data.running && html`<span class="ok-tone-wait">${say("running…")}</span>`}
-    ${data.runs.length ? html`<ul class="ws-runs">${data.runs.slice(0, 4).map((r) => html`<${RunRow} key=${r.at} r=${r} />`)}</ul>`
-      : html`<p class="ok-tone-muted">${say("No cart yet — a road brings one, or Test runs the mock carts.")}</p>`}
-    ${last && html`<${Result} r=${last} cut=${true} />`}
-    <${TestDialog} id=${id} data=${data} />
-    <div class="gui-head"><button class="ok-act" onClick=${() => setAsking(true)}>
-      <span class="ok-act__label">Ask ${data.keeper_name || say("the keeper")} to change the script or schedule</span></button></div>
-    ${asking && html`<${AskDialog} id=${id} data=${data} onClose=${() => setAsking(false)} />`}
-  </div>`;
 }
 
 function Head({ id, data }) {

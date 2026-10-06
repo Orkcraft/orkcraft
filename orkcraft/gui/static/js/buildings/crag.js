@@ -1,5 +1,5 @@
 // 🪨 Tally Crag: a dashboard of charts (core/workers/crag.py carves them). Each chart says where it
-// shows: all states (the hut too), command only (the Command Card and the dashboard), full only. The
+// shows: all states (the hut too), or the dashboard only ("command" and "full" both mean its Work). The
 // keeper writes the charts and their thresholds from what the person asks in plain words.
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -89,19 +89,6 @@ export function card(b) {
     <span class="crag-thumb__title ok-font-status">${t.title}</span>
     <${Bars} values=${t.values.length ? t.values : [0]} scale=${t.scale} warn=${t.warn} crit=${t.crit} label=${t.title} />
   </div>`)}</div>`;
-}
-
-/** Command: the chart in front, of those set to all states or command only; Flip and Next turn it. */
-export function preview(id, data) {
-  const shown = data.charts.filter((c) => c.show !== "full");
-  if (!shown.length) return html`<p class="ok-tone-muted">${say("Every chart here shows in the full window only.")}</p>`;
-  const front = shown.find((c) => c.index === data.front) || shown[0];
-  return html`<div class="crag-front">
-    <${Head} c=${front} />
-    <${Chart} c=${front} />
-    ${shown.length > 1 && html`<div class="crag-dots" aria-label=${say("charts")}>${shown.map((c) => html`<span key=${c.index}
-      class=${cls("", { "is-front": c.index === front.index })} title=${c.title}>●</span>`)}</div>`}
-  </div>`;
 }
 
 function Ask({ id }) {

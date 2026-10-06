@@ -53,7 +53,7 @@ function StepsDialog({ id, data, onClose }) {
   </${Dialog}>`;
 }
 
-/** Run and Edit steps; the Command Card has Run among the type's own actions already (`run` false there). */
+/** Run and Edit steps (`run` false: Run is left out). */
 function Acts({ id, data, run = true }) {
   const [editing, setEditing] = useState(false);
   return html`<div class="gui-head">
@@ -75,22 +75,6 @@ function RunRow({ r, onClick, selected = false, full = false }) {
     <span class="gui-head__what">${r.result.replace(/\n/g, " ⏎ ").slice(0, 120)}</span>
     <span class="meta">${r.cost ? money(r.cost) : r.agent ? say("an agent") : ""}</span>
   </li>`;
-}
-
-function Command({ id, data }) {
-  const pick = (r) => { chosen.value = { ...chosen.value, [id]: r.id }; openInLake({ text: r.ok ? r.result : r.error, title: r.title, from: id }); };
-  return html`<div class="ok-font-status">
-    <${Chain} data=${data} />
-    <p class="ok-detail__section">Last runs</p>
-    ${data.runs.length ? html`<ul class="ok-list__items gui-rows">${data.runs.slice(0, 5).map((r) => html`<${RunRow} key=${r.id} r=${r}
-        onClick=${() => pick(r)} />`)}</ul>`
-      : html`<p class="ok-tone-muted">No runs yet — a road brings the input.</p>`}
-    <${Acts} id=${id} data=${data} run=${false} />
-  </div>`;
-}
-
-export function preview(id, data) {
-  return html`<${Command} id=${id} data=${data} />`;
 }
 
 // -- full ---------------------------------------------------------------------------------------------------

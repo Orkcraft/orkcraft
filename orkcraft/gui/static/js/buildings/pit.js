@@ -113,14 +113,6 @@ function Row({ id, it, onClick, selected = false, full = false }) {
   </li>`;
 }
 
-export function preview(id, data) {
-  if (!data.items.length) return html`<p class="ok-font-status ok-tone-muted">Nothing dropped yet — drop a file, a link or a text on its card.</p>`;
-  return html`<ul class="ok-list__items gui-rows ok-font-status">
-    ${data.items.slice(0, 8).map((it) => html`<${Row} key=${it.id} id=${id} it=${it} onClick=${() => open(id, it)} />`)}
-  </ul>
-  ${data.count > 8 && html`<p class="ok-font-status ok-tone-muted">${data.count - 8} more — Open shows them all</p>`}`;
-}
-
 // -- full: the history, each drop's chain and its cost ------------------------------------------------------
 
 function Drop({ id }) {

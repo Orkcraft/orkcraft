@@ -10,9 +10,10 @@ import { opened, openBuilding, closeBuilding } from "./windows.js";
 
 const HALL = "town_hall";                          // the Warchief's hall (js/buildings/town_hall.js)
 
-export const building = signal(false);            // the Build dialog is open
+export const building = signal(false);            // the Build dialog is open: true, or {hut: [x, y], need}
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
 export const pickedRoad = signal(null);            // the road key the person clicked
+export const demolishing = signal(null);           // the building id a Demolish dialog asks about
 
 /** Build, in one (docs/design/building-views.md §3, Town Hall): say what you need — the Warchief points
  *  at the building that does it (its chat offers to build it) — or pick one of the catalog, by what it is for. */
@@ -20,10 +21,14 @@ export function BuildDialog() {
   const [types, setTypes] = useState(null);
   const [need, setNeed] = useState("");
   const close = () => { building.value = false; setNeed(""); };
-  useEffect(() => { if (building.value && types === null) command("town.catalog").then(setTypes, () => setTypes([])); },
-            [building.value]);
+  useEffect(() => {
+    if (building.value && types === null) command("town.catalog").then(setTypes, () => setTypes([]));
+    if (building.value && building.value.need) setNeed(building.value.need);
+  }, [building.value]);
   if (!building.value) return null;
-  const raise = (t) => command("town.build", { type: t.id }).then((id) => { close(); openBuilding(id); }, () => {});
+  const hut = building.value.hut;
+  const raise = (t) => command("town.build", hut ? { type: t.id, hut } : { type: t.id })
+    .then((id) => { close(); openBuilding(id); }, () => {});
   const ask = () => need.trim() && act(HALL, "ask", { text: `What should I build? ${need.trim()}` })
     .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
   const groups = [];
@@ -106,6 +111,14 @@ export function RoadBar() {
   </div>
   ${handling && html`<${HandlerDialog} road=${{ key, title: titles[road.from] || road.from, label: road.label }}
     onClose=${() => setHandling(false)} onDone=${() => {}} />`}`;
+}
+
+/** Demolish asked from the hut's menu or the Warchief's line. */
+export function DemolishAsked() {
+  const id = demolishing.value;
+  const b = id && town.value.buildings.find((x) => x.id === id);
+  if (!b) return null;
+  return html`<${Demolish} b=${b} onClose=${() => { demolishing.value = null; }} />`;
 }
 
 export function Demolish({ b, onClose }) {

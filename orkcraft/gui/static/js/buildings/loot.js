@@ -33,7 +33,7 @@ function edit(id, it) {
   act(id, "edit", { item: it.id }).then((d) => openInLake({ path: d.path, title: d.title, from: id }), () => {});
 }
 
-/** The quick actions on the Command Card (catalog: Accept all, Accept files). */
+/** The quick actions in its Info (catalog: Accept all, Accept files). */
 export function quick(id, action) {
   if (action === "loot.accept_all") { act(id, "accept_all").catch(() => {}); return true; }
   if (action === "generator.accept_all") { act(id, "accept_files").catch(() => {}); return true; }
@@ -231,34 +231,6 @@ export function card(b) {
 }
 
 /** Command: the queue with Accept / Rework per cart; a click on a cart opens it in Lake. */
-const URL_RE = /(https?:\/\/[^\s)>\]]+)/;
-
-/** A line with its links as links. */
-function linked(text) {
-  return text.split(URL_RE).map((part, i) => (i % 2
-    ? html`<a key=${i} class="gui-link" href=${part} target="_blank" rel="noopener">${part}</a>` : part));
-}
-
-export function preview(id, data) {
-  const open = data.queue.slice(0, 5);
-  return html`<div class="gui-section">
-    <div class="ok-font-status ok-tone-muted">${headLine(data)}</div>
-    ${open.length ? html`<ul class="gui-rows">${open.map((it) => html`<li key=${it.id} class="ok-font-status">
-        <span class=${cls("gui-link", { "ok-tone-fire": it.status === "needs_you" })} title="Open in Lake" onClick=${() => openCart(id, it)}>
-          ${MARK[it.status]} ${it.label}</span>
-        <span class="ok-tone-muted"> · ${it.source}${it.spent && ` · ${it.spent}`}</span>
-        <div><${Acts} id=${id} it=${it} /></div></li>`)}</ul>`
-      : html`<div class="ok-font-status">Nothing waits for you.</div>`}
-    ${data.queue.length > open.length && html`<div class="ok-font-status ok-tone-muted">and ${data.queue.length - open.length} more — Open</div>`}
-    ${(data.delivered || []).length > 0 && html`<h3 class="ok-font-heading">${say("Passed lately")}</h3>
-      <ul class="gui-rows">${data.delivered.map((x, i) => html`<li key=${i}><b>${x.outcome || x.title}</b>
-        <span class="ok-tone-muted"> · ${x.at}</span>
-        ${x.outcome && html`<div class="ok-tone-muted">${x.title}</div>`}
-        ${x.lines.map((ln, j) => html`<div key=${j}>${linked(ln)}</div>`)}
-        ${x.links.map((u) => html`<div key=${u}>${linked(u)}</div>`)}</li>`)}</ul>`}
-    <${ReworkDialog} id=${id} data=${data} />
-  </div>`;
-}
 
 export function panes(id, data) {
   return {

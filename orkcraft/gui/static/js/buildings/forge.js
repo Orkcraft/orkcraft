@@ -30,7 +30,7 @@ function diff(id, name) {
     () => {});
 }
 
-/** The type's quick actions on the Command Card (catalog: Merge, Open PR) act on the chosen branch. */
+/** The type's quick actions in its Info (catalog: Merge, Open PR) act on the chosen branch. */
 export function quick(id, action) {
   const d = (details.value[id] || {}).data;
   if (action !== "forge.merge" && action !== "git.open_pr") return false;
@@ -222,23 +222,6 @@ export function card(b) {
                           : html`<span class="ok-tone-error">✗ ${c.last.why}</span> ${c.last.branch}`)
     : null;
   return html`<div>branches <b>${c.branches}</b> · PRs <b>${c.prs}</b></div>${last && html`<div>${last}</div>`}`;
-}
-
-/** Command: the branches (a click picks one), Run tests for the chosen one; Merge and Open PR are the quick actions. */
-export function preview(id, data) {
-  const name = data.picked;
-  const b = name && data.branches.find((x) => x.name === name);
-  return html`<div class="gui-section">
-    <${Asking} id=${id} data=${data} />
-    <div class="ok-font-status ok-tone-muted">${headLine(data)}</div>
-    <${Branches} id=${id} data=${data} limit=${6} />
-    ${b ? html`<div class="ok-detail__actions">
-        <span class="ok-font-status">⎇ ${name}</span>
-        <button class="ok-act" disabled=${b.tests === "running"} onClick=${() => act(id, "test", { branch: name }).catch(() => {})}>
-          <span class="ok-act__label">Run tests</span></button></div>`
-      : html`<div class="ok-font-status ok-tone-muted">Pick a branch to merge, test or open its PR.</div>`}
-    <${MergeDialog} id=${id} data=${data} />
-  </div>`;
 }
 
 export function panes(id, data) {

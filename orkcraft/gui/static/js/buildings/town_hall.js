@@ -1,23 +1,20 @@
 // 🏰 Town Hall, the town's way in (docs/design/building-views.md §3; the work is
 // core/workers/town_hall.py, the data gui/views/town_hall.py):
-//   closed  — Build and Ask me anything, or what happens in the hall;
-//   command — the Warchief's chat, the live sessions (a click: its terminal), the audit, spend and quotas;
-//   full    — the tabs Hall (its orks, the audit, the proposals), Sessions (the War Tent, js/tent.js), Limits.
+//   closed  — Ask me anything, or what happens in the hall (Camp's hut; Office has the Warchief's line);
+//   Work    — the tabs Chat (the Warchief's whole chat), Hall (its orks, the audit, the proposals), Sessions
+//             (the War Tent, js/tent.js), Limits.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, command, town, say } from "../link.js";
-import { opened, openBuilding } from "../windows.js";
+import { openBuilding } from "../windows.js";
 import { building as buildOpen } from "../build.js";
-import { WarTent, showSession, newSession, hallTab } from "../tent.js";
+import { WarTent, hallTab } from "../tent.js";
 
 const keep = (e) => e.stopPropagation();          // a press on a control is not a press on the hut
 
-/** A question for the Warchief; the hall is selected so its Command Card shows the chat. */
+/** A question for the Warchief (Camp's hut asks it); his answer comes in the town's line and the hall's Chat. */
 export function askWarchief(id, text) {
-  return act(id, "ask", { text }).then(() => {
-    if (opened.value.active !== id) openBuilding(id);
-    return true;
-  }, () => false);
+  return act(id, "ask", { text }).then(() => true, () => false);
 }
 
 function AskField({ id, autofocus }) {
@@ -41,10 +38,7 @@ function HallCard({ b }) {
   const news = (b.card && b.card.news) || [];
   return html`<div class="gui-form">
     ${news.length > 0 && html`<ul class="ok-hut__lines">${news.map((line, i) => html`<li key=${i}>${say(line)}</li>`)}</ul>`}
-    <div class="gui-form__row">
-      <button class="ok-btn primary" style="flex:none" onPointerDown=${keep} onClick=${() => { buildOpen.value = true; }}>Build</button>
-      ${!news.length && html`<${AskField} id=${b.id} />`}
-    </div>
+    ${!news.length && html`<div class="gui-form__row"><${AskField} id=${b.id} /></div>`}
   </div>`;
 }
 
@@ -52,7 +46,7 @@ export function card(b) {
   return html`<${HallCard} b=${b} />`;
 }
 
-/** The Command Card's quick actions of the hall: Build opens the Build dialog, Audit runs it. */
+/** The hall's quick actions in its Info: Build opens the catalog, Audit runs it. */
 export function quick(id, action) {
   if (action === "hall.build") buildOpen.value = true;
   else if (action === "hall.audit") act(id, "audit").catch(() => {});
@@ -62,7 +56,7 @@ export function quick(id, action) {
 
 // -- the Warchief's chat ---------------------------------------------------------------------------
 
-function Message({ m, name }) {
+export function Message({ m, name }) {
   if (m.who === "you") {
     return html`<li class="ok-font-body"><span class="ok-font-label ok-tone-muted">You: </span>${m.text}</li>`;
   }
@@ -90,35 +84,7 @@ function Chat({ id, data, height }) {
   </div>`;
 }
 
-// -- command: the top of the Command Card ------------------------------------------------------------
-
-function Sessions() {
-  const live = town.value.sessions.filter((s) => s.running);
-  return html`<div class="ok-font-status">
-    <span class="ok-tone-muted">Sessions: </span>${live.length ? live.map((s, i) => html`<span key=${s.key}>${i > 0 && " · "}
-        <button class="gui-link" title=${say("Its terminal")} onClick=${() => showSession(s.key)}>${s.title}</button></span>`)
-      : html`<span class="ok-tone-muted">none running</span>`}
-    <span class="ok-tone-muted"> · </span><button class="gui-link" onClick=${() => newSession("claude")}>New session</button>
-  </div>`;
-}
-
-function auditLine(hall) {
-  if (!hall.audit) return "not run yet";
-  const serious = hall.agents.reduce((n, a) => n + a.serious, 0);
-  return `${hall.audit.count} found${serious ? `, ${serious} to look at` : ""} · ${hall.audit.ts.slice(11, 16)}`;
-}
-
-export function preview(id, data) {
-  const s = data.spend;
-  return html`<${Chat} id=${id} data=${data} height="6em" />
-    <${Sessions} />
-    <div class="ok-font-status"><span class="ok-tone-muted">Audit: </span>${auditLine(data.hall)}</div>
-    <div class="ok-font-status"><span class="ok-tone-muted">Limits: </span>
-      <span class=${cls("", { "ok-tone-wait": s.level === "warn", "ok-tone-error": s.level === "over" })}>${say("spend")} $${s.spent.toFixed(2)} / $${s.limit}</span>
-      ${data.lowest.map((x) => ` · ${x}`)}</div>`;
-}
-
-// -- full: Hall, Sessions, Limits --------------------------------------------------------------------
+// -- Work: Chat, Hall, Sessions, Limits ------------------------------------------------------------------
 
 /** Apply or say no to a retro's proposal; an unanswered one may be applied by the orks (its building's
  * autonomy, docs/design/retros-and-goals.md §3). */
@@ -239,6 +205,7 @@ function Tabs() {
   const live = town.value.sessions.filter((s) => s.running).length;
   const pick = (name) => () => { hallTab.value = name; };
   return html`<div class="ok-tabs" role="tablist">
+    <button class=${cls("ok-tab", { "is-active": tab === "chat" })} role="tab" onClick=${pick("chat")}>Chat</button>
     <button class=${cls("ok-tab", { "is-active": tab === "hall" })} role="tab" onClick=${pick("hall")}>Hall</button>
     <button class=${cls("ok-tab", { "is-active": tab === "sessions" })} role="tab" onClick=${pick("sessions")}>Sessions${live ? ` (${live})` : ""}</button>
     <button class=${cls("ok-tab", { "is-active": tab === "limits" })} role="tab" onClick=${pick("limits")}>Limits</button>
@@ -251,6 +218,7 @@ export function panes(id, data) {
   const tab = hallTab.value;
   return {
     tabs: () => html`<${Tabs} />`,
+    chat: () => (tab === "chat" ? html`<${Chat} id=${id} data=${data} height="none" />` : null),
     hall: () => (tab === "hall" ? html`<${Hall} id=${id} h=${data.hall} />` : null),
     sessions: () => (tab === "sessions" ? html`<${WarTent} />` : null),
     limits: () => (tab === "limits" ? html`<${Limits} id=${id} data=${data} />` : null),

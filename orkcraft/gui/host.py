@@ -70,6 +70,7 @@ class Host:
         self.town.bus.subscribe(bus.ANY, self._event)
         self.commands: dict[str, Callable[[dict], Any]] = {
             "orkspace.select": self._select_orkspace,
+            "orkspace.new": self._new_orkspace,
             "hut.move": self._move_hut,
             "building.open": self._open_building,
             "halt": self._halt,
@@ -267,6 +268,18 @@ class Host:
         self.town.scroll.active_orkspace_id = oid
         self.town.save()
         self.on_change()
+
+    def _new_orkspace(self, args: dict) -> str:
+        """A new empty orkspace, named by the person, and the town goes to it."""
+        from orkcraft import scroll
+        try:
+            ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60])
+        except ValueError as e:
+            raise CommandError(str(e)) from None
+        self.town.scroll.active_orkspace_id = ork.id
+        self.town.save()
+        self.on_change()
+        return ork.id
 
     def _move_hut(self, args: dict) -> None:
         """A hut dragged on the town: its spot as fractions of the canvas, the person's own."""

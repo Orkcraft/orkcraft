@@ -46,7 +46,7 @@ export function card(b) {
   </div>`;
 }
 
-/** The Command Card's quick actions, done here: Open new, Read all, Check now. */
+/** Its Info's quick actions, done here: Open new, Read all, Check now. */
 export function quick(id, action) {
   const name = { "mail.open_new": "open_new", "watch.read_all": "read_all", "mail.refresh": "check_now" }[action];
   if (!name) return false;
@@ -66,17 +66,6 @@ function Row({ id, s, selected }) {
     <span class="ok-tone-muted">${s.label}</span>
     ${s.from && html`<b>${s.from}</b>`}<span>${s.title}</span>
     <span class="meta">${s.at.slice(5)}</span></li>`;
-}
-
-/** Command: the newest per source (source, from, title), a failing source with why. */
-export function preview(id, d) {
-  return html`<div class="gui-rows">
-    ${!d.sources.length && html`<p class="ok-tone-muted">No source yet: mail, GitHub, Slack, Jira, Confluence, Figma, a schedule or a webhook, in its settings.</p>`}
-    <${Failing} sources=${d.sources} />
-    ${d.sources.length > 0 && !d.latest.length && html`<p class="ok-tone-muted">Nothing came in yet${d.checked ? ` · checked ${d.checked}` : ""}.</p>`}
-    <ul class="ok-list__items">${d.latest.map((s) => html`<${Row} key=${s.key} id=${id} s=${s} />`)}</ul>
-    ${d.reading && html`<div class="gui-prose" dangerouslySetInnerHTML=${{ __html: d.reading.html }}></div>`}
-  </div>`;
 }
 
 function Sources({ id, d }) {

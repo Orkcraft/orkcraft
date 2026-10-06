@@ -1,19 +1,82 @@
 {
   "type": "town_hall",
-  "about": "🏰 Town Hall, the town's way in: three tabs, one shown at a time — the Hall (its orks, the audit, the proposals, the Elders, the Council's reviews), Sessions (the War Tent) and Limits (spend and quotas).",
+  "about": "🏰 Town Hall, the town's way in: four tabs, one shown at a time — the Warchief's chat (all of it; the town's line shows its last words), the Hall (its orks, the audit, the proposals, the Elders, the Council's reviews), Sessions (the War Tent) and Limits (spend and quotas).",
   "panes": {
-    "tabs":     {"about": "the tabs Hall, Sessions (how many run) and Limits; a click shows one", "components": ["status"], "required": true},
-    "hall":     {"about": "the Hall tab: its orks, the last audit and Audit now, the proposals and the town retro, the Elders, the Council's Fast Path, the stewards' ratings", "components": ["list", "text"], "dynamic": true},
-    "sessions": {"about": "the Sessions tab, the War Tent: every live session, a click shows its terminal", "components": ["terminal", "view"], "dynamic": true},
-    "limits":   {"about": "the Limits tab: this run's spend and each provider's quota left, Read again", "components": ["chart", "table"], "dynamic": true}
+    "tabs": {
+      "about": "the tabs Chat, Hall, Sessions (how many run) and Limits; a click shows one",
+      "components": [
+        "status"
+      ],
+      "required": true
+    },
+    "chat": {
+      "about": "the Chat tab: the whole conversation with the Warchief, his cards and the field to ask",
+      "components": [
+        "list",
+        "text"
+      ],
+      "dynamic": true
+    },
+    "hall": {
+      "about": "the Hall tab: its orks, the last audit and Audit now, the proposals and the town retro, the Elders, the Council's Fast Path, the stewards' ratings",
+      "components": [
+        "list",
+        "text"
+      ],
+      "dynamic": true
+    },
+    "sessions": {
+      "about": "the Sessions tab, the War Tent: every live session, a click shows its terminal",
+      "components": [
+        "terminal",
+        "view"
+      ],
+      "dynamic": true
+    },
+    "limits": {
+      "about": "the Limits tab: this run's spend and each provider's quota left, Read again",
+      "components": [
+        "chart",
+        "table"
+      ],
+      "dynamic": true
+    }
   },
   "default": {
-    "version": 1, "type": "town_hall", "split": "column",
+    "version": 1,
+    "type": "town_hall",
+    "split": "column",
     "panes": [
-      {"id": "tabs", "component": "status", "size": "auto", "font": "status"},
-      {"id": "hall", "component": "list", "size": 1, "font": "body"},
-      {"id": "sessions", "component": "terminal", "size": 1, "font": "body"},
-      {"id": "limits", "component": "chart", "size": 1, "font": "body"}
+      {
+        "id": "tabs",
+        "component": "status",
+        "size": "auto",
+        "font": "status"
+      },
+      {
+        "id": "chat",
+        "component": "list",
+        "size": 1,
+        "font": "body"
+      },
+      {
+        "id": "hall",
+        "component": "list",
+        "size": 1,
+        "font": "body"
+      },
+      {
+        "id": "sessions",
+        "component": "terminal",
+        "size": 1,
+        "font": "body"
+      },
+      {
+        "id": "limits",
+        "component": "chart",
+        "size": 1,
+        "font": "body"
+      }
     ]
   }
 }

@@ -1,7 +1,7 @@
 """The GUI in a real browser (Chromium through Playwright): the town on a fresh project, every type of the
-catalog raised through Build and looked at three ways — closed (its card on the town), command (selected:
-Info, the garrison and the Commands window) and full (its whole window) — plus the Lake window and the
-Town Hall (docs/design/building-views.md). Each must draw, and the page must log no error.
+catalog raised through Build and looked at — closed (its card on the town), then in the panel on the right:
+its Work, its Info, the whole town (docs/design/calm-town.md) — plus Lake's documents in the panel, the
+Warchief's line and the right click. Each must draw, and the page must log no error.
 
 Skipped where Playwright or Chromium is missing; `-m browser` runs these alone, `-m "not browser"` leaves
 them out."""
@@ -86,7 +86,7 @@ def page(gui):
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     pg.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
     pg.goto(server.url)
-    pg.wait_for_selector(".gui-advisor__face", timeout=WAIT_MS)   # Office: the Control panel is the advisor
+    pg.wait_for_selector(".gui-warchief__face", timeout=WAIT_MS)   # Office: the Warchief's line is the hall's way in
     yield pg
     pg.wait_for_timeout(300)                    # what a refresh after the last step draws
     pg.close()
@@ -110,44 +110,51 @@ def _closed(pg, bid: str) -> None:
     assert card.is_visible() and card.bounding_box()["height"] > 0
 
 
-def _command(pg) -> None:
-    for c in (".gui-console", ".gui-roster", ".gui-card"):
-        pg.locator(c).wait_for(state="visible", timeout=WAIT_MS)
-    pg.locator(".gui-card .ok-act").first.wait_for(state="visible", timeout=WAIT_MS)
-    pg.locator(".gui-console .gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
+def _panel(pg, tab: str = "") -> None:
+    """The panel stands, on `tab` (Work or Info) when one is named."""
+    panel = pg.locator(".gui-panel")
+    panel.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".ok-win__title").inner_text().strip()
+    if tab:
+        panel.locator(".gui-panel__tabs .ok-tab.is-active", has_text=tab).wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-win__body").bounding_box()["height"] > 0
 
 
-def _full(pg, has_view: bool) -> None:
-    full = pg.locator(".gui-full")
-    full.wait_for(state="visible", timeout=WAIT_MS)
-    assert full.locator(".ok-win__title").inner_text().strip()
-    if has_view:                                # its detail came and its panes are laid out
-        full.locator(".gui-win__body.is-view").wait_for(state="visible", timeout=WAIT_MS)
-    assert full.locator(".gui-win__body").bounding_box()["height"] > 0
+def _info(pg) -> None:
+    pg.locator(".gui-panel__tabs .ok-tab", has_text="Info").click()
+    _panel(pg, "Info")
+    pg.locator(".gui-panel .gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
 
 
 def _three_ways(pg, bid: str, has_view: bool = True) -> None:
     _closed(pg, bid)
-    _hut(pg, bid).locator(".gui-hut__title").click()   # selected: Info, the garrison, Commands
-    _command(pg)
-    if has_view:
-        pg.locator(".gui-card__preview").wait_for(state="visible", timeout=WAIT_MS)
-    _hut(pg, bid).locator(".gui-hut__title").click()   # a click on the selected hut opens it
-    _full(pg, has_view)
-    pg.keyboard.press("Escape")                 # back to selected
-    _command(pg)
-    pg.locator(".gui-card").get_by_role("button", name="Open", exact=True).click()
-    _full(pg, has_view)
-    pg.keyboard.press("Escape")
-    pg.keyboard.press("Escape")
-    pg.locator(".gui-console").wait_for(state="hidden", timeout=WAIT_MS)
+    _hut(pg, bid).locator(".gui-hut__title").click()   # open: the panel on its Work
+    _panel(pg, "Work" if has_view else "")
+    if has_view:                                # its detail came and its panes are laid out
+        pg.locator(".gui-panel .gui-win__body.is-view").wait_for(state="visible", timeout=WAIT_MS)
+    _info(pg)
+    pg.locator(".gui-panel .gui-panel__full").click()  # the whole town
+    pg.locator(".gui-panel.is-full").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")                 # back to half
+    pg.locator(".gui-panel:not(.is-full)").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")                 # closed
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def _line(pg, text: str, enter: bool = True) -> None:
+    """Something typed into the Warchief's line."""
+    field = pg.locator(".gui-warchief__input")
+    field.click()
+    field.fill(text)
+    if enter:
+        field.press("Enter")
 
 
 @pytest.mark.parametrize("type_id", TYPES)
 def test_every_type_built_draws_three_ways(page, type_id):
     pg = page
     before = set(pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)"))
-    pg.locator(".gui-advisor__bubble").get_by_role("button", name="Build", exact=True).click()
+    _line(pg, "/build")                         # the catalog
     items = pg.locator(".gui-catalog__item")
     items.first.wait_for(state="visible", timeout=WAIT_MS)
     assert items.count() == len(TYPES)
@@ -155,27 +162,24 @@ def test_every_type_built_draws_three_ways(page, type_id):
     pg.locator(".gui-modal").wait_for(state="hidden", timeout=WAIT_MS)
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
     bid = next(i for i in pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)") if i not in before)
-    _command(pg)                                # Build leaves the new building selected
+    _panel(pg)                                  # Build leaves the new building open
     pg.keyboard.press("Escape")
-    pg.locator(".gui-console").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
     _three_ways(pg, bid)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)     # the next one stands where this one stood
 
 
-def test_the_town_hall_is_the_pinned_advisor_in_office(page):
+def test_the_town_hall_is_the_warchiefs_line_in_office(page):
     pg = page
     assert _hut(pg, TOWN_HALL).count() == 0                     # no hut of it on the town
-    bubble = pg.locator(".gui-advisor__bubble")
-    assert bubble.is_visible() and not bubble.locator(".gui-hut__title").count()   # its card, no name
-    face = pg.locator(".gui-advisor__face")
-    face.click()                                                # selected: Info, the garrison, Commands
-    _command(pg)
-    pg.locator(".gui-card").get_by_role("button", name="Open", exact=True).click()   # the card stands over the advisor
-    _full(pg, True)
+    assert pg.locator(".gui-strip, .gui-status, .gui-advisor").count() == 0   # no console, no status bar
+    pg.locator(".gui-warchief__face").click()                   # the hall in the panel, on the Warchief's chat
+    _panel(pg, "Work")
+    pg.locator(".gui-panel .ok-tab.is-active", has_text="Chat").wait_for(state="visible", timeout=WAIT_MS)
+    _info(pg)
     pg.keyboard.press("Escape")
-    pg.keyboard.press("Escape")
-    pg.locator(".gui-console").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
 
 
 def test_huts_stand_pinned_until_unpinned(page):
@@ -214,86 +218,146 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
         await openInLake({ path: 'README.md', title: 'README.md' });
         await openInLake({ path: 'src/app.py', title: 'app.py' });
     }""")
-    lake = pg.locator(".gui-lake")
+    lake = pg.locator(".gui-panel")                             # documents are the panel's tabs
     lake.wait_for(state="visible", timeout=WAIT_MS)
     pg.wait_for_function("() => document.querySelectorAll('.gui-lake__tabtitle').length >= 3", timeout=WAIT_MS)
+    assert lake.locator(".gui-panel__tabs .ok-tab", has_text="Info").count() == 0   # no building open: documents only
     for n in range(lake.locator(".gui-lake__tabtitle").count()):
         lake.locator(".gui-lake__tabtitle").nth(n).click()
         pg.wait_for_function("() => !document.querySelector('.gui-lake__win')?.textContent.includes('Opening…')",
                              timeout=WAIT_MS)
         assert lake.locator(".gui-lake__win").bounding_box()["height"] > 0
-    lake.locator("button", has_text="Full").click()
-    pg.locator(".gui-lake.is-full").wait_for(state="visible", timeout=WAIT_MS)
-    lake.locator("button", has_text="Half").click()
-    lake.locator(".gui-win__close").click()                     # hidden: its handle stays
-    pg.locator(".gui-lake__handle").wait_for(state="visible", timeout=WAIT_MS)
-    pg.locator(".gui-lake__handle").click()
+    lake.get_by_role("button", name="Full", exact=True).click()
+    pg.locator(".gui-panel.is-full").wait_for(state="visible", timeout=WAIT_MS)
+    lake.get_by_role("button", name="Half", exact=True).click()
+    lake.locator(".gui-win__close").click()                     # closed: its handle stays
+    pg.locator(".gui-panel__handle").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-panel__handle").click()
     lake.wait_for(state="visible", timeout=WAIT_MS)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    _panel(pg, "Work")                                          # a building opened beside the documents
+    assert lake.locator(".gui-lake__tabtitle").count() >= 3
+    lake.locator(".gui-lake__tabtitle").first.click()
+    lake.locator(".gui-lake__win").wait_for(state="visible", timeout=WAIT_MS)
+    lake.locator(".gui-panel__tabs .ok-tab", has_text="Info").click()
+    _panel(pg, "Info")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
-def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
-    """👍 / 👎 in Info and no Pin, nothing recruits, the steward's Redesign window is under it in the garrison, the
-    Barracks takes a New task in place (its first words its title), Demolish is at the window's bottom."""
+def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
+    """Info: 👍 / 👎 and no Pin, nothing recruits, the steward's part with Redesign, its goal and Freedom, Demolish at
+    the bottom. The Barracks' Work takes a New task in place (its first words its title)."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
-    pg.keyboard.press("Escape")
     _hut(pg, bid).locator(".gui-hut__title").click()
-    _command(pg)
-    info, roster, card = pg.locator(".gui-console"), pg.locator(".gui-roster"), pg.locator(".gui-card")
-    box, face = card.bounding_box(), pg.locator(".gui-advisor__face").bounding_box()
-    assert box["x"] + box["width"] >= pg.viewport_size["width"] - 1          # at the right edge…
-    assert box["x"] <= face["x"] and box["y"] + box["height"] >= face["y"] + face["height"]   # …over the advisor
-    mid = (face["x"] + face["width"] / 2, face["y"] + face["height"] / 2)
-    top = pg.evaluate("([x, y]) => document.elementsFromPoint(x, y).map((e) => e.closest('.gui-card, .gui-advisor'))"
-                      ".find(Boolean).className", list(mid))           # under the toasts, the card before the advisor
-    assert "gui-card" in top
+    _panel(pg, "Work")
+    panel = pg.locator(".gui-panel")
+    box = panel.bounding_box()
+    assert box["x"] + box["width"] >= pg.viewport_size["width"] - 1            # at the right edge…
+    assert abs(box["width"] - pg.viewport_size["width"] / 2) < 2               # …half of the town
+    work = panel.locator(".gui-win__body.is-view")
+    brief = work.locator(".gui-newtask textarea")
+    brief.wait_for(state="visible", timeout=WAIT_MS)
+    work.get_by_role("button", name="Pause", exact=True).first.click()
+    brief.fill("tidy the readme headings and nothing else")
+    work.locator(".gui-newtask").get_by_role("button", name="Send it").click()
+    pg.wait_for_function("() => document.querySelector('.gui-newtask textarea').value === ''", timeout=WAIT_MS)
+    assert pg.locator(".gui-modal").count() == 0                  # no window opened for it
+    work.get_by_text("Tidy the readme headings").first.wait_for(state="visible", timeout=WAIT_MS)
+    _info(pg)
+    info = panel.locator(".gui-info-tab")
     info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
-    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]          # a like, a dislike, their counts
+    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]
     assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
-    roster.get_by_role("button", name="Redesign", exact=True).wait_for(state="visible", timeout=WAIT_MS)
-    assert roster.bounding_box()["height"] == info.bounding_box()["height"]          # as tall as Info
-    assert info.get_by_role("button", name="Balance", exact=True).count() == 0     # the goal is the steward's now
-    title = roster.locator(".ok-win__title").inner_text()
-    assert "★" in title and "idle" in title                                        # its window: the steward's name, status
-    assert info.get_by_text("Listen", exact=True).count() == 0                     # the roads are the steward's too
-    roster.get_by_text("Listens to nobody yet").wait_for(state="visible", timeout=WAIT_MS)
-    roster.get_by_role("button", name="Quality", exact=True).click()
-    pg.wait_for_function("() => [...document.querySelectorAll('.gui-roster .gui-steps__one')].find((e) => e.textContent === 'Quality')"
+    steward = info.locator(".gui-steward-part")
+    steward.get_by_role("button", name="Redesign", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    title = steward.locator("h3").inner_text()
+    assert "★" in title and "idle" in title.lower()                               # the steward's name, its status
+    steward.get_by_text("Listens to nobody yet").wait_for(state="visible", timeout=WAIT_MS)
+    steward.get_by_role("button", name="Quality", exact=True).click()
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-steward-part .gui-steps__one')].find((e) => e.textContent === 'Quality')"
                          ".classList.contains('is-on')", timeout=WAIT_MS)
     assert server_building(pg, bid)["goal"] == "quality"
-    town_step = roster.locator(".gui-steps__one.is-as-town")
+    town_step = steward.locator(".gui-steps__one.is-as-town")
     assert "is-on" in town_step.get_attribute("class")              # as the town, until one is picked
-    clock = roster.locator(".gui-steps__one.is-icon").nth(1)
-    clock.click()                                                  # 🕰 lit, no longer as the town
-    pg.wait_for_function("() => document.querySelectorAll('.gui-steps__one.is-icon')[1].classList.contains('is-on')",
+    clock = steward.locator(".gui-steps__one.is-icon").nth(1)
+    clock.click()
+    pg.wait_for_function("() => document.querySelectorAll('.gui-steward-part .gui-steps__one.is-icon')[1].classList.contains('is-on')",
                          timeout=WAIT_MS)
-    assert "is-on" not in town_step.get_attribute("class")
     assert server_building(pg, bid)["autonomy"] == "clock"
     clock.click()                                                  # the lit one again: as the town
-    pg.wait_for_function("() => document.querySelector('.gui-steps__one.is-as-town').classList.contains('is-on')",
+    pg.wait_for_function("() => document.querySelector('.gui-steward-part .gui-steps__one.is-as-town').classList.contains('is-on')",
                          timeout=WAIT_MS)
-    assert card.get_by_text("Redesign window").count() == 0 and card.get_by_text("Revert").count() == 0
-    brief = card.locator(".gui-newtask textarea")
-    brief.wait_for(state="visible", timeout=WAIT_MS)
-    card.get_by_role("button", name="Pause", exact=True).click()
-    brief.fill("tidy the readme headings and nothing else")
-    card.locator(".gui-newtask").get_by_role("button", name="Send it").click()
-    pg.wait_for_function("() => document.querySelector('.gui-newtask textarea').value === ''", timeout=WAIT_MS)
-    assert pg.locator(".gui-modal").count() == 0                  # no window opened for it
-    card.get_by_text("Tidy the readme headings").wait_for(state="visible", timeout=WAIT_MS)
-    card.get_by_role("button", name="Open", exact=True).click()
-    _full(pg, True)
-    full = pg.locator(".gui-full")
-    assert full.locator(".ok-win__bar .gui-win__demolish").count() == 0
-    foot = full.locator(".gui-win__foot")
-    demolish, about = foot.locator(".gui-win__demolish").bounding_box(), foot.locator(".gui-about").bounding_box()
-    assert demolish["x"] > about["x"] and abs(demolish["y"] - about["y"]) < 20     # one row, Demolish at its right
-    pg.keyboard.press("Escape")
+    demolish = info.locator(".gui-win__demolish").bounding_box()
+    assert demolish["y"] > steward.bounding_box()["y"]             # Demolish at the bottom
     pg.keyboard.press("Escape")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click(button="right")
+    menu = pg.locator(".gui-menu")
+    menu.wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-panel").count() == 0                   # the menu, not the panel
+    items = menu.locator(".gui-menu__item").all_inner_texts()
+    assert any(t.startswith("Info") for t in items) and any(t.startswith("Demolish") for t in items)
+    menu.locator(".gui-menu__item", has_text="Info").click()
+    _panel(pg, "Info")
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click(button="right")
+    menu.locator(".gui-menu__item", has_text="Ask the").click()     # the Warchief's line, about it
+    pg.locator(".gui-warchief__chip", has_text="@").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-town").click(button="right", position={"x": 600, "y": 500})
+    menu.wait_for(state="visible", timeout=WAIT_MS)
+    menu.locator(".gui-menu__item", has_text="Build here").click()
+    pg.locator(".gui-modal .gui-catalog__item").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click(button="right")
+    menu.locator(".gui-menu__item", has_text="Demolish").click()
+    pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
+    pg = page
+    field = pg.locator(".gui-warchief__input")
+    field.click()
+    pg.locator(".gui-warchief__hint").first.wait_for(state="visible", timeout=WAIT_MS)   # empty: hints
+    field.fill("/ro")
+    pg.locator(".gui-warchief__list .ok-item", has_text="/road").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Tab")
+    assert field.input_value() == "/road "
+    field.fill("/nonsense")
+    field.press("Enter")
+    pg.locator(".gui-warchief__said").wait_for(state="visible", timeout=WAIT_MS)
+    _line(pg, "/orkspace Billing")                               # a new orkspace, and the town goes to it
+    pg.locator(".gui-orkspaces__one.is-selected", has_text="Billing").wait_for(state="visible", timeout=WAIT_MS)
+    first = pg.locator(".gui-orkspaces__one").first
+    first.click()
+    pg.wait_for_function("() => !document.querySelector('.gui-orkspaces__one.is-selected')?.textContent.includes('Billing')",
+                         timeout=WAIT_MS)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    pg.keyboard.press("Escape")
+    title = _hut(pg, bid).locator(".gui-hut__name").inner_text()
+    _line(pg, f"@{title[:3]}", enter=False)
+    pg.locator(".gui-warchief__list .ok-item", has_text=title).click()
+    assert field.input_value() == f"@{title} "
+    field.fill(f"/open @{title}")
+    field.press("Enter")
+    _panel(pg, "Work")
+    pg.locator(".gui-warchief__chip.is-auto", has_text=title).wait_for(state="visible", timeout=WAIT_MS)   # the open one
+    _line(pg, "/demolish")                                       # about the building open
+    pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
@@ -321,7 +385,7 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     fields.locator(".gui-parts__one", has_text="Notes").click()
     drum.locator(".gui-parts__one", has_text="meetings").click()
     pg.wait_for_timeout(500)
-    assert pg.locator(".gui-console").is_hidden()                     # a checkbox never opens the hut
+    assert pg.locator(".gui-panel").count() == 0                      # a checkbox never opens the hut
     assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
     after = {t: box(t) for t in ids}
     shrunk = before["fields"]["height"] - after["fields"]["height"]
@@ -353,8 +417,8 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     _hut(pg, dst).locator(".gui-hut__title").click()
-    _command(pg)
-    roster = pg.locator(".gui-roster")
+    _info(pg)
+    roster = pg.locator(".gui-steward-part")
     roads = roster.locator(".gui-steward__road")
     roads.first.wait_for(state="visible", timeout=WAIT_MS)
     assert roads.count() == 1                                        # the Pit takes only roads to an ork
@@ -377,7 +441,7 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     assert next(u for u in server_building(pg, dst)["steward"]["uses"] if u["id"] == "watch")["tier"] == "laborer"
     pg.wait_for_function("() => document.querySelector('.gui-steward__model').textContent.includes('+1')", timeout=WAIT_MS)
     roads.filter(has_text="Coder").locator(".gui-steward__more").click()     # › the ork itself
-    roster.locator(".ok-win__title", has_text="Inventory").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-panel .gui-info-tab h3", has_text="Inventory").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     pg.keyboard.press("Escape")
     for bid in (src, dst):
@@ -388,9 +452,9 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     """The project's name opens the town's settings: its autonomy and, on the clock, its two waits;
     Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
     pg = page
-    hud, status = pg.locator(".gui-hud"), pg.locator(".gui-status")
-    assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1
-    assert status.get_by_role("button", name="Stop all", exact=True).count() == 0 and hud.get_by_text("Ready").count() == 0
+    hud = pg.locator(".gui-hud")
+    assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1 and hud.get_by_text("Ready").count() == 0
+    assert hud.get_by_role("button", name="Answers", exact=True).count() == 1          # the orks' questions, always there
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
@@ -422,8 +486,8 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
     _hut(pg, fields).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     _hut(pg, fields).locator(".gui-hut__title").click()
-    _command(pg)
-    pg.locator(".gui-roster .gui-steward__group summary button").first.click()          # + Listen
+    _info(pg)
+    pg.locator(".gui-steward-part .gui-steward__group summary button").first.click()    # + Listen
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
     manual = modal.locator("details.gui-road__manual")
