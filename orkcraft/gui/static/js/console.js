@@ -1,6 +1,6 @@
 // The console of a selected building, laid out as the TUI's (screens/console.py): to the right of the
 // War Map, Info (UnitInfo), the garrison or a picked ork's Inventory (ClanRoster), the Command Card.
-// Info as in the TUI: the name with Good / Bad / Pin / Demolish (an ork's: Good / Bad / Dismiss),
+// Info as in the TUI: the name with 👍 / 👎 and their counts, Demolish (an ork's: 👍 / 👎 / Dismiss),
 // why it is here, one line of what it spent and its runs with History, one line of who it listens to
 // with Listen (a road there picks it: its handler, removing it). The garrison keeps the steward's own
 // settings and commands under it: the goal its retros aim at, how freely it applies their changes (the
@@ -42,6 +42,13 @@ function useInfo(id, ork) {
   const t = town.value;
   useEffect(() => { ask(id, ork); }, [id, ork, t]);
   return infos.value[keyOf(id, ork)];
+}
+
+/** 👍 or 👎 with how many it got: a like or a dislike, the same in Office and in Camp. */
+function Thumb({ up, count, title, onClick }) {
+  const label = say(up ? "Good" : "Bad");
+  return html`<button class=${cls("ok-act gui-thumb", { "is-down": !up })} title=${title} aria-label=${label} onClick=${onClick}>
+    <span aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
 }
 
 function Act({ label, title, onClick }) {
@@ -131,13 +138,11 @@ function Row({ text, children, title }) {
 function BuildingInfo({ b, i, redo, open }) {
   const run = (name, args = {}) => command(name, { id: b.id, ...args }).then(redo, () => {});
   const w = i.week;
-  const runs = `${i.spend_plain} · week: ${w.runs} runs (${w.ok} ✓ ${w.failed} ✗) · ${w.results} results · good ${i.likes} bad ${i.dislikes}`;
+  const runs = `${i.spend_plain} · week: ${w.runs} runs (${w.ok} ✓ ${w.failed} ✗) · ${w.results} results`;
   return html`<section class="gui-info">
     <${Row} text=${html`<b>${say(b.title)}</b>`}>
-      <${Act} label=${say("Good")} title=${say("Its last result becomes a reference")} onClick=${() => run("building.like")} />
-      <${Act} label=${say("Bad")} title=${say("What went wrong?")} onClick=${() => open("dislike")} />
-      <${Act} label=${say(i.pinned ? "Unpin" : "Pin")} title=${say("A pinned building keeps its place on the town")}
-        onClick=${() => run("building.pin")} />
+      <${Thumb} up count=${i.likes} title=${say("Good: its last result becomes a reference")} onClick=${() => run("building.like")} />
+      <${Thumb} count=${i.dislikes} title=${say("Bad: what went wrong?")} onClick=${() => open("dislike")} />
       ${b.id !== HALL && html`<${DemolishButton} b=${b} />`}
     </${Row}>
     <p class="ok-font-body gui-info__about">${i.about_plain}</p>
@@ -156,13 +161,13 @@ function BuildingInfo({ b, i, redo, open }) {
 
 function OrkInfo({ b, o, i, redo, open }) {
   const run = (name, args = {}) => command(name, { id: b.id, ork: o.ref, ...args }).then(redo, () => {});
-  const runs = [i.spend_plain, i.context && `${i.context} in context`, i.garrison && `good ${i.likes} bad ${i.dislikes}`,
+  const runs = [i.spend_plain, i.context && `${i.context} in context`,
                 i.deployed ? "deployed" : "not deployed"].filter(Boolean).join(" · ");
   return html`<section class="gui-info">
     <${Row} text=${html`${o.tier && html`<span class="ok-tone-muted">${o.tier} </span>`}<b>${o.lead ? "★ " : ""}${o.name}</b>
         <span class="ok-tone-muted"> · ${say(b.title)}</span>`}>
-      ${i.garrison && html`<${Act} label=${say("Good")} title=${say("Good work: noted on this ork")} onClick=${() => run("ork.like")} />
-        <${Act} label=${say("Bad")} title=${say("What went wrong?")} onClick=${() => open("ork-bad")} />`}
+      ${i.garrison && html`<${Thumb} up count=${i.likes} title=${say("Good work: noted on this ork")} onClick=${() => run("ork.like")} />
+        <${Thumb} count=${i.dislikes} title=${say("Bad work: what went wrong?")} onClick=${() => open("ork-bad")} />`}
       ${i.garrison && !i.lead && html`<${Act} label=${say("Dismiss")} title=${say("It leaves the garrison (a steward stays)")}
         onClick=${() => command("ork.dismiss", { id: b.id, ork: o.ref }).then(() => selectOrk(null), () => {})} />`}
     </${Row}>

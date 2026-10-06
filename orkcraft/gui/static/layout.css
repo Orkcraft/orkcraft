@@ -137,6 +137,8 @@ button { font: inherit; color: inherit; }
 .gui-info__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gui-info__row .gui-win__demolish { margin-left: 0; }
 .gui-info__row .gui-link b { text-decoration: underline dotted; }
+.gui-thumb { gap: 3px; }
+.gui-thumb__n { font-size: .9em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .gui-info__about { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .gui-console__sep { padding: var(--space-1) 0 0; }
 .gui-console__row.is-static { cursor: default; }
