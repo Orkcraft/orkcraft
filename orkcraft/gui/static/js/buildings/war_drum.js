@@ -12,6 +12,7 @@ import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
 
+
 const sheet = new URL("./war_drum.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
   const link = document.createElement("link");
@@ -43,8 +44,8 @@ function prepare(id, e) {
 
 function DocMark({ id, e }) {
   if (!e.doc) return null;
-  return html`<button class="ok-chip" title=${say(`Open ${e.doc} in Lake`)}
-    onClick=${(ev) => { ev.stopPropagation(); openDoc(id, e); }}>doc</button>`;
+  return html`<button class="ok-chip is-on gui-drum__doc" title=${say(`Open ${e.doc} in Lake`)}
+    onClick=${(ev) => { ev.stopPropagation(); openDoc(id, e); }}>📄 doc</button>`;
 }
 
 function NewEvent({ id }) {
@@ -94,7 +95,8 @@ function Beat({ b }) {
       title=${b.approx ? say(ESTIMATE) : b.detail}>
     <span class="gui-drum__glyph" aria-hidden="true">${MARK[b.kind]}</span>
     <b class="gui-drum__when">${beatWhen(b)}</b>
-    <span class="gui-drum__title">${beatTitle(b)}${b.doc ? html` <span class="ok-word ok-tone-muted">doc</span>` : ""}</span>
+    <span class="gui-drum__title">${beatTitle(b)}</span>
+    ${b.doc && html`<span class="ok-chip is-on gui-drum__doc" title=${say("Its document is ready")}>📄 doc</span>`}
     <span class="gui-drum__meta">${beatMeta(b)}</span></li>`;
 }
 
@@ -122,10 +124,11 @@ const KINDS = [
 export function card(b) {
   const c = b.card;
   if (!c) return null;
+  const kinds = KINDS.filter((k) => !c.kinds || c.kinds.includes(k.key));   // its `beats`: a calendar may hold meetings alone
   const on = (x) => shown(b.id, x.kind);
   const beats = c.beats.filter(on);
   return html`<div class=${cls("gui-drum", { "is-folded": hidden(b.id).length > 0 })}>
-    <${PartToggles} id=${b.id} parts=${KINDS} />
+    ${kinds.length > 1 && html`<${PartToggles} id=${b.id} parts=${kinds} />`}
     <${Strip} c=${{ ...c, strip: c.strip.filter(on) }} />
     ${beats.length ? html`<ul class="gui-drum__beats">${beats.map((x) => html`<${Beat} key=${beatKey(x)} b=${x} />`)}</ul>`
       : html`<p class="ok-tone-muted">${c.error ? "the calendar cannot be read" : "nothing ahead"}</p>`}

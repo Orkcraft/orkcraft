@@ -417,11 +417,14 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 - Specs of the earlier building types load as their camp buildings (`mail` → Watchtower, `tasks` → Task
   Fields, `git` → Forge…; an Agent / Script becomes a Mill step or a one-ork Barracks); event ids
   are unchanged, so old roads keep working.
-- `orkcraft --demo --demo-set dashboard` opens all of them on five canvases (My Day, Agent Yard,
-  Gates, Library — three LLM wikis, code, team and design, that tasks pass through — and Front Desk:
+- `orkcraft --demo --demo-set dashboard` opens all of them on six canvases (My Day, Agent Yard,
+  Gates, Library — three LLM wikis, code, team and design, that tasks pass through — Front Desk:
   mail and Slack triaged by a Clan Fire that routes, to your to-dos or to an ork that does the task by
-  itself) in a real git repository; agents never run there and the Catapult only dry-runs.
-  `python tools/landing_flow.py` films the Front Desk's flow, frame by frame and as a video.
+  itself — and Meetings: a mail that asks to meet becomes an event in the War Drum, which asks for its
+  brief at once; an ork writes it from the Scroll Dump's notes and it comes back to the event) in a real
+  git repository; agents never run there and the Catapult only dry-runs.
+  `python tools/landing_flow.py [--flow desk|meeting|all]` films the Front Desk's flow or the Meetings'
+  one, frame by frame and as a video.
 
 ## Windows (tiles view)
 
@@ -582,7 +585,7 @@ touched). Data is simulated; chains run for real, agents show a prepared last re
 call a model. `--demo-reset` rebuilds it; `--demo-screens OUT` walks F1–F8 headless and saves
 SVG + PNG screenshots. `--demo-set managers` opens a second sandbox (default
 `~/.orkcraft-demo-managers`) with the engineering-manager 1on1-Prep canvas; `--demo-set dashboard`
-one with every building type the catalog builds (My Day, Agent Yard, Gates, Library, Front Desk) in a real git
+one with every building type the catalog builds (My Day, Agent Yard, Gates, Library, Front Desk, Meetings) in a real git
 repository, each with a few days of state: tasks, a calendar around the hour it was built, signals
 (the Watchtower asks no server: one feed fails on purpose), routes, mill runs, PRs as `gh` would
 list them, a conflict, orks with questions on their screens. `orkcraft gui --demo` opens this set

@@ -56,7 +56,7 @@ def test_barracks_closed_command_and_full(fake_repo, monkeypatch):
     bid = _raised(host, "barracks", worktrees=False, max_orcs=2)
     b = _card(host, bid)
     assert b["page"] and b["card"] == {"asks": "", "active": 0, "max": 2, "queue": 0, "done": 0, "failed": 0,
-                                       "spent": "$0.00", "paused": False}
+                                       "spent": "$0.00", "paused": False, "working": []}
     assert host.command("info", {"id": bid})["quick"] == []      # its preview draws them
 
     task = host.command("act", {"id": bid, "act": "task", "args": {"title": " Write  the changelog ", "brief": "for v0.2"}})
@@ -131,7 +131,7 @@ def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
     monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
     host = _host(fake_repo)
     bid = _raised(host, "council", members=["Planner:claude"], veto=["Planner"], max_cycles=3)
-    assert _card(host, bid)["card"] == {"state": "none", "queued": 0}
+    assert _card(host, bid)["card"] == {"state": "none", "queued": 0, "triage": False, "of": 1}
     assert host.command("info", {"id": bid})["quick"] == []
 
     assert host.command("act", {"id": bid, "act": "review", "args": {"text": "# Launch plan\n\nShip it."}}) == "started"

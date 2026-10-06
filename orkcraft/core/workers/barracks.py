@@ -19,7 +19,12 @@ The steward — the building's own orc — keeps the rules (`orders`) and judges
 Tokens: a follow-up, a rework or a related task resumes the orc's session and sends only what is new
 (♻ warm); a cold start sends the briefing, plus a handoff of the orc's recent work only when related.
 A `[meet:<id>]` tag in the cart (a War Drum's meeting) stays in the task's title, so `pool.done`
-finds its way back to the meeting even when a Signpost renamed the cart to its route.
+finds its way back to the meeting even when a Signpost renamed the cart to its route — unless the
+cart's `ref` names the meeting already (a return road takes it home by that, the title stays clean).
+
+`notes` names Scroll Dumps to read first: a task that arrives goes to each of them (directly, not by
+a road), which sends it back with the notes it found as `knowledge.chunks` (core/workers/scrolls.py
+`lend`), and the task starts when that cart arrives. A Scroll Dump no road brings back from is skipped.
 
 The orcs run in threads of the worker; what they come to is applied on the town's thread
 (`town.call`). `tick()` looks at the pull requests of done tasks now and then (a face calls it).
@@ -276,14 +281,37 @@ class BarracksWorker(PlanMixin, Worker):
         if draft is not None:                   # a Loot or a Clan Fire sent the draft back: what to change
             self.answer(draft.id, markdown or payload.value or "the review sent it back")
             return
+        if self._read_first(payload):           # it comes back with the notes
+            return
         text = markdown or payload.value
         first = text.strip().splitlines()[0][:60] if text.strip() else "task"
         title = payload.title or first
         meet = daybook.meet_tag(title) or daybook.meet_tag(text)
+        if meet and payload.ref.endswith(f":{meet}"):
+            meet = ""                           # its ref finds the meeting: the title stays as it is
         if meet and daybook.meet_tag(title[:80]) != meet:          # the task keeps 80 characters
             title = f"{title.replace(f'[meet:{meet}]', '').strip()[:80 - len(meet) - 8]} [meet:{meet}]"
         self.add_task(title, text, bk.task_key(payload.kind, payload.value, payload.title),
                       ref=payload.ref, trail=payload.trail)
+
+    @property
+    def notes(self) -> list[str]:
+        """The Scroll Dumps a task reads first (`notes`)."""
+        got = self.config.get("notes") or []
+        return [str(x) for x in ([got] if isinstance(got, str) else got) if str(x) != self.building_id]
+
+    def _read_first(self, payload) -> bool:
+        """Send a new task to the notes it reads first; True when one sends it back by a road."""
+        if not hasattr(self, "town") or payload.mode.endswith("rework") or not self.notes \
+                or payload.source in self.notes:
+            return False
+        sent = False
+        for bid in self.notes:
+            lend = getattr(self.town.worker(bid), "lend", None)
+            if lend is not None and lend(payload, self.building_id):
+                sent = True
+                break
+        return sent
 
     def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
@@ -669,8 +697,10 @@ class BarracksWorker(PlanMixin, Worker):
                                else ("local, no pull request: " if local else "") + (out.notes or "accepted")))
             where = f"\n\n_pull request:_ {out.pr}" if out.pr else (f"\n\n_branch:_ `{task.branch}`" if task.branch else "")
             note = f" (published to {task.target or 'its place'} after your approval)" if published else \
-                " (a local document: no pull request)" if local else \
+                " (a local document: no pull request)" if local and not self._meeting(task) else \
                 (f" ({out.pr_note})" if out.pr_note and not out.pr else "")
+            if note and not where:               # a line of its own, not the end of the report's last line
+                note = f"\n\n_{note.strip()[1:-1]}_"
             self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}"
                       + self._files_md(task), task.title, trail=self._trail(task, orc, "done"), ref=task.ref)
         else:

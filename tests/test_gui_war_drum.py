@@ -78,7 +78,8 @@ def test_the_drum_worker_keeps_the_day_without_a_face(fake_repo, clock, monkeypa
     assert [p.mode for p in sent] == ["calendar.day_schedule"] and w.mini_status()[0] == "▶ Standup"
     clock["now"] = at(12, 0)
     w.tick()
-    assert sent[-1].mode == "calendar.event_upcoming" and sent[-1].title.startswith("1:1 Ann [meet:")
+    assert sent[-1].mode == "calendar.event_upcoming" and sent[-1].title == "1:1 Ann" \
+        and sent[-1].ref == f"drum:{daybook.meet_id(w.today()[1])}" and "[meet:" in sent[-1].value
     assert w.prepare() == "" and sent[-1].title.startswith("1:1 Ann")              # the next meeting, at once
     start = w.add("Lunch", "12:30", 45)
     assert start == at(12, 30) and sent[-1].mode == "calendar.event_added" and "Lunch" in (fake_repo / "cal.ics").read_text()
@@ -103,7 +104,8 @@ def test_the_drum_in_the_gui_card_detail_and_acts(fake_repo, clock):
     card = hut["card"]
     assert hut["page"] and [(b["kind"], b["at"], b["title"], b["now"], b["doc"]) for b in card["beats"]] == [
         ("meeting", "09:00", "Standup", True, False), ("meeting", "14:00", "1:1 Ann", False, False),
-        ("meeting", "16:00", "Retro", False, False), ("meeting", "17:30", "Wrap-up", False, False)]
+        ("meeting", "16:00", "Retro", False, False), ("meeting", "17:30", "Wrap-up", False, False),
+        ("meeting", "10:00", "Planning", False, False)]                  # tomorrow's too
     assert card["left"] == 3 and card["now"] == "09:10" and not card["error"]
     d = host.detail("drum")
     assert [leaf.pane["id"] for leaf in ui.leaves(d["ui"])] == ["head", "day", "week", "meeting", "settings"]

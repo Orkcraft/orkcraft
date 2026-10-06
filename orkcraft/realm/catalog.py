@@ -180,7 +180,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
                 "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
-                "plan": (bool, None, False), "escalate": (bool, None, False)},
+                "plan": (bool, None, False), "escalate": (bool, None, False),
+                "notes": (list, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Clan Fire", "🪔", "M",
@@ -208,11 +209,13 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("calendar.event_removed", "event removed", TEXT, "an event was removed"),
                 _e("calendar.day_schedule", "day schedule", TEXT, "the morning digest: today's events"),
                 _e("calendar.event_upcoming", "meeting soon", TEXT,
-                   "a meeting starts in `lead` (2h): time to prepare its document; tagged [meet:<id>]"),
+                   "a meeting starts in `lead` (2h), or was just added with `prepare_new`: time to prepare its "
+                   "document; titled by the meeting, tagged [meet:<id>], its ref the meeting's"),
                 _e("calendar.doc_opened", "doc opened", FILE, "Enter on a meeting with a document: the document")),
         actions=(_a("calendar.new", "New event", "+", "add an event"),
                  _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now")),
-        config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False)},
+        config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False),
+                "prepare_new": (bool, None, False), "beats": (list, None, False)},
         art="war_tent", orc="Drummer"),
     # -- 3. storage, code and inspection ---------------------------------------------------------------
     BuildingType(
@@ -231,7 +234,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "pages people own stay theirs, the Council spot-checks, every change is committed",
         "the topic, pages, sources, what is not taken in yet", "the wiki's pages and the sources; i ingests, l lints",
         events=(_e("knowledge.changed", "knowledge changed", FILE, "a source or a wiki page was added or changed"),
-                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's map, for the agent to read from"),
+                _e("knowledge.chunks", "wiki context", TEXT, "a task with the wiki's map and the pages that matter most for "
+                   "it, for the agent to read from (also when a Barracks reads it first: `notes`)"),
                 _e("wiki.updated", "wiki updated", TEXT, "an ingest finished: the pages added, changed, marked stale"),
                 _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found"),
                 _e("wiki.review", "spot-check", TEXT, "a sample of freshly written pages, for the Council to check")),

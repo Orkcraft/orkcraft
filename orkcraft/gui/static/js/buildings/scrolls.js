@@ -12,6 +12,9 @@ const CSS = `
 .gui-scrolls__recent { list-style: none; margin: 0; padding: 0; }
 .gui-scrolls__recent li { display: flex; gap: var(--space-2); align-items: baseline; }
 .gui-scrolls__recent .gui-tree__item { flex: 1; min-width: 0; }
+.gui-scrolls__lent ul { list-style: none; margin: 0; padding: 0; }
+.gui-scrolls__lent li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-scrolls__lent li::before { content: "▪ "; color: var(--ink-muted); }
 `;
 if (typeof document !== "undefined" && !document.getElementById("gui-css-scrolls")) {
   const style = document.createElement("style");
@@ -106,13 +109,21 @@ function ago(mtime) {
     : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 }
 
-/** Closed: the pages and what waits to be taken in, nothing more (docs/design/building-views.md). */
+/** The notes a task was given lately: what it is and the pages named for it. */
+function Lent({ lent }) {
+  return html`<div class="gui-scrolls__lent">
+    <div class="ok-tone-accent">Read for: <b>${lent.task}</b></div>
+    <ul>${lent.pages.map((t) => html`<li key=${t}>${t}</li>`)}</ul></div>`;
+}
+
+/** Closed: the pages and what waits to be taken in (docs/design/building-views.md); the notes a task
+ * was given lately, while they are fresh. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  return html`<div><b>${c.pages}</b> page${c.pages === 1 ? "" : "s"}</div>
-    <div class=${c.error ? "ok-tone-fire" : c.running || c.pending ? "ok-tone-wait" : "ok-tone-muted"}>
-      ${c.running ? `${c.running}…` : c.pending ? `${c.pending} pending` : "nothing pending"}</div>`;
+  return html`<div><b>${c.pages}</b> page${c.pages === 1 ? "" : "s"}${c.lent ? "" : html`${" "}<span class=${c.error ? "ok-tone-fire" : c.running || c.pending ? "ok-tone-wait" : "ok-tone-muted"}>
+      · ${c.running ? `${c.running}…` : c.pending ? `${c.pending} pending` : "nothing pending"}</span>`}</div>
+    ${c.lent && html`<${Lent} lent=${c.lent} />`}`;
 }
 
 /** The type's quick actions in its Info (realm/catalog.py). */

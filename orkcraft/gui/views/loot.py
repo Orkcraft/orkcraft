@@ -29,13 +29,26 @@ def _waiting_cost(items) -> str:
 
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): `N to review` or `all reviewed ✓`, `passed: N` and what
-    the waiting carts cost."""
+    the waiting carts cost; what came of the newest one that passed."""
     if w.error:
         return {"error": " ".join(w.error.split())[:60]}
     waiting = [i for i in w.queue.items if i.status in (gate.HELD, gate.NEEDS_YOU)]
     return {"to_review": len(waiting), "needs_you": sum(1 for i in waiting if i.status == gate.NEEDS_YOU),
             "files": sum(1 for g in w.rows if not g.reviewed), "passed": len(w.stored),
-            "cost": _waiting_cost(waiting)}
+            "cost": _waiting_cost(waiting), "latest": _latest(w)}
+
+
+_OUTCOMES: dict[str, str] = {}          # a kept cart's path → what came of it (kept carts do not change)
+
+
+def _latest(w) -> str:
+    """What came of the newest kept cart, in a line ("" when nothing passed)."""
+    if not w.stored:
+        return ""
+    newest = max(w.stored, key=lambda x: x.at)
+    if newest.path not in _OUTCOMES:
+        _OUTCOMES[newest.path] = (_gist(w, newest.path).get("outcome") or newest.title)[:80]
+    return _OUTCOMES[newest.path]
 
 
 def _chain(hops, names: dict[str, str]) -> list[dict]:

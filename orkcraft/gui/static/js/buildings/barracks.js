@@ -126,6 +126,7 @@ export function card(b) {
   if (!c) return null;
   return html`<div>
     ${c.asks && html`<div class="ok-tone-fire">${c.asks} asks</div>`}
+    ${(c.working || []).map((w) => html`<div key=${w.ork} class="ok-tone-accent gui-hut__line">⚒ <b>${w.ork}</b> · ${w.task}</div>`)}
     <div>active ${c.active}/${c.max} · queue ${c.queue}${c.paused ? html` · <span class="ok-tone-wait">⚠ paused</span>` : ""}</div>
     <div>✓${c.done} ✗${c.failed} · ${c.spent}</div>
   </div>`;

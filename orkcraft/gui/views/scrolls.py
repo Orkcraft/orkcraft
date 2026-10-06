@@ -3,6 +3,8 @@ page open. The work (ingest, lint, stop, a folder connected) is the worker's
 (core/workers/scrolls.py)."""
 from __future__ import annotations
 
+import time
+
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import shelves, wiki
@@ -11,6 +13,7 @@ from orkcraft.sources import lore
 REFRESH_S = 30.0              # as the TUI
 ITEMS = 2000                  # rows per branch of the tree: a huge source is cut, the window stays quick
 RECENT = 5                    # the last changed pages the Command Card shows
+LENT_SHOWN_S = 600.0          # how long the card says which notes a task was given
 
 
 def refresh(w) -> None:
@@ -30,7 +33,15 @@ def _state(w) -> str:
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): the pages and what waits to be taken in, nothing more."""
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
-            "error": bool(w.last_error)}
+            "error": bool(w.last_error), "lent": _lent(w)}
+
+
+def _lent(w) -> dict | None:
+    """The task it gave notes to lately: its title and the pages named for it."""
+    lent = w.lent
+    if not lent or time.time() - lent.get("at", 0) > LENT_SHOWN_S:
+        return None
+    return {"task": lent["task"], "pages": lent["pages"]}
 
 
 def _recent(w) -> list[dict]:
@@ -60,7 +71,7 @@ def detail(w) -> dict:
         "topic": w.topic, "root": rel, "pages_count": count, "state": _state(w),
         "state_plain": _state(w).replace("⚠ ", ""), "running": w.running, "error": bool(w.last_error),
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
-        "recent": _recent(w),
+        "recent": _recent(w), "lent": _lent(w),
     }
 
 

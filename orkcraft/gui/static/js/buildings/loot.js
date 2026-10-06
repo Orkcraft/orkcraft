@@ -218,7 +218,8 @@ function Cart({ id, data }) {
   return html`<p class="ok-tone-muted">Pick a cart, a file or what passed.</p>`;
 }
 
-/** Closed: `N to review` or `all reviewed ✓`, `passed: N` and what the waiting carts cost. */
+/** Closed: what came of the newest cart that passed; `N to review` or `all reviewed ✓`, `passed: N` and
+ * what the waiting carts cost. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
@@ -226,7 +227,7 @@ export function card(b) {
   const first = c.to_review
     ? html`<b>${c.to_review}</b> to review${c.needs_you ? html` · <span class="ok-tone-fire">${c.needs_you} need you</span>` : ""}`
     : c.files ? html`<b>${c.files}</b> files to review` : html`all reviewed <span class="ok-tone-ok">✓</span>`;
-  return html`<div>${first}</div>
+  return html`${c.latest && html`<div class="ok-tone-ok"><b>✓ ${c.latest}</b></div>`}<div>${first}</div>
     <div>passed: <b>${c.passed}</b>${c.cost && html` · <span class="ok-tone-wait">${c.cost}</span> waiting`}</div>`;
 }
 

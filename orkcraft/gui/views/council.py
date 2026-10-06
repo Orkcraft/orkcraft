@@ -26,7 +26,7 @@ def card(w) -> dict:
     """Closed (docs/design/building-views.md): `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews, else the last
     outcome; `N queued`."""
     d = w.current
-    out = {"state": "none", "queued": len(w.waiting)}
+    out = {"state": "none", "queued": len(w.waiting), "triage": bool(w.routes), "of": len(w.team)}
     if d is None:
         return out
     out.update({"state": "running" if d.outcome == "running" else d.outcome, "cycle": d.cycle, "max": w.max_cycles,
@@ -48,7 +48,8 @@ def _turn(t: tm.Turn) -> dict:
 def _review(w, d: tm.Discussion, full: bool) -> dict:
     row = {"id": d.id, "title": d.title, "cycle": d.cycle, "outcome": d.outcome,
            "outcome_word": OUTCOME.get(d.outcome, d.outcome), "spent": _money(d.spent),
-           "started": d.started.replace("T", " ")[:16], "route": d.route, "task": d.task, **_tally(d)}
+           "started": d.started.replace("T", " ")[:16], "route": d.route, "task": d.task, "when": d.when,
+           **_tally(d)}
     if full:
         row.update({"doc": d.doc[:KEEP], "doc_html": markdown.render(d.doc), "doc_path": d.doc_path,
                     "question": d.question if d.outcome == "asked" else "", "decision": d.decision, "error": d.error,

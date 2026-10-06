@@ -34,7 +34,7 @@ def cart(value: str, ref: str, cost: float = 0.05) -> pipes.Payload:
 def test_the_card_counts_what_waits_and_what_it_cost(loot):
     host, bid, w = loot
     card = lambda: next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": ""}
+    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": "", "latest": ""}
     w.receive(cart("one", "A"), "Doc A", "one")
     w.receive(cart("two", "B", 0.10), "Doc B", "two")
     assert card()["to_review"] == 2 and card()["cost"] == "8.0k tok $0.15"
