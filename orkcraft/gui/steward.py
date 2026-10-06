@@ -11,7 +11,7 @@ from orkcraft.core import buildings as core_buildings
 from orkcraft.core import runners
 from orkcraft.design import ui
 from orkcraft.gui.jobs import ConsoleError, plain
-from orkcraft.realm import builders, steward
+from orkcraft.realm import steward
 
 
 class StewardMixin:
@@ -26,8 +26,8 @@ class StewardMixin:
         budget_ok = not self.host.treasury.exhausted(quiet=True)
 
         def work() -> steward.StewardReport:
-            report = steward.watch(repo, snapshot, bs.id, carts=carts, runs=runs,
-                                   runner=runners.STEWARD_RUNNER or builders.claude_runner, budget_ok=budget_ok)
+            report = steward.watch(repo, snapshot, bs.id, carts=carts, runs=runs, budget_ok=budget_ok,
+                                   runner=steward.runner_for(snapshot.building(bs.id), "watch", runners.STEWARD_RUNNER))
             try:
                 steward.save_report(repo, report)
             except OSError:
@@ -113,7 +113,7 @@ class StewardMixin:
 
         def work() -> steward.StewardReport:
             return steward.redesign(repo, snapshot, bs.id, type_id, request,
-                                    runner=runners.STEWARD_RUNNER or builders.claude_runner)
+                                    runner=steward.runner_for(snapshot.building(bs.id), "redesign", runners.STEWARD_RUNNER))
 
         def done(job: dict, report: steward.StewardReport) -> None:
             if not report.proposals:

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from orkcraft import autonomy
 from orkcraft import scroll as ts
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
@@ -68,7 +69,22 @@ def _about(town: Town, building_id: str) -> str:
     return about or getattr(bs, "role", "") or "No description yet."
 
 
-def _listens(town: Town, building_id: str) -> list[dict[str, Any]]:
+KINDS = {"agent": "agent", "hybrid": "agent + script", "script": "script", "chain": "chain"}
+
+
+def _handler(town: Town, muster: Muster, building_id: str, orc) -> dict[str, Any]:
+    """One handler of the garrison as the steward's window lists it: who, what kind, what it does now,
+    and what a click edits (an agent's orders, a script's file)."""
+    ref = f"{building_id}/{orc.id}"
+    live = find_ork(muster, ref)
+    return {"ref": ref, "name": orc.name, "kind": orc.kind, "kind_label": KINDS.get(orc.kind, orc.kind),
+            "status": live.status if live is not None else orc.status,
+            "tier": tiers.orc_tier(orc.harness, orc.kind) or "",
+            "script": str((orc.script or {}).get("path") or ""),
+            "trigger": str((orc.trigger or {}).get("type") or "on_demand")}
+
+
+def _listens(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any]]:
     """Who the building listens to, and which ork (or a plain road) takes each cart."""
     scroll = town.scroll
     target = scroll.building(building_id)
@@ -80,8 +96,43 @@ def _listens(town: Town, building_id: str) -> list[dict[str, Any]]:
                     "title": src.title if src else road.source,
                     "label": road.label or pipes.label(road.event),
                     "handler": orc.name if orc is not None else "",
-                    "tier": tiers.orc_tier(orc.harness, orc.kind) or "" if orc is not None else ""})
+                    "tier": tiers.orc_tier(orc.harness, orc.kind) or "" if orc is not None else "",
+                    "by": _handler(town, muster, building_id, orc) if orc is not None else None})
     return out
+
+
+def _others(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any]]:
+    """The handlers no road brings carts to: they work on a schedule or when asked."""
+    b = town.scroll.building(building_id)
+    if b is None:
+        return []
+    on_roads = {r.handler for r in b.roads if r.handler}
+    return [_handler(town, muster, building_id, h) for h in b.garrison.handlers if h.id not in on_roads]
+
+
+def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
+    """The building's steward (its garrison's lead) for the head of its window: name, status, model."""
+    lead = next((o for o in muster.roster.garrison(building_id) if o.lead), None)
+    if lead is None:
+        return None
+    term = terminal_of(lead)
+    models = inventory.models_of(lead, town.snapshot.model_by_terminal.get(term, "") if term else "")
+    bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
+    uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use)}
+            for use, label in steward.uses(catalog.type_of(spec).id if spec else "").items()]
+    picked = [u["tier"] for u in uses if u["tier"]]
+    default = models[0][1] if models else ""
+    first = modes.text(tiers.label(picked[0]), modes.OFFICE) if picked else default
+    return {"ref": lead.ref, "name": lead.name, "status": lead.status, "tier": lead.tier or "",
+            "model": first or "default", "more": len({u["tier"] or "" for u in uses}) - 1 if picked else 0,
+            "default": default, "uses": uses, "own": bs is not None and bs.garrison.steward is not None}
+
+
+def _town_autonomy(town: Town) -> str:
+    """The town's autonomy level, which a building without its own follows: `📜 Morning advice`."""
+    level = getattr(town.machine, "autonomy", autonomy.DEFAULT_LEVEL)
+    lv = next((x for x in autonomy.LEVELS if x.n == level), autonomy.LEVELS[autonomy.DEFAULT_LEVEL])
+    return f"{lv.icon} {lv.title}"
 
 
 def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
@@ -104,7 +155,11 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
         "pinned": bool(bs.pinned),
         "can_revert": checkpoint.can_revert(town.repo_root, building_id),
-        "listens": _listens(town, building_id),
+        "autonomy": bs.autonomy or "",
+        "town_autonomy": _town_autonomy(town),
+        "listens": _listens(town, muster, building_id),
+        "others": _others(town, muster, building_id),
+        "steward": _steward(town, muster, building_id),
         "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
                  [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
     }

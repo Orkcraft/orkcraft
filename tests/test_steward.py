@@ -143,3 +143,41 @@ def test_chronicle_events_exist():
         "steward: 2 finding(s), 1 proposal(s)"
     assert chronicles.describe({"type": "proposal_applied", "what": "Seer demoted to a chain"})[1] == \
         "applied: Seer demoted to a chain"
+
+
+def test_a_steward_runs_each_task_on_its_own_tier(monkeypatch, tmp_path):
+    """`OrcSpec.models`: a tier per task (watch, redesign, keeper, the type's own); the scroll keeps it,
+    the model call takes it, an unset task runs on the default, a test's fake runner stays as it is."""
+    import threading
+    from orkcraft.core.workers.barracks import BarracksWorker, RunOutcome
+    from orkcraft.realm import builders
+    presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
+    s = ts.default_scroll(presets, raised=["a"])
+    b = s.building("a")
+    b.garrison.steward = ts.OrcSpec("keeper", "Grunts")
+    assert steward.set_models(b, {"watch": "laborer", "review": "elder", "keeper": "", "nonsense": "elder"}) == \
+        {"watch": "laborer", "review": "elder"}
+    back = ts.TownScroll.from_dict(s.to_dict()).building("a")
+    assert back.garrison.steward.models == {"watch": "laborer", "review": "elder"} and ts.validate(s.to_dict()) == []
+    assert steward.model_for(back, "watch") == "haiku" and steward.model_for(back, "redesign") == ""
+    calls = []
+    monkeypatch.setattr(builders, "claude_runner", lambda prompt, model=None: calls.append(model) or ("{}", None))
+    steward.runner_for(back, "watch")("p")
+    steward.runner_for(back, "redesign")("p")
+    assert calls == ["haiku", None]
+    fake = lambda prompt: ("{}", None)                               # noqa: E731
+    assert steward.runner_for(back, "watch", fake) is fake
+    assert "answer" in steward.uses("barracks") and "answer" not in steward.uses("forge")
+
+    seen = []
+
+    class Pool:                                                      # the Barracks' steward: its review on its tier
+        steward_runner = staticmethod(lambda h, p, w, c, m: seen.append((h, m)) or ("ACCEPT", 0.0))
+        config = {"steward": "claude:warrior"}
+        building_id, simulated = "a", False
+
+        class town:
+            scroll = s
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), use="review")
+    BarracksWorker._steward(Pool(), "answer it", tmp_path, threading.Event(), RunOutcome(), use="answer")
+    assert seen == [("claude", "opus"), ("claude", "sonnet")]      # review: elder; answer: its setting's

@@ -64,7 +64,8 @@ the reset, thrift wins over quality (§3).
 
 A three-stop slider, like the autonomy slider: **🪙 Thrift · ⚖️ Balance · 💎 Quality**. Stored in the
 Town Scroll as `buildings[].goal`: `"thrift" | "balance" | "quality"`; missing means ⚖️ Balance.
-Set from the Info panel: the goal button beside 👍 / 👎 cycles it.
+Set under the building's steward in the garrison (GUI: `↳ Goal: …`, a click cycles it; TUI: the goal
+key in the Info panel).
 
 | | 🪙 Thrift | ⚖️ Balance | 💎 Quality |
 |---|---|---|---|
@@ -91,6 +92,15 @@ Set from the Info panel: the goal button beside 👍 / 👎 cycles it.
 - **Autonomy**: `enrich` is applied by the orks themselves only at ⛓️‍💥 Free orks (level 3) — it spends
   more, so it is a bigger step than a shrink. Probation is the same 24 h: a 👎 or more failed runs take
   it back.
+- **A building's own autonomy** — a three-step switch under its steward, beside the goal: **⛓️ In
+  chains · 🕰 On the clock · ⛓️‍💥 Unchained** (Office: Propose only · Apply if unanswered · Apply at
+  once). Stored as `buildings[].autonomy`: `"chains" | "clock" | "free"`; missing (or the lit step
+  clicked again) follows the town's autonomy level as above. It rules what the building's Building
+  retro and its steward propose; **the Town Hall's rules the Town retro** (weekly). In chains nothing
+  lands by itself; on the clock a proposal left unanswered for `evolution.CLOCK_WAIT` (12 h) is
+  applied in the next quiet hours; unchained, in the next quiet hours. Whatever the step, a removal or
+  a note stays advice, and every self-applied change still passes the Council, gets its checkpoint and
+  24 h of probation (`evolution.may_apply`, `Night.candidates`).
 
 ## 4. The Town retro survey (`realm/retro.py`)
 

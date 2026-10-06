@@ -42,7 +42,7 @@ from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, tiers
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, steward, tiers
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -490,10 +490,16 @@ class BarracksWorker(PlanMixin, Worker):
             self.changed()
 
     def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome,
-                 tier: str = plans.REVIEW_TIER) -> str:
-        """One call of the steward, on `tier`'s model — unless `steward` names its model outright."""
+                 use: str = "review", tier: str = plans.REVIEW_TIER) -> str:
+        """One model call of the steward's: `use` is its task (plan | answer | review | final), whose tier its
+        spec may set (realm/steward.py); else the model of its `steward` setting, else `tier`'s."""
         harness, model = bk.parse_provider(str(self.config.get("steward") or "claude"))
-        model = model or tiers.MODELS.get(harness, {}).get(tier, "")
+        scroll = getattr(self.town, "scroll", None)
+        chosen = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
+        if chosen:
+            model = tiers.resolve(harness, chosen)
+        elif not model:
+            model = tiers.MODELS.get(harness, {}).get(tier, "")
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:
@@ -508,7 +514,7 @@ class BarracksWorker(PlanMixin, Worker):
     def _steward_answer(self, task: bk.PoolTask, question: str, workdir: Path, cancel: threading.Event,
                         out: RunOutcome) -> str:
         prompt = bk.steward_question_prompt(self.keeper, self.orders, task, question)
-        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out))
+        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out, use="answer"))
 
     def _review(self, task: bk.PoolTask, workdir: Path, git: jobs.TaskGit | None, cancel: threading.Event,
                 out: RunOutcome) -> None:

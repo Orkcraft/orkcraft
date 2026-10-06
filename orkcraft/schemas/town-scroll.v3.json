@@ -365,6 +365,13 @@
           "type": "string",
           "maxLength": 600,
           "description": "Why this kind (the recruiter's explanation)."
+        },
+        "models": {
+          "type": "object",
+          "description": "A steward's tier per task (watch, redesign, keeper, and its type's own); a missing task runs on the default.",
+          "additionalProperties": {
+            "enum": ["elder", "warrior", "laborer"]
+          }
         }
       }
     },
@@ -424,6 +431,10 @@
         "goal": {
           "enum": ["thrift", "balance", "quality"],
           "description": "What the retros improve it towards: fewer tokens, both, better results (missing: balance)."
+        },
+        "autonomy": {
+          "enum": ["chains", "clock", "free"],
+          "description": "How its retro's changes land (the Town Hall's: the Town retro's): proposed only, applied when unanswered for a day, applied at once (missing: as the town's autonomy)."
         },
         "bounds": {
           "$ref": "#/$defs/bounds"

@@ -16,6 +16,14 @@ silence never makes the camp spend more:
                       from the catalog
     never             removing a road or a building, notes — those stay advice
 
+A building's own autonomy (`BuildingSpec.autonomy`, set under its steward; the Town Hall's is the Town
+retro's) takes the place of the level for what its retro proposes (`may_apply`):
+
+    ⛓️ chains         nothing by itself: every proposal waits for the operator
+    🕰 clock          a proposal the operator left unanswered for CLOCK_WAIT is applied in the next quiet hours
+    ⛓️‍💥 free           applied in the next quiet hours (right after a retro that ran in them)
+    unset             the town's level, as above
+
 Each one must pass its own checks (validation, sandbox, replay) and the Council's review with no
 block, objection or Warder warning; it gets its own checkpoint (Z takes it back) and 24 hours of
 probation: a 👎 on the building, or more failed runs than before, takes it back by itself — and the
@@ -47,9 +55,32 @@ LEVEL_FOR: dict[str, int] = {
 NEVER = ("remove_road", "remove_building", "note")
 
 
+CLOCK_WAIT = dt.timedelta(hours=12)       # 🕰: what the operator has to answer a proposal before it lands
+
+
 def allowed(change: str, level: int) -> bool:
     need = LEVEL_FOR.get(change)
     return need is not None and change not in NEVER and level >= need
+
+
+def may_apply(change: str, level: int, freedom: str | None = None, made: str = "",
+              now: dt.datetime | None = None) -> bool:
+    """May the orcs apply this change themselves: by the building's own autonomy (`freedom`, its retro's
+    proposal made at `made`), else by the town's `level`. A removal or a note never."""
+    if change not in LEVEL_FOR or change in NEVER:
+        return False
+    if freedom == "chains":
+        return False
+    if freedom == "free":
+        return True
+    if freedom == "clock":
+        try:
+            at = dt.datetime.fromisoformat(made)
+        except (TypeError, ValueError):
+            return False
+        now = now or dt.datetime.now(at.tzinfo)
+        return now - at >= CLOCK_WAIT
+    return allowed(change, level)
 
 
 @dataclass

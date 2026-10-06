@@ -28,7 +28,7 @@ from orkcraft.gui.keeper import KeeperMixin
 from orkcraft.gui.recruiter import RecruiterMixin
 from orkcraft.gui.steward import StewardMixin
 from orkcraft.gui.views import lake as lake_view
-from orkcraft.realm import catalog, chronicles, tiers
+from orkcraft.realm import catalog, chronicles, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
 
@@ -53,13 +53,16 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
             "building.like": lambda a: core_buildings.like(self.town, self._spec(a).id),
             "building.dislike_context": self.dislike_context,
             "building.dislike": self.dislike,
-            "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id),
+            "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id, str(a.get("value") or "")),
+            "building.autonomy": lambda a: core_buildings.set_autonomy(self.town, self._spec(a).id,
+                                                                       str(a.get("value") or "") or None),
             "building.pin": self.pin,
             "building.revert": self.revert,
             "building.quick": self.quick,
             "building.recruit": self.recruit,
             "building.recruit_ask": self.recruit_ask,
             "building.redesign": self.redesign,
+            "steward.models": self.steward_models,
             "road.handlers": self.road_handlers,
             "road.handler": self.road_handler,
             "ork.like": lambda a: self.rate_ork(a, True),
@@ -185,6 +188,19 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
         self.town.toast(f"{bs.title} {'pinned' if bs.pinned else 'unpinned'}", title="Pin")
         self.host.on_change()
         return bs.pinned
+
+    def steward_models(self, args: dict) -> dict:
+        """Which tier its steward runs each of its tasks on (realm/steward.py USES); "" is the default."""
+        bs = self._spec(args)
+        models = args.get("models") if isinstance(args.get("models"), dict) else {}
+        try:
+            kept = steward.set_models(bs, {str(k): str(v) for k, v in models.items()})
+        except ValueError as e:
+            raise ConsoleError(str(e)) from None
+        self._saved()
+        self.town.toast(", ".join(f"{k}: {tiers.TIER_LABELS[v]}" for k, v in kept.items()) or "every task on the default",
+                        title=f"{bs.title} · steward's models")
+        return kept
 
     def revert(self, args: dict) -> bool:
         ok = core_buildings.revert(self.town, self._spec(args).id)

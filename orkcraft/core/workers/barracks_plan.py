@@ -111,11 +111,11 @@ class PlanMixin:
             out = RunOutcome()
             subs, errors = None, []
             try:
-                text = self._steward(prompt, self.repo_root, cancel, out, plans.PLAN_TIER)
+                text = self._steward(prompt, self.repo_root, cancel, out, "plan", plans.PLAN_TIER)
                 subs, errors = plans.parse(text)
                 if errors:                                    # once more, with what was wrong
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
-                        f"- {e}" for e in errors), self.repo_root, cancel, out, plans.PLAN_TIER)
+                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan", plans.PLAN_TIER)
                     subs, errors = plans.parse(text)
             except InterruptedError:
                 out.error = "stopped"
@@ -368,7 +368,7 @@ class PlanMixin:
                         tests = f"`{cmd}` passes on the merged branch"
                 verdict = self._steward(plans.final_prompt(self.keeper, self.orders, parent.title, parent.text,
                                                            parent.plan, reports, diff, tests, bk.DIFF_LIMIT),
-                                        self.repo_root, cancel, out, goal.final)
+                                        self.repo_root, cancel, out, "final", goal.final)
                 out.accepted, out.notes = bk.verdict_of(verdict)
                 if out.accepted and git is not None and commits:
                     body = f"{parent.text}\n\n---\n\n" + "\n\n".join(

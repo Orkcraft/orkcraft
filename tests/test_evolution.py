@@ -26,6 +26,19 @@ def test_what_each_level_may_apply():
         assert not evolution.allowed(never, 2)
 
 
+def test_a_buildings_own_autonomy_takes_the_place_of_the_level():
+    now = dt.datetime(2026, 10, 6, 3, 0)
+    fresh, old = (now - dt.timedelta(hours=2)).isoformat(), (now - dt.timedelta(hours=20)).isoformat()
+    assert not evolution.may_apply("shrink", 3, "chains", old, now)            # ⛓️ only proposes
+    assert not evolution.may_apply("shrink", 0, "clock", fresh, now)           # 🕰 waits for an answer…
+    assert evolution.may_apply("shrink", 0, "clock", old, now)                 # …a day unanswered, it lands
+    assert not evolution.may_apply("shrink", 0, "clock", "", now)
+    assert evolution.may_apply("script", 0, "free", fresh, now)                # ⛓️‍💥 at once, whatever the level
+    for never in ("remove_road", "remove_building", "note"):
+        assert not evolution.may_apply(never, 3, "free", old, now)
+    assert evolution.may_apply("shrink", 1, None, fresh, now) and not evolution.may_apply("shrink", 0, None, old, now)
+
+
 def test_the_ledger(tmp_path: Path):
     mine = evolution.record(tmp_path, evolution.Change("b", "shrink", "daily", "shrink orc:x", by="you"))
     theirs = evolution.record(tmp_path, evolution.Change("b", "chain", "steward", "demote x", by="orcs"))
@@ -107,6 +120,37 @@ async def test_chains_apply_nothing(fake_repo: Path, quiet):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _camp(app, pilot, fake_repo)
+        app._evolve_consider()
+        await pilot.pause(0.2)
+        assert _orders_now(app) == ORDERS and evolution.load(fake_repo) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("freedom, age_h, applied", [("free", 0, True), ("clock", 1, False), ("clock", 20, True)])
+async def test_a_building_set_free_or_on_the_clock_applies_under_morning_advice(fake_repo: Path, quiet,
+                                                                                freedom, age_h, applied):
+    _machine(1)                                                            # the town's level applies nothing
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        p = await _camp(app, pilot, fake_repo)
+        p.ts = (dt.datetime.now() - dt.timedelta(hours=age_h)).isoformat(timespec="seconds")
+        optimize.save(fake_repo, p)
+        app.scroll.building("town_hall").autonomy = freedom
+        app._evolve_consider()
+        if applied:
+            await _until(pilot, lambda: _orders_now(app) == SHORT)
+        else:
+            await pilot.pause(0.2)
+            assert _orders_now(app) == ORDERS and evolution.load(fake_repo) == []
+
+
+@pytest.mark.asyncio
+async def test_a_building_in_chains_applies_nothing_even_for_routine_orks(fake_repo: Path, quiet):
+    _machine(2)
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _camp(app, pilot, fake_repo)
+        app.scroll.building("town_hall").autonomy = "chains"
         app._evolve_consider()
         await pilot.pause(0.2)
         assert _orders_now(app) == ORDERS and evolution.load(fake_repo) == []
