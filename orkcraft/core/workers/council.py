@@ -245,13 +245,13 @@ class CouncilWorker(Worker):
             if d.outcome == "approved":
                 self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
                 if d.route:                                # who takes it on: each road waits for its route
-                    self.emit("team.routed", d.doc, d.title, trail=trail, ref=ref, route=d.route)
+                    self.emit("team.routed", d.doc, d.task or d.title, trail=trail, ref=ref, route=d.route)
             else:
                 back = tm.rework_markdown(d, self.max_cycles)
                 self.emit("team.rework", back, d.title, trail=trail, ref=ref)
                 self._send_back(source, pipes.Payload(pipes.TEXT, back, self.building_id, "team.rework", d.title,
                                                       trail, ref))
-            self.toast(f"{d.title[:60]}: {OUTCOME[d.outcome]}" + (f" → {d.route}" if d.route else ""),
+            self.toast(f"{(d.task or d.title)[:60]}: {OUTCOME[d.outcome]}" + (f" → {d.route}" if d.route else ""),
                        title=f"{ICON} Clan Fire")
         elif d.outcome == "asked":
             self.toast(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")

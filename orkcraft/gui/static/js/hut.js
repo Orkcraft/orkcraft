@@ -16,6 +16,7 @@ import { town, say } from "./link.js";
 import { TypeIcon, headerSprite } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
+export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
 const IDLE_MS = 5000;                      // an unpinned hut left alone this long is pinned again
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
 export const dragging = signal(null);      // {id, dx, dy}: the hut under the mouse, so its roads follow it
@@ -94,10 +95,14 @@ export function Hut({ b, spot, number, onMoved }) {
     const el = ref.current;
     if (!el) return;
     const w = el.offsetWidth, h = el.offsetHeight;
+    const card = el.querySelector(".ok-hut__card");          // where roads meet the hut in Camp: its card's frame
+    const top = card ? card.offsetTop : 0, ch = card ? card.offsetHeight : h;
     const old = sizes.value[b.id];
-    if (!old || old.w !== w || old.h !== h) sizes.value = { ...sizes.value, [b.id]: { w, h } };
+    if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch) {
+      sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch } };
+    }
   });
-  const free = !!unpinned.value[b.id] && !b.pinned;     // a building pinned in the town scroll never moves
+  const free = !!unpinned.value[b.id] && !b.pinned && b.id !== CORNER;   // pinned in the scroll, or the Hall: never moves
   const office = town.value.look === "office";
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
@@ -137,7 +142,7 @@ export function Hut({ b, spot, number, onMoved }) {
       ${office && html`<${TypeIcon} type=${b.type} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
       ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class="ok-word ok-tone-muted">pinned</span>`}
-      ${!b.pinned && html`<${PinButton} b=${b} />`}</span>
+      ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>
     ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
       draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}
     <div class="ok-hut__card">

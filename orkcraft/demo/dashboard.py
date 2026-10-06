@@ -101,7 +101,7 @@ MY_DAY = {
     ],
     # the War Drum's tall card (a fifth of the screen) stands over the Watchtower's spot: the tower goes down a row;
     # the Task board's wide card reaches past a third of the town: the drum steps right of it
-    "huts": {"post": (1 / 3, 1.0), "days": (0.4, 0.0)},
+    "huts": {"post": (1 / 3, 1.0), "days": (0.4, 0.0), "drop": (0.0, 0.64)},     # the Pit clear of the board in Camp
     "layout": [(0.0, 0.0, 0.32, 0.46), (0.34, 0.0, 0.32, 0.46), (0.68, 0.0, 0.32, 0.46),
                (0.0, 0.54, 0.24, 0.46), (0.26, 0.54, 0.16, 0.46), (0.44, 0.54, 0.26, 0.46), (0.72, 0.54, 0.28, 0.46)],
     "roads": [
@@ -232,6 +232,7 @@ LIBRARY = {
               steward_prompt="Let pages go when they match their sources; send back what is wrong.",
               members=["Reviewer:claude", "Critic:agy"], max_cycles=2, budget_usd=1.0),
     ],
+    "huts": {"lib_camp": (0.0, 0.64)},                 # the Barracks clear of the board, Camp's sprite and all
     "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
                (0.0, 0.54, 0.3, 0.46), (0.33, 0.54, 0.3, 0.46), (0.66, 0.54, 0.34, 0.46)],
     "roads": [

@@ -121,7 +121,33 @@ class Film:
 
     # -- the flow ----------------------------------------------------------------------------------
 
-    def play(self, url: str) -> None:
+    def settle(self, look: str) -> None:
+        """Before the first frame: the questions other orkspaces' orks wait with are answered (the demo seeds
+        two), so the counters say nothing of them."""
+        try:                                             # the orks' screens are read a moment after the start
+            self.until("(t.alerts || []).length > 0", timeout=12_000)
+        except Exception:
+            pass
+        for _ in range(5):
+            alerts = self.page.evaluate("() => window.__ork.town.value.alerts || []")
+            for a in alerts:
+                if a.get("options"):
+                    self.page.evaluate("([id, key]) => window.__ork.command('orders.answer', {id, key}).catch(() => {})",
+                                       [a["id"], a["options"][0][0]])
+            if not alerts:
+                break
+            self.wait(2000)
+        self.wait(800)
+
+    def strip(self, shown: bool) -> None:
+        """The film frames a building's Command Card alone: Info and its orks below it say nothing new here."""
+        self.page.evaluate("""(shown) => {
+          let s = document.getElementById('landing-frame');
+          if (!s) { s = document.createElement('style'); s.id = 'landing-frame'; document.head.append(s); }
+          s.textContent = shown ? '' : 'section.gui-console, section.gui-roster { visibility: hidden; }';
+        }""", shown)
+
+    def play(self, url: str, look: str) -> None:
         page = self.page
         page.goto(url)
         page.wait_for_selector(".gui-hut", timeout=30000)
@@ -130,7 +156,9 @@ class Film:
         page.evaluate("id => window.__ork.command('orkspace.select', {id})", fd.ID)
         self.until("t.active_orkspace === arg", fd.ID)
         page.wait_for_selector(f'.gui-hut[data-id="{fd.POST}"]', timeout=10000)
-        self.wait(2500)
+        self.settle(look)
+        self.strip(False)
+        self.wait(1500)
         self.frame("front-desk", "The Front Desk: Inbox (mail and Slack), Triage, Tasks, Agents at work and "
                                  "Results")
         mail_road, chat_road = f"{fd.TRIAGE}:{fd.POST}-mail_received", f"{fd.TRIAGE}:{fd.POST}-watch_comment"
@@ -141,9 +169,9 @@ class Film:
 
         # 1. a mail: triaged, then the person's
         self.simulate(fd.MAIL)
-        self.cart_on(mail_road, "Dana")
+        self.cart_on(mail_road, "Thursday")
         self.wait(600)
-        self.frame("mail-arrives", "A mail arrives in the Inbox: Dana asks to move Thursday's review")
+        self.frame("mail-arrives", "A mail arrives: the Inbox shows it — Dana asks to move Thursday's review")
         self.wait(TRAVEL_S * 1000 * 0.35)
         self.frame("mail-to-triage", "It travels the road to Triage")
         self.until("t.buildings.some(b => b.id === arg && b.card && b.card.state === 'running')", fd.TRIAGE)
@@ -154,38 +182,39 @@ class Film:
         self.frame("triage-reading", "Triage reads it: each member gives a short verdict")
         self.cart_on(human, "Dana")
         self.wait(500)
-        self.frame("triage-verdicts", "The verdicts are in: stressed, medium priority, before Thursday. "
-                                      "The steward decides: this one is for you")
+        self.frame("triage-verdicts", "The verdicts are in: stressed, medium priority, before Thursday. The steward "
+                                      "decides it is yours: “Reply to Dana: move Thursday's review?”")
         self.close()
-        self.wait(TRAVEL_S * 1000 * 0.15)
+        self.wait(TRAVEL_S * 1000 * 0.2)
         self.frame("task-for-human", "It goes down the road “task for human”")
         self.until("t.buildings.some(b => b.id === arg[0] && b.card && b.card.todos && "
                    "b.card.todos.top.some(x => x.includes(arg[1])))", [fd.BOARD, "Dana"])
         self.wait(700)
         self.frame("my-todo", "…and lands in your to-dos in Tasks")
         self.open_full(fd.BOARD)
-        self.frame("my-todo-board", "Your to-dos: answer Dana — the agents' tasks stay apart, above")
+        self.frame("my-todo-board", "Your to-dos: reply to Dana — the agents' tasks stay apart, above")
         self.close()
 
         # 2. a Slack message: triaged, then an agent's — and done by itself
         self.simulate(fd.CHAT)
-        self.cart_on(chat_road, "Sam")
+        self.cart_on(chat_road, "Feedback summary")
         self.wait(600)
         self.frame("slack-arrives", "A Slack message arrives: Sam asks for a summary of last month's feedback")
         self.until("t.buildings.some(b => b.id === arg && b.card && b.card.state === 'running')", fd.TRIAGE)
         self.open_card(fd.TRIAGE)
-        self.cart_on(agent, "Sam")
+        self.cart_on(agent, "Summarize")
         self.wait(500)
-        self.frame("triage-agent", "Triage: low risk, routine, due Friday — the steward gives it to an agent")
+        self.frame("triage-agent", "Triage: low risk, routine, due Friday — the steward gives it to an agent: "
+                                   "“Summarize last month's feedback for the team (by Fri)”")
         self.close()
-        self.wait(TRAVEL_S * 1000 * 0.15)
+        self.wait(TRAVEL_S * 1000 * 0.2)
         self.frame("task-for-agent", "It goes down the road “task for agent”")
-        self.cart_on(to_camp, "Sam")
+        self.cart_on(to_camp, "Summarize")
         self.open_card(fd.BOARD)
         self.frame("kanban-todo", "A task in the agents' To Do — Tasks sends it to the agents at once")
         self.close()
         self.frame("to-barracks", "The task travels to Agents at work")
-        self.cart_on(started, "Sam")
+        self.cart_on(started, "Summarize")
         self.open_card(fd.CAMP)
         self.frame("ork-working", "An agent takes it and works on it")
         self.close()
@@ -194,7 +223,7 @@ class Film:
         self.open_full(fd.BOARD)
         self.frame("kanban-in-progress", "In Tasks the card moves to In Progress, with who works on it")
         self.close()
-        self.cart_on(result, "Sam")
+        self.cart_on(result, "Summarize")
         self.wait(TRAVEL_S * 1000 * 0.4)
         self.frame("result-back", "Done: the result goes back to Tasks and on to Results")
         self.until("t.buildings.some(b => b.id === arg && b.card && b.card.lanes && "
@@ -203,13 +232,14 @@ class Film:
         self.open_full(fd.BOARD)
         self.frame("kanban-done", "The card lands in Done with the result: the summary is shared, ticket #142")
         self.close()
-        self.cart_on(outcome, "Sam")
+        self.cart_on(outcome, "Summarize")
         self.until("t.buildings.some(b => b.id === arg && b.card && b.card.passed > 0)", fd.LOOT)
         self.open_card(fd.LOOT)
-        self.frame("loot-outcome", "Results keeps what was delivered: the summary shared, ticket #142, with links")
+        self.frame("loot-outcome", "Results: “Feedback summary shared with the team”, ticket #142, with its links")
         self.close()
         self.wait(1500)
-        self.frame("all-done", "Both messages handled: one waits for you, the other is done")
+        self.frame("all-done", "Both handled: “Reply to Dana” waits in your to-dos, the agent's task is Done "
+                               "and its outcome is in Results")
 
 
 def to_mp4(webm: Path, mp4: Path) -> Path:
@@ -242,7 +272,7 @@ def film(look: str, out: Path, chromium: str) -> dict:
             page = ctx.new_page()
             f = Film(page, out)
             try:
-                f.play(url)
+                f.play(url, look)
             finally:
                 video = page.video
                 ctx.close()                               # the video is written when its page closes

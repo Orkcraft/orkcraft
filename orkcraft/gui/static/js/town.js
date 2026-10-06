@@ -9,7 +9,8 @@ import { command, say, town as snapshot } from "./link.js";
 import { opened, closeBuilding } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad } from "./build.js";
-import { Hut, sizes, dragging, pulling } from "./hut.js";
+import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
+import { RoadTiles } from "./roadtiles.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
@@ -33,19 +34,23 @@ function defaultSpot(i) {
 }
 
 function place(b, i, size) {
+  const f = free(size);
+  if (b.id === CORNER) {                       // the Hall: the bottom-right corner, where Office's advisor stands —
+    const r = room.value;                       // under the strip, which covers it while a building is selected
+    return { x: Math.max(r.w - size.w - MARGIN, 0), y: Math.max(r.h - size.h - MARGIN, 0) };
+  }
   if (dropped.value[b.id]) return dropped.value[b.id];
   const [fx, fy] = b.hut || defaultSpot(i);
-  const f = free(size);
   return { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h };
 }
 
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
 let planned = { key: "", paths: [] };
 
-function plannedPaths(rects, roads) {
+function plannedPaths(rects, roads, ports = rects) {
   const r = room.value;
-  const key = JSON.stringify([rects, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
-  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h) };
+  const key = JSON.stringify([rects, ports, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
+  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h, ports) };
   return planned.paths;
 }
 
@@ -128,12 +133,12 @@ function Signs({ paths, roads }) {
   </div>`;
 }
 
-function Roads({ roads, rects, tints = {} }) {
+function Roads({ roads, rects, ports, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const active = opened.value.active;
   return html`<svg class="gui-roads" width=${r.w} height=${r.h} aria-hidden="true">
-    ${plannedPaths(rects, roads).map((p) => {
+    ${plannedPaths(rects, roads, ports).map((p) => {
       const road = byId[p.id];
       const sel = active === road.from || active === road.to;
       const mid = along(p.points, 0.5);
@@ -167,12 +172,16 @@ export function Town({ buildings, roads }) {
     return () => ro.disconnect();
   }, []);
 
-  const spots = {}, rects = {};
+  const spots = {}, rects = {}, ports = {};
+  const camp = !!snapshot.value && snapshot.value.look === "camp";
   buildings.forEach((b, i) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     spots[b.id] = place(b, i, size);
     const d = dragging.value && dragging.value.id === b.id ? dragging.value : { dx: 0, dy: 0 };
-    rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, ...size };
+    rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, w: size.w, h: size.h };
+    // Camp: a road meets the card's frame under the sprite, not the sprite (Office's hut is its card)
+    ports[b.id] = camp && size.ch ? { x: rects[b.id].x, y: rects[b.id].y + (size.top || 0), w: size.w, h: size.ch }
+                                  : rects[b.id];
   });
 
   function moved(b, x, y) {
@@ -191,11 +200,13 @@ export function Town({ buildings, roads }) {
   const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road")) closeBuilding(); };
   const shown = new Set(buildings.map((b) => b.id));
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
-  const paths = plannedPaths(rects, here);
+  const gatesOn = camp ? ports : rects;               // Office: the hut is its card
+  const paths = plannedPaths(rects, here, gatesOn);
   const snap = snapshot.value;
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
-      <${Roads} roads=${here} rects=${rects}
+      ${camp && html`<${RoadTiles} paths=${paths} roads=${here} />`}
+      <${Roads} roads=${here} rects=${rects} ports=${gatesOn}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}
       <${Signs} paths=${paths} roads=${here} />

@@ -43,10 +43,10 @@ def test_the_steward_names_a_route_and_the_prompt_asks_for_one():
     team = tm.members_of({"members": ["Risk analyst:claude", "Tone reader:claude"]})
     seen = []
     d = tm.new("Summary by Friday", "Could someone sum up the feedback?")
-    run = _runner("DECISION: approve\nROUTE: agent\nRoutine.")
+    run = _runner("DECISION: approve\nROUTE: agent\nTASK: Sum up the feedback\nRoutine.")
     tm.run(d, team, tm.Steward("triage"), set(), 1, 1.0, lambda h, p, m: seen.append(p) or run(h, p, m),
            routes=["human", "agent"])
-    assert (d.outcome, d.route, d.decision) == ("approved", "agent", "Routine.")
+    assert (d.outcome, d.route, d.task, d.decision) == ("approved", "agent", "Sum up the feedback", "Routine.")
     assert "ROUTE: <one of human, agent>" in seen[-1]
     assert "→ agent" in tm.report_markdown(d, team)
 
@@ -201,15 +201,16 @@ def test_the_front_desk_plays_the_whole_flow(tmp_path: Path):
         host.command("act", {"id": fd.POST, "act": "simulate", "args": fd.MAIL})
         board, triage = host.town.worker(fd.BOARD), host.town.worker(fd.TRIAGE)
         _wait(lambda: any(c.kind == tasklist.MINE and "Dana" in c.title for c in board.cards))
-        assert triage.current.route == "human"
+        assert triage.current.route == "human" and triage.current.task == "Reply to Dana: move Thursday's review?"
+        assert any(c.title == "Reply to Dana: move Thursday's review?" for c in board.todos)
         assert [t.text for t in triage.current.reviews()][1] == "Stressed and apologetic: reply kindly."
         host.command("act", {"id": fd.POST, "act": "simulate", "args": fd.CHAT})
-        _wait(lambda: any(c.column == "done" and "Sam" in c.title for c in board.cards))
-        done = next(c for c in board.cards if c.column == "done" and "Sam" in c.title)
+        _wait(lambda: any(c.column == "done" and "Summarize" in c.title for c in board.cards))
+        done = next(c for c in board.cards if c.column == "done" and "Summarize" in c.title)
         assert fd.TICKET in done.body
         loot = host.town.worker(fd.LOOT)
         _wait(lambda: len(loot.stored) > 0)
-        assert len(loot.stored) == 1 and len([c for c in board.cards if "Sam" in c.title]) == 1
+        assert len(loot.stored) == 1 and len([c for c in board.cards if "Summarize" in c.title]) == 1
         assert not any(c.kind == tasklist.TASK and "Dana" in c.title for c in board.cards)
     finally:
         host.close()
@@ -243,3 +244,11 @@ def test_the_watchtower_card_previews_the_newest_message(tmp_path: Path):
         assert tower.hut_lines([10] * 4)[:2] == ["gmail    1", "slack    0"]      # a narrow hut: the counters only
     finally:
         host.close()
+
+
+def test_a_listeners_cart_reads_as_its_subject():
+    from orkcraft.gui.views.watchtower import subject
+    assert subject("slack · Sam in #team: Feedback summary by Friday?") == "Feedback summary by Friday?"
+    assert subject("Dana Reyes: Can we move Thursday's review?") == "Can we move Thursday's review?"
+    assert subject("PR #12 opened") == "PR #12 opened"
+    assert tm.parse_task("TASK: Reply to Dana\nyours") == ("Reply to Dana", "yours")

@@ -263,6 +263,8 @@ class Host:
     def _move_hut(self, args: dict) -> None:
         """A hut dragged on the town: its spot as fractions of the canvas, the person's own."""
         bs = self._spec(args)
+        if bs.id == "town_hall":
+            raise CommandError("The Town Hall stands in its corner")
         if bs.pinned:
             raise CommandError(f"{bs.title} is pinned — unpin it in its Info to move it")
         try:

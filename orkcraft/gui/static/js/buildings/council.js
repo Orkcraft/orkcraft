@@ -146,7 +146,9 @@ function Triage({ id, data }) {
       <b>${r.title}</b></span></div>
     <ul class="gui-rows">${data.members.slice(0, SHOWN + 2).map((m) => html`<li key=${m.role}><b>${m.role}</b>
       <span class=${m.says ? TONE[m.verdict] || "" : "ok-tone-muted"}> · ${m.says || say("reading…")}</span></li>`)}</ul>
-    ${decided ? html`<p><b>${say("Steward")}</b> <b class=${TONE[r.outcome] || ""}>${r.route ? `→ ${r.route}` : r.outcome_word}</b>${` · ${firstLine(decided.text).slice(0, 140)}`}</p>`
+    ${decided ? html`<p><b>${say("Steward")}</b> <b class=${TONE[r.outcome] || ""}>${r.route ? `→ ${r.route}` : r.outcome_word}</b>${
+        r.task ? html` · <b>${r.task}</b>` : ""}</p>
+        <p class="ok-tone-muted">${firstLine(decided.text).slice(0, 140)}</p>`
       : html`<p class="ok-tone-muted">${say("The steward decides when every member has spoken.")}</p>`}
     ${data.queued.length > 0 && html`<div class="ok-tone-muted">${data.queued.length} queued</div>`}
     <${Dialogs} id=${id} data=${data} />

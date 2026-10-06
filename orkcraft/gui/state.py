@@ -114,6 +114,7 @@ CART_SHOWN_S = 12.0           # a cart stays in the snapshot this long after it 
 def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
     """The carts that left lately: on which road, what they carry, how long ago, how long the road takes
     (`travel`; the page draws each moving from gate to gate). A filtered one turns back at the source."""
+    from orkcraft.gui.views.watchtower import subject
     engine = getattr(town, "roads", None)
     now = time.monotonic() if now is None else now
     out = []
@@ -121,8 +122,12 @@ def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
         age = now - c.at
         if age < 0 or age > CART_SHOWN_S:
             continue
+        title = c.payload.title or ""
+        spec = town.custom_specs.get(c.source)
+        if spec is not None and catalog.type_of(spec).id == "watchtower":
+            title = subject(title)                   # the Inbox's card says who sent it and where from
         out.append({"id": f"{road_key(c.target, c.road_id)}@{c.at:.3f}", "road": road_key(c.target, c.road_id),
-                    "status": c.status, "title": modes.strip_emoji(c.payload.title or "")[:80], "age": round(age, 2)})
+                    "status": c.status, "title": modes.strip_emoji(title)[:80], "age": round(age, 2)})
     return out
 
 

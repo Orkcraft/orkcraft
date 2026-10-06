@@ -127,14 +127,17 @@ TRIAGE_SCRIPT = {
             _rule("feedback", "APPROVE: Due Friday.")],
     },
     "steward": [
-        _rule("Thursday's review", "DECISION: approve\nROUTE: human\nYour calendar and a personal reply: this one is yours.", 2.6),
-        _rule("feedback", "DECISION: approve\nROUTE: agent\nRoutine and low risk: an agent can do it.", 2.6),
+        _rule("Thursday's review", "DECISION: approve\nROUTE: human\nTASK: Reply to Dana: move Thursday's review?\n"
+                                   "Your calendar, your reply.", 2.6),
+        _rule("feedback", "DECISION: approve\nROUTE: agent\n"
+                         "TASK: Summarize last month's feedback for the team (by Fri)\n"
+                         "Routine and low risk.", 2.6),
     ],
 }
 
 CAMP_SCRIPT = {"work": [
-    _rule("feedback", "Feedback summary shared with the team in #team.\n\n"
-                      f"Ticket created: #142 Feedback summary — {TICKET}\n"
+    _rule("feedback", "Feedback summary shared with the team\n\n"
+                      f"Ticket #142: {TICKET}\n"
                       f"Summary: {SUMMARY_DOC}\n\n"
                       "42 replies, 78% positive. Most asked for: faster exports. Most heard complaint: onboarding "
                       "takes too long.", 9.0),

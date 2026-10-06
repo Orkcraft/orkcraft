@@ -41,14 +41,17 @@ def test_a_hut_moved_keeps_its_spot_in_the_scroll(fake_repo, isolated_layout_fil
     host = _host(fake_repo)
     changed = []
     host.on_change = lambda: changed.append(1)
-    host.command("hut.move", {"id": "town_hall", "x": 0.25, "y": 1.7})
-    assert host.town.scroll.building("town_hall").hut == [0.25, 1.0]        # kept inside the room
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    host.command("hut.move", {"id": pit, "x": 0.25, "y": 1.7})
+    assert host.town.scroll.building(pit).hut == [0.25, 1.0]                 # kept inside the room
     assert changed and isolated_layout_file.exists()
     assert json.loads(isolated_layout_file.read_text())                      # saved
     with pytest.raises(CommandError):
         host.command("hut.move", {"id": "nowhere", "x": 0, "y": 0})
     with pytest.raises(CommandError):
-        host.command("hut.move", {"id": "town_hall", "x": "left"})
+        host.command("hut.move", {"id": pit, "x": "left"})
+    with pytest.raises(CommandError, match="corner"):                        # the Hall stands in its corner
+        host.command("hut.move", {"id": "town_hall", "x": 0.1, "y": 0.1})
     with pytest.raises(CommandError):
         host.command("rm -rf", {})
 
@@ -81,7 +84,9 @@ async def _serving(server: Server):
 
 @pytest.mark.asyncio
 async def test_the_socket_takes_only_its_own_page_and_answers_commands(fake_repo):
-    server = Server(_host(fake_repo))
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    server = Server(host)
     task = await _serving(server)
     ws_url = f"ws://127.0.0.1:{server.port}/ws?t={server.token}"
     try:
@@ -93,15 +98,15 @@ async def test_the_socket_takes_only_its_own_page_and_answers_commands(fake_repo
             first = json.loads(await ws.recv())
             assert first["t"] == "state" and first["state"]["buildings"]
             await ws.send(json.dumps({"t": "cmd", "id": 1, "name": "hut.move",
-                                      "args": {"id": "town_hall", "x": 0.5, "y": 0.5}}))
+                                      "args": {"id": pit, "x": 0.5, "y": 0.5}}))
             await ws.send(json.dumps({"t": "cmd", "id": 2, "name": "nope"}))
             got = {}
             while len([m for m in got.values() if m["t"] == "reply"]) < 2 or "state" not in got:
                 msg = json.loads(await asyncio.wait_for(ws.recv(), 5))
                 got[msg.get("id") if msg["t"] == "reply" else msg["t"]] = msg
             assert got[1]["ok"] and not got[2]["ok"] and "Unknown command" in got[2]["error"]
-            hall = next(b for b in got["state"]["state"]["buildings"] if b["id"] == "town_hall")
-            assert hall["hut"] == [0.5, 0.5]
+            moved = next(b for b in got["state"]["state"]["buildings"] if b["id"] == pit)
+            assert moved["hut"] == [0.5, 0.5]
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)
@@ -556,13 +561,14 @@ def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_
 
 def test_a_pinned_building_keeps_its_place(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
-    assert host.command("building.pin", {"id": "town_hall"}) is True
-    assert next(b for b in host.snapshot()["buildings"] if b["id"] == "town_hall")["pinned"]
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    assert host.command("building.pin", {"id": pit}) is True
+    assert next(b for b in host.snapshot()["buildings"] if b["id"] == pit)["pinned"]
     with pytest.raises(CommandError):
-        host.command("hut.move", {"id": "town_hall", "x": 0.5, "y": 0.5})
-    assert host.command("history", {"id": "town_hall"})["events"][0]["text"] == "pinned"
-    assert host.command("building.pin", {"id": "town_hall"}) is False
-    host.command("hut.move", {"id": "town_hall", "x": 0.5, "y": 0.5})
+        host.command("hut.move", {"id": pit, "x": 0.5, "y": 0.5})
+    assert host.command("history", {"id": pit})["events"][0]["text"] == "pinned"
+    assert host.command("building.pin", {"id": pit}) is False
+    host.command("hut.move", {"id": pit, "x": 0.5, "y": 0.5})
     assert host.command("building.goal", {"id": "town_hall"}) == "quality"
 
 

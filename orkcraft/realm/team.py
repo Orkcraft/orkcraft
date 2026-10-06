@@ -18,8 +18,8 @@ needs; the steward's is the building's short `steward_prompt` plus `steward.md` 
 document and the briefs from disk; agy, which works in an empty folder, gets them in its prompt.
 
 A clan that **routes** (`routes`: `["human", "agent"]`) also decides who takes the document on: the
-steward's approval names one route (`ROUTE: agent`), and the document goes on as `team.routed` with
-it — a road from the Clan Fire may wait for one route, as a Signpost's do. An approval without a route
+steward's approval names one route (`ROUTE: agent`) and the task it becomes (`TASK: Summarize the
+feedback`), and the document goes on as `team.routed` with that route, titled by that task — a road from the Clan Fire may wait for one route, as a Signpost's do. An approval without a route
 goes to the operator. Triage is the usual use: a mail or a message, read by a risk analyst, a tone
 reader and a priority checker, goes to the person or to the agents.
 
@@ -47,6 +47,7 @@ INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read
 _VERDICT = re.compile(r"^[\s*#_>`-]*(APPROVE|CHANGES|VETO)\b[\s*_`]*:?\s*", re.I)
 _DECISION = re.compile(r"^[\s*#_>`-]*DECISION\b[\s*_`]*:?\s*(approve|rework|ask)\b[\s*_`.:-]*", re.I)
 _ROUTE = re.compile(r"^[\s*#_>`-]*ROUTE\b[\s*_`]*:?[\s*_`]*([A-Za-z0-9_-]{1,32})[\s*_`.]*$", re.I | re.M)
+_TASK = re.compile(r"^[\s*#_>`-]*TASK\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`]*$", re.I | re.M)
 _ROLE = re.compile(r"^You are (.+?) in a clan")
 
 Runner = Callable[[str, str, str], tuple[str, float | None]]
@@ -167,6 +168,7 @@ class Discussion:
     reviewed: list[int] = field(default_factory=list)       # members (by place) who reviewed
     decision: str = ""              # the steward's comments (rework), note (approve) or question (ask)
     route: str = ""                 # who takes it on, when the clan routes (one of its `routes`)
+    task: str = ""                  # … and the task it becomes, in a line (the steward's `TASK:`)
     spent: float = 0.0
     error: str = ""
     turns: list[Turn] = field(default_factory=list)
@@ -254,6 +256,14 @@ def parse_route(text: str, routes: list[str] | tuple[str, ...]) -> tuple[str, st
     return (route if route in routes else ""), rest
 
 
+def parse_task(text: str) -> tuple[str, str]:
+    """(the task the steward named in one line, or "", its answer without the TASK line)."""
+    m = _TASK.search(text or "")
+    if not m:
+        return "", text
+    return " ".join(m.group(1).split())[:120], (text[:m.start()] + text[m.end():]).strip()
+
+
 def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: int, inline: bool = False,
                   routes: list[str] | tuple[str, ...] = ()) -> str:
     reviews = "\n\n".join(f"### {t.role} — {t.verdict.upper()}{f' ({t.note})' if t.note else ''}\n\n{t.text}"
@@ -278,7 +288,7 @@ def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: i
                  "Follow your brief on when to let it go and when to show it to the operator.")
     if routes:
         parts.append(f"When you approve, name who takes it on in a second line `ROUTE: <one of {', '.join(routes)}>`, "
-                     "as your brief says.")
+                     "as your brief says, and the task it becomes in a third, `TASK: <what to do, in a few words>`.")
     return "\n\n".join(p for p in parts if p)
 
 
@@ -359,6 +369,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
     note = ""
     if routes:
         d.route, body = parse_route(body, routes)
+        d.task, body = parse_task(body)
         if decision == "approve" and not d.route:
             decision, note = "ask", "no route named"
             body = f"The steward let it go but named no route. Who takes it on: {', '.join(routes)}?\n\n{body}".strip()

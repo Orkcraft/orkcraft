@@ -258,8 +258,8 @@ button.gui-status__item { cursor: pointer; }
    road's path (CSS motion path) once, in the time the road takes; a filtered one turns back. */
 .gui-road.is-return polyline:not(.gui-road__hit) { stroke-dasharray: 6 4; }
 .gui-carts, .gui-signs { position: absolute; inset: 0; pointer-events: none; }
-.gui-signs { z-index: 2; }
-.gui-carts { z-index: 3; }
+.gui-carts { z-index: 2; }
+.gui-signs { z-index: 3; }                   /* a road's sign stays readable over a cart passing it */
 .gui-sign { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; padding: 1px 8px;
   background: var(--panel-raised); color: var(--ink); border: 1px solid var(--road-selected); border-radius: var(--radius-sm);
   box-shadow: var(--shadow-window); }
@@ -272,7 +272,7 @@ button.gui-status__item { cursor: pointer; }
   box-shadow: 0 0 0 2px var(--canvas), 0 0 10px 2px var(--road-selected); }
 .gui-cart.is-held .gui-cart__dot { background: var(--cart-held); }
 .gui-cart.is-back .gui-cart__dot { background: var(--cart-filtered); }
-.gui-cart__label { position: absolute; right: 0; bottom: calc(100% + 3px); max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
+.gui-cart__label { position: absolute; right: 0; top: calc(100% + 10px); max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
   background: var(--road-selected); color: var(--on-action); border-radius: var(--radius-sm); }
 [data-theme="office"] .gui-cart__label { border-radius: var(--radius-full); }
 @keyframes gui-cart-go { 0% { offset-distance: 0%; opacity: 0; } 6% { opacity: 1; } 94% { offset-distance: 100%; opacity: 1; }
@@ -284,3 +284,16 @@ button.gui-status__item { cursor: pointer; }
 /* Camp draws a command as its icon; a command that has none yet says its word instead of an empty tile. */
 [data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: auto; min-height: 28px; padding: var(--space-1) var(--space-2); font-size: 14px; line-height: 1.2; }
 [data-theme="camp"] .ok-act:not(:has(img)) .ok-act__label { display: inline; }
+
+/* Camp: a typed building's card keeps its text off the frame (Office's cards have their own padding). */
+[data-theme="camp"] .gui-hut .gui-hut__body { padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2); }
+
+/* Camp: roads are road tiles (js/roadtiles.js); the lines stay only to be clicked, the gates are tiles too. */
+.gui-tiles { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.gui-tiles__road { opacity: .6; }
+.gui-tiles__road.is-bright, .gui-tiles__road.is-picked { opacity: 1; }
+.gui-tiles__road.is-picked { filter: drop-shadow(0 0 1px var(--road-selected)) drop-shadow(0 0 1px var(--road-selected)); }
+.gui-tiles__road.is-return { opacity: .45; }
+.gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .8; }
+.gui-tile { position: absolute; width: 16px; height: 16px; background-size: 16px 16px; image-rendering: pixelated; }
+[data-theme="camp"] .gui-road polyline:not(.gui-road__hit), [data-theme="camp"] .gui-road circle { visibility: hidden; }

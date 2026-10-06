@@ -11,7 +11,10 @@ from pathlib import Path
 
 SESSIONS = Path(".orkcraft") / "demo-sessions"
 # A screen is printed, the answer read and echoed; then the session idles, taking what is typed.
-PLAY = 'cat "$1"; read answer; printf "\\n  → %s\\n" "$answer"; exec cat >/dev/null'
+# The answer is one key, as a Claude menu takes it (no Enter): the terminal reads it at once, and the menu
+# leaves the screen as Claude's does (so the question is answered for the roster too).
+PLAY = ('stty -icanon min 1 2>/dev/null; cat "$1"; answer=$(dd bs=1 count=1 2>/dev/null); stty icanon 2>/dev/null; '
+        'printf "\\033[2J\\033[H  → %s · going on\\n" "$answer"; exec cat >/dev/null')
 
 
 def write(root: Path, screens: list[dict]) -> None:

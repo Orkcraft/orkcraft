@@ -65,10 +65,12 @@ def _gist(w, path: str) -> dict:
     for ln in text_.splitlines()[1:]:                    # the file's first line repeats its title
         if re.match(r"^\*\*.*\*\* — |^_.*_$", ln.strip()):   # `**Title** — who did it`, `_from … · when_`
             continue
-        ln = _LINK.sub("", ln).strip(" #*-—:")
+        ln = ln.strip(" #*-—")
         if ln and len(lines) < 3:
-            lines.append(ln[:160])
-    return {"lines": lines, "links": list(dict.fromkeys(_LINK.findall(text_)))[:3]}
+            lines.append(ln[:200])
+    links = [u for u in dict.fromkeys(_LINK.findall(text_)) if not any(u in ln for ln in lines)]
+    return {"outcome": _LINK.sub("", lines[0]).strip(" :—") if lines else "", "lines": lines[1:],
+            "links": links[:3]}
 
 
 def detail(w) -> dict:

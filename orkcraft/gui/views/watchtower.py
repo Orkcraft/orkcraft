@@ -30,6 +30,12 @@ def _who(title: str, source: str = "mail") -> tuple[str, str]:
     return (m.group(2), m.group(3)) if m else ("", title)
 
 
+def subject(title: str) -> str:
+    """What a signal's cart is about, without its source and sender: `slack · Sam in #team: Hi?` → `Hi?`."""
+    rest = re.sub(r"^(?:" + "|".join(watch.FEEDS) + r") · ", "", title or "")
+    return _who(rest, "mail")[1] or rest
+
+
 def _signal(w, s) -> dict:
     who, title = _who(s.title, s.source)
     return {"key": s.key, "source": s.source, "label": w.label(s.source), "at": s.at[:16].replace("T", " "),
