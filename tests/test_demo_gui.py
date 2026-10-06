@@ -30,12 +30,13 @@ def test_the_gui_opens_the_dashboard_set_and_the_tui_the_eight_roles(monkeypatch
         def run(root, *a, **kw):
             return 0
 
-    monkeypatch.setattr(cli, "_gui", lambda: Launch)
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
     monkeypatch.setattr(demo, "build", lambda path, reset=False, set_name="main": built.append(set_name) or tmp_path)
     monkeypatch.setattr(cli.OrkcraftApp, "run", lambda self: None)
-    assert cli.main(["gui", "--demo"]) == 0 and cli.main(["--demo"]) == 0
+    assert cli.main(["gui", "--demo"]) == 0 and cli.main(["--demo", "tui"]) == 0
     assert cli.main(["gui", "--demo", "--browser"]) == 0 and cli.main(["--demo-set", "managers", "gui", "--demo"]) == 0
-    assert built == ["dashboard", "main", "dashboard", "managers"]
+    assert cli.main(["--demo"]) == 0                    # the window is the default
+    assert built == ["dashboard", "main", "dashboard", "managers", "dashboard"]
 
 
 def test_a_sandbox_of_another_set_or_an_older_demo_is_built_again(tmp_path: Path):
