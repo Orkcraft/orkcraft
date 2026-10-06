@@ -143,12 +143,12 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
 - **Other Camp art:**
   - command buttons (`icon-command`, 32px);
   - HUD resources and carts (`icon-resource`, 16px);
-  - the ork (`ork-w` × `ork-h`, 16×15) wherever 🧌 stood, and ork portraits (`portrait-w` × `portrait-h`, 46×38);
+  - the ork (`ork-w` × `ork-h`, 24×20, the ork mark's head) wherever 🧌 stood, and ork portraits (`portrait-w` × `portrait-h`, 46×38);
   - fire overlays.
 - **Rendering:** always `image-rendering: pixelated`, at 1× or a whole multiple. The full brief is in the Sprites section.
 - **Until sprites exist:** Camp uses the TUI's pictographs, wrapped in `<i class="ok-ico">` so Office can drop them.
   - Resources now have sprites: an hourglass (quota), coins (spend), logs (context) and meat (agents), in `icons/res-*.png`.
-  - Orks: the chain or script has its signpost sprite (`icons/chain.png`). The agent ork already has its sprite (`orks/ork.png`, 16×15) and no longer uses 🧌.
+  - Orks: the chain or script has its signpost sprite (`icons/chain.png`). The agent ork already has its sprite (`orks/ork.png`, 24×20, the ork mark's head) and no longer uses 🧌.
   - Status is the ork's face: `orks/ork-idle.png` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its head.
 - **Office: no emoji and no sprites** (`modes.strip_emoji`).
   - Words in `<span class="ok-word">` replace pictographs: Quota, Spend, Context, Agents, `busy`, `?`.

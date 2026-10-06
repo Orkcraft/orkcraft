@@ -10,6 +10,7 @@ import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useState } from "preact/hooks";
 import { typeModule } from "./types.js";
+import { OrkHead, headerSprite } from "./icons.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
 // `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
@@ -70,6 +71,7 @@ export function Badge({ garrison, alert }) {
   const more = garrison.length - 1;
   const busy = garrison.some((o) => o.status === "busy");
   return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
+    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
     ${lead.name}${more > 0 ? `+${more}` : ""}
     ${lead.scheme && html` <span class="gui-scheme">${lead.scheme}</span>`}
     ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
@@ -97,7 +99,7 @@ function Garrison({ garrison, b }) {
   return html`<section class="gui-section">
     <h3 class="ok-font-heading">${say("Garrison")}</h3>
     <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
-      <span class="ok-font-label">${o.name}</span>
+      <${OrkHead} o=${o} /> <span class="ok-font-label">${o.name}</span>
       ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
       <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
       ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>
@@ -161,9 +163,11 @@ export function DemolishButton({ b }) {
 function Full({ b, t }) {
   const hot = b.alert && b.alert.waited >= 30;
   return html`<section class=${cls("ok-win is-active gui-win gui-full", { "is-alert": !!b.alert, "is-hot": hot })}>
-    <div class="ok-head is-banner"></div>
+    <div class="ok-head is-banner"><img class="ok-sprite gui-win__banner" src=${headerSprite(b.type)} alt=""
+      onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
     <div class="ok-win__frame">
       <div class="ok-win__bar" onDblClick=${stepBack}>
+        <span class="ok-win__no">${t.buildings.indexOf(b) + 1}</span>
         <span class="ok-win__title">${say(b.title)}</span>
         <${Badge} garrison=${b.garrison} alert=${b.alert} />
         <button class="gui-tab__close gui-win__close" title=${say("Back to the town (Esc)")} aria-label=${say("Back to the town")}

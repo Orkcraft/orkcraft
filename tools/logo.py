@@ -15,6 +15,11 @@ Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`)
   `design-system/fonts/` and turned into outlines so it needs no font;
 - `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`.
 
+The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` and its
+states (`ork-idle` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its head) on a 12×10 grid
+(two rows over the head for the state's mark), drawn at 2× (24×20) and 4× (`@2x`), and `ork-portrait`,
+the head at 3× in the 46×38 portrait slot.
+
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 """
 from __future__ import annotations
@@ -51,6 +56,51 @@ PALETTES = {
 }
 
 W, H = len(GRID[0]), len(GRID)
+
+# The agent's states: what changes on the head, and what stands in the two rows over it.
+# z sleep, S sweat, O and Y the flame (alert orange, gold core), d shut eyes.
+STATES = {
+    "ork": ["", ""],
+    "ork-idle": ["..........z.", "........z..."],
+    "ork-busy": ["", "..........S."],
+    "ork-waiting": [".....YY.....", "....OYYO...."],
+}
+SPRITE_COLOURS = {"F": "#6ca420", "D": "#1a2816", "T": "#e8e0c8", "d": "#3f6b14",
+                  "z": "#e8e0c8", "S": "#9fd3ff", "O": "#ff8c1a", "Y": "#f2c66d"}
+
+
+def state_grid(name: str) -> list[str]:
+    top = [row or "." * W for row in STATES[name]]
+    head = list(GRID)
+    if name == "ork-idle":                       # asleep: the eyes shut into the face
+        head = [row.replace("D", "d") for row in head]
+    if name == "ork-busy":                       # a drop of sweat runs down past the right ear
+        head[0] = head[0][:10] + "S" + head[0][11:]
+    return top + head
+
+
+def grid_image(grid: list[str], colours: dict[str, str], k: int) -> Image.Image:
+    img = Image.new("RGBA", (len(grid[0]) * k, len(grid) * k), (0, 0, 0, 0))
+    for y, row in enumerate(grid):
+        for x, c in enumerate(row):
+            if c != ".":
+                rgb = tuple(int(colours[c][i:i + 2], 16) for i in (1, 3, 5))
+                img.paste(rgb + (255,), (x * k, y * k, (x + 1) * k, (y + 1) * k))
+    return img
+
+
+def sprites(out: pathlib.Path) -> None:
+    """The agent's head and its states for the GUI (design-system/sprites/orks/)."""
+    out.mkdir(parents=True, exist_ok=True)
+    for name in STATES:
+        grid = state_grid(name)
+        grid_image(grid, SPRITE_COLOURS, 2).save(out / f"{name}.png")
+        grid_image(grid, SPRITE_COLOURS, 4).save(out / f"{name}@2x.png")
+    for scale, suffix, (w, h) in ((3, "", (46, 38)), (6, "@2x", (92, 76))):
+        head = grid_image(GRID, SPRITE_COLOURS, scale)
+        slot = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        slot.alpha_composite(head, ((w - head.width) // 2, h - head.height - scale))
+        slot.save(out / f"ork-portrait{suffix}.png")
 CELL = 10  # SVG units per pixel of the grid
 
 
@@ -146,7 +196,8 @@ def main() -> None:
     # every size drawn on its own grid, never scaled down from the largest
     raster(office, 48).save(out / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)],
                             append_images=[raster(office, 16), raster(office, 32)])
-    print(f"wrote {out}")
+    sprites(ROOT / "design-system" / "sprites" / "orks")
+    print(f"wrote {out} and the ork sprites")
 
 
 if __name__ == "__main__":

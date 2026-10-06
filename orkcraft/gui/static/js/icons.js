@@ -36,3 +36,16 @@ export function headerSprite(type) {
   const name = type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
   return `/ds/sprites/buildings/${name}/header.png`;
 }
+
+// Camp: an ork of a garrison as its head in its state (design-system/sprites/orks/, the ork mark's
+// head); a chain or script as its signpost. Office hides both (`.ok-sprite`) and keeps the words.
+const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle" };
+
+export function OrkHead({ o, alert }) {
+  if (o.kind === "chain" || o.kind === "script") {
+    return html`<img class="ok-sprite" data-kind="chain" src="/ds/sprites/icons/chain.png" width="16" height="16" alt="" />`;
+  }
+  const state = alert ? "ork-waiting" : ORK_STATE[o.status] || "ork";
+  return html`<img class="ok-sprite" data-kind="ork" src=${`/ds/sprites/orks/${state}.png`}
+    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width="24" height="20" alt="" />`;
+}
