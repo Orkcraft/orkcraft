@@ -97,8 +97,9 @@ MY_DAY = {
         typed("brief", "mill", "Daily Brief", "⚙️", "Miller", "turns what arrives into a brief", "thatch",
               steps=[f"script: {BRIEF}"]),
     ],
-    # the War Drum's tall card (a fifth of the screen) stands over the Watchtower's spot: the tower goes down a row
-    "huts": {"post": (1 / 3, 1.0)},
+    # the War Drum's tall card (a fifth of the screen) stands over the Watchtower's spot: the tower goes down a row;
+    # the Task board's wide card reaches past a third of the town: the drum steps right of it
+    "huts": {"post": (1 / 3, 1.0), "days": (0.4, 0.0)},
     "layout": [(0.0, 0.0, 0.32, 0.46), (0.34, 0.0, 0.32, 0.46), (0.68, 0.0, 0.32, 0.46),
                (0.0, 0.54, 0.24, 0.46), (0.26, 0.54, 0.16, 0.46), (0.44, 0.54, 0.26, 0.46), (0.72, 0.54, 0.28, 0.46)],
     "roads": [
