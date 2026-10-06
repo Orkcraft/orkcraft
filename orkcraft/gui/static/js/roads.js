@@ -4,11 +4,13 @@
 // evenly; paths are A* on a grid of CELL px where a step under a hut costs WINDOW_COST, a turn
 // TURN_COST and a step on a cell an earlier road took LANE_COST, so roads keep to the gaps, turn as
 // little as they can and run side by side in lanes of their own instead of on top of each other.
+// A road leaves its gate and comes into one straight for STUB cells, so it never bends right at a hut.
 
 const CELL = 8;
 const WINDOW_COST = 40;
 const TURN_COST = 3;
 const LANE_COST = 6;
+const STUB = 6;                            // cells a road runs straight out of a gate before it may turn
 const STEP = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -184,9 +186,31 @@ export function plan(rects, roads, roomW, roomH, ports = rects, sideways = false
   for (const r of roads) {
     const g = all[r.id];
     if (!g || !g.exit || !g.entry) continue;
-    const outside = (gate) => clamp([gate.x + STEP[gate.side][0], gate.y + STEP[gate.side][1]]);
-    const cells = route(outside(g.exit), outside(g.entry), under, width, height, taken);
-    for (const [x, y] of cells) taken[y * width + x] = 1;
+    // Straight out of each gate for up to STUB cells: never into another hut, and where the two gates
+    // face each other, each to half the gap, so a short jog between them bends in the middle.
+    const reach = (gate, most) => {
+      const [dx, dy] = STEP[gate.side];
+      let n = 1;
+      while (n < most) {
+        const [x, y] = [gate.x + dx * (n + 1), gate.y + dy * (n + 1)];
+        if (x < 0 || y < 0 || x >= width || y >= height || under[y * width + x]) break;
+        n++;
+      }
+      return n;
+    };
+    let most = STUB;
+    if (STEP[g.exit.side][0] === -STEP[g.entry.side][0] && STEP[g.exit.side][1] === -STEP[g.entry.side][1]) {
+      const [dx, dy] = STEP[g.exit.side];
+      const gap = (g.entry.x - g.exit.x) * dx + (g.entry.y - g.exit.y) * dy - 1;   // free cells between, facing
+      if (gap > 0) most = Math.max(Math.min(STUB, Math.ceil(gap / 2)), 1);
+    }
+    const stub = (gate) => {
+      const n = reach(gate, most), [dx, dy] = STEP[gate.side];
+      return Array.from({ length: n }, (_, i) => clamp([gate.x + dx * (i + 1), gate.y + dy * (i + 1)]));
+    };
+    const away = stub(g.exit), back = stub(g.entry);
+    const cells = route(away[away.length - 1], back[back.length - 1], under, width, height, taken);
+    for (const [x, y] of [...away, ...cells, ...back]) taken[y * width + x] = 1;
     const exit = edgePoint(g.exit, ports[r.from]), entry = edgePoint(g.entry, ports[r.to]);
     // From the edge straight out along the gate's side, then cell by cell, then straight in.
     const first = centre(cells[0]), last = centre(cells[cells.length - 1]);
