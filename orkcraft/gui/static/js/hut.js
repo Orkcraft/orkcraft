@@ -91,7 +91,9 @@ function Card({ b }) {
 export function Hut({ b, spot, number, onMoved }) {
   const ref = useRef(null);
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
-  useLayoutEffect(() => {
+  // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
+  // late, a part of its card hidden): the town places the huts and the roads by it.
+  const measure = () => {
     const el = ref.current;
     if (!el) return;
     const w = el.offsetWidth, h = el.offsetHeight;
@@ -101,7 +103,14 @@ export function Hut({ b, spot, number, onMoved }) {
     if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch) {
       sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch } };
     }
-  });
+  };
+  useLayoutEffect(measure);
+  useLayoutEffect(() => {
+    if (!ref.current || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, [b.id]);
   const free = !!unpinned.value[b.id] && !b.pinned && b.id !== CORNER;   // pinned in the scroll, or the Hall: never moves
   const office = town.value.look === "office";
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";

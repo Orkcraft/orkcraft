@@ -97,6 +97,11 @@ button { font: inherit; color: inherit; }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
+/* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. */
+.gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
+.gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
+.gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
+.gui-parts .ok-check.is-off { color: var(--ink-muted); }
 .gui-town__room > .gui-roads { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .gui-road polyline { fill: none; stroke: var(--road); stroke-width: 2; stroke-linejoin: miter; }
 .gui-road circle { fill: var(--road); }
