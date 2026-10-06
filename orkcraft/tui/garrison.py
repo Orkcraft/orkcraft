@@ -101,8 +101,8 @@ class GarrisonMixin:
             self.push_screen(OrcProgress("🔎 The steward is looking at the building…"))
 
         def _worker() -> None:
-            report = steward.watch(self.repo_root, snapshot, building_id, carts=carts, runs=runs,
-                                   runner=runners.STEWARD_RUNNER or builders.claude_runner, budget_ok=budget_ok)
+            report = steward.watch(self.repo_root, snapshot, building_id, carts=carts, runs=runs, budget_ok=budget_ok,
+                                   runner=steward.runner_for(snapshot.building(building_id), "watch", runners.STEWARD_RUNNER))
             try:
                 steward.save_report(self.repo_root, report)
             except OSError:
@@ -290,7 +290,8 @@ class GarrisonMixin:
 
             def _worker() -> None:
                 report = steward.redesign(self.repo_root, snapshot, building_id, type_id, request,
-                                          runner=runners.STEWARD_RUNNER or builders.claude_runner)
+                                          runner=steward.runner_for(snapshot.building(building_id), "redesign",
+                                                                    runners.STEWARD_RUNNER))
                 self.call_from_thread(self._on_redesigned, building_id, report, request)
 
             self.run_worker(_worker, thread=True, name=f"redesign-{building_id}")

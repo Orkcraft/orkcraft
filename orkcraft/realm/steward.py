@@ -32,7 +32,51 @@ from typing import Any, Iterable
 
 from orkcraft import scroll as ts
 from orkcraft.design import ui as design_ui
-from orkcraft.realm import builders, chains, chronicles, roads
+from orkcraft.realm import builders, chains, chronicles, roads, tiers
+
+# -- which model for which of its tasks ----------------------------------------------------------------
+
+# What every steward calls a model for, and what a type's steward does besides (the Barracks' answers to
+# its orks and its review of their work). Its spec keeps a tier per task (`OrcSpec.models`); a task with
+# none runs on the default (the CLI's own model, or the type's setting).
+USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings"}
+TYPE_USES = {"barracks": {"answer": "Answer the orks' questions", "review": "Review their work"}}
+
+
+def uses(type_id: str) -> dict[str, str]:
+    """Its tasks, the type's own last: id → what it is."""
+    return {**USES, **TYPE_USES.get(type_id, {})}
+
+
+def tier_for(b: ts.BuildingSpec | None, use: str) -> str:
+    """The tier its steward runs `use` on, or "" for the default."""
+    stew = b.garrison.steward if b is not None else None
+    tier = str(((stew.models if stew is not None else None) or {}).get(use) or "")
+    return tier if tier in tiers.TIERS else ""
+
+
+def model_for(b: ts.BuildingSpec | None, use: str, harness: str = "claude") -> str:
+    """The model of that tier on `harness`, or "" for the default."""
+    tier = tier_for(b, use)
+    return tiers.MODELS.get(harness, {}).get(tier, "") if tier else ""
+
+
+def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None = None) -> builders.Runner:
+    """The model call for one of its tasks: the test's or demo's fake as it is, else Claude on its tier."""
+    if fake is not None:
+        return fake
+    model = model_for(b, use)
+    return (lambda prompt: builders.claude_runner(prompt, model=model)) if model else builders.claude_runner
+
+
+def set_models(b: ts.BuildingSpec, models: dict[str, str]) -> dict[str, str]:
+    """Its steward's tier per task (an unknown task or tier is left out; empty: the default)."""
+    if b.garrison.steward is None:
+        raise ValueError(f"{b.title} has no steward")
+    known = set(USES) | {u for t in TYPE_USES.values() for u in t}
+    kept = {u: t for u, t in models.items() if u in known and t in tiers.TIERS}
+    b.garrison.steward.models = kept or None
+    return kept
 
 MAX_ATTEMPTS = 3
 WINDOW_DAYS = 7

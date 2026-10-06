@@ -140,12 +140,14 @@ def revert(town: Town, building_id: str) -> bool:
 
 # -- a building's goal and 👍 / 👎 -------------------------------------------------------------------
 
-def cycle_goal(town: Town, building_id: str) -> str | None:
-    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards."""
+def cycle_goal(town: Town, building_id: str, goal: str = "") -> str | None:
+    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards (`goal`:
+    that one, as the GUI's three steps pick it)."""
     b = town.scroll.building(building_id)
     if b is None:
         return None
-    goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
+    if goal not in scroll.GOALS:
+        goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
     b.goal = None if goal == "balance" else goal
     town.save()
     town.toast(f"{town.title_of(building_id)}: {GOAL_WORDS[goal]}",

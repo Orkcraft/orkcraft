@@ -365,6 +365,13 @@
           "type": "string",
           "maxLength": 600,
           "description": "Why this kind (the recruiter's explanation)."
+        },
+        "models": {
+          "type": "object",
+          "description": "A steward's tier per task (watch, redesign, keeper, and its type's own); a missing task runs on the default.",
+          "additionalProperties": {
+            "enum": ["elder", "warrior", "laborer"]
+          }
         }
       }
     },
