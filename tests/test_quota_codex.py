@@ -206,6 +206,8 @@ def test_limits_carry_codex_windows(monkeypatch, tmp_path):
     monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex")
     monkeypatch.setattr(tools, "codex_login", lambda path: (True, "subscription"))
     monkeypatch.setattr(codex_quota, "_converse", lambda cmd, messages, timeout, cwd: raw)
+    parse = codex_quota.parse_app_server        # read at the fixture's hour, not the clock's: its 5h window resets at 15:00
+    monkeypatch.setattr(codex_quota, "parse_app_server", lambda out, *a, **k: parse(out, *a, **{**k, "now": NOW}))
     rows = limits.fetch_limits(tmp_path)
     assert [(r.provider, r.window, r.group) for r in rows] == [
         ("codex", "5h", ""), ("codex", "weekly", ""), ("codex", "", "gpt-6-astra 5h")]
