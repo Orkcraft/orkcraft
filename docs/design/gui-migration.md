@@ -339,3 +339,5 @@ found by its files, so a port touches no shared list and parallel ports do not c
 2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
 3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
    camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.
+4. A phone over the same host: glance, Orders, the Pit, the Warchief, Halt All, pushes —
+   [mobile.md](mobile.md); stage 0 (`gui/mobile.py`, `GET /api/version`) stands.

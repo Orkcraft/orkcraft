@@ -143,16 +143,17 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     # -- 2. queues and execution -----------------------------------------------------------------------
     BuildingType(
         "fields", "Task Fields", "🌾", "M",
-        "a board of cards: tasks in To Do / In Progress / Done and sticky notes in lanes of their own "
-        "(Ideas, Questions…); a note becomes a task by moving into a status lane",
-        "counts per status, the notes, * when something is new",
-        "the lanes; add, move, open, colour and send cards",
+        "a board of cards: tasks for the orks in To Do / In Progress / Done, your own to-dos (a checklist) "
+        "and sticky notes in lanes of their own (Ideas, Questions…); a note becomes a task by moving into a status lane",
+        "counts per status, the task in work, your open to-dos, the latest notes, * when something is new",
+        "the lanes, your to-dos and the notes; add, move, open, tick off, colour and send cards",
         events=(_e("tasks.status_changed", "task moved", NODE, "a task changed its status (from → to)"),
                 _e("tasks.created", "task added", NODE, "a new task was added (or a note became one)"),
                 _e("notes.created", "note added", TEXT, "a sticky note was added: its title and text"),
                 _e("tasks.sent", "card sent", TEXT, "the operator sent a card on (s): its title and text")),
         actions=(_a("tasks.new", "New task", "+", "add a card to the focused lane"),
-                 _a("notes.new", "New note", "🗒", "add a sticky note")),
+                 _a("notes.new", "New note", "🗒", "add a sticky note"),
+                 _a("todos.new", "New chore", "☐", "add a to-do of your own")),
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
                 "lanes": (list, None, False)},
         art="burrow", orc="Taskmaster"),

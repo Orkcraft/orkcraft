@@ -32,7 +32,7 @@ export function Hud() {
     ${hud.quota && html`<${Resource} word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
-    <${Resource} word=${words.supply} value=${`${hud.supply}/${hud.supply_max}`}
+    <${Resource} word=${words.supply} value=${`${hud.agents_working}/${hud.agents}`}
       level=${hud.supply >= hud.supply_max ? "over" : "ok"} />
   </header>`;
 }

@@ -75,7 +75,8 @@ def test_every_building_type_stands_with_a_card_to_show(dashboard):
     by_id = {b["id"]: b for b in snap["buildings"]}
     assert by_id["camp"]["card"]["asks"] and by_id["council"]["card"]["cycle"] == 2
     days = by_id["days"]["card"]
-    assert any(m["now"] for m in days["meetings"]) and any(m["doc"] for m in days["meetings"])
+    assert any(m["now"] for m in days["beats"]) and any(m["doc"] for m in days["beats"])
+    assert {m["kind"] for m in days["beats"]} == {"meeting", "schedule", "limit"}          # all three, overlaid
     assert called == []                                   # no model, no mailbox, no feed asked
 
 

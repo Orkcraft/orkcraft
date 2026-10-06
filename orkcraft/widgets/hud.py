@@ -41,6 +41,8 @@ class Resources:
     lumber_level: str = "ok"
     supply: int = 0       # 🥩 running orcs
     supply_max: int = 5
+    agents: int = 0           # every ork of the town (the keepers too); the HUD shows working / all
+    agents_working: int = 0
     alerts: int = 0       # ❓ orcs waiting for orders
     commit: bool = True   # §10 per-action commits
     quota: str = ""       # ⏳ used share of the subscriptions' limits ("claude 38% · agy 71%"); "" → none
@@ -161,8 +163,8 @@ class Hud(Static):
             right.append(" ")
         right.append(f"[{modes.resource('lumber')} {lumber_disp}]", style=levels.get(r.lumber_level, ""))
         right.append(" ")
-        supply_style = "bold red" if r.supply >= r.supply_max else ("yellow" if r.supply else "")
-        right.append(f"[{modes.resource('supply')} {r.supply}/{r.supply_max}]", style=supply_style)
+        supply_style = "bold red" if r.supply >= r.supply_max else ("yellow" if r.agents_working else "")
+        right.append(f"[{modes.resource('supply')} {r.agents_working}/{r.agents}]", style=supply_style)
 
         gap = self.size.width - cell_len(left.plain) - cell_len(right.plain)
         line = left + Text(" " * max(gap, 1)) + right

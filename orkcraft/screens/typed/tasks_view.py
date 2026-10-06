@@ -1,5 +1,7 @@
-"""🌾 Task Fields: a board of cards — tasks in To Do / In Progress / Done, sticky notes in lanes of
-their own — kept in `TASKS.md` or a tasks folder (realm/tasklist.py).
+"""🌾 Task Fields: a board of cards — tasks for the orks in To Do / In Progress / Done, the person's
+own to-dos (My chores, a checklist) and sticky notes in lanes of their own — kept in `TASKS.md` or a
+tasks folder (realm/tasklist.py). In `board` mode the orks' lanes stand on top, the checklist and the
+notes under them: three parts on one screen.
 
 `mode` picks what the board shows: `board` (default) every lane, `tasks` the three status lanes
 (a kanban), `notes` the lanes of notes (a wall of stickers). `lanes` names lanes of notes that are
@@ -7,7 +9,7 @@ always there (`["Ideas", "Questions"]`); any other `##` section of the file is o
 
 Keys: `n` a new card in the focused lane · `<` `>` move it · `e` / Enter open it (its first line is
 the title, the rest its text) · `c` its colour · `t` a note ⇄ a task · `s` send it down the roads ·
-`d` delete it · `N` a new lane of notes. A cart that comes by road becomes a card: a task in To Do
+`d` delete it · `N` a new lane of notes · `x` tick a to-do off · `m` make a card a to-do of yours. A cart that comes by road becomes a card: a task in To Do
 (a note in `notes` mode), its title, else its first line, the rest its text.
 
 Each change — here or in the file by hand (looked at every 10 s) — sends `tasks.created` or
@@ -28,7 +30,7 @@ from textual.widgets.option_list import Option
 
 from orkcraft.core.workers.fields import TITLE, FieldsWorker
 from orkcraft.realm import tasklist
-from orkcraft.realm.tasklist import NOTE, TASK
+from orkcraft.realm.tasklist import MINE, NOTE, TASK
 from orkcraft.screens.dialogs import Confirm, TextBlock, TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
@@ -44,13 +46,20 @@ class TasksView(TypedView):
                 Binding("greater_than_sign", "move(1)", "Move ▶"), Binding("e", "open", "Open"),
                 Binding("enter", "open", "Open", show=False), Binding("c", "color", "Colour"),
                 Binding("t", "flip", "Note ⇄ task"), Binding("s", "send", "Send", show=False),
-                Binding("d", "delete", "Delete", show=False), Binding("N", "new_lane", "New lane", show=False)]
+                Binding("d", "delete", "Delete", show=False), Binding("N", "new_lane", "New lane", show=False),
+                Binding("x", "check", "Tick off"), Binding("m", "mine", "My chore", show=False)]
     DEFAULT_CSS = """
     TasksView .tasks-col { width: 1fr; height: 1fr; border: round $surface-lighten-1; }
     TasksView .tasks-col.notes-col { border: round $warning-darken-2; }
     TasksView .tasks-col Label { padding: 0 1; text-style: bold; color: $accent; }
     TasksView .tasks-col.notes-col Label { color: $warning; }
     TasksView .tasks-col OptionList { height: 1fr; border: none; }
+    TasksView .tasks-col.mine-col { border: round $success-darken-2; }
+    TasksView .tasks-col.mine-col Label { color: $success; }
+    TasksView #tasks-board { height: 1fr; }
+    TasksView #tasks-work { height: 3fr; }
+    TasksView #tasks-lower { height: 2fr; }
+    TasksView #tasks-lower.-none { display: none; }
     """
 
     def __init__(self, *a, **kw) -> None:
@@ -94,6 +103,15 @@ class TasksView(TypedView):
     def visible_lanes(self) -> list[tasklist.Lane]:
         return self.worker.visible_lanes()
 
+    def all_lanes(self) -> list[tasklist.Lane]:
+        """Every column the view draws: the board's lanes, and in board mode the person's checklist
+        (after the status lanes, before the notes)."""
+        lanes = self.visible_lanes()
+        if not self.worker.shows_todos:
+            return lanes
+        tasks = [ln for ln in lanes if ln.kind == TASK]
+        return tasks + [self.worker.todo_lane()] + [ln for ln in lanes if ln.kind != TASK]
+
     def card(self, card_id: str) -> tasklist.Task | None:
         return self.worker.card(card_id)
 
@@ -109,7 +127,8 @@ class TasksView(TypedView):
     # -- the view -------------------------------------------------------------------------------------
 
     def compose_body(self) -> ComposeResult:
-        yield Horizontal(classes="typed-row", id="tasks-board")
+        yield Vertical(Horizontal(classes="typed-row", id="tasks-work"),
+                       Horizontal(classes="typed-row", id="tasks-lower"), id="tasks-board")
 
     def on_mount(self) -> None:
         self.refresh_data()
@@ -125,27 +144,33 @@ class TasksView(TypedView):
     def _build_lanes(self) -> bool:
         """One column per visible lane; rebuilt only when the lanes change (True: just rebuilt — the
         new lists are filled once they are mounted)."""
-        lanes = self.visible_lanes()
+        lanes = self.all_lanes()
         ids = tuple(ln.id for ln in lanes)
         if ids == self._shown:
-            for ln in lanes:
-                try:
-                    self.query_one(f"#tasks-label-{ln.id}", Label).update(ln.label)
-                except Exception:
-                    pass
             return False
         try:
-            board = self.query_one("#tasks-board", Horizontal)
+            work, lower = self.query_one("#tasks-work", Horizontal), self.query_one("#tasks-lower", Horizontal)
         except Exception:
             return False
-        board.remove_children()
+        parts = self.worker.shows_todos
+        work.remove_children()
+        lower.remove_children()
+        lower.set_class(not parts, "-none")
         for ln in lanes:
-            col = Vertical(Label(ln.label, id=f"tasks-label-{ln.id}", classes="-as-written"),
-                           OptionList(id=f"tasks-{ln.id}", classes="-as-written"),
-                           classes="tasks-col" + (" notes-col" if ln.kind == NOTE else ""))
-            board.mount(col)
+            mine = ln.kind == MINE
+            label = Label(self._label(ln, 0), id=f"tasks-label-{ln.id}", classes="" if mine else "-as-written")
+            col = Vertical(label, OptionList(id=f"tasks-{ln.id}", classes="-as-written"),
+                           classes="tasks-col" + (" notes-col" if ln.kind == NOTE else " mine-col" if mine else ""))
+            (lower if parts and ln.kind != TASK else work).mount(col)
         self._shown = ids
         return True
+
+    @staticmethod
+    def _label(ln: tasklist.Lane, n: int, open_: int | None = None) -> str:
+        """A column's heading: the lane's own name; the checklist says it in the camp's words (My chores)."""
+        if ln.kind == MINE:
+            return f"☐ My chores · {open_ if open_ is not None else n}/{n}"
+        return f"{ln.label} · {n}"
 
     def on_show(self) -> None:
         if self.cards:
@@ -159,14 +184,14 @@ class TasksView(TypedView):
 
     def _fill_lanes(self) -> None:
         seen = self.worker.seen()
-        for ln in self.visible_lanes():
+        for ln in self.all_lanes():
             try:
                 lst, label = self.query_one(f"#tasks-{ln.id}", OptionList), self.query_one(f"#tasks-label-{ln.id}", Label)
             except Exception:
                 continue
             keep = self._highlighted_id(lst)
-            rows = [t for t in self.cards if t.column == ln.id]
-            label.update(f"{ln.label} · {len(rows)}")
+            rows = self.worker.todos if ln.kind == MINE else [t for t in self.cards if t.column == ln.id]
+            label.update(self._label(ln, len(rows), sum(1 for t in rows if not t.checked)))
             lst.clear_options()
             for t in rows:
                 lst.add_option(Option(self._card_row(t, t.id not in seen, ln.id == "done"), id=t.id))
@@ -180,6 +205,9 @@ class TasksView(TypedView):
         bg = COLOR_STYLE.get(t.color, "")
         if new:
             row.append("* ", style="bold yellow")
+        if t.kind == MINE:
+            row.append("☑ " if t.checked else "☐ ", style="green" if t.checked else "")
+            done = t.checked
         if t.color:
             row.append(f"{t.color} ")
         row.append(tasklist.plain(t.title), style=("dim strike " if done else "bold " if t.kind == NOTE else "") + bg)
@@ -198,7 +226,7 @@ class TasksView(TypedView):
 
     def _lists(self) -> list[tuple[str, OptionList]]:
         out = []
-        for ln in self.visible_lanes():
+        for ln in self.all_lanes():
             try:
                 out.append((ln.id, self.query_one(f"#tasks-{ln.id}", OptionList)))
             except Exception:
@@ -230,7 +258,7 @@ class TasksView(TypedView):
             lst = self.query_one(f"#tasks-{lane}", OptionList)
         except Exception:
             return
-        ids = [t.id for t in self.cards if t.column == lane]
+        ids = [t.id for t in (self.worker.todos if lane == MINE else [t for t in self.cards if t.column == lane])]
         if card_id in ids:
             lst.focus()
             lst.highlighted = ids.index(card_id)
@@ -241,10 +269,11 @@ class TasksView(TypedView):
 
     def action_new(self) -> None:
         lane = self.focused_lane()
-        what = "task" if tasklist.kind_of(lane) == TASK else "note"
-        label = next((ln.label for ln in self.visible_lanes() if ln.id == lane), lane)
+        kind = tasklist.kind_of(lane)
+        what = "task" if kind == TASK else "chore" if kind == MINE else "note"
+        label = "My chores" if kind == MINE else next((ln.label for ln in self.visible_lanes() if ln.id == lane), lane)
         self.app.push_screen(TextPrompt(f"🌾 New {what} · {label}",
-                                        placeholder="what needs doing" if what == "task" else "a note"),
+                                        placeholder="what needs doing" if what != "note" else "a note"),
                              lambda title: self.add(title, lane) if title else None)
 
     def action_new_lane(self) -> None:
@@ -262,7 +291,7 @@ class TasksView(TypedView):
         if sel is None:
             return
         lane, tid = sel
-        ids = [ln.id for ln in self.visible_lanes()]
+        ids = [ln.id for ln in self.all_lanes()]
         i = ids.index(lane) + int(step) if lane in ids else -1
         if 0 <= i < len(ids):
             self.move(tid, ids[i])
@@ -278,7 +307,8 @@ class TasksView(TypedView):
             if lines:
                 self.worker.edit(card.id, lines[0], "\n".join(lines[1:]))
 
-        self.app.push_screen(TextBlock(f"🌾 {'Task' if card.kind == TASK else 'Note'} · {tasklist.plain(card.title)}",
+        what = {TASK: "Task", MINE: "Chore"}.get(card.kind, "Note")
+        self.app.push_screen(TextBlock(f"🌾 {what} · {tasklist.plain(card.title)}",
                                        f"{card.title}\n{card.body}".rstrip(),
                                        "the first line is the title, the rest the card's text · ctrl+s keeps it"), done)
 
@@ -290,8 +320,21 @@ class TasksView(TypedView):
         if card is not None and self.worker.color(card.id):
             self._focus_card(card.column, card.id)
 
+    def action_check(self) -> None:
+        """Tick one of the person's to-dos off (or back on)."""
+        card = self._selected_card()
+        if card is not None and card.kind == MINE and self.worker.check(card.id):
+            self._focus_card(MINE, card.id)
+
+    def action_mine(self) -> None:
+        """A note (an idea) or a task becomes a to-do of the person's own."""
+        card = self._selected_card()
+        if card is not None and self.worker.to_mine(card.id):
+            self._focus_card(MINE, card.id)
+
     def action_flip(self) -> None:
-        """A note becomes a task in To Do; a task becomes a note (in the first lane of notes)."""
+        """A note or a to-do becomes a task for the orks in To Do; a task becomes a note (in the first
+        lane of notes)."""
         card = self._selected_card()
         lane = self.worker.flip(card.id) if card is not None else ""
         if lane:
@@ -331,6 +374,10 @@ class TasksView(TypedView):
     def quick_action(self, action_id: str) -> bool:
         if action_id == "tasks.new":
             self.action_new()
+            return True
+        if action_id == "todos.new":
+            self.app.push_screen(TextPrompt("🌾 New chore", placeholder="what needs doing"),
+                                 lambda title: self.add(title, MINE) if title else None)
             return True
         if action_id == "notes.new":
             lanes = [ln.id for ln in self.visible_lanes() if ln.kind == NOTE] or [tasklist.NOTES]

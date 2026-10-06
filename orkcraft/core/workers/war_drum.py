@@ -10,6 +10,11 @@ A cart that comes back with the tag is the meeting's document (`docs.json`): a f
 its Markdown kept in `docs/<id>.md`. `open_doc` sends it as `calendar.doc_opened` when a road carries
 that; otherwise the face shows it in Lake. `prepare` sends `meeting soon` for a meeting at once, and
 `add` puts an event in the calendar it may write (its own when the calendar is a URL).
+
+Over the meetings it lays the town's schedules and its limits (realm/drumbeat.py): `jobs()` are the
+scheduled runs of every standing building, `limits()` the 🪙 spend and 🪵 context limits with ≈ when
+each is reached at the burn rate it samples on every tick (`burn.jsonl`; the demo's is seeded, as
+agents never run there), and `beats(until)` all three on one timeline.
 """
 from __future__ import annotations
 
@@ -20,10 +25,11 @@ import time
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import daybook, shelves
+from orkcraft.realm import daybook, drumbeat, shelves
 
 TICK_S = 30.0
 RELOAD_S = 300.0
+HUT_BEATS = 7                                       # timeline rows on the TUI's hut
 DOC = "📄"
 _PATH = re.compile(r"`([^`\n]+\.[A-Za-z0-9]{1,8})`")
 
@@ -85,6 +91,7 @@ class WarDrumWorker(Worker):
             self.emit("calendar.event_due", daybook.line(e), e.summary)
         self._maybe_upcoming(since, now)
         self._maybe_digest(now)
+        self.sample_burn(now)
         self.changed()
 
     def status(self) -> str:
@@ -107,6 +114,54 @@ class WarDrumWorker(Worker):
         """The meeting a quick action is about when none is picked: the one on now, else the next."""
         cur, nxt, _ = self.now_and_next()
         return nxt or cur
+
+    # -- the timeline: meetings, the town's schedules, its limits -----------------------------
+
+    @property
+    def burn_file(self) -> Path:
+        return self.state_dir / "burn.jsonl"
+
+    def sample_burn(self, now: dt.datetime | None = None) -> bool:
+        """Keep where this run's spend and the fullest session's context stand (none in the demo:
+        its samples are seeded)."""
+        if self.simulated:
+            return False
+        snap = self.town.snapshot
+        who, ctx = max(snap.context_by_terminal.items(), key=lambda kv: kv[1], default=("", 0))
+        try:
+            return drumbeat.sample(self.burn_file, now or self.clock(), self.town.run_id, snap.spent_usd, ctx, who)
+        except OSError:
+            return False
+
+    def jobs(self) -> list[drumbeat.Job]:
+        return drumbeat.jobs(self.town.scroll, self.town.custom_specs)
+
+    def limits(self) -> list[drumbeat.Limit]:
+        rows = drumbeat.read_samples(self.burn_file, None if self.simulated else self.town.run_id)
+        budget = self.town.scroll.budget
+        return drumbeat.limits(rows, budget.gold_session_limit_usd, budget.lumber_context_limit_tokens, self.clock())
+
+    def beats(self, until: dt.datetime | None = None, limits: list | None = None) -> list[drumbeat.Beat]:
+        """Meetings, scheduled runs and ≈ limits from now to `until` (a day ahead), in time order."""
+        now = self.clock()
+        until = until or now + dt.timedelta(days=1)
+        return drumbeat.timeline(self.day.events, self.jobs(), self.limits() if limits is None else limits, now, until)
+
+    def week_beats(self, limits: list | None = None) -> dict:
+        """Each day of the week → its scheduled runs (up to `drumbeat.PER_JOB` a job, the rest as
+        `more`) and the limits reached that day; today's from now on."""
+        now = self.clock()
+        limits = self.limits() if limits is None else limits
+        jobs = self.jobs()
+        last = now.date() + dt.timedelta(days=daybook.WEEK_DAYS - 1)
+        reached = drumbeat.timeline([], [], limits, now, dt.datetime.combine(last, dt.time(23, 59)))
+        out = {}
+        for d in range(daybook.WEEK_DAYS):
+            day = now.date() + dt.timedelta(days=d)
+            start = now if d == 0 else dt.datetime.combine(day, dt.time()) - dt.timedelta(minutes=1)
+            runs = drumbeat.timeline([], jobs, [], start, dt.datetime.combine(day, dt.time(23, 59)))
+            out[day] = sorted(runs + [b for b in reached if b.at.date() == day], key=lambda b: (b.at, b.kind))
+        return out
 
     # -- documents for meetings -----------------------------------------------------------------
 
@@ -226,14 +281,30 @@ class WarDrumWorker(Worker):
         lines.append(f"{left} left today" if left else "nothing more today")
         later = [e for e in self.day.events if e.day > now.date()][:2]
         lines += [f"{e.day:%a} {daybook.when(e)[:5]} {self.mark(e, docs)}{e.summary}" for e in later]
+        beats = self.beats()
+        lines += [self.beat_line(b, docs) for kind in ("schedule", "limit")
+                  for b in [next((x for x in beats if x.kind == kind), None)] if b is not None]
         return lines
 
+    def beat_line(self, b: drumbeat.Beat, docs: dict | None = None) -> str:
+        """One beat as the hut says it: `[14:00] 📄 1:1 Ann`, `[05:00] ↻ Watchtower`, `[≈17:40] gold limit`."""
+        now = self.clock()
+        when = f"{b.at:%a} {b.at:%H:%M}" if b.at.date() != now.date() else f"{b.at:%H:%M}"
+        if b.kind == "meeting":
+            e = self.event(b.ref)
+            return f"[{when}] {'▶ ' if b.now else ''}{self.mark(e, docs) if e else ''}{b.title}"
+        if b.kind == "schedule":
+            return f"[{when}] ↻ {b.title}"
+        if b.reached:
+            return f"[!] {b.title} limit reached"
+        return f"[≈{when}] {b.title} limit"
+
     def hut_lines(self, widths: list[int]) -> list[str]:
-        cur, nxt, left = self.now_and_next()
+        _, _, left = self.now_and_next()
         docs = self.docs()
-        lines = [f"[{daybook.when(e)[:5]}] {self.mark(e, docs)}{e.summary}" for e in self.today()[:4]] or ["nothing today"]
-        lines += [""] * (5 - len(lines))
-        lines.append(f"now: {cur.summary}" if cur else f"next: {daybook.when(nxt)[:5]} {nxt.summary}" if nxt
-                     else "next: nothing more")
-        lines.append(f"left today: {left}")
+        beats = drumbeat.ahead(self.beats(), HUT_BEATS)
+        lines = [self.beat_line(b, docs) for b in beats] or ["nothing ahead"]
+        lines += [""] * (HUT_BEATS - len(lines))
+        approx = any(b.approx for b in beats)
+        lines.append(f"left today: {left}" + (" · ≈ estimate" if approx else ""))
         return lines

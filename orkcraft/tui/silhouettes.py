@@ -164,7 +164,9 @@ WATCHTOWER = _make("watchtower", ["     /\\     ", "   _/  \\_   ", " _/______\\
 
 # -- the production and staff halls (18 wide, seven text rows) ------------------------------------
 
-FIELDS = _make("fields", _box(18, 7, top="┌─\\||/─\\||/─\\||/─┐"), body=(18, 9))
+# Task Fields stands wider and taller than its hall row: its card holds three parts — the orks' lanes,
+# the person's to-dos, the latest notes (about a fifth of a terminal's height).
+FIELDS = _make("fields", _box(26, 9, top="┌" + "─\\||/─" * 4 + "┐"), body=(26, 11))
 BARRACKS = _make("barracks", ["  __    __    __  "] + _box(18, 7, top="┌|  |──|  |──|  |┐"),
                  head=("WORKER POOL",), body=(18, 9))
 COUNCIL = _make("council", ["   o    o    o    "] + _box(18, 7, top="┌──/\\───/\\───/\\──┐"),
