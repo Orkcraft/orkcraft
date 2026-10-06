@@ -14,7 +14,7 @@ from orkcraft import schedule, settings, tools
 from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
 from orkcraft.realm import interview
 from orkcraft.tui import silhouettes
-from orkcraft.screens.onboarding.common import NARROW, _buttons, _css, _nav, _title
+from orkcraft.screens.onboarding.common import AGY_UNGUARDED, NARROW, agy_warder_line, _buttons, _css, _nav, _title
 from orkcraft.screens.onboarding.person import Chip
 
 
@@ -87,11 +87,13 @@ class ToolsStep(ModalScreen[dict | str | None]):
             yield Checkbox("Install the 🛡 Warder in this project (recommended) — edits .claude/settings.json "
                            "(and .codex/hooks.json with Codex)",
                            value=self.warder, id="ob-warder")
+            yield Static(AGY_UNGUARDED, id="ob-warder-agy", classes="build-hint", markup=False)
             yield Static("", id="ob-tools-note", classes="ob-note", markup=False)
             yield _nav(self.can_back)
 
     def on_mount(self) -> None:
         self.query_one("#ob-warder", Checkbox).display = self.show_warder
+        self.query_one("#ob-warder-agy", Static).display = self.show_warder
         self.query_one(".ob-head").display = False
         if self.detected is None:
             self.detect()
@@ -152,6 +154,7 @@ class ToolsStep(ModalScreen[dict | str | None]):
         elif missing:
             text = "Not found: " + " · ".join(missing)
         self.query_one("#ob-tools-missing", Static).update(text)
+        self.query_one("#ob-warder-agy", Static).update(agy_warder_line(self.machine.agy_warder_checked, statuses))
 
     @on(Chip.Toggled)
     def _rated(self, event: Chip.Toggled) -> None:

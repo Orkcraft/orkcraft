@@ -8,7 +8,7 @@ from typing import Callable
 from orkcraft import settings, tools
 from orkcraft.realm import interview
 from orkcraft.screens.autonomy import AutonomyStep
-from orkcraft.screens.onboarding.common import CUSTOM, EMPTY, hide_skip
+from orkcraft.screens.onboarding.common import CUSTOM, EMPTY, agy_warder_line, hide_skip
 from orkcraft.screens.onboarding.person import PersonStep, QuestionsStep, XpStep
 from orkcraft.screens.onboarding.town import IntentStep
 from orkcraft.screens.onboarding.machine import DETECTED, ToolsStep, detect_all
@@ -115,7 +115,9 @@ class Onboarding:
         elif name == INTENT:
             screen = IntentStep(self.profile, self.step, back, last and not self._interviewing,
                                 show_warder=TOOLS not in self.steps and self.claude_on, choice=self.choice,
-                                builder=self.claude_on)
+                                builder=self.claude_on,
+                                agy_line=agy_warder_line(self.machine.agy_warder_checked,
+                                                         self.detected[0] if self.detected else None))
         elif name in INTERVIEW_STEPS:
             page = interview.INTERVIEW[INTERVIEW_STEPS.index(name)]
             screen = QuestionsStep(page, self.answers, {**self.profile, "role": self.choice.get("role", "")},

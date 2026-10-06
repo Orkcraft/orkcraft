@@ -61,6 +61,9 @@ class MachineSettings:
     autonomy_wait: int = autonomy_.DEFAULT_WAIT   # a question: minutes
     rebuild_wait: int = autonomy_.DEFAULT_REBUILD   # a rebuild: hours the operator is around
     profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, ai_tools
+    # The 🛡 Warder's agy hook was checked on a live agy here (docs/design/agy-guard.md, smoke test):
+    # only then does onboarding say the Warder guards agy and install its hook. Off until someone does.
+    agy_warder_checked: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -74,6 +77,7 @@ class MachineSettings:
             "autonomy_wait": self.autonomy_wait,
             "rebuild_wait": self.rebuild_wait,
             "profile": self.profile,
+            "agy_warder_checked": self.agy_warder_checked,
         }
 
     @classmethod
@@ -97,6 +101,7 @@ class MachineSettings:
         s.autonomy_wait = autonomy_.wait_of(data.get("autonomy_wait"))
         s.rebuild_wait = autonomy_.rebuild_of(data.get("rebuild_wait"))
         s.profile = clean_profile(data.get("profile"))
+        s.agy_warder_checked = data.get("agy_warder_checked") is True
         return s
 
 

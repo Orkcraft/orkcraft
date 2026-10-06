@@ -36,6 +36,8 @@ def test_only_a_one_time_yes_and_a_no_can_be_advised():
     assert elders.choices(_alert()) == {"1": "Yes", "3": "No, and tell Claude what to do differently (esc)"}
     widening = _alert(options=[("1", "Yes, allow all edits during this session"), ("2", "No")])
     assert elders.choices(widening) == {"2": "No"}
+    agy = _alert(options=[("1", "Yes"), ("2", "Yes, for this conversation"), ("3", "No")])
+    assert elders.choices(agy) == {"1": "Yes", "3": "No"}                    # agy's conversation-wide grant
     assert not elders.qualifies(Alert(id="w", title="Warder", options=[("1", "Acknowledge")], source="warder"))
 
 

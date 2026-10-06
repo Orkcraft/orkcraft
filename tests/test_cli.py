@@ -87,6 +87,92 @@ def test_codex_hooks_go_into_codex_hooks_json(tmp_path: Path, monkeypatch, capsy
     assert json.loads(codex.read_text())["hooks"] == {"Stop": [{"hooks": [{"type": "command", "command": "echo mine"}]}]}
 
 
+def test_agy_hooks_merge_into_agents_hooks_json_and_leave_the_rest(tmp_path: Path, monkeypatch, capsys):
+    import json
+    import subprocess
+    import sys
+
+    from orkcraft.cli import main
+    from orkcraft.hooks import install as hooks_install
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(hooks_install.shutil, "which", lambda name: None)
+    assert hooks_install.install_all(tmp_path) == [tmp_path / ".claude" / "settings.json"]   # no agy here
+    assert not (tmp_path / ".agents").exists()
+
+    monkeypatch.setattr(hooks_install.tools, "agy_version", lambda: "1.1.11")
+    assert not hooks_install.wants_agy()                                  # too old to be guarded
+    monkeypatch.setattr(hooks_install.tools, "agy_version", lambda: "1.2.17")
+    agents = tmp_path / ".agents" / "hooks.json"
+    agents.parent.mkdir()
+    theirs = {"PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": "echo mine"}]}]}
+    agents.write_text(json.dumps({"mine": theirs}))
+    assert main(["--repo", str(tmp_path), "hooks", "install", "--no-agy-global"]) == 0
+    assert main(["--repo", str(tmp_path), "hooks", "install", "--no-agy-global"]) == 0    # idempotent
+    assert "trusted" in capsys.readouterr().out
+    data = json.loads(agents.read_text())
+    assert set(data) == {"mine", "orkcraft"} and data["mine"] == theirs
+    pre = data["orkcraft"]["PreToolUse"]
+    assert len(pre) == 1 and "run_command" in pre[0]["matcher"] and "view_file" in pre[0]["matcher"]
+    assert pre[0]["hooks"][0]["command"] == f"{sys.executable} -m orkcraft.hooks.warder agy"
+    assert data["orkcraft"]["Stop"][0]["command"].endswith("-m orkcraft.hooks.session agy")
+    assert not hooks_install.agy_global_file().exists()                 # never without a yes
+
+    assert main(["--repo", str(tmp_path), "hooks", "uninstall"]) == 0
+    assert json.loads(agents.read_text()) == {"mine": theirs}
+
+
+def test_agy_global_hooks_only_after_a_yes(tmp_path: Path, monkeypatch):
+    import io
+    import json
+    import subprocess
+
+    import orkcraft.cli as cli
+    from orkcraft.cli import main
+    from orkcraft.hooks import install as hooks_install
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(hooks_install.shutil, "which", lambda name: None)
+    monkeypatch.setattr(hooks_install.tools, "agy_version", lambda: "1.2.17")
+    glob = hooks_install.agy_global_file()
+    glob.parent.mkdir(parents=True)
+    glob.write_text(json.dumps({"someone": {"Stop": []}}))
+
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("y\n"))          # piped: never asked, never written
+    assert main(["--repo", str(tmp_path), "hooks", "install"]) == 0
+    assert json.loads(glob.read_text()) == {"someone": {"Stop": []}}
+
+    class Tty(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+    asked: list[str] = []
+    monkeypatch.setattr("builtins.input", lambda prompt: asked.append(prompt) or "n")
+    monkeypatch.setattr(cli.sys, "stdin", Tty())
+    assert main(["--repo", str(tmp_path), "hooks", "install"]) == 0
+    assert "temp folder" in asked[0] and "orkcraft" not in json.loads(glob.read_text())
+    monkeypatch.setattr("builtins.input", lambda prompt: "y")
+    assert main(["--repo", str(tmp_path), "hooks", "install"]) == 0
+    data = json.loads(glob.read_text())
+    assert set(data) == {"someone", "orkcraft"}
+
+    assert main(["--repo", str(tmp_path), "hooks", "uninstall", "--no-agy-global"]) == 0
+    assert "orkcraft" in json.loads(glob.read_text())                   # left alone when told to
+    assert main(["--repo", str(tmp_path), "hooks", "uninstall"]) == 0
+    assert json.loads(glob.read_text()) == {"someone": {"Stop": []}}
+
+
+def test_agy_hooks_file_that_is_not_json_is_left_alone(tmp_path: Path):
+    import pytest as _pytest
+
+    from orkcraft.hooks import install as hooks_install
+
+    broken = tmp_path / "hooks.json"
+    broken.write_text("{nope")
+    with _pytest.raises(ValueError):
+        hooks_install.install_agy(broken)
+    assert broken.read_text() == "{nope"
+
+
 def test_the_demo_flag_never_swallows_the_gui_subcommand(monkeypatch, tmp_path: Path):
     """`orkcraft --demo gui` and `orkcraft gui --demo` both open the sandbox in the GUI, not the TUI."""
     import orkcraft.cli as cli

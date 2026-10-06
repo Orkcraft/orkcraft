@@ -83,6 +83,7 @@ tool                    paid by          👍 👎  what for
     Cursor                               👍 👎                    weak at… ▾
 Not found: …
 [✓] Install the 🛡 Warder in this project (recommended)
+The 🛡 Warder does not guard agy yet: … start agy with --sandbox and keep secrets out of the project folder.
 ```
 
 - The CLIs orkcraft leads get ✓ (on when found) and how they are paid for — subscription or API;
@@ -93,7 +94,10 @@ Not found: …
 - What it is for: a test of how people find the tools they use, and later the choice of models.
   The Town Builder reads it today: work a tool is liked for may go to agents, work it is weak at
   gets a person's accept step or a rule.
-- The Warder checkbox is here when the run raises a town.
+- The Warder checkbox is here when the run raises a town. The line under it says the Warder does
+  not guard agy yet until its agy hook was checked on a live agy (`agy_warder_checked` in the
+  machine settings, docs/design/agy-guard.md §8). Then it says the Warder guards agy, or plainly
+  that it cannot when agy is missing or older than 1.1.12, and raising installs agy's hook too.
 
 Stored: `tools` (enabled, billing) and `profile.ai_tools` = {tool: {title, like, good, dislike, weak}}.
 

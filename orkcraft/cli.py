@@ -25,6 +25,19 @@ def _gui(quiet: bool = False):
     return launch
 
 
+def _agy_global_yes(flag: bool | None) -> bool:
+    """`--agy-global` / `--no-agy-global`, else ask the operator (no on a closed or piped stdin)."""
+    if flag is not None:
+        return flag
+    from orkcraft.hooks import install as hooks_install
+    if not sys.stdin.isatty():
+        return False
+    try:
+        return input(hooks_install.AGY_GLOBAL_ASK + " [y/N] ").strip().lower() in ("y", "yes")
+    except EOFError:
+        return False
+
+
 def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
     """`orkcraft --demo gui`: the optional DIR of --demo would swallow the subcommand, so a
     subcommand right after it means the default sandbox (`--demo=`)."""
@@ -63,8 +76,13 @@ def main(argv: list[str] | None = None) -> int:
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
     gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
                        help="Open the showcase sandbox in the window")
-    hooks_p = subparsers.add_parser("hooks", help="Claude Code and Codex hooks: session log and the Warder guard")
+    hooks_p = subparsers.add_parser("hooks", help="Claude Code, Codex and agy hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
+    agy_global = hooks_p.add_mutually_exclusive_group()
+    agy_global.add_argument("--agy-global", dest="agy_global", action="store_true", default=None,
+                            help="Also guard agy's headless steps in ~/.gemini/config/hooks.json, without asking")
+    agy_global.add_argument("--no-agy-global", dest="agy_global", action="store_false",
+                            help="Leave ~/.gemini/config/hooks.json alone, without asking")
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
@@ -79,7 +97,12 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
         try:
-            paths = (hooks_install.install_all if args.action == "install" else hooks_install.uninstall_all)(root)
+            if args.action == "install":
+                paths = hooks_install.install_all(root)
+                if any(p.parent.name == ".agents" for p in paths) and _agy_global_yes(args.agy_global):
+                    paths.append(hooks_install.install_agy_global())
+            else:
+                paths = hooks_install.uninstall_all(root, agy_global=args.agy_global is not False)
         except ValueError as e:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
@@ -87,6 +110,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{args.action}ed: {path}")
         if args.action == "install" and any(p.parent.name == ".codex" for p in paths):
             print(hooks_install.CODEX_TRUST)
+        if args.action == "install" and any(p.parent.name == ".agents" for p in paths):
+            print(hooks_install.AGY_TRUST)
         if not paths:
             print("nothing to uninstall")
         return 0

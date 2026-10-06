@@ -276,6 +276,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         assert step.query("#ob-tool-claude") and not step.query("#ob-tool-agy") and step.query("#ob-like-cursor")
         assert "Antigravity" in str(step.query_one("#ob-tools-missing").render())
         assert step.query_one("#ob-warder", Checkbox).display and step.query_one("#ob-warder", Checkbox).value
+        assert "does not guard agy yet" in str(step.query_one("#ob-warder-agy").render())   # says agy is unguarded
         assert step.query_one("#ob-good-claude", Select).styles.visibility == "hidden"
         step.query_one("#ob-billing-claude", Select).value = "api"
         step.query_one("#ob-like-claude").action_toggle()
@@ -397,6 +398,7 @@ async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
         assert not town.query(".ob-buttons #ob-back")                            # nothing before it
         assert "step" not in _title(app)                                         # no "step 1 of 1"
         assert town.query_one("#ob-warder", Checkbox).display                    # claude on: here
+        assert town.query_one("#ob-warder-agy").display and "--sandbox" in str(town.query_one("#ob-warder-agy").render())
         assert str(town.query_one("#ob-next", Button).label) == "Build"
         assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "bug_hunt"
         town.query_one("#ob-role-browse", Select).value = "designer"             # other roles' towns
@@ -436,6 +438,7 @@ async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard)
         assert custom.id == "custom" and custom.disabled and "needs Claude Code" in str(custom.prompt)
         assert "Claude Code" in str(app.screen.query_one("#ob-town-note").render())
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
+        assert not app.screen.query_one("#ob-warder-agy").display
         assert "KNIGHT" in str(app.screen.query_one("#ob-mascot").render())
 
 
@@ -597,3 +600,35 @@ async def test_the_focused_mode_radio_keeps_its_label(fake_repo: Path, monkeypat
         camp.focus()
         await _settle(pilot)
         assert camp.region.height == 1
+
+
+def test_the_warder_line_claims_agy_only_once_checked_live():
+    from orkcraft.screens.onboarding.common import AGY_GUARDED, AGY_UNGUARDED, agy_warder_line
+    by_id = {t.id: t for t in tools.TOOLS}
+
+    def agy(version: str = "", found: bool = True) -> list[tools.ToolStatus]:
+        return [tools.ToolStatus(by_id["agy"], found=found, version=version)]
+
+    assert agy_warder_line(False, agy("1.2.17")) == AGY_UNGUARDED                   # the default, whatever agy is
+    assert agy_warder_line(True, None) == AGY_UNGUARDED                             # not looked yet
+    assert agy_warder_line(True, agy("1.2.17")) == AGY_GUARDED
+    old = agy_warder_line(True, agy("1.1.11"))
+    assert "cannot guard agy 1.1.11" in old and "1.1.12 or later" in old and "--sandbox" in old
+    assert "not installed" in agy_warder_line(True, agy(found=False))
+    assert "does not say its version" in agy_warder_line(True, agy(""))
+
+
+@pytest.mark.asyncio
+async def test_a_checked_agy_hook_is_claimed_on_the_tools_step(fake_repo: Path, onboard, monkeypatch):
+    settings.save(settings.MachineSettings(agy_warder_checked=True))
+    by_id = {t.id: t for t in tools.TOOLS}
+    found = [tools.ToolStatus(by_id["claude"], found=True, path="/usr/bin/claude", version="2.1.4", logged_in=True),
+             tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.1.9"),
+             tools.ToolStatus(by_id["codex"])]
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: found)
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _who(app, pilot, "qa", "fintech")
+        await _tools_ready(app, pilot)
+        line = str(app.screen.query_one("#ob-warder-agy").render())
+        assert "cannot guard agy 1.1.9" in line and "1.1.12 or later" in line

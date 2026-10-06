@@ -171,3 +171,74 @@ def test_codex_cannot_ask_so_warder_denies_and_says_why(tmp_path):
     patch = {"tool_name": "apply_patch", "tool_input": {"command": "*** Begin Patch\n*** Add File: .env\n+A=1\n"}}
     assert run("codex", patch)["permissionDecision"] == "deny"
     assert json.loads(log.read_text().splitlines()[-1])["subject"] == ".env"      # the file, not the whole patch
+
+
+# -- agy: toolCall / workspacePaths in, {"decision": "deny" | "ask"} out, never allow ------------------------
+
+def _agy(tmp_path: Path, payload: dict) -> tuple[dict, list[dict]]:
+    log = tmp_path / "warder.jsonl"
+    proc = subprocess.run(
+        [sys.executable, "-c",
+         f"import importlib.util,sys; s=importlib.util.spec_from_file_location('w', {str(HOOK)!r}); "
+         f"w=importlib.util.module_from_spec(s); s.loader.exec_module(w); w.LOG=__import__('pathlib').Path({str(log)!r}); "
+         "sys.argv=['warder', 'agy']; sys.exit(w.main())"],
+        input=json.dumps(payload), capture_output=True, text=True, timeout=10, cwd=tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    entries = [json.loads(l) for l in log.read_text().splitlines()] if log.exists() else []
+    return json.loads(proc.stdout), entries
+
+
+def _call(name: str, workspace: Path, **args) -> dict:
+    return {"toolCall": {"name": name, "args": args}, "stepIdx": 3, "conversationId": "c-42",
+            "workspacePaths": [str(workspace)], "modelName": "gemini-3-pro"}
+
+
+def test_agy_deny_says_why_and_logs_the_conversation(tmp_path):
+    out, entries = _agy(tmp_path, _call("run_command", tmp_path, CommandLine="rm -rf .git"))
+    assert out["decision"] == "deny" and out["reason"].startswith("🛡️ Warder:") and "repository" in out["reason"]
+    assert set(out) == {"decision", "reason"}
+    assert entries[-1]["decision"] == "deny" and entries[-1]["tool"] == "Bash"
+    assert entries[-1]["subject"] == "rm -rf .git" and entries[-1]["session"] == "c-42"
+
+
+def test_agy_ask_stays_an_ask(tmp_path):
+    out, _ = _agy(tmp_path, _call("run_command", tmp_path, CommandLine="git reset --hard"))
+    assert out == {"decision": "ask", "reason": "🛡️ Warder: git reset --hard discards uncommitted work"}
+
+
+def test_agy_gets_an_empty_answer_never_allow(tmp_path):
+    assert _agy(tmp_path, _call("run_command", tmp_path, CommandLine="ls -la")) == ({}, [])
+    assert _agy(tmp_path, _call("view_file", tmp_path, AbsolutePath=str(tmp_path / "README.md")))[0] == {}
+    assert _agy(tmp_path, {"toolCall": "garbage"})[0] == {}           # never blocks on what it cannot read
+    proc = subprocess.run([sys.executable, str(HOOK), "agy"], input="{not json", capture_output=True, text=True,
+                          timeout=10, cwd=tmp_path)
+    assert proc.returncode == 0 and json.loads(proc.stdout) == {}
+
+
+@pytest.mark.parametrize("name, args, want", [
+    ("view_file", {"AbsolutePath": "/w/.env"}, "deny"),
+    ("write_to_file", {"TargetFile": "/w/keys/server.pem", "CodeContent": "x"}, "deny"),
+    ("grep_search", {"SearchPath": "/home/u/.ssh", "Query": "BEGIN"}, "deny"),
+    ("list_dir", {"DirectoryPath": "/home/u/.aws/credentials"}, "deny"),
+    ("replace_file_content", {"TargetFile": str(warder.REPO / ".agents" / "hooks.json")}, "ask"),
+    ("write_to_file", {"TargetFile": "/w/notes.md", "CodeContent": "cat .env"}, None),   # content is not a path
+    ("view_file", {"AbsolutePath": "/w/.env.example"}, None),
+])
+def test_agy_file_tools_by_their_path_arguments(name, args, want):
+    tool, tool_input, cwd = warder.from_agy(_call(name, Path("/w"), **args))
+    v = warder.judge(tool, tool_input, cwd)
+    assert (v[0] if v else None) == want, (name, args, v)
+
+
+def test_agy_folder_is_cwd_else_the_first_workspace(tmp_path):
+    payload = _call("run_command", tmp_path / "a", CommandLine="ls")
+    payload["workspacePaths"].append(str(tmp_path / "b"))
+    assert warder.from_agy(payload)[2] == tmp_path / "a"
+    payload["toolCall"]["args"]["Cwd"] = str(tmp_path / "c")
+    assert warder.from_agy(payload)[2] == tmp_path / "c"
+
+
+def test_agy_global_hooks_file_is_warders_own():
+    assert bash(f"echo '{{}}' > {warder.AGY_GLOBAL}") == "ask"
+    v = warder.judge("Write", {"file_path": str(warder.AGY_GLOBAL)}, CWD)
+    assert v == ("ask", "~/.gemini/config/hooks.json configures Warder itself")

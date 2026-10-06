@@ -11,7 +11,7 @@ from textual.widgets import Button, Checkbox, Label, OptionList, Select, Static
 from textual.widgets.option_list import Option
 
 from orkcraft.realm import intents, interview
-from orkcraft.screens.onboarding.common import CUSTOM, EMPTY, _css, _highlight, _highlighted_id, _title
+from orkcraft.screens.onboarding.common import AGY_UNGUARDED, CUSTOM, EMPTY, _css, _highlight, _highlighted_id, _title
 
 
 def intent_blurb(it: intents.Intent) -> Text:
@@ -45,13 +45,15 @@ class IntentStep(ModalScreen[dict | str | None]):
     """
 
     def __init__(self, profile: dict | None = None, step: str = "", can_back: bool = True, last: bool = False,
-                 show_warder: bool = False, choice: dict | None = None, builder: bool = True) -> None:
+                 show_warder: bool = False, choice: dict | None = None, builder: bool = True,
+                 agy_line: str = AGY_UNGUARDED) -> None:
         super().__init__()
         self.profile = dict(profile or {})
         self.step = step
         self.can_back = can_back
         self.last = last
         self.show_warder = show_warder
+        self.agy_line = agy_line          # what the Warder step says about agy (common.agy_warder_line)
         self.builder = builder            # the Town Builder plans with Claude Code: is it chosen?
         self.choice = dict(choice or {})
         self.role = self.choice.get("role") or self.profile.get("role") or intents.OTHER
@@ -70,6 +72,7 @@ class IntentStep(ModalScreen[dict | str | None]):
             yield Checkbox("Install the 🛡 Warder (recommended) — edits .claude/settings.json "
                            "(and .codex/hooks.json with Codex)",
                            value=self.choice.get("warder", True), id="ob-warder")
+            yield Static(self.agy_line, id="ob-warder-agy", classes="build-hint", markup=False)
             yield Static("", id="ob-town-note", classes="ob-note", markup=False)
             yield Horizontal(
                 Button("🏰 Empty town", id="ob-empty"), Static("", classes="ob-spacer"),
@@ -83,6 +86,7 @@ class IntentStep(ModalScreen[dict | str | None]):
 
     def _setup(self) -> None:
         self.query_one("#ob-warder", Checkbox).display = self.show_warder
+        self.query_one("#ob-warder-agy", Static).display = self.show_warder
         day = self.profile.get("day") or []
         line = Text("For ", style="dim")
         line.append(interview.who(self.profile), style="bold")

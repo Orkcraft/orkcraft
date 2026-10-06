@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -23,6 +24,9 @@ from typing import Callable
 from orkcraft.sources.sessions import agy_bin, claude_bin, codex_bin
 
 VERSION_TIMEOUT_S = 5
+# The oldest agy the 🛡 Warder guards: `--mode` is honoured in `-p` runs and a project's
+# `.agents/hooks.json` loads once the folder is trusted (docs/design/agy-guard.md).
+AGY_WARDER_MIN = (1, 1, 12)
 
 
 @dataclass(frozen=True)
@@ -79,6 +83,24 @@ def _version(path: str, run: Callable) -> str:
         return ""
     words = (out.stdout or "").split()
     return next((w.lstrip("v") for w in words if w[:1].isdigit() or (w[:1] == "v" and w[1:2].isdigit())), "")
+
+
+def version_tuple(version: str) -> tuple[int, ...] | None:
+    """"1.2.17" (or "v1.2.17-beta") as (1, 2, 17); None when it holds no number."""
+    m = re.match(r"v?(\d+(?:\.\d+)*)", (version or "").strip())
+    return tuple(int(x) for x in m.group(1).split(".")) if m else None
+
+
+def agy_guardable(version: str) -> bool:
+    """Whether the 🛡 Warder can guard this agy: 1.1.12 or later. An unknown version cannot be."""
+    v = version_tuple(version)
+    return v is not None and v >= AGY_WARDER_MIN
+
+
+def agy_version(which: Callable[[str], str | None] | None = None, run: Callable | None = None) -> str | None:
+    """Blocking: the agy on PATH's version ("" when it does not say), or None when agy is not installed."""
+    path = (which or shutil.which)(_bin("agy"))
+    return None if not path else _version(path, run or subprocess.run)
 
 
 def _claude_login(env: dict, home: Path) -> tuple[bool | None, str]:
