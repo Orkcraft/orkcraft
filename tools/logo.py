@@ -17,8 +17,7 @@ Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`)
 
 The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` and its
 states (`ork-idle` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its crown), each on the
-head's own 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`), and `ork-portrait`,
-the head at 3× in the 46×38 portrait slot.
+head's own 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`).
 
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 """
@@ -94,11 +93,8 @@ def sprites(out: pathlib.Path) -> None:
         grid = state_grid(name)
         grid_image(grid, SPRITE_COLOURS, 2).save(out / f"{name}.png")
         grid_image(grid, SPRITE_COLOURS, 4).save(out / f"{name}@2x.png")
-    for scale, suffix, (w, h) in ((3, "", (46, 38)), (6, "@2x", (92, 76))):
-        head = grid_image(GRID, SPRITE_COLOURS, scale)
-        slot = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        slot.alpha_composite(head, ((w - head.width) // 2, h - head.height - scale))
-        slot.save(out / f"ork-portrait{suffix}.png")
+
+
 CELL = 10  # SVG units per pixel of the grid
 
 
