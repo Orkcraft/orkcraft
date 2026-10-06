@@ -100,4 +100,12 @@ def _intent(w, args: dict) -> bool:
     return True
 
 
-ACTS = {"read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}
+def _simulate(w, args: dict) -> str:
+    """The sandbox only: a mail or a message arrives as its source would send it (a film or a walk-through)."""
+    sig = w.simulate(text(args, "source", 20), text(args, "title", 300), text(args, "body", 4000))
+    if sig is None:
+        raise ActError("Only the demo makes messages up")
+    return sig.key
+
+
+ACTS = {"simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

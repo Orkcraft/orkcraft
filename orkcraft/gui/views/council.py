@@ -30,6 +30,7 @@ def card(w) -> dict:
     if d is None:
         return out
     out.update({"state": "running" if d.outcome == "running" else d.outcome, "cycle": d.cycle, "max": w.max_cycles,
+                "route": d.route,
                 "spent": _money(d.spent), "outcome": OUTCOME.get(d.outcome, d.outcome), **_tally(d)})
     return out
 
@@ -47,7 +48,7 @@ def _turn(t: tm.Turn) -> dict:
 def _review(w, d: tm.Discussion, full: bool) -> dict:
     row = {"id": d.id, "title": d.title, "cycle": d.cycle, "outcome": d.outcome,
            "outcome_word": OUTCOME.get(d.outcome, d.outcome), "spent": _money(d.spent),
-           "started": d.started.replace("T", " ")[:16], **_tally(d)}
+           "started": d.started.replace("T", " ")[:16], "route": d.route, **_tally(d)}
     if full:
         row.update({"doc": d.doc[:KEEP], "doc_html": markdown.render(d.doc), "doc_path": d.doc_path,
                     "question": d.question if d.outcome == "asked" else "", "decision": d.decision, "error": d.error,
@@ -58,12 +59,13 @@ def _review(w, d: tm.Discussion, full: bool) -> dict:
 
 def detail(w) -> dict:
     d, veto = w.current, w.veto
-    verdict = {}
+    verdict, says = {}, {}
     if d is not None:
         for t in d.reviews():
             verdict[t.role] = t.verdict
+            says[t.role] = next((ln.strip() for ln in t.text.splitlines() if ln.strip()), "")[:200]
     members = [{"role": m.role, "label": m.label, "tier": _tier(m), "veto": m.role.lower() in veto,
-                "verdict": verdict.get(m.role, ""), "brief": w.rel(w.role_file(m.role)),
+                "verdict": verdict.get(m.role, ""), "says": says.get(m.role, ""), "brief": w.rel(w.role_file(m.role)),
                 "briefed": bool(tm.brief_text(w.role_file(m.role)))} for m in w.team]
     cycles = []
     for x in w.history if d is not None else ():       # the same document sent back before: its earlier cycles
@@ -77,7 +79,7 @@ def detail(w) -> dict:
         "members": members,
         "steward": {"label": steward.harness + (f":{steward.model}" if steward.model else ""),
                     "brief": w.rel(w.steward_file), "briefed": bool(steward.brief), "prompt": steward.prompt},
-        "max_cycles": w.max_cycles, "budget": _money(w.budget), "busy": w.busy,
+        "max_cycles": w.max_cycles, "budget": _money(w.budget), "busy": w.busy, "routes": w.routes,
         "current": _review(w, d, True) if d is not None else None,
         "cycles": cycles,
         "queued": [x[0] for x in w.waiting],

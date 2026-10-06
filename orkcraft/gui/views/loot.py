@@ -3,6 +3,8 @@ changed files, what passed; the chosen cart with the chain it came through, step
 decision is the worker's (core/workers/loot.py); a cart is edited in Lake, in its draft file."""
 from __future__ import annotations
 
+import re
+
 from orkcraft.core.workers.loot import label as _label
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import feedback, gate, pipes
@@ -11,6 +13,8 @@ REFRESH_S = 10.0              # as the TUI
 ITEMS = 50
 VALUE = 20_000                # characters of a cart shown in the window (Lake has it all)
 STORED = 40
+GIST = 3                      # what passed lately: the Command Card shows its first lines and links
+_LINK = re.compile(r"https?://[^\s)>\]]+")
 
 
 def refresh(w) -> None:
@@ -51,6 +55,22 @@ def _item(w, it: gate.Item, names: dict[str, str]) -> dict:
             if files else None}
 
 
+def _gist(w, path: str) -> dict:
+    """What a kept cart says, in short: its first lines (Markdown marks and links aside) and its links."""
+    try:
+        text_ = (w.repo_root / path).read_text(encoding="utf-8")[:4000]
+    except (OSError, ValueError):
+        return {"lines": [], "links": []}
+    lines = []
+    for ln in text_.splitlines()[1:]:                    # the file's first line repeats its title
+        if re.match(r"^\*\*.*\*\* — |^_.*_$", ln.strip()):   # `**Title** — who did it`, `_from … · when_`
+            continue
+        ln = _LINK.sub("", ln).strip(" #*-—:")
+        if ln and len(lines) < 3:
+            lines.append(ln[:160])
+    return {"lines": lines, "links": list(dict.fromkeys(_LINK.findall(text_)))[:3]}
+
+
 def detail(w) -> dict:
     names = w.names()
     open_items = w.queue.open()
@@ -68,6 +88,7 @@ def detail(w) -> dict:
         "stored": [{"index": i, "at": x.at[:16].replace("T", " "), "title": x.title, "path": x.path,
                     "source": names.get(x.source, x.source), "spent": pipes.spent(x.tokens, x.cost),
                     "chain": _chain(x.hops, names)} for i, x in enumerate(stored)],
+        "delivered": [{"title": x.title, "at": x.at[11:16], **_gist(w, x.path)} for x in stored[:GIST]],
         "passed": len(w.stored), "passed_spent": pipes.spent(sum(toks) if toks else None, sum(costs) if costs else None),
         "reasons": [{"tag": t, "label": label} for t, label, _ in feedback.REASONS],
     }

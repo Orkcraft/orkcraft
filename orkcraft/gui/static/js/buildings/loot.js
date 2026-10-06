@@ -242,6 +242,11 @@ export function preview(id, data) {
         <div><${Acts} id=${id} it=${it} /></div></li>`)}</ul>`
       : html`<div class="ok-font-status">Nothing waits for you.</div>`}
     ${data.queue.length > open.length && html`<div class="ok-font-status ok-tone-muted">and ${data.queue.length - open.length} more — Open</div>`}
+    ${(data.delivered || []).length > 0 && html`<h3 class="ok-font-heading">${say("Passed lately")}</h3>
+      <ul class="gui-rows">${data.delivered.map((x, i) => html`<li key=${i}><b>${x.title}</b>
+        <span class="ok-tone-muted"> · ${x.at}</span>
+        ${x.lines.map((ln, j) => html`<div key=${j}>${ln}</div>`)}
+        ${x.links.map((u) => html`<div key=${u}><a class="gui-link" href=${u} target="_blank" rel="noopener">${u}</a></div>`)}</li>`)}</ul>`}
     <${ReworkDialog} id=${id} data=${data} />
   </div>`;
 }

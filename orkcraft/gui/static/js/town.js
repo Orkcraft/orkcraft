@@ -5,7 +5,7 @@
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say } from "./link.js";
+import { command, say, town as snapshot } from "./link.js";
 import { opened, closeBuilding } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad } from "./build.js";
@@ -67,6 +67,67 @@ function start(points) {
   return out.map((q) => q.join(",")).join(" ");
 }
 
+/** The point `frac` of the way along a polyline (by length), for a road's sign. */
+function along(points, frac) {
+  const lens = points.slice(1).map((q, i) => Math.hypot(q[0] - points[i][0], q[1] - points[i][1]));
+  let left = lens.reduce((a, b) => a + b, 0) * frac;
+  for (let i = 0; i < lens.length; i++) {
+    if (left <= lens[i] && lens[i] > 0) {
+      const k = left / lens[i], [ax, ay] = points[i], [bx, by] = points[i + 1];
+      return [ax + (bx - ax) * k, ay + (by - ay) * k];
+    }
+    left -= lens[i];
+  }
+  return points[points.length - 1];
+}
+
+// Carts (docs/design/roads-and-orcs.md §4a): each one the town sent lately moves from its road's exit gate
+// to its entry gate once, in the time the road takes (`travel`, else a short trip); a filtered one turns
+// back at the source. A cart is drawn from where it is now: one that left a while ago starts on its way.
+const started = new Map();               // cart id → its animation-delay, fixed when first seen
+const SHORT_TRIP_S = 1.6;
+
+function delayOf(c) {
+  if (!started.has(c.id)) {
+    started.set(c.id, `${-Math.min(c.age, 30)}s`);
+    if (started.size > 400) started.delete(started.keys().next().value);
+  }
+  return started.get(c.id);
+}
+
+function Carts({ paths, carts, travel, camp }) {
+  const byRoad = Object.fromEntries(paths.map((p) => [p.id, p]));
+  const trip = travel > 0 ? travel : SHORT_TRIP_S;
+  return html`<div class="gui-carts" aria-hidden="true">
+    ${carts.filter((c) => byRoad[c.road] && c.age < trip + 1).map((c) => {
+      const p = byRoad[c.road];
+      const d = "M" + p.points.map((q) => q.join(" ")).join(" L");
+      const back = c.status === "filtered";
+      return html`<div key=${c.id} class=${cls("gui-cart", { "is-back": back, "is-held": c.status === "held" || c.status === "error" })}
+          style=${`offset-path: path("${d}"); animation-duration: ${back ? SHORT_TRIP_S : trip}s; animation-delay: ${delayOf(c)}`}>
+        ${camp ? html`<img class="gui-cart__sprite" src="/ds/sprites/carts/minecart@2x.png" width="20" height="18" alt="" />`
+               : html`<i class="gui-cart__dot"></i>`}
+        ${c.title && !back && html`<span class="gui-cart__label ok-font-status">${say(c.title)}</span>`}
+      </div>`;
+    })}
+  </div>`;
+}
+
+/** Signs on the roads that wait for a route (a Signpost's, a Clan Fire's that routes): always shown. */
+function Signs({ paths, roads }) {
+  const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
+  const signed = paths.filter((p) => byId[p.id] && byId[p.id].sign);
+  return html`<div class="gui-signs" aria-hidden="true">
+    ${signed.map((p) => {
+      // signs of roads that leave one gate for the same event stand apart along their roads
+      const mates = signed.filter((q) => byId[q.id].from === byId[p.id].from && byId[q.id].event === byId[p.id].event);
+      const i = mates.indexOf(p);
+      const [x, y] = along(p.points, (i + 1) / (mates.length + 1));
+      return html`<span key=${p.id} class="gui-sign ok-font-status" style=${`left:${x}px;top:${y}px`}>${say(byId[p.id].sign)}</span>`;
+    })}
+  </div>`;
+}
+
 function Roads({ roads, rects, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
@@ -75,14 +136,14 @@ function Roads({ roads, rects, tints = {} }) {
     ${plannedPaths(rects, roads).map((p) => {
       const road = byId[p.id];
       const sel = active === road.from || active === road.to;
-      const mid = p.points[Math.floor(p.points.length / 2)];
+      const mid = along(p.points, 0.5);
       const pts = p.points.map((q) => q.join(",")).join(" ");
-      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": sel || pickedRoad.value === p.id })}>
+      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": sel || pickedRoad.value === p.id, "is-return": road.returns })}>
         <polyline points=${pts} />
         ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
         <polyline points=${pts} class="gui-road__hit" onClick=${() => { pickedRoad.value = p.id; }} />
         <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
-        ${sel && html`<text x=${mid[0] + 6} y=${mid[1] - 6} class="ok-font-status">${road.label}</text>`}
+        ${sel && !road.sign && html`<text x=${mid[0] + 6} y=${mid[1] - 6} class="ok-font-status">${road.label}</text>`}
       </g>`;
     })}
     ${pulling.value && rects[pulling.value.from] && html`<line class="gui-road__pull"
@@ -129,11 +190,17 @@ export function Town({ buildings, roads }) {
   // A click on the bare town lets the selected building go, as in the TUI.
   const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road")) closeBuilding(); };
   const shown = new Set(buildings.map((b) => b.id));
+  const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
+  const paths = plannedPaths(rects, here);
+  const snap = snapshot.value;
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
-      <${Roads} roads=${roads.filter((r) => shown.has(r.from) && shown.has(r.to))} rects=${rects}
+      <${Roads} roads=${here} rects=${rects}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}
+      <${Signs} paths=${paths} roads=${here} />
+      <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0}
+        camp=${!!snap && snap.look === "camp"} />
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

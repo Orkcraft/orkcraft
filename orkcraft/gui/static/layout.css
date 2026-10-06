@@ -253,3 +253,34 @@ button.gui-status__item { cursor: pointer; }
   border-radius: var(--ok-radius-md, 0); }
 .gui-catalog__item:hover { border-color: var(--frame-focus); background: var(--selection); }
 .gui-win__demolish { margin-left: auto; }
+
+/* Carts on the roads and the signs of roads that wait for a route (js/town.js). A cart moves along its
+   road's path (CSS motion path) once, in the time the road takes; a filtered one turns back. */
+.gui-road.is-return polyline:not(.gui-road__hit) { stroke-dasharray: 6 4; }
+.gui-carts, .gui-signs { position: absolute; inset: 0; pointer-events: none; }
+.gui-signs { z-index: 2; }
+.gui-carts { z-index: 3; }
+.gui-sign { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; padding: 1px 8px;
+  background: var(--panel-raised); color: var(--ink); border: 1px solid var(--road-selected); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-window); }
+[data-theme="office"] .gui-sign { border-radius: var(--radius-full); }
+.gui-cart { position: absolute; left: 0; top: 0; offset-rotate: 0deg; offset-anchor: 10px 50%; display: flex; align-items: center;
+  gap: 4px; animation-name: gui-cart-go; animation-timing-function: linear; animation-fill-mode: both; }
+.gui-cart.is-back { animation-name: gui-cart-back; }
+.gui-cart__sprite { width: 20px; height: 18px; image-rendering: pixelated; flex: none; }
+.gui-cart__dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cart); flex: none;
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 10px 2px var(--road-selected); }
+.gui-cart.is-held .gui-cart__dot { background: var(--cart-held); }
+.gui-cart.is-back .gui-cart__dot { background: var(--cart-filtered); }
+.gui-cart__label { position: absolute; left: 0; bottom: calc(100% + 3px); max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
+  background: var(--road-selected); color: var(--on-action); border-radius: var(--radius-sm); }
+[data-theme="office"] .gui-cart__label { border-radius: var(--radius-full); }
+@keyframes gui-cart-go { 0% { offset-distance: 0%; opacity: 0; } 6% { opacity: 1; } 94% { offset-distance: 100%; opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; } }
+@keyframes gui-cart-back { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: .7; } 50% { offset-distance: 12%; }
+  100% { offset-distance: 0%; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gui-cart { animation-timing-function: steps(8); } }
+
+/* Camp draws a command as its icon; a command that has none yet says its word instead of an empty tile. */
+[data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: 30px; padding: 0 var(--space-2); font-size: 14px; }
+[data-theme="camp"] .ok-act:not(:has(img)) .ok-act__label { display: inline; }

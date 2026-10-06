@@ -15,6 +15,7 @@ with no toolkit at all. Everything here runs on one thread, the server's event l
 """
 from __future__ import annotations
 
+import os
 import threading
 import time
 from pathlib import Path
@@ -35,6 +36,7 @@ from orkcraft.realm import catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
+CART_TRAVEL_ENV = "ORKCRAFT_CART_TRAVEL_S"   # seconds a cart takes along a plain road (default 0: at once)
 
 
 class CommandError(Exception):
@@ -52,6 +54,12 @@ class Host:
         self.night = Night(self.town)               # quiet hours: the Elders' advice on the orks' questions
         self.night.restore()
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
+        # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
+        # slowly enough that a person sees each cart on its road before its building acts (tools/landing_flow.py).
+        try:
+            self.town.cart_travel_s = max(0.0, min(float(os.environ.get(CART_TRAVEL_ENV) or 0), 30.0))
+        except ValueError:
+            self.town.cart_travel_s = 0.0
         self.on_change: Callable[[], None] = lambda: None
         self.on_toast: Callable[[dict], None] = lambda data: None
         self.on_detail: Callable[[str], None] = lambda building_id: None
