@@ -144,7 +144,7 @@ def test_default_scroll_is_valid_and_saves(tmp_path: Path):
 
 def test_save_refuses_an_invalid_scroll(tmp_path: Path):
     scroll = ts.default_scroll(PRESETS)
-    scroll.orkspaces[0].biome = "lava"
+    scroll.orkspaces[0].biome = "desert"
     path = tmp_path / ".orkcraft.json"
     assert ts.save(path, scroll) and not path.exists()
 

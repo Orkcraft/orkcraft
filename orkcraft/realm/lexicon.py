@@ -57,6 +57,12 @@ TERMS: tuple[Term, ...] = (
     _t("treasury", "Treasury", "Budget"),
     # -- screens and actions ------------------------------------------------------------------------
     _t("war_map", "War Map", "Workspaces"),
+    # -- growth (docs/design/growth.md) ---------------------------------------------------------------
+    _t("renown", "Renown", "Maturity"),                         # a building's level I–III (realm/growth.py)
+    _t("banner", "banner", "goal mark", "banners", "goal marks"),   # the goal flag on a hut's roof
+    _t("mascot", "mascot", "avatar", "mascots", "avatars"),      # the operator's, from the onboarding
+    _t("deed", "deed", "milestone", "deeds", "milestones"),     # what the camp learned to do
+    _t("fog_of_war", "fog of war", "new workspace"),            # the War Map's foot: + Orkspace
     _t("war_horn", "War Horn", "Stop all"),
     _t("war_tent", "War Tent", "Terminals"),
     _t("orders", "Orders", "Answers"),

@@ -167,7 +167,10 @@
           "enum": [
             "void",
             "forest",
-            "ice"
+            "ice",
+            "dirt",
+            "dust",
+            "lava"
           ]
         },
         "git": {
@@ -427,6 +430,10 @@
         "demolished": {
           "type": "boolean",
           "description": "Window closed; its state and slot are kept."
+        },
+        "level": {
+          "enum": [1, 2, 3],
+          "description": "The maturity it reached: kept changes of its orks and what was liked of it (realm/growth.py; missing: none yet). Never drops."
         },
         "goal": {
           "enum": ["thrift", "balance", "quality"],

@@ -42,7 +42,9 @@ FREEDOMS = autonomy.WORDS
 FREEDOM_ICONS = autonomy.ICONS
 FREEDOM_TITLES = autonomy.TITLES
 VERSION = "0.3.0"
-BIOMES = ("void", "forest", "ice")
+# The grounds an orkspace stands on (docs/design/war-map.md §3): the TUI's three and the GUI's dirt, dust, lava.
+BIOMES = ("void", "forest", "ice", "dirt", "dust", "lava")
+LEVELS = (1, 2, 3)                # a building's level of maturity (docs/design/growth.md §4); none: 0
 ROAD_EVENTS = ("on_selection_change", "on_task_completed", "on_stream")
 
 
@@ -189,6 +191,7 @@ class BuildingSpec:
     pinned: bool = False
     demolished: bool = False
     goal: str | None = None           # thrift | balance | quality — what the retros aim at; None = balance
+    level: int | None = None          # 1–3, the maturity it reached (realm/growth.py); None = none yet
     autonomy: str | None = None       # chains | clock | free — how freely it decides; None = as the town
     question_wait: int | None = None  # minutes a question waits for the operator on the clock; None = as the town
     rebuild_wait: int | None = None   # hours (the operator around) a rebuild waits on the clock; None = as the town
@@ -332,6 +335,7 @@ class TownScroll:
                 id=b["id"], preset_ref=b["preset_ref"], title=b["title"], icon=b.get("icon", ""),
                 pinned=bool(b.get("pinned", False)), demolished=bool(b.get("demolished", False)),
                 goal=b.get("goal") if b.get("goal") in GOALS else None,
+                level=b.get("level") if b.get("level") in LEVELS else None,
                 autonomy=b.get("autonomy") if b.get("autonomy") in FREEDOMS else
                 autonomy.WORDS[autonomy.CLOCK] if b.get("autonomy") in autonomy.OLD_WORDS else None,
                 question_wait=autonomy.wait_of(b["question_wait"]) if b.get("question_wait") else None,

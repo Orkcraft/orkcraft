@@ -8,6 +8,7 @@
     s.autonomy_wait                  # minutes a question waits for the operator (1..60)
     s.rebuild_wait                   # hours (the operator around) a rebuild waits (1..48)
     s.profile                        # who the operator is and how their day goes (realm/intents.py)
+    s.growth                         # the operator's mascot stage and deeds (realm/growth.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, the display mode and the day's schedule:
@@ -61,6 +62,7 @@ class MachineSettings:
     autonomy_wait: int = autonomy_.DEFAULT_WAIT   # a question: minutes
     rebuild_wait: int = autonomy_.DEFAULT_REBUILD   # a rebuild: hours the operator is around
     profile: dict = field(default_factory=dict)   # orchestration, role, industry (+ _other), day, ai_tools
+    growth: dict = field(default_factory=dict)    # stage (1–4) and deeds {id: date}: the operator's, every camp's
     # The 🛡 Warder's agy hook was checked on a live agy here (docs/design/agy-guard.md, smoke test):
     # only then does onboarding say the Warder guards agy and install its hook. Off until someone does.
     agy_warder_checked: bool = False
@@ -77,6 +79,7 @@ class MachineSettings:
             "autonomy_wait": self.autonomy_wait,
             "rebuild_wait": self.rebuild_wait,
             "profile": self.profile,
+            "growth": self.growth,
             "agy_warder_checked": self.agy_warder_checked,
         }
 
@@ -101,8 +104,22 @@ class MachineSettings:
         s.autonomy_wait = autonomy_.wait_of(data.get("autonomy_wait"))
         s.rebuild_wait = autonomy_.rebuild_of(data.get("rebuild_wait"))
         s.profile = clean_profile(data.get("profile"))
+        s.growth = clean_growth(data.get("growth"))
         s.agy_warder_checked = data.get("agy_warder_checked") is True
         return s
+
+
+def clean_growth(raw: object) -> dict:
+    """The mascot's stage (1–4) and the deeds done with their dates; {} for anything else."""
+    if not isinstance(raw, dict):
+        return {}
+    out: dict = {}
+    if isinstance(raw.get("stage"), int) and 1 <= raw["stage"] <= 4:
+        out["stage"] = raw["stage"]
+    deeds = raw.get("deeds")
+    if isinstance(deeds, dict):
+        out["deeds"] = {str(k)[:40]: str(v)[:20] for k, v in list(deeds.items())[:40] if isinstance(v, str)}
+    return out
 
 
 def clean_profile(raw: object) -> dict:
