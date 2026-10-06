@@ -115,6 +115,7 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "lumber": lumber, "lumber_level": lumber_level,
         "quota": quota, "quota_level": quota_level,
         "supply": muster.roster.active, "supply_max": town.scroll.budget.supply_max_workers,
+        "agents_working": muster.roster.working, "agents": len(muster.roster.agents),
         "alerts": len(muster.roster.alerts),
         "hour": (hour := schedule.status(town.machine)),
         "hour_plain": modes.text(hour, modes.OFFICE),

@@ -103,11 +103,10 @@ out), `core/runners.py`, and:
    deployment, the report of an ork that went home); the TUI's `Terminal` draws a session with
    pyte and the GUI's with xterm.js.
 3. **🛑 Halt All through the `Town`.** `Town.halt()` stops the road handlers and every worker.
-   Done in the GUI: its Halt All interrupts every session, kills every agent process
-   (`halt.halt_all`) and calls `town.halt()`. The TUI's Halt All interrupts the sessions and kills
-   the processes too, but still walks the open windows (a view's `halt` is its worker's) and does
-   not call `town.halt()`: the road handlers and a worker whose window is closed are not told to
-   stop. Left: the TUI's Halt All as `town.halt()` plus its terminals.
+   Done in both faces: Halt All interrupts every session, kills every agent process
+   (`halt.halt_all`) and calls `town.halt()`, so a worker whose window is closed stops too. The
+   TUI also cancels the terminals it runs agents in; its toast says how many sessions, processes
+   and buildings were stopped.
 
 **How it moves:** one domain at a time, with the whole suite green after each. A service lands in
 `core/`, and the TUI's part for that domain calls it instead of doing the work itself. Method
@@ -125,7 +124,12 @@ conflicted there. Now:
   `self.<method>` calls between them still work.
 - **Rule of thumb:** a module over ~600 lines is split by domain before a feature is added to it.
   A new feature goes into its domain's module, or into a new one, never into `app.py`.
-- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/onboarding.py`.
+- `wm/desktop.py` keeps only the `Desktop` class (its bindings, messages and lookups) and the
+  taskbar; its domains are mixins beside it: `wm/layout.py` (orkspaces, saving, biome),
+  `wm/focus.py` (z-order, focus, the preview link), `wm/arrange.py` (window operations and window
+  mode), `wm/town_view.py` (huts and the ghost), `wm/roads.py` (roads, traffic, rally mode).
+- `screens/onboarding.py` is now a package, one module per part: `common`, `person`, `town`,
+  `machine`, `raising`, `flow`.
 - `screens/console/` is split by part: `cards.py` (what Info says, as text), `warmap.py`,
   `info.py`, `garrison.py` (the Clan Roster and the Inventory), `command_card.py`, and the
   `Console` itself in `__init__.py`, which still exports every name.
@@ -338,3 +342,5 @@ found by its files, so a port touches no shared list and parallel ports do not c
 2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
 3. Camp (stage 5): the same page in `data-theme="camp"` with the sprites — `orkcraft gui --look
    camp` opens it; what only Camp adds goes in `camp.css` and in what `js/hut.js` draws.
+4. A phone over the same host: glance, Orders, the Pit, the Warchief, Halt All, pushes —
+   [mobile.md](mobile.md); stage 0 (`gui/mobile.py`, `GET /api/version`) stands.

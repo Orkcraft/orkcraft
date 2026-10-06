@@ -100,10 +100,11 @@ def test_the_drum_in_the_gui_card_detail_and_acts(fake_repo, clock):
     host = _host(fake_repo)
     w = host.town.worker("drum")
     hut = next(b for b in host.snapshot()["buildings"] if b["id"] == "drum")
-    assert hut["page"] and hut["card"] == {"meetings": [
-        {"at": "09:00", "title": "Standup", "now": True, "doc": False},
-        {"at": "14:00", "title": "1:1 Ann", "now": False, "doc": False},
-        {"at": "16:00", "title": "Retro", "now": False, "doc": False}], "more": 1, "error": False}
+    card = hut["card"]
+    assert hut["page"] and [(b["kind"], b["at"], b["title"], b["now"], b["doc"]) for b in card["beats"]] == [
+        ("meeting", "09:00", "Standup", True, False), ("meeting", "14:00", "1:1 Ann", False, False),
+        ("meeting", "16:00", "Retro", False, False), ("meeting", "17:30", "Wrap-up", False, False)]
+    assert card["left"] == 3 and card["now"] == "09:10" and not card["error"]
     d = host.detail("drum")
     assert [leaf.pane["id"] for leaf in ui.leaves(d["ui"])] == ["head", "day", "week", "meeting", "settings"]
     data = d["data"]
@@ -122,7 +123,7 @@ def test_the_drum_in_the_gui_card_detail_and_acts(fake_repo, clock):
     host.town.deliver("drum", pipes.Payload(pipes.TEXT, "# Ann", "pool", "pool.done", f"[meet:{ann['id']}]"), "", "# Ann")
     doc = act("doc", id=ann["id"])
     assert doc["path"].endswith(f"{ann['id']}.md") and host.detail("drum")["data"]["days"][0]["events"][1]["doc"]
-    assert next(b for b in host.snapshot()["buildings"] if b["id"] == "drum")["card"]["meetings"][1]["doc"]
+    assert next(b for b in host.snapshot()["buildings"] if b["id"] == "drum")["card"]["beats"][1]["doc"]
 
     assert act("add", title="Lunch", when="12:30", minutes=30) == "Fri 02 12:30"
     assert "Lunch" in [e["title"] for e in host.detail("drum")["data"]["days"][0]["events"]]

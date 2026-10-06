@@ -20,9 +20,10 @@ def test_the_page_has_a_section_per_building_and_lists_what_was_found():
     gl = _gallery()
     g = gl.Gallery("2026-10-06 03:00", maps=[gl.Shot("shots/map-my-day.jpg", "My Day")])
     b = gl.Building("days", "Calendar", "war_drum", "My Day",
-                    closed=[gl.Shot("shots/my-day-days-closed.png", "Closed: the card")],
-                    command=[gl.Shot("shots/my-day-days-command.jpg", "Command")],
-                    full=[gl.Shot("shots/my-day-days-full.jpg", "Full")],
+                    closed=[gl.Shot("shots/my-day-days-closed.png", "Closed: the card", 270, 114)],
+                    command=[gl.Shot("shots/my-day-days-command-card.png", "Command: Command Card", 438, 438),
+                             gl.Shot("shots/my-day-days-command-screen.jpg", "Command: the whole screen", 1440, 900)],
+                    full=[gl.Shot("shots/my-day-days-full.png", "Full: the window", 1400, 820)],
                     problems=[{"level": "warn", "view": "closed", "text": "text cut: “<b>Standup</b>”"}])
     g.buildings.append(b)
     g.buildings.append(gl.Building("todo", "Task board", "fields", "My Day"))
@@ -31,7 +32,10 @@ def test_the_page_has_a_section_per_building_and_lists_what_was_found():
     page = gl.render(g)
     assert page.startswith("<title>Orkcraft Building Gallery</title>")
     assert 'id="my-day-days"' in page and 'id="my-day-todo"' in page
-    assert 'src="shots/my-day-days-full.jpg"' in page and 'class="card" src="shots/my-day-days-closed.png"' in page
+    assert 'src="shots/my-day-days-closed.png" width="270" height="114"' in page          # each view a file of its own
+    assert 'src="shots/my-day-days-command-card.png"' in page and 'src="shots/my-day-days-full.png"' in page
+    assert '<figure class=screen><img src="shots/my-day-days-command-screen.jpg"' in page
+    assert page.index("my-day-days-closed.png") < page.index("command-card.png") < page.index("days-full.png")
     assert "&lt;b&gt;Standup&lt;/b&gt;" in page and "<b>Standup</b>" not in page          # what it found is text
     assert "TypeError: x is undefined" in page and "the lanes overlap" in page
     assert [p["level"] for p in g.buildings[1].problems] == ["eye"]

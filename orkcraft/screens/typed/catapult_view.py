@@ -8,7 +8,7 @@ Each is checked against `schema` and sent to `url`. `c` asks before each shot (`
 🎯 fires what is loaded now (or retries the last failed shot), 🧪 shows it without sending.
 `catapult.sent` carries the answer, `catapult.failed` the reason. The sandbox never sends.
 
-Browser mode (`mode: browser`, realm/catapult_web.py) closes a whole intent on a site with no API:
+Browser mode (`mode: browser`, realm/catapult_web/) closes a whole intent on a site with no API:
 `forms` lists its forms in order (`event = https://… | the new-event form`). `s`: the building's
 orc walks the site to each form itself, marks its fields and writes its `fill.py` (kept in the
 camp's git). `l`: a visible browser to log in (and, if you like, show the way to a form). `m`: a

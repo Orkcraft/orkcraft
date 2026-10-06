@@ -10,7 +10,7 @@
              written anywhere
 
 Shots are kept in `.orkcraft/catapult/<id>/shots.jsonl` (the answer's status and first lines).
-Where a site has no API, the browser mode fills its web form instead (realm/catapult_web.py).
+Where a site has no API, the browser mode fills its web form instead (realm/catapult_web/).
 """
 from __future__ import annotations
 

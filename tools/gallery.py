@@ -4,9 +4,11 @@
 
 It builds the demo afresh, starts `orkcraft gui --demo --browser` on a free port and walks it with
 Playwright (Chromium), orkspace by orkspace. For each building it takes the three views of
-docs/design/building-views.md — closed (its card close up, and the map with it outlined), command
-(selected: Info, the garrison, the Command Card with its preview) and full (its window) — then the
-Lake window with a document open, the Town Hall's chat and the Answers. It listens for page errors
+docs/design/building-views.md, every view in files of its own: closed (its card close up, and the
+map with it outlined), command (Info, the garrison and the Command Card each on its own, unrolled
+so nothing hides behind a scroll, and the screen they sit on) and full (its window) — then the
+Lake window with a document open, the Town Hall's chat and the Answers. The pictures are taken at
+twice the pixels and cut to the element, as PNG, so the text on a card reads. It listens for page errors
 and console errors all along and looks for plain problems: an empty card, an empty preview or
 window, text cut off, "orc" where a person reads. Out come `index.html`, `report.json` and the
 pictures in `shots/`.
@@ -32,6 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEWPORT = (1440, 900)
+SCALE = 2                     # pixels per CSS pixel in the pictures: the text on a card has to read
 WAIT_MS = 1200                # after a click, for the host's answer and the page to draw it
 LAKE_DOCS = ("docs/meetings/design-sync.md", "docs/handbook/releases.md")
 WORDING = re.compile(r"\b[Oo]rcs?\b|[Oo]rchestrat")
@@ -65,10 +68,40 @@ CUT_JS = """(args) => {
 }"""
 
 
+# A window grows to show all it holds — its own scroll and its rows' — and keeps its foot where it
+# was, growing upwards (the console sits on the bottom); it gives back what to undo.
+UNROLL_JS = """(sel) => {
+  const root = document.querySelector(sel), undo = [];
+  if (!root) return undo;
+  const set = (el, props) => { undo.push([el, el.getAttribute('style')]); Object.assign(el.style, props); };
+  const r0 = root.getBoundingClientRect(), loose = new Set();
+  for (const el of root.querySelectorAll('*')) {
+    const st = getComputedStyle(el);
+    if (!/auto|scroll|hidden/.test(st.overflowY) || el.scrollHeight <= el.clientHeight + 1) continue;
+    for (let up = el; up && up !== root; up = up.parentElement) loose.add(up);   // and all that holds it in
+  }
+  if (!loose.size) return 0;
+  for (const el of loose) set(el, {height: 'auto', maxHeight: 'none', minHeight: '0', flex: 'none', overflow: 'visible'});
+  set(root, {width: `${r0.width}px`, aspectRatio: 'auto', height: 'auto', maxHeight: 'none', alignSelf: 'flex-end'});
+  const r1 = root.getBoundingClientRect(), grew = r1.height - r0.height;
+  if (grew > 0 && r1.bottom > innerHeight)
+    set(root, {transform: `translateY(${-Math.min(grew, r1.top)}px)`, zIndex: 999});
+  window.__unroll = undo;
+  return undo.length;
+}"""
+UNDO_JS = """() => {
+  for (const [el, style] of (window.__unroll || []).reverse())
+    style === null ? el.removeAttribute('style') : el.setAttribute('style', style);
+  window.__unroll = [];
+}"""
+
+
 @dataclasses.dataclass
 class Shot:
     file: str
     caption: str
+    width: int = 0             # its size in CSS pixels (the file has SCALE times as many); 0: not known
+    height: int = 0
 
 
 @dataclasses.dataclass
@@ -136,17 +169,31 @@ class Walk:
     def _error(self, kind: str, text: str) -> None:
         self.g.errors.append({"at": self.step, "kind": kind, "text": text[:600]})
 
-    def shot(self, name: str, caption: str, element=None, pad: int = 14) -> Shot:
+    def shot(self, name: str, caption: str, element=None, pad: int = 14, above: int = 22) -> Shot:
+        """The screen (JPEG), or one element and `pad` around it, `above` more for a title over it (PNG)."""
         rel = f"shots/{name}"
         path = self.out / rel
-        if element is not None:
-            box = element.bounding_box()
-            clip = {"x": max(box["x"] - pad, 0), "y": max(box["y"] - pad - 22, 0),          # the title above it
-                    "width": box["width"] + 2 * pad, "height": box["height"] + 2 * pad + 22}
-            self.page.screenshot(path=str(path), clip=clip)
-        else:
-            self.page.screenshot(path=str(path), type="jpeg", quality=82)
-        return Shot(rel, caption)
+        if element is None:
+            self.page.screenshot(path=str(path), type="jpeg", quality=90)
+            return Shot(rel, caption, *VIEWPORT)
+        box = element.bounding_box()
+        x, y = max(box["x"] - pad, 0), max(box["y"] - pad - above, 0)
+        clip = {"x": x, "y": y, "width": min(box["x"] + box["width"] + pad, VIEWPORT[0]) - x,
+                "height": min(box["y"] + box["height"] + pad, VIEWPORT[1]) - y}
+        self.page.screenshot(path=str(path), clip=clip)
+        return Shot(rel, caption, round(clip["width"]), round(clip["height"]))
+
+    def panel(self, selector: str, name: str, caption: str) -> Shot | None:
+        """One window of the page on its own, unrolled: what its scroll hides is drawn too."""
+        loc = self.page.locator(selector)
+        if not loc.count():
+            return None
+        undo = self.page.evaluate(f"({UNROLL_JS})", selector)
+        self.wait(150)
+        try:
+            return self.shot(name, caption, loc.first, pad=6, above=0)
+        finally:
+            self.page.evaluate(f"({UNDO_JS})", undo)
 
     def wait(self, ms: int = WAIT_MS) -> None:
         self.page.wait_for_timeout(ms)
@@ -183,7 +230,7 @@ class Walk:
         b.closed.append(self.shot(f"{slug}-closed.png", "Closed: the card", hut))
         page.evaluate("id => document.querySelector(`.gui-hut[data-id=\"${id}\"]`).style.outline ="
                       " '2px solid #e8b94a'", b.id)
-        b.closed.append(self.shot(f"{slug}-map.jpg", f"Closed: on the map of {b.orkspace}"))
+        b.closed.append(self.shot(f"{slug}-closed-map.jpg", f"Closed: on the map of {b.orkspace}"))
         page.evaluate("id => document.querySelector(`.gui-hut[data-id=\"${id}\"]`).style.outline = ''", b.id)
 
         self.step = f"{b.title} · command"
@@ -198,7 +245,12 @@ class Walk:
             b.problems.append({"level": "warn", "view": "command", "text": "no preview in the Command Card"})
         for c in self.cut(".gui-card__preview"):
             b.problems.append({"level": "warn", "view": "command", "text": f"preview: text {c['kind']}: “{c['text']}”"})
-        b.command.append(self.shot(f"{slug}-command.jpg", "Command: selected — Info, garrison, Command Card"))
+        for sel, part, caption in (("section.gui-card", "card", "Command Card"), ("section.gui-console", "info", "Info"),
+                                   ("section.gui-roster", "garrison", "Garrison")):
+            s = self.panel(sel, f"{slug}-command-{part}.png", f"Command: {caption}")
+            if s:
+                b.command.append(s)
+        b.command.append(self.shot(f"{slug}-command-screen.jpg", "Command: the whole screen"))
 
         self.step = f"{b.title} · full"
         hut.locator(".gui-hut__title").click()
@@ -212,7 +264,8 @@ class Walk:
             b.problems.append({"level": "warn", "view": "full", "text": f"the window is (almost) empty: “{full[:60]}”"})
         for c in self.cut(".gui-full"):
             b.problems.append({"level": "warn", "view": "full", "text": f"text {c['kind']}: “{c['text']}”"})
-        b.full.append(self.shot(f"{slug}-full.jpg", "Full: the window"))
+        b.full.append(self.shot(f"{slug}-full.png", "Full: the window", page.locator(".gui-full").first, pad=0, above=0)
+                      if page.locator(".gui-full").count() else self.shot(f"{slug}-full.jpg", "Full: the screen"))
         for view, text in (("command", preview), ("full", full), ("closed", body)):
             for m in sorted(set(WORDING.findall(text))):
                 b.problems.append({"level": "warn", "view": view, "text": f"wording: “{m}” where a person reads"})
@@ -263,12 +316,13 @@ class Walk:
             return
         if len(self.text("section.gui-lake")) < 20:
             b.problems.append({"level": "warn", "view": "half", "text": "the document is empty"})
-        b.command.append(self.shot("lake-half.jpg", "Half: two documents in tabs"))
+        b.command.append(self.shot("lake-half.png", "Half: two documents in tabs", page.locator("section.gui-lake").first,
+                                   pad=0, above=0))
         full = page.locator("section.gui-lake .ok-win__bar button.ok-btn", has_text="Full")
         if full.count():
             full.first.click()
             self.wait()
-            b.full.append(self.shot("lake-full.jpg", "Full"))
+            b.full.append(self.shot("lake-full.png", "Full", page.locator("section.gui-lake").first, pad=0, above=0))
         close = page.locator("section.gui-lake .gui-win__close")
         if close.count():
             close.first.click()
@@ -283,7 +337,9 @@ class Walk:
         self.wait()
         if not re.search(r"\?", self.text("body")):
             b.problems.append({"level": "warn", "view": "dialog", "text": "no question shows"})
-        b.full.append(self.shot("answers.jpg", "The questions that wait for the person"))
+        box = page.locator('[role="dialog"]')
+        b.full.append(self.shot("answers.png", "The questions that wait for the person", box.first, pad=0, above=0)
+                      if box.count() else self.shot("answers.jpg", "The questions that wait for the person"))
         page.keyboard.press("Escape")
         self.wait(300)
 
@@ -292,7 +348,8 @@ class Walk:
 
 STYLE = """
 /* The Office look of the GUI itself: its dark ground, amber for what to look at, red for what broke.
-   Layout: a summary of the problems first, then one band per building, its three views side by side. */
+   Layout: a summary of the problems first, then one band per building, a row per view: its pictures
+   at their own size (they have twice the pixels), so the text on them reads. */
 :root {
   --ground: #1a1813; --panel: #221f18; --line: #3a3427; --text: #e8e0cc; --muted: #9a8f78;
   --accent: #e8b94a; --danger: #f5806e; --ok: #8fc46a;
@@ -323,20 +380,19 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 section.b { padding-block: 18px; border-bottom: 1px solid var(--line); scroll-margin-top: 12px; }
 .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .type { color: var(--muted); }
-.views { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 12px; }
-@media (max-width: 1000px) { .views { grid-template-columns: minmax(0, 1fr); } }
-figure { margin: 0; display: grid; gap: 6px; align-content: start; min-width: 0; }
-figure + figure { margin-top: 10px; }
-figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 3px; cursor: zoom-in; background: #000; }
-figure img.card { width: auto; max-width: 100%; }
+.view { margin-top: 14px; }
+.shots { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; margin-top: 8px; }
+figure { margin: 0; display: grid; gap: 6px; align-content: start; min-width: 0; max-width: 100%; }
+figure img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 3px; cursor: zoom-in; background: #000; }
+figure.screen img { width: 480px; }
 figcaption { color: var(--muted); font-size: 13px; }
+figcaption a { color: inherit; text-decoration-color: var(--line); }
 .problems { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .problems li { font-size: 13.5px; padding-left: 10px; border-left: 3px solid var(--accent); overflow-wrap: anywhere; }
 .problems li.error { border-color: var(--danger); }
 .problems li.eye { border-color: var(--muted); }
 .problems .v { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-right: 6px; }
 .clean { color: var(--ok); font-size: 13.5px; margin-top: 10px; }
-.maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
 dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; }
 dialog::backdrop { background: rgb(0 0 0 / .82); }
 dialog img { max-width: 96vw; max-height: 92vh; display: block; cursor: zoom-out; }
@@ -356,10 +412,12 @@ def _esc(text: str) -> str:
     return html.escape(str(text), quote=True)
 
 
-def _figure(s: Shot, card: bool = False) -> str:
-    cls = ' class="card"' if card else ""
-    return (f'<figure><img{cls} src="{_esc(s.file)}" alt="{_esc(s.caption)}" loading="lazy">'
-            f'<figcaption>{_esc(s.caption)}</figcaption></figure>')
+def _figure(s: Shot) -> str:
+    """A cut-out at its own size; a whole screen (JPEG) small, to click for the full size."""
+    screen = s.file.endswith(".jpg")
+    size = f' width="{s.width}" height="{s.height}"' if s.width and s.height else ""
+    return (f'<figure{" class=screen" if screen else ""}><img src="{_esc(s.file)}"{size} alt="{_esc(s.caption)}"'
+            f' loading="lazy"><figcaption><a href="{_esc(s.file)}">{_esc(s.caption)}</a></figcaption></figure>')
 
 
 def _anchor(b: Building) -> str:
@@ -367,18 +425,16 @@ def _anchor(b: Building) -> str:
 
 
 def _section(b: Building) -> str:
-    cols = []
+    rows = []
     for label, shots in (("closed", b.closed), ("command", b.command), ("full", b.full)):
         if shots:
-            figs = "".join(_figure(s, card=label == "closed" and i == 0 and s.file.endswith(".png"))
-                           for i, s in enumerate(shots))
-            cols.append(f'<div><h3>{label}</h3>{figs}</div>')
+            rows.append(f'<div class="view"><h3>{label}</h3><div class="shots">{"".join(map(_figure, shots))}</div></div>')
     probs = "".join(f'<li class="{_esc(p["level"])}"><span class="v">{_esc(p["view"])}</span>{_esc(p["text"])}</li>'
                     for p in b.problems)
     tail = f'<ul class="problems">{probs}</ul>' if probs else '<p class="clean">Nothing found by the checks.</p>'
     return (f'<section class="b" id="{_anchor(b)}"><div class="head"><h2>{_esc(b.title)}</h2>'
             f'<span class="type mono">{_esc(b.type)} · <code>{_esc(b.id)}</code></span></div>'
-            f'<div class="views">{"".join(cols)}</div>{tail}</section>')
+            f'{"".join(rows)}{tail}</section>')
 
 
 def render(g: Gallery) -> str:
@@ -411,7 +467,7 @@ def render(g: Gallery) -> str:
 <h1>Orkcraft Building Gallery</h1>
 <p class="lede">Every building of <code>orkcraft gui --demo</code> three ways — closed, command, full
 (<code>docs/design/building-views.md</code>) — taken {_esc(g.made)} in the Office look at {VIEWPORT[0]}×{VIEWPORT[1]}.
-Click a picture to see it full size.</p>
+Each view is its own picture, cut to the element at twice the pixels; click one to see it full size.</p>
 <div class="summary">
   <div class="box"><h3>Found</h3><div class="counts"><span><b>{len(g.buildings)}</b> buildings</span>
     <span><b>{n_err}</b> errors</span><span><b>{n_warn}</b> found by the checks</span>
@@ -421,7 +477,7 @@ Click a picture to see it full size.</p>
 </div>
 <nav class="nav" aria-label="Buildings">{chips}</nav>
 <h3>Workspaces (orkspaces)</h3>
-<div class="maps">{maps}</div>
+<div class="maps shots">{maps}</div>
 {"".join(body)}
 </div>
 <dialog id="zoom" aria-label="Picture at full size"><img alt=""></dialog>
@@ -480,7 +536,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         with sync_playwright() as p:
             browser = launch(p, args.chromium)
-            page = browser.new_page(viewport={"width": VIEWPORT[0], "height": VIEWPORT[1]})
+            page = browser.new_page(viewport={"width": VIEWPORT[0], "height": VIEWPORT[1]}, device_scale_factor=SCALE)
             Walk(page, out, g).run(url)
             browser.close()
     finally:

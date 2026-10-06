@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import buildings, roads
-from orkcraft.realm import catalog, lake, modes
+from orkcraft.realm import catalog, lake, modes, naming
 
 
 class BuildError(Exception):
@@ -48,6 +48,9 @@ def build(host, args: dict) -> str:
         raise BuildError("Lake is the town's window, not a building: a document's mark opens it")
     if spec is None:
         raise BuildError("That type cannot be raised here")
+    prompt = args.get("prompt")
+    if isinstance(prompt, str) and prompt.strip():       # built for a request: named after it, ≤ 4 words
+        spec["title"] = naming.from_prompt(prompt[:2000], spec["title"])
     hut = args.get("hut")
     spot = [float(hut[0]), float(hut[1])] if isinstance(hut, list) and len(hut) == 2 else None
     built = buildings.raise_spec(town, spec, spot)

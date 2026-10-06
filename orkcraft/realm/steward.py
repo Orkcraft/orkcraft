@@ -107,6 +107,30 @@ def due(expr: str, last: dt.datetime | None, now: dt.datetime) -> bool:
     return False
 
 
+def next_due(expr: str, after: dt.datetime, within: dt.timedelta = dt.timedelta(days=8)) -> dt.datetime | None:
+    """The first scheduled minute after `after`, at most `within` later; None when there is none in
+    that time or `expr` is not a schedule. Skips whole days and hours that cannot match."""
+    fields = to_cron(expr)
+    if fields is None:
+        return None
+    minute, hour, dom, month, dow = fields
+    t = after.replace(second=0, microsecond=0) + dt.timedelta(minutes=1)
+    end = after + within
+    try:
+        while t <= end:
+            if not _cron_match(["*", "*", dom, month, dow], t):
+                t = (t + dt.timedelta(days=1)).replace(hour=0, minute=0)
+            elif not _cron_match(["*", hour, dom, month, dow], t):
+                t = (t + dt.timedelta(hours=1)).replace(minute=0)
+            elif not _field_matches(minute, t.minute, 0, 59):
+                t += dt.timedelta(minutes=1)
+            else:
+                return t
+    except ValueError:
+        return None
+    return None
+
+
 # -- metrics (free) ------------------------------------------------------------------------------
 
 @dataclass

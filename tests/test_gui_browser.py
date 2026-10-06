@@ -180,6 +180,10 @@ def test_huts_stand_pinned_until_unpinned(page):
     hut.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     assert hut.locator(".gui-pit__icon").is_visible()           # the Pit's card: only its tray
+    title = hut.locator(".gui-hut__title")
+    assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
+    pin, name = title.locator(".gui-hut__pin").bounding_box(), title.locator(".gui-hut__name").bounding_box()
+    assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
     start = hut.bounding_box()
     pg.mouse.move(start["x"] + 30, start["y"] + start["height"] - 10)
     pg.mouse.down()
