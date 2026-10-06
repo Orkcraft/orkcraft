@@ -6,11 +6,12 @@
   --road-selected: #e8b94a; --road-live: #6aa84f; }
 [data-look="office"] .ok-head { display: none; }
 
-/* A hut keeps its building, two thirds of Camp's size, standing at the card's left over its name. */
+/* A hut keeps its building, four ninths of Camp's size, standing at the card's left over its name. */
 [data-look="office"] .gui-hut > .ok-head { display: flex; justify-content: flex-start; padding-left: var(--space-3); }
-[data-look="office"] .gui-hut__sprite { zoom: calc(2 / 3); }
-/* Its garrison's ork, in the badge on the card, at the same two thirds. */
-[data-look="office"] .gui-hut .ok-badge img[data-kind="ork"] { zoom: calc(2 / 3); }
+[data-look="office"] .gui-hut__sprite { zoom: calc(4 / 9); }
+/* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
+[data-look="office"] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
+[data-look="office"] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }
 
 /* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
    road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;

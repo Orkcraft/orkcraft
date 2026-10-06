@@ -4,7 +4,7 @@
 // it, the + handle pulls a road out of it. A hut moves freely until the person pins it: the pin at the
 // right of its name pins it in place (in the Town Scroll, as from its Info) and unpins it. Before the name a
 // spinner while it works and, in Office, its type's icon; its type's header sprite stands over the
-// card (in Office two thirds of the size, at the card's left). One look's huts differ only in what this draws (Office: an explorer card; Camp: the
+// card (in Office four ninths of the size, at the card's left). One look's huts differ only in what this draws (Office: an explorer card; Camp: the
 // card under its header sprite), never in how the town places them.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
@@ -15,7 +15,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule } from "./types.js";
 import { town, say, command } from "./link.js";
-import { TypeIcon, headerSprite } from "./icons.js";
+import { TypeIcon, headerSprite, OrkHead } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -98,6 +98,16 @@ function hutMenu(e, b) {
   ]);
 }
 
+/** Office: the garrison's lead as its head alone, no framed name (it is in the tooltip and the Info). */
+function Keeper({ garrison, alert }) {
+  if (!garrison.length) return null;
+  const lead = garrison.find((o) => o.lead) || garrison[0];
+  const busy = garrison.some((o) => o.status === "busy");
+  const more = garrison.length - 1;
+  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}`}>
+    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
+}
+
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 function Card({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
@@ -166,7 +176,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       ${office && html`<${TypeIcon} type=${b.type} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
-      <${Badge} garrison=${b.garrison} alert=${b.alert} />
+      ${office ? html`<${Keeper} garrison=${b.garrison} alert=${b.alert} />` : html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
       ${b.alert && html`<span class="ok-word">?</span>`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
