@@ -22,6 +22,11 @@ A session's bytes go as binary frames, only to the pages that show it (`term.att
 
 The socket takes only the page this server gave out: a random token in its address and an Origin
 of this server, so another page open in a browser cannot drive the town.
+
+`GET /api/version` (the same token, as `?t=` or `Authorization: Bearer`) is the handshake a client
+other than the page makes first (docs/design/mobile.md): what this server speaks, as JSON.
+
+    ← {"name": "orkcraft", "version": "0.1.0", "protocol": 1, "api": 1}
 """
 from __future__ import annotations
 
@@ -39,13 +44,16 @@ from websockets.datastructures import Headers
 from websockets.exceptions import ConnectionClosed
 from websockets.http11 import Request, Response
 
+from orkcraft import __version__
 from orkcraft.design import tokens
+from orkcraft.gui import mobile
 from orkcraft.gui.host import CommandError, Host
 
 STATIC = Path(__file__).with_name("static")
 TICK_S = 1.0
 FLUSH_S = 0.05
 ROUTES = {"/static/": STATIC, "/ds/": tokens.SYSTEM}
+PROTOCOL = 1            # the socket's messages above: a change that breaks a client raises it
 mimetypes.add_type("text/javascript", ".mjs")
 mimetypes.add_type("font/woff2", ".woff2")
 
@@ -97,6 +105,17 @@ class Server:
 
     # -- HTTP ----------------------------------------------------------------------------------
 
+    def _token_ok(self, request: Request) -> bool:
+        """The server's token, from the address (`?t=`) or an `Authorization: Bearer` header."""
+        token = parse_qs(urlsplit(request.path).query).get("t", [""])[0]
+        auth = request.headers.get("Authorization", "")
+        if not token and auth.startswith("Bearer "):
+            token = auth.removeprefix("Bearer ").strip()
+        return bool(token) and secrets.compare_digest(token, self.token)
+
+    def version(self) -> dict:
+        return {"name": "orkcraft", "version": __version__, "protocol": PROTOCOL, "api": mobile.API}
+
     def _http(self, connection: ServerConnection, request: Request) -> Response | None:
         parts = urlsplit(request.path)
         if parts.path == "/ws":
@@ -105,6 +124,10 @@ class Server:
             if not secrets.compare_digest(token, self.token) or origin != self.origin:
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             return None                                   # go on with the WebSocket handshake
+        if parts.path == "/api/version":
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return _response(HTTPStatus.OK, json.dumps(self.version()).encode(), "application/json")
         if parts.path in ("/", "/index.html"):
             return _response(HTTPStatus.OK, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
         if parts.path == "/favicon.ico":
