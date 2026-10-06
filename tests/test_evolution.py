@@ -2,18 +2,29 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from pathlib import Path
 
 import pytest
 
-from orkcraft import schedule, scroll as ts, settings
+from orkcraft import autonomy, schedule, scroll as ts, settings
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import checkpoint, evolution, feedback, metrics, optimize
+from orkcraft.realm import awake, checkpoint, evolution, feedback, metrics, optimize
 from orkcraft.screens.changes import ChangesModal
 from tests.test_optimize import ORDERS
 
 SIZE = (180, 50)
 SHORT = "Summarise the PR, flag risk, give a verdict."
+
+
+def _unanswered(root: Path, p, hours: float = 13, around: bool = True) -> None:
+    """The proposal was made `hours` ago; the operator was around all that time (or never)."""
+    now = dt.datetime.now().replace(microsecond=0)
+    p.ts = (now - dt.timedelta(hours=hours)).isoformat(timespec="seconds")
+    optimize.save(root, p)
+    f = root / awake.FILE
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"spans": [[p.ts, now.isoformat()]] if around else []}), encoding="utf-8")
 
 
 def test_what_each_level_may_apply():
@@ -27,16 +38,32 @@ def test_what_each_level_may_apply():
 
 
 def test_a_buildings_own_autonomy_takes_the_place_of_the_level():
-    now = dt.datetime(2026, 10, 6, 3, 0)
-    fresh, old = (now - dt.timedelta(hours=2)).isoformat(), (now - dt.timedelta(hours=20)).isoformat()
-    assert not evolution.may_apply("shrink", 3, "chains", old, now)            # ⛓️ only proposes
-    assert not evolution.may_apply("shrink", 0, "clock", fresh, now)           # 🕰 waits for an answer…
-    assert evolution.may_apply("shrink", 0, "clock", old, now)                 # …a day unanswered, it lands
-    assert not evolution.may_apply("shrink", 0, "clock", "", now)
-    assert evolution.may_apply("script", 0, "free", fresh, now)                # ⛓️‍💥 at once, whatever the level
+    town = autonomy.Rules(autonomy.CHAINS, 7, 12)
+    b = type("B", (), {"autonomy": "clock", "question_wait": None, "rebuild_wait": 6})()
+    rules = autonomy.rules_of(b, town.level, town.wait, town.rebuild)
+    assert rules == autonomy.Rules(autonomy.CLOCK, 7, 6)                      # its own level and wait, the town's other
+    assert autonomy.rules_of(None, autonomy.FREE, 5, 24) == autonomy.Rules(autonomy.FREE, 5, 24)
+    chains, clock, free = (autonomy.Rules(n, 7, 12) for n in (0, 1, 2))
+    assert not evolution.may_apply("shrink", chains, 100)                       # ⛓️ only proposes
+    assert not evolution.may_apply("shrink", clock, 11.9)                       # 🕰 waits the hours you are around…
+    assert evolution.may_apply("shrink", clock, 12)                             # …then a cheaper change lands
+    assert not evolution.may_apply("script", clock, 100)                        # silence never spends more
+    assert evolution.may_apply("script", free, 0)                               # ⛓️‍💥 at once
     for never in ("remove_road", "remove_building", "note"):
-        assert not evolution.may_apply(never, 3, "free", old, now)
-    assert evolution.may_apply("shrink", 1, None, fresh, now) and not evolution.may_apply("shrink", 0, None, old, now)
+        assert not evolution.may_apply(never, free, 100)
+
+
+def test_only_the_hours_the_operator_is_around_count(tmp_path: Path):
+    day = dt.datetime(2026, 10, 6, 9, 0)
+    for minute in range(0, 4 * 60 + 1, 1):                                       # 09:00–13:00, noted every minute
+        awake.note(tmp_path, day + dt.timedelta(minutes=minute))
+    awake.note(tmp_path, day + dt.timedelta(hours=14))                           # the camp closed for an hour
+    awake.note(tmp_path, day + dt.timedelta(hours=15))
+    spans = json.loads((tmp_path / awake.FILE).read_text())["spans"]
+    assert len(spans) == 3
+    assert awake.hours_since(tmp_path, day - dt.timedelta(hours=10), day + dt.timedelta(days=1)) == pytest.approx(4)
+    assert awake.hours_since(tmp_path, day + dt.timedelta(hours=2), day + dt.timedelta(days=1)) == pytest.approx(2)
+    assert awake.hours_since(tmp_path, "nonsense") == 0
 
 
 def test_the_ledger(tmp_path: Path):
@@ -98,11 +125,11 @@ def _machine(level: int) -> None:
 
 
 @pytest.mark.asyncio
-async def test_timer_orks_shrink_a_prompt_in_quiet_hours(fake_repo: Path, quiet):
+async def test_clock_orks_shrink_a_prompt_unanswered_for_the_hours_you_are_around(fake_repo: Path, quiet):
     _machine(1)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _camp(app, pilot, fake_repo)
+        _unanswered(fake_repo, await _camp(app, pilot, fake_repo))
         app._evolve_consider()
         await _until(pilot, lambda: _orders_now(app) == SHORT)
         [change] = evolution.load(fake_repo)
@@ -126,15 +153,15 @@ async def test_chains_apply_nothing(fake_repo: Path, quiet):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("freedom, age_h, applied", [("free", 0, True), ("clock", 1, False), ("clock", 20, True)])
-async def test_a_building_set_free_or_on_the_clock_applies_under_morning_advice(fake_repo: Path, quiet,
-                                                                                freedom, age_h, applied):
-    _machine(1)                                                            # the town's level applies nothing
+@pytest.mark.parametrize("freedom, age_h, around, applied", [("free", 0, True, True), ("clock", 1, True, False),
+                                                              ("clock", 20, True, True), ("clock", 20, False, False)])
+async def test_a_building_set_free_or_on_the_clock_applies_in_chains(fake_repo: Path, quiet,
+                                                                     freedom, age_h, around, applied):
+    _machine(0)                                                            # the town's level applies nothing
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         p = await _camp(app, pilot, fake_repo)
-        p.ts = (dt.datetime.now() - dt.timedelta(hours=age_h)).isoformat(timespec="seconds")
-        optimize.save(fake_repo, p)
+        _unanswered(fake_repo, p, age_h, around)                           # 20 h old but asleep: still waits
         app.scroll.building("town_hall").autonomy = freedom
         app._evolve_consider()
         if applied:
@@ -145,7 +172,7 @@ async def test_a_building_set_free_or_on_the_clock_applies_under_morning_advice(
 
 
 @pytest.mark.asyncio
-async def test_a_building_in_chains_applies_nothing_even_for_routine_orks(fake_repo: Path, quiet):
+async def test_a_building_in_chains_applies_nothing_even_for_unchained_orks(fake_repo: Path, quiet):
     _machine(2)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
@@ -186,7 +213,7 @@ async def test_a_dislike_on_probation_takes_it_back_and_says_so(fake_repo: Path,
     _machine(1)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _camp(app, pilot, fake_repo)
+        _unanswered(fake_repo, await _camp(app, pilot, fake_repo))
         app._evolve_consider()
         await _until(pilot, lambda: _orders_now(app) == SHORT)
         feedback.dislike(fake_repo, app.scroll, "town_hall", "logic", "worse verdicts")
@@ -203,7 +230,7 @@ async def test_a_change_with_newer_ones_on_top_is_not_reverted_by_itself(fake_re
     _machine(1)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _camp(app, pilot, fake_repo)
+        _unanswered(fake_repo, await _camp(app, pilot, fake_repo))
         app._evolve_consider()
         await _until(pilot, lambda: _orders_now(app) == SHORT)
         app.scroll.building("town_hall").garrison.handler("seer").orders = SHORT + " Be brief."
@@ -222,7 +249,7 @@ async def test_the_list_after_quiet_hours_and_taking_one_back(fake_repo: Path, m
     monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: is_quiet["on"])
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
-        await _camp(app, pilot, fake_repo)
+        _unanswered(fake_repo, await _camp(app, pilot, fake_repo))
         app.tick_schedule()
         await _until(pilot, lambda: _orders_now(app) == SHORT)
         is_quiet["on"] = False

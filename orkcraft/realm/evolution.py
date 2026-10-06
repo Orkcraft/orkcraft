@@ -1,28 +1,26 @@
 """🔧 Self-improvement by the orcs themselves, by autonomy level (design: docs/design/onboarding.md).
 
-    evolution.allowed("shrink", level)       may the orcs apply this kind of change on their own?
+    evolution.allowed("shrink", level)       may the orks ever apply this kind of change on their own?
+    evolution.may_apply("shrink", rules, h)  …now, unanswered for h hours the operator was around?
     evolution.record(root, Change(...))      the ledger of every applied change: .orkcraft/evolution/changes.jsonl
     evolution.unseen(root)                   what the operator has not seen yet (the list after changes)
     evolution.verdict(root, change, now)     on probation: a reason to take it back, or None
 
-The Building retro (daily), the Town retro (weekly) and the stewards keep proposing as before. In 🌙 quiet
-hours (nobody to wait for: autonomy.waits), from ⏳ Timer, the orks apply what their level allows —
-silence never makes the camp spend more:
+The Building retro (daily), the Town retro (weekly) and the stewards keep proposing as before. A
+proposal is a rebuild (autonomy.py): the level and the rebuild wait of its building rule it — its own,
+set in its steward's window (the Town Hall's rules the Town retro's), else the town's (`may_apply`):
 
-    ⏳ Timer (1)      changes that make a building cheaper or simpler: shrink a prompt, an agent made a
-                      chain, a steward's demotion (proved on recorded runs), a run policy, a road filter
-    ⛓️‍💥 Free orks (2)  also a script instead of an agent (sandbox-proved), a richer prompt for a ⚖️ / 💎
-                      building (it spends more), a new plain road, a building's setting, a building
-                      from the catalog
+    ⛓️ in chains      nothing by itself: every proposal waits for the operator
+    🕰 on the clock   a proposal the operator left unanswered for `rebuild wait` hours they were around
+                      (realm/awake.py: the camp open, outside quiet hours) — only one that makes a
+                      building cheaper or simpler (`CHEAPER`): shrink a prompt, an agent made a chain, a
+                      steward's demotion (proved on recorded runs), a run policy, a road filter
+    ⛓️‍💥 unchained     at once, also a script instead of an agent (sandbox-proved), a richer prompt for a
+                      ⚖️ / 💎 building (it spends more), a new plain road, a building's setting, a
+                      building from the catalog
     never             removing a road or a building, notes — those stay advice
 
-A building's own autonomy (`BuildingSpec.autonomy`, set under its steward; the Town Hall's is the Town
-retro's) takes the place of the level for what its retro proposes (`may_apply`):
-
-    ⛓️ chains         nothing by itself: every proposal waits for the operator
-    🕰 clock          a proposal the operator left unanswered for CLOCK_WAIT is applied in the next quiet hours
-    ⛓️‍💥 free           applied in the next quiet hours (right after a retro that ran in them)
-    unset             the town's level, as above
+What may be applied is applied in 🌙 quiet hours, one change at a time.
 
 Each one must pass its own checks (validation, sandbox, replay) and the Council's review with no
 block, objection or Warder warning; it gets its own checkpoint (Z takes it back) and 24 hours of
@@ -46,41 +44,25 @@ PROBATION = dt.timedelta(hours=24)
 MAX_PER_NIGHT = 10
 FAILED = ("error", "failed", "fail")
 
-# The lowest autonomy level at which the orcs may apply a kind of change themselves.
-_T, _F = autonomy.TIMER, autonomy.FREE
-LEVEL_FOR: dict[str, int] = {
-    "shrink": _T, "chain": _T, "demote": _T, "set_run": _T, "filter": _T,
-    "script": _F, "enrich": _F, "new_road": _F, "set_config": _F, "add_building": _F,
-}
+# What the orks may apply on their own, and the lowest level that lets them without asking first.
+CHEAPER = frozenset({"shrink", "chain", "demote", "set_run", "filter"})      # 🕰: after its wait
+LEVEL_FOR: dict[str, int] = {**{c: autonomy.CLOCK for c in CHEAPER},
+                             **{c: autonomy.FREE for c in ("script", "enrich", "new_road", "set_config", "add_building")}}
 NEVER = ("remove_road", "remove_building", "note")
 
 
-CLOCK_WAIT = dt.timedelta(hours=12)       # 🕰: what the operator has to answer a proposal before it lands
-
-
 def allowed(change: str, level: int) -> bool:
+    """May the orks ever apply this kind of change at this level (after its wait)."""
     need = LEVEL_FOR.get(change)
     return need is not None and change not in NEVER and level >= need
 
 
-def may_apply(change: str, level: int, freedom: str | None = None, made: str = "",
-              now: dt.datetime | None = None) -> bool:
-    """May the orcs apply this change themselves: by the building's own autonomy (`freedom`, its retro's
-    proposal made at `made`), else by the town's `level`. A removal or a note never."""
+def may_apply(change: str, rules: autonomy.Rules, awake_hours: float) -> bool:
+    """May the orks apply this change now: by its building's rules (autonomy.rules_of), the proposal left
+    unanswered for `awake_hours` hours the operator was around. A removal or a note never."""
     if change not in LEVEL_FOR or change in NEVER:
         return False
-    if freedom == "chains":
-        return False
-    if freedom == "free":
-        return True
-    if freedom == "clock":
-        try:
-            at = dt.datetime.fromisoformat(made)
-        except (TypeError, ValueError):
-            return False
-        now = now or dt.datetime.now(at.tzinfo)
-        return now - at >= CLOCK_WAIT
-    return allowed(change, level)
+    return autonomy.rebuilds(rules.level, change in CHEAPER, awake_hours, rules.rebuild)
 
 
 @dataclass

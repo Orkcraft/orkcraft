@@ -56,6 +56,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
             "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id, str(a.get("value") or "")),
             "building.autonomy": lambda a: core_buildings.set_autonomy(self.town, self._spec(a).id,
                                                                        str(a.get("value") or "") or None),
+            "building.waits": lambda a: core_buildings.set_waits(self.town, self._spec(a).id,
+                                                                 _int(a.get("question")), _int(a.get("rebuild"))),
             "building.pin": self.pin,
             "building.revert": self.revert,
             "building.quick": self.quick,
@@ -340,3 +342,11 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
             raise ConsoleError("The road kept its handler (see the note)")
         self.town.save()
         return True
+
+
+def _int(value: object) -> int | None:
+    """A whole number from the page, or None (as the town)."""
+    try:
+        return int(value) if value not in (None, "", 0, "0") else None
+    except (TypeError, ValueError):
+        return None

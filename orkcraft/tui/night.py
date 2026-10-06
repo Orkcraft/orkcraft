@@ -182,7 +182,7 @@ class NightMixin:
         self.call_from_thread(self._elders_done, alert, who, decision)
 
     def _elders_done(self, alert: Alert, who: str, decision: elders.Decision) -> None:
-        """The Elders' advice is kept for the operator, or — from ⏳ timer, while the same question waits —
+        """The Elders' advice is kept for the operator, or — from 🕰 on the clock, while the same question waits —
         their key goes to the agent (core/night.py `judged`)."""
         send = self.night.judged(alert, decision, who, self.roster.alerts, self.desktop.quiet,
                                  self.desktop.machine.autonomy)
@@ -213,11 +213,13 @@ class NightMixin:
             if isinstance(result, dict):
                 machine.autonomy = int(result.get("autonomy", machine.autonomy))
                 machine.autonomy_wait = autonomy.wait_of(result.get("autonomy_wait", machine.autonomy_wait))
+                machine.rebuild_wait = autonomy.rebuild_of(result.get("rebuild_wait", machine.rebuild_wait))
                 settings.save(machine)
                 lvl = autonomy.LEVELS[machine.autonomy]
                 self.notify(f"❓ {lvl.questions}\n🔧 {lvl.improves}", title=f"{lvl.icon} {lvl.title}")
 
-        self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True, wait=machine.autonomy_wait), done)
+        self.push_screen(AutonomyStep(machine.autonomy, tools_, standalone=True, wait=machine.autonomy_wait,
+                                      rebuild=machine.rebuild_wait), done)
 
     def open_day(self) -> None:
         """F10 → 🕰 Your day: the mode, the quiet hours and the office hours, on the day bar."""

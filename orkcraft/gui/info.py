@@ -129,10 +129,20 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
 
 
 def _town_autonomy(town: Town) -> str:
-    """The town's autonomy level, which a building without its own follows: `📜 Morning advice`."""
+    """The town's autonomy level, which a building without its own follows: `🕰 On the clock`."""
     level = getattr(town.machine, "autonomy", autonomy.DEFAULT_LEVEL)
     lv = next((x for x in autonomy.LEVELS if x.n == level), autonomy.LEVELS[autonomy.DEFAULT_LEVEL])
     return f"{lv.icon} {lv.title}"
+
+
+def _waits(town: Town, bs) -> dict:
+    """🕰 its waits: its own (0 when it follows the town), the town's, what rules it now, the choices."""
+    m = town.machine
+    rules = autonomy.rules_of(bs, m.autonomy, m.autonomy_wait, m.rebuild_wait)
+    return {"question": bs.question_wait or 0, "rebuild": bs.rebuild_wait or 0,
+            "town_question": m.autonomy_wait, "town_rebuild": m.rebuild_wait,
+            "clock": rules.level == autonomy.CLOCK,
+            "questions": list(autonomy.QUESTION_WAITS), "rebuilds": list(autonomy.REBUILD_WAITS)}
 
 
 def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
@@ -157,6 +167,7 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "can_revert": checkpoint.can_revert(town.repo_root, building_id),
         "autonomy": bs.autonomy or "",
         "town_autonomy": _town_autonomy(town),
+        "waits": _waits(town, bs),
         "listens": _listens(town, muster, building_id),
         "others": _others(town, muster, building_id),
         "steward": _steward(town, muster, building_id),

@@ -18,31 +18,39 @@ The steward reviews each part and the whole, and sends work back. Nobody hires b
 
 Deciding more on their own needs a clearer autonomy model, so the slider shrinks to three levels (§2).
 
-## 2. Autonomy: three levels
+## 2. Autonomy: three levels, one rule for the town and a building
 
-| | ⛓️ Chains | ⏳ Timer | ⛓️‍💥 Free orks |
+The town's level (the machine's settings, F10 → 🏛 Ork autonomy) and a building's own (its steward's
+window; missing → as the town) are the same three levels with the same two waits — `autonomy.rules_of`
+gives what rules a building: its own level and waits, each one it has not set the town's.
+
+Two kinds of decision, each with its own wait:
+
+- **a question** — what to do with a task: an agent's question (the Elders), a steward's (🔥: the
+  steward could not answer an ork, a task sent back too often), a new persona. It holds work up now,
+  so it waits **minutes** (`autonomy_wait` / `question_wait`, 7 by default, 1–60).
+- **a rebuild** — a change of a building or of the town a retro or a steward proposes. It holds
+  nothing up, so it waits **hours the operator is around** (`rebuild_wait`, 12 by default, 1–48): the
+  camp open, outside quiet hours (`realm/awake.py` notes them once a minute); a night asleep does not
+  count. What may be applied is applied in the next quiet hours, as before.
+
+| | ⛓️ In chains | 🕰 On the clock | ⛓️‍💥 Unchained |
 |---|---|---|---|
-| A decision (an agent's question, a new persona, a self-improvement) | waits for the operator 🔥 | waits `autonomy_wait` minutes (default 7, 5–10), then the orks decide | the orks decide at once; the operator sees the list afterwards |
-| In quiet hours | waits for the operator | no wait: nobody is there to answer | at once |
-| The Elders | advise; the operator follows with one key | answer when the timer runs out | answer at once |
-| Self-improvement (`evolution.py`, still in quiet hours only) | proposals wait for a click | only what makes a building cheaper or simpler (shrink, chain, demote, run policy, filter) | also what spends more or adds: script, enrich, new road, setting, building |
-| The agents' own permissions (📋 guide) | unchanged | today's 🧭 Routine block | today's ⛓️‍💥 Free block |
+| A question | waits for the operator 🔥 | waits its minutes, then the orks decide; in quiet hours no wait | the orks decide at once |
+| …what the orks do | — | the Elders send their one-time yes; a new persona is approved; the steward answers the question itself by its rules; a task sent back too often is closed as failed, with the last notes | the same, at once |
+| A rebuild | waits for a click | after its hours: only what makes a building cheaper or simpler (shrink, chain, demote, run policy, filter) | also what spends more or adds: script, enrich, new road, setting, building |
+| The agents' own permissions (📋 guide) | unchanged | the routine block | the free block |
 
-The same at every level, never relaxed by a timer: what the Warder's rules block waits for the
-operator; removing a road or a building is never done by the orks; only a one-time yes is ever sent
-(never "always"); every change passes the Council, gets a checkpoint (Z takes it back) and 24 h on
-probation.
+Never decided by the orks at any level: what the Warder's rules block, a draft to post outside the
+camp (Jira, Confluence…), a removal of a road or a building; only a one-time yes is ever sent (never
+"always"); every change passes the Council, gets a checkpoint (Z takes it back) and 24 h on probation.
+Silence never makes the camp spend more: that is why 🕰 applies only the cheaper half of the rebuilds.
+A run that crashes is tried once more by itself, without waiting for anyone.
 
-Silence never makes the camp spend more: that is why ⏳ applies only the cheaper half of the changes.
-
-**Stored** as a word, `autonomy: "chains" | "timer" | "free"` in `~/.config/orkcraft/settings.json`.
-An old number still loads, never bolder than it was: 0 Ask me and 1 Morning advice → ⛓️ Chains,
-2 Routine → ⏳ Timer, 3 Free orks → ⛓️‍💥 Free orks. A new camp starts at ⏳ Timer.
-
-Touches: `autonomy.py` (levels, `advises` / `answers` become `waits(level, quiet) → minutes | None`),
-`settings.py` (the word and the old numbers), `core/night.py` and `realm/elders.py` (the Elders work by
-day too, after the timer), `realm/evolution.py` (`LEVEL_FOR` → cheaper at ⏳, the rest at ⛓️‍💥),
-`screens/autonomy.py`, the onboarding step, `gui/host.py`, the tests.
+**Stored** as words: `autonomy: "chains" | "clock" | "free"`, `autonomy_wait`, `rebuild_wait` in
+`~/.config/orkcraft/settings.json`; `buildings[].autonomy`, `.question_wait`, `.rebuild_wait` in the Town
+Scroll. Older values load never bolder than they were: the four old stops 0 Ask me and 1 Morning advice
+→ ⛓️, 2 Routine → 🕰, 3 Free orks → ⛓️‍💥; `timer` → 🕰. A new camp starts on 🕰 the clock.
 
 ## 3. The goal of the steward
 

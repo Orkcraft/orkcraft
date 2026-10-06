@@ -6,7 +6,7 @@ an ork is an instance hired *as* a persona. The steward writes a new one while i
 `personas/<name>.md` under the building's state folder and used again whenever a plan names it.
 
 A new persona is the orks' decision, so it waits as the autonomy level says (autonomy.waits):
-⛓️ for the operator, ⏳ the timer, ⛓️‍💥 not at all. Until it is approved it is `approved: false`.
+⛓️ for the operator, 🕰 the question wait of its building, ⛓️‍💥 not at all. Until it is approved it is `approved: false`.
 
     p = personas.load(state_dir, "backend")      # None when there is none
     personas.save(state_dir, p)

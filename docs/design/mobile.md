@@ -175,7 +175,7 @@ on iOS, FCM on Android).
   no code, no file contents and no secrets: only the title and who asks. Tapping it opens the
   question in the app, which fetches it through the socket.
 - **Quiet hours** (`schedule.quiet_now`): pushes keep coming, unless the machine's autonomy lets the
-  Elders answer (⛓️‍💥 Free orks); then only an `over` spend wakes the phone. A device can mute each
+  Elders answer (🕰 on the clock or ⛓️‍💥 unchained); then only an `over` spend wakes the phone. A device can mute each
   kind.
 - **Where it is sent from.** APNs and FCM need the app's own credentials, which a laptop does not
   hold, so a push goes through the relay (§2): the host sends it the device's push token and the

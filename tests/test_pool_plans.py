@@ -361,7 +361,7 @@ async def test_chains_a_new_persona_waits_for_the_operator(fake_repo: Path, monk
         waiting = st.asked[0]
         assert waiting.persona_waits == "streamer" and "You write streaming endpoints." in waiting.question
         assert any(p.mode == "pool.question" for p in sent)
-        assert not view.worker.tick_personas(now=time.time() + 3600)        # ⛓️: no timer
+        assert not view.worker.tick_asks(now=time.time() + 3600)        # ⛓️: no timer
         view.worker.answer(waiting.id, "yes")
         assert await _until(pilot, lambda: len(crew.calls) == 2)
         assert "## Who you are: streamer" in crew.calls[1]["prompt"]
@@ -371,7 +371,7 @@ async def test_chains_a_new_persona_waits_for_the_operator(fake_repo: Path, monk
 
 @pytest.mark.asyncio
 async def test_timer_a_new_persona_is_approved_when_nobody_answers(fake_repo: Path, monkeypatch, steward, git):
-    _level(autonomy.TIMER, False, monkeypatch)
+    _level(autonomy.CLOCK, False, monkeypatch)
     steward(plans=[NEW_PERSONA])
     crew = Crew()
     app = _app(fake_repo, monkeypatch, crew)
@@ -381,15 +381,15 @@ async def test_timer_a_new_persona_is_approved_when_nobody_answers(fake_repo: Pa
         assert await _until(pilot, lambda: len(crew.calls) == 1)
         st = view.state
         assert "approved by itself in 5 min" in st.asked[0].question
-        assert not view.worker.tick_personas(now=time.time() + 60)          # still the operator's
-        assert view.worker.tick_personas(now=time.time() + 301)
+        assert not view.worker.tick_asks(now=time.time() + 60)          # still the operator's
+        assert view.worker.tick_asks(now=time.time() + 301)
         assert await _until(pilot, lambda: len(crew.calls) == 2)
         assert any(d.action == "persona" and "nobody answered in 5 min" in d.why for d in st.decisions())
 
 
 @pytest.mark.asyncio
 async def test_free_orks_and_quiet_hours_do_not_wait(fake_repo: Path, monkeypatch, steward, git):
-    _level(autonomy.TIMER, True, monkeypatch)                                # ⏳ in quiet hours: no wait
+    _level(autonomy.CLOCK, True, monkeypatch)                                # ⏳ in quiet hours: no wait
     steward(plans=[NEW_PERSONA])
     crew = Crew()
     app = _app(fake_repo, monkeypatch, crew)
@@ -479,3 +479,101 @@ async def test_a_tight_quota_makes_the_barracks_thrifty(fake_repo: Path, monkeyp
         await pilot.pause(0.1)
         assert len(crew.calls) == 2 and {o.label for o in view.state.orcs} == {"claude:haiku"}
         assert any("the quota is tight" in d.why for d in view.state.decisions())
+
+
+# -- what waits for the operator: the clock -------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_on_the_clock_the_steward_answers_a_question_nobody_answered(fake_repo: Path, monkeypatch, git):
+    _level(autonomy.CLOCK, False, monkeypatch)
+    s = Steward(answers=[])
+    calls = []
+
+    def stew(harness, prompt, workdir, cancel, model):
+        calls.append(prompt)
+        if "decide it yourself now" in prompt:
+            return "ANSWER: use the v2 endpoint", 0.01
+        return s(harness, prompt, workdir, cancel, model)
+    monkeypatch.setattr(BarracksWorker, "steward_runner", staticmethod(stew))
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    async with app.run_test(size=SIZE) as pilot:
+        view, _sent = await _open(pilot, app)
+        _arrive(app, "T6001")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        st = view.state
+        task = st.task(st.orcs[0].task)
+        crew.finish(0)
+        assert await _until(pilot, lambda: task.status == "done")
+        task.status = "working"                     # as if the ork asked and the steward handed it on (ASK)
+        view.worker._ask(task, "Which endpoint?", "Grub asks", kind="question")
+        assert not view.worker.tick_asks(now=time.time() + 60)                    # 5 min not yet
+        assert view.worker.tick_asks(now=time.time() + 301)
+        assert await _until(pilot, lambda: task.status != "asked")
+        assert task.qa[-1] == ["Which endpoint?", "use the v2 endpoint", "Foreman"]
+
+
+@pytest.mark.asyncio
+async def test_on_the_clock_a_task_sent_back_too_often_is_closed(fake_repo: Path, monkeypatch, steward, git):
+    _level(autonomy.CLOCK, False, monkeypatch)
+    steward(verdicts=["REWORK: no"] * 3)
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew, max_reworks=1, escalate=False)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _arrive(app, "T6002")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        crew.finish(0)
+        assert await _until(pilot, lambda: len(crew.calls) == 2)
+        crew.finish(1)
+        st = view.state
+        assert await _until(pilot, lambda: bool(st.asked))
+        task = st.asked[0]
+        assert task.ask_kind == "rejected"
+        assert view.worker.tick_asks(now=time.time() + 301)
+        assert task.status == "failed" and "closed by Foreman" in task.error and "nobody answered in 5 min" in task.error
+        assert [p.mode for p in sent].count("pool.failed") == 2                   # the rejection, then the close
+
+
+@pytest.mark.asyncio
+async def test_a_draft_to_post_always_waits_for_the_operator(fake_repo: Path, monkeypatch, steward, git):
+    _level(autonomy.FREE, False, monkeypatch)
+    steward()
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    async with app.run_test(size=SIZE) as pilot:
+        view, _sent = await _open(pilot, app)
+        _arrive(app, "T6003")
+        assert await _until(pilot, lambda: len(crew.calls) == 1)
+        st = view.state
+        task = st.task(st.orcs[0].task)
+        crew.finish(0)
+        assert await _until(pilot, lambda: task.status == "done")
+        task.status = "working"
+        view.worker._ask(task, "Publish to Jira?", "Grub wants to publish", kind="draft")
+        assert not view.worker.tick_asks(now=time.time() + 10_000) and task.status == "asked"
+
+
+@pytest.mark.asyncio
+async def test_a_building_has_its_own_freedom_and_waits(fake_repo: Path, monkeypatch, steward, git):
+    from orkcraft.core import buildings as core_buildings
+    _level(autonomy.CHAINS, False, monkeypatch)                                # the town: in chains
+    steward(plans=[NEW_PERSONA])
+    crew = Crew()
+    app = _app(fake_repo, monkeypatch, crew)
+    async with app.run_test(size=SIZE) as pilot:
+        view, _sent = await _open(pilot, app)
+        core_buildings.set_autonomy(app.core, "camp", "clock")
+        assert core_buildings.set_waits(app.core, "camp", 15, 6) == {"question": 15, "rebuild": 6,
+                                                                      "own_question": 15, "own_rebuild": 6}
+        assert view.worker.rules == autonomy.Rules(autonomy.CLOCK, 15, 6)
+        _hard(view)
+        assert await _until(pilot, lambda: len(view.state.asked) == 1)
+        assert "approved by itself in 15 min" in view.state.asked[0].question
+        assert not view.worker.tick_asks(now=time.time() + 14 * 60)
+        assert view.worker.tick_asks(now=time.time() + 15 * 60 + 1)
+        b = app.scroll.building("camp")
+        again = type(app.scroll).from_dict(app.scroll.to_dict()).building("camp")
+        assert (again.autonomy, again.question_wait, again.rebuild_wait) == ("clock", 15, 6)
+        assert core_buildings.set_waits(app.core, "camp", 0, None)["own_question"] is None
+        assert b.question_wait is None and view.worker.rules.wait == 5          # back to the town's

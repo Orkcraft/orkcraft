@@ -197,9 +197,9 @@ class BarracksWorker(PlanMixin, Worker):
         return "BUSY" if any(o.status == "working" for o in st.orcs) else ""
 
     def tick(self, now: float | None = None) -> None:
-        """Now and then: a persona whose timer ran out; what waits in the queue with nobody on it (an orc that
-        could not be hired is tried again); what became of the pull requests of done tasks."""
-        self.tick_personas()
+        """Now and then: what waited for the operator its time (the orks decide); what waits in the queue with
+        nobody on it (an orc that could not be hired is tried again); what became of the pull requests."""
+        self.tick_asks()
         st = self.state
         if st.queue and not st.paused and not any(o.status == "working" for o in st.orcs):
             self._pump()
@@ -627,7 +627,13 @@ class BarracksWorker(PlanMixin, Worker):
         st.stats = f.stats
         for q, a, _who in out.qa:
             st.log(bk.Decision(bk.now_iso(), task.id, "answer", orc.name, f"{q} → {a}"))
-        if out.error:
+        if out.error and out.error != "stopped" and not task.retried and not task.publish:
+            task.retried = True                           # a crash is tried once more, by itself
+            st.log(bk.Decision(bk.now_iso(), task.id, "retry", orc.name, f"once more after: {out.error[:200]}"))
+            st.tasks.remove(task)
+            task.status, task.wait_for, task.error = "queued", orc.name, ""
+            st.queue.insert(0, task)
+        elif out.error:
             task.status = "failed"
             if task.parent:                               # the whole fails when nothing else runs (_advance)
                 st.log(bk.Decision(bk.now_iso(), task.id, "failed", orc.name, f"part `{task.sub}`: {out.error}"))
@@ -635,7 +641,7 @@ class BarracksWorker(PlanMixin, Worker):
                 self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title,
                           trail=self._trail(task, orc, "error"), ref=task.ref)
         elif out.asked:
-            self._ask(task, out.asked, f"{orc.name} asks")
+            self._ask(task, out.asked, f"{orc.name} asks", kind="question")
         elif ok and task.parent:
             self._part_done(task, orc, out)
         elif ok and not task.publish and (draft := bk.publish_of(out.text))[2]:
@@ -695,7 +701,7 @@ class BarracksWorker(PlanMixin, Worker):
         self.emit("pool.failed", f"**{task.title}** — rejected after {reworks} reworks: {notes}", task.title,
                   trail=self._trail(task, orc, "error"), ref=task.ref)
         self._ask(task, f"Rejected after {reworks} reworks. Last notes: {notes[:500]}\n\nWhat should {orc.name} do?",
-                  "rejected")
+                  "rejected", kind="rejected")
 
     def _files_md(self, task: bk.PoolTask) -> str:
         if not task.files:
@@ -715,7 +721,7 @@ class BarracksWorker(PlanMixin, Worker):
               f"approval (accept: it is posted as below, your edits included · send back: what to change)\n\n"
               f"{report.strip()}{self._files_md(task)}\n\n## To publish\n\nPUBLISH: {target}\n\n{draft}")
         self._ask(task, f"Publish to {target or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
-                  trail=self._trail(task, orc, self.APPROVAL))
+                  trail=self._trail(task, orc, self.APPROVAL), kind="draft")
 
     def approved(self, payload: pipes.Payload) -> bool:
         """A Loot accepted a waiting draft (perhaps edited there): the orc posts it. False when none waits."""
@@ -737,9 +743,12 @@ class BarracksWorker(PlanMixin, Worker):
         st.save()
         self.changed()
 
-    def _ask(self, task: bk.PoolTask, question: str, why: str, markdown: str = "", trail: tuple = ()) -> None:
+    def _ask(self, task: bk.PoolTask, question: str, why: str, markdown: str = "", trail: tuple = (),
+             kind: str = "question") -> None:
+        """🔥 It waits for the operator — or, by its autonomy, for its time (tick_asks): `kind` says what it is."""
         st = self.state
         task.status, task.question = "asked", question
+        task.ask_kind, task.waits_since = kind, time.time()
         st.log(bk.Decision(bk.now_iso(), task.id, "ask", task.orc, f"{why}: {question[:200]}"))
         self.emit("pool.question", markdown or f"**{task.title}** — {why}:\n\n{question}", task.title,
                   trail=trail, ref=task.ref)
@@ -747,7 +756,7 @@ class BarracksWorker(PlanMixin, Worker):
 
     # -- the operator's answers ------------------------------------------------------------------------
 
-    def answer(self, task_id: str, text: str | None) -> str:
+    def answer(self, task_id: str, text: str | None, who: str = "operator") -> str:
         """The operator's answer goes back to the orc that asked (the task returns to its queue). The rule
         the steward proposes from it (a face asks whether to keep it: `add_rule`), "" when none."""
         st = self.state
@@ -775,13 +784,14 @@ class BarracksWorker(PlanMixin, Worker):
         if not text:
             return ""
         question = task.question.split("\n\n")[0]
-        task.qa.append([question, text.strip(), "operator"])
+        task.qa.append([question, text.strip(), who])
+        task.ask_kind = ""
         if task.attempts - 1 >= self.foreman.max_reworks:
             task.attempts = 0                       # the operator's word opens a new round of reworks
         task.question, task.status, task.wait_for = "", "queued", task.orc
         st.tasks.remove(task)
         st.queue.insert(0, task)
-        st.log(bk.Decision(bk.now_iso(), task.id, "answer", task.orc, f"operator: {text.strip()[:200]}"))
+        st.log(bk.Decision(bk.now_iso(), task.id, "answer", task.orc, f"{who}: {text.strip()[:200]}"))
         self._pump()
         st.save()
         self.changed()

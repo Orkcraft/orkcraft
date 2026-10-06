@@ -123,7 +123,7 @@ def test_without_a_model_there_is_no_advice():
 
 
 def test_the_levels_and_the_guide():
-    assert [lvl.n for lvl in autonomy.LEVELS] == [autonomy.CHAINS, autonomy.TIMER, autonomy.FREE] == [0, 1, 2]
+    assert [lvl.n for lvl in autonomy.LEVELS] == [autonomy.CHAINS, autonomy.CLOCK, autonomy.FREE] == [0, 1, 2]
     assert [autonomy.answers(n) for n in range(3)] == [False, True, True]
     assert autonomy.claude_settings(0) is None
     timer, free = autonomy.claude_settings(1), autonomy.claude_settings(2)
@@ -141,21 +141,26 @@ def test_the_levels_and_the_guide():
 
 def test_how_long_a_decision_waits():
     assert autonomy.waits(autonomy.CHAINS, quiet=False) is None and autonomy.waits(autonomy.CHAINS, quiet=True) is None
-    assert autonomy.waits(autonomy.TIMER, quiet=False, minutes=5) == 5 and autonomy.waits(autonomy.TIMER, quiet=True) == 0
+    assert autonomy.waits(autonomy.CLOCK, quiet=False, minutes=5) == 5 and autonomy.waits(autonomy.CLOCK, quiet=True) == 0
     assert autonomy.waits(autonomy.FREE, quiet=False) == 0
-    assert [autonomy.wait_of(v) for v in (3, 7, 12, "x", None)] == [5, 7, 10, 7, 7]
+    assert [autonomy.wait_of(v) for v in (0, 7, 90, "x", None)] == [1, 7, 60, 7, 7]
+    assert [autonomy.rebuild_of(v) for v in (0, 12, 99, None)] == [1, 12, 48, 12]
+    assert not autonomy.rebuilds(autonomy.CHAINS, True, 100) and autonomy.rebuilds(autonomy.FREE, False, 0)
+    assert autonomy.rebuilds(autonomy.CLOCK, True, 12, 12) and not autonomy.rebuilds(autonomy.CLOCK, True, 11, 12)
+    assert not autonomy.rebuilds(autonomy.CLOCK, False, 100, 12)                 # 🕰 never spends more
 
 
 def test_autonomy_is_kept_in_the_machine_settings(tmp_path: Path):
     f = tmp_path / "s.json"
-    settings.save(settings.MachineSettings(autonomy=autonomy.FREE, autonomy_wait=10), f)
+    settings.save(settings.MachineSettings(autonomy=autonomy.FREE, autonomy_wait=10, rebuild_wait=24), f)
     data = json.loads(f.read_text(encoding="utf-8"))
     assert data["autonomy"] == "free" and data["autonomy_wait"] == 10           # a word: never read as an old number
     assert settings.load(f).autonomy == autonomy.FREE and settings.load(f).autonomy_wait == 10
+    assert settings.load(f).rebuild_wait == 24
     f.write_text('{"autonomy": 9}', encoding="utf-8")
-    assert settings.load(f).autonomy == autonomy.DEFAULT_LEVEL == autonomy.TIMER
+    assert settings.load(f).autonomy == autonomy.DEFAULT_LEVEL == autonomy.CLOCK
     # the four old stops load never bolder than they were
-    for old, new in ((0, "chains"), (1, "chains"), (2, "timer"), (3, "free")):
+    for old, new in ((0, "chains"), (1, "chains"), (2, "clock"), (3, "free"), ("timer", "clock")):
         f.write_text(json.dumps({"autonomy": old}), encoding="utf-8")
         assert settings.load(f).autonomy == autonomy.WORDS.index(new)
 
@@ -329,18 +334,18 @@ async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_r
 @pytest.mark.asyncio
 async def test_by_day_the_timer_lets_a_question_wait_for_the_operator_first(fake_repo: Path, monkeypatch):
     monkeypatch.setattr(schedule, "quiet_now", lambda m, now=None: False)
-    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.TIMER, autonomy_wait=5))
+    settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CLOCK, autonomy_wait=5))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         alert = _alert()
         night = app.night
-        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1000.0) is None     # just asked
-        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1299.0) is None     # still the operator's
-        assert night.next_question([alert], False, autonomy.TIMER, 5, now=1300.0) is alert    # the timer ran out
+        assert night.next_question([alert], False, autonomy.CLOCK, 5, now=1000.0) is None     # just asked
+        assert night.next_question([alert], False, autonomy.CLOCK, 5, now=1299.0) is None     # still the operator's
+        assert night.next_question([alert], False, autonomy.CLOCK, 5, now=1300.0) is alert    # the timer ran out
         night.elders_busy = False
         other = _alert("pytest -q --lf")
-        assert night.next_question([other], True, autonomy.TIMER, 5, now=2000.0) is other     # quiet: no wait
+        assert night.next_question([other], True, autonomy.CLOCK, 5, now=2000.0) is other     # quiet: no wait
         assert app.elders_state() == "watch"
 
 
@@ -350,15 +355,17 @@ async def test_the_slider_picks_the_minutes_of_the_timer():
 
     from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
 
-    step = AutonomyStep(level=autonomy.TIMER, tools=("claude",), standalone=True, wait=5)
+    step = AutonomyStep(level=autonomy.CLOCK, tools=("claude",), standalone=True, wait=5)
     async with App().run_test(size=(120, 50)) as pilot:
         pilot.app.push_screen(step)
         await pilot.pause()
         assert step.query_one("#au-wait").display and step.query_one("#au-wait-5").value
-        step.query_one("#au-wait-10").value = True
+        assert step.query_one("#au-rebuild").display and step.query_one("#au-rebuild-12").value
+        step.query_one("#au-wait-15").value = True
+        step.query_one("#au-rebuild-24").value = True
         await pilot.pause()
-        assert step.result() == {"autonomy": autonomy.TIMER, "autonomy_wait": 10}
+        assert step.result() == {"autonomy": autonomy.CLOCK, "autonomy_wait": 15, "rebuild_wait": 24}
         assert not step.query_one("#au-wait-5").value
         step.query_one(AutonomySlider).set_level(autonomy.CHAINS)
         await pilot.pause()
-        assert not step.query_one("#au-wait").display                     # chains: no timer to pick
+        assert not step.query_one("#au-wait").display and not step.query_one("#au-rebuild").display

@@ -8,8 +8,8 @@
 
 What happens with the advice depends on the operator's autonomy level (autonomy.py): at ⛓️ Chains
 the Elders only advise, in quiet hours, and the operator follows the advice with one key (Orders →
-`a`, or `A` for all); from ⏳ Timer they answer themselves once the question has waited the timer (at
-once in quiet hours, and at once at ⛓️‍💥 Free orks) — their key goes to the agent (core/night.py
+`a`, or `A` for all); on 🕰 the clock they answer themselves once the question has waited its minutes (at
+once in quiet hours, and at once ⛓️‍💥 unchained) — their key goes to the agent (core/night.py
 `judged`), and the log says `sent`.
 
 Only an agent's own question qualifies: a permission menu in a claude / agy session (an `Alert` with
@@ -19,7 +19,7 @@ source "terminal"). The Elders are conservative by design:
    sudo, `curl | sh`, `rm -rf /`…) gets no advice — the question waits for the operator as it is; no
    model is asked. What they only *warn* about (the network, a push, a backtick) goes to the model with
    the Warder's note; the advice then carries a ⚠ and is never sent by the Elders themselves, even at
-   ⛓️‍💥 Free orks — the operator reads the note and decides.
+   ⛓️‍💥 unchained — the operator reads the note and decides.
 2. **Only a one-time yes** may be advised: options like "Yes, and don't ask again", "allow all edits"
    or "always" are never advised. Options are read from their labels ("❯ 1. Yes" as well as "Yes").
 3. **The light model judges** (the Council's Fast Path model, haiku by default) between that one-time
@@ -189,7 +189,7 @@ def judge(alert: Alert, runner: fastpath.Runner | None, context_lines: int = CON
 
 
 def log(repo_root: Path, alert: Alert, decision: Decision, who: str = "", sent: bool = False) -> None:
-    """One judgement; `sent`: the Elders' key went to the agent (from ⏳ Timer)."""
+    """One judgement; `sent`: the Elders' key went to the agent (from 🕰 on the clock)."""
     path = Path(repo_root) / LOG
     record = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "who": who, "question": alert.title[:200],
               "options": dict(alert.options), "mark": mark(alert), **asdict(decision), "sent": sent}
