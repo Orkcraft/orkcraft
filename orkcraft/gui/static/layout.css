@@ -103,13 +103,16 @@ button { font: inherit; color: inherit; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
 .gui-parts .ok-check.is-off { color: var(--ink-muted); }
 .gui-town__room > .gui-roads { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.gui-road polyline { fill: none; stroke: var(--road); stroke-width: 2; stroke-linejoin: miter; }
+.gui-road__line, .gui-road__tint { fill: none; stroke: var(--road); stroke-width: 2; stroke-linejoin: miter; }
+.gui-road__halo { display: none; }          /* Office only (office.css) */
 .gui-road circle { fill: var(--road); }
 .gui-road .gui-road__in { fill: var(--canvas); stroke: var(--road); stroke-width: 2; }
-.gui-road.is-selected polyline { stroke: var(--road-selected); }
+.gui-road.is-selected .gui-road__line { stroke: var(--road-selected); }
 .gui-road.is-selected circle { fill: var(--road-selected); }
 .gui-road.is-selected .gui-road__in { fill: var(--canvas); stroke: var(--road-selected); }
 .gui-road text { fill: var(--ink-muted); }
+.gui-road__label { display: none; }
+.gui-road.is-selected .gui-road__label { display: inline; }
 .gui-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; }
 
 /* A selected building, as the TUI's console (js/console.js): Info fills the room after the War Map and
@@ -271,7 +274,7 @@ button.gui-status__item { cursor: pointer; }
 
 /* Carts on the roads and the signs of roads that wait for a route (js/town.js). A cart moves along its
    road's path (CSS motion path) once, in the time the road takes; a filtered one turns back. */
-.gui-road.is-return polyline:not(.gui-road__hit) { stroke-dasharray: 6 4; }
+.gui-road.is-return .gui-road__line, .gui-road.is-return .gui-road__tint { stroke-dasharray: 6 4; }
 .gui-carts, .gui-signs { position: absolute; inset: 0; pointer-events: none; }
 .gui-carts { z-index: 2; }
 .gui-signs { z-index: 3; }                   /* a road's sign stays readable over a cart passing it */
@@ -311,4 +314,4 @@ button.gui-status__item { cursor: pointer; }
 .gui-tiles__road.is-return { opacity: .6; }
 .gui-tiles__road.is-return.is-bright, .gui-tiles__road.is-return.is-picked { opacity: .9; }
 .gui-tile { position: absolute; width: 32px; height: 32px; background-size: 32px 32px; image-rendering: pixelated; }
-[data-theme="camp"] .gui-road polyline:not(.gui-road__hit), [data-theme="camp"] .gui-road circle { visibility: hidden; }
+[data-theme="camp"] .gui-road :is(.gui-road__line, .gui-road__tint, .gui-road__halo), [data-theme="camp"] .gui-road circle { visibility: hidden; }

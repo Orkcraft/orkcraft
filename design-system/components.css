@@ -211,17 +211,22 @@
 .ok-hut.is-alert.is-hot .ok-hut__label { color: var(--alert-hot); }
 
 [data-theme="office"] .ok-hut, [data-theme="office"] .ok-hut[class] { width: 240px; }
-[data-theme="office"] .ok-hut__card { border: 0; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--frame); padding: var(--space-2) var(--space-3); }
+[data-theme="office"] .ok-hut__card { border: 0; border-radius: var(--radius-md); background: var(--panel-raised); box-shadow: inset 0 0 0 1px var(--hut-frame); padding: var(--space-2) var(--space-3); }
 [data-theme="office"] .ok-hut__label { padding: 0; font: 600 13px/20px var(--font-office); }
 [data-theme="office"] .ok-hut__label .no { font: 400 12px/20px var(--font-office); color: var(--ink-comment); }
 [data-theme="office"] .ok-hut__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-comment); margin-left: auto; align-self: center; }
-[data-theme="office"] .ok-hut.is-busy .ok-hut__dot { background: var(--unit-active); }
+/* Office busy: a meter strip sweeping along the card's foot, not a gold dot (gold is selection only). */
+[data-theme="office"] .ok-hut.is-busy .ok-hut__card::before { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 2px;
+  border-radius: var(--radius-full); pointer-events: none; background: linear-gradient(var(--meter), var(--meter)) no-repeat;
+  background-size: 30% 100%; animation: ok-hut-busy 1.4s ease-in-out infinite; }
+@keyframes ok-hut-busy { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+@media (prefers-reduced-motion: reduce) { [data-theme="office"] .ok-hut.is-busy .ok-hut__card::before { animation: none; background-position: 50% 0; } }
 [data-theme="office"] .ok-hut__lines { padding: 2px 0 4px; font: 400 12px/18px var(--font-office); }
 [data-theme="office"] .ok-hut__acts { gap: 0; padding: 0; margin-left: -6px; }
 [data-theme="office"] .ok-hut.is-selected .ok-hut__card { box-shadow: inset 0 0 0 1px var(--frame-focus); }
 [data-theme="office"] .ok-hut.is-selected .ok-hut__card::after { display: none; }
 [data-theme="office"] .ok-hut.is-selected .ok-hut__label { color: var(--ink); }
-[data-theme="office"] .ok-hut.is-alert .ok-hut__card { box-shadow: inset 0 0 0 1px var(--alert-hot); background: var(--panel); }
+[data-theme="office"] .ok-hut.is-alert .ok-hut__card { box-shadow: inset 0 0 0 2px var(--alert-hot); background: var(--panel-raised); }
 [data-theme="office"] .ok-hut.is-alert .ok-hut__label { color: var(--danger); }
 [data-theme="office"] .ok-hut.is-alert .ok-hut__lines { color: var(--ink-muted); }
 [data-theme="office"] .ok-hut.is-alert .ok-hut__dot { background: var(--alert-hot); }

@@ -185,10 +185,12 @@ A building as it stands on the town map, collapsed. In Camp it is a card with th
   - No flicker under `prefers-reduced-motion` or in 🌙 quiet hours, where a ❓ follows the name instead.
 
 **Office (VS Code)**
-- A 240px card on `panel` with a hairline and `radius-md`. No header.
-- A status dot on the right: grey when idle, `unit-active` when busy, `alert-hot` when waiting.
+- A 240px card on `panel-raised` with a 1px `hut-frame` and `radius-md`, so it keeps its box on the map. No header.
+- A status dot on the right: grey when idle, `alert-hot` when waiting.
+- Busy is a 2px `meter` strip sweeping along the card's foot (still under `prefers-reduced-motion`), never gold: gold is selection only.
 - Text actions.
-- A waiting card turns its outline and name red-orange and adds `?`.
+- A waiting card turns its outline (2px) and name red-orange and adds `?`.
+- With a building selected, every hut that is neither it nor at the other end of one of its roads dims to 40%. A waiting hut never dims.
 
 ## Input
 A single-line text field: answers to an ork, building names, the Builder chat.
@@ -243,7 +245,12 @@ A subscription between two buildings, with carts (events) travelling from the ex
 - The straight tile (`roads/straight.png`, rotated by the app for vertical roads), the dead end (`roads/end.png`), the crossing (`roads/cross.png`; the app cuts tees from it), the exit gate (`roads/gate-out.png`: the road's rounded start with a gold arrow post pointing along it), the entry gate (`roads/gate-in.png`: the rounded end with a gold ring post) and the mine cart's side and front views exist; the tile set above shows the tiles at 2×. A road that leads nowhere (its target building was removed) ends in the dead-end tile instead of an entry gate. Only the corner is still to come.
 
 **Office**
-- 2px lines with dot gates.
+- The town reads as a block diagram: 2px lines, an exit dot and a filled arrowhead at the entry.
+- A plain road (no handler) is dashed in `road`. A road a handler works on is solid in `road-live` (moss green).
+- Every road carries its label, in `ink-muted` on a `canvas` halo, at the middle of its longest straight run.
+- Bends turn on `radius-md` (4px). Where roads cross, the later one's `canvas` halo breaks the one below.
+- Roads that would share a path take lanes of their own, one cell (8px) apart.
+- With a building selected, its roads out turn `road-selected` (gold), its roads in keep their colour, and every other road dims to 40%.
 - Carts are round dots in their status colours, with a pill label.
 
 **Motion.** Carts move at about 8 fps. More than six on one road collapse into a counter (×N).

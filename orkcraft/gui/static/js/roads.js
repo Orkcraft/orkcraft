@@ -1,12 +1,14 @@
 // Where roads run on the town: gates on the huts and orthogonal paths between them, as the TUI
 // lays them (wm/roadmap.py, ported: the page plans them itself, so a road follows a hut while it is
 // dragged). Gates sit on the side of a hut that faces the other end, several on one side spread
-// evenly; paths are A* on a grid of CELL px where a step under a hut costs WINDOW_COST and a turn
-// TURN_COST, so roads keep to the gaps and turn as little as they can.
+// evenly; paths are A* on a grid of CELL px where a step under a hut costs WINDOW_COST, a turn
+// TURN_COST and a step on a cell an earlier road took LANE_COST, so roads keep to the gaps, turn as
+// little as they can and run side by side in lanes of their own instead of on top of each other.
 
 const CELL = 8;
 const WINDOW_COST = 40;
 const TURN_COST = 3;
+const LANE_COST = 6;
 const STEP = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -97,8 +99,9 @@ function pop(heap) {
   return top;
 }
 
-/** The cheapest orthogonal path of cells from `start` to `end`, both included. */
-export function route(start, end, under, width, height) {
+/** The cheapest orthogonal path of cells from `start` to `end`, both included. `taken` (optional): the
+ * cells earlier roads run on, which cost LANE_COST more to step on. */
+export function route(start, end, under, width, height, taken = null) {
   const [sx, sy] = start, [ex, ey] = end;
   if (sx === ex && sy === ey) return [start];
   const key = (x, y, d) => (y * width + x) * 4 + d;
@@ -123,7 +126,8 @@ export function route(start, end, under, width, height) {
     for (let nd = 0; nd < 4; nd++) {
       const nx = x + DIRS[nd][0], ny = y + DIRS[nd][1];
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      const nc = cost + (under[ny * width + nx] ? WINDOW_COST : 1) + (nd !== d ? TURN_COST : 0);
+      const nc = cost + (under[ny * width + nx] ? WINDOW_COST : 1) + (nd !== d ? TURN_COST : 0)
+        + (taken && taken[ny * width + nx] ? LANE_COST : 0);
       const k = key(nx, ny, nd);
       if (nc < (best.get(k) ?? Infinity)) {
         best.set(k, nc);
@@ -175,12 +179,14 @@ export function plan(rects, roads, roomW, roomH, ports = rects) {
   }
   const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
   const all = gates(geoms, roads, ports !== rects);
+  const taken = new Uint8Array(width * height);
   const out = [];
   for (const r of roads) {
     const g = all[r.id];
     if (!g || !g.exit || !g.entry) continue;
     const outside = (gate) => clamp([gate.x + STEP[gate.side][0], gate.y + STEP[gate.side][1]]);
-    const cells = route(outside(g.exit), outside(g.entry), under, width, height);
+    const cells = route(outside(g.exit), outside(g.entry), under, width, height, taken);
+    for (const [x, y] of cells) taken[y * width + x] = 1;
     const exit = edgePoint(g.exit, ports[r.from]), entry = edgePoint(g.entry, ports[r.to]);
     // From the edge straight out along the gate's side, then cell by cell, then straight in.
     const first = centre(cells[0]), last = centre(cells[cells.length - 1]);

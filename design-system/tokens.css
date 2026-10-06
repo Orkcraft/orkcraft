@@ -10,6 +10,7 @@
   --bevel-lo: #050403;
   --selection: #1f3a5c;
   --frame: #8a6a2e;
+  --hut-frame: #8a6a2e;
   --frame-strong: #6a9a6f;
   --frame-focus: #e8b94a;
   --ink: #e8e0c8;
@@ -41,6 +42,7 @@
   --road: #5c4326;
   --road-bright: #a0703c;
   --road-selected: #d9a066;
+  --road-live: #5c4326;
   --tier-elder: #c084fc;
   --tier-warrior: #f87171;
   --tier-laborer: #a8a29e;
@@ -75,6 +77,7 @@
   --bevel-lo: #020508;
   --selection: #1f3a5c;
   --frame: #2b4763;
+  --hut-frame: #2b4763;
   --frame-strong: #4f7aa3;
   --frame-focus: #82aaff;
   --ink: #dbe6ef;
@@ -106,6 +109,7 @@
   --road: #5c4326;
   --road-bright: #a0703c;
   --road-selected: #d9a066;
+  --road-live: #5c4326;
   --tier-elder: #c084fc;
   --tier-warrior: #f87171;
   --tier-laborer: #a8a29e;
@@ -140,6 +144,7 @@
   --bevel-lo: #000000;
   --selection: #2a2a3a;
   --frame: #22262b;
+  --hut-frame: #22262b;
   --frame-strong: #6b6b6b;
   --frame-focus: #c99a3e;
   --ink: #e8e0c8;
@@ -171,6 +176,7 @@
   --road: #5c4326;
   --road-bright: #a0703c;
   --road-selected: #d9a066;
+  --road-live: #5c4326;
   --tier-elder: #c084fc;
   --tier-warrior: #f87171;
   --tier-laborer: #a8a29e;
@@ -205,6 +211,7 @@
   --bevel-lo: #0f0d09;
   --selection: #3d3420;
   --frame: #3a3427;
+  --hut-frame: #6b6352;
   --frame-strong: #7a6e55;
   --frame-focus: #e8b94a;
   --ink: #ece4cf;
@@ -233,9 +240,10 @@
   --day-quiet: #3b2f4a;
   --day-office: #6b6352;
   --quiet-ink: #c09ab8;
-  --road: #4a4334;
+  --road: #8f8166;
   --road-bright: #7a6e55;
   --road-selected: #e8b94a;
+  --road-live: #6aa84f;
   --tier-elder: #c79af5;
   --tier-warrior: #f2806f;
   --tier-laborer: #aca38a;

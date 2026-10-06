@@ -1,7 +1,9 @@
 // The town: every building of the orkspace as a hut card where the person put it, and the roads
-// between them. Office draws huts as explorer cards and roads as 2px lines with dot gates
-// (design-system/components.md: Hut, Road). Positions are the person's: dragging a hut saves its
-// spot as fractions of the room (`hut` in the Town Scroll, the same the TUI reads).
+// between them. Office draws huts as explorer cards and roads as a block diagram: 2px lines with an
+// exit dot and an arrowhead, dashed when plain, moss green when a handler works on them, labelled,
+// rounded at the bends and broken where another road crosses over (design-system/components.md: Hut,
+// Road). Positions are the person's: dragging a hut saves its spot as fractions of the room (`hut`
+// in the Town Scroll, the same the TUI reads).
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -152,22 +154,61 @@ function Signs({ paths, roads }) {
   </div>`;
 }
 
+const BEND_PX = 4;                          // Office rounds a road's bends (radius-md); Camp keeps them square
+
+/** A road's corners as a path, each bend rounded by up to `r` px. */
+function pathOf(points, r) {
+  const at = (p) => `${p[0]} ${p[1]}`;
+  let d = `M ${at(points[0])}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const [a, p, b] = [points[i - 1], points[i], points[i + 1]];
+    const la = Math.hypot(p[0] - a[0], p[1] - a[1]), lb = Math.hypot(b[0] - p[0], b[1] - p[1]);
+    const k = Math.min(r, la / 2, lb / 2);
+    if (!k) { d += ` L ${at(p)}`; continue; }
+    const p1 = [p[0] - ((p[0] - a[0]) / la) * k, p[1] - ((p[1] - a[1]) / la) * k];
+    const p2 = [p[0] + ((b[0] - p[0]) / lb) * k, p[1] + ((b[1] - p[1]) / lb) * k];
+    d += ` L ${at(p1)} Q ${at(p)} ${at(p2)}`;
+  }
+  return d + ` L ${at(points[points.length - 1])}`;
+}
+
+/** Where a road's label goes: the middle of its longest straight run, above it or beside it. */
+function labelSpot(points) {
+  let best = 0, len = -1;
+  for (let i = 1; i < points.length; i++) {
+    const l = Math.abs(points[i][0] - points[i - 1][0]) + Math.abs(points[i][1] - points[i - 1][1]);
+    if (l > len) { len = l; best = i; }
+  }
+  const [a, b] = [points[best - 1] || points[0], points[best] || points[0]];
+  const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
+  return a[1] === b[1] ? { x, y: y - 6, anchor: "middle" } : { x: x + 6, y: y + 4, anchor: "start" };
+}
+
+// The arrowheads Office puts at a road's entry, one per colour a road can wear (layout.css picks one).
+const HEADS = [["gui-road-head", "--road"], ["gui-road-head-live", "--road-live"], ["gui-road-head-selected", "--road-selected"]];
+
 function Roads({ roads, rects, ports, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const active = opened.value.active;
-  return html`<svg class="gui-roads" width=${r.w} height=${r.h} aria-hidden="true">
+  const bend = snapshot.value && snapshot.value.look === "office" ? BEND_PX : 0;
+  return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
+    <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8"
+      markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 8 4 L 0 8 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
     ${plannedPaths(rects, roads, ports).map((p) => {
       const road = byId[p.id];
-      const sel = active === road.from || active === road.to;
-      const mid = along(p.points, 0.5);
-      const pts = p.points.map((q) => q.join(",")).join(" ");
-      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": sel || pickedRoad.value === p.id, "is-return": road.returns })}>
-        <polyline points=${pts} />
-        ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
-        <polyline points=${pts} class="gui-road__hit" onClick=${() => { pickedRoad.value = p.id; }} />
-        <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
-        ${sel && !road.sign && html`<text x=${mid[0] + 6} y=${mid[1] - 6} class="ok-font-status">${road.label}</text>`}
+      const out = active === road.from, into = active === road.to;
+      const d = pathOf(p.points, bend);
+      const spot = labelSpot(p.points);
+      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": out || into || pickedRoad.value === p.id,
+                                                         "is-out": out, "is-in": into && !out, "is-live": !!road.handler,
+                                                         "is-return": road.returns })}>
+        <path d=${d} class="gui-road__halo" />
+        <path d=${d} class="gui-road__line" />
+        ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} class="gui-road__tint" style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
+        <path d=${d} class="gui-road__hit" onClick=${() => { pickedRoad.value = p.id; }} />
+        <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" class="gui-road__out" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
+        ${!road.sign && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${road.label}</text>`}
       </g>`;
     })}
     ${pulling.value && rects[pulling.value.from] && html`<line class="gui-road__pull"
@@ -235,12 +276,16 @@ export function Town({ buildings, roads }) {
   const gatesOn = camp ? ports : rects;               // Office: the hut is its card
   const paths = plannedPaths(rects, here, gatesOn);
   const snap = snapshot.value;
+  // With a building selected, Office dims every hut that is neither it nor at the other end of one of its roads.
+  const active = opened.value.active;
+  const near = new Set(active ? here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])) : []);
+  const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare}>
     <div class="gui-town__room" style=${`width:${room.value.w}px;height:${room.value.h}px`}>
       ${camp && html`<${RoadTiles} paths=${paths} roads=${here} />`}
       <${Roads} roads=${here} rects=${rects} ports=${gatesOn}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
-      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} onMoved=${moved} />`)}
+      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} onMoved=${moved} />`)}
       <${Signs} paths=${paths} roads=${here} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0}
         camp=${!!snap && snap.look === "camp"} />
