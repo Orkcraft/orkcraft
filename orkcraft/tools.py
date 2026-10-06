@@ -152,6 +152,12 @@ def _codex_login(env: dict, home: Path, path: str = "", run: Callable | None = N
     return None, "subscription"
 
 
+def codex_login(path: str = "", run: Callable = subprocess.run, env: dict | None = None,
+                home: Path | None = None) -> tuple[bool | None, str]:
+    """(logged in, billing) of Codex as onboarding tells it: what ⏳ Limits asks before reading its windows."""
+    return _codex_login(dict(os.environ) if env is None else env, Path.home() if home is None else home, path, run)
+
+
 def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = subprocess.run,
            env: dict | None = None, home: Path | None = None) -> list[ToolStatus]:
     env = dict(os.environ) if env is None else env

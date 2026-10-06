@@ -195,4 +195,4 @@ def test_the_warchief_of_the_sandbox_answers_from_the_catalog(fake_repo: Path):
     assert w.ask("I want a board for tasks and notes") == ""
     assert not w.thinking and w.chat[-1]["card"]["type"] == "fields" and "demo" in w.chat[-1]["text"]
     w.read_limits()
-    assert w.lowest() == ["claude 62% left", "agy 40% left"]
+    assert w.lowest() == ["claude 62% left", "agy 40% left", "codex 70% left"]

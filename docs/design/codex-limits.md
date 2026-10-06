@@ -1,6 +1,9 @@
 # Design — 🪙 Codex: its limits and its spend
 
-Status: design notes, written 2026-10-06. Nothing here is implemented.
+Status: design notes, written 2026-10-06. §5.1 (the ⏳ Limits row) is built
+(`orkcraft/quota/codex_quota.py`): the plain `codex` bucket's rows are `5h` / `weekly`, another bucket
+names itself with its window (`gpt-6-astra 5h`), and the plan, credits and `as of` go into the row's
+`note`, so each window keeps its own name on the Tally Crag. §5.2 (pricing) is not built.
 Answers the roadmap item "🪙 Codex: its limits and its spend" (`docs/roadmap.md`).
 
 Codex sources were read at `openai/codex` main, commit `685270a` (2026-10-05); the newest stable

@@ -1,0 +1,2 @@
+{"timestamp": "2026-10-06T10:00:00.000Z", "type": "session_meta", "payload": {"id": "t-rfc", "cli_version": "0.50.0"}}
+{"timestamp": "2026-10-06T10:00:05.000Z", "type": "event_msg", "payload": {"type": "token_count", "info": null, "rate_limits": {"primary": {"used_percent": 45.0, "window_minutes": 300, "resets_at": "2026-10-06T14:00:00Z"}, "secondary": {"used_percent": 70.0, "window_minutes": 10080, "resets_at": "2026-10-09T09:00:00+00:00"}}}}

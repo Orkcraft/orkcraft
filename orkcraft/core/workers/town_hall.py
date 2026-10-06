@@ -10,7 +10,7 @@
   carries a card (core/warchief.py): the Town Builder's plan (made here, in a thread, then the Council's
   rules), one building of the catalog, or a face's job (a road, an ork, a keeper's change, `bus.ORDER`).
   A card is answered by `card_act` (build, cancel, undo). The chat is kept in `chat.jsonl`.
-- **Limits**: spend against the run's budget, and the claude / agy quotas read in a thread every
+- **Limits**: spend against the run's budget, and the claude / agy / codex quotas read in a thread every
   `LIMITS_REFRESH_S` (`read_limits()`).
 
 The sandbox (`orkcraft --demo`) never calls a model nor a CLI: the Warchief answers from the
@@ -30,7 +30,7 @@ from orkcraft.core import bus, runners, warchief
 from orkcraft.core import roads as core_roads
 from orkcraft.core.workers import Worker
 from orkcraft.realm import audit, catalog, elders, fastpath, feedback, optimize, pipes, town_presets, weekly
-from orkcraft.sources.limits import Limit, fetch_limits
+from orkcraft.sources.limits import PROVIDERS, Limit, fetch_limits
 
 TOWN_HALL = "town_hall"
 CHAT_FILE = "chat.jsonl"
@@ -43,7 +43,8 @@ LIMITS_REFRESH_S = 10 * 60      # as the TUI's Limits
 BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "lays out its panes and hut"))
 
 DEMO_LIMITS = (Limit("claude", "", "5h session", 0.62, None), Limit("claude", "", "weekly", 0.81, None),
-               Limit("agy", "", "daily", 0.4, None))
+               Limit("agy", "", "daily", 0.4, None), Limit("codex", "plus", "5h", 0.9, None),
+               Limit("codex", "plus", "weekly", 0.7, None))
 
 PROMPT = """You are the Warchief, the lead ork of an Orkcraft town. A town is a project: buildings (typed
 modules) take carts (messages) along roads (links) and orks (agents) work in them. The person who runs
@@ -499,7 +500,7 @@ class TownHallWorker(Worker):
     def lowest(self) -> list[str]:
         """The lowest remaining quota per provider: `claude 62% left`."""
         out = []
-        for provider in ("claude", "agy"):
+        for provider in PROVIDERS:
             left = [x.remaining for x in self.limits or () if x.provider == provider and x.remaining is not None]
             if left:
                 out.append(f"{provider} {round(min(left) * 100)}% left")
