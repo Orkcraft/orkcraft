@@ -181,3 +181,17 @@ def test_clan_fire_shows_the_cycles_of_the_document_sent_back(fake_repo):
     d = host.detail(bid)["data"]
     assert d["current"]["cycle"] == 3 and [c["cycle"] for c in d["cycles"]] == [1, 2]    # not the approved one
     assert [h["outcome"] for h in d["history"]] == ["rework", "rework", "approved"]
+
+
+def test_closing_the_window_does_not_leave_the_barracks_paused(fake_repo):
+    """Closing the window stops the orks, but only 🛑 Halt All or ⏸ pauses the barracks: a task written
+    after the next launch is taken up, not parked as `paused`."""
+    host = _host(fake_repo)
+    bid = _raised(host, "barracks", worktrees=False)
+    host.close()
+    assert not host.town.worker(bid).state.paused
+    again = _host(fake_repo)
+    assert not again.town.worker(bid).state.paused
+    host.command("act", {"id": bid, "act": "pause"})
+    host.close()
+    assert _host(fake_repo).town.worker(bid).state.paused            # the operator's own ⏸ is kept

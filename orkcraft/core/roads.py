@@ -9,7 +9,7 @@ from __future__ import annotations
 from orkcraft import scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import catalog, pipes
+from orkcraft.realm import catalog, pipes, road_planner
 
 
 def choices(town: Town, source_id: str, target_id: str) -> list[tuple[str, str | None, str]]:
@@ -45,12 +45,50 @@ def listenable(town: Town, source_id: str, target_id: str) -> list[tuple[str, st
                                                               handler=True)]
 
 
+def _help(event: str) -> str:
+    for t in catalog.TYPES.values():
+        e = t.event(event.partition("#")[0])
+        if e is not None:
+            return e.help
+    return ""
+
+
+def contract(town: Town, target_id: str, source_id: str | None = None,
+             among: list[str] | None = None) -> tuple[road_planner.Target, list[road_planner.Source]]:
+    """What the road planner sees: what the receiver takes and what each building that could send it
+    sends — `source_id` alone when the road was drawn from it, else every building (of `among`)."""
+    sc = town.scroll
+    tgt = sc.building(target_id) if sc is not None else None
+    if tgt is None:
+        raise ValueError(f"unknown building {target_id!r}")
+    tspec = town.custom_specs.get(target_id)
+    target = road_planner.Target(target_id, tgt.title, catalog.takes(catalog.type_of(tspec).id) if tspec else "")
+    ids = [source_id] if source_id else [b.id for b in sc.buildings if not b.demolished]
+    if among is not None and not source_id:
+        ids = [i for i in ids if i in set(among)]
+    sources = []
+    for sid in ids:
+        src = sc.building(sid)
+        if src is None or src.demolished or sid == target_id:
+            continue
+        spec = town.custom_specs.get(sid)
+        plain = tuple(road_planner.Event(ev, label.removeprefix("plain · "), _help(ev))
+                      for ev, h, label in choices(town, sid, target_id) if h is None)
+        ruled = tuple(road_planner.Event(ev, label, _help(ev)) for ev, label in listenable(town, sid, target_id))
+        sources.append(road_planner.Source(sid, src.title, catalog.type_of(spec).summary if spec else "", plain, ruled))
+    return target, sources
+
+
 def lay(town: Town, target_id: str, source_id: str, event: str, handler: str | None,
-        quiet: bool = False) -> scroll.Road | None:
+        quiet: bool = False, match: str = "") -> scroll.Road | None:
     """A road from `source_id` into `target_id` on `event` (`signpost.routed#<route>`: a road that
-    waits for that route). `quiet`: one of many (a town plan) — no toast and no checkpoint of its own."""
+    waits for that route; `match`: only what the regex finds in a cart leaves the source).
+    `quiet`: one of many (a town plan) — no toast and no checkpoint of its own."""
     event, _, route = event.partition("#")
-    flt = {"route": [route]} if route else None
+    flt = {"route": [route]} if route else {}
+    if match:
+        flt["match"] = match
+    flt = flt or None
     try:
         road = scroll.subscribe(town.scroll, target_id, source_id, event, flt, handler=handler, label=route)
     except ValueError as e:

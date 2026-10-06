@@ -427,9 +427,11 @@ async def test_failing_tests_send_it_back_without_asking_the_model(fake_repo: Pa
 
 
 @pytest.mark.asyncio
-async def test_nothing_committed_is_not_accepted(fake_repo: Path, monkeypatch):
-    crew = Crew()
-    monkeypatch.setattr(BarracksWorker, "git", FakeGit(commits=0))
+async def test_nothing_committed_goes_to_the_steward_who_sends_a_change_back(fake_repo: Path, monkeypatch):
+    crew, steward = Crew(), Steward(verdicts=["REWORK: commit the change"])
+    git = FakeGit(commits=0)
+    monkeypatch.setattr(BarracksWorker, "git", git)
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
     app = _app(fake_repo, monkeypatch, crew, max_orcs=1, max_reworks=0)
     async with app.run_test(size=SIZE) as pilot:
         view, sent = await _open(pilot, app)
@@ -437,7 +439,26 @@ async def test_nothing_committed_is_not_accepted(fake_repo: Path, monkeypatch):
         assert await _until(pilot, _calls_done(crew, 1))
         crew.finish(0)
         assert await _until(pilot, lambda: view.state.tasks[0].status == "asked")
-        assert "nothing was committed" in view.state.tasks[0].question
+        assert "commit the change" in view.state.tasks[0].question
+        assert "nothing committed" in steward.prompts[-1] and git.published == []
+
+
+@pytest.mark.asyncio
+async def test_a_question_answered_in_the_report_is_done_without_a_commit(fake_repo: Path, monkeypatch):
+    """"Find me what is known about Shakira": the report is the answer — accepted, no pull request, no rework."""
+    crew = Crew()
+    git = FakeGit(commits=0)
+    monkeypatch.setattr(BarracksWorker, "git", git)
+    app = _app(fake_repo, monkeypatch, crew, max_orcs=1)
+    async with app.run_test(size=SIZE) as pilot:
+        view, sent = await _open(pilot, app)
+        _arrive(app, "T8102")
+        assert await _until(pilot, _calls_done(crew, 1))
+        assert "needs no commit" in crew.calls[0]["prompt"]
+        crew.finish(0)
+        assert await _until(pilot, lambda: view.state.tasks[0].status == "done")
+        task = view.state.tasks[0]
+        assert task.attempts == 1 and task.scope == "local" and task.pr == "" and git.published == []
 
 
 @pytest.mark.asyncio

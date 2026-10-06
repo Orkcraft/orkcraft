@@ -126,6 +126,7 @@ async def test_y_subscribes_the_receiver(fake_repo: Path):
         await pilot.press(str(chat.number))
         await _settle(pilot)
         assert isinstance(app.screen, SubscribeModal)
+        await pilot.press("down")                      # past "💬 Say it in words…": the first event
         await pilot.press("enter")
         await _settle(pilot)
         [road] = app.scroll.building("loot").roads

@@ -215,6 +215,9 @@ OUTSIDE_RULE = ("Never act outside this repository yourself: do not post, send o
                 "with one line `PUBLISH: <where>` (e.g. `PUBLISH: Jira, project APP, a new Bug`) and below it exactly "
                 "what goes out — the title, the fields, the text. The operator approves it first; then you post it.")
 
+ANSWER_RULE = ("When the task only asks a question or for information (find, explain, compare), your report is the "
+               "answer: write it there in full; it needs no commit.")
+
 
 def publish_prompt(task: PoolTask) -> str:
     return "\n\n".join(p for p in [
@@ -291,7 +294,8 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         f"## The orc's report\n\n{report.strip() or '(none)'}",
         f"## Tests\n\n{tests}" if tests else "",
         f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```" if diff.strip()
-        else "## The diff\n\n(nothing committed: the report is the document)",
+        else "## The diff\n\n(nothing committed: the report is the work. That is enough when the task asks a "
+             "question or for information; when it asks for changes, they had to be committed.)",
         "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
         "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "

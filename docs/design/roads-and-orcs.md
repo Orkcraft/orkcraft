@@ -144,6 +144,26 @@ today's garrison lead becomes the steward; other members become agent handlers w
   person sees it on the road before its building acts — `tools/landing_flow.py` films with it. The
   GUI draws every cart moving from gate to gate (`js/town.js`), a filtered one turning back.
 
+## 5b. Roads in words (implemented)
+
+Few people think in events, so a road starts with what the person wants: *"listen to unread messages
+and make to-dos of them"*. The receiver's steward reads it (`realm/road_planner.py`, one model call)
+and offers up to three roads; the person picks one, the event list waits folded below.
+
+- **Two ways in.** *➕ Listen* on the receiver knows only the target: the steward picks the source among
+  the buildings in view. An arrow drawn from one building's + to another knows both: it picks the event.
+  The TUI's `Y` → a source → *💬 Say it in words…* is the second.
+- **What it sees.** The contracts, never the town's content: what the receiver takes
+  (`catalog.takes`), and per building what a plain road from it carries and what a rule's handler can
+  take (`core/roads.contract`).
+- **What it may offer.** A plain road on an event the source declares, with a `match` filter at the
+  source when only some carts should go ("unread", "from my boss"); or a road with a **rule**, which
+  goes on to the Recruiter and the Council as *Listen with a prompt* does. Events are never invented:
+  a filter or a rule narrows what a type sends. When nothing fits it says what is missing.
+- **Checked.** Every option is checked against the sources' events, the filter schema and a copy of
+  the scroll (`subscribe`: duplicates, loops, limits); what fails is dropped, and when nothing holds the
+  steward gets the problems back once more.
+
 ## 6. Open for later
 
 - `on_stream` roads and which receiver consumes a raw stream.

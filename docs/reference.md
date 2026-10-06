@@ -506,6 +506,11 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   mock carts run in a sandbox (an empty folder, a bare environment, a timeout) before you approve;
   the open Workshop shows its runs as a log, a table or a card, `e` edits the script, 🧪 reruns
   the mocks.
+- **Roads in words.** *➕ Listen* in the GUI (or an arrow drawn from a building's + to another) asks
+  what it should listen to and what should happen to it — *"unread messages become to-dos"*. The
+  receiver's steward offers up to three roads (an event, a filter, or a rule an ork handles); picking
+  the event or the building by hand is folded below. In the TUI: `Y`, the source, *💬 Say it in words…*
+  (docs/design/roads-and-orcs.md §5b).
 - **Roads with a prompt.** `Y`, then click the source building (or press its number); "✨ Listen
   with a prompt…" takes one or several of its events and says how to handle them. The Recruiter
   makes the handler — a chain or a script whenever the rule needs no judgement — then the Council

@@ -109,19 +109,17 @@ function HistoryDialog({ b, ork, tool, onClose }) {
   </${Dialog}>`;
 }
 
-/** Pick the building a new road comes from (➕ Listen); the road itself is the Road dialog's. */
+/** ➕ Listen: the road dialog in words, the steward picks the source among the buildings here (build.js). */
 function ListenDialog({ b, onClose }) {
-  const t = town.value;
-  const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
-  const here = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
-  here.add(HALL);
-  const sources = t.buildings.filter((x) => x.id !== b.id && here.has(x.id));
-  const pick = (from) => { onClose(); laying.value = { from, to: b.id }; };
-  return html`<${Dialog} title=${say(`Listen — ${b.title}`)} text=${say("Which building should it listen to?")} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>`}>
-    <ul class="gui-catalog">${sources.map((x) => html`<li key=${x.id} class="gui-catalog__item" onClick=${() => pick(x.id)}>
-      <b>${x.title}</b></li>`)}</ul>
-  </${Dialog}>`;
+  useEffect(() => {
+    const t = town.value;
+    const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
+    const here = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
+    here.add(HALL);
+    laying.value = { from: null, to: b.id, among: t.buildings.filter((x) => x.id !== b.id && here.has(x.id)).map((x) => x.id) };
+    onClose();
+  }, []);
+  return null;
 }
 
 // -- Info: what every building and ork shares --------------------------------------------------------

@@ -526,10 +526,12 @@ class BarracksWorker(PlanMixin, Worker):
         if git is not None:
             commits, diff = git.diff(workdir, task.base, task.branch)
             files = out.files = bk.changed_files(diff)
-            if commits == 0 and not meeting and not draft:
-                out.accepted, out.notes = False, "nothing was committed on the branch — commit your work"
+            if commits == 0 and not meeting and not draft and not out.text.strip():
+                out.accepted, out.notes = False, "nothing was committed on the branch and there is no report"
                 return
         rule = bk.scope_rule(files, meeting) or (bk.EXTERNAL if draft else "")
+        if git is not None and commits == 0 and not draft:   # an answer, not a change: the report is the work
+            rule = bk.LOCAL
         cmd = str(self.config.get("test_cmd") or "") if git is not None and commits and rule != bk.LOCAL else ""
         if cmd:
             passed, tail = git.test(workdir, cmd, cancel)
@@ -587,7 +589,7 @@ class BarracksWorker(PlanMixin, Worker):
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
-                 decisions, sent_back, ask, bk.OUTSIDE_RULE,
+                 decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
                  "no pull request." if self._meeting(task) else "",
                  "Finish with a short Markdown report: what you changed, what is left."]
@@ -820,6 +822,10 @@ class BarracksWorker(PlanMixin, Worker):
         self.state.save()
         self.changed()
         return running
+
+    def close(self) -> int:
+        """The window closes: every orc and the steward stop, the barracks keeps its own ⏸ / ▶."""
+        return self.stop()
 
     # -- the hut ----------------------------------------------------------------------------------
 

@@ -124,7 +124,21 @@ function ReportView({ job, v }) {
   </div>`;
 }
 
-const JOB_TITLE = { recruit: "Recruiter", watch: "Steward", redesign: "Redesign" };
+const JOB_TITLE = { recruit: "Recruiter", watch: "Steward", redesign: "Redesign", road: "Listen" };
+
+/** The roads the steward offers for what the person said (gui/road_planner.py): lay one, or hand it to the
+ *  Recruiter when an ork has to read the carts by a rule. */
+function RoadOptions({ job, v }) {
+  const take = (index) => command("job.accept", { job: job.id, index }).catch(() => {});
+  if (!v.options.length) return html`<p>${say("No road fits:")} ${v.missing}</p>`;
+  return html`<ul class="gui-rows">${v.options.map((o) => html`<li key=${o.index}>
+      <div>${o.say}</div>
+      <div class="ok-font-status ok-tone-muted">${o.from} · ${o.event}${o.match ? ` · only “${o.match}”` : ""}
+        ${o.rule ? html` · ${say("an ork by the rule:")} ${o.rule}` : ""}</div>
+      <button class="ok-act" onClick=${() => take(o.index)}><span class="ok-act__label">${o.rule ? say("Hire an ork for it") : say("Lay it")}</span></button>
+    </li>`)}</ul>
+    ${v.cost && html`<p class="ok-font-status ok-tone-muted">${v.cost}</p>`}`;
+}
 
 /** The oldest job of the console, as a dialog: running, ready to take, the Council's notes, failed. */
 export function Jobs() {
@@ -143,6 +157,11 @@ export function Jobs() {
   if (job.state === "failed") {
     return html`<${Dialog} title=${title} text=${job.error} onCancel=${drop} warn
       actions=${html`<button class="ok-btn primary" onClick=${drop}>${say("Close")}</button>`} />`;
+  }
+  if (job.kind === "road") {
+    return html`<${Dialog} title=${title} text=${job.view.options.length ? say("Pick the road to lay.") : ""} onCancel=${drop}
+        actions=${html`<button class="ok-btn" onClick=${drop}>${say("Cancel")}</button>`}>
+      <${RoadOptions} job=${job} v=${job.view} /></${Dialog}>`;
   }
   if (job.kind === "recruit") {
     const blocked = job.view.blocked;

@@ -4,11 +4,16 @@ A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
 from __future__ import annotations
 
+import copy
+
 from orkcraft import scroll
-from orkcraft.realm import fastpath, pipes
+from orkcraft.realm import builders, fastpath, pipes, road_planner
+from orkcraft.screens.dialogs import MessageModal, TextPrompt
+from orkcraft.screens.orc_flow import OrcProgress
 from orkcraft.screens.road_rule_modal import RoadRuleModal
-from orkcraft.screens.road_modal import PLAIN, RULE, RoadHandlerModal, SubscribeModal
+from orkcraft.screens.road_modal import PLAIN, RULE, WORDS, RoadHandlerModal, RoadPlanModal, SubscribeModal
 from orkcraft.core import roads as core_roads
+from orkcraft.core import runners
 from orkcraft.scroll import split_key
 
 
@@ -30,8 +35,13 @@ class RoadsMixin:
         if not choices:
             self.notify(f"{tgt_title} can take nothing from {src_title}", title="Roads")
             return
+        if not self.demo:
+            choices.insert(0, ("*", WORDS, "💬 Say it in words… — the steward finds the road"))
 
         def done(choice: tuple[str, str | None] | None) -> None:
+            if choice and choice[1] == WORDS:
+                self.road_in_words(target_id, source_id)
+                return
             if choice and choice[1] == RULE:
                 self.road_with_rule(target_id, source_id)
                 return
@@ -75,6 +85,62 @@ class RoadsMixin:
 
         self.push_screen(RoadRuleModal(src.title if src else source_id, tgt.title if tgt else target_id, events,
                                        picked, note), done)
+
+    def road_in_words(self, target_id: str, source_id: str, said: str = "") -> None:
+        """💬 What the road should carry and what should happen to it → the receiver's steward offers roads
+        (realm/road_planner.py, a thread) → a plain one is laid after the Council; one with a rule goes on
+        to the Recruiter."""
+        src, tgt = self.scroll.building(source_id), self.scroll.building(target_id)
+        src_title, tgt_title = (src.title if src else source_id), (tgt.title if tgt else target_id)
+
+        def asked(text: str | None) -> None:
+            if not text or not text.strip():
+                return
+            if self.gold_exhausted():
+                self.notify("🪙 budget exhausted — the steward costs a model call", title="Roads", severity="warning")
+                return
+            target, sources = core_roads.contract(self.core, target_id, source_id)
+            snapshot = copy.deepcopy(self.scroll)
+            self.push_screen(OrcProgress(f"💬 {tgt_title}'s steward is looking for the road…"))
+
+            def work() -> None:
+                plan = road_planner.plan(text, target, sources, snapshot, runners.ROAD_RUNNER or builders.claude_runner)
+                self.call_from_thread(self._on_road_planned, target_id, source_id, text, plan)
+
+            self.run_worker(work, thread=True, name="road-planner")
+
+        self.push_screen(TextPrompt(f"💬 {src_title} → {tgt_title}", said,
+                                    placeholder="e.g. listen to unread messages and make to-dos of them",
+                                    help="What should the road carry, and what should happen to it?"), asked)
+
+    def _on_road_planned(self, target_id: str, source_id: str, said: str, plan: road_planner.RoadPlan) -> None:
+        if isinstance(self.screen, OrcProgress):
+            self.screen.dismiss(None)
+        src, tgt = self.scroll.building(source_id), self.scroll.building(target_id)
+        src_title, tgt_title = (src.title if src else source_id), (tgt.title if tgt else target_id)
+        if not plan.ok:
+            why = plan.missing or plan.error or "the steward gave none"
+            self.push_screen(MessageModal("💬 No road fits", why), lambda _: None)
+            return
+        rows = [(o.say, f"{pipes.label(o.event.partition('#')[0])}" + (f" · only “{o.match}”" if o.match else "")
+                 + (f" · an ork by the rule: {o.rule}" if o.rule else "")) for o in plan.options]
+        cost = f"${plan.cost_usd:.2f}" if plan.cost_usd is not None else ""
+
+        def picked(index: int | None) -> None:
+            if index is None:
+                return
+            o = plan.options[index]
+            if o.rule:
+                self.recruit_from_prompt(target_id, o.rule, road=[(o.source, o.event)],
+                                         on_rejected=lambda why: self.road_in_words(target_id, source_id, said))
+                return
+            base, _, route = o.event.partition("#")
+            subject = fastpath.Subject("road", f"{source_id}->{target_id}", {
+                "source": source_id, "target": target_id, "event": base, "handler_kind": "", "filter": o.filter})
+            self.council_gate(subject, lambda: core_roads.lay(self.core, target_id, source_id, o.event, None,
+                                                              match=o.match))
+
+        self.push_screen(RoadPlanModal(src_title, tgt_title, rows, cost), picked)
 
     def _roads_changed(self) -> None:
         self.desktop.save()

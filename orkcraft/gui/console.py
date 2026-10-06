@@ -26,6 +26,7 @@ from orkcraft.gui import info
 from orkcraft.gui.jobs import ConsoleError, JobsMixin, plain
 from orkcraft.gui.keeper import KeeperMixin
 from orkcraft.gui.recruiter import RecruiterMixin
+from orkcraft.gui.road_planner import RoadPlannerMixin
 from orkcraft.gui.steward import StewardMixin
 from orkcraft.gui.views import lake as lake_view
 from orkcraft.realm import catalog, chronicles, steward, tiers
@@ -38,7 +39,7 @@ def tier_choices() -> list[list[str]]:
         [["", "CLI default model"]]
 
 
-class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
+class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardMixin):
     def __init__(self, host) -> None:
         self.host = host
         self.town = host.town
@@ -65,6 +66,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, StewardMixin):
             "building.recruit_ask": self.recruit_ask,
             "building.redesign": self.redesign,
             "steward.models": self.steward_models,
+            "roads.plan": self.road_plan,
             "road.handlers": self.road_handlers,
             "road.handler": self.road_handler,
             "ork.like": lambda a: self.rate_ork(a, True),

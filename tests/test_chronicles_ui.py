@@ -67,6 +67,7 @@ async def test_building_chronicles_recording(fake_repo: Path, isolated_layout_fi
         await pilot.press(str(loot_win.number))
         await pilot.pause()
         assert isinstance(app.screen, SubscribeModal)
+        await pilot.press("down")                      # past "💬 Say it in words…": the first event
         await pilot.press("enter")
         await pilot.pause()
 
@@ -109,6 +110,7 @@ async def test_building_chronicles_overlay(fake_repo: Path, isolated_layout_file
         assert loot_win is not None
         await pilot.press(str(loot_win.number))
         await pilot.pause()
+        await pilot.press("down")                      # past "💬 Say it in words…": the first event
         await pilot.press("enter")
         await pilot.pause()
 
