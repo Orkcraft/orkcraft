@@ -1,40 +1,37 @@
-/* What only Office adds to the layout (layout.css), scoped to [data-theme="office"]: VS Code chrome
-   over Camp's colours, no sprites (docs/design/gui-design-system.md). */
+/* What only Office adds to the layout (layout.css), scoped to [data-look="office"]. Office wears the Camp
+   design system (data-theme="camp": bevels, gold, the faces, the agents' heads) on its own plain dark
+   ground, with no building sprites, its roads as a block diagram and its own words
+   (docs/design/gui-design-system.md). */
+[data-look="office"] { --canvas: #1a1813; --terrain: #1a1813; --road: #8f8166; --road-bright: #7a6e55;
+  --road-selected: #e8b94a; --road-live: #6aa84f; }
+[data-look="office"] .ok-head { display: none; }
 
 /* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
    road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;
    every road says what it carries; a later road's halo breaks the ones it crosses over. With a building
    selected its roads out turn gold, its roads in keep their colour and the rest of the town dims. */
-[data-theme="office"] .gui-road__line { stroke-dasharray: 6 6; stroke-linejoin: round; marker-end: url(#gui-road-head); }
-[data-theme="office"] .gui-road.is-live .gui-road__line { stroke: var(--road-live); stroke-dasharray: none; marker-end: url(#gui-road-head-live); }
-[data-theme="office"] .gui-road.is-live .gui-road__out { fill: var(--road-live); }
-[data-theme="office"] .gui-road.is-return .gui-road__line { stroke-dasharray: 6 4; }
-[data-theme="office"] .gui-road__in { display: none; }
-[data-theme="office"] .gui-road__halo { display: inline; fill: none; stroke: var(--canvas); stroke-width: 8; }
-[data-theme="office"] .gui-road__label { display: inline; fill: var(--ink-muted); paint-order: stroke; stroke: var(--canvas);
+[data-look="office"] .gui-road__line { stroke-dasharray: 6 6; stroke-linejoin: round; marker-end: url(#gui-road-head); }
+[data-look="office"] .gui-road.is-live .gui-road__line { stroke: var(--road-live); stroke-dasharray: none; marker-end: url(#gui-road-head-live); }
+[data-look="office"] .gui-road.is-live .gui-road__out { fill: var(--road-live); }
+[data-look="office"] .gui-road.is-return .gui-road__line { stroke-dasharray: 6 4; }
+[data-look="office"] .gui-road__in { display: none; }
+[data-look="office"] .gui-road__halo { display: inline; fill: none; stroke: var(--canvas); stroke-width: 8; }
+[data-look="office"] .gui-road__label { display: inline; fill: var(--ink-muted); paint-order: stroke; stroke: var(--canvas);
   stroke-width: 4px; stroke-linejoin: round; }
-[data-theme="office"] .gui-road.is-selected .gui-road__line { marker-end: url(#gui-road-head-selected); }
-[data-theme="office"] .gui-road.is-selected .gui-road__label { fill: var(--road-selected); font-weight: 600; }
-[data-theme="office"] .gui-road.is-in .gui-road__line { stroke: var(--road); marker-end: url(#gui-road-head); }
-[data-theme="office"] .gui-road.is-in.is-live .gui-road__line { stroke: var(--road-live); marker-end: url(#gui-road-head-live); }
-[data-theme="office"] .gui-road.is-in .gui-road__out { fill: var(--road); }
-[data-theme="office"] .gui-road.is-in.is-live .gui-road__out { fill: var(--road-live); }
-[data-theme="office"] .gui-road.is-in .gui-road__label { fill: var(--ink); font-weight: 400; }
-[data-theme="office"] .gui-road { transition: opacity .15s; }
-[data-theme="office"] .gui-roads.has-focus .gui-road:not(.is-selected) { opacity: .4; }
+[data-look="office"] .gui-road.is-selected .gui-road__line { marker-end: url(#gui-road-head-selected); }
+[data-look="office"] .gui-road.is-selected .gui-road__label { fill: var(--road-selected); font-weight: 600; }
+[data-look="office"] .gui-road.is-in .gui-road__line { stroke: var(--road); marker-end: url(#gui-road-head); }
+[data-look="office"] .gui-road.is-in.is-live .gui-road__line { stroke: var(--road-live); marker-end: url(#gui-road-head-live); }
+[data-look="office"] .gui-road.is-in .gui-road__out { fill: var(--road); }
+[data-look="office"] .gui-road.is-in.is-live .gui-road__out { fill: var(--road-live); }
+[data-look="office"] .gui-road.is-in .gui-road__label { fill: var(--ink); font-weight: 400; }
+[data-look="office"] .gui-road { transition: opacity .15s; }
+[data-look="office"] .gui-roads.has-focus .gui-road:not(.is-selected) { opacity: .4; }
 
 /* A selected building keeps itself and its neighbours; the rest dims. A question never dims. */
-[data-theme="office"] .gui-hut { transition: opacity .15s; }
-[data-theme="office"] .gui-hut.is-dim:not(.is-alert) { opacity: .4; }
+[data-look="office"] .gui-hut { transition: opacity .15s; }
+[data-look="office"] .gui-hut.is-dim:not(.is-alert) { opacity: .4; }
 
 /* Gold is selection only: the working spinner turns the meter's tan. */
-[data-theme="office"] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
+[data-look="office"] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
 
-/* A hut is one box: its name heads the card over a hairline, the status dot stays in the corner. The
-   number and the pin show on hover, focus or selection only (an unpinned or warned pin stays). */
-[data-theme="office"] .ok-hut__card > .gui-hut__title { padding: 0 var(--space-4) var(--space-1) 0; margin-bottom: var(--space-1);
-  border-bottom: 1px solid var(--frame); }
-[data-theme="office"] .gui-hut__title .no, [data-theme="office"] .gui-hut__pin:not(.is-off):not(.is-warn) { opacity: 0; transition: opacity .1s; }
-[data-theme="office"] .gui-hut:is(:hover, :focus-within, .is-selected) :is(.gui-hut__title .no, .gui-hut__pin) { opacity: 1; }
-[data-theme="office"] .gui-hut__pin:focus-visible { opacity: 1; }
-[data-theme="office"] .gui-hut__dot { top: 14px; }           /* on the name's line */
