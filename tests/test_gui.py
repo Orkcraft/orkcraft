@@ -474,6 +474,8 @@ def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolate
     assert not {"town_hall", "workshop", "custom", "lake"} & {t["id"] for t in types}   # never offered
     with pytest.raises(CommandError):
         host.command("town.build", {"type": "lake"})                               # the town's window
+    named = host.command("town.build", {"type": "fields", "prompt": "What should I build? sort my inbox into tasks"})
+    assert next(b for b in host.snapshot()["buildings"] if b["id"] == named)["title"] == "Sort inbox into tasks"
     bid = host.command("town.build", {"type": "fields"})
     assert bid in {b["id"] for b in host.snapshot()["buildings"]} and host.town.workers.get(bid) is not None
     assert bid in host.town.scroll.active_orkspace.buildings
@@ -685,6 +687,7 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
     you, chief = chat
     assert you["text"] == "Where do my tasks go?" and "<strong>Task Fields</strong>" in chief["html"]
     assert chief["suggest"] == "fields" and chief["suggest_title"] == "Task Fields" and "BUILD" not in chief["html"]
+    assert chief["asked"] == "Where do my tasks go?"                       # what its Build names the building after
     summary = host.command("act", {"id": "town_hall", "act": "audit"})
     assert "Warder" in summary and host.detail("town_hall")["data"]["hall"]["audit"]["ts"]
     host.command("act", {"id": "town_hall", "act": "limits"})

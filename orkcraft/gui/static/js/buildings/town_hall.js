@@ -30,8 +30,9 @@ function AskField({ id, autofocus }) {
     onPointerDown=${keep} onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} />`;
 }
 
-function raise(type) {
-  return command("town.build", { type }).then((id) => id && openBuilding(id), () => {});
+/** Builds `type`; `asked`, the request it answers, names it (≤ 4 words, gui/builder.py). */
+function raise(type, asked = "") {
+  return command("town.build", asked ? { type, prompt: asked } : { type }).then((id) => id && openBuilding(id), () => {});
 }
 
 // -- closed: the hut ---------------------------------------------------------------------------------
@@ -68,7 +69,7 @@ function Message({ m, name }) {
   return html`<li class=${cls("ok-font-body", { "ok-tone-error": m.error })}>
     <span class="ok-font-label">${say(name)}:</span>
     <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: m.html }}></div>
-    ${m.suggest && html`<button class="ok-act" onClick=${() => raise(m.suggest)}>
+    ${m.suggest && html`<button class="ok-act" onClick=${() => raise(m.suggest, m.asked)}>
       <span class="ok-act__label">${say(`Build ${m.suggest_title}`)}</span></button>`}
   </li>`;
 }

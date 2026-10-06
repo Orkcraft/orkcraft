@@ -173,6 +173,9 @@ class TownHallWorker(Worker):
         msg = {"who": who, "text": text, "ts": dt.datetime.now().isoformat(timespec="seconds")}
         if suggest:
             msg["suggest"] = suggest
+            asked = next((m["text"] for m in reversed(self.chat) if m.get("who") == "you"), "")
+            if asked:
+                msg["asked"] = asked            # what the person wanted: the building is named after it
         if error:
             msg["error"] = True
         chat = (self.chat + [msg])[-CHAT_KEPT:]
