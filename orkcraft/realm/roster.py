@@ -49,6 +49,17 @@ class Roster:
             if o.category == WORKER or (o.category == RESIDENT and bool(o.session))
         )
 
+    @property
+    def agents(self) -> list[Orc]:
+        """Every ork of the town: the buildings' garrisons (their keepers), the War Tent's sessions
+        and the council; the builders are the town's own tools, not agents."""
+        return [o for o in self.orcs if o.category != BUILDER]
+
+    @property
+    def working(self) -> int:
+        """The agents at work right now (busy, or asking while at it)."""
+        return sum(o.status in ("busy", "alert") for o in self.agents)
+
     def by_building(self, building_id: str) -> Orc | None:
         return next((o for o in self.orcs if o.building == building_id and o.lead),
                     next((o for o in self.orcs if o.building == building_id), None))

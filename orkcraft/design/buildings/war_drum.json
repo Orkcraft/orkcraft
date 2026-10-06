@@ -1,11 +1,11 @@
 {
   "type": "war_drum",
-  "about": "🥁 War Drum: the day's rhythm from a calendar — today by the hour, the week, a meeting and its document.",
+  "about": "🥁 War Drum: the day's rhythm from a calendar — today by the hour, the week, a meeting and its document — with the town's scheduled runs and the estimated moments its limits are reached laid over the meetings.",
   "panes": {
-    "head": {"about": "the date, what is now, what is next, how much is left; New event, Prepare doc", "components": ["status"], "required": true},
-    "day": {"about": "today by the hour, now marked, a meeting with a document marked", "components": ["list", "table"], "required": true},
-    "week": {"about": "the next seven days, a meeting per row", "components": ["text", "list", "table"], "required": true},
-    "meeting": {"about": "the chosen meeting: when, where, its document", "components": ["text", "markdown"], "required": false},
+    "head": {"about": "the date, what is now, what is next, how much is left, when a limit is likely reached; New event, Prepare doc", "components": ["status"], "required": true},
+    "day": {"about": "today by the hour, now marked, a meeting with a document marked; the scheduled runs and estimated limits in their hour", "components": ["list", "table"], "required": true},
+    "week": {"about": "the next seven days, a meeting per row, then the day's scheduled runs and estimated limits", "components": ["text", "list", "table"], "required": true},
+    "meeting": {"about": "the chosen meeting: when, where, its document; the limits with their burn rate", "components": ["text", "markdown"], "required": false},
     "settings": {"about": "the calendar file or URL, when the day's digest goes out, how long before a meeting its document is asked for", "components": ["form"], "required": false}
   },
   "default": {

@@ -47,6 +47,7 @@ def _message(m: dict, titles: dict[str, str]) -> dict:
         out["text"] = m["text"]
     if m.get("suggest") in titles:
         out["suggest"], out["suggest_title"] = m["suggest"], titles[m["suggest"]]
+        out["asked"] = str(m.get("asked") or "")
     return out
 
 

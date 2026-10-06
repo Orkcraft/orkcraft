@@ -27,9 +27,8 @@ def probe(host) -> dict:
     for other in list(host.town.workers.values()):
         if getattr(other, "TYPE", "") == "barracks":
             busy += sum(1 for o in other.state.orcs if o.status == "working")
-    hall = host.town.workers.get("town_hall")
     limits = [(f"{x.provider} {x.group or x.window}", (1 - x.remaining) * 100)
-              for x in getattr(hall, "limits", None) or () if x.remaining is not None]
+              for x in host.limits() if x.remaining is not None]
     return {"orcs": busy, "limits": limits}
 
 

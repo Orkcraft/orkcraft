@@ -100,20 +100,19 @@ class SessionsMixin:
         """Emergency freeze: everything the camp runs stops — War Tent sessions, road agents, the
         buildings' own work (orcs, reviews, the librarian, scripts, tests, browsers) and every model
         call; queues wait. The TUI stays open."""
-        halted = self.tent.interrupt_all()             # every session the core runs (core/sessions.py)
+        sessions = self.tent.interrupt_all()           # every session the core runs (core/sessions.py)
         killed = halt.halt_all()                        # every agent, script, test and browser process
-        for worker in self.workers:
+        for worker in self.workers:                     # the terminals this face runs agents in
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
-        stopped = 0
-        for b_spec in self.scroll.buildings:          # what buildings run themselves: they stop and hold their queues
-            stop = getattr(self._custom_view(b_spec.id), "halt", None)
-            if callable(stop):
-                stopped += int(stop() or 0)
-        halted += max(killed, stopped)
+        buildings = self.core.halt()                    # the road handlers and every building's worker
+        stopped = sessions + max(killed, buildings)
         hud = self._hud
-        hud.set_halt(f"HALTED — {halted} stopped")
-        self.notify(f"🛑 Halt All: {halted} running session{'s' if halted != 1 else ''} interrupted",
+        hud.set_halt(f"HALTED — {stopped} stopped")
+        parts = [f"{n} {one if n == 1 else many} {done}" for n, one, many, done in
+                 ((sessions, "session", "sessions", "interrupted"), (killed, "process", "processes", "killed"),
+                  (buildings, "building", "buildings", "stopped")) if n]
+        self.notify("🛑 Halt All: " + (", ".join(parts) if parts else "nothing was running"),
                     title="Emergency freeze", severity="warning")
         self.set_timer(HALT_RESET_S, lambda: hud.set_halt("READY"))
 

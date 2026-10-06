@@ -173,6 +173,7 @@ def test_the_hall_is_its_worker_s_and_the_warchief_answers(fake_repo: Path, monk
     you, chief = w.chat[-2:]
     assert you == {**you, "who": "you", "text": "Where do my bugs go?"}
     assert chief["who"] == "warchief" and chief["text"] == "A board keeps them." and chief["suggest"] == "fields"
+    assert chief["asked"] == "Where do my bugs go?"
     assert w.ask("And then?") == ""
     _answered(w, 4)
     assert "The conversation so far" in asked[1] and "A board keeps them." in asked[1]

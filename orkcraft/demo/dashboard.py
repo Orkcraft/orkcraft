@@ -67,6 +67,9 @@ MY_DAY = {
                     "- [ ] Answer Ann about the offsite\n- [ ] 🟥 Renew the domain\n  expires on the 12th\n\n"
                     "## In Progress\n- [ ] Write the Barracks docs\n\n## Done\n"
                     "- [x] Town Hall audit\n- [x] Git building\n\n"
+                    "## My to-dos\n- [ ] Call the accountant about Q3\n- [ ] Review Ann's pricing draft\n"
+                    "  before Thursday's sync\n- [ ] Book the train to the offsite\n- [x] Pay the hosting invoice\n"
+                    "- [x] Reply to the design agency\n\n"
                     "## Ideas\n- 🟨 A calendar roof\n  the War Drum's hut shows the next meeting\n"
                     "- 🟩 Mail digests at 05:00\n  one page, before the stand-up\n"
                     "- 🟦 Ask the clan about pricing\n",
@@ -94,6 +97,9 @@ MY_DAY = {
         typed("brief", "mill", "Daily Brief", "⚙️", "Miller", "turns what arrives into a brief", "thatch",
               steps=[f"script: {BRIEF}"]),
     ],
+    # the War Drum's tall card (a fifth of the screen) stands over the Watchtower's spot: the tower goes down a row;
+    # the Task board's wide card reaches past a third of the town: the drum steps right of it
+    "huts": {"post": (1 / 3, 1.0), "days": (0.4, 0.0)},
     "layout": [(0.0, 0.0, 0.32, 0.46), (0.34, 0.0, 0.32, 0.46), (0.68, 0.0, 0.32, 0.46),
                (0.0, 0.54, 0.24, 0.46), (0.26, 0.54, 0.16, 0.46), (0.44, 0.54, 0.26, 0.46), (0.72, 0.54, 0.28, 0.46)],
     "roads": [
@@ -162,7 +168,7 @@ GATES = {
         typed("launcher", "catapult", "Release hook", "🎯", "Loader", "sends releases out", "flag",
               url="https://example.com/hooks/release", schema="demo/release.schema.json", method="POST"),
         typed("counter", "workshop", "Word Count", "🔢", "Tinker", "counts the words of every paste",
-              runtime="python", layout="card", inputs=["gate_pit:pit.text"]),
+              runtime="python", layout="card", inputs=["gate_pit:pit.text"], schedule="every 3h"),
         typed("gate_horn", "horn", "The Horn", "📯", "Hornblower", "sounds what comes in",
               sounds=["pit.text: chime", "crossroads/signpost.routed: horn", "*: ding"], quiet="23:00-07:00",
               cooldown=5),
@@ -195,7 +201,12 @@ LIBRARY = {
     "nodes": [],
     "files": {
         "LIBRARY_TASKS.md": "# Tasks\n\n## To Do\n- [ ] Show the price tag in the new accent colour\n"
-                            "- [ ] Add yearly billing\n\n## In Progress\n\n## Done\n",
+                            "- [ ] Add yearly billing\n\n## In Progress\n- [ ] Document the checkout flow\n\n"
+                            "## Done\n- [x] Sync the design tokens\n\n"
+                            "## My to-dos\n- [ ] Read the checkout study notes\n- [ ] Approve the accent colour\n"
+                            "- [x] Invite Lee to the design wiki\n\n"
+                            "## Ideas\n- 🟨 A wiki page per component\n  generated from design/components.md\n"
+                            "- 🟦 Weekly digest of new decisions\n",
         "design/components.md": "# Components (exported from the design file)\n\n## PriceTag\nAmount and currency; "
                                 "variants: default, discounted (old price struck through), large.\n\n## CheckoutButton\n"
                                 "Primary action; disabled while the payment is pending.\n",

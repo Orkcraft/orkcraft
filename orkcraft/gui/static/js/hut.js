@@ -1,8 +1,10 @@
 // A building as it stands on the town, closed (design-system/components.md: Hut;
 // docs/design/building-views.md): its name above the card, inside only its type's live status (the
 // type's `card(b)`, else its status lines), and the mouse on it — a press opens it, a drag moves
-// it, the + handle pulls a road out of it. Every hut stands pinned: the pin by its name unpins it, so
-// a drag moves it, and five seconds without a move pin it again. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
+// it, the + handle pulls a road out of it. Every hut stands pinned: the pin at the right of its name
+// unpins it, so a drag moves it, and five seconds without a move pin it again. Before the name a
+// spinner while it works and, in Office, its type's icon; in Camp its type's header sprite stands
+// between the name and the card. One look's huts differ only in what this draws (Office: an explorer card; Camp: the
 // card under its header sprite), never in how the town places them.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
@@ -10,7 +12,8 @@ import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying } from "./build.js";
 import { typeModule } from "./types.js";
-import { say } from "./link.js";
+import { town, say } from "./link.js";
+import { TypeIcon, headerSprite } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 const IDLE_MS = 5000;                      // an unpinned hut left alone this long is pinned again
@@ -95,6 +98,7 @@ export function Hut({ b, spot, number, onMoved }) {
     if (!old || old.w !== w || old.h !== h) sizes.value = { ...sizes.value, [b.id]: { w, h } };
   });
   const free = !!unpinned.value[b.id] && !b.pinned;     // a building pinned in the town scroll never moves
+  const office = town.value.look === "office";
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
 
@@ -128,9 +132,14 @@ export function Hut({ b, spot, number, onMoved }) {
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag,
                                         "is-free": free })}
       onPointerDown=${down}>
-    <div class="ok-head"></div>
-    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>${!b.pinned && html`<${PinButton} b=${b} />`}${say(b.title)}
-      ${b.alert && html` <span class="ok-word">?</span>`}${b.pinned && html` <span class="ok-word ok-tone-muted">pinned</span>`}</span>
+    <span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
+      ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
+      ${office && html`<${TypeIcon} type=${b.type} />`}
+      <span class="gui-hut__name">${say(b.title)}</span>
+      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class="ok-word ok-tone-muted">pinned</span>`}
+      ${!b.pinned && html`<${PinButton} b=${b} />`}</span>
+    ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
+      draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}
     <div class="ok-hut__card">
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}>+</button>

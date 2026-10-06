@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import threading
 import time
 
 import pytest
@@ -218,7 +219,13 @@ async def test_custom_action_building_refresh_and_inactive_elsewhere(fake_repo: 
 @pytest.mark.asyncio
 async def test_ui_stays_responsive_while_building(fake_repo: Path, monkeypatch):
     """The UI stays responsive while the Foreman drafts: Esc hides BuildProgress, the review comes after."""
-    monkeypatch.setattr(runners, "BUILD_RUNNER", _foreman(TASKS, delay=0.5))
+    drafted = threading.Event()   # the Foreman drafts until the test lets it answer, however slow the machine
+
+    def slow(prompt: str) -> tuple[str, float | None]:
+        drafted.wait(10)
+        return json.dumps(TASKS), 0.02
+
+    monkeypatch.setattr(runners, "BUILD_RUNNER", slow)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -228,6 +235,7 @@ async def test_ui_stays_responsive_while_building(fake_repo: Path, monkeypatch):
         await pilot.press("escape")
         await pilot.pause(0.05)
         assert not isinstance(app.screen, BuildProgress)
+        drafted.set()
         while not isinstance(app.screen, BuildReview):
             await pilot.pause(0.05)
         await pilot.press("escape")

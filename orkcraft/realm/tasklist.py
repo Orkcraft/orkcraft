@@ -4,16 +4,20 @@ A **lane** is a column of cards. The three status lanes — To Do, In Progress, 
 moving one between them is a change of status (`tasks.status_changed`). Every other lane (Ideas,
 Notes, Questions…) holds **notes**, stickers with no status. A card is a task or a note by the lane
 it is in: a note moved into a status lane becomes a task, a task moved out becomes a note.
+One more lane is the person's own: **My to-dos** (`mine`) holds what the person has to do, a checklist —
+its cards are ticked off (`- [x]`) rather than moved, and they are neither tasks for the orks nor notes.
 
 `path` (default `TASKS.md`) is either
 
     a Markdown file   one `##` section per lane: `## To Do` / `## In Progress` / `## Done` and any
                       other heading (`## Ideas`); a card is a `- [ ] title` (or `- title`) line, its
-                      text the indented lines under it; what comes before the first `##` is kept
+                      text the indented lines under it; what comes before the first `##` is kept;
+                      `## My to-dos` (or `For me`, `Mine`…) is the person's checklist
     a folder          `todo/`, `in-progress/`, `done/` and any other subfolder (`ideas/`) holding one
                       `.md` file per card (a project's `tasks/` folder works as it is: moving a task
                       moves its file and updates its `status:` line; the text after the title is the
-                      card's text)
+                      card's text); `mine/` is the person's checklist, a ticked card's front matter
+                      says `done: true`
 
 A card's colour is the coloured square its title starts with (🟨 🟩 🟦 🟥 🟪): it reads the same in
 the file, on GitHub and on the board. A card's id is its file name in a folder, a slug of its title
@@ -30,7 +34,11 @@ LABELS = {"todo": "To Do", "in_progress": "In Progress", "done": "Done"}
 FOLDERS = {"todo": "todo", "in_progress": "in-progress", "done": "done"}
 COLORS = ("", "🟨", "🟩", "🟦", "🟥", "🟪")
 NOTES = "notes"                                          # the lane a task goes to when it becomes a note
-TASK, NOTE = "task", "note"
+MINE = "mine"                                            # the person's own to-dos: a checklist
+MINE_LABEL = "My to-dos"
+TASK, NOTE = "task", "note"                              # a card's kind; the person's to-do is MINE
+_MINE_HEADS = ("my to dos", "my todos", "my to do", "to dos", "todos", "for me", "mine", "my chores", "chores",
+               "personal", "my checklist", "checklist")
 _HEAD = re.compile(r"^##\s+(.+?)\s*$")
 _ITEM = re.compile(r"^[-*]\s+(?:\[( |x|X)\]\s+)?(.+?)\s*$")
 _BODY = re.compile(r"^(?: {2,}|\t)(.*)$")
@@ -38,6 +46,7 @@ _TITLE = re.compile(r"^title:\s*[\"']?(.+?)[\"']?\s*$", re.M)
 _H1 = re.compile(r"^#\s+(.+?)\s*$", re.M)
 _STATUS = re.compile(r"^status:\s*.*$", re.M)
 _COLOR = re.compile("^(" + "|".join(c for c in COLORS if c) + r")\s*")
+_DONE = re.compile(r"^done:[ \t]*(.*?)[ \t]*$", re.M)
 
 
 def column_of(heading: str) -> str | None:
@@ -50,6 +59,16 @@ def column_of(heading: str) -> str | None:
     if h in ("done", "finished", "completed"):
         return "done"
     return None
+
+
+def is_mine(heading: str) -> bool:
+    """A heading that names the person's own checklist (`## My to-dos`, `## For me`)."""
+    return heading.lower().replace("-", " ").strip() in _MINE_HEADS
+
+
+def lane_of(heading: str) -> str:
+    """The lane id a `##` heading stands for."""
+    return column_of(heading) or (MINE if is_mine(heading) else slug(heading))
 
 
 def slug(title: str) -> str:
@@ -74,16 +93,19 @@ def next_color(title: str) -> str:
 
 
 def kind_of(lane: str) -> str:
-    return TASK if lane in COLUMNS else NOTE
+    """`task` in a status lane, `mine` in the person's checklist, else `note`."""
+    return TASK if lane in COLUMNS else MINE if lane == MINE else NOTE
 
 
 @dataclass
 class Task:
-    """A card. `column` is its lane's id: a status (`todo`…) for a task, else a notes lane."""
+    """A card. `column` is its lane's id: a status (`todo`…) for a task, `mine` for the person's to-do,
+    else a notes lane. `checked`: a to-do of the person's that is done (ticked off)."""
     id: str
     title: str
     column: str
     body: str = ""
+    checked: bool = False
 
     @property
     def kind(self) -> str:
@@ -129,10 +151,12 @@ class TaskList:
         return [t for t in self.load() if t.kind == TASK]
 
     def lanes(self) -> list[Lane]:
-        """The status lanes first, then the lanes of notes in the order the file keeps them."""
+        """The status lanes first, the person's to-dos when the board has them, then the lanes of notes
+        in the order the file keeps them."""
         found = self._read()[0]
+        mine = [ln for ln in found if ln.kind == MINE][:1]
         notes = [ln for ln in found if ln.kind == NOTE]
-        return [Lane(c, LABELS[c]) for c in COLUMNS] + notes
+        return [Lane(c, LABELS[c]) for c in COLUMNS] + mine + notes
 
     def _read(self) -> tuple[list[Lane], list[Task]]:
         return self._read_folder() if self.is_folder else self._read_file()[1:]
@@ -152,7 +176,7 @@ class TaskList:
         for line in lines:
             m = _HEAD.match(line)
             if m:
-                lid = column_of(m.group(1)) or slug(m.group(1))
+                lid = lane_of(m.group(1))
                 lane = next((ln for ln in lanes if ln.id == lid), None)
                 if lane is None:
                     lane = Lane(lid, LABELS.get(lid, m.group(1)))
@@ -170,7 +194,7 @@ class TaskList:
                 while tid in ids:
                     tid, n = f"{base}-{n}", n + 1
                 ids.add(tid)
-                last = Task(tid, title, lane.id)
+                last = Task(tid, title, lane.id, checked=lane.id == MINE and (m.group(1) or " ") in "xX")
                 cards.append(last)
                 continue
             b = _BODY.match(line)
@@ -184,7 +208,9 @@ class TaskList:
         out = [(Lane(c, LABELS[c]), self.path / FOLDERS[c]) for c in COLUMNS]
         status = set(FOLDERS.values())
         for d in sorted(p for p in self.path.iterdir() if p.is_dir()) if self.path.is_dir() else []:
-            if d.name not in status and not d.name.startswith((".", "_")):
+            if d.name == MINE:
+                out.append((Lane(MINE, MINE_LABEL), d))
+            elif d.name not in status and not d.name.startswith((".", "_")):
                 out.append((Lane(d.name, d.name.replace("-", " ").replace("_", " ").capitalize()), d))
         return out
 
@@ -198,7 +224,9 @@ class TaskList:
                 except OSError:
                     continue
                 m = _TITLE.search(text) or _H1.search(text)
-                cards.append(Task(f.stem, m.group(1) if m else f.stem, lane.id, _folder_body(text)))
+                done = _DONE.search(_front(text))
+                cards.append(Task(f.stem, m.group(1) if m else f.stem, lane.id, _folder_body(text),
+                                  checked=lane.id == MINE and bool(done) and done.group(1).lower() in ("true", "yes", "x")))
         return lanes, cards
 
     # -- writing ------------------------------------------------------------------------------------
@@ -207,7 +235,8 @@ class TaskList:
         out = list(head) or ["# Tasks", ""]
         if out and out[-1].strip():
             out.append("")
-        order = [ln for ln in lanes if ln.kind == TASK] + [ln for ln in lanes if ln.kind == NOTE]
+        order = [ln for ln in lanes if ln.kind == TASK] + [ln for ln in lanes if ln.kind == MINE][:1] \
+            + [ln for ln in lanes if ln.kind == NOTE]
         for c in COLUMNS:                                    # the status lanes are always there
             if not any(ln.id == c for ln in order):
                 order.insert(COLUMNS.index(c), Lane(c, LABELS[c]))
@@ -216,7 +245,10 @@ class TaskList:
             for t in cards:
                 if t.column != lane.id:
                     continue
-                box = ("[x] " if lane.id == "done" else "[ ] ") if lane.kind == TASK else ""
+                if lane.kind == MINE:
+                    box = "[x] " if t.checked else "[ ] "
+                else:
+                    box = ("[x] " if lane.id == "done" else "[ ] ") if lane.kind == TASK else ""
                 out.append(f"- {box}{t.title}")
                 out += [f"  {ln}" if ln.strip() else "" for ln in t.body.splitlines()]
             out.append("")
@@ -240,7 +272,7 @@ class TaskList:
         that is there already is returned as it is; a status lane's name is refused."""
         name = " ".join(name.split())
         lid = slug(name).lstrip("_-")
-        if column_of(name) or not re.search(r"[^\W_]", name) or not lid:
+        if column_of(name) or is_mine(name) or not re.search(r"[^\W_]", name) or not lid:
             raise ValueError(f"“{name}” is not a name for a lane of notes")
         if self.is_folder:
             folder = self._lane_folder(lid)
@@ -259,7 +291,7 @@ class TaskList:
         title = " ".join(title.split())
         if not plain(title).strip():
             raise ValueError("a card needs a title")
-        lane = lane if lane in COLUMNS else (slug(lane) if lane else NOTES)
+        lane = lane if lane in COLUMNS or lane == MINE else (slug(lane) if lane else NOTES)
         if self.is_folder:
             folder = self._lane_folder(lane)
             folder.mkdir(parents=True, exist_ok=True)
@@ -273,7 +305,7 @@ class TaskList:
             return Task(stem, title, lane, body.strip())
         head, lanes, cards = self._read_file()
         if not any(ln.id == lane for ln in lanes) and lane not in COLUMNS:
-            lanes.append(Lane(lane, lane.replace("-", " ").capitalize()))
+            lanes.append(_new_lane(lane))
         cards.append(Task("", title, lane, body.strip()))
         self._write_file(head, lanes, cards)
         return next(t for t in reversed(self.load()) if t.title == title and t.column == lane)
@@ -294,15 +326,18 @@ class TaskList:
             if end > 0 and _STATUS.search(text[:end]):         # the frontmatter's status follows the folder
                 status = FOLDERS.get(column, "note")
                 text = _STATUS.sub(f"status: {status}", text[:end], count=1) + text[end:]
+            end = text.find("\n---", 3) if text.startswith("---") else -1
+            if end > 0 and _DONE.search(text[:end]):           # a to-do starts unticked wherever it goes
+                text = _DONE.sub("done: false", text[:end], count=1) + text[end:]
             dst.write_text(text, encoding="utf-8")
             src.unlink()
         else:
             head, lanes, cards = self._read_file()
             if not any(ln.id == column for ln in lanes) and column not in COLUMNS:
-                lanes.append(Lane(column, column.replace("-", " ").capitalize()))
+                lanes.append(_new_lane(column))
             moved = next(t for t in cards if t.id == task_id)
             cards.remove(moved)
-            moved.column = column
+            moved.column, moved.checked = column, False
             cards.append(moved)
             self._write_file(head, lanes, cards)
         return before, column
@@ -331,6 +366,31 @@ class TaskList:
             self._write_file(head, lanes, cards)
         return Task(task_id, new_title, card.column, new_body)
 
+    def check(self, task_id: str, done: bool | None = None) -> Task:
+        """Tick one of the person's to-dos off, or back on (`done` None: the other way round from how it is)."""
+        card = self._find(task_id)
+        if card.column != MINE:
+            raise ValueError("only a to-do of yours is ticked off")
+        done = (not card.checked) if done is None else bool(done)
+        if self.is_folder:
+            f = self._card_file(card)
+            text = f.read_text(encoding="utf-8")
+            line = f"done: {'true' if done else 'false'}"
+            front = _front(text)
+            if front:
+                head = _DONE.sub(line, front, count=1) if _DONE.search(front) else f"{front}\n{line}"
+                text = head + text[len(front):]
+            else:
+                text = f"---\n{line}\n---\n\n{text.lstrip()}"
+            f.write_text(text, encoding="utf-8")
+        else:
+            head, lanes, cards = self._read_file()
+            for t in cards:
+                if t.id == task_id:
+                    t.checked = done
+            self._write_file(head, lanes, cards)
+        return Task(card.id, card.title, card.column, card.body, done)
+
     def rename(self, task_id: str, title: str) -> None:
         self.edit(task_id, title=title)
 
@@ -342,6 +402,19 @@ class TaskList:
             head, lanes, cards = self._read_file()
             self._write_file(head, lanes, [t for t in cards if t.id != task_id])
         return card
+
+
+def _new_lane(lane: str) -> Lane:
+    return Lane(MINE, MINE_LABEL) if lane == MINE else Lane(lane, lane.replace("-", " ").capitalize())
+
+
+def _front(text: str) -> str:
+    """A card file's front matter up to its closing `---` ("" when it has none)."""
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end > 0:
+            return text[:end]
+    return ""
 
 
 def _folder_head(text: str) -> str:
@@ -362,18 +435,21 @@ def _folder_body(text: str) -> str:
 
 def changes(before: list[Task] | None, after: list[Task]) -> list[tuple[str, Task, str]]:
     """(event id, card, detail) between two loads; the first load only sets the baseline.
-    A task added or moved between statuses → tasks.*; a note added → notes.created."""
+    A task added or moved between statuses → tasks.*; a note added → notes.created; the person's own
+    to-dos send nothing (they are no work for the orks until one is moved into a status lane)."""
     if before is None:
         return []
     old = {t.id: t for t in before}
     out = []
     for t in after:
         prev = old.get(t.id)
+        if t.kind == MINE:
+            continue
         if t.kind == NOTE:
             if prev is None:
                 out.append(("notes.created", t, t.column))
             continue
-        if prev is None or prev.kind == NOTE:
+        if prev is None or prev.kind != TASK:
             out.append(("tasks.created", t, LABELS[t.column]))
         elif prev.column != t.column:
             out.append(("tasks.status_changed", t, f"{LABELS[prev.column]} → {LABELS[t.column]}"))
