@@ -50,7 +50,7 @@ button { font: inherit; color: inherit; }
 .gui-strip > :is(.ok-win, .ok-list):last-child,
 .gui-strip > .ok-win:last-child > .ok-win__frame { border-top-right-radius: 0; }
 
-/* Office: the Control panel, pinned at the strip's bottom right (js/advisor.js): the ork in a tie, gold
+/* Office: the Control panel, pinned at the strip's bottom right (js/advisor.js): the ork mark, gold
    under the mouse, its card over it at the left as a speech bubble. Out of the strip's flow: a selected
    building's Command Card stands at the right edge over it, as over the Town Hall's hut in Camp. */
 .gui-advisor { position: absolute; right: var(--space-3); bottom: var(--space-3); z-index: 0; }

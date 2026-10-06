@@ -6,7 +6,7 @@ The mark is a 12×8 ork head on a plain grid: green face, pointed ears, a dark b
 and two tusks. No outline, no shading, three colours, so it reads at 16 px and stays sober enough for
 the Office. Every file is built from `GRID` below; change the grid, run this again, and they all follow.
 
-Out come, in `docs/img/logo/` by default:
+Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`):
 
 - `ork-mark.svg`, `ork-mark-camp.svg`, `ork-mark-light.svg`: the mark in the Office, Camp and
   light-ground colours;
@@ -126,7 +126,7 @@ def raster(colours: dict[str, str], size: int) -> Image.Image:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--out", type=pathlib.Path, default=ROOT / "docs" / "img" / "logo")
+    ap.add_argument("--out", type=pathlib.Path, default=ROOT / "design-system" / "logo")
     out = ap.parse_args().out
     out.mkdir(parents=True, exist_ok=True)
 
