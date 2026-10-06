@@ -1,0 +1,17 @@
+/* 🗼 Watchtower (js/buildings/watchtower.js): the closed card previews the newest messages under the
+   counters. Every rule is scoped to this building: its hut is the one that holds a .gui-tower card. */
+
+/* Closed: a little wider than other huts, so the preview of the newest message fits; three or four lines. */
+.gui-town__room > .gui-hut.ok-hut[class]:has(.gui-tower) { width: 320px; max-width: none; }
+.gui-hut:has(.gui-tower) .gui-hut__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+
+.gui-tower { display: flex; flex: 1; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-tower__latest { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-tower__msg { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 var(--space-2); align-items: baseline;
+  padding: 2px var(--space-1); border-left: 2px solid transparent; min-width: 0; }
+.gui-tower__msg.is-read { color: var(--ink-muted); }
+.gui-tower__msg.is-fresh { background: var(--selection); border-left-color: var(--frame-focus); color: var(--ink); }
+.gui-tower__src { white-space: nowrap; font-size: .9em; }
+.gui-tower__what { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow-wrap: anywhere; }
+.gui-tower__at { white-space: nowrap; font-size: .9em; font-variant-numeric: tabular-nums; }

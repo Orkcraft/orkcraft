@@ -28,6 +28,7 @@ class Town:
     ) -> None:
         # The showcase sandbox (orkcraft --demo): simulated data, agent handlers never run.
         self.demo = demo
+        self.cart_travel_s = 0.0           # how long a cart is on a plain road before it arrives (a face may slow it)
         self.repo_root = repo_root or find_project_root()
         self.config = Config(repo_root=self.repo_root)
         if auto_commit is not None:
@@ -136,9 +137,9 @@ class Town:
         delivery.deliver(self, target_id, payload, title, markdown)
 
     def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
-                   trail: tuple = (), ref: str = "") -> bool:
+                   trail: tuple = (), ref: str = "", route: str = "") -> bool:
         """A typed building sends one of its events down the roads that carry it."""
-        return delivery.emit(self, building_id, event_id, value, title, trail, ref)
+        return delivery.emit(self, building_id, event_id, value, title, trail, ref, route)
 
     def halt(self) -> int:
         """Stop what the town runs: the road handlers and every worker's own work (queues wait).

@@ -83,7 +83,7 @@ The ground is **one flat colour per biome**, with no patches, no texture and no 
 
 | Biome | Ground |
 |---|---|
-| Forest (`camp`) | `canvas` #0a130c |
+| Forest (`camp`) | `canvas` #172a0a (a dark moss green the footpath's verge melts into) |
 | Ice (`camp-ice`) | `canvas` #070d14 |
 | Void (`camp-void`) | `canvas` #080808 |
 
@@ -109,23 +109,24 @@ Roads are subscriptions between buildings, and carts are the events travelling a
 
 ### Road tiles
 
-- **Grid.** Roads use 16×16 tiles on the map's 16px grid. The path is a strip 8px wide through the middle of the tile, so tiles join edge to edge.
-- **Look.** A packed dirt track with darker wheel ruts and a 1px darker verge. There are no stones, grass tufts or puddles. It uses 3 colours from the road tokens: `road` #5c4326 for the track, `#3f2e1a` for the ruts and verge, and `road-bright` #a0703c as a few lit pixels on the top-left edges.
-- **Biomes.** The same dirt track serves every biome. Optional variants are `-ice` (packed snow: #2b4763 / #8fa3b5) and `-void` (ash: #2a2620 / #4d4538).
+- **Grid.** Roads use 32×32 tiles (two steps of the map's 16px grid), centred on the road's line. The path is about a third of the tile wide through its middle and meets every edge it reaches straight on, so tiles join edge to edge.
+- **Look.** A forest footpath: packed dark earth (#5a4128, ruts #3e2c1a, lit #7a5c36) with two foot-worn ruts and a thin uneven verge of dark moss (#2f5216 / #24410f) with a few leaves and pebbles. Outside the verge the tile is transparent; the verge melts into the forest ground #172a0a.
+- **Biomes.** The same footpath serves every biome for now. Optional variants are `-ice` (packed snow: #2b4763 / #8fa3b5) and `-void` (ash: #2a2620 / #4d4538).
 - **States.** These are drawn by the UI, never painted in:
-  - faint (a road of an unselected building): the tile at 60% opacity;
+  - faint (a road of an unselected building): the tile at 85% opacity;
   - bright (a road of the selected building): the tile as drawn;
   - selected: the tile with a 1px `road-selected` glow and its label chip.
 
-**Tiles to draw.** You only need to draw five. The app rotates them by 90° steps and composites the tees.
+**Tiles.** The app turns them by 90° steps. Return roads use the straight, every other tile, fainter.
 
 | File | What | Derived by the app |
 |---|---|---|
 | `roads/straight.png` | a horizontal straight | the vertical straight |
-| `roads/corner.png` | a corner from the right edge down to the bottom edge (┌) | ┐ └ ┘ |
-| `roads/cross.png` | a crossing (┼) | the tees ├ ┤ ┬ ┴, cut from the crossing |
-| `roads/end.png` | a dead end with the track coming in from the left and a rounded end | the other three directions |
-| `roads/gate-out.png`, `roads/gate-in.png` | where a road leaves a card (a small gold ▶ marker post) and enters one (a small gold ● ring post) | the four sides |
+| `roads/corner.png` | a corner from the right edge down to the bottom edge (┌), a rounded inner curve | ┐ └ ┘ |
+| `roads/tee.png` | a tee: left to right with a branch down (┬) | ├ ┤ ┴ |
+| `roads/cross.png` | a crossing (┼) with a small trodden clearing | — |
+| `roads/end.png` | a dead end with the path coming in from the left and a rounded end | the other three directions |
+| `roads/gate-out.png`, `roads/gate-in.png` | the path coming in from the left to a small wooden post: a gold ▶ where a road leaves a card, a gold ● ring where it enters one; turned so the post stands at the card | the four sides |
 
 ### Carts
 
@@ -195,9 +196,8 @@ These sprites don't exist yet, listed in the order they matter. Every prompt ask
 
 | # | Sprite | Files | Size | Replaces |
 |---|---|---|---|---|
-| 1 | Road tiles | `roads/corner` | 16×16 | the corner slot in the Road tile set (straight, cross, dead end and both gates are done) |
-| 2 | Window banners | `buildings/<id>/banner.png` | 128×64 | the header stretched onto an opened window |
-| 3 | Decorations | more forest trees and bushes, a third ice peak, more void rocks (done: pine, dead tree, stump, two ice peaks, frozen tree, ash spire) | 16×12 to 32×24 | the empty decoration slots |
+| 1 | Window banners | `buildings/<id>/banner.png` | 128×64 | the header stretched onto an opened window |
+| 2 | Decorations | more forest trees and bushes, a third ice peak, more void rocks (done: pine, dead tree, stump, two ice peaks, frozen tree, ash spire) | 16×12 to 32×24 | the empty decoration slots |
 
 **Window banners (128×64):** use the building's prompt from Building-prompts with two changes: "the same building a little wider, with one more element of its shape (a side wing, a second window, a fence post)" and a 2:1 canvas. Keep the palette and the level of detail.
 

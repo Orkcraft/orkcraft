@@ -21,12 +21,18 @@ finds its way back to the meeting even when a Signpost renamed the cart to its r
 
 The orcs run in threads of the worker; what they come to is applied on the town's thread
 (`town.call`). `tick()` looks at the pull requests of done tasks now and then (a face calls it).
+
+`pool.assigned`, `pool.done` and `pool.failed` carry the task's `ref`: a board that sent the task gets its
+card moved by them over a return road. In the sandbox no model runs: an ork's report comes from
+`simulated.json` in the state folder when the demo wrote one (`{"work": [{"match", "say", "seconds"}]}`).
 """
 from __future__ import annotations
 
 import threading
 import time
 import uuid
+import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -48,6 +54,24 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
         raise InterruptedError("stopped")
     task = prompt.split("## Task", 1)[-1].splitlines()[0].lstrip(": ")
     return f"_(demo — simulated)_ {harness} would have worked on: {task}", None, None, ""
+
+
+def _scripted_work(rules: list):
+    """The sandbox's orks with their reports written beforehand: the first rule whose `match` is found in
+    the prompt says `say` after `seconds`; no rule → the plain simulated report."""
+    def run(harness, prompt, workdir, cancel, model, env, resume):
+        for rule in rules:
+            try:
+                hit = re.search(str(rule.get("match") or ""), prompt, re.I | re.S)
+            except re.error:
+                hit = None
+            if hit is None:
+                continue
+            if cancel.wait(float(rule.get("seconds") or 1.5)):
+                raise InterruptedError("stopped")
+            return str(rule.get("say") or ""), None, None, ""
+        return _simulated_work(harness, prompt, workdir, cancel, model, env, resume)
+    return run
 
 
 def _simulated_steward(harness, prompt, workdir, cancel, model):
@@ -370,7 +394,7 @@ class BarracksWorker(Worker):
         orc.branch = task.branch
         rework = f" [rework {task.attempts - 1}]" if task.feedback else ""
         self.emit("pool.assigned", f"{orc.name} ({orc.label}) ← {task.title}" + (" [follow-up]" if follow else "")
-                  + rework + (" ♻" if task.warm else ""), task.title)
+                  + rework + (" ♻" if task.warm else ""), task.title, ref=task.ref)
         cancel = threading.Event()
         self._cancels[orc.name] = cancel
         workdir = Path(orc.worktree) if orc.worktree else repo
@@ -384,7 +408,7 @@ class BarracksWorker(Worker):
               cancel: threading.Event) -> None:
         """In the orc's thread: the branch, the orc's run, the steward's answers and its review."""
         out = RunOutcome()
-        runner = type(self).work_runner or (_simulated_work if self.simulated else jobs.run_work)
+        runner = type(self).work_runner or (self._sandbox_work() if self.simulated else jobs.run_work)
         env = {"ORKCRAFT_ORC": f"{self.building_id}/{orc.name.lower()}"}
         git = self.task_git if self.uses_git else None
 
@@ -424,6 +448,14 @@ class BarracksWorker(Worker):
         except Exception as e:  # one orc's failure must not take the barracks down
             out.error = str(e)[:300]
         self._call(self.finish, task.id, orc.name, out)
+
+    def _sandbox_work(self):
+        """The sandbox's ork: its report from `simulated.json` (what the demo wrote), else the plain one."""
+        try:
+            rules = json.loads((self.state_dir / "simulated.json").read_text(encoding="utf-8")).get("work")
+        except (OSError, ValueError, AttributeError):
+            rules = None
+        return _scripted_work(rules) if isinstance(rules, list) and rules else _simulated_work
 
     def _call(self, fn, *args) -> None:
         try:
