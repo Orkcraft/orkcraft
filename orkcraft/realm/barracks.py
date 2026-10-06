@@ -1,12 +1,17 @@
 """🏕 Barracks: a foreman orc runs incoming tasks in parallel.
 
-A task arrives (a cart from Tasks, a ticket, any text). The foreman decides, by rules:
+A task arrives (a cart from Tasks, a ticket, any text). The steward judges it first (realm/plans.py,
+docs/design/barracks-planning.md): a simple one goes whole to one ork of the light tier the building's
+goal names; a hard one becomes a plan — subtasks with a tier, a persona, the files they touch and what
+they wait for — each a task of its own here, merged into the task's branch, the whole reviewed at the
+end. Nobody hires by hand. Then the foreman decides, by rules:
 
     follow-up   it names a ticket an orc already worked on, or reads like a follow-up of the
                 only orc with history → that orc gets it (now if idle, else when it is free)
-    reuse       an idle orc with nothing waiting for it takes it
-    hire        fewer orcs than `max_orcs` and budget left → a new orc; the foreman picks its
-                provider and model from `providers`
+    reuse       an idle orc of the tier and persona the task wants, with nothing waiting for it
+    hire        fewer orcs than `max_orcs` and budget left → a new orc of that tier and persona; the
+                foreman picks its provider from `providers` (a provider that names its model keeps it)
+    retier      the pool is full: an idle orc of another tier takes it, on the task's model
     queue       otherwise it waits
 
 Context is reused, not re-sent. An orc whose earlier work is close to the new task (same ticket,
@@ -100,6 +105,11 @@ class PoolOrc:
     recent: list[str] = field(default_factory=list)  # its last tasks, a line each: what it knows
     session_tasks: int = 0          # tasks the current session carries
     tokens: int = 0
+    persona: str = ""               # who it was hired as (realm/personas.py); "" — any work
+
+    @property
+    def tier(self) -> str | None:
+        return tiers.step_tier({"harness": self.harness, "model": self.model})
 
     @property
     def label(self) -> str:
@@ -143,13 +153,24 @@ class PoolTask:
     target: str = ""                # where its draft goes out (Jira, Confluence…): the `PUBLISH:` line
     draft: str = ""                 # what goes out, waiting for the operator's approval
     publish: str = ""               # the approved version: the orc posts it on its next run
+    tier: str = ""                  # the tier it wants (realm/tiers.py); "" — whatever the ork has
+    persona: str = ""               # the persona it wants (realm/personas.py)
+    # A planned task (realm/plans.py): the parent keeps the plan, its subtasks point back at it.
+    plan: list[dict] = field(default_factory=list)   # the parent's subtasks as planned (plans.Sub dicts)
+    parent: str = ""                # a subtask: its parent task's id
+    sub: str = ""                   # a subtask: its id in the plan
+    after: list[str] = field(default_factory=list)   # a subtask: the ids it waits for
+    touches: list[str] = field(default_factory=list)  # a subtask: the files it changes
+    cheaper_ok: bool = False
+    persona_waits: str = ""         # a new persona that waits for approval before this subtask runs
+    waits_since: float = 0.0        # …since then (epoch seconds): the autonomy level says how long
 
 
 @dataclass
 class Decision:
     at: str
     task: str
-    action: str                     # follow-up | wait | reuse | hire | queue | budget | paused
+    action: str                     # follow-up | wait | reuse | hire | retier | queue | budget | paused | plan | …
     orc: str = ""
     why: str = ""
 
@@ -303,10 +324,13 @@ class Foreman:
     # -- the model ------------------------------------------------------------------------------------
 
     def choose_model(self, task: PoolTask) -> tuple[str, str, str]:
-        """(harness, model, why): the best provider by its record, nudged by what the task is."""
+        """(harness, model, why): the best provider by its record, nudged by what the task is; the model is
+        the task's tier's on that harness, unless the provider names its own."""
         docs = bool(DOCS_WORDS.search(f"{task.title} {task.text}"))
         best, best_score, best_why = None, -1e9, ""
         for harness, model in self.providers:
+            if not model and task.tier:
+                model = tiers.MODELS.get(harness, {}).get(task.tier, "")
             if harness == "agy" and not model:
                 model = AGY_DOCS if docs else AGY_CODE
             key = f"{harness}:{model}" if model else harness
@@ -346,6 +370,18 @@ class Foreman:
     def related(self, task: PoolTask, orc: PoolOrc) -> bool:
         return self.affinity(task, orc) >= RELATED
 
+    def model_for(self, harness: str, tier: str) -> str | None:
+        """The model of `tier` on `harness`; None when the providers name that harness's model outright
+        (the operator chose it) or the harness has no tiers."""
+        if not any(h == harness and not m for h, m in self.providers):
+            return None
+        return tiers.MODELS.get(harness, {}).get(tier)
+
+    @staticmethod
+    def fits(task: PoolTask, orc: PoolOrc) -> bool:
+        """The orc is of the tier and the persona the task wants (a task that wants none fits any)."""
+        return (not task.tier or orc.tier == task.tier) and (not task.persona or orc.persona == task.persona)
+
     def can_resume(self, orc: PoolOrc) -> bool:
         return orc.harness in RESUMABLE and bool(orc.session) and orc.session_tasks < self.session_tasks
 
@@ -378,24 +414,31 @@ class Foreman:
             return Decision(at, task.id, "wait", orc.name, why + f"; waits until {orc.name} is free")
         waiting_for = {t.wait_for for t in queue if t.wait_for}
         idle = [o for o in orcs if o.status == "idle" and o.name not in waiting_for]
-        if idle:
-            best = max(idle, key=lambda o: self.affinity(task, o))         # max keeps the first of equals
+        fit = [o for o in idle if self.fits(task, o)]
+        if fit:
+            best = max(fit, key=lambda o: self.affinity(task, o))          # max keeps the first of equals
             score = self.affinity(task, best)
             why = f"{best.name} is idle" + (f" and knows this work ({score:.0%} overlap)" if score >= RELATED else "")
             return Decision(at, task.id, "reuse", best.name, why)
+        wants = " ".join(w for w in (task.tier, task.persona and f"as {task.persona}") if w)
         if len(orcs) < self.max_orcs:
             harness, model, mwhy = self.choose_model(task)
             name = next((n for n in NAMES if n not in {o.name for o in orcs}), f"Ork{len(orcs) + 1}")
-            return Decision(at, task.id, "hire", name, f"{len(orcs)}/{self.max_orcs} orks busy → hire; {mwhy}")
+            busy = f"{len(orcs)}/{self.max_orcs} orks" + (f", none idle is {wants}" if idle else " busy")
+            return Decision(at, task.id, "hire", name, f"{busy} → hire; {mwhy}")
+        if idle:
+            best = max(idle, key=lambda o: self.affinity(task, o))
+            return Decision(at, task.id, "retier", best.name, f"the pool is full; {best.name} is idle and becomes {wants}")
         return Decision(at, task.id, "queue", why=f"all {len(orcs)} orks busy — waits in the queue")
 
-    def next_for(self, orc: PoolOrc, queue: list[PoolTask]) -> PoolTask | None:
+    def next_for(self, orc: PoolOrc, queue: list[PoolTask], room: bool = False) -> PoolTask | None:
         """What a freed orc takes: its own follow-ups first, then — among the first few tasks nobody waits
-        on — the one closest to its work, else the oldest."""
+        on — the one closest to its work, else the oldest. While the pool has `room` for a new orc, only a
+        task of its tier and persona: the others wait for an orc hired for them."""
         mine = next((t for t in queue if t.wait_for == orc.name), None)
         if mine is not None:
             return mine
-        free = [t for t in queue if not t.wait_for]
+        free = [t for t in queue if not t.wait_for and (not room or self.fits(t, orc))]
         if not free:
             return None
         best = max(free[:LOOKAHEAD], key=lambda t: self.affinity(t, orc))
@@ -440,6 +483,13 @@ class Barracks:
             self.steward_cost = float(data.get("steward_cost", 0.0))
         except (OSError, ValueError, TypeError):
             pass
+        for t in [t for t in self.tasks if t.status == "planning"]:     # the plan is made again
+            self.tasks.remove(t)
+            t.status = "queued"
+            self.queue.insert(0, t)
+        for t in self.tasks:                  # the last look at a planned whole is taken again
+            if t.plan and t.status == "reviewing":
+                t.status = "planned"
         for o in self.orcs:                   # a restart interrupts the work: those tasks go back
             if o.status == "working":
                 t = next((x for x in self.tasks if x.id == o.task and x.status in ("working", "reviewing")), None)

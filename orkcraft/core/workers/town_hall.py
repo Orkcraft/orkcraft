@@ -352,6 +352,7 @@ class TownHallWorker(Worker):
 
     def _limits_read(self, found: list[Limit]) -> None:
         self.limits, self.limits_at, self.reading_limits = found, dt.datetime.now(), False
+        self.town.limits = list(found)
         self.changed()
 
     def lowest(self) -> list[str]:

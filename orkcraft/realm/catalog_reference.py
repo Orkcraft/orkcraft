@@ -146,13 +146,17 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "barracks": {
         "max_orcs": "how many orks work at once (default 3)",
         "budget_usd": "the most the barracks may spend, in USD",
-        "providers": "who may be hired, `harness[:model]`: claude, agy or codex, e.g. [\"claude:sonnet\", \"agy\"]",
+        "providers": "who the steward may hire, `harness[:model]`: claude, agy or codex, e.g. [\"claude\", \"agy\"]; "
+                     "without a model the task's tier picks it (elder · warrior · laborer), a named model is kept",
         "worktrees": "each ork in its own git worktree (default true)",
         "orders": "standing orders: the steward's rules, given to every ork with each task",
         "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
-        "steward": "`harness[:model]` of the steward that answers and reviews (default claude)",
+        "steward": "`harness[:model]` of the steward that plans, answers and reviews (default claude: an elder plans, "
+                   "a warrior reviews a part, the building's goal picks who looks at the whole)",
+        "plan": "false: every task goes whole to one ork, the steward never plans it into parts (default true)",
+        "escalate": "false: a task sent back keeps its tier instead of going up one (default true)",
         "base": "the branch each task is cut from and its pull request targets (default the current one)",
     },
     "council": {

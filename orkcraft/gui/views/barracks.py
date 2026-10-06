@@ -15,7 +15,7 @@ REFRESH_S = 30.0              # the pull requests of done tasks are looked at no
 KEEP = 20_000                 # characters of a brief or a report the page gets
 LANES = (("queue", "Queue"), ("work", "Working"), ("review", "Review"), ("done", "Done"), ("failed", "Failed"))
 LANE_OF = {"queued": "queue", "working": "work", "reviewing": "review", "asked": "review", "done": "done",
-           "failed": "failed"}
+           "failed": "failed", "planning": "queue", "blocked": "queue", "planned": "work"}
 
 
 def refresh(w) -> None:
@@ -44,7 +44,9 @@ def _task(t: bk.PoolTask, full: bool = False) -> dict:
     row = {"id": t.id, "title": t.title, "status": t.status, "lane": LANE_OF.get(t.status, "queue"), "ork": t.orc,
            "wait_for": t.wait_for, "branch": t.branch, "reworks": max(t.attempts - 1, 0), "warm": t.warm,
            "cost": _money(t.cost_usd) if t.cost_usd else "", "pr": t.pr, "pr_state": t.pr_state, "scope": t.scope,
-           "asks": t.status == "asked", "draft": bool(t.draft), "arrived": t.arrived}
+           "asks": t.status == "asked", "draft": bool(t.draft), "arrived": t.arrived,
+           "tier": t.tier, "persona": t.persona, "parent": t.parent, "part": t.sub, "after": list(t.after),
+           "parts": len(t.plan)}
     if full:
         row.update({"brief": t.text[:KEEP], "report": t.result[:KEEP], "error": t.error, "notes": t.feedback,
                     "question": t.question, "target": t.target, "draft_text": t.draft[:KEEP], "decided": t.decided,
@@ -91,11 +93,6 @@ def _new_task(w, args: dict) -> str:
 
 def _pause(w, args: dict) -> bool:
     return w.pause()
-
-
-def _hire(w, args: dict) -> str:
-    orc = w.hire_by_hand()
-    return orc.name if orc is not None else ""
 
 
 def _answer(w, args: dict) -> str:
@@ -166,5 +163,5 @@ def _terminal(w, args: dict) -> str:
     return key
 
 
-ACTS = {"task": _new_task, "pause": _pause, "hire": _hire, "answer": _answer, "add_rule": _add_rule,
+ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
         "diff": _diff, "terminal": _terminal}

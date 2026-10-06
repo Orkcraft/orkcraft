@@ -1,6 +1,7 @@
 # Design — the Barracks plans its work; three levels of autonomy
 
-Status: design notes, written 2026-10-06; §2 is implemented, the rest is under way. Builds on the Barracks
+Status: written 2026-10-06 and implemented: `autonomy.py` (§2), `realm/plans.py`, `realm/personas.py`,
+`core/workers/barracks_plan.py` (§3–5), tests in `tests/test_pool_plans.py`. Builds on the Barracks
 (`realm/barracks.py`, `core/workers/barracks.py`), the tiers (`realm/tiers.py`), the building goals
 (docs/design/retros-and-goals.md §3) and the autonomy slider (`autonomy.py`, docs/design/onboarding.md §6).
 
@@ -138,18 +139,23 @@ rework notes. One pull request, for the whole task, after the final review.
 - **escalation**: a subtask that fails (tests red, or a `REWORK`) goes up one tier on its next try:
   laborer → warrior → elder. Every try counts against `max_reworks`; past it → 🔥 for the operator.
 
-The steward keeps the intent: each planned task has a steward session of its own (planning, its
-answers to questions, the final review). When that session is rolled over, the next one gets the
-original request and the plan verbatim — never a retelling.
+The steward keeps the intent: every call about a planned task — the plan, the review of a part, the
+last look — gets the operator's original request and the plan verbatim, never a retelling.
 
-### 4.7 The budget
+### 4.7 The budget and the quota
 
-The plan has to fit `max_orcs` and what is left of `budget_usd` (estimated from the record of each
-tier in `stats.json`). When it does not, it is trimmed, never silently cut:
+The plan has to fit what is left of `budget_usd` in dollars and, for the tools on a subscription, what is
+left of the binding quota in tokens: the town keeps the last quota read (`town.limits`, from the Town
+Hall's Limits), `realm/pressure.py` turns it into the tokens the camp can still spend before the reset,
+and a plan may take at most half of that (`plans.QUOTA_SHARE`). Each part is estimated by its tier — $ and
+tokens a run from the barracks' own record in `stats.json`, else a guess (`DEFAULT_COST`,
+`DEFAULT_TOKENS`); the estimate is written in the plan's decision. When the camp's quota is **tight**
+(its forecast passes what is left), the barracks works as 🪙 thrift whatever its goal. When the plan
+does not fit, it is trimmed, never silently cut:
 
 1. fewer at a time — the graph runs with less parallelism (same spend, longer);
 2. a lower tier where the steward marked `cheaper_ok`;
-3. only then the steward is asked to merge subtasks.
+3. if it still does not fit, the task runs whole, as a simple one (one ork, one go).
 
 Every trim lands in `decisions.jsonl` with its reason.
 

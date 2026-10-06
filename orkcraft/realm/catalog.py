@@ -173,13 +173,14 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                   "(Jira, Confluence…) waits for approval: the draft, the report and the files; through a "
                   "Loot, accept lets the ork post it and rework sends it back"),
                 _e("pool.idle", "queue empty", TEXT, "every task is done, the orks are idle")),
-        actions=(_a("pool.hire", "Hire / answer", "+", "answer the steward's question when it asks, else hire an ork"),
+        actions=(_a("pool.answer", "Answer", "+", "answer the steward's question (🔥); the steward hires the orks itself"),
                  _a("pool.pause", "Pause / resume", "⏸", "stop or resume taking tasks"),
                  _a("pool.task", "New task", "✍", "write a task straight to the barracks: a title and a brief")),
         config={"max_orcs": (int, (1, 10), False), "budget_usd": (float, (0, 200), False),
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
-                "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False)},
+                "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
+                "plan": (bool, None, False), "escalate": (bool, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Clan Fire", "🪔", "M",

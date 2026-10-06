@@ -45,6 +45,7 @@ class Town:
             self.graph = None
         self.bus = b.Bus()
         self.machine = settings.load()      # this machine's settings: you, your tools, your day (settings.py)
+        self.limits: list = []              # the last quota reads (sources/limits.py), whoever made them
         self.saver: Callable[[], bool] | None = None
         self.buildings: list[Building] = registry()
         specs, self.mason_problems = masonry.load_specs(self.repo_root)

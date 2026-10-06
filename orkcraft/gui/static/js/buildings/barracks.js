@@ -155,7 +155,7 @@ export function preview(id, data) {
     <ul class="gui-rows">
       ${data.orks.slice(0, SHOWN).map((o) => html`<${OrkRow} key=${o.name} id=${id} o=${o} onClick=${() => openOrk(id, o)} />`)}
       ${more > 0 && html`<li class="ok-tone-muted">+${more} more — Open</li>`}
-      ${!data.orks.length && html`<li class="ok-tone-muted">No orks yet — a task hires one</li>`}
+      ${!data.orks.length && html`<li class="ok-tone-muted">No orks yet — the steward hires them for the tasks</li>`}
     </ul>
     <div class="ok-tone-muted">Queue ${queue.length}${data.paused ? " · paused" : ""}</div>
     <ul class="gui-rows">${queue.slice(0, 3).map((t) => html`<li key=${t.id}>· ${t.title}
@@ -172,8 +172,9 @@ function TaskCard({ id, t, isChosen }) {
     <div class="ok-card__title">${t.status === "done" && html`<span class="ok-card__check">✓</span>`}<span>${t.title}</span>
       ${t.asks && html`<span class="ok-word ok-tone-fire"> asks</span>`}</div>
     <div class="ok-card__meta ok-tone-muted">
-      ${[t.ork || (t.wait_for && `waits for ${t.wait_for}`), t.branch, t.reworks ? `${t.reworks} rework${t.reworks > 1 ? "s" : ""}` : "",
-         t.cost].filter(Boolean).join(" · ")}
+      ${[t.parts ? say(`planned in ${t.parts} parts`) : "", t.part ? say(`part ${t.part}`) : "",
+         t.ork || (t.wait_for && `waits for ${t.wait_for}`), t.tier, t.branch,
+         t.reworks ? `${t.reworks} rework${t.reworks > 1 ? "s" : ""}` : "", t.cost].filter(Boolean).join(" · ")}
       ${t.pr && html` <span class="ok-pr" data-state=${(t.pr_state || "open").toLowerCase()}>PR</span>`}</div>
   </div>`;
 }
@@ -287,14 +288,13 @@ function Head({ id, data }) {
     ${data.asked.length > 0 && html`<span class="ok-tone-fire">${data.keeper} asks (${data.asked.length})</span>`}
     <span class="gui-head__spacer"></span>
     <${Acts} id=${id} data=${data} />
-    <button class="ok-act" onClick=${() => act(id, "hire").catch(() => {})}><span class="ok-act__label">Hire an ork</span></button>
     <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
 
 /** The orks' pane: a tab per ork, the chosen one's terminal under it (the one that asks comes first). */
 function Orks({ id, data }) {
-  if (!data.orks.length) return html`<p class="ok-tone-muted">No orks yet — a task hires one, or Hire an ork.</p>`;
+  if (!data.orks.length) return html`<p class="ok-tone-muted">No orks yet — the steward hires them for the tasks.</p>`;
   const tab = tabs.value[id] || "";
   const ork = data.orks.find((o) => `ork:${o.name}` === tab)
     || data.orks.find((o) => o.asks) || data.orks.find((o) => o.status === "working") || data.orks[0];

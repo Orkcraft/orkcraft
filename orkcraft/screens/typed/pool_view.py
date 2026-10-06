@@ -23,6 +23,7 @@ ICON = worker_mod.ICON
 TASK_ICON = worker_mod.TASK_ICON
 STEWARD = "steward"
 PR_CHECK_S = worker_mod.PR_CHECK_S
+TICK_S = 15.0
 
 
 class PoolView(TypedView):
@@ -97,8 +98,12 @@ class PoolView(TypedView):
                 yield Static("", id="pool-detail", classes="-as-written")
 
     def on_mount(self) -> None:                           # TypedView's on_mount runs too (Textual walks the MRO)
-        self.set_timer(worker_mod.PR_FIRST_S, self.check_prs)     # what happened while the camp was closed
-        self.set_interval(PR_CHECK_S, self.check_prs)
+        self.set_interval(TICK_S, self.tick)      # the worker's pace: personas' timers, the queue, the PRs
+
+    def tick(self) -> None:
+        w = self.worker
+        if w is not None:
+            w.tick()
 
     def on_unmount(self) -> None:
         w = self.worker
@@ -230,11 +235,20 @@ class PoolView(TypedView):
                 t.append(f"  rework for {q.wait_for}\n" if q.feedback and q.wait_for else
                          f"  waits for {q.wait_for}\n" if q.wait_for else "\n", style="dim")
             t.append("\n")
-        recent = [x for x in st.tasks if x.status in ("done", "failed")][-5:]
+        for parent in [x for x in st.tasks if x.plan and x.status in ("planning", "planned", "reviewing", "asked")] + \
+                [x for x in st.tasks if x.status == "planning"]:
+            t.append(f"🧭 {parent.title}", style="bold")
+            t.append(f"  {'planning…' if parent.status == 'planning' else parent.status}\n", style="dim")
+            for k in self.worker.children(parent):
+                t.append(f"  {TASK_ICON.get(k.status, '·')} {k.sub} · {k.tier}"
+                         + (f" · {k.persona}" if k.persona else "") + (f" — {k.orc}" if k.orc else ""), style="")
+                t.append(f"  after {', '.join(k.after)}\n" if k.status == "blocked" and k.after else "\n", style="dim")
+            t.append("\n")
+        recent = [x for x in st.tasks if x.status in ("done", "failed") and not x.parent][-5:]
         if recent:
             t.append("Finished\n", style="bold")
             for x in reversed(recent):
-                t.append(f"{TASK_ICON[x.status]} {'♻ ' if x.warm else ''}{x.title} — {x.orc}",
+                t.append(f"{TASK_ICON[x.status]} {'♻ ' if x.warm else ''}{x.title} — {x.orc or self.keeper}",
                          style="green" if x.status == "done" else "red")
                 tries = f" · {x.attempts} runs" if x.attempts > 1 else ""
                 t.append(f"{tries}{' · ' + x.pr if x.pr else ''}\n", style="dim")
@@ -261,11 +275,8 @@ class PoolView(TypedView):
                                             help="Enter goes to the next line, then sends the task to the foreman"),
                                  self.new_task)
             return True
-        if action_id == "pool.hire":
-            if st.asked:                     # the steward's question comes first
-                return self.ask_operator()
-            self.worker.hire_by_hand()
-            return True
+        if action_id in ("pool.answer", "pool.hire"):     # pool.hire: the old id of the key
+            return self.ask_operator()
         if action_id == "pool.pause":
             self.worker.pause()
             return True
