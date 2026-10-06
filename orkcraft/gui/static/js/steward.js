@@ -1,5 +1,6 @@
 // The steward's window: the middle column of a selected building's console (js/console.js), once the
-// garrison's list. Its head is the steward — name, status, model (a click: its models) — and its body
+// garrison's list. Its head is the steward — name, status, model (a click: which model for which of its
+// tasks, realm/steward.py USES) — and its body
 // what the steward keeps and does:
 //
 //   settings   the goal its retros aim at (three steps), how freely it applies their changes (the Town
@@ -11,8 +12,10 @@
 //   on its own the handlers no road feeds: on a schedule or when asked
 //
 // The data is the building's `info` (gui/info.py: steward, listens, others, goal, autonomy).
+import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say } from "./link.js";
+import { Dialog } from "./dialog.js";
 import { selectOrk } from "./windows.js";
 import { HALL } from "./tent.js";
 import { pickedRoad } from "./build.js";
@@ -30,16 +33,34 @@ const GOALS = [["thrift", "Thrift", "Fewer tokens, keeping what was liked"],
                ["balance", "Balance", "Cheaper where it is liked, better where it is not"],
                ["quality", "Quality", "Better results; it may spend more"]];
 
-/** The window's title: the steward, its status, its model (a click: which model for what). */
+/** The window's title: the steward, its status, its model (a click: which model for which task). */
 export function StewardTitle({ i, open }) {
   const s = i && i.steward;
   if (!s) return say("Steward");
   return html`<span class="gui-steward__head">
-    <button class="gui-link" title=${say("The steward itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(s.ref)}>★ <b>${s.name}</b></button>
+    <button class="gui-link" title=${say("The steward itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(s.ref)}>★ <b>${say(s.name)}</b></button>
     <span class="ok-tone-muted"> · ${s.status}</span>
-    ${s.model && html` <button class="gui-steward__model" title=${say("Which model it uses, step by step")}
-        onClick=${() => open("ork-model", s.ref)}>${s.model}${s.models > 1 ? ` +${s.models - 1}` : ""} ▾</button>`}
+    ${s.own && html` <button class="gui-steward__model" title=${say("Which model it runs each of its tasks on")}
+        onClick=${() => open("steward-models")}>${s.model}${s.more > 0 ? ` +${s.more}` : ""} ▾</button>`}
   </span>`;
+}
+
+/** Which tier the steward runs each of its tasks on: every building's (watch, redesign, rules) and its
+ * type's own; "" is the default (the CLI's own model, or the type's setting). */
+export function StewardModels({ b, i, onClose, onDone }) {
+  const s = i.steward;
+  const [picked, setPicked] = useState(Object.fromEntries(s.uses.map((u) => [u.id, u.tier])));
+  const choices = (i.tiers || []).map(([v, label]) => [v, v ? label : say(`Default${s.default ? ` (${s.default})` : ""}`)]);
+  const save = () => command("steward.models", { id: b.id, models: picked }).then(() => { onClose(); onDone(); }, () => {});
+  return html`<${Dialog} title=${say(`${s.name}'s models — ${b.title}`)} text=${say("Which model the steward runs each of its tasks on.")}
+      onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${save}>${say("Save")}</button>`}>
+    <div class="gui-form">${s.uses.map((u) => html`<label key=${u.id} class="gui-field"><span class="ok-font-label">${say(u.label)}</span>
+      <select class="ok-input" value=${picked[u.id]} onChange=${(e) => setPicked({ ...picked, [u.id]: e.target.value })}>
+        ${choices.map(([v, label]) => html`<option key=${v} value=${v} selected=${v === picked[u.id]}>${label}</option>`)}
+      </select></label>`)}</div>
+  </${Dialog}>`;
 }
 
 function Steps({ label, title, children }) {
@@ -102,7 +123,7 @@ function editTitle(h) {
 }
 
 function Handler({ h }) {
-  return html`<span class="gui-steward__who"><b>${h.name}</b>
+  return html`<span class="gui-steward__who"><b>${say(h.name)}</b>
     <span class="ok-tone-muted"> · ${say(h.kind_label)}${h.tier ? ` · ${h.tier}` : ""}</span>
     <span class=${cls("gui-steward__status", { "ok-tone-wait": h.status === "busy", "ok-tone-fire": h.status === "alert" })}> · ${h.status}</span></span>`;
 }

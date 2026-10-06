@@ -13,7 +13,7 @@ from orkcraft.gui import markdown
 from orkcraft.gui.jobs import ConsoleError, plain
 from orkcraft.gui.views import ActError
 from orkcraft.gui.views import lake as lake_view
-from orkcraft.realm import builders
+from orkcraft.realm import steward
 
 
 class KeeperMixin:
@@ -48,7 +48,7 @@ class KeeperMixin:
 
         def work() -> keeper.Proposal:
             return keeper.ask(repo, spec, snapshot, bs.id, request, selection=selection, existing_ids=others,
-                              runner=runners.KEEPER_RUNNER or builders.claude_runner)
+                              runner=steward.runner_for(snapshot.building(bs.id), "keeper", runners.KEEPER_RUNNER))
 
         def done(job: dict, p: keeper.Proposal) -> None:
             if p.error:

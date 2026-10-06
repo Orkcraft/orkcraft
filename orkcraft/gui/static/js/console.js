@@ -17,7 +17,7 @@ import { openOrders } from "./orders.js";
 import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
-import { StewardTitle, StewardWindow } from "./steward.js";
+import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -276,6 +276,7 @@ function Console({ b, orkRef }) {
   ${dialog && dialog.kind === "history" && html`<${HistoryDialog} b=${b} ork=${o} tool=${dialog.tool} onClose=${close} />`}
   ${dialog && dialog.kind === "listen" && html`<${ListenDialog} b=${b} onClose=${close} />`}
   ${dialog && dialog.kind === "redesign" && html`<${RedesignDialog} b=${b} onClose=${close} />`}
+  ${dialog && dialog.kind === "steward-models" && i && i.steward && html`<${StewardModels} b=${b} i=${i} onClose=${close} onDone=${redo} />`}
   ${dialog && (dialog.kind === "ork-orders" || dialog.kind === "ork-model") && html`<${OrkDialog} key=${dialog.tool}
     b=${b} ref=${dialog.tool} which=${dialog.kind === "ork-model" ? "model" : "orders"} onClose=${close} />`}
   ${dialog && dialog.kind === "orders" && i && o && html`<${OrdersDialog} b=${b} i=${i} onClose=${close} onDone=${redo} />`}

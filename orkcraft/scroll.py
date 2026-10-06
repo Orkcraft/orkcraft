@@ -92,6 +92,7 @@ class OrcSpec:
     chain: list[dict] = field(default_factory=list)
     script: dict | None = None    # {"path", "sha256"?, "reviewed"?}
     why: str = ""                 # the recruiter's reason for this kind
+    models: dict | None = None    # a steward's tier per task (realm/steward.py USES): {"watch": "laborer", …}
 
     def __post_init__(self) -> None:
         self.avatar = OLD_ICONS.get(self.avatar, self.avatar)
@@ -106,7 +107,7 @@ class OrcSpec:
 
     def to_dict(self) -> dict:
         d = asdict(self)
-        for key, empty in (("run", None), ("chain", []), ("script", None), ("why", "")):
+        for key, empty in (("run", None), ("chain", []), ("script", None), ("why", ""), ("models", None)):
             if d[key] == empty:
                 d.pop(key)
         return d  # harness always: an empty list must not load back as the default

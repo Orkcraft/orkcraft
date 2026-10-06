@@ -335,7 +335,8 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
 
 
 def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(page):
-    """Its head is the steward; each road in with its handler (the Pit takes no plain one); a click on an agent's edits its prompt,
+    """Its head is the steward (its models, task by task); each road in with its handler (the Pit takes no
+    plain one); a click on an agent's edits its prompt,
     › opens the ork; an ork no road feeds is listed on its own."""
     pg = page
     link = "import('/static/js/link.js')"
@@ -363,6 +364,15 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     assert "Coder" in modal.inner_text() and modal.locator("textarea").first.input_value() == "Read the ticket."
     pg.keyboard.press("Escape")
     modal.wait_for(state="hidden", timeout=WAIT_MS)
+    roster.locator(".gui-steward__model").click()                   # the steward's models, task by task
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    labels = modal.locator(".gui-field .ok-font-label").all_inner_texts()
+    assert labels[:3] == ["Watch: findings and proposals", "Redesign the window", "Rules and settings"]
+    modal.locator("select").first.select_option("laborer")
+    modal.get_by_role("button", name="Save", exact=True).click()
+    modal.wait_for(state="hidden", timeout=WAIT_MS)
+    assert next(u for u in server_building(pg, dst)["steward"]["uses"] if u["id"] == "watch")["tier"] == "laborer"
+    pg.wait_for_function("() => document.querySelector('.gui-steward__model').textContent.includes('+1')", timeout=WAIT_MS)
     roads.filter(has_text="Coder").locator(".gui-steward__more").click()     # › the ork itself
     roster.locator(".ok-win__title", has_text="Inventory").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")

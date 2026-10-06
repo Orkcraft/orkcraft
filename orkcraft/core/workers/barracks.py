@@ -39,7 +39,7 @@ from pathlib import Path
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, pipes, roads
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, pipes, roads, steward, tiers
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗"}
@@ -479,8 +479,14 @@ class BarracksWorker(Worker):
             task.status = status
             self.changed()
 
-    def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome) -> str:
+    def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome, use: str = "review") -> str:
+        """One model call of the steward's: `use` is its task (answer | review), whose tier its spec may set
+        (realm/steward.py); else the model of its `steward` setting."""
         harness, model = bk.parse_provider(str(self.config.get("steward") or "claude"))
+        scroll = getattr(self.town, "scroll", None)
+        tier = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
+        if tier:
+            model = tiers.resolve(harness, tier)
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:
@@ -495,7 +501,7 @@ class BarracksWorker(Worker):
     def _steward_answer(self, task: bk.PoolTask, question: str, workdir: Path, cancel: threading.Event,
                         out: RunOutcome) -> str:
         prompt = bk.steward_question_prompt(self.keeper, self.orders, task, question)
-        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out))
+        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out, use="answer"))
 
     def _review(self, task: bk.PoolTask, workdir: Path, git: jobs.TaskGit | None, cancel: threading.Event,
                 out: RunOutcome) -> None:

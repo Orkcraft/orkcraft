@@ -117,8 +117,15 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         return None
     term = terminal_of(lead)
     models = inventory.models_of(lead, town.snapshot.model_by_terminal.get(term, "") if term else "")
+    bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
+    uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use)}
+            for use, label in steward.uses(catalog.type_of(spec).id if spec else "").items()]
+    picked = [u["tier"] for u in uses if u["tier"]]
+    default = models[0][1] if models else ""
+    first = modes.text(tiers.label(picked[0]), modes.OFFICE) if picked else default
     return {"ref": lead.ref, "name": lead.name, "status": lead.status, "tier": lead.tier or "",
-            "model": models[0][1] if models else "", "models": len(models)}
+            "model": first or "default", "more": len({u["tier"] or "" for u in uses}) - 1 if picked else 0,
+            "default": default, "uses": uses, "own": bs is not None and bs.garrison.steward is not None}
 
 
 def _town_autonomy(town: Town) -> str:
