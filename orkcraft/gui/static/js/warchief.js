@@ -348,7 +348,7 @@ export function WarchiefLine() {
     <div key="bar" class="gui-warchief__bar">
       <button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
         onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>
-        <img src="/ds/sprites/orks/ork-advisor@2x.png" width="26" height="28" alt="" />
+        <img src=${t.look === "camp" ? "/ds/logo/ork-mark-camp.svg" : "/ds/logo/ork-mark.svg"} width="36" height="24" alt="" />
         ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
       </button>
       <${Speaks} hidden=${focused || !!l.text || chips.length > 0} />
