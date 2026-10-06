@@ -1,0 +1,172 @@
+# Design — the War Map: the orkspaces as a framed map, and the biomes back
+
+Status: design notes, written 2026-10-06; nothing is in the GUI yet. A working prototype is
+`design-system/previews/OrkspaceMap.html`. Open it in a browser: click, ↑ / ↓, right click for the
+next biome (the GUI will have a menu, §2.4), Delete, the fog for `+ Orkspace`, "+ 4 orkspaces",
+"Building panel". Builds on the
+orkspaces of the Town Scroll (`scroll.py` `Orkspace`: `id`, `name`, `biome`, `hotkey`, `buildings`), the
+calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat sprites
+(building-sprites.md). Wording: ork, orkestration (CLAUDE.md).
+
+| stage | what | state |
+|---|---|---|
+| 1 | the biomes: five grounds, the huts drawn for each (§3) | |
+| 2 | the War Map: the orkspaces as lands in a framed square, the open one large (§2) | |
+| 3 | the map's fog at the foot makes a new orkspace; right click changes a land's biome (§2.4) | |
+| later | the biome's doodads on the town's ground (sprites.md, Decorations) | |
+
+![The prototype: the War Map at the bottom left, the town in the open orkspace's biome (ice)](../img/war-map/town.png)
+
+## 1. Why
+
+The orkspaces are a row of buttons today (`js/chrome.js` `Orkspaces`). They work, but they are the
+one part of the town that says nothing of the game it is, and every orkspace looks the same once
+opened: only its name tells where you are.
+
+Two changes, one idea:
+
+- **Each orkspace has a biome again**: its own ground, and huts drawn for it. You know which one is
+  open at a glance, before you read a name.
+- **The orkspaces are a map**: lands stacked in a framed square at the bottom left, where a strategy
+  game keeps its minimap. Each land is coloured by its biome, so their edges need no help.
+
+The GUI has one look (gui-design-system.md); all of this is drawn in it. With Office words the same
+art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Workspaces*: `lexicon.TERMS`).
+
+## 2. The War Map
+
+### 2.1 The shape
+
+```
+┌────────────────────────────┐   a bevelled frame (--panel-raised, --bevel-*, a --frame line)
+│ main                    ░░ │   a closed land: one line, its name
+│ release ■               ░░ │   ■ the orks ask a question there
+│▌research                ░░ │   the open land: tall, its name in gold, a gold bar at its left,
+│ 3 buildings · all quiet ░░ │     a status line,
+│ ■ ■ ■                   ░░ │     and its buildings as dots (gold: at work)
+│ ops                     ░░ │
+│ docs                    ░░ │
+│ + Orkspace ░░░░░░░░░░░░░░░ │   the fog of war: the foot (makes a new one) and a ragged edge at the right
+└────────────────────────────┘
+```
+
+- **A square of 240 px** (40 × 40 cells of 6 px) in a frame of the design system's bevel. It does not
+  grow with the orkspaces: they share it.
+- **One land per orkspace, top to bottom** in the Town Scroll's order. It is the same list as today,
+  so names read, order is kept and the keyboard walks it, but drawn as a map.
+- **The open land is large**, about 2.4 closed ones: name, a status line ("9 buildings · 2 at work",
+  "· 1 question", "· all quiet") and a dot per building (gold while it works). The others are one
+  line each.
+- **Large is the open one, never the busy one.** Sizing by activity would reshape the map every time an
+  ork starts or stops: it would breathe and be hard to hit. Activity shows inside a land (the status,
+  the dots, ■).
+- **The fog of war**: the foot of the map (`+ Orkspace`, fixed, 4 cells) and a ragged strip at the
+  right (2–5 cells) where the lands end in a coast short of the frame, so the map reads as a land
+  that goes on, not a table in a box. The right strip is not clickable. Only the foot makes a new
+  orkspace, so it is clear where to press.
+
+### 2.2 Borders, coast, stability
+
+- **A border between two lands** wanders ±1 cell in steps of 3–5 columns, and is seeded by the
+  **pair of ids** it parts. Renaming changes nothing, and two neighbours always meet tooth to tooth.
+- **The coast** wanders 0–3 cells in steps of 2–4 rows, seeded by the **absolute row**, so a new land
+  never moves the coast of the others.
+- **A seam of 1 px** (the frame's dark) parts two lands; the biome colours do the rest.
+- **The heights**: the open land gets what the closed ones (≥ 5 cells, 30 px, so a ±1 border never
+  reaches a name) and the fog leave, and at least 11 cells. Up to **six orkspaces** fit the square.
+  From seven (the Town Scroll allows eight, F1–F8) the lands scroll inside the frame, and the open
+  one is kept in sight.
+
+### 2.3 The parts, in code
+
+- Each land is a real `<button>` the size of the square, cut to its land by `clip-path: path(…)`: a
+  union of the land's cells, row by row. Clicks and hover follow the shape, so a neighbour's tooth
+  clicks as the neighbour. The prototype checks this.
+- **Focus** is drawn inside (a lighter land, the name dotted-underlined in gold), because a clip
+  path cuts an outline off. ↑ / ↓ walk the lands and the fog, Enter opens.
+- **aria-label** says what the shape shows: "release, 5 buildings, 1 question, forest";
+  `aria-current` marks the open one; the map is a `nav` "Orkspaces".
+- The shape is computed on the client from what the host sends. `state.orkspaces` already sends `id`,
+  `name`, `biome`, `buildings` and `questions`; it adds the **working** count per orkspace.
+- **One animation only**: a short (150–200 ms) change of heights when another land opens. A clip path
+  morphs only between paths of the same commands, so it is done as a quick cross-fade of the two
+  renders. Nothing else moves; ■ blinks as a hut's fire does.
+- `js/chrome.js` `Orkspaces` is replaced by the map; its commands stay (`orkspace.select`,
+  `orkspace.new`).
+
+### 2.4 Acts
+
+| on | does |
+|---|---|
+| a land | opens that orkspace (`orkspace.select`) |
+| the fog at the foot | `+ Orkspace`: asks a name, as today (`orkspace.new`); the new land rises from the fog, open |
+| right click on a land | its menu: Rename…, Biome ▸ (five), Delete… |
+| ↑ / ↓, Enter | walk, open |
+| F1–F8 | as today, the hotkeys of the orkspaces |
+
+- **One orkspace**: a single land fills the map above the fog. It is a map from the first day, and
+  the fog shows where it grows.
+
+## 3. The biomes
+
+![Five biomes, the huts changed by code, nothing redrawn](../img/war-map/biomes.png)
+
+### 3.1 Five
+
+| biome | the town's ground | the land on the map | the huts |
+|---|---|---|---|
+| **dirt** | `#1a1813` (today's Office ground) | `#3a3326` | as drawn |
+| **forest** | `#14260c` | `#2c4a1e` | as drawn (the ground says forest; moss at the foot was tried and does not read) |
+| **ice** | `#0c1622` | `#263c52` | snow: the two top pixels of every edge that faces the sky go ivory |
+| **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
+| **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
+
+- **One flat colour per biome**, dark and low in saturation, as sprites.md has it: the cards, their
+  text, the gold and the fire must read on all five.
+- These become tokens (`tokens.json`: `ground-<biome>`, `land-<biome>`), and the GUI sets `--canvas`
+  from the open orkspace's biome.
+
+### 3.2 The huts, by code
+
+The 19 buildings are **not redrawn** per biome. `tools/biomes.py` makes the four variants from each
+flat sprite: a palette swap (dust, void) and a few pixels added by rule (snow on ice, sand on dust).
+It writes `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`) beside today's
+`header.png`, which stays dirt's and forest's. That is 76 files, all made by the script, so they are
+clean pixels; a CSS filter at run time would smear the palette. `js/icons.js` `headerSprite(type,
+biome)` picks the file. The prototype does the same on a canvas, to try the rules live.
+
+- The agents' heads and the Warchief stay green in every biome: they are the clan, not the place.
+- Void takes the green off the buildings. That is accepted: the clan stays green.
+
+### 3.3 Who picks it
+
+- A **new orkspace** gets the first biome no orkspace has. When all five are taken, it gets any biome
+  but its upper neighbour's, so two lands that touch never share a colour.
+- **Right click → Biome ▸** changes it. It is stored in the Town Scroll, `orkspaces[].biome`, which
+  exists already (`scroll.BIOMES = ("void", "forest", "ice")`; it gains `"dirt"` and `"dust"`).
+
+## 4. With the growth of buildings
+
+growth.md puts a flag on a hut's roof. On **ice** an ivory flag (levels I–II) disappears into the
+snow, so on ice the flag's cloth gets a 1 px dark edge. The gold of III reads everywhere.
+
+## 5. To check (in the prototype first)
+
+| | why | how |
+|---|---|---|
+| the fire on **dust** | a warm ground under orange fire | a burning hut and ■ on a dust land |
+| a flag on **ice** | ivory on snow (§4) | a level I flag on an ice roof |
+| the map beside an open panel | the panel takes the town's right half | "Building panel" in the prototype: the map keeps its corner and the town's huts move left |
+| seven and eight orkspaces | the scroll inside the frame | "+ 4 orkspaces" |
+| one orkspace | the map from the first day | Delete down to one |
+
+## 6. Open questions
+
+- **The default biome.** `new_orkspace` writes `"forest"` when none is given, so every camp so far
+  says forest, although the GUI showed them on dirt. Either the GUI's first release reads a stored
+  `"forest"` as it is (the towns turn green), or a one-time step re-biomes the camp's orkspaces by
+  §3.3. The second keeps today's look for the first orkspace and spreads the rest. Recommended.
+- **The old War Map preview** (`design-system/previews/WarMap.html`) shows the list of the TUI's days.
+  It is replaced by `OrkspaceMap.html` when the map lands.
+- **Biome doodads** (a pine, a dead tree, a drift; sprites.md, Decorations) would make the five
+  grounds richer. Later, and only if the town stays calm.

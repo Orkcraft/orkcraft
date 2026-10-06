@@ -1,0 +1,277 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>OrkspaceMap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<!-- The orkspaces as a framed map (docs/design/war-map.md): a prototype, not the GUI's code.
+     Click a land to open it · ↑ / ↓ walk the lands · right click: the next biome · Delete: drop it ·
+     the fog at the foot: + Orkspace. -->
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #000; color: var(--ink); font-family: var(--ok-font); }
+  .town { position: relative; height: 100vh; min-height: 520px; overflow: hidden; background: var(--ground);
+    transition: background-color .2s; }
+  .bar { position: absolute; top: 0; left: 0; right: 0; display: flex; gap: 12px; align-items: center; padding: 8px 16px;
+    background: var(--panel); box-shadow: 0 2px 0 var(--bevel-lo); font: 600 12px/20px var(--ok-font); color: var(--ink-muted); z-index: 3; }
+  .bar b { color: var(--ink-gold); font-weight: 600; }
+  .bar .sp { flex: 1; }
+  .bar button { font: inherit; color: var(--ink-gold); background: var(--panel-raised); border: 0; box-shadow: var(--bevel-raised); padding: 2px 10px; cursor: pointer; }
+  .bar button:active { box-shadow: var(--bevel-sunken); }
+  .huts { position: absolute; top: 72px; left: 300px; right: 24px; display: flex; flex-wrap: wrap; gap: 28px 40px; align-items: flex-end; }
+  .hut { display: flex; flex-direction: column; align-items: center; gap: 6px; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
+  .hut canvas { image-rendering: pixelated; width: 87px; }
+  .town.has-panel .huts { right: calc(42% + 24px); }
+  .panel { position: absolute; top: 36px; right: 0; bottom: 0; width: 42%; background: var(--panel); box-shadow: -2px 0 0 var(--bevel-lo), inset 2px 0 0 var(--bevel-hi);
+    display: none; padding: 16px; box-sizing: border-box; color: var(--ink-muted); font-size: 13px; z-index: 2; }
+  .town.has-panel .panel { display: block; }
+  .panel h3 { margin: 0 0 8px; color: var(--ink-gold); font: 700 15px/20px var(--ok-font); }
+  .warchief { position: absolute; bottom: 20px; left: 320px; width: 340px; height: 30px; background: var(--panel-inset); box-shadow: var(--bevel-sunken);
+    color: var(--ink-comment); font-size: 13px; line-height: 30px; padding: 0 12px; }
+
+  /* the map */
+  .om { position: absolute; left: 16px; bottom: 16px; z-index: 2; padding: 8px; background: var(--panel-raised);
+    box-shadow: var(--bevel-raised), 0 0 0 2px var(--bevel-lo), 4px 4px 0 #000; }
+  .om-view { width: 240px; height: 240px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset);
+    box-shadow: 0 0 0 3px var(--frame); position: relative; }
+  .om-land { position: relative; background: var(--fog); }
+  .om-band { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: var(--fill); cursor: pointer; color: var(--ink);
+    font: 600 13px/16px var(--ok-font); text-align: left; outline: none; }
+  .om-band:hover { filter: brightness(1.12); }
+  .om-band:focus-visible { filter: brightness(1.2); }
+  .om-band:focus-visible .om-name { text-decoration: underline dotted var(--ink-gold); text-underline-offset: 3px; }
+  .om-band > * { position: absolute; pointer-events: none; }
+  .om-name { left: 12px; white-space: nowrap; text-shadow: 1px 1px 0 var(--bevel-lo); }
+  .is-open .om-name { color: var(--frame-focus); }
+  .om-bar { left: 0; width: 3px; background: var(--frame-focus); }
+  .om-ask { display: inline-block; width: 8px; height: 8px; margin-left: 6px; background: var(--alert); box-shadow: inset 0 0 0 2px var(--alert), inset 0 0 0 4px var(--fire-glow);
+    animation: om-ask 1.6s steps(2) infinite; vertical-align: 1px; }
+  @keyframes om-ask { 50% { background: var(--fire-glow); } }
+  .om-state { left: 12px; font: 400 11px/14px var(--ok-font); color: var(--ink); opacity: .85; white-space: nowrap; }
+  .om-dots { left: 13px; display: flex; gap: 6px; }
+  .om-dots i { width: 4px; height: 4px; background: var(--ink); }
+  .om-dots i.w { background: var(--ink-gold); }
+  .om-fog { color: var(--ink-muted); }
+  .om-fog:hover .om-name { color: var(--ink); }
+  .note { position: absolute; z-index: 1; left: 300px; bottom: 64px; max-width: 420px; font-size: 12px; color: var(--ink-comment); }
+  .note kbd { font: 600 11px var(--ok-font); color: var(--ink-muted); }
+</style></head>
+<body data-theme="camp" data-look="office">
+<div class="town" id="town">
+  <div class="bar"><span><b>Orkspace map</b> — a prototype</span><span class="sp"></span>
+    <span id="where"></span>
+    <button id="panel">Building panel</button><button id="more">+ 4 orkspaces</button><button id="reset">Reset</button></div>
+  <div class="huts" id="huts"></div>
+  <aside class="panel"><h3>The Forge</h3>Work · Info — a building's panel takes the right of the town; the map keeps its corner.</aside>
+  <div class="warchief">Ask the Warchief… or /</div>
+  <p class="note">Click a land to open it · <kbd>↑</kbd> <kbd>↓</kbd> walk the lands · right click: the next biome ·
+    <kbd>Delete</kbd>: drop the focused one · the fog at the foot: <kbd>+ Orkspace</kbd></p>
+  <nav class="om" aria-label="Orkspaces"><div class="om-view" id="view"><div class="om-land" id="land"></div></div></nav>
+</div>
+<script>
+const SPRITES = {"forge": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAAA2CAYAAACWeYpTAAABhUlEQVR4nO2aoU4DQRBA50i/gS/A49rgkAgSLLq6ClHRD6hAVKGb4LAkiEpckwoSPF/AR1DUICY3t7Ozu2F6M880aee2M/c6u3ubdmCc+ePtURK3Xb51Q5+f1UnHPlHo2Bj8Xddg/T4X9djqejuYC9erqd5E3BidtBpYapLGp8xqCaNaOJNfh+/e+Ivpee/1tc26MVp811K9SE2iQe596ThIzLoEtVGtSW0cFx9GCdlGa5ksvQ7jwygheTdaGUyRO25q3Q2j/2Wy9Hs4s/6MWjGYQmvYj9FTMUnJzcuNUfZ51KpJhD4F4SuXp1+jOEvhqZs1kxRqFvOnc48bo+qdkVXc74yanes+3b8CAMDNw5UofrfZAwDA4uWuST5htBSpSW18LmE0F+7ctXScWut4GJXCmcRZ9ON5Jhpn9dl/z1N7WClhtBSpSWR9+QMAvNlS3Bg1X+hus//r9xLMF1qLZj1ai1o7JjdGo9Cx0axHW62HWmxl05AodGx00n84nzpujEahY+MXmg+nqrjcYloAAAAASUVORK5CYII=", "watchtower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAABCCAYAAAAYA/U3AAAB10lEQVR4nO2arU4DQRDHp4RHIChkNQkJIcEhEIg+xQkcBoHgASoQGByiT4FAIOpISBMSdCWK8A6H+ofclLnZ27vZK7P7c/3Yj9vfzezctkTGzJdVPV9WtfU4YCfVQKmYWHUsWbk9W5iNSVQM6YTGi5WpYkgiNpMNbaoY4gy1xwxlqhgC1rt/rDG/hr4/32sior2Do9aVSVmXEXU3la8hyczl9IqIiB7XDwbT+0UyxeftztAufwNXDKxXHmimcYfgexLuDG3clzAUaoavWFejse15u3xiqG/MhGY9LRY00D/Pfu4MqbtwdTdrZL3n+9fG5x+rlz/bHR6ft/Yb2u7i+rTxenHz1Drn/AwBmOKGrIEhzQxwZ2gjy2lgxaxN8dgJxZ2hckHbjlhta0+uY8OfCtzWcmK1DVI9D4Ui1YD5GgJjm9LMAP+GOKnP4TS0czp3htRabv32RURE05N988mEzEMjP0MgdIXGJl9DY5PtE2twRS1VENLpztCnQaHVvztDo8eQZCSWYghosSARGlux5oqhoYg1rFEM9cXKDHBnSN19eYXQNxt1NcT71yoGd4Y6x5D1PtKXYghYZ6tY8jGkZbdUYFzEpPbriDtDE/4/hP+OO0PlgradH41CwIFkm7cmAAAAAElFTkSuQmCC", "mill": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAAsCAYAAAAq/ZsdAAABmklEQVR4nO2Yr04DQRCHfyV9Bp6gGkUgOAQCQYJFV6CKQSB4AASihipEkzpsk4qKClwT0lRU9wEIb4AqgvwSOjDsn9vrXib7mTbb27vd/W5md9pCIN3Hi01onxiGd5NWTL+91APJjfcq7MqMJNSUOUPBE5r255j253WMJQnmDDnfT8YOrfReLgEAg6sxAOD89qS2wf3EN5bMGWprP+TKahocj8uUOUO/ZivNyNiR7DqWiGbKrqFQM5KmmDJnqF3VTG5k9rNniF84w9j9p+oJIvRUrY3TnCHnPhRLbMX58Nr99/n3p8NyUtgAQOdoP+qG67cP+PTnSruMuJDGzBlST9sS7d0NXWFmQdmP7b4wq/I+HJ85Q42Z0Goxw2oxq3xdYyaUCu8YqoqW1Rg7A3x/cvUPDs+2+mvtMpaKobqhgeXo+M92F8VQatS66/Pd7zpBMZQaeUKIzXLEnKGomiUFcj+67twAcGczmnpeP221mz3LZY8h4rvP8Dot65kzlC2GiFZPyeynGTFfsWY3REIrX62CLobqpvwvJ/gCPvavK0bxLl8AAAAASUVORK5CYII=", "barracks": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAAA0CAYAAAAg5t6HAAABF0lEQVR4nO3ZsQnCYBRFYSPO4ATOINhZWjhFRrB0AAuLjOAclnaCMziBS2ilxZOYnOSXaHK+3hc4XCSQbJTI7pTfU936hu3ykKW4M05xZEhaV//1ZUVtl+bCoMa1/21ZUdOluTAIV/73ZUV0aS4Mql23b8uK6i7NhUGVVfu+rKhqaS4MKq05tGVFZUtzYdBbxaEvK4pLc2HQq57L+uy5NBcGZS6LcWGQwSCDQb7pl/BNPxGDQQaDDAYZDJrQH1wvt0YPms2nSe6kvhfvVHFhUGfBjsV5dCzOXT2+MRcG4f+wVFabRVePbsWFQQaDDAYZDDIYZDDIYJDBIINBBoMMBhkMMhhkMMhgUJbv14P+wk25MMhgkMGgB/0GO0xznYNqAAAAAElFTkSuQmCC", "town_hall": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAAA+CAYAAACIll2bAAAB90lEQVR4nO2aPU7DQBCFY4TEBRCioEwf0VBzAE7hgo6WggO4oKWj8Ck4QGqaXCBligjlAjQx1SB5ouXN7C7rH72vS7Trn+fP49nEiwXgsNt0h92mQ+OmhvW8zkoczJQZPKBmXXfNuj65kqHvSzN4QGOnQgP0fXp5cwvnWPDa8XLfZtmv93xoEOC89A5j64rMy2WSFRoEcNcgwVuLkDnbz6/e5+Xd1Z/b85oUex40CBBtkCZ0JULmIGNSjUo9boEGAcz3sfWKvG/fTNsTQ5AZ1nHC4/LJNM5aQ2kQoFgf5K0pelzs/FRoEMDdlepahGpO7iuvt4e2q2uSt3+jQYDodU3uzjgW61Mudg1HgwDmVK2rcG/fkgvvfq1G0SAATHEstcZK7l8FaBDgJD1vrRGGNkfjPT4Z3z5/9DKhQYDftLy1RhibOSFiaxMNAlRTe0rlwto30SBA8PeguZqjQSbRIEDQIOkHxvCGxX8gxsjTKnSeNAiQvBYbmlB/FkLXGq7FEpl9QM3quGhWx+j5sw8oleLvB+VGakr9vTeN80KDAIMZlPr0KQUNAhQ3yGuOnlfaJBoEYEAABgRgQAAGBJh8J61pL657n1GHjaBBgNkYpM3JBQ0CzMagEKlm0SAAAwIwIAADAjAgQFW/Poz6f6+hoUEABgRgQIAfHQTW/vIN1nkAAAAASUVORK5CYII="};
+const BIOMES = {            // the map's ground, and the land's fill on the orkspace map (a step lighter)
+  dirt:   { ground: "#1a1813", land: "#3a3326" },
+  forest: { ground: "#14260c", land: "#2c4a1e" },
+  ice:    { ground: "#0c1622", land: "#263c52" },
+  dust:   { ground: "#2a2014", land: "#5a462a" },
+  void:   { ground: "#0e0c14", land: "#2c263c" },
+};
+const ORDER = Object.keys(BIOMES);
+const FOG = "#221e16";
+const N = 40, T = 6;                     // 40 × 40 cells of 6 px: a 240 px square
+const FOG_ROWS = 4, CLOSED_MIN = 5, OPEN_MIN = 11;
+
+const START = [
+  { id: "o1", name: "main", biome: "dirt", buildings: 9, working: 2, questions: 0 },
+  { id: "o2", name: "release", biome: "forest", buildings: 5, working: 0, questions: 1 },
+  { id: "o3", name: "research", biome: "ice", buildings: 3, working: 0, questions: 0 },
+  { id: "o4", name: "ops", biome: "dust", buildings: 6, working: 1, questions: 0 },
+  { id: "o5", name: "docs", biome: "void", buildings: 2, working: 0, questions: 0 },
+];
+const EXTRA = ["billing", "growth", "landing", "infra", "design", "support", "hiring", "lore"];
+let spaces, open, nextId;
+function reset() { spaces = START.map((s) => ({ ...s })); open = "o3"; nextId = 6; render(); }
+
+// -- deterministic shapes: a border is seeded by the pair of lands it parts, the coast by its row --------
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0 || 1; }
+function rng(seed) { let s = seed; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function stepped(seed, len, lo, hi, runs) {
+  const r = rng(seed), out = []; let off = 0;
+  while (out.length < len) {
+    off = Math.max(lo, Math.min(hi, off + (r() < 0.5 ? -1 : 1)));
+    const k = runs[Math.floor(r() * runs.length)];
+    for (let i = 0; i < k; i++) out.push(off);
+  }
+  return out.slice(0, len);
+}
+const COAST = stepped(hash("coast"), 400, 0, 3, [2, 3, 4]);   // by absolute row: adding a land never moves it
+
+function layout() {
+  const n = spaces.length, closedN = n - 1;
+  const avail = N - FOG_ROWS;
+  let closed = Math.max(CLOSED_MIN, Math.floor(avail / (closedN + 2.4)));
+  let openH = Math.max(OPEN_MIN, avail - closedN * closed);
+  const rows = closedN * closed + openH + FOG_ROWS;
+  if (rows < N) openH += N - rows;
+  const H = Math.max(N, rows);
+  const tops = [0];
+  for (const s of spaces) tops.push(tops[tops.length - 1] + (s.id === open ? openH : closed));
+  // the border above land k (k ≥ 1) and above the fog, per column
+  const ids = spaces.map((s) => s.id).concat(["fog"]);
+  const border = ids.map((id, k) => k === 0 ? null
+    : stepped(hash(ids[k - 1] + "|" + id), N, -1, 1, [3, 4, 5]).map((o) => tops[k] + o));
+  return { H, tops, border };
+}
+
+function cellsPath(inside, H, isTop) {
+  // a union of rects, row by row; the first row of a land in a column leaves a 1 px seam above it
+  let d = "";
+  for (let y = 0; y < H; y++) {
+    let x = 0;
+    while (x < N) {
+      if (!inside(x, y)) { x++; continue; }
+      const top = isTop(x, y); let x1 = x;
+      while (x1 < N && inside(x1, y) && isTop(x1, y) === top) x1++;
+      const y0 = y * T + (top ? 1 : 0), h = T - (top ? 1 : 0);
+      d += `M${x * T} ${y0}h${(x1 - x) * T}v${h}h${-(x1 - x) * T}z`;
+      x = x1;
+    }
+  }
+  return d;
+}
+
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function render() {
+  const land = document.getElementById("land"), view = document.getElementById("view");
+  const { H, tops, border } = layout();
+  land.innerHTML = "";
+  land.style.height = `${H * T}px`;
+  land.style.setProperty("--fog", FOG);
+  const n = spaces.length;
+  const coastAt = (y) => N - 3 - COAST[y];
+  spaces.forEach((s, k) => {
+    const from = (x) => k === 0 ? 0 : border[k][x];
+    const to = (x) => border[k + 1][x];
+    const inside = (x, y) => y >= from(x) && y < to(x) && x < coastAt(y);
+    const path = cellsPath(inside, H, (x, y) => k > 0 && y === from(x));
+    const b = el("button", "om-band" + (s.id === open ? " is-open" : ""));
+    b.style.clipPath = `path("${path}")`;
+    b.style.setProperty("--fill", BIOMES[s.biome].land);
+    b.setAttribute("aria-current", s.id === open ? "true" : "false");
+    b.setAttribute("aria-label", `${s.name}, ${plural(s.buildings, "building")}${s.questions ? `, ${s.questions} question` : ""}, ${s.biome}`);
+    b.dataset.id = s.id;
+    const y0 = tops[k] * T, y1 = tops[k + 1] * T;
+    const name = el("span", "om-name", s.name);
+    if (s.questions) name.append(el("span", "om-ask"));
+    b.append(name);
+    if (s.id === open) {
+      name.style.top = `${y0 + 12}px`;
+      const st = el("span", "om-state",
+        `${plural(s.buildings, "building")} · ${s.questions ? `${s.questions} question` : s.working ? `${s.working} at work` : "all quiet"}`);
+      st.style.top = `${y0 + 31}px`; b.append(st);
+      const dots = el("span", "om-dots"); dots.style.top = `${y1 - 16}px`;
+      for (let i = 0; i < s.buildings; i++) dots.append(el("i", i < s.working ? "w" : ""));
+      b.append(dots);
+      const bar = el("span", "om-bar"); bar.style.top = `${y0 + 8}px`; bar.style.height = `${y1 - y0 - 16}px`; b.append(bar);
+    } else {
+      name.style.top = `${(y0 + y1) / 2 - 8}px`;
+    }
+    b.addEventListener("click", () => { open = s.id; render(); focusId(s.id); });
+    b.addEventListener("contextmenu", (e) => {
+      e.preventDefault(); s.biome = ORDER[(ORDER.indexOf(s.biome) + 1) % ORDER.length]; render(); focusId(s.id);
+    });
+    land.append(b);
+  });
+  // the fog at the foot: + Orkspace
+  const fogFrom = (x) => border[n][x];
+  const fog = el("button", "om-band om-fog");
+  fog.style.clipPath = `path("${cellsPath((x, y) => y >= fogFrom(x), H, (x, y) => y === fogFrom(x))}")`;
+  fog.style.setProperty("--fill", FOG);
+  fog.setAttribute("aria-label", "New orkspace");
+  const fl = el("span", "om-name", "+ Orkspace"); fl.style.top = `${(tops[n] + (H - tops[n]) / 2) * T - 8}px`;
+  fog.append(fl);
+  fog.addEventListener("click", add);
+  land.append(fog);
+  // keep the open land in sight
+  const k = spaces.findIndex((s) => s.id === open);
+  const top = tops[k] * T, bottom = tops[k + 1] * T;
+  if (top < view.scrollTop || bottom > view.scrollTop + 240) view.scrollTop = Math.max(0, top - 24);
+  town();
+}
+
+function focusId(id) { const b = document.querySelector(`.om-band[data-id="${id}"]`); if (b) b.focus({ preventScroll: true }); }
+
+function add(name) {
+  const used = new Set(spaces.map((s) => s.biome));
+  // an unused biome first; else any but the one of the land it will touch
+  const last = spaces[spaces.length - 1].biome;
+  const biome = ORDER.find((b) => !used.has(b)) || ORDER.filter((b) => b !== last)[spaces.length % (ORDER.length - 1)];
+  const id = "o" + nextId++;
+  spaces.push({ id, name: typeof name === "string" ? name : EXTRA[(nextId - 7) % EXTRA.length], biome, buildings: 1, working: 0, questions: 0 });
+  open = id; render(); focusId(id);
+}
+
+document.getElementById("land").addEventListener("keydown", (e) => {
+  const all = [...document.querySelectorAll(".om-band")];
+  const i = all.indexOf(document.activeElement);
+  if (i < 0) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    const j = Math.max(0, Math.min(all.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)));
+    all[j].focus();
+    all[j].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Delete" && document.activeElement.dataset.id && spaces.length > 1) {
+    const id = document.activeElement.dataset.id;
+    spaces = spaces.filter((s) => s.id !== id);
+    if (open === id) open = spaces[0].id;
+    render(); focusId(open);
+  }
+});
+
+// -- the town around it: the ground and the huts in the open orkspace's biome ---------------------------
+const G = [0x86, 0xc0, 0x62], DG = [0x62, 0x8a, 0x4c], IV = [0xec, 0xe4, 0xcf];
+const near = (d, i, ref) => Math.abs(d[i] - ref[0]) + Math.abs(d[i + 1] - ref[1]) + Math.abs(d[i + 2] - ref[2]) < 40;
+const loaded = {};
+function biomeSprite(type, biome) {
+  const img = loaded[type], w = img.width / 2, h = img.height / 2;
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, w, h);
+  const id = g.getImageData(0, 0, w, h), d = id.data, at = (x, y) => (y * w + x) * 4;
+  const paint = (i, rgb) => { d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; };
+  if (biome === "ice") {                       // snow on the edges that face the sky, two pixels deep
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) {
+      const i = at(x, y); if (!d[i + 3]) continue;
+      if (near(d, i, G) || near(d, i, DG)) { paint(i, IV); const j = at(x, y + 1); if (y + 1 < h && (near(d, j, G))) paint(j, IV); }
+      break;
+    }
+  } else if (biome === "dust" || biome === "void") {
+    const [a, b] = biome === "dust" ? [[0xa8, 0xa0, 0x5c], [0x7a, 0x70, 0x40]] : [[0x8e, 0x88, 0xa8], [0x5e, 0x58, 0x7a]];
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3]) { if (near(d, i, G)) paint(i, a); else if (near(d, i, DG)) paint(i, b); }
+    if (biome === "dust") for (let x = 0; x < w; x++) { const i = at(x, h - 1); if (d[i + 3] && x % 5 < 3) paint(i, [0xc9, 0xa4, 0x6a]); }
+  }
+  g.putImageData(id, 0, 0);
+  return c;
+}
+const NAMES = { forge: "The Forge", watchtower: "Watchtower", mill: "The Mill", barracks: "Barracks", town_hall: "Town Hall" };
+function town() {
+  const s = spaces.find((x) => x.id === open);
+  document.getElementById("town").style.setProperty("--ground", BIOMES[s.biome].ground);
+  document.getElementById("where").textContent = `${s.name} · ${s.biome}`;
+  const huts = document.getElementById("huts"); huts.innerHTML = "";
+  if (Object.keys(loaded).length < Object.keys(SPRITES).length) return;
+  for (const t of Object.keys(SPRITES)) {
+    const h = el("div", "hut"); h.append(biomeSprite(t, s.biome), el("span", "", NAMES[t])); huts.append(h);
+  }
+}
+let left = Object.keys(SPRITES).length;
+for (const [t, src] of Object.entries(SPRITES)) {
+  const img = new Image(); img.onload = () => { loaded[t] = img; if (--left === 0) town(); }; img.src = src;
+}
+document.getElementById("panel").onclick = () => document.getElementById("town").classList.toggle("has-panel");
+document.getElementById("more").onclick = () => { for (let i = 0; i < 4; i++) add(); };
+document.getElementById("reset").onclick = reset;
+reset();
+</script>
+</body></html>
