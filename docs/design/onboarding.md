@@ -83,6 +83,7 @@ tool                    paid by          👍 👎  what for
     Cursor                               👍 👎                    weak at… ▾
 Not found: …
 [✓] Install the 🛡 Warder in this project (recommended)
+The 🛡 Warder does not guard agy yet: … start agy with --sandbox and keep secrets out of the project folder.
 ```
 
 - The CLIs orkcraft leads get ✓ (on when found) and how they are paid for — subscription or API;

@@ -11,6 +11,8 @@ from orkcraft.screens.build_flow import MODAL_CSS
 CUSTOM = "custom"
 EMPTY = "empty"
 NARROW = 90                # below this many columns the mode cards stack
+AGY_UNGUARDED = ("The 🛡 Warder does not guard agy yet: agy sessions run with only agy's own sandbox and "
+                 "permission prompts, so start agy with --sandbox and keep secrets out of the project folder.")
 
 
 def _css(cls: str, width: int) -> str:

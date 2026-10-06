@@ -668,8 +668,8 @@ Where sessions come from:
   module `orkcraft.hooks.session`, into the project the session works in): Claude Code —
   `.claude/settings.json` (SessionStart, UserPromptSubmit); Codex — `.codex/hooks.json` (the same events,
   run once trusted with `/hooks`; the only source of Codex sessions, whose own store keeps no project folder);
-  agy — `.agents/hooks.json` (PreInvocation, Stop; agy 1.1.x reads only
-  `~/.gemini/config/hooks.json`, copy the entries there). Tickets come from
+  agy — `.agents/hooks.json` (PreInvocation, Stop; agy reads it once the folder is trusted, since
+  1.1.1, and also the global `~/.gemini/config/hooks.json`). Tickets come from
   `$ORKCRAFT_TICKET` (set when orkcraft opens a session for a node) and `[[T…]]` in prompts.
 - Local Claude transcripts `~/.claude/projects/<repo>/*.jsonl`, agy conversations
   `~/.gemini/antigravity-cli/brain/<id>/`.
@@ -723,7 +723,8 @@ the CLI paths.
   shell). Here-document bodies are data and are not judged. Every deny / ask lands in
   `.orkcraft/warder.jsonl` (tokens redacted) and puts ❓ on Warder in the Council — `1`
   acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code
-  and Codex (agy has no documented pre-tool hook); hooks load when a session starts. For Codex it is
+  and Codex; agy reads a `PreToolUse` hook from `.agents/hooks.json` and `~/.gemini/config/hooks.json`,
+  but orkcraft does not install one for it yet ([agy-guard](design/agy-guard.md)); hooks load when a session starts. For Codex it is
   in `.codex/hooks.json` with `apply_patch` among its tools (the files are read from the patch), runs
   once trusted with `/hooks`, and turns an ask into a deny that says why — Codex cannot ask yet.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
