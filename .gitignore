@@ -23,3 +23,6 @@ venv/
 
 # tools/landing_flow.py writes its frames and videos here
 /landing-flow/
+
+# Claude Code agents' worktrees (parallel work on this repo)
+.claude/worktrees/
