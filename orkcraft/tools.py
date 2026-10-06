@@ -5,9 +5,10 @@
         t.id, t.found, t.version, t.logged_in, t.billing
     tools.detect_others()                   # [Other(...)] installed: Cursor, Copilot, ChatGPT… (no process run)
 
-Nothing here spends quota or reads a key: a CLI is looked up on PATH, asked for its version, and
-its login is guessed from what it leaves on disk or in the environment. `logged_in` is None when
-it cannot be told without a model call. `billing` is a guess the operator may override.
+Nothing here spends quota or keeps a key: a CLI is looked up on PATH, asked for its version, and
+its login is guessed from what it leaves on disk or in the environment (Codex's `auth.json` is read
+for which kind of login it holds, never for the key; failing that, `codex login status` tells).
+`logged_in` is None when it cannot be told without a model call. `billing` is a guess the operator may override.
 """
 from __future__ import annotations
 
@@ -98,12 +99,56 @@ def _agy_login(env: dict, home: Path) -> tuple[bool | None, str]:
     return None, "subscription"
 
 
-def _codex_login(env: dict, home: Path) -> tuple[bool | None, str]:
-    if env.get("OPENAI_API_KEY") or env.get("CODEX_API_KEY"):
+# Codex's auth modes (`AuthMode` in openai/codex codex-rs/protocol/src/auth.rs) by who pays.
+_CODEX_API_MODES = frozenset({"apikey", "bedrockApiKey", "bedrockAccessKeys"})
+_CODEX_PLAN_MODES = frozenset({"chatgpt", "chatgptAuthTokens", "agentIdentity", "personalAccessToken"})
+
+
+def _codex_auth_billing(auth: Path) -> str:
+    """"api" | "subscription" from `auth.json` (`AuthDotJson`), "" when it cannot be told. An API-key
+    login (`codex login --with-api-key`) writes the same file as a ChatGPT one: its `auth_mode`, or
+    for an older file what it holds (as Codex's `resolved_mode`), says which. Only the field names are
+    looked at."""
+    try:
+        data = json.loads(auth.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    mode = data.get("auth_mode")
+    if isinstance(mode, str):
+        return "api" if mode in _CODEX_API_MODES else "subscription" if mode in _CODEX_PLAN_MODES else ""
+    if data.get("personal_access_token"):
+        return "subscription"
+    if data.get("bedrock_api_key") or data.get("bedrock_access_keys") or data.get("OPENAI_API_KEY"):
+        return "api"
+    return "subscription" if data.get("tokens") else ""
+
+
+def _codex_login_status(path: str, run: Callable, env: dict) -> tuple[bool | None, str]:
+    """`codex login status`: one line on stderr from the auth store, no network call, no model turn."""
+    try:
+        out = run([path, "login", "status"], capture_output=True, text=True, timeout=VERSION_TIMEOUT_S, env=env)
+    except (OSError, subprocess.SubprocessError):
+        return None, "subscription"
+    said = f"{out.stderr or ''}\n{out.stdout or ''}"
+    if "Not logged in" in said:
+        return False, "subscription"
+    if "Logged in using ChatGPT" in said or "access token" in said:     # also a personal one
+        return True, "subscription"
+    if "API key" in said or "AWS access keys" in said:
+        return True, "api"
+    return None, "subscription"
+
+
+def _codex_login(env: dict, home: Path, path: str = "", run: Callable | None = None) -> tuple[bool | None, str]:
+    if env.get("CODEX_API_KEY"):                       # `codex exec` honours it; OPENAI_API_KEY it does not
         return True, "api"
     codex_home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else home / ".codex"
-    if (codex_home / "auth.json").is_file():          # only that it is there: what it holds is never read
-        return True, "subscription"
+    if billing := _codex_auth_billing(codex_home / "auth.json"):
+        return True, billing
+    if path and run is not None:                      # no file (a keyring login) or one it cannot read
+        return _codex_login_status(path, run, env)
     return None, "subscription"
 
 
@@ -117,7 +162,8 @@ def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = su
         if tool.available and (path := which(_bin(tool.id))):
             status.found, status.path = True, path
             status.version = _version(path, run)
-            login = {"claude": _claude_login, "agy": _agy_login, "codex": _codex_login}.get(tool.id)
+            login = {"claude": _claude_login, "agy": _agy_login,
+                     "codex": lambda e, h: _codex_login(e, h, path, run)}.get(tool.id)
             if login is not None:
                 status.logged_in, status.billing = login(env, home)
         out.append(status)
