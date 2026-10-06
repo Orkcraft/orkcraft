@@ -87,7 +87,7 @@ TERMS: tuple[Term, ...] = (
     _t("council_word", "Council", "Review board"),
     _t("clan", "clan", "team"),
     # -- building types (catalog ids) ---------------------------------------------------------------
-    _t("pit", "The Pit", "Inbox"),
+    _t("pit", "The Pit", "Drop file here"),
     _t("watchtower", "Watchtower", "External listeners", "Watchtowers", "External listeners"),
     _t("signpost", "Signpost", "Router", "Signposts", "Routers"),
     _t("mill", "The Mill", "Transformer"),
@@ -134,7 +134,7 @@ _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",
 # camp is the town, but Camp alone is the mode's name and stays; so does the F10 line that tells what
 # the Camp looks like (it is about the camp, in any mode).
 _PHRASES = {"the camp": "the project", "an orkspace": "a workspace", "Punk ork": "Expert", "an ork": "an agent",
-            "Into the pit": "To the inbox", "the Elders' advice": "the advisors' advice",
+            "Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
             "Not enough food": "No agent slots left", "Treasury empty": "Budget spent",
             "Halt All Operations": "Stop all", "Halt All": "Stop all", "Awaiting Orders": "Awaiting an answer",
             "WAR MAP (Orkspaces)": "WORKSPACES", "War Map (Orkspaces)": "Workspaces",

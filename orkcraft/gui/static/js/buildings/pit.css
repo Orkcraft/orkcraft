@@ -1,0 +1,13 @@
+/* The Pit's closed card (js/buildings/pit.js): only a tray, and the card takes a file held over it.
+   Tokens only (design-system/tokens.css). */
+.gui-pit__zone { display: grid; place-items: center; min-width: 56px; padding: var(--space-1) 0; color: var(--ink-muted); }
+.gui-pit__icon { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  overflow: visible; }
+.gui-pit__arrow { transform: translateY(-2px); transition: transform .15s ease-out; }
+.gui-pit__tray { transition: fill .15s ease-out; }
+.gui-pit__zone.is-over { color: var(--frame-focus); }
+.gui-pit__zone.is-over .gui-pit__arrow { transform: translateY(5px); }
+.gui-pit__zone.is-over .gui-pit__tray { fill: color-mix(in srgb, var(--frame-focus) 18%, transparent); }
+.gui-hut:has(.gui-pit__zone.is-over) .ok-hut__card { box-shadow: inset 0 0 0 2px var(--frame-focus); outline: 1px dashed var(--frame-focus);
+  outline-offset: 3px; }
+.gui-hut:has(.gui-pit__zone.is-over) .ok-hut__label { color: var(--frame-focus); }
