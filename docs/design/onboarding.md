@@ -3,7 +3,7 @@
 Status: design notes, written 2026-10-03, reworked on 2026-10-04: five steps on the usual path.
 How well the operator knows orkestration picks the path; who they are and their day are one
 screen; the AI tools installed are one screen, rated 👍 / 👎; then the town; the camp rules last.
-Implemented (`screens/onboarding.py`, `screens/autonomy.py`, `realm/intents.py`,
+Implemented (`screens/onboarding/`, `screens/autonomy.py`, `realm/intents.py`,
 `realm/interview.py`, `tools.py`). Builds on the quota readers, the display modes, the Warder
 hooks, the Town Hall and the Town Builder (`realm/town_builder.py`). Wording: ork, orkestration
 (CLAUDE.md).
