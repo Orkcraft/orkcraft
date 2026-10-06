@@ -1,10 +1,11 @@
 """🌾 Task Fields' work: the board — its cards and lanes, kept in `TASKS.md` or a tasks folder
-(realm/tasklist.py) — and what each change sends.
+(realm/tasklist.py) — and what each change sends. One board, three parts: the orks' tasks (the status
+lanes, a kanban), the person's own to-dos (a checklist, `My to-dos`) and the notes (ideas, questions).
 
 `refresh()` reads the board (the face calls it on a timer: a hand edit of the file is seen
 there) and sends `tasks.created` / `tasks.status_changed` for a task, `notes.created` for a note.
-The acts (add, move, edit, colour, flip, send, remove) change the file and send the same events
-for what they changed. A cart is a new card. The hut's * marks what is new since the board was
+The acts (add, move, edit, colour, flip, check, send, remove) change the file and send the same events
+for what they changed; the person's to-dos send none (they are not the orks' work). A cart is a new card. The hut's * marks what is new since the board was
 last looked at (`seen.json`).
 """
 from __future__ import annotations
@@ -13,7 +14,7 @@ import json
 
 from orkcraft.core.workers import Worker
 from orkcraft.realm import tasklist
-from orkcraft.realm.tasklist import COLUMNS, LABELS, NOTE, TASK
+from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 
 TITLE = "🌾 Task Fields"
 SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
@@ -53,11 +54,25 @@ class FieldsWorker(Worker):
     def notes(self) -> list[tasklist.Task]:
         return [c for c in self.cards if c.kind == NOTE]
 
+    @property
+    def todos(self) -> list[tasklist.Task]:
+        """The person's own to-dos (the checklist), open ones first."""
+        mine = [c for c in self.cards if c.kind == MINE]
+        return [c for c in mine if not c.checked] + [c for c in mine if c.checked]
+
+    @property
+    def shows_todos(self) -> bool:
+        """The person's checklist stands on the board in `board` mode (the kanban and the wall keep theirs)."""
+        return self.mode == "board"
+
+    def todo_lane(self) -> tasklist.Lane:
+        return next((ln for ln in self.lanes if ln.kind == MINE), tasklist.Lane(MINE, tasklist.MINE_LABEL))
+
     def card(self, card_id: str) -> tasklist.Task | None:
         return next((t for t in self.cards if t.id == card_id), None)
 
     def visible_lanes(self) -> list[tasklist.Lane]:
-        lanes = list(self.lanes) or [tasklist.Lane(c, LABELS[c]) for c in COLUMNS]
+        lanes = [ln for ln in self.lanes if ln.kind != MINE] or [tasklist.Lane(c, LABELS[c]) for c in COLUMNS]
         for name in self.config.get("lanes") or []:                 # lanes of notes always there
             lid = tasklist.slug(str(name))
             if lid not in COLUMNS and not any(ln.id == lid for ln in lanes):
@@ -132,7 +147,7 @@ class FieldsWorker(Worker):
             return None
         if card.kind == TASK:
             self.announce("tasks.created", card, LABELS[card.column])
-        else:
+        elif card.kind == NOTE:
             self.announce("notes.created", card, card.column)
         self._sync()
         return card
@@ -185,17 +200,32 @@ class FieldsWorker(Worker):
         self._sync()
         return True
 
+    def check(self, card_id: str, done: bool | None = None) -> bool:
+        """Tick one of the person's to-dos off (or back on)."""
+        try:
+            self.store.check(card_id, done)
+        except (OSError, ValueError, KeyError) as e:
+            self.toast(str(e), title=TITLE, severity="error")
+            return False
+        self._sync()
+        return True
+
+    def to_mine(self, card_id: str) -> bool:
+        """A note (an idea) or a task becomes a to-do of the person's own."""
+        card = self.card(card_id)
+        return card is not None and card.kind != MINE and self.move(card.id, MINE)
+
     def color(self, card_id: str) -> bool:
         card = self.card(card_id)
         return card is not None and self.edit(card.id, tasklist.next_color(card.title))
 
     def flip(self, card_id: str) -> str:
-        """A note becomes a task in To Do; a task becomes a note (in the first lane of notes).
-        The lane it went to ("" when it did not move)."""
+        """A note or a to-do of the person's becomes a task for the orks in To Do; a task becomes a note
+        (in the first lane of notes). The lane it went to ("" when it did not move)."""
         card = self.card(card_id)
         if card is None:
             return ""
-        lane = "todo" if card.kind == NOTE else self.note_lanes()[0]
+        lane = "todo" if card.kind != TASK else self.note_lanes()[0]
         return lane if self.move(card.id, lane) else ""
 
     def send(self, card_id: str) -> bool:
@@ -233,9 +263,15 @@ class FieldsWorker(Worker):
         doing = [t for t in self.cards if t.column == "in_progress"]
         if doing:
             lines.append(f"⚒ {tasklist.plain(doing[0].title)}")
+        if self.mode == "board" and self.todos:
+            lines.append(self._todo_line())
         if self.mode == "board" and self.notes:
             lines.append(self._note_line(seen))
         return lines
+
+    def _todo_line(self) -> str:
+        todos = self.todos
+        return f"☐ My chores {sum(1 for t in todos if not t.checked)}/{len(todos)}"
 
     def hut_lines(self, widths: list[int]) -> list[str]:
         if self.error:
@@ -249,14 +285,37 @@ class FieldsWorker(Worker):
             last = self.notes[-1:] if self.notes else []
             lines.append(f"✎ {tasklist.plain(last[0].title)}" if last else "no notes yet")
             return lines
+        if self.mode == "board":
+            return self._board_lines(seen)
         for col, tag in zip(COLUMNS, ("TODO", "PROG", "DONE")):
             rows = [t for t in self.cards if t.column == col]
             lines.append(f"[{tag}] {len(rows)} task{'s' if len(rows) != 1 else ''}"
                          + (" *" if any(t.id not in seen for t in rows) else ""))
         doing = [t for t in self.cards if t.column == "in_progress"]
         lines.append(f"⚒ {tasklist.plain(doing[0].title)}" if doing else "nothing in progress")
-        if self.mode == "board" and self.notes:
-            lines.append(self._note_line(seen))
+        return lines
+
+    def _board_lines(self, seen: set[str]) -> list[str]:
+        """The board's three parts in nine rows: the orks' lanes (counts, what is in work, what is
+        next), the person's open to-dos, the latest notes."""
+        counts = []
+        for col, tag in zip(COLUMNS, ("TODO", "PROG", "DONE")):
+            rows = [t for t in self.cards if t.column == col]
+            counts.append(f"{tag} {len(rows)}" + ("*" if any(t.id not in seen for t in rows) else ""))
+        doing = [t for t in self.cards if t.column == "in_progress"][:1]
+        nxt = [t for t in self.cards if t.column == "todo"][:2 - len(doing)]
+        lines = [" ".join(counts)]
+        lines += [f"⚒ {tasklist.plain(t.title)}" for t in doing] + [f"▸ {tasklist.plain(t.title)}" for t in nxt]
+        lines += [""] * (3 - len(lines))
+        todos = self.todos
+        open_ = [t for t in todos if not t.checked]
+        lines.append(f"My chores {len(open_)}/{len(todos)}" if todos else "My chores: none yet")
+        lines += [f"☐ {tasklist.plain(t.title)}" for t in open_[:2]]
+        lines += [""] * (6 - len(lines))
+        notes = self.notes
+        star = "*" if any(t.id not in seen for t in notes) else ""
+        lines.append(f"Scribbles {len(notes)}{star}" if notes else "Scribbles: none yet")
+        lines += [f"✎ {tasklist.plain(t.title)}" for t in notes[::-1][:2]]
         return lines
 
 

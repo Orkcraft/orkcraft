@@ -221,7 +221,10 @@ def fields(root: Path, now: dt.datetime) -> None:
     """Some cards are new to the person: their lanes wear `*`."""
     from orkcraft.realm import tasklist
     seen = [tasklist.slug(t) for t in ("Plan the v0.2 release", "Answer Ann about the offsite", "Write the Barracks docs",
-                                       "Town Hall audit", "Git building", "A calendar roof", "Mail digests at 05:00")]
+                                       "Town Hall audit", "Git building", "A calendar roof", "Mail digests at 05:00",
+                                       "Call the accountant about Q3", "Review Ann's pricing draft",
+                                       "Book the train to the offsite", "Pay the hosting invoice",
+                                       "Reply to the design agency")]
     _json(state_dir(root, "fields", "todo") / "seen.json", seen)
 
 

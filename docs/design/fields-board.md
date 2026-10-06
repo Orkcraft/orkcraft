@@ -20,6 +20,19 @@ Implemented: `realm/tasklist.py` (the board in a file or a folder), `screens/typ
 Why not two buildings, or a type switch on every card: the step from "an idea" to "a task" is the
 point of keeping both in one place, and a lane already says what a card is.
 
+## 1a. The person's own to-dos — three parts on one board
+
+The orks' tasks are not all the work: the person has their own. A third kind of lane holds them,
+**My to-dos** (`## My to-dos` in the file, `mine/` in a folder; Camp says *My chores*, the Office
+*My to-dos*): a checklist whose cards are ticked off (`- [x]`, `done: true` in a card file) rather than
+moved. They send nothing down the roads — they are no work for the orks — until one is given to them
+(moved into To Do, `tasks.created`). An idea (a note) becomes a task (`t`, *Give it to the orks*) or a
+chore (`m`, *Make it my chore*); `x` ticks a chore off.
+
+In `board` mode the screen has three parts: **Ork work** (the status lanes) on top, **My chores** and
+**Scribbles** (the lanes of notes) under it. The closed card shows all three at a glance and stands
+larger than other huts (about a fifth of the screen high; 26 × 11 cells in the terminal).
+
 ## 2. Modes instead of more screens
 
 `mode` decides which lanes the board shows; the cards stay the same:

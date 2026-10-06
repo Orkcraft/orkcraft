@@ -17,7 +17,7 @@ SIZE = (200, 56)
 # the design: (footprint width, the widths of the text slots) per building
 DESIGN = {
     "mill": (15, [8]), "catapult": (17, [8]), "horn": (14, [8]), "pit": (9, [1]), "signpost": (10, [6, 6]), "watchtower": (12, [10] * 4),
-    "fields": (18, [16] * 7), "barracks": (18, [16] * 7), "council": (18, [16] * 7), "forge": (18, [16] * 7),
+    "fields": (26, [24] * 9), "barracks": (18, [16] * 7), "council": (18, [16] * 7), "forge": (18, [16] * 7),
     "scrolls": (18, [16] * 7), "war_drum": (26, [24] * 9), "forest": (26, [24] * 9), "loot": (26, [24] * 9),
     "crag": (26, [24] * 9), "lake": (60, [58] + [28, 24] * 6 + [58]),
 }
@@ -264,7 +264,7 @@ async def test_the_menu_switches_between_camp_and_office(fake_repo: Path, town):
         assert desk.plain and "mode" not in desk.scroll.preferences                  # the machine's, not the project's
         assert settings.load().mode == "office"
         assert desk.huts["mill"].geom.w == 13 and desk.huts["mill"].sil.id.endswith("-plain")   # "Transformer"
-        assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────┐" in str(desk.huts["todo"].render())
+        assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────────────┐" in str(desk.huts["todo"].render())
         geoms = [h.geom for h in desk.huts.values() if h.display]
         assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
         desk.set_mode(False)
