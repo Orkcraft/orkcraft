@@ -23,6 +23,20 @@ export const dragging = signal(null);      // {id, dx, dy}: the hut under the mo
 export const pulling = signal(null);       // {from, x, y}: a road being pulled out of a hut, to the pointer
 export const unpinned = signal({});        // building id → true while a drag may move it
 const idle = new Map();                    // building id → the timer that pins it again
+const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
+const warned = signal({});                 // building id → true while its pin says it holds the hut
+const warnings = new Map();                // building id → the timer that lets the pin go back
+
+/** A drag on a pinned hut: its pin turns red for WARN_MS, so the person sees why it does not move. */
+function warnPinned(id) {
+  clearTimeout(warnings.get(id));
+  warned.value = { ...warned.value, [id]: true };
+  warnings.set(id, setTimeout(() => {
+    warnings.delete(id);
+    const { [id]: _, ...rest } = warned.value;
+    warned.value = rest;
+  }, WARN_MS));
+}
 
 function pinAgain(id) {
   clearTimeout(idle.get(id));
@@ -48,7 +62,7 @@ function togglePin(e, id) {
 function PinButton({ b }) {
   const off = !!unpinned.value[b.id];
   const label = off ? say("Pin it in place") : say("Unpin to move it");
-  return html`<button class=${cls("gui-hut__pin", { "is-off": off })} title=${label} aria-label=${label} aria-pressed=${off}
+  return html`<button class=${cls("gui-hut__pin", { "is-off": off, "is-warn": !!warned.value[b.id] })} title=${label} aria-label=${label} aria-pressed=${off}
       onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => togglePin(e, b.id)}>
     <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
       <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
@@ -124,6 +138,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
     const move = (ev) => {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
       if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
+      if (!moved && !free) warnPinned(b.id);
       moved = true;
       if (!free) return;                   // a pinned hut keeps its place: a drag on it does nothing
       stir(b.id);
@@ -150,7 +165,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       ${office && html`<${TypeIcon} type=${b.type} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
-      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class="ok-word ok-tone-muted">pinned</span>`}
+      ${b.alert && html`<span class="ok-word">?</span>`}${b.pinned && html`<span class=${cls("ok-word ok-tone-muted gui-hut__pinned", { "is-warn": !!warned.value[b.id] })}>pinned</span>`}
       ${!b.pinned && b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>
     ${!office && html`<div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
       draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>`}

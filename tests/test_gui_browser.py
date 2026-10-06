@@ -166,7 +166,7 @@ def test_the_town_hall_is_the_pinned_advisor_in_office(page):
     face = pg.locator(".gui-advisor__face")
     face.click()                                                # selected: Info, the garrison, Commands
     _command(pg)
-    face.click()                                                # a click on it selected opens it
+    pg.locator(".gui-card").get_by_role("button", name="Open", exact=True).click()   # the card stands over the advisor
     _full(pg, True)
     pg.keyboard.press("Escape")
     pg.keyboard.press("Escape")
@@ -190,6 +190,9 @@ def test_huts_stand_pinned_until_unpinned(page):
     pg.mouse.move(start["x"] + 130, start["y"] + start["height"] + 40, steps=5)
     pg.mouse.up()
     assert hut.bounding_box()["x"] == start["x"]                 # pinned: a drag does nothing
+    assert "is-warn" in hut.locator(".gui-hut__pin").get_attribute("class")    # …and its pin says why, in red
+    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__pin`).classList.contains('is-warn')",
+                         arg=bid, timeout=4_000)                 # for a moment
     pg.keyboard.press("Escape")
     hut.locator(".gui-hut__pin").click()
     assert "is-free" in hut.get_attribute("class")
@@ -233,6 +236,13 @@ def test_the_console_and_the_window_keep_their_commands_where_they_belong(page):
     _hut(pg, bid).locator(".gui-hut__title").click()
     _command(pg)
     info, roster, card = pg.locator(".gui-console"), pg.locator(".gui-roster"), pg.locator(".gui-card")
+    box, face = card.bounding_box(), pg.locator(".gui-advisor__face").bounding_box()
+    assert box["x"] + box["width"] >= pg.viewport_size["width"] - 1          # at the right edge…
+    assert box["x"] <= face["x"] and box["y"] + box["height"] >= face["y"] + face["height"]   # …over the advisor
+    mid = (face["x"] + face["width"] / 2, face["y"] + face["height"] / 2)
+    top = pg.evaluate("([x, y]) => document.elementsFromPoint(x, y).map((e) => e.closest('.gui-card, .gui-advisor'))"
+                      ".find(Boolean).className", list(mid))           # under the toasts, the card before the advisor
+    assert "gui-card" in top
     info.get_by_role("button", name="Pin", exact=True).or_(info.get_by_role("button", name="Unpin", exact=True)).wait_for()
     assert card.get_by_role("button", name="Pin", exact=True).count() == 0
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
