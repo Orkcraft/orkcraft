@@ -125,8 +125,11 @@ conflicted there. Now:
   `self.<method>` calls between them still work.
 - **Rule of thumb:** a module over ~600 lines is split by domain before a feature is added to it.
   A new feature goes into its domain's module, or into a new one, never into `app.py`.
-- Next in line, when they are touched anyway: `wm/desktop.py`, `screens/onboarding.py`,
-  `screens/console.py`.
+- `wm/desktop.py` keeps only the `Desktop` class (its bindings, messages and lookups) and the
+  taskbar; its domains are mixins beside it: `wm/layout.py` (orkspaces, saving, biome),
+  `wm/focus.py` (z-order, focus, the preview link), `wm/arrange.py` (window operations and window
+  mode), `wm/town_view.py` (huts and the ghost), `wm/roads.py` (roads, traffic, rally mode).
+- Next in line, when they are touched anyway: `screens/onboarding.py`, `screens/console.py`.
 
 ## 4. Stage 3 — the design system and the building's UI as JSON
 
