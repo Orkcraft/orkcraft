@@ -2,7 +2,7 @@
 
 Carts are loaded under their source buildings, in groups (realm/catapult.py); a group that has
 everything `wait_for` names becomes a shot and joins the queue; shots fire one at a time. Each is
-checked against `schema` and sent to `url` — or, in browser mode (realm/catapult_web.py), fills
+checked against `schema` and sent to `url` — or, in browser mode (realm/catapult_web/), fills
 the intent's forms in turn, a screenshot of each kept (`screens`). With `confirm` on, a shot
 waits for the person's yes (`asking`: the faces show the question, `answer` takes it).
 `catapult.sent` carries the answer, `catapult.failed` the reason. The sandbox never sends.
