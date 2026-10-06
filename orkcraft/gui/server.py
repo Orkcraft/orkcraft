@@ -130,8 +130,8 @@ class Server:
             return _response(HTTPStatus.OK, json.dumps(self.version()).encode(), "application/json")
         if parts.path in ("/", "/index.html"):
             return _response(HTTPStatus.OK, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
-        if parts.path == "/favicon.ico":
-            return _response(HTTPStatus.NO_CONTENT, b"")
+        if parts.path == "/favicon.ico":                  # the ork mark (design-system/logo)
+            return _response(HTTPStatus.OK, (tokens.SYSTEM / "logo" / "favicon.ico").read_bytes(), "image/x-icon")
         if parts.path == "/roles.css":
             return _response(HTTPStatus.OK, tokens.roles_css().encode(), "text/css; charset=utf-8")
         target = resolve(parts.path)

@@ -160,6 +160,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
   - The gold wordmark is for the splash screen and onboarding.
   - The ork mascot is for Camp onboarding and empty states.
   - Office sets the name in plain type.
+  - **The ork mark** (`logo/`, drawn by `tools/logo.py` from one 12×8 grid): a flat ork head, green with pointed ears, a dark brow band and two tusks, three colours and no outline, so it reads at 16px and stays sober in Office. It comes in Office (`ork-mark.svg`), Camp (`ork-mark-camp.svg`), light-ground (`ork-mark-light.svg`) and one-colour (`ork-mark-mono.svg`) colours, beside the word (`orkcraft-dark.svg`, `orkcraft-light.svg`, Titillium Web 700 in outlines) and as the favicon. Shown at a whole multiple of its grid with `image-rendering: pixelated`. In Office it is the Control panel's advisor at the town's bottom-right corner (`js/advisor.js`).
 
 ## Components
 

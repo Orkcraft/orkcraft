@@ -1,5 +1,5 @@
 // Office only: the Control panel (the Town Hall) is no hut on the town but an advisor pinned at the
-// strip's bottom right — the ork in a tie, gold under the mouse — with the hall's closed card over it at
+// strip's bottom right — the ork mark (design-system/logo), gold under the mouse — with the hall's closed card over it at
 // the left, as a speech bubble without a name (its `card(b)`, js/buildings/town_hall.js). A press on
 // the advisor selects the hall, as a press on its hut does in Camp. While a building is selected its
 // Command Card stands over the advisor (layout.css .gui-advisor).
@@ -20,7 +20,7 @@ export function Advisor() {
     ${mod && mod.card && html`<div class="gui-advisor__bubble ok-font-status" role="dialog" aria-label=${say(b.title)}>
       ${mod.card(b)}</div>`}
     <button class="gui-advisor__face" title=${say(b.title)} aria-label=${say(b.title)} onClick=${() => openBuilding(HALL)}>
-      <img src="/ds/sprites/orks/ork-advisor@2x.png" width="52" height="56" alt="" />
+      <img src="/ds/logo/ork-mark.svg" width="72" height="48" alt="" />
       ${b.alert && html`<span class="ok-word gui-advisor__ask">?</span>`}
     </button>
   </div>`;
