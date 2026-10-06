@@ -8,7 +8,7 @@ Two stores, both under `.orkcraft/`:
 
 Sources (the `source` setting):
 
-    limits   % of each claude / agy quota used        (sampled)        horizontal: per quota
+    limits   % of each claude / agy / codex quota used (sampled)       horizontal: per quota
     spend    $ of the runs                            (ledger)         horizontal: per building
     tokens   tokens of the runs                       (ledger)         horizontal: per building
     runs     runs, ✓ and ✗                            (ledger)         horizontal: per building

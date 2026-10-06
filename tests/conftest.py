@@ -61,3 +61,32 @@ def fresh_halt_registry():
     halt.reset()
     yield
     halt.reset()
+
+
+@pytest.fixture
+def codex_limits(monkeypatch):
+    """`codex_limits(billing=...)`: the real `fetch_limits`, with claude and agy answering a sample and
+    Codex its recorded app-server reply (tests/fixtures/codex_app_server_rate_limits.jsonl) at 12:00 UTC."""
+    return lambda billing="subscription": _codex_beside_claude_and_agy(monkeypatch, billing)
+
+
+def _codex_beside_claude_and_agy(monkeypatch, billing: str) -> None:
+    from datetime import datetime, timezone
+
+    from orkcraft import tools
+    from orkcraft.quota import codex_quota
+    from orkcraft.quota.models import QuotaStatus
+    from orkcraft.sources import limits
+
+    soon = datetime.now(timezone.utc).replace(microsecond=0)
+    raw = (Path(__file__).parent / "fixtures" / "codex_app_server_rate_limits.jsonl").read_text(encoding="utf-8")
+    monkeypatch.setenv("ORKCRAFT_LIMITS", "1")
+    monkeypatch.setattr("orkcraft.quota.claude_quota.get_claude_quota",
+                        lambda **k: [QuotaStatus("claude", "session", "session", 0.86, soon)])
+    monkeypatch.setattr("orkcraft.quota.agy_quota.get_agy_quota",
+                        lambda **k: [QuotaStatus("agy", "pro", "daily", 0.4, soon)])
+    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex")
+    monkeypatch.setattr(tools, "codex_login", lambda path: (True, billing))
+    monkeypatch.setattr(codex_quota, "_converse", lambda cmd, messages, timeout, cwd: raw)
+    monkeypatch.setattr(codex_quota, "datetime", type("D", (datetime,), {"now": staticmethod(
+        lambda tz=None: datetime(2026, 10, 6, 12, 0, tzinfo=timezone.utc))}))

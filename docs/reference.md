@@ -104,7 +104,7 @@ Buildings (keys `1`–`9`):
 | # | Building | Resident | Shows |
 |---|---|---|---|
 | 1 | 📦 Artifacts | Quartermaster | `./loot/` artifacts and wiki notes |
-| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy quota) |
+| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy / codex quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
 Every other building is built from the catalog of typed buildings (below) or from scratch by the Builder (a Workshop).
@@ -650,6 +650,11 @@ Subscribe to Google Calendar with each calendar's *Secret address in iCal format
 Feeds are cached in `~/.cache/orkcraft/ics/` for 15 minutes; offline, the cached copy
 is used. Limits are read by the bundled `orkcraft.quota` (`claude -p /usage`, `agy -p /usage`:
 answered locally, no quota spent), refreshed every 10 minutes; `ORKCRAFT_LIMITS=0` turns them off.
+Codex's 5-hour and weekly windows come from `codex app-server` (`account/rateLimits/read`, Codex
+0.53.0 and later; no model turn), with the plan and its credits; when that fails they are taken from
+the newest `token_count` in `~/.codex/sessions/` (`$CODEX_HOME`) and marked `as of` that session's
+time. A Codex that is not installed, not logged in or logged in with an API key gets one plain row
+saying so (an API key has no plan windows). Design: [design/codex-limits.md](design/codex-limits.md).
 
 ## Sessions (Town Hall)
 
@@ -702,7 +707,7 @@ the CLI paths.
   price (agy and Codex sessions, unknown models) — it is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
-  shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71%]`, read by the
+  shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
   Town Hall's Limits tab every few minutes), and 🪙 only while some tool runs on an API key.
 
 ## Worktrees and the Council

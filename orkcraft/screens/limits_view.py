@@ -1,4 +1,4 @@
-"""Limits window: claude / agy quota bars, read in the background through orkcraft.quota."""
+"""Limits window: claude / agy / codex quota bars, read in the background through orkcraft.quota."""
 from __future__ import annotations
 
 import datetime as dt
@@ -11,16 +11,17 @@ from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
-from orkcraft.sources.limits import Limit, fetch_limits
+from orkcraft.sources.limits import PROVIDERS, Limit, fetch_limits
 
 LIMITS_REFRESH_S = 10 * 60
 BAR = 10
+PROVIDER_STYLE = {"claude": "bold magenta", "agy": "bold blue", "codex": "bold green"}
 
 
 def limit_line(lim: Limit) -> Text:
     """claude ██████░░░░ 62% 5h session ↻14:00 — what the quota is for comes before the reset."""
     t = Text(no_wrap=True, overflow="ellipsis")
-    t.append(f"{lim.provider:<6} ", style="bold magenta" if lim.provider == "claude" else "bold blue")
+    t.append(f"{lim.provider:<6} ", style=PROVIDER_STYLE.get(lim.provider, "bold"))
     if lim.error or lim.remaining is None:
         t.append(lim.error or "no data", style="dim italic")
         return t
@@ -34,6 +35,8 @@ def limit_line(lim: Limit) -> Text:
     if lim.reset:
         soon = lim.reset - dt.datetime.now() < dt.timedelta(hours=24)
         t.append(f"  ↻{lim.reset.strftime('%H:%M' if soon else '%a %H:%M')}", style="dim")
+    if lim.note:
+        t.append(f"  {lim.note}", style="dim")
     return t
 
 
@@ -93,7 +96,7 @@ class LimitsView(VerticalScroll):
         if not self.limits:
             return ["quota not read yet", ""]
         lines = []
-        for provider in ("claude", "agy"):
+        for provider in PROVIDERS:
             left = [x.remaining for x in self.limits if x.provider == provider and x.remaining is not None]
             if left:
                 lines.append(f"{provider} {round(min(left) * 100)}% left")

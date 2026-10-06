@@ -31,17 +31,16 @@ step either guards agy or says plainly that it cannot.
 Drummer, Taskmaster, Alchemist and Keeper are still draft agents in `watchers/`; only the Warder
 runs. Taskmaster's budget duty is covered by the 🪙 / 🪵 limits.
 
-## 🪙 Codex: its limits and its spend
+## 🪙 Codex: its spend
 
-Codex runs as a harness (`codex exec`) and in the War Tent, but the HUD knows nothing of what it
-costs: `codex exec --json` reports tokens and no price, so its runs count as unpriced (`+`), and
-there is no Codex row under ⏳ Limits.
+Codex runs as a harness (`codex exec`) and in the War Tent, and its plan's windows show under
+⏳ Limits, but the HUD does not know what it costs: `codex exec --json` reports tokens and no price,
+so its runs count as unpriced (`+`). The research and the plan are in
+[design/codex-limits.md](design/codex-limits.md) §4 and §5.2.
 
-Find out, for the Codex version orkcraft supports:
+- Read OpenAI's per-token prices for the Codex models (`gpt-6-*`) first-hand and write them, with
+  their date, into a second table in `sources/pricing.py`; the numbers in the note are unverified.
+- Price `codex exec` runs and War Tent sessions from the model and the token counts (an
+  API-equivalent estimate for a ChatGPT login, as for Claude Pro / Max).
 
-- where its plan's windows can be read without spending quota (`/status` shows them in the TUI;
-  older session files carried `rate_limits`, newer sessions live in an sqlite store);
-- whether OpenAI publishes per-token prices for the Codex models (`gpt-6-*`), so an API-billed
-  Codex can be priced like Claude in `sources/pricing.py`.
-
-Done when the ⏳ Limits tab shows Codex next to claude and agy, or a note says why it cannot.
+Done when a Codex run on a known model shows 🪙 instead of `+`.
