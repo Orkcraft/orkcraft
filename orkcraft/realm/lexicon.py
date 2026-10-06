@@ -41,7 +41,7 @@ TERMS: tuple[Term, ...] = (
     _t("orkestration", "orkestration", "coordination"),
     _t("orkestrate", "orkestrate", "coordinate"),
     _t("town", "town", "project", "towns", "projects"),
-    _t("building", "building", "module", "buildings", "modules"),
+    _t("building", "building", "block", "buildings", "blocks"),
     _t("hut", "hut", "tile", "huts", "tiles"),
     _t("road", "road", "link", "roads", "links"),
     _t("cart", "cart", "message", "carts", "messages"),
@@ -72,12 +72,12 @@ TERMS: tuple[Term, ...] = (
     _t("town_scroll", "Town Scroll", "Project file", "Town Scrolls", "Project files"),
     _t("town_builder", "Town Builder", "Project planner"),
     _t("town_retro", "Town retro", "Weekly review"),
-    _t("building_retro", "Building retro", "Module review"),
+    _t("building_retro", "Building retro", "Block review"),
     _t("chronicles", "Chronicles", "History"),
     _t("elders", "Elder", "Advisor", "Elders", "Advisors"),
     _t("steward", "steward", "coordinator", "stewards", "coordinators"),
     _t("keeper", "keeper", "coordinator", "keepers", "coordinators"),     # a building's steward, asked in plain words
-    _t("builders", "Mason & Artisan", "Module designer"),
+    _t("builders", "Mason & Artisan", "Block designer"),
     # -- the Town Hall's own orks -------------------------------------------------------------------
     _t("orc.town_hall", "Warchief", "Lead agent"),          # the hall's steward: the chat behind Ask me anything
     _t("orc.mason", "Mason", "Data planner"),

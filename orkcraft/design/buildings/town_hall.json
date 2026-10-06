@@ -1,0 +1,19 @@
+{
+  "type": "town_hall",
+  "about": "🏰 Town Hall, the town's way in: three tabs, one shown at a time — the Hall (its orks, the audit, the proposals, the Elders, the Council's reviews), Sessions (the War Tent) and Limits (spend and quotas).",
+  "panes": {
+    "tabs":     {"about": "the tabs Hall, Sessions (how many run) and Limits; a click shows one", "components": ["status"], "required": true},
+    "hall":     {"about": "the Hall tab: its orks, the last audit and Audit now, the proposals and the town retro, the Elders, the Council's Fast Path, the stewards' ratings", "components": ["list", "text"], "dynamic": true},
+    "sessions": {"about": "the Sessions tab, the War Tent: every live session, a click shows its terminal", "components": ["terminal", "view"], "dynamic": true},
+    "limits":   {"about": "the Limits tab: this run's spend and each provider's quota left, Read again", "components": ["chart", "table"], "dynamic": true}
+  },
+  "default": {
+    "version": 1, "type": "town_hall", "split": "column",
+    "panes": [
+      {"id": "tabs", "component": "status", "size": "auto", "font": "status"},
+      {"id": "hall", "component": "list", "size": 1, "font": "body"},
+      {"id": "sessions", "component": "terminal", "size": 1, "font": "body"},
+      {"id": "limits", "component": "chart", "size": 1, "font": "body"}
+    ]
+  }
+}

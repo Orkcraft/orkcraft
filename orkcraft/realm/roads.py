@@ -23,6 +23,7 @@ Rules (docs/design/roads-and-orcs.md):
 """
 from __future__ import annotations
 
+import glob
 import json
 import os
 import re
@@ -280,21 +281,55 @@ def _codex_events(stdout: str) -> list[dict]:
     return events
 
 
-def codex_result_of(stdout: str) -> tuple[str, float | None, int | None, str]:
-    """(text, cost, tokens, session) of `codex exec --json`: the last agent message, the tokens of
-    every turn (cached input is part of the input) and the thread id. Codex prints no price: the
-    cost is None, never $0."""
-    text, tokens, session = "", None, ""
+def _usage_tokens(usage) -> int | None:
+    vals = [usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)] \
+        if isinstance(usage, dict) else []
+    return sum(vals) if vals else None
+
+
+def codex_result_of(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, session) of `codex exec --json`: the last agent message, the tokens of this
+    run (cached input is part of the input) and the thread id. Codex prints no price: the cost is None,
+    never $0. Each `turn.completed.usage` is the thread's running total (openai/codex
+    `usage_from_last_total`), so the last one counts, less `before`: what the thread had already used
+    when this run resumed it (`codex_thread_total`)."""
+    text, total, session = "", None, ""
     for event in _codex_events(stdout):
-        kind, item, usage = event.get("type"), event.get("item"), event.get("usage")
+        kind, item = event.get("type"), event.get("item")
         if kind == "thread.started":
             session = str(event.get("thread_id") or "")
         elif kind == "item.completed" and isinstance(item, dict) and item.get("type") == "agent_message":
             text = str(item.get("text") or "")
-        elif kind == "turn.completed" and isinstance(usage, dict):
-            vals = [usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)]
-            tokens = (tokens or 0) + sum(vals) if vals else tokens
-    return text.strip(), None, tokens, session
+        elif kind == "turn.completed" and (tokens := _usage_tokens(event.get("usage"))) is not None:
+            total = tokens
+    return text.strip(), None, None if total is None else max(total - before, 0), session
+
+
+def codex_thread_total(thread: str, env: dict | None = None) -> int:
+    """The tokens a Codex thread has used so far: the last `token_count` total in its rollout
+    (`$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<thread>.jsonl`), which `exec resume` starts its
+    running total from. 0 when there is none (a compressed rollout is not read)."""
+    env = os.environ if env is None else env
+    if not thread:
+        return 0
+    home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else Path.home() / ".codex"
+    total = 0
+    for rollout in sorted((home / "sessions").glob(f"*/*/*/rollout-*-{glob.escape(thread)}.jsonl")):
+        try:
+            lines = rollout.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            if '"token_count"' not in line:
+                continue
+            try:
+                payload = json.loads(line).get("payload")
+            except (ValueError, AttributeError):
+                continue
+            info = payload.get("info") if isinstance(payload, dict) and payload.get("type") == "token_count" else None
+            if isinstance(info, dict) and (tokens := _usage_tokens(info.get("total_token_usage"))) is not None:
+                total = tokens
+    return total
 
 
 def codex_error(stdout: str) -> str:

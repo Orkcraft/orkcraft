@@ -26,9 +26,10 @@ button { font: inherit; color: inherit; }
    window's height: the Command Card takes all of it, as wide as tall; Info and the garrison
    are as tall as the War Map: 42% of it, about 21% (STRIP in js/town.js keeps the huts above it).
    The windows stand edge to edge as one panel: no gap, their shared edges drawn once, square where
-   they meet. */
+   they meet. The panel stands on the status bar and against the window's sides, as an RTS console:
+   no gap under or beside it, its corners there square. */
 .gui-strip { grid-area: town; align-self: end; z-index: 4; height: 50vh; min-height: 300px; box-sizing: border-box;
-  display: flex; align-items: flex-end; gap: 0; padding: var(--space-3); pointer-events: none; }
+  display: flex; align-items: flex-end; gap: 0; padding: var(--space-3) 0 0 0; pointer-events: none; }
 .gui-strip > * { pointer-events: auto; }
 .gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list) { margin-left: calc(-1 * var(--ok-frame, 1px)); }
 .gui-strip > :is(.ok-win, .ok-list):has(+ :is(.ok-win, .ok-list)),
@@ -36,10 +37,15 @@ button { font: inherit; color: inherit; }
 .gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list),
 .gui-strip > :is(.ok-win, .ok-list) + :is(.ok-win, .ok-list) > .ok-win__frame { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .gui-strip > .ok-win.is-active { z-index: 1; }   /* its focus edge over the neighbour's */
+.gui-strip > :is(.ok-win, .ok-list), .gui-strip > .ok-win > .ok-win__frame { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.gui-strip > :is(.ok-win, .ok-list):first-child,
+.gui-strip > .ok-win:first-child > .ok-win__frame { border-top-left-radius: 0; }
+.gui-strip > :is(.ok-win, .ok-list):last-child,
+.gui-strip > .ok-win:last-child > .ok-win__frame { border-top-right-radius: 0; }
 
 /* Office: the Control panel, pinned at the strip's right end (js/advisor.js): the ork in a tie, gold
    under the mouse, its card over it at the left as a speech bubble. */
-.gui-advisor { flex: none; position: relative; margin-left: auto; padding-left: var(--space-3); align-self: flex-end; }
+.gui-advisor { flex: none; position: relative; padding-left: var(--space-3); margin: 0 var(--space-3) var(--space-3) auto; align-self: flex-end; }
 .gui-advisor__face { display: block; position: relative; padding: var(--space-1); border: 1px solid transparent; background: none;
   border-radius: var(--radius-full, 50%); cursor: pointer; transition: box-shadow .15s ease-out, border-color .15s ease-out; }
 .gui-advisor__face > img { display: block; image-rendering: pixelated; }
@@ -150,7 +156,7 @@ button { font: inherit; color: inherit; }
 .gui-scheme { color: var(--ink-muted); }
 
 /* The status bar (KeyFooter): mouse first, every item a button. */
-.gui-status { grid-area: status; gap: 0; }
+.gui-status { grid-area: status; gap: 0; position: relative; z-index: 5; }   /* over the console's shadow: the console stands on it */
 .gui-status__item { border: 0; background: none; padding: 0 var(--space-2); height: 100%; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
 button.gui-status__item { cursor: pointer; }

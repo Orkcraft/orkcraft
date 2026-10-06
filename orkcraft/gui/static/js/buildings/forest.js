@@ -127,10 +127,12 @@ export function preview(id, data) {
   return html`<div class="gui-forest"><${Head} id=${id} data=${data} /><${Tree} id=${id} data=${data} media=${false} /></div>`;
 }
 
-/** Full: only the tree, with small previews of images and video. */
+/** Full: the head and the tree, with small previews of images and video (design/buildings/forest.json). */
 export function panes(id, data) {
-  return { main: () => html`<div class="gui-forest"><${Head} id=${id} data=${data} />
-    <${Tree} id=${id} data=${data} media=${true} /></div>` };
+  return {
+    head: () => html`<${Head} id=${id} data=${data} />`,
+    tree: () => html`<div class="gui-forest"><${Tree} id=${id} data=${data} media=${true} /></div>`,
+  };
 }
 
 /** The type's quick actions on the Command Card (realm/catalog.py). */

@@ -26,6 +26,10 @@ LAMPS_OFFICE = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off"
 
 
 class TownHallView(Container):
+    # The panes of its contract (design/buildings/town_hall.json) and the widget that draws each: the
+    # tab strip and a tab per pane. Only named: the hall keeps its tabs as they are.
+    UI_PANES = {"tabs": "#hall-tabs ContentTabs", "hall": "#hall-tab-hall", "sessions": "#hall-tab-sessions",
+                "limits": "#hall-tab-limits"}
     DEFAULT_CSS = """
     TownHallView { height: 1fr; }
     TownHallView TabbedContent { height: 1fr; }
