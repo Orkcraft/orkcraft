@@ -192,7 +192,7 @@ def test_huts_move_until_the_person_pins_them(page):
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
     sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
-    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__sprite`).complete",
+    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__sprite img`).complete",
                          arg=bid, timeout=WAIT_MS)
     s, c = sprite.bounding_box(), card.bounding_box()           # Office: its building, smaller, at the card's left
     assert s["width"] < 68 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
@@ -350,10 +350,11 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     field.press("Enter")
     pg.locator(".gui-warchief__said").wait_for(state="visible", timeout=WAIT_MS)
     _line(pg, "/orkspace Billing")                               # a new orkspace, and the town goes to it
-    pg.locator(".gui-orkspaces__one.is-selected", has_text="Billing").wait_for(state="visible", timeout=WAIT_MS)
-    first = pg.locator(".gui-orkspaces__one").first
-    first.click()
-    pg.wait_for_function("() => !document.querySelector('.gui-orkspaces__one.is-selected')?.textContent.includes('Billing')",
+    pg.locator(".gui-map__land.is-open", has_text="Billing").wait_for(state="visible", timeout=WAIT_MS)
+    first = pg.locator(".gui-map__land[data-id]").first          # a land is cut to its shape: open it by key
+    first.focus()
+    pg.keyboard.press("Enter")
+    pg.wait_for_function("() => !document.querySelector('.gui-map__land.is-open')?.textContent.includes('Billing')",
                          timeout=WAIT_MS)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
     pg.keyboard.press("Escape")

@@ -19,7 +19,7 @@ from orkcraft import scroll as ts
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, checkpoint, chronicles, feedback, inventory, modes, pipes, roads, steward, tiers, unit_info
+from orkcraft.realm import catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, steward, tiers, unit_info
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
 
@@ -163,6 +163,8 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "week": {"runs": j["runs"], "ok": j["ok"], "failed": j["failed"], "results": j["results"]},
         "likes": j["likes"], "dislikes": j["dislikes"],
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
+        "level": bs.level or 0, "level_mark": growth.mark(aim, bs.level or 0),
+        "next": growth.next_step(town.repo_root, building_id, bs.level or 0),
         "pinned": bool(bs.pinned),
         "can_revert": checkpoint.can_revert(town.repo_root, building_id),
         "autonomy": bs.autonomy or "",

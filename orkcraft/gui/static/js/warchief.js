@@ -21,6 +21,7 @@ import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
+import { WarchiefHead } from "./icons.js";
 
 const THREAD = 3;                          // the last messages shown over the line
 const HISTORY = 30;                        // lines ↑ walks back through
@@ -246,6 +247,20 @@ function Speaks({ hidden }) {
         onPointerDown=${(e) => e.preventDefault()} onClick=${() => openOrders(a.id)}>
       ❓ ${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></button>`;
   }
+  const news = t.growth && t.growth.news.length ? t.growth.news[t.growth.news.length - 1] : null;
+  if (news) {                                  // what grew (docs/design/growth.md §3): said once, then seen
+    const seen = () => command("growth.seen", { id: news.id }).catch(() => {});
+    const go = () => {
+      seen();
+      if (news.building) openBuilding(news.building, "info");
+      else settingsOpen.value = true;
+    };
+    return html`<span class="gui-warchief__speaks ok-font-status gui-warchief__news">
+      <button class="gui-link" title=${say(news.text)} onPointerDown=${(e) => e.preventDefault()} onClick=${go}>
+        ${news.icon} ${say(news.text)}</button>
+      <button class="gui-link" title=${say("Seen")} aria-label=${say("Seen")} onPointerDown=${(e) => e.preventDefault()}
+        onClick=${seen}>✕</button></span>`;
+  }
   const level = t.hud.gold_level;
   if (t.hud.show_gold && (level === "warn" || level === "over")) {
     return html`<button class="gui-warchief__speaks ok-font-status ok-tone-wait" title=${say("Ask where the gold goes")}
@@ -348,7 +363,7 @@ export function WarchiefLine() {
     <div key="bar" class="gui-warchief__bar">
       <button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
         onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>
-        <img src="/ds/logo/ork-mark.svg" width="36" height="24" alt="" />
+        <${WarchiefHead} state=${b.alert ? "waiting" : data && data.thinking ? "busy" : ""} />
         ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
       </button>
       <${Speaks} hidden=${focused || !!l.text || chips.length > 0} />

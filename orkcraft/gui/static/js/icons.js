@@ -2,6 +2,7 @@
 // usual UI sets (Lucide, VS Code's codicons), drawn here on a 16px grid in the text's colour. Camp
 // shows the type's header sprite instead (js/hut.js). A type without one of its own gets the box.
 import { html } from "./html.js";
+import { town } from "./link.js";
 
 const PATHS = {
   pit: "M2 9.5v4h12v-4M2 9.5h3.5l1 1.5h3l1-1.5H14M8 2v6M5.5 5.5 8 8l2.5-2.5",                      // inbox tray
@@ -31,15 +32,75 @@ export function TypeIcon({ type }) {
     <path d=${PATHS[type] || PATHS.custom} /></svg>`;
 }
 
-/** The type's header sprite, Camp's and Office's (design-system/sprites/buildings/<type>/header.png). */
-export function headerSprite(type) {
-  const name = type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
-  return `/ds/sprites/buildings/${name}/header.png`;
+// The biomes an orkspace stands on (docs/design/war-map.md §3, realm/biomes.py): the town's ground, the
+// land's fill on the War Map. Dark and low in saturation, so cards, gold and fire read on all; lava is
+// basalt, never red (red is the fire's).
+export const BIOMES = {
+  dirt: { ground: "#1a1813", land: "#3a3326" },
+  forest: { ground: "#14260c", land: "#2c4a1e" },
+  ice: { ground: "#0c1622", land: "#263c52" },
+  dust: { ground: "#2a2014", land: "#5a462a" },
+  void: { ground: "#0e0c14", land: "#2c263c" },
+  lava: { ground: "#161212", land: "#342c2a" },
+};
+export const BIOME_ORDER = Object.keys(BIOMES);
+const DRAWN_FOR = new Set(["ice", "dust", "void", "lava"]);   // header-<biome>.png (tools/growth_sprites.py)
+
+function spriteName(type) {
+  return type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
+}
+
+/** The type's header sprite (design-system/sprites/buildings/<type>/header.png), drawn for the biome its
+ *  orkspace stands on; dirt and forest wear the flat one. */
+export function headerSprite(type, biome = "") {
+  const name = spriteName(type);
+  return `/ds/sprites/buildings/${name}/${DRAWN_FOR.has(biome) ? `header-${biome}` : "header"}.png`;
+}
+
+// Where the goal flag stands on each roof (docs/design/growth.md §5): [x, y, height] in the header's own
+// pixels (2 screen px each): the pole's foot at (x, y), the sprite `height` tall. Set by hand: the roof's
+// highest point would put it on the Town Hall's horn.
+const FLAG_AT = {
+  barracks: [19, 0, 26], catapult: [13, 1, 18], council: [11, 0, 23], crag: [13, 8, 33], custom: [17, 1, 26],
+  fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], horn: [12, 11, 23], lake: [17, 0, 33],
+  loot: [16, 0, 30], mill: [13, 0, 22], pit: [12, 9, 24], scrolls: [16, 0, 30], signpost: [11, 0, 24],
+  town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
+};
+
+/** A building's header sprite in its biome, with its goal flag when it has a level (none at 0). */
+export function HutSprite({ type, biome, goal, level, className = "", onError }) {
+  const at = FLAG_AT[spriteName(type)];
+  return html`<span class=${`gui-sprite ${className}`}>
+    <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
+    ${level > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
+      src=${`/ds/sprites/flags/${goal || "balance"}-${level}.png`} alt="" draggable="false"
+      style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}
+  </span>`;
 }
 
 // Camp: an ork of a garrison as its head in its state (design-system/sprites/orks/, the ork mark's
 // head); a chain or script as its signpost. Office hides both (`.ok-sprite`) and keeps the words.
 const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle" };
+
+/** The Warchief: the ork's head under its gold crown (docs/design/growth.md §8); waiting, the crown burns. */
+export function WarchiefHead({ state = "" }) {
+  const name = state ? `warchief-${state}` : "warchief";
+  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${name}.png`}
+    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width="24" height="20" alt="" />`;
+}
+
+/** The operator's mascot (docs/design/growth.md §7): its kin's head at its stage. */
+export function MascotHead({ kin, stage, size = 4 }) {     // size: screen px a pixel of its 12 × 11 grid
+  return html`<img class="ok-sprite gui-mascot" src=${`/ds/sprites/mascots/${kin}-${stage}@2x.png`}
+    width=${12 * size} height=${11 * size} alt="" />`;
+}
+
+/** The biome of the open orkspace: the ground its huts stand on. */
+export function activeBiome() {
+  const t = town.value;
+  const o = t && t.orkspaces.find((x) => x.id === t.active_orkspace);
+  return o && BIOMES[o.biome] ? o.biome : "dirt";
+}
 
 export function OrkHead({ o, alert }) {
   if (o.kind === "chain" || o.kind === "script") {

@@ -75,6 +75,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "type": (type_id := catalog.type_of(spec).id if spec else bs.preset_ref or bs.id),
             "hut": list(bs.hut) if bs.hut else None,
             "pinned": bool(bs.pinned),
+            "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.text(x, modes.OFFICE) for x in lines],
             "state": worker.status() if worker is not None else "",
@@ -148,8 +149,12 @@ def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
 def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
     out = []
     for o in town.scroll.orkspaces:
+        ids = set(o.buildings)
+        standing = [b for b in town.scroll.buildings if b.id in ids and not b.demolished and b.id != "town_hall"]
         out.append({"id": o.id, "name": o.name, "icon": o.icon, "biome": o.biome, "hotkey": o.hotkey,
-                    "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id))})
+                    "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id)),
+                    "count": len(standing),                       # what the War Map's land says and dots
+                    "working": sum(1 for x in muster.roster.orcs if x.building in ids and x.status == "busy")})
     return out
 
 

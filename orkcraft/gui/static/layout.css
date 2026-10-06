@@ -27,17 +27,12 @@ button { font: inherit; color: inherit; }
 .gui-hud__stop:hover { color: var(--panel); background: var(--danger); }
 .gui-settings .gui-steps { align-self: flex-start; }
 
-/* The town's foot (docs/design/calm-town.md §1): the orkspaces at the left, the Warchief's line in the
+/* The town's foot (docs/design/calm-town.md §1): the War Map at the left (js/warmap.js), the Warchief's line in the
    middle of what the panel leaves of the town (js/chrome.js, js/warchief.js). Only its controls take the mouse. */
 .gui-foot { grid-area: town; align-self: end; z-index: 5; position: relative; display: flex; align-items: flex-end;
   gap: var(--space-3); padding: 0 var(--space-3) var(--space-3); pointer-events: none; min-width: 0; }
 .gui-foot > * { pointer-events: auto; }
-.gui-orkspaces { flex: 0 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0;
-  max-width: 34%; }
-.gui-orkspaces__one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-.gui-orkspaces__one.is-selected { border-color: var(--frame-focus); color: var(--ink-gold); }
-.gui-orkspaces__one.is-alert { border-color: var(--alert-hot); }
-.gui-orkspaces__new .ok-input { width: 160px; }
+
 
 /* The Warchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
    chat, what a command said, the hints or the commands and names as typed. */
@@ -373,3 +368,73 @@ button { font: inherit; color: inherit; }
 .gui-rows .ok-sprite, .ok-item .meta .ok-sprite { vertical-align: middle; image-rendering: pixelated; }
 .ok-item .meta .ok-sprite { margin-right: 2px; }
 .gui-win__banner { display: block; image-rendering: pixelated; }
+
+/* The War Map (js/warmap.js, docs/design/war-map.md): the orkspaces as lands in a framed square. Every name
+   is in the ink (white): on six grounds a dark or gold name would not read; the open land is told by its
+   gold bar and its height. */
+.gui-map { position: relative; flex: none; padding: 8px; background: var(--panel-raised);
+  box-shadow: var(--bevel-raised), 0 0 0 2px var(--bevel-lo), 4px 4px 0 #000; }
+.gui-map__view { width: 240px; max-height: 240px; overflow-y: auto; overflow-x: hidden; position: relative;
+  box-shadow: 0 0 0 3px var(--frame); scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
+.gui-map__ground { position: relative; background: var(--fog); }
+.gui-map__land { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: var(--fill); cursor: pointer;
+  color: var(--ink); font: 600 13px/16px var(--ok-font); text-align: left; outline: none; }
+.gui-map__land:hover { filter: brightness(1.12); }
+.gui-map__land:focus-visible { filter: brightness(1.2); }
+.gui-map__land:focus-visible .gui-map__name { text-decoration: underline dotted var(--frame-focus); text-underline-offset: 3px; }
+.gui-map__land > * { position: absolute; pointer-events: none; }
+.gui-map__name { left: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
+  text-shadow: 1px 1px 0 var(--bevel-lo); }
+.gui-map__fog .gui-map__name { color: var(--ink-muted); }
+.gui-map__fog:hover .gui-map__name { color: var(--ink); }
+.gui-map__bar { left: 0; width: 3px; background: var(--frame-focus); }
+.gui-map__state { left: 12px; font: 400 11px/14px var(--ok-font); color: var(--ink); opacity: .85; white-space: nowrap; }
+.gui-map__dots { left: 13px; display: flex; gap: 6px; }
+.gui-map__dots i { width: 4px; height: 4px; background: var(--ink); }
+.gui-map__dots i.is-busy { background: var(--frame-focus); }
+.gui-map__ask { display: inline-block; position: static; width: 8px; height: 8px; margin-left: 6px; vertical-align: 1px;
+  background: var(--alert); box-shadow: inset 0 0 0 2px var(--alert), inset 0 0 0 4px var(--fire-glow); animation: gui-map-ask 1.6s steps(2) infinite; }
+@keyframes gui-map-ask { 50% { background: var(--fire-glow); } }
+.gui-map__field { position: absolute; left: 8px; width: 200px; z-index: 6; }
+/* the call (§2.5): rings from the land's ■, the land flashes; an arrow at the frame's edge out of sight */
+.gui-map__ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.gui-map__ping::before { content: ""; position: absolute; outline: 2px solid var(--alert); animation: gui-map-ping .9s steps(6) both;
+  animation-delay: inherit; }
+@keyframes gui-map-ping { from { left: -4px; top: -4px; width: 8px; height: 8px; opacity: 1; }
+                          to { left: -30px; top: -30px; width: 60px; height: 60px; opacity: .1; } }
+.gui-map__land.is-hit { animation: gui-map-hit .3s steps(2) 4; }
+@keyframes gui-map-hit { 50% { filter: brightness(1.7); } }
+.gui-map__edge { position: absolute; left: 16px; right: 16px; z-index: 3; pointer-events: none; text-align: center;
+  font: 700 12px/12px var(--ok-font); color: var(--alert); text-shadow: 1px 1px 0 var(--bevel-lo); animation: gui-map-hit .3s steps(2) 6; }
+.gui-map__edge.is-up { top: 12px; } .gui-map__edge.is-down { bottom: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .gui-map__ping { display: none; }
+  .gui-map__land.is-hit, .gui-map__edge, .gui-map__ask { animation: none; }
+  .gui-map__land.is-hit { filter: brightness(1.4); }
+}
+
+/* A hut's header in its biome, with its goal flag on the roof (js/icons.js HutSprite, docs/design/growth.md §5). */
+.gui-sprite { position: relative; display: inline-block; line-height: 0; }
+.gui-sprite > .ok-sprite { display: block; }
+.gui-sprite__flag { position: absolute; }
+.gui-sprite__flag.is-on-snow { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo)); }
+
+/* The building's Info head: its sprite large, its renown and what the next asks (js/console.js). */
+.gui-info__head { display: flex; align-items: flex-end; gap: var(--space-3); padding-top: 16px; }  /* the flag rises over the sprite */
+.gui-info__head .gui-sprite { zoom: 1.5; }
+.gui-info__renown { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* The head of Settings: the operator's mascot, its stage and deeds (js/settings.js, docs/design/growth.md §7). */
+.gui-you { display: flex; gap: var(--space-3); align-items: center; padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--frame); margin-bottom: var(--space-3); }
+.gui-you__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-you__name { font: 700 15px/20px var(--ok-font); color: var(--ink-gold); }
+.gui-you__deeds { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.gui-you__deed { width: 22px; height: 22px; display: grid; place-items: center; font-size: 13px; background: var(--panel-inset);
+  box-shadow: var(--bevel-sunken); }
+.gui-you__deed.is-ahead { filter: grayscale(1) brightness(.5); }
+.gui-you__camp { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
+
+/* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
+.gui-warchief__face .gui-warchief__crowned { width: 36px; height: 30px; }
+.gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }

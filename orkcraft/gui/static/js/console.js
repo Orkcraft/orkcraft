@@ -17,11 +17,12 @@ import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
-import { OrkHead } from "./icons.js";
+import { OrkHead, HutSprite, activeBiome } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
 const ASK_MS = 2000;               // while the town keeps changing, at most this often
+const ROMAN = ["", "I", "II", "III"];
 
 function keyOf(id, ork) {
   return ork ? `${id}|${ork}` : id;
@@ -135,7 +136,15 @@ function BuildingInfo({ b, i, redo, open }) {
   const run = (name, args = {}) => command(name, { id: b.id, ...args }).then(redo, () => {});
   const w = i.week;
   const runs = `${i.spend_plain} · week: ${w.runs} runs (${w.ok} ✓ ${w.failed} ✗) · ${w.results} results`;
+  const renown = `Renown: ${i.level ? ROMAN[i.level] : "none yet"}`;
   return html`<section class="gui-info">
+    <div class="gui-info__head">
+      <${HutSprite} type=${b.type} biome=${activeBiome()} goal=${i.goal} level=${i.level || 0} />
+      <div class="gui-info__renown">
+        <span class="ok-font-body">${i.level_mark ? html`<b>${i.level_mark}</b> · ${say(i.goal_title)}` : say(`${renown} · ${i.goal_title}`)}</span>
+        ${i.next && html`<span class="ok-font-status ok-tone-muted">${say(i.next)}</span>`}
+      </div>
+    </div>
     <${Row} text=${html`<b>${say(b.title)}</b>`}>
       <${Thumb} up count=${i.likes} title=${say("Good: its last result becomes a reference")} onClick=${() => run("building.like")} />
       <${Thumb} count=${i.dislikes} title=${say("Bad: what went wrong?")} onClick=${() => open("dislike")} />

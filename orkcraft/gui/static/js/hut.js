@@ -14,7 +14,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule } from "./types.js";
 import { town, say, command } from "./link.js";
-import { TypeIcon, headerSprite, OrkHead } from "./icons.js";
+import { TypeIcon, HutSprite, OrkHead, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -182,8 +182,8 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
                                         "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
-    <div class="ok-head"><img class="ok-sprite gui-hut__sprite" src=${headerSprite(b.type)} alt=""
-      draggable="false" onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
+    <div class="ok-head"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
     <div class="ok-hut__card">
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

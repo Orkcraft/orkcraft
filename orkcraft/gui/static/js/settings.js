@@ -1,14 +1,33 @@
 // The town's settings, opened from the project's name in the HUD (js/chrome.js): how freely the orks
 // decide — the level every building follows until it has its own (its steward's window, js/steward.js)
 // — and, on the clock, how long a question and a change wait for you. The host's town.settings
-// (gui/town_settings.py), as the TUI's F10 → Ork autonomy.
+// (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Its head is you: your mascot at its stage, what
+// the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
+// it, the camp's rules.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say } from "./link.js";
+import { command, say, town } from "./link.js";
+import { MascotHead } from "./icons.js";
 import { Dialog } from "./dialog.js";
 
 export const settingsOpen = signal(false);
+
+/** You: the mascot (per machine, every camp's), its name and stage, the next stage, the deeds. */
+function You({ y }) {
+  return html`<section class="gui-you">
+    <${MascotHead} kin=${y.kin} stage=${y.stage} size=${4} />
+    <div class="gui-you__who">
+      <span class="gui-you__name">${say(y.name)}</span>
+      <span class="ok-font-status ok-tone-muted">${say(`${y.role} · stage ${y.stage} of 4`)}</span>
+      ${y.next && html`<span class="ok-font-status">${say(`Next: ${y.next}`)}</span>`}
+      <span class="gui-you__deeds" aria-label=${say("Deeds")}>
+        ${y.deeds.map((d) => html`<span key=${d.id} class=${cls("gui-you__deed", { "is-ahead": !d.done })}
+            title=${say(d.done ? `${d.title} · ${d.done}` : `${d.title}: ${d.hint}`)} aria-label=${say(d.title)}>${d.icon}</span>`)}
+      </span>
+    </div>
+  </section>`;
+}
 
 function Steps({ label, items, value, onPick }) {
   return html`<div class="gui-field"><span class="ok-font-label">${label}</span>
@@ -25,9 +44,13 @@ export function SettingsDialog() {
   const close = () => { settingsOpen.value = false; };
   const set = (args) => command("town.settings.set", args).then(setS, () => {});
   const level = s.levels.find((x) => x.id === s.autonomy) || s.levels[0];
+  const t = town.value;
+  const you = t && t.growth && t.growth.you;
   return html`<${Dialog} title=${say("Settings")} onCancel=${close}
       actions=${html`<button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
+    ${you && html`<${You} y=${you} />`}
     <div class="gui-form gui-settings">
+      <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>
       <${Steps} label=${say("Autonomy: how freely the orks decide")} value=${s.autonomy}
         items=${s.levels.map((x) => [x.id, `${x.icon} ${say(x.title)}`, say(x.questions)])} onPick=${(v) => set({ autonomy: v })} />
       <p class="ok-font-status ok-tone-muted">${say(level.questions)} ${say(level.improves)}</p>

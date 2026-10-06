@@ -1,0 +1,210 @@
+// The War Map (docs/design/war-map.md): the orkspaces as lands stacked in a framed square at the town's
+// bottom left, each in its biome's colour, the open one tall with its status and its buildings as dots, the
+// fog of war at the foot (+ Orkspace) and in a ragged strip at the right. Every land is a real button cut to
+// its shape by a clip path, so clicks follow the shape; ↑ / ↓ walk the lands, Enter opens, the right click
+// renames, changes the biome or removes. When an ork asks in another orkspace the map calls: rings from the
+// land's ■, the land flashes, an arrow at the frame's edge when it is out of sight (§2.5).
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { html, cls } from "./html.js";
+import { town, command, say } from "./link.js";
+import { openMenu } from "./menu.js";
+import { BIOMES, BIOME_ORDER } from "./icons.js";
+
+const N = 40, T = 6;                       // 40 × 40 cells of 6 px: a 240 px square
+const FOG_ROWS = 4, CLOSED_MIN = 5, OPEN_MIN = 11;
+const FOG = "#221e16";
+const CALL_EVERY_MS = 30_000;              // a land calls at most this often
+
+// -- deterministic shapes: a border is seeded by the pair of lands it parts, the coast by its row ---------
+function hash(s) {
+  let h = 2166136261;
+  for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return h >>> 0 || 1;
+}
+function rng(seed) {
+  let s = seed;
+  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+}
+function stepped(seed, len, lo, hi, runs) {
+  const r = rng(seed), out = [];
+  let off = 0;
+  while (out.length < len) {
+    off = Math.max(lo, Math.min(hi, off + (r() < 0.5 ? -1 : 1)));
+    const k = runs[Math.floor(r() * runs.length)];
+    for (let i = 0; i < k; i++) out.push(off);
+  }
+  return out.slice(0, len);
+}
+const COAST = stepped(hash("coast"), 600, 0, 3, [2, 3, 4]);   // by absolute row: a new land never moves it
+
+function layout(lands, open) {
+  const closedN = lands.length - 1, avail = N - FOG_ROWS;
+  const closed = Math.max(CLOSED_MIN, Math.floor(avail / (closedN + 2.4)));
+  let openH = Math.max(OPEN_MIN, avail - closedN * closed);
+  const rows = closedN * closed + openH + FOG_ROWS;
+  if (rows < N) openH += N - rows;
+  const H = Math.max(N, rows);
+  const tops = [0];
+  for (const o of lands) tops.push(tops[tops.length - 1] + (o.id === open ? openH : closed));
+  const ids = lands.map((o) => o.id).concat(["fog"]);
+  const border = ids.map((id, k) => (k === 0 ? null
+    : stepped(hash(`${ids[k - 1]}|${id}`), N, -1, 1, [3, 4, 5]).map((o) => tops[k] + o)));
+  return { H, tops, border };
+}
+
+/** A union of the cells `inside` holds, row by row; a land's first row in a column leaves a 1 px seam. */
+function cellsPath(inside, H, isTop) {
+  let d = "";
+  for (let y = 0; y < H; y++) {
+    let x = 0;
+    while (x < N) {
+      if (!inside(x, y)) { x++; continue; }
+      const top = isTop(x, y);
+      let x1 = x;
+      while (x1 < N && inside(x1, y) && isTop(x1, y) === top) x1++;
+      const y0 = y * T + (top ? 1 : 0), h = T - (top ? 1 : 0);
+      d += `M${x * T} ${y0}h${(x1 - x) * T}v${h}h${-(x1 - x) * T}z`;
+      x = x1;
+    }
+  }
+  return d;
+}
+
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+function state(o) {
+  if (o.questions) return plural(o.questions, "question");
+  if (o.working) return `${o.working} at work`;
+  return "all quiet";
+}
+
+/** A name typed in place: a new orkspace in the fog, or a land renamed. */
+function NameField({ top, value = "", onDone, onName }) {
+  const [name, setName] = useState(value);
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) { ref.current.focus(); ref.current.select(); } }, []);
+  const done = () => { if (name.trim() && name.trim() !== value) onName(name.trim()); onDone(); };
+  return html`<input ref=${ref} class="ok-input gui-map__field" style=${`top:${top}px`} value=${name}
+    aria-label=${say("Orkspace name")} placeholder=${say("Orkspace name")}
+    onInput=${(e) => setName(e.target.value)} onBlur=${onDone}
+    onKeyDown=${(e) => { e.stopPropagation(); if (e.key === "Enter") done(); else if (e.key === "Escape") onDone(); }} />`;
+}
+
+export function WarMap() {
+  const t = town.value;
+  const lands = t.orkspaces, open = t.active_orkspace;
+  const view = useRef(null), land = useRef(null), frame = useRef(null);
+  const [naming, setNaming] = useState(null);          // "new" | an orkspace id being renamed
+  const asked = useRef(null);                           // orkspace id → its questions at the last render
+  const called = useRef({});                            // orkspace id → when it last called
+  const { H, tops, border } = layout(lands, open);
+  const coastAt = (y) => N - 3 - COAST[y % COAST.length];
+  const n = lands.length;
+
+  const select = (o) => { if (o.id !== open) command("orkspace.select", { id: o.id }).catch(() => {}); };
+  const menuOf = (e, o) => openMenu(e, [
+    { label: "Rename…", run: () => setNaming(o.id) },
+    "-",
+    ...BIOME_ORDER.map((b) => ({ label: `${b === o.biome ? "✓ " : ""}Biome: ${b}`,
+      run: () => command("orkspace.biome", { id: o.id, biome: b }).catch(() => {}) })),
+    "-",
+    lands.length > 1 && { label: "Remove", danger: true, run: () => command("orkspace.remove", { id: o.id }).catch(() => {}) },
+  ]);
+  function key(e) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const all = [...land.current.querySelectorAll(".gui-map__land")];
+    const i = all.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault();
+    const j = Math.max(0, Math.min(all.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)));
+    all[j].focus({ preventScroll: true });
+    all[j].querySelector(".gui-map__name")?.scrollIntoView({ block: "nearest" });
+  }
+
+  // keep the open land in sight
+  const k = Math.max(0, lands.findIndex((o) => o.id === open));
+  useLayoutEffect(() => {
+    const v = view.current;
+    if (!v) return;
+    const top = tops[k] * T, bottom = tops[k + 1] * T;
+    if (top < v.scrollTop || bottom > v.scrollTop + v.clientHeight) v.scrollTop = Math.max(0, top - 24);
+  }, [open, n]);
+
+  // the call: a new question in an orkspace that is not open
+  useEffect(() => {
+    const before = asked.current;
+    asked.current = Object.fromEntries(lands.map((o) => [o.id, o.questions]));
+    if (!before || t.hud.quiet) return;
+    const now = Date.now();
+    for (const o of lands) {
+      if (o.id === open || o.questions <= (before[o.id] ?? o.questions)) continue;
+      if (now - (called.current[o.id] || 0) < CALL_EVERY_MS) continue;
+      called.current[o.id] = now;
+      call(o);
+    }
+  });
+  function call(o) {
+    const el = land.current && land.current.querySelector(`[data-id="${CSS.escape(o.id)}"]`);
+    const ask = el && el.querySelector(".gui-map__ask");
+    if (!ask) return;
+    const L = land.current.getBoundingClientRect(), r = ask.getBoundingClientRect();
+    const x = r.left - L.left + 4, y = r.top - L.top + 4;
+    for (let i = 0; i < 3; i++) {
+      const p = document.createElement("span");
+      p.className = "gui-map__ping";
+      p.style.cssText = `left:${x}px;top:${y}px;animation-delay:${i * 0.45}s`;
+      land.current.append(p);
+      setTimeout(() => p.remove(), 1000 + i * 450);
+    }
+    el.classList.add("is-hit");
+    setTimeout(() => el.classList.remove("is-hit"), 1300);
+    const v = view.current;
+    if (v && (y < v.scrollTop || y > v.scrollTop + v.clientHeight) && frame.current) {
+      const a = document.createElement("span");
+      a.className = `gui-map__edge ${y < v.scrollTop ? "is-up" : "is-down"}`;
+      a.textContent = `${y < v.scrollTop ? "▲" : "▼"} ${o.name}`;
+      frame.current.append(a);
+      setTimeout(() => a.remove(), 4000);
+    }
+  }
+
+  const fogFrom = (x) => border[n][x];
+  const fogMid = (tops[n] + (H - tops[n]) / 2) * T - 8;
+  return html`<nav ref=${frame} class="gui-map" aria-label=${say("Orkspaces")} onKeyDown=${key}>
+    <div ref=${view} class="gui-map__view">
+      <div ref=${land} class="gui-map__ground" style=${`height:${H * T}px;--fog:${FOG}`}>
+        ${lands.map((o, i) => {
+          const from = (x) => (i === 0 ? 0 : border[i][x]), to = (x) => border[i + 1][x];
+          const inside = (x, y) => y >= from(x) && y < to(x) && x < coastAt(y);
+          const path = cellsPath(inside, H, (x, y) => i > 0 && y === from(x));
+          const y0 = tops[i] * T, y1 = tops[i + 1] * T, isOpen = o.id === open;
+          const label = `${o.name}, ${plural(o.count, "building")}${o.questions ? `, ${plural(o.questions, "question")}` : ""}`;
+          return html`<button key=${o.id} data-id=${o.id} class=${cls("gui-map__land", { "is-open": isOpen })}
+              style=${`clip-path:path("${path}");--fill:${(BIOMES[o.biome] || BIOMES.dirt).land}`}
+              aria-current=${isOpen ? "true" : "false"} aria-label=${say(label)} title=${say(`${o.name} · ${o.biome}`)}
+              onClick=${() => select(o)} onContextMenu=${(e) => menuOf(e, o)}>
+            ${isOpen && html`<span class="gui-map__bar" style=${`top:${y0 + 8}px;height:${y1 - y0 - 16}px`}></span>`}
+            <span class="gui-map__name" style=${`top:${isOpen ? y0 + 12 : (y0 + y1) / 2 - 8}px`}>${say(o.name)}${o.questions
+              ? html`<span class="gui-map__ask" aria-hidden="true"></span>` : null}</span>
+            ${isOpen && html`<span class="gui-map__state" style=${`top:${y0 + 31}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
+            ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 16}px`}>
+              ${Array.from({ length: Math.min(o.count, 24) }, (_, j) => html`<i key=${j} class=${j < o.working ? "is-busy" : ""}></i>`)}</span>`}
+          </button>`;
+        })}
+        <button class="gui-map__land gui-map__fog" title=${say("A new orkspace from the fog of war")}
+            style=${`clip-path:path("${cellsPath((x, y) => y >= fogFrom(x), H, (x, y) => y === fogFrom(x))}");--fill:${FOG}`}
+            onClick=${() => setNaming("new")}>
+          <span class="gui-map__name" style=${`top:${fogMid}px`}>+ ${say("Orkspace")}</span>
+        </button>
+        ${naming === "new" && html`<${NameField} top=${fogMid - 6} onDone=${() => setNaming(null)}
+          onName=${(name) => command("orkspace.new", { name }).catch(() => {})} />`}
+        ${naming && naming !== "new" && (() => {
+          const i = lands.findIndex((o) => o.id === naming);
+          if (i < 0) return null;
+          return html`<${NameField} top=${tops[i] * T + 6} value=${lands[i].name} onDone=${() => setNaming(null)}
+            onName=${(name) => command("orkspace.rename", { id: naming, name }).catch(() => {})} />`;
+        })()}
+      </div>
+    </div>
+  </nav>`;
+}

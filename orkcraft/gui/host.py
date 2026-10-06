@@ -29,10 +29,10 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, console, mobile, nightly, state, town_settings, views
+from orkcraft.gui import builder, console, growth, mobile, nightly, state, town_settings, views
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
-from orkcraft.realm import catalog, elders, fastpath, halt, modes
+from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
@@ -98,6 +98,8 @@ class Host:
         self.commands.update(self.console.commands())
         self.commands.update(town_settings.commands(self))   # the HUD's menu: autonomy and its waits
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
+        self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
+        self.commands.update(self.growth.commands())
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -113,6 +115,7 @@ class Host:
                               night=self.night)
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
+        snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         return snap
 
     def limits(self) -> list:
@@ -132,6 +135,8 @@ class Host:
             self._order(event.data)
         if event.topic == bus.ROADS:                   # the roads changed: the scroll keeps them
             self.town.save()
+        if event.topic in (bus.HALL, bus.ROADS):      # a rating, a change of the orks, a road: growth looks again
+            self.growth.soon()
         if event.topic in (bus.WORKER, bus.SPEC, bus.UI) and event.data.get("building"):
             self.on_detail(str(event.data["building"]))
         self.on_change()
@@ -202,6 +207,7 @@ class Host:
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.refresh_roster()
         self._night()
+        self.growth.tick(now)
 
     # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
 
@@ -269,7 +275,7 @@ class Host:
             raise CommandError(f"Unknown command: {name}")
         try:
             return fn(dict(args or {}))
-        except console.ConsoleError as e:
+        except (console.ConsoleError, growth.GrowthError) as e:
             raise CommandError(str(e)) from None
 
     def _spec(self, args: dict):
@@ -290,7 +296,7 @@ class Host:
         """A new empty orkspace, named by the person, and the town goes to it."""
         from orkcraft import scroll
         try:
-            ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60])
+            ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60], biome=biomes.for_new(self.town.scroll))
         except ValueError as e:
             raise CommandError(str(e)) from None
         self.town.scroll.active_orkspace_id = ork.id

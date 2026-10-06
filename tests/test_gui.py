@@ -67,6 +67,46 @@ def test_a_new_orkspace_is_named_and_the_town_goes_to_it(fake_repo, isolated_lay
         host.command("orkspace.new", {"name": ""})
 
 
+def test_the_war_map_lands_get_biomes_names_and_go(fake_repo, isolated_layout_file):
+    """docs/design/war-map.md: a camp's old default spreads once, a new land takes a free biome, the right
+    click renames, changes the biome, removes an empty land; the snapshot says what each land shows."""
+    host = _host(fake_repo)
+    first = host.town.scroll.orkspaces[0]
+    assert first.biome == "dirt" and host.town.scroll.meta.get("biomes")    # the old "forest" spread once
+    oid = host.command("orkspace.new", {"name": "Billing"})
+    assert host.town.scroll.orkspace(oid).biome == "forest"                  # the first biome nobody has
+    host.command("orkspace.biome", {"id": oid, "biome": "lava"})
+    host.command("orkspace.rename", {"id": oid, "name": "Payments"})
+    land = next(o for o in host.snapshot()["orkspaces"] if o["id"] == oid)
+    assert land["biome"] == "lava" and land["name"] == "Payments" and land["count"] == 0 and land["working"] == 0
+    with pytest.raises(CommandError):
+        host.command("orkspace.biome", {"id": oid, "biome": "desert"})
+    with pytest.raises(CommandError):
+        host.command("orkspace.rename", {"id": oid, "name": "  "})
+    host.command("orkspace.remove", {"id": oid})
+    assert host.town.scroll.orkspace(oid) is None
+    with pytest.raises(CommandError, match="last"):
+        host.command("orkspace.remove", {"id": first.id})
+
+
+def test_the_snapshot_carries_growth_and_a_buildings_level(fake_repo, isolated_layout_file):
+    """docs/design/growth.md: the news, the operator's mascot and deeds, a hut's level and goal for its flag."""
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    host.town.scroll.building(pit).level = 2
+    host.tick()
+    snap = host.snapshot()
+    you = snap["growth"]["you"]
+    assert you["stage"] >= 1 and you["kin"] and you["name"] and len(you["deeds"]) == 8
+    assert next(d for d in you["deeds"] if d["id"] == "town")["done"]          # a building beside the Hall
+    hut = next(b for b in snap["buildings"] if b["id"] == pit)
+    assert hut["level"] == 2 and hut["goal"] == "balance"
+    assert host.command("info", {"id": pit})["level_mark"] == "⚖️ II"
+    host.growth._news = [{"id": "n1", "text": "x"}]
+    host.command("growth.seen", {"id": "n1"})
+    assert host.snapshot()["growth"]["news"] == []
+
+
 def test_halt_all_says_what_it_stopped(fake_repo):
     host = _host(fake_repo)
     toasts = []
