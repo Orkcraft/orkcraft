@@ -40,7 +40,7 @@ from orkcraft.realm import builders, chains, chronicles, roads, tiers
 # its orks and its review of their work). Its spec keeps a tier per task (`OrcSpec.models`); a task with
 # none runs on the default (the CLI's own model, or the type's setting).
 USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings"}
-TYPE_USES = {"barracks": {"plan": "Plan the tasks", "answer": "Answer the orks' questions",
+TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
                          "review": "Review their work", "final": "Look at the whole"}}
 
 

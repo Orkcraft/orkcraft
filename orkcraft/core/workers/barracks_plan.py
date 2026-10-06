@@ -2,9 +2,13 @@
 
 A task that arrives is judged before any ork takes it:
 
-    simple    the rules are sure (a short task, a follow-up, a rework, an approved post) or the steward
-              answers `SIMPLE` → the whole task goes to one ork of the tier the building's goal names
-    planned   the steward answers a plan → the task becomes the parent of subtasks: each a task here of
+    simple    a follow-up, a rework or an approved post → the whole task goes to the ork that knows it
+    sorted    else the steward's light look (`plans.TRIAGE_TIER`): `trivial` → one light ork at once, no
+              review but its tests; `single` → one ork of the tier the sort names, then the review;
+              `plan` (stages, parallel parts) → the steward plans it on the goal's tier (`Goal.plan`).
+              A short task with no steps (`plans.clearly_simple`) is never planned: not trivial, it goes
+              to one ork of the tier the building's goal names, reviewed
+    planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent of subtasks: each a task here of
               its own (`parent`, `sub`), with its tier, its persona, the files it touches and the parts it
               waits for. A part starts when what it waits for is merged and nothing running touches its
               files; accepted, its branch is merged into the parent's (`git merge-tree`, no checkout).
@@ -94,35 +98,86 @@ class PlanMixin:
         known = self.foreman.follow_up_of(task, st.orcs)[0] is not None
         if known or task.feedback or task.publish or task.qa or task.branch or self._meeting(task):
             return True
-        if not self.plans_on or plans.clearly_simple(task.title, task.text):
+        if not self.plans_on:
             task.tier = self.goal.simple
             return True
-        self._plan(task)
+        self._triage(task, short=plans.clearly_simple(task.title, task.text))
         return False
 
-    def _plan(self, task: bk.PoolTask) -> None:
+    def _take(self, task: bk.PoolTask, why: str) -> threading.Event:
+        """The task leaves the queue while the steward looks at it (`planning`: a restart sorts it again)."""
         st = self.state
         if task in st.queue:
             st.queue.remove(task)
         task.status = "planning"
         if task not in st.tasks:
             st.tasks.append(task)
-        st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"{self.keeper} plans it"))
-        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, task.text, self.aim,
-                                   self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir))
+        st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=why))
         cancel = threading.Event()
         self._cancels[f"plan:{task.id}"] = cancel
+        return cancel
+
+    def _triage(self, task: bk.PoolTask, short: bool = False) -> None:
+        """The steward's light look (`plans.TRIAGE_TIER`): trivial and single go to one ork at once, a task of
+        stages or parallel parts is planned. A sort that does not hold is planned too, as before the triage.
+        `short`: the rules are sure it needs no plan — it is only told trivial (no review) from the rest."""
+        cancel = self._take(task, f"{self.keeper} sorts it")
+        prompt = plans.triage_prompt(self.keeper, self.orders, task.title, task.text)
+
+        def work() -> None:
+            from orkcraft.core.workers.barracks import RunOutcome
+            out, sort = RunOutcome(), None
+            try:
+                sort = plans.parse_triage(self._steward(prompt, self.repo_root, cancel, out, "triage",
+                                                        plans.TRIAGE_TIER))
+            except InterruptedError:
+                out.error = "stopped"
+            except Exception:  # a steward that cannot sort never stops the task: it is planned
+                sort = None
+            self._call(self._sorted, task.id, sort, out, short)
+
+        threading.Thread(target=work, daemon=True, name=f"triage-{self.building_id}-{task.id}").start()
+
+    def _sorted(self, task_id: str, sort: plans.Triage | None, out, short: bool = False) -> None:
+        st = self.state
+        self._cancels.pop(f"plan:{task_id}", None)
+        task = st.task(task_id)
+        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        if task is None or task.status != "planning":
+            return
+        task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
+        if out.error == "stopped":
+            self._whole(task, "", "the sort was stopped")
+        elif short and (sort is None or sort.kind != plans.TRIVIAL):     # no plan for it: one light ork, reviewed
+            task.kind = plans.SINGLE
+            self._whole(task, self.goal.simple, "short and clear" + (f" — {sort.why}" if sort and sort.why else ""))
+        elif sort is None or sort.kind == plans.PLAN:
+            task.kind = plans.PLAN
+            why = f": {sort.why}" if sort is not None and sort.why else ""
+            self._plan(task, f"{self.keeper} plans it ({self.goal.plan}){why}")
+        else:
+            task.kind = sort.kind
+            tier = self.goal.simple if sort.kind == plans.TRIVIAL else plans.shift(sort.tier, self.goal.shift)
+            self._whole(task, tier, f"{self.keeper}: {sort.kind}" + (f" — {sort.why}" if sort.why else ""))
+        st.save()
+        self.changed()
+
+    def _plan(self, task: bk.PoolTask, why: str = "") -> None:
+        cancel = self._take(task, why or f"{self.keeper} plans it")
+        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, task.text, self.aim,
+                                   self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir))
+        tier = self.goal.plan
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
             out = RunOutcome()
             subs, errors = None, []
             try:
-                text = self._steward(prompt, self.repo_root, cancel, out, "plan", plans.PLAN_TIER)
+                text = self._steward(prompt, self.repo_root, cancel, out, "plan", tier)
                 subs, errors = plans.parse(text)
                 if errors:                                    # once more, with what was wrong
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
-                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan", plans.PLAN_TIER)
+                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan", tier)
                     subs, errors = plans.parse(text)
             except InterruptedError:
                 out.error = "stopped"

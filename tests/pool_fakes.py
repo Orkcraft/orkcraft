@@ -43,16 +43,19 @@ class FakeGit:
 
 
 class Steward:
-    """A scripted steward: answers questions with `answers` (else ASK), plans with `plans` (else SIMPLE),
-    reviews with `verdicts` (else ACCEPT)."""
+    """A scripted steward: sorts with `sorts` (else `plan`: the task goes on to the plan), answers questions
+    with `answers` (else ASK), plans with `plans` (else SIMPLE), reviews with `verdicts` (else ACCEPT)."""
 
-    def __init__(self, verdicts=(), answers=(), plans=()):
+    def __init__(self, verdicts=(), answers=(), plans=(), sorts=()):
         self.verdicts, self.answers, self.plans, self.prompts = list(verdicts), list(answers), list(plans), []
+        self.sorts = list(sorts)
         self.models = []
 
     def __call__(self, harness, prompt, workdir, cancel, model):
         self.prompts.append(prompt)
         self.models.append(model)
+        if "SORT the task" in prompt:
+            return (self.sorts.pop(0) if self.sorts else '{"kind": "plan"}'), 0.005
         if "PLAN the task" in prompt:
             return (self.plans.pop(0) if self.plans else "SIMPLE"), 0.02
         if "asks\n\n" in prompt:

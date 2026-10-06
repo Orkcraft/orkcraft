@@ -2,6 +2,7 @@
 subtasks (design: docs/design/barracks-planning.md §3–4).
 
     clearly_simple(task)                   the rules decide when they are sure: a short task, no steps
+    triage_prompt(...) / parse_triage(t)   else the steward's light look: trivial | single (a tier) | plan
     plan_prompt(...) / parse(text)         the steward answers `SIMPLE` or a JSON plan; the code checks it
     ready(children, limit)                 the subtasks that may start now: what they wait for is done,
                                            nothing running touches the same files, within the limit
@@ -40,15 +41,18 @@ class Goal:
     parallel: int                # subtasks at once at most (0: as many as the pool has orks)
     sub_review: bool             # a subtask is read by the steward after its tests (else the tests only)
     final: str                   # the tier of the steward's last look at the whole
+    plan: str = "warrior"        # the tier the steward plans a task on that is worth a plan
+    review_trivial: bool = False  # a trivial task is read by the steward too (else its tests only)
 
 
 GOALS = {
-    "thrift": Goal("laborer", -1, 2, False, "warrior"),
-    "balance": Goal("laborer", 0, 0, True, "elder"),
-    "quality": Goal("warrior", 1, 0, True, "elder"),
+    "thrift": Goal("laborer", -1, 2, False, "warrior", "warrior", False),
+    "balance": Goal("laborer", 0, 0, True, "elder", "warrior", False),
+    "quality": Goal("warrior", 1, 0, True, "elder", "elder", True),
 }
-PLAN_TIER = "elder"              # a wrong plan costs more than everything after it
-REVIEW_TIER = "warrior"          # the steward's read of a simple task or a subtask
+TRIAGE_TIER = "laborer"          # the steward's first look at a task: light and quick
+PLAN_TIER = "elder"              # the heaviest a plan ever runs on (a goal names its own: `Goal.plan`)
+REVIEW_TIER = "warrior"          # the steward's read of a task or a subtask
 
 
 def goal_of(aim: str) -> Goal:
@@ -74,6 +78,52 @@ def clearly_simple(title: str, text: str) -> bool:
     body = f"{title}\n{text}"
     return (len(text) <= SHORT and len(STEP.findall(text)) < 3
             and len(set(TICKETS.findall(body))) <= 1)
+
+
+TRIVIAL, SINGLE, PLAN = "trivial", "single", "plan"       # what the triage makes of a task (`PoolTask.kind`)
+
+
+@dataclass(frozen=True)
+class Triage:
+    kind: str                    # trivial | single | plan
+    tier: str                    # the tier of the one ork (trivial, single); "" for a plan
+    why: str = ""
+
+
+def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
+    """The steward's first, light look: is it trivial, one ork's job, or worth a plan?"""
+    rules = f"## Your rules\n\n{orders.strip()}" if orders.strip() else ""
+    return "\n\n".join(p for p in [
+        f"You are {keeper}, the steward of a barracks of coding agents. SORT the task below before anyone works "
+        "on it — quickly, without planning it.", rules, f"## The task: {title}", text[:BRIEF_LIMIT],
+        "Answer one JSON object and nothing else: "
+        '{"kind": "trivial" | "single" | "plan", "tier": "laborer" | "warrior" | "elder", "why": "<a few words>"}',
+        "- `trivial`: a small, clear job one light agent does at once (a question, a lookup, a rename, a typo, "
+        "a short note);\n"
+        "- `single`: one agent's job in one go, but it needs thought — `tier` says how strong: `warrior` for "
+        "ordinary code, `elder` for design or tricky code;\n"
+        "- `plan`: several stages, or parts that can run in parallel — it is planned before anyone starts.\n"
+        "In doubt between `single` and `plan`: `plan`."] if p)
+
+
+def parse_triage(text: str) -> Triage | None:
+    """The steward's sort; None when it is not one (then the task is planned, as before the triage)."""
+    text = (text or "").strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        data = json.loads(text[start:end + 1])
+    except ValueError:
+        return None
+    if not isinstance(data, dict) or data.get("kind") not in (TRIVIAL, SINGLE, PLAN):
+        return None
+    kind, tier = data["kind"], str(data.get("tier") or "")
+    if kind == PLAN:
+        tier = ""
+    elif tier not in tiers.TIERS:
+        tier = "warrior" if kind == SINGLE else ""
+    return Triage(kind, tier, str(data.get("why") or "")[:200])
 
 
 # -- the plan ---------------------------------------------------------------------------------------
