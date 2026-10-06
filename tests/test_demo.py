@@ -81,7 +81,7 @@ def test_cli_builds_the_demo(tmp_path: Path, monkeypatch):
     from orkcraft import cli
     ran = []
     monkeypatch.setattr(cli.OrkcraftApp, "run", lambda self: ran.append(self))
-    assert cli.main(["--demo", str(tmp_path / "d")]) == 0
+    assert cli.main(["--demo", str(tmp_path / "d"), "tui"]) == 0
     assert ran and ran[0].demo and ran[0].repo_root == (tmp_path / "d").resolve()
 
 

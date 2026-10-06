@@ -21,6 +21,10 @@
 
 ## Where code goes (docs/design/gui-migration.md)
 
+- **The TUI is deprecated** ([docs/design/calm-town.md](docs/design/calm-town.md) §9): a new feature
+  goes to the GUI (`orkcraft/gui/`) only. The TUI (`tui/`, `screens/`, `widgets/`, `wm/`, `app.py`)
+  gets fixes and nothing else; its tests stay green until it is removed.
+
 - `orkcraft/core/`, `orkcraft/realm/`, `orkcraft/design/` have no face: they never import Textual,
   Rich or a face module (`tests/test_architecture.py` checks it). A service changes the town and
   publishes on the bus (`core/bus.py`). It never shows a toast or a dialog itself.

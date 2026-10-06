@@ -161,4 +161,4 @@ def test_the_cli_starts_again_on_restart(fake_repo: Path, monkeypatch):
 
     monkeypatch.setattr(cli, "OrkcraftApp", Fake)
     monkeypatch.chdir(fake_repo)
-    assert cli.main([]) == 0 and len(runs) == 2
+    assert cli.main(["tui"]) == 0 and len(runs) == 2

@@ -106,3 +106,34 @@ def test_the_demo_flag_never_swallows_the_gui_subcommand(monkeypatch, tmp_path: 
     assert main(["gui", "--demo", "--browser"]) == 0
     assert main(["--demo", "gui", "--browser"]) == 0
     assert opened == [(tmp_path, True, False), (tmp_path, True, True), (tmp_path, True, True)]
+
+
+def test_the_window_is_the_default_and_the_tui_is_deprecated(monkeypatch, tmp_path: Path, capsys):
+    """No subcommand opens the window; `orkcraft tui` still opens the TUI and says it is deprecated;
+    without the window's packages the TUI opens as before."""
+    import orkcraft.cli as cli
+    opened = []
+
+    class Launch:
+        @staticmethod
+        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
+            opened.append("gui")
+            return 0
+
+    class Tui:
+        def __init__(self, **kw):
+            pass
+
+        def run(self):
+            opened.append("tui")
+
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
+    monkeypatch.setattr(cli, "OrkcraftApp", Tui)
+    (tmp_path / ".git").mkdir()
+    assert main(["--repo", str(tmp_path)]) == 0
+    assert opened == ["gui"] and "deprecated" not in capsys.readouterr().err
+    assert main(["--repo", str(tmp_path), "tui"]) == 0
+    assert opened == ["gui", "tui"] and "deprecated" in capsys.readouterr().err
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: None)
+    assert main(["--repo", str(tmp_path)]) == 0
+    assert opened == ["gui", "tui", "tui"]

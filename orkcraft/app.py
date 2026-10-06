@@ -272,6 +272,8 @@ class OrkcraftApp(
             self.notify("Showcase sandbox — simulated data. Chains run for real; agents show a prepared "
                         "last result and do not call a model. F1–F8 switch the scenarios.",
                         title="🎪 Orkcraft demo", timeout=10)
+        self.notify("The terminal UI gets no new features: open the town in its window — orkcraft gui.",
+                    title="Deprecated", severity="warning", timeout=8)
         pct = self.scroll.preferences.get("console_height_pct")
         self._console.set_height_pct(pct if isinstance(pct, int) else CONSOLE_DEFAULT_PCT)
         if self.scroll_problems:

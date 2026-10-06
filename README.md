@@ -5,13 +5,13 @@
 
 # Orkcraft
 
-**A terminal harness for running many coding agents in one project — as a real-time strategy game.**
+**A harness for running many coding agents in one project — as a real-time strategy game.**
 
 Windows are **buildings** with a resident **ork**. Agents are the **clan**. Buildings send **carts**
 to each other along **roads**. The HUD shows what you spend. Agents never pop dialogs: when one
 needs you it sets its hut on fire 🔥 and waits for your orders.
 
-Orkcraft is a [Textual](https://textual.textualize.io/) app. It works in any git project and talks to
+Orkcraft opens your project as a town in a window. It works in any git project and talks to
 models only through the CLIs you already have — [Claude Code](https://claude.com/claude-code) (`claude`),
 Google Antigravity (`agy`) and [OpenAI Codex](https://github.com/openai/codex) (`codex`) — so there are no API
 keys to configure.
@@ -27,7 +27,7 @@ keys to configure.
 ## Try it
 
 ```bash
-pipx install git+https://github.com/Orkcraft/orkcraft
+pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"
 orkcraft --demo                    # a sandbox with simulated data: nothing real is touched, no model is called
 ```
 
@@ -36,20 +36,19 @@ In a real project:
 ```bash
 cd your-project
 orkcraft hooks install             # session log + the Warder guard in .claude/settings.json (reversible)
-orkcraft                           # open the town
+orkcraft                           # open the town in a window (macOS: the system's WebKit); gui --browser for a tab
 ```
 
-The GUI is coming (Office look first, see [stage 4](docs/design/gui-migration.md#5-stage-4--office-in-the-gui)):
-
-```bash
-pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"
-orkcraft gui                       # the town in a window (macOS: the system's WebKit); --browser for a tab
-```
+> [!NOTE]
+> **The terminal UI is deprecated.** `orkcraft tui` still opens it, and `orkcraft` falls back to it
+> when the window's packages are missing, but it gets no new features: the town lives in the window
+> now ([docs/design/calm-town.md](docs/design/calm-town.md)). On a machine without a display, use
+> `orkcraft gui --browser` over a forwarded port.
 
 You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
 Builder needs `claude`), `gh` (GitHub events in the Watchtower).
 
-Keys worth knowing: `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
+Keys worth knowing (the deprecated TUI): `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
 `Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent, script and browser).
 
 ## The idea

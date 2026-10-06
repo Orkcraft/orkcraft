@@ -1,4 +1,5 @@
-"""Command-line interface for orkcraft supporting headless subcommands and TUI launch."""
+"""Command-line interface for orkcraft: the window (the default), the headless subcommands and the
+deprecated TUI (`orkcraft tui`; docs/design/calm-town.md §9)."""
 from __future__ import annotations
 
 import argparse
@@ -9,12 +10,17 @@ from orkcraft.app import OrkcraftApp
 from orkcraft.config import find_project_root
 
 
-def _gui():
-    """The GUI's launcher, or None (said why) when its packages are missing."""
+TUI_DEPRECATED = ("orkcraft: the terminal UI is deprecated and gets no new features; "
+                  "the town lives in the window now: orkcraft gui (pip install 'orkcraft[gui]')\n")
+
+
+def _gui(quiet: bool = False):
+    """The GUI's launcher, or None (said why, unless `quiet`) when its packages are missing."""
     try:
         from orkcraft.gui import launch
     except ImportError as e:
-        sys.stderr.write(f"orkcraft error: the GUI needs pip install 'orkcraft[gui]' ({e.name} is missing)\n")
+        if not quiet:
+            sys.stderr.write(f"orkcraft error: the GUI needs pip install 'orkcraft[gui]' ({e.name} is missing)\n")
         return None
     return launch
 
@@ -32,7 +38,7 @@ def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
-        description="Terminal UI harness for multi-agent systems",
+        description="Many coding agents in one project, as a real-time strategy game",
     )
     parser.add_argument("--repo", type=Path, default=None, help="Path to project root")
     parser.add_argument("--no-commit", action="store_true", help="Disable §10 per-action git commits")
@@ -51,8 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 
     # orkcraft tui
-    subparsers.add_parser("tui", help="Launch interactive Textual TUI (default)")
-    gui_p = subparsers.add_parser("gui", help="Open the town in a window (Office look; pip install 'orkcraft[gui]')")
+    subparsers.add_parser("tui", help="The terminal UI (deprecated: no new features)")
+    gui_p = subparsers.add_parser("gui", help="Open the town in a window (the default; pip install 'orkcraft[gui]')")
     gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
     gui_p.add_argument("--look", choices=("office", "camp", "auto"), default="office",
@@ -97,6 +103,12 @@ def main(argv: list[str] | None = None) -> int:
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
 
+    # No subcommand: the window when its packages are there, else the TUI (deprecated) as before.
+    if args.subcommand is None and args.demo_screens is None and _gui(quiet=True) is not None:
+        args.subcommand = "gui"
+        for name, default in (("browser", False), ("port", 0), ("look", "office")):
+            setattr(args, name, getattr(args, name, default))
+
     if args.demo is not None:
         from orkcraft import demo
         if args.demo_set is None:          # the GUI draws the typed buildings; the TUI's showcase is the 8 roles
@@ -119,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
             return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port,
                               look=args.look)
         OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True).run()
+        sys.stderr.write(TUI_DEPRECATED)
         return 0
 
     try:
@@ -134,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port, look=args.look)
 
-    # Default: launch TUI
+    # The TUI: asked for, or the window's packages are missing
     reset = args.reset_layout
     while True:                       # the weekly self-audit may ask for a fresh start
         app = OrkcraftApp(
@@ -144,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
             reset_layout=reset,
         )
         if app.run() != "restart":
+            sys.stderr.write(TUI_DEPRECATED)
             return 0
         reset = False
 
