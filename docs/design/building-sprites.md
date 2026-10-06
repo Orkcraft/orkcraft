@@ -2,13 +2,13 @@
 
 The buildings' header sprites are being redrawn in the ork mark's style: flat pixels, no outline, no
 shading, five colours (the mark's green, a darker green, ivory, gold and the dark of the ground), an
-ork touch (tusks, horns, bones) on each. They replace the Warcraft 2 headers one sheet at a time.
+ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one; the Warcraft 2 headers are gone.
 
 | sheet | buildings | state |
 |---|---|---|
-| 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done |
+| 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done (redrawn, cut at `--cell 11 --scale 2`) |
 | 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done |
-| 3 | File Forest, Tally Crag, Custom | |
+| 3 | File Forest, Tally Crag, Custom | done (`--cell 16.6 --scale 2`) |
 
 ## Making a sheet
 
