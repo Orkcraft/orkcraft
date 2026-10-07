@@ -111,6 +111,27 @@ function Keeper({ garrison, alert }) {
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
 }
 
+// -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
+// Its card is ablaze from the first second (components.css); from FIRE_FROM s flames climb its roof, one more
+// a minute until FIRE_FULL s covers it. Never in quiet hours, nor when Settings turned them off; under
+// prefers-reduced-motion they stand still (components.css).
+const FIRE_FROM = 60, FIRE_FULL = 300;
+const FLAMES = [[50, 46], [24, 26], [76, 30], [38, 4], [62, 8]];        // where each flame stands: % of the roof
+const now = signal(Date.now());
+setInterval(() => { now.value = Date.now(); }, 10_000);
+const firstSeen = new Map();               // alert id → when it began, as this page counts it
+
+function Flames({ alert }) {
+  const hud = (town.value && town.value.hud) || {};
+  if (!alert || hud.fire === false || hud.quiet) return null;
+  if (!firstSeen.has(alert.id)) firstSeen.set(alert.id, Date.now() - (alert.waited || 0) * 1000);
+  const waited = (now.value - firstSeen.get(alert.id)) / 1000;
+  if (waited < FIRE_FROM) return null;
+  const n = Math.min(FLAMES.length, 1 + Math.floor(((waited - FIRE_FROM) / (FIRE_FULL - FIRE_FROM)) * (FLAMES.length - 1)));
+  return html`${FLAMES.slice(0, n).map(([x, y], i) => html`<i key=${i} class="ok-flame is-sprite gui-hut__flame" aria-hidden="true"
+    style=${`left:${x}%;bottom:${y}%;animation-delay:${-i * 0.15}s`}></i>`)}`;
+}
+
 /** Its quick actions on the card's bottom edge, out while the mouse is on the hut, it has the focus or it is
  *  selected: a press does that one thing — a small window of its own when it asks for words, else it is
  *  done — and never opens the building. */
@@ -198,8 +219,8 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
-    <div class="ok-head"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
-      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
+    <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>
     <div class="ok-hut__card">
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

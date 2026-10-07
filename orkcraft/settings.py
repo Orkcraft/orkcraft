@@ -56,6 +56,7 @@ class MachineSettings:
     agy_warder_checked: bool = False
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
+    fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
 
     def to_dict(self) -> dict:
         return {
@@ -69,6 +70,7 @@ class MachineSettings:
             "growth": self.growth,
             "agy_warder_checked": self.agy_warder_checked,
             "usage": {"share": self.usage, "id": self.install_id},
+            "fire": self.fire,
         }
 
     @classmethod
@@ -91,6 +93,7 @@ class MachineSettings:
         s.agy_warder_checked = data.get("agy_warder_checked") is True
         usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
         s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
+        s.fire = data.get("fire") is not False
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)

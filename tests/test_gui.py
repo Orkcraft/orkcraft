@@ -903,3 +903,13 @@ def test_a_stewards_report_keeps_its_other_proposals_open_after_one_is_applied(f
     assert host.command("job.accept", {"job": jid, "index": 0}) == "change 0" and applied == [0]   # taken once
     host.command("job.accept", {"job": jid, "index": 1})
     assert not any(j["id"] == jid for j in host.snapshot()["jobs"]) and applied == [0, 1]       # the note needs nothing
+
+
+def test_the_fire_on_the_roofs_is_on_until_settings_turn_it_off(fake_repo, isolated_layout_file):
+    """Flames over a building that waits are a look of this machine: on by default, off from Settings, kept."""
+    from orkcraft import settings
+    host = _host(fake_repo)
+    assert host.snapshot()["hud"]["fire"] is True and host.command("town.settings", {})["fire"] is True
+    assert host.command("town.settings.set", {"fire": False})["fire"] is False
+    assert host.snapshot()["hud"]["fire"] is False
+    assert settings.load().fire is False and settings.MachineSettings.from_dict({}).fire is True
