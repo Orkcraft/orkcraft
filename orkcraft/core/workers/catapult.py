@@ -4,12 +4,13 @@ Carts are loaded under their source buildings, in groups (realm/catapult.py); a 
 everything `wait_for` names becomes a shot and joins the queue; shots fire one at a time. Each is
 checked against `schema` and sent to `url` — or, in browser mode (realm/catapult_web/), fills
 the intent's forms in turn, a screenshot of each kept (`screens`). With `confirm` on, a shot
-waits for the person's yes (`asking`: the faces show the question, `answer` takes it).
+waits for the person's yes (`asking`: the faces show the question, `answer` takes it); put off,
+it waits at the front of the queue and holds it (`held`) until Resume or Drop.
 `catapult.sent` carries the answer, `catapult.failed` the reason. The sandbox never sends.
 
 The overseer (the building's ork) scouts the forms, maps fields with a model and repairs a script
 the site broke; a site that wants a login holds the queue (`login_needed`) until `login()`.
-🛑 Halt All kills the browser and pauses the queue until the next 🎯.
+🛑 Stop all kills the browser and pauses the queue until Resume (or the next Fire).
 """
 from __future__ import annotations
 
@@ -48,11 +49,13 @@ class CatapultWorker(Worker):
         self.progress = ""             # "2/3" while the forms of a shot are filled
         self.step = ""                 # the form being filled now
         self.login_needed = ""         # why the site wants a login again (the hut burns)
-        self.paused = False            # 🛑 Halt All: the queue waits for 🎯
+        self.paused = False            # 🛑 Stop all: the queue waits for Resume
+        self.held = False              # the first queued shot was put off: the queue waits for Resume or Drop
         self.failed: dict | None = None
         self.proc = None               # the running fill.py
         self.asking: dict | None = None        # a shot waiting for the person's yes: {title, text}
         self._go: Callable[[], None] | None = None
+        self._asked: dict | None = None        # the body and first form of the shot `asking` is about
 
     # -- what it is ---------------------------------------------------------------------------------
 
@@ -124,7 +127,7 @@ class CatapultWorker(Worker):
         return "WORKING" if self.firing or self.busy else ""
 
     def halt(self) -> int:
-        """🛑 Halt All: the running browser stops, the queue waits for 🎯."""
+        """🛑 Stop all: the running browser stops, the queue waits for Resume."""
         self.paused = True
         proc, self.proc = self.proc, None
         if proc is not None and proc.poll() is None:
@@ -141,22 +144,60 @@ class CatapultWorker(Worker):
 
     # -- the person's yes -----------------------------------------------------------------------------
 
-    def _ask(self, title: str, text: str, go: Callable[[], None]) -> None:
+    def _ask(self, title: str, text: str, go: Callable[[], None], body, start: int = 0) -> None:
         """`confirm` is on: the shot waits for the person (the faces show `asking`)."""
         self.firing = True
         self.asking, self._go = {"title": title, "text": text}, go
+        self._asked = {"body": body, "start": start}
         self.changed()
 
-    def answer(self, yes: bool) -> None:
+    def answer(self, yes: bool, drop: bool = False) -> None:
+        """Yes fires the shot; no puts it off — it goes back to the front of the queue, which holds
+        until Resume (it asks again) or Drop; `drop` lets it go."""
         go, self._go, self.asking = self._go, None, None
+        asked, self._asked = self._asked, None
         if yes and go is not None:
             go()
-        else:
-            self._declined()
-
-    def _declined(self) -> None:
+            return
         self.firing = False
+        if asked is not None and not drop:
+            self.queue.push(asked["body"], asked["start"], front=True)
+            self.held = True
+            self.changed()
+            return
         self.pump()
+
+    def resume(self) -> bool:
+        """The queue goes on after 🛑 Stop all or a shot put off; nothing loaded is fired."""
+        if not (self.paused or self.held):
+            return False
+        self.paused = self.held = False
+        self.pump()
+        return True
+
+    def drop(self, what: str) -> bool:
+        """Let something go: `next` the first queued shot (the one put off), `failed` the shot Fire
+        would send again, `load` what is loaded and not yet a shot."""
+        if what == "next":
+            if self.queue.pop() is None:
+                return False
+            self.held = False
+            self.pump()
+            return True
+        if what == "failed":
+            if self.failed is None:
+                return False
+            self.failed = None
+            self.changed()
+            return True
+        if what == "load":
+            load = self.load
+            if not load.groups:
+                return False
+            load.clear()
+            self.changed()
+            return True
+        raise ValueError(f"drop {what!r}: next, failed or load")
 
     # -- loading and the queue ----------------------------------------------------------------------
 
@@ -172,9 +213,9 @@ class CatapultWorker(Worker):
         self.pump()
 
     def pump(self) -> None:
-        """Fire the next queued shot, unless one is flying, the ork is busy, the site wants a login
-        or 🛑 Halt All paused the queue."""
-        if self.firing or self.busy or self.login_needed or self.paused:
+        """Fire the next queued shot, unless one is flying, the ork is busy, the site wants a login,
+        🛑 Stop all paused the queue or a shot was put off."""
+        if self.firing or self.busy or self.login_needed or self.paused or self.held:
             self.changed()
             return
         item = self.queue.pop()
@@ -193,15 +234,15 @@ class CatapultWorker(Worker):
         return body
 
     def fire(self, auto: bool = False, dry: bool = False) -> bool:
-        """🎯: what is loaded now joins the queue (ready or not) — or the last failed shot again.
-        🧪 (`dry`): show it, take nothing."""
+        """🎯: what is loaded now joins the queue (ready or not) — or the last failed shot again; the
+        queue goes on (as Resume). 🧪 (`dry`): show it, take nothing."""
         if dry:
             body = self.loaded_body()
             if body is None:
                 self.toast("nothing is loaded yet", title="🎯 Catapult")
                 return False
             return self._dry(body)
-        self.paused = False
+        self.paused = self.held = False
         body = self.load.take(self.wait_for, force=True)
         if body is not None:
             self.queue.push(body)
@@ -229,7 +270,7 @@ class CatapultWorker(Worker):
             self._done(cp.dry_run(url or "(no url set)", str(self.config.get("method") or "POST"), body))
             return True
         if self.config.get("confirm"):
-            self._ask(f"🎯 Send to {url}?", json.dumps(body, ensure_ascii=False)[:600], lambda: self._send(url, body))
+            self._ask(f"🎯 Send to {url}?", json.dumps(body, ensure_ascii=False)[:600], lambda: self._send(url, body), body)
             return True
         self._send(url, body)
         return True
@@ -250,13 +291,14 @@ class CatapultWorker(Worker):
     def _dry(self, body) -> bool:
         problems = cp.check(body, self.schema_path)
         if problems:
-            self._done(cp.Shot(_now(), False, 0, "", str(body)[:2000], error="; ".join(problems)), body=None)
+            # a dry run that fails the check is still a dry run: nothing failed downstream, Fire is unchanged
+            self._done(cp.Shot(_now(), False, 0, "", str(body)[:2000], error="; ".join(problems), dry=True), body=None)
             return False
         if self.browser:
             parts = []
             for form in self.forms:
                 p = self.form_plan(form, body)
-                parts.append(f"[{form.name}] " + (cw.describe(p, body) if p else "not scouted yet (s)"))
+                parts.append(f"[{form.name}] " + (cw.describe(p, body) if p else "not scouted yet — Scout finds it"))
             self._done(cp.dry_run_form(", ".join(f.name for f in self.forms) or "(no forms)", "\n\n".join(parts), body))
             return True
         url = str(self.config.get("url") or "")
@@ -329,9 +371,9 @@ class CatapultWorker(Worker):
                 continue
             p = self.form_plan(form, body)
             if p is None:
-                return self._problem(body, form.url, f"{form.name}: not scouted yet — press s", start)
+                return self._problem(body, form.url, f"{form.name}: not scouted yet — Scout finds it", start)
             if not p.steps:
-                return self._problem(body, form.url, f"{form.name}: no field matches the cart — set fields or press m", start)
+                return self._problem(body, form.url, f"{form.name}: no field matches the cart — set fields or Map fields", start)
             if press and not self._submit(form):
                 return self._problem(body, form.url, f"{form.name}: no submit button known — scout again or name it in forms", start)
             filled, problems = cw.resolve_files(body, p.steps, self.repo_root, pending, self.state_dir / "downloads")
@@ -344,7 +386,7 @@ class CatapultWorker(Worker):
             runs.append((i, form, script, url, filled, cw.describe(p, body)))
         if self.config.get("confirm"):
             self._ask(f"🎯 Fill {label}?", "\n\n".join(f"[{f.name}] {d}" for _, f, _, _, _, d in runs)[:900],
-                      lambda: self._run_forms(runs, body, press, retried_at))
+                      lambda: self._run_forms(runs, body, press, retried_at), body, start)
             return True
         self._run_forms(runs, body, press, retried_at)
         return True
@@ -610,7 +652,7 @@ class CatapultWorker(Worker):
         forms = [f for f in self.forms if cw.load_map(self.fdir(f)) is not None]
         keys = self._keys()
         if not self.browser or not forms:
-            self.toast("scout the forms first (s)", title="🎯 Catapult")
+            self.toast("Scout the forms first", title="🎯 Catapult")
             return False
         if not self.simulated and self.out_of_gold("the mapping"):
             return False
@@ -696,9 +738,11 @@ class CatapultWorker(Worker):
         if self.busy:
             bits.append(self.busy)
         if self.login_needed:
-            bits.append(f"🔥 log in again (l) — {self.login_needed}")
+            bits.append(f"🔥 log in again — {self.login_needed}")
         if self.paused:
-            bits.append("halted — 🎯 resumes")
+            bits.append("stopped by Stop all — Resume goes on")
+        if self.held:
+            bits.append("a shot put off waits — Resume asks again, Drop lets it go")
         queued = len(self.queue)
         if queued:
             bits.append(f"{queued} queued")
@@ -710,7 +754,7 @@ class CatapultWorker(Worker):
     def mini_status(self) -> list[str]:
         load = self.load
         missing = load.missing(self.wait_for)
-        lines = [self._mark("🔥 log in (l)" if self.login_needed else
+        lines = [self._mark("🔥 log in" if self.login_needed else
                             f"waits for {', '.join(missing)}" if missing and self.wait_for else
                             f"{len(load.items)} loaded" if load.items else "empty")]
         queued = len(self.queue)

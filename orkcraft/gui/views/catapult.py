@@ -33,16 +33,17 @@ def _line(w) -> tuple[str, str]:
     if w.busy:
         word = w.busy.split(" ")[0]
         return {"🔧": "repairing…", "🔭": "scouting…", "🔑": "logging in…", "🧠": "mapping…"}.get(word, "busy…"), "wait"
+    if w.held:
+        return "put off" + (f" +{queued - 1}" if queued > 1 else ""), "fire"     # the shot put off is queued too
+    if w.paused:
+        return "stopped" + more, "wait"
     have = len(waits) - len(load.missing(waits)) if waits else 0
     if waits and load.missing(waits) and (have or not w.shots):      # half loaded (or never fired)
         return f"wait {have}/{len(waits)}{more}", "muted"
     if load.items and not waits:
         return f"{len(load.items)} loaded{more}", "muted"
     if w.shots:
-        s = w.shots[0]
-        if s.dry:
-            return "dry run" + more, "muted"
-        mark, tone = _mark(s)
+        mark, tone = _mark(w.shots[0])
         return mark + more, tone
     return "idle", "muted"
 
@@ -59,7 +60,7 @@ def _target(w) -> str:
 
 def _mark(s) -> tuple[str, str]:
     if s.dry:
-        return "dry run", "muted"
+        return ("dry run", "muted") if s.ok else ("✗ dry run", "error")
     return ((f"✓ {s.status}" if s.status else "✓ filled"), "ok") if s.ok else (f"✗ {s.status or 'error'}", "error")
 
 
@@ -133,6 +134,7 @@ def detail(w) -> dict:
         "body": _json(body) if body is not None else "", "problems": problems,
         "state": _plain(w.state_text()), "line": _line(w)[0], "firing": w.firing, "busy": _plain(w.busy),
         "progress": w.progress, "step": w.step, "login": _plain(w.login_needed), "paused": w.paused,
+        "held": _json(w.queue.items[0]["body"]) if w.held and len(w.queue) else "",
         "queued": len(w.queue), "failed": w.failed is not None,
         "asking": {"title": _plain(w.asking["title"]), "text": w.asking["text"]} if w.asking else None, "overseer": w.overseer,
         "shots": [_shot(w, s) for s in w.shots[:SHOTS]],
@@ -149,9 +151,25 @@ def _dry(w, args: dict) -> bool:
 
 
 def _answer(w, args: dict) -> None:
+    """Fire (`yes`), put it off (it waits at the front of the queue) or let it go (`drop`)."""
     if not w.asking:
         raise ActError("No shot waits for a yes")
-    w.answer(bool(args.get("yes")))
+    w.answer(bool(args.get("yes")), drop=bool(args.get("drop")))
+
+
+def _resume(w, args: dict) -> bool:
+    if not w.resume():
+        raise ActError("The queue is not stopped")
+    return True
+
+
+def _drop(w, args: dict) -> bool:
+    what = text(args, "what", 10)
+    if what not in ("next", "failed", "load"):
+        raise ActError("Drop the next shot, the failed one or the load")
+    if not w.drop(what):
+        raise ActError({"next": "No shot is queued", "failed": "No shot failed", "load": "Nothing is loaded"}[what])
+    return True
 
 
 def _confirm(w, args: dict) -> bool:
@@ -207,5 +225,5 @@ def _picture(w, args: dict) -> str:
     return "data:image/png;base64," + base64.b64encode(data).decode()
 
 
-ACTS = {"fire": _fire, "dry_run": _dry, "answer": _answer, "confirm": _confirm, "scout": _scout, "login": _login,
+ACTS = {"fire": _fire, "dry_run": _dry, "answer": _answer, "resume": _resume, "drop": _drop, "confirm": _confirm, "scout": _scout, "login": _login,
         "map": _map, "finish": _finish, "picture": _picture}

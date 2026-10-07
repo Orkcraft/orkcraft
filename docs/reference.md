@@ -256,7 +256,10 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   without it joins the newest group still missing its source. `ttl` (minutes) drops carts that
   waited too long. A group that has everything `wait_for` names becomes a shot and joins the queue;
   shots fire one at a time, in order, and a cart loaded meanwhile is never lost. A failed shot
-  takes its group with it: 🎯 fires it again.
+  takes its group with it: 🎯 fires it again, **Drop it** lets it go (**Drop the load** lets go of
+  what is loaded and not yet a shot). With `confirm`, a shot waits for your yes: **Fire**, **Later**
+  (it waits at the front of the queue and holds it until **Resume**, which asks again, or **Drop**)
+  or **Drop**. A 🧪 dry run that fails the check is kept as a dry run: it sends no `catapult.failed`.
 - **The Catapult's browser mode** closes a whole intent on a site with no API (a new event in the
   Google Play Console: the event, then its images, …). Install it with
   `pip install 'orkcraft[browser]'` and `playwright install chromium`, then set `mode: browser`
@@ -298,7 +301,8 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     every field found) and committed, and the shot resumes at that form — the forms already filled
     are not filled twice. A failed repair restores the old script and sends `catapult.failed`; a good
     one sends `catapult.repaired` with what changed. `repair: false` turns it off.
-  - 🛑 Halt All stops the running browser; the queue waits for 🎯. The hut's line starts with 🌐 in
+  - 🛑 Stop all stops the running browser; the queue waits for **Resume** (which fires nothing loaded)
+    or the next 🎯. The hut's line starts with 🌐 in
     browser mode. Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that
     presses submit with no schema and no confirmation.
 - **Add a source** (the GUI; design/watchtower-quick-add.md). A tower with no source opens its panel on
