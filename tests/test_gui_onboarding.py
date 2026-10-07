@@ -210,10 +210,12 @@ def test_set_up_again_from_the_map(fake_repo: Path, onboard, monkeypatch):
     assert host.snapshot()["onboarding"] is None and settings.load().profile["role"] == "data_analyst"
 
 
-def test_the_planner_needs_claude_code(fake_repo: Path, onboard, monkeypatch):
+def test_the_planner_needs_an_ai_tool_on(fake_repo: Path, onboard, monkeypatch):
     monkeypatch.setattr(runners, "BUILD_RUNNER", None)
     host = _host(fake_repo)
-    host.command("onboarding.tools", {"tools": {"claude": {"enabled": False}}})
+    assert host.snapshot()["onboarding"]["planner"]
+    host.command("onboarding.tools", {"tools": {"claude": {"enabled": False}, "codex": {"enabled": False}}})
+    assert not host.snapshot()["onboarding"]["planner"]
     with pytest.raises(CommandError, match="AI tool"):
         host.command("onboarding.town", {"custom": True})
 
