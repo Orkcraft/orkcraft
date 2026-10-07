@@ -292,7 +292,7 @@ class Host:
 
     def _opened(self) -> None:
         m = self.town.machine
-        self.usage.track("app_opened", face="gui", mode=m.mode,
+        self.usage.track("app_opened", face="gui",
                          tools=[t for t, c in m.tools.items() if c.enabled],
                          buildings=usage.count(sum(1 for b in self.town.scroll.buildings if not b.demolished)),
                          roads=usage.count(len(state.roads(self.town))))

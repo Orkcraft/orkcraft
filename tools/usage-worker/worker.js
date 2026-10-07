@@ -16,7 +16,7 @@ const DEEDS = ["town", "road", "reference", "week", "learned", "mature", "truste
 
 const oneOf = (list) => (v) => list.includes(v);
 const EVENTS = {
-  app_opened: { face: oneOf(["gui", "tui"]), mode: oneOf(["camp", "office", "shift"]),
+  app_opened: { face: oneOf(["gui", "tui"]),
     tools: (v) => Array.isArray(v) && v.length <= TOOLS.length && v.every((t) => TOOLS.includes(t)),
     buildings: oneOf(COUNTS), roads: oneOf(COUNTS) },
   app_closed: { minutes: oneOf(MINUTES) },

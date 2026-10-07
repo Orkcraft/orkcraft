@@ -149,4 +149,4 @@ def test_the_window_counts_a_road_and_a_building_and_asks_once(sharing, fake_rep
     events = [e for b in sent for e in b["events"]]
     assert [e["event"] for e in events] == ["app_opened", "building_built", "halted", "app_closed"]
     assert events[1]["props"] == {"type": "forge"}
-    assert set(events[0]["props"]) == {"face", "mode", "tools", "buildings", "roads"}
+    assert set(events[0]["props"]) == {"face", "tools", "buildings", "roads"}

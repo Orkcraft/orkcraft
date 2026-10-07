@@ -11,7 +11,7 @@ Each event below, with only the properties listed. Numbers go as buckets (`0`, `
 
 | Event | When | Properties |
 |---|---|---|
-| `app_opened` | the window opens | `face` (gui), `mode` (camp · office · shift), `tools` (claude · agy · codex: the ones you turned on), `buildings`, `roads` (buckets) |
+| `app_opened` | the window opens | `face` (gui), `tools` (claude · agy · codex: the ones you turned on), `buildings`, `roads` (buckets) |
 | `app_closed` | the window closes | `minutes` it was open (`<5` · `5-30` · `30-120` · `120+`) |
 | `building_built` | you raise a building | `type`: its catalog type (lake, forge, …, custom) |
 | `building_demolished` | you demolish one | — |

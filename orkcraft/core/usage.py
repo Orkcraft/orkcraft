@@ -44,7 +44,7 @@ MINUTES = ("<5", "5-30", "30-120", "120+")
 
 # Every event and every property it may carry; the proxy keeps the same list (tools/usage-worker/worker.js).
 EVENTS: dict[str, dict[str, Callable[[Any], bool]]] = {
-    "app_opened": {"face": lambda v: v in ("gui", "tui"), "mode": lambda v: v in settings.MODES,
+    "app_opened": {"face": lambda v: v in ("gui", "tui"),
                    "tools": lambda v: isinstance(v, list) and all(t in settings.TOOLS for t in v),
                    "buildings": lambda v: v in COUNTS, "roads": lambda v: v in COUNTS},
     "app_closed": {"minutes": lambda v: v in MINUTES},
