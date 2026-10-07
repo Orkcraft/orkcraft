@@ -7,8 +7,8 @@ docs/design/war-map.md):
   ork mark's grid per kin, its four stages drawn by adding to it (a band, horns, then gold eyes and a
   gem), never a crown: the crown is the Warchief's.
 - `design-system/sprites/flags/<goal>-<level>.png` (and `@2x`): the goal flag on a hut's roof, a
-  square banner with a coin (thrift), a plain flag (balance) or a pennant (quality), taller with each
-  level, gold at III. Drawn at the header sprites' scale (2 px a pixel), the pole's foot at the
+  square banner with a coin (thrift), a plain flag (balance) or a pennant (quality): muted with no
+  renown yet (level 0), ivory at I, taller at II, gold at III. Drawn at the header sprites' scale (2 px a pixel), the pole's foot at the
   bottom left; `js/icons.js` `FLAG_AT` says where on each roof it stands.
 - `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`): each flat header redrawn
   for ice (snow on the edges facing the sky), dust (dry olive, sand at the foot), void (ashen violet)
@@ -138,26 +138,24 @@ def mascots() -> None:
 
 
 # -- the goal flags --------------------------------------------------------------------------------------
-# | the pole (dark green), X the cloth (ivory, gold at III), k the coin's hole. The pole's foot is the
-# bottom left pixel.
-FLAGS = {
-    ("thrift", 1): ["|XX", "|XX", "|  ", "|  "],
-    ("thrift", 2): ["|XXX", "|XkX", "|XXX", "|   ", "|   "],
-    ("thrift", 3): ["|XXX", "|XkX", "|XXX", "|   ", "|   ", "|   "],
-    ("balance", 1): ["|XX", "|XX", "|  ", "|  "],
-    ("balance", 2): ["|XXX", "|XXX", "|   ", "|   ", "|   "],
-    ("balance", 3): ["|XXX", "|XXX", "|   ", "|   ", "|   ", "|   "],
-    ("quality", 1): ["|X ", "|XX", "|X ", "|  "],
-    ("quality", 2): ["|X  ", "|XX ", "|XXX", "|XX ", "|X  ", "|   "],
-    ("quality", 3): ["|X  ", "|XX ", "|XXX", "|XX ", "|X  ", "|   ", "|   "],
+# | the pole (dark green), X the cloth, k the coin's hole. The pole's foot is the bottom left pixel. The
+# shape says the goal from the start (level 0: a muted cloth, the banner raised but no renown yet); the
+# cloth turns ivory at I, the pole grows at II, the cloth turns gold at III.
+SHAPES = {
+    "thrift": ["|XXX", "|XkX", "|XXX"],          # a square banner with a coin
+    "balance": ["|XXX", "|XXX"],                  # a plain flag
+    "quality": ["|X ", "|XX", "|XXX", "|XX", "|X "],   # a pennant
 }
+POLE = {0: 1, 1: 1, 2: 2, 3: 3}                   # the bare pole under the cloth, by level
+CLOTH = {0: "#8f8166", 1: IVORY, 2: IVORY, 3: GOLD}
+FLAGS = {(goal, level): SHAPES[goal] + ["|"] * POLE[level] for goal in SHAPES for level in POLE}
 
 
 def flags() -> None:
     for (goal, level), rows in FLAGS.items():
         w = max(len(r) for r in rows)
         grid = [r.ljust(w).replace(" ", ".") for r in rows]
-        colours = {"|": DARK_GREEN, "X": GOLD if level == 3 else IVORY, "k": NIGHT}
+        colours = {"|": DARK_GREEN, "X": CLOTH[level], "k": NIGHT}
         save_pair(grid_image(grid, colours, 2), SPRITES / "flags" / f"{goal}-{level}.png")
 
 

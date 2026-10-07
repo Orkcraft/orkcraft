@@ -21,6 +21,11 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 
 ## As built
 
+- **A 160 px square** (40 × 40 cells of 4 px), not 240: at 240 it took too much of the town and its
+  edges looked rough. Borders wander in runs of 4–6 columns, the coast 0–2 cells. A closed land is at
+  least 24 px tall, and a border stays flat under the words of the two lands it parts, so no name or
+  status line touches it. Up to six lands fit (the map grows to 184 px for the sixth); seven and eight
+  scroll.
 - **Names are white** (the ink) on every land, the open one too: a dark or gold name does not read on
   six grounds. The open land is told by its gold bar, its height and its status line.
 - **The call** rings for a new question in an orkspace that is not open, at most once in 30 s a land,
@@ -154,7 +159,7 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
 | biome | the town's ground | the land on the map | the huts |
 |---|---|---|---|
 | **dirt** | `#1a1813` (today's Office ground) | `#3a3326` | as drawn |
-| **forest** | `#14260c` | `#2c4a1e` | as drawn (the ground says forest; moss at the foot was tried and does not read) |
+| **forest** | `#101a0b` | `#22341a` | as drawn (the ground says forest; moss at the foot was tried and does not read) |
 | **ice** | `#0c1622` | `#263c52` | snow: the two top pixels of every edge that faces the sky go ivory |
 | **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
 | **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
