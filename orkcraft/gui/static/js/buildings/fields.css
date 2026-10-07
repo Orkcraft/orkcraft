@@ -17,7 +17,6 @@
 .gui-fhut__head b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .gui-fhut__item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-fhut__mark { color: var(--ink-muted); margin-right: 4px; }
-.gui-counters__notes { flex-basis: 100%; }
 
 /* -- open: the head ------------------------------------------------------------------------------------- */
 .gui-fields { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }

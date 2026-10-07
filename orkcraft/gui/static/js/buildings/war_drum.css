@@ -29,7 +29,7 @@
 .gui-drum__beat.is-past .gui-drum__title { color: var(--ink-muted); }
 .gui-drum__beat .ok-chip { flex: none; }
 /* An estimate leans: the ≈ moments of the limits. */
-.gui-drum__beat.is-limit .gui-drum__when, .gui-drum__beat.is-limit .gui-drum__title, .gui-drum__est { font-style: italic; }
+.gui-drum__beat.is-limit .gui-drum__when, .gui-drum__beat.is-limit .gui-drum__title { font-style: italic; }
 .gui-drum__glyph { flex: none; width: 1em; text-align: center; }
 .gui-drum__when { flex: none; min-width: 3.2em; font-variant-numeric: tabular-nums; }
 .gui-drum__title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
