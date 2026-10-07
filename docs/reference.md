@@ -447,12 +447,19 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   first note) with that front matter, and the librarian keeps it at take-in (*Take in now*, on by
   default, starts one at once). Saving sends `wiki.noted`. When rules find nothing, the light model
   (the Council's `fast_model`) is asked once per note for a section and tags (`suggest_model`).
+  `/note <text>` in the Warchief's line shows those suggestions over the line as the text is typed —
+  the meeting it is for, the section, the tags, the pages to link — and saves only on Enter; Tab
+  picks another coming meeting (the next 14 days) or *Not for a meeting*, Shift+Tab goes back, and
+  `@Wiki` names the wiki when the town has several.
 - **Meetings.** A note that names a meeting of a Calendar (War Drum) — by its day, a person, its
   words — or that names only a person, lands under **To discuss** on the meeting's page
   (`pages/meetings/`, written at once and committed alone); a person ticks items off there. When the
   Calendar asks for the meeting's brief (`meeting soon`, `[meet:<id>]`), the Wiki hands over that
   page first; after the meeting what was not ticked moves on to the next meeting with the same
   person. The window lists what the coming meetings should cover; the card counts the next one's.
+  The Calendar says it too, beside each meeting the Wiki keeps items for: *from the Wiki: 2 to
+  discuss* in its window (and *· 3 pages*, the pages the notes link, once the brief is back), *✎ 2*
+  on its card.
 - **Quality check** (`check`: `weekly` by default, `daily`, `ingest`, `off`): the librarian's lint on a
   schedule, one line per problem with its kind; rules look at every refresh, no model, for links to
   nowhere, pages missing from their section's index and pages without front matter. The window shows

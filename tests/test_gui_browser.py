@@ -7,6 +7,7 @@ Skipped where Playwright or Chromium is missing; `-m browser` runs these alone, 
 them out."""
 from __future__ import annotations
 
+import datetime as dt
 import os
 import subprocess
 from pathlib import Path
@@ -402,6 +403,45 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _line(pg, "/demolish")                                       # about the building open
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_saves(page, gui):
+    """`/note`: the Wiki's meeting, section and tags stand over the bar; Tab picks another meeting; Enter
+    saves what was shown, and the Calendar's meeting says what the Wiki keeps for it
+    (docs/design/wiki-librarian.md §4, §6)."""
+    pg = page
+    server, _ = gui
+    repo = server.host.town.repo_root
+    day = dt.date.today() + dt.timedelta(days=1)
+    rows = []
+    for n, (summary, when) in enumerate((("Pricing review", day), ("Roadmap sync", day + dt.timedelta(days=1)))):
+        rows += ["BEGIN:VEVENT", f"UID:note-{n}@x", f"DTSTART:{when:%Y%m%d}T110000", f"DTEND:{when:%Y%m%d}T113000",
+                 f"SUMMARY:{summary}", "END:VEVENT"]
+    (repo / "note-cal.ics").write_text("\r\n".join(["BEGIN:VCALENDAR", *rows, "END:VCALENDAR"]) + "\r\n")
+    build = "t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))"
+    drum = pg.evaluate(build, "war_drum")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.act(id, 'settings', { ics: 'note-cal.ics' }))", drum)
+    wiki = pg.evaluate(build, "scrolls")
+    pg.keyboard.press("Escape")
+    field = pg.locator(".gui-warchief__input")
+    _line(pg, "/note Go over the pricing numbers tomorrow", enter=False)
+    meet = pg.locator(".gui-warchief__note-meet")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert "to discuss" in pg.locator(".gui-warchief__note-rows").inner_text()
+    field.press("Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Tab")
+    meet.filter(has_text="Not for a meeting").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Enter")
+    pg.locator(".ok-toast", has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert field.input_value() == ""
+    _hut(pg, drum).locator(".gui-drum__wiki", has_text="1").wait_for(state="visible", timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", wiki)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", drum)
 
 
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
