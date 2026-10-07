@@ -27,16 +27,17 @@ What remains:
 Drummer, Taskmaster, Alchemist and Keeper are still draft agents in `watchers/`; only the Warder
 runs. Taskmaster's budget duty is covered by the 🪙 / 🪵 limits.
 
-## 🪙 Codex: its spend
+## 🪙 Codex: its prices
 
-Codex runs as a harness (`codex exec`) and in the War Tent, and its plan's windows show under
-⏳ Limits, but the HUD does not know what it costs: `codex exec --json` reports tokens and no price,
-so its runs count as unpriced (`+`). The research and the plan are in
-[design/codex-limits.md](design/codex-limits.md) §4 and §5.2.
+`codex exec` runs and War Tent sessions are priced from their model and token counts
+(`pricing.codex_usage_cost`, [design/codex-limits.md](design/codex-limits.md) §5.2), but OpenAI's
+table in `sources/pricing.py` (`OPENAI_PRICES`) is empty: openai.com could not be read from the
+machine it was built on, and a price is never guessed. Until it is filled, Codex runs stay
+unpriced (`+`).
 
-- Read OpenAI's per-token prices for the Codex models (`gpt-6-*`) first-hand and write them, with
-  their date, into a second table in `sources/pricing.py`; the numbers in the note are unverified.
-- Price `codex exec` runs and War Tent sessions from the model and the token counts (an
-  API-equivalent estimate for a ChatGPT login, as for Claude Pro / Max).
+- Read OpenAI's per-token prices for the Codex models (`gpt-6-*`) first-hand from
+  <https://developers.openai.com/api/docs/pricing>. Write them into `OPENAI_PRICES` with
+  `OPENAI_PRICES_AS_OF`. Include the long-context threshold and whether a cache write costs more
+  than input. The numbers in the design note's §4 are unverified.
 
 Done when a Codex run on a known model shows 🪙 instead of `+`.
