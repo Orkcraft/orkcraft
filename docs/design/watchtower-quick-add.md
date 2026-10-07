@@ -337,6 +337,9 @@ logins work.
   a daily ceiling
   in the tower's settings, past it the source waits like the Lookout does out of 🪙. A
   subscription's turns count against its limits (⏳ Limits shows them).
+- **An empty answer is not proof.** A look whose tool failed (a wrong site, a CQL the service
+  refused) still ends `success` with `items: []` — the schema gets an `error` field (what the
+  tool said, or "") and a look with one fails as *failing: the answer*, never as "nothing new".
 - **The same path every time.** Left to itself the model takes 3 turns one run and 13 the next
   (§7.5). The prompt names the tools in order, and the ids a look learns once — the Atlassian
   cloud id, the person's Slack user id — are kept and passed to the next look, which saves two
