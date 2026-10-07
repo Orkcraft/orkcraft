@@ -28,7 +28,7 @@ class RoadPlannerMixin:
         among = [str(x) for x in args["among"]] if isinstance(args.get("among"), list) else None
         tgt, sources = core_roads.contract(self.town, target.id, source, among)
         self._budget()
-        snapshot, runner = copy.deepcopy(self.town.scroll), runners.ROAD_RUNNER or builders.claude_runner
+        snapshot, runner = copy.deepcopy(self.town.scroll), runners.ROAD_RUNNER or builders.main_runner
         work = lambda: road_planner.plan(prompt, tgt, sources, snapshot, runner)  # noqa: E731
         return self._job("road", target.id, f"{plain(target.title)}'s steward is looking for the road…", work,
                          lambda job, result: self._road_planned(job, result, source or ""))

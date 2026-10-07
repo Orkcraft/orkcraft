@@ -33,7 +33,7 @@ def test_steward_is_the_resident_and_handlers_start_empty():
     assert next(b for b in data["buildings"] if b["id"] == "forge")["garrison"] == {
         "steward": {"id": "smith", "name": "Smith", "role": "kanban", "avatar": "🧌", "status": "idle",
                     "trigger": {"type": "on_demand"}, "orders": "", "kind": "agent",
-                    "harness": [{"role": "run", "harness": "claude"}]},
+                    "harness": [{"role": "run", "harness": "main"}]},
         "handlers": []}
     valid(scroll)
 

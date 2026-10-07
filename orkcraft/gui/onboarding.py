@@ -22,10 +22,10 @@ from urllib.parse import urlencode
 from orkcraft import schedule, settings, tools
 from orkcraft.core import buildings, roads, runners
 from orkcraft.env import getenv
-from orkcraft.realm import biomes, builders, checkpoint, intents, interview, mcp, town_builder, town_presets
+from orkcraft.realm import biomes, builders, checkpoint, harnesses, intents, interview, mcp, town_builder, town_presets
 
 TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
-WARDED = ("claude", "codex", "agy")    # the tools the Security reviewer's hooks guard (hooks/install.py)
+WARDED = harnesses.ids()    # the tools the Security reviewer's hooks guard (hooks/install.py): every one
 GRID = (4, 3)               # where the planned buildings stand: four across, as js/town.js lays out a hut without a spot
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
@@ -224,15 +224,11 @@ class Onboarding:
         return [t for t, c in {**machine.tools, **self.picked}.items() if c.enabled]
 
     def _planner_runner(self):
-        """What draws a town from the person's words: the tests' runner, else the main tool once the registry
-        has one (builders.planner_runner: the chosen main tool if it is on, else the first on), else Claude
-        Code when it is on; None when nothing can."""
+        """What draws a town from the person's words: the tests' runner, else the main tool (builders.planner_runner:
+        the chosen main tool if it is on, else the first on); None when no tool is on."""
         if runners.BUILD_RUNNER is not None:
             return runners.BUILD_RUNNER
-        pick = getattr(builders, "planner_runner", None)
-        if pick is not None:
-            return pick(self._enabled(), getattr(self.host.town.machine, "main_tool", ""))
-        return builders.claude_runner if "claude" in self._enabled() else None
+        return builders.planner_runner(self._enabled(), self.host.town.machine.main_tool)
 
     def cancel(self, args: dict) -> None:
         """Set up again, left without saving (a first run has no way out but Skip)."""
@@ -441,7 +437,7 @@ class Onboarding:
         """The Town planner draws the town from the survey, on a thread (a model call)."""
         town = self.host.town
         role = self.profile.get("role", "")
-        runner = self._planner_runner() or builders.claude_runner
+        runner = self._planner_runner() or builders.main_runner_of(self.host.town.machine)
         try:
             result = town_builder.plan(prompt, town.repo_root, town.taken_ids(), runner,
                                        templates=intents.templates_text(role) if role else "")

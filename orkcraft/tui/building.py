@@ -32,7 +32,7 @@ class BuildingMixin:
 
         def _worker() -> None:
             existing_ids = self._taken_building_ids()
-            runner = runners.BUILD_RUNNER or builders.claude_runner
+            runner = runners.BUILD_RUNNER or builders.main_runner
             result = builders.build(prompt, self.repo_root, existing_ids=existing_ids, runner=runner)
             self.call_from_thread(self._on_build_finished, prompt, result)
 
@@ -106,7 +106,7 @@ class BuildingMixin:
         """From scratch: a conversation with the Builder. A rejected blueprint comes
         back here — what the operator says after it is the Builder's feedback for the next draft."""
         sources = self._scratch_sources()
-        runner = runners.BUILD_RUNNER or builders.claude_runner
+        runner = runners.BUILD_RUNNER or builders.main_runner
         opening = ("What should I change in the blueprint?" if rejected is not None else bp_chat.GREETING)
         start = len(history or [])
 
@@ -124,7 +124,7 @@ class BuildingMixin:
         taken = self._taken_building_ids() | masonry.ID_RESERVED
 
         def _worker() -> None:
-            result = blueprint.build(interview, taken, runners.BUILD_RUNNER or builders.claude_runner, feedback, previous)
+            result = blueprint.build(interview, taken, runners.BUILD_RUNNER or builders.main_runner, feedback, previous)
             verdict, runs = self.check_blueprint(result.blueprint, light=True) if result.ok else (None, [])
             self.call_from_thread(self._on_blueprint, interview, result, verdict, runs)
 
@@ -253,7 +253,7 @@ class BuildingMixin:
         self.push_screen(BuildProgress("🏗 The Foreman prefills the building…"))
 
         def _worker() -> None:
-            runner = runners.BUILD_RUNNER or builders.claude_runner
+            runner = runners.BUILD_RUNNER or builders.main_runner
             result = builders.propose(request, self.repo_root, type_id, self._taken_building_ids(), runner)
             self.call_from_thread(self._on_wizard_proposal, type_id, request, result)
 

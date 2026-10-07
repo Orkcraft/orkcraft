@@ -25,7 +25,7 @@ def _gui(quiet: bool = False):
     return launch
 
 
-def _agy_global_yes(flag: bool | None) -> bool:
+def _agy_global_yes(flag: bool | None, ask: str | None = None) -> bool:
     """`--agy-global` / `--no-agy-global`, else ask the operator (no on a closed or piped stdin)."""
     if flag is not None:
         return flag
@@ -33,7 +33,7 @@ def _agy_global_yes(flag: bool | None) -> bool:
     if not sys.stdin.isatty():
         return False
     try:
-        return input(hooks_install.AGY_GLOBAL_ASK + " [y/N] ").strip().lower() in ("y", "yes")
+        return input((ask or hooks_install.AGY_GLOBAL_ASK) + " [y/N] ").strip().lower() in ("y", "yes")
     except EOFError:
         return False
 
@@ -150,13 +150,18 @@ def main(argv: list[str] | None = None) -> int:
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
     gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
                        help="Open the showcase sandbox in the window")
-    hooks_p = subparsers.add_parser("hooks", help="Claude Code, Codex and agy hooks: session log and the Warder guard")
+    hooks_p = subparsers.add_parser("hooks", help="Every AI tool's hooks: session log and the Warder guard")
     hooks_p.add_argument("action", choices=("install", "uninstall"))
     agy_global = hooks_p.add_mutually_exclusive_group()
     agy_global.add_argument("--agy-global", dest="agy_global", action="store_true", default=None,
                             help="Also guard agy's headless steps in ~/.gemini/config/hooks.json, without asking")
     agy_global.add_argument("--no-agy-global", dest="agy_global", action="store_false",
                             help="Leave ~/.gemini/config/hooks.json alone, without asking")
+    hermes_global = hooks_p.add_mutually_exclusive_group()
+    hermes_global.add_argument("--hermes-global", dest="hermes_global", action="store_true", default=None,
+                               help="Also guard Hermes in ~/.hermes/config.yaml, without asking")
+    hermes_global.add_argument("--no-hermes-global", dest="hermes_global", action="store_false",
+                               help="Leave ~/.hermes/config.yaml alone, without asking")
     usage_p = subparsers.add_parser("usage", help="Anonymous usage stats: share them, stop, or see what is set")
     usage_p.add_argument("action", choices=("on", "off", "status"))
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
@@ -200,6 +205,8 @@ def main(argv: list[str] | None = None) -> int:
                 paths = hooks_install.install_all(root)
                 if any(p.parent.name == ".agents" for p in paths) and _agy_global_yes(args.agy_global):
                     paths.append(hooks_install.install_agy_global())
+                if hooks_install.wants_hermes() and _agy_global_yes(args.hermes_global, hooks_install.HERMES_GLOBAL_ASK):
+                    paths.append(hooks_install.install_hermes_global())
             else:
                 paths = hooks_install.uninstall_all(root, agy_global=args.agy_global is not False)
         except ValueError as e:

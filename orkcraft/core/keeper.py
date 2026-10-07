@@ -285,7 +285,7 @@ def check(answer: Any, spec: dict, subject: Subject, repo_root: Path,
 
 
 def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, selection: Any = None,
-        runner: builders.Runner = builders.claude_runner, budget_ok: bool = True,
+        runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
         existing_ids: frozenset[str] | set[str] = frozenset(), max_attempts: int = MAX_ATTEMPTS) -> Proposal:
     """The person's words → the keeper's proposal (checked against the type's contract; a rejected answer
     goes back with its problems). Never raises."""

@@ -56,7 +56,7 @@ function ReviewDialog({ id, busy, onClose }) {
 
 function MemberDialog({ id, onClose }) {
   const [role, setRole] = useState("");
-  const [harness, setHarness] = useState("claude");
+  const [harness, setHarness] = useState("main");
   const add = () => act(id, "add_member", { role, harness }).then(onClose, () => {});
   return html`<${Dialog} title=${say("Add a member of the clan")} text=${say("Its brief is a file: what it checks, what it knows, its red lines.")}
       onCancel=${onClose}
@@ -65,7 +65,7 @@ function MemberDialog({ id, onClose }) {
     <p class="ok-dialog__section">Role</p>
     <input class="ok-input" value=${role} autofocus placeholder=${say("Marketing")} onInput=${(e) => setRole(e.target.value)} />
     <p class="ok-dialog__section">Model</p>
-    <input class="ok-input" value=${harness} placeholder=${say("claude · agy · codex · agy:gemini-3.1-pro-high")}
+    <input class="ok-input" value=${harness} placeholder=${say("main · claude · codex · agy · hermes · pi · cursor · agy:gemini-3.1-pro-high")}
       onInput=${(e) => setHarness(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && role.trim() && add()} />
   </${Dialog}>`;
 }

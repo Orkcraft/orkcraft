@@ -14,7 +14,8 @@ from orkcraft.scroll import OrcSpec
 from orkcraft.realm.council import warder_events
 from orkcraft.sources.agents import collect_agents
 
-WORKER_NAMES = {"agy": "Grunt", "codex": "Goblin"}   # a War Tent session's ork, by harness (Claude: Peon)
+WORKER_NAMES = {"agy": "Grunt", "codex": "Goblin", "hermes": "Runner", "pi": "Kobold", "cursor": "Gremlin"}
+# … a War Tent session's ork, by harness (Claude: Peon)
 # A CLI that printed nothing for this long while showing a numbered menu is waiting.
 PROMPT_IDLE_S = 1.0
 COUNCIL_SYSTEM = "watchers"

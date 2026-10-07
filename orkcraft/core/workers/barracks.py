@@ -521,7 +521,7 @@ class BarracksWorker(PlanMixin, Worker):
                  use: str = "review", tier: str = plans.REVIEW_TIER) -> str:
         """One model call of the steward's: `use` is its task (plan | answer | review | final), whose tier its
         spec may set (realm/steward.py); else the model of its `steward` setting, else `tier`'s."""
-        harness, model = bk.parse_provider(str(self.config.get("steward") or "claude"))
+        harness, model = bk.parse_provider(str(self.config.get("steward") or "main"))
         scroll = getattr(self.town, "scroll", None)
         chosen = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
         if chosen:

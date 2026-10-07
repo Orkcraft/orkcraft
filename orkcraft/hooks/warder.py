@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""🛡️ Warder — the Council's security orc, as a Claude Code, Codex and agy PreToolUse hook.
+"""🛡️ Warder — the Council's security orc, as a PreToolUse hook of every AI tool orkcraft leads.
 
     .claude/settings.json → hooks.PreToolUse → python3 -m orkcraft.hooks.warder        (`orkcraft hooks install`)
     .codex/hooks.json     → hooks.PreToolUse → python3 -m orkcraft.hooks.warder codex
     .agents/hooks.json    → orkcraft.PreToolUse → python3 -m orkcraft.hooks.warder agy
+    .cursor/hooks.json    → hooks.preToolUse → python3 -m orkcraft.hooks.warder cursor
+    ~/.hermes/config.yaml → hooks.pre_tool_call → python3 -m orkcraft.hooks.warder hermes   (asked first)
+    pi: the extension `-e …/orkcraft.ts` (hooks/pi_extension.py) → python3 -m orkcraft.hooks.warder pi
+
+Hermes, Cursor and pi name their tools their way (`terminal`, `Shell`, `bash`…): `from_named` judges
+each as the Claude Code tool it is, and `answer` says the verdict as each reads it (Hermes hands an
+ask to its own approval gate; pi's extension asks in its UI, or refuses when no one is there).
 
 Reads the hook payload (`tool_name`, `tool_input`, `cwd`) on stdin and decides:
 
@@ -80,8 +87,10 @@ SECRET_GLOBS = ("*.pem", "*.key", "*.p12", "*.pfx", "*.keystore", "*.jks")
 SECRET_DIRS = (".ssh", ".gnupg")
 ENV_OK = (".env.example", ".env.sample", ".env.template", ".env.dist")
 SELF = ("orkcraft/hooks/warder.py", "scripts/warder_hook.py", ".claude/settings.json", ".claude/settings.local.json",
-        ".codex/hooks.json", ".codex/config.toml", ".agents/hooks.json")
+        ".codex/hooks.json", ".codex/config.toml", ".agents/hooks.json", ".cursor/hooks.json",
+        ".pi/extensions/orkcraft.ts")
 AGY_GLOBAL = Path.home() / ".gemini" / "config" / "hooks.json"   # agy's hooks for every folder, headless steps' too
+HERMES_GLOBAL = Path(os.environ.get("HERMES_HOME") or Path.home() / ".hermes") / "config.yaml"   # Hermes' hooks
 # Programs that may name a secret file without reading it.
 HARMLESS = {"ls", "stat", "test", "[", "file", "realpath", "dirname", "basename", "echo"}
 _TOKEN = re.compile(r"(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{8,}|xox[a-z]-[A-Za-z0-9-]{8,}|AKIA[A-Z0-9]{12,}"
@@ -193,6 +202,8 @@ def self_name(path: Path) -> str | None:
         resolved = path.resolve()
         if resolved == AGY_GLOBAL.resolve():
             return "~/.gemini/config/hooks.json"
+        if resolved == HERMES_GLOBAL.resolve():
+            return "~/.hermes/config.yaml"
         rel = resolved.relative_to(REPO).as_posix()
     except (ValueError, OSError, RuntimeError):
         return None
@@ -333,6 +344,42 @@ def from_agy(payload: dict) -> tuple[str, dict, Path]:
     return tool, {f"path{i}": p for i, p in enumerate(_agy_paths(args))}, cwd
 
 
+# Hermes, Cursor and pi: their tools, as the Claude Code tool judged in their place.
+HERMES_TOOLS = {"terminal": "Bash", "read_file": "Read", "search_files": "Grep", "write_file": "Write", "patch": "Edit"}
+CURSOR_TOOLS = {"Shell": "Bash", "Read": "Read", "Grep": "Grep", "Write": "Write", "Delete": "Write"}
+PI_TOOLS = {"bash": "Bash", "read": "Read", "grep": "Grep", "find": "Grep", "ls": "Read", "edit": "Edit", "write": "Write"}
+NAMES = {"hermes": HERMES_TOOLS, "cursor": CURSOR_TOOLS, "pi": PI_TOOLS}
+
+
+def from_named(harness: str, payload: dict) -> tuple[str, dict, Path]:
+    """A Hermes, Cursor or pi payload (`tool_name`, `tool_input`, `cwd`; Cursor's `command` on
+    beforeShellExecution, its `workspace_roots`) as (tool, tool_input, cwd) in Claude Code's shape."""
+    name = str(payload.get("tool_name") or ("Shell" if payload.get("command") else ""))
+    tool_input = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
+    if not tool_input and payload.get("command"):
+        tool_input = {"command": str(payload["command"])}
+    roots = [w for w in payload.get("workspace_roots") or [] if isinstance(w, str) and w]
+    cwd = Path(str(payload.get("cwd") or (roots[0] if roots else "") or os.getcwd()))
+    tool = NAMES[harness].get(name, name)
+    if tool == "Bash":
+        return tool, {"command": str(tool_input.get("command") or tool_input.get("cmd") or "")}, cwd
+    return tool, {k: v for k, v in tool_input.items() if isinstance(v, str) and "content" not in k.lower()}, cwd
+
+
+def answer(harness: str, decision: str, reason: str) -> str:
+    """What each tool reads on stdout as a refusal (deny) or a question (ask)."""
+    said = f"🛡️ Warder: {reason}"
+    if harness in ("agy", "pi"):                          # pi: its extension (hooks/pi_extension.py) reads this
+        return json.dumps({"decision": decision, "reason": said}, ensure_ascii=False)
+    if harness == "hermes":                               # "approve" hands it to Hermes' own approval gate
+        return json.dumps({"action": "approve", "message": said} if decision == ASK
+                          else {"decision": "block", "reason": said}, ensure_ascii=False)
+    if harness == "cursor":
+        return json.dumps({"permission": decision, "user_message": said, "agent_message": said}, ensure_ascii=False)
+    return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": decision,
+                                              "permissionDecisionReason": said}})
+
+
 def redact(text: str) -> str:
     text = _TOKEN.sub("***", text.replace("\n", " "))
     return text if len(text) <= EXCERPT else text[: EXCERPT - 1] + "…"
@@ -352,10 +399,13 @@ def log(entry: dict, cwd: Path | None = None) -> None:
 def main() -> int:
     harness = sys.argv[1] if len(sys.argv) > 1 else "claude"
     agy = harness == "agy"
+    payload: dict = {}
     try:
         payload = json.loads(sys.stdin.read() or "{}")
         if agy:
             tool, tool_input, cwd = from_agy(payload)
+        elif harness in NAMES:
+            tool, tool_input, cwd = from_named(harness, payload)
         else:
             tool = str(payload.get("tool_name") or "")
             tool_input = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
@@ -365,8 +415,8 @@ def main() -> int:
         log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": "error", "reason": redact(repr(e))})
         verdict = None
     if verdict is None:
-        if agy:
-            print("{}")                                   # agy reads every hook's stdout as its answer
+        if agy or harness == "cursor":
+            print("{}")                                   # they read every hook's stdout as its answer
         return 0
     decision, reason = verdict
     if decision == ASK and harness == "codex":           # Codex parses "ask" but does not support it yet
@@ -375,18 +425,15 @@ def main() -> int:
         subject = ", ".join(patch_paths(str(tool_input.get("command") or "")))
     else:
         subject = tool_input.get("command") or next(iter(_paths_of(tool_input)), "")
+    session = _first_of(payload, "conversationId" if agy else "session_id", "conversation_id")
     log({"ts": dt.datetime.now().isoformat(timespec="seconds"), "decision": decision, "tool": tool,
-         "reason": reason, "subject": redact(str(subject)),
-         "session": str(payload.get("conversationId" if agy else "session_id") or "")[:64]},
-        cwd)
-    if agy:                                               # deny or ask only: agy ignores a hook's allow (#1053)
-        print(json.dumps({"decision": decision, "reason": f"🛡️ Warder: {reason}"}, ensure_ascii=False))
-        return 0
-    print(json.dumps({"hookSpecificOutput": {
-        "hookEventName": "PreToolUse", "permissionDecision": decision,
-        "permissionDecisionReason": f"🛡️ Warder: {reason}",
-    }}))
+         "reason": reason, "subject": redact(str(subject)), "session": session[:64]}, cwd)
+    print(answer(harness, decision, reason))             # agy: deny or ask only — it ignores an allow (#1053)
     return 0
+
+
+def _first_of(payload: dict, *keys: str) -> str:
+    return next((str(payload[k]) for k in keys if isinstance(payload, dict) and payload.get(k)), "")
 
 
 if __name__ == "__main__":

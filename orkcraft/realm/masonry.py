@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from orkcraft.realm import harnesses
+
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schemas" / "building-spec.v1.json"
 SPECS_DIR = Path(".orkcraft") / "buildings"
 
@@ -39,7 +41,7 @@ SOURCES: dict[str, tuple[str, dict[str, tuple[type, Any]], str]] = {
     "file_tail": (TEXT, {"path": (str, None), "lines": (int, (1, 500))}, "the last lines of a file inside the repository"),
     "directory": (TREE, {"path": (str, None)}, "a folder inside the repository"),
     "sessions": (LIST, {
-        "ticket": (str, None), "harness": (str, ("claude", "agy", "codex", "claude-web")), "limit": (int, (1, 100)),
+        "ticket": (str, None), "harness": (str, (*harnesses.ids(), "claude-web")), "limit": (int, (1, 100)),
     }, "Claude / agy / Codex sessions, optionally of one ticket"),
     "agents": (LIST, {"system": (str, None)}, "agents of the multi-agent systems"),
     "git_log": (LIST, {"path": (str, None), "limit": (int, (1, 200))}, "recent commits, optionally touching a path"),

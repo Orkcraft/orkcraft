@@ -137,7 +137,7 @@ def repair(state_dir: Path, page_map: dict, plan_of: Callable[[dict], Plan], sub
     reached, every field found) before anything is filled again. Blocking: call from a thread.
     A failed repair leaves the old map and script in place."""
     from orkcraft.realm import builders
-    runner, check = runner or builders.claude_runner, check or run_script
+    runner, check = runner or builders.main_runner, check or run_script
     out, feedback = Repair(False), ""
     if edited_by_hand(state_dir):
         out.errors = ["fill.py was edited by hand — repair it there, or delete it to let the overseer write it"]

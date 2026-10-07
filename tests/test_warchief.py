@@ -75,6 +75,23 @@ def test_a_plan_is_the_town_builders_reviewed_by_the_council_and_raised_on_build
     assert all(town.scroll.building(i) is None or town.scroll.building(i).demolished for i in made["buildings"])
 
 
+def test_the_town_builder_plans_on_the_tool_that_is_on(fake_repo, monkeypatch, isolated_layout_file):
+    from orkcraft import settings
+    from orkcraft.realm import builders
+    monkeypatch.setattr(runners, "BUILD_RUNNER", None)
+    called = []
+    monkeypatch.setattr(builders, "ask", lambda tool, p, model=None: called.append(tool) or _runner(GOOD)(p))
+    town = _town(fake_repo, monkeypatch, 'The Town Builder plans it.\nDO: {"plan": "episodes from notes to release"}')
+    town.machine.autonomy = autonomy.CLOCK
+    town.machine.tools = {**town.machine.tools, "claude": settings.ToolChoice(enabled=False),
+                          "agy": settings.ToolChoice(enabled=True), "codex": settings.ToolChoice(enabled=True)}
+    town.machine.main_tool = "codex"                                           # chosen over agy, which comes first
+    w = town.worker(TOWN_HALL)
+    w.ask("I make a podcast", about=["town_hall"])
+    _wait(w, lambda: w.chat and w.chat[-1].get("card", {}).get("state") == "ready", "a ready plan")
+    assert called == ["codex"]                                                 # the chosen main tool
+
+
 def test_unchained_the_warchief_builds_at_once_and_offers_undo(fake_repo, monkeypatch, isolated_layout_file):
     town = _town(fake_repo, monkeypatch, 'A board keeps them.\nDO: {"build": "fields"}')
     town.machine.autonomy = autonomy.FREE

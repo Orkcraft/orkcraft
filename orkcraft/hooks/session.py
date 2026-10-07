@@ -77,14 +77,15 @@ def record(harness: str, payload: dict, env: dict | None = None) -> dict | None:
     session = _first(payload, "session_id", "sessionId", "conversationId", "conversation_id")
     if not session:
         return None
-    prompt = _first(payload, "prompt", "userPrompt", "user_prompt", "message")
+    extra = payload.get("extra") if isinstance(payload.get("extra"), dict) else {}    # Hermes' own fields
+    prompt = _first(payload, "prompt", "userPrompt", "user_prompt", "message") or _first(extra, "user_message", "prompt")
     tickets = []
     ticket_env = env.get("ORKCRAFT_TICKET") or env.get("ORCRAFT_TICKET") or env.get("MGTUI_TICKET") or ""
     for t in [ticket_env] + _TICKET.findall(prompt):
         t = t.strip().upper()
         if t and t not in tickets:
             tickets.append(t)
-    workspace = payload.get("workspacePaths")
+    workspace = payload.get("workspacePaths") or payload.get("workspace_roots")         # agy, Cursor
     cwd = _first(payload, "cwd") or (workspace[0] if isinstance(workspace, list) and workspace else "")
     entry = {
         "ts": dt.datetime.now().isoformat(timespec="seconds"),
@@ -124,8 +125,8 @@ def main() -> int:
             record(harness, payload)
     except Exception:
         pass  # a hook must never break the session it observes
-    if harness == "agy":
-        print("{}")  # agy parses hook stdout; Claude would add it to the context
+    if harness in ("agy", "cursor"):
+        print("{}")  # agy and Cursor parse hook stdout; Claude would add it to the context
     return 0
 
 

@@ -298,12 +298,12 @@ def _step(name: str, arg: str, v: Any, script: Callable[[str, str], str], agent:
 
 def default_agent(repo_root: Path, cancel: threading.Event, model: str = "",
                   spent: Callable[[float | None], None] | None = None) -> Agent:
-    """A read-only Claude (it may read the repository, never change it) as the `agent:` step; `spent`
+    """A read-only agent on the main tool (it may read the repository, never change it) as the `agent:` step; `spent`
     hears what each call cost (None when the CLI does not say)."""
     from orkcraft.realm import roads
 
     def ask(what: str, text: str) -> str:
-        out, cost, _ = roads.run_agent("claude", agent_prompt(what, text), repo_root, {}, cancel, model)
+        out, cost, _ = roads.run_agent("main", agent_prompt(what, text), repo_root, {}, cancel, model)
         if spent is not None:
             spent(cost)
         return out.strip()

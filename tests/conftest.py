@@ -91,7 +91,7 @@ def _codex_beside_claude_and_agy(monkeypatch, billing: str) -> None:
                         lambda **k: [QuotaStatus("claude", "session", "session", 0.86, soon)])
     monkeypatch.setattr("orkcraft.quota.agy_quota.get_agy_quota",
                         lambda **k: [QuotaStatus("agy", "pro", "daily", 0.4, soon)])
-    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex")
+    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex" if name == "codex" else None)
     monkeypatch.setattr(tools, "codex_login", lambda path: (True, billing))
     monkeypatch.setattr(codex_quota, "_converse", lambda cmd, messages, timeout, cwd: raw)
     monkeypatch.setattr(codex_quota, "datetime", type("D", (datetime,), {"now": staticmethod(

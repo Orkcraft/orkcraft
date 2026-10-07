@@ -915,3 +915,19 @@ def test_the_fire_on_the_roofs_is_on_until_settings_turn_it_off(fake_repo, isola
     assert host.command("town.settings.set", {"fire": False})["fire"] is False
     assert host.snapshot()["hud"]["fire"] is False
     assert settings.load().fire is False and settings.MachineSettings.from_dict({}).fire is True
+
+
+def test_settings_turn_the_ai_tools_on_and_choose_the_main_one(fake_repo, isolated_layout_file):
+    """The AI tools of this machine and the main tool every decision runs on, from Settings; kept."""
+    from orkcraft import settings
+    host = _host(fake_repo)
+    s = host.command("town.settings", {})
+    assert [t["id"] for t in s["tools"]] == ["claude", "agy", "codex", "hermes", "pi", "cursor"]
+    s = host.command("town.settings.set", {"tools": {"pi": True, "hermes": True, "claude": False}})
+    assert {t["id"] for t in s["tools"] if t["on"]} >= {"pi", "hermes"} and s["main_now"] in ("agy", "codex", "hermes")
+    s = host.command("town.settings.set", {"main_tool": "pi"})
+    assert s["main_tool"] == "pi" and s["main_now"] == "pi" and settings.load().main_tool == "pi"
+    s = host.command("town.settings.set", {"main_tool": "spaceship"})
+    assert s["main_tool"] == ""                                              # only a tool of the registry
+    s = host.command("town.settings.set", {"tools": {"pi": False}, "main_tool": "pi"})
+    assert s["main_tool"] == "pi" and s["main_now"] != "pi"                  # chosen, but off: the first one on

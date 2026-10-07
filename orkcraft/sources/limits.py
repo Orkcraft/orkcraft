@@ -1,4 +1,5 @@
-"""claude / agy / codex quota through the bundled `orkcraft.quota` (answers locally, spends no quota)."""
+"""Every AI tool's quota through the bundled `orkcraft.quota` (spends no quota): claude, agy and codex
+always; Hermes and Cursor when they are on PATH; pi keeps no windows (its spend shows in 🪙)."""
 from __future__ import annotations
 
 import datetime as dt
@@ -7,8 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from orkcraft.env import getenv
+from orkcraft.realm import harnesses
 
-PROVIDERS = ("claude", "agy", "codex")     # the rows of ⏳ Limits, in this order
+PROVIDERS = harnesses.ids()     # the rows of ⏳ Limits, in this order
 
 
 @dataclass(frozen=True)
@@ -36,8 +38,30 @@ def _codex(timeout: int) -> list:
     return codex_quota.get_codex_quota(path, timeout=timeout, billing=billing)
 
 
+def _on_path(harness: str) -> str | None:
+    h = harnesses.get(harness)
+    return which(h.bin) if h else None
+
+
+def _hermes(timeout: int) -> list:
+    from orkcraft.quota import hermes_quota
+    path = _on_path("hermes")
+    return hermes_quota.get_hermes_quota(path, timeout=timeout) if path else []
+
+
+def _cursor(timeout: int) -> list:
+    from orkcraft.quota import cursor_quota
+    return cursor_quota.get_cursor_quota(timeout=timeout) if _on_path("cursor") else []
+
+
+def _pi(timeout: int) -> list:
+    from orkcraft.quota.models import QuotaStatus
+    return [QuotaStatus("pi", "", "", None, None, None, "no windows: pi pays per token, see 🪙")] if _on_path("pi") else []
+
+
 def fetch_limits(repo_root: Path, timeout: int = 30) -> list[Limit]:
-    """Blocking: runs `claude -p /usage`, `agy -p /usage` and `codex app-server`. Call from a worker thread.
+    """Blocking: runs `claude -p /usage`, `agy -p /usage`, `codex app-server` and `hermes usage`, and
+    asks Cursor's API for its plan. Call from a worker thread.
 
     `ORKCRAFT_LIMITS=0` turns it off (tests, machines without the CLIs).
     """
@@ -50,6 +74,9 @@ def fetch_limits(repo_root: Path, timeout: int = 30) -> list[Limit]:
         ("claude", get_claude_quota, {"timeout": timeout}),
         ("agy", get_agy_quota, {"timeout": timeout}),
         ("codex", _codex, {"timeout": timeout}),
+        ("hermes", _hermes, {"timeout": timeout}),
+        ("pi", _pi, {"timeout": timeout}),
+        ("cursor", _cursor, {"timeout": timeout}),
     ):
         try:
             statuses = fn(**kwargs)

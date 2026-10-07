@@ -7,7 +7,7 @@ import os
 
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import tiers
+from orkcraft.realm import harnesses, tiers
 from orkcraft.sources import sessions as past
 
 OWN_QUICK = True              # its quick actions are in its preview (js/buildings/), not the generic buttons
@@ -75,7 +75,7 @@ def detail(w) -> dict:
         "keeper": w.keeper, "paused": st.paused, "max": f.max_orcs, "spent": _money(st.spent),
         "budget": _money(f.budget) if f.budget else "", "max_reworks": f.max_reworks,
         "providers": [h + (":" + m if m else "") for h, m in f.providers],
-        "steward": str(w.config.get("steward") or "claude"), "steward_cost": _money(st.steward_cost),
+        "steward": str(w.config.get("steward") or "main"), "steward_cost": _money(st.steward_cost),
         "test_cmd": str(w.config.get("test_cmd") or ""), "worktrees": w.worktrees,
         "rules": [ln for ln in w.orders.splitlines() if ln.strip()],
         "orks": orks,
@@ -155,7 +155,7 @@ def _terminal(w, args: dict) -> str:
     cwd = orc.worktree or str(w.repo_root)
     if w.simulated:
         command, harness = [os.environ.get("SHELL") or "/bin/sh"], "shell"
-    elif orc.session and orc.harness in ("claude", "codex", "agy"):
+    elif orc.session and orc.harness in harnesses.REGISTRY:
         command = past.resume_command(past.Session(orc.harness, orc.session)) or past.new_command(orc.harness)
         harness = orc.harness
     else:

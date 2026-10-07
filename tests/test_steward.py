@@ -161,10 +161,13 @@ def test_a_steward_runs_each_task_on_its_own_tier(monkeypatch, tmp_path):
     assert back.garrison.steward.models == {"watch": "laborer", "review": "elder"} and ts.validate(s.to_dict()) == []
     assert steward.model_for(back, "watch") == "haiku" and steward.model_for(back, "redesign") == ""
     calls = []
-    monkeypatch.setattr(builders, "claude_runner", lambda prompt, model=None: calls.append(model) or ("{}", None))
-    steward.runner_for(back, "watch")("p")
+    monkeypatch.setattr(builders, "ask", lambda tool, prompt, model=None: calls.append((tool, model)) or ("{}", None))
+    monkeypatch.setattr(builders, "main_tool", lambda machine=None: "agy")
+    steward.runner_for(back, "watch")("p")                          # main: the machine's main tool
     steward.runner_for(back, "redesign")("p")
-    assert calls == ["haiku", None]
+    back.garrison.steward.harness = [{"role": "run", "harness": "claude"}]
+    steward.runner_for(back, "watch")("p")                          # its own tool: the one its step names
+    assert calls == [("agy", "laborer"), ("agy", None), ("claude", "laborer")]
     fake = lambda prompt: ("{}", None)                               # noqa: E731
     assert steward.runner_for(back, "watch", fake) is fake
     assert "answer" in steward.uses("barracks") and "answer" not in steward.uses("forge")

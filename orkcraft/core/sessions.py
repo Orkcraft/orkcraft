@@ -33,13 +33,12 @@ import pyte
 
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import chronicles, pipes, worktrees
+from orkcraft.realm import chronicles, harnesses, pipes, worktrees
 from orkcraft.realm.roster import WorkerInfo
 from orkcraft.sources import sessions as past
-from orkcraft.sources.sessions import HARNESS_AGY, HARNESS_CLAUDE, HARNESS_CODEX
 
 BACKLOG = 512 * 1024          # bytes a session keeps for a face that opens it later
-HARNESSES = (HARNESS_CLAUDE, HARNESS_CODEX, HARNESS_AGY)
+HARNESSES = harnesses.ids()
 COLS, ROWS = 100, 30
 
 
@@ -178,8 +177,7 @@ class Sessions:
             prompt += f" Orders: {m_spec.orders}"
         if first_message:
             prompt += f"\n\nThe operator says: {first_message}"
-        first = (m_spec.harness[0].get("harness") if m_spec.harness else "") or HARNESS_CLAUDE
-        harness = first if first == HARNESS_CODEX else HARNESS_CLAUDE     # agy's orks deploy as Claude
+        harness = past.deploy_harness(m_spec.harness[0] if m_spec.harness else {})
         command = past.deploy_command(harness, prompt)
         if command is None:
             town.toast("This ork's harness cannot be deployed yet", title="Deploy", severity="warning")

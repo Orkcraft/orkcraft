@@ -191,7 +191,7 @@ def test_limits_say_codex_runs_on_an_api_key(monkeypatch, tmp_path):
     from orkcraft import tools
     from orkcraft.sources import limits
     _no_others(monkeypatch)
-    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex")
+    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex" if name == "codex" else None)
     monkeypatch.setattr(tools, "codex_login", lambda path: (True, "api"))
     monkeypatch.setattr(codex_quota, "_converse", lambda *a: pytest.fail("no app-server for an API key"))
     (row,) = limits.fetch_limits(tmp_path)
@@ -203,7 +203,7 @@ def test_limits_carry_codex_windows(monkeypatch, tmp_path):
     from orkcraft.sources import limits
     _no_others(monkeypatch)
     raw = (FIXTURES / "codex_app_server_rate_limits.jsonl").read_text(encoding="utf-8")
-    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex")
+    monkeypatch.setattr(limits, "which", lambda name: "/usr/bin/codex" if name == "codex" else None)
     monkeypatch.setattr(tools, "codex_login", lambda path: (True, "subscription"))
     monkeypatch.setattr(codex_quota, "_converse", lambda cmd, messages, timeout, cwd: raw)
     parse = codex_quota.parse_app_server        # read at the fixture's hour, not the clock's: its 5h window resets at 15:00
@@ -212,4 +212,4 @@ def test_limits_carry_codex_windows(monkeypatch, tmp_path):
     assert [(r.provider, r.window, r.group) for r in rows] == [
         ("codex", "5h", ""), ("codex", "weekly", ""), ("codex", "", "gpt-6-astra 5h")]
     assert rows[0].note == "plus · credits 120" and rows[0].reset.tzinfo is None
-    assert limits.PROVIDERS == ("claude", "agy", "codex")
+    assert limits.PROVIDERS == ("claude", "agy", "codex", "hermes", "pi", "cursor")

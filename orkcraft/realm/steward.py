@@ -62,12 +62,19 @@ def model_for(b: ts.BuildingSpec | None, use: str, harness: str = "claude") -> s
     return tiers.MODELS.get(harness, {}).get(tier, "") if tier else ""
 
 
+def harness_for(b: ts.BuildingSpec | None) -> str:
+    """The tool its steward thinks with: the one its first step names, else "" (the machine's main tool)."""
+    stew = b.garrison.steward if b is not None else None
+    steps = (stew.harness if stew is not None else None) or []
+    return str(steps[0].get("harness") or "") if steps and isinstance(steps[0], dict) else ""
+
+
 def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None = None) -> builders.Runner:
-    """The model call for one of its tasks: the test's or demo's fake as it is, else Claude on its tier."""
+    """The model call for one of its tasks: the test's or demo's fake as it is, else its steward's tool
+    (the main one unless it names its own) on the task's tier."""
     if fake is not None:
         return fake
-    model = model_for(b, use)
-    return (lambda prompt: builders.claude_runner(prompt, model=model)) if model else builders.claude_runner
+    return builders.runner_for(harness_for(b), tier_for(b, use) or None)
 
 
 def set_models(b: ts.BuildingSpec, models: dict[str, str]) -> dict[str, str]:
@@ -564,7 +571,7 @@ def _check(answer: Any, repo_root: Path, scroll: ts.TownScroll, building_id: str
 
 def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: Iterable[roads.Cart] = (),
           runs: Iterable[roads.HandlerRun] = (), sessions: list | None = None,
-          runner: builders.Runner = builders.claude_runner, budget_ok: bool = True,
+          runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
           now: dt.datetime | None = None, max_attempts: int = MAX_ATTEMPTS) -> StewardReport:
     """Metrics → findings → (only if any, and within 🪙) proposals. Never raises."""
     m = collect(repo_root, scroll, building_id, carts=carts, runs=runs, sessions=sessions, now=now)
@@ -629,7 +636,7 @@ Answer with ONE JSON object and nothing else: {{"proposals": [{{"type": "ui", "u
 
 
 def redesign(repo_root: Path, scroll: ts.TownScroll, building_id: str, type_id: str, request: str, *,
-             runner: builders.Runner = builders.claude_runner, budget_ok: bool = True,
+             runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
              max_attempts: int = MAX_ATTEMPTS) -> StewardReport:
     """The operator's wish for the building's window → one `ui` proposal (a whole UI document, checked
     against the type's contract; a rejected answer goes back with the problems). Never raises."""

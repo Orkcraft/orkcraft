@@ -150,7 +150,7 @@ def _feedback(attempts: list[Attempt], operator: str) -> str:
     return ("\n" + "\n\n".join(parts) + "\n") if parts else ""
 
 
-def build(interview: dict, taken: set[str] | frozenset[str] = frozenset(), runner: builders.Runner = builders.claude_runner,
+def build(interview: dict, taken: set[str] | frozenset[str] = frozenset(), runner: builders.Runner = builders.main_runner,
           feedback: str = "", previous: dict | None = None, max_attempts: int = MAX_ATTEMPTS) -> Result:
     """The Builder's blueprint for `interview`. Never raises; blocking (one model call per attempt)."""
     result = Result()

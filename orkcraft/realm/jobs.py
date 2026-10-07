@@ -20,13 +20,13 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import halt, roads
+from orkcraft.realm import halt, harnesses, roads
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
 WORK_TIMEOUT_S = 1800
 RESULT_KEEP = 4000
-HARNESSES = ("claude", "agy", "codex", "script")
+HARNESSES = (*harnesses.ids(), "script")
 
 
 @dataclass
@@ -110,16 +110,10 @@ def run_script(command: str, stdin: str, repo_root: Path, cancel: threading.Even
 
 def work_cmd(harness: str, prompt: str, workdir: Path, model: str = "", resume: str = "") -> list[str]:
     """An agent that may change files — only inside `workdir` (a Barracks worktree)."""
-    if harness == "claude":
-        cmd = [os.environ.get("ORKCRAFT_CLAUDE_BIN", "claude"), "-p", prompt, "--output-format", "json",
-               "--permission-mode", "acceptEdits"]
-        return cmd + (["--model", model] if model else []) + (["--resume", resume] if resume else [])
-    if harness == "agy":
-        return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or roads.AGY_MODEL,
-                "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
-    if harness == "codex":                     # the prompt goes on stdin (roads.harness_stdin)
-        return roads.codex_cmd("workspace-write", model, resume=resume)
-    raise RuntimeError(f"harness {harness!r} cannot work in a worktree")
+    h = harnesses.get(roads.resolve(harness))
+    if h is None:
+        raise RuntimeError(f"harness {harness!r} cannot work in a worktree")
+    return h.work(prompt, workdir, model, resume if h.resumable else "")
 
 
 def session_of(stdout: str) -> str:
@@ -134,17 +128,16 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
              env: dict | None = None, resume: str = "",
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of an agent working in `workdir`."""
+    harness = roads.resolve(harness)
     cmd = work_cmd(harness, prompt, workdir, model, resume)
-    run_env = {**os.environ, **(env or {})}
+    tool_env = h.env("work", workdir) if (h := harnesses.get(harness)) else {}
+    run_env = {**os.environ, **tool_env, **(env or {})}
     before = roads.codex_thread_total(resume, run_env) if harness == "codex" and resume else 0
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s))
     if code != 0:
         raise RuntimeError(roads.failure(harness, code, out, err))
-    if harness == "codex":
-        text, cost, tokens, session = roads.codex_result_of(out, before)
-    else:
-        (text, cost, tokens), session = roads._result_of(out), session_of(out)
+    text, cost, tokens, session = roads.result_of(harness, out, before)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker")
     return text, cost, tokens, session

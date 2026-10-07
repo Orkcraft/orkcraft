@@ -217,6 +217,36 @@ def codex_line(level: int) -> str:
     return f"start it with `{codex_command(level)}`: it works in its sandbox and asks only to leave it."
 
 
+def hermes_command(level: int) -> str:
+    """Hermes asks only before a dangerous command (its approvals); ⛓️‍💥 starts it without asking."""
+    return "hermes --yolo" if level >= FREE else ""
+
+
+def hermes_line(level: int) -> str:
+    if level < CLOCK:
+        return "nothing to change — it asks before a dangerous command (approvals.mode: manual asks before every one)."
+    if level == CLOCK:
+        return "keep `approvals.mode: smart` in ~/.hermes/config.yaml: it asks only before a dangerous command."
+    return f"start it with `{hermes_command(level)}`: it runs every command without asking; the Warder still stops the worst."
+
+
+def pi_line(level: int) -> str:
+    return ("it never asks before it acts, at any level: the Warder (orkcraft's pi extension) is its only guard; "
+            "give it fewer tools with `--tools read,grep,find,ls` to keep it reading.")
+
+
+def cursor_command(level: int) -> str:
+    return "cursor-agent --force --sandbox enabled" if level >= FREE else ""
+
+
+def cursor_line(level: int) -> str:
+    if level < CLOCK:
+        return "nothing to change — it asks before it acts."
+    if level == CLOCK:
+        return "allow routine commands in .cursor/cli.json `permissions.allow` (e.g. Shell(git), Shell(npm test)); deny wins."
+    return f"start it with `{cursor_command(level)}`: commands run without asking, inside its sandbox."
+
+
 def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
     """The guide as plain text (docs and tests); the screen shows the same lines with 📋 buttons."""
     lines: list[str] = []
@@ -232,6 +262,12 @@ def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
         lines.append(f"Codex: {codex_line(level)}")
         if codex_command(level):
             lines.append(f"    {codex_command(level)}")
+    if "hermes" in tools:
+        lines.append(f"Hermes Agent: {hermes_line(level)}")
+    if "pi" in tools:
+        lines.append(f"pi: {pi_line(level)}")
+    if "cursor" in tools:
+        lines.append(f"Cursor: {cursor_line(level)}")
     if level >= FREE:
         lines.append("The 🏛 Elders answer routine questions for you at once (a one-time yes or no); "
                      "every answer is in .orkcraft/council/elders.jsonl. Move the slider down to stop it.")

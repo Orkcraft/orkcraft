@@ -129,6 +129,8 @@
 [data-theme="office"] .ok-badge.is-alert { color: var(--danger); box-shadow: inset 0 0 0 1px var(--alert-hot); }
 .ok-h-claude { color: var(--harness-claude); } .ok-h-agy { color: var(--harness-agy); }
 .ok-h-codex { color: var(--harness-codex); } .ok-h-pipe { color: var(--harness-pipeline); }
+.ok-h-hermes { color: var(--harness-hermes); } .ok-h-pi { color: var(--harness-pi); }
+.ok-h-cursor { color: var(--harness-cursor); }
 .ok-arrow { color: var(--ink-comment); }
 
 /* --- Header sprites (Camp only) --------------------------------------------------------- */

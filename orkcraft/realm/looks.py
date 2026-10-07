@@ -6,11 +6,14 @@
 """
 from __future__ import annotations
 
+from orkcraft.realm import harnesses
+
 KIND_ICONS = {"chain": "🪧", "script": "🪧", "agent": "🧌", "hybrid": "🪧🧌"}
 OLD_ICONS = {"🗿": "🪧", "🗿🧌": "🪧🧌"}     # a scroll saved before the 🪧 keeps loading with it
 KIND_LABELS = {"chain": "chain", "script": "script (runs later)", "agent": "agent", "hybrid": "hybrid (script + agent)"}
-HARNESS_LETTER = {"claude": "✻", "agy": "✦", "codex": "⌬"}    # Claude's spark, Gemini's sparkle, OpenAI's hexagon (one cell each)
-HARNESS_STYLE = {"claude": "bold #f59e0b", "agy": "bold #3b82f6", "codex": "bold #10a37f", "pipeline": "bold #e879f9"}
+# One cell each, from the registry (Claude's spark, Gemini's sparkle, OpenAI's hexagon…)
+HARNESS_LETTER = {h.id: h.mark for h in harnesses.REGISTRY.values()}
+HARNESS_STYLE = {**{h.id: h.color for h in harnesses.REGISTRY.values()}, "pipeline": "bold #e879f9"}
 LONG_SCHEME = 3          # longer schemes read as first→last·N
 
 
@@ -21,6 +24,9 @@ def kind_icon(kind: str) -> str:
 def _letter(harness: str) -> tuple[str, str]:
     if harness.startswith("pipeline:"):
         return "P", HARNESS_STYLE["pipeline"]
+    if harness in ("", harnesses.MAIN):                   # the machine's main tool, as it is now
+        from orkcraft.realm import builders
+        harness = builders.main_tool()
     return HARNESS_LETTER.get(harness, "?"), HARNESS_STYLE.get(harness, "bold")
 
 

@@ -104,7 +104,7 @@ class RoadsMixin:
             self.push_screen(OrcProgress(f"💬 {tgt_title}'s steward is looking for the road…"))
 
             def work() -> None:
-                plan = road_planner.plan(text, target, sources, snapshot, runners.ROAD_RUNNER or builders.claude_runner)
+                plan = road_planner.plan(text, target, sources, snapshot, runners.ROAD_RUNNER or builders.main_runner)
                 self.call_from_thread(self._on_road_planned, target_id, source_id, text, plan)
 
             self.run_worker(work, thread=True, name="road-planner")
