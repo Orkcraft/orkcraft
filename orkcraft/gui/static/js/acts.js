@@ -93,10 +93,11 @@ export function HandlerDialog({ road, onClose, onDone }) {
 
 function RecruitView({ v }) {
   return html`<div class="gui-form">
-    <p class="ok-font-body"><b>${v.name}</b> <span class="ok-tone-muted">· ${v.kind}${v.tier ? ` · ${v.tier}` : ""}</span></p>
-    ${v.why && html`<p class="ok-font-status">Why ${v.kind}: ${v.why}</p>`}
+    <p class="ok-font-body"><b>${v.name}</b> <span class="ok-tone-muted">· ${v.kind_label || v.kind}${v.tier ? ` · ${v.tier}` : ""}</span></p>
+    ${v.why && html`<p class="ok-font-status">Why ${v.kind_label || v.kind}: ${v.why}</p>`}
     ${v.role && html`<p class="ok-font-status ok-tone-muted">${v.role}</p>`}
-    ${v.orders && html`<p class="ok-font-status">Orders: ${v.orders}</p>`}
+    ${v.orders && html`<p class="ok-font-status">${v.kind === "steward" ? "Rule" : "Orders"}: ${v.orders}</p>`}
+    ${v.kind === "steward" && html`<p class="ok-font-status ok-tone-muted">The steward carries it out on its own tool: no new ork.</p>`}
     ${v.chain > 0 && html`<p class="ok-font-status ok-tone-muted">A chain of ${v.chain} steps, never calls a model.</p>`}
     ${v.roads.length > 0 && html`<p class="ok-font-status">Listens: ${v.roads.map((r) => `${r.from} · ${r.event}`).join(", ")}</p>`}
     ${v.script && html`<pre class="gui-pre gui-orders__context">${v.script}</pre>`}

@@ -14,8 +14,7 @@ from orkcraft.screens.road_modal import RULE
 CHAIN = {"name": "Crier", "role": "done digest", "kind": "chain", "why": "a template is enough",
          "chain": [{"op": "template", "md": "✅ {id} — {title}"}],
          "roads": [{"from": "loot", "event": "on_selection_change"}]}
-AGENT = dict(CHAIN, kind="agent", chain=[], orders="format it", harness=[{"role": "run", "harness": "claude"}],
-             why="judgement")
+AGENT = dict(CHAIN, kind="steward", chain=[], orders="format it", why="judgement")
 
 
 def test_a_deterministic_rule_never_gets_an_agent(fake_repo: Path):
@@ -34,7 +33,7 @@ def test_a_deterministic_rule_never_gets_an_agent(fake_repo: Path):
     assert "deterministic" in prompts[1] and "exactly these roads: from loot on on_selection_change" in prompts[2]
     agent_ok = recruiter.recruit("summarise what changed", scroll, "town_hall", lambda p: (json.dumps(AGENT), 0.0),
                                  road=("loot", "on_selection_change"))
-    assert agent_ok.ok and agent_ok.orc["kind"] == "agent"                  # judgement: an agent may do it
+    assert agent_ok.ok and agent_ok.orc["kind"] == "steward"                # judgement: the steward does it
     assert recruiter.needs_judgement("резюмируй письмо") and not recruiter.needs_judgement("count the lines")
 
 

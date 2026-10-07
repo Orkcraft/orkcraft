@@ -45,7 +45,7 @@ def orc_problems(orc: dict, where: str = "") -> list[str]:
     if errors:
         return errors
     kind = orc.get("kind", "agent")
-    harness = orc.get("harness", DEFAULT_HARNESS)
+    harness = orc.get("harness", [] if kind == "steward" else DEFAULT_HARNESS)
     name = orc.get("id", "?")
     if kind == "chain" and not orc.get("chain"):
         errors.append(f"{prefix}ork {name}: a chain needs at least one op")
