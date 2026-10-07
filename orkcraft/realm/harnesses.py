@@ -131,6 +131,9 @@ class Harness:
     task_models: dict = field(default_factory=dict)   # "code" / "docs" → model, when a step names none
     mark: str = "?"                  # one cell on the map and in schemes (realm/looks.py)
     color: str = "bold"              # … in its colour
+    deploy_args: tuple[str, ...] = ()   # what goes before a first prompt in an interactive session
+    env_cmd: Callable[["Harness", str, str], dict] | None = None   # (h, ask|read|work, workdir) → variables
+    priced: bool = False             # its answers say what they cost
     extra: dict = field(default_factory=dict)
 
     @property
@@ -149,6 +152,10 @@ class Harness:
     def stdin(self, prompt: str) -> str | None:
         return prompt if self.stdin_prompt else None
 
+    def env(self, mode: str, workdir: str | Path = "") -> dict[str, str]:
+        """The variables a run of `mode` (ask, read, work) needs on top of the environment."""
+        return dict(self.env_cmd(self, mode, str(workdir))) if self.env_cmd else {}
+
     def interactive(self, prompt: str = "", resume: str = "") -> list[str] | None:
         """An interactive session: new, reopened (`resume`) or starting on `prompt`; None when it cannot."""
         if resume:
@@ -159,7 +166,7 @@ class Harness:
             return cli
         if not self.deploys:
             return None
-        return cli + ["Orders: " + prompt if prompt.startswith("-") else prompt]
+        return cli + list(self.deploy_args) + ["Orders: " + prompt if prompt.startswith("-") else prompt]
 
 
 # Claude Code ---------------------------------------------------------------------------------------
@@ -207,6 +214,135 @@ def codex_exec(h, sandbox: str, model: str = "", web: bool = False, resume: str 
             "-c", f'sandbox_mode="{sandbox}"', "-c", CODEX_WEB[web], *_model("--model", model)]
 
 
+# Hermes Agent (Nous Research) ---------------------------------------------------------------------
+# `hermes chat -q … --oneshot --format stream-json`: JSONL, the last `result` line carries the text,
+# the tokens and the session id; no price (only `-z --usage-file` prices, and `-z` approves every
+# command, so it is never used). Its tools come as toolsets; `file` can write, so a reading agent gets
+# HERMES_WRITE_SAFE_ROOT on a path nothing can be written under. The prompt comes on stdin. Dangerous commands are refused in a
+# one-shot run (`approvals.single_query_mode: deny`, its default). docs/design/harnesses.md
+
+def hermes_result(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    text, tokens, session, parts = "", None, "", []
+    for event in json_lines(stdout):
+        kind = event.get("type")
+        if kind == "system" and event.get("session_id"):
+            session = str(event["session_id"])
+        elif kind == "text" and isinstance(event.get("text"), str):
+            parts.append(event["text"])
+        elif kind == "result":
+            session = str(event.get("session_id") or session)
+            text = str(event.get("text") or "")
+            t = event.get("tokens")
+            if isinstance(t, dict) and isinstance(t.get("total"), int):
+                tokens = t["total"]
+    return (text or "".join(parts)).strip(), None, tokens, session
+
+
+def hermes_error(stdout: str) -> str:
+    for event in reversed(json_lines(stdout)):
+        if event.get("type") == "result" and event.get("error"):
+            return str(event["error"])
+    return ""
+
+
+HERMES_READ = "file,search"
+HERMES_WORK = "file,terminal,search"
+NOWHERE = "/dev/null/orkcraft"       # a write root no file can be made under
+
+
+def _hermes(h, prompt, model, toolsets, resume=""):
+    return [h.bin, "chat", "--query-file", "-", "--oneshot", "--format", "stream-json", "--toolsets", toolsets,
+            *_model("--model", model), *(["--resume", resume] if resume else [])]
+
+
+def _hermes_env(h, mode, workdir):
+    # hooks run headless (the Warder, hooks/install.py) and file tools write only where they may
+    return {"HERMES_ACCEPT_HOOKS": "1", "HERMES_WRITE_SAFE_ROOT": workdir if mode == "work" and workdir else NOWHERE}
+
+
+# pi (earendil-works/pi, formerly badlogic/pi-mono) -------------------------------------------------
+# `pi --mode json … -- <prompt>`: JSONL; the first line is the session header (its id), each assistant
+# `message_end` carries the text and `usage` with `cost.total` in USD. pi has no approvals and no
+# sandbox: what it may do is the tools it is given (`--tools`). Project extensions wait for trust
+# headless, so only orkcraft's own (`-e`, hooks/install.py) run.
+
+def pi_result(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    text, cost, tokens, session = "", None, None, ""
+    for event in json_lines(stdout):
+        kind = event.get("type")
+        if kind == "session" and event.get("id"):
+            session = session or str(event["id"])
+        msg = event.get("message") if kind == "message_end" else None
+        if not isinstance(msg, dict) or msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if isinstance(content, list):
+            said = "".join(str(c.get("text") or "") for c in content if isinstance(c, dict) and c.get("type") == "text")
+            text = said or text
+        usage = msg.get("usage")
+        if isinstance(usage, dict):
+            if isinstance(usage.get("totalTokens"), int):
+                tokens = (tokens or 0) + usage["totalTokens"]
+            total = (usage.get("cost") or {}).get("total") if isinstance(usage.get("cost"), dict) else None
+            if isinstance(total, (int, float)):
+                cost = (cost or 0.0) + float(total)
+    return text.strip(), cost, tokens, session
+
+
+def pi_error(stdout: str) -> str:
+    for event in reversed(json_lines(stdout)):
+        msg = event.get("message")
+        if isinstance(msg, dict) and msg.get("stopReason") in ("error", "aborted"):
+            return str(msg.get("errorMessage") or msg.get("stopReason"))
+    return ""
+
+
+PI_READ = "read,grep,find,ls"
+PI_WORK = "read,grep,find,ls,edit,write,bash"
+
+
+def _pi(h, prompt, model, tools, session="", keep=False):
+    return [h.bin, "--mode", "json", *(["--tools", tools] if tools else ["--no-tools"]),
+            *([] if keep or session else ["--no-session"]), *(["--session", session] if session else []),
+            *_model("--model", model), "--", prompt]
+
+
+# Cursor CLI (`cursor-agent`) -----------------------------------------------------------------------
+# `cursor-agent -p --output-format stream-json --trust`: JSONL; the `result` line carries the text,
+# the session (chat) id and `usage` in camelCase; no price (the plan pays). The prompt goes on stdin:
+# `--resume` takes an optional value and would swallow it. `--mode ask` reads and never edits.
+
+def cursor_result(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    text, tokens, session, said = "", None, "", []
+    for event in json_lines(stdout):
+        kind = event.get("type")
+        session = str(event.get("session_id") or session)
+        msg = event.get("message")
+        if kind == "assistant" and isinstance(msg, dict) and isinstance(msg.get("content"), list):
+            said.append("".join(str(c.get("text") or "") for c in msg["content"] if isinstance(c, dict)))
+        elif kind == "result":
+            text = str(event.get("result") or "")
+            usage = event.get("usage")
+            if isinstance(usage, dict):
+                vals = [usage[k] for k in ("inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens")
+                        if isinstance(usage.get(k), int)]
+                tokens = sum(vals) if vals else None
+    return (said[-1] if said else text).strip(), None, tokens, session
+
+
+def cursor_error(stdout: str) -> str:
+    for event in reversed(json_lines(stdout)):
+        if event.get("type") == "result" and (event.get("is_error") or event.get("subtype") == "error"):
+            return str(event.get("result") or event.get("error") or "error")
+    return ""
+
+
+def _cursor(h, model, mode="", resume=""):
+    return [h.bin, "-p", "--output-format", "stream-json", "--trust",
+            *(["--mode", mode] if mode else ["--force", "--sandbox", "enabled"]),
+            *_model("--model", model), *([f"--resume={resume}"] if resume else [])]
+
+
 REGISTRY: dict[str, Harness] = {}
 
 
@@ -219,7 +355,7 @@ register(Harness(
     "claude", "Claude Code", "claude", "npm i -g @anthropic-ai/claude-code", "claude  (then /login)",
     {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     _claude_ask, _claude_read, _claude_work,
-    resumable=True, deploys=True, web=True, mark="✻", color="bold #f59e0b",
+    resumable=True, deploys=True, web=True, priced=True, mark="✻", color="bold #f59e0b",
     resume_cmd=lambda h, sid: [h.bin, "--resume", sid]))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
@@ -239,6 +375,31 @@ register(Harness(
     result=codex_result, error=codex_error, resumable=True, stdin_prompt=True, deploys=True, web=True,
     mark="⌬", color="bold #10a37f",
     resume_cmd=lambda h, sid: [h.bin, "resume", sid]))
+register(Harness(
+    "hermes", "Hermes Agent", "hermes", "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+    "hermes setup", {},
+    lambda h, p, f, m: _hermes(h, p, m, "todo"),
+    lambda h, p, w, m, web: _hermes(h, p, m, HERMES_READ + (",web" if web else "")),
+    lambda h, p, w, m, r: _hermes(h, p, m, HERMES_WORK, r),
+    result=hermes_result, error=hermes_error, resumable=True, stdin_prompt=True, deploys=True, web=True,
+    env_cmd=_hermes_env,
+    fits=("code", "docs"), mark="☤", color="bold #a855f7", deploy_args=("chat", "-q"),
+    resume_cmd=lambda h, sid: [h.bin, "chat", "--resume", sid]))
+register(Harness(
+    "pi", "pi", "pi", "npm install -g --ignore-scripts @earendil-works/pi-coding-agent", "pi  (then /login)", {},
+    lambda h, p, f, m: _pi(h, p, m, ""),
+    lambda h, p, w, m, web: _pi(h, p, m, PI_READ),
+    lambda h, p, w, m, r: _pi(h, p, m, PI_WORK, session=r, keep=True),
+    result=pi_result, error=pi_error, resumable=True, deploys=True, priced=True, mark="π", color="bold #e11d48",
+    resume_cmd=lambda h, sid: [h.bin, "--session", sid]))
+register(Harness(
+    "cursor", "Cursor", "cursor-agent", "curl https://cursor.com/install -fsS | bash", "cursor-agent login", {},
+    lambda h, p, f, m: _cursor(h, m, "ask"),
+    lambda h, p, w, m, web: _cursor(h, m, "ask"),
+    lambda h, p, w, m, r: _cursor(h, m, resume=r),
+    result=cursor_result, error=cursor_error, resumable=True, stdin_prompt=True, deploys=True,
+    mark="◆", color="bold #94a3b8",
+    resume_cmd=lambda h, sid: [h.bin, f"--resume={sid}"]))
 
 
 # -- lookups --------------------------------------------------------------------------------------

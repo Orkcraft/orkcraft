@@ -110,7 +110,7 @@ def _call(h: harnesses.Harness, prompt: str, model: str | None) -> subprocess.Co
     """One non-interactive answer of `h` in an empty temporary folder, without orkcraft's own
     variables. Raises RuntimeError when the CLI is missing or silent, Stopped on 🛑 Halt All."""
     with tempfile.TemporaryDirectory(prefix="orkcraft-mason-") as empty:
-        env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
+        env = {**{k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}, **h.env("ask", empty)}
         cmd = h.ask(prompt, empty, model or "")
         try:
             return halt.run(cmd, input=h.stdin(prompt), cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All

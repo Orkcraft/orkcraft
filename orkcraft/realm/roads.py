@@ -347,7 +347,8 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
     with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
         workdir = repo_root if harness in IN_REPO else Path(scratch)
         cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
-        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **env}, harness_stdin(harness, prompt), wait)
+        tool_env = h.env("read", scratch) if (h := harnesses.get(harness)) else {}
+        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:
         raise RuntimeError(failure(harness, code, stdout, stderr))
     result = result_of(harness, stdout)[:3]

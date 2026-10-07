@@ -212,4 +212,4 @@ def test_limits_carry_codex_windows(monkeypatch, tmp_path):
     assert [(r.provider, r.window, r.group) for r in rows] == [
         ("codex", "5h", ""), ("codex", "weekly", ""), ("codex", "", "gpt-6-astra 5h")]
     assert rows[0].note == "plus · credits 120" and rows[0].reset.tzinfo is None
-    assert limits.PROVIDERS == ("claude", "agy", "codex")
+    assert limits.PROVIDERS == ("claude", "agy", "codex", "hermes", "pi", "cursor")

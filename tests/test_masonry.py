@@ -259,4 +259,4 @@ def test_the_planner_is_the_first_tool_turned_on():
     assert builders.planner_tool(["agy", "codex"], chosen="agy") == "agy"          # the chosen main tool
     assert builders.planner_tool(["codex"], chosen="agy") == "codex"                # … only while it is on
     assert builders.planner_runner(["agy"]) is not None
-    assert builders.planner_tool([]) is None and builders.planner_runner(["cursor"]) is None
+    assert builders.planner_tool([]) is None and builders.planner_runner(["windsurf"]) is None

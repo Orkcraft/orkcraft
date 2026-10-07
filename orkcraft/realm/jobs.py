@@ -130,7 +130,8 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     """(text, cost, tokens, session) of an agent working in `workdir`."""
     harness = roads.resolve(harness)
     cmd = work_cmd(harness, prompt, workdir, model, resume)
-    run_env = {**os.environ, **(env or {})}
+    tool_env = h.env("work", workdir) if (h := harnesses.get(harness)) else {}
+    run_env = {**os.environ, **tool_env, **(env or {})}
     before = roads.codex_thread_total(resume, run_env) if harness == "codex" and resume else 0
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s))
