@@ -1,6 +1,7 @@
 """The town's own settings in the GUI, from the HUD's menu (js/settings.js): how freely the orks decide
 (autonomy.py — the level a building without its own follows) and its two waits on the clock, minutes a
-question waits and hours you are around a change waits. As the TUI's F10 → Ork autonomy.
+question waits and hours you are around a change waits. As the TUI's F10 → Ork autonomy. And whether
+anonymous usage stats are shared (core/usage.py), asked once by its own small dialog.
 
     host.commands.update(town_settings.commands(host))
 """
@@ -9,6 +10,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from orkcraft import autonomy, settings
+from orkcraft.core import usage
 
 
 def read(host) -> dict[str, Any]:
@@ -16,7 +18,8 @@ def read(host) -> dict[str, Any]:
     return {"autonomy": autonomy.word(m.autonomy), "wait": m.autonomy_wait, "rebuild": m.rebuild_wait,
             "waits": list(autonomy.QUESTION_WAITS), "rebuilds": list(autonomy.REBUILD_WAITS),
             "levels": [{"id": autonomy.word(lv.n), "icon": lv.icon, "title": lv.title, "questions": lv.questions,
-                        "improves": lv.improves} for lv in autonomy.LEVELS]}
+                        "improves": lv.improves} for lv in autonomy.LEVELS],
+            "usage": m.usage, "usage_blocked": usage.blocked()}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -24,6 +27,7 @@ def change(host, args: dict) -> dict[str, Any]:
     m = host.town.machine
     if args.get("autonomy") in autonomy.WORDS:
         m.autonomy = autonomy.of(args["autonomy"])
+        host.usage.track("autonomy_set", level=args["autonomy"])
     if args.get("wait") is not None:
         m.autonomy_wait = autonomy.wait_of(args.get("wait"))
     if args.get("rebuild") is not None:
@@ -36,5 +40,18 @@ def change(host, args: dict) -> dict[str, Any]:
     return read(host)
 
 
+def share_usage(host, args: dict) -> dict[str, Any]:
+    """The operator's answer about usage stats (`share`: true | false); the first yes says hello."""
+    m = host.town.machine
+    was = host.usage.enabled()
+    usage.share(m, args.get("share") is True)
+    settings.save(m)
+    if host.usage.enabled() and not was:
+        host._opened()
+    host.on_change()
+    return read(host)
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
-    return {"town.settings": lambda a: read(host), "town.settings.set": lambda a: change(host, a)}
+    return {"town.settings": lambda a: read(host), "town.settings.set": lambda a: change(host, a),
+            "usage.share": lambda a: share_usage(host, a)}

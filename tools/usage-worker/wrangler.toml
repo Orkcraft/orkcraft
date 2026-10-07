@@ -1,0 +1,21 @@
+# Orkcraft's usage proxy (README.md). The Amplitude key is a secret, never here:
+#   npx wrangler secret put AMPLITUDE_API_KEY
+name = "orkcraft-usage"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true                  # https://orkcraft-usage.<account>.workers.dev, or a route below
+
+# routes = [{ pattern = "usage.orkcraft.dev", custom_domain = true }]
+
+[vars]
+AMPLITUDE_REGION = "eu"             # "eu" (api.eu.amplitude.com) or "us": where the Amplitude project lives
+SEND_COUNTRY = "false"              # "true": Cloudflare's guess of the country goes along (never the IP)
+
+# At most 30 batches a minute from one install; the app sends one a minute.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[observability]
+enabled = false                     # no request logs: they would hold the people's addresses

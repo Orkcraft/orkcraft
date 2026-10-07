@@ -48,6 +48,26 @@ def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
     return out
 
 
+def _usage(action: str) -> int:
+    """`orkcraft usage on|off|status` (core/usage.py, docs/usage-stats.md)."""
+    from orkcraft import settings
+    from orkcraft.core import usage
+    machine = settings.load()
+    if action != "status":
+        usage.share(machine, action == "on")
+        settings.save(machine)
+    said = {True: "on", False: "off", None: "not asked yet (off)"}[machine.usage]
+    print(f"usage stats: {said}")
+    if machine.usage and machine.install_id:
+        print(f"install id: {machine.install_id}")
+    if usage.blocked():
+        print(f"nothing is collected here: {usage.blocked()}")
+    elif not usage.endpoint():
+        print("nothing is sent: this build has no usage proxy")
+    print("what is collected: docs/usage-stats.md")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -83,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
                             help="Also guard agy's headless steps in ~/.gemini/config/hooks.json, without asking")
     agy_global.add_argument("--no-agy-global", dest="agy_global", action="store_false",
                             help="Leave ~/.gemini/config/hooks.json alone, without asking")
+    usage_p = subparsers.add_parser("usage", help="Anonymous usage stats: share them, stop, or see what is set")
+    usage_p.add_argument("action", choices=("on", "off", "status"))
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
@@ -115,6 +137,9 @@ def main(argv: list[str] | None = None) -> int:
         if not paths:
             print("nothing to uninstall")
         return 0
+
+    if args.subcommand == "usage":
+        return _usage(args.action)
 
     if args.subcommand == "feedback":
         from orkcraft.realm import calibrate
