@@ -28,5 +28,5 @@ Void has no glyphs (as in the TUI): the colour alone.
 | meadow | `#0d1a16` | `#24443a` | knights |
 
 The huts of each biome are `design-system/sprites/buildings/<type>/header-<biome>.png` (dirt and forest:
-`header.png`); the mascots are `design-system/sprites/mascots/<kin>-<stage>.png`. To export again after a
+`header.png`); the mascots are `design-system/sprites/mascots/<role>-<stage>.png`. To export again after a
 change: open the GUI and save `terrainUrl(biome, 1)` and `terrainUrl(biome, 2)` from `js/terrain.js`.

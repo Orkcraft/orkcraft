@@ -108,9 +108,9 @@ export function WarchiefHead({ state = "" }) {
     srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width=${state ? 40 : 24} height="20" alt="" />`;
 }
 
-/** The operator's mascot (docs/design/growth.md §7): its kin's head at its stage. */
-export function MascotHead({ kin, stage, size = 4 }) {     // size: screen px a pixel of its 12 × 11 grid
-  return html`<img class="ok-sprite gui-mascot" src=${`/ds/sprites/mascots/${kin}-${stage}@2x.png`}
+/** The operator's mascot (docs/design/growth.md §7): its role's head at its stage. */
+export function MascotHead({ sprite, stage, size = 4 }) {  // size: screen px a pixel of its 12 × 11 grid
+  return html`<img class="ok-sprite gui-mascot" src=${`/ds/sprites/mascots/${sprite}-${stage}@2x.png`}
     width=${12 * size} height=${11 * size} alt="" />`;
 }
 
