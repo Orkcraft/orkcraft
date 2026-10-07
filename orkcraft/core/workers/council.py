@@ -115,6 +115,10 @@ class CouncilWorker(Worker):
                 return True
         return False
 
+    def loose_ends(self) -> list[dict]:
+        """The named exits no road takes yet: the map draws each as a stub to pull a road from."""
+        return [{"route": e.id, "name": e.name} for e in self.exits if not self.connected(e)] if self.named else []
+
     def phase(self) -> str:
         """While it reviews: `reading` (members speak) or `deciding` (the steward's turn)."""
         d = self.current

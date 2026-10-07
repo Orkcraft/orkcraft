@@ -27,9 +27,9 @@ def choices(town: Town, source_id: str, target_id: str) -> list[tuple[str, str |
         from orkcraft.realm import signpost
         out = [(f"signpost.routed#{r}", None, f"plain · route {r}")
                for r in signpost.routes((spec.get("config") or {}).get("rules") or [])] + out
-    if spec is not None and catalog.type_of(spec).id == "council":       # a clan that routes: one road per route
+    if spec is not None and catalog.type_of(spec).id == "council":       # a board's exits: one road per exit
         from orkcraft.realm import team
-        out = [(f"team.routed#{r}", None, f"plain · route {r}") for r in team.routes_of(spec.get("config") or {})] + out
+        out = [(f"team.routed#{e.id}", None, f"plain · exit {e.name}") for e in team.exits_of(spec.get("config") or {})] + out
     for orc in tgt.garrison.handlers:
         for ev in pipes.road_events(source_id, target_id, has_garrison, handler=True):
             out.append((ev, orc.id, f"{orc.avatar} {orc.name} ({orc.kind}) · {pipes.label(ev)}"))
@@ -103,8 +103,17 @@ def lay(town: Town, target_id: str, source_id: str, event: str, handler: str | N
     src_title = src.title if src else source_id
     town.record(target_id, "road_subscribed", source=src_title, event=pipes.label(event), handler=who)
     if not quiet:
-        town.toast(f"🛤 {src_title} → {tgt.title if tgt else target_id} ({pipes.label(event)}, {who})", title="Roads")
+        what = _exit_name(town, source_id, route) if event == "team.routed" else ""
+        town.toast(f"🛤 {src_title} → {tgt.title if tgt else target_id} ({what or pipes.label(event)}, {who})", title="Roads")
     return road
+
+
+def _exit_name(town: Town, board: str, route: str) -> str:
+    """A Review board's exit by its route, in words (`to-development` → `exit To development`)."""
+    from orkcraft.realm import team
+    spec = town.custom_specs.get(board)
+    names = {e.id: e.name for e in team.exits_of((spec or {}).get("config") or {})} if route else {}
+    return f"exit {names[route]}" if route in names else ""
 
 
 def remove(town: Town, key: str) -> scroll.Road | None:

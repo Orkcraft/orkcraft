@@ -662,6 +662,41 @@ def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down
     shot("rb-5-sent")
     shot("rb-6-card", f'.gui-hut[data-id="{bid}"]')
     call("town.demolish", {"id": bid})
+
+
+def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
+    """A named exit with no road is a dashed stub off the board with its name; pulled to a building, the road is laid
+    for that exit and signed with its name (docs/design/review-board.md §2). `ORKCRAFT_SHOTS` keeps screenshots."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    bid = call("town.build", {"type": "council"})
+    to = call("town.build", {"type": "pit"})
+    call("act", {"id": bid, "act": "setup_save", "args": {
+        "purpose": "PRDs before development",
+        "members": [{"role": "Product critic", "checks": "scope", "tier": "", "veto": False}],
+        "exits": [{"name": "To development", "when": "ready to build"}, {"name": "To the designer", "when": "flows unclear"}]}})
+    pg.keyboard.press("Escape")
+    stub = pg.locator(".gui-loose", has_text="To development")
+    stub.wait_for(state="visible", timeout=WAIT_MS)
+    assert "no road" in stub.get_attribute("title") and pg.locator(".gui-loose").count() == 2
+    if shots:
+        pg.locator(".gui-town").screenshot(path=f"{shots}/rb-7-stubs.png")
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    pg.mouse.move(s["x"] + 4, s["y"] + 1)
+    pg.mouse.down()
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.up()
+    pg.locator(".gui-sign", has_text="To development").and_(pg.locator(":not(.gui-loose__sign)")) \
+        .wait_for(state="visible", timeout=WAIT_MS)                          # the road, signed with the exit
+    pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
+    assert pg.locator(".gui-modal").count() == 0                                # laid at once, nothing asked
+    if shots:
+        pg.locator(".gui-town").screenshot(path=f"{shots}/rb-8-road.png")
+    call("town.demolish", {"id": to})
+    call("town.demolish", {"id": bid})
+
+
 def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     """Settings → AI tools: a tool turned on joins the main tool's choices; picking it says decisions run there."""
     pg = page

@@ -13,7 +13,7 @@ import { plan } from "./roads.js";
 import { pickedRoad, building as buildOpen } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
-import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
+import { Hut, sizes, dragging, pulling, pullRoad, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
@@ -194,6 +194,20 @@ function Signs({ paths, roads }) {
   </div>`;
 }
 
+/** A building's exits with no road yet (a Review board's): a short dashed stub off its right edge with the exit's sign;
+ *  pull a road from it to a building and the road is laid for that exit (docs/design/review-board.md §2). */
+function LooseEnds({ buildings, rects }) {
+  return html`<div class="gui-loose-ends">${buildings.filter((b) => b.loose && b.loose.length && rects[b.id]).map((b) =>
+    b.loose.map((x, i) => {
+      const r = rects[b.id];
+      return html`<button key=${`${b.id}:${x.route}`} class="gui-loose" style=${`left:${r.x + r.w}px;top:${r.y + r.h - 18 - i * 26}px`}
+          title=${say(`${x.name}: no road takes this exit yet — pull one to a building`)} aria-label=${say(`Connect the exit ${x.name}`)}
+          onPointerDown=${(e) => pullRoad(e, b.id, x.route)}>
+        <span class="gui-loose__stub"></span><span class="gui-sign gui-loose__sign ok-font-status">${say(x.name)}</span>
+      </button>`;
+    }))}</div>`;
+}
+
 const BEND_PX = 4;                          // a road's bends are rounded (radius-md)
 
 /** A road's corners as a path, each bend rounded by up to `r` px. */
@@ -360,7 +374,7 @@ export function Town({ buildings, roads }) {
   }
 
   // A click on the bare town lets the selected building go, as in the TUI.
-  const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road")) closeBuilding(); };
+  const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road, .gui-loose")) closeBuilding(); };
   const shown = new Set(buildings.map((b) => b.id));
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
   const paths = plannedPaths(rects, here, ports);
@@ -381,6 +395,7 @@ export function Town({ buildings, roads }) {
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)}
           fresh=${fresh.has(b.id)} onMoved=${moved} />`)}
       <${Signs} paths=${paths} roads=${here} />
+      <${LooseEnds} buildings=${buildings} rects=${rects} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
