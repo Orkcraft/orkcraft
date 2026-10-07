@@ -191,7 +191,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence, Figma, GitHub (many repos, notifications), GitLab and Discord, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own (a route no road takes is a dashed stub off the post on the map: pull a road from it to a building); a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
@@ -334,15 +334,23 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     presses submit with no schema and no confirmation.
 - **Add a source** (the GUI; design/watchtower-quick-add.md). A tower with no source opens its panel on
   it, and its card says **+ Add a source**; later the **+** chip and Sources & intent open it. It stays
-  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a Slack channel, a Jira
-  issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, Gmail, Slack, Jira,
-  Confluence or Figma, then three steps: **Log in** (gh's own login for GitHub, nothing to paste; else
-  one paste — an app password, a token — with the link to the page that makes it; Slack's app comes
-  from a ready manifest), **What** (repos, channels, projects, spaces or files, this project's repo
-  ticked; *about me* on), **Check** (the first look, made now: as whom, what it hears, how many are
-  there — marked seen, not sent) and **Add**. A source's row in Sources & intent says what it hears and
-  whether it fails, with Remove (confirmed). Not yet: GitLab, Discord, many GitHub repos and GitHub
-  notifications, listening through Claude's connectors.
+  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a GitLab project — on
+  gitlab.com or a host this machine has a GitLab login for —, a Slack channel, a Discord channel, a
+  Jira issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, GitLab, Gmail, Slack,
+  Jira, Confluence, Figma or Discord, then three steps: **Log in** (gh's own login for GitHub and
+  glab's for GitLab, nothing to paste — else a token; else one paste — an app password, a token — with
+  the link to the page that makes it; Slack's app comes from a ready manifest; Discord's bot is made
+  in its developer portal and invited by the link the next step gives), **What** (repos, projects,
+  channels, spaces or files, this project's repo ticked; *about me* on — GitHub's notifications,
+  GitLab's to-dos, mentions; Discord asks who **Me** is, by user id or a link to a message you wrote),
+  **Check** (the first look, made now: as whom, what it hears, how many are there — marked seen, not
+  sent) and **Add**. A source's row in Sources & intent says what it hears and whether it fails, with
+  **Edit** (step 2, its picks ticked), **Log in again** when its login fails (step 1, what it hears
+  kept; the new line takes the old one's place) and Remove (confirmed). A failing source says which
+  way, and offers that one fix in the panel's head too: *the token was refused* → Log in again; *a
+  channel, repo, project or file is gone or out of reach* → Edit; *could not reach* the service → no
+  button, it tries again by itself. Not yet: Everything (a whole service at once), listening through
+  Claude's connectors.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,
@@ -361,11 +369,17 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     - "jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN"            # jql=… takes the rest
     - "confluence: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN spaces=DOC"   # cql=… too
     - "figma: token=FIGMA_TOKEN files=AbC123,XyZ789"
+    - "github: repos=acme/app,acme/api notifications=on"   # gh's login; or token=GH_TOKEN (classic, for notifications)
+    - "gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on"   # read_api; no token: glab's login
+    - "discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789"   # a bot with Message Content Intent
   ```
 
-  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
-  `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
-  service). Your own messages are skipped; each feed's first look only marks what is there as seen.
+  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment, a
+  GitHub notification (a review asked, a mention, an assignment, a thread you are in), a GitLab
+  to-do, a Discord message that mentions you (`me=`) or the bot or answers you → `watch.mention`; any
+  other new comment or message → `watch.comment` (its title starts with the service); a GitHub repo's
+  events → `watch.github`, as the `github:` setting's. Your own messages are skipped; each feed's
+  first look only marks what is there as seen.
 - The same services can **push** instead (no two-minute wait): the Watchtower's webhook listens on
   127.0.0.1 only, so give it a public address with a tunnel (`cloudflared tunnel --url
   http://127.0.0.1:8787`, ngrok, tailscale funnel; `smee.io` for GitHub) and point each service at

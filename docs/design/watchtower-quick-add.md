@@ -1,10 +1,12 @@
 # Design — adding a source to the Watchtower in a minute
 
 Status: written 2026-10-07. Built: Logins (§3), the flow in the panel (§4) with the link, the picker and
-the three steps, for GitHub (gh), Gmail, Slack, Jira, Confluence and Figma (§5), Remove in Sources &
-intent. Not yet: GitLab, Discord, many GitHub repos and notifications, the failure kinds and Log in
-again (§8), Everything (§6), the agent source (§7). Items marked *(check)* have not been
-verified against the live services yet. It is the near, hand-held half of
+the three steps, for GitHub (gh or a token; many repos and the notifications), GitLab (glab or a
+token; to-dos and projects), Gmail, Slack, Discord (a bot, its invite link, *me*), Jira, Confluence
+and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), Remove in Sources &
+intent. Not yet: Everything (§6), the agent source (§7), `gh auth login --web` in the GUI's terminal
+panel (GitHub without gh asks for a token instead), pushes (GitLab's webhook, Discord's Gateway). Items
+marked *(check)* have not been verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop
 (OAuth apps, a background service, tunnels, webhooks registered for them); this one makes the
 loop short today, with no server of ours and no OAuth app anyone has to own.
@@ -165,13 +167,20 @@ What each service needs, the shortest login, what step 2 lists, and what becomes
   - **Repos** — a list from `gh repo list` and the orgs, **this project's `origin` ticked**:
     their events as today (`repos/{repo}/events`). → `watch.github`.
 - **Spec:** the `github:` key takes a list and notifications move into a feed line:
-  `github: repos=owner/app,owner/api notifications=on` (gh's login; `token=keychain:github` when
-  there is no gh). The old `github: owner/repo` key keeps loading as one repo.
+  `github: repos=owner/app,owner/api notifications=on` (gh's login; `token=keychain:github-<you>` when
+  there is no gh). The old `github: owner/repo` key keeps loading as one repo; its **Edit** moves it
+  into a line (and Add of a line that picks that repo does too), so it is never heard twice.
+- **Built:** the token's login checks `GET /user`; step 2 lists `user/repos?sort=pushed` (owned, a
+  collaborator's and the orgs') through gh or the token. A notification's key carries its
+  `updated_at`, so a thread that changes again is new again. A fine-grained token cannot read
+  notifications *(check: GitHub's docs say classic only)* — the panel asks for a classic one to
+  hear them.
 - **Push later:** `gh api repos/{repo}/hooks` (needs admin; the automation plan §2 D).
 
 ### GitLab — new
 
-- **Login:** `glab auth status` *(check)* → reuse it. Otherwise a personal access token: the link
+- **Login:** `glab api --hostname <host> user` *(check: glab's flags)* → reuse it, silently: when it
+  fails the form is there, no error. Otherwise a personal access token: the link
   `https://<host>/-/user_settings/personal_access_tokens?name=orkcraft&scopes=read_api` opens the
   form prefilled; paste `glpat-…`. A self-hosted GitLab is asked for its host first (or comes
   from the pasted link).
@@ -180,10 +189,12 @@ What each service needs, the shortest login, what step 2 lists, and what becomes
     review requests, failed pipelines of mine. → `watch.mention`.
   - **Projects** — `GET /api/v4/projects?membership=true&order_by=last_activity_at`, the
     project whose remote matches `origin` ticked; their events
-    (`GET /projects/:id/events`). → `watch.comment` (`watch.gitlab` *(check: a new event or
-    reuse `watch.github`'s shape)*).
-- **Spec:** `gitlab: host=gitlab.com token=keychain:gitlab projects=group/app,group/api todos=on`
-  (`projects=` takes paths with `/`, so `feeds.IDS` grows a path form).
+    (`GET /projects/:id/events`), the person's own left out; a note that @-mentions them →
+    `watch.mention`, the rest → `watch.comment`. *(Open: a `watch.gitlab` event of its own, the
+    way repo events are `watch.github`; built as `watch.comment` meanwhile.)*
+- **Spec:** `gitlab: host=gitlab.com token=keychain:gitlab-gitlab.com projects=group/app,group/api todos=on`
+  (`projects=` takes paths with `/`: `feeds.PATHS`). A link to a self-hosted GitLab is known once this
+  machine has a GitLab login for its host; before that, pick GitLab and type the host.
 - **Push later:** project webhooks with `X-Gitlab-Token`; `/gitlab` in `realm/inbound.py`.
 
 ### Gmail — one paste (an app password)
@@ -247,7 +258,12 @@ user id (asked once in step 2).
   person's Discord user (from a pasted message link's author or typed `@name`), to tell mentions.
 - **Signals:** new messages per channel (`GET /channels/{id}/messages?after=<last>`). A message
   that mentions **me** or the bot, or replies to me → `watch.mention`; others `watch.comment`.
-- **Spec:** `discord: token=keychain:discord-bot channels=123,456 me=789`.
+- **Spec:** `discord: token=keychain:discord-<bot> channels=123,456 me=789`.
+- **Built:** Continue refuses a token whose `/users/@me` is not a bot. Step 2 shows the invite link
+  and **List again** (after inviting); **Me** takes the user id, `<@id>` or a link to a message the
+  person wrote (its author). A channel the bot cannot see (403/404) fails as *a target* → Edit.
+  Without Message Content Intent a guild message's text comes back empty but for mentions *(check)*;
+  Discord's API v10 and `permissions=66560` *(check against a live bot)*.
 - **Push later:** the Gateway (a WebSocket, like Slack's Socket Mode) — no tunnel needed.
 
 ### Jira (and Confluence) — one paste, both from it
@@ -466,9 +482,22 @@ The Watchtower's states (its card and window) stay as they are; a source adds it
 | failing: a target | `slack ✗ ERR` | *#support is gone or the app was removed from it* · **Edit** (step 2) |
 | failing: the network | `slack ✗ ERR` | *Could not reach slack.com* · nothing to do, it retries |
 
-A failure reads as which of the three it is, so the fix is one button. `feeds.Look.error` grows
-a kind (`login` / `target` / `network`) from the HTTP status (401/403 → login, 404 → target,
-others → network).
+A failure reads as which of the three it is, so the fix is one button. `feeds.Look` grows a `kind`
+(`login` / `target` / `network`) from the HTTP status (401/403 → login, 400/404/410 → target,
+others → network), and from what the service says where it says more: Slack's `invalid_auth`,
+`token_revoked`, `missing_scope`… → login, `channel_not_found`, `not_in_channel` → target; a Figma
+file, a GitHub repo, a GitLab project or a Discord channel that answers 403/404 after the login
+answered → target; `gh` / `glab` by what they print; IMAP's refused login → login, a folder that
+will not open → target. A login that is gone from this machine → login.
+
+- **Log in again** opens step 1 for that source with its site (or host, or address) kept; on a
+  good login step 2 comes with the source's picks ticked, and Add (*Keep it*) puts the new line
+  where the old one was.
+- **Edit** opens step 2 with the source's login and picks. A line the steps cannot make again — a
+  schedule, a webhook, a line with its own JQL or CQL, a mailbox that is not Gmail — has no Edit:
+  the building's settings change it.
+- Both buttons are on the source's line in Sources & intent and on the *failing* line in the
+  panel's head (the chip itself only filters the feed).
 
 ## 9. What changes in the code
 
