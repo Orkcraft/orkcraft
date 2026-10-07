@@ -39,12 +39,21 @@ if not _can_launch():
     pytest.skip("no Chromium for Playwright here", allow_module_level=True)
 
 
+@pytest.fixture(scope="module")
+def browser():
+    """One Chromium for the module, launched before a test's fixtures move XDG_CACHE_HOME (conftest.py):
+    Playwright finds its browsers under it."""
+    pw = playwright.sync_playwright().start()
+    chromium = _launch(pw)
+    yield chromium
+    chromium.close()
+    pw.stop()
+
+
 @pytest.fixture
-def demo_page(tmp_path, monkeypatch):
+def demo_page(tmp_path, browser):
     """The dashboard demo served and open in Chromium; every page error it logged fails the test."""
     root = demo.build(tmp_path / "demo", set_name="dashboard")
-    pw = playwright.sync_playwright().start()
-    browser = _launch(pw)
     server = Server(Host(root, False, root / ".orkcraft.json", demo=True))
     thread = server.start_thread()
     pg = browser.new_page(viewport={"width": 1440, "height": 900})
@@ -57,8 +66,6 @@ def demo_page(tmp_path, monkeypatch):
         yield pg
     finally:
         pg.close()
-        browser.close()
-        pw.stop()
         server.stop()
         thread.join(10)
     assert not errors, "\n".join(errors)
