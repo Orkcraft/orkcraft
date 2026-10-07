@@ -43,7 +43,7 @@ def _drop(w, args: dict) -> int:
     value = text(args, "text", 200_000)
     if not value.strip():
         raise ActError("Nothing to drop")
-    return w.drop(value)
+    return w.drop(value, paths=args.get("paths") is not False)
 
 
 def _drop_file(w, args: dict) -> int:

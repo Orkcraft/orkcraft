@@ -63,10 +63,11 @@ class PitWorker(Worker):
 
     # -- taking things in -----------------------------------------------------------------------
 
-    def drop(self, text: str) -> int:
-        """Take what a paste or a drop brought. Returns how many items it made."""
+    def drop(self, text: str, paths: bool = True) -> int:
+        """Take what a paste or a drop brought. Returns how many items it made. `paths` False: the text is
+        never read as files on this machine (a phone's drop: it names no path)."""
         try:
-            items = pit.sort(self.repo_root, text)
+            items = pit.sort(self.repo_root, text, paths=paths)
         except OSError as e:
             self.toast(str(e), severity="error")
             return 0

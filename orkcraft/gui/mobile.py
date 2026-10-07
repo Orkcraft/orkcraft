@@ -19,7 +19,7 @@ import json
 from typing import Any, Callable
 
 from orkcraft import __version__
-from orkcraft.realm import modes
+from orkcraft.realm import lexicon, modes
 
 API = 1                  # the mobile API's version: a change that breaks a client raises it
 CONTEXT_LINES = 3        # of a question's screen, the last lines a phone shows
@@ -54,10 +54,21 @@ def allowed(host, name: str, args: dict | None = None) -> bool:
     return str(args.get("act", "")) in acts.get(host.type_of(bid), ())
 
 
+def guard(name: str, args: dict) -> dict:
+    """A phone's command as the host gets it, after `allowed`: a drop into The Pit is the phone's own
+    text, never read as paths on this machine (a phone names no path, docs/design/mobile.md §7)."""
+    args = dict(args)
+    if name == "act" and args.get("act") == "drop":
+        args["args"] = {**(args.get("args") if isinstance(args.get("args"), dict) else {}), "paths": False}
+    return args
+
+
 def hello(host) -> dict[str, Any]:
-    """The handshake: what this town speaks, so a phone built for another version says so."""
+    """The handshake: what this town speaks, so a phone built for another version says so, and the
+    glossary (key, word, the Camp word it replaced), so an app built once says words added later."""
     return {"name": "orkcraft", "version": __version__, "api": API,
-            "commands": sorted(COMMANDS), "acts": {k: list(v) for k, v in COMMANDS["act"].items()}}
+            "commands": sorted(COMMANDS), "acts": {k: list(v) for k, v in COMMANDS["act"].items()},
+            "words": [{"key": k, "word": w, "was": was} for k, w, was in lexicon.glossary()]}
 
 
 def _alert(a: dict) -> dict[str, Any]:
