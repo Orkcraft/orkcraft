@@ -6,6 +6,7 @@
 //   settings   two rows, each named: the goal its retros aim at (three steps), how freely it applies their changes
 //              (Freedom: as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
 //   commands   one row: Watch, Report, Redesign, Revert while there is a checkpoint
+//   script     a script-first building's line: no model, its ork wakes on an error or a 👎 (or what thinks)
 //   listens    the roads into the building, one line each with its handler (an agent, a script, a chain)
 //              and what it does now; a click edits the handler's prompt, opens its script in Lake, or
 //              picks a plain road; › opens the ork itself; + Listen lays a new road
@@ -183,12 +184,29 @@ function OnItsOwn({ b, i, open }) {
   </details>`;
 }
 
+/** Whether its work is code (docs/design/script-first.md): no model, its ork wakes on an error or a 👎; or what
+ * in it thinks on its carts. Nothing for a type that thinks by its nature. */
+function ScriptFirst({ i }) {
+  const c = i.script_first;
+  if (!c) return null;
+  if (!c.on) {
+    const parts = c.thinking.join(", ");
+    return html`<p class="gui-steward__script-first ok-font-status ok-tone-muted"
+        title=${say("It calls a model on its carts. Without these parts it would be script-first: no model, its ork woken only on an error or a 👎")}>
+      ${say("Thinks on its carts")}: ${parts}</p>`;
+  }
+  return html`<p class="gui-steward__script-first is-on ok-font-status ok-tone-ok"
+      title=${say("Its work is code. Its ork calls no model on carts or schedules: it wakes once when the building fails or gets a 👎, and its keeper proposes a fix")}>
+    ${say("Script-first")} · ${say("no model")} · ${say("its ork wakes on an error or a 👎")}${c.woke && html`<span class="ok-tone-muted"> · ${say(c.woke)}</span>`}</p>`;
+}
+
 /** The body of the steward's window. */
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
     <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
+    <${ScriptFirst} i=${i} />
     <${Listens} b=${b} i=${i} open=${open} />
     <${OnItsOwn} b=${b} i=${i} open=${open} />
   </div>`;

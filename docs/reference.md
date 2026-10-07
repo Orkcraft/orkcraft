@@ -719,6 +719,13 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   shows it all with attempts and cost, Enter recruits (handler + roads). Scripts are saved as drafts
   under `.orkcraft/scripts/` and do not run yet. The name / role / orders fields below still recruit
   an agent by hand.
+- **Script-first** (docs/design/script-first.md): a building whose work is code calls no model on its carts or
+  schedules: Drop file here, Sound alerts, Router, File tree, Metrics, Calendar, Review gate, Branches & PRs, a
+  Transformer without an `agent:` step and a Script without a steward prompt, so long as no handler of
+  theirs thinks. Its ork wakes once when the building fails (its ERROR, a failed handler run), and once per
+  👎. The ork is its keeper, and it proposes a fix in the console for you to apply. The steward's window
+  says *Script-first · no model · its ork wakes on an error or a 👎*, or what in it thinks. The Building
+  retro skips these buildings.
 - **`W` Steward** (Unit state on a ★ steward): watch now — free metrics (errors, jams, noisy filters,
   🪙, an agent repeating itself); a model is asked only when something was found. Proposals
   (demote an agent to a chain — replayed on its recorded runs first —, rerun policy, filter, new
