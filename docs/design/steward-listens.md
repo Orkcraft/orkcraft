@@ -37,6 +37,31 @@ of its own.
 - **The agent handler goes away for new roads.** The Recruiter's order becomes chain → script →
   **steward** → hybrid.
 
+## 2a. Code over thinking
+
+The steward does not spend its tokens on what code can do. A rule is where a road starts, not where it
+has to stay: when the steward sees that a rule only *processes* its carts (picks fields, filters,
+reformats, counts, sorts by a keyword, fills a template), it writes the code for it and steps aside.
+
+- **When.** After `MIN_EXAMPLES` recorded runs of a rule, its Watch compares inputs and outputs
+  (today's repeat finding, `REPEAT_SIMILARITY`): the same shape of answer for the same shape of cart, no
+  judgment in between. Also at once, when a rule is written: the Recruiter's chain → script → steward
+  order already stands, and a rule it could only make a `steward` handler is looked at again here.
+- **What it writes.** A **chain** when the whitelisted ops can do it (data, runs at once); a **script**
+  when they cannot (today's demotion knows only chains, so this adds scripts to it). Where only part of
+  the work is mechanical, a **hybrid**: the script does the routine and exits 3 for the carts it cannot
+  decide, and only those reach the steward.
+- **Proved before it replaces.** The new code is replayed on the rule's recorded runs (`READY_SCORE`); a
+  script also passes the Council and the person's review before it ever runs, as every script does
+  (`script_problem`). Until then the rule keeps running on the steward.
+- **Who decides.** A chain that replays clean replaces the rule by itself when the building's Autonomy
+  lets the steward change its own handlers; otherwise it is a proposal with the replay and the spend it
+  saves per week ("≈ $1.80/week → $0"). A script always waits for review.
+- **The rule stays as the way back.** The handler keeps its words (`orders`) next to its code: when the
+  code starts failing or the carts change shape, the steward goes back to the rule and tries again later.
+- **Spend is the signal.** The steward's report shows, per rule, its runs and spend on the *listen* tier;
+  a rule that costs much and keeps answering alike is the first one it tries to turn into code.
+
 ## 3. Schema
 
 The smallest change that keeps the road engine as it is: a handler of a new kind, **`steward`**.
@@ -82,9 +107,9 @@ state off the handler, and needs a second engine path.
   `harness` for that kind. `agent` is still accepted when the person asks for a pipeline of tools the
   steward does not have (`[write: agy, review: claude]`) — see §7.
 - **Council's Fast Path** reviews a steward rule like an agent's orders today (its text and its roads).
-- **The steward's Watch** (`realm/steward.py`): demotion becomes the steward's own move — a rule it keeps
-  answering the same way is replayed as a chain on its recorded runs, as now. A new finding: an `agent`
-  handler whose tools are the steward's own is proposed for *Hand to the steward*.
+- **The steward's Watch** (`realm/steward.py`): demotion becomes the steward's own move (§2a) and learns
+  to write scripts and hybrids, not only chains. A new finding: an `agent` handler whose tools are the
+  steward's own is proposed for *Hand to the steward*.
 - **Spend** is charged to the building as today and shown under the steward's *listen* tier in Info.
   The 🪙 budget check and Stop all apply unchanged (`_budget_ok`, `halt`).
 - **Chronicles**: a rule's runs stay in its own chronicle (the handler id), so its history, feedback
@@ -99,7 +124,8 @@ state off the handler, and needs a second engine path.
    contract and on a road with a rule from the planner ending as a steward rule.
 3. **GUI.** Rules under the steward in the garrison, the rule's panel, *Hand to the steward*, the
    *listen* tier in Info, the lexicon term.
-4. **Watch.** The steward proposes *Hand to the steward* and demotes its own rules. This document's
+4. **Watch.** The steward turns its own rules into code (§2a: chain, script, hybrid; replayed, a chain
+   applied by itself under Autonomy) and proposes *Hand to the steward*. This document's
    status and [roads-and-orcs.md](roads-and-orcs.md) §1, §3 updated to the new model.
 
 ## 7. Open questions
