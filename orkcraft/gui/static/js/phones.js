@@ -7,7 +7,7 @@ import { html } from "./html.js";
 import { command, say } from "./link.js";
 
 const WHAT = "A paired phone sees the town small: each building, the questions the orks wait on, spend and "
-  + "quotas. It may answer a question, stop all, drop a text or a file and ask the lead agent. It never builds, "
+  + "quotas. It may answer a question, stop all, drop a text or a file into Drop file here and ask the Warchief. It never builds, "
   + "types into a terminal or changes a setting.";
 
 const when = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "");
