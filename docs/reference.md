@@ -1014,6 +1014,9 @@ onboarding (*Punk ork*).
 | Review board | Council |
 | to-do | chore |
 | note | scribble |
+| context | — |
+| plan | — |
+| personal | — |
 | Drop file here | The Pit |
 | External listeners | Watchtower |
 | Router | Signpost |

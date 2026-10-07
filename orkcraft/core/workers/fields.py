@@ -19,6 +19,16 @@ What comes by road:
 
 `send_new`: every new task goes down the roads as it is (`tasks.sent`, its text and ref), as if `s` were
 pressed — a Barracks takes it, and its results come back to the card.
+
+**Context, plan, personal** (realm/cardlore.py keeps them beside the board, never in its file):
+
+    context 📜   a new or edited card asks the town's Scroll Dumps (`wikis`, default every one) for the
+                 pages that share its words — no model, nothing leaves the machine; none found, no context
+    plan 🧭      a to-do's steps, asked of a light model (`plan_model`, else the Council's `fast_model`) only
+                 when the person presses Plan, with its context's pages; first it shows what will leave
+                 (`plan_preview`), cleaned of e-mails, phones, cards, IBANs and secrets (realm/privacy.py)
+    personal 🔒  a card the person marked so (or every to-do, `private_todos`) never reaches a model: no
+                 plan, and its title is its first words
 """
 from __future__ import annotations
 
@@ -27,6 +37,7 @@ import threading
 
 from orkcraft.core import runners
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.fields_lore import CardLore, card_text
 from orkcraft.realm import tasklist
 from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 
@@ -35,7 +46,7 @@ SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
 MODES = ("board", "tasks", "notes")
 
 
-class FieldsWorker(Worker):
+class FieldsWorker(CardLore, Worker):
     TYPE = "fields"
 
     def __init__(self, town, building_id: str) -> None:
@@ -44,6 +55,8 @@ class FieldsWorker(Worker):
         self.lanes: list[tasklist.Lane] = []
         self.error = ""
         self._last: list[tasklist.Task] | None = None
+        self.planning: set[str] = set()          # the to-dos whose plan a model is writing now
+        self.plan_error = ""
 
     def start(self) -> None:
         self.refresh()
@@ -129,6 +142,8 @@ class FieldsWorker(Worker):
             self.lanes, self.cards, self.error = [], [], str(e)[:200]
         for event_id, card, detail in tasklist.changes(self._last, self.cards):
             self.announce(event_id, card, detail)
+        if not self.error:
+            self.lore.keep_only({c.id for c in self.cards})
         if self._last is None and not (self.state_dir / "seen.json").exists():
             self.mark_seen()                     # the first look: nothing is new yet
         self._last = list(self.cards)
@@ -164,13 +179,14 @@ class FieldsWorker(Worker):
             self.toast(str(e), title=TITLE, severity="error")
             return None
         self._sync(seen)                  # first: what the roads bring back about it finds it on the board
+        self.find_context(card.id)
         if card.kind == TASK:
             self.announce("tasks.created", card, LABELS[card.column])
         elif card.kind == NOTE:
             self.announce("notes.created", card, card.column)
         return card
 
-    def write(self, text: str, lane: str = "todo") -> tasklist.Task | None:
+    def write(self, text: str, lane: str = "todo", private: bool = False) -> tasklist.Task | None:
         """A card written as one text (the person's New task / New note). A short line is its own title; a
         longer text is the card's text, and a light model (the Council's `fast_model`) names it in a few words
         — off the town's thread, the card added once named. Without a model its first words are its title.
@@ -178,11 +194,12 @@ class FieldsWorker(Worker):
         text = text.strip()
         if not text:
             return None
+        private = private or (lane == MINE and bool(self.config.get("private_todos")))
         if not tasklist.needs_title(text):
-            return self.add(" ".join(text.split()), lane)
-        runner = self._title_runner()
+            return self._mark(self.add(" ".join(text.split()), lane), private)
+        runner = None if private else self._title_runner()      # a personal card's text never reaches a model
         if runner is None:
-            return self.add(tasklist.short_title(text) or "Note", lane, text)
+            return self._mark(self.add(tasklist.short_title(text) or "Note", lane, text), private)
 
         def work() -> None:
             try:
@@ -274,12 +291,19 @@ class FieldsWorker(Worker):
         return True
 
     def edit(self, card_id: str, title: str, body: str | None = None) -> bool:
+        before = self.card(card_id)
         try:
             self.store.edit(card_id, title, body)
         except (OSError, ValueError, KeyError) as e:
             self.toast(str(e), title=TITLE, severity="error")
             return False
         self._sync()
+        if before is not None:            # what the board knows of the card follows it (its id follows its title)
+            after = next((c for c in self.cards if c.column == before.column and c.title == title), None)
+            if after is not None:
+                self.lore.rename(card_id, after.id)
+                if card_text(after) != card_text(before):
+                    self.find_context(after.id)
         return True
 
     def check(self, card_id: str, done: bool | None = None) -> bool:
@@ -318,6 +342,7 @@ class FieldsWorker(Worker):
 
     def remove(self, card_id: str) -> None:
         self.store.remove(card_id)
+        self.lore.drop(card_id)
         self._sync()
 
     # -- the hut --------------------------------------------------------------------------------
@@ -408,8 +433,3 @@ def result_of(text: str) -> str:
     if lines and lines[0].startswith("**") and " — " in lines[0]:
         lines = lines[1:]
     return "\n".join(lines).strip() or text.strip()
-
-
-def card_text(card: tasklist.Task) -> str:
-    title = tasklist.plain(card.title)
-    return f"{title}\n\n{card.body}" if card.body else title

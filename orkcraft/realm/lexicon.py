@@ -108,6 +108,9 @@ TERMS: tuple[Term, ...] = (
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
     _t("scribble", "note", "notes", "scribble", "scribbles"),       # an idea or a note on the board
+    _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)
+    _t("todo_plan", "plan", "plans"),                              # a to-do's steps from a light model, 🧭
+    _t("personal_card", "personal"),                               # a card that never reaches a model, 🔒
     # -- building types (catalog ids): named by what they do -----------------------------------------
     _t("pit", "Drop file here", "", "The Pit"),
     _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),
