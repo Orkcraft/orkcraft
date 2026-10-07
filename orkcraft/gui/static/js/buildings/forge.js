@@ -1,18 +1,31 @@
 // ⚒️ The Forge: the branches with their PRs, tests and changes (design-system/components.md: Forge).
-// Closed: how many branches and PRs and the last merge. Command: the branches, Run tests, and Merge
-// and Open PR (the type's quick actions, `quick` below). Full: the branches, the chosen one in detail
-// (its PR with comments, commits, files, test output, merges and their conflicts; the diff opens in
-// Lake) and the settings. Every merge asks first. The work is the worker's (core/workers/forge.py).
+// Closed: how many branches, the PRs open, a merge that waits for a yes, the last merge and when. Open,
+// made for the half panel: the counters on one line with Look again, a merge a road brought as a strip
+// with Merge right there, every branch on its own row (its PR, its last commit, tests, +/−); a branch
+// opens over the list (← back) with Merge, Run tests, Diff and its PR, commits, files, test output and
+// merges; the settings fold to one line. Every merge asks first. The work is the worker's
+// (core/workers/forge.py); the diff opens in Lake.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, details, toast } from "../link.js";
+import { act, details, toast, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
+import { showBuilding } from "../windows.js";
 
+const sheet = new URL("./forge.css", import.meta.url).href;
+if (!document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
+}
+
+const opened = signal({});            // building id → the branch open over the list (the worker keeps `picked`)
 const confirming = signal({});        // building id → the branch whose merge waits for a yes on this page
 
 function pick(id, name) {
+  opened.value = { ...opened.value, [id]: name };
   act(id, "pick", { branch: name }).catch(() => {});
 }
 
@@ -35,7 +48,7 @@ export function quick(id, action) {
   const d = (details.value[id] || {}).data;
   if (action !== "forge.merge" && action !== "git.open_pr") return false;
   const name = d && d.picked;
-  if (!name) { toast("Pick a branch first"); return true; }
+  if (!name) { showBuilding(id); toast(say("Pick a branch first")); return true; }     // from its closed card: the list to pick from
   if (action === "forge.merge") merge(id, name);
   else openPr(id, name);
   return true;
@@ -56,12 +69,11 @@ function MergeDialog({ id, data }) {
 /** A branch a road brought waits for the person's yes (the `confirm` setting): the strip is the question. */
 function Asking({ id, data }) {
   if (!data.asking) return null;
-  return html`<div class="gui-head">
-    <span class="gui-head__what ok-tone-fire">A road brought ${data.asking}: merge it into ${data.base}?</span>
-    <span class="gui-head__spacer"></span>
-    <button class="ok-act" onClick=${() => act(id, "merge", { branch: data.asking }).catch(() => {})}>
-      <span class="ok-act__label">Merge</span></button>
-    <button class="ok-act" onClick=${() => act(id, "decline").catch(() => {})}><span class="ok-act__label">Not now</span></button>
+  return html`<div class="forge-ask">
+    <span class="forge-ask__who">? ${say("Merge")}</span>
+    <span class="forge-ask__what" title=${data.asking}>A road brought <b>${data.asking}</b>: merge it into ${data.base}?</span>
+    <button class="ok-btn" onClick=${() => act(id, "decline").catch(() => {})}>Not now</button>
+    <button class="ok-btn primary" onClick=${() => act(id, "merge", { branch: data.asking }).catch(() => {})}>Merge</button>
   </div>`;
 }
 
@@ -78,11 +90,12 @@ function Tests({ state }) {
 }
 
 function Branch({ id, b, picked }) {
-  return html`<li class=${cls("ok-branch", { "is-selected": b.name === picked })} title=${b.subject}
-      onClick=${() => pick(id, b.name)}>
-    <span class="ok-branch__cur">${b.current ? "●" : ""}</span>
+  return html`<li class=${cls("ok-branch forge-row", { "is-selected": b.name === picked })} title=${b.subject}
+      tabIndex="0" onClick=${() => pick(id, b.name)} onKeyDown=${(e) => e.key === "Enter" && pick(id, b.name)}>
+    <span class="ok-branch__cur" aria-label=${b.current ? say("checked out") : ""}>${b.current ? "●" : ""}</span>
     <span class="ok-branch__name">${b.name}</span>
     <${Pr} pr=${b.pr} />
+    <span class="forge-row__sub">${b.pr ? b.pr.title : b.subject}${b.when ? html`<span class="forge-row__when"> · ${b.when}</span>` : ""}</span>
     <span class="ok-branch__stat">
       <${Tests} state=${b.tests} />
       ${b.files > 0 && html`<span class="ok-add">+${b.added}</span><span class="ok-del">−${b.removed}</span>`}
@@ -91,31 +104,40 @@ function Branch({ id, b, picked }) {
   </li>`;
 }
 
-function headLine(data) {
-  if (data.looking) return "looking…";
-  if (data.error) return data.error;
-  const bits = [`base ${data.base}`, `${data.branches.filter((b) => b.name !== data.base).length} branches`];
-  if (!data.prs_known) bits.push("PRs: install and log in to gh to see them");
-  if (data.merging) bits.push(`merging ${data.merging}…`);
-  if (data.testing.length) bits.push(`testing ${data.testing.join(", ")}…`);
-  if (data.last && !data.merging) bits.push(data.last.ok ? `✓ ${data.last.branch} merged` : `✗ ${data.last.branch}: ${data.last.why}`);
-  return bits.join(" · ");
-}
-
 function Head({ id, data }) {
-  return html`<${Asking} id=${id} data=${data} /><div class="gui-head">
-    <span class=${cls("gui-head__what", { "ok-tone-error": !!data.error, "ok-tone-wait": !!data.merging })}>${headLine(data)}</span>
-    <span class="gui-head__spacer"></span>
-    <button class="ok-act" onClick=${() => act(id, "look").catch(() => {})}><span class="ok-act__label">Look again</span></button>
+  const rows = data.branches.filter((b) => b.name !== data.base);
+  const prs = rows.filter((b) => b.pr && (b.pr.state === "open" || b.pr.state === "draft")).length;
+  const failing = rows.filter((b) => b.tests === "failed").length;
+  const last = data.last;
+  return html`<div>
+    <${Asking} id=${id} data=${data} />
+    <div class="forge-head">
+      ${data.looking ? html`<span>${say("looking…")}</span>`
+        : data.error ? html`<span class="ok-tone-error forge-head__err" title=${data.error}>✗ ${data.error}</span>`
+        : html`<span><b>${rows.length}</b> ${say("branches")}</span>
+          <span><b>${prs}</b> ${say("PRs open")}</span>
+          ${failing > 0 && html`<span class="ok-tone-error">✗ <b>${failing}</b> ${say("tests failing")}</span>`}
+          <span>${say("into")} <b>${data.base}</b></span>`}
+      ${data.merging && html`<span class="ok-tone-wait">${say("merging")} ${data.merging}…</span>`}
+      ${data.testing.length > 0 && html`<span class="ok-tone-wait">${say("testing")} ${data.testing.join(", ")}…</span>`}
+      ${last && !data.merging && html`<span class="forge-head__last" title=${last.ok ? "" : last.why}>
+        <span class=${last.ok ? "ok-tone-ok" : "ok-tone-error"}>${last.ok ? "✓" : "✗"}</span> ${last.branch}${last.ok ? "" : `: ${last.why}`}${last.at ? ` · ${last.at}` : ""}</span>`}
+      <span class="gui-head__spacer"></span>
+      <button class="ok-btn" onClick=${() => act(id, "look").catch(() => {})}>Look again</button>
+    </div>
+    ${!data.prs_known && !data.looking && !data.error && html`<p class="forge-note">${say("PRs: install and log in to gh to see them")}</p>`}
     <${MergeDialog} id=${id} data=${data} />
   </div>`;
 }
 
-function Branches({ id, data, limit }) {
-  if (data.looking || data.error) return limit ? null : html`<p class="ok-tone-muted">${headLine(data)}</p>`;
-  const rows = limit ? data.branches.filter((b) => b.name !== data.base).slice(0, limit) : data.branches;
-  if (!rows.length) return html`<p class="ok-tone-muted">No branches but ${data.base}.</p>`;
-  return html`<ul class="ok-branches">${rows.map((b) => html`<${Branch} key=${b.name} id=${id} b=${b} picked=${data.picked} />`)}</ul>`;
+function Branches({ id, data }) {
+  if (data.looking) return html`<p class="ok-tone-muted">${say("Looking at the branches…")}</p>`;
+  if (data.error) return html`<p class="ok-tone-error">${data.error}</p>`;
+  const open = opened.value[id];
+  if (open && data.chosen && data.chosen.name === open) return html`<${Detail} id=${id} data=${data} />`;
+  const rows = data.branches;
+  if (rows.length < 2) return html`<p class="ok-tone-muted">${say(`No branches but ${data.base} — an ork's task brings one.`)}</p>`;
+  return html`<div><ul class="ok-branches forge-list">${rows.map((b) => html`<${Branch} key=${b.name} id=${id} b=${b} picked=${data.picked} />`)}</ul></div>`;
 }
 
 function Actions({ id, data, name }) {
@@ -123,12 +145,10 @@ function Actions({ id, data, name }) {
   if (!b) return null;
   const base = name === data.base;
   return html`<div class="ok-detail__actions">
-    ${!base && html`<button class="ok-act" disabled=${!!data.merging} onClick=${() => merge(id, name)}>
-      <span class="ok-act__label">Merge</span></button>`}
-    ${b.pr && html`<button class="ok-act" onClick=${() => openPr(id, name)}><span class="ok-act__label">Open PR</span></button>`}
-    <button class="ok-act" disabled=${b.tests === "running"} onClick=${() => act(id, "test", { branch: name }).catch(() => {})}>
-      <span class="ok-act__label">Run tests</span></button>
-    ${!base && html`<button class="ok-act" onClick=${() => diff(id, name)}><span class="ok-act__label">Diff in Lake</span></button>`}
+    ${!base && html`<button class="ok-btn primary" disabled=${!!data.merging} onClick=${() => merge(id, name)}>Merge</button>`}
+    <button class="ok-btn" disabled=${b.tests === "running"} onClick=${() => act(id, "test", { branch: name }).catch(() => {})}>Run tests</button>
+    ${!base && html`<button class="ok-btn" onClick=${() => diff(id, name)}>Diff in Lake</button>`}
+    ${b.pr && html`<button class="ok-btn" onClick=${() => openPr(id, name)}>${say("Open PR")} ↗</button>`}
   </div>`;
 }
 
@@ -167,10 +187,13 @@ function Files({ files }) {
 
 function Detail({ id, data }) {
   const c = data.chosen;
-  if (!c) return html`<p class="ok-tone-muted">Pick a branch: its PR, commits, files, tests and merges show here.</p>`;
+  if (!c) return null;
   const b = data.branches.find((x) => x.name === c.name) || {};
-  return html`<div class="ok-detail">
-    <div class="ok-detail__head">⎇ ${c.name} <${Pr} pr=${b.pr} /></div>
+  const back = () => { opened.value = { ...opened.value, [id]: null }; };
+  return html`<div class="forge-open" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
+    <button class="ok-btn forge-open__back" onClick=${back}>← ${say("All branches")} · ${data.branches.length}</button>
+    <div class="ok-detail">
+    <div class="ok-detail__head forge-open__name"><span title=${c.name}>⎇ ${c.name}</span> <${Pr} pr=${b.pr} /></div>
     ${b.pr && html`<p class="ok-detail__pr">${b.pr.title}</p>`}
     ${c.name !== data.base && html`<p class="ok-detail__meta">${`${b.ahead} ahead, ${b.behind} behind ${data.base} · ${b.files} files · +${b.added} −${b.removed}`}</p>`}
     <${Actions} id=${id} data=${data} name=${c.name} />
@@ -185,7 +208,7 @@ function Detail({ id, data }) {
         <code>${x.hash}</code><span>${x.subject}</span><span class="when">${x.when}</span></li>`)}</ul>`
       : html`<p class="ok-detail__meta">No commits of its own.</p>`}
     <${Files} files=${c.files} />
-  </div>`;
+  </div></div>`;
 }
 
 function Settings({ id, data }) {
@@ -194,8 +217,9 @@ function Settings({ id, data }) {
   const [tests, setTests] = useState(s.test_cmd);
   useEffect(() => { setBase(s.base); setTests(s.test_cmd); }, [s.base, s.test_cmd]);
   const changed = base !== s.base || tests !== s.test_cmd;
-  return html`<details class="gui-section">
-    <summary class="ok-font-heading">Settings</summary>
+  return html`<details class="forge-fold">
+    <summary><span>${say("Settings")}</span>
+      <span class="forge-fold__sum ok-font-status">${say("Base")} ${data.base} · ${say("Tests")}: ${s.test_cmd || say("none")}${s.confirm ? ` · ${say("asks before a road's merge")}` : ""}</span></summary>
     <div class="gui-form">
       <div class="gui-form__row">
         <label class="gui-field"><span class="ok-font-label">Base branch</span>
@@ -211,24 +235,36 @@ function Settings({ id, data }) {
   </details>`;
 }
 
-/** Closed: `branches 4 · PRs 2` and the last merge, `merging …` meanwhile. */
+const keep = (e) => e.stopPropagation();          // a press on the card's control is not a press on the hut
+
+/** Closed: the headline is how many branches wait besides the base, with the PRs open; a merge a road
+ *  brought asks here with Merge; the foot is the last merge and when (`merging …` meanwhile). */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  if (c.looking) return html`<span class="ok-tone-muted">looking…</span>`;
-  if (c.error) return html`<span class="ok-tone-error">${c.error}</span>`;
-  const last = c.merging ? html`<span class="ok-tone-wait">merging ${c.merging}…</span>`
-    : c.last ? (c.last.ok ? html`<span class="ok-tone-ok">✓</span> ${c.last.branch}`
-                          : html`<span class="ok-tone-error">✗ ${c.last.why}</span> ${c.last.branch}`)
-    : null;
-  return html`<div>branches <b>${c.branches}</b> · PRs <b>${c.prs}</b></div>${last && html`<div>${last}</div>`}`;
+  if (c.looking) return html`<div class="gui-hut__body-in"><div class="gui-hut__big">…<small>${say("looking at the branches")}</small></div></div>`;
+  if (c.error) return html`<div class="gui-hut__body-in"><div class="gui-hut__big ok-tone-error">✗<small>${say("cannot read the repository")}</small></div>
+    <div class="gui-hut__text" title=${c.error}>${c.error}</div></div>`;
+  const last = c.last;
+  return html`<div class="gui-hut__body-in">
+    <div class="gui-hut__big">${c.branches}<small>${say(c.branches === 1 ? "branch" : "branches")} · ${c.prs} ${say(c.prs === 1 ? "PR open" : "PRs open")}</small></div>
+    ${c.asking && html`<div class="gui-hut__text ok-tone-fire forge-card__ask"><span>? ${say("merge")} <b>${c.asking}</b></span>
+      <button class="ok-act gui-hut__act" onPointerDown=${keep}
+        onClick=${(e) => { keep(e); act(b.id, "merge", { branch: c.asking }).catch(() => {}); }}><span class="ok-act__label">Merge</span></button></div>`}
+    ${c.merging ? html`<div class="gui-hut__foot"><span class="ok-tone-wait">${say("merging")} ${c.merging}…</span></div>`
+      : last ? html`<div class="gui-hut__foot"><span><span class=${last.ok ? "ok-tone-ok" : "ok-tone-error"}>${last.ok ? "✓ merged" : `✗ ${last.why}`}</span> ${last.branch}</span>
+          ${last.at && html`<span class="gui-hut__when">${last.at}</span>`}</div>`
+      : html`<div class="gui-hut__foot"><span>${say("Nothing merged yet")}</span></div>`}
+  </div>`;
 }
 
+/** The window by its UI document (design/buildings/forge.json). `detail` shows nothing of its own: a branch
+ *  opens over the list (an older document that still has the pane loses nothing). */
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
     branches: () => html`<${Branches} id=${id} data=${data} />`,
-    detail: () => html`<${Detail} id=${id} data=${data} />`,
+    detail: () => null,                   // a branch opens over the list, in `branches`
     settings: () => html`<${Settings} id=${id} data=${data} />`,
   };
 }

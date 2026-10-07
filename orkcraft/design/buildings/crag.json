@@ -1,19 +1,17 @@
 {
   "type": "crag",
-  "about": "🪨 Tally Crag: a dashboard of charts carved from the town's numbers; each chart says where it shows (all states, command only, full only).",
+  "about": "🪨 Tally Crag: a dashboard of charts carved from the town's numbers; each chart says where it shows (all states, command only, full only); the crossings of a line fold to one line under them.",
   "panes": {
     "head": {"about": "the dashboard's window, and asking the keeper for a chart or a threshold in plain words", "components": ["status", "form"], "required": true},
     "charts": {"about": "every chart, each with its value now, its lines and where it shows", "components": ["chart"], "required": true},
-    "crossings": {"about": "when a value crossed a warning or critical line", "components": ["list", "log", "table"], "required": false}
+    "crossings": {"about": "when a value crossed a warning or critical line; one line (the last one) until opened", "components": ["list", "log", "table"], "required": false}
   },
   "default": {
     "version": 1, "type": "crag", "split": "column",
     "panes": [
       {"id": "head", "component": "form", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"id": "charts", "component": "chart", "size": 3, "font": "body"},
-        {"id": "crossings", "component": "list", "size": 1, "font": "status", "title": "Threshold crossings"}
-      ]}
+      {"id": "charts", "component": "chart", "size": 1, "font": "body"},
+      {"id": "crossings", "component": "list", "size": "auto", "font": "status"}
     ]
   }
 }

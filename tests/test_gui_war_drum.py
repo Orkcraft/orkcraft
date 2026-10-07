@@ -108,7 +108,7 @@ def test_the_drum_in_the_gui_card_detail_and_acts(fake_repo, clock):
         ("meeting", "10:00", "Planning", False, False)]                  # tomorrow's too
     assert card["left"] == 3 and card["now"] == "09:10" and not card["error"]
     d = host.detail("drum")
-    assert [leaf.pane["id"] for leaf in ui.leaves(d["ui"])] == ["head", "day", "week", "meeting", "settings"]
+    assert [leaf.pane["id"] for leaf in ui.leaves(d["ui"])] == ["head", "day", "week", "settings"]   # a meeting opens over the agenda
     data = d["data"]
     assert data["left"] == 3 and len(data["days"]) == 7 and data["days"][1]["events"][0]["title"] == "Planning"
     standup, ann = data["days"][0]["events"][:2]

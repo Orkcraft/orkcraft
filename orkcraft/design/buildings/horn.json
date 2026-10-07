@@ -2,54 +2,16 @@
   "type": "horn",
   "about": "📯 The Horn: which sound answers which road or event, the calls it heard or kept quiet, and when it stays quiet.",
   "panes": {
-    "table": {
-      "about": "a row per road that comes in and everything else: its sound, or an audio file of one's own",
-      "components": [
-        "table",
-        "list"
-      ],
-      "required": true
-    },
-    "settings": {
-      "about": "mute, quiet hours, the cooldown, the default sound",
-      "components": [
-        "status",
-        "form"
-      ],
-      "required": true
-    },
-    "log": {
-      "about": "every call: heard, or kept quiet and why",
-      "components": [
-        "list",
-        "table"
-      ],
-      "required": false
-    }
+    "table":    {"about": "a row per road that comes in and everything else: its sound or an audio file of one's own, and Play", "components": ["table", "list"], "required": true},
+    "settings": {"about": "Sound on or muted and this page's volume, Test; the quiet hours, the cooldown and the default sound folded to a line", "components": ["status", "form"], "required": true},
+    "log":      {"about": "every call: heard, or kept quiet and why", "components": ["list", "table"], "required": false}
   },
   "default": {
-    "version": 1,
-    "type": "horn",
-    "split": "column",
+    "version": 1, "type": "horn", "split": "column",
     "panes": [
-      {
-        "id": "settings",
-        "component": "status",
-        "size": "auto",
-        "font": "status"
-      },
-      {
-        "id": "table",
-        "component": "table",
-        "size": 3,
-        "font": "body"
-      },
-      {
-        "id": "log",
-        "component": "list",
-        "size": 2,
-        "font": "body"
-      }
+      {"id": "settings", "component": "status", "size": "auto", "font": "body"},
+      {"id": "table", "component": "list", "size": "auto", "font": "body"},
+      {"id": "log", "component": "list", "size": 1, "font": "body"}
     ]
   }
 }

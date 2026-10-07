@@ -1,0 +1,36 @@
+/* 🌲 File tree (js/buildings/forest.js), made for the half panel: the counters on one line, the target as
+   a strip with Send beside it, the changed files over the tree, the tree taking the rest. Tokens only. */
+.gui-forest { display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; min-width: 0; }
+.gui-forest .gui-tree ul { margin: 0; }
+.gui-forest__row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.gui-forest__fold { width: var(--space-4); flex: none; text-align: center; color: var(--ink-muted); }
+.gui-forest__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-forest__dir { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
+.gui-forest__mark { margin-left: auto; flex: none; padding: 0 var(--space-1); font-family: var(--font-mono); }
+.gui-forest__lake { flex: none; appearance: none; border: 0; background: none; color: var(--info); cursor: pointer; padding: 0 var(--space-1); }
+.gui-forest__lake:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.gui-forest__thumb { height: calc(var(--space-8) + var(--space-4)); max-width: calc(var(--space-8) * 3); flex: none;
+  object-fit: contain; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-forest__changed { color: var(--warning); }
+.gui-forest__target { flex: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--frame-focus); }
+
+/* The head: the counters, Open the folder quiet. */
+.forest-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.forest-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.forest-head__spacer { flex: 1; }
+
+/* The target: a strip that names it, Send beside it. */
+.forest-target { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); }
+.forest-target__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.forest-target__what > span { color: var(--ink-muted); }
+.forest-target > button { flex: none; }
+[data-theme="office"] .forest-target { background: transparent; box-shadow: inset 0 0 0 1px var(--frame-focus); border-radius: var(--radius-md); }
+
+/* The changed files over the tree. */
+.forest-changed > h3 { margin: 0 0 var(--space-1); display: flex; align-items: baseline; gap: var(--space-2); }
+.forest-changed > h3 > small { font: 600 12px/16px var(--ok-font); color: var(--ink-muted); text-transform: none; letter-spacing: 0; }
+.forest-changed ul { list-style: none; margin: 0; padding: 0; }
+.forest-changed .gui-forest__row { gap: var(--space-2); }
+.forest-changed .gui-forest__mark { margin-left: 0; width: 2.2em; text-align: center; }
+.forest-changed .gui-forest__dir { margin-left: auto; flex: 0 1 auto; }

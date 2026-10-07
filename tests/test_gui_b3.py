@@ -68,9 +68,10 @@ def test_file_forest_closed_command_and_full(fake_repo):
     host = _host(fake_repo)
     bid = _raised(host, "forest", path="src")
     ts.subscribe(host.town.scroll, "town_hall", bid, "files.selected")
-    assert _card(host, bid) == {"folder": "./src", "changed": 1, "picked": "", "error": ""}   # logo.png is new
+    assert _card(host, bid) == {"folder": "./src", "changed": 1, "picked": "", "error": "", "files": ["logo.png"]}   # logo.png is new
     data = host.detail(bid)["data"]
     assert data["folder"] == "./src" and data["changed"] == 1
+    assert data["changes"] == [{"path": "src/logo.png", "name": "logo.png", "status": "??"}]   # listed over the tree
     rows = {r["name"]: r for r in data["top"]}
     assert rows["app.py"]["status"] == "" and rows["logo.png"]["status"] == "??" and rows["logo.png"]["media"] == "image"
     # a click picks the target, Send sends it down its roads
@@ -109,7 +110,7 @@ def test_scroll_dump_closed_is_pages_and_pending_and_command_the_last_pages(fake
     bid = _raised(host, "scrolls", paths=["docs"], auto_ingest=False)
     host.tick(now=1e9)
     card = _card(host, bid)
-    assert set(card) == {"pages", "pending", "running", "error", "lent"} and card["lent"] is None and card["pages"] == 0 and card["pending"] >= 1
+    assert set(card) == {"pages", "pending", "running", "error", "lent", "last"} and card["lent"] is None and card["last"] is None and card["pages"] == 0 and card["pending"] >= 1
     root = fake_repo / "llm-wiki" / "general" / "pages"
     root.mkdir(parents=True)
     (root / "old.md").write_text("# Old\n")

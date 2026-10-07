@@ -58,7 +58,7 @@ def act(host: Host, bid: str, name: str, **args):
 def test_the_card_and_the_detail(forge):
     host, bid, w = forge
     card = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card == {"branches": 2, "prs": 0, "merging": "", "last": None}
+    assert card == {"branches": 2, "prs": 0, "merging": "", "asking": "", "last": None}
     d = host.detail(bid)["data"]
     assert [b["name"] for b in d["branches"]][0] == d["base"]             # the base first
     assert {b["name"] for b in d["branches"]} >= {"feat", "clash"} and d["chosen"] is None
@@ -85,7 +85,8 @@ def test_a_merge_its_conflicts_and_the_card(forge):
     m = host.detail(bid)["data"]["chosen"]["merges"]
     assert m[0]["conflicts"] == ["README.md"] and not m[0]["ok"]
     card = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card["last"] == {"ok": False, "branch": "clash", "why": "conflict"}
+    assert {k: card["last"][k] for k in ("ok", "branch", "why")} == {"ok": False, "branch": "clash", "why": "conflict"}
+    assert len(card["last"]["at"]) == 5                                     # HH:MM: it merged today
     act(host, bid, "merge", branch="feat")
     wait(lambda: w.last_merge.branch == "feat")
     assert w.last_merge.ok and git(host.town.repo_root, "log", "-1", "--format=%s").startswith("squash: feat")

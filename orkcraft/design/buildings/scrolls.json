@@ -1,10 +1,10 @@
 {
   "type": "scrolls",
-  "about": "🗑️ Scroll Dump: the wiki its ork keeps — the tree of pages and the page that is open.",
+  "about": "🗑️ Scroll Dump: the wiki its ork keeps — the pages changed lately over the tree of pages and sources; a page opens over them.",
   "panes": {
-    "head": {"about": "the librarian's state: what waits to be taken in, what runs, the last note", "components": ["status"], "required": true},
-    "tree": {"about": "the wiki's pages, folder by folder", "components": ["tree"], "required": true},
-    "page": {"about": "the open page, rendered", "components": ["markdown", "text"], "required": true}
+    "head": {"about": "the pages, the sources, what waits to be taken in with Take in, what runs with Stop; Check the wiki, Add a folder", "components": ["status"], "required": true},
+    "tree": {"about": "the pages changed lately, then the wiki's pages and its sources folder by folder; a page picked opens here, over them, rendered", "components": ["tree"], "required": true},
+    "page": {"about": "in the GUI a page opens over the tree, in the tree pane, so this one shows nothing there (the TUI draws the page here)", "components": ["markdown", "text"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "scrolls", "split": "column",

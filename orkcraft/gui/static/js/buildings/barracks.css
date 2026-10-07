@@ -1,0 +1,85 @@
+/* 🏕 Barracks, made for the half panel (js/buildings/barracks.js): what is used often — the question, a new
+   task, the open tasks, the ork's terminal — takes the room; what is used rarely — the finished tasks, the
+   rules and settings — folds to one line. */
+
+/* The head: the counters on one line, Pause as a quiet action. */
+.pool-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.pool-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.pool-head__spend { display: inline-flex; align-items: center; gap: var(--space-2); }
+.pool-meter { position: relative; display: inline-block; width: 64px; height: 6px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.pool-meter > i { position: absolute; inset: 0 auto 0 0; background: var(--meter); }
+[data-theme="office"] .pool-meter { box-shadow: none; border-radius: var(--radius-full); overflow: hidden; }
+.pool-head__spacer { flex: 1; }
+
+/* The question waiting for the person: a strip that says what it asks, Answer beside it. */
+.pool-ask { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.pool-ask__who { flex: none; font-weight: 700; color: var(--alert); }
+.pool-ask__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+[data-theme="office"] .pool-ask { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* New task: one line, grows as it is written; Send beside it. */
+.gui-newtask { display: flex; gap: var(--space-2); align-items: flex-start; margin-top: var(--space-2); }
+.gui-newtask > textarea.gui-textarea { flex: 1; min-height: 32px; height: 32px; resize: none; padding-top: 6px; padding-bottom: 6px; }
+.gui-newtask > textarea.gui-textarea:focus, .gui-newtask > textarea.gui-textarea.has-text { height: 72px; }
+
+/* The open tasks as one flow of cards, the one that asks first. */
+.pool-flow { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2); }
+.pool-card { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; min-height: 76px; box-sizing: border-box;
+  padding: var(--space-2) 10px; background: var(--panel); box-shadow: var(--bevel-raised); cursor: pointer;
+  border: 0; text-align: left; font: inherit; color: inherit; }
+.pool-card:hover { background: var(--panel-raised); }
+.pool-card:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+.pool-card.is-asks { background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.pool-card__state { display: flex; align-items: center; gap: var(--space-1); min-width: 0; font-size: 11px; line-height: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); white-space: nowrap; }
+.pool-card__state .ok-sprite { flex: none; image-rendering: pixelated; }
+.pool-card__who { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--ink); }
+.pool-card__title { font-weight: 700; font-size: 13px; line-height: 18px; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pool-card__foot { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin-top: auto; font-size: 11px; line-height: 16px; color: var(--ink-muted); }
+.pool-card__branch { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.pool-card__cost { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
+[data-theme="office"] .pool-card { background: var(--panel); box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+[data-theme="office"] .pool-card:hover { box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .pool-card.is-asks { background: var(--panel); box-shadow: inset 0 0 0 1px var(--alert-hot); }
+.pool-empty { margin: 0; color: var(--ink-muted); }
+
+/* Finished tasks: one line that unfolds into the same cards. */
+.pool-fold { margin-top: var(--space-3); }
+.pool-fold > summary { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; cursor: pointer; color: var(--ink-muted);
+  list-style: none; white-space: nowrap; }
+.pool-fold > summary::-webkit-details-marker { display: none; }
+.pool-fold > summary::before { content: "▸"; flex: none; }
+.pool-fold[open] > summary::before { content: "▾"; }
+.pool-fold > summary:hover { color: var(--ink); }
+.pool-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.pool-fold__last { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: auto; }
+.pool-fold > .pool-flow { margin-top: var(--space-2); }
+
+/* A task open: over the flow, ← back to it. */
+.pool-task { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pool-task__back { align-self: flex-start; }
+.pool-task__head { display: flex; align-items: baseline; gap: var(--space-3); }
+.pool-task__title { flex: 1; min-width: 0; margin: 0; }
+.pool-task__answer { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.pool-task__answer .ok-row { justify-content: flex-end; }
+[data-theme="office"] .pool-task__answer { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* The orks: a tab each (its head says how it is), its terminal under them; it folds to the tabs. */
+.gui-pane[data-pane="orks"]:has(.pool-orks.is-folded) { flex: none !important; }
+.pool-orks { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; height: 100%; }
+.pool-orks__bar { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; }
+.pool-orks__bar .ok-tab { display: inline-flex; align-items: center; gap: var(--space-1); }
+.pool-orks__bar .ok-tab .ok-sprite { image-rendering: pixelated; }
+.pool-orks__about { margin-left: auto; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* Rules, settings, decisions: one line until opened. */
+.pool-rules > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; cursor: pointer; color: var(--ink-muted); white-space: nowrap; }
+.pool-rules > summary::-webkit-details-marker { display: none; }
+.pool-rules > summary::before { content: "▸"; flex: none; }
+.pool-rules[open] > summary::before { content: "▾"; }
+.pool-rules > summary:hover { color: var(--ink); }
+.pool-rules > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.pool-rules__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

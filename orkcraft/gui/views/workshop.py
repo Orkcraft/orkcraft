@@ -21,10 +21,11 @@ def _mark(r: workshop.Run) -> str:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): the last run and the schedule."""
+    """Closed (docs/design/building-views.md): the last run, the first line of what it said, and the schedule."""
     r = w.runs[0] if w.runs else None
+    said = next((ln.strip() for ln in ((r.result or r.err) if r else "").splitlines() if ln.strip()), "")
     return {"running": w.running, "mark": _mark(r) if r else "", "outcome": r.outcome if r else "",
-            "at": r.at[11:16] if r else "", "schedule": w.schedule}
+            "at": r.at[11:16] if r else "", "schedule": w.schedule, "said": said[:80], "runs": len(w.runs)}
 
 
 def _shape(layout: str, r: workshop.Run) -> dict:

@@ -3,6 +3,8 @@ files, test output, merges and PR comments; the settings. The looks, the tests a
 worker's (core/workers/forge.py). The page asks the person before every merge."""
 from __future__ import annotations
 
+import time
+
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
 
@@ -14,13 +16,23 @@ def refresh(w) -> None:
     w.refresh()
 
 
-def _merge(r) -> dict:
+def _merge(r, at: str = "") -> dict:
     why = "conflict" if r.conflicts else r.error
-    return {"ok": r.ok, "branch": r.branch, "why": why[:60]}
+    return {"ok": r.ok, "branch": r.branch, "why": why[:60], "at": at}
+
+
+def _last(w) -> dict | None:
+    """The last merge and when (`HH:MM` today, else `MM-DD`)."""
+    if w.last_merge is None:
+        return None
+    at = w.merges[-1][0] if w.merges and w.merges[-1][1] is w.last_merge else ""
+    today = time.strftime("%Y-%m-%d")
+    return _merge(w.last_merge, at[11:16] if at.startswith(today) else at[5:10])
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): `branches 4 · PRs 2` and the last merge, `merging …` meanwhile."""
+    """Closed (docs/design/building-views.md): how many branches, the PRs open, a merge that waits for a yes,
+    and the last merge with when (`merging …` meanwhile)."""
     snap = w.snap
     if snap is None:
         return {"looking": True}
@@ -28,7 +40,7 @@ def card(w) -> dict:
         return {"error": " ".join(snap.error.split())[:60]}
     rows = [b for b in snap.branches if b.name != snap.base]
     return {"branches": len(rows), "prs": sum(1 for b in rows if b.pr is not None and b.pr.state in ("OPEN", "DRAFT")),
-            "merging": w.merging, "last": _merge(w.last_merge) if w.last_merge is not None else None}
+            "merging": w.merging, "asking": w.asking, "last": _last(w)}
 
 
 def _tests(w, name: str) -> str:
@@ -72,7 +84,7 @@ def detail(w) -> dict:
            "testing": sorted(w.testing), "picked": w.picked,
            "settings": {"base": str(cfg.get("base") or ""), "test_cmd": str(cfg.get("test_cmd") or ""),
                         "confirm": bool(cfg.get("confirm")), "remote": str(cfg.get("remote") or "")},
-           "last": _merge(w.last_merge) if w.last_merge is not None else None,
+           "last": _last(w),
            "branches": [], "chosen": _chosen(w)}
     if snap is not None and not snap.error:
         rows = sorted(snap.branches, key=lambda b: b.name != snap.base)       # the base first

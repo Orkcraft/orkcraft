@@ -1,0 +1,63 @@
+/* 🎯 The Catapult (js/buildings/catapult.js), made for the half panel: a shot that waits for a yes as a
+   strip, where it sends with Fire on one line, the load with its check, the shots one line each; the
+   settings fold to a line. Tokens only (design-system/tokens.css). */
+
+.gui-cat__head { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+
+/* A shot waiting for the person: a strip, Fire right there. */
+.gui-cat__ask { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.gui-cat__askline { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.gui-cat__askwho { flex: none; font-weight: 700; color: var(--alert); }
+.gui-cat__askwhat { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+[data-theme="office"] .gui-cat__ask { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* Where it sends, what runs now, Fire. */
+.gui-cat__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; }
+.gui-cat__target { flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 13px/20px var(--font-mono); color: var(--ink); }
+.gui-cat__state { flex: none; white-space: nowrap; }
+.gui-cat__acts { flex: none; display: flex; gap: var(--space-2); margin-left: auto; }
+
+/* What is rare folds to one line. */
+.gui-cat__fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; padding: var(--space-1) 0; cursor: pointer;
+  color: var(--ink-muted); white-space: nowrap; min-width: 0; }
+.gui-cat__fold > summary::-webkit-details-marker { display: none; }
+.gui-cat__fold > summary::before { content: "▸"; flex: none; }
+.gui-cat__fold[open] > summary::before { content: "▾"; }
+.gui-cat__fold > summary:hover { color: var(--ink); }
+.gui-cat__fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.gui-cat__sum { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: auto; font-size: 12px; }
+.gui-cat__settings { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-1) 0 var(--space-2); }
+.gui-cat__settings > .ok-check { border: 0; background: none; padding: 0; }
+.gui-cat__settings > .ok-check:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+
+/* The load: what it waits for and the check on one line, the JSON under it. */
+.gui-cat__load { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-cat__loadline { margin: 0; color: var(--ink-muted); }
+.gui-cat__loadline b { color: var(--ink); }
+.gui-cat__problems { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.gui-cat__json { max-height: 14em; overflow: auto; padding: var(--space-2) var(--space-3); background: var(--panel-inset); }
+.gui-cat__json.is-bad { box-shadow: inset 2px 0 0 var(--danger); }
+[data-theme="office"] .gui-cat__json { border-radius: var(--radius-sm); }
+
+/* The shots: one line each — how it went, when, where it went. */
+.gui-cat__shots { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-cat__sum2 { margin: 0; color: var(--ink-muted); }
+.gui-cat__sum2 b { color: var(--ink); }
+.gui-cat__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-cat__row { display: grid; grid-template-columns: minmax(0, 9em) 7.5em minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+  width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.gui-cat__row:hover { background: var(--selection); }
+.gui-cat__row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.gui-cat__mark, .gui-cat__url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-cat__mark { font-weight: 700; }
+.gui-cat__at { color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 12px; }
+.gui-cat__url { color: var(--ink-muted); font: 12px var(--font-mono); }
+
+/* A shot open over the rows. */
+.gui-cat__shot { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-cat__back { align-self: flex-start; }
+.gui-cat__shothead { margin: 0; display: flex; gap: var(--space-2); align-items: baseline; }

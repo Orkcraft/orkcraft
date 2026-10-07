@@ -1,0 +1,43 @@
+/* 📯 The Horn (js/buildings/horn.js), made for the half panel: Sound on and the volume on one line, the
+   rarely changed settings folded under it, a row per road, every call. Tokens only. */
+
+/* The mute toggle and the volume, on the card and in the head. */
+.gui-horn__row { overflow: visible; }
+.gui-horn__volume { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.gui-horn__slider { width: 7em; accent-color: var(--frame-focus); }
+.gui-horn__slider:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+
+.gui-horn__head { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-horn__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; }
+.gui-horn__spacer { flex: 1; }
+.gui-horn__fold > summary { list-style: none; display: flex; gap: var(--space-2); align-items: center; padding: var(--space-1) 0; cursor: pointer;
+  color: var(--ink-muted); white-space: nowrap; min-width: 0; }
+.gui-horn__fold > summary > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gui-horn__fold > summary::-webkit-details-marker { display: none; }
+.gui-horn__fold > summary::before { content: "▸"; flex: none; }
+.gui-horn__fold[open] > summary::before { content: "▾"; }
+.gui-horn__fold > summary:hover { color: var(--ink); }
+.gui-horn__fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.gui-horn__settings { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: var(--space-1) 0 var(--space-2); }
+
+/* A row per road or event: what, its sound, Play; an audio file written in under it. */
+.gui-horn__rules { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-horn__rule { display: grid; grid-template-columns: minmax(0, 1fr) 10em auto; align-items: center; gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) 0; border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.gui-horn__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-horn__sound { width: 100%; box-sizing: border-box; }
+.gui-horn__play { min-width: 32px; padding: 0 var(--space-2); }
+.gui-horn__file { grid-column: 1 / -1; display: flex; gap: var(--space-2); min-width: 0; }
+.gui-horn__file > .ok-input { flex: 1; min-width: 0; width: auto; }
+
+/* Every call: when, the sound, what, where from (and why it kept quiet). */
+.gui-horn__calls { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-horn__sum { margin: 0; color: var(--ink-muted); }
+.gui-horn__sum b { color: var(--ink); }
+.gui-horn__log { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-horn__call { display: grid; grid-template-columns: 3.5em 6em minmax(0, 1fr) minmax(0, max-content); align-items: baseline; gap: var(--space-2);
+  padding: var(--space-1) var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.gui-horn__call.is-quiet { color: var(--ink-muted); }
+.gui-horn__at { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.gui-horn__snd, .gui-horn__title, .gui-horn__from { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-horn__from { max-width: 16em; font-size: 12px; color: var(--ink-muted); }

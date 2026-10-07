@@ -39,5 +39,6 @@ export function html(strings, ...values) {
 
 /** Class names from an object of flags: cls("ok-hut", {"is-alert": true}) → "ok-hut is-alert". */
 export function cls(base, flags = {}) {
+  if (typeof flags === "string") return flags ? `${base} ${flags}` : base;     // a class name of its own, not flags
   return [base, ...Object.entries(flags).filter(([, on]) => on).map(([name]) => name)].join(" ");
 }

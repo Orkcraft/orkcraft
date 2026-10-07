@@ -1,0 +1,43 @@
+/* 🗑️ Wiki (js/buildings/scrolls.js), made for the half panel: the counters on one line, what waits to be
+   taken in as a strip with Take in beside it, then the pages changed lately and the tree; a page opens
+   over them (← back). Tokens only (design-system/tokens.css). */
+
+/* The head: the counters, the quiet acts on the right. */
+.wiki-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.wiki-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.wiki-head__spacer { flex: 1; }
+.wiki-head__acts { display: flex; align-items: center; gap: var(--space-1); }
+
+/* What waits to be taken in, or what runs: a strip that says it, the act beside it. */
+.wiki-strip { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--panel-raised); box-shadow: inset 0 0 0 2px var(--warning); }
+.wiki-strip__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.wiki-strip.is-error { box-shadow: inset 0 0 0 2px var(--danger); }
+[data-theme="office"] .wiki-strip { background: transparent; box-shadow: inset 0 0 0 1px var(--warning); border-radius: var(--radius-md); }
+[data-theme="office"] .wiki-strip.is-error { box-shadow: inset 0 0 0 1px var(--danger); }
+
+/* The pages changed lately: a short list over the tree, when each changed on the right. */
+.wiki-recent { margin-bottom: var(--space-3); max-width: 720px; }
+.wiki-recent > h3 { margin: 0 0 var(--space-1); }
+.wiki-recent ul { list-style: none; margin: 0; padding: 0; }
+.wiki-recent li { display: flex; gap: var(--space-2); align-items: baseline; min-width: 0; }
+.wiki-recent .gui-tree__item { flex: 1; min-width: 0; }
+.wiki-recent__when { flex: none; font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+.gui-scrolls__lake { flex: none; appearance: none; border: 0; background: none; color: var(--info); cursor: pointer; padding: 0 var(--space-1); }
+.gui-scrolls__lake:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.wiki-tree .gui-tree__item { display: flex; align-items: baseline; gap: var(--space-1); }
+.wiki-tree .gui-tree__item > .wiki-tree__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wiki-tree summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* A page open over the tree: ← back, its path, Open in Lake, the page. */
+.wiki-page { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.wiki-page__bar { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.wiki-page__path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
+.wiki-page__bar > button { flex: none; }
+
+/* The closed card: the notes a task was given lately. */
+.gui-scrolls__lent ul { list-style: none; margin: 0; padding: 0; }
+.gui-scrolls__lent li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-scrolls__lent li::before { content: "▪ "; color: var(--ink-muted); }
+.wiki-page__meta { margin: 0; font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

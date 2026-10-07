@@ -10,6 +10,8 @@ from orkcraft.gui.views import ActError, text
 
 REFRESH_S = 10.0              # as the TUI: git is asked this often
 THUMB_BYTES = {"image": 2_000_000, "video": 6_000_000}     # a larger file shows its name only
+CARD_FILES = 3                # changed files the closed card names
+CHANGES = 50                  # changed files the window lists over the tree
 VIDEO_TYPES = {".mov": "video/quicktime", ".m4v": "video/mp4", ".ogv": "video/ogg", ".webm": "video/webm"}
 
 
@@ -18,19 +20,22 @@ def refresh(w) -> None:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): `./<folder>`, how many files changed, the target."""
+    """Closed (docs/design/building-views.md): `./<folder>`, how many files changed and the first few
+    names (`files`), the target."""
     return {"folder": w.folder_label(), "changed": len(w.changes), "picked": w.picked.rsplit("/", 1)[-1],
-            "error": w.error[:60]}
+            "error": w.error[:60], "files": [p.rsplit("/", 1)[-1][:40] for p in list(w.changes)[:CARD_FILES]]}
 
 
 def detail(w) -> dict:
-    """The top of the tree; a folder's rows come with `list` when it is opened."""
+    """The top of the tree and the changed files (`changes`, the first `CHANGES`); a folder's rows come
+    with `list` when it is opened."""
     try:
         top, problem = w.listing(), ""
     except ValueError as e:
         top, problem = [], str(e)[:200]
     return {"folder": w.folder_label(), "root": w.rel, "changed": len(w.changes), "picked": w.picked,
-            "error": w.error or problem, "top": top}
+            "error": w.error or problem, "top": top,
+            "changes": [{"path": p, "name": p.rsplit("/", 1)[-1], "status": s.strip()} for p, s in list(w.changes.items())[:CHANGES]]}
 
 
 def _list(w, args: dict) -> list[dict]:

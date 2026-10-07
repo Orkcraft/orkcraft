@@ -9,7 +9,7 @@ import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
-import { typeModule } from "./types.js";
+import { runQuick } from "./types.js";
 import { selectOrk, DemolishButton } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
@@ -230,11 +230,8 @@ function Garrison({ garrison, b }) {
 // -- the building's own quick actions (the TUI's keys of its type) --------------------------------------
 
 function Quick({ b, i }) {
-  const mod = b.page ? typeModule(b.type) : null;          // a type may do its quick actions itself (js/types.js)
-  const quick = (a) => (mod && mod.quick && mod.quick(b.id, a.id))
-    || command("building.quick", { id: b.id, action: a.id }).catch(() => {});
-  if (!i || !i.quick.length) return null;
-  return html`<div class="gui-info__acts">${i.quick.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => quick(a)} />`)}</div>`;
+  if (!i || !i.quick.length) return null;                 // a type may do its quick actions itself (js/types.js)
+  return html`<div class="gui-info__acts">${i.quick.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => runQuick(b, a.id)} />`)}</div>`;
 }
 
 function OrkCommands({ b, o, open }) {

@@ -11,7 +11,7 @@ import { Layout } from "./layout.js";
 import { HALL, deploy } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView } from "./console.js";
@@ -93,9 +93,24 @@ window.addEventListener("keydown", (e) => {
 
 // The host sends the open building's own state, and the Town Hall's (the Warchief's line shows his chat),
 // and again when its worker says it changed.
+// A small window of a closed building (a quick action's, js/types.js overlay) wants its state too, while it stands.
+const peeking = signal({});                 // building id → how many small windows want its state
+
+/** A small window over a closed building: its state comes while the window stands. */
+export function usePeek(id) {
+  useEffect(() => {
+    peeking.value = { ...peeking.value, [id]: (peeking.value[id] || 0) + 1 };
+    return () => {
+      const n = (peeking.value[id] || 1) - 1;
+      const { [id]: _, ...rest } = peeking.value;
+      peeking.value = n > 0 ? { ...rest, [id]: n } : rest;
+    };
+  }, [id]);
+}
+
 effect(() => {
-  const id = opened.value.active;
-  if (online.value) command("watch", { ids: [...new Set([HALL, ...(id ? [id] : [])])] }).catch(() => {});
+  const id = opened.value.active, peeked = Object.keys(peeking.value);
+  if (online.value) command("watch", { ids: [...new Set([HALL, ...(id ? [id] : []), ...peeked])] }).catch(() => {});
 });
 
 /** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */

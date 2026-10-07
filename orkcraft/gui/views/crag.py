@@ -2,6 +2,8 @@
 the charts themselves are written by its keeper from plain words (js/keeper.js)."""
 from __future__ import annotations
 
+import time
+
 from orkcraft.core.workers.crag import fmt
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import metrics
@@ -45,7 +47,8 @@ def _thin(values: list[float], n: int) -> list[float]:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): thumbnails of the charts set to `all`, without numbers."""
+    """Closed (docs/design/building-views.md): thumbnails of the charts set to `all`, without numbers; the last
+    crossing of a line and when."""
     out = []
     for i, c in w.shown("closed")[:THUMBS]:
         s = w.series.get(i)
@@ -53,7 +56,11 @@ def card(w) -> dict:
             continue
         out.append({"title": c.name, "values": [round(v, 3) for v in _thin(_values(s, c), THUMB_BARS)],
                     "scale": s.scale, "warn": c.warn, "crit": c.crit, "level": w.level(c, s.now)})
-    return {"charts": out}
+    last = w.crossings(1)
+    x = last[0] if last else None
+    at = str(x.get("at") or "").replace("T", " ") if x else ""
+    return {"charts": out, "last": {"chart": str(x.get("chart", "")), "level": str(x.get("level", "")),
+                                    "at": at[11:16] if at[:10] == time.strftime("%Y-%m-%d") else at[5:10]} if x else None}
 
 
 def _chart(w, i: int, c: metrics.Chart) -> dict:

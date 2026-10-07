@@ -1,61 +1,17 @@
 {
   "type": "watchtower",
-  "about": "🗼 Watchtower: what comes in from outside — the sources with what is new in each, a source's feed, the item read in full, and what to listen for.",
+  "about": "🗼 Watchtower: what comes in from outside — the sources with what is new in each, the feed, a signal read in full, and what to listen for.",
   "panes": {
-    "sources": {
-      "about": "every source with what is new in it and its state; a failing one says why",
-      "components": [
-        "status",
-        "list"
-      ],
-      "required": true
-    },
-    "feed": {
-      "about": "the chosen source's signals (or all of them), new ones marked; on the settings tab the sources and the intent",
-      "components": [
-        "list",
-        "form"
-      ],
-      "required": true
-    },
-    "item": {
-      "about": "the signal read in full",
-      "components": [
-        "markdown",
-        "text"
-      ],
-      "required": true
-    }
+    "sources": {"about": "a chip per source with what is new in it (it filters the feed), when it last looked; Open new, Read all, Check now, Sources & intent; a failing one says why", "components": ["status", "list"], "required": true},
+    "feed":    {"about": "the chosen source's signals (or all of them), one line each, new ones marked; a signal opens here, over the feed, to be read in full, and so do the sources and the intent", "components": ["list", "form"], "required": true},
+    "item":    {"about": "kept for older documents: a signal now opens over the feed, in the feed pane", "components": ["markdown", "text"], "dynamic": true}
   },
   "default": {
-    "version": 1,
-    "type": "watchtower",
-    "split": "column",
+    "version": 1, "type": "watchtower", "split": "column",
     "panes": [
-      {
-        "id": "sources",
-        "component": "status",
-        "size": "auto",
-        "font": "status"
-      },
-      {
-        "split": "row",
-        "size": 1,
-        "panes": [
-          {
-            "id": "feed",
-            "component": "list",
-            "size": 2,
-            "font": "body"
-          },
-          {
-            "id": "item",
-            "component": "markdown",
-            "size": 3,
-            "font": "body"
-          }
-        ]
-      }
+      {"id": "sources", "component": "status", "size": "auto", "font": "body"},
+      {"id": "feed", "component": "list", "size": 1, "font": "body"},
+      {"id": "item", "component": "markdown", "size": 1, "font": "body"}
     ]
   }
 }

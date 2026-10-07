@@ -31,9 +31,12 @@ def _state(w) -> str:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): the pages and what waits to be taken in, nothing more."""
+    """Closed (docs/design/building-views.md): the pages and what waits to be taken in; the page changed
+    last (`last`: its title and when) for the foot."""
+    recent = _recent(w)[:1]
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
-            "error": bool(w.last_error), "lent": _lent(w)}
+            "error": bool(w.last_error), "lent": _lent(w),
+            "last": {"title": recent[0]["title"][:60], "mtime": recent[0]["mtime"]} if recent else None}
 
 
 def _lent(w) -> dict | None:
@@ -79,7 +82,21 @@ def _read(w, args: dict) -> dict:
     path = text(args, "path", 2000)
     if not path:
         raise ActError("Which page?")
-    return {"path": path, "html": markdown.render(w.read(path, page=bool(args.get("page"))))}
+    body, meta = _front(w.read(path, page=bool(args.get("page"))))
+    return {"path": path, "html": markdown.render(body), "meta": meta}
+
+
+def _front(text_: str) -> tuple[str, str]:
+    """A page's front matter (`---` … `---` on top) taken off its body, as one line `kind: notes · …`: read
+    as Markdown it was a heading of its own."""
+    lines = text_.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return text_, ""
+    end = next((i for i, ln in enumerate(lines[1:20], 1) if ln.strip() == "---"), 0)
+    if not end:
+        return text_, ""
+    meta = " · ".join(ln.strip() for ln in lines[1:end] if ln.strip())
+    return "\n".join(lines[end + 1:]).lstrip("\n"), meta[:400]
 
 
 def _ingest(w, args: dict) -> bool:

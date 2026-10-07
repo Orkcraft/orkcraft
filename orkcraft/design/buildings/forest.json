@@ -2,14 +2,14 @@
   "type": "forest",
   "about": "🌲 File Forest: a folder of the project as a tree that opens folder by folder in place; the files git sees changed marked, a click picks the target, Send sends it down its roads, a file opens in Lake.",
   "panes": {
-    "head": {"about": "the folder, how many files changed, the target picked; Send", "components": ["status"], "required": true},
-    "tree": {"about": "the tree, folders open in place, the changed files marked, small previews of images and video", "components": ["tree"], "required": true}
+    "head": {"about": "the folder, how many files changed, Open the folder; the target picked as a strip with Send", "components": ["status"], "required": true},
+    "tree": {"about": "the changed files listed first, then the tree, folders open in place, the changed files marked, small previews of images and video", "components": ["tree"], "required": true}
   },
   "default": {
     "version": 1, "type": "forest", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"id": "tree", "component": "tree", "size": 2, "font": "body"}
+      {"id": "tree", "component": "tree", "size": 1, "font": "body"}
     ]
   }
 }

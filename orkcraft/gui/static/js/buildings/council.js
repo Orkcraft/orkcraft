@@ -1,22 +1,34 @@
 // 🪔 Clan Fire: a review of a document by the clan, three ways (docs/design/building-views.md §3).
-// Closed: only the review's state — its cycle, the tally and the spend while it runs, else how it ended,
-// and what waits in line. Command: the members and their verdicts, the document and the last turns;
-// Review, Add member, Answer. Full: the members, the review turn by turn and cycle by cycle, the document
-// with its comments, the report and the past reviews, each a pane of its UI document
-// (design/buildings/council.json). The worker does it (core/workers/council.py); the
-// document opens in Lake, briefs and rules change through the keeper.
+// Closed: the review's state — its cycle, the tally and the spend while it runs, else how it ended — what
+// it reviews and the last turn. Open, made for the half panel: the review on one line with Review and
+// Stop, the question waiting for you as a strip with Answer, the clan as a row of chips (each one's
+// verdict now, a click opens its brief), then the review itself — turn by turn, the document, the
+// report, as tabs taking the room — and the past reviews, the line and the steward's rules folded to
+// one line at the bottom; each a pane of its UI document (design/buildings/council.json). The worker
+// does it (core/workers/council.py); the document opens in Lake, briefs and rules change through the
+// keeper.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, details, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
+import { usePeek } from "../windows.js";
+
+const sheet = new URL("./council.css", import.meta.url).href;
+if (!document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
+}
 
 const dialogs = signal({});        // building id → "review" | "member" | "answer"
 const past = signal({});           // building id → a past review shown in place of the current one
-const side = signal({});           // building id → "document" | "report"
+const side = signal({});           // building id → "review" | "document" | "report"
 
+const MARK = { approve: "✓", changes: "⚠", veto: "✗", rework: "↩", ask: "?" };
 const VERDICT = { approve: "approves", changes: "asks for changes", veto: "vetoes", rework: "sends it back",
                   ask: "asks you", "": "" };
 const TONE = { approve: "ok-tone-ok", changes: "ok-tone-wait", veto: "ok-tone-error", rework: "ok-tone-wait",
@@ -77,148 +89,184 @@ function Dialogs({ id, data }) {
   return null;
 }
 
-function Acts({ id, data }) {
-  const asks = data.current && data.current.outcome === "asked";
-  return html`${asks && html`<button class="ok-act" onClick=${() => setIn(dialogs, id, "answer")}><span class="ok-act__label">Answer</span></button>`}
-    <button class="ok-act" onClick=${() => setIn(dialogs, id, "review")}><span class="ok-act__label">Review</span></button>
-    <button class="ok-act" onClick=${() => setIn(dialogs, id, "member")}><span class="ok-act__label">Add member</span></button>`;
-}
-
 // -- closed ------------------------------------------------------------------------------------------
 
-/** Closed: `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews (a triage: `reading · 2 of 3 have spoken`), else how
- * the last one ended; `N queued`. */
+const BIG = { approved: "✓", rework: "↩", budget: "⚠", asked: "?", error: "✗", stopped: "■" };
+
+/** Closed: the headline is the state — the cycle and the tally while it reviews (a triage: how many have
+ *  spoken), else how it ended; under it what it reviews and the line; the foot the last turn and when. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  return html`<div>
-    ${c.state === "none" ? html`<div class="ok-tone-muted">no review yet</div>`
-      : c.state === "running" && c.triage ? html`<div>reading · ${c.ok + c.no} of ${c.of} have spoken</div>`
-      : c.state === "running" ? html`<div>cycle ${c.cycle}/${c.max} · ${c.ok} ✓ ${c.no} ✗ · ${c.spent}</div>`
-      : html`<div class=${TONE[c.state] || ""}>${c.outcome}${c.route ? ` → ${c.route}` : ""}</div>`}
-    ${c.queued > 0 && html`<div>${c.queued} queued</div>`}
+  const last = c.last;
+  return html`<div class="gui-hut__body-in">
+    ${c.state === "none" ? html`<div class="gui-hut__big">${say("Ready")}<small>${say("a road or Review brings a document")}</small></div>`
+      : c.state === "running" && c.triage ? html`<div class="gui-hut__big ok-tone-wait">${c.ok + c.no}/${c.of}<small>${say("have spoken · reading")}</small></div>`
+      : c.state === "running" ? html`<div class="gui-hut__big">${c.cycle}/${c.max}<small>${say("cycle")} · <span class="ok-tone-ok">✓${c.ok}</span> <span class=${c.no ? "ok-tone-error" : ""}>✗${c.no}</span> · ${c.spent}</small></div>`
+      : html`<div class=${`gui-hut__big ${TONE[c.state] || ""}`}>${BIG[c.state] || ""} ${say(c.outcome)}<small>${c.route ? `→ ${c.route}` : `${say("cycle")} ${c.cycle} · ${c.spent}`}</small></div>`}
+    ${c.title && html`<div class="gui-hut__text" title=${c.title}>${c.title}</div>`}
+    ${c.queued > 0 && html`<div class="gui-hut__text"><b>${c.queued}</b> ${say("waiting in line")}</div>`}
+    ${last && html`<div class="gui-hut__foot"><span><b>${say(last.who)}</b>${" "}<span class=${TONE[last.verdict] || ""}>${last.kind === "answer" ? say("answers") : VERDICT[last.verdict] ?? last.verdict}</span></span>
+      ${last.at && html`<span class="gui-hut__when">${last.at}</span>`}</div>`}
   </div>`;
 }
 
-// -- command -----------------------------------------------------------------------------------------
+// -- open ------------------------------------------------------------------------------------------
 
 /** Where a routed review went: `→ human`. */
 const routed = (r) => (r && r.route ? ` → ${r.route}` : "");
 
-// -- full --------------------------------------------------------------------------------------------
 
-function Members({ id, data }) {
-  const [ask, setAsk] = useState("");
+/** The clan as a row of chips: who, its verdict now; a click opens its brief in Lake. Add member at the end. */
+function Clan({ id, data }) {
   const brief = (path, who) => openInLake({ path, title: `Brief — ${who}`, from: id });
+  return html`<div class="council-clan" role="list" aria-label=${say("The clan")}>
+    <button class="council-chip" role="listitem" onClick=${() => brief(data.steward.brief, "Steward")}
+        title=${say(`${data.steward.label} · decides · open its brief${data.steward.briefed ? "" : " (empty)"}`)}>
+      <b>${say("Steward")}</b><span class="ok-tone-muted">${say("decides")}</span></button>
+    ${data.members.map((m) => html`<button key=${m.role} role="listitem" class=${`council-chip${TONE[m.verdict] ? ` is-${m.verdict}` : ""}`}
+        onClick=${() => brief(m.brief, m.role)}
+        title=${`${m.label}${m.tier ? ` · ${m.tier}` : ""}${m.veto ? " · veto" : ""} · ${say("open its brief")}${m.briefed ? "" : say(" (empty)")}${m.says ? `\n${m.says}` : ""}`}>
+      <b>${m.role}</b>${m.veto && html`<span class="ok-word">veto</span>`}
+      ${m.verdict ? html`<span class=${TONE[m.verdict] || ""}>${MARK[m.verdict] || ""} ${VERDICT[m.verdict]}</span>`
+        : html`<span class="ok-tone-muted">${say("waits")}</span>`}</button>`)}
+    <button class="council-chip council-clan__add" onClick=${() => setIn(dialogs, id, "member")}>+ ${say("Add member")}</button>
+  </div>`;
+}
+
+/** The steward's rules, asked in plain words, and the review's limits: rare, so in the fold. */
+function KeeperAsk({ id, data }) {
+  const [ask, setAsk] = useState("");
   return html`<section class="gui-section">
-      <h3 class="ok-font-heading">The clan</h3>
-      <ul class="gui-rows">
-        <li><b>Steward</b> <span class="ok-tone-muted">· ${data.steward.label} · decides</span>
-          <span class="gui-link" onClick=${() => brief(data.steward.brief, "Steward")}> · brief${data.steward.briefed ? "" : " (empty)"}</span></li>
-        ${data.members.map((m) => html`<li key=${m.role}><b>${m.role}</b>${m.tier && html` <span class="ok-tone-muted">${m.tier}</span>`}
-          ${m.veto && html` <span class="ok-word">veto</span>`}<span class="ok-tone-muted"> · ${m.label}</span>
-          ${m.verdict && html` · <span class=${TONE[m.verdict] || ""}>${VERDICT[m.verdict]}</span>`}
-          <span class="gui-link" onClick=${() => brief(m.brief, m.role)}> · brief${m.briefed ? "" : " (empty)"}</span></li>`)}
-      </ul>
-      <p class="ok-tone-muted">At most ${data.max_cycles} cycles and ${data.budget} a review.</p>
-    </section>
-    <section class="gui-section">
-      <h3 class="ok-font-heading">Ask the keeper</h3>
-      <textarea class="ok-input gui-textarea" rows="3" value=${ask} placeholder=${say("In plain words: a member's brief, who holds a veto, when the steward should ask you…")}
-        onInput=${(e) => setAsk(e.target.value)}></textarea>
-      <div class="ok-row"><button class="ok-btn" disabled=${!ask.trim()} onClick=${() => askKeeper(id, ask).then((r) => { if (r !== null) setAsk(""); })}>Ask</button></div>
-    </section>`;
+    <h3 class="ok-font-heading">${say("Ask the keeper")}</h3>
+    <p class="ok-tone-muted">At most ${data.max_cycles} cycles and ${data.budget} a review. Members: ${data.members.map((m) => `${m.role} (${m.label}${m.tier ? ` ${m.tier}` : ""})`).join(", ") || "none"}.</p>
+    <textarea class="ok-input gui-textarea" rows="2" value=${ask} placeholder=${say("In plain words: a member's brief, who holds a veto, when the steward should ask you…")}
+      onInput=${(e) => setAsk(e.target.value)}></textarea>
+    <div class="ok-row"><button class="ok-btn" disabled=${!ask.trim()} onClick=${() => askKeeper(id, ask).then((r) => { if (r !== null) setAsk(""); })}>Ask</button></div>
+  </section>`;
 }
 
 function Turns({ turns, open }) {
-  return html`<ul class="gui-rows">${turns.map((t, i) => html`<li key=${i}>
-    <details open=${open && i >= turns.length - 2}>
+  return html`<ul class="gui-rows council-turn-list">${turns.map((t, i) => html`<li key=${i}>
+    <details class="council-turn" open=${open && i >= turns.length - 2}>
       <summary><b>${t.kind === "decide" ? say("Steward") : t.role}</b>
-        <span class=${TONE[t.verdict] || "ok-tone-muted"}> ${t.kind === "answer" ? "answers" : VERDICT[t.verdict] ?? t.verdict}</span>
-        <span class="ok-tone-muted">${t.note ? ` · ${t.note}` : ""}${t.cost ? ` · ${t.cost}` : ""}${t.at ? ` · ${t.at}` : ""}</span></summary>
+        <span class=${TONE[t.verdict] || "ok-tone-muted"}> ${t.kind === "answer" ? "answers" : `${MARK[t.verdict] || ""} ${VERDICT[t.verdict] ?? t.verdict}`}</span>
+        <span class="council-turn__note">${t.note ? ` · ${t.note}` : ""}</span>
+        <span class="council-turn__when">${t.cost ? `${t.cost} · ` : ""}${t.at}</span></summary>
       <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: t.html }}></div>
     </details></li>`)}</ul>`;
 }
 
 function Discussion({ data, r }) {
-  return html`<section class="gui-section">
-    <h3 class="ok-font-heading">The review, turn by turn</h3>
+  return html`<section class="council-turns">
     ${data.cycles.map((c) => html`<details key=${c.id}>
       <summary>Cycle ${c.cycle} <span class=${TONE[c.outcome] || "ok-tone-muted"}>· ${c.outcome_word}</span>
         <span class="ok-tone-muted"> · ${c.ok} ✓ ${c.no} ✗ · ${c.spent} · ${c.started}</span></summary>
       <${Turns} turns=${c.turns} open=${false} />
     </details>`)}
-    <h3 class="ok-font-heading">Cycle ${r.cycle} <span class=${TONE[r.outcome] || "ok-tone-muted"}>· ${r.outcome_word}</span></h3>
+    ${data.cycles.length > 0 && html`<h3 class="ok-detail__section">Cycle ${r.cycle} <span class=${TONE[r.outcome] || ""}>· ${r.outcome_word}</span></h3>`}
     ${r.turns.length ? html`<${Turns} turns=${r.turns} open=${true} />` : html`<p class="ok-tone-muted">The clan reads it…</p>`}
     ${r.question && html`<p class="ok-tone-fire">The steward asks you.</p>`}
     ${r.error && html`<p class="ok-tone-error">${r.error}</p>`}
   </section>`;
 }
 
-function Paper({ id, r }) {
-  const at = side.value[id] || "document";
-  const comments = r.turns.filter((t) => t.kind !== "answer");
-  return html`<div class="gui-split">
-    <nav class="ok-tabs" role="tablist">
-      <button class=${cls("ok-tab", { "is-active": at === "document" })} onClick=${() => setIn(side, id, "document")}>The document</button>
-      <button class=${cls("ok-tab", { "is-active": at === "report" })} onClick=${() => setIn(side, id, "report")}>The report</button>
+/** The review itself, taking the room: turn by turn, the document, the report — a tab each; Open in Lake. Wide
+ *  (the whole town), the document stands beside the turns too. */
+function Paper({ id, data, r, shown }) {
+  const at = side.value[id] || "review";
+  const tab = (key, label, n) => html`<button role="tab" aria-selected=${at === key} class=${cls("ok-tab", { "is-active": at === key })}
+    onClick=${() => setIn(side, id, key)}>${label}${n ? html` <span class="ok-tone-muted">${n}</span>` : ""}</button>`;
+  const lake = () => (at === "report" ? openInLake({ text: r.report, title: `Report — ${r.title}`, from: id }) : openDoc(id, r));
+  return html`<div class="council-paper">
+    <nav class="council-paper__tabs" role="tablist">
+      ${tab("review", say("Turn by turn"), r.turns.length)}${tab("document", say("The document"))}${tab("report", say("The report"))}
       <span class="gui-head__spacer"></span>
-      <button class="ok-act" onClick=${() => (at === "report" ? openInLake({ text: r.report, title: `Report — ${r.title}`, from: id }) : openDoc(id, r))}>
-        <span class="ok-act__label">Open in Lake</span></button>
+      ${at !== "review" && html`<button class="ok-btn" onClick=${lake}>${say("Open in Lake")}</button>`}
     </nav>
     ${at === "report" ? html`<div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.report_html }}></div>`
-      : html`<div class="gui-split is-row">
-          <div class="gui-pane" style="flex: 3 1 0"><div>
-            ${r.doc_path && html`<p class="ok-tone-muted">${r.doc_path}</p>`}
-            <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.doc_html }}></div></div></div>
-          <div class="gui-pane" style="flex: 2 1 0"><div>
-            <h3 class="ok-font-heading">Comments</h3>
-            ${comments.length ? html`<ul class="gui-rows">${comments.map((t, i) => html`<li key=${i}>
-                <b>${t.kind === "decide" ? say("Steward") : t.role}</b> <span class=${TONE[t.verdict] || ""}>${VERDICT[t.verdict] ?? t.verdict}</span>
-                <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: t.html }}></div></li>`)}</ul>`
-              : html`<p class="ok-tone-muted">No comments yet.</p>`}</div></div>
-        </div>`}
+      : at === "document" ? html`<div>${r.doc_path && html`<p class="ok-detail__meta council-paper__path" title=${r.doc_path}>${r.doc_path}</p>`}
+          <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.doc_html }}></div></div>`
+      : html`<div class="council-review"><${Discussion} data=${shown ? { cycles: [] } : data} r=${r} />
+          <div class="council-review__doc" aria-hidden="true"><div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.doc_html }}></div></div></div>`}
   </div>`;
 }
 
+/** What waits in line, the past reviews (a click shows one) and the steward's rules: one line until opened. */
 function History({ id, data }) {
-  if (!data.history.length && !data.queued.length) return null;
   const show = (h) => act(id, "show", { review: h.id }).then((r) => setIn(past, id, r), () => {});
-  return html`${data.queued.length > 0 && html`<section class="gui-section"><h3 class="ok-font-heading">Waiting in line</h3>
+  const last = data.history[0];
+  return html`<details class="council-fold">
+    <summary><span>${say("Past reviews")} ${data.history.length}${data.queued.length ? ` · ${say("waiting")} ${data.queued.length}` : ""} · ${say("Rules")}</span>
+      ${last && html`<span class="council-fold__sum ok-font-status">${say("last:")} ${last.title} · <span class=${TONE[last.outcome] || ""}>${last.outcome_word}</span></span>`}</summary>
+    ${data.queued.length > 0 && html`<section class="gui-section"><h3 class="ok-font-heading">Waiting in line</h3>
       <ul class="gui-rows">${data.queued.map((t, i) => html`<li key=${i}>· ${t}</li>`)}</ul></section>`}
-    ${data.history.length > 0 && html`<section class="gui-section"><h3 class="ok-font-heading">Past reviews</h3>
-      <ul class="gui-rows">${data.history.map((h) => html`<li key=${h.id} class="gui-link" onClick=${() => show(h)}>
-        ${h.title} <span class=${TONE[h.outcome] || "ok-tone-muted"}>· ${h.outcome_word}</span>
-        <span class="ok-tone-muted"> · cycle ${h.cycle} · ${h.spent} · ${h.started}</span></li>`)}</ul></section>`}`;
+    <section class="gui-section"><h3 class="ok-font-heading">Past reviews</h3>
+      ${data.history.length ? html`<ul class="gui-rows">${data.history.map((h) => html`<li key=${h.id}>
+        <button class="council-past" onClick=${() => show(h)}><span class="council-past__title">${h.title}</span>
+          <span class=${TONE[h.outcome] || "ok-tone-muted"}>${h.outcome_word}</span>
+          <span class="ok-tone-muted">${say("cycle")} ${h.cycle} · ${h.spent} · ${h.started}</span></button></li>`)}</ul>`
+        : html`<p class="ok-tone-muted">${say("None yet.")}</p>`}</section>
+    <${KeeperAsk} id=${id} data=${data} />
+  </details>`;
 }
 
-/** The head: the review shown (current or past), Stop, the acts; the dialogs live here (the pane is always there). */
+/** The head: the review shown (current or past) on one line, Stop, Review; the question waiting for you as a
+ *  strip with Answer; the dialogs live here (the pane is always there). */
 function Head({ id, data }) {
   const shown = past.value[id];
   const r = shown || data.current;
-  return html`<div class="gui-head">
-    ${r ? html`<span class="gui-head__what"><b>${r.title}</b>
-        <span class=${TONE[r.outcome] || "ok-tone-muted"}> · cycle ${r.cycle}/${data.max_cycles} · ${r.outcome_word} · ${r.spent}</span></span>`
-      : html`<span class="gui-head__what ok-tone-muted">No review yet — send a document down a road, or Review.</span>`}
-    ${shown && html`<button class="ok-act" onClick=${() => setIn(past, id, null)}><span class="ok-act__label">Back to the current review</span></button>`}
-    <span class="gui-head__spacer"></span>
-    ${data.busy && html`<button class="ok-act" onClick=${() => act(id, "stop").catch(() => {})}><span class="ok-act__label">Stop</span></button>`}
-    <${Acts} id=${id} data=${data} />
-    <${Dialogs} id=${id} data=${data} />
+  const asks = !shown && data.current && data.current.outcome === "asked";
+  return html`<div>
+    <div class="council-head">
+      ${shown && html`<button class="ok-btn" onClick=${() => setIn(past, id, null)}>← ${say("The current review")}</button>`}
+      ${r ? html`<span class="council-head__title" title=${r.title}><b>${r.title}</b></span>
+          <span>${say("cycle")} <b>${r.cycle}/${data.max_cycles}</b></span>
+          <span class=${TONE[r.outcome] || ""}>${r.outcome === "running" ? "" : `${BIG[r.outcome] || ""} `}${r.outcome_word}${routed(r)}</span>
+          <span><b class="ok-tone-ok">✓${r.ok}</b> <b class=${r.no ? "ok-tone-error" : ""}>✗${r.no}</b></span>
+          <span><b>${r.spent}</b> ${say("of")} ${data.budget}</span>`
+        : html`<span class="council-head__title">${say("No review yet")}</span>`}
+      <span class="gui-head__spacer"></span>
+      ${data.busy && html`<button class="ok-btn" onClick=${() => act(id, "stop").catch(() => {})}>Stop</button>`}
+      <button class=${cls("ok-btn", { primary: !r })} onClick=${() => setIn(dialogs, id, "review")}>${say("Review…")}</button>
+    </div>
+    ${asks && html`<div class="council-ask">
+      <span class="council-ask__who">? ${say("The steward asks")}</span>
+      <span class="council-ask__what" title=${data.current.question}>${data.current.question}</span>
+      <button class="ok-btn primary" onClick=${() => setIn(dialogs, id, "answer")}>Answer</button>
+    </div>`}
   </div>`;
 }
 
-/** The full window by its UI document (design/buildings/council.json). A past review picked in the
- * history takes the current one's place in the review and the document. */
+/** The window by its UI document (design/buildings/council.json). A past review picked in the fold takes the
+ * current one's place. `document` shows nothing of its own: the document is a tab of the review (an older
+ * document that still has the pane loses nothing). */
 export function panes(id, data) {
   const shown = past.value[id];
   const r = shown || data.current;
-  const none = html`<p class="ok-tone-muted">The review shows here turn by turn, each member's verdict and the steward's decision.</p>`;
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
-    members: () => html`<div><${Members} id=${id} data=${data} /></div>`,
-    history: () => (data.history.length || data.queued.length ? html`<div><${History} id=${id} data=${data} /></div>` : null),
-    review: () => (r ? html`<${Discussion} data=${shown ? { cycles: [] } : data} r=${r} />` : none),
-    document: () => (r ? html`<${Paper} id=${id} r=${r} />` : html`<p class="ok-tone-muted">The document under review shows here, with the clan's comments.</p>`),
+    members: () => html`<${Clan} id=${id} data=${data} />`,
+    review: () => (r ? html`<${Paper} id=${id} data=${data} r=${r} shown=${!!shown} />`
+      : html`<p class="ok-tone-muted">${say("Nothing under review — Review a document, or a road brings one; each member's verdict shows here, turn by turn.")}</p>`),
+    document: () => null,
+    history: () => html`<${History} id=${id} data=${data} />`,
   };
+}
+
+/** Its quick actions, from its Info or its closed card: each opens its own small window. */
+export function quick(id, action) {
+  if (action === "team.add") { setIn(dialogs, id, "member"); return true; }
+  if (action === "team.start") { setIn(dialogs, id, "review"); return true; }
+  return false;
+}
+
+/** Its dialogs, over the town, whether the building is open or not (js/types.js). */
+function Peeked({ id }) {
+  usePeek(id);
+  return html`<${Dialogs} id=${id} data=${(details.value[id] || {}).data || {}} />`;
+}
+
+export function overlay() {
+  return html`${Object.keys(dialogs.value).filter((id) => dialogs.value[id]).map((id) => html`<${Peeked} key=${id} id=${id} />`)}`;
 }

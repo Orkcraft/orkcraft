@@ -2,18 +2,15 @@
   "type": "pit",
   "about": "🕳️ The Pit: whatever is dropped or pasted, sorted and sent on — and what became of each drop down the roads.",
   "panes": {
-    "drop":    {"about": "the drop zone: a file dropped, a link or a text pasted, the clipboard", "components": ["form"], "required": true},
-    "history": {"about": "what was dropped, newest first, with what its chain of processing cost", "components": ["table", "list"], "required": true},
-    "chain":   {"about": "the chosen drop: where its carts arrived and what they left in the other buildings", "components": ["list", "text"], "required": true}
+    "drop":    {"about": "one line to drop into: a file dropped (anywhere on the window), a link, a path or a text written in, the clipboard", "components": ["form"], "required": true},
+    "history": {"about": "what was dropped, newest first, a row each with what its chain cost; a drop opens here, over the rows: where its carts arrived and what they left in the other buildings", "components": ["table", "list"], "required": true},
+    "chain":   {"about": "kept for older documents: a drop now opens over the rows, in the history pane", "components": ["list", "text"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "pit", "split": "column",
     "panes": [
-      {"id": "drop", "component": "form", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"id": "history", "component": "table", "size": 3, "font": "body"},
-        {"id": "chain", "component": "list", "size": 2, "font": "body"}
-      ]}
+      {"id": "drop", "component": "form", "size": "auto", "font": "body"},
+      {"id": "history", "component": "list", "size": 1, "font": "body"}
     ]
   }
 }

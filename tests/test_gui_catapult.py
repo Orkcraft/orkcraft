@@ -75,7 +75,9 @@ def card(host: Host, bid: str) -> dict:
 
 def test_it_waits_checks_and_fires(catapult):
     host, bid, w, net = catapult
-    assert card(host, bid) == {"line": "wait 0/2", "tone": "muted", "browser": False}
+    c = card(host, bid)
+    assert (c["line"], c["tone"], c["browser"]) == ("wait 0/2", "muted", False)
+    assert c["target"] == "POST api.example.com/releases" and (c["loaded"], c["waits"], c["last"]) == (0, 2, None)
     w.receive(pipes.Payload(pipes.TEXT, "notes for v0.2", "notes", "mill.done", "notes"), "", "")
     assert card(host, bid)["line"] == "wait 1/2"
     d = host.detail(bid)["data"]
@@ -83,7 +85,9 @@ def test_it_waits_checks_and_fires(catapult):
     assert any("version" in p for p in d["problems"])                  # the schema check, before a shot
     w.receive(pipes.Payload(pipes.TEXT, '{"tag": "v0.2.0"}', "version", "mill.done", "v"), "", "")
     wait(lambda: not w.firing and w.shots)
-    assert len(net.requests) == 1 and card(host, bid) == {"line": "✓ 201", "tone": "ok", "browser": False}
+    c = card(host, bid)
+    assert len(net.requests) == 1 and (c["line"], c["tone"], c["browser"]) == ("✓ 201", "ok", False)
+    assert c["last"]["mark"] == "✓ 201" and c["last"]["tone"] == "ok"
     s = host.detail(bid)["data"]["shots"][0]
     assert s["ok"] and s["status"] == 201 and "v0.2.0" in s["body"] and s["screens"] == []
 

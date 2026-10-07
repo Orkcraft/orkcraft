@@ -1,21 +1,19 @@
 {
   "type": "workshop",
-  "about": "🛠️ Workshop: a script that runs on every cart; its runs, the chosen one's input, output and result, and its tests.",
+  "about": "🛠️ Workshop: a script that runs on every cart; the last run (or the one picked) with its result first, the runs as rows under it, and its tests folded to a line.",
   "panes": {
-    "head": {"about": "the script, its schedule and layout, and what runs now", "components": ["status"], "required": true},
-    "runs": {"about": "the runs, newest first: time, exit code, what went out", "components": ["list", "table"], "required": true},
-    "run": {"about": "the chosen run: its input, its output and its result as a log, a table or a card", "components": ["text", "table"], "required": true},
-    "tests": {"about": "Test's log: the mock carts run in the sandbox", "components": ["log", "list"], "required": false}
+    "head": {"about": "the script, its schedule and layout, what runs now; Run, Test, Edit; asking the keeper to change the script in plain words", "components": ["status"], "required": true},
+    "runs": {"about": "the runs, newest first: time, exit code, what went out; a click shows one above", "components": ["list", "table"], "dynamic": true},
+    "run": {"about": "the last run or the one picked: its result as a table or a card, its input and its output", "components": ["text", "table"], "required": true},
+    "tests": {"about": "Test's log: the mock carts run in the sandbox; one line until opened", "components": ["log", "list"], "required": false}
   },
   "default": {
     "version": 1, "type": "workshop", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"id": "runs", "component": "list", "size": 2, "font": "body"},
-        {"id": "run", "component": "text", "size": 3, "font": "mono"}
-      ]},
-      {"id": "tests", "component": "log", "size": "auto", "font": "mono", "title": "Test"}
+      {"id": "run", "component": "text", "size": "auto", "font": "body"},
+      {"id": "runs", "component": "list", "size": 1, "font": "status"},
+      {"id": "tests", "component": "log", "size": "auto", "font": "status"}
     ]
   }
 }

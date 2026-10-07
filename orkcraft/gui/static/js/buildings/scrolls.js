@@ -1,5 +1,7 @@
-// 🗑️ Scroll Dump: the librarian's state, the wiki and its sources as a tree, and the page open,
-// rendered (core/workers/scrolls.py does the work). A page's mark opens it in Lake.
+// 🗑️ Scroll Dump, the wiki its ork keeps (core/workers/scrolls.py does the work). Closed: how many
+// pages, what waits to be taken in, the page changed last. Open, made for the half panel: the counters
+// on one line, what waits to be taken in as a strip with Take in beside it, the pages changed lately over
+// the tree of the wiki and its sources; a page opens over them (← back). A page's mark opens it in Lake.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -7,23 +9,16 @@ import { act, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 
-const CSS = `
-.gui-scrolls__lake { appearance: none; border: 0; background: none; color: var(--info); cursor: pointer; padding: 0 var(--space-1); }
-.gui-scrolls__recent { list-style: none; margin: 0; padding: 0; }
-.gui-scrolls__recent li { display: flex; gap: var(--space-2); align-items: baseline; }
-.gui-scrolls__recent .gui-tree__item { flex: 1; min-width: 0; }
-.gui-scrolls__lent ul { list-style: none; margin: 0; padding: 0; }
-.gui-scrolls__lent li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gui-scrolls__lent li::before { content: "▪ "; color: var(--ink-muted); }
-`;
-if (typeof document !== "undefined" && !document.getElementById("gui-css-scrolls")) {
-  const style = document.createElement("style");
-  style.id = "gui-css-scrolls";
-  style.textContent = CSS;
-  document.head.append(style);
+const sheet = new URL("./scrolls.css", import.meta.url).href;
+if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
 }
 
 const adding = signal(null);       // the building whose "Add a folder" dialog is open
+const open = signal({});           // building id → {path, html}: the page open over the tree
 const toLake = (id, path, title) => openInLake({ path, title: title || path.split("/").pop(), from: id });
 
 function LakeMark({ id, path, title }) {
@@ -31,11 +26,11 @@ function LakeMark({ id, path, title }) {
     onClick=${(e) => { e.stopPropagation(); toLake(id, path, title); }}>↗</button>`;
 }
 
-const open = signal({});           // building id → {path, html}
-
 function read(id, path, page) {
   act(id, "read", { path, page }).then((r) => { open.value = { ...open.value, [id]: r }; }, () => {});
 }
+
+const close = (id) => { open.value = { ...open.value, [id]: null }; };
 
 function FolderDialog({ id, onClose }) {
   const [path, setPath] = useState("");
@@ -49,57 +44,39 @@ function FolderDialog({ id, onClose }) {
   </${Dialog}>`;
 }
 
-function Head({ id, data }) {
-  return html`<div class="gui-head">
-    <span class=${cls("gui-head__what", { "ok-tone-error": data.error, "ok-tone-wait": !!data.running })}>
-      <b>${data.topic}</b> · ${data.pages_count} page${data.pages_count === 1 ? "" : "s"} ·
-      ${data.sources.length} source${data.sources.length === 1 ? "" : "s"} · ${data.state_plain}</span>
-    <span class="gui-head__spacer"></span>
-    ${data.running
-      ? html`<button class="ok-act" onClick=${() => act(id, "stop")}><span class="ok-act__label">Stop</span></button>`
-      : html`<button class="ok-act" onClick=${() => act(id, "ingest")}><span class="ok-act__label">Take in</span></button>
-             <button class="ok-act" onClick=${() => act(id, "lint")}><span class="ok-act__label">Check the wiki</span></button>`}
-    <button class="ok-act" onClick=${() => { adding.value = id; }}><span class="ok-act__label">Add a folder</span></button>
-    <${Adding} id=${id} />
-  </div>`;
-}
-
 function Adding({ id }) {
   return adding.value === id ? html`<${FolderDialog} id=${id} onClose=${() => { adding.value = null; }} />` : null;
 }
 
-function Tree({ id, data }) {
-  const current = (open.value[id] || {}).path;
-  const row = (path, page, label, extra) => html`<li key=${path}
-      class=${cls("gui-tree__item", { "is-selected": path === current })} onClick=${() => read(id, path, page)}>
-    ${label}${extra}</li>`;
-  return html`<div class="gui-tree">
-    <details open>
-      <summary><b>${data.root}</b> <span class="ok-tone-muted">${data.pages_count}</span></summary>
-      <ul>${data.pages.length ? data.pages.map((p) => row(p.path, true,
-          html`<span style=${`padding-left:${p.depth}em`}>${p.title}</span>`,
-          html`${p.locked && html` <span class="ok-word ok-tone-muted">people's</span>`}<${LakeMark} id=${id} path=${p.path} title=${p.title} />`))
-        : html`<li class="ok-tone-muted">No wiki yet — the first take-in makes it.</li>`}</ul>
-    </details>
-    ${data.sources.map((b) => html`<details key=${b.path}>
-      <summary><b>${b.path}</b> <span class="ok-tone-muted">${b.count}</span>
-        ${b.todo > 0 && html` <span class="ok-tone-wait">● ${b.todo}</span>`}
-        ${b.error && html` <span class="ok-tone-wait">⚠ ${b.error}</span>`}</summary>
-      <ul>${b.items.map((n) => row(n.path, false, n.title,
-          n.fresh ? html` <span class="ok-tone-wait">●</span>` : ""))}</ul>
-    </details>`)}
-  </div>`;
-}
+const quiet = (label, onClick, title = "") => html`<button class="ok-act" title=${title} onClick=${onClick}>
+  <span class="ok-act__label">${label}</span></button>`;
 
-function Page({ id, data }) {
-  const page = open.value[id];
-  if (!page) return html`<p class="ok-tone-muted">Pick a page in the tree.</p>`;
-  const isPage = data.pages.some((p) => p.path === page.path);
+/** The head: the counters on one line, Check the wiki and Add a folder quiet on the right; what waits to be
+ *  taken in (or runs, or failed) as a strip under it with its act beside it. */
+function Head({ id, data }) {
+  const ingest = () => act(id, "ingest").catch(() => {});
   return html`<div>
-    ${isPage && html`<div class="gui-head"><span class="gui-head__what ok-tone-muted">${page.path}</span>
-      <span class="gui-head__spacer"></span>
-      <button class="ok-act" onClick=${() => toLake(id, page.path)}><span class="ok-act__label">Open in Lake</span></button></div>`}
-    <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: page.html }}></div>
+    <div class="wiki-head">
+      <span><b>${data.pages_count}</b> ${say(data.pages_count === 1 ? "page" : "pages")}</span>
+      <span><b>${data.sources.length}</b> ${say(data.sources.length === 1 ? "source" : "sources")}</span>
+      <span title=${say("The wiki's topic")}>${data.topic}</span>
+      ${!data.running && !data.error && !data.pending && html`<span class="ok-tone-ok">✓ ${say("up to date")}</span>`}
+      <span class="wiki-head__spacer"></span>
+      <span class="wiki-head__acts">
+        ${!data.running && !data.pending && quiet(say("Take in"), ingest, say("Read the sources again"))}
+        ${!data.running && quiet(say("Check the wiki"), () => act(id, "lint").catch(() => {}), say("Look for broken links, gaps and contradictions"))}
+        ${quiet(say("Add a folder"), () => { adding.value = id; }, say("Connect a folder of notes"))}
+      </span>
+    </div>
+    ${data.running ? html`<div class="wiki-strip">
+        <span class="wiki-strip__what ok-tone-wait">● ${data.state_plain}</span>
+        <button class="ok-btn" onClick=${() => act(id, "stop").catch(() => {})}>Stop</button></div>`
+      : data.error ? html`<div class="wiki-strip is-error">
+        <span class="wiki-strip__what ok-tone-error" title=${data.state_plain}>✗ ${data.state_plain}</span>
+        <button class="ok-btn" onClick=${ingest}>${say("Try again")}</button></div>`
+      : data.pending > 0 && html`<div class="wiki-strip">
+        <span class="wiki-strip__what"><span class="ok-tone-wait">●</span> ${say(data.pending === 1 ? "1 note waits to be taken in" : `${data.pending} notes wait to be taken in`)}</span>
+        <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`}
   </div>`;
 }
 
@@ -109,21 +86,82 @@ function ago(mtime) {
     : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 }
 
-/** The notes a task was given lately: what it is and the pages named for it. */
-function Lent({ lent }) {
-  return html`<div class="gui-scrolls__lent">
-    <div class="ok-tone-accent">Read for: <b>${lent.task}</b></div>
-    <ul>${lent.pages.map((t) => html`<li key=${t}>${t}</li>`)}</ul></div>`;
+/** The pages changed lately: the ones read most, over the tree. */
+function Recent({ id, data }) {
+  if (!data.recent || !data.recent.length) return null;
+  return html`<section class="wiki-recent">
+    <h3 class="ok-font-heading">${say("Changed lately")}</h3>
+    <ul>${data.recent.map((p) => html`<li key=${p.path}>
+      <span class="gui-tree__item" title=${p.path} onClick=${() => read(id, p.path, true)}>${p.title}</span>
+      <span class="wiki-recent__when">${say(ago(p.mtime))}</span><${LakeMark} id=${id} path=${p.path} title=${p.title} /></li>`)}</ul>
+  </section>`;
 }
 
-/** Closed: the pages and what waits to be taken in (docs/design/building-views.md); the notes a task
- * was given lately, while they are fresh. */
+function Tree({ id, data }) {
+  const row = (path, page, label, extra) => html`<li key=${path} class="gui-tree__item" title=${path} onClick=${() => read(id, path, page)}>
+    <span class="wiki-tree__name">${label}</span>${extra}</li>`;
+  return html`<div class="gui-tree wiki-tree">
+    <details open>
+      <summary><b>${data.root}</b> <span class="ok-tone-muted">${data.pages_count}</span></summary>
+      <ul>${data.pages.length ? data.pages.map((p) => row(p.path, true,
+          html`<span style=${`padding-left:${p.depth}em`}>${p.title}</span>`,
+          html`${p.locked && html` <span class="ok-word ok-tone-muted">people's</span>`}<${LakeMark} id=${id} path=${p.path} title=${p.title} />`))
+        : html`<li class="ok-tone-muted">${say("No wiki yet — Take in makes it from the sources.")}</li>`}</ul>
+    </details>
+    ${data.sources.map((b) => html`<details key=${b.path}>
+      <summary><b>${b.path}</b> <span class="ok-tone-muted">${b.count}</span>
+        ${b.todo > 0 && html` <span class="ok-tone-wait" title=${say("to take in")}>● ${b.todo}</span>`}
+        ${b.error && html` <span class="ok-tone-wait">⚠ ${b.error}</span>`}</summary>
+      <ul>${b.items.map((n) => row(n.path, false, n.title,
+          n.fresh ? html` <span class="ok-tone-wait" title=${say("to take in")}>●</span>` : ""))}</ul>
+    </details>`)}
+    ${!data.sources.length && html`<p class="ok-tone-muted">${say("No sources yet — Add a folder of notes for the wiki to read.")}</p>`}
+  </div>`;
+}
+
+/** A page open over the tree: ← back, its path, Open in Lake for a wiki page, the page rendered. */
+function Page({ id, data, page }) {
+  const isPage = data.pages.some((p) => p.path === page.path);
+  const back = () => close(id);
+  return html`<div class="wiki-page" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
+    <div class="wiki-page__bar">
+      <button class="ok-btn" onClick=${back}>← ${say("All pages")}</button>
+      <span class="wiki-page__path" title=${page.path}>${page.path}</span>
+      ${isPage && quiet(say("Open in Lake"), () => toLake(id, page.path))}
+    </div>
+    ${page.meta && html`<p class="wiki-page__meta" title=${page.meta}>${page.meta}</p>`}
+    <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: page.html }}></div>
+  </div>`;
+}
+
+function Pages({ id, data }) {
+  const page = open.value[id];
+  if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
+  return html`<div><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+}
+
+/** The notes a task was given lately: what it is and the pages named for it. */
+function Lent({ lent }) {
+  return html`<div class="gui-scrolls__lent gui-hut__text">
+    <span class="ok-tone-accent">${say("Read for")}: <b>${lent.task}</b></span>
+    <ul>${lent.pages.slice(0, 2).map((t) => html`<li key=${t}>${t}</li>`)}</ul></div>`;
+}
+
+/** Closed: how many pages; what waits to be taken in, runs or failed; the notes a task was given lately,
+ *  while they are fresh; the foot the page changed last and when. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  return html`<div><b>${c.pages}</b> page${c.pages === 1 ? "" : "s"}${c.lent ? "" : html`${" "}<span class=${c.error ? "ok-tone-fire" : c.running || c.pending ? "ok-tone-wait" : "ok-tone-muted"}>
-      · ${c.running ? `${c.running}…` : c.pending ? `${c.pending} pending` : "nothing pending"}</span>`}</div>
-    ${c.lent && html`<${Lent} lent=${c.lent} />`}`;
+  const state = c.error ? html`<span class="ok-tone-error">✗ ${say("the last take-in failed")}</span>`
+    : c.running ? html`<span class="ok-tone-wait">● ${c.running}…</span>`
+    : c.pending ? html`<span class="ok-tone-wait">● <b>${c.pending}</b> ${say(c.pending === 1 ? "note to take in" : "notes to take in")}</span>`
+    : html`<span class="ok-tone-ok">✓ ${say("up to date")}</span>`;
+  return html`<div class="gui-hut__body-in">
+    <div class="gui-hut__big">${c.pages}<small>${say(c.pages === 1 ? "page" : "pages")}</small></div>
+    <div class="gui-hut__text">${state}</div>
+    ${c.lent && html`<${Lent} lent=${c.lent} />`}
+    ${c.last && html`<div class="gui-hut__foot"><span>✎ ${c.last.title}</span><span class="gui-hut__when">${say(ago(c.last.mtime))}</span></div>`}
+  </div>`;
 }
 
 /** The type's quick actions in its Info (realm/catalog.py). */
@@ -141,10 +179,17 @@ export function quick(id, action) {
   return true;
 }
 
+/** The window by its UI document (design/buildings/scrolls.json). `page` shows nothing of its own: a page
+ *  opens over the tree (an older document that still has the pane loses nothing). */
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
-    tree: () => html`<${Tree} id=${id} data=${data} />`,
-    page: () => html`<${Page} id=${id} data=${data} />`,
+    tree: () => html`<${Pages} id=${id} data=${data} />`,
+    page: () => null,
   };
+}
+
+/** Its Add a folder window, over the town, whether the building is open or not (js/types.js). */
+export function overlay() {
+  return adding.value ? html`<${Adding} id=${adding.value} />` : null;
 }

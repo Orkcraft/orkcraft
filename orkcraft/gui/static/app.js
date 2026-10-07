@@ -16,6 +16,7 @@ import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { Menu } from "./js/menu.js";
 import { WarchiefLine } from "./js/warchief.js";
+import { Overlays } from "./js/types.js";
 
 function App() {
   const t = town.value;
@@ -38,6 +39,7 @@ function App() {
     <${UsageAsk} />
     <${Orders} />
     <${Jobs} />
+    <${Overlays} />
     <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />

@@ -84,10 +84,19 @@ class StewardMixin:
                 raise ConsoleError("\n".join(problems))
             what = "a new layout"
         else:
+            done = next((p for p in job["view"]["proposals"] if p["index"] == index and p.get("applied")), None)
+            if done is not None:
+                return done["applied"]
             what = core_buildings.apply_steward(self.town, job["building"], data, index, by="you")
             if what is None:
                 raise ConsoleError("It could not be applied (see the note)")
-        self.jobs.pop(job["id"], None)
+        # A report's other proposals wait for the person, each taken or left on its own: the report closes
+        # when they are all taken (or when the person closes it); a redesign is one layout and closes now.
+        for p in job["view"]["proposals"]:
+            if p["index"] == index:
+                p["applied"] = plain(what)
+        if job["kind"] == "redesign" or not any(p["ready"] and not p.get("applied") for p in job["view"]["proposals"]):
+            self.jobs.pop(job["id"], None)
         self._saved()
         self.town.toast(f"{plain(what)} — Revert takes it back", title=f"Steward · {job['title']}")
         return what

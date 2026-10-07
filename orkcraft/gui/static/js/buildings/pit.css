@@ -1,13 +1,50 @@
-/* The Pit's closed card (js/buildings/pit.js): only a tray, and the card takes a file held over it.
-   Tokens only (design-system/tokens.css). */
-.gui-pit__zone { display: grid; place-items: center; min-width: 56px; padding: var(--space-1) 0; color: var(--ink-muted); }
-.gui-pit__icon { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+/* 🕳️ The Pit (js/buildings/pit.js): the closed card is the drop zone — a tray beside how many were dropped,
+   the newest in its foot; open, one line to drop into over the drops as one-line rows. Tokens only
+   (design-system/tokens.css). */
+
+/* Closed: the tray at the left of the headline; a file held over the card drops the arrow into it. */
+.gui-pit__zone { display: flex; align-items: center; gap: var(--space-3); min-width: 0; color: var(--ink-muted); }
+.gui-pit__say { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-pit__icon { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
   overflow: visible; }
 .gui-pit__arrow { transform: translateY(-2px); transition: transform .15s ease-out; }
 .gui-pit__tray { transition: fill .15s ease-out; }
-.gui-pit__zone.is-over { color: var(--frame-focus); }
-.gui-pit__zone.is-over .gui-pit__arrow { transform: translateY(5px); }
-.gui-pit__zone.is-over .gui-pit__tray { fill: color-mix(in srgb, var(--frame-focus) 18%, transparent); }
-.gui-hut:has(.gui-pit__zone.is-over) .ok-hut__card { box-shadow: inset 0 0 0 2px var(--frame-focus); outline: 1px dashed var(--frame-focus);
+.is-over > .gui-pit__zone, .gui-pit__drop.is-over { color: var(--frame-focus); }
+.is-over .gui-pit__arrow { transform: translateY(5px); }
+.is-over .gui-pit__tray { fill: color-mix(in srgb, var(--frame-focus) 18%, transparent); }
+.gui-hut:has(.gui-pit__card.is-over) .ok-hut__card { box-shadow: inset 0 0 0 2px var(--frame-focus); outline: 1px dashed var(--frame-focus);
   outline-offset: 3px; }
-.gui-hut:has(.gui-pit__zone.is-over) .ok-hut__label { color: var(--frame-focus); }
+.gui-hut:has(.gui-pit__card.is-over) .ok-hut__label { color: var(--frame-focus); }
+@media (prefers-reduced-motion: reduce) { .gui-pit__arrow, .gui-pit__tray { transition: none; } }
+
+/* Open: the drop line — the tray, the field, Drop it, Paste; it lights up while a file is held over the window. */
+.gui-pit__drop { display: flex; align-items: center; gap: var(--space-2); min-width: 0; padding: var(--space-2) var(--space-3);
+  color: var(--ink-muted); background: var(--panel-inset); box-shadow: var(--bevel-sunken); outline: 1px dashed transparent; outline-offset: -4px; }
+.gui-pit__drop > .gui-pit__icon { width: 24px; height: 24px; }
+.gui-pit__drop > .ok-input { flex: 1; min-width: 0; width: auto; }
+.gui-pit__drop.is-over { outline-color: var(--frame-focus); }
+[data-theme="office"] .gui-pit__drop { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+
+/* The drops: one line each — when, what kind, the title, its stops and cost on the right. */
+.gui-pit__history { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-pit__sum { margin: 0; color: var(--ink-muted); }
+.gui-pit__sum b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.gui-pit__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; min-width: 0; }
+.gui-pit__row { display: grid; grid-template-columns: 7.5em 4.5em minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+  width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.gui-pit__row.is-stop { grid-template-columns: 7.5em minmax(0, 10em) minmax(0, 1fr) auto; }
+.gui-pit__row:hover { background: var(--selection); }
+.gui-pit__row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.gui-pit__at, .gui-pit__kind, .gui-pit__meta { color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gui-pit__kind, .gui-pit__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-pit__kind b { color: var(--ink); }
+.gui-pit__meta { font-size: 12px; }
+.gui-pit__meta b { color: var(--ink); }
+
+/* A drop open over the rows. */
+.gui-pit__chain { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-pit__back { align-self: flex-start; }
+.gui-pit__name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.gui-pit__path { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-muted); }

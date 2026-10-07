@@ -24,14 +24,18 @@ def _tally(d: tm.Discussion) -> dict:
 
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews, else the last
-    outcome; `N queued`."""
+    outcome; what it reviews, `N queued`, and the last turn (who said what, when)."""
     d = w.current
     out = {"state": "none", "queued": len(w.waiting), "triage": bool(w.routes), "of": len(w.team)}
     if d is None:
         return out
     out.update({"state": "running" if d.outcome == "running" else d.outcome, "cycle": d.cycle, "max": w.max_cycles,
-                "route": d.route,
+                "route": d.route, "title": d.title[:80],
                 "spent": _money(d.spent), "outcome": OUTCOME.get(d.outcome, d.outcome), **_tally(d)})
+    if d.turns:
+        t = d.turns[-1]
+        out["last"] = {"who": "Steward" if t.kind == "decide" else t.role, "kind": t.kind, "verdict": t.verdict,
+                       "at": t.at[11:16]}
     return out
 
 

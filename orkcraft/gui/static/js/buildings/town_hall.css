@@ -1,0 +1,55 @@
+/* 🏰 Town Hall (js/buildings/town_hall.js), made for the half panel: the Chat tab's messages take the room
+   with the composer under them; the Hall tab puts what waits for the person first and folds the rest to a
+   line each. Tokens only (design-system/tokens.css). */
+
+/* The pane of the open tab fills the window, so the chat can keep its composer at the bottom. */
+.gui-pane[data-pane="chat"] { overflow: hidden; }
+
+/* -- Chat -------------------------------------------------------------------------------------------- */
+.th-chat { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; height: 100%; }
+.th-chat__bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.th-chat__list { flex: 1 1 auto; min-height: 0; overflow: auto; list-style: none; margin: 0; padding: 0 var(--space-1) 0 0;
+  display: flex; flex-direction: column; gap: var(--space-3); }
+.th-chat__list > li { min-width: 0; }
+.th-chat__list > li > .ok-font-label { display: block; margin-bottom: 2px; color: var(--ink-gold); }
+.th-chat__list .gui-prose > :first-child { margin-top: 0; }
+.th-chat__list .gui-prose > :last-child { margin-bottom: 0; }
+.th-chat__list .gui-prose pre, .th-chat__list .gui-prose code { overflow-wrap: anywhere; white-space: pre-wrap; }
+.th-chat__list > li > .ok-act { margin-top: var(--space-1); }
+.th-chat__empty { margin: auto 0; text-align: center; }
+
+/* The composer: one line that grows while it is written; Send beside it. */
+.th-compose { flex: none; display: flex; gap: var(--space-2); align-items: flex-start; }
+.th-compose > textarea.gui-textarea { flex: 1; min-height: 32px; height: 32px; resize: none; padding-top: 6px; padding-bottom: 6px; }
+.th-compose > textarea.gui-textarea:focus, .th-compose > textarea.gui-textarea.has-text { height: 72px; }
+
+/* -- Hall -------------------------------------------------------------------------------------------- */
+.th-hall .gui-section { margin-bottom: var(--space-3); }
+.th-hall .gui-section .gui-head h3 { margin: 0; }
+.th-strip { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-3); padding: var(--space-2) var(--space-3);
+  background: var(--panel-raised); box-shadow: inset 0 0 0 2px var(--warning); }
+.th-strip__what { color: var(--ink); font-weight: 700; }
+[data-theme="office"] .th-strip { background: transparent; box-shadow: inset 0 0 0 1px var(--warning); border-radius: var(--radius-md); }
+
+/* A proposal: what it is, its Apply and Dismiss at the right. */
+.th-items > .th-item { display: flex; align-items: flex-start; gap: var(--space-3); }
+.th-item__what { flex: 1; min-width: 0; }
+.th-item > .gui-answer { flex: none; display: inline-flex; gap: var(--space-1); }
+
+/* A rare part: one line until opened. */
+.th-fold { border-top: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.th-fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; cursor: pointer;
+  color: var(--ink-muted); white-space: nowrap; }
+.th-fold > summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.th-fold > summary::-webkit-details-marker { display: none; }
+.th-fold > summary::before { content: "▸"; flex: none; }
+.th-fold[open] > summary::before { content: "▾"; }
+.th-fold > summary:hover { color: var(--ink); }
+.th-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.th-fold__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.th-fold__body { padding: 0 0 var(--space-3) var(--space-4); }
+.th-fold__body > p { margin: 0 0 var(--space-1); }
+
+/* The closed card's field to ask the Warchief. */
+.th-ask { display: flex; }
+.th-ask > .ok-input { flex: 1; min-width: 0; }

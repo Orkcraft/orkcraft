@@ -42,16 +42,45 @@ def _line(w) -> tuple[str, str]:
         s = w.shots[0]
         if s.dry:
             return "dry run" + more, "muted"
-        mark = (f"✓ {s.status}" if s.status else "✓ filled") if s.ok else f"✗ {s.status or 'error'}"
-        return mark + more, "ok" if s.ok else "error"
+        mark, tone = _mark(s)
+        return mark + more, tone
     return "idle", "muted"
 
 
+def _target(w) -> str:
+    """Where it sends, short: `POST api.example.com/releases`, or a browser's forms."""
+    cfg = w.config
+    if w.browser:
+        n = len(w.forms)
+        return f"{n} form{'' if n == 1 else 's'} · then {'press submit' if cfg.get('finish') == 'press' else 'hand over'}"
+    url = str(cfg.get("url") or "")
+    return f"{cfg.get('method') or 'POST'} {url.split('://', 1)[-1]}" if url else "no address set — dry runs only"
+
+
+def _mark(s) -> tuple[str, str]:
+    if s.dry:
+        return "dry run", "muted"
+    return ((f"✓ {s.status}" if s.status else "✓ filled"), "ok") if s.ok else (f"✗ {s.status or 'error'}", "error")
+
+
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): one line — `wait 2/3`, `3 loaded`, `firing…` / `fill 2/5`,
-    `log in`, else `✓ 201` / `✗ 422`."""
+    """Closed (docs/design/building-views.md): the headline `line` — `wait 2/3`, `3 loaded`, `firing…` /
+    `fill 2/5`, `log in`, else `✓ 201` / `✗ 422` — with where it sends, what is loaded and what the schema
+    says of it, and the last shot."""
     line, tone = _line(w)
-    return {"line": line, "tone": tone, "browser": w.browser}
+    out = {"line": line, "tone": tone, "browser": w.browser, "target": _target(w),
+           "loaded": len(w.load.items), "waits": len(w.wait_for), "problem": "", "last": None}
+    if w.load.items:
+        try:
+            _, problems = w.check_now()
+        except Exception:                 # a schema that cannot be read says so in the window
+            problems = []
+        out["problem"] = problems[0] if problems else ""
+    if w.shots:
+        s = w.shots[0]
+        mark, t = _mark(s)
+        out["last"] = {"mark": mark, "tone": t, "at": s.at}
+    return out
 
 
 def _json(value) -> str:

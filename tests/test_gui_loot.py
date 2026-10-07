@@ -34,7 +34,7 @@ def cart(value: str, ref: str, cost: float = 0.05) -> pipes.Payload:
 def test_the_card_counts_what_waits_and_what_it_cost(loot):
     host, bid, w = loot
     card = lambda: next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": "", "latest": ""}
+    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": "", "latest": "", "at": ""}
     w.receive(cart("one", "A"), "Doc A", "one")
     w.receive(cart("two", "B", 0.10), "Doc B", "two")
     assert card()["to_review"] == 2 and card()["cost"] == "8.0k tok $0.15"
@@ -44,7 +44,7 @@ def test_the_card_counts_what_waits_and_what_it_cost(loot):
     assert it["label"] == "Doc A" and it["spent"] == "4.0k tok $0.05" and it["why"]
     assert [h["building"] for h in it["chain"]] == ["pit", "camp"] and it["chain"][1]["spent"] == "4.0k tok $0.05"
     assert act(host, bid, "accept_all") == 2
-    assert card()["passed"] == 2 and card()["to_review"] == 0
+    assert card()["passed"] == 2 and card()["to_review"] == 0 and len(card()["at"]) == 5     # HH:MM: today
 
 
 def test_a_cart_is_edited_in_lake_then_accepted_as_the_person_s(loot):

@@ -59,10 +59,11 @@ def test_the_crag_is_a_dashboard_each_chart_where_it_shows(fake_repo, isolated_l
     snap = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)
     assert snap["page"] and [c["title"] for c in snap["card"]["charts"]] == ["Spend"]        # closed: all only
     assert "now" not in snap["card"]["charts"][0] and snap["card"]["charts"][0]["level"] == 1
+    assert snap["card"]["last"]["chart"] == "Spend" and snap["card"]["last"]["level"] == "warning"
     data = host.detail(bid)["data"]
     assert [c["show"] for c in data["charts"]] == ["all", "command", "full"]
     assert data["charts"][0]["now"] == 1.5 and data["crossings"] and data["errors"] == []
-    assert [p["id"] for p in host.detail(bid)["ui"]["panes"] if "id" in p] == ["head"]
+    assert [p["id"] for p in host.detail(bid)["ui"]["panes"] if "id" in p] == ["head", "charts", "crossings"]
 
     # command: Next brings the next chart shown there to the front, Flip turns it over (the quick actions)
     assert data["front"] == 0
@@ -122,12 +123,12 @@ def test_the_workshop_runs_tests_and_shows_its_runs(fake_repo, isolated_layout_f
     with pytest.raises(CommandError):                          # no cart yet
         host.command("building.quick", {"id": bid, "action": "workshop.run"})
     card = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card == {"running": False, "mark": "", "outcome": "", "at": "", "schedule": "every 15m"}
+    assert card == {"running": False, "mark": "", "outcome": "", "at": "", "schedule": "every 15m", "said": "", "runs": 0}
 
     host.town.deliver(bid, pipes.Payload(pipes.TEXT, "red green blue", "pit", "pit.text"), "", "")
     assert _wait(lambda: bool(w.runs) and not w.running)
     card = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card["mark"] == "✓" and card["outcome"] == "done"
+    assert card["mark"] == "✓" and card["outcome"] == "done" and '"words": 3' in card["said"] and card["runs"] == 1
     data = host.detail(bid)["data"]
     run = data["runs"][0]
     assert run["sent"] == "workshop.done" and run["code"] == 0 and run["input"] == "red green blue"
