@@ -141,8 +141,9 @@ class Onboarding:
             if not st.found:
                 continue
             choice = self.picked.get(st.id, settings.ToolChoice())
-            rows.append({"id": st.id, "title": st.tool.title, "version": st.version, "logged_in": st.logged_in,
-                         "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing})
+            h = harnesses.get(st.id)
+            rows.append({"id": st.id, "title": st.tool.title, "mark": h.mark if h else "", "version": st.version,
+                         "logged_in": st.logged_in, "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing})
         return rows
 
     def _towns(self) -> list[dict]:
