@@ -242,17 +242,10 @@ def _tokens_of(env: dict) -> int | None:
     return harnesses._tokens_of(env.get("usage"))
 
 
-def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
-    return harnesses.json_result(stdout)[:3]
-
-
 def result_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of one run of a tool."""
     h = harnesses.get(harness)
     return h.result(stdout, before) if h else harnesses.json_result(stdout, before)
-
-
-codex_result_of = harnesses.codex_result
 
 
 def codex_thread_total(thread: str, env: dict | None = None) -> int:

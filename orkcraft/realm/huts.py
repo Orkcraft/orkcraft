@@ -111,13 +111,6 @@ def art(name: str | None) -> tuple[str, ...]:
     return ART.get(name or "", ART[DEFAULT_ART])[0]
 
 
-def art_for(building_id: str, spec: dict | None = None) -> tuple[str, ...]:
-    """The art of a building: the custom spec's `mini.art`, the built-in's, else the workshop."""
-    if spec is not None:
-        return art((spec.get("mini") or {}).get("art"))
-    return art(BUILTIN_ART.get(building_id))
-
-
 def art_catalog() -> str:
     """One line per piece, for the Mason prompt."""
     return "\n".join(f"- {name}: {use}" for name, (_, use) in ART.items())
