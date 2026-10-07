@@ -418,7 +418,25 @@ async def test_an_existing_machine_without_a_profile_is_asked_who_first(fake_rep
 
 
 @pytest.mark.asyncio
-async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard):
+async def test_without_a_planning_tool_none_fits_is_closed(fake_repo: Path, onboard):
+    settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"}))
+    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
+    async with app.run_test(size=SIZE) as pilot:
+        await _on(pilot, app, IntentStep)
+        await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
+        lst = app.screen.query_one("#ob-presets", OptionList)
+        custom = lst.get_option_at_index(lst.option_count - 1)
+        assert custom.id == "custom" and custom.disabled and "Claude Code, Codex or agy" in str(custom.prompt)
+        assert "Claude Code, Codex or agy" in str(app.screen.query_one("#ob-town-note").render())
+
+
+@pytest.mark.asyncio
+async def test_agy_alone_plans_a_town_but_brings_no_claude_warder(fake_repo: Path, onboard, monkeypatch):
+    by_id = {t.id: t for t in tools.TOOLS}
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: [
+        tools.ToolStatus(by_id["claude"], found=False),
+        tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.1.20", logged_in=True),
+        tools.ToolStatus(by_id["codex"])])
     settings.save(settings.MachineSettings(onboarded=True, profile={"orchestration": "some", "role": "founder"},
                                            tools={**settings.MachineSettings().tools,
                                                   "agy": settings.ToolChoice(enabled=True)}))
@@ -428,8 +446,8 @@ async def test_without_claude_code_none_fits_is_closed(fake_repo: Path, onboard)
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
         lst = app.screen.query_one("#ob-presets", OptionList)
         custom = lst.get_option_at_index(lst.option_count - 1)
-        assert custom.id == "custom" and custom.disabled and "needs Claude Code" in str(custom.prompt)
-        assert "Claude Code" in str(app.screen.query_one("#ob-town-note").render())
+        assert custom.id == "custom" and not custom.disabled
+        assert str(app.screen.query_one("#ob-town-note").render()) == ""
         assert not app.screen.query_one("#ob-warder", Checkbox).display          # no claude: no Warder
         assert not app.screen.query_one("#ob-warder-agy").display
         assert "KNIGHT" in str(app.screen.query_one("#ob-mascot").render())

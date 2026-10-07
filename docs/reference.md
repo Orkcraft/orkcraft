@@ -725,7 +725,7 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder, the Building retro and the Town retro (`claude -p`), the Barracks orks and the
+  Town Builder (`claude -p`, or Codex or agy, which print no price), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
   Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
@@ -863,9 +863,12 @@ Stewards' changes now get their own checkpoint as well.
 
 ### 📜 The Town Builder
 
-An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole town: one
-`claude -p` call in an empty folder, like the Foreman, that sees only the order and the building
-catalog. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
+An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole town: one model
+call in an empty folder, like the Foreman, that sees only the order and the building catalog. It
+runs on the first tool you turned on, in this order: Claude Code (`claude -p`), Codex (`codex exec`
+in a read-only sandbox, the prompt on stdin) or agy (`agy --print` in its sandbox, its edits only in
+that empty folder) — `builders.planner_runner`. With none of them on, the order waits in the 🏰 Town
+Hall. Codex and agy print no price, so their plans cost nothing in 🪙 Gold. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
 scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
 building passes `masonry.validate_spec`, and a plan with problems goes back with them (up to 3
 attempts). The checks also refuse a road into a building that does nothing with a cart (Pit,

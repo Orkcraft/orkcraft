@@ -24,7 +24,7 @@ from typing import Callable
 
 from orkcraft.realm import halt, huts, masonry, naming
 from orkcraft.sources import telemetry
-from orkcraft.sources.sessions import claude_bin
+from orkcraft.sources.sessions import agy_bin, claude_bin, codex_bin
 
 MAX_ATTEMPTS = 3
 CALL_TIMEOUT_S = 240
@@ -107,22 +107,28 @@ def extract_json(text: str) -> dict | None:
     return None
 
 
-def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    """One non-interactive Claude Code call in an empty folder (`model`: an alias such as haiku or
-    opus; None keeps the operator's default). Raises RuntimeError on failure."""
+def _call(tool: str, cmd_in: Callable[[str], list[str]], stdin: str | None = None) -> subprocess.CompletedProcess:
+    """One non-interactive CLI call (`cmd_in(folder)`) in an empty temporary folder, without orkcraft's
+    own variables. Raises RuntimeError when the CLI is missing or silent, Stopped on 🛑 Halt All."""
     with tempfile.TemporaryDirectory(prefix="orkcraft-mason-") as empty:
         env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
+        cmd = cmd_in(empty)
         try:
-            proc = halt.run(                            # 🛑 Halt All stops it (Halted)
-                [claude_bin(), "-p", prompt, "--output-format", "json", *(["--model", model] if model else [])],
-                cwd=empty, env=env, timeout=CALL_TIMEOUT_S,
-            )
+            return halt.run(cmd, input=stdin, cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All stops it
         except FileNotFoundError as e:
-            raise RuntimeError(f"Claude Code CLI not found ({claude_bin()}) — install it or set ORKCRAFT_CLAUDE_BIN") from e
+            raise RuntimeError(f"{TOOL_NAMES[tool]} CLI not found ({cmd[0]}) — install it or set "
+                               f"ORKCRAFT_{tool.upper()}_BIN") from e
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"no answer within {CALL_TIMEOUT_S} s") from e
         except halt.Halted as e:
             raise halt.Stopped() from e
+
+
+def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
+    """One non-interactive Claude Code call in an empty folder (`model`: an alias such as haiku or
+    opus; None keeps the operator's default). Raises RuntimeError on failure."""
+    proc = _call("claude", lambda _: [claude_bin(), "-p", prompt, "--output-format", "json",
+                                      *(["--model", model] if model else [])])
     if proc.returncode != 0:
         raise RuntimeError(f"claude exited with {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:300]}")
     out = proc.stdout.strip()
@@ -136,6 +142,51 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
         text, cost = envelope["result"], float(raw) if isinstance(raw, (int, float)) else None
     telemetry.charge(cost, f"claude -p {model or 'default'}")     # no transcript of this run: 🪙 here
     return text, cost
+
+
+def agy_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
+    """One headless agy call in an empty folder, its shell in agy's sandbox and its edits only in that
+    folder (`model`: one of agy's, realm/tiers.py; None its usual flash). Raises RuntimeError on failure."""
+    from orkcraft.realm import roads
+    proc = _call("agy", lambda empty: [agy_bin(), "--print", prompt, "--model", model or roads.AGY_MODEL,
+                                       "--mode", "accept-edits", "--sandbox", "--add-dir", empty,
+                                       "--output-format", "json"])
+    if proc.returncode != 0:
+        raise RuntimeError(roads.failure("agy", proc.returncode, proc.stdout, proc.stderr))
+    text, cost, _ = roads._result_of(proc.stdout)
+    telemetry.charge(cost, f"agy --print {model or 'default'}")
+    return text, cost
+
+
+def codex_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
+    """One `codex exec` in an empty folder and a read-only sandbox, its prompt on stdin (`model`: one
+    of Codex's; None its default). Codex prints no price: the cost is None. Raises RuntimeError on failure."""
+    from orkcraft.realm import roads
+    proc = _call("codex", lambda _: [codex_bin(), *roads.codex_cmd("read-only", model or "")[1:]], stdin=prompt)
+    if proc.returncode != 0:
+        raise RuntimeError(roads.failure("codex", proc.returncode, proc.stdout, proc.stderr))
+    text = roads.codex_result_of(proc.stdout)[0]
+    if not text:
+        raise RuntimeError(f"codex gave no answer: {(roads.codex_error(proc.stdout) or proc.stderr).strip()[:300]}")
+    telemetry.charge(None, f"codex exec {model or 'default'}")
+    return text, None
+
+
+# The tools a planner (the Town Builder) may call, in the order one is picked when several are on.
+RUNNERS: dict[str, Runner] = {"claude": claude_runner, "codex": codex_runner, "agy": agy_runner}
+TOOL_NAMES = {"claude": "Claude Code", "codex": "Codex", "agy": "agy"}
+
+
+def planner_tool(enabled) -> str | None:
+    """The tool a planner calls: the first of `RUNNERS` the operator turned on, None when none is."""
+    on = set(enabled)
+    return next((t for t in RUNNERS if t in on), None)
+
+
+def planner_runner(enabled) -> Runner | None:
+    """`planner_tool`'s model call, None when no tool that plans is on."""
+    tool = planner_tool(enabled)
+    return RUNNERS[tool] if tool else None
 
 
 def _feedback(attempts: list[Attempt]) -> str:

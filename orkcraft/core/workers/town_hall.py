@@ -202,10 +202,12 @@ class TownHallWorker(Worker):
             return
         from orkcraft.realm import builders, town_builder
         repo, taken, order = self.repo_root, self.town.taken_ids(), c["order"]
+        on = [t for t, choice in self.town.machine.tools.items() if choice.enabled]
+        runner = runners.BUILD_RUNNER or builders.planner_runner(on) or builders.claude_runner   # Claude Code, Codex or agy
 
         def work() -> None:
             try:
-                plan = town_builder.plan(order, repo, taken, runners.BUILD_RUNNER or builders.claude_runner)
+                plan = town_builder.plan(order, repo, taken, runner)
             except Exception as e:             # never raises, but a town never falls over a plan
                 plan = town_builder.TownPlan(error=str(e))
             self.town.call(self._planned, c["id"], plan)

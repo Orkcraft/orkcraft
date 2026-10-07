@@ -13,7 +13,6 @@ from orkcraft.realm import checkpoint, builders
 from orkcraft.screens import onboarding
 from orkcraft.realm import intents, town_builder, town_presets
 from orkcraft.screens.town_plan import TownPlanReview
-from orkcraft import settings
 
 from orkcraft.core import runners
 
@@ -89,11 +88,12 @@ class RaisingMixin:
             return
         if self.query(onboarding.RaiseBar):
             return                                                # one town at a time
-        if runners.BUILD_RUNNER is None and not self.desktop.machine.tools.get("claude", settings.ToolChoice()).enabled:
+        on = [t for t, choice in self.desktop.machine.tools.items() if choice.enabled]
+        if runners.BUILD_RUNNER is None and builders.planner_tool(on) is None:
             self.order_burning = self._order_burns()
-            self.notify("The Town Builder plans with Claude Code, and it is off. F10 → 🧭 Onboarding turns it on; "
-                        "the order keeps waiting in the 🏰 Town Hall.", title="📜 Town Builder", severity="warning",
-                        timeout=12)
+            self.notify("The Town Builder plans with Claude Code, Codex or agy, and all of them are off. "
+                        "F10 → 🧭 Onboarding turns one on; the order keeps waiting in the 🏰 Town Hall.",
+                        title="📜 Town Builder", severity="warning", timeout=12)
             return
         bar = onboarding.mount_raise_bar(self.screen, None)
         role = str(order.get("role") or "")
@@ -103,7 +103,8 @@ class RaisingMixin:
 
     @work(thread=True, exclusive=True, group="town-builder")
     def _plan_town_work(self, order: str, note: str, bar, templates: str = "") -> None:
-        runner = runners.BUILD_RUNNER or builders.claude_runner
+        on = [t for t, choice in self.desktop.machine.tools.items() if choice.enabled]
+        runner = runners.BUILD_RUNNER or builders.planner_runner(on) or builders.claude_runner
         result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note,
                                    templates=templates)
         self.call_from_thread(self._on_town_plan, order, result, bar)

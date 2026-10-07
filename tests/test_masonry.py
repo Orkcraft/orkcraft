@@ -203,3 +203,58 @@ def test_claude_runner_calls_the_cli_in_an_empty_folder(tmp_path: Path, monkeypa
     monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(tmp_path / "missing"))
     with pytest.raises(RuntimeError, match="not found"):
         builders.claude_runner("x")
+
+
+def _fake_cli(tmp_path: Path, name: str, answer: str) -> tuple[Path, Path]:
+    """A CLI that records its argv, folder and stdin, and prints `answer`."""
+    fake, record = tmp_path / name, tmp_path / f"{name}.json"
+    fake.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, os, sys\n"
+        "stdin = '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()\n"
+        f"json.dump({{'argv': sys.argv[1:], 'cwd': os.getcwd(), 'files': os.listdir('.'), 'stdin': stdin,"
+        f" 'orkcraft_env': [k for k in os.environ if k.startswith('ORKCRAFT_')]}}, open({str(record)!r}, 'w'))\n"
+        f"sys.stdout.write({answer!r})\n",
+        encoding="utf-8")
+    fake.chmod(0o755)
+    return fake, record
+
+
+def test_agy_runner_calls_agy_headless_in_an_empty_folder(tmp_path: Path, monkeypatch):
+    fake, record = _fake_cli(tmp_path, "fake-agy", json.dumps({"response": '{"ok": 1}'}))
+    monkeypatch.setenv("ORKCRAFT_AGY_BIN", str(fake))
+    assert builders.agy_runner("plan it") == ('{"ok": 1}', None)
+    rec = json.loads(record.read_text())
+    assert rec["argv"][:2] == ["--print", "plan it"] and "--sandbox" in rec["argv"]
+    assert rec["argv"][rec["argv"].index("--add-dir") + 1] == rec["cwd"]
+    assert rec["argv"][-2:] == ["--output-format", "json"]
+    assert rec["files"] == [] and "orkcraft-mason-" in rec["cwd"] and rec["orkcraft_env"] == []
+    assert builders.agy_runner("x", model="gemini-x") and "gemini-x" in json.loads(record.read_text())["argv"]
+    monkeypatch.setenv("ORKCRAFT_AGY_BIN", str(tmp_path / "missing"))
+    with pytest.raises(RuntimeError, match="agy CLI not found"):
+        builders.agy_runner("x")
+
+
+def test_codex_runner_reads_the_last_message_of_a_read_only_exec(tmp_path: Path, monkeypatch):
+    events = "\n".join(json.dumps(e) for e in (
+        {"type": "thread.started", "thread_id": "t1"},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": "thinking"}},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": '{"ok": 1}'}},
+        {"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 5}}))
+    fake, record = _fake_cli(tmp_path, "fake-codex", events)
+    monkeypatch.setenv("ORKCRAFT_CODEX_BIN", str(fake))
+    assert builders.codex_runner("plan it") == ('{"ok": 1}', None)             # Codex prints no price
+    rec = json.loads(record.read_text())
+    assert rec["argv"][:2] == ["exec", "-"] and 'sandbox_mode="read-only"' in rec["argv"]
+    assert rec["stdin"] == "plan it" and rec["files"] == [] and rec["orkcraft_env"] == []
+    fake, _ = _fake_cli(tmp_path, "silent-codex", json.dumps({"type": "turn.failed", "error": {"message": "no login"}}))
+    monkeypatch.setenv("ORKCRAFT_CODEX_BIN", str(fake))
+    with pytest.raises(RuntimeError, match="no login"):
+        builders.codex_runner("x")
+
+
+def test_the_planner_is_the_first_tool_turned_on():
+    assert builders.planner_tool(["agy", "claude", "codex"]) == "claude"
+    assert builders.planner_tool(t for t in ("agy", "codex")) == "codex"
+    assert builders.planner_runner(["agy"]) is builders.agy_runner
+    assert builders.planner_tool([]) is None and builders.planner_runner(["cursor"]) is None
