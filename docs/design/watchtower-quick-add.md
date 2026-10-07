@@ -360,6 +360,10 @@ logins work.
   - **Use Claude's connection**: no token, every 30 min, costs a model run each look.
   - A server in `needs-auth` shows as `Jira · in Claude, needs a login` with *run `/mcp` in Claude
     Code*; the tower cannot log it in.
+- **What the login reaches.** Atlassian's `getAccessibleAtlassianResources` says which sites and
+  which products (Jira, Confluence) the login has; the picker offers only those, and a product
+  missing there reads *Confluence is not in this login — log in again in Claude with `/mcp` and
+  allow it* instead of a source that is quietly empty.
 - **Step 2 without a token.** The agent lists what there is (projects, spaces, channels) in one
   turn, for the agent source's ticks.
 - **From the intent.** Whatever way a source is added, the agent can turn *user feedback about the
@@ -394,7 +398,8 @@ Claude Code 2.1.291 on macOS, agy 1.3.1.
 | Atlassian's read tools | an allow-list by hand: `atlassianUserInfo`, `getAccessibleAtlassianResources`, `searchJiraIssuesUsingJql`, `getJiraIssue`, `searchConfluenceUsingCql` (a name filter misses `fetch`, `search`, `…UserInfo`) |
 | One Jira look (JQL about me, last day) | 4 issues, the same ids twice (`KEY:updated`); 5–7 turns, 23–42 s, $0.028–0.076 |
 | A new Jira comment (an @-mention of myself) | seen: that issue's id changed to the new time, `mention: true` — a self-mention counts |
-| One Confluence look (CQL mentions of me) | 0 items both times; one run took 13 turns and tried a tool not allowed (refused) — the same ask, a different path |
+| One Confluence look (CQL mentions of me) | 0 items, `success`, every time; one run took 13 turns and tried a tool not allowed (refused) — the same ask, a different path |
+| Why Confluence was empty | asked in words: the site's resources list no Confluence for this login, and every CQL got `403 The app is not installed on this instance` — **a failure the structured answer hid as "nothing new"** (hence the `error` field, §7.2) |
 | One Slack look (mentions and DMs) | an empty workspace: 0 items both times; 3–8 turns, 15–22 s, $0.011–0.043 |
 | A new Slack message (an @-mention of myself) | seen, `mention: true`, the same id twice (`channel:ts`); 5 turns both times, 16–23 s, $0.022–0.034. A plain message posted beside it was not returned *(check: search lag, or the search kept to mentions)* |
 | agy | its MCP config holds firebase and dart servers only: nothing to listen with there |
