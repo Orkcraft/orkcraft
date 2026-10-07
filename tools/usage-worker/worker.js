@@ -6,6 +6,8 @@
 //
 //   POST /v1/events  {install_id, session_id, app_version, os, python, events: [{event, time, props}]}
 //   → 204 (kept or dropped quietly) · 400 (not a batch) · 413 (too big) · 429 (too often)
+//   X-Amplitude-Status on a 204 that reached Amplitude: its own answer (200 ok, 400 a bad key or batch,
+//   401 a key of the other data centre), so `curl -i` shows why nothing arrives.
 
 const COUNTS = ["0", "1", "2-5", "6-10", "11+"];
 const MINUTES = ["<5", "5-30", "30-120", "120+"];
@@ -85,13 +87,14 @@ export default {
     }));
     if (!events.length) return new Response(null, { status: 204 });
 
-    const res = await fetch(AMPLITUDE[env.AMPLITUDE_REGION] || AMPLITUDE.eu, {
+    const res = await fetch(AMPLITUDE[env.AMPLITUDE_REGION] || AMPLITUDE.us, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ api_key: env.AMPLITUDE_API_KEY, events }),
     });
     // The app keeps a batch and tries again only when it is worth it: Amplitude down or busy.
     if (res.status === 429 || res.status >= 500) return new Response(null, { status: 503 });
-    return new Response(null, { status: 204 });
+    // Anything else is final for the app; the header says what Amplitude thought of the batch.
+    return new Response(null, { status: 204, headers: { "X-Amplitude-Status": String(res.status) } });
   },
 };
