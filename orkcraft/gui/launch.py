@@ -43,7 +43,7 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
             thread.join(10)
         return done()
     window = webview.create_window(TITLE, server.url, width=SIZE[0], height=SIZE[1], min_size=(960, 600),
-                          background_color="#1a1813")
+                          background_color="#141210")
     host.updates.quit = window.destroy
     try:
         webview.start()

@@ -34,14 +34,15 @@ export function TypeIcon({ type }) {
 
 // The biomes an orkspace stands on (docs/design/war-map.md §3, realm/biomes.py): the town's ground, the
 // land's fill on the War Map. Dark and low in saturation, so cards, gold and fire read on all; lava is
-// basalt, never red (red is the fire's).
+// basalt, never red (red is the fire's). Every ground stays darker than a card (`--panel`), so a card reads
+// as a plane on it (about 1.2:1 at least), never as a hole in it.
 export const BIOMES = {
-  dirt: { ground: "#1a1813", land: "#3a3326" },
+  dirt: { ground: "#141210", land: "#3a3326" },
   forest: { ground: "#101a0b", land: "#22341a" },
   ice: { ground: "#070d14", land: "#1c2c3c" },
-  dust: { ground: "#2a2014", land: "#5a462a" },
+  dust: { ground: "#1c160e", land: "#5a462a" },
   void: { ground: "#0e0c14", land: "#2c263c" },
-  lava: { ground: "#161212", land: "#342c2a" },
+  lava: { ground: "#131010", land: "#342c2a" },
   meadow: { ground: "#0d1a16", land: "#24443a" },   // the knights' open field: cool spring green, not forest's
 };
 export const BIOME_ORDER = Object.keys(BIOMES);

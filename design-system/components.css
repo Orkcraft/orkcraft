@@ -186,7 +186,7 @@
 .ok-hut { display: inline-flex; flex-direction: column; position: relative; max-width: 100%; }
 .ok-hut.xs { width: 192px; } .ok-hut.s { width: 240px; } .ok-hut.m { width: 288px; } .ok-hut.l { width: 336px; }
 .ok-hut__card { position: relative; display: flex; flex-direction: column; background: var(--panel);
-  border: var(--ok-stroke) solid var(--frame); box-shadow: var(--shadow-window); }
+  border: var(--ok-stroke) solid var(--frame); box-shadow: var(--card-edge), var(--shadow-window); }
 .ok-hut__label { display: flex; align-items: center; gap: 6px; height: var(--titlebar); padding: 0 var(--space-2);
   background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 400 15px/1 var(--ok-head); color: var(--ink); }
 .ok-hut__label .no { font: 700 12px/1 var(--ok-font); color: var(--ink-muted); }

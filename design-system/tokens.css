@@ -3,14 +3,14 @@
 :root, [data-theme="camp"] {
   --canvas: #172a0a;
   --terrain: #1f3823;
-  --panel: #1f1a12;
+  --panel: #2a2419;
   --panel-inset: #120f0a;
-  --panel-raised: #3a2f1f;
+  --panel-raised: #463a28;
   --bevel-hi: #7a6240;
   --bevel-lo: #050403;
   --selection: #1f3a5c;
-  --frame: #8a6a2e;
-  --hut-frame: #8a6a2e;
+  --frame: #a07c38;
+  --hut-frame: #a07c38;
   --frame-strong: #6a9a6f;
   --frame-focus: #e8b94a;
   --ink: #e8e0c8;
@@ -66,6 +66,7 @@
   --meter: #c9a86a;
   --bevel-raised: inset 2px 2px 0 #7a6240, inset -2px -2px 0 #050403;
   --bevel-sunken: inset 2px 2px 0 #050403, inset -2px -2px 0 #7a6240;
+  --card-edge: inset 1px 1px 0 rgba(255, 226, 170, 0.12);
   --shadow-window: 0 0 0 2px #050403, 4px 4px 0 #000000;
   --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
 }
@@ -136,6 +137,7 @@
   --meter: #c9a86a;
   --bevel-raised: inset 2px 2px 0 #4a6884, inset -2px -2px 0 #020508;
   --bevel-sunken: inset 2px 2px 0 #020508, inset -2px -2px 0 #4a6884;
+  --card-edge: inset 1px 1px 0 rgba(190, 220, 255, 0.10);
   --shadow-window: 0 0 0 2px #020508, 4px 4px 0 #000000;
   --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
 }
@@ -206,6 +208,7 @@
   --meter: #c9a86a;
   --bevel-raised: inset 2px 2px 0 #5a5040, inset -2px -2px 0 #000000;
   --bevel-sunken: inset 2px 2px 0 #000000, inset -2px -2px 0 #5a5040;
+  --card-edge: inset 1px 1px 0 rgba(255, 240, 210, 0.08);
   --shadow-window: 0 0 0 2px #000000, 4px 4px 0 #000000;
   --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
 }
@@ -276,6 +279,7 @@
   --meter: #c9a86a;
   --bevel-raised: none;
   --bevel-sunken: inset 0 0 0 1px #3a3427;
+  --card-edge: 0 0 0 0 transparent;
   --shadow-window: 0 6px 20px rgba(0, 0, 0, 0.45);
   --glow-fire: 0 0 0 1px #f0603c;
 }
