@@ -756,10 +756,11 @@ class BarracksWorker(PlanMixin, Worker):
         """The orc prepared something to go out: nothing is posted until the operator approves it — here (🔥)
         or in a Loot that `pool.question` runs through (accept → it is posted, rework → what to change)."""
         task.target, task.draft = target, draft
-        md = (f"**{task.title}** — {orc.name} wants to publish to {target or 'a service'} and waits for your "
+        where = bk.publish_kind(target)[1]
+        md = (f"**{task.title}** — {orc.name} wants to publish to {where or 'a service'} and waits for your "
               f"approval (accept: it is posted as below, your edits included · send back: what to change)\n\n"
               f"{report.strip()}{self._files_md(task)}\n\n## To publish\n\nPUBLISH: {target}\n\n{draft}")
-        self._ask(task, f"Publish to {target or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
+        self._ask(task, f"Publish to {where or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
                   trail=self._trail(task, orc, self.APPROVAL), kind="draft")
 
     def approved(self, payload: pipes.Payload) -> bool:

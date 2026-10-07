@@ -3,8 +3,9 @@
 
 Nothing in a cart says so on its own, so it is read off what the cart already carries:
 
-- a draft waiting for approval names where it goes out (`PUBLISH: Slack #release`,
-  `PUBLISH: Jira, project APP, a new Bug`): the place says what it is;
+- a draft waiting for approval names what it is and where it goes out (`PUBLISH: message, Slack
+  #release`, realm/barracks.py PUBLISH_KINDS); an older draft names the place only
+  (`PUBLISH: Jira, project APP, a new Bug`), and the place says what it is;
 - a file cart, by its name;
 - the files the cart's work committed on its branch (the trail's worktree and branch);
 - a text cart, by its text: JSON is data, Markdown with a heading a doc, anything else text.
@@ -133,7 +134,8 @@ def of(kind: str, value: str, trail: tuple = (), files: list[str] | None = None)
     _report, place, draft = barracks.publish_of(value) if kind == pipes.TEXT else (value, "", "")
     if place:
         body = draft or value
-        return Content(of_place(place), place[:80], body, lines_of(body), _images(files), len(files))
+        named, where = barracks.publish_kind(place)
+        return Content(named or of_place(where), where[:80], body, lines_of(body), _images(files), len(files))
     if files:
         branch = next((h.branch for h in reversed(trail) if h.worktree and h.branch), "")
         return Content(_of_files(files), branch, value, lines_of(value), _images(files), len(files))

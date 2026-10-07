@@ -104,8 +104,10 @@ change in the working tree.
 - **What a cart is** — every cart says it before it is opened (`realm/content.py`): a **message**
   (Slack, mail, Telegram…), a **doc** (Confluence, Notion, a Markdown page), a **ticket** (Jira,
   Linear, an issue), **code**, an **image**, **data** (JSON, CSV…) or **text**. Nothing in a cart says
-  so on its own; it is read off what the cart carries: a draft waiting for approval by its
-  `PUBLISH: <where>` line (the place is also shown: `Message · Slack #release`), a file cart by its
+  so on its own; it is read off what the cart carries: a draft waiting for approval names it first
+  on its `PUBLISH: <kind>, <where>` line (`PUBLISH: ticket, Jira, project APP` — the orks are told
+  the kinds, `barracks.PUBLISH_KINDS`; an older draft without one is read by its place), and the
+  place is shown beside it (`Message · Slack #release`); a file cart by its
   name, the files its work committed on its branch, else the text (JSON is data, Markdown with a
   heading a doc). A card in the queue shows the type, where it goes, the title and the first lines of
   what goes out — a draft without the ork's report — or thumbnails of its pictures. The closed card
