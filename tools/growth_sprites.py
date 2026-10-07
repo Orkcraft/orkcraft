@@ -52,7 +52,8 @@ def save_pair(img1x: Image.Image, path: pathlib.Path) -> None:
 
 
 # -- the mascots ---------------------------------------------------------------------------------------
-# F face, D eyes and mouth, T tusks, teeth or beard, N nose, M metal. 12 × 8, as the ork mark.
+# F face, D eyes and mouth, T tusks, teeth or beard, N nose, M metal, H hair and S its shade. 12 × 8, as
+# the ork mark.
 HEADS = {
     "orc": ["...FFFFFF...",
             "F.FFFFFFFF.F",
@@ -62,12 +63,12 @@ HEADS = {
             "..FTFFFFTF..",
             "..FTFFFFTF..",
             "...FFFFFF..."],
-    "elf": ["...FFFFFF...",
-            "..FFFFFFFF..",
+    "elf": ["...HHHHHH...",
+            "..SHHFFHHS..",
             "FFFFFFFFFFFF",
-            ".FFDDFFDDFF.",
-            "..FFFFFFFF..",
-            "..FFFFFFFF..",
+            "SFFDDFFDDFFS",
+            ".SFFFFFFFFS.",
+            ".SFFFFFFFFS.",
             "...FFDDFF...",
             "....FFFF...."],
     "lich": ["...FFFFFF...",
@@ -111,7 +112,7 @@ HEADS = {
                "..MMMMMMMM..",
                "...MMMMMM..."],
 }
-SKINS = {"orc": GREEN, "elf": "#c9d6a3", "lich": "#8e88a8", "skeleton": IVORY, "gnome": "#e3b58c",
+SKINS = {"orc": GREEN, "elf": "#eadcc2", "lich": "#8e88a8", "skeleton": IVORY, "gnome": "#e3b58c",
          "goblin": "#a8c040", "knight": "#9aa0a8"}
 KINS = tuple(HEADS)
 # Three rows over the head: what each stage adds (W a band of dark green, T ivory horns, G gold).
@@ -134,7 +135,7 @@ def mascot_grid(kin: str, stage: int) -> list[str]:
 def mascots() -> None:
     for kin in KINS:
         colours = {"F": SKINS[kin], "D": NIGHT, "T": IVORY, "N": "#c99a74", "M": SKINS[kin], "W": DARK_GREEN,
-                   "G": GOLD}
+                   "G": GOLD, "H": "#e8c76a", "S": "#b08a3a"}
         for stage in STAGES:
             save_pair(grid_image(mascot_grid(kin, stage), colours, 2), SPRITES / "mascots" / f"{kin}-{stage}.png")
 
