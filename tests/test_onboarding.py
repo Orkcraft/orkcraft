@@ -138,7 +138,7 @@ def test_who_is_which_mascot():
     assert kin["designer"] == kin["game_designer"] == "elf"
     assert kin["marketing"] == kin["aso_manager"] == "gnome"
     assert kin["data_analyst"] == "goblin" and kin["founder"] == "knight"
-    assert intents.nick("eng_manager") == "Jira Lich" and intents.nick("founder") == "Indie Knight"
+    assert intents.nick("eng_manager") == "The Jira Lich" and intents.nick("founder") == "Indie Knight"
     assert "ORK" in "\n".join(intents.mascot("engineer"))
 
 
@@ -264,7 +264,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         await _pick(app, pilot, "ob-role", "engineer")
         await _until(pilot, lambda: app.screen.chip("code"))                    # an ork's day
         assert not str(app.screen.query_one("#ob-who-note").render())
-        assert "Merge Ork" in str(app.screen.query_one("#ob-who-line").render())
+        assert "Burnout Peon" in str(app.screen.query_one("#ob-who-line").render())
         await _pick(app, pilot, "ob-industry", "fintech")
         app.screen.chip("code").action_toggle()
         app.screen.chip("firefight").action_toggle()

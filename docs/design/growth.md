@@ -216,8 +216,8 @@ What Info gets:
 
 ### 7.1 Who
 
-The mascot is **the operator**. The onboarding already gives one per role (onboarding.md §3: Merge Ork,
-Jira Lich, Figma Elf, Keyword Gnome, Dashboard Goblin, Indie Knight, Wandering Skeleton). Today it is
+The mascot is **the operator**. The onboarding already gives one per role (onboarding.md §3: Burnout Peon,
+The Jira Lich, Gradient-Sick Elf, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight, Wandering Skeleton). Today it is
 only a name. It gets a face, and the face grows.
 
 ### 7.2 Drawn like the ork
@@ -238,11 +238,11 @@ nick from the onboarding, the others are the kin's.
 
 | Kin (roles) | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
-| orks (engineers, QA) | Commit Grunt | Merge Ork · Bug Ork | Hotfix Berserker | Warlord of Prod |
-| undead (managers) | Standup Zombie | Jira Lich · Roadmap Wraith | Lich of Sprints | Release Night King |
-| elves (designers) | Pixel Sprout | Figma Elf · Lore Elf | Ranger of the Grid | High Elf of the Design System |
-| gnomes (ASO, marketing) | A/B Tinkerer | Keyword Gnome · Funnel Gnome | Growth-Hack Artificer | Grand Tinker of Conversions |
-| goblins (analysts) | Spreadsheet Scrounger | Dashboard Goblin | Pivot-Table Boss | KPI Tycoon |
+| orks (engineers, QA) | Commit Grunt | Burnout Peon · Bug Ork | Hotfix Berserker | Warlord of Prod |
+| undead (managers) | Standup Zombie | The Jira Lich · Roadmap Wraith | Lich of Sprints | Release Night King |
+| elves (designers) | Pixel Sprout | Gradient-Sick Elf · Lore Elf | Ranger of the Grid | High Elf of the Design System |
+| gnomes (ASO, marketing) | A/B Tinkerer | Keyword Gnome · Growth-Hack Gnome | Growth-Hack Artificer | Grand Tinker of Conversions |
+| goblins (analysts) | Spreadsheet Scrounger | Data-Mining Goblin | Pivot-Table Boss | KPI Tycoon |
 | knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
 | skeletons (everyone else) | Inbox Skeleton | Wandering Skeleton | Captain of the Skeleton Crew | Lord of a Thousand Tabs |
 
