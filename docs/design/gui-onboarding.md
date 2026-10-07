@@ -10,7 +10,7 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 
 ```
 1 Your AI tools                 always · + Request a tool
-2 Who are you?                  only without --role · all 11 classes at once, in two rows
+2 Who are you?                  without --role: all 11 classes in two rows; --role gnome: the 2 gnomes
 3 Tools the orks can use        only when an MCP server is connected to an AI tool
 4 Your first town               the class's towns, drawn · Use this town · Doesn't fit · Empty town
   4b Tell the town planner      only on "Doesn't fit": in · out · what each tool is best at · words · what hurts
@@ -19,7 +19,8 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 
 | Who | Screens |
 |---|---|
-| a gnome from orkcraft.dev (`--role marketing`), no MCP | 1 · 4 · 5 |
+| a Growth-Hack Gnome from orkcraft.dev (`--role marketing`), no MCP | 1 · 4 · 5 |
+| a gnome from orkcraft.dev (`--role gnome`) | 1 · 2 (the two gnomes only) · (3) · 4 · 5 |
 | a gnome with no `--role`, MCP connected | 1 · 2 · 3 · 4 · 5 |
 | "Doesn't fit" | … 4 · 4b · 5 (the planner draws the town first) |
 | Skip, from any step but the first | an empty town; the tools found stay on; no Security reviewer |
@@ -57,10 +58,12 @@ Wandering Skeleton (Someone else). Each card is its nick and its role, its masco
 (`design-system/sprites/mascots`, `--glyphs` of `js/terrain.js`); a kin's second role wears the next stage's
 head, so the two gnomes are told apart. One click picks it; there is no second question.
 
-- `orkcraft --role <role or class>` (`settings.preset_role`) skips this screen.
-- **To do:** a class from the landing page names a kin (`--role gnome`), and `intents.CLASSES` maps it to one
-  role (gnome → marketing), so a Keyword Gnome is made a Growth-Hack Gnome. For a kin with two roles, open
-  this screen with that kin's two cards marked instead.
+- `orkcraft --role <role>` (`--role marketing`) or a class with one role (`--role knight`) skips this screen
+  (`settings.preset_role`).
+- A class with two roles from the landing page (`--role gnome`, `peon`, `lich`, `elf`) is kept as `profile.kin`
+  (`intents.class_kin`): this screen shows only that kin's two cards, side by side ("Two kinds of gnomes…").
+  A machine that finished an onboarding is never asked again. The TUI still opens on the class's first role
+  (`intents.CLASSES`).
 - **To do:** the landing page's class art, larger than the 12 × 11 heads, into `design-system/sprites` and
   onto these cards.
 

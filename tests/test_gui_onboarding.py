@@ -104,6 +104,26 @@ def test_the_landing_page_s_class_skips_who_you_are(fake_repo: Path, onboard):
     assert o["steps"] == ["tools", "mcp", "town"] and o["nick"] == "Growth-Hack Gnome"
 
 
+def test_the_landing_page_s_gnome_shows_only_the_two_gnomes(fake_repo: Path, onboard):
+    settings.preset_role("marketing", kin="gnome")                        # orkcraft --role gnome
+    host = _host(fake_repo)
+    o = host.snapshot()["onboarding"]
+    assert o["steps"] == ["tools", "who", "mcp", "town"] and o["only_kin"] == "gnome" and o["role"] == ""
+    assert [c["id"] for c in o["classes"]] == ["aso_manager", "marketing"]
+    host.command("onboarding.tools", {"next": True})
+    o = host.command("onboarding.role", {"role": "aso_manager"})
+    assert o["step"] == "mcp" and o["nick"] == "Keyword Gnome"
+
+
+def test_a_known_machine_is_not_asked_again(fake_repo: Path, onboard):
+    settings.preset_role("marketing", kin="gnome")
+    m = settings.load()
+    m.onboarded = True
+    settings.save(m)
+    o = _host(fake_repo).snapshot()["onboarding"]
+    assert "who" not in o["steps"] and o["role"] == "marketing"
+
+
 def test_a_class_that_is_not_one(fake_repo: Path, onboard):
     host = _host(fake_repo)
     host.command("onboarding.tools", {"next": True})

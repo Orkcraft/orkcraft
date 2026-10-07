@@ -119,10 +119,16 @@ function ToolsStep({ o }) {
 
 // -- 2 · Who are you ------------------------------------------------------------------------------------
 
+const KIN_WORD = { orc: "orks", lich: "undead", elf: "elves", gnome: "gnomes" };
+
 function WhoStep({ o }) {
-  return html`<section class="gui-onb__card is-wide">
-    <${Head} o=${o} title="Who are you?" lead="Your class picks your first town, your mascot and the land it stands on." />
-    <div class="gui-onb__kins">
+  // From the landing page's class (`--role gnome`): only its two cards, with a lead of their own.
+  const lead = o.only_kin
+    ? say(`Two kinds of ${KIN_WORD[o.only_kin] || o.only_kin}. Each gets towns for its own work.`)
+    : "Your class picks your first town, your mascot and the land it stands on.";
+  return html`<section class=${cls("gui-onb__card", { "is-wide": !o.only_kin })}>
+    <${Head} o=${o} title="Who are you?" lead=${lead} />
+    <div class=${cls("gui-onb__kins", { "is-few": !!o.only_kin })}>
       ${o.classes.map((c) => html`<button key=${c.id} class=${cls("gui-onb__kin", { "is-on": o.role === c.id })}
           aria-pressed=${o.role === c.id} onClick=${() => send("onboarding.role", { role: c.id })}>
         <${Ground} biome=${c.biome}><${MascotHead} kin=${c.kin} stage=${c.stage} size=${5} /></${Ground}>

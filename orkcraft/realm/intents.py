@@ -552,6 +552,16 @@ def role_id_of(word: str) -> str | None:
     return w if any(r.id == w for r in ROLES) else None
 
 
+def class_kin(word: str) -> str:
+    """The kin a class of orkcraft.dev names (`gnome` → gnome, `peon` → orc) when that kin has more than one
+    role, so the onboarding asks which; "" for a role's own id or a kin with one role."""
+    w = (word or "").strip().lower().replace("-", "_")
+    if w not in CLASSES:
+        return ""
+    kin = role(CLASSES[w]).mascot
+    return kin if sum(r.mascot == kin for r in ROLES) > 1 else ""
+
+
 def industry(industry_id: str) -> Choice | None:
     return next((i for i in INDUSTRIES if i.id == industry_id), None)
 

@@ -49,8 +49,13 @@ class Onboarding:
         self.step = TOOLS
         machine = host.town.machine
         self.profile = dict(machine.profile)
-        self.kin = intents.role(self.profile["role"]).mascot if self.profile.get("role") else ""
-        self.role_given = bool(self.profile.get("role"))         # the landing page's class (settings.preset_role)
+        # The landing page named a class with two roles (`--role gnome`): step 2 shows only its two cards.
+        kin = str(self.profile.get("kin") or "")
+        self.only_kin = kin if not machine.onboarded and sum(r.mascot == kin for r in intents.ROLES) > 1 else ""
+        if self.only_kin:
+            self.profile.pop("role", None)
+        self.kin = intents.role(self.profile["role"]).mascot if self.profile.get("role") else self.only_kin
+        self.role_given = bool(self.profile.get("role"))         # the landing page's role (settings.preset_role)
         self.statuses: list[tools.ToolStatus] | None = None
         self.others: list[tools.Other] = []
         self.picked: dict[str, settings.ToolChoice] = {}
@@ -95,11 +100,13 @@ class Onboarding:
         out.append(TOWN)
         return out
 
-    @staticmethod
-    def _classes() -> list[dict]:
-        """Every role as a class card, each kin's second role with the next stage's head so the two differ."""
+    def _classes(self) -> list[dict]:
+        """Every role as a class card, each kin's second role with the next stage's head so the two differ;
+        only the landing page's kin when it named one."""
         out, seen = [], {}
         for r in intents.ROLES:
+            if self.only_kin and r.mascot != self.only_kin:
+                continue
             seen[r.mascot] = seen.get(r.mascot, 0) + 1
             out.append({"id": r.id, "nick": r.nick, "title": r.title, "kin": r.mascot, "stage": seen[r.mascot],
                         "biome": biomes.HOMES.get(r.mascot, "dirt")})
@@ -156,7 +163,7 @@ class Onboarding:
             "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(),
                       "missing": [st.tool.title for st in self.statuses or [] if not st.found],
                       "others": [{"id": o.id, "title": o.title} for o in self.others], "warder": self.warder},
-            "classes": self._classes(),
+            "classes": self._classes(), "only_kin": self.only_kin,
             "kin": self.kin, "role": self.profile.get("role", ""),
             "nick": intents.nick(self.profile["role"]) if self.profile.get("role") else "",
             "biome": biomes.home_of(self.profile),

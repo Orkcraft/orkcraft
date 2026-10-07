@@ -159,13 +159,14 @@ def load(file: Path | None = None) -> MachineSettings:
     return MachineSettings.from_dict(data) if isinstance(data, dict) else MachineSettings()
 
 
-def preset_role(role_id: str, file: Path | None = None) -> bool:
+def preset_role(role_id: str, file: Path | None = None, kin: str = "") -> bool:
     """`orkcraft --role`: the role the landing page was told, kept for the onboarding to open on.
+    `kin`: the page named a class with two roles (gnome), so the GUI's onboarding asks which of the two.
     It never overrides a role the operator picked in an onboarding they finished. True when kept."""
     s = load(file)
     if s.onboarded and s.profile.get("role"):
         return False
-    s.profile = {**s.profile, "role": role_id}
+    s.profile = {k: v for k, v in {**s.profile, "role": role_id, "kin": kin}.items() if k != "kin" or kin}
     save(s, file)
     return True
 
