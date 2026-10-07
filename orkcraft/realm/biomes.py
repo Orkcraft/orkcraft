@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from orkcraft.scroll import BIOMES
 
-ORDER = ("dirt", "forest", "ice", "dust", "void", "lava")     # a new orkspace's biome, in this order
+ORDER = ("dirt", "forest", "ice", "dust", "void", "lava", "meadow")     # a new orkspace's biome, in this order
 SETTLED = "biomes"          # meta key: the camp's biomes were spread once (the value is the rule's version)
 assert set(ORDER) == set(BIOMES)
 

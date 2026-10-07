@@ -37,7 +37,7 @@ def _t(key: str, camp: str, office: str, camp_many: str = "", office_many: str =
 TERMS: tuple[Term, ...] = (
     # -- the world ----------------------------------------------------------------------------------
     _t("ork", "ork", "agent", "orks", "agents"),
-    _t("orkspace", "orkspace", "workspace", "orkspaces", "workspaces"),
+    _t("orkspace", "orkspace", "orkspace", "orkspaces", "orkspaces"),   # the brand's word in both modes
     _t("orkestration", "orkestration", "coordination"),
     _t("orkestrate", "orkestrate", "coordinate"),
     _t("town", "town", "project", "towns", "projects"),
@@ -56,13 +56,13 @@ TERMS: tuple[Term, ...] = (
     _t("food", "food", "agent slots"),
     _t("treasury", "Treasury", "Budget"),
     # -- screens and actions ------------------------------------------------------------------------
-    _t("war_map", "War Map", "Workspaces"),
+    _t("war_map", "War Map", "War Map"),
     # -- growth (docs/design/growth.md) ---------------------------------------------------------------
     _t("renown", "Renown", "Maturity"),                         # a building's level I–III (realm/growth.py)
     _t("banner", "banner", "goal mark", "banners", "goal marks"),   # the goal flag on a hut's roof
     _t("mascot", "mascot", "avatar", "mascots", "avatars"),      # the operator's, from the onboarding
     _t("deed", "deed", "milestone", "deeds", "milestones"),     # what the camp learned to do
-    _t("fog_of_war", "fog of war", "new workspace"),            # the War Map's foot: + Orkspace
+    _t("fog_of_war", "fog of war", "new orkspace"),            # the War Map's foot: + Orkspace
     _t("war_horn", "War Horn", "Stop all"),
     _t("war_tent", "War Tent", "Terminals"),
     _t("orders", "Orders", "Answers"),
@@ -146,14 +146,13 @@ TERMS: tuple[Term, ...] = (
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
          "catapult": ("Catapult",), "town_hall": ("Town hall",)}
 
-# Whole phrases first: where a word for word would read wrong ("an orkspace" → "a workspace"). The
+# Whole phrases first: where a word for word would read wrong ("an ork" → "an agent"). The
 # camp is the town, but Camp alone is the mode's name and stays; so does the F10 line that tells what
 # the Camp looks like (it is about the camp, in any mode).
-_PHRASES = {"the camp": "the project", "an orkspace": "a workspace", "Punk ork": "Expert", "an ork": "an agent",
+_PHRASES = {"the camp": "the project", "Punk ork": "Expert", "an ork": "an agent",
             "Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
             "Not enough food": "No agent slots left", "Treasury empty": "Budget spent",
             "Halt All Operations": "Stop all", "Halt All": "Stop all", "Awaiting Orders": "Awaiting an answer",
-            "WAR MAP (Orkspaces)": "WORKSPACES", "War Map (Orkspaces)": "Workspaces",
             "the town of orks: ASCII, fire, gold and lumber": "the town of orks: ASCII, fire, gold and lumber"}
 
 _BY_KEY = {t.key: t for t in TERMS}

@@ -75,6 +75,12 @@ def test_the_war_map_lands_get_biomes_names_and_go(fake_repo, isolated_layout_fi
     assert first.biome == "dirt" and host.town.scroll.meta.get("biomes")    # the old "forest" spread once
     oid = host.command("orkspace.new", {"name": "Billing"})
     assert host.town.scroll.orkspace(oid).biome == "forest"                  # the first biome nobody has
+    picked = host.command("orkspace.new", {"name": "Tourney", "biome": "meadow"})
+    assert host.town.scroll.orkspace(picked).biome == "meadow"               # …or the one picked on the map
+    odd = host.command("orkspace.new", {"name": "Odd", "biome": "desert"})
+    assert host.town.scroll.orkspace(odd).biome == "ice"                     # an unknown one: as if none
+    for x in (picked, odd):
+        host.command("orkspace.remove", {"id": x})
     host.command("orkspace.biome", {"id": oid, "biome": "lava"})
     host.command("orkspace.rename", {"id": oid, "name": "Payments"})
     land = next(o for o in host.snapshot()["orkspaces"] if o["id"] == oid)

@@ -404,7 +404,7 @@ button { font: inherit; color: inherit; }
   box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo), 2px 2px 0 #000; }
 .gui-map__title { margin: -1px 0 5px; text-align: center; font: 500 12px/14px "Pixelify Sans", var(--ok-font);
   color: var(--ink-gold); letter-spacing: .08em; text-transform: uppercase; text-shadow: 1px 1px 0 var(--bevel-lo); }
-.gui-map__view { width: 160px; max-height: 184px; overflow-y: auto; overflow-x: hidden; position: relative;
+.gui-map__view { width: 160px; max-height: 212px; overflow-y: auto; overflow-x: hidden; position: relative;
   box-shadow: 0 0 0 2px var(--frame); scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
 .gui-map__ground { position: relative; background: var(--fog); }
 .gui-map__land { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: var(--fill); cursor: pointer;
@@ -426,6 +426,15 @@ button { font: inherit; color: inherit; }
   background: var(--alert); box-shadow: inset 0 0 0 2px var(--alert), inset 0 0 0 3px var(--fire-glow); animation: gui-map-ask 1.6s steps(2) infinite; }
 @keyframes gui-map-ask { 50% { background: var(--fire-glow); } }
 .gui-map__field { position: absolute; left: 4px; width: 148px; z-index: 6; font-size: 12px; }
+/* a new land: its name and its ground, over the fog at the map's foot */
+.gui-map__new { position: absolute; left: 3px; right: 3px; z-index: 6; padding: 5px; background: var(--panel-raised);
+  box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo); display: flex; flex-direction: column; gap: 5px; }
+.gui-map__new .gui-map__field { position: static; width: auto; }
+.gui-map__biomes { display: flex; align-items: center; gap: 3px; }
+.gui-map__biome { width: 14px; height: 14px; padding: 0; border: 0; cursor: pointer; background: var(--fill);
+  box-shadow: inset 0 0 0 2px var(--ground), 0 0 0 1px var(--bevel-lo); }
+.gui-map__biome.is-on { box-shadow: inset 0 0 0 2px var(--ground), 0 0 0 2px var(--frame-focus); }
+.gui-map__biome-name { margin-left: auto; font: 500 11px/12px "Pixelify Sans", var(--ok-font); color: var(--ink-muted); }
 /* the call (§2.5): rings from the land's ■, the land flashes; an arrow at the frame's edge out of sight */
 .gui-map__ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 5; }
 .gui-map__ping::before { content: ""; position: absolute; outline: 2px solid var(--alert); animation: gui-map-ping .9s steps(6) both;

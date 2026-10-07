@@ -926,7 +926,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | Camp | Office |
 |---|---|
 | ork | agent |
-| orkspace | workspace |
+| orkspace | orkspace |
 | orkestration | coordination |
 | orkestrate | coordinate |
 | town | project |
@@ -943,7 +943,7 @@ notes, chats, terminals, file previews, an ork's question) stay as written.
 | meat | agent slots |
 | food | agent slots |
 | Treasury | Budget |
-| War Map | Workspaces |
+| War Map | War Map |
 | War Horn | Stop all |
 | War Tent | Terminals |
 | Orders | Answers |

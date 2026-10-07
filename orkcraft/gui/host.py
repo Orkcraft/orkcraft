@@ -297,7 +297,8 @@ class Host:
         """A new empty orkspace, named by the person, and the town goes to it."""
         from orkcraft import scroll
         try:
-            ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60], biome=biomes.for_new(self.town.scroll))
+            biome = args.get("biome") if args.get("biome") in scroll.BIOMES else biomes.for_new(self.town.scroll)
+            ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60], biome=biome)
         except ValueError as e:
             raise CommandError(str(e)) from None
         self.town.scroll.active_orkspace_id = ork.id

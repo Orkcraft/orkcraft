@@ -131,7 +131,7 @@ Buildings and their operator grow, from what the orks learned — never from cli
 - **The Warchief says what grew** — a level, a deed, and the loop closed on your review ("your 👎 on
   Brief → the orks changed it → 4 👍 since"). He wears the crown; the clan stays green.
 - **The War Map.** The orkspaces are lands in a framed map at the bottom left, each in its biome
-  (dirt, forest, ice, dust, void, lava — the ground and the huts follow it, with the TUI's glyphs on
+  (dirt, forest, ice, dust, void, lava, meadow — the ground and the huts follow it, with the TUI's glyphs on
   the ground), the open one tall with its status; the fog of war makes a new one. When an ork asks
   in another orkspace, the map calls you with rings, as a strategy game does when your units are
   attacked ([docs/design/war-map.md](docs/design/war-map.md)).

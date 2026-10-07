@@ -42,8 +42,8 @@ FREEDOMS = autonomy.WORDS
 FREEDOM_ICONS = autonomy.ICONS
 FREEDOM_TITLES = autonomy.TITLES
 VERSION = "0.3.0"
-# The grounds an orkspace stands on (docs/design/war-map.md §3): the TUI's three and the GUI's dirt, dust, lava.
-BIOMES = ("void", "forest", "ice", "dirt", "dust", "lava")
+# The grounds an orkspace stands on (docs/design/war-map.md §3): the TUI's three and the GUI's dirt, dust, lava, meadow.
+BIOMES = ("void", "forest", "ice", "dirt", "dust", "lava", "meadow")
 LEVELS = (1, 2, 3)                # a building's level of maturity (docs/design/growth.md §4); none: 0
 ROAD_EVENTS = ("on_selection_change", "on_task_completed", "on_stream")
 
