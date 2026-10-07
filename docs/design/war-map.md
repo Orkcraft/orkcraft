@@ -26,7 +26,8 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
   than the one above it (14 at most), so the right edge is a neat terrace (the wandering borders read
   as dirt at this size). A closed land is at least 28 px tall (the open one 48 px). The map is always
   square: up to four lands fit it; from five they scroll inside the frame (it used to grow to 212 px for
-  six, which made it tall and narrow).
+  six, which made it tall and narrow). It sits flush in the screen's bottom-left corner, as a strategy
+  game's minimap does, with no gap and no drop shadow.
 - **A new land picks its ground.** The fog's field takes its name and, under it, a row of the seven
   biomes' swatches, the suggested one lit (the first nobody has); a click or ← / → (before typing)
   picks another, Enter raises it (`orkspace.new` takes `biome`).
