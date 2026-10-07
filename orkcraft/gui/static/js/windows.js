@@ -121,7 +121,7 @@ export function Badge({ garrison, alert }) {
   const busy = garrison.some((o) => o.status === "busy");
   return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
-    ${lead.name}${more > 0 ? `+${more}` : ""}
+    ${say(lead.name)}${more > 0 ? `+${more}` : ""}
     ${lead.scheme && html` <span class="gui-scheme">${lead.scheme}</span>`}
     ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
   </span>`;

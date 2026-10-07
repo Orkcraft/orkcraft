@@ -614,6 +614,54 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down_an_exit(page, monkeypatch):
+    """A new Review board: its card says Set up the review; the purpose, the clan picked for it and the exits happen
+    in the panel; a review that asks sets the hut on fire, and an exit's button sends the document on with the
+    verdict on top (docs/design/review-board.md). The clan is a fake; `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.core.workers.council import CouncilWorker
+    from tests.test_review_board import Clan
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    shot = (lambda name, what=".gui-panel": pg.locator(what).first.screenshot(path=f"{shots}/{name}.png")) if shots \
+        else (lambda name, what=".gui-panel": None)
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    bid = call("town.build", {"type": "council"})
+    setup = _hut(pg, bid).locator(".council-card__setup")
+    setup.wait_for(state="visible", timeout=WAIT_MS)
+    shot("rb-0-card", f'.gui-hut[data-id="{bid}"]')
+    setup.click()
+    panel = pg.locator(".gui-panel")
+    panel.locator(f"#purpose-{bid}").wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-modal").count() == 0
+    panel.get_by_role("button", name="PRD review").click()
+    shot("rb-1-purpose")
+    panel.get_by_role("button", name="Propose the clan").click()
+    panel.locator(".council-setup__item", has_text="Risks analyzer").wait_for(state="visible", timeout=WAIT_MS)
+    shot("rb-2-clan")
+    panel.get_by_role("button", name="Next: the exits").click()
+    panel.locator(".council-setup__exit").first.wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".council-setup__exit").first.fill("To development")
+    shot("rb-3-exits")
+    panel.get_by_role("button", name="Save the board").click()
+    panel.locator(".council-clan").wait_for(state="visible", timeout=WAIT_MS)
+
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(
+        Clan("DECISION: ask\nShip it now, or after the audit?", {"Product critic": "CHANGES: the metric needs a baseline"})))
+    call("act", {"id": bid, "act": "review", "args": {"text": "# PRD: Onboarding v2\n\nFive minutes to a working town."}})
+    pg.locator(f'.gui-hut.is-alert[data-id="{bid}"]').wait_for(state="visible", timeout=WAIT_MS)            # it burns
+    ask = panel.locator(".council-ask.is-asking")
+    ask.wait_for(state="visible", timeout=WAIT_MS)
+    shot("rb-4-asks")
+    ask.locator("input").fill("Ship it; add the baseline next sprint")
+    assert ask.get_by_role("button", name="To development · not connected").is_disabled()       # no road: no exit
+    ask.get_by_role("button", name="Back to the author").click()
+    sent = panel.locator(".council-sent")
+    sent.wait_for(state="visible", timeout=WAIT_MS)
+    sent.locator("summary").click()
+    assert "Review notes — Back to the author" in sent.inner_text() and "Ship it; add the baseline" in sent.inner_text()
+    shot("rb-5-sent")
+    shot("rb-6-card", f'.gui-hut[data-id="{bid}"]')
+    call("town.demolish", {"id": bid})
 def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     """Settings → AI tools: a tool turned on joins the main tool's choices; picking it says decisions run there."""
     pg = page

@@ -131,7 +131,8 @@ def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
     monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
     host = _host(fake_repo)
     bid = _raised(host, "council", members=["Planner:claude"], veto=["Planner"], max_cycles=3)
-    assert _card(host, bid)["card"] == {"state": "none", "queued": 0, "triage": False, "of": 1}
+    assert _card(host, bid)["card"] == {"state": "none", "queued": 0, "triage": False, "of": 1, "set_up": True,
+                                        "phase": "", "exits": []}
     assert host.command("info", {"id": bid})["quick"] == []
 
     assert host.command("act", {"id": bid, "act": "review", "args": {"text": "# Launch plan\n\nShip it."}}) == "started"

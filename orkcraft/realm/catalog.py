@@ -200,7 +200,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"steward_prompt": (str, None, False), "members": (list, None, False), "veto": (list, None, False),
                 "max_cycles": (int, (1, 10), False), "budget_usd": (float, (0, 100), False),
                 "moderator": (str, None, False), "routes": (list, None, False),
-                "goal": (str, None, False), "max_rounds": (int, (1, 20), False)},     # the old debate's; kept loading
+                "goal": (str, None, False), "max_rounds": (int, (1, 20), False),      # the old debate's; kept loading
+                "purpose": (str, None, False), "exits": (list, None, False)},
         art="great_hall", orc="Chieftains", agentic=True),
     BuildingType(
         "war_drum", "War Drum", "🥁", "L",

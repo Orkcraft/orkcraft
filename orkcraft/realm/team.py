@@ -48,7 +48,7 @@ DEFAULT_BUDGET = 2.0
 INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read our files)
 _VERDICT = re.compile(r"^[\s*#_>`-]*(APPROVE|CHANGES|VETO)\b[\s*_`]*:?\s*", re.I)
 _DECISION = re.compile(r"^[\s*#_>`-]*DECISION\b[\s*_`]*:?\s*(approve|rework|ask)\b[\s*_`.:-]*", re.I)
-_ROUTE = re.compile(r"^[\s*#_>`-]*ROUTE\b[\s*_`]*:?[\s*_`]*([A-Za-z0-9_-]{1,32})[\s*_`.]*$", re.I | re.M)
+_ROUTE = re.compile(r"^[\s*#_>`-]*(?:ROUTE|EXIT)\b[\s*_`]*:?[\s*_`]*([A-Za-z0-9_-]{1,32})[\s*_`.]*$", re.I | re.M)
 _TASK = re.compile(r"^[\s*#_>`-]*TASK\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`]*$", re.I | re.M)
 _WHEN = re.compile(r"^[\s*#_>`-]*WHEN\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`.]*$", re.I | re.M)
 _ROLE = re.compile(r"^You are (.+?) in a clan")
@@ -176,6 +176,8 @@ class Discussion:
     spent: float = 0.0
     error: str = ""
     turns: list[Turn] = field(default_factory=list)
+    exit: str = ""                  # the exit it went down, by name (a board with `exits`)
+    out: str = ""                   # what went out down it: the verdict, then the document (cut)
 
     @property
     def finished(self) -> bool:
@@ -240,6 +242,45 @@ def review_prompt(d: Discussion, me: Member, team: list[Member], brief_path: str
     return "\n\n".join(p for p in parts if p)
 
 
+@dataclass(frozen=True)
+class Exit:
+    """Where a judged document can go (docs/design/review-board.md §2): a name, the rule the steward reads, and
+    `id`, the route a road out waits for. *Back to the author* and *Ask me* are built in, not exits here."""
+    id: str
+    name: str
+    when: str = ""
+
+
+BACK, ASK = "back", "ask"                     # the built-in exits' ids
+TEMPLATES = {                                 # the setup's one-click starts
+    "decision": ("Next: it may go on as it is",),
+    "who": ("To an agent: an agent can do it", "To a person: it needs a person's judgment or a reply"),
+}
+OUT_KEEP = 20_000                             # what went out, as the discussion keeps it
+
+
+def exit_id(name: str) -> str:
+    return re.sub(r"[^a-z0-9_-]+", "-", str(name).strip().lower()).strip("-")[:32]
+
+
+def parse_exit(entry: str) -> Exit | None:
+    """`To development: ready to build, no open risk` → Exit("to-development", "To development", "ready to …")."""
+    name, _, when = str(entry).partition(":")
+    name, when = " ".join(name.split())[:60], " ".join(when.split())[:300]
+    eid = exit_id(name)
+    return Exit(eid, name, when) if eid and eid not in (BACK, ASK) else None
+
+
+def exits_of(config: dict) -> list[Exit]:
+    """A board's exits: its `exits`, else its `routes` of old (no rule), else none (it only approves)."""
+    out: list[Exit] = []
+    raw = config.get("exits")
+    for e in (parse_exit(x) for x in raw) if isinstance(raw, list) and raw else (Exit(r, r) for r in routes_of(config)):
+        if e is not None and all(x.id != e.id for x in out):
+            out.append(e)
+    return out
+
+
 def routes_of(config: dict) -> list[str]:
     """The routes a clan that routes chooses from (`routes`), as road filters spell them."""
     out = []
@@ -282,7 +323,7 @@ def routed_text(d: Discussion) -> str:
 
 
 def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: int, inline: bool = False,
-                  routes: list[str] | tuple[str, ...] = ()) -> str:
+                  routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = ()) -> str:
     reviews = "\n\n".join(f"### {t.role} — {t.verdict.upper()}{f' ({t.note})' if t.note else ''}\n\n{t.text}"
                           for t in d.reviews()) or "_no reviews_"
     rules = [f"This is cycle {d.cycle} of at most {max_cycles} for this document."]
@@ -303,7 +344,13 @@ def decide_prompt(d: Discussion, steward: Steward, veto: set[str], max_cycles: i
                  "most important first;\n"
                  "- ask: the question for the operator, with the options you see.\n"
                  "Follow your brief on when to let it go and when to show it to the operator.")
-    if routes:
+    if exits:
+        listed = "\n".join(f"- `{e.id}` — {e.name}{f': {e.when}' if e.when else ''}" for e in exits)
+        parts.append("When you approve, name the exit it goes down in a second line `EXIT: <its id>`, by the exits' "
+                     f"rules:\n{listed}\nWhen none fits, ask. A rework goes back to its authors; you name no exit for it. "
+                     "If it becomes a task, name it in a third line `TASK: <what to do, in a few words>`; when it is a "
+                     "meeting, add when in a fourth, `WHEN: <tomorrow 11:00, 30 min>`.")
+    elif routes:
         parts.append(f"When you approve, name who takes it on in a second line `ROUTE: <one of {', '.join(routes)}>`, "
                      "as your brief says, and the task it becomes in a third, `TASK: <what to do, in a few words>`. "
                      "When it is a meeting, add when in a fourth, `WHEN: <tomorrow 11:00, 30 min>`.")
@@ -334,7 +381,7 @@ BriefOf = Callable[[Member], tuple[str, str]]          # member → (repo-relati
 def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max_cycles: int, budget: float,
         runner: Runner, on_turn: Callable[[Discussion, Turn], None] | None = None,
         cancel: threading.Event | None = None, brief_of: BriefOf | None = None,
-        routes: list[str] | tuple[str, ...] = ()) -> Discussion:
+        routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = ()) -> Discussion:
     """Run (or resume after the operator answered) until the steward decides, or it stops. A clan that
     routes (`routes`) names who takes an approved document on (`d.route`)."""
     cancel = cancel or threading.Event()
@@ -378,9 +425,10 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         add(Turn(m.role, "review", body, verdict, got[1], now_iso(), note))
         d.reviewed.append(i)
 
+    routes = [e.id for e in exits] or list(routes)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
                                                              inline=roads.resolve(steward.harness) not in roads.IN_REPO,
-                                                             routes=routes))
+                                                             routes=routes, exits=exits))
     if got is None:
         return _end(d)
     decision, body = parse_decision(got[0])
@@ -390,8 +438,10 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         d.task, body = parse_task(body)
         d.when, body = parse_when(body)
         if decision == "approve" and not d.route:
-            decision, note = "ask", "no route named"
-            body = f"The steward let it go but named no route. Who takes it on: {', '.join(routes)}?\n\n{body}".strip()
+            decision, note = "ask", "no exit named" if exits else "no route named"
+            body = (f"The steward let it go but named no exit. Which one: {', '.join(e.name for e in exits)}?\n\n{body}"
+                    if exits else f"The steward let it go but named no route. Who takes it on: {', '.join(routes)}?\n\n{body}"
+                    ).strip()
     vetoed = [t.role for t in d.reviews() if t.verdict == "veto"]
     if decision == "approve" and vetoed:
         decision, note = "rework", f"vetoed by {', '.join(vetoed)}"
@@ -445,6 +495,51 @@ def report_markdown(d: Discussion, team: list[Member]) -> str:
                        for t in d.turns if t.kind != "answer")
     answers = "".join(f"\n\n> **Operator:** {a}" for a in d.answers())
     return f"{head}\n\n{body}{answers}"
+
+
+def vetoed(d: Discussion) -> list[str]:
+    return [t.role for t in d.reviews() if t.verdict == "veto"]
+
+
+def verdict_markdown(d: Discussion, exit_name: str, back: bool = False) -> str:
+    """What goes down an exit (docs/design/review-board.md §4): the verdict — the steward's (or the person's)
+    words, then each member's remarks — then the document. A `When:` line stays first (a War Drum reads it)."""
+    r = d.reviews()
+    ok, no = sum(t.verdict == "approve" for t in r), sum(t.verdict != "approve" for t in r)
+    remarks = [f"**{t.role} — {t.verdict}:** {t.text.strip()}" for t in r if t.verdict != "approve" and t.text.strip()]
+    quiet = [t.role for t in r if t.verdict == "approve"]
+    if quiet:
+        remarks.append(f"{', '.join(quiet)} — approve.")
+    lead = "What to fix" if back else "Keep in mind"
+    words = d.decision.strip()
+    parts = [f"## Review notes — {exit_name} · cycle {d.cycle} · {ok} ✓ {no} ✗",
+             f"**{lead}:** {words}" if words else "", "\n\n".join(remarks),
+             "Revise the document and send it back under the same title." if back else "", "---", d.doc]
+    text = "\n\n".join(p for p in parts if p)
+    return f"When: {d.when}\n\n{text}" if d.when and not back else text
+
+
+def decide(d: Discussion, exit: str, comment: str, exits: list[Exit]) -> Exit | None:
+    """The person picks the exit (an asked review, or one stopped on the way): the review ends there, no model
+    turn. `exit` is an exit's id or `back`; their comment is the verdict's words. Raises ValueError when the
+    exit is not one of the board's, or a veto forbids it. The exit taken (None: back to the author)."""
+    comment = comment.strip()
+    if exit == BACK:
+        taken = None
+    else:
+        taken = next((e for e in exits if e.id == exit), None)
+        if taken is None:
+            raise ValueError("Not one of this board's exits")
+        if vetoed(d):
+            raise ValueError(f"Vetoed by {', '.join(vetoed(d))}: it can only go back to its author")
+    d.turns.append(Turn("Operator", "decide", comment or f"→ {taken.name if taken else 'back to the author'}",
+                        "approve" if taken else "rework", None, now_iso(), "the operator decided"))
+    d.decision = comment
+    d.route = taken.id if taken else ""
+    d.outcome = "approved" if taken else "rework"
+    d.error = ""
+    _end(d)
+    return taken
 
 
 def rework_markdown(d: Discussion, max_cycles: int) -> str:

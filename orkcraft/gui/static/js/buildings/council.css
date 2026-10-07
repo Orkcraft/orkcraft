@@ -77,3 +77,56 @@
   .council-review { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-6); align-items: start; }
   .council-review__doc { display: block; padding-left: var(--space-4); border-left: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
 }
+
+/* -- the Review board's exits (docs/design/review-board.md) ------------------------------------------- */
+
+/* The question, or a review stopped on the way: the exits as buttons, a note as the verdict's words. */
+.council-ask { flex-direction: column; align-items: stretch; }
+.council-ask__what { white-space: normal; margin: 0; }
+.council-ask:not(.is-asking) { background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.council-ask > .ok-input { width: 100%; box-sizing: border-box; }
+.council-ask__exits { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.council-ask__veto { font-size: 12px; }
+.council-ask__more { align-self: flex-start; }
+.council-ask__words { display: flex; gap: var(--space-2); align-items: flex-end; }
+.council-ask__words > textarea { flex: 1; }
+
+/* The line, and what went out. */
+.council-line { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2); font-size: 13px; color: var(--ink-muted); }
+.council-line > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.council-line b { color: var(--ink); }
+.council-sent { margin-top: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--panel-inset);
+  box-shadow: var(--bevel-sunken), inset 3px 0 0 var(--success); }
+.council-sent > summary { cursor: pointer; display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
+.council-sent__out { max-height: 220px; overflow: auto; font-size: 12px; white-space: pre-wrap; }
+
+/* On the card: the exits as small signs; not set up, the one thing to do. */
+.council-card__setup { align-self: flex-start; margin: var(--space-1) 0; }
+.council-card__exits { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.council-sign { padding: 0 var(--space-2); line-height: 18px; font-size: 11px; background: var(--road); color: var(--ink); }
+
+/* The setup: purpose → clan → exits, in the panel. */
+.council-setup__pane, .council-setup { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.council-setup__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.council-setup__title { margin: 0; font: 400 18px/1.25 var(--ok-head); color: var(--ink-gold); letter-spacing: var(--ok-track); }
+.council-setup__steps { display: flex; gap: var(--space-1); flex: 1; font: 700 11px/16px var(--ok-font); text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-comment); }
+.council-setup__steps .is-on { color: var(--ink-gold); }
+.council-setup__steps .is-done { color: var(--success); }
+.council-setup__sub { margin: 0; font-size: 12px; }
+.council-setup__label { display: block; font: 700 11px/16px var(--ok-font); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.council-setup__row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.council-setup__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.council-setup__item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center;
+  padding: var(--space-2) var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.council-setup__item.is-builtin { background: transparent; box-shadow: inset 0 0 0 1px var(--frame); grid-template-columns: auto 1fr; font-size: 13px; }
+.council-setup__name { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.council-setup__acts { display: flex; gap: var(--space-2); align-items: center; font-size: 12px; }
+.council-setup__checks { grid-column: 1 / -1; width: 100%; box-sizing: border-box; font-size: 12px; }
+.council-setup__exit { font-weight: 700; min-width: 0; }
+.council-setup__tag { appearance: none; border: 0; cursor: pointer; font: 700 11px/18px var(--ok-font); text-transform: uppercase; letter-spacing: .06em;
+  padding: 0 var(--space-2); background: var(--panel-raised); box-shadow: var(--bevel-raised); color: var(--ink-gold); }
+.council-setup__tag.is-veto { color: var(--danger); }
+.council-setup__foot { display: flex; gap: var(--space-2); justify-content: flex-end; align-items: center; flex-wrap: wrap;
+  padding-top: var(--space-2); border-top: var(--ok-stroke) solid var(--frame); }
+.council-setup__foot > .council-setup__sub { margin-right: auto; }
