@@ -141,9 +141,22 @@ class Onboarding:
             if not st.found:
                 continue
             choice = self.picked.get(st.id, settings.ToolChoice())
-            rows.append({"id": st.id, "title": st.tool.title, "version": st.version, "logged_in": st.logged_in,
-                         "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing})
+            h = harnesses.get(st.id)
+            rows.append({"id": st.id, "title": st.tool.title, "mark": h.mark if h else "", "version": st.version,
+                         "logged_in": st.logged_in, "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing})
         return rows
+
+    def _not_run_on(self) -> dict:
+        """The tools the orks don't run on here: `missing` (not found), `others` (found, but no harness) and `cli`
+        (an app here whose CLI the orks run on is not: Cursor's editor without cursor-agent). A tool found
+        is never named again below the table."""
+        statuses = self.statuses or []
+        found = {st.id for st in statuses if st.found}
+        others = [o for o in self.others if o.id not in found]
+        cli = {o.id: h for o in others if (h := harnesses.get(o.id))}
+        return {"missing": [st.tool.title for st in statuses if not st.found and st.id not in cli],
+                "others": [{"id": o.id, "title": o.title} for o in others if o.id not in cli],
+                "cli": [{"id": o.id, "title": o.title, "bin": cli[o.id].bin} for o in others if o.id in cli]}
 
     def _towns(self) -> list[dict]:
         role = self.profile.get("role") or ""
@@ -194,9 +207,8 @@ class Onboarding:
         return {
             "step": self.step, "steps": steps,
             "n": steps.index(self.step) if self.step in steps else len(steps) - 1,
-            "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(),
-                      "missing": [st.tool.title for st in self.statuses or [] if not st.found],
-                      "others": [{"id": o.id, "title": o.title} for o in self.others], "warder": self.warder},
+            "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(), **self._not_run_on(),
+                      "warder": self.warder},
             "classes": self._classes(), "only_kin": self.only_kin,
             "kin_word": KIN_WORDS.get(self.only_kin, self.only_kin),
             "kin": self.kin, "role": self.profile.get("role", ""),

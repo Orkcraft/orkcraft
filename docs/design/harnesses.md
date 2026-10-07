@@ -88,8 +88,8 @@ on; with none on it is Claude Code, as before there was a choice (`builders.main
   stored login (Linux/Windows `auth.json`; macOS keeps it in the Keychain, not read). Undocumented: an
   answer it does not expect is a plain row.
 - Login: `CURSOR_API_KEY`, or the stored `accessToken`.
-- The Cursor editor is still asked about as an *other* tool in onboarding only when the CLI is not
-  found.
+- Onboarding: the CLI found, the editor is not named again; only the editor here, it says to install
+  the CLI (`cursor-agent`) to run orks on it.
 
 Unverified (cursor.com was unreachable when this was written): `--mode ask`, the hook event list and
 field names, the web toggle. Re-check against `cursor-agent --help` before relying on them.

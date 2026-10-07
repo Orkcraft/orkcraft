@@ -17,11 +17,15 @@ const autonomyLater = signal(false);   // the Autonomy card was put away
 const send = (name, args = {}) => command(name, args).catch(() => {});
 
 const GLYPHS = new Set(["github", "gitlab", "gmail", "discord", "jira", "confluence", "figma"]);
+const TOOL_GLYPHS = new Set(["claude", "cursor", "pi"]);   // icons/tools
 
-/** A service's glyph (icons/services); a service without one shows its first letter, Slack its `#`. */
-function Glyph({ id, big = false }) {
-  const mark = GLYPHS.has(id) ? "" : id === "slack" ? "#" : (id[0] || "?").toUpperCase();
-  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${id}`, { "is-big": big })} aria-hidden="true">${mark}</span>`;
+/** A service's glyph (icons/services); a service without one shows its first letter, Slack its `#`.
+ *  An AI tool's (`tool`, icons/tools) stands bare beside its checkbox; a tool without one shows its harness mark. */
+function Glyph({ id, big = false, tool = false, mark = "" }) {
+  const has = (tool ? TOOL_GLYPHS : GLYPHS).has(id);
+  const text = has ? "" : mark || (id === "slack" ? "#" : (id[0] || "?").toUpperCase());
+  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${tool ? "tool-" : ""}${id}`, { "is-big": big, "is-bare": tool, "has-glyph": has })}
+    aria-hidden="true">${text}</span>`;
 }
 
 function Ground({ biome, children, className = "" }) {
@@ -90,7 +94,7 @@ function ToolsStep({ o }) {
           <label class="ok-check" title=${say(`Orks run on ${r.title}`)}>
             <input type="checkbox" class="gui-onb__hide" checked=${r.enabled} onChange=${() => set(r.id, { enabled: !r.enabled })} />
             <i>${r.enabled ? "✓" : ""}</i></label>
-          <span class="gui-onb__tool"><span class=${`ok-h-${r.id}`}></span>${r.title}
+          <span class="gui-onb__tool"><${Glyph} id=${r.id} tool=${true} mark=${r.mark} />${r.title}
             ${r.version && html`<span class="ok-font-status ok-tone-muted">${r.version}</span>`}</span>
           <span class=${cls("ok-font-status", r.logged_in === false ? "ok-tone-wait" : "ok-tone-ok")}>
             ${r.logged_in === false ? say(`⚠ not logged in: ${r.login}`) : "✓ logged in"}</span>
@@ -104,6 +108,7 @@ function ToolsStep({ o }) {
       <div class="gui-onb__line">
         <span class="ok-font-status ok-tone-muted">${[
           t.others.length ? say(`Also here: ${t.others.map((x) => x.title).join(", ")}. Orks can't run on these yet.`) : "",
+          ...t.cli.map((x) => say(`${x.title}: install the CLI (${x.bin}) to run orks on it.`)),
           t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
         <button class="ok-btn" onClick=${() => { asking.value = true; }}>Request a tool</button>
       </div>
