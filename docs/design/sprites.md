@@ -176,7 +176,7 @@ The ork replaces the 🧌 pictograph everywhere in Camp: the roster, the War Map
 |---|---|---|
 | `orks/ork.png` | 16×15 (`ork-w` × `ork-h`) | Badges, the roster, the War Map and anywhere 🧌 stood. **Done.** It sits inside the badge plate with room to spare. |
 | `orks/ork-portrait.png` | 26×24, centred in the 46×38 portrait slot | The Command Card and the selected ork. **Done:** the source at its own pixel grid. |
-| `orks/ork-idle.png`, `ork-busy.png`, `ork-waiting.png` | 16×15 | The ork's states, replacing 💤, ⚙ and 🔥: eyes shut; heavy lids, brows dipped and a drop of sweat; brows up, eyes wide and a flame on the head. **Done**, drawn as pixel edits of `ork.png` so the four heads match exactly. |
+| `orks/ork-idle.png`, `ork-busy.png`, `ork-waiting.png`, `ork-frozen.png`, `ork-draft.png` | 40×16 | The ork's states, replacing 💤, ⚙, 🔥, 🧊 and 📜: the head with a glyph beside it, a pale-blue Zz (eyes shut too), a gold gear, an orange `!` (a flame on the crown too), a snowflake, a page. A mark inside the 24×16 head was one or two pixels and could not be told apart, so the state stands next to it. **Done**, drawn by `tools/logo.py`. |
 
 - **Why 16×15.** It sits inside the badge plate, title bars included, without touching the plate's edges. With the tie gone, the head alone still reads at this size: brows, eyes and tusks survive. At 20px the head overflowed the plate in window title bars.
 - **How the done sprites were made.** The source is pixel art on an uneven generator grid (about 23 px per cell). The portrait was rebuilt by finding the cell edges and taking each cell's median colour, giving 26×24. The 16×15 icon is a block reduction of the source that keeps the outline, with the eye rows mirrored so both eyes match.

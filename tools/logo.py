@@ -15,9 +15,10 @@ Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`)
   `design-system/fonts/` and turned into outlines so it needs no font;
 - `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`.
 
-The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` and its
-states (`ork-idle` asleep, `ork-busy` sweating, `ork-waiting` with a flame on its crown), each on the
-head's own 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`).
+The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` (the
+head's 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`)) and its states with their glyph beside the head
+on a 20×8 grid (40×16): `ork-idle` eyes shut and Zz, `ork-busy` a gear, `ork-waiting` a flame on the
+crown and `!`, `ork-frozen` a snowflake, `ork-draft` a page.
 
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 """
@@ -56,24 +57,83 @@ PALETTES = {
 
 W, H = len(GRID[0]), len(GRID)
 
-# The agent's states, drawn inside the head's own 12×8 grid so the sprite fits a badge's plate:
-# d shut eyes and z a sleep mark over the right ear, S a drop of sweat past it, O and Y a flame
-# (alert orange, gold core) on the crown.
+# The agent's states: the head keeps its own 12×8 grid and the state stands beside it as a glyph on a
+# 7×8 cell, one blank column apart, so the sprite is 20×8 (40×16 drawn) and the state reads at a glance.
+# On the head: d shut eyes asleep, O and Y a flame (alert orange, gold core) on the crown while waiting.
+# The glyphs: Zz asleep (idle), a gold gear at work (busy), an orange `!` waiting on a person (alert),
+# a snowflake frozen, a page with lines a draft.
 STATES = {
     "ork": {},
-    "ork-idle": {(10, 0): "z"},
-    "ork-busy": {(10, 0): "S", (10, 1): "S"},
+    "ork-idle": {},
+    "ork-busy": {},
     "ork-waiting": {(4, 0): "O", (5, 0): "Y", (6, 0): "Y", (7, 0): "O"},
+    "ork-frozen": {},
+    "ork-draft": {},
+}
+GLYPHS = {
+    "ork-idle": [
+        "....zzz",
+        ".....z.",
+        "....z..",
+        "....zzz",
+        "ZZZZ...",
+        "..Z....",
+        ".Z.....",
+        "ZZZZ...",
+    ],
+    "ork-busy": [
+        "...G...",
+        ".GGGGG.",
+        ".GG.GG.",
+        "GG...GG",
+        ".GG.GG.",
+        ".GGGGG.",
+        "...G...",
+        ".......",
+    ],
+    "ork-waiting": [
+        "..OO...",
+        "..OO...",
+        "..OO...",
+        "..OO...",
+        "..OO...",
+        ".......",
+        "..OO...",
+        "..OO...",
+    ],
+    "ork-frozen": [
+        "...I...",
+        ".I.I.I.",
+        "..III..",
+        "IIIIIII",
+        "..III..",
+        ".I.I.I.",
+        "...I...",
+        ".......",
+    ],
+    "ork-draft": [
+        "PPPP...",
+        "PLLPP..",
+        "PPPPPP.",
+        "PLLLLP.",
+        "PPPPPP.",
+        "PLLLLP.",
+        "PPPPPP.",
+        ".......",
+    ],
 }
 SPRITE_COLOURS = {"F": "#6ca420", "D": "#1a2816", "T": "#e8e0c8", "d": "#3f6b14",
-                  "z": "#e8e0c8", "S": "#9fd3ff", "O": "#ff8c1a", "Y": "#f2c66d"}
+                  "z": "#9fd3ff", "Z": "#9fd3ff", "G": "#f2c66d", "O": "#ff8c1a", "Y": "#f2c66d",
+                  "I": "#bfe6ff", "P": "#d8c79a", "L": "#8a7a58"}
 
 
 def state_grid(name: str) -> list[str]:
+    """The head in its state, with the state's glyph beside it when it has one."""
     head = [list(row.replace("D", "d") if name == "ork-idle" else row) for row in GRID]
     for (x, y), c in STATES[name].items():
         head[y][x] = c
-    return ["".join(row) for row in head]
+    glyph = GLYPHS.get(name)
+    return ["".join(row) + ("." + glyph[y] if glyph else "") for y, row in enumerate(head)]
 
 
 def grid_image(grid: list[str], colours: dict[str, str], k: int) -> Image.Image:
@@ -100,15 +160,21 @@ def sprites(out: pathlib.Path) -> None:
 
 # The Warchief: the ork's head under a gold crown (docs/design/growth.md §8), two rows over the 12×8 grid.
 # The crown marks the role, it is never earned. Waiting, the crown's points burn instead of the ork's flame.
+# A state's glyph stands beside the head as the ork's does, the crown's rows padded to its width.
 CROWN = ["...Y.YY.Y...", "...YYYYYY..."]
 CROWN_BURNING = ["...O.OO.O...", "...YYYYYY..."]
 
 
+def crowned(crown: list[str], grid: list[str]) -> list[str]:
+    return [row.ljust(len(grid[0]), ".") for row in crown] + grid
+
+
 def warchief_grids() -> dict[str, list[str]]:
+    waiting = [row[:W] + glyph for row, glyph in zip(state_grid("ork"), (r[W:] for r in state_grid("ork-waiting")))]
     return {"warchief": CROWN + state_grid("ork"),
-            "warchief-idle": CROWN + state_grid("ork-idle"),
-            "warchief-busy": CROWN + state_grid("ork-busy"),
-            "warchief-waiting": CROWN_BURNING + state_grid("ork")}
+            "warchief-idle": crowned(CROWN, state_grid("ork-idle")),
+            "warchief-busy": crowned(CROWN, state_grid("ork-busy")),
+            "warchief-waiting": crowned(CROWN_BURNING, waiting)}
 
 
 CELL = 10  # SVG units per pixel of the grid

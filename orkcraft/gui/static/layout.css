@@ -297,12 +297,18 @@ button { font: inherit; color: inherit; }
 
 /* Changing the town: a road pulled out of a hut, a road picked, the catalog. */
 .gui-hut .ok-hut__card { position: relative; }
-.gui-hut__road { position: absolute; right: -9px; top: 50%; transform: translateY(-50%); z-index: 2;
-  width: 16px; height: 16px; padding: 0; border-radius: var(--radius-full, 50%); cursor: crosshair; line-height: 14px;
-  font-size: 11px; color: var(--ink-muted); background: var(--panel-raised); border: 1px solid var(--frame-strong); opacity: 0; }
+/* The handle and the target are pixel sprites (tools/road_sprites.py): a gold + on a plate in a round rim, and
+   four corner brackets round the hut the road would land on. */
+.gui-hut__road { position: absolute; right: -12px; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: crosshair; opacity: 0; }
+.gui-hut__road > img { display: block; width: 22px; height: 22px; image-rendering: pixelated; }
+.gui-hut__road:hover > img { filter: brightness(1.2); }
 .gui-hut:hover .gui-hut__road, .gui-hut__road:focus-visible { opacity: 1; }
+.gui-hut.is-target::after { content: ""; position: absolute; inset: -10px; z-index: 3; pointer-events: none;
+  border: 12px solid transparent; border-image: url("/ds/sprites/icons/road-target@2x.png") 16 / 12px; image-rendering: pixelated; }
 .gui-road__hit { stroke: transparent !important; stroke-width: 10; fill: none; pointer-events: stroke; cursor: pointer; }
-.gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 6 4; }
+.gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 4 4; shape-rendering: crispEdges; }
+.gui-road__pull-end { fill: var(--ink-gold); stroke: var(--canvas); stroke-width: 1; shape-rendering: crispEdges; }
 .gui-roadbar { position: fixed; left: 50%; top: calc(30px + var(--space-3)); transform: translateX(-50%); z-index: 9;   /* clear of the line */
   display: flex; align-items: center; gap: var(--space-3); }
 .gui-catalog { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; display: grid; gap: var(--space-2); }
@@ -436,5 +442,5 @@ button { font: inherit; color: inherit; }
 .gui-you__camp { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
 
 /* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
-.gui-warchief__face .gui-warchief__crowned { width: 36px; height: 30px; }
+.gui-warchief__face .gui-warchief__crowned { width: auto; height: 30px; }
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }
