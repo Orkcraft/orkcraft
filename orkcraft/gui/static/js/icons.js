@@ -38,7 +38,7 @@ export function TypeIcon({ type }) {
 export const BIOMES = {
   dirt: { ground: "#1a1813", land: "#3a3326" },
   forest: { ground: "#101a0b", land: "#22341a" },
-  ice: { ground: "#0c1622", land: "#263c52" },
+  ice: { ground: "#070d14", land: "#1c2c3c" },
   dust: { ground: "#2a2014", land: "#5a462a" },
   void: { ground: "#0e0c14", land: "#2c263c" },
   lava: { ground: "#161212", land: "#342c2a" },

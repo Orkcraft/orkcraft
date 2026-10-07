@@ -73,7 +73,8 @@ button { font: inherit; color: inherit; }
 .gui-menu__sep { border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
 
 /* The town: huts where the person put them, roads under them. */
-.gui-town { grid-area: town; position: relative; overflow: auto; }
+.gui-town { grid-area: town; position: relative; overflow: auto;
+  background: var(--terrain-image, none) repeat; background-attachment: local; }   /* the biome's glyphs (js/terrain.js) */
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
 .gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }

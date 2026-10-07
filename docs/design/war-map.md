@@ -160,7 +160,7 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
 |---|---|---|---|
 | **dirt** | `#1a1813` (today's Office ground) | `#3a3326` | as drawn |
 | **forest** | `#101a0b` | `#22341a` | as drawn (the ground says forest; moss at the foot was tried and does not read) |
-| **ice** | `#0c1622` | `#263c52` | snow: the two top pixels of every edge that faces the sky go ivory |
+| **ice** | `#070d14` | `#1c2c3c` | snow: the two top pixels of every edge that faces the sky go ivory |
 | **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
 | **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
 | **lava** | `#161212` | `#342c2a` | basalt, embers at the foot (§3.4) |
@@ -169,6 +169,16 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
   text, the gold and the fire must read on all five.
 - These become tokens (`tokens.json`: `ground-<biome>`, `land-<biome>`), and the GUI sets `--canvas`
   from the open orkspace's biome.
+
+### 3.1.1 The ground's glyphs, as in the TUI
+
+The ground is not bare: as the TUI drew it (`theme.py` `terrain_glyph`), about one cell in eleven of a
+13 px monospace grid carries a glyph, in one colour a step off the ground (`js/terrain.js`). It is drawn
+once per biome on a 480 × 432 px canvas tile and repeats under the town, scrolling with it. Forest and ice
+take the TUI's own glyphs and colours (forest `· , " ↟` in `#1f3823`, ice `· ' * ⁕` in `#162736`); the
+GUI's new biomes get their own (dirt `· . \` °`, dust `· ~ ∴ ˜`, lava `· ^ ∴ ⁘`, all near their ground);
+void stays bare, as in the TUI. It reads as texture, never as something to look at: cards, gold and fire
+stay the only things that do. This replaces sprites.md's "one flat colour, no texture" for the GUI.
 
 ### 3.2 The huts, by code
 

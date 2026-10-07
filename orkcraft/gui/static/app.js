@@ -6,7 +6,7 @@ import { html } from "./js/html.js";
 import { town, connect } from "./js/link.js";
 import { Hud, Toasts } from "./js/chrome.js";
 import { WarMap } from "./js/warmap.js";
-import { BIOMES } from "./js/icons.js";
+import { wearGround } from "./js/terrain.js";
 import { Town } from "./js/town.js";
 import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
@@ -22,8 +22,8 @@ function App() {
   if (!t) return html`<div class="gui-loading ok-font-body">Opening the town…</div>`;
   // One look, Office, on the Camp design system (index.html: data-theme camp, data-look office; office.css).
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
-  // The town's ground is the open orkspace's biome (docs/design/war-map.md §3).
-  document.documentElement.style.setProperty("--canvas", (BIOMES[space && space.biome] || BIOMES.dirt).ground);
+  // The town's ground is the open orkspace's biome, its colour and its glyphs (docs/design/war-map.md §3).
+  wearGround(space ? space.biome : "dirt");
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
   ids.delete(HALL);                                      // the Warchief's line is the hall's way in
   const buildings = t.buildings.filter((b) => ids.has(b.id));
