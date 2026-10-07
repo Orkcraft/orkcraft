@@ -22,8 +22,10 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
 - `buildings/<type>/header-<biome>.png`: each header redrawn by `tools/growth_sprites.py` for ice (snow), dust
   (dry olive, sand), void (ashen violet) and lava (basalt, embers); dirt and forest wear `header.png`
   (`js/icons.js` `headerSprite`; docs/design/war-map.md §3).
-- `flags/<goal>-<level>.png`: the goal flag on a hut's roof at levels I–III, gold at III (`js/icons.js`
-  `HutSprite`, its anchor per type in `FLAG_AT`; docs/design/growth.md §5).
+- `flags/level-<n>.png`: the flag on a hut's roof at renown I–III, gold at III (its anchor per type in
+  `js/icons.js` `FLAG_AT`); `flags/footing-<n>.png`: a tile of the stones under the hut, a course more at
+  each level; `flags/annex-thrift.png` (a lean-to over logs) and `flags/annex-quality.png` (a crystal on a
+  whetstone): beside the hut by its goal, none for balance (`js/icons.js` `HutSprite`; docs/design/growth.md §5).
 - `mascots/<kin>-<stage>.png` (24×22): the operator's mascot, seven kins in four stages, on the ork mark's grid
   (`js/icons.js` `MascotHead`; docs/design/growth.md §7).
 - `icons/res-quota.png`, `res-gold.png`, `res-lumber.png`, `res-meat.png` (16×16): the HUD resources, an

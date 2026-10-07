@@ -443,9 +443,13 @@ button { font: inherit; color: inherit; }
   .gui-map__land.is-hit { filter: brightness(1.4); }
 }
 
-/* A hut's header in its biome, with its goal flag on the roof (js/icons.js HutSprite, docs/design/growth.md §5). */
-.gui-sprite { position: relative; display: inline-block; line-height: 0; }
-.gui-sprite > .ok-sprite { display: block; }
+/* A hut's header in its biome: its renown as a flag on the roof and stones under it, its goal as an annex
+   beside it (js/icons.js HutSprite, docs/design/growth.md §5). */
+.gui-sprite { display: inline-flex; align-items: flex-end; gap: 4px; line-height: 0; }
+.gui-sprite__hut { display: flex; flex-direction: column; }
+.gui-sprite__walls { position: relative; }
+.gui-sprite__walls > .ok-sprite { display: block; }
+.gui-sprite__footing { display: block; background-repeat: repeat-x; background-size: auto 100%; image-rendering: pixelated; }
 .gui-sprite__flag { position: absolute; }
 .gui-sprite__flag.is-on-snow { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo)); }
 

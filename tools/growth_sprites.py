@@ -6,10 +6,11 @@ docs/design/war-map.md):
 - `design-system/sprites/mascots/<kin>-<stage>.png` (and `@2x`): the operator's mascot, a head on the
   ork mark's grid per kin, its four stages drawn by adding to it (a band, horns, then gold eyes and a
   gem), never a crown: the crown is the Warchief's.
-- `design-system/sprites/flags/<goal>-<level>.png` (and `@2x`): the goal flag on a hut's roof, a
-  square banner with a coin (thrift), a plain flag (balance) or a pennant (quality): muted with no
-  renown yet (level 0), ivory at I, taller at II, gold at III. Drawn at the header sprites' scale (2 px a pixel), the pole's foot at the
-  bottom left; `js/icons.js` `FLAG_AT` says where on each roof it stands.
+- `design-system/sprites/flags/`: a building's renown and goal, drawn at the header sprites' scale (2 px
+  a pixel). `level-<n>.png`, the flag on its roof at I–III (ivory, taller at II, gold at III; the pole's
+  foot at the bottom left, `js/icons.js` `FLAG_AT` says where on each roof it stands); `footing-<n>.png`,
+  a tile of the stones under it, a course more at each level; `annex-thrift.png` (a lean-to over a stack
+  of logs) and `annex-quality.png` (a crystal on a whetstone), beside it by its goal. Balance has none.
 - `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`): each flat header redrawn
   for ice (snow on the edges facing the sky), dust (dry olive, sand at the foot), void (ashen violet)
   and lava (basalt, embers at the foot). Dirt and forest keep `header.png`.
@@ -137,26 +138,70 @@ def mascots() -> None:
             save_pair(grid_image(mascot_grid(kin, stage), colours, 2), SPRITES / "mascots" / f"{kin}-{stage}.png")
 
 
-# -- the goal flags --------------------------------------------------------------------------------------
-# | the pole (dark green), X the cloth, k the coin's hole. The pole's foot is the bottom left pixel. The
-# shape says the goal from the start (level 0: a muted cloth, the banner raised but no renown yet); the
-# cloth turns ivory at I, the pole grows at II, the cloth turns gold at III.
-SHAPES = {
-    "thrift": ["|XXX", "|XkX", "|XXX"],          # a square banner with a coin
-    "balance": ["|XXX", "|XXX"],                  # a plain flag
-    "quality": ["|X ", "|XX", "|XXX", "|XX", "|X "],   # a pennant
+# -- a building's renown and goal (docs/design/growth.md §5) ---------------------------------------------
+# The renown is told twice, by a flag on the roof and by the stones under the hut; the goal by an annex
+# beside it. ⚖️ balance, the default, has none, so a goal chosen stands out.
+#
+# The flag: | the pole (dark green), X the cloth. The pole's foot is the bottom left pixel. None at level 0;
+# ivory at I, the pole taller at II, the cloth gold at III.
+FLAG = ["|XXX", "|XXX"]
+POLE = {1: 1, 2: 3, 3: 3}                         # the bare pole under the cloth, by level
+CLOTH = {1: IVORY, 2: IVORY, 3: GOLD}
+FLAGS = {level: FLAG + ["|"] * POLE[level] for level in POLE}
+
+# The stones: a tile the width of four pixels, repeated under the whole hut (`js/icons.js` `HutSprite`),
+# a course of stones (S) and mortar (m) for each level, the top edge in ivory (c) from II.
+STONE, MORTAR = "#8f8166", "#4a4235"
+FOOTINGS = {1: ["SSSm", "mmmm"],
+            2: ["cccc", "SSSm", "SmSS", "mmmm"],
+            3: ["cccc", "SSSm", "SmSS", "SSSm", "SmSS", "mmmm"]}
+
+# The annex, standing on the ground at the hut's right: G green, W dark green, I ivory, D the dark.
+ANNEXES = {
+    "thrift": ["......WW........",          # a lean-to over a stack of logs: kept, counted, reused
+               "....WWGGGG......",
+               "..WWGGGGGGGG....",
+               "WWGGGGGGGGGGGGW.",
+               "GGGGGGGGGGGGGGGW",
+               ".W............W.",
+               ".W.II.II.II...W.",
+               ".W.ID.ID.ID...W.",
+               ".W..II.II.II..W.",
+               ".W..ID.ID.ID..W.",
+               ".W.II.II.II.II.W",
+               ".W.ID.ID.ID.ID.W",
+               "WWWWWWWWWWWWWWWW"],
+    "quality": [".....I......",               # a crystal on a whetstone: cut, polished, checked
+                "....III.....",
+                "...IIWII....",
+                "..IIIWIII...",
+                "..IIWIIII...",
+                ".IIIWIIIII..",
+                ".IIWIIIIWI..",
+                ".IIWIIIWII..",
+                "..IIIIWII...",
+                "..IIIWIII...",
+                "...IIWII....",
+                "....III.....",
+                "..WWWWWWW...",
+                ".WGGGGGGGW..",
+                "WWWWWWWWWWW."],
 }
-POLE = {0: 1, 1: 1, 2: 2, 3: 3}                   # the bare pole under the cloth, by level
-CLOTH = {0: "#8f8166", 1: IVORY, 2: IVORY, 3: GOLD}
-FLAGS = {(goal, level): SHAPES[goal] + ["|"] * POLE[level] for goal in SHAPES for level in POLE}
 
 
-def flags() -> None:
-    for (goal, level), rows in FLAGS.items():
+def renown_and_goals() -> None:
+    folder = SPRITES / "flags"
+    for old in folder.glob("*.png"):          # the old goal flags, <goal>-<level>.png
+        old.unlink()
+    for level, rows in FLAGS.items():
         w = max(len(r) for r in rows)
         grid = [r.ljust(w).replace(" ", ".") for r in rows]
-        colours = {"|": DARK_GREEN, "X": CLOTH[level], "k": NIGHT}
-        save_pair(grid_image(grid, colours, 2), SPRITES / "flags" / f"{goal}-{level}.png")
+        save_pair(grid_image(grid, {"|": DARK_GREEN, "X": CLOTH[level]}, 2), folder / f"level-{level}.png")
+        save_pair(grid_image(FOOTINGS[level], {"S": STONE, "m": MORTAR, "c": IVORY}, 2),
+                  folder / f"footing-{level}.png")
+    for goal, grid in ANNEXES.items():
+        save_pair(grid_image(grid, {"G": GREEN, "W": DARK_GREEN, "I": IVORY, "D": NIGHT}, 2),
+                  folder / f"annex-{goal}.png")
 
 
 # -- the huts of each biome -------------------------------------------------------------------------------
@@ -216,9 +261,9 @@ def biome_huts() -> None:
 
 def main() -> None:
     mascots()
-    flags()
+    renown_and_goals()
     biome_huts()
-    print("wrote the mascots, the flags and the huts of each biome")
+    print("wrote the mascots, the flags, footings and annexes, and the huts of each biome")
 
 
 if __name__ == "__main__":
