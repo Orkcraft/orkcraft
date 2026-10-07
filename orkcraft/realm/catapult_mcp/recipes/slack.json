@@ -1,0 +1,16 @@
+{
+  "service": "slack", "title": "Slack", "match": ["slack"],
+  "tools": [
+    {"what": "a message", "match": ["post_message", "send_message", "postmessage", "chat_post", "reply_to_thread"],
+     "args": {"channel": ["channel_id", "channel", "channelid"], "text": ["text", "message", "markdown_text", "content"],
+              "thread": ["thread_ts", "threadts"]},
+     "need": ["channel", "text"],
+     "routes": [
+       {"title": "Slack API", "method": "POST", "url": "https://slack.com/api/chat.postMessage",
+        "auth": {"kind": "bearer", "env": "SLACK_BOT_TOKEN"},
+        "body": {"channel": "@channel", "text": "@text", "thread_ts": "@thread?"}, "ok": "ok"},
+       {"title": "Slack webhook", "method": "POST", "url_env": "SLACK_WEBHOOK_URL",
+        "body": {"text": "@text"}, "note": "posts to the webhook's own channel"}
+     ]}
+  ]
+}

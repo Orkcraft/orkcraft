@@ -5,7 +5,7 @@
     "head":  {"about": "a shot that waits for a yes as a strip with Fire; where it sends, what runs now, Fire, Dry run; ask before every shot and the schema and address folded to a line", "components": ["status"], "required": true},
     "load":  {"about": "what is loaded and what it waits for, the schema check, the load as JSON", "components": ["text", "markdown"], "required": true},
     "shots": {"about": "the shots, newest first, one line each; a shot opens here, over the rows: the request, the answer, the pictures of the forms", "components": ["list", "log", "table"], "required": true},
-    "forms": {"about": "browser mode: the intent's forms, their fields and what fills each, the last picture of each form", "components": ["table", "list"], "dynamic": true}
+    "forms": {"about": "browser mode: the intent's forms, their fields and what fills each, the last picture of each form; mode mcp: the path — the track a shot takes, what it sends, the direct path learned and a local server", "components": ["table", "list"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "catapult", "split": "column",

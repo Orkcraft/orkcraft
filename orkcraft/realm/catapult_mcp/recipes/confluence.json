@@ -1,0 +1,16 @@
+{
+  "service": "confluence", "title": "Confluence", "match": ["confluence", "atlassian"],
+  "tools": [
+    {"what": "a page", "match": ["create_page", "createconfluencepage", "create_confluence_page", "page_create"],
+     "args": {"space": ["spaceid", "space_id", "space"], "title": ["title"], "body": ["body", "content", "markdown"],
+              "parent": ["parentid", "parent_id", "parent"]},
+     "need": ["space", "title", "body"],
+     "routes": [
+       {"title": "Confluence API", "method": "POST", "url": "{$CONFLUENCE_URL}/wiki/api/v2/pages",
+        "auth": {"kind": "basic", "user_env": "CONFLUENCE_EMAIL", "env": "CONFLUENCE_API_TOKEN"},
+        "body": {"spaceId": "@space", "title": "@title", "parentId": "@parent?",
+                 "body": {"representation": "storage", "value": "@body"}},
+        "note": "the body goes in Confluence's storage format (XHTML)"}
+     ]}
+  ]
+}

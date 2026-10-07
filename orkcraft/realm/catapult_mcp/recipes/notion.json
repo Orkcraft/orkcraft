@@ -1,0 +1,18 @@
+{
+  "service": "notion", "title": "Notion", "match": ["notion"],
+  "tools": [
+    {"what": "a page", "match": ["create_page", "create-pages", "create_pages", "post-page", "post_page", "pages_create"],
+     "args": {"parent": ["parent_id", "page_id", "parent", "parentid"], "title": ["title", "name"],
+              "text": ["content", "markdown", "text", "body"]},
+     "need": ["parent", "title"],
+     "routes": [
+       {"title": "Notion API", "method": "POST", "url": "https://api.notion.com/v1/pages",
+        "auth": {"kind": "bearer", "env": "NOTION_TOKEN"}, "headers": {"Notion-Version": "2022-06-28"},
+        "body": {"parent": {"page_id": "@parent"},
+                 "properties": {"title": {"title": [{"text": {"content": "@title"}}]}},
+                 "children": [{"object": "block", "type": "paragraph",
+                               "paragraph": {"rich_text": [{"type": "text", "text": {"content": "@text?"}}]}}]},
+        "note": "the text goes in as one paragraph (Notion keeps 2000 characters a block)"}
+     ]}
+  ]
+}

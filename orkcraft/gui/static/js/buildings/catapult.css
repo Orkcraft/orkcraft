@@ -36,6 +36,7 @@
 .gui-cat__load { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .gui-cat__loadline { margin: 0; color: var(--ink-muted); }
 .gui-cat__loadline b { color: var(--ink); }
+.gui-cat__loadline > .ok-btn { margin-left: var(--space-2); }
 .gui-cat__problems { list-style: none; margin: 0; padding: 0; font-size: 12px; }
 .gui-cat__json { max-height: 14em; overflow: auto; padding: var(--space-2) var(--space-3); background: var(--panel-inset); }
 .gui-cat__json.is-bad { box-shadow: inset 2px 0 0 var(--danger); }
@@ -61,3 +62,8 @@
 .gui-cat__shot { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .gui-cat__back { align-self: flex-start; }
 .gui-cat__shothead { margin: 0; display: flex; gap: var(--space-2); align-items: baseline; }
+
+/* Mode mcp: the direct paths, one line each — the path, its variables, its state, a button. */
+.gui-cat__pathrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) 0; border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.gui-cat__pathrow > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
