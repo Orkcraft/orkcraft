@@ -2,6 +2,7 @@
 // §4.2): the picker (a pasted link, or a service), then three steps — Log in, What, Check — and Add. The steps'
 // state is the worker's (core/workers/watchtower_add.py), so the panel can close while the person makes a token
 // and open again on the same step; a typed secret stays in this form until Continue sends it, and is not kept here.
+// A source already listed comes back here too: Edit (step 2, its picks ticked) and Log in again (step 1).
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -24,7 +25,8 @@ function Steps({ step }) {
 function Head({ a }) {
   return html`<div class="gui-add__head"><${Glyph} service=${a.service} big=${true} />
     <div><h3 class="gui-add__title">${a.label}${a.who ? html` <span class="ok-tone-muted">· ${a.who}</span>` : ""}</h3>
-      <${Steps} step=${a.step} /></div></div>`;
+      <${Steps} step=${a.step} />
+      ${a.editing && html`<p class="ok-tone-muted gui-add__sub">${a.step === "login" ? "Log in again — what it hears stays as it is" : "Changing a source it already hears"}</p>`}</div></div>`;
 }
 
 function State({ a }) {
@@ -64,10 +66,11 @@ function Picker({ id, a, back }) {
 // -- 1 · Log in --------------------------------------------------------------------------------------------
 
 function Login({ id, a }) {
-  const [values, setValues] = useState({});
+  const [values, setValues] = useState({ ...(a.prefill || {}) });
   const set = (k, v) => setValues({ ...values, [k]: v });
   const fields = (a.fields || []).filter((f) => !(f.key === "site" && a.link && a.link.site && a.link.service !== "gmail"));
-  const ready = fields.every((f) => (values[f.key] || "").trim());
+  const ready = fields.every((f) => f.optional || (values[f.key] || "").trim())
+    && (a.service !== "github" || (values.token || "").trim());
   const send = () => ready && !a.busy && act(id, "add_login", { values }).catch(() => {});
   return html`<div class="gui-add">
     <${Head} a=${a} />
@@ -93,9 +96,8 @@ function Login({ id, a }) {
     <${State} a=${a} />
     <div class="gui-add__foot">
       <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
-      ${a.service === "github"
-        ? html`<button class="ok-btn primary" disabled=${!!a.busy} onClick=${() => act(id, "add_start", { service: "github" }).catch(() => {})}>Check again</button>`
-        : html`<button class="ok-btn primary" disabled=${!ready || !!a.busy} onClick=${send}>Continue</button>`}
+      ${a.service === "github" && html`<button class="ok-btn" disabled=${!!a.busy} onClick=${() => act(id, "add_again").catch(() => {})}>Check gh again</button>`}
+      <button class="ok-btn primary" disabled=${!ready || !!a.busy} onClick=${send}>Continue</button>
     </div>
   </div>`;
 }
@@ -106,12 +108,13 @@ function What({ id, a }) {
   const [picks, setPicks] = useState(a.picks || []);
   const [aboutMe, setAboutMe] = useState(a.about_me !== false);
   const [folder, setFolder] = useState(a.folder || "INBOX");
+  const [me, setMe] = useState(a.me || "");
   const [find, setFind] = useState("");
   const [links, setLinks] = useState("");
   useEffect(() => setPicks(a.picks || []), [JSON.stringify(a.picks)]);
   const toggle = (k) => setPicks(picks.includes(k) ? picks.filter((x) => x !== k) : [...picks, k]);
   const shown = (a.options || []).filter((o) => !find || o.label.toLowerCase().includes(find.toLowerCase()));
-  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder }).catch(() => {});
+  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder, me }).catch(() => {});
   return html`<div class="gui-add">
     <${Head} a=${a} />
     ${a.about_me_says && html`<label class="ok-check gui-add__switch"><input type="checkbox" checked=${aboutMe}
@@ -122,7 +125,15 @@ function What({ id, a }) {
       <div class="gui-head"><input id=${`add-files-${id}`} class="ok-input" style="flex: 1; width: auto" value=${links}
         placeholder="figma.com/design/… or figma.com/files/team/…" onInput=${(e) => setLinks(e.target.value)} />
         <button class="ok-btn" disabled=${!links.trim()} onClick=${() => act(id, "add_files", { links }).then(() => setLinks(""), () => {})}>Add links</button></div></div>`}
-    ${a.picks_of && a.service !== "figma" && html`<span class="gui-add__label">${{ repos: "Repos — their events", channels: "Channels", projects: "Projects", spaces: "Spaces" }[a.picks_of]}</span>`}
+    ${a.service === "discord" && html`<div class="gui-add__field">
+      <span class="gui-add__label">Invite the bot</span>
+      <p class="gui-add__sub">It hears only the servers it is in — open the link, pick your server, Authorize; then List again.
+        ${a.invite && html` <a href=${a.invite} target="_blank" rel="noopener noreferrer">${say("Invite it")} ↗</a>`}</p>
+      <div class="gui-add__foot" style="justify-content: flex-start"><button class="ok-btn" disabled=${!!a.busy} onClick=${() => act(id, "add_again").catch(() => {})}>List again</button></div>
+      <label class="gui-add__label" for=${`add-me-${id}`}>Me — to tell mentions of you</label>
+      <input id=${`add-me-${id}`} class="ok-input" value=${me} placeholder=${say("your user id, or a link to a message you wrote")}
+        onInput=${(e) => setMe(e.target.value)} /></div>`}
+    ${a.picks_of && a.service !== "figma" && html`<span class="gui-add__label">${{ repos: "Repos — their events", channels: "Channels", projects: "Projects — their events", spaces: "Spaces" }[a.picks_of]}</span>`}
     ${(a.options || []).length > 8 && html`<input class="ok-input" placeholder=${say("Search")} value=${find} onInput=${(e) => setFind(e.target.value)} />`}
     ${shown.length > 0 && html`<ul class="gui-add__options">
       ${shown.map((o) => html`<li key=${o.id}><label class="ok-check"><input type="checkbox" checked=${picks.includes(o.id)}
@@ -162,15 +173,25 @@ function Check({ id, a, done }) {
     ${a.busy && html`<${State} a=${a} />`}
     <div class="gui-add__foot">
       <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
-      <button class="ok-btn primary" disabled=${bad || !!a.busy} onClick=${() => act(id, "add_save").then(done, () => {})}>Add ${a.label}</button>
+      <button class="ok-btn primary" disabled=${bad || !!a.busy} onClick=${() => act(id, "add_save").then(done, () => {})}>${a.editing ? "Keep it" : `Add ${a.label}`}</button>
     </div>
   </div>`;
+}
+
+const awaited = new Set();          // building ids whose steps were just started elsewhere (Edit, Log in again)
+
+/** Edit or Log in again a listed source: the steps start at the worker, and the pane waits for them
+ *  instead of opening the picker over them while the panel's data catches up. */
+export function editSource(id, source, login) {
+  awaited.add(id);
+  return act(id, "edit", { source, login }).catch((e) => { awaited.delete(id); throw e; });
 }
 
 /** The pane over the feed: opens the picker when nothing is under way; `done` goes back to the signals. */
 export function AddPane({ id, d, done }) {
   const a = d.adding;
-  useEffect(() => { if (!a) act(id, "add_open").catch(() => {}); }, [!a]);
+  if (a) awaited.delete(id);
+  useEffect(() => { if (!a && !awaited.has(id)) act(id, "add_open").catch(() => {}); }, [!a]);
   const close = () => act(id, "add_close").then(done, done);
   const back = d.sources.length ? close : null;
   const keys = (e) => {

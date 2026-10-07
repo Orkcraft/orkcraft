@@ -25,7 +25,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import feeds, logins, mailbox, sources_link, watch
+from orkcraft.realm import feeds, feeds_discord, feeds_git, logins, mailbox, sources_link, watch
 
 TIMEOUT_S = 15
 LIST_MAX = 200
@@ -39,6 +39,7 @@ class Field:
     placeholder: str = ""
     shape: str = ""             # a regex the value should match (checked as typed, a hint only)
     shape_says: str = ""
+    optional: bool = False      # may stay empty: a CLI's login (gh, glab), a default host
 
 
 @dataclass(frozen=True)
@@ -66,9 +67,25 @@ SLACK_MANIFEST = {"display_information": {"name": "Orkcraft listener",
                   "settings": {"org_deploy_enabled": False, "socket_mode_enabled": False}}
 SLACK_NEW_APP = "https://api.slack.com/apps?new_app=1&manifest_json=" + urllib.parse.quote(json.dumps(SLACK_MANIFEST))
 
+GH_TOKEN_PAGE = "https://github.com/settings/personal-access-tokens/new"
+GITLAB_TOKEN_PAGE = "https://{host}/-/user_settings/personal_access_tokens?name=orkcraft&scopes=read_api"
+
 SERVICES: dict[str, Service] = {s.id: s for s in (
-    Service("github", "GitHub", picks="repos",
-            note="Uses the gh command's login: nothing to paste. Not logged in? Run `gh auth login` in a terminal."),
+    Service("github", "GitHub",
+            (Field("token", "Or a token", True, "github_pat_… or ghp_…", r"^(github_pat_|gh[pousr]_)\S+$",
+                   "a GitHub token starts with github_pat_ or ghp_", optional=True),),
+            (("Without gh: make a token — read-only Metadata, Issues, Pull requests "
+              "(a classic token with notifications to hear them)", GH_TOKEN_PAGE),),
+            picks="repos", about_me="My notifications — review requests, mentions, assignments",
+            note="Uses the gh command's login: nothing to paste. Not logged in? Run `gh auth login` in a terminal "
+                 "and Check again — or paste a token."),
+    Service("gitlab", "GitLab",
+            (Field("host", "Your GitLab", placeholder="gitlab.com", optional=True),
+             Field("token", "Personal access token", True, "glpat-…", r"^glpat-\S+$",
+                   "a GitLab token starts with glpat-", optional=True)),
+            (("Make a token — the page opens filled in (read_api); Create, then copy it", GITLAB_TOKEN_PAGE),),
+            picks="projects", about_me="My to-dos — mentions, assignments, review requests",
+            note="Logged in with glab? Leave the token empty and Continue."),
     Service("gmail", "Gmail",
             (Field("email", "Your Gmail address", placeholder="you@gmail.com"),
              Field("password", "App password", True, "16 letters", r"^[a-zA-Z]{4}( ?[a-zA-Z]{4}){3}$",
@@ -90,6 +107,14 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
             (Field("token", "Personal access token", True, "figd_…", r"^figd_\S+$", "a Figma token starts with figd_"),),
             (("Settings → Security → Generate new token; allow reading comments and files", "https://www.figma.com/settings"),),
             picks="files"),
+    Service("discord", "Discord",
+            (Field("token", "The bot's token", True, "paste the token", r"^[\w-]{20,}\.[\w-]{4,}\.[\w-]{20,}$",
+                   "a bot token is three parts with dots"),),
+            (("New Application → Bot → Reset Token, and copy it", "https://discord.com/developers/applications"),
+             ("On the same page switch on Message Content Intent, then Save", ""),
+             ("Paste the token here; the next step gives the link that invites it to your server", "")),
+            picks="channels",
+            note="Discord lets a tool listen only as a bot you invite: it hears the channels it can see."),
 )}
 ATLASSIAN = ("jira", "confluence")
 
@@ -149,6 +174,35 @@ def _get(url: str, head: dict, opener) -> dict | list:
         raise Refused(f"Could not reach {urllib.parse.urlsplit(url).hostname}: {getattr(e, 'reason', e)}") from None
 
 
+def _host(value: str, default: str = "gitlab.com") -> str:
+    v = (value or "").strip().lower().removeprefix("https://").removeprefix("http://").split("/")[0] or default
+    if not feeds.SITE.match(v):
+        raise Refused("That is not a host — like gitlab.com or gitlab.acme.io")
+    return v
+
+
+def _gh_head(token: str) -> dict:
+    return {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+
+
+def _cli(runner, cmd: list[str], kind: str):
+    try:
+        return feeds_git.cli(runner, cmd, kind)
+    except feeds.Failed as e:
+        raise Refused(str(e).removeprefix(f"{kind}: ")) from None
+
+
+def _git_api(login: "Verified", path: str, opener, runner):
+    """GitHub's or GitLab's API as this login: its token over HTTPS, else the CLI's (`gh` / `glab`)."""
+    token = logins.resolve(login.refs["token"]) if login.refs.get("token") else ""
+    if login.service == "github":
+        return _get(f"{feeds_git.GH_API}/{path}", _gh_head(token), opener) if token else \
+            _cli(runner, ["gh", "api", path], "github")
+    if token:
+        return _get(f"https://{login.site}/api/v4/{path}", {"PRIVATE-TOKEN": token}, opener)
+    return _cli(runner, ["glab", "api", "--hostname", login.site, path], "gitlab")
+
+
 def _basic(email: str, token: str) -> dict:
     return {"Authorization": "Basic " + base64.b64encode(f"{email}:{token}".encode()).decode()}
 
@@ -176,14 +230,30 @@ def verify(service: str, values: dict, opener=urllib.request.urlopen, runner=sub
     s = SERVICES.get(service)
     if s is None:
         raise Refused(f"{service!r} cannot be added here yet")
-    v = {k: str(values.get(k) or "").strip() for k in ("site", "email", "token", "password")}
+    v = {k: str(values.get(k) or "").strip() for k in ("site", "email", "token", "password", "host")}
     if service == "github":
-        who = gh_login(runner)
+        if not v["token"]:
+            who = gh_login(runner)
+            if not who:
+                raise Refused("gh is not logged in — run `gh auth login` in a terminal and Check again, or paste a token")
+            return Verified(service, who, who)
+        me = _get(f"{feeds_git.GH_API}/user", _gh_head(v["token"]), opener)
+        who = str((me or {}).get("login") or "") if isinstance(me, dict) else ""
         if not who:
-            raise Refused("gh is not logged in — run `gh auth login` in a terminal, then Check again")
-        return Verified(service, who, who)
+            raise Refused("GitHub did not say who this token is")
+        return Verified(service, who, who, {"token": logins.save(f"github-{_slug(who)}", v["token"], "github", who)})
+    if service == "gitlab":
+        host = _host(v["host"])
+        if not v["token"]:
+            me = _cli(runner, ["glab", "api", "--hostname", host, "user"], "gitlab")
+            refs: dict[str, str] = {}
+        else:
+            me = _get(f"https://{host}/api/v4/user", {"PRIVATE-TOKEN": v["token"]}, opener)
+            refs = {"token": logins.save(f"gitlab-{_slug(host)}", v["token"], "gitlab", host)}
+        who = str((me or {}).get("username") or "?") if isinstance(me, dict) else "?"
+        return Verified(service, f"{who} · {host}", host, refs, host)
     for f in s.fields:
-        if not v.get(f.key):
+        if not v.get(f.key) and not f.optional:
             raise Refused(f"{f.label} is empty")
     if service == "gmail":
         email, password = v["email"], v["password"].replace(" ", "")
@@ -217,6 +287,15 @@ def verify(service: str, values: dict, opener=urllib.request.urlopen, runner=sub
         me = _get("https://api.figma.com/v1/me", {"X-Figma-Token": v["token"]}, opener)
         handle = str((me or {}).get("handle") or "figma") if isinstance(me, dict) else "figma"
         return Verified(service, handle, handle, {"token": logins.save(f"figma-{_slug(handle)}", v["token"], "figma", handle)})
+    if service == "discord":
+        me = _get(f"{feeds_discord.API}/users/@me", feeds_discord.head(v["token"]), opener)
+        if not isinstance(me, dict) or not me.get("id"):
+            raise Refused("Discord did not say who this token is")
+        if not me.get("bot"):
+            raise Refused("That is not a bot's token — Discord lets a tool listen only as a bot")
+        name = str(me.get("username") or "bot")
+        ref = logins.save(f"discord-{_slug(name)}", v["token"], "discord", name)
+        return Verified(service, name, name, {"token": ref}, str(me["id"]))
     raise Refused(f"{service!r} cannot be added here yet")
 
 
@@ -229,9 +308,12 @@ def kept(service: str) -> list[Verified]:
     elif service == "slack":
         for e in logins.listed("slack"):
             out.append(Verified(service, e["account"], e["account"], {"token": logins.PREFIX + e["name"]}, e["account"]))
-    elif service == "figma":
-        for e in logins.listed("figma"):
+    elif service in ("figma", "github", "discord"):
+        for e in logins.listed(service):
             out.append(Verified(service, e["account"], e["account"], {"token": logins.PREFIX + e["name"]}))
+    elif service == "gitlab":
+        for e in logins.listed("gitlab"):
+            out.append(Verified(service, e["account"], e["account"], {"token": logins.PREFIX + e["name"]}, e["account"]))
     elif service in ATLASSIAN:
         names = {e["name"] for e in logins.listed("atlassian")}
         for e in logins.listed("atlassian"):
@@ -244,37 +326,60 @@ def kept(service: str) -> list[Verified]:
 
 # -- step 2: what to hear ---------------------------------------------------------------------------------
 
-def origin_repo(repo_root: Path, runner=subprocess.run) -> str:
-    """This project's GitHub repo (`owner/repo`) from its `origin`, or ""."""
+def origin(repo_root: Path, runner=subprocess.run) -> tuple[str, str]:
+    """This project's `origin` as (host, path): ("github.com", "owner/repo"), or ("", "")."""
     try:
         out = runner(["git", "-C", str(repo_root), "remote", "get-url", "origin"], capture_output=True, text=True,
                      timeout=TIMEOUT_S)
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return "", ""
     url = (out.stdout or "").strip() if out.returncode == 0 else ""
-    m = re.match(r"^(?:git@github\.com:|ssh://git@github\.com/)([^/]+/[^/]+?)(?:\.git)?/?$", url)
-    if m:
-        return m.group(1)
-    link = sources_link.recognise(url)
-    return link.target if link and link.service == "github" else ""
+    m = re.match(r"^(?:[\w.-]+@([\w.-]+):|ssh://[\w.-]+@([\w.-]+)(?::\d+)?/|https?://(?:[^@/]+@)?([\w.-]+)(?::\d+)?/)"
+                 r"([\w.-]+(?:/[\w.-]+)+?)(?:\.git)?/?$", url)
+    if not m:
+        return "", ""
+    return (m.group(1) or m.group(2) or m.group(3)).lower(), m.group(4).removesuffix(".git")
+
+
+def origin_repo(repo_root: Path, runner=subprocess.run) -> str:
+    """This project's GitHub repo (`owner/repo`) from its `origin`, or ""."""
+    host, path = origin(repo_root, runner)
+    return path if host == "github.com" and path.count("/") == 1 else ""
 
 
 def options(login: Verified, opener=urllib.request.urlopen, runner=subprocess.run, repo_root: Path | None = None,
             files: list[str] | None = None) -> list[Option]:
     """What there is to pick for this login, the likely ones ticked."""
     service = login.service
-    if service == "github":
-        mine = origin_repo(repo_root, runner) if repo_root else ""
+    if service in ("github", "gitlab"):
+        host, path = origin(repo_root, runner) if repo_root else ("", "")
+        mine = path if host == (login.site or "github.com") else ""
         try:
-            out = _run(runner, ["gh", "repo", "list", "--json", "nameWithOwner,pushedAt", "--limit", "50"])
-            repos = json.loads(out.stdout or "[]") if out.returncode == 0 else []
-        except (OSError, subprocess.SubprocessError, ValueError):
-            repos = []
-        found = [Option(r["nameWithOwner"], r["nameWithOwner"], str(r.get("pushedAt") or "")[:10],
-                        r["nameWithOwner"] == mine) for r in repos if isinstance(r, dict) and r.get("nameWithOwner")]
+            repos = _git_api(login, "user/repos?sort=pushed&per_page=100" if service == "github" else
+                             "projects?membership=true&order_by=last_activity_at&per_page=50", opener, runner)
+        except Refused:
+            if not mine:                                  # nothing to offer: say why
+                raise
+            repos = []                                    # this project's own still offered, ticked
+        if service == "github":
+            found = [Option(r["full_name"], r["full_name"], str(r.get("pushed_at") or "")[:10], r["full_name"] == mine)
+                     for r in repos or [] if isinstance(r, dict) and r.get("full_name")]
+        else:
+            found = [Option(r["path_with_namespace"], r["path_with_namespace"], str(r.get("last_activity_at") or "")[:10],
+                            r["path_with_namespace"] == mine)
+                     for r in repos or [] if isinstance(r, dict) and r.get("path_with_namespace")]
         if mine and not any(o.id == mine for o in found):
             found.insert(0, Option(mine, mine, "this project", True))
         return sorted(found, key=lambda o: (not o.picked, -int(re.sub(r"\D", "", o.meta) or 0)))
+    if service == "discord":
+        head = feeds_discord.head(logins.resolve(login.refs["token"]))
+        found = []
+        for g in _get(f"{feeds_discord.API}/users/@me/guilds", head, opener) or []:
+            chans = _get(f"{feeds_discord.API}/guilds/{g.get('id')}/channels", head, opener) or []
+            found += [Option(str(c["id"]), f"{g.get('name', '?')} · #{c.get('name', c['id'])}")
+                      for c in sorted(chans, key=lambda c: c.get("position", 0))
+                      if isinstance(c, dict) and c.get("id") and c.get("type") in feeds_discord.TEXT_CHANNELS]
+        return found
     if service == "slack":
         head = {"Authorization": f"Bearer {logins.resolve(login.refs['token'])}"}
         data = _get("https://slack.com/api/users.conversations?" + urllib.parse.urlencode(
@@ -309,13 +414,30 @@ def options(login: Verified, opener=urllib.request.urlopen, runner=subprocess.ru
 
 # -- what it makes ----------------------------------------------------------------------------------------
 
-def plan(login: Verified, picks: list[str], about_me: bool = True, folder: str = "INBOX") -> Plan:
+def plan(login: Verified, picks: list[str], about_me: bool = True, folder: str = "INBOX", me: str = "") -> Plan:
     """The settings the picks make, and what the tower will hear, in words."""
     service, picks = login.service, [p for p in picks if re.fullmatch(r"[A-Za-z0-9_.:/-]{1,120}", p)]
-    if service == "github":
-        if len(picks) != 1:
-            raise Refused("Pick one repo — the tower hears one GitHub repo for now")
-        return Plan({"github": picks[0]}, f"the events of {picks[0]}")
+    token = f" token={login.refs['token']}" if login.refs.get("token") else ""
+    if service in ("github", "gitlab"):
+        pattern, what = (feeds.REPOS, "repos") if service == "github" else (feeds.PATHS, "projects")
+        picks = [p for p in picks if pattern.match(p)]
+        if not picks and not about_me:
+            raise Refused("Pick a repo, or keep your notifications" if service == "github" else
+                          "Pick a project, or keep your to-dos")
+        line = f"{service}:" + (f" host={login.site}" if service == "gitlab" else "") + token + \
+            (f" {what}={','.join(picks)}" if picks else "") + \
+            (f" {'notifications' if service == 'github' else 'todos'}=on" if about_me else "")
+        says = [x for x in (("your notifications" if service == "github" else "your to-dos") if about_me else "",
+                            f"the events of {', '.join(picks)}" if picks else "") if x]
+        return Plan({}, " and ".join(says), line.replace(":  ", ": "))
+    if service == "discord":
+        picks = [p for p in picks if p.isdigit()]
+        if not picks:
+            raise Refused("Pick a channel — invite the bot first if the list is empty")
+        if me and not me.isdigit():
+            raise Refused("Me is your Discord user id — digits, or a link to a message you wrote")
+        line = f"discord:{token} channels={','.join(picks)}" + (f" me={me}" if me else "")
+        return Plan({}, f"{len(picks)} channel(s)" + (", mentions of you told" if me else ""), line)
     if service == "gmail":
         folder = (folder or "INBOX").strip()[:100]
         return Plan({"host": "gmail", "user": login.account, "user_env": None, "password_env": login.refs["password"],
@@ -360,7 +482,7 @@ def first_look(login: Verified, p: Plan, opener=urllib.request.urlopen, runner=s
         feed, err = feeds.parse(p.feed)
         if feed is None:
             return 0, err
-        got = feeds.look(feed, opener)
+        got = feeds.look(feed, opener, runner)
         return len(got.items), got.error
     if login.service == "gmail":
         got = mailbox.look(p.changes, imap_factory)
@@ -369,3 +491,85 @@ def first_look(login: Verified, p: Plan, opener=urllib.request.urlopen, runner=s
         _, _, err = watch.github_events(p.changes["github"], "", runner)
         return -1, err
     return 0, ""
+
+
+# -- Discord: the invite, and who "me" is ------------------------------------------------------------------
+
+def discord_invite(login: Verified) -> str:
+    """The link that adds the bot to a server, allowed to read and nothing else ("" without its id)."""
+    return feeds_discord.invite(login.site) if login.site.isdigit() else ""
+
+
+def discord_bot(login: Verified, opener=urllib.request.urlopen) -> Verified:
+    """A kept bot login with its id (the Logins file keeps the name only): `/users/@me` once."""
+    if login.site.isdigit():
+        return login
+    me = _get(f"{feeds_discord.API}/users/@me", feeds_discord.head(logins.resolve(login.refs["token"])), opener)
+    return Verified(login.service, login.who, login.account, login.refs, str((me or {}).get("id") or ""))
+
+
+def discord_me(login: Verified, text: str, opener=urllib.request.urlopen) -> str:
+    """The person's Discord user id from what they typed: the id, `<@id>`, or a link to a message they wrote."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+    m = re.fullmatch(r"<@!?(\d{1,25})>|(\d{1,25})", text)
+    if m:
+        return m.group(1) or m.group(2)
+    link = re.search(r"discord(?:app)?\.com/channels/(?:\d+|@me)/(\d+)/(\d+)", text)
+    if not link:
+        raise Refused("Me is your Discord user id — digits, or a link to a message you wrote")
+    msg = _get(f"{feeds_discord.API}/channels/{link.group(1)}/messages/{link.group(2)}",
+               feeds_discord.head(logins.resolve(login.refs["token"])), opener)
+    who = str(((msg or {}).get("author") or {}).get("id") or "") if isinstance(msg, dict) else ""
+    if not who:
+        raise Refused("That message did not say who wrote it")
+    return who
+
+
+# -- a source already listed, back into the steps -----------------------------------------------------------
+
+@dataclass
+class Source:
+    """A listed source as the steps take it again: the login it uses, what it hears, its switches."""
+    login: Verified
+    picks: list[str] = field(default_factory=list)
+    about_me: bool = True
+    folder: str = "INBOX"
+    me: str = ""
+
+
+PICKS = {"slack": "channels", "confluence": "spaces", "figma": "files", "github": "repos", "gitlab": "projects",
+         "discord": "channels"}
+
+
+def from_source(config: dict, source: str) -> Source:
+    """`mail`, `github` (the old one-repo setting) or `feed:<line>` as the steps' login and picks.
+    Raises Refused for a source the steps cannot make again (a schedule, a webhook, an own query)."""
+    if source == "mail":
+        if str(config.get("host") or "").lower() != "gmail":
+            raise Refused("This mailbox is not Gmail — change it in the building's settings")
+        user = str(config.get("user") or "") or logins.resolve(str(config.get("user_env") or ""))
+        return Source(Verified("gmail", user, user, {"password": str(config.get("password_env") or "")}),
+                      folder=str(config.get("folder") or "INBOX"))
+    if source == "github":
+        return Source(Verified("github", "gh", "gh"), [str(config.get("github") or "")], about_me=False)
+    feed, err = feeds.parse(source.removeprefix("feed:")) if source.startswith("feed:") else (None, "")
+    if feed is None or feed.kind not in SERVICES:
+        raise Refused(err or f"{source!r} cannot be changed here — change it in the building's settings")
+    o = feed.opts
+    if not feed.poll:
+        raise Refused("This line only listens to a webhook — change it in the building's settings")
+    if o.get("cql") or (o.get("jql") and feeds.JIRA_JQL not in o["jql"] and not re.fullmatch(
+            r"project in \([A-Z0-9_, ]+\)", o["jql"])):
+        raise Refused("This line asks its own query — change it in the building's settings")
+    refs = {k: o[k] for k in ("token", "user") if o.get(k)}
+    site = o.get("site") or (feed.host if feed.kind == "gitlab" else "")
+    account = site or (o["token"][len(logins.PREFIX):] if logins.is_ref(o.get("token", "")) else feed.kind)
+    picks = feed.ids(PICKS[feed.kind]) if feed.kind in PICKS else []
+    keys = re.search(r"project in \(([^)]*)\)", o.get("jql", ""))
+    if feed.kind == "jira" and keys:
+        picks = [k.strip() for k in keys.group(1).split(",") if k.strip()]
+    about_me = {"github": feed.on("notifications"), "gitlab": feed.on("todos"),
+                "jira": not o.get("jql") or feeds.JIRA_JQL in o["jql"]}.get(feed.kind, True)
+    return Source(Verified(feed.kind, account, account, refs, site), picks, about_me, me=o.get("me", ""))

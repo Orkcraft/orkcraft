@@ -589,7 +589,7 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel = pg.locator(".gui-panel")
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
-    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 6
+    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
     panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
     shot("1-picker")
     panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
@@ -611,6 +611,28 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
+    # the token is revoked: the next look fails as the login, and Log in again fixes it in one step (§8)
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener({**ATL, "acme.atlassian.net/rest/api/3/myself": 401}))
+    panel.get_by_role("button", name="Check now").click()
+    failing = panel.locator(".gui-tower__failing", has_text="the token was refused")
+    failing.wait_for(state="visible", timeout=WAIT_MS)
+    row = panel.locator(".gui-tower__source.is-bad", has_text="Jira")
+    row.get_by_role("button", name="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    shot("7-failing")
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
+    failing.get_by_role("button", name="Log in again").click()
+    panel.locator(".gui-add__sub", has_text="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-site-" + bid).count() == 0          # the site is kept
+    panel.locator("#add-email-" + bid).fill("ann@acme.io")
+    panel.locator("#add-token-" + bid).fill("n" * 24)
+    shot("8-login-again")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.get_by_role("button", name="Keep it").click()
+    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check now").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-panel .gui-tower__failing')", timeout=WAIT_MS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 

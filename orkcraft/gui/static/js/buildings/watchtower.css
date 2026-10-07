@@ -13,7 +13,10 @@
 .gui-tower__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-tower__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
 .gui-tower__state { flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
-.gui-tower__failing { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.gui-tower__failing { margin: 0; min-width: 0; display: flex; gap: var(--space-2); align-items: center; font-size: 12px; }
+.gui-tower__failing > span:first-child { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-tower__failing > .ok-btn { flex: none; }
+.gui-tower__retry { flex: none; font-size: 12px; }
 
 /* The feed: one line per signal — new, source, from · what, when. */
 .gui-tower__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
@@ -103,5 +106,6 @@
 .gui-tower__source.is-bad { box-shadow: var(--bevel-sunken), inset 3px 0 0 var(--danger); }
 .gui-tower__source-name { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; font-weight: 700; }
 .gui-tower__source-name > span { font-size: 12px; font-weight: 600; }
+.gui-tower__source-acts { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; }
 .gui-tower__source-line { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-theme="office"] .gui-svc { box-shadow: inset 0 0 0 1px var(--frame); }
