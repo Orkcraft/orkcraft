@@ -117,6 +117,11 @@ class MillWorker(Worker):
             self.toast("queued after the cart that is milling")
         return self.run_steps(self.last_input)
 
+    def _steward_tool(self) -> str:
+        from orkcraft.realm import steward
+        scroll = getattr(self.town, "scroll", None)
+        return steward.harness_for(scroll.building(self.building_id) if scroll is not None else None) or "main"
+
     def _agent(self, job: jobs.Job | None = None) -> mill.Agent:
         if self.simulated:
             return _simulated_agent
@@ -125,7 +130,8 @@ class MillWorker(Worker):
             if job is not None and cost:
                 job.cost_usd = (job.cost_usd or 0.0) + float(cost)
 
-        ask, town = mill.default_agent(self.repo_root, self.cancel, str(self.config.get("model") or ""), spent), self.town
+        pick = self.steward_pick("agent", str(self.config.get("model") or ""))     # its `model`, else its goal's
+        ask, town = mill.default_agent(self.repo_root, self.cancel, pick.model, spent, self._steward_tool()), self.town
 
         def gated(what: str, text: str) -> str:
             if not town.budget_ok():

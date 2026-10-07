@@ -3,9 +3,9 @@
 A task that arrives is judged before any ork takes it:
 
     simple    a follow-up, a rework or an approved post → the whole task goes to the ork that knows it
-    sorted    else the steward's light look (`plans.TRIAGE_TIER`): `trivial` → one light ork at once, no
+    sorted    else the steward's light look (its `triage`, realm/steward.py `WORK`): `trivial` → one light ork at once, no
               review but its tests; `single` → one ork of the tier the sort names, then the review;
-              `plan` (stages, parallel parts) → the steward plans it on the goal's tier (`Goal.plan`).
+              `plan` (stages, parallel parts) → the steward plans it on the goal's tier (its `plan`).
               A short task with no steps (`plans.clearly_simple`) is never planned: not trivial, it goes
               to one ork of the tier the building's goal names, reviewed
     planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent
@@ -31,46 +31,27 @@ import uuid
 from dataclasses import asdict
 
 from orkcraft import autonomy, schedule
-from orkcraft.core import treasury
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import personas, pipes, plans, pressure, worktrees
+from orkcraft.realm import personas, pipes, plans, steward, worktrees
 
 NO = frozenset({"no", "n", "nope", "нет", "не"})
-QUOTA_READ_S = 60.0                 # how long one measure of the quota is good for
 
 
 class PlanMixin:
     # -- what it is ---------------------------------------------------------------------------------
 
     @property
-    def aim(self) -> str:
-        b = self.town.scroll.building(self.building_id)
-        return b.aim if b is not None else "balance"
+    def plan_tier(self) -> str:
+        """The tier the steward plans on now: the one picked for it, else its goal's (realm/steward.py)."""
+        scroll = getattr(self.town, "scroll", None)
+        p = steward.pick(scroll.building(self.building_id) if scroll is not None else None, "plan",
+                         type_id=self.TYPE, goal=self.aim_now)
+        return p.tier or "the default model"
 
     @property
     def goal(self) -> plans.Goal:
-        """The building's goal; 🪙 thrift whatever it is while the camp's quota is tight."""
-        camp = self.quota()
-        return plans.goal_of("thrift" if camp is not None and camp.tight else self.aim)
-
-    def quota(self) -> pressure.Camp | None:
-        """What is left of the binding subscription quota (realm/pressure.py, from the town's last quota
-        read); None with no read, no subscription or nothing spent yet. Measured once a minute."""
-        now = time.monotonic()
-        cached = getattr(self, "_quota_cache", None)
-        if cached is not None and now - cached[0] < QUOTA_READ_S:
-            return cached[1]
-        camp = None
-        subs = treasury.subscriptions(self.town.machine)
-        limits = getattr(self.town, "limits", None) or []
-        if subs and limits and not self.simulated:
-            try:
-                camp = pressure.measure(self.repo_root, limits, providers=subs)
-            except Exception:  # a quota that cannot be measured never stops a plan
-                camp = None
-        camp = camp if camp is not None and camp.left is not None else None
-        self._quota_cache = (now, camp)
-        return camp
+        """The building's goal for its orks; 🪙 thrift whatever it is while the camp's quota is tight."""
+        return plans.goal_of(self.aim_now)
 
     @property
     def rules(self) -> autonomy.Rules:
@@ -119,7 +100,7 @@ class PlanMixin:
         return cancel
 
     def _triage(self, task: bk.PoolTask, short: bool = False) -> None:
-        """The steward's light look (`plans.TRIAGE_TIER`): trivial and single go to one ork at once, a task of
+        """The steward's light look (its `triage`): trivial and single go to one ork at once, a task of
         stages or parallel parts is planned. A sort that does not hold is planned too, as before the triage.
         `short`: the rules are sure it needs no plan — it is only told trivial (no review) from the rest."""
         cancel = self._take(task, f"{self.keeper} sorts it")
@@ -129,8 +110,7 @@ class PlanMixin:
             from orkcraft.core.workers.barracks import RunOutcome
             out, sort = RunOutcome(), None
             try:
-                sort = plans.parse_triage(self._steward(prompt, self.repo_root, cancel, out, "triage",
-                                                        plans.TRIAGE_TIER))
+                sort = plans.parse_triage(self._steward(prompt, self.repo_root, cancel, out, "triage"))
             except InterruptedError:
                 out.error = "stopped"
             except Exception:  # a steward that cannot sort never stops the task: it is planned
@@ -155,7 +135,7 @@ class PlanMixin:
         elif sort is None or sort.kind == plans.PLAN:
             task.kind = plans.PLAN
             why = f": {sort.why}" if sort is not None and sort.why else ""
-            self._plan(task, f"{self.keeper} plans it ({self.goal.plan}){why}")
+            self._plan(task, f"{self.keeper} plans it ({self.plan_tier}){why}")
         else:
             task.kind = sort.kind
             tier = self.goal.simple if sort.kind == plans.TRIVIAL else plans.shift(sort.tier, self.goal.shift)
@@ -167,18 +147,17 @@ class PlanMixin:
         cancel = self._take(task, why or f"{self.keeper} plans it")
         prompt = plans.plan_prompt(self.keeper, self.orders, task.title, task.text, self.aim,
                                    self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir))
-        tier = self.goal.plan
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
             out = RunOutcome()
             subs, errors = None, []
             try:
-                text = self._steward(prompt, self.repo_root, cancel, out, "plan", tier)
+                text = self._steward(prompt, self.repo_root, cancel, out, "plan")
                 subs, errors = plans.parse(text)
                 if errors:                                    # once more, with what was wrong
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
-                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan", tier)
+                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan")
                     subs, errors = plans.parse(text)
             except InterruptedError:
                 out.error = "stopped"
@@ -473,7 +452,6 @@ class PlanMixin:
         self._cancels[f"final:{parent.id}"] = cancel
         git = self.task_git if self.uses_git else None
         cmd = str(self.config.get("test_cmd") or "")
-        goal = self.goal
         st.log(bk.Decision(bk.now_iso(), parent.id, "review", why=f"every part is in: {self.keeper} looks at the whole"))
 
         def work() -> None:
@@ -494,7 +472,7 @@ class PlanMixin:
                         tests = f"`{cmd}` passes on the merged branch"
                 verdict = self._steward(plans.final_prompt(self.keeper, self.orders, parent.title, parent.text,
                                                            parent.plan, reports, diff, tests, bk.DIFF_LIMIT),
-                                        self.repo_root, cancel, out, "final", goal.final)
+                                        self.repo_root, cancel, out, "final")
                 out.accepted, out.notes = bk.verdict_of(verdict)
                 if out.accepted and git is not None and commits:
                     body = f"{parent.text}\n\n---\n\n" + "\n\n".join(

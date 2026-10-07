@@ -130,7 +130,37 @@ card instead of making new work — so it is not counted as a loop (`scroll_road
 The demo's Front Desk (F5, `demo/front_desk.py`) shows it all: Inbox → Triage → "task for human" (a
 to-do) / "task for agent" (a task → Agents at work → In Progress → Done, the outcome on to Results).
 
+## 5b. Context, plan and personal cards
+
+Kept beside the board, never in its file (`.orkcraft/fields/<id>/cards.json`, realm/cardlore.py): the
+file stays the person's to edit by hand, and a hand edit that removes a card removes what was kept of it.
+
+- **Context 📜.** A new or edited ticket, to-do or note asks the town's Scroll Dumps (`wikis`, default
+  every one) for the pages that share its words (`ScrollsWorker.look_up`: no model, nothing leaves the
+  machine; a word matches by its start, so "банку" finds "банк"). None found, no context and no mark. The
+  card shows `📜 2`; a click lists the pages and opens one in Lake. A page that changed since makes the
+  mark pale, and *Look again* asks once more.
+- **Plan 🧭.** Only for a to-do, only when the person presses *Plan*. The first time on a board it shows
+  what will leave first (*What goes to the model*): the to-do as it leaves, what was taken out of it and
+  the pages it takes along, each one with a box; *Don't ask again on this board* skips it after. The model
+  is its steward's (`plan_model`, else the tier picked for *Plan the to-dos*, else the goal's: docs/design/steward-at-work.md §2). The steps come back as a 🧭 on the
+  to-do; *Make them to-dos* adds one to-do per step.
+- **Personal 🔒.** A card marked personal (*Personal* in its strip, or the box when it is written; every
+  to-do with `private_todos`) never reaches a model: no plan, and its title is its first words. Its
+  context still works — that never leaves the machine.
+
+Before anything goes, realm/privacy.py takes out what has a shape — e-mails, phone numbers, card numbers,
+IBANs, secrets — as marks (`[email-1]`), and puts them back into the answer here. Names, sums or
+diagnoses written in words are not caught: personal is the first line, this the second. What left is
+logged as a fact, never its text (`sent.jsonl`: when, the card, how many characters, the model, the
+pages, what was taken out).
+
 ## 6. Next
+
+- **A local model for personal cards.** `pi` and `hermes` can point at one on this machine (an
+  OpenAI-compatible address); a personal to-do could then get its plan without leaving it.
+- **One wiki trip for a ticket.** A ticket sent to a Barracks that reads the same wiki first (`notes`)
+  could take the card's context with it instead of asking again.
 
 - **A Clan Fire's verdict back on the card.** A Barracks' result comes back by a return road (§5a); a
   card sent to a Clan Fire could get its verdict the same way once `team.*` carries the card's `ref`

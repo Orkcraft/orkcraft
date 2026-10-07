@@ -177,10 +177,34 @@ def test_a_steward_runs_each_task_on_its_own_tier(monkeypatch, tmp_path):
     class Pool:                                                      # the Barracks' steward: its review on its tier
         steward_runner = staticmethod(lambda h, p, w, c, m: seen.append((h, m)) or ("ACCEPT", 0.0))
         config = {"steward": "claude:warrior"}
-        building_id, simulated = "a", False
+        building_id, simulated, TYPE, aim_now = "a", False, "barracks", "balance"
 
         class town:
             scroll = s
     BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), use="review")
     BarracksWorker._steward(Pool(), "answer it", tmp_path, threading.Event(), RunOutcome(), use="answer")
     assert seen == [("claude", "opus"), ("claude", "sonnet")]      # review: elder; answer: its setting's
+    Pool.config = {"steward": "claude"}                              # its tool, no model of its own
+    BarracksWorker._steward(Pool(), "the whole", tmp_path, threading.Event(), RunOutcome(), use="final")
+    Pool.aim_now = "thrift"                                          # a tight quota runs it as 🪙
+    BarracksWorker._steward(Pool(), "the whole", tmp_path, threading.Event(), RunOutcome(), use="final")
+    assert seen[2:] == [("claude", "opus"), ("claude", "sonnet")]   # no setting: the goal's tier
+
+
+def test_the_steward_s_work_follows_the_goal_and_its_upkeep_does_not():
+    """One order for every building (docs/design/steward-at-work.md §2): a tier set closer to the work, the
+    one picked for the task, the building's own setting, the goal's for its work, the default."""
+    presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
+    b = ts.default_scroll(presets, raised=["a"]).building("a")
+    b.garrison.steward = ts.OrcSpec("keeper", "Grunts")
+    assert steward.is_work("workshop", "escalate") and not steward.is_work("workshop", "watch")
+    pick = lambda use, **k: steward.pick(b, use, "claude", type_id="workshop", **k)          # noqa: E731
+    assert pick("escalate") == steward.Pick("", "", "default")                       # ⚖️ balance: the default
+    b.goal = "quality"
+    assert pick("escalate") == steward.Pick("opus", "elder", "goal")
+    assert pick("escalate", goal="thrift") == steward.Pick("sonnet", "warrior", "goal")   # tight: 🪙
+    assert pick("watch").by == "default"                                              # upkeep: no goal
+    assert pick("escalate", setting="haiku") == steward.Pick("haiku", "", "setting")
+    steward.set_models(b, {"escalate": "laborer"})
+    assert pick("escalate", setting="haiku").by == "picked"
+    assert pick("escalate", own="elder") == steward.Pick("opus", "elder", "own")

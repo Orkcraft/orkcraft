@@ -64,6 +64,7 @@ TERMS: tuple[Term, ...] = (
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview", "", "ghost"),
     _t("loot", "output", "", "loot"),
+    _t("cart_type", "content type", "content types"),            # message, doc, ticket… (realm/content.py)
     _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
     # resources (HUD)
     _t("gold", "spend", "", "gold"),
@@ -96,7 +97,8 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    _t("elders", "Advisor", "Advisors", "Elder", "Elders"),
+    # the night's advisors were only ever "the Elders": a lone "Elder" is the heaviest model tier (realm/tiers.py)
+    _t("elders", "Advisor", "Advisors", "", "Elders"),
     _t("builders", "Building designer", "", "Mason & Artisan"),
     # the Town Hall's own orks
     _t("orc.mason", "Data planner", "", "Mason"),
@@ -108,6 +110,9 @@ TERMS: tuple[Term, ...] = (
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
     _t("scribble", "note", "notes", "scribble", "scribbles"),       # an idea or a note on the board
+    _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)
+    _t("todo_plan", "plan", "plans"),                              # a to-do's steps from a light model, 🧭
+    _t("personal_card", "personal"),                               # a card that never reaches a model, 🔒
     # -- building types (catalog ids): named by what they do -----------------------------------------
     _t("pit", "Drop file here", "", "The Pit"),
     _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),
@@ -169,9 +174,10 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
-        if not t.was:
+        if not t.was and not t.was_many:
             continue
-        out.setdefault(t.was, t.word)
+        if t.was:
+            out.setdefault(t.was, t.word)
         if t.was_many:
             out.setdefault(t.was_many, t.many or t.word)
         if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
@@ -240,4 +246,4 @@ def table() -> list[tuple[str, str]]:
 
 def glossary() -> list[tuple[str, str, str]]:
     """(key, word, the Camp word it replaced or "") for every concept, in the glossary's order."""
-    return [(t.key, t.word, t.was) for t in TERMS]
+    return [(t.key, t.word, t.was or t.was_many) for t in TERMS]

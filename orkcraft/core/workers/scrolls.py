@@ -439,16 +439,22 @@ class ScrollsWorker(Worker):
         under the task's own title and ref; `by` is the building that asked (a Barracks that reads it
         first). True when a road took it."""
         task = f"{payload.title} {payload.value}".strip()[:500]
-        found = wiki.relevant(self.repo_root, self.pages, task, LENT_PAGES)
+        found = self.look_up(task, by, payload.title)
         context = wiki.context(self.wiki_root, self.repo_root, task)
         if found:
             context += "\n\n**Notes for this task — read these first:**\n" + \
                 "\n".join(f"- `{n.path}` — {n.title}" for n in found)
-        self.lent = {"task": (payload.title or task)[:80], "pages": [n.title for n in found], "by": by,
-                     "at": time.time()}
-        self.changed()
         return self.emit("knowledge.chunks", context, (payload.title or task)[:80], trail=payload.trail,
                          ref=payload.ref)
+
+    def look_up(self, task: str, by: str = "", title: str = "", limit: int = LENT_PAGES) -> list[shelves.Note]:
+        """The pages that matter most for `task` (no model: the words they share); what it lent shows on
+        its card. A Task Fields board asks it so for a card's context (core/workers/fields.py)."""
+        task = task.strip()[:500]
+        found = wiki.relevant(self.repo_root, self.pages, task, limit)
+        self.lent = {"task": (title or task)[:80], "pages": [n.title for n in found], "by": by, "at": time.time()}
+        self.changed()
+        return found
 
     # -- the hut --------------------------------------------------------------------------------
 

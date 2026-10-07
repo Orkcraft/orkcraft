@@ -125,7 +125,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "(a read-only model step), `script: <command> || agent: <ask>` (the agent when the script fails). "
                  "e.g. [\"lines\", \"grep: TODO\", \"limit: 20\", \"join\"]",
         "env": "environment variables a `script:` step may see besides a clean PATH, e.g. [\"API_TOKEN\"]",
-        "model": "the model of `agent:` steps, e.g. sonnet (default Claude Code's own)",
+        "model": "the model of `agent:` steps, e.g. sonnet (default its steward's: the tier picked for its agent "
+                 "steps, else the building's goal's)",
     },
     "horn": {
         "sounds": "one line per key, the most precise wins: `<building>/<event>: <sound>`, `<event>: <sound>`, "
@@ -145,6 +146,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                        "(a Clan Fire that triages names the route)",
         "send_new": "true: every new task goes down the roads as it is (tasks.sent), as if s were pressed — "
                     "a Barracks takes it and its results come back to the card on a return road",
+        "wikis": "the Scroll Dumps a card's context comes from, e.g. [\"kb\"] (default every one in the town; [] none)",
+        "private_todos": "true: every to-do of your own is personal — never sent to a model (no plan, its title its first words)",
+        "plan_model": "the model a to-do's plan is asked of: a tier (laborer, warrior) or a model (default its "
+                      "steward's: the tier picked for Plan the to-dos, else the building's goal's)",
     },
     "barracks": {
         "max_orcs": "how many orks work at once (default 3)",
@@ -174,7 +179,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "veto": "roles whose VETO blocks approval, e.g. [\"Security\"]",
         "max_cycles": "reworks of one document before the operator decides (default 3)",
         "budget_usd": "the most one review may spend, in USD (default 2)",
-        "moderator": "`harness[:model]` of the steward (default main, the main tool)",
+        "moderator": "`harness[:model]` of the steward (default its steward's tool, else main; its model the tier "
+                     "picked for Let the document go, else the building's goal's)",
         "routes": "who it may route what it lets go to, e.g. [\"human\", \"agent\"] (triage): the steward names "
                   "one, team.routed carries it and each road out may wait for one route; when the steward "
                   "also names a time (WHEN:), the document goes on after a `When:` line (a War Drum adds the event)",

@@ -2,7 +2,7 @@
 
 A cart runs the script in a thread of its own; exit 0 sends `workshop.done`, 4 `workshop.alert`,
 anything else `workshop.failed`; exit 3 hands the cart to its keeper's prompt (one model call, never
-in the demo, never past the budget). `tick()` runs it on its schedule (a `workshop.tick` cart). Run
+in the demo, never past the budget, on the model its steward's `escalate` names: realm/steward.py `pick`). `tick()` runs it on its schedule (a `workshop.tick` cart). Run
 runs the last cart again; Test runs the blueprint's mock carts in the sandbox and keeps their log.
 The script is saved (checked first) as a checkpoint, so Revert takes it back.
 """
@@ -106,17 +106,18 @@ class WorkshopWorker(Worker):
         script, runtime, repo = self.script, self.runtime, self.repo_root
         prompt = str(self.config.get("steward_prompt") or "")
         may_ask = bool(prompt) and not self.simulated and self.town.budget_ok()
-        runner = type(self).steward_runner
-        from orkcraft.realm import feedback
+        from orkcraft.realm import feedback, steward
+        scroll = getattr(self.town, "scroll", None)
+        runner = steward.runner_for(scroll.building(self.building_id) if scroll is not None else None, "escalate",
+                                    type(self).steward_runner, type_id=self.TYPE, goal=self.aim_now) if may_ask else None
         liked = [str(r.get("value", "")) for r in feedback.examples(repo, self.building_id, 3)]
         self.changed()
 
         def work() -> None:
             r = workshop.run(script, runtime, the_cart, repo)
             if r.code == workshop.ESCALATE and may_ask:
-                from orkcraft.realm import builders
                 try:
-                    r.steward = (runner or builders.main_runner)(workshop.steward_prompt(prompt, the_cart, r.out, liked))[0].strip()
+                    r.steward = runner(workshop.steward_prompt(prompt, the_cart, r.out, liked))[0].strip()
                 except Exception as e:  # the model is out of reach: the cart stays escalated
                     r.err = (r.err + f"\nsteward: {e}").strip()[:workshop.OUT_KEEP]
             try:

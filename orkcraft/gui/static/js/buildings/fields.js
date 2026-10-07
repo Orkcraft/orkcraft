@@ -2,7 +2,8 @@
 // lanes of cards (a kanban), the person's own to-dos (a checklist) and the notes (ideas, questions) in
 // lanes of their own. The mouse does it all: drag a card to another lane or part, click it to select
 // it, double-click it to open it; the selected card's acts sit over the board; a to-do is ticked off
-// by its box. The closed card shows
+// by its box. A card's marks: 📜 its context (wiki pages, no model), 🧭 a to-do's plan, 🔒 personal
+// (never sent to a model) — docs/design/fields-board.md §5b. The closed card shows
 // all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
 // board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
@@ -10,6 +11,7 @@ import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
 import { Dialog } from "../dialog.js";
+import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
 import { usePeek } from "../windows.js";
 
@@ -46,11 +48,13 @@ const dragCard = (cardId) => (e) => { e.dataTransfer.setData("text/x-ork-card", 
  *  names it in a few words (the card shows up once named). An open card keeps its title. */
 function CardDialog({ id, card, lane, onClose }) {
   const [body, setBody] = useState(card ? card.body || card.title : "");
+  const [personal, setPersonal] = useState(false);
   const kind = card ? card.kind : lane.kind;
   const what = kind === "task" ? "task" : kind === "mine" ? "to-do" : "note";
   const head = card ? what[0].toUpperCase() + what.slice(1) : `New ${what}`;
   function keep() {
-    const call = card ? act(id, "edit", { card: card.id, text: body }) : act(id, "add", { lane: lane.id, text: body });
+    const call = card ? act(id, "edit", { card: card.id, text: body })
+      : act(id, "add", { lane: lane.id, text: body, ...(personal ? { private: true } : {}) });
     call.then((kept) => {
       if (kept) selected.value = { ...selected.value, [id]: kept };     // a card's id follows its title
       onClose();
@@ -63,6 +67,8 @@ function CardDialog({ id, card, lane, onClose }) {
     <textarea class="ok-input gui-textarea" rows="6" value=${body} autofocus aria-label=${say("Text")}
       placeholder=${say(card ? "Its text (Ctrl+Enter keeps it)" : "What it is — a short line is its title, a longer text gets one (Ctrl+Enter adds it)")}
       onInput=${(e) => setBody(e.target.value)} onKeyDown=${keys}></textarea>
+    ${!card && html`<label class="fields-personal"><input type="checkbox" checked=${personal}
+      onChange=${(e) => setPersonal(e.target.checked)} /> 🔒 Personal — never sent to a model</label>`}
   </${Dialog}>`;
 }
 
@@ -74,29 +80,47 @@ function Confirm({ title, text, yes, onYes, onClose }) {
 
 const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardId }; };
 
-function Card({ id, card, isSelected, onOpen }) {
+/** A card's small marks: 🔒 personal, 📜 its context (pale when a page changed since), 🧭 its plan (… while
+ *  it is written). A click on 📜 or 🧭 opens it; the card stays as it is. */
+function Marks({ card, onMark }) {
+  const n = (card.pages || []).length;
+  const plan = (card.plan || []).length > 0;
+  if (!card.private && !n && !plan && !card.planning) return null;
+  const mark = (what, label, title, extra) => html`<button class=${cls("fields-mark", extra)} title=${say(title)}
+      aria-label=${say(title)} onClick=${(e) => { e.stopPropagation(); onMark && onMark(what, card); }}
+      onDblClick=${(e) => e.stopPropagation()}>${label}</button>`;
+  return html`<span class="fields-marks">
+    ${card.private && html`<span class="fields-mark is-still" title=${say("Personal: never sent to a model")}>🔒</span>`}
+    ${n > 0 && mark("context", `📜 ${n}`, card.stale ? "Context: the wiki changed since — look again" : "Context: pages from the wiki",
+      { "is-stale": card.stale })}
+    ${card.planning ? html`<span class="fields-mark is-still" title=${say("Writing the plan…")}>🧭 …</span>`
+      : plan && mark("plan", "🧭", "Plan")}
+  </span>`;
+}
+
+function Card({ id, card, isSelected, onOpen, onMark }) {
   return html`<div class=${cls("ok-card", { "is-selected": isSelected, "is-done": card.column === "done" })}
       data-color=${card.color || undefined} draggable="true" onDragStart=${dragCard(card.id)}
       onClick=${() => pick(id, card.id)} onDblClick=${() => onOpen(card)}>
     <div class="ok-card__title"><i class="ok-card__sw"></i>
       ${card.column === "done" && html`<span class="ok-card__check">✓</span>`}<span>${card.title}</span>
-      ${card.new && html`<span class="ok-word gui-new"> new</span>`}</div>
+      ${card.new && html`<span class="ok-word gui-new"> new</span>`}<${Marks} card=${card} onMark=${onMark} /></div>
     ${card.body && html`<p class="ok-card__text">${card.body}</p>`}
   </div>`;
 }
 
-function Lane({ id, lane, sel, onOpen, onAdd }) {
+function Lane({ id, lane, sel, onOpen, onAdd, onMark }) {
   const [over, drop] = useDrop(id, lane.id);
   return html`<section class=${cls("ok-lane", { "is-notes": lane.kind === "note", "gui-drop": over })} ...${drop}>
     <header class="ok-lane__head">${lane.label}<span class="ok-lane__count">${lane.cards.length}</span></header>
-    ${lane.cards.map((c) => html`<${Card} key=${c.id} id=${id} card=${{ ...c, column: lane.id }} isSelected=${c.id === sel} onOpen=${onOpen} />`)}
+    ${lane.cards.map((c) => html`<${Card} key=${c.id} id=${id} card=${{ ...c, column: lane.id }} isSelected=${c.id === sel} onOpen=${onOpen} onMark=${onMark} />`)}
     <button class="ok-lane__add" onClick=${() => onAdd(lane)}>+ New ${lane.kind === "task" ? "task" : "note"}</button>
   </section>`;
 }
 
 /** The person's checklist: a box ticks a to-do off, a click selects it, a double-click opens it; a card
  * dropped here becomes a to-do. `top` cuts it. */
-function Todos({ id, todos, sel, onOpen, top }) {
+function Todos({ id, todos, sel, onOpen, onMark, top }) {
   const [over, drop] = useDrop(id, todos.id);
   const [title, setTitle] = useState("");
   const cards = top ? todos.cards.filter((c) => !c.done).slice(0, top) : todos.cards;
@@ -111,6 +135,7 @@ function Todos({ id, todos, sel, onOpen, top }) {
         <label class="ok-check" title=${say(c.done ? "Put it back on my to-dos" : "Tick it off")}
           onClick=${(e) => { e.stopPropagation(); act(id, "check", { card: c.id }).catch(() => {}); }}><i>${c.done ? "✓" : ""}</i></label>
         <span class="gui-todo__title">${c.title}${c.new ? html`<span class="ok-word gui-new"> new</span>` : ""}</span>
+        <${Marks} card=${c} onMark=${onMark} />
       </li>`)}
       ${cards.length === 0 && html`<li class="ok-tone-muted ok-font-status">${todos.cards.length ? "All done ✓" : "No to-dos yet — add one below"}</li>`}
       ${top && todos.cards.filter((c) => !c.done).length > top
@@ -143,7 +168,7 @@ function noteLanes(data) {
 
 /** The selected card in a strip: its title, Open, where it goes next (the orks, a note, my to-dos) and
  *  Send; Colour and Delete quiet after them; × lets it go. */
-function Acts({ id, sel, setDialog }) {
+function Acts({ id, sel, setDialog, onPlan }) {
   const a = (label, onClick) => html`<button class="ok-act" onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
     <span class="fields-sel__what" title=${sel.title}>${sel.title}</span>
@@ -152,13 +177,77 @@ function Acts({ id, sel, setDialog }) {
       ${sel.kind !== "task" && a("Give it to the orks", () => act(id, "flip", { card: sel.id }))}
       ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
       ${sel.kind !== "mine" && sel.mine && a("Make it my to-do", () => act(id, "mine", { card: sel.id }))}
+      ${sel.kind === "mine" && a(sel.plan && sel.plan.length ? "🧭 Plan" : "🧭 Make a plan",
+        () => (sel.plan && sel.plan.length ? setDialog({ plan: sel.id }) : onPlan(sel)))}
+      ${a(`📜 Context${sel.pages && sel.pages.length ? ` ${sel.pages.length}` : ""}`, () => setDialog({ context: sel.id }))}
       ${a("Send", () => act(id, "send", { card: sel.id }))}
+      ${a(sel.private ? "🔒 Not personal" : "🔒 Personal", () => act(id, "private", { card: sel.id }))}
       ${a("Colour", () => act(id, "color", { card: sel.id }))}
       ${a("Delete", () => setDialog({ remove: sel }))}
       <button class="ok-act" aria-label=${say("Let the card go")} title=${say("Let the card go")} onClick=${() => pick(id, null)}>
         <span class="ok-act__label">×</span></button>
     </span>
   </div>`;
+}
+
+/** A card's context: the wiki pages that share its words (found here, no model). A page opens in Lake;
+ *  Look again asks the wikis once more. */
+function ContextDialog({ id, card, onClose }) {
+  const [looking, setLooking] = useState(false);
+  const again = () => { setLooking(true); act(id, "context", { card: card.id }).finally(() => setLooking(false)); };
+  const pages = card.pages || [];
+  return html`<${Dialog} title=${say(`Context · ${card.title}`)} onCancel=${onClose}
+      meta=${say("Pages from the wiki that share its words — found on this machine, nothing is sent to a model")}
+      actions=${html`<button class="ok-btn" disabled=${looking} onClick=${again}>${looking ? "Looking…" : "Look again"}</button>
+        <button class="ok-btn primary" onClick=${onClose}>Close</button>`}>
+    ${card.stale && html`<p class="ok-tone-wait">${say("A page changed since it was found — look again")}</p>`}
+    ${pages.length ? html`<ul class="fields-pages">${pages.map((p) => html`<li key=${p.path}>
+        <button class="gui-link fields-page" onClick=${() => openInLake({ path: p.path, title: p.title, from: id })}>📜 ${p.title}</button>
+        <small class="ok-tone-muted">${p.path}</small></li>`)}</ul>`
+      : html`<p class="ok-tone-muted">${say("No page of the wiki shares its words yet.")}</p>`}
+  </${Dialog}>`;
+}
+
+/** What goes to the model, before a plan is asked: the to-do as it leaves (cleaned), what was taken out,
+ *  the pages it takes along — each one may stay home — and the model. */
+function PreviewDialog({ id, card, preview, onClose, onSent }) {
+  const [pages, setPages] = useState((preview.pages || []).map((p) => p.path));
+  const [trust, setTrust] = useState(false);
+  const toggle = (path) => setPages(pages.includes(path) ? pages.filter((p) => p !== path) : pages.concat(path));
+  const send = () => act(id, "plan", { card: card.id, pages, trust }).then(onSent, () => {});
+  if (!preview.allowed) {
+    return html`<${Dialog} title=${say(`No plan · ${card.title}`)} text=${say(preview.why || "It cannot be sent")} onCancel=${onClose}
+      actions=${html`<button class="ok-btn primary" onClick=${onClose}>Close</button>`} />`;
+  }
+  return html`<${Dialog} title=${say("What goes to the model")} warn wide onCancel=${onClose}
+      meta=${say(`For a plan of “${card.title}” · model: ${preview.model}`)}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
+        <button class="ok-btn primary" onClick=${send}>Send</button>`}>
+    <pre class="fields-outgoing ok-font-mono">${preview.text}</pre>
+    <p class=${preview.taken_out ? "ok-tone-ok" : "ok-tone-muted"}>${preview.taken_out
+      ? say(`Taken out before it goes: ${preview.taken_out}. They come back into the plan here.`)
+      : say("Nothing with a shape to take out (e-mails, phones, cards, IBANs, secrets). Names and sums written in words go as they are.")}</p>
+    ${(preview.pages || []).length > 0 && html`<div class="fields-pages">
+      <p class="ok-font-label">${say("Pages from the wiki it takes along")}</p>
+      ${preview.pages.map((p) => html`<label key=${p.path} class="fields-personal">
+        <input type="checkbox" checked=${pages.includes(p.path)} onChange=${() => toggle(p.path)} /> 📜 ${p.title}</label>`)}
+    </div>`}
+    <label class="fields-personal"><input type="checkbox" checked=${trust} onChange=${(e) => setTrust(e.target.checked)} />
+      ${say("Don't ask again on this board")}</label>
+  </${Dialog}>`;
+}
+
+/** A to-do's plan: its steps; they may become to-dos of their own, or the plan be asked again. */
+function PlanDialog({ id, card, onPlan, onClose }) {
+  const steps = card.plan || [];
+  const make = () => act(id, "plan_steps", { card: card.id }).then(onClose, () => {});
+  return html`<${Dialog} title=${say(`Plan · ${card.title}`)} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" disabled=${card.planning} onClick=${() => onPlan(card)}>Plan again</button>
+        <button class="ok-btn" disabled=${!steps.length} onClick=${make}>Make them to-dos</button>
+        <button class="ok-btn primary" onClick=${onClose}>Close</button>`}>
+    ${card.planning ? html`<p class="ok-tone-muted">${say("Writing the plan…")}</p>`
+      : html`<ol class="fields-plan">${steps.map((s, i) => html`<li key=${i}>${s}</li>`)}</ol>`}
+  </${Dialog}>`;
 }
 
 /** The counters on one line: the orks' lanes, my to-dos open of all, the notes; New note folder quiet on
@@ -178,7 +267,7 @@ function Head({ id, data, setDialog }) {
 }
 
 function Board({ id, data }) {
-  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true}
+  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan: id} | {preview, of}
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const parts = !!data.todos;                       // board mode: the three parts
   const cards = data.lanes.flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
@@ -187,21 +276,29 @@ function Board({ id, data }) {
   const sel = found && { ...found, mine: parts };
   const close = () => setDialog(null);
   const open = (card) => setDialog({ card });
+  const mark = (what, card) => setDialog({ [what]: card.id });
+  // Plan: what leaves is shown first, unless the person said once not to ask on this board.
+  const plan = (card) => act(id, "plan_preview", { card: card.id }).then((preview) => {
+    if (!preview) return;
+    if (preview.allowed && !preview.asked) act(id, "plan", { card: card.id }).then(() => setDialog({ plan: card.id }), () => {});
+    else setDialog({ preview, of: card.id });
+  }, () => {});
+  const byId = (cid) => cards.find((c) => c.id === cid);
   const lanes = (list) => html`<div class="ok-board" style=${`--lanes:${list.length}`}>
       ${list.map((ln) => html`<${Lane} key=${ln.id} id=${id} lane=${ln} sel=${sel && sel.id}
-        onOpen=${open} onAdd=${(lane) => setDialog({ lane })} />`)}
+        onOpen=${open} onMark=${mark} onAdd=${(lane) => setDialog({ lane })} />`)}
     </div>`;
   if (data.error) return html`<p class="ok-tone-error">⚠ ${data.error}</p>`;
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} />`}
+    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} />`}
     ${parts ? html`
       <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
         ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>
       <div class="gui-fields__lower">
         <section class="gui-fields__part"><h3 class="ok-font-heading">My to-dos <small>${todoOpen}/${data.todos.cards.length}</small></h3>
-          <${Todos} id=${id} todos=${data.todos} sel=${sel && sel.id} onOpen=${open} /></section>
+          <${Todos} id=${id} todos=${data.todos} sel=${sel && sel.id} onOpen=${open} onMark=${mark} /></section>
         <section class="gui-fields__part"><h3 class="ok-font-heading">Notes</h3>
           ${lanes(noteLanes(data))}</section>
       </div>` : lanes(data.lanes)}
@@ -209,7 +306,11 @@ function Board({ id, data }) {
       text="It goes from the file too (git keeps it)." yes="Delete"
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
-    ${dialog && !dialog.remove && !dialog.folder && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
+    ${dialog && dialog.context && byId(dialog.context) && html`<${ContextDialog} id=${id} card=${byId(dialog.context)} onClose=${close} />`}
+    ${dialog && dialog.plan && byId(dialog.plan) && html`<${PlanDialog} id=${id} card=${byId(dialog.plan)} onPlan=${plan} onClose=${close} />`}
+    ${dialog && dialog.preview && byId(dialog.of) && html`<${PreviewDialog} id=${id} card=${byId(dialog.of)} preview=${dialog.preview}
+      onClose=${close} onSent=${() => setDialog({ plan: dialog.of })} />`}
+    ${dialog && (dialog.card || dialog.lane) && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
   </div>`;
 }
 

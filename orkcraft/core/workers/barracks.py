@@ -47,7 +47,7 @@ from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, steward, tiers
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, steward
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -518,16 +518,13 @@ class BarracksWorker(PlanMixin, Worker):
             self.changed()
 
     def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome,
-                 use: str = "review", tier: str = plans.REVIEW_TIER) -> str:
-        """One model call of the steward's: `use` is its task (plan | answer | review | final), whose tier its
-        spec may set (realm/steward.py); else the model of its `steward` setting, else `tier`'s."""
-        harness, model = bk.parse_provider(str(self.config.get("steward") or "main"))
+                 use: str = "review") -> str:
+        """One model call of the steward's: `use` is its task (triage | plan | answer | review | final), on the
+        model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's."""
+        harness, setting = bk.parse_provider(str(self.config.get("steward") or "main"))
         scroll = getattr(self.town, "scroll", None)
-        chosen = steward.tier_for(scroll.building(self.building_id) if scroll is not None else None, use)
-        if chosen:
-            model = tiers.resolve(harness, chosen)
-        elif not model:
-            model = tiers.MODELS.get(harness, {}).get(tier, "")
+        model = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
+                             type_id=self.TYPE, goal=self.aim_now, setting=setting).model
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:
@@ -756,10 +753,11 @@ class BarracksWorker(PlanMixin, Worker):
         """The orc prepared something to go out: nothing is posted until the operator approves it — here (🔥)
         or in a Loot that `pool.question` runs through (accept → it is posted, rework → what to change)."""
         task.target, task.draft = target, draft
-        md = (f"**{task.title}** — {orc.name} wants to publish to {target or 'a service'} and waits for your "
+        where = bk.publish_kind(target)[1]
+        md = (f"**{task.title}** — {orc.name} wants to publish to {where or 'a service'} and waits for your "
               f"approval (accept: it is posted as below, your edits included · send back: what to change)\n\n"
               f"{report.strip()}{self._files_md(task)}\n\n## To publish\n\nPUBLISH: {target}\n\n{draft}")
-        self._ask(task, f"Publish to {target or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
+        self._ask(task, f"Publish to {where or 'a service'}?\n\n{draft}", f"{orc.name} wants to publish", md,
                   trail=self._trail(task, orc, self.APPROVAL), kind="draft")
 
     def approved(self, payload: pipes.Payload) -> bool:
