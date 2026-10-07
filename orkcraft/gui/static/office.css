@@ -4,9 +4,9 @@
    (docs/design/gui-design-system.md). */
 [data-look="office"] { --canvas: #1a1813; --terrain: #1a1813; --road: #8f8166; --road-bright: #7a6e55;
   --road-selected: #e8b94a; --road-live: #6aa84f; }
-/* A hut keeps its building, four ninths of its sprite's size, standing at the card's left over its name. */
+/* A hut keeps its building, two thirds of its sprite's size, standing at the card's left over its name. */
 [data-look="office"] .gui-hut > .ok-head { justify-content: flex-start; padding-left: var(--space-3); }
-[data-look="office"] .gui-hut__sprite { zoom: calc(4 / 9); }
+[data-look="office"] .gui-hut__sprite { zoom: calc(2 / 3); }
 /* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
 [data-look="office"] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
 [data-look="office"] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }

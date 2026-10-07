@@ -4,7 +4,7 @@
 // it, the + handle pulls a road out of it. A hut moves freely until the person pins it: the pin at the
 // right of its name pins it in place (in the Town Scroll, as from its Info) and unpins it. Before the name a
 // spinner while it works and its type's icon; its type's header sprite stands over the card's left
-// (office.css: four ninths of the sprite's size), and the garrison's lead is its ork's head alone.
+// (office.css: two thirds of the sprite's size), and the garrison's lead is its ork's head alone.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
