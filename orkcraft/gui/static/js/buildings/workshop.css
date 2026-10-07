@@ -22,3 +22,42 @@
 .ws-link { cursor: pointer; text-decoration: underline dotted; }
 .ws-scroll { max-height: 60vh; overflow: auto; }
 .ws-ask { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
+
+/* Made for the half panel: the script on one line with Run, the ask as one line that grows, the last run
+   taking the room (its result first), the runs as rows under it, Test's log folded. */
+.ws-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.ws-head b { color: var(--ink); }
+.ws-script { min-width: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 13px/18px var(--font-mono); color: var(--ink); text-decoration: underline dotted; }
+.ws-script:hover { color: var(--ink-gold); }
+.ws-script:focus-visible, .ws-quiet:focus-visible, .ws-run:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 1px; }
+.ws-ask { flex-direction: row; align-items: flex-start; gap: var(--space-2); }
+.ws-ask > textarea.gui-textarea { flex: 1; min-height: 32px; height: 32px; resize: none; padding-top: 6px; padding-bottom: 6px; }
+.ws-ask > textarea.gui-textarea:focus, .ws-ask > textarea.gui-textarea.has-text { height: 72px; }
+.ws-ask > .ok-btn { flex: none; }
+.ws-quiet { padding: 0; border: 0; background: none; font: inherit; color: var(--ink-muted); text-decoration: underline; cursor: pointer; }
+.ws-quiet:hover { color: var(--ink); }
+.ws-none { margin: 0; color: var(--ink-muted); }
+
+.ws-run-open { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ws-run-open__head { display: flex; align-items: baseline; gap: var(--space-2); margin: 0; white-space: nowrap; min-width: 0; }
+.ws-run-open__head > .ok-tone-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ws-result { padding: var(--space-2) var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken); font-size: 15px; line-height: 22px; max-height: 280px; overflow: auto; }
+[data-theme="office"] .ws-result { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+.ws-io { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 var(--space-4); min-width: 0; }
+.ws-io > div { min-width: 0; }
+.ws-io .ws-pre { max-height: 200px; overflow: auto; }
+.ws-io .ws-section { margin-top: 0; }
+.ws-runs { border-top: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.ws-run { padding: 3px var(--space-1); }
+
+.ws-fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; cursor: pointer; color: var(--ink-muted); white-space: nowrap; }
+.ws-fold > summary::-webkit-details-marker { display: none; }
+.ws-fold > summary::before { content: "▸"; flex: none; }
+.ws-fold[open] > summary::before { content: "▾"; }
+.ws-fold > summary:hover { color: var(--ink); }
+.ws-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.ws-fold__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ws-fold[open] { max-height: 40vh; overflow: auto; }
+
+.ws-card__said { font-family: var(--font-mono); }

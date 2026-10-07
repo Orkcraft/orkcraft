@@ -130,6 +130,7 @@ function Page({ id, data, page }) {
       <span class="wiki-page__path" title=${page.path}>${page.path}</span>
       ${isPage && quiet(say("Open in Lake"), () => toLake(id, page.path))}
     </div>
+    ${page.meta && html`<p class="wiki-page__meta" title=${page.meta}>${page.meta}</p>`}
     <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: page.html }}></div>
   </div>`;
 }

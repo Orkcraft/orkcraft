@@ -48,7 +48,7 @@
 .loot-file__path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .loot-file__meta { flex: none; font-family: var(--ok-font); font-size: 11px; color: var(--ink-muted); }
 
-.loot-fold > summary { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; cursor: pointer; color: var(--ink-muted);
+.loot-fold > summary { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; cursor: pointer; color: var(--ink-muted); font-size: 13px;
   list-style: none; white-space: nowrap; }
 .loot-fold > summary::-webkit-details-marker { display: none; }
 .loot-fold > summary::before { content: "▸"; flex: none; }

@@ -37,7 +37,7 @@
 .council-clan__add:hover { color: var(--ink); }
 
 /* The review: tabs over turn by turn, the document, the report. */
-.council-paper { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; min-height: 0; }
+.council-paper { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; min-height: 0; }
 .council-paper__tabs { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: var(--panel); }
 .council-paper__path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
 .council-turns { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
@@ -70,3 +70,10 @@
 .council-past:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
 .council-past__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .council-past > :last-child { margin-left: auto; flex: none; }
+
+/* Wide (the whole town): the document beside the turns. */
+.council-review__doc { display: none; }
+@container (min-width: 1100px) {
+  .council-review { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-6); align-items: start; }
+  .council-review__doc { display: block; padding-left: var(--space-4); border-left: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+}

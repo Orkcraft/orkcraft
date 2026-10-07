@@ -39,3 +39,31 @@
 .crag-front .crag-chart__plot { height: 160px; }
 .crag-ask .ok-act { flex: none; white-space: nowrap; }
 .crag-window.is-chosen { padding: 0 var(--space-1); border-bottom: 1px solid var(--frame-focus); }
+
+/* Made for the half panel: the window and the ask on one line, the charts take the room, the crossings fold. */
+.crag-bar-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.crag-windows { display: inline-flex; align-items: center; gap: var(--space-1); flex: none; }
+.crag-windows > .ok-tone-muted { margin-right: var(--space-1); }
+button.crag-window { border: 0; font-family: inherit; }
+button.crag-window:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+.crag-error { margin: var(--space-1) 0 0; }
+.crag-tile__foot .crag-show { padding: 0 var(--space-2); border: 0; font: 600 11px/20px var(--ok-font); color: var(--ink-muted);
+  background: var(--panel-inset); box-shadow: var(--bevel-sunken); cursor: pointer; white-space: nowrap; }
+.crag-tile__foot .crag-show:hover { color: var(--ink); }
+.crag-tile__foot .crag-show:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+[data-theme="office"] .crag-tile__foot .crag-show { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-full); background: transparent; }
+.crag-tile__foot { min-height: 22px; }
+.crag-none { margin: 0; color: var(--ink-muted); }
+.crag-fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; cursor: pointer; color: var(--ink-muted); white-space: nowrap; }
+.crag-fold > summary::-webkit-details-marker { display: none; }
+.crag-fold > summary::before { content: "▸"; flex: none; }
+.crag-fold[open] > summary::before { content: "▾"; }
+.crag-fold > summary:hover { color: var(--ink); }
+.crag-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.crag-fold__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.crag-fold > .gui-rows { max-height: 200px; overflow: auto; margin-top: var(--space-1); }
+/* The closed card: the thumbnails as the body's headline, a warn or crit mark beside a title over its line. */
+.gui-hut .crag-thumbs { gap: var(--space-2) var(--space-3); }
+.gui-hut .crag-thumb { gap: 2px; }
+.gui-hut .crag-thumb__title { font-size: 11px; line-height: 14px; }
+.gui-hut .crag-thumb svg { height: 24px; }

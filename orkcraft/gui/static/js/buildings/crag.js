@@ -1,6 +1,8 @@
 // 🪨 Tally Crag: a dashboard of charts (core/workers/crag.py carves them). Each chart says where it
 // shows: all states (the hut too), or the dashboard only ("command" and "full" both mean its Work). The
-// keeper writes the charts and their thresholds from what the person asks in plain words.
+// keeper writes the charts and their thresholds from what the person asks in plain words. Closed: the
+// thumbnails, the last crossing of a line and when. Open, made for the half panel: the window and the
+// ask on one line, the charts take the room, the crossings fold to one line under them.
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -80,15 +82,21 @@ function Head({ c }) {
   </div>`;
 }
 
-/** Closed: thumbnails of the charts set to all states, without numbers (docs/design/building-views.md). */
+/** Closed: thumbnails of the charts set to all states, without numbers (docs/design/building-views.md); the
+ *  foot the last crossing of a line and when. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  if (!c.charts.length) return html`<span class="ok-tone-muted">${say("no chart shows here")}</span>`;
-  return html`<div class="crag-thumbs">${c.charts.map((t, i) => html`<div key=${i} class="crag-thumb">
-    <span class="crag-thumb__title ok-font-status">${t.title}</span>
-    <${Bars} values=${t.values.length ? t.values : [0]} scale=${t.scale} warn=${t.warn} crit=${t.crit} label=${t.title} />
-  </div>`)}</div>`;
+  const x = c.last;
+  return html`<div class="gui-hut__body-in">
+    ${c.charts.length ? html`<div class="crag-thumbs">${c.charts.map((t, i) => html`<div key=${i} class="crag-thumb">
+        <span class="crag-thumb__title">${t.level > 0 ? html`<span class=${t.level === 2 ? "ok-tone-error" : "ok-tone-wait"}>${t.level === 2 ? "✗" : "⚠"} </span>` : ""}${t.title}</span>
+        <${Bars} values=${t.values.length ? t.values : [0]} scale=${t.scale} warn=${t.warn} crit=${t.crit} label=${t.title} />
+      </div>`)}</div>`
+      : html`<div class="gui-hut__big">0<small>${say("charts here — open it and ask for one, or set one to all states")}</small></div>`}
+    ${x && html`<div class="gui-hut__foot"><span><span class=${x.level === "critical" ? "ok-tone-error" : "ok-tone-wait"}>${x.level === "critical" ? "✗" : "⚠"}</span>
+        ${" "}${x.chart} ${say("crossed its line")}</span>${x.at && html`<span class="gui-hut__when">${x.at}</span>`}</div>`}
+  </div>`;
 }
 
 function Ask({ id }) {
@@ -97,22 +105,21 @@ function Ask({ id }) {
   return html`<div class="crag-ask">
     <input class="ok-input" value=${text} placeholder=${say("A chart or a threshold, in plain words: “spend this week, warn at $5”")}
       onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} />
-    <button class="ok-act" disabled=${!text.trim()} onClick=${send}><span class="ok-act__label">Ask the keeper</span></button>
+    <button class="ok-btn" disabled=${!text.trim()} onClick=${send}>${say("Ask the keeper")}</button>
   </div>`;
 }
 
 function Toolbar({ id, data }) {
   const pick = (w) => act(id, "window", { window: w }).catch(() => {});
-  const choice = (w, label) => (data.window === w
-    ? html`<b key=${w} class="crag-window is-chosen">${label}</b>`
-    : html`<button key=${w} class="ok-act" onClick=${() => pick(w)}><span class="ok-act__label">${label}</span></button>`);
-  return html`<div class="gui-head">
-    <span class="ok-tone-muted">Window</span>
-    ${choice("", say("as set"))}
-    ${data.windows.map((w) => choice(w, w))}
-    <span class="gui-head__spacer"></span>
-    <${Ask} id=${id} />
-    ${data.errors.map((e, i) => html`<p key=${i} class="ok-tone-error ok-font-status">⚠ ${e}</p>`)}
+  const choice = (w, label) => html`<button key=${w} role="radio" aria-checked=${data.window === w}
+    class=${cls("ok-chip crag-window", { "is-on": data.window === w })} onClick=${() => pick(w)}>${label}</button>`;
+  return html`<div>
+    <div class="crag-bar-head">
+      <span class="crag-windows" role="radiogroup" aria-label=${say("Window")}><span class="ok-tone-muted">${say("Window")}</span>
+        ${choice("", say("as set"))}${data.windows.map((w) => choice(w, w))}</span>
+      <${Ask} id=${id} />
+    </div>
+    ${data.errors.map((e, i) => html`<p key=${i} class="ok-tone-error ok-font-status crag-error">⚠ ${e}</p>`)}
   </div>`;
 }
 
@@ -121,29 +128,38 @@ function Tile({ id, c }) {
     <${Head} c=${c} />
     <${Chart} c=${c} />
     <div class="crag-tile__foot ok-font-status">
-      <span class="ok-badge crag-show" title=${say("Where it shows — a click moves it on")}
-        onClick=${() => act(id, "show", { chart: c.index, show: NEXT_SHOW[c.show] }).catch(() => {})}>${say(SHOW[c.show])}</span>
-      ${c.warn !== null && html`<span class="ok-tone-wait">warn ${fmt(c.warn)}</span>`}
-      ${c.crit !== null && html`<span class="ok-tone-error">crit ${fmt(c.crit)}</span>`}
+      <button class="crag-show" title=${say("Where it shows — a click moves it on")}
+        onClick=${() => act(id, "show", { chart: c.index, show: NEXT_SHOW[c.show] }).catch(() => {})}>${say(SHOW[c.show])}</button>
+      ${c.warn !== null && html`<span class="ok-tone-wait">⚠ ${say("warn")} ${fmt(c.warn)}</span>`}
+      ${c.crit !== null && html`<span class="ok-tone-error">✗ ${say("crit")} ${fmt(c.crit)}</span>`}
       <span class="gui-head__spacer"></span>
-      <button class="ok-act" onClick=${() => act(id, "flip", { chart: c.index }).catch(() => {})}><span class="ok-act__label">Flip</span></button>
+      <button class="crag-show" title=${say("Flip: bars across or up")} onClick=${() => act(id, "flip", { chart: c.index }).catch(() => {})}>${say("Flip")}</button>
     </div>
   </section>`;
 }
 
+const crossing = (x) => html`<span class=${x.level === "critical" ? "ok-tone-error" : "ok-tone-wait"}>${x.level === "critical" ? "✗" : "⚠"}</span>
+  ${" "}<b>${x.chart}</b> ${fmt(x.value)} ≥ ${fmt(x.line)}`;
+
+/** The crossings of a line: one line — the last one — until opened. */
 function Crossings({ data }) {
-  if (!data.crossings.length) return html`<p class="ok-tone-muted">${say("No value has crossed a line yet.")}</p>`;
-  return html`<ul class="gui-rows">${data.crossings.map((x, i) => html`<li key=${i}>
-    <span class="ok-tone-muted">${String(x.at || "").slice(5, 16).replace("T", " ")}</span>${" "}
-    <b>${x.chart}</b> ${fmt(x.value)} ≥ ${fmt(x.line)}
-    <span class=${x.level === "critical" ? "ok-tone-error" : "ok-tone-wait"}> ${x.level}</span></li>`)}</ul>`;
+  if (!data.crossings.length) return html`<p class="crag-none">${say("No value has crossed a line yet.")}</p>`;
+  const x = data.crossings[0];
+  return html`<details class="crag-fold">
+    <summary><span>${say("Threshold crossings")} ${data.crossings.length}</span>
+      <span class="crag-fold__sum">${say("last:")} ${crossing(x)} · ${String(x.at || "").slice(5, 16).replace("T", " ")}</span></summary>
+    <ul class="gui-rows">${data.crossings.map((y, i) => html`<li key=${i}>
+      <span class="ok-tone-muted">${String(y.at || "").slice(5, 16).replace("T", " ")}</span>${" "}${crossing(y)}
+      <span class=${y.level === "critical" ? "ok-tone-error" : "ok-tone-wait"}> ${y.level}</span></li>`)}</ul>
+  </details>`;
 }
 
 /** Full: the dashboard — every chart, the window, the history of crossings; new charts through the keeper. */
 export function panes(id, data) {
   return {
     head: () => html`<${Toolbar} id=${id} data=${data} />`,
-    charts: () => html`<div class="crag-grid">${data.charts.map((c) => html`<${Tile} key=${c.index} id=${id} c=${c} />`)}</div>`,
+    charts: () => (data.charts.length ? html`<div class="crag-grid">${data.charts.map((c) => html`<${Tile} key=${c.index} id=${id} c=${c} />`)}</div>`
+      : html`<p class="ok-tone-muted">${say("No chart yet — ask the keeper above for one, in plain words.")}</p>`),
     crossings: () => html`<${Crossings} data=${data} />`,
   };
 }

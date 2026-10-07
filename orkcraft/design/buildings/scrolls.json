@@ -4,13 +4,16 @@
   "panes": {
     "head": {"about": "the pages, the sources, what waits to be taken in with Take in, what runs with Stop; Check the wiki, Add a folder", "components": ["status"], "required": true},
     "tree": {"about": "the pages changed lately, then the wiki's pages and its sources folder by folder; a page picked opens here, over them, rendered", "components": ["tree"], "required": true},
-    "page": {"about": "kept for older documents: a page now opens over the tree, in the tree pane", "components": ["markdown", "text"], "dynamic": true}
+    "page": {"about": "in the GUI a page opens over the tree, in the tree pane, so this one shows nothing there (the TUI draws the page here)", "components": ["markdown", "text"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "scrolls", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"id": "tree", "component": "tree", "size": 1, "font": "body"}
+      {"split": "row", "size": 1, "panes": [
+        {"id": "tree", "component": "tree", "size": 2, "font": "body"},
+        {"id": "page", "component": "markdown", "size": 3, "font": "body"}
+      ]}
     ]
   }
 }

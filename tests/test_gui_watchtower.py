@@ -78,6 +78,7 @@ def test_the_watchtower_in_the_gui_card_detail_and_acts(fake_repo, gh):
     card = hut()
     assert [s["label"] for s in card["sources"]] == ["slack", "jira", "figma"] and card["sources"][0]["n"] == "ERR"
     assert card["more"] == {"count": 2, "n": "0"}                          # github and cron fold into +2 more
+    assert card["new"] == 0 and card["failing"] >= 1                         # slack fails: no token
     gh["now"] = [PR, PUSH]
     act = lambda name, **args: host.command("act", {"id": "tower", "act": name, "args": args})
     act("check_now")

@@ -58,7 +58,8 @@ def test_the_horn_in_the_gui_card_detail_and_acts(fake_repo):
     w = host.town.worker("horn")
     snap = host.snapshot()
     hut = next(b for b in snap["buildings"] if b["id"] == "horn")
-    assert hut["page"] and hut["card"] == {"muted": False, "plays": 0, "played": ""}
+    assert hut["page"] and hut["card"] == {"muted": False, "plays": 0, "played": "", "today": 0, "kept": 0, "last": None,
+                                           "quiet": "", "quiet_now": False}
 
     act = lambda name, **args: host.command("act", {"id": "horn", "act": name, "args": args})
     assert act("cycle", source="gate_pit", event="pit.link") == "drum" and w.plays == 1 and w.played == "drum"
@@ -85,6 +86,8 @@ def test_the_horn_in_the_gui_card_detail_and_acts(fake_repo):
     host.town.deliver("horn", Payload("text", "x", "gate_pit", "pit.link", "while muted"))
     call = host.detail("horn")["data"]["calls"][0]
     assert not call["heard"] and call["why"] == "muted" and call["title"] == "while muted"
+    c = next(b for b in host.snapshot()["buildings"] if b["id"] == "horn")["card"]
+    assert c["last"]["title"] == "while muted" and not c["last"]["heard"] and c["last"]["why"] == "muted" and c["kept"] >= 1
     assert act("test", event="*") == "page" and w.played == "sounds/ping.wav"
 
 

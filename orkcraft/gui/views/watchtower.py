@@ -50,10 +50,11 @@ def _fresh(at: str, now: dt.datetime) -> bool:
 
 
 def card(w) -> dict:
-    """Closed: what is new per source (`gmail 3`, `slack 99+`, `jira ERR`), more than four → `+N more`; then
-    the newest signals kept (source, from, title, time), the one that just arrived marked `fresh`."""
+    """Closed: how many are new (`new`) and how many sources fail; what is new per source (`gmail 3`,
+    `slack 99+`, `jira ERR`), more than four → `+N more`; then the newest signals kept (source, from,
+    title, time), the one that just arrived marked `fresh`."""
     if not w.sources:
-        return {"sources": [], "more": None, "latest": []}
+        return {"sources": [], "more": None, "latest": [], "new": 0, "failing": 0}
     shown, more = w.counters(CARD_ROWS)
     now = dt.datetime.now()
     latest = []
@@ -62,7 +63,8 @@ def card(w) -> dict:
         latest.append({"key": s.key, "source": s.source, "label": w.label(s.source), "from": who, "title": title,
                        "at": s.at[11:16], "read": s.read, "fresh": _fresh(s.at, now)})
     return {"sources": [{"label": label, "n": n} for label, n in shown],
-            "more": {"count": more[0], "n": more[1]} if more else None, "latest": latest}
+            "more": {"count": more[0], "n": more[1]} if more else None, "latest": latest,
+            "new": len(w.unread()), "failing": sum(1 for x in w.shown() if w.failing(x))}
 
 
 def detail(w) -> dict:

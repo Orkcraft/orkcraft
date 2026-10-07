@@ -4,6 +4,7 @@ cooldown. The page plays the sounds (Web Audio): the hut card counts what the wo
 from __future__ import annotations
 
 import base64
+import datetime as dt
 
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import catalog, horn
@@ -16,8 +17,17 @@ WHY = {"muted": "muted", "quiet": "quiet hours", "cooldown": "cooldown", "none":
 
 
 def card(w) -> dict:
-    """Closed: the mute toggle and the volume slider draw from this; `plays` tells the page to play `played`."""
-    return {"muted": w.muted, "plays": w.plays, "played": w.played}
+    """Closed: the mute toggle and the volume slider draw from this; `plays` tells the page to play `played`;
+    how many calls it sounded and kept quiet today, the last call, and the quiet hours (and whether they
+    hold now)."""
+    today = dt.date.today().isoformat()
+    calls = [c for c in w.calls if c.at[:10] == today]
+    last = w.calls[0] if w.calls else None
+    return {"muted": w.muted, "plays": w.plays, "played": w.played,
+            "today": sum(1 for c in calls if c.heard), "kept": sum(1 for c in calls if not c.heard),
+            "last": ({"sound": last.sound, "title": last.title or (catalog.event_label(last.event) or last.event),
+                      "at": last.at, "heard": last.heard, "why": WHY.get(last.played, "")} if last else None),
+            "quiet": w.quiet, "quiet_now": bool(w.quiet) and horn.in_quiet(w.quiet)}
 
 
 def detail(w) -> dict:

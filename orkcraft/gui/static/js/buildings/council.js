@@ -170,7 +170,8 @@ function Discussion({ data, r }) {
   </section>`;
 }
 
-/** The review itself, taking the room: turn by turn, the document, the report — a tab each; Open in Lake. */
+/** The review itself, taking the room: turn by turn, the document, the report — a tab each; Open in Lake. Wide
+ *  (the whole town), the document stands beside the turns too. */
 function Paper({ id, data, r, shown }) {
   const at = side.value[id] || "review";
   const tab = (key, label, n) => html`<button role="tab" aria-selected=${at === key} class=${cls("ok-tab", { "is-active": at === key })}
@@ -185,7 +186,8 @@ function Paper({ id, data, r, shown }) {
     ${at === "report" ? html`<div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.report_html }}></div>`
       : at === "document" ? html`<div>${r.doc_path && html`<p class="ok-detail__meta council-paper__path" title=${r.doc_path}>${r.doc_path}</p>`}
           <div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.doc_html }}></div></div>`
-      : html`<${Discussion} data=${shown ? { cycles: [] } : data} r=${r} />`}
+      : html`<div class="council-review"><${Discussion} data=${shown ? { cycles: [] } : data} r=${r} />
+          <div class="council-review__doc" aria-hidden="true"><div class="gui-prose" dangerouslySetInnerHTML=${{ __html: r.doc_html }}></div></div></div>`}
   </div>`;
 }
 
@@ -222,7 +224,7 @@ function Head({ id, data }) {
           <span class=${TONE[r.outcome] || ""}>${r.outcome === "running" ? "" : `${BIG[r.outcome] || ""} `}${r.outcome_word}${routed(r)}</span>
           <span><b class="ok-tone-ok">✓${r.ok}</b> <b class=${r.no ? "ok-tone-error" : ""}>✗${r.no}</b></span>
           <span><b>${r.spent}</b> ${say("of")} ${data.budget}</span>`
-        : html`<span class="council-head__title">${say("No review yet — send a document down a road, or Review.")}</span>`}
+        : html`<span class="council-head__title">${say("No review yet")}</span>`}
       <span class="gui-head__spacer"></span>
       ${data.busy && html`<button class="ok-btn" onClick=${() => act(id, "stop").catch(() => {})}>Stop</button>`}
       <button class=${cls("ok-btn", { primary: !r })} onClick=${() => setIn(dialogs, id, "review")}>${say("Review…")}</button>
@@ -246,7 +248,7 @@ export function panes(id, data) {
     head: () => html`<${Head} id=${id} data=${data} />`,
     members: () => html`<${Clan} id=${id} data=${data} />`,
     review: () => (r ? html`<${Paper} id=${id} data=${data} r=${r} shown=${!!shown} />`
-      : html`<p class="ok-tone-muted">${say("Review… or a road brings a document: each member's verdict and the steward's decision show here, turn by turn.")}</p>`),
+      : html`<p class="ok-tone-muted">${say("Nothing under review — Review a document, or a road brings one; each member's verdict shows here, turn by turn.")}</p>`),
     document: () => null,
     history: () => html`<${History} id=${id} data=${data} />`,
   };

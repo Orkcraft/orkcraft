@@ -11,6 +11,14 @@ import { building as buildOpen } from "../build.js";
 import { WarTent, hallTab, HALL } from "../tent.js";
 import { fill } from "../warchief.js";
 
+const sheet = new URL("./town_hall.css", import.meta.url).href;
+if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
+}
+
 /** Change, on a plan: the person goes on talking, and the Warchief asks the Town Builder again. */
 const changePlan = () => fill("Change the plan: ");
 
@@ -38,11 +46,14 @@ function raise(type, asked = "") {
 
 // -- closed: the hut ---------------------------------------------------------------------------------
 
+/** Closed: what happens in the hall — a town order waits, the Warchief is answering, the audit found
+ *  something — its count the headline and each on a line; else the field to ask the Warchief. */
 function HallCard({ b }) {
   const news = (b.card && b.card.news) || [];
-  return html`<div class="gui-form">
-    ${news.length > 0 && html`<ul class="ok-hut__lines">${news.map((line, i) => html`<li key=${i}>${say(line)}</li>`)}</ul>`}
-    ${!news.length && html`<div class="gui-form__row"><${AskField} id=${b.id} /></div>`}
+  if (!news.length) return html`<div class="gui-hut__body-in"><div class="gui-form__row th-ask"><${AskField} id=${b.id} /></div></div>`;
+  return html`<div class="gui-hut__body-in">
+    <div class="gui-hut__big ok-tone-wait">⚠ ${news.length}<small>${say(news.length === 1 ? "thing for you" : "things for you")}</small></div>
+    ${news.slice(0, 2).map((line, i) => html`<div key=${i} class="gui-hut__text">${say(line)}</div>`)}
   </div>`;
 }
 
@@ -124,19 +135,39 @@ export function Message({ m, name }) {
   </li>`;
 }
 
-function Chat({ id, data, height }) {
+/** The composer under the chat: one line that grows while it is written, Send beside it; Enter sends,
+ *  Shift+Enter breaks the line. */
+function Composer({ id, name }) {
+  const [text, setText] = useState("");
+  const send = () => {
+    const t = text.trim();
+    if (t) askWarchief(id, t).then((ok) => ok && setText((now) => (now === text ? "" : now)));
+  };
+  const keys = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
+  return html`<div class="th-compose">
+    <textarea class=${cls("ok-input gui-textarea", { "has-text": !!text })} rows="1" value=${text} aria-label=${say(`Ask the ${name}`)}
+      placeholder=${say("Ask me anything — Enter sends it, Shift+Enter a new line")}
+      onInput=${(e) => setText(e.target.value)} onKeyDown=${keys}></textarea>
+    <button class="ok-btn primary" disabled=${!text.trim()} onClick=${send}>Send</button>
+  </div>`;
+}
+
+/** The Warchief's whole chat: the messages take the room and scroll, the newest at the bottom; the
+ *  composer stays under them; New chat quiet on top. */
+function Chat({ id, data }) {
   const box = useRef(null);
   useEffect(() => { if (box.current) box.current.scrollTop = box.current.scrollHeight; }, [data.chat.length, data.thinking]);
   const name = data.warchief;
-  return html`<div class="gui-form" style="max-height:none;overflow:visible">
-    <div class="gui-head"><b>${say(`Ask the ${name}`)}</b><span class="gui-head__spacer"></span>
-      ${data.chat.length > 0 && html`<button class="ok-act" onClick=${() => act(id, "forget").catch(() => {})}>
-        <span class="ok-act__label">New chat</span></button>`}</div>
-    ${(data.chat.length > 0 || data.thinking) && html`<ul class="gui-rows" ref=${box} style=${`max-height:${height};overflow:auto`}>
+  return html`<div class="th-chat">
+    ${data.chat.length > 0 && html`<div class="th-chat__bar">
+      <span class="ok-tone-muted">${say(`${data.chat.length} messages`)}</span>
+      <button class="ok-act" onClick=${() => act(id, "forget").catch(() => {})}><span class="ok-act__label">New chat</span></button></div>`}
+    <ul class="th-chat__list" ref=${box}>
       ${data.chat.map((m, i) => html`<${Message} key=${i} m=${m} name=${name} />`)}
       ${data.thinking && html`<li class="ok-font-status ok-tone-wait">${say(`${name} is answering…`)}</li>`}
-    </ul>`}
-    <${AskField} id=${id} />
+      ${!data.chat.length && !data.thinking && html`<li class="th-chat__empty ok-tone-muted">${say(`Ask the ${name} what the town should do — he builds, plans roads and answers about the orks.`)}</li>`}
+    </ul>
+    <${Composer} id=${id} name=${name} />
   </div>`;
 }
 
@@ -167,16 +198,57 @@ function Rows({ items, empty, row }) {
 const MARK = { approved: "✓", overridden: "?", rejected: "✗", cancelled: "·", pending: "…", applied: "✓", dismissed: "✗",
                answered: "↪", advised: "!", left: "·" };
 
+/** A rare part of the hall: one line (its name, a count, a word on it) until opened. */
+function Fold({ title, count, sum, children }) {
+  return html`<details class="th-fold">
+    <summary><span>${title}${count !== undefined ? html` <b>${count}</b>` : ""}</span>
+      ${sum && html`<span class="th-fold__sum ok-font-status">${sum}</span>`}</summary>
+    <div class="th-fold__body">${children}</div>
+  </details>`;
+}
+
+/** The Hall tab, what needs the person first: a town order waiting, the proposals and the town retro's
+ *  items with Apply beside each, the audit's findings with Audit now; the rest — its orks, the answered
+ *  proposals, the Elders, the Council's Fast Path, the stewards' ratings — one line each until opened. */
 function Hall({ id, h }) {
   const b = town.value.buildings.find((x) => x.id === id);
   const garrison = b ? b.garrison : [];
   const titles = Object.fromEntries(town.value.buildings.map((x) => [x.id, say(x.title)]));
-  return html`<div>
-    ${h.order && html`<${Section} title=${say("A town waits to be raised")}>
-      <p class="ok-font-body">“${h.order}”</p>
-      <p class="ok-font-status ok-tone-muted">${say("The Town Builder plans it (in the TUI: F10); you approve the plan before anything is raised.")}</p>
-    </${Section}>`}
-    <${Section} title=${say("Orks of the hall")}>
+  const pending = h.proposals.filter((p) => p.status === "pending");
+  const answered = h.proposals.filter((p) => p.status !== "pending");
+  const weekly = h.weekly ? h.weekly.rows : [];
+  const where = (bid) => (bid && titles[bid]
+    ? html`<button class="gui-link" onClick=${() => openBuilding(bid)}>${titles[bid]}</button>` : html`<b>${bid || ""}</b>`);
+  const proposal = (p, i) => html`<li key=${p.id || i} class="th-item">
+    <span class="th-item__what">${p.status === "pending" ? "" : `${MARK[p.status] || "·"} `}${where(p.building)} · ${p.action} ${p.target}
+      <span class="ok-font-status ok-tone-muted"> — ${p.why} · ${p.ts}</span></span>
+    ${p.status === "pending" && html`<${Answer} onApply=${() => act(id, "proposal", { id: p.id, choice: "apply" })}
+      onNo=${() => act(id, "proposal", { id: p.id, choice: "dismiss" })} no=${say("Dismiss")} />`}</li>`;
+  const orks = garrison.length + h.builders.length + h.agents.length;
+  const ratings = h.board.length + h.incidents.length;
+  return html`<div class="th-hall">
+    ${h.order && html`<div class="th-strip">
+      <span class="th-strip__what">${say("A town waits to be raised")}: “${h.order}”</span>
+      <span class="ok-font-status ok-tone-muted">${say("The Town Builder plans it; you approve the plan before anything is raised.")}</span></div>`}
+    <${Section} title=${say("Waiting for you")} extra=${html`<span class="ok-font-status ok-tone-muted">${pending.length + weekly.length}</span>`}>
+      ${pending.length + weekly.length ? html`<ul class="gui-rows th-items">
+          ${pending.map(proposal)}
+          ${weekly.map((x) => html`<li key=${`w${x.n}`} class="th-item">
+            <span class="th-item__what">${say("Town retro")} · ${x.building && titles[x.building] ? html`${where(x.building)}: ` : ""}${x.title}
+              <span class="ok-font-status ok-tone-muted"> — ${x.why}</span></span>
+            <${Answer} onApply=${() => act(id, "weekly", { n: x.n, choice: "apply" })}
+              onNo=${() => act(id, "weekly", { n: x.n, choice: "decline" })} no=${say("Decline")} /></li>`)}</ul>`
+        : html`<p class="ok-font-status ok-tone-muted">${say("Nothing to decide — the Building retro and the Town retro bring proposals here.")}</p>`}
+    </${Section}>
+    <${Section} title=${h.audit ? `${say("Last audit")} ${h.audit.ts.slice(0, 16).replace("T", " ")}` : say("Audit")}
+        extra=${html`<button class="ok-act" onClick=${() => act(id, "audit").catch(() => {})}><span class="ok-act__label">Audit now</span></button>`}>
+      <${Rows} items=${h.audit ? h.audit.findings : []} empty=${h.audit ? say("Nothing found.")
+          : say("No audit yet: the Warder, the Pathfinder and the Treasurer look over the town in a moment, no model call.")}
+        row=${(f, i) => html`<li key=${i} class=${cls("ok-font-body", { "ok-tone-error": f.severity === "high", "ok-tone-wait": f.severity === "warn" })}>
+          ${f.severity === "high" ? "✗ " : f.severity === "warn" ? "⚠ " : "· "}${f.building && titles[f.building] ? html`${where(f.building)}: ` : ""}${f.text}</li>`} />
+    </${Section}>
+    <${Fold} title=${say("Orks of the hall")} count=${orks}
+        sum=${h.audit ? say(`${h.agents.reduce((n, a) => n + (a.serious || 0), 0)} to look at`) : say("not audited yet")}>
       <ul class="gui-rows">
         ${garrison.map((o) => html`<li key=${o.ref || o.name}><b>${say(o.name)}</b>
           <span class="ok-font-status ok-tone-muted"> · ${o.lead ? say("steward") : o.tier || o.kind} · ${o.status}</span></li>`)}
@@ -186,47 +258,29 @@ function Hall({ id, h }) {
           <span class="ok-font-status ok-tone-muted"> · ${a.area} · </span>
           <span class=${cls("ok-font-status", { "ok-tone-wait": a.serious > 0 })}>${h.audit ? `${a.found} found${a.serious ? `, ${a.serious} to look at` : ""}` : "not audited yet"}</span></li>`)}
       </ul>
-    </${Section}>
-    <${Section} title=${h.audit ? `${say("Last audit")} ${h.audit.ts.slice(0, 16).replace("T", " ")}` : say("Audit")}
-        extra=${html`<button class="ok-act" onClick=${() => act(id, "audit").catch(() => {})}><span class="ok-act__label">Audit now</span></button>`}>
-      <${Rows} items=${h.audit ? h.audit.findings : []} empty=${h.audit ? say("Nothing found.")
-          : say("No audit yet: the Warder, the Pathfinder and the Treasurer look over the town in a moment, no model call.")}
-        row=${(f, i) => html`<li key=${i} class=${cls("ok-font-body", { "ok-tone-error": f.severity === "high", "ok-tone-wait": f.severity === "warn" })}>
-          ${f.building && titles[f.building] ? html`<button class="gui-link" onClick=${() => openBuilding(f.building)}>${titles[f.building]}</button>: ` : ""}${f.text}</li>`} />
-    </${Section}>
-    <${Section} title=${say("Proposals")} extra=${html`<span class="ok-font-status ok-tone-muted">${h.pending} pending</span>`}>
-      <${Rows} items=${h.proposals} empty=${say("No proposals yet — the Building retro makes them.")}
-        row=${(p, i) => html`<li key=${i} class="ok-font-body">${MARK[p.status] || "·"} ${p.ts} <b>${titles[p.building] || p.building}</b>
-          · ${p.action} ${p.target}<span class="ok-font-status ok-tone-muted"> — ${p.why}</span>
-          ${p.status === "pending" && html` <${Answer} onApply=${() => act(id, "proposal", { id: p.id, choice: "apply" })}
-            onNo=${() => act(id, "proposal", { id: p.id, choice: "dismiss" })} no=${say("Dismiss")} />`}</li>`} />
-      <p class="ok-font-status ok-tone-muted">${say("Town retro")}: ${h.weekly
-        ? `${h.weekly.ts.slice(0, 10)} · ${h.weekly.items} items, ${h.weekly.applied} applied${h.weekly.waiting ? `, ${h.weekly.waiting} waiting` : ""}`
-        : say("not run yet — Sunday 05:00")}</p>
-      ${h.weekly && h.weekly.rows.length > 0 && html`<ul class="gui-rows">${h.weekly.rows.map((x) => html`<li key=${x.n} class="ok-font-body">
-        · ${x.building && titles[x.building] ? html`<b>${titles[x.building]}</b>: ` : ""}${x.title}
-        <span class="ok-font-status ok-tone-muted"> — ${x.why}</span>
-        <${Answer} onApply=${() => act(id, "weekly", { n: x.n, choice: "apply" })}
-          onNo=${() => act(id, "weekly", { n: x.n, choice: "decline" })} no=${say("Decline")} /></li>`)}</ul>`}
-    </${Section}>
-    <${Section} title=${say("The Elders")}>
+    </${Fold}>
+    <${Fold} title=${say("Proposals answered")} count=${answered.length}
+        sum=${`${say("Town retro")}: ${h.weekly ? `${h.weekly.ts.slice(0, 10)} · ${h.weekly.items} items, ${h.weekly.applied} applied` : say("not run yet — Sunday 05:00")}`}>
+      <${Rows} items=${answered} empty=${say("None yet.")} row=${proposal} />
+    </${Fold}>
+    <${Fold} title=${say("The Elders")} count=${h.elders.length}>
       <${Rows} items=${h.elders} empty=${say("Nothing judged yet — they read the orks' questions in quiet hours.")}
         row=${(r, i) => html`<li key=${i} class="ok-font-body">${MARK[r.how]} ${r.ts} ${r.who && `${r.who} · `}${r.question}
           <span class="ok-font-status ok-tone-muted"> → ${r.how === "left" ? "left to you" : `${r.how} [${r.key}] ${r.option}`}${r.why ? ` — ${r.why}` : ""}</span></li>`} />
-    </${Section}>
-    <${Section} title=${say("The Council's Fast Path")}>
+    </${Fold}>
+    <${Fold} title=${say("The Council's Fast Path")} count=${h.reviews.length} sum=${h.fast_path.map((r) => r.name).join(" · ")}>
       <p class="ok-font-status ok-tone-muted">${h.fast_path.map((r) => `${r.name} (${r.duty})`).join(" · ")}</p>
       <${Rows} items=${h.reviews} empty=${say("No reviews yet.")}
         row=${(r, i) => html`<li key=${i} class="ok-font-body">${MARK[r.decision] || "·"} ${r.ts} ${r.kind} ${r.id}
           ${r.note && html`<span class="ok-font-status ok-tone-muted"> — ${r.note}</span>`}</li>`} />
-    </${Section}>
-    <${Section} title=${say("Good and bad of the stewards")}>
+    </${Fold}>
+    <${Fold} title=${say("Good and bad of the stewards")} count=${ratings}>
       <${Rows} items=${[...h.board.map((x) => ({ ...x, row: "board" })), ...h.incidents.map((x) => ({ ...x, row: "incident" }))]}
         empty=${say("No ratings yet.")}
         row=${(x, i) => x.row === "board"
           ? html`<li key=${i} class="ok-font-body"><b>${titles[x.building] || x.building}</b>: good ${x.likes} bad ${x.dislikes} · penalty ${x.penalty}</li>`
           : html`<li key=${i} class="ok-font-body ok-tone-wait">${x.ts} ${titles[x.building] || x.building} · ${x.kind}${x.how ? ` (${x.how})` : ""} → ${x.blamed}${x.note ? ` — ${x.note}` : ""}</li>`} />
-    </${Section}>
+    </${Fold}>
   </div>`;
 }
 
@@ -274,7 +328,7 @@ export function panes(id, data) {
   const tab = hallTab.value;
   return {
     tabs: () => html`<${Tabs} />`,
-    chat: () => (tab === "chat" ? html`<${Chat} id=${id} data=${data} height="none" />` : null),
+    chat: () => (tab === "chat" ? html`<${Chat} id=${id} data=${data} />` : null),
     hall: () => (tab === "hall" ? html`<${Hall} id=${id} h=${data.hall} />` : null),
     sessions: () => (tab === "sessions" ? html`<${WarTent} />` : null),
     limits: () => (tab === "limits" ? html`<${Limits} id=${id} data=${data} />` : null),

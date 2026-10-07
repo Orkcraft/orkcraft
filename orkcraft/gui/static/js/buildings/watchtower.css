@@ -1,17 +1,36 @@
-/* 🗼 Watchtower (js/buildings/watchtower.js): the closed card previews the newest messages under the
-   counters. Every rule is scoped to this building: its hut is the one that holds a .gui-tower card. */
+/* 🗼 Watchtower (js/buildings/watchtower.js). Closed: the shared anatomy — how many are new, a counter
+   per source, the newest message in the foot. Open, made for the half panel: the sources as chips with
+   the actions on one line, the feed one line per signal, a signal read over it. Tokens only. */
 
-/* Closed: a little wider than other huts, so the preview of the newest message fits; three or four lines. */
+/* Closed: a little wider than other huts, so the newest message fits in the foot. */
 .gui-town__room > .gui-hut.ok-hut[class]:has(.gui-tower) { width: 320px; max-width: none; }
-.gui-hut:has(.gui-tower) .gui-hut__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.gui-tower__count { margin-right: var(--space-3); white-space: nowrap; }
+.gui-tower__msg.is-fresh { background: var(--selection); box-shadow: inset 2px 0 0 var(--frame-focus); color: var(--ink); padding-left: var(--space-1); }
+.gui-tower__msg:not(.is-read) { color: var(--ink); }
 
-.gui-tower { display: flex; flex: 1; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.gui-tower__latest { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gui-tower__msg { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 var(--space-2); align-items: baseline;
-  padding: 2px var(--space-1); border-left: 2px solid transparent; min-width: 0; }
-.gui-tower__msg.is-read { color: var(--ink-muted); }
-.gui-tower__msg.is-fresh { background: var(--selection); border-left-color: var(--frame-focus); color: var(--ink); }
-.gui-tower__src { white-space: nowrap; font-size: .9em; }
-.gui-tower__what { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow-wrap: anywhere; }
-.gui-tower__at { white-space: nowrap; font-size: .9em; font-variant-numeric: tabular-nums; }
+/* The head: a chip per source (it filters the feed), then when it looked and the actions. */
+.gui-tower__head { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-tower__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.gui-tower__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+.gui-tower__state { flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
+.gui-tower__failing { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+/* The feed: one line per signal — new, source, from · what, when. */
+.gui-tower__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-tower__row { display: grid; grid-template-columns: 1em minmax(0, 4.5em) minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+  width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.gui-tower__row:hover { background: var(--selection); }
+.gui-tower__row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.gui-tower__row.is-read { color: var(--ink-muted); }
+.gui-tower__row.is-read b { font-weight: 600; }
+.gui-tower__row.is-out { color: var(--ink-comment); }
+.gui-tower__src, .gui-tower__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-tower__src { color: var(--ink-muted); font-size: 12px; }
+.gui-tower__at { color: var(--ink-muted); white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* A signal, or the sources and the intent, over the feed. */
+.gui-tower__item, .gui-tower__setup { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-tower__back { align-self: flex-start; }
+.gui-tower__setup > .ok-list__head { margin: var(--space-2) 0 0; }

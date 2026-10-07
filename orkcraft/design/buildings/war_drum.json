@@ -13,8 +13,8 @@
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
       {"split": "row", "size": 1, "panes": [
-        {"id": "week", "component": "text", "size": 3, "font": "body"},
-        {"id": "day", "component": "list", "size": 2, "font": "body"}
+        {"id": "day", "component": "list", "size": 2, "font": "body"},
+        {"id": "week", "component": "text", "size": 3, "font": "body"}
       ]},
       {"id": "settings", "component": "form", "size": "auto", "font": "status"}
     ]

@@ -77,7 +77,7 @@ export function card(b) {
   const [big, small, tone] = headline(c);
   const lastInBig = c.last && (c.line || "").startsWith(c.last.mark);
   return html`<div class="gui-hut__body-in">
-    <div class=${cls("gui-hut__big", TONE[tone] || "")}>${big}${small && html`<small>${small}</small>`}</div>
+    <div class=${`gui-hut__big ${TONE[tone] || ""}`}>${big}${small && html`<small>${small}</small>`}</div>
     <div class="gui-hut__text ok-tone-muted" title=${c.target || ""}>${c.browser ? say("browser · ") : ""}${say(c.target || "")}</div>
     ${c.problem ? html`<div class="gui-hut__text ok-tone-error" title=${c.problem}>✗ ${say("schema")}: ${c.problem}</div>`
       : c.loaded > 0 && html`<div class="gui-hut__text"><span class="ok-tone-ok">✓</span> ${say("the load passes the schema")}</div>`}
@@ -130,7 +130,7 @@ function Head({ id, data }) {
     <${Asking} id=${id} data=${data} />
     <div class="gui-cat__bar">
       <span class="gui-cat__target" title=${say(target(data))}>${say(target(data))}</span>
-      ${data.state && html`<span class=${cls("gui-cat__state", data.login ? "ok-tone-fire" : "ok-tone-wait")}>${say(data.state)}</span>`}
+      ${data.state && html`<span class=${`gui-cat__state ${data.login ? "ok-tone-fire" : "ok-tone-wait"}`}>${say(data.state)}</span>`}
       <span class="gui-cat__acts">
         ${data.login && html`<button class="ok-btn primary" onClick=${() => act(id, "login").catch(() => {})}>${say("Log in")}</button>`}
         ${data.mode === "browser" && html`<button class="ok-btn" onClick=${() => act(id, "scout").catch(() => {})}>Scout</button>`}
@@ -174,7 +174,7 @@ function Load({ data }) {
 
 function ShotLine({ s }) {
   const mark = s.dry ? say("dry run") : s.ok ? (s.status ? `✓ ${s.status}` : `✓ ${say("filled")}`) : `✗ ${s.error || s.status}`;
-  return html`<span class=${cls("gui-cat__mark", s.dry ? "ok-tone-muted" : s.ok ? "ok-tone-ok" : "ok-tone-error")}>${mark}</span>`;
+  return html`<span class=${`gui-cat__mark ${s.dry ? "ok-tone-muted" : s.ok ? "ok-tone-ok" : "ok-tone-error"}`}>${mark}</span>`;
 }
 
 function Shot({ id, data, s }) {
