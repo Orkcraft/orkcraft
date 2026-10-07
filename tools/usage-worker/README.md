@@ -40,6 +40,18 @@ Whoever runs the proxy can change the analytics behind it without a release of O
    # HTTP/2 204; the event shows in Amplitude → User lookup → device 0123…cdef within a minute
    ```
 
+   Nothing in Amplitude?
+   - `npx wrangler secret list` must show `"name": "AMPLITUDE_API_KEY"`. A secret named after the key
+     itself means `secret put` got the key where the name goes: delete it and put it again.
+   - Send one event to Amplitude itself, without the Worker: `curl -i https://api2.amplitude.com/2/httpapi
+     -H 'Content-Type: application/json' -d '{"api_key":"…","events":[{"device_id":"0123456789abcdef0123456789abcdef","event_type":"road_laid"}]}'`.
+     `"invalid api_key"` means a wrong key, or a project in the EU data centre (`api.eu.amplitude.com`,
+     `AMPLITUDE_REGION = "eu"`).
+   - `npx wrangler tail --format pretty` shows the Worker's requests live while you send one.
+   - The Worker's answer may carry `x-amplitude-status` (Amplitude's own answer), but Cloudflare's edge
+     does not always pass it on: its absence proves nothing.
+   - A change to `wrangler.toml` counts only after `npx wrangler deploy`.
+
 5. **Point Orkcraft at it**: set `ENDPOINT = "https://…/v1/events"` in `orkcraft/core/usage.py` and
    release. Until then, try it on your own machine with
    `ORKCRAFT_USAGE_URL=https://…/v1/events orkcraft usage on && orkcraft`.
