@@ -3,10 +3,12 @@ its output is read the same way whatever the tool."""
 from __future__ import annotations
 
 import json
+import threading
+from pathlib import Path
 
 import pytest
 
-from orkcraft.realm import builders, harnesses, roads
+from orkcraft.realm import builders, harnesses, jobs, roads
 
 
 def _lines(*events: dict) -> str:
@@ -57,6 +59,30 @@ def test_pi_sums_its_messages_and_their_price():
     read = h.read("x", "/r")
     assert "--no-tools" in h.ask("x", "/f") and read[read.index("--tools") + 1] == "read,grep,find,ls"
     assert read[read.index("-e") + 1].endswith("orkcraft.ts")                         # the Warder rides along
+
+
+PI_BAD_KEY = Path(__file__).parent / "fixtures" / "pi_json_bad_key.jsonl"   # pi 1.0.4 on Gemini, a wrong key
+
+
+def test_a_failed_pi_request_ends_with_0_and_still_fails(tmp_path, monkeypatch):
+    out = PI_BAD_KEY.read_text(encoding="utf-8")
+    assert harnesses.pi_result(out)[0] == ""
+    assert harnesses.pi_error(out) == "API key not valid. Please pass a valid API key."     # not JSON in JSON
+    monkeypatch.setattr(roads, "run_proc", lambda *a, **k: (0, out, ""))
+    with pytest.raises(RuntimeError, match="pi gave no answer: API key not valid"):
+        roads.run_agent("pi", "x", tmp_path, {}, threading.Event())
+    with pytest.raises(RuntimeError, match="pi gave no answer: API key not valid"):
+        jobs.run_work("pi", "x", tmp_path, threading.Event())
+
+
+@pytest.mark.parametrize("name", ["pi_json_ask"])
+def test_what_pi_printed_on_the_live_bench_still_reads(name):
+    """tests/live/ rewrites this with --refresh-fixtures: a new pi that prints otherwise fails here."""
+    file = PI_BAD_KEY.parent / f"{name}.jsonl"
+    if not file.exists():
+        pytest.skip(f"{file.name} is not recorded yet (pytest -m live --live --refresh-fixtures)")
+    text, cost, tokens, session = harnesses.pi_result(file.read_text(encoding="utf-8"))
+    assert "pong" in text.lower() and cost is not None and tokens and session
 
 
 def test_cursor_reads_its_result_line():

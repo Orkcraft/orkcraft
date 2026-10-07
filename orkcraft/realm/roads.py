@@ -323,6 +323,16 @@ def failure(harness: str, code: int, stdout: str, stderr: str) -> str:
     return f"{harness} exited with {code}: {why[:300]}"
 
 
+def answer_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    """`result_of` of a run that exited 0, raising RuntimeError when it holds no answer and its events say
+    why (pi ends a failed request with 0: a bad key, a model it does not know)."""
+    result = result_of(harness, stdout, before)
+    h = harnesses.get(harness)
+    if not result[0].strip() and h and (why := h.error(stdout)):
+        raise RuntimeError(f"{harness} gave no answer: {why[:300]}")
+    return result
+
+
 def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
               cancel: threading.Event, model: str = "", web: bool = False) -> tuple[str, float | None, int | None]:
     """One harness step. Claude reads the repository (read-only tools, plus web search and fetch
@@ -351,7 +361,7 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:
         raise RuntimeError(failure(harness, code, stdout, stderr))
-    result = result_of(harness, stdout)[:3]
+    result = answer_of(harness, stdout)[:3]
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
     return result

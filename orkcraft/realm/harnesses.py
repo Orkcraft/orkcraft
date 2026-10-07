@@ -289,11 +289,27 @@ def pi_result(stdout: str, before: int = 0) -> tuple[str, float | None, int | No
     return text.strip(), cost, tokens, session
 
 
+def _innermost(message: str) -> str:
+    """A provider's error as pi passes it on: JSON in JSON (`{"error": {"message": "{\\n \\"error\\": …`);
+    the deepest `message` is what a person can read, else the text as it came."""
+    for _ in range(4):
+        try:
+            env = json.loads(message)
+        except ValueError:
+            break
+        inner = env.get("error") if isinstance(env, dict) else None
+        inner = inner.get("message") if isinstance(inner, dict) else inner
+        if not isinstance(inner, str) or not inner.strip():
+            break
+        message = inner.strip()
+    return message
+
+
 def pi_error(stdout: str) -> str:
     for event in reversed(json_lines(stdout)):
         msg = event.get("message")
         if isinstance(msg, dict) and msg.get("stopReason") in ("error", "aborted"):
-            return str(msg.get("errorMessage") or msg.get("stopReason"))
+            return _innermost(str(msg.get("errorMessage") or msg.get("stopReason")))
     return ""
 
 

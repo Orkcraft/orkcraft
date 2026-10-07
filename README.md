@@ -186,7 +186,8 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/orkcraft --demo
 ```
 
-Every pull request and every push to `main` runs the tests on GitHub Actions (`.github/workflows/tests.yml`).
+Every pull request and every push to `main` runs the tests on GitHub Actions (`.github/workflows/tests.yml`). A live bench runs the
+real tools on real models every night ([docs/testing.md](docs/testing.md)).
 
 ```
 orkcraft/

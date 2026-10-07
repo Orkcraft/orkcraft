@@ -96,3 +96,20 @@ def _codex_beside_claude_and_agy(monkeypatch, billing: str) -> None:
     monkeypatch.setattr(codex_quota, "_converse", lambda cmd, messages, timeout, cwd: raw)
     monkeypatch.setattr(codex_quota, "datetime", type("D", (datetime,), {"now": staticmethod(
         lambda tz=None: datetime(2026, 10, 6, 12, 0, tzinfo=timezone.utc))}))
+
+
+# -- the live bench (tests/live/, docs/testing.md) ----------------------------------------------------
+
+def pytest_addoption(parser):
+    parser.addoption("--live", action="store_true", help="run tests/live/ on real models (they cost money)")
+    parser.addoption("--refresh-fixtures", action="store_true",
+                     help="with --live: write what the real tools printed to tests/fixtures/")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--live"):
+        return
+    skip = pytest.mark.skip(reason="a real model: run with --live")
+    for item in items:
+        if "live" in item.keywords:
+            item.add_marker(skip)

@@ -137,7 +137,7 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
                                     lambda proc: _wait(proc, cancel, timeout_s))
     if code != 0:
         raise RuntimeError(roads.failure(harness, code, out, err))
-    text, cost, tokens, session = roads.result_of(harness, out, before)
+    text, cost, tokens, session = roads.answer_of(harness, out, before)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker")
     return text, cost, tokens, session
