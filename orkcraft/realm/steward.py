@@ -45,7 +45,7 @@ from orkcraft.realm import builders, chains, chronicles, roads, tiers
 # results (`WORK`) — runs, when nothing is picked, on the tier its building's goal names, and on 🪙 thrift
 # while the quota is tight (the caller says which goal is in force: `Worker.aim_now`).
 USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings",
-        "roads": "Roads: what it listens to"}
+        "roads": "Roads: what it listens to", "listen": "Listen: carry out the road rules"}
 TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
                          "review": "Review their work", "final": "Look at the whole"},
              "workshop": {"escalate": "Take what the script hands over"},
@@ -70,6 +70,9 @@ WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("
         "mill": {"agent": _g("laborer", "", "elder")},
         "council": {"decide": _g("warrior", "", "elder")},
         "town_hall": {"answer": _g("warrior", "", "elder"), "build": _g("warrior", "", "elder")}}
+# Work every steward has, whatever its type: `listen` runs its road rules on every cart (a `steward` handler,
+# docs/design/steward-listens.md) — where the money goes, so the goal picks its tier; `roads` stays upkeep.
+WORK_ALL = {"listen": _g("laborer", "warrior", "elder")}
 # Not on the steward yet — they call their models on their own, so the goal does not reach them, and they
 # break the rule the test holds (tests/test_steward_work.py): the Wiki (scrolls: its librarian, its review),
 # the Review gate (loot) and the Publisher (catapult: its overseer). Being reworked; until then not done.
@@ -83,12 +86,12 @@ def uses(type_id: str) -> dict[str, str]:
 
 def is_work(type_id: str, use: str) -> bool:
     """Whether `use` is part of the building's work (its goal picks the tier), not its upkeep."""
-    return use in WORK.get(type_id, {})
+    return use in WORK.get(type_id, {}) or use in WORK_ALL
 
 
 def goal_tier(type_id: str, use: str, goal: str) -> str:
     """The tier `goal` names for one of the steward's work tasks, "" for the default (and for upkeep)."""
-    by_goal = WORK.get(type_id, {}).get(use) or {}
+    by_goal = WORK.get(type_id, {}).get(use) or WORK_ALL.get(use) or {}
     return by_goal.get(goal, by_goal.get("balance", ""))
 
 

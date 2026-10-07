@@ -78,7 +78,7 @@ class Orc:
     ref: str = ""                 # terminal key (workers), agent key (council), "<building_id>/<orc_id>" (residents)
     lead: bool = False            # the building's steward (v3) / lead (v2)
     session: str = ""             # War Tent terminal key when deployed
-    kind: str = "agent"           # chain | script | agent | hybrid
+    kind: str = "agent"           # chain | script | steward | agent | hybrid
     harness: list[dict] = field(default_factory=list)
     roads: list[str] = field(default_factory=list)   # labels of the incoming roads it works on
     run: dict = field(default_factory=dict)           # effective re-run policy

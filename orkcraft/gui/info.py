@@ -70,7 +70,7 @@ def _about(town: Town, building_id: str) -> str:
     return about or getattr(bs, "role", "") or "No description yet."
 
 
-KINDS = {"agent": "agent", "hybrid": "agent + script", "script": "script", "chain": "chain"}
+KINDS = {"agent": "agent", "hybrid": "agent + script", "script": "script", "chain": "chain", "steward": "road rule"}
 
 
 def _handler(town: Town, muster: Muster, building_id: str, orc) -> dict[str, Any]:

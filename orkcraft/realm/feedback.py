@@ -70,7 +70,7 @@ LABELS = {EXPLICIT: "👍 / 👎", "loot.accepted": "accepted in a Loot", "loot.
 # (the Town retro may remove the building), never a reason to spend more on its quality.
 NOT_QUALITY = frozenset({"usage.ignored"})
 STRONG = frozenset({EXPLICIT, "pr.merged"})     # likes that shield a building from a thrift retro
-AUTHOR_KINDS = frozenset({"agent", "hybrid", "task"})   # hops that write; a team reviews, a chain or script carries
+AUTHOR_KINDS = frozenset({"agent", "hybrid", "steward", "task"})   # hops that write; a team reviews, a chain or script carries
 ENOUGH = 1.0                       # the weight from which readers treat signals as a 👍 / 👎
 # Why a cart goes back, offered as chips (the reason is still free text): the tag, the label, and
 # whether it blames the inputs (the hops before the maker) or the maker's own logic.
