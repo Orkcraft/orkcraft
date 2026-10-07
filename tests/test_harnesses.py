@@ -126,3 +126,17 @@ def test_autonomy_says_what_each_new_tool_changes():
     assert "hermes --yolo" in free and "cursor-agent --force" in free and "never asks" in free
     chains = autonomy.guide(0, ("hermes", "cursor"))
     assert "--yolo" not in chains and "--force" not in chains
+
+
+def test_mcp_servers_of_hermes_pi_and_cursor_are_named_never_read(tmp_path):
+    from orkcraft.realm import mcp
+    (tmp_path / ".hermes").mkdir()
+    (tmp_path / ".hermes" / "config.yaml").write_text(
+        "model:\n  default: x\nmcp_servers:\n  github:\n    command: npx\n    env:\n      TOKEN: secret\n"
+        "  linear:\n    url: https://x\nhooks: {}\n", encoding="utf-8")
+    (tmp_path / ".cursor").mkdir()
+    (tmp_path / ".cursor" / "mcp.json").write_text('{"mcpServers": {"github": {}, "figma": {}}}', encoding="utf-8")
+    (tmp_path / ".pi" / "agent").mkdir(parents=True)
+    (tmp_path / ".pi" / "agent" / "mcp.json").write_text('{"mcpServers": {"sentry": {}}}', encoding="utf-8")
+    got = {s.id: s.tools for s in mcp.found(home=tmp_path)}
+    assert got == {"github": ("hermes", "cursor"), "linear": ("hermes",), "figma": ("cursor",), "sentry": ("pi",)}
