@@ -143,6 +143,12 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .gui-hut__spin { animation-duration: 2.4s; } }
 .gui-hut > .ok-head { margin-top: var(--space-1); }
 .gui-hut__sprite { -webkit-user-drag: none; }
+/* The building's sprite: a 1px dark outline, so a green hut stands off green ground; a building whose orks sleep
+   is muted, so the eye finds the ones at work — one that asks, or is open, keeps its full colour. */
+.gui-hut .gui-sprite { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo))
+  drop-shadow(0 1px 0 var(--bevel-lo)) drop-shadow(0 -1px 0 var(--bevel-lo)); }
+.gui-hut__roof { transition: filter .3s; }
+.gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof { filter: brightness(.78) saturate(.8); }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
