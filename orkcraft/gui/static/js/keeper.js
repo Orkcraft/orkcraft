@@ -32,10 +32,11 @@ export function KeeperAsk({ id, selection = null, placeholder = "e.g. send bugs 
 }
 
 /** The request field in a dialog (a type's "Ask the keeper" button, a selection in Lake). */
-export function KeeperDialog({ id, title, selection = null, onClose }) {
+export function KeeperDialog({ id, title, selection = null, onClose, children = null }) {
   return html`<${Dialog} title=${say(title || "Ask the keeper")} onCancel=${onClose}
       text=${say(selection ? "What should its keeper do with the selection?" : "What should the building do? Its keeper writes it.")}
       actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>`}>
+    ${children}
     ${selection && html`<${Selection} s=${selection} />`}
     <${KeeperAsk} id=${id} selection=${selection} onAsked=${onClose} />
   </${Dialog}>`;

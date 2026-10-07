@@ -152,3 +152,18 @@ async def test_a_rework_finds_the_barracks_past_a_mill(fake_repo: Path, monkeypa
         trail = (pipes.hop("camp2", "grub", "agent", 100, 0.01), pipes.hop("grinder", "miller", "script"))
         back = pipes.Payload(pipes.TEXT, "fix it", "gate", "loot.rework", "rework: Docs", trail, "D-1")
         assert app.return_for_rework("grinder", back) == "camp2" and got == ["D-1"]
+
+
+def test_the_rules_read_out_in_plain_words():
+    say = gate.describe({"review": "rules", "sources": ["camp"], "paths": ["auth/**"], "max_cost_usd": 0.2,
+                         "max_rework": 1, "rework_tokens": 50000}, {"camp": "Agent pool"})
+    assert say[0] == "A draft an ork wants to publish always waits for your approval."
+    assert "A cart from Agent pool waits." in say and "A cart that touches auth/** waits." in say
+    assert "A cart whose chain cost more than $0.20 waits." in say
+    assert "A cart from a run that did not finish clean waits." in say          # on by default
+    assert say[-2:] == ["Anything else passes by itself.",
+                        "A cart goes back for rework at most 1 time, and not once its chain spent 50,000 tokens; "
+                        "then it needs you."]
+    assert gate.describe({"review": "always"})[1] == "Every cart waits for you."
+    assert gate.describe({"review": "never"}) == ["A draft an ork wants to publish always waits for your approval.",
+                                                  "Every other cart passes by itself."]

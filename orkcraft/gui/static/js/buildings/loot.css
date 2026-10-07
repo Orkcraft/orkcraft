@@ -1,6 +1,7 @@
 /* 📦 Loot Vault, made for the half panel (js/buildings/loot.js): the waiting carts take the room as one flow
-   of cards, the changed files as rows; what passed and what was rejected fold to a line; a cart opens over
-   them. */
+   of cards, the changed files a tab of rows; what passed and what was rejected fold to a line; a cart opens
+   over them. In a full panel the list keeps the left and what is open stands beside it, its content in the
+   middle and why it waits and its chain on the right. */
 
 /* The head: the counters on one line, the acts on the right. */
 .loot-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
@@ -25,6 +26,8 @@
 .loot-card:hover { background: var(--panel-raised); }
 .loot-card:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
 .loot-card.is-asks { background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.loot-card.is-chosen { box-shadow: inset 0 0 0 2px var(--frame-focus); }
+[data-theme="office"] .loot-card.is-chosen { box-shadow: inset 0 0 0 2px var(--frame-focus); }
 .loot-card__head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .loot-card__head > .loot-kind { flex: 1 1 auto; }
 .loot-card__state { flex: none; margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; font-weight: 700;
@@ -82,6 +85,7 @@
 .loot-file:hover { background: var(--panel-raised); }
 .loot-file:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
 .loot-file.is-done { color: var(--ink-muted); }
+.loot-file.is-chosen { background: var(--panel-raised); box-shadow: inset 2px 0 0 var(--frame-focus); }
 .loot-file__mark { flex: none; width: 1em; color: var(--ink-muted); }
 .loot-file__path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .loot-file__meta { flex: none; font-family: var(--ok-font); font-size: 11px; color: var(--ink-muted); }
@@ -100,4 +104,34 @@
 .loot-open__back { align-self: flex-start; }
 .loot-open__title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .loot-open .gui-pre { max-height: 320px; overflow: auto; }
-.loot-open .gui-diff { width: 100%; }
+
+/* The two lists, a tab each: the carts, the changed files of the working tree. */
+.loot-tabs { display: flex; gap: var(--space-1); }
+.loot-scope { margin: 0; font-size: 12px; color: var(--ink-muted); }
+
+/* The rules, read out in the Rules dialog. */
+.loot-rules { margin: 0 0 var(--space-2); padding-left: 1.2em; display: flex; flex-direction: column; gap: 2px; }
+
+/* The chain, with its columns named. */
+.loot-chain { width: 100%; border-collapse: collapse; }
+.loot-chain th { text-align: left; font-weight: 600; font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .06em; padding: 0 var(--space-2) 2px 0; }
+.loot-chain td { vertical-align: top; padding: 2px var(--space-2) 2px 0; overflow-wrap: anywhere; }
+.loot-chain td:first-child { width: 1.5em; color: var(--ink-muted); }
+.loot-chain td:last-child, .loot-chain th:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; padding-right: 0; }
+
+/* The list and what is open: one over the other in the half panel, side by side in a full one. */
+.loot-split__open { display: none; min-width: 0; }
+.loot-split.has-open > .loot-split__list { display: none; }
+.loot-split.has-open > .loot-split__open { display: block; }
+.gui-panel.is-full .loot-split { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.gui-panel.is-full .loot-split > .loot-split__list, .gui-panel.is-full .loot-split > .loot-split__open { display: block; }
+.gui-panel.is-full .loot-split .loot-flow { grid-template-columns: 1fr; }
+.gui-panel.is-full .loot-split .loot-files { grid-template-columns: 1fr; }
+.gui-panel.is-full .loot-open__back { display: none; }
+
+/* An open cart: its head, then what it is; why it waits and its chain under it — beside it in a full panel. */
+.loot-detail { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.loot-detail__top, .loot-detail__main, .loot-detail__side { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-panel.is-full .loot-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: var(--space-2) var(--space-4); align-items: start; }
+.gui-panel.is-full .loot-detail__top { grid-column: 1 / -1; }
+.gui-panel.is-full .loot-open .loot-what__body.gui-prose, .gui-panel.is-full .loot-open .gui-pre { max-height: none; }

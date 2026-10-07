@@ -122,8 +122,17 @@ change in the working tree.
   pictures large, the whole cart with the report folded under it.
 - **Hut** — counters and the queue only: `3 held · 1 needs you`, the first titles, `passed: 12`,
   the total cost of what passed today. No preview.
-- **Full window** — list | diff or preview | the trail with cost. Diffs, images and editing live
-  here only.
+- **The panel** — two tabs: the **carts** (one flow of cards, the ones that need you first, what
+  passed folded under them) and the **changed files** of the working tree, which no cart brought
+  (accepted, rejected and brought back one by one). A cart opens over the list; a decision on it —
+  Accept, Rework, Drop — opens the next one that waits, and a changed file accepted or rejected the
+  next file. A held cart's first act is Accept; one that **needs you** ran out of rounds, so its first
+  act is Edit (a file: open it) and Accept as it is comes second; once edited, Accept takes the edit.
+- **Full window** — the list on the left, the chosen cart beside it: what it is in the middle (its
+  text, its pictures, its branch's files with their diffs), why it waits and the chain with each
+  step's cost on the right.
+- **The rules** are read out in plain words in the Rules dialog (`gate.describe`): what waits, what
+  passes by itself, how often a cart goes back; below them the steward is asked to change them.
 - **Images** — the preview names a picture by its first bytes: `PNG image · 512×512 · 34.2 KB ·
   o opens it`. `o` hands the highlighted file to the system viewer (`open` on macOS, `xdg-open`
   on Linux); a file that is only on a task's branch is first copied out with `git show

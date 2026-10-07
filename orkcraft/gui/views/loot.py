@@ -142,6 +142,7 @@ def detail(w) -> dict:
     return {
         "error": w.error, "scope": str(w.config.get("path") or "") or "the working tree",
         "review": str(w.config.get("review") or "rules"),
+        "rules": gate.describe(w.config, names),
         "counts": {s: w.queue.count(s) for s in (gate.HELD, gate.NEEDS_YOU, gate.REWORK)},
         "waiting_cost": _waiting_cost([i for i in open_items if i.status != gate.REWORK]),
         "queue": [_item(w, it, names) for it in open_items[:ITEMS]],

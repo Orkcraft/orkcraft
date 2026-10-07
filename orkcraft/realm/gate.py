@@ -101,6 +101,41 @@ def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) ->
     return why
 
 
+def describe(config: dict, names: dict[str, str] | None = None) -> list[str]:
+    """The rules as a person reads them: what waits for them, what passes by itself, how often a cart may
+    go back. `names` turns building ids into their titles."""
+    names = names or {}
+    out = ["A draft an ork wants to publish always waits for your approval."]
+    mode = str(config.get("review") or "rules")
+    if mode == "always":
+        out.append("Every cart waits for you.")
+    elif mode == "never":
+        out.append("Every other cart passes by itself.")
+    else:
+        if sources := _list(config, "sources"):
+            out.append(f"A cart from {', '.join(names.get(x, x) for x in sources)} waits.")
+        if paths := _list(config, "paths"):
+            out.append(f"A cart that touches {', '.join(paths)} waits.")
+        if (v := _num(config, "max_cost_usd")) is not None:
+            out.append(f"A cart whose chain cost more than ${v:.2f} waits.")
+        if (v := _num(config, "max_tokens")) is not None:
+            out.append(f"A cart whose chain spent more than {int(v):,} tokens waits.")
+        if (v := _num(config, "max_files")) is not None:
+            out.append(f"A cart with more than {int(v)} changed files waits.")
+        if config.get("on_failed", True):
+            out.append("A cart from a run that did not finish clean waits.")
+        if config.get("external"):
+            out.append("A cart that leaves the town waits.")
+        out.append("Anything else passes by itself.")
+    if mode != "never":
+        limit = int(v) if (v := _num(config, "max_rework")) is not None else DEFAULT_MAX_REWORK
+        cap = _num(config, "rework_tokens")
+        out.append(f"A cart goes back for rework at most {limit} time{'s' if limit != 1 else ''}"
+                   + (f", and not once its chain spent {int(cap):,} tokens" if cap is not None else "")
+                   + "; then it needs you.")
+    return out
+
+
 # -- the queue -----------------------------------------------------------------------------------------
 
 @dataclass

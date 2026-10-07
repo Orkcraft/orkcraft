@@ -1,10 +1,12 @@
 // 📦 Loot Vault: the review checkpoint. Closed: how many carts wait (the ones that need you first), the
 // changed files, what the waiting carts cost, what passed last and when. Open, made for the half panel:
-// the counters on one line with Accept all, Accept files and the rules; a cart that needs you as a strip
-// with Look; the waiting carts as one flow of cards, the changed files as rows, what passed and what was
-// rejected folded to a line each; a cart or a file opens over them (← back) with its acts, why it waits
-// and the chain it came through. A cart opens in Lake and is edited there (its draft file) before it is
-// accepted; the rules are the keeper's. The decisions are the worker's (core/workers/loot.py).
+// the counters on one line with Accept all (or Accept files) and the rules; a cart that needs you as a
+// strip with Look; two tabs — the carts as one flow of cards with what passed folded under them, and the
+// changed files of the working tree with what was rejected; a cart or a file opens over them (← back)
+// with its acts, what it is first, why it waits and the chain it came through, and a decision opens the
+// next cart. In the whole town's width the list stays on the left and the chosen one opens beside it.
+// A cart opens in Lake and is edited there (its draft file) before it is accepted; the rules are the
+// keeper's, read out in plain words. The decisions are the worker's (core/workers/loot.py).
 // Every cart says what it is before it is opened (realm/content.py): a message, a doc, a ticket, code,
 // an image, data or text — with where it goes and its first line, or a thumbnail of its picture, which
 // the closed card shows too.
@@ -28,6 +30,7 @@ const chosen = signal({});        // building id → {kind: item | file | reject
 const reworking = signal({});     // building id → the item sent back, while its dialog is open
 const accepting = signal({});     // building id → what Accept all would accept, while it waits for a yes
 const dropping = signal({});      // building id → the cart to drop, while it waits for a yes
+const tabs = signal({});          // building id → "carts" | "files", the one the person picked
 
 const MARK = { held: "", needs_you: "! ", rework: "↩ " };
 const WORD = { held: "held", needs_you: "needs you", rework: "in rework" };
@@ -80,6 +83,28 @@ function choose(id, kind, key) {
   chosen.value = { ...chosen.value, [id]: { kind, key } };
 }
 
+/** The waiting carts in the order the list shows them: the ones that need you first. */
+function ordered(queue) {
+  return queue.map((it, i) => ({ it, i }))
+    .sort((a, b) => (ORDER[a.it.status] ?? 1) - (ORDER[b.it.status] ?? 1) || a.i - b.i).map((x) => x.it);
+}
+
+/** After a decision on the open cart, the next one that waits for the person opens; none: back to the list. */
+function advance(id, data, done) {
+  const list = ordered(data.queue);
+  const waits = (x) => x.id !== done && x.status !== "rework";
+  const next = list.slice(list.findIndex((x) => x.id === done) + 1).find(waits) || list.find(waits);
+  chosen.value = { ...chosen.value, [id]: next ? { kind: "item", key: next.id } : null };
+}
+
+/** After a changed file is accepted or rejected, the next one still to review opens; none: back to the list. */
+function advanceFile(id, data, done) {
+  const list = data.files;
+  const waits = (f) => f.path !== done && !f.reviewed;
+  const next = list.slice(list.findIndex((f) => f.path === done) + 1).find(waits) || list.find(waits);
+  chosen.value = { ...chosen.value, [id]: next ? { kind: "file", key: next.path } : null };
+}
+
 /** A cart in Lake: a text cart as its text, a file cart as the file. */
 function openCart(id, it) {
   if (it.kind === "file") openInLake({ path: it.value, title: it.title, from: id });
@@ -128,7 +153,7 @@ function DropDialog({ id, data }) {
   const it = iid && data.queue.find((x) => x.id === iid);
   if (!it) return null;
   const close = () => { dropping.value = { ...dropping.value, [id]: null }; };
-  const yes = () => { close(); act(id, "drop", { item: it.id }).catch(() => {}); };
+  const yes = () => { close(); act(id, "drop", { item: it.id }).then(() => advance(id, data, it.id), () => {}); };
   return html`<${Dialog} title=${`${say("Drop")} “${it.label}”?`} warn=${true} onCancel=${close}
       text=${say("It leaves the queue for good: it is not sent on, nor back to its maker, who hears it was not wanted.")}
       actions=${html`<button class="ok-btn" onClick=${close}>${say("Cancel")}</button>
@@ -155,7 +180,7 @@ function ReworkDialog({ id, data }) {
   useEffect(() => { setTag(""); setNote(""); }, [iid]);
   if (!it) return null;
   const close = () => { reworking.value = { ...reworking.value, [id]: null }; };
-  const send = () => act(id, "rework", { item: it.id, tag, reason: note }).then(close, () => {});
+  const send = () => act(id, "rework", { item: it.id, tag, reason: note }).then(() => { close(); advance(id, data, it.id); }, () => {});
   return html`<${Dialog} title=${`Send back to ${it.source} — why?`} text=${`Round ${it.attempts + 1}: ${it.label}`} onCancel=${close}
       actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>
         <button class="ok-btn primary" disabled=${!tag && !note.trim()} onClick=${send}>Send back</button>`}>
@@ -166,18 +191,30 @@ function ReworkDialog({ id, data }) {
   </${Dialog}>`;
 }
 
-function Acts({ id, it }) {
+/** A cart's acts. A held one: Accept first. One that needs you ran out of rounds or could not go back, so
+ *  the person fixes it: Edit (a file: open it) comes first, Accept as it is after; once edited, Accept
+ *  takes the edit. */
+function Acts({ id, it, data }) {
   if (it.status === "rework") return html`<span class="ok-tone-muted">with ${it.source} for rework</span>`;
-  return html`<button class="ok-btn primary" onClick=${() => act(id, "accept", { item: it.id }).catch(() => {})}>
-      ${it.edited ? "Accept your version" : "Accept"}</button>
-    ${it.status === "held" && html`<button class="ok-btn" onClick=${() => { reworking.value = { ...reworking.value, [id]: it.id }; }}>Rework…</button>`}`;
+  const accept = (label, primary) => html`<button class=${cls("ok-btn", { primary })}
+      onClick=${() => act(id, "accept", { item: it.id }).then(() => advance(id, data, it.id), () => {})}>${say(label)}</button>`;
+  const fix = (primary) => it.kind === "file"
+    ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`
+    : html`<button class=${cls("ok-btn", { primary })} onClick=${() => edit(id, it)}>${say("Edit in Lake")}</button>`;
+  if (it.edited) return html`${accept("Accept your version", true)}${fix(false)}`;
+  if (it.status === "needs_you") return html`${fix(true)}${accept("Accept as it is", false)}`;
+  return html`${accept("Accept", true)}
+    <button class="ok-btn" onClick=${() => { reworking.value = { ...reworking.value, [id]: it.id }; }}>${say("Rework…")}</button>
+    ${fix(false)}`;
 }
 
 /** A waiting cart as a card: what it is and where it goes, how it is, its title, its first line or its
  *  picture, where it came from and what its chain cost. */
 function CartCard({ id, it }) {
   const w = it.what;
-  return html`<button class=${cls("loot-card", `loot-card--${w.type}`, { "is-asks": it.status === "needs_you" })} title=${it.title}
+  const c = chosen.value[id];
+  const on = !!c && c.kind === "item" && c.key === it.id;
+  return html`<button class=${cls("loot-card", `loot-card--${w.type}`, { "is-asks": it.status === "needs_you", "is-chosen": on })} title=${it.title}
       onClick=${() => choose(id, "item", it.id)}>
     <span class="loot-card__head"><${Kind} what=${w} />
       <span class=${`loot-card__state ${TONE[it.status] || ""}`}>${MARK[it.status]}${say(WORD[it.status])}${it.edited ? ` · ${say("edited")}` : ""}</span></span>
@@ -205,58 +242,90 @@ function Head({ id, data }) {
         <span><b>${files}</b> ${say(files === 1 ? "file to review" : "files to review")}</span>
         <span><b>${data.passed}</b> ${say("passed")}</span>`}
       <span class="gui-head__spacer"></span>
-      <button class="ok-btn" title=${`${say("Review")}: ${data.review}`} onClick=${() => setRules(true)}>${say("Rules")}</button>
-      ${files > 0 && html`<button class="ok-btn" onClick=${() => act(id, "accept_files").catch(() => {})}>${say("Accept files")}</button>`}
-      ${c.held > 0 && html`<button class="ok-btn primary" onClick=${() => askAcceptAll(id)}>${say("Accept all")} · ${c.held}</button>`}
+      <button class="ok-btn" title=${data.rules.join("\n")} onClick=${() => setRules(true)}>${say("Rules")}</button>
+      ${tabOf(id, data) === "files" ? files > 0 && html`<button class="ok-btn primary" onClick=${() => act(id, "accept_files").catch(() => {})}>${say("Accept files")} · ${files}</button>`
+        : c.held > 0 && html`<button class="ok-btn primary" onClick=${() => askAcceptAll(id)}>${say("Accept all")} · ${c.held}</button>`}
     </div>
     ${asks && html`<div class="loot-ask">
       <span class="loot-ask__who">! ${say("Needs you")}${c.needs_you > 1 ? ` · ${c.needs_you}` : ""}</span>
       <span class="loot-ask__what" title=${asks.why.join(" · ")}>${asks.label}${asks.why[0] ? ` — ${asks.why[0]}` : ""}</span>
       <button class="ok-btn primary" onClick=${() => choose(id, "item", asks.id)}>${say("Look")}</button>
     </div>`}
-    ${rules && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setRules(false)} />`}
+    ${rules && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setRules(false)}>
+      <p class="ok-dialog__section">${say("Now")}</p>
+      <ul class="loot-rules">${data.rules.map((r, i) => html`<li key=${i}>${say(r)}</li>`)}</ul>
+      <p class="ok-dialog__section">${say("Change them")}</p>
+    </${KeeperDialog}>`}
     <${ReworkDialog} id=${id} data=${data} />
     <${DropDialog} id=${id} data=${data} />
   </div>`;
 }
 
-/** The waiting carts as one flow, the one that needs you first; the changed files as rows; what passed and
- *  what was rejected folded to a line each. */
+/** Which tab the list shows: the one picked, else the carts — the changed files when no cart is there. */
+function tabOf(id, data) {
+  const t = tabs.value[id];
+  if (t) return t;
+  return !data.queue.length && !data.stored.length && (data.files.length || data.rejected.length) ? "files" : "carts";
+}
+
+/** The list: the carts (the one that needs you first, what passed folded under them) or the changed files of
+ *  the working tree (what was rejected folded under them), a tab each. */
 function Queue({ id, data }) {
-  const open = data.queue.map((it, i) => ({ it, i }))
-    .sort((a, b) => (ORDER[a.it.status] ?? 1) - (ORDER[b.it.status] ?? 1) || a.i - b.i).map((x) => x.it);
   const empty = !data.queue.length && !data.files.length && !data.rejected.length && !data.stored.length;
   if (empty) return html`<p class="loot-empty">${say("Nothing waits: a road brings carts here, and the files agents change show up too.")}</p>`;
+  const tab = tabOf(id, data);
   const files = data.files.filter((f) => !f.reviewed).length;
+  const waiting = data.queue.filter((x) => x.status !== "rework").length;
+  const pick = (t) => { tabs.value = { ...tabs.value, [id]: t }; };
   return html`<div class="loot-queue">
+    <div class="loot-tabs" role="tablist">
+      <button role="tab" aria-selected=${tab === "carts"} class=${cls("ok-tab", { "is-active": tab === "carts" })} onClick=${() => pick("carts")}>
+        ${say("Carts")}${waiting ? ` · ${waiting}` : ""}</button>
+      <button role="tab" aria-selected=${tab === "files"} class=${cls("ok-tab", { "is-active": tab === "files" })} onClick=${() => pick("files")}>
+        ${say("Changed files")}${files ? ` · ${files}` : ""}</button>
+    </div>
+    ${tab === "carts" ? html`<${Carts} id=${id} data=${data} />` : html`<${Files} id=${id} data=${data} />`}
+  </div>`;
+}
+
+function Carts({ id, data }) {
+  const open = ordered(data.queue);
+  return html`
     ${open.length ? html`<div class="loot-flow">${open.map((it) => html`<${CartCard} key=${it.id} id=${id} it=${it} />`)}</div>`
       : html`<p class="loot-empty">${say("No cart waits.")}</p>`}
-    ${data.files.length > 0 && html`<div>
-      <h3 class="ok-detail__section">${say("Changed files")} · ${files ? `${files} ${say("to review in")} ${data.scope}` : say("all reviewed ✓")}</h3>
-      <ul class="loot-files">${data.files.map((f) => html`<li key=${f.path}>
-        <button class=${cls("loot-file", { "is-done": f.reviewed })} title=${f.path} onClick=${() => choose(id, "file", f.path)}>
-          <span class="loot-file__mark">${f.reviewed ? "✓" : CHANGE[f.change] || "~"}</span><span class="loot-file__path">${f.path}</span></button></li>`)}</ul>
-    </div>`}
     ${data.stored.length > 0 && html`<details class="loot-fold">
       <summary><span class="ok-tone-ok">✓ ${data.passed} ${say("passed")}</span>${data.passed_spent && html`<span>${data.passed_spent}</span>`}
         <span class="loot-fold__last">${say("last:")} ${data.stored[0].title} · ${data.stored[0].at}</span></summary>
       <ul class="loot-files">${data.stored.map((x) => html`<li key=${x.index}>
         <button class="loot-file" title=${x.path} onClick=${() => choose(id, "stored", x.index)}>
           <span class="loot-file__path">${x.title}</span><span class="loot-file__meta">${x.at} · ${x.source}${x.spent && ` · ${x.spent}`}</span></button></li>`)}</ul>
-    </details>`}
+    </details>`}`;
+}
+
+/** The files agents changed in the working tree (or its `path`), not brought by any cart: each accepted or
+ *  rejected (rolled back, kept aside, can be brought back). */
+function Files({ id, data }) {
+  const files = data.files.filter((f) => !f.reviewed).length;
+  const c = chosen.value[id];
+  return html`
+    <p class="loot-scope">${files ? `${files} ${say("to review in")} ${data.scope}` : data.files.length ? say("All reviewed ✓") : `${say("Nothing changed in")} ${data.scope}`}</p>
+    ${data.files.length > 0 && html`<ul class="loot-files">${data.files.map((f) => html`<li key=${f.path}>
+      <button class=${cls("loot-file", { "is-done": f.reviewed, "is-chosen": c && c.kind === "file" && c.key === f.path })} title=${f.path}
+        onClick=${() => choose(id, "file", f.path)}>
+        <span class="loot-file__mark">${f.reviewed ? "✓" : CHANGE[f.change] || "~"}</span><span class="loot-file__path">${f.path}</span></button></li>`)}</ul>`}
     ${data.rejected.length > 0 && html`<details class="loot-fold">
       <summary><span class="ok-tone-error">✗ ${data.rejected.length} ${say("rejected")}</span>
         <span class="loot-fold__last">${say("kept aside, can be brought back")}</span></summary>
       <ul class="loot-files">${data.rejected.map((r) => html`<li key=${r.index}>
         <button class="loot-file" title=${r.path} onClick=${() => choose(id, "rejected", r.index)}>
           <span class="loot-file__mark">✗</span><span class="loot-file__path">${r.path}</span><span class="loot-file__meta">${r.at}</span></button></li>`)}</ul>
-    </details>`}
-  </div>`;
+    </details>`}`;
 }
 
 function Chain({ chain, total }) {
   if (!chain.length) return html`<p class="ok-detail__meta">No ork worked on it.</p>`;
-  return html`<table class="gui-diff">
+  return html`<table class="loot-chain">
+    <thead><tr><th></th><th>${say("Building")}</th><th>${say("Who")}</th><th>${say("Ended")}</th><th>${say("Spent")}</th></tr></thead>
     <tbody>${chain.map((h, i) => html`<tr key=${i}><td>${i + 1}</td><td>${h.building}</td><td>${h.who}</td>
       <td>${h.outcome}</td><td>${h.spent || "—"}</td></tr>`)}</tbody>
   </table>${total && chain.length > 1 && html`<p class="ok-detail__meta">The chain: ${total}</p>`}`;
@@ -272,32 +341,39 @@ function Preview({ id, item, path }) {
   return html`<pre class="gui-pre">${shown.text}</pre>`;
 }
 
-function ItemDetail({ id, it }) {
+/** An open cart: its head and acts, then what it is (the main column), and beside it — under it in the half
+ *  panel — why it waits and the chain it came through. */
+function ItemDetail({ id, it, data }) {
   const [file, setFile] = useState(null);
   useEffect(() => setFile(null), [it.id]);
-  return html`<div class="ok-detail">
-    <div class="ok-detail__head loot-open__title" title=${it.title}>${it.title}</div>
-    <p class=${cls("ok-detail__meta", { "ok-tone-fire": it.status === "needs_you" })}>${WORD[it.status]} · from ${it.source} · ${it.at}${it.spent ? ` · ${it.spent}` : ""}
-      ${it.attempts > 0 ? ` · reworked ${it.attempts}×` : ""}</p>
-    <div class="ok-detail__actions">
-      <${Acts} id=${id} it=${it} />
-      ${it.status !== "rework" && it.kind !== "file" && html`<button class="ok-btn" onClick=${() => edit(id, it)}>${say("Edit in Lake")}</button>`}
-      <span class="gui-head__spacer"></span>
-      ${it.edited && html`<button class="ok-btn" onClick=${() => act(id, "discard_edit", { item: it.id }).catch(() => {})}>Forget your edit</button>`}
-      <button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>
-      <button class="ok-btn danger" onClick=${() => { dropping.value = { ...dropping.value, [id]: it.id }; }}>${say("Drop")}</button>
+  return html`<div class="ok-detail loot-detail">
+    <div class="loot-detail__top">
+      <div class="ok-detail__head loot-open__title" title=${it.title}>${it.title}</div>
+      <p class=${cls("ok-detail__meta", { "ok-tone-fire": it.status === "needs_you" })}>${say(WORD[it.status])} · ${say("from")} ${it.source} · ${it.at}${it.spent ? ` · ${it.spent}` : ""}
+        ${it.attempts > 0 ? ` · ${say("reworked")} ${it.attempts}×` : ""}</p>
+      <div class="ok-detail__actions">
+        <${Acts} id=${id} it=${it} data=${data} />
+        <span class="gui-head__spacer"></span>
+        ${it.edited && html`<button class="ok-btn" onClick=${() => act(id, "discard_edit", { item: it.id }).catch(() => {})}>${say("Forget your edit")}</button>`}
+        ${it.kind !== "file" && html`<button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`}
+        <button class="ok-btn danger" onClick=${() => { dropping.value = { ...dropping.value, [id]: it.id }; }}>${say("Drop")}</button>
+      </div>
+      ${it.edited && html`<p class="ok-detail__meta ok-tone-wait">${say("Edited in Lake: Accept takes your version.")}</p>`}
     </div>
-    ${it.edited && html`<p class="ok-detail__meta ok-tone-wait">Edited in Lake: Accept takes your version.</p>`}
-    <${What} id=${id} it=${it} />
-    <p class="ok-detail__section">Why it waits</p>
-    <ul class="gui-rows">${it.why.map((w, i) => html`<li key=${i} class="ok-font-status">${w}</li>`)}
-      ${it.notes.map((n, i) => html`<li key=${`n${i}`} class="ok-font-status ok-tone-muted">↩ ${n}</li>`)}</ul>
-    <p class="ok-detail__section">The chain it came through</p>
-    <${Chain} chain=${it.chain} total=${it.total} />
-    ${it.branch && html`<p class="ok-detail__section">On ${it.branch.name} · ${it.branch.files.length} files</p>
-      <ul class="ok-files">${it.branch.files.map((g) => html`<li key=${g.path} class=${cls("ok-file gui-tree__item", { "is-selected": file === g.path })}
-        onClick=${() => setFile(g.path)}><span>${CHANGE[g.change] || "~"} ${g.path}</span></li>`)}</ul>
-      ${file && html`<${Preview} id=${id} item=${it.id} path=${file} />`}`}
+    <div class="loot-detail__main">
+      <${What} id=${id} it=${it} />
+      ${it.branch && html`<p class="ok-detail__section">${say("On")} ${it.branch.name} · ${it.branch.files.length} ${say("files")}</p>
+        <ul class="ok-files">${it.branch.files.map((g) => html`<li key=${g.path} class=${cls("ok-file gui-tree__item", { "is-selected": file === g.path })}
+          onClick=${() => setFile(g.path)}><span>${CHANGE[g.change] || "~"} ${g.path}</span></li>`)}</ul>
+        ${file && html`<${Preview} id=${id} item=${it.id} path=${file} />`}`}
+    </div>
+    <div class="loot-detail__side">
+      <p class="ok-detail__section">${say("Why it waits")}</p>
+      <ul class="gui-rows">${it.why.map((w, i) => html`<li key=${i} class="ok-font-status">${w}</li>`)}
+        ${it.notes.map((n, i) => html`<li key=${`n${i}`} class="ok-font-status ok-tone-muted">↩ ${n}</li>`)}</ul>
+      <p class="ok-detail__section">${say("The chain it came through")}</p>
+      <${Chain} chain=${it.chain} total=${it.total} />
+    </div>
   </div>`;
 }
 
@@ -325,29 +401,36 @@ function Open({ id, data }) {
   const esc = (e) => {                     // a dialog over it (Rework, Drop) takes Escape first
     if (e.key === "Escape" && !document.querySelector(".gui-modal")) { e.stopPropagation(); back(); }
   };
+  const c = chosen.value[id];
+  const toFiles = c && (c.kind === "file" || c.kind === "rejected");
   return html`<div class="loot-open" onKeyDown=${esc}>
-    <button class="ok-btn loot-open__back" onClick=${back}>← ${say("All carts")} · ${data.queue.length}</button>
+    <button class="ok-btn loot-open__back" onClick=${back}>← ${say(toFiles ? "Changed files" : "All carts")}</button>
     ${body}
   </div>`;
 }
 
+/** The list and, over it, what was opened; in the whole town's width (a full panel) the two side by side. */
 function QueuePane({ id, data }) {
-  return Open({ id, data }) || html`<${Queue} id=${id} data=${data} />`;
+  const open = Open({ id, data });
+  return html`<div class=${cls("loot-split", { "has-open": !!open })}>
+    <div class="loot-split__list"><${Queue} id=${id} data=${data} /></div>
+    <div class="loot-split__open">${open || html`<p class="loot-empty">${say("Choose a cart or a file on the left.")}</p>`}</div>
+  </div>`;
 }
 
 function Cart({ id, data }) {
   const c = chosen.value[id];
   if (c && c.kind === "item") {
     const it = data.queue.find((x) => x.id === c.key);
-    if (it) return html`<${ItemDetail} id=${id} it=${it} />`;
+    if (it) return html`<${ItemDetail} id=${id} it=${it} data=${data} />`;
   }
   if (c && c.kind === "file" && data.files.some((f) => f.path === c.key)) {
     const f = data.files.find((x) => x.path === c.key);
     return html`<div class="ok-detail">
       <div class="ok-detail__head loot-open__title" title=${f.path}>${f.path}</div>
       <div class="ok-detail__actions">
-        ${!f.reviewed && html`<button class="ok-btn primary" onClick=${() => act(id, "file_accept", { path: f.path }).catch(() => {})}>Accept</button>`}
-        <button class="ok-btn" onClick=${() => act(id, "file_reject", { path: f.path }).catch(() => {})}>Reject</button>
+        ${!f.reviewed && html`<button class="ok-btn primary" onClick=${() => act(id, "file_accept", { path: f.path }).then(() => advanceFile(id, data, f.path), () => {})}>${say("Accept")}</button>`}
+        <button class="ok-btn" onClick=${() => act(id, "file_reject", { path: f.path }).then(() => advanceFile(id, data, f.path), () => {})}>${say("Reject")}</button>
         ${f.change !== "D" && html`<button class="ok-btn" onClick=${() => openInLake({ path: f.path, title: f.path, from: id })}>${say("Open in Lake")}</button>`}
       </div>
       <${Preview} id=${id} path=${f.path} />

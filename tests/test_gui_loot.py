@@ -40,6 +40,7 @@ def test_the_card_counts_what_waits_and_what_it_cost(loot):
     assert card()["to_review"] == 2 and card()["cost"] == "8.0k tok $0.15"
     d = host.detail(bid)["data"]
     assert d["counts"]["held"] == 2 and d["waiting_cost"] == "8.0k tok $0.15"
+    assert d["rules"][1] == "Every cart waits for you."                    # the fixture's review: always
     it = d["queue"][0]
     assert it["label"] == "Doc A" and it["spent"] == "4.0k tok $0.05" and it["why"]
     assert [h["building"] for h in it["chain"]] == ["pit", "camp"] and it["chain"][1]["spent"] == "4.0k tok $0.05"
