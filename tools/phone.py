@@ -8,6 +8,9 @@ what a phone may send can be tried from another machine on the same Wi-Fi (or th
     python tools/phone.py answer <id> <key>  # answer a question (one of its own answers only)
     python tools/phone.py follow <id>        # send the Elders' advice as your answer
     python tools/phone.py halt               # stop all (asks first)
+    python tools/phone.py ask 'What should I build next?'   # ask the Warchief; `chat` reads his answer
+    python tools/phone.py drop 'https://example.com/spec'   # drop a text or a link into The Pit (once, by its id)
+    python tools/phone.py watch              # the news as it comes, as the app's local notifications would
     python tools/phone.py send <command> '<json args>'   # anything else: the listener refuses what a phone may not
 
 Settings → Phones → Pair a phone shows the QR code; its text is the link `pair` takes (any QR reader
@@ -31,6 +34,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from websockets.asyncio.client import connect
+from websockets.exceptions import InvalidStatus
 
 API = 1
 
@@ -106,6 +110,20 @@ async def session(args, name: str, cmd_args: dict) -> None:
         if name == "glance":
             show(state)
             return
+        if name == "watch":
+            print("Watching: Ctrl+C stops.")
+            async for raw in ws:
+                msg = json.loads(raw)
+                if msg.get("t") == "news":
+                    for item in msg["news"]:
+                        print(f"  ! {item['line']}")
+            return
+        if name == "act" and cmd_args.get("act") in ("drop", "ask"):
+            hall = cmd_args["act"] == "ask"
+            match = [b["id"] for b in state["buildings"] if b["type"] == ("town_hall" if hall else "pit")]
+            if not match:
+                sys.exit("This town has no building that takes it")
+            cmd_args["id"] = match[0]
         await ws.send(json.dumps({"t": "cmd", "id": 1, "name": name, "args": cmd_args}))
         while True:
             msg = json.loads(await ws.recv())
@@ -144,6 +162,12 @@ def main() -> None:
     f = sub.add_parser("follow")
     f.add_argument("id")
     sub.add_parser("halt")
+    sub.add_parser("chat")
+    sub.add_parser("watch")
+    q = sub.add_parser("ask")
+    q.add_argument("text")
+    d = sub.add_parser("drop")
+    d.add_argument("text")
     s = sub.add_parser("send")
     s.add_argument("command")
     s.add_argument("json", nargs="?", default="{}")
@@ -159,9 +183,23 @@ def main() -> None:
     elif args.what == "halt":
         if input("Stop every ork in the town? [y/N] ").strip().lower() == "y":
             asyncio.run(session(args, "halt", {}))
+    elif args.what == "chat":
+        asyncio.run(session(args, "mobile.chat", {"limit": 6}))
+    elif args.what == "watch":
+        asyncio.run(session(args, "watch", {}))
+    elif args.what == "ask":
+        asyncio.run(session(args, "act", {"act": "ask", "args": {"text": args.text}}))
+    elif args.what == "drop":
+        cid = hashlib.sha256(args.text.encode()).hexdigest()[:16]     # the same text again within an hour drops once
+        asyncio.run(session(args, "act", {"act": "drop", "args": {"text": args.text, "client_id": cid}}))
     else:
         asyncio.run(session(args, args.command, json.loads(args.json)))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except OSError as e:
+        sys.exit(f"Cannot reach the town ({e.strerror or e}): is `orkcraft gui` running, and this phone still paired?")
+    except InvalidStatus as e:
+        sys.exit(f"The town refused this phone ({e.response.status_code}): pair it again")
