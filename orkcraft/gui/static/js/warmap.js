@@ -12,7 +12,7 @@ import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
 
 const N = 40, T = 4;                       // 40 × 40 cells of 4 px: a 160 px square
-const FOG_ROWS = 4, CLOSED_MIN = 6, OPEN_MIN = 11;   // a closed land at least 24 px: its name never touches a border
+const FOG_ROWS = 4, CLOSED_MIN = 7, OPEN_MIN = 12;   // a closed land at least 28 px: its name never touches a border
 const FOG = "#221e16";
 const CALL_EVERY_MS = 30_000;              // a land calls at most this often
 
@@ -55,7 +55,7 @@ function layout(lands, open) {
   for (const o of lands) tops.push(tops[tops.length - 1] + (o.id === open ? openH : closed));
   const ids = lands.map((o) => o.id).concat(["fog"]);
   // A border wanders only right of the words of the two lands it parts, so no name or status line meets it.
-  const words = lands.map((o) => textWidth(o, o.id === open)).concat([textWidth({ name: "+ Workspace" }, false)]);
+  const words = lands.map((o) => textWidth(o, o.id === open)).concat([textWidth({ name: "Add orkspace +" }, false)]);
   const border = ids.map((id, k) => {
     if (k === 0) return null;
     const clear = Math.ceil(Math.max(words[k - 1], words[k]) / T) + 2;
@@ -103,6 +103,48 @@ function NameField({ top, value = "", onDone, onName }) {
     aria-label=${say("Orkspace name")} placeholder=${say("Orkspace name")}
     onInput=${(e) => setName(e.target.value)} onBlur=${onDone}
     onKeyDown=${(e) => { e.stopPropagation(); if (e.key === "Enter") done(); else if (e.key === "Escape") onDone(); }} />`;
+}
+
+/** The biome a new land takes unless another is picked: the first nobody has, else any but the last's
+ *  (realm/biomes.py `for_new`). */
+function suggested(lands) {
+  const taken = lands.map((o) => o.biome);
+  const free = BIOME_ORDER.find((b) => !taken.includes(b));
+  if (free) return free;
+  const others = BIOME_ORDER.filter((b) => b !== taken[taken.length - 1]);
+  return others[taken.length % others.length];
+}
+
+/** A new land from the fog: its name, and its ground picked from a row of swatches (the biome it suggests
+ *  lit). ← / → walk the swatches without leaving the name; Enter raises it, Esc lets it go. */
+function NewLand({ lands, bottom, onDone }) {
+  const [name, setName] = useState("");
+  const [biome, setBiome] = useState(() => suggested(lands));
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.focus(); }, []);
+  const make = () => {
+    if (name.trim()) command("orkspace.new", { name: name.trim(), biome }).catch(() => {});
+    onDone();
+  };
+  const step = (d) => setBiome(BIOME_ORDER[(BIOME_ORDER.indexOf(biome) + d + BIOME_ORDER.length) % BIOME_ORDER.length]);
+  return html`<div class="gui-map__new" style=${`bottom:${bottom}px`}
+      onMouseDown=${(e) => { if (e.target !== ref.current) e.preventDefault(); }}>
+    <input ref=${ref} class="ok-input gui-map__field" value=${name} aria-label=${say("Orkspace name")}
+      placeholder=${say("Orkspace name")} onInput=${(e) => setName(e.target.value)} onBlur=${onDone}
+      onKeyDown=${(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") make();
+        else if (e.key === "Escape") onDone();
+        else if (e.key === "ArrowLeft" && !name) { e.preventDefault(); step(-1); }
+        else if (e.key === "ArrowRight" && !name) { e.preventDefault(); step(1); }
+      }} />
+    <div class="gui-map__biomes" role="radiogroup" aria-label=${say("Biome")}>
+      ${BIOME_ORDER.map((b) => html`<button key=${b} role="radio" aria-checked=${b === biome} title=${say(`Biome: ${b}`)}
+          class=${cls("gui-map__biome", { "is-on": b === biome })} style=${`--fill:${BIOMES[b].land};--ground:${BIOMES[b].ground}`}
+          tabindex="-1" onClick=${() => { setBiome(b); if (ref.current) ref.current.focus(); }}></button>`)}
+      <span class="gui-map__biome-name">${say(biome)}</span>
+    </div>
+  </div>`;
 }
 
 export function WarMap() {
@@ -214,8 +256,7 @@ export function WarMap() {
             onClick=${() => setNaming("new")}>
           <span class="gui-map__name" style=${`top:${fogMid}px`}>${say("Add orkspace")} +</span>
         </button>
-        ${naming === "new" && html`<${NameField} top=${fogMid - 4} onDone=${() => setNaming(null)}
-          onName=${(name) => command("orkspace.new", { name }).catch(() => {})} />`}
+        ${naming === "new" && html`<${NewLand} lands=${lands} bottom=${2} onDone=${() => setNaming(null)} />`}
         ${naming && naming !== "new" && (() => {
           const i = lands.findIndex((o) => o.id === naming);
           if (i < 0) return null;

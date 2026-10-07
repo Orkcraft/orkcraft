@@ -1,7 +1,7 @@
 """Widgets that speak the office's words, without emoji, in the office mode (`realm/modes.py`,
 `realm/lexicon.py`).
 
-    OfficeStatic       a Static: in the office its content in office words (War Map → Workspaces), no emoji
+    OfficeStatic       a Static: in the office its content in office words (Garrison → Agents), no emoji
     OfficeOptionList   an OptionList whose options do the same as they are added
     OfficeFooter       the key footer: `📯 War Horn` → `Stop all`, `🔥 Orders` → `Answers`
 

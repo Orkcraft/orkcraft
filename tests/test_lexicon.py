@@ -40,8 +40,8 @@ def test_the_office_says_the_interface_in_its_words():
     assert say("3 orks in the Barracks") == "3 agents in the Agent pool"
     assert say("Orks wait on the road") == "Agents wait on the link"
     assert say("🧌 GARRISON") == "🧌 AGENTS"
-    assert say("No buildings in this orkspace yet.") == "No blocks in this workspace yet."
-    assert say("New in an orkspace") == "New in a workspace"
+    assert say("No buildings in this orkspace yet.") == "No blocks in this orkspace yet."   # the brand's word stays
+    assert say("New in an orkspace") == "New in an orkspace"
     assert say("Audit the camp") == "Audit the project"
     assert say("Standing orders & trigger") == "Instructions & trigger"
 

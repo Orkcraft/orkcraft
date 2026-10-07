@@ -234,6 +234,24 @@ def test_a_huts_banner_follows_its_goal_from_the_start(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_a_new_orkspace_from_the_fog_takes_the_biome_picked(page):
+    """docs/design/war-map.md §2.4: the fog's field names the land and its swatches pick its ground."""
+    pg = page
+    pg.locator(".gui-map__fog").focus()
+    pg.keyboard.press("Enter")
+    pg.locator(".gui-map__new").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator('.gui-map__biome[title$="meadow"]').click()
+    assert pg.locator(".gui-map__biome.is-on").get_attribute("title").endswith("meadow")
+    pg.keyboard.type("Tournament")
+    pg.keyboard.press("Enter")
+    pg.locator(".gui-map__land.is-open", has_text="Tournament").wait_for(state="visible", timeout=WAIT_MS)
+    lands = pg.evaluate("() => import('/static/js/link.js').then(({ town }) => town.value.orkspaces)")
+    made = next(o for o in lands if o["name"] == "Tournament")
+    assert made["biome"] == "meadow"
+    assert pg.locator(".gui-map__title").inner_text().strip().lower() == "war map"   # the brand's words stay
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
+
+
 def test_the_lake_window_shows_text_markdown_and_code(page):
     pg = page
     pg.evaluate("""async () => {

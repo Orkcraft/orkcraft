@@ -331,7 +331,7 @@ New pairs in `realm/lexicon.py` `TERMS` (Camp word in code, Office word shown wi
 | `renown` | Renown | Maturity |
 | `banner` | banner | goal mark |
 | `deed` | deed | milestone |
-| `fog_of_war` | fog of war | new workspace |
+| `fog_of_war` | fog of war | new orkspace |
 | `growth.next` | Next | To reach the next level |
 
 Mascot names and the Warchief's address are Camp words only.

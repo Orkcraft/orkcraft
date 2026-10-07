@@ -23,12 +23,17 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 
 - **A 160 px square** (40 × 40 cells of 4 px), not 240: at 240 it took too much of the town and its
   edges looked rough. Borders wander in runs of 4–6 columns, the coast 0–2 cells. A closed land is at
-  least 24 px tall, and a border stays flat under the words of the two lands it parts, so no name or
-  status line touches it. Up to six lands fit (the map grows to 184 px for the sixth); seven and eight
-  scroll.
+  least 28 px tall (the open one 48 px), and a border stays flat under the words of the two lands it
+  parts, so no name or status line touches it. Up to six lands fit (the map grows to 212 px for them);
+  seven and eight scroll.
+- **A new land picks its ground.** The fog's field takes its name and, under it, a row of the seven
+  biomes' swatches, the suggested one lit (the first nobody has); a click or ← / → (before typing)
+  picks another, Enter raises it (`orkspace.new` takes `biome`).
+- **The brand's words in both modes:** *orkspace* and *War Map* are no longer *workspace* and
+  *Workspaces* in Office words.
 - **Terraces, not a coast.** Each land is a step (8 px) shorter than the one above it, the fog of war
   filling the wedge at the right: the ragged coast read as untidy.
-- **A title and a foot.** "War Map" heads the frame (Office: *Workspaces*), "Add orkspace +" is the
+- **A title and a foot.** "War Map" heads the frame, "Add orkspace +" is the
   fog's label; the title and the lands' names are in Pixelify Sans (OFL, `design-system/fonts/`, with
   Cyrillic for names people give in Russian).
 - **Names are white** (the ink) on every land, the open one too: a dark or gold name does not read on
@@ -55,7 +60,7 @@ Two changes, one idea:
   game keeps its minimap. Each land is coloured by its biome, so their edges need no help.
 
 The GUI has one look (gui-design-system.md); all of this is drawn in it. With Office words the same
-art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Workspaces*: `lexicon.TERMS`).
+art stays and the words change by `lexicon.TERMS` (*orkspace* and *War Map* are the brand's words and stay in both).
 
 ## 2. The War Map
 
