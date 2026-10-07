@@ -42,7 +42,7 @@ from typing import Callable
 from orkcraft import scroll as ts
 from orkcraft.realm import roads, tiers
 
-DEFAULT_MEMBERS = ("Product manager:claude", "Architect:claude")
+DEFAULT_MEMBERS = ("Product manager:main", "Architect:main")
 DEFAULT_CYCLES = 3
 DEFAULT_BUDGET = 2.0
 INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read our files)
