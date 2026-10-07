@@ -1,6 +1,7 @@
 """The town's own settings in the GUI, from the HUD's menu (js/settings.js): how freely the orks decide
 (autonomy.py — the level a building without its own follows) and its two waits on the clock, minutes a
-question waits and hours you are around a change waits. As the TUI's F10 → Ork autonomy. And whether
+question waits and hours you are around a change waits. As the TUI's F10 → Ork autonomy. Whether flames
+climb the roof of a building whose ork waits for you (`fire`, per machine). And whether
 anonymous usage stats are shared (core/usage.py), asked once by its own small dialog.
 
     host.commands.update(town_settings.commands(host))
@@ -19,7 +20,7 @@ def read(host) -> dict[str, Any]:
             "waits": list(autonomy.QUESTION_WAITS), "rebuilds": list(autonomy.REBUILD_WAITS),
             "levels": [{"id": autonomy.word(lv.n), "icon": lv.icon, "title": lv.title, "questions": lv.questions,
                         "improves": lv.improves} for lv in autonomy.LEVELS],
-            "usage": m.usage, "usage_blocked": usage.blocked()}
+            "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -32,6 +33,11 @@ def change(host, args: dict) -> dict[str, Any]:
         m.autonomy_wait = autonomy.wait_of(args.get("wait"))
     if args.get("rebuild") is not None:
         m.rebuild_wait = autonomy.rebuild_of(args.get("rebuild"))
+    if isinstance(args.get("fire"), bool):            # the flames over a building that waits: a look, said apart
+        m.fire = args["fire"]
+        settings.save(m)
+        host.on_change()
+        return read(host)
     settings.save(m)
     lv = autonomy.LEVELS[m.autonomy]
     host.town.toast(f"a question waits {m.autonomy_wait} min, a change {m.rebuild_wait} h you are around"

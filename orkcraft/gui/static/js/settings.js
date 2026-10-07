@@ -3,8 +3,8 @@
 // — and, on the clock, how long a question and a change wait for you. The host's town.settings
 // (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Its head is you: your mascot at its stage, what
 // the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
-// it, the camp's rules, and whether anonymous usage stats are shared (core/usage.py), which a small
-// dialog of its own asks once.
+// it, the camp's rules, whether flames climb the roof of a building that waits for you, and whether
+// anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -86,6 +86,9 @@ export function SettingsDialog() {
           items=${s.waits.map((v) => [v, `${v} min`])} onPick=${(v) => set({ wait: v })} />
         <${Steps} label=${say("A change waits the hours you are around")} value=${s.rebuild}
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
+      <${Steps} label=${say("Fire on the roofs")} value=${s.fire !== false}
+        items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ fire: v })} />
+      <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
     </div>
   </${Dialog}>`;
