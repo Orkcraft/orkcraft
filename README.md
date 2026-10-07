@@ -1,6 +1,9 @@
 <p align="center">
-  <img src="design-system/logo/ork-mark-256.png" alt="" width="128"><br>
-  <img src="docs/img/logo.png" alt="Orkcraft" width="360">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design-system/logo/orkcraft-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="design-system/logo/orkcraft-light.svg">
+    <img src="design-system/logo/orkcraft-dark.svg" alt="Orkcraft" width="415">
+  </picture>
 </p>
 
 # Orkcraft
