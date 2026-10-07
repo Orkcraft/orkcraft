@@ -7,7 +7,7 @@ from pathlib import Path
 
 from orkcraft import scroll as ts
 from orkcraft import settings
-from orkcraft.realm import biomes, evolution, feedback, growth
+from orkcraft.realm import biomes, evolution, feedback, growth, intents
 from orkcraft.scroll import BuildingSpec, Orkspace, TownScroll
 
 NOW = dt.datetime(2026, 10, 6, 12, 0)
@@ -192,3 +192,15 @@ def test_each_kin_has_a_home_and_a_new_camp_opens_on_it():
     taken = TownScroll("a", [Orkspace("a", "A", "forest"), Orkspace("b", "B", "ice")], [])
     biomes.settle(taken, home="ice")                                   # the home already chosen elsewhere
     assert [o.biome for o in taken.orkspaces] == ["dirt", "ice"]
+
+
+def test_every_role_has_its_own_mascot_at_every_stage():
+    """docs/design/growth.md §7.2: a head per onboarding role, four stages each, no two alike."""
+    sprites = Path(__file__).resolve().parent.parent / "design-system" / "sprites" / "mascots"
+    seen = set()
+    for role in intents.ROLES:
+        for stage in (1, 2, 3, 4):
+            png = sprites / f"{role.id}-{stage}.png"
+            assert png.is_file() and (sprites / f"{role.id}-{stage}@2x.png").is_file(), png.name
+            seen.add(png.read_bytes())
+    assert len(seen) == 4 * len(intents.ROLES)

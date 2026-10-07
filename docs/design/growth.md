@@ -219,18 +219,32 @@ The mascot is **the operator**. The onboarding already gives one per role (onboa
 The Jira Lich, Gradient-Sick Elf, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight, Wandering Skeleton). Today it is
 only a name. It gets a face, and the face grows.
 
-### 7.2 Drawn like the ork
+### 7.2 Drawn like the landing's classes
 
-A head on the ork mark's grid (`tools/logo.py`: 12×8, flat, no outline, the same palette), one per
-kin: ork, undead, elf, gnome, goblin, knight, skeleton. Stages **add** to the head and never redraw
-it, the way the ork's states do (sleep mark, sweat, flame):
+A head on the 12 × 11 grid of orkcraft.dev's class sprites (flat, no outline, the camp's palette), one
+per **role**, so two roles of one kin never look alike (`tools/growth_sprites.py` `ROLES`). Each stage
+adds its own headgear or prop, so every stage reads as a step up:
 
-| Stage | Reached when (starting values) | Its mark on the head |
-|---|---|---|
-| 1 | the first town is raised | — |
-| 2 | 3+ buildings rated in one week | a band |
-| 3 | a building reaches level II | horns |
-| 4 | three buildings at III, one of them on the clock or unchained | gold eyes and a gem |
+| Role | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| Software engineer (ork) | a bare head | sweat and tired eyes | a red bandana, war paint | a horned iron helm, gold eyes |
+| QA engineer (ork) | a beetle on the head | a magnifier on the eye | goggles up, the beetle caught | a gold beetle-shell helm |
+| Engineering manager (lich) | a sticky note | a red bow tie | a headset | a high plum collar, gold tie and eyes |
+| Product manager (wraith) | a pale hood | a rolled roadmap | a map pin over the hood | a gold-hemmed hood, the roadmap unrolled |
+| Product designer (elf) | a sprout in blonde hair | the gradient rainbow | a ranger's green hood, a pencil | long hair, gold pins and eyes, swatches |
+| Game designer (elf) | auburn hair | a quill | a plum beret | long hair, gold eyes, a d20 |
+| ASO manager (gnome) | a red cap | a keyword tag | brass goggles | a gold band under five rating stars |
+| Marketing (gnome) | a blue cap | its gold star | a megaphone | a gold band, the green arrow of growth |
+| Data analyst (goblin) | a green visor | a miner's lamp | a pickaxe | a top hat, a monocle, a gold tooth |
+| Founder (knight) | a squire's leather coif | a steel helm, a pink plume | a sprout and a gold trim | a white-and-gold helm, a glowing visor |
+| Someone else (skeleton) | a bare skull | a straw hat | a captain's hat, an eye patch | a crest of open tabs, gold eyes |
+
+| Stage | Reached when (starting values) |
+|---|---|
+| 1 | the first town is raised |
+| 2 | 3+ buildings rated in one week |
+| 3 | a building reaches level II |
+| 4 | three buildings at III, one of them on the clock or unchained |
 
 The names (`realm/growth.py` `STAGE_NAMES`): a fantasy rank with the job in it. Stage 2 is the role's own
 nick from the onboarding, the others are the kin's.
@@ -245,11 +259,10 @@ nick from the onboarding, the others are the kin's.
 | knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
 | skeletons (everyone else) | Inbox Skeleton | Wandering Skeleton | Captain of the Skeleton Crew | Lord of a Thousand Tabs |
 
-- **The top stage is never a crown.** The crown is the Warchief's (§8). Each kin has its own top
-  mark: glowing eyes and a staff for the lich, a horned war helm for the ork, and so on.
+- **The top stage is never a crown.** The crown is the Warchief's (§8). Each role has its own top
+  mark: a horned war helm for the engineer, rating stars for the ASO gnome, and so on.
 - **The names** keep the onboarding's humour (Jira Lich, Release Night King).
-- **Art cost:** 7 heads + about 3 stage marks per kin, all from code grids. Start with two kins
-  (undead and orks) and 3 stages. The others show a shared stage mark until drawn.
+- **Art cost:** 8 base heads and 44 overlays (11 roles × 4 stages), all from code grids.
 
 ### 7.3 Where it lives: the head of Settings
 

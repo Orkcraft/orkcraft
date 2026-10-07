@@ -76,14 +76,15 @@ class Growth:
     # -- what the page sees -----------------------------------------------------------------------------
 
     def you(self) -> dict[str, Any]:
-        """The operator's mascot (its kin and stage, from the onboarding's role) and their deeds."""
+        """The operator's mascot (its kin, sprite and stage, from the onboarding's role) and their deeds."""
         machine = self.host.town.machine
         profile = machine.profile or {}
         grown = machine.growth or {}
         stage = int(grown.get("stage") or 1)
         done = grown.get("deeds") or {}
         role = intents.role(str(profile.get("role") or ""))
-        return {"kin": growth.kin_of(profile), "home": biomes.home_of(profile), "stage": stage, "name": growth.stage_name(profile, stage),
+        return {"kin": growth.kin_of(profile), "sprite": role.id, "home": biomes.home_of(profile), "stage": stage,
+                "name": growth.stage_name(profile, stage),
                 "role": role.title, "next": growth.STAGE_NEXT.get(stage, ""),
                 "deeds": [{"id": d.id, "icon": d.icon, "title": d.title, "hint": d.hint, "done": done.get(d.id, "")}
                           for d in growth.DEEDS]}
