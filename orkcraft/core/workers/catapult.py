@@ -8,6 +8,9 @@ waits for the person's yes (`asking`: the faces show the question, `answer` take
 it waits at the front of the queue and holds it (`held`) until Resume or Drop.
 `catapult.sent` carries the answer, `catapult.failed` the reason. The sandbox never sends.
 
+In `mode: mcp` a shot goes to an MCP server: a learned direct path, a local server, or the AI tool
+that has the server (core/workers/catapult_mcp.py).
+
 The overseer (the building's ork) scouts the forms, maps fields with a model and repairs a script
 the site broke; a site that wants a login holds the queue (`login_needed`) until `login()`.
 🛑 Stop all kills the browser and pauses the queue until Resume (or the next Fire).
@@ -25,6 +28,7 @@ from typing import Callable
 
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.catapult_mcp import McpShots
 from orkcraft.realm import catapult as cp, catapult_web as cw, halt, roads
 
 GLOBE = "🌐"
@@ -35,7 +39,7 @@ def _now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
-class CatapultWorker(Worker):
+class CatapultWorker(McpShots, Worker):
     TYPE = "catapult"
     opener = None                      # tests put a fake network here
     repair_runner = None               # … a fake overseer for repairs
@@ -51,6 +55,7 @@ class CatapultWorker(Worker):
         self.login_needed = ""         # why the site wants a login again (the hut burns)
         self.paused = False            # 🛑 Stop all: the queue waits for Resume
         self.held = False              # the first queued shot was put off: the queue waits for Resume or Drop
+        self.waiting = ""              # mode mcp: why the queue waits (no carrier, no budget) until Resume
         self.failed: dict | None = None
         self.proc = None               # the running fill.py
         self.asking: dict | None = None        # a shot waiting for the person's yes: {title, text}
@@ -169,9 +174,13 @@ class CatapultWorker(Worker):
 
     def resume(self) -> bool:
         """The queue goes on after 🛑 Stop all or a shot put off; nothing loaded is fired."""
-        if not (self.paused or self.held):
+        mcp_login = self.mcp_mode and self.login_needed      # a refused token: fixed outside, then Resume
+        if not (self.paused or self.held or self.waiting or mcp_login):
             return False
         self.paused = self.held = False
+        self.waiting = ""
+        if mcp_login:
+            self.login_needed = ""
         self.pump()
         return True
 
@@ -215,7 +224,7 @@ class CatapultWorker(Worker):
     def pump(self) -> None:
         """Fire the next queued shot, unless one is flying, the ork is busy, the site wants a login,
         🛑 Stop all paused the queue or a shot was put off."""
-        if self.firing or self.busy or self.login_needed or self.paused or self.held:
+        if self.firing or self.busy or self.login_needed or self.paused or self.held or self.waiting:
             self.changed()
             return
         item = self.queue.pop()
@@ -238,11 +247,14 @@ class CatapultWorker(Worker):
         queue goes on (as Resume). 🧪 (`dry`): show it, take nothing."""
         if dry:
             body = self.loaded_body()
+            if body is None and self.mcp_mode:
+                body = self.sample().get("cart")                # the cart the path was learned on
             if body is None:
                 self.toast("nothing is loaded yet", title="🎯 Catapult")
                 return False
             return self._dry(body)
         self.paused = self.held = False
+        self.waiting = ""
         body = self.load.take(self.wait_for, force=True)
         if body is not None:
             self.queue.push(body)
@@ -265,6 +277,8 @@ class CatapultWorker(Worker):
             return self._problem(body, str(self.config.get("url", "")), "; ".join(problems))
         if self.browser:
             return self._shoot_forms(body, start)
+        if self.mcp_mode:
+            return self._shoot_mcp(body, start)
         url = str(self.config.get("url") or "")
         if self.simulated or not url:
             self._done(cp.dry_run(url or "(no url set)", str(self.config.get("method") or "POST"), body))
@@ -300,6 +314,12 @@ class CatapultWorker(Worker):
                 p = self.form_plan(form, body)
                 parts.append(f"[{form.name}] " + (cw.describe(p, body) if p else "not scouted yet — Scout finds it"))
             self._done(cp.dry_run_form(", ".join(f.name for f in self.forms) or "(no forms)", "\n\n".join(parts), body))
+            return True
+        if self.mcp_mode:
+            where, what = self.dry_text(body)
+            shot = cp.Shot(_now(), not what.startswith("✗"), 0, where, json.dumps(body, ensure_ascii=False, indent=2)[:2000],
+                           what[:cp.ANSWER_KEEP], what[2:200] if what.startswith("✗") else "", dry=True, track="dry")
+            self._done(shot)
             return True
         url = str(self.config.get("url") or "")
         self._done(cp.dry_run(url or "(no url set)", str(self.config.get("method") or "POST"), body))
@@ -738,11 +758,13 @@ class CatapultWorker(Worker):
         if self.busy:
             bits.append(self.busy)
         if self.login_needed:
-            bits.append(f"🔥 log in again — {self.login_needed}")
+            bits.append(f"🔥 {self.login_needed}" if self.mcp_mode else f"🔥 log in again — {self.login_needed}")
         if self.paused:
             bits.append("stopped by Stop all — Resume goes on")
         if self.held:
             bits.append("a shot put off waits — Resume asks again, Drop lets it go")
+        if self.waiting:
+            bits.append(f"waits: {self.waiting} — Resume tries again")
         queued = len(self.queue)
         if queued:
             bits.append(f"{queued} queued")

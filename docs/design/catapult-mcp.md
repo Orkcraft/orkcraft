@@ -1,6 +1,6 @@
 # The Catapult through MCP: a shot carried by a tool, then a path of its own
 
-*Status: design, not built.* The 🎯 Catapult sends out over HTTP with a token, or fills a site's forms
+*Status: built (phases 1–3); carriers beyond Claude Code wait for each tool's check (phase 4).* The 🎯 Catapult sends out over HTTP with a token, or fills a site's forms
 in a browser. People already have **Slack, Jira, Confluence, email, Notion and Discord** connected in
 their AI tools as MCP servers or claude.ai connectors. This design lets a Catapult send through them —
 and, after a shot went out that way, lets its ork (the Loader) build a **deterministic path** so the
@@ -43,9 +43,9 @@ per shot`.
 **Who carries is chosen by the server, not by the ork.** The Loader keeps thinking on its tool; a
 shot is carried by a tool that has the server.
 
-- `realm/mcp.py` keeps what it found as it is (server → tools) in the machine settings, not only the
-  ids: `MachineSettings.mcp = {"slack": ["codex"], "atlassian": ["claude", "agy"]}`, refreshed when
-  Settings → AI tools opens and when a Catapult in `mode: mcp` starts.
+- `realm/mcp.py` `found()` says which tools have which server (server → tools); the Catapult reads it
+  fresh for every carried shot and every look at its window, so a server connected a minute ago counts
+  (the onboarding's saved ids are not used: they lost the tools).
 - `via` (optional) picks the carrier; else the first tool that has the server **and is on**, the
   cheaper by billing first (`ToolChoice.billing`). A server whose only tool is off: the card says so
   — `slack is connected in Codex — Codex is off` — and the shot waits like a login (🔥), it is not
@@ -130,7 +130,8 @@ request), so a seventh service is one file.
 - `mode: mcp` starts with `confirm` on; the first shot of every new track or carrier asks even when
   you turned it off. The 🔍 Audit flags a Catapult in `mode: mcp` that carries with confirm off.
 - A carrier is allowed one tool and gets no shell, no edits, no web; the run's stream is the proof
-  (§3), not its words.
+  (§3), not its words. A learning shot (no `tool` yet) is allowed the whole server, so it always asks
+  and shows the cart first; set `tool` to hold even the first shot to one tool.
 - Carried shots spend: the light model, one call, in the ledger and under the 🪙 budget; past the
   budget a carried shot waits, an API or local shot does not.
 - The sandbox never sends: every track is a dry run there.
@@ -139,9 +140,10 @@ request), so a seventh service is one file.
 
 ## 7. The building
 
-- Config: `mode: mcp`, `to` (a server id), `tool` (optional: the Loader picks it from the server's
-  tools and asks once), `via` (optional carrier), `args` (like `fields`: `channel = "C0123"`,
-  `text = notes`), `route_token_env` / the auth of a learned route.
+- Config: `mode: mcp`, `to` (a server id), `tool` (optional: the first shot lets the carrier pick it
+  and the Loader learns it), `via` (optional carrier), `args` (like `fields`: `channel = "C0123"`,
+  `text = notes`), `goal` (what a first shot is for), `local` (start a local server itself). A learned
+  route's auth is the recipe's: its env var names show in the window (`✗ $SLACK_BOT_TOKEN`).
 - Card: `slack · post_message`, under it the track (`via Codex — a model call per shot` in the wait
   tone until a path is learned, then `Slack API`), the last shot.
 - Window, head: the track with what it costs (`a model call per shot` / `no model`); a strip when a
@@ -149,6 +151,11 @@ request), so a seventh service is one file.
 - New events: none — `catapult.sent` / `failed` / `repaired` say it, with the track in the title.
 
 ## 8. Phases
+
+Where each lives: `realm/catapult_mcp/` (templates, carrier, local, routes, recipes),
+`realm/harnesses.py` (`call`, `carries`), `realm/mcp.py` (`launch`), `core/workers/catapult_mcp.py`
+(the worker's part), `gui/views/catapult.py` and `js/buildings/catapult.js` (the Path pane).
+
 
 1. **Carrier**: server → tools kept, `harnesses.call` with an allow-list for Claude Code, the stream
    check, `mode: mcp` with `to` / `tool` / `args`, the card and the window. Slack and Jira first.

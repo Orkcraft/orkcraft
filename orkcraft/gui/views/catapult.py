@@ -8,7 +8,8 @@ import base64
 import json
 
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import catapult_web as cw
+from orkcraft.realm import catapult_mcp as cm, catapult_web as cw, harnesses
+from orkcraft.realm.catapult_mcp import routes as cm_routes
 
 SHOTS = 30
 JSON_LIMIT = 40_000              # characters of a loaded value shown
@@ -25,7 +26,7 @@ def _line(w) -> tuple[str, str]:
     load, waits, queued = w.load, w.wait_for, len(w.queue)
     more = f" +{queued}" if queued else ""
     if w.login_needed:
-        return "log in", "fire"
+        return ("token refused" if w.mcp_mode else "log in"), "fire"
     if w.asking:
         return "waits for your yes", "fire"
     if w.firing:
@@ -33,6 +34,8 @@ def _line(w) -> tuple[str, str]:
     if w.busy:
         word = w.busy.split(" ")[0]
         return {"🔧": "repairing…", "🔭": "scouting…", "🔑": "logging in…", "🧠": "mapping…"}.get(word, "busy…"), "wait"
+    if w.waiting:
+        return "waits" + more, "fire"
     if w.held:
         return "put off" + (f" +{queued - 1}" if queued > 1 else ""), "fire"     # the shot put off is queued too
     if w.paused:
@@ -54,6 +57,17 @@ def _target(w) -> str:
     if w.browser:
         n = len(w.forms)
         return f"{n} form{'' if n == 1 else 's'} · then {'press submit' if cfg.get('finish') == 'press' else 'hand over'}"
+    if w.mcp_mode:
+        if not w.server:
+            return "no MCP server set — to: slack"
+        route = w.route
+        tool = cm_routes.short_tool(w.mcp_tool(route)) or "learns its tool"
+        track = w.track(route)
+        how = {"direct": cm_routes.title(cm.direct(route) or {}), "local": "local server, no model"}.get(track, "")
+        if track == "carrier":
+            who, _ = w.carrier_choice()
+            how = f"via {harnesses.need(who).title} — a model call" if who else "no carrier"
+        return f"{w.server} · {tool} · {how}"
     url = str(cfg.get("url") or "")
     return f"{cfg.get('method') or 'POST'} {url.split('://', 1)[-1]}" if url else "no address set — dry runs only"
 
@@ -61,7 +75,8 @@ def _target(w) -> str:
 def _mark(s) -> tuple[str, str]:
     if s.dry:
         return ("dry run", "muted") if s.ok else ("✗ dry run", "error")
-    return ((f"✓ {s.status}" if s.status else "✓ filled"), "ok") if s.ok else (f"✗ {s.status or 'error'}", "error")
+    done = "✓ sent" if s.track else "✓ filled"
+    return ((f"✓ {s.status}" if s.status else done), "ok") if s.ok else (f"✗ {s.status or 'error'}", "error")
 
 
 def card(w) -> dict:
@@ -93,7 +108,7 @@ def _json(value) -> str:
 
 
 def _shot(w, s) -> dict:
-    return {"at": s.at, "when": s.at[5:16].replace("T", " "), "ok": s.ok, "dry": s.dry, "status": s.status,
+    return {"at": s.at, "when": s.at[5:16].replace("T", " "), "ok": s.ok, "dry": s.dry, "status": s.status, "track": s.track,
             "url": s.url, "body": s.body, "answer": s.answer, "error": s.error,
             "screens": [{"form": r["form"], "path": r["path"]} for r in w.screens(s.at)]}
 
@@ -124,7 +139,8 @@ def detail(w) -> dict:
     for r in w.screens():                    # the newest picture of each form
         pictures[r["form"]] = r["path"]
     return {
-        "mode": "browser" if w.browser else "api", "url": str(cfg.get("url") or ""),
+        "mode": "browser" if w.browser else "mcp" if w.mcp_mode else "api", "url": str(cfg.get("url") or ""),
+        "target": _target(w), "mcp": w.mcp_state() if w.mcp_mode else None,
         "method": str(cfg.get("method") or "POST"), "schema": str(cfg.get("schema") or ""),
         "confirm": bool(cfg.get("confirm")), "finish": str(cfg.get("finish") or "leave"),
         "key": str(cfg.get("key") or ""), "ttl": int(cfg.get("ttl") or 0),
@@ -225,5 +241,35 @@ def _picture(w, args: dict) -> str:
     return "data:image/png;base64," + base64.b64encode(data).decode()
 
 
+def _need_mcp(w) -> None:
+    if not w.mcp_mode:
+        raise ActError("Only a Catapult in mode mcp sends through an MCP server")
+
+
+def _use_direct(w, args: dict) -> bool:
+    """Send by the learned direct path (the first shot on it still asks)."""
+    _need_mcp(w)
+    pick = args.get("pick", 0)
+    if not isinstance(pick, int) or not w.use_direct(pick):
+        raise ActError("No direct path is learned yet — a carried shot teaches it")
+    return True
+
+
+def _keep_carrier(w, args: dict) -> bool:
+    _need_mcp(w)
+    if not w.keep_carrier():
+        raise ActError("Nothing is learned yet")
+    return True
+
+
+def _allow_local(w, args: dict) -> bool:
+    """Let the Catapult start the local server itself: no model per shot."""
+    _need_mcp(w)
+    if not w.allow_local(bool(args.get("on"))):
+        raise ActError("The setting was not saved")
+    return bool(args.get("on"))
+
+
 ACTS = {"fire": _fire, "dry_run": _dry, "answer": _answer, "resume": _resume, "drop": _drop, "confirm": _confirm, "scout": _scout, "login": _login,
-        "map": _map, "finish": _finish, "picture": _picture}
+        "map": _map, "finish": _finish, "picture": _picture,
+        "use_direct": _use_direct, "keep_carrier": _keep_carrier, "allow_local": _allow_local}

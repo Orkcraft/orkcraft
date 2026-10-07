@@ -1,0 +1,15 @@
+{
+  "service": "discord", "title": "Discord", "match": ["discord"],
+  "tools": [
+    {"what": "a message", "match": ["send_message", "post_message", "create_message", "send"],
+     "args": {"channel": ["channel_id", "channel", "channelid"], "text": ["content", "message", "text"]},
+     "need": ["text"],
+     "routes": [
+       {"title": "Discord webhook", "method": "POST", "url_env": "DISCORD_WEBHOOK_URL",
+        "body": {"content": "@text"}, "note": "posts to the webhook's own channel"},
+       {"title": "Discord API", "method": "POST", "url": "https://discord.com/api/v10/channels/{@channel}/messages",
+        "auth": {"kind": "header", "header": "Authorization", "prefix": "Bot ", "env": "DISCORD_BOT_TOKEN"},
+        "body": {"content": "@text"}}
+     ]}
+  ]
+}

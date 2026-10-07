@@ -46,7 +46,7 @@ include = ["orkcraft*"]
 
 [tool.setuptools.package-data]
 # design/system links to design-system/: a wheel carries the files themselves.
-orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json", "design/system/**/*", "gui/static/**/*"]
+orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json", "realm/catapult_mcp/recipes/*.json", "design/system/**/*", "gui/static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

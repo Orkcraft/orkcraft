@@ -4,7 +4,8 @@
 // off, it waits at the front of the queue as a strip with Resume and Drop);
 // where it sends with Fire, Dry run (and Scout, Log in in browser mode); what is loaded as JSON with the
 // schema check; the shots one line each, a shot opening over them (← back): the request, the answer, the
-// pictures of the forms; in browser mode the forms. Ask before every shot and the schema and address
+// pictures of the forms; in browser mode the forms; in mode mcp the path: which track a shot takes, what it
+// sends, the direct path the ork learned (Use it / Keep the carrier) and a local server it may start. Ask before every shot and the schema and address
 // (the steward's to write) fold to a line. The work is the worker's (core/workers/catapult.py).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
@@ -62,6 +63,9 @@ function headline(c) {
   const n = /^(\d+) loaded(.*)$/.exec(line);
   if (n) return [n[1], `${say("loaded")}${n[2]}`, ""];
   if (line === "log in") return [`⚠ ${say("Log in")}`, say("the site wants you"), "fire"];
+  if (line === "token refused") return [`⚠ ${say("Token refused")}`, say("fix it, then Resume"), "fire"];
+  const wt = /^waits(.*)$/.exec(line);
+  if (wt) return [say("Waits"), `${say("no carrier or no budget — see the window")}${wt[1]}`, "fire"];
   if (line === "waits for your yes") return [`? ${say("Fire?")}`, say("a shot waits for your yes"), "fire"];
   if (line === "idle") return [say("Ready"), say("fires when its carts are loaded"), ""];
   const h = /^put off(.*)$/.exec(line);
@@ -126,6 +130,7 @@ function Held({ id, data }) {
 }
 
 function target(data) {
+  if (data.mode === "mcp") return data.target;
   if (data.mode === "browser") {
     return `${data.forms.map((f) => f.name + (f.scouted ? "" : " (not scouted)")).join(" → ") || "no forms set"} · then ${data.finish === "press" ? "press submit" : "hand over"}`;
   }
@@ -149,7 +154,8 @@ function Settings({ id, data }) {
 }
 
 function Head({ id, data }) {
-  const resume = data.paused && !data.held;      // a shot put off has its own strip with Resume
+  // a shot put off has its own strip with Resume; a refused token in mode mcp is fixed outside, then Resume
+  const resume = (data.paused || (data.mcp && (data.mcp.waiting || data.login))) && !data.held;
   return html`<div class="gui-cat__head">
     <${Asking} id=${id} data=${data} />
     <${Held} id=${id} data=${data} />
@@ -157,12 +163,12 @@ function Head({ id, data }) {
       <span class="gui-cat__target" title=${say(target(data))}>${say(target(data))}</span>
       ${data.state && html`<span class=${`gui-cat__state ${data.login ? "ok-tone-fire" : "ok-tone-wait"}`}>${say(data.state)}</span>`}
       <span class="gui-cat__acts">
-        ${data.login && html`<button class="ok-btn primary" onClick=${() => act(id, "login").catch(() => {})}>${say("Log in")}</button>`}
+        ${data.login && data.mode === "browser" && html`<button class="ok-btn primary" onClick=${() => act(id, "login").catch(() => {})}>${say("Log in")}</button>`}
         ${data.mode === "browser" && html`<button class="ok-btn" onClick=${() => act(id, "scout").catch(() => {})}>Scout</button>`}
         <button class="ok-btn" onClick=${() => act(id, "dry_run").catch(() => {})}>${say("Dry run")}</button>
         ${resume && html`<button class="ok-btn primary" title=${say("The queue goes on; nothing loaded is fired")}
           onClick=${() => act(id, "resume").catch(() => {})}>${say("Resume")}</button>`}
-        <button class=${cls("ok-btn", { primary: !data.login && !resume && !data.held })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
+        <button class=${cls("ok-btn", { primary: !(data.login && data.mode === "browser") && !resume && !data.held })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
       </span>
     </div>
     <${Settings} id=${id} data=${data} />
@@ -210,7 +216,7 @@ function Load({ id, data }) {
 // -- open: the shots -------------------------------------------------------------------------------------------
 
 function ShotLine({ s }) {
-  const mark = s.dry ? (s.ok ? say("dry run") : `✗ ${say("dry run")}: ${s.error}`) : s.ok ? (s.status ? `✓ ${s.status}` : `✓ ${say("filled")}`) : `✗ ${s.error || s.status}`;
+  const mark = s.dry ? (s.ok ? say("dry run") : `✗ ${say("dry run")}: ${s.error}`) : s.ok ? (s.status ? `✓ ${s.status}` : `✓ ${say(s.track ? "sent" : "filled")}`) : `✗ ${s.error || s.status}`;
   return html`<span class=${`gui-cat__mark ${s.dry ? "ok-tone-muted" : s.ok ? "ok-tone-ok" : "ok-tone-error"}`}>${mark}</span>`;
 }
 
@@ -281,12 +287,63 @@ function Forms({ id, data }) {
   </div>`;
 }
 
+// -- open: the path (mode mcp) ---------------------------------------------------------------------------
+
+const TRACK = { direct: "direct — no model", local: "local server — no model", carrier: "carried — a model call per shot" };
+
+/** Mode mcp: the track the next shot takes, what it sends, the direct path learned, a local server. */
+function Path({ id, data }) {
+  const m = data.mcp;
+  if (!m) return null;
+  const options = m.options || [];
+  const offered = options.length > 0 && !m.on && !m.kept;
+  const best = options[0];
+  return html`<div class="gui-section">
+    <div class="gui-head">
+      <span class="gui-head__what">${m.server || say("no server")} · ${m.tool || say("learns its tool")}</span>
+      <span class="gui-head__spacer"></span>
+      <span class=${m.track === "carrier" ? "ok-tone-wait" : "ok-tone-ok"}>${say(TRACK[m.track] || m.track)}</span>
+    </div>
+    ${m.waiting && html`<p class="gui-cat__loadline ok-tone-error">${say("Waits")}: ${m.waiting}</p>`}
+    ${offered && html`<div class="gui-cat__ask">
+      <div class="gui-cat__askline">
+        <span class="gui-cat__askwho">${say("A direct path")}</span>
+        <span class="gui-cat__askwhat">${data.overseer} ${say("learned it from the carried shot")}: ${best.title}${best.missing.length
+          ? ` — ${say("set")} ${best.missing.map((n) => "$" + n).join(", ")}` : ""}</span>
+        <button class="ok-btn" onClick=${() => act(id, "keep_carrier").catch(() => {})}>${say("Keep the carrier")}</button>
+        <button class="ok-btn primary" onClick=${() => act(id, "use_direct", { pick: 0 }).catch(() => {})}>${say("Use it")}</button>
+      </div>
+      ${best.note && html`<p class="ok-detail__meta">${best.note}</p>`}
+    </div>`}
+    ${m.track === "carrier" && html`<p class="ok-detail__meta">${m.carrier
+      ? `${say("Carried by")} ${m.carrier}${m.tool ? "" : ` — ${say("the first shot lets it pick the tool, and")} ${data.overseer} ${say("learns from it")}`}`
+      : m.no_carrier}</p>`}
+    ${m.args && html`<p class="ok-detail__section">${say("What it sends")}</p><pre class="gui-pre gui-cat__json">${m.args}</pre>`}
+    ${options.length > 0 && html`<p class="ok-detail__section">${say("Direct paths")}</p>
+      <ul class="gui-cat__rows">${options.map((o, i) => html`<li key=${o.title} class="gui-cat__pathrow">
+        <span class=${m.on && m.pick === i ? "ok-tone-ok" : ""}>${m.on && m.pick === i ? "● " : "○ "}${o.title}</span>
+        <span class="ok-tone-muted">${o.needs.map((n) => (o.missing.includes(n) ? `✗ $${n}` : `✓ $${n}`)).join(" ")}</span>
+        <span class="ok-tone-muted">${m.on && m.pick === i ? say(m.proven ? "proved" : "its first shot asks") : ""}</span>
+        ${m.on && m.pick === i
+          ? html`<button class="ok-btn" onClick=${() => act(id, "keep_carrier").catch(() => {})}>${say("Back to the carrier")}</button>`
+          : html`<button class="ok-btn" onClick=${() => act(id, "use_direct", { pick: i }).catch(() => {})}>${say("Use it")}</button>`}
+      </li>`)}</ul>`}
+    ${m.launch && html`<div class="gui-cat__settings">
+      <button class="ok-check" role="checkbox" aria-checked=${m.local} title=${say("It starts the server as your AI tool's config says, and keeps nothing of it")}
+        onClick=${() => act(id, "allow_local", { on: !m.local }).catch(() => {})}><i>${m.local ? "✓" : ""}</i>
+        ${say("Start the local server itself — no model")} (${m.launch.command}, ${m.launch.where})</button>
+    </div>`}
+  </div>`;
+}
+
 /** The window by its UI document (design/buildings/catapult.json). */
+
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
     load: () => html`<${Load} id=${id} data=${data} />`,
     shots: () => html`<${Shots} id=${id} data=${data} />`,
-    forms: () => (data.mode === "browser" ? html`<${Forms} id=${id} data=${data} />` : null),
+    forms: () => (data.mode === "browser" ? html`<${Forms} id=${id} data=${data} />`
+      : data.mode === "mcp" ? html`<${Path} id=${id} data=${data} />` : null),
   };
 }

@@ -205,7 +205,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions); keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
-| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
+| 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or through an MCP server (carried by the tool that has it, then a direct path the ork learns), or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
 - **🌾 Task Fields is a board of cards** — tasks and sticky notes on one board
   ([design](design/fields-board.md)). A **lane** is a column: the three status lanes (To Do, In
@@ -260,6 +260,33 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   what is loaded and not yet a shot). With `confirm`, a shot waits for your yes: **Fire**, **Later**
   (it waits at the front of the queue and holds it until **Resume**, which asks again, or **Drop**)
   or **Drop**. A 🧪 dry run that fails the check is kept as a dry run: it sends no `catapult.failed`.
+- **The Catapult's mode mcp** sends through an MCP server your AI tools already have — Slack, Jira,
+  Confluence, email, Notion, Discord (docs/design/catapult-mcp.md). Set `mode: mcp`, `to` (the server,
+  as your tools name it), and optionally `tool`, `args` (`channel = "C0123"`, `text = notes`), `via`
+  and `goal`. A shot takes the most deterministic track there is:
+  - **direct** — a learned route to the service's own API (or SMTP) with a token of yours from the
+    environment: no model;
+  - **local** — with `local: true` (Start the local server itself) the Catapult starts a local (stdio)
+    server as your tool's config says and calls the tool: no model;
+  - **carrier** — the AI tool that has the server (chosen by the server, not by the ork: Slack in Codex
+    and the Loader on Claude still works) runs headless, allowed exactly that one MCP tool, with the
+    arguments as JSON; its events are the proof — exactly one call, that tool, those arguments, else the
+    shot failed. One call of the light model, in the ledger and under the 🪙 budget. Only Claude Code
+    carries for now; a server whose tools are all off or cannot carry makes the shot wait (Resume).
+  - **Learning.** The first carried shot (it asks, even with `confirm` off) may let the carrier pick
+    the tool; the Loader turns the call into a template over the cart and — where a recipe
+    (`realm/catapult_mcp/recipes/`) knows the service — into a direct route, kept in
+    `.orkcraft/scripts/<id>/route.json` (a commit). The window offers it: **Use it** (its first shot
+    asks; 🧪 shows the carried call beside the direct request for the same cart) or **Keep the carrier**.
+  - **Breaks.** A refused token (401/403, Slack's `invalid_auth`…) burns the hut and holds the queue
+    until you fix it and press **Resume**; a refused call on a direct or local path is carried once and
+    learned again (`catapult.repaired`), unless `repair: false`.
+  - Environment variables the recipes read: `SLACK_BOT_TOKEN` or `SLACK_WEBHOOK_URL`;
+    `DISCORD_WEBHOOK_URL` or `DISCORD_BOT_TOKEN`; `JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`;
+    `CONFLUENCE_URL`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`; `NOTION_TOKEN`; `SMTP_HOST`,
+    `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` (an app password), `SMTP_FROM`, or `RESEND_API_KEY` and
+    `EMAIL_FROM`. Tokens are read when a shot fires and never written anywhere.
+  - The 🔍 Audit flags a Catapult in mode mcp that sends without asking.
 - **The Catapult's browser mode** closes a whole intent on a site with no API (a new event in the
   Google Play Console: the event, then its images, …). Install it with
   `pip install 'orkcraft[browser]'` and `playwright install chromium`, then set `mode: browser`
