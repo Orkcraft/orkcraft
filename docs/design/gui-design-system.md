@@ -85,6 +85,9 @@ Every colour is a token with one value per theme. Use the token, never the hex.
 | Camp | `display`: Almendra SC, a calligraphic small-caps serif that echoes the gold wordmark (`camp-title`, `camp-heading`) | `camp`: Titillium Web, the Factorio UI face (`camp-label` in uppercase, `camp-body`, `camp-caption`, `camp-number` with tabular figures) | `mono` (`code`) |
 | Office | `office`: the system UI stack, as VS Code uses (`office-title`, and `office-heading` at 11px uppercase) | `office` (`office-label`, `office-body`, `office-caption`) | `mono` (`code`, `code-small`) |
 
+One more face, for one place: **Pixelify Sans** (OFL, Latin and Cyrillic) sets the War Map's title and its
+lands' names (`js/warmap.js`, [war-map.md](war-map.md)), the map's pixels in its words.
+
 - Keys are written as words (`Ctrl+S`, `F10`).
   - In Camp they are engraved gold `ok-kbd`.
   - In Office they are VS Code keycaps.

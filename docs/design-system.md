@@ -31,7 +31,8 @@ face looks the role up.
 The GUI's type styles, faces and colours are the GUI design system's
 ([design/gui-design-system.md](design/gui-design-system.md), `design-system/tokens.json`), the source
 of truth: Camp sets headings in Almendra SC and the rest in Titillium Web, Office uses the system UI
-face, and both use JetBrains Mono for code. The fonts ship with it (`design-system/fonts/`, OFL).
+face, and both use JetBrains Mono for code; the War Map's title and lands are in Pixelify Sans, a pixel
+face with Cyrillic for the names people give. The fonts ship with it (`design-system/fonts/`, OFL).
 `orkcraft/design/tokens.json` maps each role onto it (`gui`), and the GUI wears them as the classes
 `tokens.roles_css()` writes (`.ok-font-status`, `.ok-tone-fire`).
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/ork.png" alt="" width="128"><br>
+  <img src="design-system/logo/ork-mark-256.png" alt="" width="128"><br>
   <img src="docs/img/logo.png" alt="Orkcraft" width="360">
 </p>
 
@@ -9,19 +9,20 @@
 
 Windows are **buildings** with a resident **ork**. Agents are the **clan**. Buildings send **carts**
 to each other along **roads**. The HUD shows what you spend. Agents never pop dialogs: when one
-needs you it sets its hut on fire 🔥 and waits for your orders.
+needs you it sets its hut on fire 🔥 and waits for your orders, and the **Warchief**, the lead agent
+in the line at the town's foot, builds, commands and answers for you.
 
 Orkcraft opens your project as a town in a window. It works in any git project and talks to
 models only through the CLIs you already have — [Claude Code](https://claude.com/claude-code) (`claude`),
 Google Antigravity (`agy`) and [OpenAI Codex](https://github.com/openai/codex) (`codex`) — so there are no API
 keys to configure.
 
-![The town: a Pit and a Totem feed a Lake, a Catapult and a Workshop](docs/img/town.png)
+![The town: a task board, a calendar and a wiki feed a daily brief; the War Map of orkspaces at the bottom left, the Warchief's line at the foot](docs/img/town.png)
 
 > [!WARNING]
 > **Alpha version — it may be unstable.** Orkcraft is under active development: features, settings
 > and file formats can change between versions, and some things may break or behave unexpectedly.
-> It has ~800 tests and is used daily, but try it on projects you have committed or backed up, and
+> It has ~1,300 tests and is used daily, but try it on projects you have committed or backed up, and
 > keep an eye on what the agents do. Issues and ideas are welcome.
 
 ## Try it
@@ -48,14 +49,15 @@ orkcraft                           # open the town in a window (macOS: the syste
 You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
 Builder needs `claude`), `gh` (GitHub events in the Watchtower).
 
-Keys worth knowing (the deprecated TUI): `F10` menu · `?` all keys · `B` build · `P` presets · `Y` road · `K` / `F` 👍 / 👎 ·
-`Z` revert a building · `space` or `ctrl+p` 🛑 Halt All (stops every running agent, script and browser).
+Worth knowing: `/` or `Ctrl+K` puts you in the Warchief's line (`/build`, `/road`, `/orkspace`, `@a building`,
+or just ask) · a right click on a hut or on the bare map has its menu · ↑ / ↓ and Enter walk the War Map ·
+**Stop all** in the HUD stops every running agent, script and browser.
 
 ## The idea
 
 | In the game | In your project |
 |---|---|
-| 🏰 **Town** | one canvas per workflow (`F1`–`F8`), every building a small hut with live status lines |
+| 🏰 **Town** | one map per workflow (an **orkspace**, `F1`–`F8`, each on its own biome), every building a small hut with live status lines |
 | 🏗 **Building** | a window: tasks, files, git, a mailbox, a webhook, a chart… |
 | 🧌 **Ork** | an agent, a script or a free chain of data steps living in a building |
 | 🛤 **Road** | a subscription: what happens in one building travels as a cart to the buildings that listen |
@@ -67,7 +69,7 @@ what to do with each cart. The cheapest thing that works wins: a plain road, the
 
 ## The camp
 
-Sixteen buildings, each with its own events and settings:
+The catalog, each building with its own events and settings — and a custom one the Builder writes for you:
 
 | | |
 |---|---|
@@ -81,14 +83,15 @@ Sixteen buildings, each with its own events and settings:
 The 🏰 Town Hall is where the town changes. Everything goes through it, and everything it does is
 a commit in the camp's own git, so it can be undone.
 
-![The Town Hall: the Council, ratings, proposals](docs/img/town-hall.png)
+![The Town Hall: the Warchief's chat, its Hall, the sessions and the limits](docs/img/town-hall.png)
 
-- **🏗 Build → 📜 Preset** — pick what you need, name it, place it with a ghost that follows the mouse. No model call.
-- **🏗 Build → 🛠 New** — talk to the **Builder**: it asks what the building should do, offers three views, and
-  writes a **script** (a model only where a script cannot do the job). The blueprint is previewed,
-  reviewed by the Council and run on mock carts in a sandbox before you approve it.
+- **🏗 Build** — `/build` or a right click on the map: say what you need, or pick a block from the
+  catalog and it stands where you clicked. No model call for a block from the catalog.
 
-  ![The Builder's blueprint: script, preview, emulation, sandbox, Council](docs/img/blueprint.png)
+  ![Build: say what you need, or pick a block](docs/img/build.png)
+- **🛠 New** — ask the Warchief for what the catalog lacks: the **Builder** asks what the building
+  should do and writes a **script** (a model only where a script cannot do the job). The blueprint is
+  previewed, reviewed by the Council and run on mock carts in a sandbox before you approve it.
 - **🏛 The Council** reviews what is made from scratch — 👑 Chief (budget), 🧱 Mason (schemas),
   🎨 Artisan (the screen and your cognitive load), 🛡 Warder (shell commands, prompts, secrets),
   ⛏ Peon (worktrees, permissions, housekeeping). Rules first; a light model (`haiku`) adds opinions.
@@ -103,7 +106,31 @@ a commit in the camp's own git, so it can be undone.
 - **Retros, never automatic.** Daily, the 🔧 Building retro proposes one change for the building
   that eats most of the camp and of your limit and that you are unhappy with; weekly, the 🗓 Town
   retro has a heavy model (`opus`) audit the whole camp. Nothing
-  applies without your click, each change is a checkpoint, and **`Z`** reverts one building.
+  applies without your click, each change is a checkpoint, and one building can be taken back on its own.
+
+## Growth
+
+Buildings and their operator grow, from what the orks learned — never from clicks
+([docs/design/growth.md](docs/design/growth.md)).
+
+- **🚩 Renown I–III.** A building earns it from the changes of its orks that passed probation and
+  what you liked since; it never drops. Its **goal** (🪙 thrift · ⚖️ balance · 💎 quality) flies as a
+  banner on its roof from the start — a coin banner, a plain flag, a pennant — ivory at I, taller at
+  II, gold at III. Info says what the next level asks.
+
+  ![A building's Info: its sprite with its banner, its renown and goal, its garrison](docs/img/info.png)
+- **Your mascot.** Settings opens with you: the mascot of the role you gave in the onboarding (an
+  ork, a lich, an elf…), four stages from a Zombie Manager to a Night King, and your **deeds** — the
+  first road, the first change the orks kept, a building at III; the ones ahead are grey with a hint.
+
+  ![Settings: your mascot, its stage and deeds, then the project's rules](docs/img/settings.png)
+- **The Warchief says what grew** — a level, a deed, and the loop closed on your review ("your 👎 on
+  Brief → the orks changed it → 4 👍 since"). He wears the crown; the clan stays green.
+- **The War Map.** The orkspaces are lands in a framed map at the bottom left, each in its biome
+  (dirt, forest, ice, dust, void, lava — the ground and the huts follow it, with the TUI's glyphs on
+  the ground), the open one tall with its status; the fog of war makes a new one. When an ork asks
+  in another orkspace, the map calls you with rings, as a strategy game does when your units are
+  attacked ([docs/design/war-map.md](docs/design/war-map.md)).
 
 ## Safety
 
@@ -133,7 +160,8 @@ Inside the project it runs in, orkcraft keeps only local state (add these to you
 
 Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_CODEX_BIN`, `ORKCRAFT_LIMITS=0`,
 `ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council and the
-Elders' limits are set in the app (F10 → ⚙) and stored in `.orkcraft/council/settings.json`.
+Elders' limits are set in the Town Hall and stored in `.orkcraft/council/settings.json`; you, your
+role, mascot and deeds are per machine in `~/.config/orkcraft/settings.json`.
 
 The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
 the design of roads and orks is in [docs/design/roads-and-orks.md](docs/design/roads-and-orcs.md).
@@ -144,7 +172,7 @@ What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 ```bash
 git clone https://github.com/Orkcraft/orkcraft && cd orkcraft
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -q -n auto        # ~800 tests in parallel; the UI tests drive a real Textual app headlessly
+.venv/bin/pytest -q -n auto        # ~1,300 tests in parallel; the GUI's are driven in Chromium, the TUI's headlessly
 .venv/bin/orkcraft --demo
 ```
 
@@ -157,6 +185,7 @@ orkcraft/
   tui/               the app's parts, one domain each: roads, sessions, council, retros…
   gui/               the GUI face: host and server over the core, the page (Preact, no build step)
   design/            tokens, the building UI contracts; design/system → design-system/ (the GUI's CSS, fonts, sprites)
+  tools/             the sprites drawn from code (logo.py, growth_sprites.py), the gallery and landing captures
   wm/                the window manager: town, huts, roads, ghost
   screens/           modals and the typed views of every building (screens/typed/)
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
@@ -169,3 +198,6 @@ orkcraft/
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Copyright 2026 Vadim Sidoryk.
+
+The fonts bundled in `design-system/fonts/` — Almendra SC, Titillium Web, JetBrains Mono and Pixelify
+Sans — are under the SIL Open Font License 1.1; their licences sit beside them.

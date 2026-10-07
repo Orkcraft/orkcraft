@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "orkcraft"
 version = "0.1.0"
-description = "An RTS-style terminal harness for running many coding agents in one project"
+description = "A harness for running many coding agents in one project, as a real-time strategy game"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
