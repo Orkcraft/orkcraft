@@ -226,16 +226,29 @@ A head on the ork mark's grid (`tools/logo.py`: 12×8, flat, no outline, the sam
 kin: ork, undead, elf, gnome, goblin, knight, skeleton. Stages **add** to the head and never redraw
 it, the way the ork's states do (sleep mark, sweat, flame):
 
-| Stage | Example: undead | Example: orks | Reached when (starting values) |
-|---|---|---|---|
-| 1 | 🧟 Zombie manager | Grunt | the first town is raised |
-| 2 | Roadmap Wraith (a hood) | Merge Ork (a helmet) | 3+ buildings rated in one week |
-| 3 | Jira Lich (a bone circlet) | Warband Chief (horns) | a building reaches level II |
-| 4 | Night King (kin's own top mark) | Prod Warlord (kin's own top mark) | three buildings at III, one of them on the clock or unchained |
+| Stage | Reached when (starting values) | Its mark on the head |
+|---|---|---|
+| 1 | the first town is raised | — |
+| 2 | 3+ buildings rated in one week | a band |
+| 3 | a building reaches level II | horns |
+| 4 | three buildings at III, one of them on the clock or unchained | gold eyes and a gem |
+
+The names (`realm/growth.py` `STAGE_NAMES`): a fantasy rank with the job in it. Stage 2 is the role's own
+nick from the onboarding, the others are the kin's.
+
+| Kin (roles) | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| orks (engineers, QA) | Commit Grunt | Merge Ork · Bug Ork | Hotfix Berserker | Warlord of Prod |
+| undead (managers) | Standup Zombie | Jira Lich · Roadmap Wraith | Lich of Sprints | Release Night King |
+| elves (designers) | Pixel Sprout | Figma Elf · Lore Elf | Ranger of the Grid | High Elf of the Design System |
+| gnomes (ASO, marketing) | A/B Tinkerer | Keyword Gnome · Funnel Gnome | Growth-Hack Artificer | Grand Tinker of Conversions |
+| goblins (analysts) | Spreadsheet Scrounger | Dashboard Goblin | Pivot-Table Boss | KPI Tycoon |
+| knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
+| skeletons (everyone else) | Inbox Skeleton | Wandering Skeleton | Captain of the Skeleton Crew | Lord of a Thousand Tabs |
 
 - **The top stage is never a crown.** The crown is the Warchief's (§8). Each kin has its own top
   mark: glowing eyes and a staff for the lich, a horned war helm for the ork, and so on.
-- **The names** keep the onboarding's humour (Jira Lich, Night King). They are Camp words; with Office
+- **The names** keep the onboarding's humour (Jira Lich, Release Night King). They are Camp words; with Office
   words the stage is named by the role and its number ("Engineering manager · stage 3").
 - **Art cost:** 7 heads + about 3 stage marks per kin, all from code grids. Start with two kins
   (undead and orks) and 3 stages. The others show a shared stage mark until drawn.

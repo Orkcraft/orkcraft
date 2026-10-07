@@ -124,7 +124,7 @@ Buildings and their operator grow, from what the orks learned — never from cli
 
   ![A building's Info: its sprite with its banner, its renown and goal, its garrison](docs/img/info.png)
 - **Your mascot.** Settings opens with you: the mascot of the role you gave in the onboarding (an
-  ork, a lich, an elf…), four stages from a Zombie Manager to a Night King, and your **deeds** — the
+  ork, a lich, an elf…), four stages from a Standup Zombie to a Release Night King, and your **deeds** — the
   first road, the first change the orks kept, a building at III; the ones ahead are grey with a hint.
 
   ![Settings: your mascot, its stage and deeds, then the project's rules](docs/img/settings.png)

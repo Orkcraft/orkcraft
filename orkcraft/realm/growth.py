@@ -137,14 +137,14 @@ DEEDS: tuple[Deed, ...] = (
 )
 
 # The mascot's stages by kin (realm/intents.py `Role.mascot`); stage 2 is the role's own nick.
-STAGE_NAMES = {
-    "orc": ("Grunt", "", "Warband Chief", "Prod Warlord"),
-    "lich": ("Zombie Manager", "", "Lich Lord", "Night King"),
-    "elf": ("Elf Sprout", "", "Elf Ranger", "Elf Lord of Pixels"),
-    "gnome": ("Tinker Gnome", "", "Gnome Engineer", "Grand Tinker"),
-    "goblin": ("Goblin Scrounger", "", "Goblin Boss", "Goblin Tycoon"),
-    "knight": ("Squire", "", "Knight Errant", "Paladin of Prod"),
-    "skeleton": ("Bag of Bones", "", "Skeleton Captain", "Bone Lord"),
+STAGE_NAMES = {           # a fantasy rank with the job in it: what the stage means, said with a grin
+    "orc": ("Commit Grunt", "", "Hotfix Berserker", "Warlord of Prod"),
+    "lich": ("Standup Zombie", "", "Lich of Sprints", "Release Night King"),
+    "elf": ("Pixel Sprout", "", "Ranger of the Grid", "High Elf of the Design System"),
+    "gnome": ("A/B Tinkerer", "", "Growth-Hack Artificer", "Grand Tinker of Conversions"),
+    "goblin": ("Spreadsheet Scrounger", "", "Pivot-Table Boss", "KPI Tycoon"),
+    "knight": ("Bootstrap Squire", "", "Knight of the Seed Round", "Paladin of Product-Market Fit"),
+    "skeleton": ("Inbox Skeleton", "", "Captain of the Skeleton Crew", "Lord of a Thousand Tabs"),
 }
 STAGE_NEXT = {1: "Rate three buildings in one week", 2: "Bring a building to level II",
               3: "Three buildings at level III, one of them on the clock or unchained", 4: ""}
