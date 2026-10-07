@@ -59,7 +59,9 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     json.dumps(o)                                                         # it crosses the socket as it is
     assert o["step"] == "tools" and o["steps"] == ["tools", "who", "mcp", "town"]
     assert [r["id"] for r in o["tools"]["rows"]] == ["claude", "codex"]   # only what is installed
-    assert o["tools"]["missing"] == ["Antigravity"] and o["tools"]["others"][0]["title"] == "Cursor"
+    assert o["tools"]["missing"] == ["Antigravity"] and o["tools"]["others"] == []
+    # Cursor's editor without cursor-agent: the CLI is what the orks run on, not "can't run on these yet"
+    assert o["tools"]["cli"] == [{"id": "cursor", "title": "Cursor", "bin": "cursor-agent"}]
 
     host.command("onboarding.tools", {"tools": {"codex": {"enabled": False, "billing": "api"}}})
     o = host.command("onboarding.tools", {"next": True})
@@ -233,3 +235,13 @@ def test_a_tool_request_is_an_issue_the_person_sends(fake_repo: Path, onboard):
 def test_no_onboarding_when_turned_off_or_in_a_town(fake_repo: Path, onboard, monkeypatch):
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
     assert Host(fake_repo, auto_commit=False).snapshot()["onboarding"] is None
+
+
+def test_cursor_found_is_not_named_again_below_the_table(fake_repo: Path, onboard, monkeypatch: pytest.MonkeyPatch):
+    found = [*_statuses(), tools.ToolStatus({t.id: t for t in tools.TOOLS}["cursor"], found=True,
+                                            path="/usr/bin/cursor-agent", version="2026.09", logged_in=True)]
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: found)
+    monkeypatch.setattr(tools, "detect_others", lambda *a, **k: [o for o in tools.OTHERS if o.id in ("cursor", "aider")])
+    t = _host(fake_repo).snapshot()["onboarding"]["tools"]
+    assert "cursor" in [r["id"] for r in t["rows"]]
+    assert t["others"] == [{"id": "aider", "title": "Aider"}] and t["cli"] == [] and "Cursor" not in t["missing"]

@@ -108,6 +108,7 @@ function ToolsStep({ o }) {
       <div class="gui-onb__line">
         <span class="ok-font-status ok-tone-muted">${[
           t.others.length ? say(`Also here: ${t.others.map((x) => x.title).join(", ")}. Orks can't run on these yet.`) : "",
+          ...t.cli.map((x) => say(`${x.title}: install the CLI (${x.bin}) to run orks on it.`)),
           t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
         <button class="ok-btn" onClick=${() => { asking.value = true; }}>Request a tool</button>
       </div>
