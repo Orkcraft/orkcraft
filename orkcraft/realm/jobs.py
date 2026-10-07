@@ -116,14 +116,6 @@ def work_cmd(harness: str, prompt: str, workdir: Path, model: str = "", resume: 
     return h.work(prompt, workdir, model, resume if h.resumable else "")
 
 
-def session_of(stdout: str) -> str:
-    try:
-        env = json.loads(stdout.strip())
-    except ValueError:
-        return ""
-    return str(env.get("session_id", "")) if isinstance(env, dict) else ""
-
-
 def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
              env: dict | None = None, resume: str = "",
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
@@ -141,20 +133,6 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker")
     return text, cost, tokens, session
-
-
-def run_skill(harness: str, skill: str, input_text: str, repo_root: Path, cancel: threading.Event,
-              env: dict | None = None, agent_runner=None) -> tuple[str, float | None, int | None]:
-    """Agent / Script: a script gets the input on stdin; an agent gets the skill and the input."""
-    if harness == "script":
-        return run_script(skill, input_text, repo_root, cancel, env)
-    prompt = skill.strip() or "Summarise the input for the operator."
-    if input_text:
-        prompt += f"\n\n## Input\n\n{input_text}"
-    prompt += "\n\nAnswer with the Markdown the operator should see and nothing else."
-    runner = agent_runner or roads.run_agent
-    answer = runner(harness, prompt, repo_root, env or {}, cancel)
-    return answer[0], answer[1], answer[2] if len(answer) > 2 else None
 
 
 class Log:

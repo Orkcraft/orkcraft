@@ -215,11 +215,6 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     return "\n\n".join(parts)
 
 
-def codex_cmd(sandbox: str, model: str = "", web: bool = False, resume: str = "") -> list[str]:
-    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout (harnesses.codex_exec)."""
-    return harnesses.codex_exec(harnesses.need("codex"), sandbox, model, web, resume)
-
-
 def resolve(harness: str) -> str:
     """A step's tool as it runs: `main` (or nothing) is the machine's main tool."""
     if harness and harness != harnesses.MAIN:
@@ -255,10 +250,6 @@ def result_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | 
     """(text, cost, tokens, session) of one run of a tool."""
     h = harnesses.get(harness)
     return h.result(stdout, before) if h else harnesses.json_result(stdout, before)
-
-
-def _codex_events(stdout: str) -> list[dict]:
-    return harnesses.json_lines(stdout)
 
 
 codex_result_of = harnesses.codex_result
