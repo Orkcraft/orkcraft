@@ -129,7 +129,7 @@ function WhoStep({ o }) {
     <div class=${cls("gui-onb__kins", { "is-few": !!o.only_kin })}>
       ${o.classes.map((c) => html`<button key=${c.id} class=${cls("gui-onb__kin", { "is-on": o.role === c.id })}
           aria-pressed=${o.role === c.id} onClick=${() => send("onboarding.role", { role: c.id })}>
-        <${Ground} biome=${c.biome}><${MascotHead} kin=${c.kin} stage=${c.stage} size=${5} /></${Ground}>
+        <${Ground} biome=${c.biome}><${MascotHead} sprite=${c.sprite} stage=${1} size=${5} /></${Ground}>
         <span class="gui-onb__kin-name">${c.nick}</span>
         <span class="ok-font-status ok-tone-muted">${c.title}</span>
       </button>`)}

@@ -102,16 +102,11 @@ class Onboarding:
         return out
 
     def _classes(self) -> list[dict]:
-        """Every role as a class card, each kin's second role with the next stage's head so the two differ;
-        only the landing page's kin when it named one."""
-        out, seen = [], {}
-        for r in intents.ROLES:
-            if self.only_kin and r.mascot != self.only_kin:
-                continue
-            seen[r.mascot] = seen.get(r.mascot, 0) + 1
-            out.append({"id": r.id, "nick": r.nick, "title": r.title, "kin": r.mascot, "stage": seen[r.mascot],
-                        "biome": biomes.HOMES.get(r.mascot, "dirt")})
-        return out
+        """Every role as a class card with its own mascot (mascots/<role>-1.png), on its kin's biome; only the
+        landing page's kin when it named one."""
+        return [{"id": r.id, "nick": r.nick, "title": r.title, "kin": r.mascot, "sprite": r.id,
+                 "biome": biomes.HOMES.get(r.mascot, "dirt")}
+                for r in intents.ROLES if not self.only_kin or r.mascot == self.only_kin]
 
     def _tools_rows(self) -> list[dict]:
         rows = []

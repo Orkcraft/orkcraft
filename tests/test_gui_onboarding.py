@@ -66,7 +66,9 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     assert o["step"] == "who"
     classes = {c["id"]: c for c in o["classes"]}                          # every class at once, both gnomes too
     assert len(classes) == 11 and classes["aso_manager"]["nick"] == "Keyword Gnome"
-    assert classes["aso_manager"]["stage"] == 1 and classes["marketing"]["stage"] == 2   # two heads, told apart
+    assert classes["aso_manager"]["sprite"] == "aso_manager" and classes["marketing"]["sprite"] == "marketing"
+    sprites = Path(__file__).parents[1] / "design-system" / "sprites" / "mascots"
+    assert all((sprites / f"{c['sprite']}-1@2x.png").is_file() for c in classes.values())   # each its own head
     assert classes["marketing"]["biome"] == "lava"
     o = host.command("onboarding.role", {"role": "marketing"})
     assert o["step"] == "mcp" and o["kin"] == "gnome" and o["mcp"]["on"] == ["github", "amplitude"]
