@@ -3,7 +3,7 @@
 A Cloudflare Worker between Orkcraft and Amplitude (what is collected: [docs/usage-stats.md](../../docs/usage-stats.md)).
 
 ```
-orkcraft ──POST /v1/events──▶ Worker ──▶ Amplitude HTTP API v2 (EU)
+orkcraft ──POST /v1/events──▶ Worker ──▶ Amplitude HTTP API v2 (US)
             User-Agent: orkcraft/x.y   · holds AMPLITUDE_API_KEY (a Worker secret)
                                        · keeps only the listed events and properties
                                        · at most 30 batches a minute per install
@@ -15,8 +15,9 @@ Whoever runs the proxy can change the analytics behind it without a release of O
 
 ## Set it up
 
-1. **Amplitude.** Create a project (EU data centre: sign up at `analytics.eu.amplitude.com`, or set
-   `AMPLITUDE_REGION = "us"` in `wrangler.toml`). Project settings → General: copy the **API Key**.
+1. **Amplitude.** Create a project (US data centre, `app.amplitude.com`; for one in the EU data centre,
+   `analytics.eu.amplitude.com`, set `AMPLITUDE_REGION = "eu"` in `wrangler.toml`). Project settings →
+   General: copy the **API Key**.
    The **Secret Key** is not needed and stays in Amplitude. In the project's settings, turn off IP
    address and location tracking if offered: the only address Amplitude ever sees is Cloudflare's.
 2. **Cloudflare.** An account (the free plan is enough), and Node 20+ for `wrangler`.
