@@ -101,6 +101,17 @@ change in the working tree.
 
 ## 5. The views
 
+- **What a cart is** — every cart says it before it is opened (`realm/content.py`): a **message**
+  (Slack, mail, Telegram…), a **doc** (Confluence, Notion, a Markdown page), a **ticket** (Jira,
+  Linear, an issue), **code**, an **image**, **data** (JSON, CSV…) or **text**. Nothing in a cart says
+  so on its own; it is read off what the cart carries: a draft waiting for approval by its
+  `PUBLISH: <where>` line (the place is also shown: `Message · Slack #release`), a file cart by its
+  name, the files its work committed on its branch, else the text (JSON is data, Markdown with a
+  heading a doc). A card in the queue shows the type, where it goes, the title and the first lines of
+  what goes out — a draft without the ork's report — or thumbnails of its pictures. The closed card
+  names the first waiting cart's type and shows the waiting carts' pictures small: a picture is judged
+  by looking at it. An open cart shows what goes out first, rendered (Markdown with raw HTML off), the
+  pictures large, the whole cart with the report folded under it.
 - **Hut** — counters and the queue only: `3 held · 1 needs you`, the first titles, `passed: 12`,
   the total cost of what passed today. No preview.
 - **Full window** — list | diff or preview | the trail with cost. Diffs, images and editing live

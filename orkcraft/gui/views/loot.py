@@ -1,14 +1,19 @@
 """📦 Loot Vault in the GUI: the queue of held carts (what, from where, what the chain cost), the
 changed files, what passed; the chosen cart with the chain it came through, step by step. Every
-decision is the worker's (core/workers/loot.py); a cart is edited in Lake, in its draft file."""
+decision is the worker's (core/workers/loot.py); a cart is edited in Lake, in its draft file. Each
+cart says what it is before it is opened (realm/content.py): a message, a doc, a ticket, code, an
+image (a thumbnail, even on the closed card), data or text."""
 from __future__ import annotations
 
+import base64
+import mimetypes
 import re
 import time
 
 from orkcraft.core.workers.loot import label as _label
+from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import feedback, gate, pipes
+from orkcraft.realm import content, feedback, gate, pipes
 
 REFRESH_S = 10.0              # as the TUI
 ITEMS = 50
@@ -16,6 +21,8 @@ VALUE = 20_000                # characters of a cart shown in the window (Lake h
 STORED = 40
 GIST = 3                      # what passed lately: the Command Card shows its first lines and links
 _LINK = re.compile(r"https?://[^\s)>\]]+")
+THUMB_BYTES = 2_000_000       # a larger picture shows its name only
+PICS = 3                      # the waiting carts' pictures the closed card shows
 
 
 def refresh(w) -> None:
@@ -34,9 +41,30 @@ def card(w) -> dict:
     if w.error:
         return {"error": " ".join(w.error.split())[:60]}
     waiting = [i for i in w.queue.items if i.status in (gate.HELD, gate.NEEDS_YOU)]
+    first = next((i for i in w.queue.open() if i.status != gate.REWORK), None)
     return {"to_review": len(waiting), "needs_you": sum(1 for i in waiting if i.status == gate.NEEDS_YOU),
             "files": sum(1 for g in w.rows if not g.reviewed), "passed": len(w.stored),
-            "cost": _waiting_cost(waiting), "latest": _latest(w), "at": _latest_at(w)}
+            "cost": _waiting_cost(waiting), "latest": _latest(w), "at": _latest_at(w),
+            "first": _glance(w, first) if first is not None else None, "pics": _pics(w, waiting)}
+
+
+def _content(w, it: gate.Item) -> content.Content:
+    found = w.branches.get(it.id)
+    return content.of(it.kind, it.value, it.hops, [g.path for g in found[1]] if found else None)
+
+
+def _glance(w, it: gate.Item) -> dict:
+    """The cart the closed card names first: what it is, where it goes, its title."""
+    c = _content(w, it)
+    return {"id": it.id, "status": it.status, "type": c.type, "where": c.where, "label": _label(it)}
+
+
+def _pics(w, waiting: list[gate.Item]) -> list[dict]:
+    """The pictures of the waiting carts, for the closed card: a picture is judged by looking at it."""
+    out: list[dict] = []
+    for it in waiting:
+        out += [{"id": it.id, "path": p} for p in _content(w, it).images]
+    return out[:PICS]
 
 
 _OUTCOMES: dict[str, str] = {}          # a kept cart's path → what came of it (kept carts do not change)
@@ -72,9 +100,18 @@ def _item(w, it: gate.Item, names: dict[str, str]) -> dict:
             "attempts": it.attempts, "why": list(it.why), "notes": list(it.notes), "at": it.at[:16].replace("T", " "),
             "value": it.value[:VALUE], "cut": len(it.value) > VALUE, "chain": _chain(it.hops, names),
             "total": pipes.spent(*pipes.trail_totals(it.hops)), "maker": names.get(w.maker(it), w.maker(it)),
-            "edited": w.edited(it), "worktree": it.worktree,
+            "edited": w.edited(it), "worktree": it.worktree, "what": _what(w, it),
             "branch": {"name": files[0].branch, "files": [{"path": g.path, "change": g.change} for g in files[1]]}
             if files else None}
+
+
+def _what(w, it: gate.Item) -> dict:
+    c = _content(w, it).as_dict()
+    c["cut"] = len(c["body"]) > VALUE
+    c["body"] = c["body"][:VALUE]
+    prose = it.kind == pipes.TEXT and c["type"] != content.DATA
+    c["html"] = markdown.render(c["body"]) if prose else ""      # raw HTML off: what an ork wrote never runs
+    return c
 
 
 def _gist(w, path: str) -> dict:
@@ -219,6 +256,31 @@ def _preview(w, args: dict) -> dict:
         raise ActError(str(e)) from None
 
 
+def _thumb(w, args: dict) -> str:
+    """A cart's picture as a data: URL — the file a file cart names, or one on its branch ("" when it is
+    too large, gone or not a picture)."""
+    item = _held(w, args)
+    rel = text(args, "path", 2000)
+    if not content.is_image(rel):
+        return ""
+    data = b""
+    try:
+        found = w.branches.get(item.id)
+        if found is not None and any(g.path == rel for g in found[1]):
+            data = found[0].blob(rel)
+        elif item.kind == pipes.FILE and item.value == rel:
+            root = w.repo_root.resolve()
+            p = (root / rel).resolve()
+            if p.is_relative_to(root) and p.is_file() and p.stat().st_size <= THUMB_BYTES:
+                data = p.read_bytes()
+    except (RuntimeError, OSError, ValueError):
+        return ""
+    if not data or len(data) > THUMB_BYTES:
+        return ""
+    kind = mimetypes.guess_type(rel)[0] or "application/octet-stream"
+    return f"data:{kind};base64," + base64.b64encode(data).decode("ascii")
+
+
 ACTS = {"accept": _accept, "edit": _edit, "discard_edit": _discard_edit, "rework": _rework, "drop": _drop,
         "accept_all": _accept_all, "accept_files": _accept_files, "file_accept": _file_accept,
-        "file_reject": _file_reject, "file_restore": _file_restore, "preview": _preview}
+        "file_reject": _file_reject, "file_restore": _file_restore, "preview": _preview, "thumb": _thumb}

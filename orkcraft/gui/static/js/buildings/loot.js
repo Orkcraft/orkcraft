@@ -5,6 +5,9 @@
 // rejected folded to a line each; a cart or a file opens over them (← back) with its acts, why it waits
 // and the chain it came through. A cart opens in Lake and is edited there (its draft file) before it is
 // accepted; the rules are the keeper's. The decisions are the worker's (core/workers/loot.py).
+// Every cart says what it is before it is opened (realm/content.py): a message, a doc, a ticket, code,
+// an image, data or text — with where it goes and its first line, or a thumbnail of its picture, which
+// the closed card shows too.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -29,6 +32,47 @@ const WORD = { held: "held", needs_you: "needs you", rework: "in rework" };
 const TONE = { needs_you: "ok-tone-fire", rework: "ok-tone-wait" };
 const ORDER = { needs_you: 0, held: 1, rework: 2 };
 const CHANGE = { A: "+", M: "~", D: "−" };
+
+/** What a cart is (realm/content.py TYPES): its word and a line pictogram on the 16px grid of js/icons.js. */
+const KIND = {
+  message: { word: "Message", d: "M2 3h12v8H7l-3 2.5V11H2z" },                                              // speech bubble
+  doc: { word: "Doc", d: "M3.5 1.5h6l3 3v10h-9zM9.5 1.5v3h3M5.5 8h5M5.5 10.5h5" },                            // page
+  ticket: { word: "Ticket", d: "M1.5 4h13v2.5a1.5 1.5 0 0 0 0 3V12h-13V9.5a1.5 1.5 0 0 0 0-3zM10 4v8" },      // ticket stub
+  code: { word: "Code", d: "M5 4.5 1.5 8 5 11.5M11 4.5 14.5 8 11 11.5M9.2 3 6.8 13" },                         // brackets
+  image: { word: "Image", d: "M1.5 3h13v10h-13zM1.5 11l4-4 3.5 3.5 2-2 3.5 3.5M10.5 6.2v.1" },               // picture
+  data: { word: "Data", d: "M3 3.5C3 2.5 5.2 2 8 2s5 .5 5 1.5v9c0 1-2.2 1.5-5 1.5s-5-.5-5-1.5zM3 3.5C3 4.5 5.2 5 8 5s5-.5 5-1.5M3 8c0 1 2.2 1.5 5 1.5S13 9 13 8" }, // cylinder
+  text: { word: "Text", d: "M2.5 4h11M2.5 7h11M2.5 10h11M2.5 13h7" },                                         // lines
+};
+const kindOf = (t) => KIND[t] || KIND.text;
+
+function KindIcon({ type }) {
+  return html`<svg class="gui-type-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d=${kindOf(type).d} /></svg>`;
+}
+
+/** What it is and where it goes: `[icon] MESSAGE · Slack #release`. */
+function Kind({ what, className = "" }) {
+  const where = what.type === "code" && what.files ? `${what.where ? `${what.where} · ` : ""}${what.files} ${say(what.files === 1 ? "file" : "files")}` : what.where;
+  return html`<span class=${cls("loot-kind", `loot-kind--${what.type}`, className)}>
+    <${KindIcon} type=${what.type} /><span class="loot-kind__word">${say(kindOf(what.type).word)}</span>
+    ${where && html`<span class="loot-kind__where" title=${where}>${where}</span>`}</span>`;
+}
+
+const thumbs = signal({});         // "<building>|<cart>|<path>" → a data: URL, "" when there is none
+
+/** A cart's picture, fetched once (`act thumb`); "" while it comes or when there is none. */
+function thumb(id, item, path) {
+  const key = `${id}|${item}|${path}`;
+  if (key in thumbs.value) return thumbs.value[key];
+  thumbs.value = { ...thumbs.value, [key]: "" };
+  act(id, "thumb", { item, path }).then((url) => { thumbs.value = { ...thumbs.value, [key]: url || "" }; }, () => {});
+  return "";
+}
+
+function Thumb({ id, item, path, className }) {
+  const url = thumb(id, item, path);
+  return url ? html`<img class=${className} src=${url} alt=${path} title=${path} loading="lazy" />`
+    : html`<span class=${cls(className, "is-empty")} title=${path}><${KindIcon} type="image" /></span>`;
+}
 
 function choose(id, kind, key) {
   chosen.value = { ...chosen.value, [id]: { kind, key } };
@@ -77,12 +121,17 @@ function Acts({ id, it }) {
     ${it.status === "held" && html`<button class="ok-btn" onClick=${() => { reworking.value = { ...reworking.value, [id]: it.id }; }}>Rework…</button>`}`;
 }
 
-/** A waiting cart as a card: how it is, its title, where it came from and what its chain cost. */
+/** A waiting cart as a card: what it is and where it goes, how it is, its title, its first line or its
+ *  picture, where it came from and what its chain cost. */
 function CartCard({ id, it }) {
-  return html`<button class=${cls("loot-card", { "is-asks": it.status === "needs_you" })} title=${it.title}
+  const w = it.what;
+  return html`<button class=${cls("loot-card", `loot-card--${w.type}`, { "is-asks": it.status === "needs_you" })} title=${it.title}
       onClick=${() => choose(id, "item", it.id)}>
-    <span class=${`loot-card__state ${TONE[it.status] || ""}`}>${MARK[it.status]}${say(WORD[it.status])}${it.edited ? ` · ${say("edited")}` : ""}</span>
+    <span class="loot-card__head"><${Kind} what=${w} />
+      <span class=${`loot-card__state ${TONE[it.status] || ""}`}>${MARK[it.status]}${say(WORD[it.status])}${it.edited ? ` · ${say("edited")}` : ""}</span></span>
     <span class="loot-card__title">${it.label}</span>
+    ${w.images.length ? html`<span class="loot-card__pics">${w.images.map((p) => html`<${Thumb} key=${p} id=${id} item=${it.id} path=${p} className="loot-card__thumb" />`)}</span>`
+      : w.lines.length > 0 && w.lines[0] !== it.label && html`<span class="loot-card__line">${w.lines.filter((l) => l !== it.label).slice(0, 2).join(" · ")}</span>`}
     <span class="loot-card__foot"><span class="loot-card__from">${it.source}</span>
       ${it.attempts > 0 && html`<span>↩${it.attempts}</span>`}
       ${it.spent && html`<span class="loot-card__cost">${it.spent}</span>`}</span>
@@ -186,6 +235,7 @@ function ItemDetail({ id, it }) {
       <button class="ok-btn danger" onClick=${() => act(id, "drop", { item: it.id }).catch(() => {})}>Drop</button>
     </div>
     ${it.edited && html`<p class="ok-detail__meta ok-tone-wait">Edited in Lake: Accept takes your version.</p>`}
+    <${What} id=${id} it=${it} />
     <p class="ok-detail__section">Why it waits</p>
     <ul class="gui-rows">${it.why.map((w, i) => html`<li key=${i} class="ok-font-status">${w}</li>`)}
       ${it.notes.map((n, i) => html`<li key=${`n${i}`} class="ok-font-status ok-tone-muted">↩ ${n}</li>`)}</ul>
@@ -195,8 +245,22 @@ function ItemDetail({ id, it }) {
       <ul class="ok-files">${it.branch.files.map((g) => html`<li key=${g.path} class=${cls("ok-file gui-tree__item", { "is-selected": file === g.path })}
         onClick=${() => setFile(g.path)}><span>${CHANGE[g.change] || "~"} ${g.path}</span></li>`)}</ul>
       ${file && html`<${Preview} id=${id} item=${it.id} path=${file} />`}`}
-    <p class="ok-detail__section">${say(it.kind === "file" ? "The file" : "The cart")}</p>
-    <pre class="gui-pre">${it.value}${it.cut ? "\n… (the rest in Lake)" : ""}</pre>
+  </div>`;
+}
+
+/** The cart itself, first: what it is and where it goes, its pictures large, then what goes out (a draft
+ *  without the ork's report) — the whole cart in Lake. */
+function What({ id, it }) {
+  const w = it.what;
+  return html`<div class="loot-what">
+    <${Kind} what=${w} className="loot-what__kind" />
+    ${w.images.length > 0 && html`<div class="loot-what__pics">${w.images.map((p) => html`<${Thumb} key=${p} id=${id} item=${it.id} path=${p} className="loot-what__pic" />`)}</div>`}
+    ${w.html ? html`<div class="gui-prose loot-what__body" dangerouslySetInnerHTML=${{ __html: w.html }}></div>`
+      : (it.kind !== "file" || !w.images.length) && html`<pre class="gui-pre loot-what__body">${w.body}</pre>`}
+    ${w.cut && html`<p class="ok-detail__meta">${say("… the rest in Lake")}</p>`}
+    ${it.kind !== "file" && w.body.trim() !== it.value.trim() && html`<details class="loot-fold">
+      <summary>${say("The whole cart, with the ork's report")}</summary>
+      <pre class="gui-pre">${it.value}${it.cut ? "\n… (the rest in Lake)" : ""}</pre></details>`}
   </div>`;
 }
 
@@ -250,6 +314,16 @@ function Cart({ id, data }) {
   return null;
 }
 
+/** On the closed card, the cart that waits first — what it is, where it goes, its title — and the waiting
+ *  carts' pictures, small. */
+function Glance({ id, g, pics }) {
+  return html`<div class="loot-glance">
+    ${g && html`<div class="loot-glance__text"><${Kind} what=${{ type: g.type, where: g.where, files: 0 }} />
+      <span class="loot-glance__title" title=${g.label}>${g.label}</span></div>`}
+    ${pics.length > 0 && html`<div class="loot-glance__pics">${pics.map((p) => html`<${Thumb} key=${`${p.id}|${p.path}`} id=${id} item=${p.id} path=${p.path} className="loot-glance__thumb" />`)}</div>`}
+  </div>`;
+}
+
 /** Closed: the headline is how many carts wait (fire when one needs you), else that all is reviewed; under it
  *  the changed files and what the waiting carts cost; the foot what passed last and when. */
 export function card(b) {
@@ -260,6 +334,7 @@ export function card(b) {
   return html`<div class="gui-hut__body-in">
     ${c.to_review ? html`<div class="gui-hut__big">${c.to_review}<small>${say("to review")}${c.needs_you ? html` · <span class="ok-tone-fire">! ${c.needs_you} ${say("need you")}</span>` : ""}</small></div>`
       : html`<div class="gui-hut__big ok-tone-ok">✓<small>${say("nothing waits for you")}</small></div>`}
+    ${(c.first || (c.pics || []).length > 0) && html`<${Glance} id=${b.id} g=${c.first} pics=${c.pics || []} />`}
     ${(c.files > 0 || c.cost) && html`<div class="gui-hut__text">${c.files > 0 && html`<b>${c.files}</b> ${say(c.files === 1 ? "file to review" : "files to review")}`}
       ${c.files > 0 && c.cost ? " · " : ""}${c.cost && html`<b>${c.cost}</b> ${say("waiting")}`}</div>`}
     ${c.latest ? html`<div class="gui-hut__foot"><span><span class="ok-tone-ok">✓</span> ${c.latest}</span>

@@ -3,7 +3,7 @@
   "about": "📦 Loot Vault: the review checkpoint — the carts held for the person as one flow of cards, the files agents changed, and what passed folded to a line; a cart opens over them.",
   "panes": {
     "head":  {"about": "how many wait, need you or went back; what the waiting carts cost; a cart that needs you with Look; Accept all, Accept files, the rules", "components": ["status"], "required": true},
-    "queue": {"about": "the held carts as cards (what, from where, what the chain cost), the changed files, the rejected ones and what passed folded; a cart or a file opens here, over them (its text, why it was held, the chain, Accept, Rework, Edit)", "components": ["list", "table"], "required": true},
+    "queue": {"about": "the held carts as cards (what it is — message, doc, ticket, code, image, data, text — and where it goes, its first lines or pictures, from where, what the chain cost), the changed files, the rejected ones and what passed folded; a cart or a file opens here, over them (its text, why it was held, the chain, Accept, Rework, Edit)", "components": ["list", "table"], "required": true},
     "cart":  {"about": "kept for older documents: a cart now opens over the queue, in the queue pane", "components": ["text", "markdown", "diff"], "dynamic": true}
   },
   "default": {
