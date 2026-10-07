@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/wordmark-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/img/wordmark-light.png">
-    <img src="docs/img/wordmark-dark.png" alt="Orkcraft" width="380">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/img/logo-light.png">
+    <img src="docs/img/logo-dark.png" alt="Orkcraft" width="480">
   </picture>
 </p>
 
