@@ -51,6 +51,7 @@ class Service:
     picks: str = ""                             # what step 2 lists: repos, channels, projects, spaces, files
     about_me: str = ""                          # the "about me" switch, on by default, when the service has one
     note: str = ""
+    everything: str = ""                        # the Everything switch (§6), off by default; "" none
 
 
 ATL_SITE = Field("site", "Your Atlassian site", placeholder="acme.atlassian.net")
@@ -77,6 +78,7 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
             (("Without gh: make a token — read-only Metadata, Issues, Pull requests "
               "(a classic token with notifications to hear them)", GH_TOKEN_PAGE),),
             picks="repos", about_me="My notifications — review requests, mentions, assignments",
+            everything="Everything — the notifications of the repos I watch too",
             note="Uses the gh command's login: nothing to paste. Not logged in? Run `gh auth login` in a terminal "
                  "and Check again — or paste a token."),
     Service("gitlab", "GitLab",
@@ -92,17 +94,21 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
                    "an app password is 16 letters")),
             (("Turn on 2-Step Verification, if it is off", "https://myaccount.google.com/signinoptions/twosv"),
              ("Create an app password (any name) and copy its 16 letters", "https://myaccount.google.com/apppasswords")),
-            note="Read-only: the tower never marks mail read in the mailbox."),
+            note="Read-only: the tower never marks mail read in the mailbox.",
+            everything="Everything — the whole mailbox (All Mail), not only the inbox"),
     Service("slack", "Slack",
             (Field("token", "User OAuth Token", True, "xoxp-…", r"^xoxp-\S+$", "a user token starts with xoxp-"),),
             (("Create the app — Slack opens with it filled in; pick the workspace, Create", SLACK_NEW_APP),
              ("Install it: Install to Workspace → Allow", ""),
              ("On OAuth & Permissions, copy the User OAuth Token (xoxp-…)", "")),
-            picks="channels", about_me="Mentions and direct messages"),
+            picks="channels", about_me="Mentions and direct messages",
+            everything="Everything — every message I can see, in every channel"),
     Service("jira", "Jira", (ATL_SITE, ATL_EMAIL, ATL_TOKEN), ATL_HOW, picks="projects",
-            about_me="Issues I watch, am assigned or reported"),
+            about_me="Issues I watch, am assigned or reported",
+            everything="Everything — new comments on every issue of the site"),
     Service("confluence", "Confluence", (ATL_SITE, ATL_EMAIL, ATL_TOKEN), ATL_HOW, picks="spaces",
-            about_me="Pages and comments that mention me"),
+            about_me="Pages and comments that mention me",
+            everything="Everything — every new page and comment of the site"),
     Service("figma", "Figma",
             (Field("token", "Personal access token", True, "figd_…", r"^figd_\S+$", "a Figma token starts with figd_"),),
             (("Settings → Security → Generate new token; allow reading comments and files", "https://www.figma.com/settings"),),
@@ -113,7 +119,7 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
             (("New Application → Bot → Reset Token, and copy it", "https://discord.com/developers/applications"),
              ("On the same page switch on Message Content Intent, then Save", ""),
              ("Paste the token here; the next step gives the link that invites it to your server", "")),
-            picks="channels",
+            picks="channels", everything="Everything — every channel of the servers it is in",
             note="Discord lets a tool listen only as a bot you invite: it hears the channels it can see."),
 )}
 ATLASSIAN = ("jira", "confluence")
@@ -414,10 +420,19 @@ def options(login: Verified, opener=urllib.request.urlopen, runner=subprocess.ru
 
 # -- what it makes ----------------------------------------------------------------------------------------
 
-def plan(login: Verified, picks: list[str], about_me: bool = True, folder: str = "INBOX", me: str = "") -> Plan:
-    """The settings the picks make, and what the tower will hear, in words."""
+ALL_MAIL = "[Gmail]/All Mail"
+
+
+def plan(login: Verified, picks: list[str], about_me: bool = True, folder: str = "INBOX", me: str = "",
+         everything: bool = False, guilds: tuple[str, ...] = ()) -> Plan:
+    """The settings the picks make, and what the tower will hear, in words. `everything`: the whole
+    service at once (§6) — the picks are not needed then; Discord's takes the servers the bot is in."""
     service, picks = login.service, [p for p in picks if re.fullmatch(r"[A-Za-z0-9_.:/-]{1,120}", p)]
     token = f" token={login.refs['token']}" if login.refs.get("token") else ""
+    if everything:
+        whole = _everything(login, picks, me, guilds, token)
+        if whole is not None:
+            return whole
     if service in ("github", "gitlab"):
         pattern, what = (feeds.REPOS, "repos") if service == "github" else (feeds.PATHS, "projects")
         picks = [p for p in picks if pattern.match(p)]
@@ -466,6 +481,35 @@ def plan(login: Verified, picks: list[str], about_me: bool = True, folder: str =
     raise Refused(f"{service!r} cannot be added here yet")
 
 
+def _everything(login: Verified, picks: list[str], me: str, guilds: tuple[str, ...], token: str) -> Plan | None:
+    """The whole service as one line (docs/design/watchtower-quick-add.md §6); None: it has no Everything."""
+    service = login.service
+    if service == "github":
+        repos = [p for p in picks if feeds.REPOS.match(p)]
+        return Plan({}, "every notification, the repos you watch too" + (f", and the events of {', '.join(repos)}"
+                                                                           if repos else ""),
+                    f"github:{token}" + (f" repos={','.join(repos)}" if repos else "") + " notifications=all")
+    if service == "slack":
+        return Plan({}, "every message you can see", f"slack: token={login.refs['token']} everything=on")
+    if service in ATLASSIAN:
+        line = f"{service}: site={login.site} user={login.refs['user']} token={login.refs['token']}"
+        if service == "jira":
+            return Plan({}, f"new comments on every issue of {login.site}", f"{line} jql={feeds.EVERYTHING_JQL}")
+        return Plan({}, f"every new page and comment of {login.site}", f"{line} cql={feeds.EVERYTHING_CQL}")
+    if service == "discord":
+        ids = [g for g in guilds if g.isdigit()]
+        if not ids:
+            raise Refused("The bot is in no server yet — invite it, then List again")
+        if me and not me.isdigit():
+            raise Refused("Me is your Discord user id — digits, or a link to a message you wrote")
+        return Plan({}, f"every channel of {len(ids)} server(s)" + (", mentions of you told" if me else ""),
+                    f"discord:{token} guilds={','.join(ids)}" + (f" me={me}" if me else ""))
+    if service == "gmail":
+        return Plan({"host": "gmail", "user": login.account, "user_env": None, "password_env": login.refs["password"],
+                     "folder": ALL_MAIL}, f"new mail in {login.account} · the whole mailbox")
+    return None
+
+
 def with_feed(current: list, line: str) -> list[str]:
     """The `feeds` setting with `line` in: it replaces a line that asks the same service as the same login."""
     new, _ = feeds.parse(line)
@@ -508,6 +552,12 @@ def discord_bot(login: Verified, opener=urllib.request.urlopen) -> Verified:
     return Verified(login.service, login.who, login.account, login.refs, str((me or {}).get("id") or ""))
 
 
+def discord_guilds(login: Verified, opener=urllib.request.urlopen) -> tuple[str, ...]:
+    """The servers the bot is in: Everything listens to all of them."""
+    found = _get(f"{feeds_discord.API}/users/@me/guilds", feeds_discord.head(logins.resolve(login.refs["token"])), opener)
+    return tuple(str(g["id"]) for g in found or [] if isinstance(g, dict) and g.get("id"))
+
+
 def discord_me(login: Verified, text: str, opener=urllib.request.urlopen) -> str:
     """The person's Discord user id from what they typed: the id, `<@id>`, or a link to a message they wrote."""
     text = (text or "").strip()
@@ -537,6 +587,7 @@ class Source:
     about_me: bool = True
     folder: str = "INBOX"
     me: str = ""
+    everything: bool = False
 
 
 PICKS = {"slack": "channels", "confluence": "spaces", "figma": "files", "github": "repos", "gitlab": "projects",
@@ -550,8 +601,9 @@ def from_source(config: dict, source: str) -> Source:
         if str(config.get("host") or "").lower() != "gmail":
             raise Refused("This mailbox is not Gmail — change it in the building's settings")
         user = str(config.get("user") or "") or logins.resolve(str(config.get("user_env") or ""))
+        folder = str(config.get("folder") or "INBOX")
         return Source(Verified("gmail", user, user, {"password": str(config.get("password_env") or "")}),
-                      folder=str(config.get("folder") or "INBOX"))
+                      folder=folder, everything=folder == ALL_MAIL)
     if source == "github":
         return Source(Verified("github", "gh", "gh"), [str(config.get("github") or "")], about_me=False)
     feed, err = feeds.parse(source.removeprefix("feed:")) if source.startswith("feed:") else (None, "")
@@ -560,8 +612,10 @@ def from_source(config: dict, source: str) -> Source:
     o = feed.opts
     if not feed.poll:
         raise Refused("This line only listens to a webhook — change it in the building's settings")
-    if o.get("cql") or (o.get("jql") and feeds.JIRA_JQL not in o["jql"] and not re.fullmatch(
-            r"project in \([A-Z0-9_, ]+\)", o["jql"])):
+    everything = (feed.kind == "slack" and feed.on("everything") or o.get("notifications") == "all"
+                  or o.get("jql") == feeds.EVERYTHING_JQL or o.get("cql") == feeds.EVERYTHING_CQL or bool(o.get("guilds")))
+    if not everything and (o.get("cql") or (o.get("jql") and feeds.JIRA_JQL not in o["jql"] and not re.fullmatch(
+            r"project in \([A-Z0-9_, ]+\)", o["jql"]))):
         raise Refused("This line asks its own query — change it in the building's settings")
     refs = {k: o[k] for k in ("token", "user") if o.get(k)}
     site = o.get("site") or (feed.host if feed.kind == "gitlab" else "")
@@ -571,5 +625,6 @@ def from_source(config: dict, source: str) -> Source:
     if feed.kind == "jira" and keys:
         picks = [k.strip() for k in keys.group(1).split(",") if k.strip()]
     about_me = {"github": feed.on("notifications"), "gitlab": feed.on("todos"),
-                "jira": not o.get("jql") or feeds.JIRA_JQL in o["jql"]}.get(feed.kind, True)
-    return Source(Verified(feed.kind, account, account, refs, site), picks, about_me, me=o.get("me", ""))
+                "jira": not o.get("jql") or feeds.JIRA_JQL in o["jql"] or everything}.get(feed.kind, True)
+    return Source(Verified(feed.kind, account, account, refs, site), picks, about_me, me=o.get("me", ""),
+                  everything=everything)

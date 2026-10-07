@@ -4,6 +4,7 @@ Discord forbids automating a person's account, so the tower listens as a bot the
 invited to their server (docs/design/watchtower-quick-add.md §5):
 
     discord: token=keychain:discord-bot channels=123,456 me=789
+    discord: token=keychain:discord-bot guilds=111 me=789       # every text channel of a server (§6)
 
 Each look asks `GET /channels/{id}/messages` per channel (the newest `LOOK`); a message that
 mentions `me` (the person's user id) or the bot, or answers a message of `me`, is a mention; the
@@ -26,6 +27,7 @@ API = "https://discord.com/api/v10"
 PERMISSIONS = 1024 + 65536          # View Channels + Read Message History, nothing else
 TEXT_CHANNELS = (0, 5)              # a text channel, an announcement channel
 CHANNELS: dict[str, dict] = {}      # channel id → {name, guild_id}, for the app's life
+GUILD_MAX = 25                      # channels a `guilds=` look asks at most, per server
 
 
 def head(token: str) -> dict:
@@ -57,7 +59,20 @@ def discord(feed: Feed, opener=urllib.request.urlopen) -> Look:
     bot = feeds.get_json(f"{API}/users/@me", h, opener) or {}
     bid, me = str(bot.get("id") or ""), feed.opts.get("me", "")
     items: list[Item] = []
-    for ch in feed.ids("channels"):
+    channels = feed.ids("channels")
+    for guild in feed.ids("guilds"):            # its text channels, asked each look: a new one is heard too
+        try:
+            listed = feeds.get_json(f"{API}/guilds/{guild}/channels", h, opener) or []
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 404):
+                raise Failed(f"discord: the bot is not in the server {guild} — invite it again, or edit", "target") from None
+            raise
+        text = [c for c in sorted(listed, key=lambda c: c.get("position", 0)) if c.get("type") in TEXT_CHANNELS]
+        for c in text[:GUILD_MAX]:                  # a big server: its first channels, as Discord orders them
+            CHANNELS[str(c["id"])] = {"name": str(c.get("name") or c["id"]), "guild_id": guild}
+            if str(c["id"]) not in channels:
+                channels.append(str(c["id"]))
+    for ch in channels:
         try:
             where = _channel(ch, h, opener)
             messages = feeds.get_json(f"{API}/channels/{ch}/messages?limit={feeds.LOOK}", h, opener) or []

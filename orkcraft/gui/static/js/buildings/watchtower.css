@@ -80,6 +80,7 @@
 .gui-add__field { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-add__field > .ok-input { width: 100%; box-sizing: border-box; }
 .gui-add__hint { margin: 0; font-size: 12px; }
+.gui-add__switch.is-off { opacity: .5; cursor: not-allowed; }
 .gui-add__kept { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .gui-add__kept > .gui-add__label { width: 100%; }
 .gui-add .ok-check input, .gui-add__switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }

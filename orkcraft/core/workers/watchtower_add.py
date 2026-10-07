@@ -46,6 +46,9 @@ class Adding:
         self.me = ""                      # Discord: the person's user id, to tell mentions
         self.invite = ""                  # Discord: the link that adds the bot to a server
         self.prefill: dict[str, str] = {}     # what the login form starts with (never a secret)
+        self.everything = False           # the whole service at once (§6)
+        self.intent = ""                  # what to listen for, asked with Everything when the tower has none
+        self.guilds: tuple[str, ...] = ()     # Discord: the servers the bot is in
 
     # -- the runners: the worker's, so tests fake one place ----------------------------------------------
 
@@ -166,10 +169,10 @@ class Adding:
         if self.service == "discord":                 # the invite needs the bot's id
             def work():
                 bot = quickadd.discord_bot(login, opener)
-                return bot, quickadd.options(bot, opener)
+                return bot, quickadd.options(bot, opener), quickadd.discord_guilds(bot, opener)
 
             def listed(result) -> None:
-                self.login, self.invite = result[0], quickadd.discord_invite(result[0])
+                self.login, self.invite, self.guilds = result[0], quickadd.discord_invite(result[0]), result[2]
                 self._listed(result[1])
 
             self._thread("Looking what the bot can see…", work, listed)
@@ -216,17 +219,24 @@ class Adding:
         else:
             self.w.changed()
 
-    def what(self, picks: list[str], about_me: bool, folder: str = "INBOX", me: str = "") -> None:
-        """The picks → the setting it makes, and the first look, before anything is saved."""
+    def what(self, picks: list[str], about_me: bool, folder: str = "INBOX", me: str = "",
+             everything: bool = False, intent: str = "") -> None:
+        """The picks → the setting it makes, and the first look, before anything is saved. Everything with
+        an intent keeps the intent too (the Lookout keeps a whole service calm)."""
         if self.login is None:
             raise Refused("Log in first")
+        s = quickadd.SERVICES[self.service]
         self.picks, self.about_me, self.folder, self.me = picks, about_me, folder, me.strip()
+        self.everything, self.intent = everything and bool(s.everything), " ".join(intent.split())[:500]
         login, opener, runner, imap = self.login, self._opener(), self._runner(), type(self.w).imap_factory
-        quickadd.plan(login, picks, about_me, folder, "")            # what is wrong with the picks, at once
+        whole, guilds, ask = self.everything, self.guilds, self.intent
+        quickadd.plan(login, picks, about_me, folder, "", whole, guilds)     # what is wrong with the picks, at once
 
         def work():
             p = quickadd.plan(login, picks, about_me, folder, quickadd.discord_me(login, self.me, opener)
-                              if login.service == "discord" else "")
+                              if login.service == "discord" else "", whole, guilds)
+            if whole and ask and not self.w.intent:
+                p.changes["intent"] = ask
             return p, quickadd.first_look(login, p, opener, runner, imap)
 
         def done(result) -> None:
@@ -271,6 +281,7 @@ class Adding:
         login = made.login
         self.gh, self.service, self.editing = keep_gh, login.service, source
         self.picks, self.about_me, self.folder, self.me = list(made.picks), made.about_me, made.folder, made.me
+        self.everything = made.everything
         if login.service == "gmail":
             self.prefill = {"email": login.account}
         elif login.site and login.service in (*quickadd.ATLASSIAN, "gitlab"):
@@ -325,6 +336,9 @@ class Adding:
                    fields=[asdict(f) for f in s.fields],
                    how=[{"text": t, "url": u.replace("{host}", host)} for t, u in s.how],
                    editing=self.editing, prefill=dict(self.prefill), me=self.me, invite=self.invite,
+                   everything_says=s.everything, everything=self.everything, intent=self.intent,
+                   asks_intent=not self.w.intent,
+                   whole_team="Whole team — needs push, not built yet" if self.service == "figma" else "",
                    kept=[] if self.editing and self.step == "login" else       # Log in again: not the refused one
                    [{"account": x.account, "who": x.who} for x in self.logins_here()],
                    who=self.login.who if self.login else "",
@@ -332,7 +346,7 @@ class Adding:
                    folder=self.folder)
         if self.step == "check" and self.plan is not None:
             out.update(says=self.plan.says, found=self.found, line=self.plan.feed or "",
-                       every="every 2 min")
+                       every="every 2 min", listens_for=str(self.plan.changes.get("intent") or self.w.intent or ""))
         return out
 
 
@@ -360,6 +374,12 @@ def _hears(feed: feeds.Feed) -> list[str]:
     """What a feed line hears, in words: `acme.atlassian.net · about you · projects WEB`."""
     o = feed.opts
     out = [o["site"]] if o.get("site") else []
+    if (feed.on("everything") or o.get("notifications") == "all" or o.get("guilds")
+            or o.get("jql") == feeds.EVERYTHING_JQL or o.get("cql") == feeds.EVERYTHING_CQL):
+        out.append("everything" + (f" · servers {o['guilds']}" if o.get("guilds") else ""))
+        if o.get("repos"):
+            out.append(f"repos {o['repos']}")
+        return out + (["mentions of you told"] if o.get("me") else [])
     jql = o.get("jql", "")
     if feed.kind in ("slack", "confluence") or (feed.kind == "jira" and (not jql or feeds.JIRA_JQL in jql)):
         out.append("about you")

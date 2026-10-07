@@ -602,6 +602,13 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Continue").click()
     panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     shot("3-what")
+    whole = panel.locator(".gui-add__switch", has_text="Everything")             # §6: the whole site, an intent asked
+    whole.click()
+    panel.locator("#add-intent-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-add__options").count() == 0
+    shot("3b-everything")
+    whole.click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("4-check")

@@ -349,8 +349,12 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   kept; the new line takes the old one's place) and Remove (confirmed). A failing source says which
   way, and offers that one fix in the panel's head too: *the token was refused* → Log in again; *a
   channel, repo, project or file is gone or out of reach* → Edit; *could not reach* the service → no
-  button, it tries again by itself. Not yet: Everything (a whole service at once), listening through
-  Claude's connectors.
+  button, it tries again by itself. **Everything** (step 2, off by default) hears a whole service at
+  once — GitHub's every notification (`notifications=all`), every Slack message the login can see
+  (`everything=on`), every channel of the servers a Discord bot is in (`guilds=`), every issue of a
+  Jira site (`jql=updated >= -1d`), every Confluence page and comment, the whole Gmail mailbox (All
+  Mail); a tower with no intent asks for one there (empty keeps everything). Figma's whole team waits
+  for push. Not yet: listening through Claude's connectors.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,

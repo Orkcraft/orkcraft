@@ -398,3 +398,81 @@ def test_a_list_that_cannot_be_read_still_offers_this_project(fake_repo):
     assert [(o.id, o.picked) for o in quickadd.options(login, Opener({}), runner, fake_repo)] == [("acme/web", True)]
     with pytest.raises(quickadd.Refused, match="not available"):
         quickadd.options(login, Opener({}), Runner({"gh api user/repos": failed("gh: HTTP 403: not available")}), fake_repo)
+
+
+# -- Everything (§6) --------------------------------------------------------------------------------------
+
+def test_everything_is_one_line_per_service_and_each_reads_back():
+    gh = quickadd.Verified("github", "ann", "ann")
+    atl = quickadd.Verified("jira", "Ann", "acme.atlassian.net", {"user": "keychain:u", "token": "keychain:t"},
+                            "acme.atlassian.net")
+    conf = quickadd.Verified("confluence", "Ann", "acme.atlassian.net", atl.refs, "acme.atlassian.net")
+    slack = quickadd.Verified("slack", "ann", "acme.slack.com", {"token": "keychain:slack-acme"}, "acme.slack.com")
+    bot = quickadd.Verified("discord", "orkbot", "orkbot", {"token": "keychain:discord-orkbot"}, "900")
+    mail = quickadd.Verified("gmail", "ann@gmail.com", "ann@gmail.com", {"password": "keychain:gmail-ann"})
+    lines = {
+        "github": quickadd.plan(gh, ["acme/web"], everything=True).feed,
+        "jira": quickadd.plan(atl, ["WEB"], everything=True).feed,
+        "confluence": quickadd.plan(conf, [], everything=True).feed,
+        "slack": quickadd.plan(slack, [], everything=True).feed,
+        "discord": quickadd.plan(bot, [], me="789", everything=True, guilds=("111",)).feed,
+    }
+    assert lines["github"] == "github: repos=acme/web notifications=all"
+    assert lines["jira"].endswith("jql=updated >= -1d") and lines["confluence"].endswith("cql=type in (page, blogpost, comment)")
+    assert lines["slack"] == "slack: token=keychain:slack-acme everything=on"
+    assert lines["discord"] == "discord: token=keychain:discord-orkbot guilds=111 me=789"
+    assert feeds.check(list(lines.values())) == []
+    for line in lines.values():
+        assert quickadd.from_source({}, f"feed:{line}").everything
+    assert quickadd.plan(mail, [], everything=True).changes["folder"] == "[Gmail]/All Mail"
+    assert quickadd.from_source({"host": "gmail", "folder": "[Gmail]/All Mail"}, "mail").everything
+    with pytest.raises(quickadd.Refused, match="no server"):
+        quickadd.plan(bot, [], everything=True)
+    figma = quickadd.Verified("figma", "ann", "ann", {"token": "keychain:figma-ann"})
+    assert quickadd.plan(figma, ["AbC"], everything=True).feed == "figma: token=keychain:figma-ann files=AbC"
+
+
+def test_slack_everything_searches_every_channel_and_github_all_tells_watching_from_mentions(monkeypatch):
+    monkeypatch.setenv("T_SLACK", "xoxp-1")
+    api = Opener({"slack.com/api/auth.test": {"ok": True, "user_id": "UME"},
+                  "slack.com/api/search.messages?query=after": {"ok": True, "messages": {"matches": [
+                      {"ts": "1790000100.1", "user": "UBO", "username": "bo", "text": "lunch?",
+                       "channel": {"id": "C1", "name": "random"}},
+                      {"ts": "1790000200.1", "user": "UBO", "username": "bo", "text": "hi",
+                       "channel": {"id": "D1", "is_im": True}}]}},
+                  "slack.com/api/search.messages": {"ok": True, "messages": {"matches": []}}})
+    got = feeds.look(feeds.parse("slack: token=T_SLACK everything=on")[0], api)
+    assert [(i.title, i.mention) for i in got.items] == [("bo in #random: lunch?", False),
+                                                          ("@ bo in a direct message: hi", True)]
+    watching = dict(GH)
+    watching["gh api notifications"] = ok([{"id": "1", "reason": "subscribed", "updated_at": "2026-10-02T05:00:00Z",
+                                            "subject": {"title": "Bump"}, "repository": {"full_name": "acme/web"}}])
+    runner = Runner(watching)
+    got = feeds.look(feeds.parse("github: notifications=all")[0], Opener({}), runner)
+    assert [(i.title, i.mention) for i in got.items] == [("watching · acme/web: Bump", False)]
+    assert "participating=false" in runner.ran[0][2]
+
+
+def test_discord_everything_hears_every_text_channel_of_a_server(monkeypatch):
+    monkeypatch.setenv("T_D", "bot.token.here")
+    got = feeds.look(feeds.parse("discord: token=T_D guilds=111 me=789")[0], Opener(DISCORD))
+    assert got.error == "" and {i.key.split(":")[0] for i in got.items} == {"222"}
+    asked = feeds.look(feeds.parse("discord: token=T_D guilds=999")[0], Opener({**DISCORD, "guilds/999/channels": 403}))
+    assert asked.kind == "target" and "not in the server 999" in asked.error
+
+
+def test_everything_in_the_panel_asks_what_to_listen_for(host):
+    act, w = _act(host), host.town.worker("tower")
+    act("add_open")
+    act("add_link", link="https://acme.atlassian.net/browse/WEB-3")
+    act("add_login", values={"email": "ann@acme.io", "token": "t" * 24})
+    assert _until(lambda: w.adding.step == "what" and not w.adding.busy)
+    a = host.detail("tower")["data"]["adding"]
+    assert a["everything_says"].startswith("Everything") and a["asks_intent"] and not a["everything"]
+    act("add_what", picks=["WEB"], about_me=True, everything=True, intent="user feedback about the app")
+    assert _until(lambda: w.adding.step == "check" and not w.adding.busy)
+    assert host.detail("tower")["data"]["adding"]["listens_for"] == "user feedback about the app"
+    act("add_save")
+    assert w.config["feeds"][0].endswith("jql=updated >= -1d") and w.intent == "user feedback about the app"
+    row = host.detail("tower")["data"]["listed"][0]
+    assert "everything" in row["line"] and row["editable"]

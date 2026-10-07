@@ -8,7 +8,8 @@ the token itself (the Town Hall's Warder flags a spec that does) — or a login 
 
     slack: token=SLACK_TOKEN channels=C0123,D0456
         mentions of you (search.messages, a user token with search:read) and the new messages in
-        the channels listed (conversations.history); a message in a direct channel (D…) is a mention
+        the channels listed (conversations.history); a message in a direct channel (D…) is a mention.
+        `everything=on`: every message the person can see, by search (`after:` yesterday)
     jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN jql=project = WEB
         new comments on the issues you watch, are assigned or reported (or what `jql=` picks — it
         takes the rest of the line); a comment that @-mentions you is a mention
@@ -56,13 +57,13 @@ SEEN_KEEP = 500                 # keys a feed remembers
 BODY = 1500
 
 KINDS = {                       # kind: (required options, optional options, the option that takes the rest)
-    "slack": (("token",), ("channels", "secret"), ""),
+    "slack": (("token",), ("channels", "secret", "everything"), ""),
     "jira": (("site", "user", "token"), ("jql", "secret"), "jql"),
     "confluence": (("site", "user", "token"), ("spaces", "secret", "cql"), "cql"),
     "figma": (("token", "files"), ("secret",), ""),
     "github": ((), ("repos", "notifications", "token"), ""),
     "gitlab": ((), ("host", "token", "projects", "todos"), ""),
-    "discord": (("token", "channels"), ("me",), ""),
+    "discord": (("token",), ("channels", "guilds", "me"), ""),
 }
 ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨", "github": "🐙", "gitlab": "🦊", "discord": "🎮"}
 HOST = {"slack": "slack.com", "figma": "api.figma.com", "github": "api.github.com", "discord": "discord.com"}
@@ -74,6 +75,8 @@ PATH = r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+"
 PATHS = re.compile(rf"^{PATH}(,{PATH})*$")      # GitLab's group/sub/project, GitHub's owner/repo
 REPOS = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(,[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)*$")
 SWITCH = ("on", "off")
+EVERYTHING_JQL = "updated >= -1d"                      # Jira's Everything: every issue of the site (§6)
+EVERYTHING_CQL = "type in (page, blogpost, comment)"   # Confluence's
 SLACK_NAMES: dict[str, str] = {}     # user id → name, for the app's life
 SLACK_LOGIN = ("invalid_auth", "not_authed", "token_revoked", "token_expired", "account_inactive", "missing_scope",
                "no_permission")
@@ -110,7 +113,7 @@ class Feed:
         return self.opts.get("site") or self.opts.get("host") or HOST.get(self.kind, "gitlab.com")
 
     def on(self, name: str) -> bool:
-        return self.opts.get(name, "off") == "on"
+        return self.opts.get(name, "off") in ("on", "all")
 
     def ids(self, name: str) -> list[str]:
         return [x for x in self.opts.get(name, "").split(",") if x]
@@ -175,7 +178,7 @@ def parse(line: str) -> tuple[Feed | None, str]:
         opts["site"] = opts["site"].removeprefix("https://").rstrip("/")
         if not SITE.match(opts["site"]):
             return None, f"{kind}: site= is a host name, like acme.atlassian.net"
-    for k in ("channels", "files", "spaces"):
+    for k in ("channels", "files", "spaces", "guilds"):
         if k in opts and not IDS.match(opts[k]):
             return None, f"{kind}: {k}= is a comma-separated list of ids"
     if "repos" in opts and not REPOS.match(opts["repos"]):
@@ -186,11 +189,13 @@ def parse(line: str) -> tuple[Feed | None, str]:
         opts["host"] = opts["host"].removeprefix("https://").rstrip("/")
         if not SITE.match(opts["host"]):
             return None, f"{kind}: host= is a host name, like gitlab.com"
-    for k in ("notifications", "todos"):
-        if k in opts and opts[k] not in SWITCH:
-            return None, f"{kind}: {k}= is on or off"
-    if kind == "github" and not (opts.get("repos") or opts.get("notifications") == "on"):
+    for k in ("notifications", "todos", "everything"):
+        if k in opts and opts[k] not in SWITCH + (("all",) if k == "notifications" else ()):
+            return None, f"{kind}: {k}= is on or off" + (" (or all)" if k == "notifications" else "")
+    if kind == "github" and not (opts.get("repos") or opts.get("notifications") in ("on", "all")):
         return None, "github: set repos= or notifications=on"
+    if kind == "discord" and not (opts.get("channels") or opts.get("guilds")):
+        return None, "discord: set channels= (or guilds= for every channel of a server)"
     if kind == "gitlab" and not (opts.get("projects") or opts.get("todos") == "on"):
         return None, "gitlab: set projects= or todos=on"
     if kind == "discord" and opts.get("me") and not opts["me"].isdigit():
@@ -273,6 +278,20 @@ def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
         items[key] = Item(key, f"@ {m.get('username') or name(m.get('user', ''))} in #{ch.get('name', '?')}: "
                                f"{_short(text, 60)}", text[:BODY], m.get("permalink", ""),
                           _iso(m.get("ts")), mention=True)
+    if feed.on("everything"):          # every channel the person can see: search, no channel list (§6)
+        since = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)).strftime("%Y-%m-%d")
+        for m in (call("search.messages", query=f"after:{since}", sort="timestamp", sort_dir="desc", count=LOOK)
+                  .get("messages") or {}).get("matches") or []:
+            ch = m.get("channel") or {}
+            key = f"{ch.get('id', '')}:{m.get('ts', '')}"
+            if m.get("user") == uid or key in items:
+                continue
+            direct = bool(ch.get("is_im")) or str(ch.get("id", "")).startswith("D") or f"<@{uid}>" in m.get("text", "")
+            text = plain(m.get("text", ""))
+            where = "a direct message" if ch.get("is_im") else f"#{ch.get('name', '?')}"
+            items[key] = Item(key, f"{'@ ' if direct else ''}{m.get('username') or name(m.get('user', ''))} in {where}: "
+                                   f"{_short(text, 60)}", text[:BODY], m.get("permalink", ""), _iso(m.get("ts")),
+                              mention=direct)
     oldest = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)).timestamp()
     for ch in feed.ids("channels"):
         for m in call("conversations.history", channel=ch, oldest=f"{oldest:.0f}", limit=LOOK).get("messages") or []:

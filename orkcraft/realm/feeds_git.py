@@ -4,6 +4,8 @@ the repos and projects listed.
     github: repos=owner/app,owner/api notifications=on
         `notifications=on`: GET /notifications?participating=true — review requests, mentions,
         assignments, replies in threads you are in, across every repo; each is about you (a mention).
+        `notifications=all`: the repos you watch too (participating=false); what only watching
+        brings is not a mention.
         `repos=`: GET /repos/{repo}/events, as the old `github: owner/repo` setting heard one repo.
         Asked through `gh api` (its login: nothing to paste), or with `token=` over HTTPS.
     gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app,group/api todos=on
@@ -133,15 +135,17 @@ def github(feed: Feed, opener=urllib.request.urlopen, runner=None) -> Look:
 
     items: list[Item] = []
     if feed.on("notifications"):
-        for n in api(f"notifications?participating=true&per_page={feeds.LOOK}") or []:
+        everything = feed.opts.get("notifications") == "all"      # watching too, not only taking part (§6)
+        for n in api(f"notifications?participating={'false' if everything else 'true'}&per_page={feeds.LOOK}") or []:
             subject, repo = n.get("subject") or {}, (n.get("repository") or {})
             name, why = repo.get("full_name", "?"), REASON.get(n.get("reason", ""), n.get("reason", ""))
             title = subject.get("title", "")
+            about = not everything or n.get("reason") not in ("subscribed", "manual", "ci_activity")
             items.append(Item(f"n:{n.get('id', '')}:{n.get('updated_at', '')}",
-                              f"@ {why} · {name}: {_short(title, 60)}",
+                              f"{'@ ' if about else ''}{why} · {name}: {_short(title, 60)}",
                               f"{name} · {subject.get('type', '')} · {why}\n\n{title}"[:feeds.BODY],
                               html_url(subject.get("url", ""), repo.get("html_url", "")), _iso(n.get("updated_at")),
-                              mention=True))
+                              mention=about))
     for repo in feed.ids("repos"):
         try:
             events = api(f"repos/{repo}/events?per_page=30") or []

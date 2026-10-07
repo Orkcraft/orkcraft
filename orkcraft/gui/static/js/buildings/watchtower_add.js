@@ -109,17 +109,27 @@ function What({ id, a }) {
   const [aboutMe, setAboutMe] = useState(a.about_me !== false);
   const [folder, setFolder] = useState(a.folder || "INBOX");
   const [me, setMe] = useState(a.me || "");
+  const [whole, setWhole] = useState(!!a.everything);
+  const [intent, setIntent] = useState(a.intent || "");
   const [find, setFind] = useState("");
   const [links, setLinks] = useState("");
   useEffect(() => setPicks(a.picks || []), [JSON.stringify(a.picks)]);
   const toggle = (k) => setPicks(picks.includes(k) ? picks.filter((x) => x !== k) : [...picks, k]);
   const shown = (a.options || []).filter((o) => !find || o.label.toLowerCase().includes(find.toLowerCase()));
-  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder, me }).catch(() => {});
+  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder, me, everything: whole, intent }).catch(() => {});
+  const picking = !whole || a.service === "github";            // Everything needs no list (GitHub's repos still add their events)
   return html`<div class="gui-add">
     <${Head} a=${a} />
-    ${a.about_me_says && html`<label class="ok-check gui-add__switch"><input type="checkbox" checked=${aboutMe}
+    ${a.everything_says && html`<label class="ok-check gui-add__switch"><input type="checkbox" checked=${whole}
+      onChange=${(e) => setWhole(e.target.checked)} /><i>${whole ? "✓" : ""}</i>${a.everything_says}</label>`}
+    ${a.whole_team && html`<label class="ok-check gui-add__switch is-off" title=${say("Figma has no list of a team's comments to ask: it needs a public address to push to")}><input type="checkbox" disabled /><i></i>${a.whole_team}</label>`}
+    ${whole && a.asks_intent && html`<div class="gui-add__field">
+      <label class="gui-add__label" for=${`add-intent-${id}`}>Everything in ${a.label} is a lot — say what you listen for, or keep everything</label>
+      <input id=${`add-intent-${id}`} class="ok-input" value=${intent} placeholder=${say("e.g. user feedback about the app — empty lets everything through")}
+        onInput=${(e) => setIntent(e.target.value)} /></div>`}
+    ${a.about_me_says && !whole && html`<label class="ok-check gui-add__switch"><input type="checkbox" checked=${aboutMe}
       onChange=${(e) => setAboutMe(e.target.checked)} /><i>${aboutMe ? "✓" : ""}</i>${a.about_me_says}</label>`}
-    ${a.service === "gmail" && html`<div class="gui-add__field"><label class="gui-add__label" for=${`add-folder-${id}`}>Folder</label>
+    ${a.service === "gmail" && !whole && html`<div class="gui-add__field"><label class="gui-add__label" for=${`add-folder-${id}`}>Folder</label>
       <input id=${`add-folder-${id}`} class="ok-input" value=${folder} onInput=${(e) => setFolder(e.target.value)} /></div>`}
     ${a.service === "figma" && html`<div class="gui-add__field"><label class="gui-add__label" for=${`add-files-${id}`}>Figma file or team links</label>
       <div class="gui-head"><input id=${`add-files-${id}`} class="ok-input" style="flex: 1; width: auto" value=${links}
@@ -133,17 +143,17 @@ function What({ id, a }) {
       <label class="gui-add__label" for=${`add-me-${id}`}>Me — to tell mentions of you</label>
       <input id=${`add-me-${id}`} class="ok-input" value=${me} placeholder=${say("your user id, or a link to a message you wrote")}
         onInput=${(e) => setMe(e.target.value)} /></div>`}
-    ${a.picks_of && a.service !== "figma" && html`<span class="gui-add__label">${{ repos: "Repos — their events", channels: "Channels", projects: "Projects — their events", spaces: "Spaces" }[a.picks_of]}</span>`}
-    ${(a.options || []).length > 8 && html`<input class="ok-input" placeholder=${say("Search")} value=${find} onInput=${(e) => setFind(e.target.value)} />`}
-    ${shown.length > 0 && html`<ul class="gui-add__options">
+    ${a.picks_of && a.service !== "figma" && picking && html`<span class="gui-add__label">${{ repos: "Repos — their events", channels: "Channels", projects: "Projects — their events", spaces: "Spaces" }[a.picks_of]}</span>`}
+    ${picking && (a.options || []).length > 8 && html`<input class="ok-input" placeholder=${say("Search")} value=${find} onInput=${(e) => setFind(e.target.value)} />`}
+    ${picking && shown.length > 0 && html`<ul class="gui-add__options">
       ${shown.map((o) => html`<li key=${o.id}><label class="ok-check"><input type="checkbox" checked=${picks.includes(o.id)}
         onChange=${() => toggle(o.id)} /><i>${picks.includes(o.id) ? "✓" : ""}</i>${o.label}</label>
         ${o.meta && html`<span class="ok-tone-muted gui-add__meta">${o.meta}</span>`}</li>`)}
     </ul>`}
-    ${a.picks_of && !a.busy && !(a.options || []).length && a.service !== "figma" && html`<p class="ok-tone-muted gui-add__sub">Nothing to pick here.</p>`}
+    ${picking && a.picks_of && !a.busy && !(a.options || []).length && a.service !== "figma" && html`<p class="ok-tone-muted gui-add__sub">Nothing to pick here.</p>`}
     <${State} a=${a} />
     <div class="gui-add__foot">
-      <span class="ok-tone-muted gui-add__sub">${picks.length ? `${picks.length} picked` : ""}</span>
+      <span class="ok-tone-muted gui-add__sub">${picking && picks.length ? `${picks.length} picked` : ""}</span>
       <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
       <button class="ok-btn primary" disabled=${!!a.busy} onClick=${check}>Check</button>
     </div>
@@ -164,6 +174,7 @@ function Check({ id, a, done }) {
         <dl class="gui-add__kv">
           <dt>As</dt><dd>${a.who}</dd>
           <dt>Hears</dt><dd>${a.says}</dd>
+          <dt>Listens for</dt><dd>${a.listens_for || "everything passes"}</dd>
           ${!bad && a.found >= 0 && html`<dt>Found now</dt><dd>${a.found} — marked seen, not sent</dd>`}
           <dt>Checks</dt><dd>${a.every}</dd>
         </dl>

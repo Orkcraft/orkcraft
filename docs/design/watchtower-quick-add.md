@@ -3,8 +3,9 @@
 Status: written 2026-10-07. Built: Logins (§3), the flow in the panel (§4) with the link, the picker and
 the three steps, for GitHub (gh or a token; many repos and the notifications), GitLab (glab or a
 token; to-dos and projects), Gmail, Slack, Discord (a bot, its invite link, *me*), Jira, Confluence
-and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), Remove in Sources &
-intent. Not yet: Everything (§6), the agent source (§7), `gh auth login --web` in the GUI's terminal
+and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), **Everything** (§6) for
+GitHub, Slack, Discord, Jira, Confluence and Gmail, Remove in Sources & intent. Not yet: the agent
+source (§7), Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
 panel (GitHub without gh asks for a token instead), pushes (GitLab's webhook, Discord's Gateway). Items
 marked *(check)* have not been verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop
@@ -327,6 +328,21 @@ So step 2 of every service but Figma gets **Everything** at the top of its list 
 and turning it on with no intent asks for one: *Everything in Jira is a lot — say what you listen
 for, or keep everything*. Figma's **Whole team** stays greyed out with *needs push — not built
 yet* until the tunnel exists.
+
+**Built** — one line each, read back by Edit:
+
+| Service | Everything is |
+|---|---|
+| GitHub | `notifications=all` (`participating=false`): the repos watched too; what only watching brings (`subscribed`, `manual`, `ci_activity`) is not a mention. Ticked repos still add their events |
+| Slack | `everything=on`: `search.messages` for `after:<yesterday>` beside the mentions search; a DM is a mention *(check: how far search trails, and whether `after:` takes a day)* |
+| Discord | `guilds=<ids>`: every text channel of each server the bot is in, listed again each look (a new channel is heard), the first 25 a server |
+| Jira | `jql=updated >= -1d`: comments on every issue of the site |
+| Confluence | `cql=type in (page, blogpost, comment)` beside the mentions query |
+| Gmail | the folder `[Gmail]/All Mail` *(check: its name in a mailbox in another language)* |
+| GitLab | no switch: the to-dos already cover every project. *(Open: an Everything that hears every member project's events — one call per project a look.)* |
+
+With no intent on the tower, turning Everything on asks for one in the same step; an empty answer
+keeps everything. The intent is saved with the source on Add.
 
 ## 7. Through Claude or agy: the connectors people already have
 
