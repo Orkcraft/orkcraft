@@ -183,3 +183,20 @@ def test_the_mill_queues_while_it_mills(fake_repo, isolated_layout_file):
     assert _card(host, grinder) == {"state": "running", "at": d["current"]["started"], "queue": 1, "title": "first",
                                     "steps": 1, "runs": 0}
     _wait(lambda: len(w.runs) == 2 and not w.running)
+
+
+def test_a_signpost_route_no_road_takes_is_a_stub_on_the_map(fake_repo, isolated_layout_file):
+    """A route of the rules with no road out is drawn as a stub to pull a road from; a road for every route takes all."""
+    host = _host(fake_repo)
+    post = _raised(host, "signpost", rules=["bugs: contains error", "new-meeting: contains invite", "rest: else"])
+    a, b = _raised(host, "lake"), _raised(host, "lake")
+    ts.subscribe(host.town.scroll, a, post, "signpost.routed", {"route": ["bugs"]})
+    ts.subscribe(host.town.scroll, b, post, "signpost.unmatched")
+    w = host.town.worker(post)
+    assert w.loose_ends() == [{"route": "new-meeting", "name": "new meeting", "event": "signpost.routed#new-meeting"},
+                              {"route": "rest", "name": "rest", "event": "signpost.routed#rest"}]
+    assert next(x for x in host.snapshot()["buildings"] if x["id"] == post)["loose"] == w.loose_ends()
+    assert host.command("roads.lay", {"from": post, "to": b, "event": "signpost.routed#rest", "handler": None})
+    assert [x["route"] for x in w.loose_ends()] == ["new-meeting"]
+    ts.subscribe(host.town.scroll, a, post, "signpost.routed")                 # every route
+    assert w.loose_ends() == []

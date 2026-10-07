@@ -107,7 +107,8 @@ class Worker:
         return None
 
     def loose_ends(self) -> list[dict]:
-        """Its ways out that no road takes yet — [{"route", "name"}] — drawn on the map as a stub to pull a road from."""
+        """Its ways out that no road takes yet — [{"route", "name", "event"}] — drawn on the map as a stub to pull a
+        road from; the road pulled is laid on `event` at once (gui/static/js/town.js LooseEnds)."""
         return []
 
     def answer_alert(self, key: str) -> str | None:

@@ -150,3 +150,25 @@ async def test_the_tui_finds_the_road_in_words_and_lays_it(fake_repo, monkeypatc
                 break
         road = app.scroll.building(fields).roads[0]
         assert (road.source, road.event, road.filter) == (tower, "mail.received", {"match": "(?i)unread"})
+
+
+def test_the_receivers_steward_finds_the_road_on_its_own_tool_and_tier(fake_repo, monkeypatch):
+    from orkcraft import scroll as ts
+    from orkcraft.realm import builders, steward
+
+    host = _host(fake_repo)
+    tower = buildings.raise_spec(host.town, buildings.type_spec(host.town, "watchtower")).id
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    b = host.town.scroll.building(fields)
+    b.garrison.steward = ts.OrcSpec("keeper", "Grunts", harness=[{"role": "run", "harness": "claude"}])
+    steward.set_models(b, {"roads": "laborer"})
+    calls: list[tuple[str, str | None]] = []
+    rule = {"from": tower, "event": "mail.received", "rule": "only my boss's mail", "say": "When the boss writes…"}
+    monkeypatch.setattr(builders, "ask", lambda tool, prompt, model=None: calls.append((tool, model)) or (
+        json.dumps({"options": [rule]}) if "Recruiter" not in prompt else "{}", None))
+    jid = host.command("roads.plan", {"to": fields, "from": tower, "prompt": "boss mail"})
+    assert _wait(host, jid)["state"] == "ready"
+    rid = host.command("job.accept", {"job": jid, "index": 0})
+    _wait(host, rid)
+    assert calls[0] == ("claude", "laborer") and ("claude", "laborer") in calls[1:]    # the planner, then the Recruiter
+    assert "roads" in steward.uses("fields")

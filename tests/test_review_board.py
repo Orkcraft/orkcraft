@@ -235,7 +235,7 @@ def test_an_exit_with_no_road_is_a_loose_end_and_its_road_says_its_name(host):
     from orkcraft.core import roads
     from orkcraft.gui import state
     w = host.town.worker("board")
-    assert w.loose_ends() == [{"route": "to-the-designer", "name": "To the designer"}]
+    assert w.loose_ends() == [{"route": "to-the-designer", "name": "To the designer", "event": "team.routed#to-the-designer"}]
     choices = roads.choices(host.town, "board", "dev")
     assert ("team.routed#to-the-designer", None, "plain · exit To the designer") in choices
     road = next(r for r in state.roads(host.town) if r["from"] == "board" and r["to"] == "dev")
