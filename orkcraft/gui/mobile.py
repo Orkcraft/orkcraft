@@ -10,7 +10,7 @@ host's own command table, so the GUI's page and tests reach it today the same wa
 
 The compact snapshot is derived from the page's (`Host.snapshot`, gui/state.py), never from the
 town directly, so the two cannot disagree. Text that may carry emoji comes twice, as it is and
-`_plain` (Office's words without emoji: `modes.text`), as in the page's snapshot.
+`_plain` (today's words without emoji: `modes.plain`), as in the page's snapshot.
 """
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ def _alert(a: dict) -> dict[str, Any]:
 
 
 def _building(b: dict) -> dict[str, Any]:
-    return {"id": b["id"], "title": b["title"], "title_plain": modes.text(b["title"], modes.OFFICE),
+    return {"id": b["id"], "title": b["title"], "title_plain": modes.plain(b["title"]),
             "type": b["type"], "state": b.get("state", ""),
             "alert": (b.get("alert") or {}).get("id") or None}
 

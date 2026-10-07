@@ -194,7 +194,7 @@ class BuildingMixin:
         raises it there, Esc builds nothing. Without a town on screen it is raised at once.
         True when it was raised at once."""
         label = f"{spec.get('icon', '')} {spec.get('title', '')}".strip()
-        sil = silhouettes.styled(silhouettes.of(spec), self.desktop.plain)
+        sil = silhouettes.of(spec)
         size = footprint(sil, silhouettes.label(len(self.desktop.huts) + 1, label, sil.width),
                          len(catalog.quick_actions_of(spec)))
 

@@ -11,11 +11,10 @@ from textual.message import Message
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import modes
 from orkcraft.realm.orcs import BUILDER, COUNCIL, RESIDENT, WORKER, Orc
 from orkcraft.screens.console.cards import STATUS_DISPLAY, _append_tier, orc_key
 from orkcraft.tui.text import scheme_text
-from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
+from orkcraft.widgets.office import WordedOptionList, WordedStatic
 
 if TYPE_CHECKING:
     from orkcraft.app import FocusState
@@ -44,10 +43,10 @@ class ClanRoster(Vertical):
         self.inventory_of: str | None = None      # the orc whose 🎒 inventory the list shows
 
     def compose(self) -> ComposeResult:
-        yield OfficeStatic("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
-        yield OfficeOptionList(id="roster-list")
-        yield OfficeStatic("", markup=False, id="roster-card")
-        yield OfficeStatic("[Space] Fold   [1-9] Select", markup=False, id="roster-footer", classes="console-footer")
+        yield WordedStatic("🧌 CLAN ROSTER", id="roster-title", classes="console-title")
+        yield WordedOptionList(id="roster-list")
+        yield WordedStatic("", markup=False, id="roster-card")
+        yield WordedStatic("[Space] Fold   [1-9] Select", markup=False, id="roster-footer", classes="console-footer")
 
     @staticmethod
     def _render_garrison_row(o: Orc, number: int, seen: set[str] | frozenset = frozenset()) -> Text:
@@ -60,7 +59,7 @@ class ClanRoster(Vertical):
         asks = o.alert.id not in seen if o.alert is not None else o.status == "alert"
         t.append(f"[{number}] ", style="dim")
         if asks:
-            t.append(modes.QUESTION if modes.office() else "❓", style="bold black on yellow")
+            t.append("❓", style="bold black on yellow")
             t.append(" ")
         t.append("★ " if o.lead else "", style=name_style)
         _append_tier(t, o)

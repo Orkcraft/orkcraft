@@ -121,7 +121,7 @@ async def test_a_waiting_orc_is_a_passive_alert(fake_repo: Path):
         await pilot.pause()
         assert [a.id for a in app.roster.alerts] == ["spec:loot/quartermaster"]
         assert app.roster.by_building("loot").status == "alert"
-        assert "🔥 1 awaiting orders" in str(app.screen.query_one("#hud", Hud).render())
+        assert "🔥 1 awaiting an answer" in str(app.screen.query_one("#hud", Hud).render())
         assert not isinstance(app.screen, AlertModal)  # never opens by itself
 
         await pilot.press("exclamation_mark")
@@ -260,7 +260,7 @@ async def test_hud_click_opens_awaiting_orders_modal(fake_repo: Path):
         await pilot.pause()
         assert len(app.roster.alerts) == 2
         hud = app.screen.query_one("#hud", Hud)
-        assert "🔥 2 awaiting orders" in str(hud.render())
+        assert "🔥 2 awaiting an answer" in str(hud.render())
         astart, aend = hud._alerts_span
         assert astart > 0 and aend > astart
 

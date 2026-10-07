@@ -12,16 +12,13 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, OptionList, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import modes
+from orkcraft.realm import lexicon
 
 
 MENU_ITEMS: list[tuple[str, str]] = [
     ("halt", "🛑 Halt All Operations"),
     ("screenshot", "📸 Capture Screenshot (SVG → ./loot/screenshots/)"),
     ("keys", "⌨️ Keybindings Cheat Sheet"),
-    ("camp", "🧌 Camp — the town of orks: ASCII, fire, gold and lumber"),
-    ("office", "👔 Office — a work tool: grey frames, ❓ and plain words (agents, links, modules)"),
-    ("shift", "🧌/👔 Shift — Office in office hours, Camp otherwise"),
     ("terrain", "🌲 Toggle Terrain (Dim / Black)"),
     ("save", "💾 Save Town Scroll (.orkcraft.json)"),
     ("audit", "🔍 Audit the camp (security, usability, spend)"),
@@ -29,10 +26,10 @@ MENU_ITEMS: list[tuple[str, str]] = [
     ("improve", "🔧 Building retro — the daily proposal for one building"),
     ("weekly", "🗓 Town retro — the weekly look over the camp, or run it now"),
     ("settings", "⚙ Retro settings — models and schedules"),
-    ("day", "🕰 Your day — quiet hours and office hours"),
+    ("day", "🕰 Your day — quiet hours"),
     ("autonomy", "🏛 Ork autonomy — the Elders' advice, the agents' own settings"),
     ("changes", "🧾 What the orks changed — their own improvements, on probation or kept"),
-    ("onboarding", "🧭 Onboarding — who you are, your AI tools, the look of the town"),
+    ("onboarding", "🧭 Onboarding — who you are and your AI tools"),
     ("town_order", "📜 Town Builder — plan the town ordered in words"),
     ("quit", "🚪 Quit Orkcraft"),
 ]
@@ -155,17 +152,17 @@ def _format_column(groups: list[tuple[str, list[tuple[str, str]]]]) -> Group:
     for idx, (title, rows) in enumerate(groups):
         if idx > 0:
             parts.append(Text(""))
-        parts.append(Text(f"── {modes.text(title)} ──", style="bold yellow"))     # a Rich table: the mode's words here
+        parts.append(Text(f"── {lexicon.words(title)} ──", style="bold yellow"))     # a Rich table: the hook does not reach it
         grid = Table.grid(padding=(0, 1))
         grid.add_column(style="bold cyan", no_wrap=True)
         grid.add_column(overflow="fold")
         for key, desc in rows:
-            grid.add_row(Text(key), Text(modes.text(desc)))
+            grid.add_row(Text(key), Text(lexicon.words(desc)))
         parts.append(grid)
     return Group(*parts)
 
 
-from orkcraft.widgets.office import OfficeOptionList, OfficeStatic  # noqa: E402
+from orkcraft.widgets.office import WordedOptionList, WordedStatic  # noqa: E402
 
 class SystemMenu(ModalScreen[str | None]):
     """System menu modal [F10]."""
@@ -208,29 +205,21 @@ class SystemMenu(ModalScreen[str | None]):
         Binding("1", "pick('halt')", show=False),
         Binding("2", "pick('screenshot')", show=False),
         Binding("3", "pick('keys')", show=False),
-        Binding("4", "pick('camp')", show=False),
-        Binding("5", "pick('office')", show=False),
-        Binding("6", "pick('shift')", show=False),
-        Binding("7", "pick('terrain')", show=False),
-        Binding("8", "pick('save')", show=False),
+        Binding("4", "pick('terrain')", show=False),
+        Binding("5", "pick('save')", show=False),
     ]
-
-    def __init__(self, mode: str = "camp") -> None:
-        super().__init__()
-        self.mode = mode            # which of the three modes is on (marked ●)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="system-menu-dialog"):
-            yield OfficeStatic("⚙️ SYSTEM & CLAN OPERATIONS", id="system-menu-title", markup=False)
-            yield OfficeOptionList(id="system-menu-list")
+            yield WordedStatic("⚙️ SYSTEM & CLAN OPERATIONS", id="system-menu-title", markup=False)
+            yield WordedOptionList(id="system-menu-list")
             yield Static("[1-9] action · [Esc] cancel", id="system-menu-footer", markup=False)
 
     def on_mount(self) -> None:
         lst = self.query_one("#system-menu-list", OptionList)
         lst.clear_options()
         for i, (action_id, label) in enumerate(MENU_ITEMS, 1):
-            on = action_id == self.mode
-            lst.add_option(Option(Text(f"[{i}] {label}" + ("  ●" if on else "")), id=action_id))
+            lst.add_option(Option(Text(f"[{i}] {label}"), id=action_id))
         lst.focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:

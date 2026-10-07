@@ -255,7 +255,11 @@ DEFAULT_VIEW = "town"   # town (huts, one building expanded) | tiles (every wind
 
 def _default_preferences() -> dict:
     return {"terrain_solid_black": False, "preview_linked": True, "carts": "selected", "roads": "faint",
-            "view": DEFAULT_VIEW}         # "mode" only when the project overrides the machine's (settings.py)
+            "view": DEFAULT_VIEW}
+
+
+# Preferences an older scroll may carry that mean nothing now: they load and are dropped.
+_OLD_PREFERENCES = ("mode",)    # the look (Camp / Office / Shift) of a project: there is one look now
 
 
 @dataclass
@@ -361,7 +365,8 @@ class TownScroll:
         return cls(
             active_orkspace_id=data["active_orkspace_id"], orkspaces=orkspaces, buildings=buildings,
             budget=Budget(**(data.get("budget") or {})),
-            preferences={**_default_preferences(), **(data.get("preferences") or {})},
+            preferences={**_default_preferences(), **{k: v for k, v in (data.get("preferences") or {}).items()
+                                                       if k not in _OLD_PREFERENCES}},
             meta={k: v for k, v in (data.get("meta") or {}).items() if k != "updated_at"} or
                  {"project_name": "orkcraft", "tagline": "Work vs Humans"},
             version=data.get("version", VERSION),

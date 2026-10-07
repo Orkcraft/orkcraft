@@ -200,7 +200,7 @@ async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, qui
         assert elders.recent(fake_repo)[0]["key"] == "1"
         app.push_screen(AwaitingOrdersModal([alert], {}))
         await pilot.pause()
-        assert "The Elders advise [1] Yes" in str(app.screen.query_one("#order-advice").render())
+        assert "The Advisors advise [1] Yes" in str(app.screen.query_one("#order-advice").render())
         await pilot.press("a")                                                # the operator follows it
         await pilot.pause()
         assert sent == [("t1", b"1")]
@@ -288,7 +288,7 @@ async def test_follow_all_answers_only_the_advised(fake_repo: Path, quiet, monke
         await pilot.press("A")
         await pilot.pause()
         assert sent == [("t1", b"1")] and isinstance(app.screen, AwaitingOrdersModal)
-        assert "No advice: Warder: deletes" in str(app.screen.query_one("#order-advice").render())
+        assert "No advice: Security reviewer: deletes" in str(app.screen.query_one("#order-advice").render())
 
 
 @pytest.mark.asyncio
@@ -305,7 +305,7 @@ async def test_follow_all_skips_the_flagged_advice(fake_repo: Path, quiet, monke
         app.advice[app.elders_mark(b)] = elders.Decision("1", "looks fine", "model", warn="the action goes to the network")
         app.push_screen(AwaitingOrdersModal([b, a], {}))
         await pilot.pause()
-        assert "⚠ The Warder flags this screen" in str(app.screen.query_one("#order-advice").render())
+        assert "⚠ The Security reviewer flags this screen" in str(app.screen.query_one("#order-advice").render())
         await pilot.press("A")
         await pilot.pause()
         assert sent == [("t1", b"1")]                                         # b waits for its own `a`
@@ -335,7 +335,7 @@ async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_r
         view = app.desktop.get_window(TOWN_HALL).query_one(TownHallView)
         view.refresh_hall()
         body = str(view.query_one("#hall-body").render())
-        assert "🏛 The Elders" in body and "Grunt" in body and "advised [1] Yes" in body and "1 of 40 tonight" in body
+        assert "🏛 The Advisors" in body and "Worker" in body and "advised [1] Yes" in body and "1 of 40 tonight" in body
         assert view.hut_lines([4, 24])[0] == "📜"
         app.roster.alerts = []
         assert app.elders_state() == "watch" and view.lamp() == "🌙"

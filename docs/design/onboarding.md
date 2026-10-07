@@ -31,7 +31,7 @@ hooks, the Town Hall and the Town Builder (`realm/town_builder.py`). Wording: or
 | a known machine, no profile yet | orkestration · who + day · town | 3 |
 | F10 → 🧭 Onboarding | orkestration · who + day · AI tools · camp rules — never the town | 4 |
 
-- Kept per machine in `~/.config/orkcraft/settings.json` (`profile`, `tools`, `autonomy`, `mode`,
+- Kept per machine in `~/.config/orkcraft/settings.json` (`profile`, `tools`, `autonomy`,
   `quiet`); per project in `.orkcraft.json`, `.orkcraft/` and the order `.orkcraft/town/order.json`.
 - Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
   **Skip** = an empty town, defaults for the rest, no Warder; the CLIs found are kept on.
@@ -126,9 +126,9 @@ is reviewed and raised; Later leaves the order burning 🔥 in the Town Hall.
 ## 6. Camp rules
 
 The ork autonomy slider (⛓️ In chains · 🕰 On the clock · ⛓️‍💥 Unchained — docs/design/barracks-planning.md §2 — with what
-each means and the agents' own settings to copy) and, below it, the look — 🧌 Camp · 👔 Office ·
-🧌/👔 Shift — and 🌙 quiet hours 23:00–08:00 on or off. The hours themselves and the office days
-are F10 → 🕰 Your day (the day bar); the slider alone is F10 → 🏛 Ork autonomy.
+each means and the agents' own settings to copy) and, below it, 🌙 quiet hours 23:00–08:00 on or
+off. There is no look to choose: Camp and Office are one (CLAUDE.md, Wording). The hours themselves are
+F10 → 🕰 Your day (the day bar); the slider alone is F10 → 🏛 Ork autonomy.
 
 ## 7. Raising the town
 

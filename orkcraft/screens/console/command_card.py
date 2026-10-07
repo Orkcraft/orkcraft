@@ -11,7 +11,7 @@ from textual.widgets.option_list import Option
 
 from orkcraft.realm.orcs import RESIDENT
 from orkcraft.screens.console.cards import orc_key
-from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
+from orkcraft.widgets.office import WordedOptionList, WordedStatic
 
 if TYPE_CHECKING:
     from orkcraft.app import FocusState
@@ -69,9 +69,9 @@ class CommandCard(Vertical):
     """Right column: clickable actions for the current focus state."""
 
     def compose(self) -> ComposeResult:
-        yield OfficeStatic("⚒️ COMMAND CARD", id="command-title", classes="console-title")
-        yield OfficeOptionList(id="command-actions")
-        yield OfficeStatic("[Esc] Deselect / Neutral Mode", markup=False, id="command-footer", classes="console-footer")
+        yield WordedStatic("⚒️ COMMAND CARD", id="command-title", classes="console-title")
+        yield WordedOptionList(id="command-actions")
+        yield WordedStatic("[Esc] Deselect / Neutral Mode", markup=False, id="command-footer", classes="console-footer")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
         actions_list = self.query_one("#command-actions", OptionList)

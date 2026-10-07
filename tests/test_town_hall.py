@@ -132,8 +132,8 @@ def test_an_old_scroll_s_chieftain_is_the_warchief_and_keeps_its_id():
     assert (lead.id, lead.name) == ("chieftain", "Warchief") and ts.validate(scroll.to_dict()) == []
     fresh = ts.default_scroll(presets(registry())).building(TOWN_HALL).garrison.steward
     assert (fresh.id, fresh.name) == ("warchief", "Warchief")
-    assert lexicon.term("orc.town_hall", lexicon.OFFICE) == "Lead agent"
-    assert lexicon.office_words("Ask the Warchief") == "Ask the Lead agent"
+    assert lexicon.term("orc.town_hall") == "Warchief"
+    assert lexicon.words("Ask the Warchief") == "Ask the Warchief"
 
 
 def test_custom_leaves_the_catalog_and_an_old_one_still_loads():

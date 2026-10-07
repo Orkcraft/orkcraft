@@ -1,14 +1,11 @@
-"""The day of the operator: 🌙 quiet hours and 👔 office hours (design: docs/design/onboarding.md).
+"""The day of the operator: 🌙 quiet hours (design: docs/design/onboarding.md).
 
     span = Span.parse("23:00", "08:00")      # start + length in minutes; may wrap past midnight
     span.contains(30)                        # 00:30 → True
-    office_now(machine, now)                 # Shift mode: an office hour on an office day
     quiet_now(machine, now)                  # do-not-disturb: no fires, later no sound, no push
     quiet_started(machine, now)              # when tonight's quiet hours began (None: not quiet)
-    plain_now(machine, now)                  # buildings as frames: Office, or Shift in office hours
 
-Times are local and snap to `STEP` minutes (the day bar has one cell per step). Office and quiet
-are independent: where they overlap both hold — the town in frames, and no fires (later no sound).
+Times are local and snap to `STEP` minutes (the day bar has one cell per step).
 """
 from __future__ import annotations
 
@@ -88,27 +85,10 @@ class Span:
 
 
 DEFAULT_QUIET = Span(23 * 60, 9 * 60)            # 23:00–08:00
-DEFAULT_OFFICE = Span(9 * 60, 9 * 60)            # 09:00–18:00
-DEFAULT_OFFICE_DAYS = (0, 1, 2, 3, 4)
 
 
 def _minute(now: dt.datetime) -> int:
     return now.hour * 60 + now.minute
-
-
-def office_now(machine, now: dt.datetime | None = None) -> bool:
-    """An office hour on an office day. A span that started yesterday evening belongs to yesterday."""
-    now = now or dt.datetime.now()
-    span = machine.office
-    if span is None:
-        return False
-    m = _minute(now)
-    if not span.contains(m):
-        return False
-    day = now.weekday()
-    if m < span.start:                                # the tail past midnight
-        day = (day - 1) % 7
-    return day in machine.office_days
 
 
 def quiet_now(machine, now: dt.datetime | None = None) -> bool:
@@ -126,18 +106,7 @@ def quiet_started(machine, now: dt.datetime | None = None) -> dt.datetime | None
     return (now - dt.timedelta(minutes=back)).replace(second=0, microsecond=0)
 
 
-def plain_now(machine, now: dt.datetime | None = None, mode: str | None = None) -> bool:
-    """Frames instead of ASCII: Office always, Shift in office hours, Camp never."""
-    mode = mode or machine.mode
-    return mode == "office" or (mode == "shift" and office_now(machine, now))
-
-
 def status(machine, now: dt.datetime | None = None) -> str:
-    """The HUD's word on the hour: `🌙 quiet till 08:00`, `👔 office till 18:00`, both, or ""."""
+    """The HUD's word on the hour: `🌙 quiet till 08:00`, or ""."""
     now = now or dt.datetime.now()
-    words = []
-    if machine.mode == "shift" and office_now(machine, now):
-        words.append(f"👔 office till {fmt(machine.office.end)}")
-    if quiet_now(machine, now):
-        words.append(f"🌙 quiet till {fmt(machine.quiet.end)}")
-    return " · ".join(words)
+    return f"🌙 quiet till {fmt(machine.quiet.end)}" if quiet_now(machine, now) else ""

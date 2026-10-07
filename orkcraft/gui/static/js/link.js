@@ -16,8 +16,8 @@ let nextId = 1;
 
 const TOAST_S = { information: 5, warning: 8, error: 10 };
 
-// The town's words as the page says them (realm/lexicon.py): the code's Camp words in Office's —
-// say("🗼 Watchtower") is "🗼 External listeners", say("Garrison") "Agents".
+// The town's words as the page says them (realm/lexicon.py): an old Camp spelling in today's word —
+// say("🗼 Watchtower") is "🗼 External listeners", say("Garrison") "Orks"; ork, town and road stay.
 let saying = { words: null, re: null, to: null };
 export function say(text) {
   const t = town.value;
@@ -84,7 +84,7 @@ function receive(msg) {
   } else if (msg.t === "detail") {
     details.value = { ...details.value, [msg.detail.id]: msg.detail };
   } else if (msg.t === "toast") {
-    // The page drops pictographs and says Office words: the host sends each text as it is and `_plain`.
+    // The page drops pictographs and says today's words: the host sends each text as it is and `_plain`.
     toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout);
   } else if (msg.t === "reply") {
     const p = pending.get(msg.id);

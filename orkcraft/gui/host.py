@@ -128,8 +128,8 @@ class Host:
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
             data = {k: event.data.get(k) for k in ("message", "title", "severity", "timeout")}
-            data["message_plain"] = modes.text(str(data["message"] or ""), modes.OFFICE)
-            data["title_plain"] = modes.text(str(data["title"] or ""), modes.OFFICE)
+            data["message_plain"] = modes.plain(str(data["message"] or ""))
+            data["title_plain"] = modes.plain(str(data["title"] or ""))
             self.on_toast(data)
             return
         if event.topic == bus.ORDER:                   # the Warchief gave a specialist work: the console runs it

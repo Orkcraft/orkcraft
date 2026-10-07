@@ -1,7 +1,7 @@
 """A building's UI document (design/ui.py) drawn by the TUI.
 
 The terminal has one font, so a font role becomes a text style (`tokens.json` → `tui`) and a tone the
-role's colour in the look on screen (camp or office). Sizes become `fr` shares along the pane's real
+role's colour in the camp's theme. Sizes become `fr` shares along the pane's real
 parent, order is kept among siblings, a title goes on the pane's frame. A view names which widget draws
 each pane of its contract (`TypedView.UI_PANES`); the TUI keeps its own nesting, so a group the
 document moves elsewhere is drawn where the view has it — a GUI honours the groups as written.
@@ -11,11 +11,10 @@ from __future__ import annotations
 from textual.widget import Widget
 
 from orkcraft.design import tokens, ui
-from orkcraft.realm import modes
 
 
 def _theme() -> str:
-    return modes.current()
+    return "camp"
 
 
 def _along_row(widget: Widget) -> bool:

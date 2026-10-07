@@ -1,10 +1,11 @@
 """What the GUI shows of the town, as plain data: one snapshot the page draws from.
 
 Pure functions over a `core.Town` and its roster. The host sends a fresh snapshot whenever the town
-changes; the page keeps it in signals, so only what changed is drawn again. The page has one look,
-Office (`look` stays in the snapshot for the phone, docs/design/mobile.md): it drops pictographs and words resources the Office way (`modes.RESOURCES`), and a
-text that may carry emoji comes twice, as it is and `_plain` (in Office's words, without emoji:
-`modes.text`). `words` is the glossary (`realm/lexicon.py`) the page says its own labels in.
+changes; the page keeps it in signals, so only what changed is drawn again. The page has one look
+(`look` stays in the snapshot for the phone, docs/design/mobile.md): it drops pictographs and words the
+resources (`modes.RESOURCES`), and a text that may carry emoji comes twice, as it is and `_plain` (in
+today's words, without emoji: `modes.plain`). `words` are the old Camp spellings with today's words
+(`realm/lexicon.py`), for the page's labels and the town's older titles.
 
     snapshot(town, muster, treasury)   # {"project", "hud", "orkspaces", "buildings", "roads", "alerts"}
 """
@@ -77,7 +78,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "pinned": bool(bs.pinned),
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
-            "status_plain": [modes.text(x, modes.OFFICE) for x in lines],
+            "status_plain": [modes.plain(x) for x in lines],
             "state": worker.status() if worker is not None else "",
             "garrison": [_ork(o) for o in garrison],
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
@@ -178,7 +179,7 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "agents_working": muster.roster.working, "agents": len(muster.roster.agents),
         "alerts": len(muster.roster.alerts),
         "hour": (hour := schedule.status(town.machine)),
-        "hour_plain": modes.text(hour, modes.OFFICE),
+        "hour_plain": modes.plain(hour),
         "quiet": schedule.quiet_now(town.machine),
     }
 

@@ -29,8 +29,7 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 - **A new land picks its ground.** The fog's field takes its name and, under it, a row of the seven
   biomes' swatches, the suggested one lit (the first nobody has); a click or ← / → (before typing)
   picks another, Enter raises it (`orkspace.new` takes `biome`).
-- **The brand's words in both modes:** *orkspace* and *War Map* are no longer *workspace* and
-  *Workspaces* in Office words.
+- **The brand's words:** *orkspace* and *War Map*, never *workspace* and *Workspaces*.
 - **Terraces, not a coast.** Each land is a step (8 px) shorter than the one above it, the fog of war
   filling the wedge at the right: the ragged coast read as untidy.
 - **A title and a foot.** "War Map" heads the frame, "Add orkspace +" is the
@@ -59,8 +58,8 @@ Two changes, one idea:
 - **The orkspaces are a map**: lands stacked in a framed square at the bottom left, where a strategy
   game keeps its minimap. Each land is coloured by its biome, so their edges need no help.
 
-The GUI has one look (gui-design-system.md); all of this is drawn in it. With Office words the same
-art stays and the words change by `lexicon.TERMS` (*orkspace* and *War Map* are the brand's words and stay in both).
+The GUI has one look (gui-design-system.md) and one vocabulary (`lexicon.TERMS`); all of this is drawn
+and said in it.
 
 ## 2. The War Map
 

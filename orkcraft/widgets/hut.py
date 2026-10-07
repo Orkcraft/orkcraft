@@ -9,8 +9,7 @@ The frame takes the colour of the biome, so the rules for that are CSS; only the
 styles of its own. An orc waiting for an answer sets the hut on fire (the camp, `realm/modes.py`):
 the building — its frame, text and ground — flickers orange (the name and the buttons only take
 the colour, not the ground), turns red when the
-question is left waiting, then the roof turns to 🔥 bit by bit. In the office mode only its frame
-and its name turn red.
+question is left waiting, then the roof turns to 🔥 bit by bit.
 """
 from __future__ import annotations
 
@@ -23,16 +22,15 @@ from textual.message import Message
 from textual.widget import Widget
 
 from orkcraft import theme
-from orkcraft.realm import modes
+from orkcraft.realm import lexicon, modes
 from orkcraft.tui import silhouettes
 from orkcraft.realm.orcs import ALERT_ICON
 from orkcraft.tui.silhouettes import clip  # noqa: F401  (the ghost clips its label the same way)
 from orkcraft.wm.geometry import Geom
 
-QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire (office look: modes.QUESTION)
+QUIET_ALERT = "❓"     # what a waiting orc shows in quiet hours instead of a fire
 
 FIRE = ("#ff8c1a", "#e8411c", "#ffc04d", "#b31b0f")   # orange ↔ amber, then red ↔ dark red
-ALERT_RED = "#ef4444"                                   # the office mode: a waiting hut is only red
 FIRE_GROUND = ("#3a1c06", "#420d07")                    # the burning building's ground: orange, red
 HEAD_STYLE, LIVE_STYLE = "bold #e8e0c8", "#a89f86"
 NAME_STYLE, BUTTON_STYLE, ORC_STYLE = "bold #e8e0c8", "bold #f2c66d", "bold #f2c66d"
@@ -42,7 +40,7 @@ _EDGE = re.compile(r"[─~_═]+")         # the bottom edge of a frame, where t
 _BIOME_RULES = "\n".join(
     f"    Desktop.biome-{name} Hut {{ background: {b.canvas}; color: {b.border}; }}\n"
     f"    Desktop.biome-{name} Hut.-expanded, Desktop.biome-{name} Hut.-selected {{ color: {b.border_focus}; text-style: bold; }}"
-    for name, b in theme.LOOKS.items()
+    for name, b in theme.BIOMES.items()
 )
 
 
@@ -68,7 +66,6 @@ class Hut(Widget):
     Desktop Hut.-alert.-flame {{ color: {FIRE[2]}; }}
     Desktop Hut.-alert.-burning {{ color: {FIRE[1]}; text-style: bold; }}
     Desktop Hut.-alert.-burning.-flame {{ color: {FIRE[3]}; }}
-    Desktop.-office Hut.-alert {{ color: {ALERT_RED}; text-style: bold; }}
     Desktop Hut.-rally-target {{ color: $success; text-style: bold; }}
     """
 
@@ -96,7 +93,6 @@ class Hut(Widget):
         self.base = sil or DEFAULT_SIL         # the silhouette as its type draws it
         self.sil = self.base                  # …grown to the content, for the types that grow
         self.rows = 0
-        self.plain = False                    # the office look: just frames
         self.quiet = False                    # 🌙 quiet hours: no fire, ❓ instead
         self.alert_since: float | None = None  # when the orc started waiting for an answer
         self.burnt = 0.0                      # share of the roof on fire
@@ -124,10 +120,9 @@ class Hut(Widget):
         return f"{parts[0]} {parts[-1]}" if len(parts) >= 2 else ""
 
     def _shown_title(self) -> str:
-        """The name as the look wears it; in quiet hours a waiting orc adds ❓, since nothing burns."""
-        title = modes.text(self.title, modes.OFFICE) if self.plain else self.title
-        mark = modes.QUESTION if self.plain else QUIET_ALERT
-        return f"{title} {mark}" if self.quiet and ALERT_ICON in self.badge else title
+        """The name in today's words; in quiet hours a waiting orc adds ❓, since nothing burns."""
+        title = lexicon.words(self.title)
+        return f"{title} {QUIET_ALERT}" if self.quiet and ALERT_ICON in self.badge else title
 
     def _relabel(self) -> None:
         label = silhouettes.label(self.number, self._shown_title(), self.sil.width)
@@ -167,7 +162,7 @@ class Hut(Widget):
     def update_fire(self, now: float | None = None) -> None:
         """How far the fire got: orange, then red, then the roof burns (the camp only, never in quiet hours)."""
         stage, burnt = "", 0.0
-        if self.alert_since is not None and not self.plain and not self.quiet:
+        if self.alert_since is not None and not self.quiet:
             stage, burnt = modes.fire_stage((modes.now() if now is None else now) - self.alert_since)
         self.set_class(stage == "red", "-burning")
         if not stage:
@@ -190,20 +185,8 @@ class Hut(Widget):
         self._apply(self._look(), actions)
 
     def _look(self) -> silhouettes.Silhouette:
-        """The base shape, grown to its content, in the town's mode (decorated or plain)."""
-        sil = silhouettes.fit(self.base, self.rows) if self.rows else self.base
-        return silhouettes.styled(sil, self.plain)
-
-    def set_plain(self, plain: bool) -> bool:
-        """Immersion (decorated) or plain (just a frame); True when the hut changed size."""
-        if plain == self.plain:
-            return False
-        self.plain = plain
-        self.update_fire()
-        before = (self.geom.w, self.geom.h)
-        self._apply(self._look(), self.actions)
-        self._relabel()
-        return (self.geom.w, self.geom.h) != before
+        """The base shape, grown to its content."""
+        return silhouettes.fit(self.base, self.rows) if self.rows else self.base
 
     def set_rows(self, rows: int) -> bool:
         """The content wants `rows` text rows (a growing building only); True when the hut changed size."""
@@ -230,11 +213,7 @@ class Hut(Widget):
     def _action_row(self, width: int, fire: str | None = None) -> Text:
         """`[+ New task] [▶ Run]` when it fits, `[+] [▶]` when it does not; remembers where each is."""
         for long in (True, False):
-            if self.plain:     # no emoji: the label, or its first letter when there is no room
-                parts = [f"[{a.label}]" if long else f"[{modes.strip_emoji(a.glyph) or a.label[:1]}]"
-                         for a in self.actions]
-            else:
-                parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
+            parts = [f"[{a.glyph} {a.label}]" if long else f"[{a.glyph}]" for a in self.actions]
             if cell_len(" ".join(parts)) <= width or not long:
                 break
         total = cell_len(" ".join(parts))
@@ -250,15 +229,13 @@ class Hut(Widget):
 
     @property
     def on_fire(self) -> bool:
-        """An orc waits for an answer: the whole card takes the fire's colour (the office mode's red)."""
+        """An orc waits for an answer: the whole card takes the fire's colour."""
         return self.alert_since is not None
 
     def fire_style(self) -> str | None:
         """The one style of every cell of a card on fire (it wins over the selection and the hover)."""
         if not self.on_fire:
             return None
-        if self.plain:
-            return f"bold {ALERT_RED}"
         flame = self.has_class("-flame")
         if self.has_class("-burning"):
             return f"bold {FIRE[3] if flame else FIRE[1]}"
@@ -266,8 +243,8 @@ class Hut(Widget):
 
     def fire_ground(self) -> str | None:
         """The ground under the building itself (its box, not the name, the roof or the buttons)."""
-        if not self.on_fire or self.plain:
-            return None                       # the office mode: only the frame turns red
+        if not self.on_fire:
+            return None
         return FIRE_GROUND[1] if self.has_class("-burning") else FIRE_GROUND[0]
 
     def render(self) -> Text:
@@ -275,36 +252,35 @@ class Hut(Widget):
         fire = self.fire_style()
         bg = self.fire_ground()
         ground = f"{fire} on {bg}" if fire and bg else fire
-        inside = None if self.plain else fire       # the office mode reddens the frame (and the name), not the text
         box = max(min((y for y, _, _ in self.sil.slots), default=1) - 1, 0)   # the box's top row
         text = Text(no_wrap=True, overflow="crop")
         for i, line in enumerate(self.label.lines):
             pad = max((w - cell_len(line)) // 2, 0)
             text.append(" " * pad + line + "\n", style=fire or NAME_STYLE)
         left = (w - self.sil.width) // 2
-        status = [modes.text(ln, modes.OFFICE) for ln in self.status] if self.plain else self.status
+        status = [lexicon.words(ln) for ln in self.status]
         rows = self._burning(self.sil.draw(status))
         for n, row in enumerate(rows):
             text.append(" " * left)
             if n == len(rows) - 1:
                 row = self._orc_in_frame(row)
             for piece, role in row:
-                lit = (ground if n >= box else fire) if role == "frame" or not self.plain else None
+                lit = ground if n >= box else fire
                 text.append(piece, style=lit or (HEAD_STYLE if role == "head" else LIVE_STYLE if role == "live"
                                                  else ORC_STYLE if role == "orc" else None))
             text.append("\n")
         if self.sil.caption:
             cap = self.sil.caption_text(status)
-            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=inside or LIVE_STYLE)
+            text.append(" " * max((w - cell_len(cap)) // 2, 0) + cap + "\n", style=fire or LIVE_STYLE)
         if self.actions:
-            text.append_text(self._action_row(w, inside))
+            text.append_text(self._action_row(w, fire))
         else:
             text.rstrip()
         return text
 
     def _burning(self, rows: list[list[tuple[str, str]]]) -> list[list[tuple[str, str]]]:
         """The roof — the rows above the first line of text — with its share of 🔥."""
-        if self.burnt <= 0 or self.plain or not self.sil.slots:
+        if self.burnt <= 0 or not self.sil.slots:
             return rows
         top = min(y for y, _, _ in self.sil.slots)
         if top == 0:
@@ -316,8 +292,6 @@ class Hut(Widget):
         """The orc stands in the bottom of the frame: ` 🧌 💤 ` set into the middle of its edge, between
         the corners (a mill's sails or a pit's chute stay where they are)."""
         orc = self._badge_short(self.badge)
-        if self.plain:         # no person, no icons: `?` when it asks, `busy` when it works
-            orc = modes.QUESTION if ALERT_ICON in self.badge else "busy" if "⚙" in self.badge else ""
         line = "".join(piece for piece, _ in row)
         if not orc or any(role != "frame" for _, role in row):
             return row
@@ -325,11 +299,8 @@ class Hut(Widget):
         if edge is None:
             return row
         start, room = edge.start(), edge.end() - edge.start()
-        if self.plain:         # one word: ` ? ` or ` busy `
-            options = (f" {orc} ", orc)
-        else:
-            icon, state = orc.split()
-            options = (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon)
+        icon, state = orc.split()
+        options = (f" {icon} {state} ", f" {icon}{state} ", f" {icon} ", icon)
         marks = [m for m in options if cell_len(m) <= room]
         if not marks:
             return row

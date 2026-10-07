@@ -24,7 +24,7 @@ from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
 
 def _both(key: str, text: str) -> dict[str, str]:
-    return {key: text, f"{key}_plain": modes.text(text, modes.OFFICE)}
+    return {key: text, f"{key}_plain": modes.plain(text)}
 
 
 def find_ork(muster: Muster, ref: str) -> Orc | None:
@@ -122,7 +122,7 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
             for use, label in steward.uses(catalog.type_of(spec).id if spec else "").items()]
     picked = [u["tier"] for u in uses if u["tier"]]
     default = models[0][1] if models else ""
-    first = modes.text(tiers.label(picked[0]), modes.OFFICE) if picked else default
+    first = modes.plain(tiers.label(picked[0])) if picked else default
     return {"ref": lead.ref, "name": lead.name, "status": lead.status, "tier": lead.tier or "",
             "model": first or "default", "more": len({u["tier"] or "" for u in uses}) - 1 if picked else 0,
             "default": default, "uses": uses, "own": bs is not None and bs.garrison.steward is not None}
@@ -198,7 +198,7 @@ def ork(town: Town, muster: Muster, ref: str) -> dict[str, Any] | None:
         "likes": int(scores.get("likes", 0)), "dislikes": int(scores.get("dislikes", 0)),
         "deployed": bool(orc.session), "session": orc.session,
         "garrison": orc.category == RESIDENT,
-        "models": [{"tier": tier or "", "tier_label": modes.text(tiers.label(tier), modes.OFFICE) if tier else "", "model": model}
+        "models": [{"tier": tier or "", "tier_label": modes.plain(tiers.label(tier)) if tier else "", "model": model}
                    for tier, model in inventory.models_of(orc, live)],
         "tools": [{"tool": u.name, "name": inventory.short_tool(u.name), "count": u.count}
                   for u in inventory.recent_tools(town.repo_root, orc)],

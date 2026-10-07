@@ -15,7 +15,7 @@ from orkcraft.screens.console.cards import (
     road_card,
 )
 from orkcraft.scroll import GOAL_ICONS, GOAL_TITLES
-from orkcraft.widgets.office import OfficeStatic
+from orkcraft.widgets.office import WordedStatic
 
 if TYPE_CHECKING:
     from orkcraft.app import FocusState
@@ -28,32 +28,32 @@ class UnitInfo(Vertical):
     and who it listens to (➕ adds a road)."""
 
     def compose(self) -> ComposeResult:
-        yield OfficeStatic("ℹ INFO", id="info-title", classes="console-title")
+        yield WordedStatic("ℹ INFO", id="info-title", classes="console-title")
         with Vertical(id="info-building"):
             with Horizontal(id="ib-head", classes="ib-row"):
-                yield OfficeStatic("", id="ib-name", markup=False)
-                yield OfficeStatic(" 👍 ", id="ib-like", classes="ib-button")
-                yield OfficeStatic(" 👎 ", id="ib-dislike", classes="ib-button")
-                yield OfficeStatic(" ⚖️ ", id="ib-goal", classes="ib-button")
-                yield OfficeStatic(" 🗑 ", id="ib-demolish", classes="ib-button")
-            yield OfficeStatic("", id="ib-about", markup=False)
+                yield WordedStatic("", id="ib-name", markup=False)
+                yield WordedStatic(" 👍 ", id="ib-like", classes="ib-button")
+                yield WordedStatic(" 👎 ", id="ib-dislike", classes="ib-button")
+                yield WordedStatic(" ⚖️ ", id="ib-goal", classes="ib-button")
+                yield WordedStatic(" 🗑 ", id="ib-demolish", classes="ib-button")
+            yield WordedStatic("", id="ib-about", markup=False)
             with Horizontal(id="ib-runs-row", classes="ib-row"):
-                yield OfficeStatic("", id="ib-runs", markup=False)
-                yield OfficeStatic(" 📜 History ", id="ib-history", classes="ib-button")
+                yield WordedStatic("", id="ib-runs", markup=False)
+                yield WordedStatic(" 📜 History ", id="ib-history", classes="ib-button")
             with Horizontal(id="ib-listens-row", classes="ib-row"):
-                yield OfficeStatic("", id="ib-listens", markup=False)
-                yield OfficeStatic(" ➕ Listen ", id="ib-listen", classes="ib-button")
+                yield WordedStatic("", id="ib-listens", markup=False)
+                yield WordedStatic(" ➕ Listen ", id="ib-listen", classes="ib-button")
         with Vertical(id="info-orc"):
             with Horizontal(classes="ib-row"):
-                yield OfficeStatic("", id="io-name", markup=False)
-                yield OfficeStatic(" 👍 ", id="io-like", classes="ib-button")
-                yield OfficeStatic(" 👎 ", id="io-dislike", classes="ib-button")
-                yield OfficeStatic(" 🗑 ", id="io-dismiss", classes="ib-button")
-            yield OfficeStatic("", id="io-about", markup=False)
+                yield WordedStatic("", id="io-name", markup=False)
+                yield WordedStatic(" 👍 ", id="io-like", classes="ib-button")
+                yield WordedStatic(" 👎 ", id="io-dislike", classes="ib-button")
+                yield WordedStatic(" 🗑 ", id="io-dismiss", classes="ib-button")
+            yield WordedStatic("", id="io-about", markup=False)
             with Horizontal(classes="ib-row"):
-                yield OfficeStatic("", id="io-runs", markup=False)
-                yield OfficeStatic(" 📜 History ", id="io-history", classes="ib-button")
-        yield OfficeStatic("", markup=False, id="info-body")
+                yield WordedStatic("", id="io-runs", markup=False)
+                yield WordedStatic(" 📜 History ", id="io-history", classes="ib-button")
+        yield WordedStatic("", markup=False, id="info-body")
 
     def update_content(self, focus_state: FocusState, roster: Roster) -> None:
         title = self.query_one("#info-title", Static)

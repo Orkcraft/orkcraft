@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import re
 import textwrap
-from functools import lru_cache
 from dataclasses import dataclass, field
 
 from orkcraft.realm import lexicon
@@ -86,7 +85,7 @@ class Silhouette:
     def texts(self, live: list[str]) -> list[str]:
         """One string per slot: the headings, then the live lines, then the fallbacks of the empty ones."""
         n = len(self.slots)
-        out = list(self.head[:n])
+        out = [lexicon.words(h) for h in self.head[:n]]      # the headings in today's words
         room = n - len(out)
         shown = [str(x) for x in live[:room]] if not self.caption else []
         for i in range(room):
@@ -272,55 +271,6 @@ def fit(sil: Silhouette, rows: int) -> Silhouette:
             break
         roof_lines.append(ln)
     return Silhouette(f"frame{w}x{rows + 2}", tuple(roof_lines + _box(w, rows)), body=(w, rows + 2), grow="frame")
-
-
-_SIDES = set("()|[]{}@┤├")
-
-
-def _border_left(line: str, i: int) -> int:
-    i = max(i - 1, 0)
-    while i > 0 and line[i] == " ":
-        i -= 1
-    return i
-
-
-def _border_right(line: str, i: int) -> int:
-    i = min(i, len(line) - 1)
-    while i < len(line) - 1 and line[i] == " ":
-        i += 1
-    return i
-
-
-@lru_cache(maxsize=256)
-def plain(sil: Silhouette) -> Silhouette:
-    """The boring look: just a frame, with the same slots. Roofs, sails, trees, arms and waves go;
-    what stays is the box, the rows of text and the lines between them (the Lake's pane headers). The
-    headings speak the office's words (`realm/lexicon.py`): THE TOWN HALL reads THE CONTROL PANEL."""
-    keep = [i for i, ln in enumerate(sil.lines) if SLOT in ln]
-    if not keep:
-        return sil
-    lines = [ln.ljust(sil.width) for ln in sil.lines]
-    spans = [(_border_left(lines[i], _RUN.search(lines[i]).start()),
-              _border_right(lines[i], list(_RUN.finditer(lines[i]))[-1].end())) for i in keep]
-    left, right = min(a for a, _ in spans), max(b for _, b in spans)
-    rows = []
-    for i in range(keep[0], keep[-1] + 1):
-        row = list(lines[i][left:right + 1])
-        if i not in keep and not {row[0], row[-1]} <= _SIDES | {"│"}:
-            continue                      # between two boxes (the Signpost's boards): not part of one frame
-        for end in (0, -1):
-            if row[end] in _SIDES:
-                row[end] = "│"
-        rows.append("".join(row))
-    w = right - left + 1
-    out = ["┌" + "─" * (w - 2) + "┐"] + rows + ["└" + "─" * (w - 2) + "┘"]
-    head = tuple(lexicon.office_words(h) for h in sil.head)
-    return Silhouette(sil.id + "-plain", tuple(out), head=head, fallback=sil.fallback, pad=sil.pad,
-                      center=sil.center, caption=sil.caption, body=(w, len(out)), grow=sil.grow)
-
-
-def styled(sil: Silhouette, is_plain: bool) -> Silhouette:
-    return plain(sil) if is_plain else sil
 
 
 def rows_needed(sil: Silhouette, lines: list[str]) -> int:

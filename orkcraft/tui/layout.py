@@ -1,4 +1,4 @@
-"""Layout: the responsive viewports, the console over the town, windows moved and resized by keys, the look (camp / office).
+"""Layout: the responsive viewports, the console over the town, windows moved and resized by keys.
 
 A part of `OrkcraftApp` (app.py): its methods run with the app as `self`.
 """
@@ -11,13 +11,11 @@ from textual import events
 from orkcraft import scroll
 from orkcraft.screens.console import Console, orc_key
 from orkcraft.screens.orc_chat import OrcChat
-from orkcraft.realm import modes
-from orkcraft.widgets.office import OfficeStatic
+from orkcraft.realm import lexicon
 from orkcraft.wm import Desktop
 
 from orkcraft.tui.base import (ORC_CHAT_PCT, BUILDING_CONSOLE_MIN_H, WARMAP_FLOAT_W, mode_for)
-from orkcraft.tui import wording
-from orkcraft.tui.text import office_rich
+from orkcraft.tui.text import worded_rich
 
 
 class LayoutMixin:
@@ -43,19 +41,8 @@ class LayoutMixin:
         self._console_forced = not console.display
         self._apply_mode()
 
-    def wear_mode(self) -> None:
-        """The mode changed (camp ↔ office): everything outside the town follows it."""
-        self._hud.update_hud()
-        self._taskbar.refresh_items()
-        self.refresh_bindings()                  # the footer recomposes in the mode's words
-        wording.rewear(self)                     # every label, button and dialog in the mode's words
-        if getattr(self, "_console", None) is not None:
-            self._console.refresh_state(self.focus_state, self.roster)
-
     def notify(self, message, *, title: str = "", **kwargs) -> None:  # type: ignore[override]
-        if modes.office():                       # the office: its words and no emoji in the toasts too
-            message = office_rich(message) if not isinstance(message, str) else modes.text(message)
-            title = modes.text(title)
+        message, title = worded_rich(message), lexicon.words(title)     # today's words in the toasts too
         super().notify(message, title=title, **kwargs)
 
     def _save_screenshot(self) -> None:

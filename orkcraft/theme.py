@@ -50,10 +50,6 @@ BIOME_ICONS = {"void": "🌑", "forest": "🌲", "ice": "🧊"}   # the War Map 
 DEFAULT_BIOME = "forest"
 SOLID_BLACK = "#000000"
 
-# The hidden (office) mode wears no biome: a black canvas without terrain, grey frames.
-OFFICE = Biome(name="office", canvas=SOLID_BLACK, glyphs=(), terrain=None, window_bg=SOLID_BLACK,
-               border="#7a7a7a", border_focus="#d4d4d4")
-LOOKS: dict[str, Biome] = {**BIOMES, OFFICE.name: OFFICE}     # every look the CSS knows
 MAX_DENSITY = 0.12          # share of canvas cells that may carry a glyph
 TERRAIN_DENSITY = 0.09      # what the generator actually aims for
 UNIT_ACTIVE = "#e5c07b"

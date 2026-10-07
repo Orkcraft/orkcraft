@@ -11,13 +11,15 @@ from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
 from orkcraft import theme
-from orkcraft.realm import modes
-from orkcraft.widgets.office import OfficeOptionList, OfficeStatic
+from orkcraft.realm.orcs import ALERT_ICON
+from orkcraft.widgets.office import WordedOptionList, WordedStatic
 
 if TYPE_CHECKING:
     from orkcraft.app import FocusState
     from orkcraft.realm.roster import Roster
     from orkcraft.scroll import Orkspace, TownScroll
+
+ALERT_STYLE = "bold #ff8c1a"      # a place with a question waiting: the fire's orange
 
 
 def orkspace_has_alert(scroll_obj: TownScroll | None, ork: Orkspace, roster: Roster) -> bool:
@@ -40,10 +42,10 @@ class WarMap(Vertical):
     """Left column: shows camp/orkspace list in Neutral, card in Building/Unit."""
 
     def compose(self) -> ComposeResult:
-        yield OfficeStatic("🗺️ WAR MAP (Orkspaces)", id="warmap-title", classes="console-title")
-        yield OfficeOptionList(id="warmap-list")
-        yield OfficeStatic("[F1] 🏰 Main Camp", markup=False, id="warmap-content")
-        yield OfficeStatic("[F1-F8]   [N] New   [d] Del", markup=False, id="warmap-footer", classes="console-footer")
+        yield WordedStatic("🗺️ WAR MAP (Orkspaces)", id="warmap-title", classes="console-title")
+        yield WordedOptionList(id="warmap-list")
+        yield WordedStatic("[F1] 🏰 Main Camp", markup=False, id="warmap-content")
+        yield WordedStatic("[F1-F8]   [N] New   [d] Del", markup=False, id="warmap-footer", classes="console-footer")
 
     def update_content(self, focus_state: FocusState, roster: Roster, biome: str) -> None:
         lst = self.query_one("#warmap-list", OptionList)
@@ -65,11 +67,11 @@ class WarMap(Vertical):
                 prefix = "▶ " if is_active else "  "
                 hk = f"[{ork.hotkey}] " if ork.hotkey else ""
                 asks = orkspace_has_alert(scroll_obj, ork, roster)
-                mark = f" {modes.alert_icon()}" if asks else ""
+                mark = f" {ALERT_ICON}" if asks else ""
                 wt_mark = getattr(self.app, "worktree_marks", {}).get(ork.id, "")
                 row_text = (f"{prefix}{hk}{ork.icon} {ork.name} {theme.BIOME_ICONS.get(ork.biome, '')}"
                             f"{' ' + wt_mark if wt_mark else ''}{mark}")
-                style = modes.alert_style() if asks else "bold" if is_active else ""   # a question lights the row
+                style = ALERT_STYLE if asks else "bold" if is_active else ""   # a question lights the row
                 lst.add_option(Option(Text(row_text, style=style), id=f"orkspace:{ork.id}"))
             # The cursor follows the active orkspace unless the operator is browsing the list.
             if lst.has_focus and highlighted is not None and highlighted < lst.option_count:
@@ -77,7 +79,7 @@ class WarMap(Vertical):
             else:
                 lst.highlighted = active_idx
         else:
-            alerts_mark = f" {modes.alert_icon()}" if roster.alerts else ""
+            alerts_mark = f" {ALERT_ICON}" if roster.alerts else ""
             lst.add_option(Option(Text(f"▶ [F1] 🏰 Main Camp {theme.BIOME_ICONS.get(biome, '')}{alerts_mark}", style="bold"),
                                   id="orkspace:main_camp"))
 

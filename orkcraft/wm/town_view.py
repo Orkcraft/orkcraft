@@ -4,8 +4,8 @@ A part of `Desktop` (desktop.py): its methods run with the desktop as `self`.
 """
 from __future__ import annotations
 
-from orkcraft import schedule, settings
-from orkcraft.realm import catalog, modes
+from orkcraft import schedule
+from orkcraft.realm import catalog
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.tui import silhouettes
 from orkcraft.widgets.ghost import Ghost
@@ -34,65 +34,13 @@ class TownViewMixin:
         return w.geom if w is not None and not w.hidden and self.in_view(w) else None
 
     @property
-    def mode(self) -> str:
-        """🧌 camp · 👔 office · 🧌/👔 shift: the project's `preferences.mode` over the machine's (settings.py)."""
-        pref = self.scroll.preferences.get("mode") if self.scroll is not None else None
-        return settings.mode_of(pref) or self.machine.mode
-
-    @property
-    def look_mode(self) -> str:
-        """What the town looks like now (realm/modes.py): office when the buildings are frames —
-        Office, or Shift in office hours — else the camp."""
-        return modes.OFFICE if self.plain else modes.CAMP
-
-    def _wear_mode(self) -> None:
-        """Every widget draws the current look (the HUD, the carts, the badges read `modes.current`)."""
-        modes.set_current(self.look_mode)
-        self.set_class(self.plain, "-office")
-        self._paint()
-        for w in self.windows:
-            w.refresh_badge()
-
-    @property
-    def plain(self) -> bool:
-        """Huts are only frames now: Office, or Shift in office hours; else they wear their ASCII."""
-        if getattr(self, "machine", None) is None:          # still being built
-            return False
-        return schedule.plain_now(self.machine, mode=self.mode)
-
-    @property
     def quiet(self) -> bool:
         """🌙 Do-not-disturb hours: fires do not flicker, a waiting orc shows ❓."""
         return getattr(self, "machine", None) is not None and schedule.quiet_now(self.machine)
 
-    def set_mode(self, mode: str | bool) -> None:
-        """Set the machine's mode (F10; True / False: office / camp); the project's override is
-        dropped so the choice shows here too."""
-        if isinstance(mode, bool):
-            mode = "office" if mode else "camp"
-        if self.scroll is None or (mode == self.machine.mode and "mode" not in self.scroll.preferences):
-            return
-        self.machine.mode = mode
-        settings.save(self.machine)
-        self.scroll.preferences.pop("mode", None)
-        self.save()
-        self.apply_schedule(force=True)
-
-    def apply_schedule(self, force: bool = False) -> None:
-        """Bring the town to the hour: the look (Shift turns Office on and off by itself) and the quiet."""
-        plain, quiet = self.plain, self.quiet
-        if force or (plain != (modes.current() == modes.OFFICE)):
-            self._wear_mode()
-            for hut in self.huts.values():
-                if hut.set_plain(plain) and hut.display:
-                    self._settle(hut)
-            self.refresh_huts()
-            self.replan_roads()
-            self.traffic.restyle()
-            dress = getattr(self.app, "wear_mode", None)
-            if dress is not None:
-                dress()                 # the HUD, the footer, the console and the taskbar
-            self.post_message(self.LayoutChanged())
+    def apply_schedule(self) -> None:
+        """Bring the town to the hour: in 🌙 quiet hours nothing burns."""
+        quiet = self.quiet
         for hut in self.huts.values():
             hut.set_quiet(quiet)
         if quiet:
@@ -155,7 +103,6 @@ class TownViewMixin:
                 self.huts[w.window_id] = hut
                 self.mount(hut, after=self.terrain)
             hut.display = True
-            hut.plain = self.plain
             hut.quiet = self.quiet
             hut.set_silhouette(sil, actions)
             hut.set_title(w.number, w.window_title)
@@ -253,14 +200,14 @@ class TownViewMixin:
 
     def flicker_fires(self, now: float | None = None) -> None:
         """A hut whose orc waits for orders burns: its fence flickers, turns red, then its roof burns.
-        In the office look it only stands red; in 🌙 quiet hours nothing burns (a ❓ instead)."""
+        In 🌙 quiet hours nothing burns (a ❓ instead)."""
         if self.quiet:
             for hut in self.huts.values():
                 if hut.has_class("-flame"):
                     hut.remove_class("-flame")
             return
         for hut in self.huts.values():
-            if hut.display and hut.has_class("-alert") and not self.plain:
+            if hut.display and hut.has_class("-alert"):
                 hut.update_fire(now)
                 hut.toggle_class("-flame")
                 hut.refresh()

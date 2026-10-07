@@ -13,7 +13,7 @@ from textual.widget import Widget
 from textual.widgets import Static
 
 from orkcraft import settings, theme
-from orkcraft.realm import modes, pipes
+from orkcraft.realm import lexicon, pipes
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import TownScroll
 from orkcraft.widgets.carts import Traffic
@@ -157,7 +157,6 @@ class Desktop(LayoutMixin, FocusMixin, ArrangeMixin, TownViewMixin, RoadsMixin, 
         self.town = bool(scroll is not None and scroll.preferences.get("view", "town") == "town")
         if town is None:
             self._machine = settings.load()
-        modes.set_current(self.look_mode)
         self.huts: dict[str, Hut] = {}
         self.selected_hut: str | None = None    # a hut picked by a first click, still collapsed
         self.ghost: Ghost | None = None          # a building being placed
@@ -283,11 +282,11 @@ class Taskbar(Horizontal):
             if in_active:
                 item.set_class(w is self.desktop.active and not w.hidden, "-active")
                 item.set_class(w.hidden, "-hidden")
-                title = modes.text(w.window_title) or w.window_title
+                title = lexicon.words(w.window_title) or w.window_title
                 item.update(Text(f"{w.number} {title.split()[0]}" if self.compact else f"{w.number} {title}"))
         status = Text()
         if getattr(self.desktop, "rally_mode", False):
-            status.append(modes.text("🛤 ") + "ROAD — click the source building (or press its number) · esc cancels")
+            status.append("🛤 " + "ROAD — click the source building (or press its number) · esc cancels")
         elif self.desktop.window_mode:
             status.append(" WINDOW MODE ", style="bold reverse")
             status.append("  ←↑↓→ move · shift+←↑↓→ resize · esc done ")
@@ -300,7 +299,7 @@ class Taskbar(Horizontal):
 
 class TaskbarItem(Static):
     def __init__(self, window: Window, classes: str | None = None) -> None:
-        super().__init__(f"{window.number} {modes.text(window.window_title)}", classes=classes,
+        super().__init__(f"{window.number} {lexicon.words(window.window_title)}", classes=classes,
                          id=f"taskbar-{window.window_id}")
         self.window = window
 

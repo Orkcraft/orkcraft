@@ -14,7 +14,7 @@ from orkcraft.realm import builders, intents, interview, town_builder, town_pres
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
 from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
-from orkcraft.screens.onboarding import (IntentStep, ModeStep, PersonStep, QuestionsStep, RaiseBar, ToolsStep,
+from orkcraft.screens.onboarding import (IntentStep, PersonStep, QuestionsStep, RaiseBar, ToolsStep,
                                          XpStep)
 from orkcraft.wm import Window
 
@@ -239,12 +239,6 @@ def test_the_builder_starts_from_the_role_s_templates(tmp_path: Path):
     assert "START FROM A TEMPLATE" not in run.calls[1]
 
 
-def test_the_mode_cards_show_the_same_rows():
-    rich, plain = onboarding.card_art(False).plain, onboarding.card_art(True).plain
-    assert "tests: 42 ok" in rich and "tests: 42 ok" in plain
-    assert "oOO" in rich and "oOO" not in plain
-
-
 # -- the flows -------------------------------------------------------------------------------------
 
 @pytest.mark.asyncio
@@ -310,7 +304,6 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         await _on(pilot, app, AutonomyStep)                                      # camp rules
         assert "step 5 of 5" in _title(app) and "Camp rules" in _title(app)
         app.screen.query_one(AutonomySlider).set_level(1)
-        app.screen.pick("office")
         app.screen.query_one("#au-quiet", Checkbox).value = True
         await _press(app, pilot, "au-next")
 
@@ -318,7 +311,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
                      and any(r.source == "triage" for r in app.scroll.building("fixers").roads)
                      and not app.query(RaiseBar), n=200)
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "office" and machine.autonomy == 1
+        assert machine.onboarded and machine.autonomy == 1
         assert machine.quiet == schedule.DEFAULT_QUIET
         assert machine.tools["claude"].billing == "api" and machine.tools["claude"].enabled
         assert machine.profile == {
@@ -523,7 +516,7 @@ async def test_skip_gives_an_empty_town_and_no_warder(fake_repo: Path, onboard):
         await _press(app, pilot, "ob-skip")
         await _until(pilot, lambda: Path(app.config.layout_file).exists())
         machine = settings.load()
-        assert machine.onboarded and machine.mode == "camp" and machine.profile == {}
+        assert machine.onboarded and machine.profile == {}
         assert not (fake_repo / ".claude" / "settings.json").exists()
         assert app.scroll.building("fixers") is None
 
@@ -586,20 +579,6 @@ async def test_the_hud_shows_limits_for_a_subscription(fake_repo: Path):
         app.desktop.machine.tools["agy"] = settings.ToolChoice(enabled=True, billing="api")
         app.refresh_hud()
         assert app._hud.resources.show_gold
-
-
-@pytest.mark.asyncio
-async def test_the_focused_mode_radio_keeps_its_label(fake_repo: Path, monkeypatch):
-    monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        app.push_screen(ModeStep(standalone=True))
-        await _settle(pilot)
-        camp = app.screen.query_one("#ob-mode-camp")
-        camp.focus()
-        await _settle(pilot)
-        assert camp.region.height == 1
 
 
 def test_the_warder_line_claims_agy_only_once_checked_live():
