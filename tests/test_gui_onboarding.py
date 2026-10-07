@@ -245,3 +245,17 @@ def test_cursor_found_is_not_named_again_below_the_table(fake_repo: Path, onboar
     t = _host(fake_repo).snapshot()["onboarding"]["tools"]
     assert "cursor" in [r["id"] for r in t["rows"]]
     assert t["others"] == [{"id": "aider", "title": "Aider"}] and t["cli"] == [] and "Cursor" not in t["missing"]
+
+
+def test_the_guard_step_says_agy_is_unguarded_until_checked_live(fake_repo: Path, onboard, monkeypatch):
+    by_id = {t.id: t for t in tools.TOOLS}
+    agy = tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.2.17", logged_in=True)
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: [*_statuses()[:1], agy])
+    host = _host(fake_repo)
+    line = host.snapshot()["onboarding"]["tools"]["warder_agy"]
+    assert "does not guard agy yet" in line and "--sandbox" in line          # agy's hook is not checked on a live agy
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": False, "billing": "subscription"}}})
+    assert o["tools"]["warder_agy"] == ""                                     # agy not chosen: nothing to say
+    host.town.machine.agy_warder_checked = True
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "billing": "subscription"}}})
+    assert "guards agy too" in o["tools"]["warder_agy"]

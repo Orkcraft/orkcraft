@@ -847,9 +847,10 @@ the CLI paths.
   file tools, read once agy trusts the folder; it answers only deny or ask, never allow (agy ignores
   a hook's allow in headless runs). agy's headless steps run in a temp folder and read only
   `~/.gemini/config/hooks.json`, which `orkcraft hooks install` writes only after asking
-  (`--agy-global` / `--no-agy-global` answer for it). Onboarding says the Warder guards agy only once
-  its hook was checked on a live agy (`agy_warder_checked` in the machine settings,
-  [agy-guard](design/agy-guard.md) §8).
+  (`--agy-global` / `--no-agy-global` answer for it). Onboarding (in the window and in the terminal)
+  says the Warder guards agy only once its hook was checked on a live agy (`agy_warder_checked` in
+  the machine settings, [agy-guard](design/agy-guard.md) §8). Until then, when agy is chosen, the
+  guard step says agy is unguarded, and a raised town gets no agy hook.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 

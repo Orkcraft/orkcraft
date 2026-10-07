@@ -5,22 +5,22 @@ reference ([reference.md](reference.md)) describes only what works today.
 
 ## 🏰 Town Hall: the Council and the Elders
 
-### Guarding agy as Claude Code is guarded
+### Guarding agy as Claude Code is guarded: the live check
 
-The 🛡 Warder is a `PreToolUse` hook for Claude Code and Codex (`orkcraft/hooks/warder.py`). agy has
-one too: it reads `PreToolUse` from `.agents/hooks.json` and `~/.gemini/config/hooks.json`, and a
-`deny` stops the call ([agy-guard](design/agy-guard.md) has the format, the tool names and what is
-still unverified). orkcraft does not install it yet, so agy sessions run with only agy's own
-`--sandbox` and permission prompts, and the onboarding's Warder step says so.
+The 🛡 Warder guards agy through agy's own `PreToolUse` hook. Two pieces are built and covered by
+tests written from the documented format: `python3 -m orkcraft.hooks.warder agy`, and
+`orkcraft hooks install`, which writes `.agents/hooks.json` and, after asking,
+`~/.gemini/config/hooks.json` (agy 1.1.12 or later). [agy-guard](design/agy-guard.md) has the
+format and what is still unverified. Nobody has run it on a live agy yet, so the onboarding (the
+window's and the terminal's) still says agy is unguarded, and a town is raised without agy's hook.
 
-What remains:
+What remains is the smoke test of [agy-guard §8](design/agy-guard.md#8-smoke-test-on-a-live-agy)
+on a machine with agy:
 
-- a Warder mode for agy (`python3 -m orkcraft.hooks.warder agy`): read `toolCall.name` /
-  `toolCall.args` and `workspacePaths`, answer `{"decision": "deny" | "ask", "reason": …}`;
-- `orkcraft hooks install` writing the hooks files: the Warder and the session hook into
-  `.agents/hooks.json`, and the global `~/.gemini/config/hooks.json` where agy needs it;
-- a smoke test on a live agy: a denied `rm -rf` and a denied `.env` read, in a print run and in a
-  War Tent session, before the onboarding stops saying agy is unguarded.
+- a denied `rm -rf .git` and a denied `.env` read, in a print run and in a War Tent session, with
+  the file tools' argument keys read from a probe hook;
+- then `"agy_warder_checked": true` in the machine settings, and the agy version tested noted in
+  the design note.
 
 ### The Council's watchers
 
