@@ -137,9 +137,11 @@ async def test_the_lake_edits_a_file_and_saves_it_on_a_timer_and_on_leaving(fake
         editor = view.query_one("#lake-edit")
         assert editor.display and not view.query_one("#lake-scroll").display and app.focused is editor
         assert editor.text == readme.read_text()
+        view._autosave.pause()                   # held while "unsaved" is checked: under load a 1 s tick saved first
         editor.insert("> a note in the margin\n", (0, 0))
         await pilot.pause()
         assert view.dirty and "unsaved" in view.edit_note
+        view._autosave.resume()
         for _ in range(40):                                              # the timer saves it
             await pilot.pause(0.1)
             if not view.dirty:

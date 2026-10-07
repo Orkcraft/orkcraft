@@ -188,7 +188,7 @@ def test_huts_move_until_the_person_pins_them(page):
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    assert hut.locator(".gui-pit__icon").is_visible()           # the Pit's card: only its tray
+    hut.locator(".gui-pit__icon").wait_for(state="visible", timeout=WAIT_MS)   # the Pit's card: only its tray
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
     sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
