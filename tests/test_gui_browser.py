@@ -358,7 +358,7 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
                          timeout=WAIT_MS)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
     pg.keyboard.press("Escape")
-    title = _hut(pg, bid).locator(".gui-hut__name").inner_text()
+    title = _hut(pg, bid).locator(".gui-hut__name").text_content().strip()
     _line(pg, f"@{title[:3]}", enter=False)
     pg.locator(".gui-warchief__list .ok-item", has_text=title).click()
     assert field.input_value() == f"@{title} "
@@ -390,17 +390,19 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg.wait_for_timeout(500)
     before = {t: box(t) for t in ids}
     fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
+    fields.hover()                                                      # the board's tray comes out under the mouse
     assert words(fields) == ["Agenttasks", "Myto-dos", "Notes"]        # every part shown, in Office words
     assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
     fields.locator(".gui-parts__one", has_text="Agent tasks").click()
     fields.locator(".gui-parts__one", has_text="Notes").click()
     drum.locator(".gui-parts__one", has_text="meetings").click()
+    pg.mouse.move(0, 0)
     pg.wait_for_timeout(500)
     assert pg.locator(".gui-panel").count() == 0                      # a checkbox never opens the hut
     assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
     after = {t: box(t) for t in ids}
     shrunk = before["fields"]["height"] - after["fields"]["height"]
-    assert shrunk > 40 and after["fields"]["y"] == before["fields"]["y"]
+    assert shrunk > 10 and after["fields"]["y"] == before["fields"]["y"]   # a quiet board is as tall as what it says
     assert abs(before["pit"]["y"] - after["pit"]["y"] - shrunk) <= 1   # the hut under it moved up as much
     assert after["war_drum"]["height"] <= before["war_drum"]["height"]
     pg.reload()

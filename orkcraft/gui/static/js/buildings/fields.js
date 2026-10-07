@@ -18,14 +18,14 @@ const asking = signal(null);       // {id, lane, kind}: a New task / note / chor
 const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My chores" }, { key: "scribbles", label: "Scribbles" }];
 
 // Every rule is this building's own: the closed card (`.gui-fhut`, and the hut that holds one) stands
-// larger than other huts — about a fifth of the window high — so its three parts read at a glance.
+// larger than other huts — about a fifth of the window high while it has work or chores — so its three
+// parts read at a glance; a quiet board is as tall as what it says.
 const CSS = `
 .gui-town__room > .gui-hut.ok-hut[class]:has(.gui-fhut) { width: clamp(340px, 26vw, 460px); max-width: none; }
-.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded)) { min-height: 20vh; box-sizing: border-box; }
+.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded):not(.is-quiet)) { min-height: 20vh; box-sizing: border-box; }
 .gui-hut__body:has(> .gui-fhut) { flex: 1 1 auto; display: flex; }
 .gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
   gap: var(--space-2) var(--space-3); min-width: 0; }
-.gui-fhut > .gui-parts { grid-column: 1 / -1; }
 .gui-fhut__part { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .gui-fhut__part--work { grid-column: 1 / -1; }
 .gui-fhut__part--solo { grid-column: 1 / -1; }
@@ -256,22 +256,22 @@ export function card(b) {
   const t = c.todos, idea = c.ideas;
   const on = (part) => shown(b.id, part);
   const lower = ["chores", "scribbles"].filter(on).length;
-  return html`<div class=${cls("gui-fhut", { "is-folded": hidden(b.id).length > 0 })}>
+  // An empty part says only its head and count: a line that says "none yet" under a 0 says it twice.
+  const quiet = !doing.length && !next.length && !t.top.length;
+  return html`<div class=${cls("gui-fhut", { "is-folded": hidden(b.id).length > 0, "is-quiet": quiet })}>
     <${PartToggles} id=${b.id} parts=${PARTS} />
     ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
       <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
       ${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}
-      ${!doing.length && !next.length && html`<span class="ok-tone-muted">nothing to do</span>`}
     </section>`}
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My chores</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
       ${t.top.map((x, i) => mark("☐", x, i))}
-      ${!t.top.length && html`<span class="ok-tone-muted">${t.count ? "all done ✓" : "none yet"}</span>`}
+      ${!t.top.length && t.count > 0 && html`<span class="ok-tone-ok">all done ✓</span>`}
     </section>`}
     ${on("scribbles") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">Scribbles</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
       ${idea.top.map((x, i) => mark("✎", x, i))}
-      ${!idea.top.length && html`<span class="ok-tone-muted">none yet</span>`}
     </section>`}
   </div>`;
 }

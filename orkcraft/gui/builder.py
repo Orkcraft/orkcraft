@@ -49,8 +49,14 @@ def build(host, args: dict) -> str:
     if spec is None:
         raise BuildError("That type cannot be raised here")
     prompt = args.get("prompt")
-    if isinstance(prompt, str) and prompt.strip():       # built for a request: named after it, ≤ 4 words
-        spec["title"] = naming.from_prompt(prompt[:2000], spec["title"])
+    asked = (spec.get("type") or "", " ".join(prompt.split())[:2000]) if isinstance(prompt, str) and prompt.strip() else None
+    if asked is not None:
+        # The Warchief's Build offer stays in its chat: a second press on it opens what the first one raised.
+        done = host.raised_for.get(asked)
+        kept = town.scroll.building(done) if done else None
+        if kept is not None and not kept.demolished:
+            return done
+        spec["title"] = naming.from_prompt(prompt[:2000], spec["title"])   # built for a request: named after it, ≤ 4 words
     hut = args.get("hut")
     spot = [float(hut[0]), float(hut[1])] if isinstance(hut, list) and len(hut) == 2 else None
     built = buildings.raise_spec(town, spec, spot)
@@ -62,6 +68,8 @@ def build(host, args: dict) -> str:
     town.save()
     town.toast(f"{spec['title']} raised", title="Build")
     town.checkpoint("create", built.id, f"raise {spec.get('type') or 'custom'} {spec['title']}")
+    if asked is not None:
+        host.raised_for[asked] = built.id
     host.refresh_roster()
     return built.id
 

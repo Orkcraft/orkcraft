@@ -83,6 +83,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,
+            "paused": _paused(worker),
             "card": _card(type_id, worker),
             "page": (PAGES / f"{type_id}.js").is_file(),
         })
@@ -146,6 +147,13 @@ def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
     return out
 
 
+def _paused(worker) -> bool:
+    """A building that stopped taking work until the person resumes it (Barracks, Catapult: Halt All or ⏸)."""
+    own = getattr(worker, "paused", None)
+    kept = getattr(getattr(worker, "state", None), "paused", None)
+    return own is True or kept is True
+
+
 def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
     out = []
     for o in town.scroll.orkspaces:
@@ -154,6 +162,7 @@ def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
         out.append({"id": o.id, "name": o.name, "icon": o.icon, "biome": o.biome, "hotkey": o.hotkey,
                     "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id)),
                     "count": len(standing),                       # what the War Map's land says and dots
+                    "paused": sum(1 for b in standing if _paused(town.workers.get(b.id))),
                     "working": sum(1 for x in muster.roster.orcs if x.building in ids and x.status == "busy")})
     return out
 

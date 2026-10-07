@@ -532,6 +532,10 @@ def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolate
         host.command("town.build", {"type": "lake"})                               # the town's window
     named = host.command("town.build", {"type": "fields", "prompt": "What should I build? sort my inbox into tasks"})
     assert next(b for b in host.snapshot()["buildings"] if b["id"] == named)["title"] == "Sort inbox into tasks"
+    again = host.command("town.build", {"type": "fields", "prompt": "What should I build?  sort my inbox into tasks"})
+    assert again == named                                  # the Warchief's offer pressed twice raises one building
+    assert host.command("town.build", {"type": "fields", "prompt": "Добавь здание тасков"}) != named
+    assert next(b for b in host.snapshot()["buildings"] if b["title"] == "Task Fields")
     bid = host.command("town.build", {"type": "fields"})
     assert bid in {b["id"] for b in host.snapshot()["buildings"]} and host.town.workers.get(bid) is not None
     assert bid in host.town.scroll.active_orkspace.buildings
@@ -857,3 +861,17 @@ def test_the_hud_counts_working_agents_of_all_the_keepers_too(fake_repo, isolate
     after = host.snapshot()["hud"]
     assert after["agents"] == before["agents"] + 1
     assert after["agents_working"] == 0
+
+
+def test_a_paused_building_says_so_on_its_hut_and_its_orkspace(fake_repo, monkeypatch):
+    """A stopped queue never reads as a quiet one: the hut and the War Map's land carry `paused`."""
+    from types import SimpleNamespace
+    host = _host(fake_repo)
+    bid = host.command("town.build", {"type": "fields"})
+    snap = host.snapshot()
+    assert not next(b for b in snap["buildings"] if b["id"] == bid)["paused"]
+    assert all(o["paused"] == 0 for o in snap["orkspaces"])
+    monkeypatch.setitem(host.town.workers, bid, SimpleNamespace(state=SimpleNamespace(paused=True), status=lambda: ""))
+    snap = host.snapshot()
+    assert next(b for b in snap["buildings"] if b["id"] == bid)["paused"] is True
+    assert next(o for o in snap["orkspaces"] if o["id"] == snap["active_orkspace"])["paused"] == 1

@@ -18,6 +18,17 @@ def test_a_title_is_the_request_s_first_four_words_that_carry_it(prompt, title):
     assert got == title and len(got.split()) <= naming.MAX_WORDS
 
 
+@pytest.mark.parametrize("prompt", ["Добавь здание тасков", "add a task building", "Создай постройку для задач",
+                                    "build me a new building"])
+def test_a_request_for_a_building_alone_keeps_the_type_s_title(prompt):
+    assert naming.from_prompt(prompt, "Task Fields") == "Task Fields"
+
+
+def test_a_request_in_russian_drops_its_asking_too():
+    assert naming.from_prompt("Создай здание, которое сортирует почту") == "Сортирует почту"
+    assert naming.from_prompt("build me a building that sorts mail") == "Sorts mail"
+
+
 def test_nothing_to_name_it_after_keeps_the_fallback():
     assert naming.from_prompt("  the  ", "Task Fields") == "Task Fields"
     assert naming.from_prompt("", "") == ""
