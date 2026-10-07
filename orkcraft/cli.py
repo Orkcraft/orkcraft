@@ -68,6 +68,57 @@ def _usage(action: str) -> int:
     return 0
 
 
+def _update(action: str | None) -> int:
+    """`orkcraft update [check|auto|critical|ask]` (core/updates.py, docs/updates.md)."""
+    from orkcraft import __version__, settings
+    from orkcraft.core import updates
+    machine = settings.load()
+    if action in updates.POLICIES:
+        machine.updates = action
+        settings.save(machine)
+    if action not in (None, "check"):
+        print(f"updates: {machine.updates} — " + {
+            "auto": "every update installs when the town opens",
+            "critical": "critical updates install when the town opens; the others wait for `orkcraft update`",
+            "ask": "nothing installs by itself; `orkcraft update` installs"}[machine.updates])
+        return 0
+    if updates.blocked():
+        print(f"updates are off here: {updates.blocked()}")
+        return 0
+    try:
+        found = updates.offer(updates.check(force=True, timeout=15.0).manifest)
+    except Exception as e:
+        sys.stderr.write(f"orkcraft error: the list of updates cannot be read ({e})\n")
+        return 1
+    way = updates.method()
+    if found is None:
+        print(f"orkcraft {__version__} is the latest")
+        return 0
+    print(f"orkcraft {found.version} is out{' — a critical update' if found.critical else ''} "
+          f"(you have {__version__})")
+    for line in found.notes:
+        print(f"  {line}")
+    if action == "check":
+        print(f"install it: orkcraft update ({way.describe()})" if way.can else way.why)
+        return 0
+    if not way.can:
+        sys.stderr.write(f"orkcraft error: {way.why}\n")
+        return 1
+    print(f"installing ({way.describe()})…")
+    result = updates.install(way)
+    updates.remember(result, found.version)
+    if not result.ok:
+        sys.stderr.write(f"orkcraft error: the update did not install:\n{result.output}\n")
+        return 1
+    print(f"installed orkcraft {result.version or found.version}; open the town again to run it")
+    return 0
+
+
+def _launching(args) -> bool:
+    """The town opens (the window, the TUI, the showcase), as against a command that only says or sets."""
+    return args.subcommand in (None, "gui", "tui") and args.demo_screens is None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -111,8 +162,21 @@ def main(argv: list[str] | None = None) -> int:
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
+    up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")
+    up_p.add_argument("action", nargs="?", choices=("check", "auto", "critical", "ask"), default=None,
+                      help="check: only say what is out · auto | critical | ask: which updates install by "
+                           "themselves when the town opens (default: critical)")
 
-    args = parser.parse_args(_demo_before_subcommand(sys.argv[1:] if argv is None else list(argv), subparsers.choices))
+    words = sys.argv[1:] if argv is None else list(argv)
+    args = parser.parse_args(_demo_before_subcommand(words, subparsers.choices))
+
+    if args.subcommand == "update":
+        return _update(args.action)
+
+    if _launching(args) and args.demo is None:     # a critical fix lands before the town loads
+        from orkcraft import settings as machine_settings
+        from orkcraft.core import updates
+        updates.at_launch(words, machine_settings.load().updates)
 
     if args.role is not None:
         from orkcraft import settings as machine_settings
@@ -205,7 +269,11 @@ def main(argv: list[str] | None = None) -> int:
         launch = _gui()
         if launch is None:
             return 1
-        return launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port)
+        from orkcraft.core import updates
+        code = launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port)
+        if code == updates.RESTART:                # the window installed an update: it opens again on it
+            updates.restart(words)
+        return code
 
     # The TUI: asked for, or the window's packages are missing
     reset = args.reset_layout

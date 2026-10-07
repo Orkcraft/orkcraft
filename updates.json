@@ -1,0 +1,11 @@
+{
+  "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
+  "releases": [
+    {
+      "version": "0.2.0",
+      "date": "2026-10-07",
+      "critical": false,
+      "notes": "Orkcraft updates itself: critical fixes install by themselves when the town opens, other updates are offered."
+    }
+  ]
+}

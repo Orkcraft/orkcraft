@@ -34,3 +34,10 @@
   module or a new one, never into `app.py`. Split a module before it grows past ~600 lines.
 - A building's window is a UI document of roles, never raw colours or font names
   ([docs/design-system.md](docs/design-system.md)). The rules a model gets are `design/ui.py` `RULES`.
+
+## Releases (docs/updates.md)
+
+- A release raises `__version__` in `orkcraft/__init__.py` (the only version) and adds itself at the
+  top of `updates.json` in the same commit to `main`. Installed copies read that file to update.
+- `"critical": true` only for a security fix or a bug that loses work: it installs on every machine
+  without asking. Its `notes` say plainly what it fixes.

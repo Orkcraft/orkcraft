@@ -4,7 +4,8 @@
 // (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Its head is you: your mascot at its stage, what
 // the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
 // it, the camp's rules, whether flames climb the roof of a building that waits for you, and whether
-// anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once.
+// anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
+// which updates install by themselves (gui/updates.py; js/update.js offers the rest).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -44,6 +45,25 @@ function Steps({ label, items, value, onPick }) {
 
 const USAGE_WHAT = "Which features are used, as counts — never your code, prompts, paths or project names. "
   + "The list of every event is in docs/usage-stats.md.";
+
+const UPDATE_WHAT = {
+  auto: "Every update installs when the town opens.",
+  critical: "A critical update (a fix for something that loses work or lets harm in) installs when the town opens; the others are offered.",
+  ask: "Nothing installs by itself: every update is offered, a critical one loudly.",
+};
+
+function UpdatesField({ s }) {
+  const [u, setU] = useState(null);
+  const t = town.value;
+  const policy = (u && u.policy) || s.updates;
+  const check = () => command("update.check").then(setU, () => {});
+  const pick = (v) => command("update.policy", { policy: v }).then((r) => setU(r || { policy: v }), () => {});
+  return html`<${Steps} label=${say("Updates that install by themselves")} value=${policy}
+      items=${[["auto", say("All")], ["critical", say("Critical")], ["ask", say("None")]]} onPick=${pick} />
+    <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}
+      ${" "}${say(`This is Orkcraft ${s.version}.`)}${t && t.update ? say(` ${t.update.version} is out.`) : ""}</p>
+    <span><button class="ok-btn" onClick=${check}>Check for updates</button></span>`;
+}
 
 function UsageField({ s, onPick }) {
   return html`<${Steps} label=${say("Share anonymous usage stats")} value=${s.usage === true}
@@ -90,6 +110,7 @@ export function SettingsDialog() {
         items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ fire: v })} />
       <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
+      ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
     </div>
   </${Dialog}>`;
 }

@@ -77,6 +77,8 @@ TERMS: tuple[Term, ...] = (
     _t("war_tent", "Terminals", "", "War Tent"),
     _t("orders", "Answers", "", "Orders"),
     _t("war_raven", "Phone", "Phones", "War Raven", "War Ravens"),   # a phone paired with the town (docs/design/mobile.md)
+    _t("update", "update", "updates"),                             # a newer Orkcraft (core/updates.py, docs/updates.md)
+    _t("critical_update", "critical update", "critical updates"),  # …that installs by itself when the town opens
     _t("standing_orders", "Instructions", "", "Standing orders"),   # what an ork is told to do
     _t("awaiting_orders", "Awaiting an answer", "", "Awaiting Orders"),
     _t("garrison", "Orks", "", "Garrison"),

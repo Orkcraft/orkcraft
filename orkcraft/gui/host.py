@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, console, growth, mobile, nightly, state, town_settings, views
+from orkcraft.gui import builder, console, growth, mobile, nightly, state, town_settings, updates, views
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -104,6 +104,8 @@ class Host:
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
         self.usage = usage.Usage(self.town.machine, face="gui", demo=demo)
         self._opened()
+        self.updates = updates.Updates(self)        # what is out, installed with a click (gui/updates.py)
+        self.commands.update(self.updates.commands())
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -121,6 +123,7 @@ class Host:
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
+        snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
         return snap
 
     def limits(self) -> list:
@@ -214,6 +217,7 @@ class Host:
         self._night()
         self.growth.tick(now)
         self.usage.tick(now)
+        self.updates.tick(now)
 
     # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
 
@@ -283,7 +287,7 @@ class Host:
         args = dict(args or {})
         try:
             result = fn(args)
-        except (console.ConsoleError, growth.GrowthError) as e:
+        except (console.ConsoleError, growth.GrowthError, updates.UpdateError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result

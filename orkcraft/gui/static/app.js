@@ -14,6 +14,7 @@ import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
+import { UpdateAsk } from "./js/update.js";
 import { Menu } from "./js/menu.js";
 import { WarchiefLine } from "./js/warchief.js";
 import { Overlays } from "./js/types.js";
@@ -37,6 +38,7 @@ function App() {
     <${Toasts} />
     <${SettingsDialog} />
     <${UsageAsk} />
+    <${UpdateAsk} />
     <${Orders} />
     <${Jobs} />
     <${Overlays} />
