@@ -402,6 +402,14 @@ button { font: inherit; color: inherit; }
   background: var(--panel-raised); color: var(--ink); border: 1px solid var(--road-selected); border-radius: var(--radius-sm);
   box-shadow: var(--shadow-window); }
 [data-theme="office"] .gui-sign { border-radius: var(--radius-full); }
+/* An exit with no road yet: a dashed stub off the building with its sign; pull a road from it. */
+.gui-loose-ends { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.gui-loose { position: absolute; display: flex; align-items: center; gap: 0; padding: 0; border: 0; background: none;
+  pointer-events: auto; cursor: crosshair; transform: translateY(-50%); }
+.gui-loose__stub { width: 28px; height: 0; border-top: 2px dashed var(--road-bright); }
+.gui-loose__sign.gui-sign { position: static; transform: none; color: var(--warning); border-style: dashed; }
+.gui-loose:hover .gui-loose__stub, .gui-loose:focus-visible .gui-loose__stub { border-top-color: var(--frame-focus); }
+.gui-loose:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
 .gui-cart { position: absolute; left: 0; top: 0; offset-rotate: 0deg; offset-anchor: 10px 50%; display: flex; align-items: center;
   gap: 4px; animation-name: gui-cart-go; animation-timing-function: linear; animation-fill-mode: both; }
 .gui-cart.is-back { animation-name: gui-cart-back; }

@@ -90,8 +90,25 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             # window or just does it, never the whole building
             "quick": [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else [],
             "page": (PAGES / f"{type_id}.js").is_file(),
+            "loose": _loose(worker),                       # its exits with no road yet: stubs on the map
         })
     return out
+
+
+def _loose(worker) -> list[dict]:
+    try:
+        return list(worker.loose_ends()) if worker is not None else []
+    except Exception:                      # a building's stubs never break the snapshot
+        return []
+
+
+def _exit_names(town: Town, source: str) -> dict[str, str]:
+    """A Review board's exits by route (`to-development` → `To development`): its roads' signs say the name."""
+    spec = town.custom_specs.get(source)
+    if spec is None or catalog.type_of(spec).id != "council":
+        return {}
+    from orkcraft.realm import team
+    return {e.id: e.name for e in team.exits_of(spec.get("config") or {})}
 
 
 def roads(town: Town) -> list[dict[str, Any]]:
@@ -105,8 +122,16 @@ def roads(town: Town) -> list[dict[str, Any]]:
             flt = r.filter or {}
             out.append({"id": road_key(bs.id, r.id), "road": r.id, "from": r.source, "to": bs.id, "event": r.event,
                         "label": r.label or pipes.label(r.event), "handler": r.handler or "",
-                        "sign": sign(r) if flt.get("route") or "-" in (r.label or "") else "", "returns": bool(flt.get("returns"))})
+                        "sign": _exit_sign(town, r) or (sign(r) if flt.get("route") or "-" in (r.label or "") else ""),
+                        "returns": bool(flt.get("returns"))})
     return out
+
+
+def _exit_sign(town: Town, road) -> str:
+    """The sign of a road that takes a Review board's exit: the exit's name."""
+    routes = (road.filter or {}).get("route") or []
+    names = _exit_names(town, road.source) if routes else {}
+    return " · ".join(names[r] for r in routes if r in names)
 
 
 def sign(road) -> str:

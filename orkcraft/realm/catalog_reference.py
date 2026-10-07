@@ -172,6 +172,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
                           "(longer briefs live in steward.md)",
         "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Product manager:main\", \"Architect:agy\"]",
+        "purpose": "what the board reviews and what matters, in words; its clan and exits are set up from it",
+        "exits": "where a judged document can go, `Name: when to take it`, e.g. [\"To development: ready to build\"]; "
+                 "each is a route a road out waits for; Back to the author and Ask me are built in",
         "veto": "roles whose VETO blocks approval, e.g. [\"Security\"]",
         "max_cycles": "reworks of one document before the operator decides (default 3)",
         "budget_usd": "the most one review may spend, in USD (default 2)",

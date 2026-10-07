@@ -54,6 +54,13 @@ function PinButton({ b }) {
 
 /** A road pulled out of a hut's handle: where the pointer lets go over another hut, it goes there. */
 function pull(e, b) {
+  pullRoad(e, b.id);
+}
+
+/** A road pulled out of building `from` (its handle, or an exit's stub: `route`). Let go over another hut: an exit's
+ *  road is laid at once, waiting for its route (docs/design/review-board.md §2); any other asks what it carries. */
+export function pullRoad(e, from, route = "") {
+  const b = { id: from };
   if (e.button !== 0) return;
   e.stopPropagation();
   e.preventDefault();
@@ -72,7 +79,9 @@ function pull(e, b) {
     window.removeEventListener("pointerup", up);
     pulling.value = null;
     const to = under(ev);
-    if (to) laying.value = { from: b.id, to };
+    if (to && route) command("roads.lay", { from: b.id, to, event: `team.routed#${route}`, handler: null })
+      .catch(() => { laying.value = { from: b.id, to }; });
+    else if (to) laying.value = { from: b.id, to };
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);

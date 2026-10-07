@@ -150,6 +150,9 @@ class Host:
             self.growth.soon()
         if event.topic in (bus.WORKER, bus.SPEC, bus.UI) and event.data.get("building"):
             self.on_detail(str(event.data["building"]))
+            if event.topic == bus.WORKER and self._alert_changed(str(event.data["building"])):
+                self.refresh_roster()                  # it began or stopped asking: its hut burns, or not
+                return
         self.on_change()
 
     def _order(self, data: dict) -> None:
@@ -263,9 +266,33 @@ class Host:
         self.refresh_roster()
 
     def refresh_roster(self) -> None:
-        """The roster again, with what each session's screen says now (its questions)."""
-        self.muster.rebuild(self.sessions.infos(), self.sessions.keys())
+        """The roster again, with what each session's screen says now (its questions) and what each building
+        asks (a worker's `orders_alert`: its hut burns)."""
+        self.muster.rebuild(self.sessions.infos(), self.sessions.keys(), self._building_alerts())
         self.on_change()
+
+    def _building_alerts(self) -> list[tuple]:
+        out, asking = [], {}
+        for bid, w in list(self.town.workers.items()):
+            try:
+                wanted = w.orders_alert()
+            except Exception:                      # a building's question never breaks the roster
+                wanted = None
+            if wanted:
+                key, title, context, options = wanted
+                out.append((bid, key, title, list(context), list(options)))
+                asking[bid] = key
+        self._asking = asking
+        return out
+
+    def _alert_changed(self, building_id: str) -> bool:
+        """Whether a building began or stopped asking since the roster was made."""
+        w = self.town.workers.get(building_id)
+        try:
+            wanted = w.orders_alert() if w is not None else None
+        except Exception:
+            wanted = None
+        return (wanted[0] if wanted else None) != getattr(self, "_asking", {}).get(building_id)
 
     def close(self) -> None:
         """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
@@ -415,10 +442,18 @@ class Host:
         alert = self.muster.alert(self._word(args, "id"))
         if alert is None:
             raise CommandError("That question was answered already")
-        if not self.muster.answer(alert, self._word(args, "key"), self.sessions.write):
+        if not self.muster.answer(alert, self._word(args, "key"), self.sessions.write, self._view_answer):
             raise CommandError("Not one of its answers")
         self.refresh_roster()
         return True
+
+    def _view_answer(self, building_id: str, key: str) -> str | None:
+        """An answer to a building's own question goes to its worker."""
+        w = self.town.workers.get(building_id)
+        try:
+            return w.answer_alert(key) if w is not None else None
+        except ValueError as e:
+            raise CommandError(str(e)) from None
 
     def _building(self, fn, args: dict) -> Any:
         try:

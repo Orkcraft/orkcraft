@@ -24,9 +24,11 @@ import json
 import threading
 from pathlib import Path
 
+from orkcraft import scroll as ts
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks import take_back
+from orkcraft.core.workers.council_setup import Setup
 from orkcraft.realm import pipes, roads, shelves
 from orkcraft.realm import team as tm
 
@@ -47,6 +49,7 @@ def title_of(text: str) -> str:
 class CouncilWorker(Worker):
     TYPE = "council"
     runner = None              # tests put a (harness, prompt, model) → (text, cost) here
+    setup_runner = None        # and the keeper's proposal call, prompt → (text, cost), here
 
     def __init__(self, town, building_id: str) -> None:
         super().__init__(town, building_id)
@@ -56,6 +59,7 @@ class CouncilWorker(Worker):
         self._cart: tuple[str, tuple, str] = ("", (), "")   # the ref, trail and source of the document under review
         self._cancel: threading.Event | None = None
         self._busy = False
+        self.setup = Setup(self)           # the purpose → clan → exits steps (council_setup.py)
 
     # -- what it is -----------------------------------------------------------------------------
 
@@ -84,6 +88,43 @@ class CouncilWorker(Worker):
     def routes(self) -> list[str]:
         """Who it may route an approved document to (none: it only approves)."""
         return tm.routes_of(self.config)
+
+    @property
+    def set_up(self) -> bool:
+        """Whether the board was set up: a purpose, a clan or a steward's brief of its own (else it opens on the setup)."""
+        c = self.config
+        return any(c.get(k) for k in ("purpose", "members", "steward_prompt", "goal", "exits", "routes"))
+
+    @property
+    def named(self) -> bool:
+        """A board set up with named exits (docs/design/review-board.md): the verdict travels on every exit and an
+        exit with no road is never taken. Boards of old (`routes`, or none) behave as they did."""
+        return bool(self.config.get("exits"))
+
+    @property
+    def exits(self) -> list[tm.Exit]:
+        return tm.exits_of(self.config)
+
+    def connected(self, exit: tm.Exit) -> bool:
+        """A road out takes what goes down this exit: one that waits for its route, or one that waits for none."""
+        for _bs, road in ts.outgoing(self.town.scroll, self.building_id):
+            if road.event not in ("team.approved", "team.routed"):
+                continue
+            wanted = (road.filter or {}).get("route") or []
+            if not wanted or exit.id in wanted:
+                return True
+        return False
+
+    def loose_ends(self) -> list[dict]:
+        """The named exits no road takes yet: the map draws each as a stub to pull a road from."""
+        return [{"route": e.id, "name": e.name} for e in self.exits if not self.connected(e)] if self.named else []
+
+    def phase(self) -> str:
+        """While it reviews: `reading` (members speak) or `deciding` (the steward's turn)."""
+        d = self.current
+        if not self._busy or d is None:
+            return ""
+        return "deciding" if len(d.reviewed) >= len(self.team) else "reading"
 
     def sandbox_runner(self, cancel: threading.Event) -> tm.Runner:
         """The sandbox's clan: its lines from `simulated.json` (what the demo wrote), else everyone approves."""
@@ -150,7 +191,90 @@ class CouncilWorker(Worker):
         d = self.current
         if d is not None and d.outcome == "asked":
             return "ASKS"
-        return "BUSY" if self._busy else ""
+        return "WORKING" if self._busy else ""          # the hut spins while it reviews
+
+    # -- asking the person: the building burns, the exits are the answers ---------------------------
+
+    def answers(self) -> list[tuple[str, str]]:
+        """(exit id, its words) the person may pick now: the named exits a veto leaves open, then back."""
+        d = self.current
+        out = [] if d is None or tm.vetoed(d) else [(e.id, e.name) for e in self.exits]
+        if not out and not self.named and d is not None and not tm.vetoed(d):
+            out = [("approve", "Let it go")]                # a board of old: approve as it is
+        return out + [(tm.BACK, "Back to the author")]
+
+    def open_exit(self, eid: str) -> bool:
+        """Whether the person may send a review down this answer now: back always; a named exit when a road takes it."""
+        if eid in (tm.BACK, "approve") or not self.named:
+            return True
+        e = next((x for x in self.exits if x.id == eid), None)
+        return e is not None and self.connected(e)
+
+    def orders_alert(self):
+        """The question that sets this building on fire (gui/host.py, the roster): (key, title, context, options)."""
+        d = self.current
+        if d is None or d.outcome != "asked":
+            return None
+        options = [(str(i + 1), words) for i, (_eid, words) in enumerate(self.open_answers())]
+        return (f"ask:{d.id}", f"{d.title[:60]}: {d.question.splitlines()[0][:120] if d.question else 'the steward asks'}",
+                [ln for ln in d.question.splitlines() if ln.strip()][:6], options)
+
+    def open_answers(self) -> list[tuple[str, str]]:
+        return [(eid, words) for eid, words in self.answers() if self.open_exit(eid)]
+
+    def answer_alert(self, key: str) -> str | None:
+        """An answer picked in Answers: the exit it names, no comment."""
+        picks = self.open_answers()
+        if key.isdigit() and 0 < int(key) <= len(picks):
+            self.decide_now(picks[int(key) - 1][0], "")
+        return None
+
+    def decide_now(self, exit: str, comment: str) -> str:
+        """The person sends the review down an exit (asked, or stopped on the way): no model turn. The exit's name."""
+        d = self.current
+        if d is None or self._busy or d.outcome not in ("asked", "budget", "error", "stopped"):
+            raise ValueError("Nothing waits for your decision")
+        if not self.open_exit(exit):
+            name = next((e.name for e in self.exits if e.id == exit), exit)
+            raise ValueError(f"“{name}” has no road yet: connect it on the map, or pick another exit")
+        if exit == "approve" and not self.named:             # a board of old: let it go as it is
+            d.turns.append(tm.Turn("Operator", "decide", comment or "→ let it go", "approve", None, tm.now_iso(),
+                                   "the operator decided"))
+            d.decision, d.outcome = comment, "approved"
+            taken_name = "approved"
+        else:
+            taken = tm.decide(d, exit, comment, self.exits)
+            taken_name = taken.name if taken else "Back to the author"
+        self.finish(d)
+        return taken_name
+
+    def go_on(self) -> bool:
+        """Stopped, failed or out of its budget: the review goes on from where it was (a budget it spent is doubled)."""
+        d = self.current
+        if d is None or self._busy or d.outcome not in ("budget", "error", "stopped"):
+            return False
+        if self.out_of_gold("the review"):
+            return False
+        if d.outcome == "budget" and d.spent >= self.budget:
+            self.save_config({"budget_usd": round(max(self.budget * 2, d.spent + 1.0), 2)})
+        d.error = ""
+        self._run()
+        return True
+
+    def review_next(self) -> bool:
+        """Review now: the first document in line starts (after a stop, or when the budget is back)."""
+        if self._busy or not self.waiting or (self.current is not None and self.current.outcome == "asked"):
+            return False
+        title, text, path, ref, trail, source = self.waiting.pop(0)
+        self.changed()
+        return self.review(text, title, path, ref, trail, source)
+
+    def drop(self, index: int) -> bool:
+        if not 0 <= index < len(self.waiting):
+            return False
+        del self.waiting[index]
+        self.changed()
+        return True
 
     # -- the review ----------------------------------------------------------------------------------
 
@@ -172,9 +296,11 @@ class CouncilWorker(Worker):
             self.waiting.append((title, text, path, ref, tuple(trail), source))
             self.changed()
             return False
-        if not self.town.budget_ok() and not self.simulated:
-            self.toast("🪙 budget exhausted — a review costs model calls", title=f"{ICON} Clan Fire",
-                       severity="warning")
+        if not self.town.budget_ok() and not self.simulated:          # it waits in line, never dropped
+            self.waiting.append((title, text, path, ref, tuple(trail), source))
+            self.toast("🪙 budget exhausted — the document waits in line (Review now when there is budget)",
+                       title=f"{ICON} Clan Fire", severity="warning")
+            self.changed()
             return False
         cycle = tm.cycle_of(tm.load_all(self.state_dir, 200), title)
         d = tm.new(title, text, path, cycle)
@@ -211,6 +337,7 @@ class CouncilWorker(Worker):
         runner = type(self).runner or (self.sandbox_runner(cancel) if self.simulated else
                                        (lambda h, p, m: roads.run_agent(h, p, repo, env, cancel, m, web=True)[:2]))
         steward, veto, cycles, budget, routes = self.steward(), self.veto, self.max_cycles, self.budget, self.routes
+        exits = self.exits if self.named else []
         briefs = {m.role: self.brief_of(m) for m in team}
 
         def on_turn(_d: tm.Discussion, _t: tm.Turn) -> None:
@@ -219,7 +346,7 @@ class CouncilWorker(Worker):
         def work() -> None:
             try:
                 tm.run(d, team, steward, veto, cycles, budget, runner, on_turn, cancel,
-                       lambda m: briefs.get(m.role, ("", "")), routes=routes)
+                       lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits)
             except Exception as e:  # the town goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:
@@ -232,6 +359,13 @@ class CouncilWorker(Worker):
 
     def finish(self, d: tm.Discussion) -> None:
         self._busy, self._cancel = False, None
+        if self.named and d.outcome == "approved":       # an exit with no road is never taken: the person decides
+            taken = next((e for e in self.exits if e.id == d.route), None)
+            if taken is not None and not self.connected(taken):
+                d.outcome = "asked"
+                d.decision = (f"The steward would send it to “{taken.name}”, but that exit has no road. Connect it on "
+                              f"the map, or pick another exit.\n\n{d.decision}").strip()
+                d.turns.append(tm.Turn("Steward", "decide", d.decision, "ask", None, tm.now_iso(), "the exit has no road"))
         try:
             tm.save(self.state_dir, d)
         except OSError:
@@ -244,16 +378,30 @@ class CouncilWorker(Worker):
             trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome),)
             self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
             if d.outcome == "approved":
-                self.emit("team.approved", d.doc, d.title, trail=trail, ref=ref)
+                taken = next((e for e in self.exits if e.id == d.route), None)
+                if self.named:                             # the verdict travels on every exit
+                    d.exit = taken.name if taken else "Next"
+                    d.out = tm.verdict_markdown(d, d.exit)[:tm.OUT_KEEP]
+                doc = d.out if self.named else d.doc
+                self.emit("team.approved", doc, d.title, trail=trail, ref=ref)
                 if d.route:                                # who takes it on: each road waits for its route
-                    self.emit("team.routed", tm.routed_text(d), d.task or d.title, trail=trail, ref=ref, route=d.route)
+                    self.emit("team.routed", doc if self.named else tm.routed_text(d), d.task or d.title, trail=trail,
+                              ref=ref, route=d.route)
             else:
-                back = tm.rework_markdown(d, self.max_cycles)
+                back = tm.verdict_markdown(d, "Back to the author", back=True) if self.named \
+                    else tm.rework_markdown(d, self.max_cycles)
+                d.exit, d.out = ("Back to the author", back[:tm.OUT_KEEP]) if self.named else ("", "")
                 self.emit("team.rework", back, d.title, trail=trail, ref=ref)
                 self._send_back(source, pipes.Payload(pipes.TEXT, back, self.building_id, "team.rework", d.title,
                                                       trail, ref))
-            self.toast(f"{(d.task or d.title)[:60]}: {OUTCOME[d.outcome]}" + (f" → {d.route}" if d.route else ""),
+            self.toast(f"{(d.task or d.title)[:60]}: " + (f"{'↩' if d.outcome == 'rework' else '→'} {d.exit}" if d.exit else
+                       OUTCOME[d.outcome] + (f" → {d.route}" if d.route else "")),
                        title=f"{ICON} Clan Fire")
+            if d.out:                                      # what went out, kept with it
+                try:
+                    tm.save(self.state_dir, d)
+                except OSError:
+                    pass
         elif d.outcome == "asked":
             self.toast(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
         if d.outcome != "asked":
