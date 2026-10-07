@@ -389,9 +389,11 @@ Claude Code 2.1.291 on macOS, agy 1.3.1.
 | Their state at init | Gmail, Figma, Calendar `connected`; one run earlier read `needs-auth` for Gmail while `claude mcp list` said connected |
 | Plugin servers (Slack, Atlassian, Linear, Notion, Intercom) | `needs-auth` until logged in once with `/mcp` (a browser consent, one click when already signed in) |
 | Atlassian's read tools | an allow-list by hand: `atlassianUserInfo`, `getAccessibleAtlassianResources`, `searchJiraIssuesUsingJql`, `getJiraIssue`, `searchConfluenceUsingCql` (a name filter misses `fetch`, `search`, `…UserInfo`) |
-| One Jira look (JQL about me, last day) | 4 issues, the same ids twice (`KEY:updated`); 5–7 turns, 23–42 s, $0.029–0.076 |
+| One Jira look (JQL about me, last day) | 4 issues, the same ids twice (`KEY:updated`); 5–7 turns, 23–42 s, $0.028–0.076 |
+| A new Jira comment (an @-mention of myself) | seen: that issue's id changed to the new time, `mention: true` — a self-mention counts |
 | One Confluence look (CQL mentions of me) | 0 items both times; one run took 13 turns and tried a tool not allowed (refused) — the same ask, a different path |
-| One Slack look (mentions and DMs) | 0 items both times *(check: with a mention made on purpose)*; 3–8 turns, 15–22 s, $0.011–0.043 |
+| One Slack look (mentions and DMs) | an empty workspace: 0 items both times; 3–8 turns, 15–22 s, $0.011–0.043 |
+| A new Slack message (an @-mention of myself) | seen, `mention: true`, the same id twice (`channel:ts`); 5 turns both times, 16–23 s, $0.022–0.034. A plain message posted beside it was not returned *(check: search lag, or the search kept to mentions)* |
 | agy | its MCP config holds firebase and dart servers only: nothing to listen with there |
 | Gmail's read tools | `search_threads`, `get_thread`, `get_message`, `list_labels`, `list_drafts`, `get_draft`; 20 more write (send, reply, forward, trash, label…) — the allow-list matters |
 | Figma connector | design, Code Connect, FigJam, shaders; **no comments** |
