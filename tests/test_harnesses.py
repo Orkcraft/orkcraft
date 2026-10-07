@@ -118,3 +118,11 @@ def test_logins_of_the_new_tools_are_told_from_disk(tmp_path):
                          run=lambda *a, **k: type("P", (), {"stdout": "1.0.4", "stderr": "", "returncode": 0})(),
                          env={}, home=home)
     assert [s.id for s in found if s.found] == ["pi", "cursor"] and found[4].logged_in
+
+
+def test_autonomy_says_what_each_new_tool_changes():
+    from orkcraft import autonomy
+    free = autonomy.guide(autonomy.FREE, ("hermes", "pi", "cursor"))
+    assert "hermes --yolo" in free and "cursor-agent --force" in free and "never asks" in free
+    chains = autonomy.guide(0, ("hermes", "cursor"))
+    assert "--yolo" not in chains and "--force" not in chains

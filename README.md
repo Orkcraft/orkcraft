@@ -200,7 +200,7 @@ orkcraft/
   screens/           modals and the typed views of every building (screens/typed/)
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
                      feedback, optimize, weekly, checkpoint, housekeeping…
-  quota/             claude / agy quota readers (answered locally, no quota spent)
+  quota/             each AI tool's quota readers (no quota spent)
   sources/ hooks/    sessions, telemetry, limits; the Claude Code and Codex hooks
   demo/              the showcase sandbox
 ```

@@ -12,8 +12,9 @@ export const HALL = "town_hall";
 export const tentKey = signal(null);       // the session the War Tent shows
 export const hallTab = signal("chat");     // the Town Hall's tab open: chat | hall | sessions | limits
 
-const HARNESSES = [["claude", "Claude"], ["codex", "Codex"], ["agy", "agy"]];
-const MARK = { claude: "✻", agy: "✦", codex: "⌬" };
+const HARNESSES = [["claude", "Claude"], ["codex", "Codex"], ["agy", "agy"], ["hermes", "Hermes"], ["pi", "pi"],
+  ["cursor", "Cursor"]];
+const MARK = { claude: "✻", agy: "✦", codex: "⌬", hermes: "☤", pi: "π", cursor: "◆" };
 
 /** Show a session in the War Tent (it opens the Town Hall on its Sessions tab). */
 export function showSession(key) {

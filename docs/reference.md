@@ -109,7 +109,7 @@ Buildings (keys `1`–`9`):
 | # | Building | Resident | Shows |
 |---|---|---|---|
 | 1 | 📦 Artifacts | Quartermaster | `./loot/` artifacts and wiki notes |
-| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live Claude / agy / Codex terminals) · Limits (claude / agy / codex quota) |
+| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live terminals of every AI tool) · Limits (each tool's quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
 Every other building is built from the catalog of typed buildings (below) or from scratch by the Builder (a Workshop).
@@ -607,6 +607,28 @@ repository, each with a few days of state: tasks, a calendar around the hour it 
 list them, a conflict, orks with questions on their screens. `orkcraft gui --demo` opens this set
 by default (`~/.orkcraft-demo-dashboard`). A sandbox of an older demo is built again by itself.
 
+## AI tools and the main tool
+
+Orkcraft leads Claude Code, Antigravity (agy), Codex, Hermes Agent, pi and Cursor (`cursor-agent`),
+all through one registry (`orkcraft/realm/harnesses.py`, docs/design/harnesses.md): how each answers
+once, reads, works in a worktree, resumes and opens a terminal, what it prints and costs.
+
+- **Main tool** — Settings → *AI tools* turns each tool on or off and picks the main one (empty: the
+  first one on). Every decision runs on it: the Warchief, the Town Builder, the Foreman, the road
+  planner, the Recruiter, the Council's fast path, stewards and keepers, retros. With no tool on it
+  is Claude Code.
+- **Steps** name a tool or `main` (the main tool, read when the step runs). New orks, Barracks
+  providers, Council members and the Mill's agent start on `main`; an ork or a steward that names its
+  own tool keeps it. A tier (Elder, Warrior, Laborer) names each tool's own model; a tool without a
+  tier table (Hermes, pi, Cursor) runs its default.
+- **Guards** — the 🛡 Warder judges every tool with the same rules: Cursor in `.cursor/hooks.json`,
+  pi through orkcraft's extension (`-e`, and `.pi/extensions/orkcraft.ts`), Hermes in a marked block
+  of `~/.hermes/config.yaml`, written only after asking (`--hermes-global` / `--no-hermes-global`).
+  pi has no approvals or sandbox of its own: reading orks get only its reading tools.
+- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); agy, Codex and
+  Cursor do not (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
+  month (its stored login); pi keeps no windows.
+
 ## Orks: steward, handlers, Recruiter
 
 - **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
@@ -735,7 +757,7 @@ the CLI paths.
   source URL and date), including cache-write TTLs, fast mode and `inference_geo: "us"`. They are
   **API-equivalent estimates**, not a bill: Claude Pro / Max plans don't charge per token, and
   Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
-  price (agy and Codex sessions, unknown models) — it is never counted as $0.
+  price (agy, Codex and Cursor sessions, unknown models) — it is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
   shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
@@ -759,7 +781,7 @@ the CLI paths.
   shell). Here-document bodies are data and are not judged. Every deny / ask lands in
   `.orkcraft/warder.jsonl` (tokens redacted) and puts ❓ on Warder in the Council — `1`
   acknowledges it. Sessions in a worktree log to the main repository. Warder guards Claude Code,
-  Codex and agy with the same rules; hooks load when a session starts. For Codex it is
+  Codex, agy, Hermes, pi and Cursor with the same rules (*AI tools* above); hooks load when a session starts. For Codex it is
   in `.codex/hooks.json` with `apply_patch` among its tools (the files are read from the patch), runs
   once trusted with `/hooks`, and turns an ask into a deny that says why — Codex cannot ask yet.
   For agy (1.1.12 or later) it is the `orkcraft` entry of `.agents/hooks.json` on `run_command` and the
@@ -865,10 +887,7 @@ Stewards' changes now get their own checkpoint as well.
 
 An order in words (*Didn't find it?* at onboarding) becomes a plan of a whole town: one model
 call in an empty folder, like the Foreman, that sees only the order and the building catalog. It
-runs on the first tool you turned on, in this order: Claude Code (`claude -p`), Codex (`codex exec`
-in a read-only sandbox, the prompt on stdin) or agy (`agy --print` in its sandbox, its edits only in
-that empty folder) — `builders.planner_runner`. With none of them on, the order waits in the 🏰 Town
-Hall. Codex and agy print no price, so their plans cost nothing in 🪙 Gold. The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
+runs on the main tool (*AI tools and the main tool* above). The plan is 2–8 typed buildings from the catalog (never the Town Hall or the Builder's
 scratch type) and up to 12 **plain** roads, each waiting for an event its source sends — every
 building passes `masonry.validate_spec`, and a plan with problems goes back with them (up to 3
 attempts). The checks also refuse a road into a building that does nothing with a cart (Pit,
