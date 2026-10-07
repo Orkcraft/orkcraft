@@ -1,7 +1,7 @@
 # Design — 📦 Loot: the review checkpoint
 
-Status: design notes, written 2026-10-04. Stages 1 (the trail) and 2 (the checkpoint) are implemented;
-stages 3–4 are not.
+Status: design notes, written 2026-10-04. Stages 1 (the trail), 2 (the checkpoint), 3 (the full window)
+and 4 (images) are implemented in the GUI; the TUI is deprecated and keeps what it had (§7).
 Builds on roads and handlers (`roads-and-orcs.md`), the 🔥 of a waiting ork and the 🪙 ledger.
 
 ## 1. What Loot is
@@ -49,7 +49,19 @@ that matching, not a language of their own.
   committing is the Forge's job.
 - **✗ reject** with a reason sends `loot.rework` back to the source (a road Loot → source).
 - **↺ restore** brings a rejected file back from `rejected/`.
-- **✎ edit** — the full-window view lets the person edit the text (or the file) before accepting.
+- **✎ edit** — the full-window view lets the person edit the text (or the file) before accepting. A text
+  cart is edited in its window — *Edit*, then *Save* or *Accept this version* — or in Lake; both write its
+  draft file (`LootWorker.save_draft`, `draft_path`), so Accept and Accept all take the person's version
+  either way. A cart too long for the window is edited in Lake; a file cart is opened there.
+- **A file of a held cart's branch** — *Reject this file* puts it back on the branch as the base has it
+  (removed, if the task added it) by one commit on the branch (`generated.Branch.reject`; the branch is
+  never checked out for it, and a worktree that has it checked out gets the file, unless the file has
+  changes there nobody committed). Its content on the branch is kept under `rejected/carts/<cart>/`, the
+  cart remembers it (`Item.rejected`), the maker hears it (👎 0.34, `loot.file_rejected`) and
+  `generator.rejected` goes down the roads. *Bring it back* commits the kept copy back (a deletion is
+  deleted again), not over a newer change of that file on the branch. Only a cart that waits for the
+  person has its files decided: one in rework is with its ork. A rework tells the ork which files were
+  rejected, so it leaves them.
 - **Rework limit.** A cart goes back at most **3 times** (`max_rework`, configurable) or until the
   chain spent `rework_tokens` tokens. After that it is not sent back again: it stays in the queue
   marked `needs you`, highlighted on the hut, for the person to review and fix by hand.
@@ -139,9 +151,10 @@ change in the working tree.
 - **Images** — the preview names a picture by its first bytes: `PNG image · 512×512 · 34.2 KB ·
   o opens it`. `o` hands the highlighted file to the system viewer (`open` on macOS, `xdg-open`
   on Linux); a file that is only on a task's branch is first copied out with `git show
-  <branch>:<path>` into a temporary folder, under its own name. Later: the picture inside the
-  window by the terminal's own image protocol (kitty / sixel) when the terminal supports it,
-  `o` otherwise. No block-character fallback.
+  <branch>:<path>` into a temporary folder, under its own name. In the GUI the picture shows inside
+  the window, over what is said of it (without the `o` hint): a cart's, a file of its branch, a changed
+  file of the working tree (up to 2 MB). The terminal's own image protocol (kitty / sixel) was planned
+  for the TUI and is not built: the TUI is deprecated. No block-character fallback.
 
 ## 6. Events
 
@@ -160,7 +173,9 @@ change in the working tree.
    limit, 🔥 reminders, ↺ restore; the rules read the files of the trail's worktree; Loot's own
    `loot/` is never up for review; file names are read unescaped. *(done)*
 3. **The full window** — diff, the trail with cost; a held cart's branch files listed under it,
-   each with its diff or content *(done)*. Still to do: editing, per-file decisions inside a held
-   cart's branch.
+   each with its diff or content; a text cart edited in the window; one file of a held cart's
+   branch rejected and brought back while the rest goes on *(done, GUI)*.
 4. **Images** — size, type and dimensions in the preview, `o` opens any file in the system viewer
-   (a branch's file copied out first) *(done)*. Still to do: kitty / sixel inside the window.
+   (a branch's file copied out first) *(done)*. The picture inside the window: the GUI shows it — a
+   cart's, a file of its branch, a changed file of the working tree *(done)*. Kitty / sixel in the
+   terminal is not built: the TUI is deprecated (`calm-town.md` §9) and gets fixes only.
