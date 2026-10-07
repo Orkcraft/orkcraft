@@ -41,7 +41,7 @@ const TAPER = 2, TAPER_MAX = 14;           // cells each land is shorter than th
 /** About how wide a land's words are, in px from the map's left: its name (and ■), its status when open. */
 function textWidth(o, isOpen) {
   const name = 9 + (o.name || "").length * 7 + (o.questions ? 11 : 0);
-  return isOpen ? Math.max(name, 9 + (`${o.count} blocks · ${o.questions ? "1 question" : "all quiet"}`).length * 5.5) : name;
+  return isOpen ? Math.max(name, 9 + (`${o.count} buildings · ${o.questions ? "1 question" : "all quiet"}`).length * 5.5) : name;
 }
 
 function layout(lands, open) {

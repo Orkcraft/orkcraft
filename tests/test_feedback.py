@@ -60,7 +60,7 @@ async def test_k_and_f_on_a_building(fake_repo: Path):
         assert feedback.scores(fake_repo)["mill"]["likes"] == 1
         await pilot.press("F")
         await pilot.pause()
-        assert isinstance(app.screen, DislikeModal) and "The Pit −1" in " ".join(str(w.render()) for w in app.screen.query("Static"))
+        assert isinstance(app.screen, DislikeModal) and "Drop file here −1" in " ".join(str(w.render()) for w in app.screen.query("Static"))
         await pilot.press("1")
         await pilot.pause()
         inc = feedback.incidents(fake_repo)[0]

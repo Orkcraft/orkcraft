@@ -21,9 +21,8 @@ system's own previews still show.
 
 **The GUI has one look, Office.** Its Camp look (road tiles, mine carts, the sideways gates,
 `camp.css`, `orkcraft gui --look camp`) was dropped; Camp below is the design system's theme and the
-deprecated TUI's mode.
-
-**Shift** is not a third look. It is Office during office hours on office days and Camp at other times, so the app swaps `data-theme` at runtime.
+deprecated TUI's look. There are no modes any more: no Shift, no switch, and one vocabulary
+(CLAUDE.md, Wording), so "its Office name" below means a concept's one word.
 
 There is no terminal styling in the GUI. ASCII silhouettes, box drawing and `[bracket]` buttons belong to the TUI only. The mono face (`code`) is used only for code, diffs, logs and terminals.
 
@@ -39,7 +38,7 @@ There is no terminal styling in the GUI. ASCII silhouettes, box drawing and `[br
   - Status lines are terse fragments, such as `Branch main · 2 merged today` or `All quiet · $0.00 / $5`.
 - **Game nouns are the product nouns.** Building, hut, ork, garrison, road, cart, orkspace, War Map, Town Hall, orders.
   - Camp shows them with sprites. Until the sprites exist, it uses the TUI's pictographs (none left: every Camp pictograph now has a sprite); the ork and its states, the fire, the resources, the chain marker and the tiers already have their sprites.
-  - Office says them in words: Agents, Spend, Context, `?`, `busy`.
+  - Office says them in words: Orks, Spend, Context, `?`, `busy`.
 - **Questions are fire, not dialogs.** An ork never opens a dialog. When it needs you, its building burns (Camp) or turns red (Office), and you answer in Orders (`!`). Toasts only inform.
 - **Separators.** Use `·` between facts, `→` for flow (`pit → lake`, `✻→✦`), and `—` before an explanation.
 

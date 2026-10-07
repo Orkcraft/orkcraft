@@ -2,9 +2,6 @@
 
 The corner follows the tools' billing (settings.py): `[⏳ claude 38%]` for subscriptions, 🪙 for an API.
 
-In the office look (`realm/modes.py`) the same values stand in words, without the game:
-`[ Orkcraft v0.1 ]──[ Menu (F10) · Stop all: READY ]   … [Quota claude 38%] [Spend $— / $20.00] [Context — / 128k] [Agents n/max]`.
-
 The menu and Halt All share one segment: a click opens the system menu, whose first item is
 Halt; the segment shows the halt state (READY / HALTED — n stopped)."""
 from __future__ import annotations
@@ -19,10 +16,16 @@ from textual.widgets import Static
 
 from orkcraft import __version__
 from orkcraft.realm import modes
+from orkcraft.realm.orcs import ALERT_ICON
 from orkcraft.scroll import Budget
 from orkcraft.sources.telemetry import fmt_tokens
 
 _DEFAULT_BUDGET = Budget()
+
+
+def _icon(resource: str) -> str:
+    """A resource as the HUD shows it: its icon (realm/modes.py RESOURCES)."""
+    return modes.RESOURCES[resource][0]
 
 
 def default_gold(budget: Budget) -> str:
@@ -48,7 +51,7 @@ class Resources:
     quota: str = ""       # ⏳ used share of the subscriptions' limits ("claude 38% · agy 71%"); "" → none
     quota_level: str = "ok"
     show_gold: bool = True    # False when every tool in use is a subscription (settings.py)
-    hour: str = ""        # 🌙 quiet / 👔 office hours now (schedule.status); "" → neither
+    hour: str = ""        # 🌙 quiet hours now (schedule.status); "" → not quiet
     budget: Budget = field(default_factory=Budget)
 
     def __post_init__(self) -> None:
@@ -118,28 +121,23 @@ class Hud(Static):
 
     def update_hud(self) -> None:
         r = self.resources
-        office = modes.office()
         left = Text()
-        left.append("[ Orkcraft " if office else "[ 🧌 Orkcraft ", style="bold")
+        left.append("[ 🧌 Orkcraft ", style="bold")
         left.append(f"v{'.'.join(__version__.split('.')[:2])} ", style="dim")
         left.append("]")
         left.append("──")
         narrow = self.size.width < 130
         halt_style = "bold green" if self.halt == "READY" else "bold reverse red"
         start = cell_len(left.plain)
-        if office:
-            left.append("[ F10 · Stop: " if narrow else "[ Menu (F10) · Stop all: ", style="bold")
-        else:
-            left.append("[ ⚙️ F10 · 🛑 " if narrow else "[ ⚙️ Menu (F10) · 🛑 ", style="bold")
+        left.append("[ ⚙️ F10 · 🛑 " if narrow else "[ ⚙️ Menu (F10) · 🛑 ", style="bold")
         left.append(self.halt, style=halt_style)
         left.append(" ]")
         self._menu_span = (start, cell_len(left.plain))
         if r.alerts:
             left.append("──")
             astart = cell_len(left.plain)
-            icon = modes.alert_icon()
-            wait = "awaiting an answer" if office else "awaiting orders"
-            left.append(f"[ {icon} {r.alerts} ]" if narrow else f"[ {icon} {r.alerts} {wait} ]", style="bold yellow")
+            left.append(f"[ {ALERT_ICON} {r.alerts} ]" if narrow else f"[ {ALERT_ICON} {r.alerts} awaiting an answer ]",
+                        style="bold yellow")
             self._alerts_span = (astart, cell_len(left.plain))
         else:
             self._alerts_span = (0, 0)
@@ -153,18 +151,18 @@ class Hud(Static):
         if r.hour:
             right.append(f"[{r.hour}] ", style="#b48ead" if "🌙" in r.hour else "dim")
         if not narrow:
-            right.append(f"{'' if office else '⛏ '}commit {'ON' if r.commit else 'OFF'} ", style="dim")
+            right.append(f"⛏ commit {'ON' if r.commit else 'OFF'} ", style="dim")
         levels = {"warn": "bold yellow", "over": "bold reverse red"}
         if r.quota:
-            right.append(f"[{modes.resource('quota')} {r.quota}]", style=levels.get(r.quota_level, ""))
+            right.append(f"[{_icon('quota')} {r.quota}]", style=levels.get(r.quota_level, ""))
             right.append(" ")
         if r.show_gold:
-            right.append(f"[{modes.resource('gold')} {gold_disp}]", style=levels.get(r.gold_level, ""))
+            right.append(f"[{_icon('gold')} {gold_disp}]", style=levels.get(r.gold_level, ""))
             right.append(" ")
-        right.append(f"[{modes.resource('lumber')} {lumber_disp}]", style=levels.get(r.lumber_level, ""))
+        right.append(f"[{_icon('lumber')} {lumber_disp}]", style=levels.get(r.lumber_level, ""))
         right.append(" ")
         supply_style = "bold red" if r.supply >= r.supply_max else ("yellow" if r.agents_working else "")
-        right.append(f"[{modes.resource('supply')} {r.agents_working}/{r.agents}]", style=supply_style)
+        right.append(f"[{_icon('supply')} {r.agents_working}/{r.agents}]", style=supply_style)
 
         gap = self.size.width - cell_len(left.plain) - cell_len(right.plain)
         line = left + Text(" " * max(gap, 1)) + right

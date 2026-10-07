@@ -122,7 +122,7 @@ def test_the_mascot_stage_follows_the_camp_and_is_named_by_kin_and_role(tmp_path
     assert growth.stage_of(town, {}, machine) == 4
     assert growth.kin_of(machine.profile) == "lich"
     assert [growth.stage_name(machine.profile, s) for s in (1, 2, 3, 4)] == [
-        "Zombie Manager", "Jira Lich", "Lich Lord", "Night King"]
+        "Standup Zombie", "The Jira Lich", "Lich of Sprints", "Release Night King"]
 
 
 def test_a_review_answered_by_a_kept_change_closes_its_loop(tmp_path: Path):

@@ -34,15 +34,15 @@ from textual.widgets.option_list import Option
 
 from orkcraft.core.workers.war_drum import DOC, TICK_S, WarDrumWorker
 from orkcraft.design import tokens
-from orkcraft.realm import catalog, daybook, drumbeat, modes
+from orkcraft.realm import catalog, daybook, drumbeat
 from orkcraft.screens.dialogs import TextPrompt
 from orkcraft.screens.typed.base import TypedView
 
 
 def _tone(tone: str) -> str:
-    """A colour role as the terminal draws it in the look on screen (design/tokens.json)."""
+    """A colour role as the terminal draws it: the camp's theme (design/tokens.json)."""
     try:
-        return tokens.color(tone, modes.current())
+        return tokens.color(tone, "camp")
     except KeyError:
         return ""
 

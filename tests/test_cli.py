@@ -223,3 +223,44 @@ def test_the_window_is_the_default_and_the_tui_is_deprecated(monkeypatch, tmp_pa
     monkeypatch.setattr(cli, "_gui", lambda quiet=False: None)
     assert main(["--repo", str(tmp_path)]) == 0
     assert opened == ["gui", "tui", "tui"]
+
+
+def test_role_from_the_landing_page_opens_the_onboarding_on_it(monkeypatch, tmp_path: Path, capsys):
+    """`orkcraft --role <class>` (the pick on orkcraft.dev) or a role id is kept as the profile's role before
+    the window opens; an unknown one is refused; a role from a finished onboarding stays."""
+    import orkcraft.cli as cli
+    from orkcraft import settings
+    from orkcraft.realm import intents
+
+    class Launch:
+        @staticmethod
+        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
+            return 0
+
+    file = tmp_path / "settings.json"
+    monkeypatch.setenv("ORKCRAFT_SETTINGS_FILE", str(file))
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
+    (tmp_path / ".git").mkdir()
+    assert main(["--repo", str(tmp_path), "--role", "knight"]) == 0
+    assert settings.load(file).profile["role"] == "founder"
+    assert intents.nick(settings.load(file).profile["role"]) == "Indie Knight"
+    assert main(["--repo", str(tmp_path), "--role", "eng-manager"]) == 0
+    assert settings.load(file).profile["role"] == "eng_manager"
+    assert main(["--repo", str(tmp_path), "--role", "wizard"]) == 2
+    assert "no role 'wizard'" in capsys.readouterr().err
+    done = settings.load(file)
+    done.onboarded, done.profile = True, {**done.profile, "role": "designer"}
+    settings.save(done, file)
+    assert main(["--repo", str(tmp_path), "--role", "peon"]) == 0
+    assert settings.load(file).profile["role"] == "designer"
+
+
+def test_the_landing_page_classes_are_the_first_role_of_each_kin():
+    """Every class of orkcraft.dev names a real role, and its nick is the class's name on the page."""
+    from orkcraft.realm import intents
+    names = {"peon": "Burnout Peon", "knight": "Indie Knight", "elf": "Gradient-Sick Elf",
+             "lich": "The Jira Lich", "gnome": "Growth-Hack Gnome", "goblin": "Data-Mining Goblin"}
+    for cls, role_id in intents.CLASSES.items():
+        assert intents.role(role_id).id == role_id
+        assert intents.nick(role_id) == names[cls]
+        assert intents.role_id_of(cls.upper()) == role_id

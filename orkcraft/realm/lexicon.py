@@ -1,199 +1,194 @@
-"""The product's words in each mode: Camp says them as a game, Office as a work tool.
+"""The product's words: one word for each concept (CLAUDE.md, Wording).
 
-    term("watchtower")             == "Watchtower"            # the current mode's word
-    term("watchtower", OFFICE)     == "External listeners"
-    office_words("Spawn Ork in the Barracks") == "Add agent in the Agent pool"
+    term("watchtower")             == "External listeners"
+    term("ork", many=True)         == "orks"
+    words("Spawn Ork in the Barracks") == "Add ork in the Agent pool"
 
-One concept, two words: the Watchtower of the camp is the External listeners of the office, an ork
-is an agent, a road a link. `TERMS` is the glossary (docs/reference.md shows it as a table);
-`office_words` says a label of the interface in the office's words. It is meant for the interface
-(titles, labels, hints, toasts), not for what people or agents wrote.
+Camp and Office were two vocabularies once; now there is one. A concept keeps its Camp word when it
+says *who* (the orks, the Warchief, the town, its buildings and roads, renown) and takes a plain word
+when it says *what a thing does, what it costs or what it risks* (a building's function, the spend,
+autonomy, a file). `TERMS` is the glossary (docs/reference.md shows it as a table). A concept that
+took a plain word keeps the Camp spelling it had in `was`: older code and older towns still write it,
+and `words` says such a label in today's word. It is meant for the interface (titles, labels, hints,
+toasts), not for what people or agents wrote.
 
-Pure module, no Textual. The mode itself lives in `realm/modes.py`.
+Pure module, no Textual.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
-CAMP, OFFICE = "camp", "office"
-
 
 @dataclass(frozen=True)
 class Term:
     key: str        # the concept: a building type id, a resource, a screen
-    camp: str       # its word in the camp (singular)
-    office: str     # its word in the office (singular)
-    camp_many: str = ""     # plurals, when the word has one ("" when it has none)
-    office_many: str = ""
+    word: str       # its word (singular)
+    many: str = ""  # its plural, when it has one
+    was: str = ""   # the Camp word the code wrote for it before, when that differs ("" when the same)
+    was_many: str = ""
 
 
-def _t(key: str, camp: str, office: str, camp_many: str = "", office_many: str = "") -> Term:
-    return Term(key, camp, office, camp_many, office_many)
+def _t(key: str, word: str, many: str = "", was: str = "", was_many: str = "") -> Term:
+    return Term(key, word, many, was, was_many)
 
 
 # The glossary. Building types are keyed by their catalog id (realm/catalog.py), their resident
 # orks by `orc.<type id>`; the rest by what they are.
 TERMS: tuple[Term, ...] = (
-    # -- the world ----------------------------------------------------------------------------------
-    _t("ork", "ork", "agent", "orks", "agents"),
-    _t("orkspace", "orkspace", "orkspace", "orkspaces", "orkspaces"),   # the brand's word in both modes
-    _t("orkestration", "orkestration", "coordination"),
-    _t("orkestrate", "orkestrate", "coordinate"),
-    _t("town", "town", "project", "towns", "projects"),
-    _t("building", "building", "block", "buildings", "blocks"),
-    _t("hut", "hut", "tile", "huts", "tiles"),
-    _t("road", "road", "link", "roads", "links"),
-    _t("cart", "cart", "message", "carts", "messages"),
-    _t("ghost", "ghost", "preview"),
-    _t("loot", "loot", "output"),
-    _t("biome", "biome", "background"),
-    _t("terrain", "terrain", "background"),
-    # -- resources (HUD) ----------------------------------------------------------------------------
-    _t("gold", "gold", "spend"),
-    _t("lumber", "lumber", "context"),
-    _t("meat", "meat", "agent slots"),
-    _t("food", "food", "agent slots"),
-    _t("treasury", "Treasury", "Budget"),
-    # -- screens and actions ------------------------------------------------------------------------
-    _t("war_map", "War Map", "War Map"),
+    # -- who: the world keeps the Camp's words -------------------------------------------------------
+    _t("ork", "ork", "orks"),
+    _t("orkspace", "orkspace", "orkspaces"),
+    _t("orkestration", "orkestration"),
+    _t("orkestrate", "orkestrate"),
+    _t("town", "town", "towns"),
+    _t("building", "building", "buildings"),
+    _t("hut", "hut", "huts"),
+    _t("road", "road", "roads"),
+    _t("cart", "cart", "carts"),
+    _t("biome", "biome", "biomes"),
+    _t("terrain", "terrain"),
+    _t("clan", "clan"),
+    _t("steward", "steward", "stewards"),
+    _t("keeper", "steward", "stewards", "keeper", "keepers"),     # a building's steward, asked in plain words
+    _t("war_map", "War Map"),
+    _t("orc.town_hall", "Warchief"),                               # the hall's steward: the chat behind Ask me anything
+    _t("town_hall", "Town Hall"),
+    _t("road_planner", "Road planner"),                            # lays a road from words (realm/road_planner.py)
+    _t("building_retro", "Building retro"),
+    _t("ork_work", "Ork work"),                                    # the Task Fields' orks' kanban
     # -- growth (docs/design/growth.md) ---------------------------------------------------------------
-    _t("renown", "Renown", "Maturity"),                         # a building's level I–III (realm/growth.py)
-    _t("banner", "banner", "goal mark", "banners", "goal marks"),   # the goal flag on a hut's roof
-    _t("mascot", "mascot", "avatar", "mascots", "avatars"),      # the operator's, from the onboarding
-    _t("deed", "deed", "milestone", "deeds", "milestones"),     # what the camp learned to do
-    _t("fog_of_war", "fog of war", "new orkspace"),            # the War Map's foot: + Orkspace
-    _t("war_horn", "War Horn", "Stop all"),
-    _t("war_tent", "War Tent", "Terminals"),
-    _t("orders", "Orders", "Answers"),
-    _t("war_raven", "War Raven", "Phone", "War Ravens", "Phones"),   # a phone paired with the town (docs/design/mobile.md)
-    _t("standing_orders", "Standing orders", "Instructions"),       # what an ork is told to do
-    _t("awaiting_orders", "Awaiting Orders", "Awaiting an answer"),
-    _t("garrison", "Garrison", "Agents"),
-    _t("spawn_ork", "Spawn Ork", "Add agent"),
-    _t("recruit", "Recruit", "Add agent"),
-    _t("recruiter", "Recruiter", "Agent setup"),
-    _t("raise", "Raise", "Set up"),
-    _t("raising", "Raising the town", "Setting up the project"),
-    _t("town_scroll", "Town Scroll", "Project file", "Town Scrolls", "Project files"),
-    _t("town_builder", "Town Builder", "Project planner"),
-    _t("road_planner", "Road planner", "Link planner"),          # lays a road from words (realm/road_planner.py)
-    _t("town_retro", "Town retro", "Weekly review"),
-    _t("building_retro", "Building retro", "Block review"),
-    _t("retro_freedom", "Freedom", "Autonomy"),                    # how freely a steward applies its retro's changes
-    _t("freedom.chains", "In chains", "Propose only"),
-    _t("freedom.clock", "On the clock", "Apply if unanswered"),
-    _t("freedom.free", "Unchained", "Apply at once"),
-    _t("chronicles", "Chronicles", "History"),
-    _t("elders", "Elder", "Advisor", "Elders", "Advisors"),
-    _t("steward", "steward", "coordinator", "stewards", "coordinators"),
-    _t("keeper", "keeper", "coordinator", "keepers", "coordinators"),     # a building's steward, asked in plain words
-    _t("builders", "Mason & Artisan", "Block designer"),
-    # -- the Town Hall's own orks -------------------------------------------------------------------
-    _t("orc.town_hall", "Warchief", "Lead agent"),          # the hall's steward: the chat behind Ask me anything
-    _t("orc.mason", "Mason", "Data planner"),
-    _t("orc.artisan", "Artisan", "Layout designer"),
-    _t("orc.warder", "Warder", "Security reviewer"),
-    _t("orc.pathfinder", "Pathfinder", "Usability reviewer"),
-    _t("orc.treasurer", "Treasurer", "Cost reviewer"),
-    _t("council_word", "Council", "Review board"),
-    _t("clan", "clan", "team"),
-    # -- the Task Fields' three parts (one board: the orks' kanban, the person's checklist, the notes) ---
-    _t("ork_work", "Ork work", "Agent tasks"),
-    _t("chore", "chore", "to-do", "chores", "to-dos"),             # a to-do of the person's own
-    _t("scribble", "scribble", "note", "scribbles", "notes"),       # an idea or a note on the board
-    # -- building types (catalog ids) ---------------------------------------------------------------
-    _t("pit", "The Pit", "Drop file here"),
-    _t("watchtower", "Watchtower", "External listeners", "Watchtowers", "External listeners"),
-    _t("signpost", "Signpost", "Router", "Signposts", "Routers"),
-    _t("mill", "The Mill", "Transformer"),
-    _t("horn", "The Horn", "Sound alerts"),
-    _t("fields", "Task Fields", "Task board"),
-    _t("barracks", "Barracks", "Agent pool"),
-    _t("council", "Clan Fire", "Review board"),
-    _t("war_drum", "War Drum", "Calendar"),
-    _t("forest", "File Forest", "File tree"),
-    _t("scrolls", "Scroll Dump", "Wiki"),
-    _t("lake", "Lake of Insight", "Inspector"),
-    _t("forge", "The Forge", "Branches & PRs"),
-    _t("loot_vault", "Loot Vault", "Review gate"),
-    _t("crag", "Tally Crag", "Metrics"),
-    _t("catapult", "The Catapult", "Publisher"),
-    _t("town_hall", "Town Hall", "Control panel"),
-    _t("workshop", "Workshop", "Script", "Workshops", "Scripts"),
-    # -- the orks who live in them ------------------------------------------------------------------
-    _t("orc.pit", "Scavenger", "Sorter"),
-    _t("orc.watchtower", "Lookout", "Listener"),
-    _t("orc.signpost", "Grot Pointa", "Router"),
-    _t("orc.mill", "Miller", "Transformer"),
-    _t("orc.horn", "Hornblower", "Notifier"),
-    _t("orc.fields", "Taskmaster", "Task manager"),
-    _t("orc.barracks", "Grunt", "Worker", "Grunts", "Workers"),
-    _t("orc.council", "Chieftain", "Reviewer", "Chieftains", "Reviewers"),
-    _t("orc.war_drum", "Drummer", "Scheduler"),
-    _t("orc.forest", "Woodcutter", "File picker"),
-    _t("orc.scrolls", "Scroll Scrapper", "Wiki writer"),
-    _t("orc.lake", "Seer", "Inspector"),
-    _t("orc.forge", "Smith", "Merger", "Smiths", "Mergers"),
-    _t("orc.loot", "Quartermaster", "Gatekeeper"),
-    _t("orc.crag", "Crag Carver", "Metrics agent"),
-    _t("orc.catapult", "Loader", "Publisher"),
-    _t("orc.workshop", "Tinker", "Script runner"),
-    _t("orc.custom", "Peon", "Worker", "Peons", "Workers"),
+    _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)
+    _t("mascot", "mascot", "mascots"),                             # the operator's, from the onboarding
+    _t("deed", "deed", "deeds"),                                   # what the camp learned to do
+    # -- what a thing does, costs or risks: plain words ---------------------------------------------
+    _t("ghost", "preview", "", "ghost"),
+    _t("loot", "output", "", "loot"),
+    _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
+    # resources (HUD)
+    _t("gold", "spend", "", "gold"),
+    _t("lumber", "context", "", "lumber"),
+    _t("meat", "ork slots", "", "meat"),
+    _t("food", "ork slots", "", "food"),
+    _t("treasury", "Budget", "", "Treasury"),
+    # screens and actions
+    _t("war_horn", "Stop all", "", "War Horn"),
+    _t("war_tent", "Terminals", "", "War Tent"),
+    _t("orders", "Answers", "", "Orders"),
+    _t("war_raven", "Phone", "Phones", "War Raven", "War Ravens"),   # a phone paired with the town (docs/design/mobile.md)
+    _t("standing_orders", "Instructions", "", "Standing orders"),   # what an ork is told to do
+    _t("awaiting_orders", "Awaiting an answer", "", "Awaiting Orders"),
+    _t("garrison", "Orks", "", "Garrison"),
+    _t("spawn_ork", "Add ork", "", "Spawn Ork"),
+    _t("recruit", "Add ork", "", "Recruit"),
+    _t("recruiter", "Ork setup", "", "Recruiter"),
+    _t("raise", "Set up", "", "Raise"),
+    _t("raising", "Setting up the town", "", "Raising the town"),
+    _t("town_scroll", "Project file", "Project files", "Town Scroll", "Town Scrolls"),
+    _t("town_builder", "Town planner", "", "Town Builder"),
+    _t("town_retro", "Weekly retro", "", "Town retro"),
+    _t("retro_freedom", "Autonomy", "", "Freedom"),                 # how freely a steward applies its retro's changes
+    _t("freedom.chains", "Propose only", "", "In chains"),
+    _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
+    _t("freedom.free", "Apply at once", "", "Unchained"),
+    _t("chronicles", "History", "", "Chronicles"),
+    _t("elders", "Advisor", "Advisors", "Elder", "Elders"),
+    _t("builders", "Building designer", "", "Mason & Artisan"),
+    # the Town Hall's own orks
+    _t("orc.mason", "Data planner", "", "Mason"),
+    _t("orc.artisan", "Layout designer", "", "Artisan"),
+    _t("orc.warder", "Security reviewer", "", "Warder"),
+    _t("orc.pathfinder", "Usability reviewer", "", "Pathfinder"),
+    _t("orc.treasurer", "Cost reviewer", "", "Treasurer"),
+    _t("council_word", "Review board", "", "Council"),
+    # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
+    _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
+    _t("scribble", "note", "notes", "scribble", "scribbles"),       # an idea or a note on the board
+    # -- building types (catalog ids): named by what they do -----------------------------------------
+    _t("pit", "Drop file here", "", "The Pit"),
+    _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),
+    _t("signpost", "Router", "Routers", "Signpost", "Signposts"),
+    _t("mill", "Transformer", "", "The Mill"),
+    _t("horn", "Sound alerts", "", "The Horn"),
+    _t("fields", "Task board", "", "Task Fields"),
+    _t("barracks", "Agent pool", "", "Barracks"),
+    _t("council", "Review board", "", "Clan Fire"),
+    _t("war_drum", "Calendar", "", "War Drum"),
+    _t("forest", "File tree", "", "File Forest"),
+    _t("scrolls", "Wiki", "", "Scroll Dump"),
+    _t("lake", "Inspector", "", "Lake of Insight"),
+    _t("forge", "Branches & PRs", "", "The Forge"),
+    _t("loot_vault", "Review gate", "", "Loot Vault"),
+    _t("crag", "Metrics", "", "Tally Crag"),
+    _t("catapult", "Publisher", "", "The Catapult"),
+    _t("workshop", "Script", "Scripts", "Workshop", "Workshops"),
+    # -- the orks who live in them: named by their role ---------------------------------------------
+    _t("orc.pit", "Sorter", "", "Scavenger"),
+    _t("orc.watchtower", "Listener", "", "Lookout"),
+    _t("orc.signpost", "Router", "", "Grot Pointa"),
+    _t("orc.mill", "Transformer", "", "Miller"),
+    _t("orc.horn", "Notifier", "", "Hornblower"),
+    _t("orc.fields", "Task manager", "", "Taskmaster"),
+    _t("orc.barracks", "Worker", "Workers", "Grunt", "Grunts"),
+    _t("orc.council", "Reviewer", "Reviewers", "Chieftain", "Chieftains"),
+    _t("orc.war_drum", "Scheduler", "", "Drummer"),
+    _t("orc.forest", "File picker", "", "Woodcutter"),
+    _t("orc.scrolls", "Wiki writer", "", "Scroll Scrapper"),
+    _t("orc.lake", "Inspector", "", "Seer"),
+    _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
+    _t("orc.loot", "Gatekeeper", "", "Quartermaster"),
+    _t("orc.crag", "Metrics ork", "", "Crag Carver"),
+    _t("orc.catapult", "Publisher", "", "Loader"),
+    _t("orc.workshop", "Script runner", "", "Tinker"),
+    _t("orc.custom", "Worker", "Workers", "Peon", "Peons"),
 )
 
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
          "catapult": ("Catapult",), "town_hall": ("Town hall",)}
 
-# Whole phrases first: where a word for word would read wrong ("an ork" → "an agent"). The
-# camp is the town, but Camp alone is the mode's name and stays; so does the F10 line that tells what
-# the Camp looks like (it is about the camp, in any mode).
-_PHRASES = {"the camp": "the project", "Punk ork": "Expert", "an ork": "an agent",
-            "Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
-            "Not enough food": "No agent slots left", "Treasury empty": "Budget spent",
-            "Halt All Operations": "Stop all", "Halt All": "Stop all", "Awaiting Orders": "Awaiting an answer",
-            "the town of orks: ASCII, fire, gold and lumber": "the town of orks: ASCII, fire, gold and lumber"}
+# Whole phrases first: where a word for word would read wrong.
+_PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
+            "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
+            "Halt All Operations": "Stop all", "Halt All": "Stop all"}
 
 _BY_KEY = {t.key: t for t in TERMS}
 
 
-def term(key: str, mode: str | None = None, many: bool = False) -> str:
-    """The word for `key` in `mode` (the current one when None): `term("road", OFFICE, many=True)` → links."""
-    if mode is None:
-        from orkcraft.realm import modes          # the mode lives there; it imports us
-        mode = modes.current()
+def term(key: str, many: bool = False) -> str:
+    """The word for `key`: `term("road", many=True)` → roads."""
     t = _BY_KEY[key]
-    if mode == OFFICE:
-        return (t.office_many or t.office) if many else t.office
-    return (t.camp_many or t.camp) if many else t.camp
+    return (t.many or t.word) if many else t.word
 
 
 def _pairs() -> list[tuple[str, str]]:
+    """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
-        out.setdefault(t.camp, t.office)
-        if t.camp_many:
-            out.setdefault(t.camp_many, t.office_many or t.office)
-        if t.camp.startswith("The "):                       # "The Mill" is also "the Mill" mid-sentence
-            out.setdefault("the " + t.camp[4:], t.office)
+        if not t.was:
+            continue
+        out.setdefault(t.was, t.word)
+        if t.was_many:
+            out.setdefault(t.was_many, t.many or t.word)
+        if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
+            out.setdefault("the " + t.was[4:], t.word)
         for short in _ALSO.get(t.key, ()):
-            out.setdefault(short, t.office)
+            out.setdefault(short, t.word)
     return sorted(out.items(), key=lambda kv: len(kv[0]), reverse=True)
 
 
 _PAIRS = _pairs()
-_OFFICE = dict(_PAIRS)
-_LOWER = {camp.lower(): office for camp, office in _PAIRS if camp[:1].islower()}
-_UPPER = {camp.upper(): office for camp, office in _PAIRS}
+_TODAY = dict(_PAIRS)
+_LOWER = {old.lower(): new for old, new in _PAIRS if old[:1].islower()}
+_UPPER = {old.upper(): new for old, new in _PAIRS}
 
 
 def _alternation() -> str:
     names: list[str] = []
-    for camp, _ in _PAIRS:
-        names += [camp, camp.upper()]                       # a heading may shout: 🧌 GARRISON
-        if camp[:1].islower():                              # a common noun also opens a sentence
-            names.append(camp[:1].upper() + camp[1:])
+    for old, _ in _PAIRS:
+        names += [old, old.upper()]                         # a heading may shout: 🧌 GARRISON
+        if old[:1].islower():                               # a common noun also opens a sentence
+            names.append(old[:1].upper() + old[1:])
     return "|".join(re.escape(n) for n in sorted(set(names), key=len, reverse=True))
 
 
@@ -204,35 +199,35 @@ _WORD = re.compile(rf"(?<![\w\-/\\.])(?:{_alternation()})(?![\w\-/\\]|\.\w)")
 
 def _swap(m: re.Match) -> str:
     found = m.group(0)
-    if found in _OFFICE:
-        return _OFFICE[found]
+    if found in _TODAY:
+        return _TODAY[found]
     if found.isupper() and found in _UPPER:
         return _UPPER[found].upper()
-    office = _LOWER[found.lower()]                          # `Orks` opening a sentence → `Agents`
-    return office[:1].upper() + office[1:]
+    word = _LOWER[found.lower()]                            # `Chores` opening a sentence → `To-dos`
+    return word[:1].upper() + word[1:]
 
 
-def office_words(text: str) -> str:
-    """`text` in the office's words: `🗼 Watchtower` → `🗼 External listeners`, `3 orks` → `3 agents`.
+def words(text: str) -> str:
+    """`text` in today's words: `🗼 Watchtower` → `🗼 External listeners`, `3 chores` → `3 to-dos`.
 
-    Proper names (Watchtower, War Map) match as written; common nouns (ork, road) in any case,
-    keeping it (`Orks` → `Agents`, `ORKS` → `AGENTS`). Emoji stay — `modes.text` takes them off."""
+    Proper names (Watchtower, War Horn) match as written; common nouns (chore, loot) in any case,
+    keeping it (`Chores` → `To-dos`, `GARRISON` → `ORKS`). Emoji stay — `modes.plain` takes them off."""
     if not text:
         return text
     return _WORD.sub(_swap, str(text))
 
 
 def spans(text: str) -> list[tuple[int, int, str]]:
-    """Where `office_words` changes `text`: (start, end, office word), left to right (for styled text)."""
+    """Where `words` changes `text`: (start, end, today's word), left to right (for styled text)."""
     return [(m.start(), m.end(), _swap(m)) for m in _WORD.finditer(text or "")]
 
 
 def table() -> list[tuple[str, str]]:
-    """Every way a camp word is written, with its office word, longest first: what a face that cannot
-    import this module (the GUI's page) needs to do `office_words` itself."""
+    """Every way an old word is written, with today's, longest first: what a face that cannot import
+    this module (the GUI's page) needs to do `words` itself."""
     out = {}
-    for camp, _ in _PAIRS:
-        for found in (camp, camp.upper(), camp[:1].upper() + camp[1:]):
+    for old, _ in _PAIRS:
+        for found in (old, old.upper(), old[:1].upper() + old[1:]):
             m = _WORD.fullmatch(found)
             if m:
                 out.setdefault(found, _swap(m))
@@ -240,5 +235,5 @@ def table() -> list[tuple[str, str]]:
 
 
 def glossary() -> list[tuple[str, str, str]]:
-    """(key, camp, office) for every concept, in the glossary's order (for docs and the GUI)."""
-    return [(t.key, t.camp, t.office) for t in TERMS]
+    """(key, word, the Camp word it replaced or "") for every concept, in the glossary's order."""
+    return [(t.key, t.word, t.was) for t in TERMS]

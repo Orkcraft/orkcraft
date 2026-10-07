@@ -149,7 +149,6 @@ class LayoutMixin:
         else:
             self.remove_class("-solid-black")
         self.set_biome(ork.biome)
-        self._wear_mode()
         self.preview_linked = bool(self.scroll.preferences.get("preview_linked", True))
 
         active = None
@@ -228,12 +227,11 @@ class LayoutMixin:
 
     @property
     def look(self) -> theme.Biome:
-        """What the canvas wears: the orkspace's biome, or the office's black and grey in the office mode."""
-        return theme.OFFICE if self.plain else theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
+        """What the canvas wears: the orkspace's biome."""
+        return theme.BIOMES.get(self.biome, theme.BIOMES[theme.DEFAULT_BIOME])
 
     def set_biome(self, name: str) -> None:
-        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME. The office mode keeps it but
-        wears the office look (the biome comes back with the camp)."""
+        """Switch desktop biome. Unknown names fall back to DEFAULT_BIOME."""
         if name not in theme.BIOMES:
             name = theme.DEFAULT_BIOME
         self.biome = name
@@ -241,7 +239,7 @@ class LayoutMixin:
 
     def _paint(self) -> None:
         look = self.look
-        for b in theme.LOOKS:
+        for b in theme.BIOMES:
             self.remove_class(f"biome-{b}")
         self.add_class(f"biome-{look.name}")
         self.styles.background = theme.SOLID_BLACK if self.solid_black else look.canvas

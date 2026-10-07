@@ -174,8 +174,7 @@ class Onboarding:
             self.autonomy = int(result.get("autonomy", self.autonomy))
             self.autonomy_wait = int(result.get("autonomy_wait", self.autonomy_wait))
             self.rebuild_wait = int(result.get("rebuild_wait", self.rebuild_wait))
-            self.day = {"mode": result.get("mode", self.machine.mode), "quiet": result.get("quiet"),
-                        "office": self.machine.office, "office_days": self.machine.office_days}
+            self.day = {"quiet": result.get("quiet")}
         self.i += 1
         if self.i < len(self.steps):
             self._show()
@@ -183,7 +182,7 @@ class Onboarding:
             self._finish()
 
     def _save_machine(self, day: dict | None) -> None:
-        """The profile, and — when the machine's part was asked — tools, autonomy, mode and the day."""
+        """The profile, and — when the machine's part was asked — tools, autonomy and the day."""
         machine = replace(self.machine, profile=settings.clean_profile(self.profile))
         if not self.machine_steps:
             settings.save(machine)
@@ -196,19 +195,16 @@ class Onboarding:
         tools_.update(self.picked or {})
         machine = replace(machine, tools=tools_, onboarded=True, autonomy=self.autonomy,
                           autonomy_wait=self.autonomy_wait, rebuild_wait=self.rebuild_wait)
-        if not self.machine.onboarded and day is None:
-            machine.mode = settings.DEFAULT_MODE
         desktop = getattr(self.app, "desktop", None)
         apply_day = getattr(self.app, "apply_day", None)
         if desktop is not None and apply_day is not None:
             desktop.machine = machine
             settings.save(machine)
-            apply_day(day or {"mode": machine.mode, "quiet": machine.quiet, "office": machine.office,
-                              "office_days": machine.office_days})
+            apply_day(day or {"quiet": machine.quiet})
             machine = desktop.machine
         else:
             if day:
-                machine.mode, machine.quiet, machine.office = day["mode"], day["quiet"], day["office"]
+                machine.quiet = day["quiet"]
             settings.save(machine)
         self.machine = machine
 

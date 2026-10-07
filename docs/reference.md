@@ -497,7 +497,7 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   call whose objections you may override. Reviews: `.orkcraft/council/reviews.jsonl`, the Town Hall.
 - **The Town Hall's hut** has two buttons — 🏗 Build (a preset or new from scratch) and 🔍 Audit
   (also `[` / `]`); the clean-up and the settings live in F10. Its steward is the **Warchief**
-  (Office: *Lead agent*; a scroll of old names it the Chieftain and keeps its id). In the GUI the hut
+  (a scroll of old names it the Chieftain and keeps its id). In the GUI the hut
   is the town's way in: Build and **Ask me anything** — a question to the Warchief, whose chat is the
   Town Hall's Command Card (it names a building of the catalog when one fits, and builds it on a click). Two towers, a pediment over the round window of the Elders,
   columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
@@ -768,8 +768,7 @@ Opening orkcraft in a project with no `.orkcraft.json` starts 🧭 onboarding
    never used), or else by `codex login status`. `OPENAI_API_KEY` does not count: `codex exec` ignores it.
 2. **Autonomy** — a slider of three stops: ⛓️ *In chains* · 🕰 *On the clock* (default) · ⛓️‍💥 *Unchained*
    (see *Ork autonomy* below).
-3. **Mode and your day** — 🧌 Camp, 👔 Office or 🧌/👔 Shift (cards of the same building), and the
-   day bar with 🌙 quiet hours and, for Shift, 👔 office hours (see *Modes and your day* below).
+3. **Your day** — the day bar with 🌙 quiet hours (see *Words and the look* below).
 4. **Town** — an empty town, or a preset by domain (⚔️ Engineering · 🧝 Design · 🛡 Management ·
    💀 Indie, four each; for now every preset opens the empty town), or *Didn't find it?*: your words
    become an order for the 📜 Town Builder (below). The 🛡 Warder is installed here when `claude`
@@ -895,142 +894,133 @@ pipx install ./orkcraft        # or: python3 -m venv .venv && .venv/bin/pip inst
 cd your-project && orkcraft hooks install && orkcraft
 ```
 
-## Modes and your day: 🧌 Camp · 👔 Office · 🧌/👔 Shift
+## Words and the look
 
-F10 → *Camp* (default), *Office* or *Shift*, kept per machine as `mode` in
-`~/.config/orkcraft/settings.json` (`$ORKCRAFT_SETTINGS_FILE` overrides the path; the old names
-`immersion` / `hidden` / `plain` still load as camp / office). A project may override it with
-`preferences.mode` in `.orkcraft.json`; choosing a mode in F10 sets the machine's and drops the project's
-override. The data is the same in every mode; only the look and the words change
-(`orkcraft/realm/modes.py`). The old names `immersion` and `hidden` of the two looks are gone from
-the code: it says `camp` and `office` (`modes.CAMP`, `modes.OFFICE`, `modes.office()`).
+Orkcraft has one look and one vocabulary. Camp (a game) and Office (a work tool) were two, switched per
+machine, per project and by office hours; they are merged. The GUI wears Office's layout on Camp's design
+system (sprites, the orks' heads, gold); the deprecated TUI keeps the camp's ASCII. An older
+`settings.json` with `mode`, `office` and `office_days`, or an older `.orkcraft.json` with
+`preferences.mode`, still loads; those keys are ignored.
 
-| | 🧌 Camp | 👔 Office |
-|---|---|---|
-| Buildings | ASCII silhouettes (roofs, sails, trees, waves) on the orkspace's biome | only a grey frame with the same live rows on a black canvas (no biome, no terrain) |
-| Agents | orks 🧌 / 🪧 in the frame | nothing, or `busy` while one works |
-| A question | fire 🔥 | `?` |
-| Waiting for an answer | the building flickers orange (its ground too), after 30 s it turns red, from 60 s its roof turns to 🔥 bit by bit, all fire at 5 min | only the frame and the name turn red |
-| Roads | rocks 🪨 roll from building to building | small squares ■ |
-| HUD (top right) | 🪙 gold, 🪵 lumber, 🥩 meat | Spend, Context, Agents |
-| Emoji | everywhere | as few as possible: building names, status lines, buttons, window titles, the War Map and the roster, the F10 menu, the key footer (`Stop all`, `Add agent`, `Answers`) and the toasts lose theirs |
+**Words** (`orkcraft/realm/lexicon.py`). A concept keeps its Camp word when it says *who*: the orks, the
+Warchief, the town and its buildings and roads, renown. It takes a plain word when it says *what a thing
+does, what it costs or what it risks*: a building's function, the spend, autonomy, a file. Older code and
+older towns still write the Camp word of a renamed concept; the interface says it in today's word
+(labels, buttons, huts, toasts, the text of every GUI template), while paths (`./loot/`) and what people
+and agents wrote stay as written. The voice stays the camp's: the Warchief's lines, growth news and the
+onboarding (*Punk ork*).
 
-The opened building's own view keeps what its data says.
-
-**Words.** Every concept has a Camp name and an Office name (`orkcraft/realm/lexicon.py`): the camp
-is a game, the office a work tool. In Office the whole interface says the Office name and drops its
-emoji — labels, buttons, tabs, lists, dialogs, huts, the console, the footer, toasts, and in the GUI
-the text of every template — while paths (`./loot/`) and what people and agents wrote (cards,
-notes, chats, terminals, file previews, an ork's question) stay as written.
-
-| Camp | Office |
+| word | replaces |
 |---|---|
-| ork | agent |
-| orkspace | orkspace |
-| orkestration | coordination |
-| orkestrate | coordinate |
-| town | project |
-| building | block |
-| hut | tile |
-| road | link |
-| cart | message |
-| ghost | preview |
-| loot | output |
-| biome | background |
-| terrain | background |
-| gold | spend |
-| lumber | context |
-| meat | agent slots |
-| food | agent slots |
-| Treasury | Budget |
-| War Map | War Map |
-| War Horn | Stop all |
-| War Tent | Terminals |
-| Orders | Answers |
-| Standing orders | Instructions |
-| Awaiting Orders | Awaiting an answer |
-| Garrison | Agents |
-| Spawn Ork | Add agent |
-| Recruit | Add agent |
-| Recruiter | Agent setup |
-| Raise | Set up |
-| Raising the town | Setting up the project |
-| Town Scroll | Project file |
-| Town Builder | Project planner |
-| Town retro | Weekly review |
-| Building retro | Block review |
-| Chronicles | History |
-| Elder | Advisor |
-| steward | coordinator |
-| keeper | coordinator |
-| Mason & Artisan | Block designer |
-| Warchief | Lead agent |
-| Mason | Data planner |
-| Artisan | Layout designer |
-| Warder | Security reviewer |
-| Pathfinder | Usability reviewer |
-| Treasurer | Cost reviewer |
-| Council | Review board |
-| clan | team |
-| The Pit | Inbox |
-| Watchtower | External listeners |
-| Signpost | Router |
-| The Mill | Transformer |
-| The Horn | Sound alerts |
-| Task Fields | Task board |
-| Barracks | Agent pool |
-| Clan Fire | Review board |
-| War Drum | Calendar |
-| File Forest | File tree |
-| Scroll Dump | Wiki |
-| Lake of Insight | Inspector |
-| The Forge | Branches & PRs |
-| Loot Vault | Review gate |
-| Tally Crag | Metrics |
-| The Catapult | Publisher |
-| Town Hall | Control panel |
-| Workshop | Script |
-| Scavenger | Sorter |
-| Lookout | Listener |
-| Grot Pointa | Router |
-| Miller | Transformer |
-| Hornblower | Notifier |
-| Taskmaster | Task manager |
-| Grunt | Worker |
-| Chieftain | Reviewer |
-| Drummer | Scheduler |
-| Woodcutter | File picker |
-| Scroll Scrapper | Wiki writer |
-| Seer | Inspector |
-| Smith | Merger |
-| Quartermaster | Gatekeeper |
-| Crag Carver | Metrics agent |
-| Loader | Publisher |
-| Tinker | Script runner |
-| Peon | Worker |
+| ork | — |
+| orkspace | — |
+| orkestration | — |
+| orkestrate | — |
+| town | — |
+| building | — |
+| hut | — |
+| road | — |
+| cart | — |
+| biome | — |
+| terrain | — |
+| clan | — |
+| steward | — |
+| steward | keeper |
+| War Map | — |
+| Warchief | — |
+| Town Hall | — |
+| Road planner | — |
+| Building retro | — |
+| Ork work | — |
+| Renown | — |
+| mascot | — |
+| deed | — |
+| preview | ghost |
+| output | loot |
+| new orkspace | fog of war |
+| spend | gold |
+| context | lumber |
+| ork slots | meat |
+| ork slots | food |
+| Budget | Treasury |
+| Stop all | War Horn |
+| Terminals | War Tent |
+| Answers | Orders |
+| Phone | War Raven |
+| Instructions | Standing orders |
+| Awaiting an answer | Awaiting Orders |
+| Orks | Garrison |
+| Add ork | Spawn Ork |
+| Add ork | Recruit |
+| Ork setup | Recruiter |
+| Set up | Raise |
+| Setting up the town | Raising the town |
+| Project file | Town Scroll |
+| Town planner | Town Builder |
+| Weekly retro | Town retro |
+| Autonomy | Freedom |
+| Propose only | In chains |
+| Apply if unanswered | On the clock |
+| Apply at once | Unchained |
+| History | Chronicles |
+| Advisor | Elder |
+| Building designer | Mason & Artisan |
+| Data planner | Mason |
+| Layout designer | Artisan |
+| Security reviewer | Warder |
+| Usability reviewer | Pathfinder |
+| Cost reviewer | Treasurer |
+| Review board | Council |
+| to-do | chore |
+| note | scribble |
+| Drop file here | The Pit |
+| External listeners | Watchtower |
+| Router | Signpost |
+| Transformer | The Mill |
+| Sound alerts | The Horn |
+| Task board | Task Fields |
+| Agent pool | Barracks |
+| Review board | Clan Fire |
+| Calendar | War Drum |
+| File tree | File Forest |
+| Wiki | Scroll Dump |
+| Inspector | Lake of Insight |
+| Branches & PRs | The Forge |
+| Review gate | Loot Vault |
+| Metrics | Tally Crag |
+| Publisher | The Catapult |
+| Script | Workshop |
+| Sorter | Scavenger |
+| Listener | Lookout |
+| Router | Grot Pointa |
+| Transformer | Miller |
+| Notifier | Hornblower |
+| Task manager | Taskmaster |
+| Worker | Grunt |
+| Reviewer | Chieftain |
+| Scheduler | Drummer |
+| File picker | Woodcutter |
+| Wiki writer | Scroll Scrapper |
+| Inspector | Seer |
+| Merger | Smith |
+| Gatekeeper | Quartermaster |
+| Metrics ork | Crag Carver |
+| Publisher | Loader |
+| Script runner | Tinker |
+| Worker | Peon |
 
-**Questions on another orkspace.** Its War Map row takes the question's colour (fire orange in
-Camp, red in Office) and ends with 🔥 / `?`. Switching to it (F1–F8 or a click on the row) opens
+**Questions on another orkspace.** Its War Map row takes the question's colour (fire orange) and
+ends with 🔥. Switching to it (F1–F8 or a click on the row) opens
 its questions at once, the one waiting longest first (↑↓ for the rest); behind the dialog the building
 of that question is selected and the ork who asked it is picked in the garrison.
-- **🧌 Camp** — the game look all day.
-- **👔 Office** — the work-tool look all day, in Office words.
-- **🧌/👔 Shift** — Office in office hours on office days (default 09:00–18:00, Mon–Fri; a span past
-  midnight belongs to the day it started), Camp the rest of the time. The town switches by itself
-  (checked every 30 s) and the HUD says `[👔 office till 18:00]`.
-
-The Lake, the Crag and custom frames grow with their content in every mode, and a hut that changes
-size or mode keeps off its neighbours.
+The Lake, the Crag and custom frames grow with their content, and a hut that changes size keeps off its
+neighbours.
 
 **🌙 Do not disturb** — quiet hours (default 23:00–08:00 when switched on, off otherwise). In quiet
 hours no fence burns or flickers: a waiting ork shows ❓ on its label instead of 🔥, and the HUD says
-`[🌙 quiet till 08:00]`. Where quiet overlaps office hours both hold — the town in frames and no
-fires — the bar shows half purple, half grey and the HUD names both. Later quiet will also mute sound,
-push notifications and the bot.
+`[🌙 quiet till 08:00]`. Later quiet will also mute sound, push notifications and the bot.
 
 **F10 → 🕰 Your day** (and onboarding step 2) shows the day bar: 00:00 → 24:00, one cell per half
-hour, amber for the day, dark purple for quiet, grey for office hours (Shift only), half purple /
-half grey where they overlap, ▼ for now. Drag
-across it to set the selected span, or Tab to an edge (quiet start / end, office start / end) and
-move it with ←/→ by half an hour, shift+←/→ for the whole span; Delete turns the quiet hours off.
-Office days are `office_days` in the settings file (0 = Monday).
+hour, amber for the day, dark purple for quiet, ▼ for now. Drag across it to set the quiet hours, or
+Tab to an edge (start / end) and move it with ←/→ by half an hour, shift+←/→ for the whole span;
+Delete turns the quiet hours off.

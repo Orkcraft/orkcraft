@@ -38,7 +38,7 @@ def detail(w) -> dict:
         if r["unmatched"]:
             colour.setdefault("", r["color"])
     history = [{"at": h.get("at", ""), "route": h.get("route", ""), "source": h.get("source", ""),
-                "source_title": modes.text(w.town.title_of(h["source"]), modes.OFFICE) if h.get("source") else "",
+                "source_title": modes.plain(w.town.title_of(h["source"])) if h.get("source") else "",
                 "event": h.get("event", ""), "title": h.get("title", ""), "value": h.get("value", "")}
                for h in w.history]
     return {"rules": w.rules_text, "problems": problems, "routes": signpost.routes(w.rules_text),

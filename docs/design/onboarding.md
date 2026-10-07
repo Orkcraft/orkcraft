@@ -31,7 +31,7 @@ hooks, the Town Hall and the Town Builder (`realm/town_builder.py`). Wording: or
 | a known machine, no profile yet | orkestration · who + day · town | 3 |
 | F10 → 🧭 Onboarding | orkestration · who + day · AI tools · camp rules — never the town | 4 |
 
-- Kept per machine in `~/.config/orkcraft/settings.json` (`profile`, `tools`, `autonomy`, `mode`,
+- Kept per machine in `~/.config/orkcraft/settings.json` (`profile`, `tools`, `autonomy`,
   `quiet`); per project in `.orkcraft.json`, `.orkcraft/` and the order `.orkcraft/town/order.json`.
 - Every step has `Esc` / **Back** (the first one: Esc = Skip); Back keeps what was chosen.
   **Skip** = an empty town, defaults for the rest, no Warder; the CLIs found are kept on.
@@ -59,13 +59,17 @@ code → hands-on work), so ★ still finds the towns that fit.
 
 | Role | Kin | Mascot |
 |---|---|---|
-| Software engineer · QA engineer | orks | Merge Ork · Bug Ork |
-| Engineering manager · Product manager | undead | Jira Lich · Roadmap Wraith |
-| Product designer · Game designer | elves | Figma Elf · Lore Elf |
-| ASO manager · Marketing / growth | gnomes | Keyword Gnome · Funnel Gnome |
-| Data analyst | goblins | Dashboard Goblin |
+| Software engineer · QA engineer | orks | Burnout Peon · Bug Ork |
+| Engineering manager · Product manager | undead | The Jira Lich · Roadmap Wraith |
+| Product designer · Game designer | elves | Gradient-Sick Elf · Lore Elf |
+| ASO manager · Marketing / growth | gnomes | Keyword Gnome · Growth-Hack Gnome |
+| Data analyst | goblins | Data-Mining Goblin |
 | Founder / indie maker | knights | Indie Knight |
 | Someone else | skeletons | Wandering Skeleton |
+
+The nicks of the first role of each kin are the classes of orkcraft.dev. The page hands its pick to
+`orkcraft --role <class>` (or a role id): it is kept in `profile.role` before the first run, so this
+screen opens on it (`intents.CLASSES`, `settings.preset_role`); a role picked in a finished onboarding stays.
 
 Stored: `profile.orchestration`, `role`, `role_other`, `industry`, `industry_other`, `day`, `day_other`.
 
@@ -126,9 +130,9 @@ is reviewed and raised; Later leaves the order burning 🔥 in the Town Hall.
 ## 6. Camp rules
 
 The ork autonomy slider (⛓️ In chains · 🕰 On the clock · ⛓️‍💥 Unchained — docs/design/barracks-planning.md §2 — with what
-each means and the agents' own settings to copy) and, below it, the look — 🧌 Camp · 👔 Office ·
-🧌/👔 Shift — and 🌙 quiet hours 23:00–08:00 on or off. The hours themselves and the office days
-are F10 → 🕰 Your day (the day bar); the slider alone is F10 → 🏛 Ork autonomy.
+each means and the agents' own settings to copy) and, below it, 🌙 quiet hours 23:00–08:00 on or
+off. There is no look to choose: Camp and Office are one (CLAUDE.md, Wording). The hours themselves are
+F10 → 🕰 Your day (the day bar); the slider alone is F10 → 🏛 Ork autonomy.
 
 ## 7. Raising the town
 

@@ -24,7 +24,7 @@ from orkcraft.core.night import Night
 
 class NightMixin:
     def tick_schedule(self) -> None:
-        """Every half minute: Shift turns Office on and off, quiet hours begin and end (schedule.py)."""
+        """Every half minute: quiet hours begin and end (schedule.py)."""
         self.desktop.apply_schedule()
         self.refresh_hud()
         if self.night.tick(self.desktop.quiet):
@@ -222,18 +222,16 @@ class NightMixin:
                                       rebuild=machine.rebuild_wait), done)
 
     def open_day(self) -> None:
-        """F10 → 🕰 Your day: the mode, the quiet hours and the office hours, on the day bar."""
+        """F10 → 🕰 Your day: the quiet hours, on the day bar."""
         def done(result: dict | None) -> None:
             if result:
                 self.apply_day(result)
 
-        self.push_screen(onboarding.ModeStep(self.desktop.machine, standalone=True), done)
+        self.push_screen(onboarding.DayStep(self.desktop.machine, standalone=True), done)
 
     def apply_day(self, result: dict) -> None:
         machine = self.desktop.machine
-        machine.quiet, machine.office = result.get("quiet"), result.get("office") or machine.office
-        machine.office_days = tuple(result.get("office_days", machine.office_days))
+        machine.quiet = result.get("quiet")
         settings.save(machine)
-        self.desktop.set_mode(result.get("mode", machine.mode))
         self.desktop.apply_schedule()
         self.refresh_hud()

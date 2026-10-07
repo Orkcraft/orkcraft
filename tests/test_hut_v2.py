@@ -85,7 +85,7 @@ def test_the_hut_stands_label_over_building_buttons_under():
     assert (hut.geom.w, hut.geom.h) == (s.width, 2 + s.height + 1) == footprint(s, hut.label, len(acts))
     hut.set_status(["spend 4.04 $", "TOKENS ▇▅▃"])
     lines = str(hut.render()).splitlines()
-    assert lines[0].strip() == "5 🪨 Tally crag" and lines[1].strip() == ""     # one line, one blank row
+    assert lines[0].strip() == "5 🪨 Metrics" and lines[1].strip() == ""        # in today's words: one line, one blank row
     assert "TELEMETRY & TELEGRAPHS" in lines[3] and "spend 4.04 $" in lines[4]
     assert "Flip" in lines[-1] and "Next" in lines[-1]                       # wide enough: the labels
     x0, _, first = hut._buttons[0]
@@ -94,7 +94,7 @@ def test_the_hut_stands_label_over_building_buttons_under():
     small = Hut("s", sil.of(_spec("s", "pit")), acts)                        # 9 wide: glyphs only
     small.set_title(1, "🕳️ The Pit")
     assert str(small.render()).splitlines()[-1].strip() == "[⇅] [⟳]"
-    assert small.geom.h == 2 + 3 + 1 + 1                                     # label and gap, silhouette, caption, buttons
+    assert small.geom.h == 3 + 3 + 1 + 1          # label ("Drop file here": two lines) and gap, silhouette, caption, buttons
     shown = Hut("c", sil.of(_spec("c", "pit")))
     shown.set_status(["📄 a.txt", "3 in the pit"])
     assert str(shown.render()).splitlines()[-1].strip() == "📄 a.txt"
@@ -228,50 +228,6 @@ async def test_a_lake_grows_with_its_content_and_stays_off_its_neighbours(fake_r
         desk.refresh_huts()
         await _settle(pilot)
         assert hut.geom.h == small                                                 # and back to the design
-
-
-def test_plain_mode_is_only_a_frame_with_the_same_text_slots():
-    for sid, full in sil.SILHOUETTES.items():
-        plain = sil.plain(full)
-        assert len(plain.slots) == len(full.slots) and plain.width <= full.width, sid
-        assert plain.lines[0] == "┌" + "─" * (plain.width - 2) + "┐", sid
-        assert plain.lines[-1] == "└" + "─" * (plain.width - 2) + "┘", sid
-        assert all(ln[0] == "│" and ln[-1] == "│" for ln in plain.lines[1:-1]), sid
-        assert not set("/\\_(@~") & set("".join(plain.lines)), sid                   # no roofs, sails or waves
-    assert sil.styled(sil.MILL, False) is sil.MILL and sil.styled(sil.MILL, True).width == 10
-
-
-@pytest.mark.asyncio
-async def test_the_menu_switches_between_camp_and_office(fake_repo: Path, town):
-    from orkcraft import settings
-    from orkcraft.screens.system_menu import SystemMenu
-
-    for s in (_spec("todo", "fields"), _spec("mill", "mill"), _spec("view", "lake")):
-        assert masonry.save_spec(fake_repo, s) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        desk = app.desktop
-        assert not desk.plain and desk.huts["mill"].geom.w == 15
-        app.action_system_menu()
-        await _settle(pilot)
-        assert isinstance(app.screen, SystemMenu)
-        ids = [app.screen.query_one("#system-menu-list").get_option_at_index(i).id
-               for i in range(app.screen.query_one("#system-menu-list").option_count)]
-        assert ids[3:6] == ["camp", "office", "shift"]
-        await pilot.press("5")                                                    # [5] office
-        await _settle(pilot)
-        assert desk.plain and "mode" not in desk.scroll.preferences                  # the machine's, not the project's
-        assert settings.load().mode == "office"
-        assert desk.huts["mill"].geom.w == 13 and desk.huts["mill"].sil.id.endswith("-plain")   # "Transformer"
-        assert "/" not in str(desk.huts["todo"].render()) and "┌────────────────────────┐" in str(desk.huts["todo"].render())
-        geoms = [h.geom for h in desk.huts.values() if h.display]
-        assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
-        desk.set_mode(False)
-        await _settle(pilot)
-        assert not desk.plain and desk.huts["mill"].geom.w == 15
-        geoms = [h.geom for h in desk.huts.values() if h.display]
-        assert all(not geo.overlaps(a, b) for i, a in enumerate(geoms) for b in geoms[i + 1:])
 
 
 def test_emoji_in_live_lines_do_not_push_the_frame_out():

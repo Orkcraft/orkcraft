@@ -224,7 +224,7 @@ async def test_the_town_in_immersion_shows_the_same_one_cell_exit_arrow(fake_rep
     _with_scribe(app)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
-        assert app.desktop.town_active and not app.desktop.plain
+        assert app.desktop.town_active
         path, gate = app.desktop.road_paths[KEY], _gates(app)["exit"]
         assert gate.glyph == EXIT_GLYPH[path.exit.side] and gate.styles.offset.x.value == path.exit.x
         assert gate.styles.width.value == 1

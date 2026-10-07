@@ -13,7 +13,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, OptionList, Select, Static
 from textual.widgets.option_list import Option
 
-from orkcraft.realm import modes
+from orkcraft.realm import lexicon
 from orkcraft.realm.orcs import TRIGGERS, Alert, Orc, Trigger
 
 MODAL_CSS = """
@@ -62,7 +62,7 @@ class AlertModal(ModalScreen[str | None]):
 
 
 def _title(count: str) -> str:
-    return f"Awaiting an answer{count}" if modes.office() else f"❓ Awaiting Orders{count}"
+    return lexicon.words(f"❓ Awaiting Orders{count}")
 
 
 class AwaitingOrdersModal(AlertModal):
@@ -145,10 +145,7 @@ class AwaitingOrdersModal(AlertModal):
         title_label.update(_title(f" ({count})" if count > 1 else ""))
 
         target_label = self.query_one("#order-target", Label)
-        if modes.office():
-            prefix = f"{who}: " if who else f"{modes.QUESTION} "
-        else:
-            prefix = f"🧌 {who}: " if who else "❓ "
+        prefix = f"🧌 {who}: " if who else "❓ "
         target_label.update(f"{prefix}{alert.title}")
 
         ctx_widget = self.query_one("#order-context", Static)

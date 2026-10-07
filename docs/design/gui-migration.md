@@ -182,7 +182,7 @@ version:
 | the window | `pywebview`: the system's own web view (WKWebView on macOS), so no browser ships with it. `orkcraft gui --browser` opens the same page in a tab |
 | between the page and the core | one WebSocket on 127.0.0.1: snapshots and toasts out, commands in. It is the daemon's boundary from §1 already |
 | the page | Preact + htm + `@preact/signals` as ES modules from `gui/static/vendor/` (~26 KB, no build step, no Node) |
-| the look | Office, the only one: the GUI's Camp look was dropped (Camp stays the code's words and the deprecated TUI's mode) |
+| the look | Office, the only one: the GUI's Camp look was dropped (the deprecated TUI keeps the camp's ASCII); the words are one vocabulary (CLAUDE.md) |
 | the first buildings | the War Map, the HUD, 🌊 Lake, 🌾 Task Fields, 🗑️ Scroll Dump (they have workers and contracts), Orders and toasts; the other types follow their workers (§2, 1) |
 | terminals | the sessions service (§2, 2) is built for the GUI: processes and PTYs in the core, `xterm.js` in the page |
 | two faces at once | no: one face owns a project at a time until the daemon comes (§1) |
@@ -215,7 +215,7 @@ orkcraft/gui/
   every 50 ms and only when it differs; the page keeps it in a signal, so only what read a changed
   part draws again. Commands are `{"t": "cmd", "id", "name", "args"}` answered by a `reply`; the host
   keeps a closed list of them (`Host.commands`). Toasts go out as they come. A text that may carry
-  emoji comes twice, as it is and `_plain`, for Office.
+  emoji comes twice, as it is and `_plain` (today's words, no emoji).
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
 - **The layout is the design system's.** `layout.css` places the components (HUD on top, the town, the

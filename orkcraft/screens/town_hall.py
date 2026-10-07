@@ -13,7 +13,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.widgets import Static, TabbedContent, TabPane
 
-from orkcraft.realm import audit, elders, modes, optimize, town_presets, weekly
+from orkcraft.realm import audit, elders, optimize, town_presets, weekly
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens.chat_view import ChatView
 from orkcraft.screens.limits_view import LimitsView
@@ -22,7 +22,6 @@ from orkcraft.screens.limits_view import LimitsView
 LAMPS = {"advice": ("📜", "advice waits for you — ! opens it"), "watch": ("🌙", "on watch: they read the questions"),
          "full": ("🔚", "today's questions are used up"), "rest": ("💤", "at rest till the quiet hours"),
          "off": ("", "off")}
-LAMPS_OFFICE = {"advice": "!", "watch": "on", "full": "max", "rest": "zz", "off": ""}   # the office: no emoji
 
 
 class TownHallView(Container):
@@ -164,8 +163,6 @@ class TownHallView(Container):
     def lamp(self) -> str:
         app = self.app
         state = app.elders_state() if hasattr(app, "elders_state") else "off"
-        if modes.office():
-            return LAMPS_OFFICE.get(state, "")
         return LAMPS.get(state, LAMPS["off"])[0]
 
     # -- the hut ----------------------------------------------------------------------------------

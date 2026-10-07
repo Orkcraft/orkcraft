@@ -1,17 +1,13 @@
-"""Two looks of the same town: camp (the game) and office (a work tool).
+"""The town's one look: what its marks are and how a building that waits burns.
 
-    camp        buildings wear their ASCII, agents are orcs 🧌, a question is fire 🔥 — a building
-                left waiting burns (orange, then red, then its roof turns to 🔥), resources are gold
-                🪙, lumber 🪵 and meat 🥩, rocks 🪨 roll along the roads.
-    office      no game and, as far as it goes, no emoji at all — buildings are grey frames on black,
-                names and status lines lose their icons, a question is `?` and a waiting building
-                only gets a red frame, resources are words, the roads carry small squares. Every
-                concept goes by its office name (`realm/lexicon.py`): the Watchtower is External
-                listeners, an ork an agent, a road a link.
+Camp and Office were two looks once (a game and a work tool), switched per machine, per project and
+by office hours. They are one now: the GUI wears Office's layout on Camp's design system, every
+concept goes by its one word (`realm/lexicon.py`), and the deprecated TUI keeps the camp's ASCII.
+`preferences.mode` of an older Town Scroll and `mode` of older machine settings still load and are
+ignored. The module keeps its name so imports stay. Pure module, no Textual.
 
-The mode is kept as `preferences.mode` of the Town Scroll (`immersion` / `hidden` / `plain`, its old
-names, read as camp / office);
-the Desktop sets `current` so every widget draws the same look. Pure module, no Textual.
+    a question is fire 🔥 — a building left waiting burns (orange, then red, then its roof turns to
+    🔥), resources are gold 🪙, lumber 🪵 and meat 🥩, rocks 🪨 roll along the roads.
 """
 from __future__ import annotations
 
@@ -19,12 +15,6 @@ import re
 import time
 
 from orkcraft.realm import lexicon
-from orkcraft.realm.looks import KIND_ICONS
-from orkcraft.realm.orcs import ALERT_ICON
-
-CAMP, OFFICE = lexicon.CAMP, lexicon.OFFICE
-MODES = (CAMP, OFFICE)
-OLD_NAMES = {"immersion": CAMP, "hidden": OFFICE, "plain": OFFICE}
 
 PERSON = "🧑"
 QUESTION = "?"
@@ -36,29 +26,6 @@ SQUARE = "■"
 FIRE_RED_S = 30.0
 FIRE_ROOF_S = 60.0
 FIRE_ROOF_FULL_S = 300.0
-
-_current = CAMP
-
-
-def normalize(value: object) -> str:
-    value = OLD_NAMES.get(value, value)  # type: ignore[arg-type]
-    return OFFICE if value == OFFICE else CAMP
-
-
-def current() -> str:
-    return _current
-
-
-def set_current(mode: str) -> None:
-    global _current
-    _current = normalize(mode)
-
-
-def office(mode: str | None = None) -> bool:
-    return normalize(mode or _current) == OFFICE
-
-
-_ORC_ICONS = sorted({i for i in KIND_ICONS.values()}, key=len, reverse=True)   # 🪧🧌 before 🧌
 
 
 # Emoji and pictographs (and what glues them together); box drawing, arrows, ✓ ✗ and · stay.
@@ -88,56 +55,14 @@ def strip_emoji(text: str) -> str:
     return out.strip()
 
 
-def words(value: str, mode: str | None = None) -> str:
-    """A label in the mode's words, its emoji kept: `🗼 Watchtower` in the camp, `🗼 External listeners`
-    in the office (`realm/lexicon.py`)."""
-    return lexicon.office_words(value) if office(mode) and value else value
+def plain(value: str) -> str:
+    """A label in today's words without emoji (`🗼 Watchtower` → `External listeners`): the `_plain`
+    fields of the GUI's snapshot. For the interface only, never for what someone wrote."""
+    return strip_emoji(lexicon.words(value)) if value else value
 
 
-def text(value: str, mode: str | None = None) -> str:
-    """What the mode shows of a label: as it is in the camp; in the office in its words and without emoji
-    (`🗼 Watchtower` → `External listeners`). For the interface only, never for what someone wrote."""
-    return strip_emoji(lexicon.office_words(value)) if office(mode) and value else value
-
-
-def skin(text_: str, mode: str | None = None) -> str:
-    """Badges in the mode's words: `🧌 Smith+1 C 🔨 🔥` stays in the camp, reads `Smith+1 C ?` in the office
-    (a busy one `Smith+1 C busy`, an idle one only its name)."""
-    if not office(mode) or not text_:
-        return text_
-    text_ = text_.replace(ALERT_ICON, f" {QUESTION} ").replace("⚙", " busy ")
-    return " ".join(strip_emoji(text_).split())
-
-
-def alert_style(mode: str | None = None) -> str:
-    """The colour of a place with a question waiting (a War Map row): the camp's fire orange, the office's red."""
-    return "bold #ef4444" if office(mode) else "bold #ff8c1a"
-
-
-def alert_icon(mode: str | None = None) -> str:
-    return QUESTION if office(mode) else ALERT_ICON
-
-
-def cart_glyph(mode: str | None = None) -> str:
-    return SQUARE if office(mode) else ROCK
-
-
-def coin_glyph(mode: str | None = None) -> str:
-    return "$" if office(mode) else "🪙"
-
-
-def footer(description: str, mode: str | None = None) -> str:
-    """A key's description in the footer: `📯 War Horn` → `Stop all`, `🔥 Orders` → `Answers` in the office."""
-    return text(description, mode)
-
-
-# HUD resources: (camp icon, office word) — the values are the same in both.
-RESOURCES = {"quota": ("⏳", "Quota"), "gold": ("🪙", "Spend"), "lumber": ("🪵", "Context"), "supply": ("🥩", "Agents")}
-
-
-def resource(name: str, mode: str | None = None) -> str:
-    icon, word = RESOURCES[name]
-    return word if office(mode) else icon
+# HUD resources: (icon, word) — the TUI shows the icon, the GUI the word.
+RESOURCES = {"quota": ("⏳", "Quota"), "gold": ("🪙", "Spend"), "lumber": ("🪵", "Context"), "supply": ("🥩", "Orks")}
 
 
 # -- fire --------------------------------------------------------------------------------------------

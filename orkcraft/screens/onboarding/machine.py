@@ -1,4 +1,4 @@
-"""🧭 Onboarding, the machine: your AI tools, the look and the day."""
+"""🧭 Onboarding, the machine: your AI tools and the day."""
 from __future__ import annotations
 
 from rich.text import Text
@@ -8,19 +8,13 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Button, Checkbox, Label, RadioButton, Select, Static
+from textual.widgets import Button, Checkbox, Label, Select, Static
 
 from orkcraft import schedule, settings, tools
-from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
+from orkcraft.widgets.day_bar import DAY_COLOR, QUIET_COLOR, DayBar
 from orkcraft.realm import interview
-from orkcraft.tui import silhouettes
-from orkcraft.screens.onboarding.common import AGY_UNGUARDED, NARROW, agy_warder_line, _buttons, _css, _nav, _title
+from orkcraft.screens.onboarding.common import AGY_UNGUARDED, agy_warder_line, _buttons, _css, _nav, _title
 from orkcraft.screens.onboarding.person import Chip
-
-
-SAMPLE = silhouettes.FORGE
-SAMPLE_TITLE = "⚒️ Forge"
-SAMPLE_LINES = ["tests: 42 ok", "branch: main", "merged: 2 today", "queue: 1 waiting"]
 
 
 USE_OPTIONS = [(title, key) for key, title in interview.USES]
@@ -224,63 +218,27 @@ class ToolsStep(ModalScreen[dict | str | None]):
         {"ob-next": self.action_next, "ob-back": self.action_back}.get(event.button.id or "", self.action_skip)()
 
 
-# -- the look and the day -----------------------------------------------------------------------------------
+# -- the day -----------------------------------------------------------------------------------------------
 
-def card_art(plain: bool) -> Text:
-    """The sample building, in its ASCII or as just a frame, with the same live rows."""
-    sil = silhouettes.styled(SAMPLE, plain)
-    t = Text()
-    t.append(f"{SAMPLE_TITLE}\n", style="bold")
-    for row in sil.draw(SAMPLE_LINES):
-        for text, role in row:
-            t.append(text, style="dim" if role == "frame" and not plain else "" if role == "frame" else "bold")
-        t.append("\n")
-    return t
-
-
-class ModeCard(Static):
-    """A clickable picture of one look: the camp (ASCII) or the office (frames)."""
-
-    def __init__(self, mode: str) -> None:
-        super().__init__(card_art(mode == "office"), id=f"ob-card-{mode}", classes="ob-card")
-        self.mode = mode
-
-    def on_click(self) -> None:
-        self.screen.pick(self.mode)  # type: ignore[attr-defined]
-
-
-def day_legend(bar: DayBar, days: tuple[int, ...]) -> Text:
+def day_legend(bar: DayBar) -> Text:
     t = Text()
     t.append("█", style=DAY_COLOR)
     t.append(" day   ")
     t.append("█", style=QUIET_COLOR)
-    t.append(f" 🌙 quiet {bar.quiet.label()}   " if bar.quiet else " 🌙 quiet off   ")
-    if bar.show_office:
-        t.append("█", style=OFFICE_COLOR)
-        names = "–".join((schedule.DAYS[days[0]], schedule.DAYS[days[-1]])) if days else "no days"
-        t.append(f" 👔 office {bar.office.label()} {names}")
+    t.append(f" 🌙 quiet {bar.quiet.label()}" if bar.quiet else " 🌙 quiet off")
     return t
 
 
-class ModeStep(ModalScreen[dict | str | None]):
-    """🧌 Camp, 👔 Office or 🧌/👔 Shift, and the day: quiet hours and (for Shift) office hours.
-    Dismisses {"mode", "quiet", "office", "office_days"}, "back", "skip" or None. `standalone`
-    (F10 → 🕰 Your day): Save and Cancel instead of the onboarding's buttons."""
+class DayStep(ModalScreen[dict | str | None]):
+    """🕰 The day: the quiet hours on the day bar. Dismisses {"quiet"}, "back", "skip" or None.
+    `standalone` (F10 → 🕰 Your day): Save and Cancel instead of the onboarding's buttons."""
 
     BINDINGS = [Binding("escape", "back", "Back")]
-    DEFAULT_CSS = _css("ModeStep", 80) + """
-    ModeStep #ob-cards, ModeStep #ob-modes { height: auto; }
-    ModeStep .ob-card { width: 1fr; height: auto; border: round $panel-lighten-2; padding: 0 1; margin: 0 1; }
-    ModeStep .ob-card.-picked { border: round $accent; }
-    ModeStep .ob-gap { width: 20; height: 1; }
-    ModeStep .ob-radio-cell { width: 1fr; height: 1; align-horizontal: center; margin: 0 1; }
-    ModeStep .ob-radio-cell.-middle { width: 20; margin: 0; }
-    ModeStep RadioButton { width: auto; height: 1; border: none; padding: 0; background: transparent; }
-    ModeStep RadioButton:focus { text-style: bold; border: none; }
-    ModeStep .ob-section { text-style: bold; margin-top: 1; }
-    ModeStep #ob-day-row { height: auto; align-horizontal: center; }
-    ModeStep #ob-day-legend { height: auto; }
-    ModeStep #ob-quiet { margin-top: 0; }
+    DEFAULT_CSS = _css("DayStep", 80) + """
+    DayStep .ob-section { text-style: bold; margin-top: 1; }
+    DayStep #ob-day-row { height: auto; align-horizontal: center; }
+    DayStep #ob-day-legend { height: auto; }
+    DayStep #ob-quiet { margin-top: 0; }
     """
 
     def __init__(self, machine: settings.MachineSettings | None = None, standalone: bool = False,
@@ -288,27 +246,15 @@ class ModeStep(ModalScreen[dict | str | None]):
         super().__init__()
         self.step = step
         self.machine = machine or settings.MachineSettings()
-        self.mode = self.machine.mode
         self.standalone = standalone
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("🕰 Your day — the look of the town and its hours" if self.standalone
-                        else _title("🧭 How should the town look?", self.step), classes="build-title")
-            # Camp under the camp's picture, Office under the office's, Shift — both — between them:
-            # the radio row has the cards' columns (1fr · the gap · 1fr).
-            with Horizontal(id="ob-cards"):
-                yield ModeCard("camp")
-                yield Static("", classes="ob-gap")
-                yield ModeCard("office")
-            with Horizontal(id="ob-modes"):
-                for mode in ("camp", "shift", "office"):
-                    with Horizontal(classes="ob-radio-cell" + (" -middle" if mode == "shift" else "")):
-                        yield RadioButton(settings.MODE_TITLES[mode], value=self.mode == mode, id=f"ob-mode-{mode}")
-            yield Static("", id="ob-mode-hint", classes="build-hint")
+            yield Label("🕰 Your day — the quiet hours" if self.standalone
+                        else _title("🕰 Your day", self.step), classes="build-title")
             yield Label("Your day", classes="ob-section")
             with Horizontal(id="ob-day-row"):
-                yield DayBar(self.machine.quiet, self.machine.office, show_office=self.mode == "shift", id="ob-day")
+                yield DayBar(self.machine.quiet, id="ob-day")
             yield Static("", id="ob-day-legend", markup=False)
             yield Checkbox("🌙 Do not disturb — no fires, only ❓ (later: no sound, no push)",
                            value=self.machine.quiet is not None, id="ob-quiet")
@@ -321,48 +267,14 @@ class ModeStep(ModalScreen[dict | str | None]):
                                ("Next →", "ob-next", "primary"))
 
     def on_mount(self) -> None:
-        self.pick(self.mode)
-        self._fit()
-
-    def on_resize(self) -> None:
-        self._fit()
-
-    def _fit(self) -> None:
-        narrow = self.app.size.width < NARROW
-        self.query_one("#ob-cards").styles.layout = "vertical" if narrow else "horizontal"
-        for gap in self.query(".ob-gap"):
-            gap.display = not narrow
+        self._legend()
 
     @property
     def bar(self) -> DayBar:
         return self.query_one("#ob-day", DayBar)
 
-    def pick(self, mode: str) -> None:
-        self.mode = mode
-        for card in self.query(ModeCard):
-            card.set_class(card.mode == mode or mode == "shift", "-picked")
-        for button in self.query(RadioButton):          # one of three, kept by hand: they sit in separate cells
-            on_ = button.id == f"ob-mode-{mode}"
-            if button.value != on_:
-                with button.prevent(RadioButton.Changed):
-                    button.value = on_
-        self.query_one("#ob-mode-hint", Static).update({
-            "camp": "🧌 Buildings wear their ASCII all day.",
-            "office": "👔 Buildings are just frames — nothing to explain over a shoulder.",
-            "shift": "🧌/👔 Office in office hours on weekdays (grey on the bar), the camp the rest of the time.",
-        }[mode] + "  You can change it at any time: F10.")
-        self.bar.set_show_office(mode == "shift")
-        self._legend()
-
     def _legend(self) -> None:
-        self.query_one("#ob-day-legend", Static).update(day_legend(self.bar, self.machine.office_days))
-
-    @on(RadioButton.Changed)
-    def _radio(self, event: RadioButton.Changed) -> None:
-        event.stop()
-        mode = (event.radio_button.id or "").removeprefix("ob-mode-")
-        if mode in settings.MODES:
-            self.pick(mode if event.value else self.mode)       # a second click keeps it on
+        self.query_one("#ob-day-legend", Static).update(day_legend(self.bar))
 
     @on(DayBar.Changed)
     def _day(self, event: DayBar.Changed) -> None:
@@ -382,8 +294,7 @@ class ModeStep(ModalScreen[dict | str | None]):
             self.bar.set_quiet(None)
 
     def result(self) -> dict:
-        return {"mode": self.mode, "quiet": self.bar.quiet, "office": self.bar.office,
-                "office_days": self.machine.office_days}
+        return {"quiet": self.bar.quiet}
 
     def action_back(self) -> None:
         self.dismiss(None if self.standalone else "back")

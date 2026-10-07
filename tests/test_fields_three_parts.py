@@ -1,5 +1,5 @@
 """🌾 Task Fields, one board in three parts: the orks' tasks (a kanban), the person's own to-dos (a
-checklist kept in the board's file, `## My to-dos`) and the notes; in the TUI and the GUI, Camp and Office."""
+checklist kept in the board's file, `## My to-dos`) and the notes; in the TUI and the GUI."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,20 +9,13 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.gui.host import Host
-from orkcraft.realm import checkpoint, lexicon, masonry, modes, tasklist
+from orkcraft.realm import checkpoint, lexicon, masonry, tasklist
 from orkcraft.screens.typed.tasks_view import TasksView
-from orkcraft.tui import silhouettes, wording
+from orkcraft.tui import silhouettes
 
 BOARD = ("# Mine\n\n## To Do\n- [ ] Plan the release\n## In Progress\n- [ ] Write docs\n## Done\n\n"
          "## My to-dos\n- [ ] Call the bank\n  about the card\n- [x] Pay rent\n\n## Ideas\n- 🟨 Dark mode\n")
 SPEC = {"id": "todo", "title": "Todo", "icon": "📋", "orc": {"name": "Smith"}, "type": "fields"}
-
-
-@pytest.fixture(autouse=True)
-def camp():
-    modes.set_current(modes.CAMP)
-    yield
-    modes.set_current(modes.CAMP)
 
 
 def test_the_persons_to_dos_live_in_the_board_file(fake_repo: Path):
@@ -98,11 +91,11 @@ def test_tasks_and_notes_modes_keep_their_screens(fake_repo: Path):
     assert next(b for b in host.snapshot()["buildings"] if b["id"] == "todo")["card"]["todos"] is None
 
 
-def test_the_three_parts_have_camp_and_office_words():
-    say = lexicon.office_words
-    assert (say("Ork work"), say("My chores"), say("Scribbles")) == ("Agent tasks", "My to-dos", "Notes")
+def test_the_three_parts_say_todays_words():
+    say = lexicon.words
+    assert (say("Ork work"), say("My chores"), say("Scribbles")) == ("Ork work", "My to-dos", "Notes")
     assert say("New chore") == "New to-do" and say("Make it my chore") == "Make it my to-do"
-    assert lexicon.term("chore", modes.OFFICE, many=True) == "to-dos"
+    assert lexicon.term("chore", many=True) == "to-dos"
 
 
 def test_the_hut_is_larger_than_a_hall():
@@ -133,9 +126,5 @@ async def test_the_tui_board_holds_the_checklist_and_ticks_it_off(fake_repo: Pat
         await pilot.pause()
         assert view.card("call-the-bank").checked and not sent
         assert "- [x] Call the bank" in (fake_repo / "TASKS.md").read_text(encoding="utf-8")
-        assert "My chores" in view.query_one("#tasks-label-mine").visual.plain
-        modes.set_current(modes.OFFICE)
-        wording.rewear(app)
-        await pilot.pause()
-        assert view.query_one("#tasks-label-mine").visual.plain == "My to-dos · 0/2"    # the Office's words
+        assert view.query_one("#tasks-label-mine").visual.plain == "☐ My to-dos · 0/2"  # today's words
         assert view.query_one("#tasks-label-ideas").visual.plain == "Ideas · 1"         # the file's own, as written

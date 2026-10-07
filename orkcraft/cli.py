@@ -78,6 +78,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--layout", type=Path, default=None,
                         help="Window layout file (default: $ORKCRAFT_LAYOUT_FILE or ~/.config/orkcraft/layout.json)")
     parser.add_argument("--reset-layout", action="store_true", help="Start with the default window layout")
+    parser.add_argument("--role", default=None, metavar="ROLE",
+                        help="Who you are, as orkcraft.dev asked: a role (engineer, founder…) or a class "
+                             "(peon, knight, elf, lich, gnome, goblin); the onboarding opens on it"),
     parser.add_argument("--demo", nargs="?", const="", default=None, metavar="DIR",
                         help="Open the showcase sandbox: simulated data (default ~/.orkcraft-demo)")
     parser.add_argument("--demo-reset", action="store_true", help="Rebuild the showcase sandbox")
@@ -110,6 +113,16 @@ def main(argv: list[str] | None = None) -> int:
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
 
     args = parser.parse_args(_demo_before_subcommand(sys.argv[1:] if argv is None else list(argv), subparsers.choices))
+
+    if args.role is not None:
+        from orkcraft import settings as machine_settings
+        from orkcraft.realm import intents
+        role_id = intents.role_id_of(args.role)
+        if role_id is None:
+            known = ", ".join([*intents.CLASSES, *(r.id for r in intents.ROLES)])
+            sys.stderr.write(f"orkcraft error: no role {args.role!r}; one of: {known}\n")
+            return 2
+        machine_settings.preset_role(role_id)
 
     if args.subcommand == "hooks":
         from orkcraft.hooks import install as hooks_install

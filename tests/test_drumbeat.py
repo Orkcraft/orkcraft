@@ -140,9 +140,9 @@ def test_the_drum_lays_the_towns_schedules_and_limits_over_the_day(fake_repo, cl
     lines = w.hut_lines([24] * 8)
     assert lines == ["[09:00] ▶ Standup", "[10:00] ↻ Watchtower", "[≈11:12] lumber limit", "[12:00] ↻ Watchtower",
                      "[≈12:10] gold limit", "[14:00] 1:1 Ann", "[14:00] ↻ Watchtower", "left today: 2 · ≈ estimate"]
-    assert lexicon.office_words("[≈12:10] gold limit") == "[≈12:10] spend limit"            # the Office's words
-    assert lexicon.office_words("[≈11:12] lumber limit") == "[≈11:12] context limit"
-    assert lexicon.office_words("[06:00] ↻ Watchtower") == "[06:00] ↻ External listeners"
+    assert lexicon.words("[≈12:10] gold limit") == "[≈12:10] spend limit"                   # today's words
+    assert lexicon.words("[≈11:12] lumber limit") == "[≈11:12] context limit"
+    assert lexicon.words("[06:00] ↻ Watchtower") == "[06:00] ↻ External listeners"
     assert any(ln.startswith("[≈") for ln in w.mini_status())
 
     card = view.card(w)

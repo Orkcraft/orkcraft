@@ -16,7 +16,6 @@ from orkcraft.screens.custom_view import CustomBuildingView
 from orkcraft.screens.presets_modal import PresetsModal
 from orkcraft.screens.garrison_modal import GarrisonModal
 from orkcraft.screens.town_hall import TownHallView
-from orkcraft import settings
 from orkcraft.screens.road_modal import _PickModal
 from orkcraft.widgets.road_layer import road_key
 from orkcraft.screens.system_menu import (
@@ -41,12 +40,6 @@ class CommandsMixin:
                 self.call_after_refresh(self._save_screenshot)
             elif action == "keys":
                 self.push_screen(KeysCheatSheet())
-            elif action in settings.MODES:
-                self.desktop.set_mode(action)
-                self.refresh_hud()
-                self.notify({"camp": "the town of orks, fire and gold", "office": "hidden — frames, people and plain words",
-                             "shift": "Office in office hours, Camp otherwise — F10 → 🕰 Your day"}[action],
-                            title=settings.MODE_TITLES[action])
             elif action == "day":
                 self.open_day()
             elif action == "autonomy":
@@ -77,7 +70,7 @@ class CommandsMixin:
             elif action == "quit":
                 self.action_graceful_quit()
 
-        self.push_screen(SystemMenu(self.desktop.mode), done)
+        self.push_screen(SystemMenu(), done)
 
     def action_command_card(self, key: str) -> None:
         mode = self.focus_state.mode

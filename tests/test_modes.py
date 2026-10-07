@@ -1,4 +1,4 @@
-"""Two modes: camp (orks, fire, rocks, gold) and office (agents, ❓, squares, words)."""
+"""The town's one look: fire, rocks and gold in the terminal, and one word for each concept."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,29 +12,10 @@ from orkcraft.realm import masonry, modes
 from orkcraft.tui import silhouettes as sil
 from orkcraft.widgets import carts
 from orkcraft.widgets.hud import Hud
-from orkcraft.widgets.hut import ALERT_RED, FIRE, FIRE_GROUND, Hut
-from orkcraft.tui.text import strip_rich
+from orkcraft.widgets.hut import FIRE, FIRE_GROUND, Hut
 
 SIZE = (200, 56)
 ASKING = "🧌 Peon 🔨 🔥"
-
-
-@pytest.fixture(autouse=True)
-def immersion():
-    modes.set_current(modes.CAMP)
-    yield
-    modes.set_current(modes.CAMP)
-
-
-def test_the_old_names_read_as_office_and_badges_speak_the_mode():
-    assert modes.normalize("plain") == modes.normalize("hidden") == modes.OFFICE
-    assert modes.normalize(None) == modes.normalize("anything") == modes.CAMP
-    assert modes.skin(ASKING) == ASKING
-    assert modes.skin("🗿🧌 Smith+1 C 🔨 🔥", modes.OFFICE) == "Smith+1 C ?"
-    assert modes.skin("🗿 Bot 🕒 ⚙", modes.OFFICE) == "Bot busy"
-    assert modes.skin("🧌 Peon 🔨 💤", modes.OFFICE) == "Peon"
-    assert (modes.cart_glyph(), modes.cart_glyph(modes.OFFICE)) == ("🪨", "■")
-    assert [modes.resource(r, modes.OFFICE) for r in ("gold", "lumber", "supply")] == ["Spend", "Context", "Agents"]
 
 
 def test_the_fire_goes_orange_then_red_then_takes_the_roof():
@@ -85,32 +66,13 @@ def test_a_hut_left_waiting_burns_and_the_whole_card_takes_the_colour():
     assert not hut.on_fire and not hut.has_class("-burning") and "🔥" not in str(hut.render())
 
 
-def test_in_the_office_mode_a_waiting_hut_only_gets_a_red_frame():
-    modes.set_current(modes.OFFICE)
-    hut = Hut("w", sil.WATCHTOWER, [])
-    hut.set_plain(True)
-    hut.set_title(1, "🗼 Tower")
-    hut.set_status(["all quiet"])
-    hut.set_badge(ASKING, now=0.0)
-    hut.update_fire(now=modes.FIRE_ROOF_FULL_S * 2)
-    drawn = hut.render()
-    out = drawn.plain
-    assert "🔥" not in out and "🧌" not in out and "🗼" not in out and " ? " in out and "Tower" in out
-    assert not hut.has_class("-burning") and hut.fire_ground() is None
-    assert not any(" on " in str(sp.style) for sp in drawn.spans)                  # no red ground
-    red = "".join(out[sp.start:sp.end] for sp in drawn.spans if str(sp.style) == f"bold {ALERT_RED}")
-    assert "┌" in red and "│" in red and "Tower" in red                             # the frame and the name
-    assert "all quiet" not in red                                                  # not the text inside
-
-
-def test_carts_are_rocks_or_squares():
-    assert carts.cart_look("sent").plain == "🪨"
-    modes.set_current(modes.OFFICE)
-    assert carts.cart_look("error").plain == "■" and "#ef4444" in str(carts.cart_look("error").style)
+def test_carts_are_rocks_on_the_ground_of_their_status():
+    assert carts.cart_look("sent").plain == carts.cart_look("error").plain == "🪨"
+    assert "#7f1d1d" in str(carts.cart_look("error").style)
 
 
 @pytest.mark.asyncio
-async def test_the_hud_speaks_gold_and_lumber_or_words(fake_repo: Path):
+async def test_the_hud_shows_gold_lumber_and_meat(fake_repo: Path):
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
@@ -118,83 +80,44 @@ async def test_the_hud_speaks_gold_and_lumber_or_words(fake_repo: Path):
         hud.resources.alerts = 2
         hud.update_hud()
         text = str(hud.render())
-        assert "🪙" in text and "🪵" in text and "🥩" in text and "🔥 2" in text and "🧌" in text
-        app.desktop.set_mode(True)
-        await pilot.pause()
-        hud.resources.alerts = 2
-        hud.update_hud()
-        text = str(hud.render())
-        assert "Spend $" in text and "Context" in text and "Agents" in text and "? 2" in text
-        assert not modes._EMOJI.search(text)                                       # no emoji at all
-        assert app.desktop.has_class("-office") and modes.office()
-        app.desktop.set_mode(False)
-        await pilot.pause()
-        assert "🪙" in str(hud.render()) and not app.desktop.has_class("-hidden")
+        assert "🪙" in text and "🪵" in text and "🥩" in text and "🔥 2 awaiting an answer" in text and "🧌" in text
 
 
 @pytest.mark.asyncio
-async def test_a_scroll_with_the_old_plain_opens_in_the_office(fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
+async def test_a_scroll_with_an_old_look_opens_in_the_one_look(fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(ts, "DEFAULT_VIEW", "town")
     assert masonry.save_spec(fake_repo, {"id": "mill", "title": "Mill", "icon": "🏗", "orc": {"name": "Peon"},
                                          "type": "mill"}) == []
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
-        app.desktop.scroll.preferences["mode"] = "plain"
-        app.desktop._wear_mode()
-        assert app.desktop.plain and modes.office()
-
-
-@pytest.mark.asyncio
-async def test_the_office_mode_has_no_biome_black_ground_grey_frames(fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
-    from orkcraft import theme
-    monkeypatch.setattr(ts, "DEFAULT_VIEW", "town")
-    assert masonry.save_spec(fake_repo, {"id": "mill", "title": "Mill", "icon": "🏗", "orc": {"name": "Peon"},
-                                         "type": "mill"}) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        d = app.desktop
-        biome = d.biome
-        assert d.look.name == biome and d.has_class(f"biome-{biome}")
-        d.set_mode(True)
-        await pilot.pause()
-        assert d.look is theme.OFFICE and d.has_class("biome-office") and not d.has_class(f"biome-{biome}")
-        assert d.terrain.biome is theme.OFFICE and not theme.OFFICE.glyphs
-        hut = d.huts["mill"]
-        assert hut.styles.color.hex.lower() == theme.OFFICE.border and hut.styles.background.hex == "#000000"
-        assert d.biome == biome                                   # the orkspace keeps its biome …
-        d.set_mode(False)
-        await pilot.pause()
-        assert d.look.name == biome and d.has_class(f"biome-{biome}")   # … and wears it again
+        data = app.desktop.scroll.to_dict()
+        data["preferences"]["mode"] = "plain"                     # an older scroll's look
+        back = ts.TownScroll.from_dict(data)
+        assert "mode" not in back.preferences and "mode" not in back.to_dict()["preferences"]
+        hut = app.desktop.huts["mill"]
+        assert hut.sil is sil.MILL and not hut.sil.id.endswith("-plain")       # the building wears its ASCII
 
 
 def test_emoji_go_and_the_text_stays():
-    from rich.text import Text
     assert modes.strip_emoji("🌾 Task fields") == "Task fields"
     assert modes.strip_emoji("[🪙 $1 / $5]") == "[$1 / $5]"
     assert modes.strip_emoji("✓ all reviewed · 02:15 → done") == "✓ all reviewed · 02:15 → done"
     assert modes.strip_emoji(" 👍 ") == "+1" and modes.strip_emoji(" 🗑 ") == "Delete"
     assert modes.strip_emoji("🗑️ Scroll dump") == "Scroll dump"
     assert modes.strip_emoji("0 results · 👍 3 👎 1") == "0 results · +3 −1"                    # an icon in a name just goes
-    t = Text("▶ [F1] ")
-    t.append("🏡 My Day", style="bold red")
-    out = strip_rich(t)
-    assert out.plain == "▶ [F1] My Day" and any("red" in str(sp.style) for sp in out.spans)
-    assert modes.text("🌾 Fields") == "🌾 Fields" and modes.text("🌾 Fields", modes.OFFICE) == "Fields"
+    assert modes.plain("🌾 Fields") == "Fields" and modes.plain("🗼 Watchtower") == "External listeners"
 
 
-def test_an_office_hut_has_no_emoji_at_all():
+def test_a_hut_says_todays_words_and_keeps_its_icons():
     from orkcraft.realm.catalog import ActionDef
-    modes.set_current(modes.OFFICE)
-    hut = Hut("t", sil.TOWN_HALL, [ActionDef("a", "Preset", "📜", "")])
-    hut.set_plain(True)
-    hut.set_title(9, "🏰 Town hall")
-    hut.set_status(["🌙", "🛡 all quiet", "🪙 $0.00 / $5"])                  # the Elders' lamp, then the lines
+    hut = Hut("w", sil.WATCHTOWER, [ActionDef("a", "Preset", "📜", "")])
+    hut.set_title(9, "🗼 Watchtower")
+    hut.set_status(["🛡 all quiet", "🪙 gold $1"])
     hut.set_badge("🧌 Peon 🔨 💤")
     out = hut.render().plain
-    assert not modes._EMOJI.search(out)
-    assert "Control Panel" in out and "CONTROL PANEL" in out and "all quiet" in out and "$0.00 / $5" in out and "[Preset]" in out
+    assert "🗼 External listeners" in out and "Watchtower" not in out                # the name in today's words
+    assert "🪙 spend $1" in out and "🛡 all quiet" in out and "[📜 Preset]" in out and "🧌" in out
 
 
 @pytest.mark.asyncio

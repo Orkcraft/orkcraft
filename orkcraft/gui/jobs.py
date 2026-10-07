@@ -13,8 +13,8 @@ from orkcraft.realm import fastpath, modes
 
 
 def plain(text: str) -> str:
-    """What Office shows of a label: its words, no emoji (modes.text, realm/lexicon.py)."""
-    return modes.text(text, modes.OFFICE)
+    """A label in today's words, no emoji (modes.plain, realm/lexicon.py)."""
+    return modes.plain(text)
 
 
 class ConsoleError(Exception):

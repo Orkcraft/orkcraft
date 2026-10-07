@@ -8,10 +8,11 @@ changes and their probation (`realm/evolution.py`), the profile of the onboardin
 (docs/design/onboarding.md §3) and the flat sprite set (docs/design/building-sprites.md). Wording: ork,
 orkestration (CLAUDE.md).
 
-**One look.** The GUI has one look, Office in Camp's theme (gui-design-system.md: the sprites, the
-agents' heads and the gold stay). Everything here is drawn in that look. "Office" below means only
-the **Office words** (`modes.OFFICE`, `say()`): the same art, the concepts by their Office names, and
-no Camp-only jokes (mascot names, the Warchief's address).
+**One look, one vocabulary.** The GUI has one look, Office's layout in Camp's theme
+(gui-design-system.md: the sprites, the orks' heads and the gold stay), and Camp and Office words are
+merged (CLAUDE.md, Wording). Growth keeps the Camp's words: it says *who* the camp has become, and its
+voice may joke (mascot names, the Warchief's address). Where these notes still say "Office words", read
+the plain wording a former Office mode had; it is gone.
 
 | stage | what | state |
 |---|---|---|
@@ -25,9 +26,8 @@ no Camp-only jokes (mascot names, the Warchief's address).
 
 ## As built
 
-- **Words.** A building's level is its **Renown** (Office: *Maturity*), shown as "💎 II"; the
-  operator's milestones are **deeds** (Office: *milestones*); the goal flag is a **banner** (Office: *goal
-  mark*); the mascot is the Office's *avatar* (`realm/lexicon.py`).
+- **Words.** A building's level is its **Renown**, shown as "💎 II"; the operator's milestones are
+  **deeds**; its goal shows as an **annex** beside it (`realm/lexicon.py`).
 - **The clock.** `gui/growth.py` settles once a minute, and at the next tick after a rating, a change
   of the orks or a road (`bus.HALL`, `bus.ROADS`). The first look on a machine records the deeds and the
   stage already reached without saying them.
@@ -73,8 +73,8 @@ and let the **operator's mascot grow** with the camp (§7).
 4. **One art system.** Growth is drawn by **adding** a few pixels to the existing sprites, never by
    redrawing them: the same five colours, the same pixel. Overlays are drawn from code grids (like
    `tools/logo.py`), so they come out identical every time and never drift the way an image model does.
-5. **Office words say the same facts plainly:** the art stays (it is the one look), the words change:
-   *Level* is *Maturity*, the mascot's name is its role ("Engineering manager · stage 3").
+5. **The words are the camp's** (one vocabulary, CLAUDE.md): *Renown*, *deeds*, the mascot's name. The
+   facts under them (what the next level asks) are said plainly.
 
 ## 3. The feedback loop closed
 
@@ -210,14 +210,13 @@ What Info gets:
   This is the 128×64 "Window" size that sprites.md already plans.
 - Beside it, one line: **"The Forge · 💎 II"**, and below it one line on the next level: "Next: 2 more
   kept changes, and a month without a revert".
-- With Office words the lines read "Maturity: 2 / 3 · Goal: Quality".
 
 ## 7. The operator's mascot
 
 ### 7.1 Who
 
-The mascot is **the operator**. The onboarding already gives one per role (onboarding.md §3: Merge Ork,
-Jira Lich, Figma Elf, Keyword Gnome, Dashboard Goblin, Indie Knight, Wandering Skeleton). Today it is
+The mascot is **the operator**. The onboarding already gives one per role (onboarding.md §3: Burnout Peon,
+The Jira Lich, Gradient-Sick Elf, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight, Wandering Skeleton). Today it is
 only a name. It gets a face, and the face grows.
 
 ### 7.2 Drawn like the ork
@@ -226,17 +225,29 @@ A head on the ork mark's grid (`tools/logo.py`: 12×8, flat, no outline, the sam
 kin: ork, undead, elf, gnome, goblin, knight, skeleton. Stages **add** to the head and never redraw
 it, the way the ork's states do (sleep mark, sweat, flame):
 
-| Stage | Example: undead | Example: orks | Reached when (starting values) |
-|---|---|---|---|
-| 1 | 🧟 Zombie manager | Grunt | the first town is raised |
-| 2 | Roadmap Wraith (a hood) | Merge Ork (a helmet) | 3+ buildings rated in one week |
-| 3 | Jira Lich (a bone circlet) | Warband Chief (horns) | a building reaches level II |
-| 4 | Night King (kin's own top mark) | Prod Warlord (kin's own top mark) | three buildings at III, one of them on the clock or unchained |
+| Stage | Reached when (starting values) | Its mark on the head |
+|---|---|---|
+| 1 | the first town is raised | — |
+| 2 | 3+ buildings rated in one week | a band |
+| 3 | a building reaches level II | horns |
+| 4 | three buildings at III, one of them on the clock or unchained | gold eyes and a gem |
+
+The names (`realm/growth.py` `STAGE_NAMES`): a fantasy rank with the job in it. Stage 2 is the role's own
+nick from the onboarding, the others are the kin's.
+
+| Kin (roles) | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| orks (engineers, QA) | Commit Grunt | Burnout Peon · Bug Ork | Hotfix Berserker | Warlord of Prod |
+| undead (managers) | Standup Zombie | The Jira Lich · Roadmap Wraith | Lich of Sprints | Release Night King |
+| elves (designers) | Pixel Sprout | Gradient-Sick Elf · Lore Elf | Ranger of the Grid | High Elf of the Design System |
+| gnomes (ASO, marketing) | A/B Tinkerer | Keyword Gnome · Growth-Hack Gnome | Growth-Hack Artificer | Grand Tinker of Conversions |
+| goblins (analysts) | Spreadsheet Scrounger | Data-Mining Goblin | Pivot-Table Boss | KPI Tycoon |
+| knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
+| skeletons (everyone else) | Inbox Skeleton | Wandering Skeleton | Captain of the Skeleton Crew | Lord of a Thousand Tabs |
 
 - **The top stage is never a crown.** The crown is the Warchief's (§8). Each kin has its own top
   mark: glowing eyes and a staff for the lich, a horned war helm for the ork, and so on.
-- **The names** keep the onboarding's humour (Jira Lich, Night King). They are Camp words; with Office
-  words the stage is named by the role and its number ("Engineering manager · stage 3").
+- **The names** keep the onboarding's humour (Jira Lich, Release Night King).
 - **Art cost:** 7 heads + about 3 stage marks per kin, all from code grids. Start with two kins
   (undead and orks) and 3 stages. The others show a shared stage mark until drawn.
 
@@ -287,13 +298,11 @@ A row of small marks under the portrait, each what the camp **learned**, never a
 - **About ten, no more.** No "×100", no streaks, no comparison with anyone.
 - **The ones not reached** show as grey silhouettes with a hint ("Join two buildings with a road"), so
   the row also points at what Orkcraft can do that the operator has not tried.
-- With Office words they are a plain list, "Milestones".
 
 ### 7.4 How the Warchief addresses the operator
 
-With Camp words, the Warchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge
-asks for a decision." It is one line of wording with no art, so growth shows in the conversation too.
-With Office words there is no address.
+The Warchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge asks for a
+decision." It is one line of wording with no art, so growth shows in the conversation too.
 
 ### 7.5 Later: moods
 
@@ -333,20 +342,9 @@ leader. It is the **role's mark, not a reward**: always there, never grown.
 
 ## 10. Words
 
-New pairs in `realm/lexicon.py` `TERMS` (Camp word in code, Office word shown with Office words):
-
-| key | Camp | Office |
-|---|---|---|
-| `level` | Level | Maturity |
-| `goal_flag` | Banner | Goal mark |
-| `mascot` | Mascot | Profile |
-| `renown` | Renown | Maturity |
-| `banner` | banner | goal mark |
-| `deed` | deed | milestone |
-| `fog_of_war` | fog of war | new orkspace |
-| `growth.next` | Next | To reach the next level |
-
-Mascot names and the Warchief's address are Camp words only.
+In `realm/lexicon.py` `TERMS`, all kept from the Camp: `renown` (Renown), `mascot` (mascot), `deed`
+(deed). The War Map's foot is a `new orkspace` (it was the *fog of war*). Mascot names and the
+Warchief's address are the camp's voice.
 
 ## 11. Metrics
 

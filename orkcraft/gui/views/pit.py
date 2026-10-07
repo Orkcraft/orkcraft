@@ -25,7 +25,7 @@ def detail(w) -> dict:
     for it in w.items[:ITEMS]:
         chain = w.chains.get(item_id(it)) or {}
         stops = [{**s, "building_title": town.title_of(s.get("building", "")),
-                  "building_title_plain": modes.text(town.title_of(s.get("building", "")), modes.OFFICE)}
+                  "building_title_plain": modes.plain(town.title_of(s.get("building", "")))}
                  for s in chain.get("stops") or []]
         items.append({
             "id": item_id(it), "at": it.at, "kind": it.kind, "title": it.title, "value": it.value,

@@ -1,4 +1,4 @@
-"""🕰 The day: 🌙 quiet hours, 👔 office hours, and Shift turning Office on and off by itself."""
+"""🕰 The day: 🌙 quiet hours."""
 from __future__ import annotations
 
 import datetime as dt
@@ -9,12 +9,11 @@ import pytest
 from orkcraft import schedule, settings
 from orkcraft.app import OrkcraftApp
 from orkcraft.schedule import Span
-from orkcraft.screens.onboarding import ModeStep
-from orkcraft.widgets.day_bar import DAY_COLOR, OFFICE_COLOR, QUIET_COLOR, DayBar
+from orkcraft.screens.onboarding import DayStep
+from orkcraft.widgets.day_bar import DAY_COLOR, QUIET_COLOR, DayBar
 
 SIZE = (160, 50)
 MON_10 = dt.datetime(2026, 10, 5, 10, 0)      # a Monday
-SAT_10 = dt.datetime(2026, 10, 10, 10, 0)
 TUE_0030 = dt.datetime(2026, 10, 6, 0, 30)
 
 
@@ -31,7 +30,7 @@ def test_spans_wrap_past_midnight():
 
 
 def test_edges_move_by_half_hours_and_never_collapse():
-    o = schedule.DEFAULT_OFFICE
+    o = Span.parse("09:00", "18:00")
     assert o.with_start(8 * 60).label() == "08:00–18:00"
     assert o.with_end(17 * 60 + 40).label() == "09:00–17:30"
     assert o.with_end(9 * 60) == o                                   # would be empty: kept
@@ -39,35 +38,19 @@ def test_edges_move_by_half_hours_and_never_collapse():
     assert Span.parse("23:00", "01:00").shifted(60).label() == "00:00–02:00"
 
 
-def test_shift_is_office_on_weekdays_in_office_hours():
-    m = _machine(mode="shift")
-    assert schedule.plain_now(m, MON_10) and not schedule.plain_now(m, SAT_10)
-    assert not schedule.plain_now(m, MON_10.replace(hour=19))
-    assert schedule.plain_now(_machine(mode="office"), SAT_10)
-    assert not schedule.plain_now(_machine(mode="camp"), MON_10)
-
-
-def test_a_night_shift_belongs_to_the_day_it_started():
-    m = _machine(mode="shift", office=Span.parse("22:00", "02:00"), office_days=(0,))
-    assert schedule.office_now(m, TUE_0030)                         # Monday's shift, past midnight
-    assert not schedule.office_now(m, dt.datetime(2026, 10, 7, 0, 30))
-
-
 def test_quiet_and_the_hud_word():
-    m = _machine(mode="shift", quiet=schedule.DEFAULT_QUIET)
+    m = _machine(quiet=schedule.DEFAULT_QUIET)
     assert schedule.quiet_now(m, TUE_0030) and not schedule.quiet_now(m, MON_10)
     assert schedule.status(m, TUE_0030) == "🌙 quiet till 08:00"
-    assert schedule.status(m, MON_10) == "👔 office till 18:00"
-    assert schedule.status(_machine(mode="camp"), MON_10) == ""
+    assert schedule.status(m, MON_10) == ""
+    assert schedule.status(_machine(), TUE_0030) == ""
 
 
-def test_the_bar_colours_quiet_over_office():
-    bar = DayBar(quiet=Span.parse("17:00", "08:00"), office=schedule.DEFAULT_OFFICE)
-    assert bar.color_at(12 * 2) == OFFICE_COLOR                     # 12:00
-    assert bar.color_at(17 * 2) == QUIET_COLOR                      # 17:00: both, quiet wins
+def test_the_bar_colours_the_quiet_hours():
+    bar = DayBar(quiet=Span.parse("17:00", "08:00"))
+    assert bar.color_at(12 * 2) == DAY_COLOR                        # 12:00
+    assert bar.color_at(17 * 2) == QUIET_COLOR                      # 17:00
     assert bar.color_at(8 * 2) == DAY_COLOR                         # 08:00
-    bar.set_show_office(False)
-    assert bar.color_at(12 * 2) == DAY_COLOR
 
 
 @pytest.mark.asyncio
@@ -76,7 +59,7 @@ async def test_the_bar_edits_with_keys_and_mouse(fake_repo: Path):
 
     class _A(App):
         def compose(self):
-            yield DayBar(quiet=schedule.DEFAULT_QUIET, office=schedule.DEFAULT_OFFICE, id="bar")
+            yield DayBar(quiet=schedule.DEFAULT_QUIET, id="bar")
 
     app = _A()
     async with app.run_test(size=(80, 8)) as pilot:
@@ -86,22 +69,22 @@ async def test_the_bar_edits_with_keys_and_mouse(fake_repo: Path):
         assert bar.selected == ("quiet", "start")
         await pilot.press("left")
         assert bar.quiet.label() == "22:30–08:00"
-        await pilot.press("tab", "tab", "tab")                       # → office end
-        assert bar.selected == ("office", "end")
+        await pilot.press("tab")                                     # → quiet end
+        assert bar.selected == ("quiet", "end")
         await pilot.press("right", "right")
-        assert bar.office.label() == "09:00–19:00"
+        assert bar.quiet.label() == "22:30–09:00"
         await pilot.press("shift+left")
-        assert bar.office.label() == "08:30–18:30"
-        await pilot.press("shift+tab", "shift+tab", "delete")        # quiet off
-        assert bar.quiet is None and bar.edges() == [("office", "start"), ("office", "end")]
+        assert bar.quiet.label() == "22:00–08:30"
+        await pilot.press("delete")                                  # quiet off
+        assert bar.quiet is None and bar.edges() == []
         await pilot.mouse_down(DayBar, offset=(1 + 26, 1))           # padding 1 + 13:00
         await pilot.mouse_up(DayBar, offset=(1 + 31, 1))             # through 15:30
-        assert bar.office.label() == "13:00–16:00"
+        assert bar.quiet.label() == "13:00–16:00"
 
 
 @pytest.mark.asyncio
-async def test_shift_switches_the_town_by_the_clock(fake_repo: Path, monkeypatch):
-    settings.save(_machine(mode="shift", onboarded=True, quiet=schedule.DEFAULT_QUIET))
+async def test_quiet_hours_come_by_the_clock(fake_repo: Path, monkeypatch):
+    settings.save(_machine(onboarded=True, quiet=schedule.DEFAULT_QUIET))
     clock = {"now": MON_10}
     real = schedule.dt.datetime
 
@@ -115,12 +98,7 @@ async def test_shift_switches_the_town_by_the_clock(fake_repo: Path, monkeypatch
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         desk = app.desktop
-        assert desk.plain and not desk.quiet
-        assert app._hud.resources.hour == "👔 office till 18:00"
-        clock["now"] = MON_10.replace(hour=20)
-        app.tick_schedule()
-        await pilot.pause()
-        assert not desk.plain and all(not h.plain for h in desk.huts.values())
+        assert not desk.quiet and app._hud.resources.hour == ""
         clock["now"] = TUE_0030
         app.tick_schedule()
         await pilot.pause()
@@ -158,47 +136,11 @@ async def test_your_day_from_f10(fake_repo: Path):
         app.open_day()
         await pilot.pause()
         step = app.screen
-        assert isinstance(step, ModeStep) and step.standalone
-        assert not step.bar.show_office and step.bar.quiet is None
-        step.pick("shift")
+        assert isinstance(step, DayStep) and step.standalone
+        assert step.bar.quiet is None
         step.query_one("#ob-quiet").value = True
         await pilot.pause()
-        assert step.bar.show_office and step.bar.quiet == schedule.DEFAULT_QUIET
+        assert step.bar.quiet == schedule.DEFAULT_QUIET
         step.query_one("#ob-save").press()
         await pilot.pause()
-        m = settings.load()
-        assert m.mode == "shift" and m.quiet == schedule.DEFAULT_QUIET and m.office == schedule.DEFAULT_OFFICE
-
-
-def test_where_quiet_and_office_overlap_both_hold():
-    m = _machine(mode="shift", quiet=Span.parse("17:00", "08:00"))
-    at = MON_10.replace(hour=17, minute=30)
-    assert schedule.plain_now(m, at) and schedule.quiet_now(m, at)              # frames, and no fires
-    assert schedule.status(m, at) == "👔 office till 18:00 · 🌙 quiet till 08:00"
-    bar = DayBar(quiet=m.quiet, office=m.office)
-    assert bar.both_at(17 * 2) and not bar.both_at(12 * 2) and not bar.both_at(20 * 2)
-
-
-@pytest.mark.asyncio
-async def test_shift_sits_between_camp_and_office_and_one_is_on(fake_repo: Path):
-    from textual.widgets import RadioButton
-    settings.save(_machine(onboarded=True))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        app.open_day()
-        await pilot.pause()
-        step = app.screen
-        buttons = list(step.query(RadioButton))
-        assert [b.id for b in buttons] == ["ob-mode-camp", "ob-mode-shift", "ob-mode-office"]
-        cards = {c.mode: c.region for c in step.query("ModeCard")}
-        radios = {b.id.removeprefix("ob-mode-"): b.region for b in buttons}
-        for mode in ("camp", "office"):                                   # under its own picture
-            assert cards[mode].x <= radios[mode].x and radios[mode].right <= cards[mode].right
-        assert cards["camp"].right <= radios["shift"].x and radios["shift"].right <= cards["office"].x
-        await pilot.click("#ob-mode-office")
-        await pilot.pause()
-        assert step.mode == "office" and [b.value for b in buttons] == [False, False, True]
-        await pilot.click("#ob-mode-office")                              # a second click keeps it on
-        await pilot.pause()
-        assert step.mode == "office" and buttons[2].value
+        assert settings.load().quiet == schedule.DEFAULT_QUIET

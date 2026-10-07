@@ -20,7 +20,7 @@ from orkcraft import schedule
 from orkcraft.screens.orc_chat import OrcChat
 from orkcraft.screens.chat_view import ChatView
 from orkcraft.widgets.hud import Hud
-from orkcraft.widgets.office import OfficeFooter
+from orkcraft.widgets.office import WordedFooter
 from orkcraft.wm import Desktop, Taskbar, Window
 from orkcraft.core import bus
 from orkcraft.core.night import Night
@@ -156,7 +156,7 @@ class OrkcraftApp(
         reset_layout: bool = False,
         demo: bool = False,
     ) -> None:
-        wording.install()                    # in the Office every label says the Office's words
+        wording.install()                    # every label says today's words
         super().__init__()
         # The town without a face (core/town.py): the project, its Town Scroll, specs and treasury.
         self.core = Town(repo_root, auto_commit, layout_file, reset_layout, demo)
@@ -260,7 +260,7 @@ class OrkcraftApp(
         yield self._taskbar
         yield console
         yield self._orc_chat
-        yield OfficeFooter()
+        yield WordedFooter()
 
     def on_mount(self) -> None:
         try:

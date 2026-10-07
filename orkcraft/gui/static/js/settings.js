@@ -23,7 +23,7 @@ function You({ y }) {
       <${MascotHead} kin=${y.kin} stage=${y.stage} size=${4} />
     </span>
     <div class="gui-you__who">
-      <span class="gui-you__name">${say(y.name)}</span>
+      <span class="gui-you__name">${y.name}</span>
       <span class="ok-font-status ok-tone-muted">${say(`${y.role} · stage ${y.stage} of 4`)}</span>
       ${y.next && html`<span class="ok-font-status">${say(`Next: ${y.next}`)}</span>`}
       <span class="gui-you__deeds" aria-label=${say("Deeds")}>

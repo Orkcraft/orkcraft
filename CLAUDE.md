@@ -8,15 +8,17 @@
 - Code keeps its names: identifiers, module and file names (`realm/orcs.py`, `Orc`, `orc_id`),
   CSS ids, dict keys, event ids and config values stay as they are, so settings and town scrolls
   written before keep loading.
-- Each concept also has an **Office** name (the Watchtower is *External listeners*, an ork an *agent*,
-  a road a *link*): `orkcraft/realm/lexicon.py` `TERMS` is the glossary. A new concept or building
-  type gets its pair there. Write the Camp word in code; never hard-code an Office one: in the Office
-  the TUI says every widget's text in Office words (`tui/wording.py`, one hook in Textual) and the
-  GUI the literal text of every `html` template (`gui/static/js/html.js`; attributes and data go
-  through `say()`). A widget that shows what people or agents wrote gets the `-as-written` class
-  (TUI) so it keeps its words; Markdown, inputs, logs and terminals keep theirs already.
-- The two modes are `camp` and `office` in code (`modes.CAMP`, `modes.OFFICE`, `modes.office()`);
-  `immersion` / `hidden` / `plain` are only old names that still load.
+- **One vocabulary** (Camp and Office are merged; there are no modes). A concept keeps its Camp word
+  when it says *who* (ork, Warchief, town, building, road, Town Hall, Renown) and has a plain word
+  when it says *what a thing does, costs or risks* (External listeners, Spend, Stop all, Autonomy,
+  Project file). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
+  gets its one word there, and new code writes that word. A renamed concept keeps its old Camp
+  spelling in `was`, and the interface says an old spelling in today's word: the TUI every widget's
+  text (`tui/wording.py`), the GUI the literal text of every `html` template (`gui/static/js/html.js`;
+  attributes and data go through `say()`). A widget that shows what people or agents wrote gets the
+  `-as-written` class (TUI) so it keeps its words; Markdown, inputs, logs and terminals keep theirs.
+- The voice stays the camp's: the Warchief's lines, growth news and the onboarding may joke; labels,
+  settings and anything about money or safety say plainly what happens.
 - Tests that check a visible string use the same wording.
 
 ## Where code goes (docs/design/gui-migration.md)
