@@ -39,7 +39,8 @@ from orkcraft.realm import builders, chains, chronicles, roads, tiers
 # What every steward calls a model for, and what a type's steward does besides (the Barracks' answers to
 # its orks and its review of their work). Its spec keeps a tier per task (`OrcSpec.models`); a task with
 # none runs on the default (the CLI's own model, or the type's setting).
-USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings"}
+USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings",
+        "roads": "Roads: what it listens to"}
 TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
                          "review": "Review their work", "final": "Look at the whole"}}
 

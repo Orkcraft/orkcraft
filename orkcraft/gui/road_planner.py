@@ -1,5 +1,5 @@
 """Listen in words: the receiver's steward reads what the person wants and offers roads to lay
-(realm/road_planner.py), as a job (gui/jobs.py). A plain road is laid at once; a road with a rule goes
+(realm/road_planner.py), as a job (gui/jobs.py), on its own tool and its tier for roads (realm/steward.py). A plain road is laid at once; a road with a rule goes
 on to the Recruiter, whose handler the Council reviews before it is hired (gui/recruiter.py).
 
 A part of `Console` (console.py): its methods run with the console as `self`.
@@ -11,7 +11,7 @@ import copy
 from orkcraft.core import roads as core_roads
 from orkcraft.core import runners
 from orkcraft.gui.jobs import ConsoleError, plain
-from orkcraft.realm import builders, pipes, road_planner
+from orkcraft.realm import pipes, road_planner, steward
 
 
 class RoadPlannerMixin:
@@ -28,7 +28,8 @@ class RoadPlannerMixin:
         among = [str(x) for x in args["among"]] if isinstance(args.get("among"), list) else None
         tgt, sources = core_roads.contract(self.town, target.id, source, among)
         self._budget()
-        snapshot, runner = copy.deepcopy(self.town.scroll), runners.ROAD_RUNNER or builders.main_runner
+        snapshot = copy.deepcopy(self.town.scroll)
+        runner = steward.runner_for(snapshot.building(target.id), "roads", runners.ROAD_RUNNER)
         work = lambda: road_planner.plan(prompt, tgt, sources, snapshot, runner)  # noqa: E731
         return self._job("road", target.id, f"{plain(target.title)}'s steward is looking for the road…", work,
                          lambda job, result: self._road_planned(job, result, source or ""))
