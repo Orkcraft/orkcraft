@@ -32,7 +32,7 @@ names, git data, your settings' text, your email, your IP address.
 
 To Orkcraft's own proxy, a Cloudflare Worker (its code: [tools/usage-worker/](../tools/usage-worker/)),
 which drops anything not in the table above and your IP address, and passes the rest to
-[Amplitude](https://amplitude.com/) in its EU data centre.
+[Amplitude](https://amplitude.com/) in its US data centre.
 
 ## When nothing is collected
 

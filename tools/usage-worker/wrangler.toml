@@ -8,7 +8,7 @@ workers_dev = true                  # https://orkcraft-usage.<account>.workers.d
 # routes = [{ pattern = "usage.orkcraft.dev", custom_domain = true }]
 
 [vars]
-AMPLITUDE_REGION = "eu"             # "eu" (api.eu.amplitude.com) or "us": where the Amplitude project lives
+AMPLITUDE_REGION = "us"             # "us" (api2.amplitude.com) or "eu" (api.eu.amplitude.com): where the Amplitude project lives
 SEND_COUNTRY = "false"              # "true": Cloudflare's guess of the country goes along (never the IP)
 
 # At most 30 batches a minute from one install; the app sends one a minute.
