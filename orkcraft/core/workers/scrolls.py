@@ -22,7 +22,7 @@ from pathlib import Path
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.env import getenv
-from orkcraft.realm import catalog, jobs, roads, shelves, wiki
+from orkcraft.realm import catalog, jobs, quicknote, roads, shelves, wiki
 from orkcraft.realm import team as tm
 from orkcraft.sources import lore
 
@@ -187,6 +187,36 @@ class ScrollsWorker(Worker):
             self.save_config({"paths": list(dict.fromkeys([*(self.config.get("paths") or self.paths), rel]))})
         self.refresh()
         return ""
+
+    # -- Quick note (docs/design/wiki-librarian.md §4) --------------------------------------------
+
+    @property
+    def inbox(self) -> str:
+        """Where Quick notes are written: a source folder of this wiki."""
+        return str(self.config.get("inbox") or quicknote.INBOX).strip().strip("/") or quicknote.INBOX
+
+    def suggest(self, text: str) -> quicknote.Suggestion:
+        """The section, tags and links a note should get here (rules, no model)."""
+        return quicknote.suggest(text, self.repo_root, self.pages, wiki.sections(self.wiki_root, self.topic))
+
+    def note(self, text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
+             source: str = "quick note", take_in: bool = True) -> str:
+        """Keep a note in the inbox, the inbox a source, and take it in now when asked. Its path;
+        ValueError when it cannot be written."""
+        try:
+            path = quicknote.write(self.repo_root, self.inbox, text, section, tags, links, source)
+        except OSError as e:
+            raise ValueError(str(e)) from None
+        if not any(s.owns(path) for s in self.library.sources):
+            problem = self.add_folder(self.inbox)
+            if problem:
+                raise ValueError(problem)
+        else:
+            self.refresh()
+        self.emit("wiki.noted", path, " ".join(text.split())[:80])
+        if take_in and self.pending and not self.running:
+            self.ingest("note")
+        return path
 
     # -- the librarian's work -------------------------------------------------------------------
 

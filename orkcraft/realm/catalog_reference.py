@@ -196,6 +196,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
                    "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
+        "inbox": "where Quick notes are written, a source of the wiki (default notes/inbox)",
         "topic": "codebase, team, design or general: the sections and rules it starts with",
         "harness": "the librarian's agent: main (the main tool, default) or one of claude, agy, codex, hermes, pi, cursor",
         "model": "the librarian's model, e.g. sonnet",

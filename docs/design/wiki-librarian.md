@@ -1,6 +1,7 @@
 # Design — the Wiki's librarian: keeps, finds, places, checks
 
-Status: written 2026-10-07. Nothing built yet. The pictures are on the design canvas *Scroll Dump
+Status: written 2026-10-07. Built: stage 1 (§11) — Quick note in the window, `/note`, *→ Wiki* on the
+Task board, rules-only suggestions, Unicode `relevant`. Not yet: stages 2–4. The pictures are on the design canvas *Scroll Dump
 screens* (rows 4–6: the quality check, Quick note, the librarian and the meetings). It grows the
 🗑️ Scroll Dump (**Wiki**) from "an ork that turns sources into pages" into the town's owner of
 knowledge: a note goes in with one click, lands in the right place of the wiki, comes back out when

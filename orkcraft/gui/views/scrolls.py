@@ -7,7 +7,7 @@ import time
 
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import shelves, wiki
+from orkcraft.realm import quicknote, shelves, wiki
 from orkcraft.sources import lore
 
 REFRESH_S = 30.0              # as the TUI
@@ -74,7 +74,8 @@ def detail(w) -> dict:
         "topic": w.topic, "root": rel, "pages_count": count, "state": _state(w),
         "state_plain": _state(w).replace("⚠ ", ""), "running": w.running, "error": bool(w.last_error),
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
-        "recent": _recent(w), "lent": _lent(w),
+        "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
+        "sections": wiki.sections(w.wiki_root, w.topic),
     }
 
 
@@ -117,4 +118,28 @@ def _add_folder(w, args: dict) -> None:
         raise ActError(problem)
 
 
-ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder}
+def _suggest(w, args: dict) -> dict:
+    """What a Quick note should get here, as it is typed: section, tags, links (rules, no model)."""
+    return w.suggest(text(args, "text", quicknote.MAX_CHARS)).as_dict()
+
+
+def _strings(args: dict, key: str, most: int, chars: int = 200) -> list[str]:
+    got = args.get(key) or []
+    return [str(x)[:chars] for x in got[:most] if str(x).strip()] if isinstance(got, list) else []
+
+
+def _note(w, args: dict) -> str:
+    """Keep a Quick note: its path."""
+    body = text(args, "text", quicknote.MAX_CHARS)
+    if not body.strip():
+        raise ActError("Write the note first.")
+    try:
+        return w.note(body, text(args, "section", 80).strip(), _strings(args, "tags", 8, 60),
+                      _strings(args, "links", 6, 400), text(args, "source", 20) or "quick note",
+                      args.get("take_in", True) is not False)
+    except ValueError as e:
+        raise ActError(str(e)) from None
+
+
+ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder,
+        "suggest": _suggest, "note": _note}

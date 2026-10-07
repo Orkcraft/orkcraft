@@ -411,7 +411,12 @@ Take them in:
 2. Update the pages that they touch, or add pages, in the right section, as `{SCHEMA}` says.
    For a gone source, keep what is still true elsewhere and mark the rest stale.
 3. Update the index of every section you touched and `{INDEX}`.
-4. Add one entry at the top of `{LOG}` for {today.isoformat()}: the sources taken in, the pages touched.{_protected(list(manual))}
+4. Add one entry at the top of `{LOG}` for {today.isoformat()}: the sources taken in, the pages touched.
+
+A source whose front matter says `kind: note` is a person's quick note. Its `section`, `tags` and
+`links` were confirmed by the person: file it in that section, make the tags aliases of the page it
+lands on, and link those pages (their paths are relative to the project's root). Keep the note's
+words; a short note may become a line on an existing page rather than a page of its own.{_protected(list(manual))}
 
 Write only inside this folder, never into `{RAW}/`; the sources are read-only. Do not commit.
 Finish with a short Markdown summary: the pages added, changed and marked stale."""
@@ -504,15 +509,23 @@ def context(root: Path, repo_root: Path, task: str = "") -> str:
     return head + (f"**Task:** {task}\n\n" if task else "") + index
 
 
-_WORD = re.compile(r"[A-Za-z][A-Za-z0-9-]{3,}")
+_WORD = re.compile(r"[^\W\d_][\w-]{3,}")        # a word of 4+ characters in any script
+STEM = 5                                         # words are compared by their first letters: Сергеем finds Сергей
 _COMMON = frozenset("that this with from have will about what when where which there their them they your "
-                    "were been into over just like some more than then also only each every page pages".split())
+                    "were been into over just like some more than then also only each every page pages "
+                    "это этот эта как что чтобы когда где который есть было будет надо нужно можно очень "
+                    "после перед между через также".split())
+
+
+def stems(text: str) -> set[str]:
+    """The words of `text` as compared: lower case, cut to `STEM` letters, the common ones left out."""
+    return {w.lower()[:STEM] for w in _WORD.findall(text or "") if w.lower() not in _COMMON}
 
 
 def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
     """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
-    none that shares none."""
-    words = {w.lower() for w in _WORD.findall(task or "")} - _COMMON
+    none that shares none. A word in a page's title counts three times."""
+    words = stems(task)
     scored = []
     for n in notes:
         if not is_page(n.path):
@@ -521,11 +534,19 @@ def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> l
             text = (repo_root / n.path).read_text(encoding="utf-8")
         except OSError:
             continue
-        have = {w.lower() for w in _WORD.findall(f"{n.title} {text}")}
-        hits = len(words & have)
+        hits = len(words & stems(text)) + 3 * len(words & stems(n.title))
         if hits:
             scored.append((-hits, n.path, n))
     return [n for *_, n in sorted(scored)[:limit]]
+
+
+def sections(root: Path, topic: str = "general") -> list[str]:
+    """The wiki's sections: the folders of `pages/`, else the ones its topic starts with."""
+    try:
+        have = sorted(p.name for p in (root / PAGES).iterdir() if p.is_dir() and not p.name.startswith("."))
+    except OSError:
+        have = []
+    return have or [name for name, _ in SECTIONS.get(topic, SECTIONS["general"])]
 
 
 # -- after the orc ------------------------------------------------------------------------------------

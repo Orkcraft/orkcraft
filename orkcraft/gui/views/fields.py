@@ -3,8 +3,9 @@ person's own to-dos (a checklist) and the notes (ideas, questions). Every act is
 (core/workers/fields.py): it changes the board file and sends what changed down the roads."""
 from __future__ import annotations
 
+from orkcraft.core.workers.fields import card_text
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import tasklist
+from orkcraft.realm import catalog, tasklist
 
 REFRESH_S = 10.0              # as the TUI: a hand edit of the board file shows within this
 COLORS = {"🟨": "yellow", "🟩": "green", "🟦": "blue", "🟥": "red", "🟪": "purple"}
@@ -60,7 +61,7 @@ def detail(w) -> dict:
                  "cards": [{"id": c.id, "title": tasklist.plain(c.title), "color": COLORS.get(c.color, ""),
                             "body": c.body, "kind": c.kind, "done": c.checked, "new": c.id not in seen}
                            for c in w.todos]}
-    return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos}
+    return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos, "wiki": _wiki_of(w) is not None}
 
 
 def _card(w, args: dict) -> tasklist.Task:
@@ -142,6 +143,33 @@ def _send(w, args: dict) -> bool:
     return sent
 
 
+def _wiki_of(w):
+    """The Wiki a note of the board goes to (docs/design/wiki-librarian.md §4): one whose topic is team
+    or general first, else the first; None when the town has none."""
+    found = []
+    for bid, spec in w.town.custom_specs.items():
+        if catalog.migrate(spec).get("type") == "scrolls":
+            topic = str((spec.get("config") or {}).get("topic") or "general")
+            found.append((topic not in ("team", "general"), bid))
+    return w.town.worker(min(found)[1]) if found else None
+
+
+def _to_wiki(w, args: dict) -> str:
+    """The card kept as a Quick note in the Wiki, with what the Wiki suggests for it: the note's path."""
+    card = _card(w, args)
+    librarian = _wiki_of(w)
+    if librarian is None:
+        raise ActError("No Wiki in the town yet.")
+    body = card_text(card)
+    hint = librarian.suggest(body)
+    try:
+        path = librarian.note(body, hint.section, hint.tags, [x["path"] for x in hint.links], "task board")
+    except ValueError as e:
+        raise ActError(str(e)) from None
+    w.toast(f"{tasklist.plain(card.title)[:60]}: kept in the Wiki ({path})")
+    return path
+
+
 def _remove(w, args: dict) -> None:
     w.remove(_card(w, args).id)
 
@@ -161,4 +189,5 @@ def _seen(w, args: dict) -> None:
 
 
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
-        "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine}
+        "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
+        "to_wiki": _to_wiki}

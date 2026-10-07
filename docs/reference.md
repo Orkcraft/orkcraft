@@ -407,6 +407,13 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   page anyway the harness puts it back and says so. A page with edits not yet committed is
   protected the same way for that run. Files outside the wiki that change while it works are
   reported.
+- **Quick note** (docs/design/wiki-librarian.md): *+ Quick note* in the window, the quick action, `/note`
+  to the Warchief, or *→ Wiki* on a note of the Task board. As the note is typed the wiki suggests,
+  without a model, the pages to link (the ones that share its words, in any script and inflection),
+  their section and, as tags, the names of those pages the note says; each is dropped with one click.
+  The note is a Markdown file in `inbox` (default `notes/inbox`, made a source of the wiki by the
+  first note) with that front matter, and the librarian keeps it at take-in (*Take in now*, on by
+  default, starts one at once). Saving sends `wiki.noted`.
 - **Every change is committed** (`commit`, default on) — the wiki's folder alone, authored by
   `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the ork's
   edits from people's. Snapshots in `raw/` stay out of git (`raw/.gitignore`); `raw/manifest.json`
@@ -1041,7 +1048,7 @@ onboarding (*Punk ork*).
 | Reviewer | Chieftain |
 | Scheduler | Drummer |
 | File picker | Woodcutter |
-| Wiki writer | Scroll Scrapper |
+| Librarian | Scroll Scrapper |
 | Inspector | Seer |
 | Merger | Smith |
 | Gatekeeper | Quartermaster |
