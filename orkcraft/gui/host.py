@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import runners
+from orkcraft.core import runners, usage
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
@@ -101,6 +101,9 @@ class Host:
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())
+        # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
+        self.usage = usage.Usage(self.town.machine, face="gui", demo=demo)
+        self._opened()
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -117,6 +120,7 @@ class Host:
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
+        snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         return snap
 
     def limits(self) -> list:
@@ -209,6 +213,7 @@ class Host:
         self.refresh_roster()
         self._night()
         self.growth.tick(now)
+        self.usage.tick(now)
 
     # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
 
@@ -267,6 +272,7 @@ class Host:
         self.sessions.close()
         self.town.close()
         self.town.save()
+        self.usage.close()
 
     # -- the page's commands -------------------------------------------------------------------
 
@@ -274,10 +280,34 @@ class Host:
         fn = self.commands.get(name)
         if fn is None:
             raise CommandError(f"Unknown command: {name}")
+        args = dict(args or {})
         try:
-            return fn(dict(args or {}))
+            result = fn(args)
         except (console.ConsoleError, growth.GrowthError) as e:
             raise CommandError(str(e)) from None
+        self._used(name, args, result)
+        return result
+
+    # -- anonymous usage stats (core/usage.py): which features, never what is in them -------------
+
+    def _opened(self) -> None:
+        m = self.town.machine
+        self.usage.track("app_opened", face="gui",
+                         tools=[t for t, c in m.tools.items() if c.enabled],
+                         buildings=usage.count(sum(1 for b in self.town.scroll.buildings if not b.demolished)),
+                         roads=usage.count(len(state.roads(self.town))))
+
+    def _used(self, name: str, args: dict, result: Any) -> None:
+        if name == "town.build" and isinstance(result, str):
+            self.usage.track("building_built", type=self.type_of(result))
+        elif name == "town.demolish" and result:
+            self.usage.track("building_demolished")
+        elif name == "roads.lay" and result:
+            self.usage.track("road_laid")
+        elif name == "sessions.new" and result:
+            self.usage.track("session_opened", harness=args.get("harness"))
+        elif name == "halt":
+            self.usage.track("halted")
 
     def _spec(self, args: dict):
         bs = self.town.scroll.building(str(args.get("id", "")))

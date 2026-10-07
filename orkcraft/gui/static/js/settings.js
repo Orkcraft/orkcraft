@@ -3,7 +3,8 @@
 // — and, on the clock, how long a question and a change wait for you. The host's town.settings
 // (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Its head is you: your mascot at its stage, what
 // the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
-// it, the camp's rules.
+// it, the camp's rules, and whether anonymous usage stats are shared (core/usage.py), which a small
+// dialog of its own asks once.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -41,6 +42,27 @@ function Steps({ label, items, value, onPick }) {
     </span></div>`;
 }
 
+const USAGE_WHAT = "Which features are used, as counts — never your code, prompts, paths or project names. "
+  + "The list of every event is in docs/usage-stats.md.";
+
+function UsageField({ s, onPick }) {
+  return html`<${Steps} label=${say("Share anonymous usage stats")} value=${s.usage === true}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
+    <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
+}
+
+/** Asked once, when the operator has not said yes or no: the town opens, then this. */
+export function UsageAsk() {
+  const [done, setDone] = useState(false);
+  const t = town.value;
+  if (done || !t || !t.usage_ask || settingsOpen.value) return null;
+  const answer = (v) => { setDone(true); command("usage.share", { share: v }).catch(() => {}); };
+  return html`<${Dialog} title=${say("Help improve Orkcraft?")} onCancel=${() => setDone(true)}
+      text=${say(USAGE_WHAT + " You can change this in Settings.")}
+      actions=${html`<button class="ok-btn" onClick=${() => answer(false)}>${say("No, thanks")}</button>
+        <button class="ok-btn primary" onClick=${() => answer(true)}>${say("Share")}</button>`} />`;
+}
+
 export function SettingsDialog() {
   const [s, setS] = useState(null);
   useEffect(() => { if (settingsOpen.value) command("town.settings").then(setS, () => setS(null)); }, [settingsOpen.value]);
@@ -64,6 +86,7 @@ export function SettingsDialog() {
           items=${s.waits.map((v) => [v, `${v} min`])} onPick=${(v) => set({ wait: v })} />
         <${Steps} label=${say("A change waits the hours you are around")} value=${s.rebuild}
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
+      <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
     </div>
   </${Dialog}>`;
 }

@@ -13,7 +13,7 @@ import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
-import { SettingsDialog } from "./js/settings.js";
+import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { Menu } from "./js/menu.js";
 import { WarchiefLine } from "./js/warchief.js";
 
@@ -35,6 +35,7 @@ function App() {
     <${Panel} />
     <${Toasts} />
     <${SettingsDialog} />
+    <${UsageAsk} />
     <${Orders} />
     <${Jobs} />
     <${BuildDialog} />

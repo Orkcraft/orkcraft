@@ -61,9 +61,17 @@ class Growth:
             town.save()
         if json.dumps(machine.growth, sort_keys=True) != grown_before:
             settings.save(machine)
+            self._count(json.loads(grown_before), machine.growth)
         if fresh:
             self._news = [asdict(n) for n in growth.news(town.repo_root)][-NEWS_SHOWN:]
             self.host.on_change()
+
+    def _count(self, before: dict, after: dict) -> None:
+        """The deeds earned and the stage reached just now, for the usage stats (core/usage.py)."""
+        for deed in sorted(set(after.get("deeds") or {}) - set(before.get("deeds") or {})):
+            self.host.usage.track("deed_earned", deed=deed)
+        if (after.get("stage") or 1) > (before.get("stage") or 1):
+            self.host.usage.track("stage_reached", stage=after["stage"])
 
     # -- what the page sees -----------------------------------------------------------------------------
 

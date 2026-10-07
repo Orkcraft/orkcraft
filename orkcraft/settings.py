@@ -8,6 +8,7 @@
     s.rebuild_wait                   # hours (the operator around) a rebuild waits (1..48)
     s.profile                        # who the operator is and how their day goes (realm/intents.py)
     s.growth                         # the operator's mascot stage and deeds (realm/growth.py)
+    s.usage, s.install_id            # anonymous usage stats: None not asked yet (core/usage.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
@@ -19,6 +20,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -51,6 +54,8 @@ class MachineSettings:
     # The 🛡 Warder's agy hook was checked on a live agy here (docs/design/agy-guard.md, smoke test):
     # only then does onboarding say the Warder guards agy and install its hook. Off until someone does.
     agy_warder_checked: bool = False
+    usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
+    install_id: str = ""          # a random id while they share them; forgotten when they stop
 
     def to_dict(self) -> dict:
         return {
@@ -63,6 +68,7 @@ class MachineSettings:
             "profile": self.profile,
             "growth": self.growth,
             "agy_warder_checked": self.agy_warder_checked,
+            "usage": {"share": self.usage, "id": self.install_id},
         }
 
     @classmethod
@@ -83,6 +89,12 @@ class MachineSettings:
         s.profile = clean_profile(data.get("profile"))
         s.growth = clean_growth(data.get("growth"))
         s.agy_warder_checked = data.get("agy_warder_checked") is True
+        usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+        s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
+        install_id = usage.get("id")
+        if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
+            ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
+            s.install_id = install_id if ok else uuid.uuid4().hex
         return s
 
 

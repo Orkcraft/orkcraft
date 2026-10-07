@@ -37,6 +37,7 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     monkeypatch.setenv("ORKCRAFT_WIKI_AUTO", "0")        # no librarian starts by itself (test_wiki.py opts in)
     monkeypatch.setenv("ORKCRAFT_CALENDARS_FILE", str(tmp_path / "calendars.json"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    monkeypatch.setenv("ORKCRAFT_NO_USAGE", "1")         # no usage stats leave a test (test_usage.py opts in)
     # agy's global hooks file stays the test's own: `hooks install` / `uninstall` never touch ~/.gemini.
     from orkcraft.hooks import install as hooks_install
     monkeypatch.setattr(hooks_install, "agy_global_file", lambda: tmp_path / "gemini" / "config" / "hooks.json")

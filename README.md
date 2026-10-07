@@ -141,6 +141,9 @@ Buildings and their operator grow, from what the orks learned — never from cli
 - **Your CLIs, your login.** Models are called as `claude -p …` / `agy --print …` / `codex exec …`. Orkcraft has no
   API keys, accounts or servers, and sends nothing anywhere on its own. A building talks to the
   network only if you configure it to (Watchtower, Catapult, Lake with a URL).
+- **Usage stats are off until you say yes.** The window asks once; if you agree, a short list of
+  anonymous feature counts is shared — never code, prompts, paths or names
+  ([docs/usage-stats.md](docs/usage-stats.md)). `orkcraft usage off` stops it, and `DO_NOT_TRACK=1` always does.
 - **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkcraft hooks install`): it denies catastrophic or
   secret-leaking calls (`rm -rf /`, `curl … | sh`, reading `.env` / `.ssh`, force-push…) and asks
   about destructive ones (Codex cannot ask yet, so there it denies and says why). Codex runs a project's
