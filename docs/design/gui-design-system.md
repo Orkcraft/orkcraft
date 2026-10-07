@@ -164,7 +164,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
   - Resources now have sprites: an hourglass (quota), coins (spend), logs (context) and meat (agents), in `icons/res-*.png`.
   - Orks: the chain or script has its signpost sprite (`icons/chain.png`). The agent ork already has its sprite (`orks/ork.png`, 24×16, the ork mark's head) and no longer uses 🧌.
   - Status stands beside the ork's head: `orks/ork-idle.png` Zz, `ork-busy` a gear, `ork-waiting` `!` and a flame on its head, `ork-frozen` a snowflake, `ork-draft` a page (40×16, the bare head is 24×16).
-- **Office: no emoji and no sprites** (`modes.strip_emoji`), but for a hut's building: its header sprite at four ninths of Camp's size, at the card's left (`office.css`).
+- **Office: no emoji and no sprites** (`modes.strip_emoji`), but for a hut's building: its header sprite at two thirds of Camp's size, at the card's left (`office.css`).
   - Words in `<span class="ok-word">` replace pictographs: Quota, Spend, Context, Agents, `busy`, `?`.
   - Icon buttons become text actions.
   - Status is a coloured dot next to a word.

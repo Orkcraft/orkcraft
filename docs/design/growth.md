@@ -166,7 +166,7 @@ may propose a reviewer ork for the building's output. This is not in stages 1–
 ![⚖️ 0–III → 🪙 0–III → 💎 0–III on the Forge, the Watchtower and the Barracks](../img/growth/renown.png)
 
 The first version told both in one flag on the roof: its shape the goal, its colour the level. On the map
-a hut's sprite is drawn at four ninths, a pixel of it under one screen pixel, so the flag was three
+a hut's sprite was drawn at four ninths, a pixel of it under one screen pixel, so the flag was three
 pixels across: its shape could not be read, and the muted cloth of level 0 hardly differed from the
 ivory of I. Each building flew one too, so a flag said nothing. Now each thing has a mark of its own:
 
@@ -184,7 +184,8 @@ ivory of I. Each building flew one too, so a flag said nothing. Now each thing h
 - **The renown is said twice.** The footing raises the hut and widens its base, mass that reads at map
   size; the flag says *gold or not*. The annex says the goal at once, from level 0: choosing it is a
   decision the map shows.
-- **The annexes differ by silhouette**, wide against tall, not by a detail, so they read at four ninths.
+- **The annexes differ by silhouette**, wide against tall, not by a detail, so they read at map size. The map draws
+  the sprite at two thirds (it was four ninths), so the footing's courses and the flag's height read too.
 - **Drawn from code grids** in the flat palette (`tools/growth_sprites.py`): three flags, three footing
   tiles repeated under any width, two annexes; 8 drawings for the 19 buildings. No sprite is redrawn.
   The footing's stones are the road's tan (`#8f8166`) with a darker mortar.
