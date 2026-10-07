@@ -108,9 +108,8 @@ def test_the_orks_screens_ask_their_questions(dashboard):
     host, root, called = dashboard
     assert set(host.sessions.keys()) == {"pool:camp/grub", "pool:camp/snaga"}
 
-    def asking():
+    def asking():                          # both orks' questions (the Review gate asks one of its own too)
         host.refresh_roster()
-        return len(host.snapshot()["alerts"]) >= 2
+        questions = {a["title"] for a in host.snapshot()["alerts"]}
+        return any("release-notes.md" in q for q in questions) and any("price" in q for q in questions)
     assert _wait(asking)
-    questions = {a["title"] for a in host.snapshot()["alerts"]}
-    assert any("release-notes.md" in q for q in questions) and any("price" in q for q in questions)
