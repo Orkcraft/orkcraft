@@ -9,7 +9,7 @@ import copy
 
 from orkcraft.core import bus, runners
 from orkcraft.gui.jobs import ConsoleError, plain
-from orkcraft.realm import builders, fastpath, pipes, recruiter, tiers
+from orkcraft.realm import fastpath, pipes, recruiter, steward, tiers
 
 
 class RecruiterMixin:
@@ -22,12 +22,13 @@ class RecruiterMixin:
         return self._recruit(bs.id, prompt)
 
     def _recruit(self, building_id: str, prompt: str, road: list[tuple[str, str]] | None = None) -> str:
-        """`road` [(source, event)]: a road with a rule — the handler is made for exactly those roads."""
+        """`road` [(source, event)]: a road with a rule — the handler is made for exactly those roads.
+        The Recruiter thinks on the building's steward's tool, at its tier for roads (realm/steward.py)."""
         self._budget()
         snapshot, harnesses = copy.deepcopy(self.town.scroll), self.harnesses()
+        runner = steward.runner_for(snapshot.building(building_id), "roads", runners.RECRUIT_RUNNER)
         work = lambda: recruiter.recruit(prompt, snapshot, building_id,  # noqa: E731
-                                         runner=runners.RECRUIT_RUNNER or builders.main_runner, road=road,
-                                         harnesses=harnesses)
+                                         runner=runner, road=road, harnesses=harnesses)
         return self._job("recruit", building_id, "The Recruiter is choosing chain → script → agent…", work,
                          self._recruited)
 

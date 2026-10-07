@@ -46,12 +46,20 @@ def card(w) -> dict:
     return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas}
 
 
+def _lore(w, c) -> dict:
+    """What the board keeps beside the card: personal, its context's pages (stale when one changed), its plan."""
+    pages = w.lore.context(c.id)
+    return {"private": w.private(c.id), "pages": [{"path": p.path, "title": p.title} for p in pages],
+            "stale": bool(pages) and w.lore.stale(c.id, w.repo_root), "plan": w.lore.plan(c.id),
+            "planning": c.id in w.planning}
+
+
 def detail(w) -> dict:
     seen = w.seen()
     lanes = []
     for ln in w.visible_lanes():
         cards = [{"id": c.id, "title": tasklist.plain(c.title), "color": COLORS.get(c.color, ""),
-                  "body": c.body, "kind": c.kind, "new": c.id not in seen}
+                  "body": c.body, "kind": c.kind, "new": c.id not in seen, **_lore(w, c)}
                  for c in w.cards if c.column == ln.id]
         lanes.append({"id": ln.id, "label": ln.label, "kind": ln.kind, "cards": cards})
     todos = None
@@ -59,9 +67,10 @@ def detail(w) -> dict:
         lane = w.todo_lane()
         todos = {"id": lane.id, "label": lane.label,
                  "cards": [{"id": c.id, "title": tasklist.plain(c.title), "color": COLORS.get(c.color, ""),
-                            "body": c.body, "kind": c.kind, "done": c.checked, "new": c.id not in seen}
+                            "body": c.body, "kind": c.kind, "done": c.checked, "new": c.id not in seen, **_lore(w, c)}
                            for c in w.todos]}
-    return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos, "wiki": _wiki_of(w) is not None}
+    return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos, "plan_ok": w.lore.plan_ok,
+            "wiki": _wiki_of(w) is not None}
 
 
 def _card(w, args: dict) -> tasklist.Task:
@@ -84,11 +93,13 @@ def _add(w, args: dict) -> str:
     lane = text(args, "lane", 200) or "todo"
     written = text(args, "text", 20_000).strip()
     if written:
-        card = w.write(written, lane)
+        card = w.write(written, lane, private=bool(args.get("private")))
     elif "text" in args:
         raise ActError("A card needs some text")
     else:
         card = w.add(_title(args), lane, text(args, "body", 20_000).strip())
+        if card is not None and args.get("private"):
+            w.set_private(card.id, True)
     return card.id if card is not None else ""
 
 
@@ -157,6 +168,8 @@ def _wiki_of(w):
 def _to_wiki(w, args: dict) -> str:
     """The card kept as a Quick note in the Wiki, with what the Wiki suggests for it: the note's path."""
     card = _card(w, args)
+    if w.private(card.id):
+        raise ActError("A personal card never reaches a model: it stays on the board.")
     librarian = _wiki_of(w)
     if librarian is None:
         raise ActError("No Wiki in the town yet.")
@@ -189,6 +202,39 @@ def _seen(w, args: dict) -> None:
         w.changed()
 
 
+def _private(w, args: dict) -> bool:
+    """Mark a card personal (`on`), or not; without `on` it flips. What it is now."""
+    on = args.get("on")
+    return w.set_private(_card(w, args).id, None if on is None else bool(on))
+
+
+def _context(w, args: dict) -> int:
+    """Ask the wikis again for the card's context: how many pages it found."""
+    return w.find_context(_card(w, args).id)
+
+
+def _plan_preview(w, args: dict) -> dict:
+    return w.plan_preview(_card(w, args).id)
+
+
+def _plan(w, args: dict) -> bool:
+    """Ask for the to-do's plan with the `pages` of its context the person kept (all when not given);
+    `trust`: don't show what leaves before the next one."""
+    card = _card(w, args)
+    pages = args.get("pages")
+    if pages is not None and not (isinstance(pages, list) and all(isinstance(p, str) for p in pages)):
+        raise ActError("pages must be a list of paths")
+    preview = w.plan_preview(card.id)
+    if not preview.get("allowed"):
+        raise ActError(preview.get("why") or "No plan for this card")
+    return w.plan(card.id, pages, trust=bool(args.get("trust")))
+
+
+def _plan_steps(w, args: dict) -> int:
+    return w.plan_to_todos(_card(w, args).id)
+
+
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
         "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
-        "to_wiki": _to_wiki}
+        "private": _private, "context": _context, "plan_preview": _plan_preview, "plan": _plan,
+        "plan_steps": _plan_steps, "to_wiki": _to_wiki}

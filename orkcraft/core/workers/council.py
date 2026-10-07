@@ -117,7 +117,8 @@ class CouncilWorker(Worker):
 
     def loose_ends(self) -> list[dict]:
         """The named exits no road takes yet: the map draws each as a stub to pull a road from."""
-        return [{"route": e.id, "name": e.name} for e in self.exits if not self.connected(e)] if self.named else []
+        return [{"route": e.id, "name": e.name, "event": f"team.routed#{e.id}"}
+                for e in self.exits if not self.connected(e)] if self.named else []
 
     def phase(self) -> str:
         """While it reviews: `reading` (members speak) or `deciding` (the steward's turn)."""
@@ -170,9 +171,13 @@ class CouncilWorker(Worker):
     def steward(self) -> tm.Steward:
         own = str(self.config.get("steward_prompt") or self.config.get("goal") or "").strip()
         known = tm.brief_text(self.steward_file)
-        harness, _, model = str(self.config.get("moderator") or "main").partition(":")
-        return tm.Steward(own, harness.strip() or "main", model.strip(), known,
-                          self.rel(self.steward_file) if known else "")
+        harness, _, model = str(self.config.get("moderator") or "").partition(":")
+        if not harness.strip():                                        # its steward's own tool, else the main one
+            from orkcraft.realm import steward as st
+            scroll = getattr(self.town, "scroll", None)
+            harness = st.harness_for(scroll.building(self.building_id) if scroll is not None else None) or "main"
+        model = self.steward_pick("decide", model.strip()).model      # its `moderator` model, else its goal's
+        return tm.Steward(own, harness.strip(), model, known, self.rel(self.steward_file) if known else "")
 
     # -- its life -------------------------------------------------------------------------------
 

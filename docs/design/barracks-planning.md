@@ -68,7 +68,10 @@ A steward has no goal of its own: it works towards its building's goal (`buildin
 | A trivial task's review | the tests only | the tests only | the tests + a warrior read |
 
 The plan is made on the goal's tier, never below a warrior: a wrong plan costs more than everything
-after it, but most plans do not need the heaviest model — 💎 quality keeps the elder. The
+after it, but most plans do not need the heaviest model — 💎 quality keeps the elder. The steward's own
+tiers (the sort, the plan, the reviews, the last look) are its *work* in realm/steward.py `WORK`, chosen
+in one order with every other building's (docs/design/steward-at-work.md §2): a tier picked for that task
+in the steward's window, else its `steward` setting, else the goal's. The
 Building retro may propose changes to the steward's planning orders and to its personas' prompts
 (shrink / enrich), as for any other part, within its goal's actions.
 
@@ -85,7 +88,7 @@ task ─▶ sort (laborer) ─┬─ trivial ─▶ a light ork at once ─▶ t
 ### 4.1 Triage: a light sort first, a plan only when it is worth one
 
 A follow-up, a rework or an approved post goes to the ork that knows it, with no model call. Every
-other task gets the steward's **sort** on a laborer (`plans.TRIAGE_TIER`, one short call; its model is
+other task gets the steward's **sort** on a laborer (one short call; its model is
 the steward's *Sort the tasks* setting): `{"kind": "trivial" | "single" | "plan", "tier", "why"}`.
 
 - **trivial** — a small clear job (a question, a lookup, a rename, a typo): one light ork runs it at
@@ -93,7 +96,7 @@ the steward's *Sort the tasks* setting): `{"kind": "trivial" | "single" | "plan"
 - **single** — one agent's job that needs thought: one ork of the tier the sort names (the Foreman
   reuses an idle ork that knows the work or hires one on that tier's model), then the usual review.
 - **plan** — stages, or parts that can run in parallel: the steward plans it on the goal's tier
-  (`Goal.plan`), and may still answer `SIMPLE`.
+  (its `plan` in `WORK`), and may still answer `SIMPLE`.
 
 A short text with no steps (`plans.clearly_simple`) is never planned: the sort only tells a trivial one
 from the rest, which runs on the goal's simple tier and is reviewed. A sort that does not parse is

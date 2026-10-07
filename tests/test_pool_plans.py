@@ -14,6 +14,7 @@ from orkcraft import autonomy, schedule, settings
 from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import jobs, personas, plans
+from orkcraft.realm import steward as steward_mod
 from tests.pool_fakes import FakeGit, Steward
 from tests.test_pool_failures import Crew, _app, _arrive, _open, _until
 
@@ -434,14 +435,13 @@ def test_no_hand_hiring():
 
 @pytest.mark.asyncio
 async def test_a_plan_fits_what_is_left_of_the_quota(fake_repo: Path, monkeypatch, steward, git):
-    from orkcraft.core.workers import barracks_plan
     from orkcraft.realm import pressure
     settings.save(settings.MachineSettings(onboarded=True))                    # claude on a subscription
     machine = settings.load()
     machine.tools["claude"].enabled = True
     settings.save(machine)
     camp = pressure.Camp(left=200_000, limit="claude 5h", hours=2.0)
-    monkeypatch.setattr(barracks_plan.pressure, "measure", lambda *a, **k: camp)
+    monkeypatch.setattr(pressure, "measure", lambda *a, **k: camp)
     steward(plans=[plan(sub("a", "elder", cheaper_ok=True), sub("b", "elder", cheaper_ok=True))])
     crew = Crew(cost=0.0)
     app = _app(fake_repo, monkeypatch, crew)
@@ -461,12 +461,11 @@ async def test_a_plan_fits_what_is_left_of_the_quota(fake_repo: Path, monkeypatc
 
 @pytest.mark.asyncio
 async def test_a_tight_quota_makes_the_barracks_thrifty(fake_repo: Path, monkeypatch, steward, git):
-    from orkcraft.core.workers import barracks_plan
     from orkcraft.realm import pressure
     machine = settings.MachineSettings(onboarded=True)
     machine.tools["claude"].enabled = True
     settings.save(machine)
-    monkeypatch.setattr(barracks_plan.pressure, "measure",
+    monkeypatch.setattr(pressure, "measure",
                         lambda *a, **k: pressure.Camp(left=10_000_000, limit="claude week", tight=True))
     steward(plans=[plan(sub("a", touches=["a/"]), sub("b", touches=["b/"]), sub("c", touches=["c/"]))])
     crew = Crew(cost=0.0)
@@ -587,7 +586,8 @@ def test_a_sort_is_read_and_checked():
     assert plans.parse_triage('{"kind": "single", "tier": "huge"}').tier == "warrior"      # an unknown tier
     assert plans.parse_triage('{"kind": "plan", "tier": "elder"}').tier == ""
     assert plans.parse_triage("ACCEPT") is None and plans.parse_triage('{"kind": "maybe"}') is None
-    assert [plans.goal_of(g).plan for g in ("thrift", "balance", "quality")] == ["warrior", "warrior", "elder"]
+    assert [steward_mod.goal_tier("barracks", "plan", g) for g in ("thrift", "balance", "quality")] == \
+        ["warrior", "warrior", "elder"]
 
 
 @pytest.mark.asyncio

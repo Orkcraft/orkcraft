@@ -163,6 +163,9 @@ and offers up to three roads; the person picks one, the event list waits folded 
 - **Checked.** Every option is checked against the sources' events, the filter schema and a copy of
   the scroll (`subscribe`: duplicates, loops, limits); what fails is dropped, and when nothing holds the
   steward gets the problems back once more.
+- **On the steward's model.** The planner and the Recruiter think on the receiver's steward's tool, at
+  its tier for *Roads* (`steward.USES`). Next: the steward carries out the rules itself
+  ([steward-listens.md](steward-listens.md)).
 
 ## 5c. A meeting and its brief (implemented)
 

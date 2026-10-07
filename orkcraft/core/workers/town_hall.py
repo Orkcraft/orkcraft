@@ -130,8 +130,7 @@ class TownHallWorker(Worker):
 
         def work() -> None:
             try:
-                from orkcraft.realm import builders
-                runner = runners.WARCHIEF_RUNNER or builders.main_runner_of(self.town.machine)
+                runner = runners.WARCHIEF_RUNNER or self.steward_runner("answer")      # its steward's, by the goal
                 answer, _cost = runner(prompt)
                 result = (str(answer or "").strip() or "(no answer)", False)
             except Exception as e:             # the CLI missing, a timeout, Halt All: said in the chat
@@ -200,9 +199,9 @@ class TownHallWorker(Worker):
             self._set_card(c["id"], state="failed", error="The budget of this run is spent",
                            steps=[{"who": "Town Builder", "state": "failed"}])
             return
-        from orkcraft.realm import builders, town_builder
+        from orkcraft.realm import town_builder
         repo, taken, order = self.repo_root, self.town.taken_ids(), c["order"]
-        runner = runners.BUILD_RUNNER or builders.main_runner_of(self.town.machine)
+        runner = runners.BUILD_RUNNER or self.steward_runner("build")                 # its steward's, by the goal
 
         def work() -> None:
             try:

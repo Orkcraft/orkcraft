@@ -127,3 +127,7 @@ def test_a_note_on_the_task_board_goes_to_the_wiki(fake_repo: Path):
     meta = quicknote.front_matter((fake_repo / path).read_text(encoding="utf-8"))
     assert meta["from"] == "task board" and "llm-wiki/team/pages/product/pricing-tiers.md" in meta["links"]
     assert host.town.worker(bid).inbox == "notes/inbox"
+    secret = host.command("act", {"id": fields, "act": "add", "args": {"lane": "notes", "title": "My salary talk"}})
+    host.command("act", {"id": fields, "act": "private", "args": {"card": secret, "on": True}})
+    with pytest.raises(CommandError):                                    # a personal card never reaches a model
+        host.command("act", {"id": fields, "act": "to_wiki", "args": {"card": secret}})

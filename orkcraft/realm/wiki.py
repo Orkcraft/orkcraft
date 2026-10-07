@@ -518,23 +518,33 @@ def context(root: Path, repo_root: Path, task: str = "") -> str:
     return head + (f"**Task:** {task}\n\n" if task else "") + index
 
 
-_WORD = re.compile(r"[^\W\d_][\w-]{3,}")        # a word of 4+ characters in any script
-STEM = 5                                         # words are compared by their first letters: Сергеем finds Сергей
+_WORD = re.compile(r"[^\W\d_][\w-]{3,}")          # a word of any script: a to-do in Russian finds its pages too
+STEM = 5                                           # words are compared by their first letters: Сергеем finds Сергей
 _COMMON = frozenset("that this with from have will about what when where which there their them they your "
                     "were been into over just like some more than then also only each every page pages "
-                    "это этот эта как что чтобы когда где который есть было будет надо нужно можно очень "
-                    "после перед между через также".split())
+                    "этот эта это эти того чтобы когда если только также потом очень после перед через "
+                    "который которая которые нужно надо можно будет есть было свой своя свои как что где "
+                    "между".split())
+
+
+def _stem(word: str) -> str:
+    """A word's start, its ending cut: "release" finds "released", "банку" finds "банк"."""
+    return word[:min(STEM, max(4, len(word) - 2))]
 
 
 def stems(text: str) -> set[str]:
-    """The words of `text` as compared: lower case, cut to `STEM` letters, the common ones left out."""
+    """The words of `text` as sets compare them: lower case, cut to `STEM` letters, the common ones left out."""
     return {w.lower()[:STEM] for w in _WORD.findall(text or "") if w.lower() not in _COMMON}
+
+
+def _hits(want: set[str], have: set[str]) -> int:
+    return sum(1 for st in want if st in have or any(w.startswith(st) for w in have))
 
 
 def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
     """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
     none that shares none. A word in a page's title counts three times."""
-    words = stems(task)
+    want = {_stem(w) for w in {w.lower() for w in _WORD.findall(task or "")} - _COMMON}
     scored = []
     for n in notes:
         if not is_page(n.path):
@@ -543,7 +553,8 @@ def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> l
             text = (repo_root / n.path).read_text(encoding="utf-8")
         except OSError:
             continue
-        hits = len(words & stems(text)) + 3 * len(words & stems(n.title))
+        title = {w.lower() for w in _WORD.findall(n.title)}
+        hits = _hits(want, title | {w.lower() for w in _WORD.findall(text)}) + 2 * _hits(want, title)
         if hits:
             scored.append((-hits, n.path, n))
     return [n for *_, n in sorted(scored)[:limit]]

@@ -39,9 +39,41 @@ from orkcraft.realm import builders, chains, chronicles, roads, tiers
 # What every steward calls a model for, and what a type's steward does besides (the Barracks' answers to
 # its orks and its review of their work). Its spec keeps a tier per task (`OrcSpec.models`); a task with
 # none runs on the default (the CLI's own model, or the type's setting).
-USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings"}
+#
+# Two kinds (docs/design/steward-at-work.md §2): the upkeep of the building (`USES`: watch, redesign, rules,
+# roads) runs on what is picked for it, else the default; the steward's WORK — what becomes the building's
+# results (`WORK`) — runs, when nothing is picked, on the tier its building's goal names, and on 🪙 thrift
+# while the quota is tight (the caller says which goal is in force: `Worker.aim_now`).
+USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings",
+        "roads": "Roads: what it listens to"}
 TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
-                         "review": "Review their work", "final": "Look at the whole"}}
+                         "review": "Review their work", "final": "Look at the whole"},
+             "workshop": {"escalate": "Take what the script hands over"},
+             "fields": {"title": "Name the cards", "plan": "Plan the to-dos"},
+             "watchtower": {"judge": "Judge what it caught"},
+             "mill": {"agent": "The agent steps"},
+             "council": {"decide": "Let the document go"},
+             "town_hall": {"answer": "Answer as the Warchief", "build": "Plan the town (Town planner)"}}
+
+
+def _g(thrift: str, balance: str, quality: str) -> dict[str, str]:
+    return {"thrift": thrift, "balance": balance, "quality": quality}
+
+
+# The tier of each of the steward's work tasks under each goal ("": the default model).
+WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("warrior", "warrior", "elder"),
+                     "answer": _g("warrior", "warrior", "warrior"), "review": _g("warrior", "warrior", "warrior"),
+                     "final": _g("warrior", "elder", "elder")},
+        "workshop": {"escalate": _g("warrior", "", "elder")},
+        "fields": {"title": _g("laborer", "laborer", "laborer"), "plan": _g("laborer", "laborer", "warrior")},
+        "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
+        "mill": {"agent": _g("laborer", "", "elder")},
+        "council": {"decide": _g("warrior", "", "elder")},
+        "town_hall": {"answer": _g("warrior", "", "elder"), "build": _g("warrior", "", "elder")}}
+# Not on the steward yet — they call their models on their own, so the goal does not reach them, and they
+# break the rule the test holds (tests/test_steward_work.py): the Wiki (scrolls: its librarian, its review),
+# the Review gate (loot) and the Publisher (catapult: its overseer). Being reworked; until then not done.
+NOT_YET = {"scrolls": "Wiki", "loot": "Review gate", "catapult": "Publisher"}
 
 
 def uses(type_id: str) -> dict[str, str]:
@@ -49,17 +81,57 @@ def uses(type_id: str) -> dict[str, str]:
     return {**USES, **TYPE_USES.get(type_id, {})}
 
 
+def is_work(type_id: str, use: str) -> bool:
+    """Whether `use` is part of the building's work (its goal picks the tier), not its upkeep."""
+    return use in WORK.get(type_id, {})
+
+
+def goal_tier(type_id: str, use: str, goal: str) -> str:
+    """The tier `goal` names for one of the steward's work tasks, "" for the default (and for upkeep)."""
+    by_goal = WORK.get(type_id, {}).get(use) or {}
+    return by_goal.get(goal, by_goal.get("balance", ""))
+
+
 def tier_for(b: ts.BuildingSpec | None, use: str) -> str:
-    """The tier its steward runs `use` on, or "" for the default."""
+    """The tier picked for its steward's `use` (its window's model picker), or "" for none."""
     stew = b.garrison.steward if b is not None else None
     tier = str(((stew.models if stew is not None else None) or {}).get(use) or "")
     return tier if tier in tiers.TIERS else ""
 
 
-def model_for(b: ts.BuildingSpec | None, use: str, harness: str = "claude") -> str:
-    """The model of that tier on `harness`, or "" for the default."""
-    tier = tier_for(b, use)
-    return tiers.MODELS.get(harness, {}).get(tier, "") if tier else ""
+@dataclass(frozen=True)
+class Pick:
+    model: str           # "" for the default model
+    tier: str            # the tier it came from, "" when none
+    by: str              # own | picked | setting | goal | default: what decided
+
+
+def pick(b: ts.BuildingSpec | None, use: str, harness: str = "", *, type_id: str = "",
+         goal: str | None = None, setting: str = "", own: str = "") -> Pick:
+    """The model one of its steward's calls runs on (`harness`: its tool, "" or `main` for the machine's
+    main tool), in one order for every building:
+
+        own       a tier set closer to the work than the steward (a road's, later; "" for none)
+        picked    the tier picked for this task in its steward's window
+        setting   the model of the building's own steward setting (the Barracks' `steward`)
+        goal      for its work, the tier its goal names (`goal`: the one in force, thrift when tight)
+        default   the tool's own model
+    """
+    for tier, by in ((own, "own"), (tier_for(b, use), "picked")):
+        if tier in tiers.TIERS:
+            return Pick(tiers.resolve(harness, tier), tier, by)
+    if setting:
+        return Pick(tiers.resolve(harness, setting), setting if setting in tiers.TIERS else "", "setting")
+    tier = goal_tier(type_id, use, goal or (b.aim if b is not None else "balance")) if is_work(type_id, use) else ""
+    if tier:
+        return Pick(tiers.resolve(harness, tier), tier, "goal")
+    return Pick("", "", "default")
+
+
+def model_for(b: ts.BuildingSpec | None, use: str, harness: str = "", *, type_id: str = "",
+              goal: str | None = None) -> str:
+    """The model of that task on `harness`, or "" for the default."""
+    return pick(b, use, harness, type_id=type_id, goal=goal).model
 
 
 def harness_for(b: ts.BuildingSpec | None) -> str:
@@ -69,12 +141,14 @@ def harness_for(b: ts.BuildingSpec | None) -> str:
     return str(steps[0].get("harness") or "") if steps and isinstance(steps[0], dict) else ""
 
 
-def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None = None) -> builders.Runner:
+def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None = None, *, type_id: str = "",
+               goal: str | None = None, setting: str = "") -> builders.Runner:
     """The model call for one of its tasks: the test's or demo's fake as it is, else its steward's tool
-    (the main one unless it names its own) on the task's tier."""
+    (the main one unless it names its own) on the model `pick` names."""
     if fake is not None:
         return fake
-    return builders.runner_for(harness_for(b), tier_for(b, use) or None)
+    p = pick(b, use, harness_for(b), type_id=type_id, goal=goal, setting=setting)
+    return builders.runner_for(harness_for(b), p.tier or p.model or None)
 
 
 def set_models(b: ts.BuildingSpec, models: dict[str, str]) -> dict[str, str]:

@@ -192,7 +192,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
 | 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
-| 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own; a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
+| 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own (a route no road takes is a dashed stub off the post on the map: pull a road from it to a building); a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | a board of cards in `TASKS.md` or a folder: tasks in To Do / In Progress / Done, sticky notes in lanes of their own (Ideas, Questions…); `mode`: `board` · `tasks` · `notes`; `n` `<` `>` `e` `c` `t` `s` `d` `N` (below); a cart becomes a card | `tasks.created`, `tasks.status_changed`, `notes.created`, `tasks.sent` |
@@ -355,7 +355,8 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   a raw `watch.webhook`.
 - **One tower, an intent.** Rather than a tower per source, give one tower every source and say what
   you listen for: `intent: user feedback about the app`. The Lookout puts each new signal (the
-  schedule's aside) to the Fast Path's light model, twenty at a time, fenced as data it must not
+  schedule's aside) to its steward (*Judge what it caught*: the tier picked for it, else the goal's,
+  light under ⚖️), twenty at a time, fenced as data it must not
   obey; what matches goes down the roads with its reason (`🎯 a user complains about login`), the
   rest stays in the list, dimmed and read. With the Fast Path off everything passes, and the head
   says so.
@@ -1024,7 +1025,7 @@ onboarding (*Punk ork*).
 | Apply if unanswered | On the clock |
 | Apply at once | Unchained |
 | History | Chronicles |
-| Advisor | Elder |
+| Advisor | Elders |
 | Building designer | Mason & Artisan |
 | Data planner | Mason |
 | Layout designer | Artisan |
@@ -1034,6 +1035,9 @@ onboarding (*Punk ork*).
 | Review board | Council |
 | to-do | chore |
 | note | scribble |
+| context | — |
+| plan | — |
+| personal | — |
 | Drop file here | The Pit |
 | External listeners | Watchtower |
 | Router | Signpost |

@@ -194,15 +194,15 @@ function Signs({ paths, roads }) {
   </div>`;
 }
 
-/** A building's exits with no road yet (a Review board's): a short dashed stub off its right edge with the exit's sign;
- *  pull a road from it to a building and the road is laid for that exit (docs/design/review-board.md §2). */
+/** A building's ways out with no road yet (a Review board's exits, a Signpost's routes): a short dashed stub off its
+ *  right edge with its sign; pull a road from it to a building and the road is laid for it (review-board.md §2.1). */
 function LooseEnds({ buildings, rects }) {
   return html`<div class="gui-loose-ends">${buildings.filter((b) => b.loose && b.loose.length && rects[b.id]).map((b) =>
     b.loose.map((x, i) => {
       const r = rects[b.id];
       return html`<button key=${`${b.id}:${x.route}`} class="gui-loose" style=${`left:${r.x + r.w}px;top:${r.y + r.h - 18 - i * 26}px`}
-          title=${say(`${x.name}: no road takes this exit yet — pull one to a building`)} aria-label=${say(`Connect the exit ${x.name}`)}
-          onPointerDown=${(e) => pullRoad(e, b.id, x.route)}>
+          title=${say(`${x.name}: no road goes this way yet — pull one to a building`)} aria-label=${say(`Connect ${x.name}`)}
+          onPointerDown=${(e) => pullRoad(e, b.id, x.event)}>
         <span class="gui-loose__stub"></span><span class="gui-sign gui-loose__sign ok-font-status">${say(x.name)}</span>
       </button>`;
     }))}</div>`;

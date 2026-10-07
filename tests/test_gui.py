@@ -634,6 +634,25 @@ def test_a_pinned_building_keeps_its_place(fake_repo, isolated_layout_file):
     assert host.command("building.goal", {"id": "town_hall"}) == "quality"
 
 
+def test_an_agent_pool_goal_says_which_models_its_tasks_run_on(fake_repo):
+    host = _host(fake_repo)
+    toasts = []
+    host.on_toast = toasts.append
+    pool = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
+    assert host.command("building.goal", {"id": pool, "value": "quality"}) == "quality"
+    said = toasts[-1]["message_plain"]
+    assert "heavier models" in said and "While the quota is tight it works as Thrift" in said
+    assert "the steward: Plan the tasks on a heavy model" in said
+    info = host.command("info", {"id": pool})
+    assert set(info["goal_hints"]) == {"thrift", "balance", "quality"}
+    final = next(u for u in info["steward"]["uses"] if u["id"] == "final") if info["steward"] else None
+    assert final is None or (final["work"] and final["by_goal"])
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    host.command("building.goal", {"id": pit, "value": "thrift"})
+    assert "models" not in toasts[-1]["message_plain"]                 # its steward has no work the goal moves
+    assert host.command("info", {"id": pit})["goal_hints"] == {}
+
+
 def _wait(host, jid, states=("ready", "verdict", "failed")):
     import time
     for _ in range(100):

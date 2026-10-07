@@ -59,6 +59,15 @@ def test_a_path_is_not_a_concept():
     assert say("the loot.") == "the output."
 
 
+def test_the_heaviest_tier_stays_elder_and_the_night_s_elders_are_advisors():
+    say = lexicon.words
+    assert say("🔮 Elder — opus") == "🔮 Elder — opus" and say("Default — Quality: Elder") == "Default — Quality: Elder"
+    assert say("The Elders advise") == "The Advisors advise" and say("the Elders' advice") == "the advisors' advice"
+    assert ("Elder", "Advisor") not in lexicon.table()
+    from orkcraft.realm import modes, tiers
+    assert modes.plain(tiers.label("elder")) == "Elder"
+
+
 def test_the_glossary_says_what_each_word_replaced():
     rows = {key: (word, was) for key, word, was in lexicon.glossary()}
     assert rows["watchtower"] == ("External listeners", "Watchtower")
