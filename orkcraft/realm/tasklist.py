@@ -76,6 +76,35 @@ def slug(title: str) -> str:
     return s[:48] or "task"
 
 
+TITLE_WORDS = 4               # a card is written as one text; its title is a few words of it
+
+
+def short_title(text: str) -> str:
+    """The title a text names itself without a model: the whole text when it is one short line, else its
+    first few words (no trailing punctuation)."""
+    line = next((ln.strip(" #*-") for ln in text.splitlines() if ln.strip(" #*-")), "")
+    title = " ".join(line.split()[:TITLE_WORDS]).rstrip(".,:;!?—-")[:60]
+    return title[:1].upper() + title[1:]
+
+
+def needs_title(text: str) -> bool:
+    """More than a short line: its title is worth asking a light model for."""
+    words = text.split()
+    return len(words) > TITLE_WORDS or len([ln for ln in text.splitlines() if ln.strip()]) > 1
+
+
+def title_prompt(text: str) -> str:
+    return ("Name this task or note in 2 to 4 words, in the language it is written in. "
+            "Answer with the title only: no quotes, no full stop.\n\n" + text[:4000])
+
+
+def parse_title(answer: str) -> str:
+    """The model's title: its first line, quotes and a full stop aside, at most a few words; "" when it said none."""
+    line = next((ln for ln in answer.splitlines() if ln.strip()), "")
+    line = line.strip().strip("\"'`*«»“”").rstrip(".")
+    return " ".join(line.split()[:TITLE_WORDS + 1])[:60]
+
+
 def color_of(title: str) -> str:
     m = _COLOR.match(title)
     return m.group(1) if m else ""

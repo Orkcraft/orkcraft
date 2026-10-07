@@ -78,8 +78,16 @@ def _title(args: dict) -> str:
 
 
 def _add(w, args: dict) -> str:
+    """A card written as one `text` (its title a few words a light model picks; "" back while it does), or
+    a `title` with a `body` (a to-do of the person's own)."""
     lane = text(args, "lane", 200) or "todo"
-    card = w.add(_title(args), lane, text(args, "body", 20_000).strip())
+    written = text(args, "text", 20_000).strip()
+    if written:
+        card = w.write(written, lane)
+    elif "text" in args:
+        raise ActError("A card needs some text")
+    else:
+        card = w.add(_title(args), lane, text(args, "body", 20_000).strip())
     return card.id if card is not None else ""
 
 
@@ -90,9 +98,21 @@ def _move(w, args: dict) -> bool:
 def _edit(w, args: dict) -> str:
     """The card's id after the edit (a card's id follows its title), "" when it was not kept."""
     card = _card(w, args)
-    colour = card.color
-    title = f"{card.color} {_title(args)}" if colour else _title(args)
-    if not w.edit(card.id, title, text(args, "body", 20_000).rstrip()):
+    if "text" in args:            # one text: the card's text (its title kept); a title-only card's short line renames it
+        written = text(args, "text", 20_000).strip()
+        if not written:
+            raise ActError("A card needs some text")
+        name = tasklist.plain(card.title).strip()
+        if " ".join(written.split()) == name:
+            body = ""
+        elif card.body.strip() or tasklist.needs_title(written):
+            body = written
+        else:
+            name, body = " ".join(written.split()), ""
+    else:
+        name, body = _title(args), text(args, "body", 20_000).rstrip()
+    title = f"{card.color} {name}" if card.color else name
+    if not w.edit(card.id, title, body):
         return ""
     return next((c.id for c in w.cards if c.column == card.column and c.title == title), "")
 

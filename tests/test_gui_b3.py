@@ -121,3 +121,52 @@ def test_scroll_dump_closed_is_pages_and_pending_and_command_the_last_pages(fake
     recent = host.detail(bid)["data"]["recent"]
     assert [p["title"] for p in recent][:2] == ["New", "Old"] and recent[0]["path"].endswith("pages/new.md")
     assert _card(host, bid)["pages"] == 2
+
+
+def _written(host: Host, bid: str, lane: str, title: str, wait: float = 5.0):
+    import time
+    end = time.monotonic() + wait
+    while time.monotonic() < end:
+        cards = next((ln["cards"] for ln in host.detail(bid)["data"]["lanes"] if ln["id"] == lane), [])
+        found = next((c for c in cards if c["title"] == title), None)
+        if found:
+            return found
+        time.sleep(0.02)
+    raise AssertionError(f"no card {title!r} in {lane}")
+
+
+def test_task_fields_card_is_written_as_one_text_and_a_light_model_names_it(fake_repo, monkeypatch):
+    from orkcraft.core import runners
+    asked = []
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", lambda prompt: (asked.append(prompt), ('"Fix the login."', 0.001))[1])
+    host = _host(fake_repo)
+    bid = _raised(host, "fields")
+    # a short line is its own title: no model
+    card = host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": " Ship  it "}})
+    assert card and not asked and _written(host, bid, "todo", "Ship it")["body"] == ""
+    # a longer text is the card's text; the model names it, the card shows up once named
+    long = "the login page hangs on submit\nwhen the password has a quote in it"
+    assert host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": long}}) == ""
+    named = _written(host, bid, "todo", "Fix the login")
+    assert named["body"] == long and len(asked) == 1 and long in asked[0]
+    # an edit keeps the title and changes its text; a title-only card's short line renames it
+    host.command("act", {"id": bid, "act": "edit", "args": {"card": named["id"], "text": "only the quote"}})
+    assert _written(host, bid, "todo", "Fix the login")["body"] == "only the quote"
+    host.command("act", {"id": bid, "act": "edit", "args": {"card": card, "text": "Ship it today"}})
+    assert _written(host, bid, "todo", "Ship it today")["body"] == ""
+    with pytest.raises(CommandError):
+        host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": "   "}})
+
+
+def test_task_fields_card_without_a_model_is_named_by_its_first_words(fake_repo, monkeypatch):
+    from orkcraft.core import runners
+
+    def down(prompt):
+        raise RuntimeError("no model")
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", down)
+    host = _host(fake_repo)
+    bid = _raised(host, "fields")
+    lane = "ideas"                                     # a lane of notes: its first note makes it
+    host.command("act", {"id": bid, "act": "add", "args": {"lane": lane, "text": "maybe cache the triage per ticket, it repeats"}})
+    note = _written(host, bid, lane, "Maybe cache the triage")
+    assert note["kind"] == "note" and note["body"].startswith("maybe cache")

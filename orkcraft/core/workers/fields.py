@@ -23,7 +23,9 @@ pressed — a Barracks takes it, and its results come back to the card.
 from __future__ import annotations
 
 import json
+import threading
 
+from orkcraft.core import runners
 from orkcraft.core.workers import Worker
 from orkcraft.realm import tasklist
 from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
@@ -167,6 +169,39 @@ class FieldsWorker(Worker):
         elif card.kind == NOTE:
             self.announce("notes.created", card, card.column)
         return card
+
+    def write(self, text: str, lane: str = "todo") -> tasklist.Task | None:
+        """A card written as one text (the person's New task / New note). A short line is its own title; a
+        longer text is the card's text, and a light model (the Council's `fast_model`) names it in a few words
+        — off the town's thread, the card added once named. Without a model its first words are its title.
+        The card when it was added at once, None when it waits for its title (or was not added)."""
+        text = text.strip()
+        if not text:
+            return None
+        if not tasklist.needs_title(text):
+            return self.add(" ".join(text.split()), lane)
+        runner = self._title_runner()
+        if runner is None:
+            return self.add(tasklist.short_title(text) or "Note", lane, text)
+
+        def work() -> None:
+            try:
+                title = tasklist.parse_title(runner(tasklist.title_prompt(text))[0])
+            except Exception:  # a model that cannot be reached never loses the card: its first words name it
+                title = ""
+            self.town.call(self.add, title or tasklist.short_title(text) or "Note", lane, text)
+
+        threading.Thread(target=work, daemon=True, name=f"fields-title-{self.building_id}").start()
+        return None
+
+    def _title_runner(self):
+        """The light model that names a card, None when there is none to call (switched off, the demo, no 🪙)."""
+        if runners.FASTPATH_RUNNER is not None:
+            return runners.FASTPATH_RUNNER
+        if self.simulated or self.town.demo or not self.town.budget_ok():
+            return None
+        from orkcraft.realm import fastpath
+        return fastpath.light_runner(self.repo_root)
 
     def add_lane(self, name: str) -> str:
         """A new lane of notes on the board (a folder of notes). Its id, "" when it was not made."""

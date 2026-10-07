@@ -42,27 +42,27 @@ function useDrop(id, laneId) {
 
 const dragCard = (cardId) => (e) => { e.dataTransfer.setData("text/x-ork-card", cardId); e.dataTransfer.effectAllowed = "move"; };
 
+/** A card is written as one text: a short line is its title; a longer text is its text, and a light model
+ *  names it in a few words (the card shows up once named). An open card keeps its title. */
 function CardDialog({ id, card, lane, onClose }) {
-  const [title, setTitle] = useState(card ? card.title : "");
-  const [body, setBody] = useState(card ? card.body : "");
+  const [body, setBody] = useState(card ? card.body || card.title : "");
   const kind = card ? card.kind : lane.kind;
   const what = kind === "task" ? "task" : kind === "mine" ? "to-do" : "note";
   const head = card ? what[0].toUpperCase() + what.slice(1) : `New ${what}`;
   function keep() {
-    const call = card ? act(id, "edit", { card: card.id, title, body }) : act(id, "add", { lane: lane.id, title, body });
+    const call = card ? act(id, "edit", { card: card.id, text: body }) : act(id, "add", { lane: lane.id, text: body });
     call.then((kept) => {
       if (kept) selected.value = { ...selected.value, [id]: kept };     // a card's id follows its title
       onClose();
     }, () => {});
   }
+  const keys = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && body.trim()) { e.preventDefault(); keep(); } };
   return html`<${Dialog} title=${say(card ? `${head} · ${card.title}` : `${head} · ${lane.label}`)} onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" disabled=${!title.trim()} onClick=${keep}>${card ? "Keep it" : "Add it"}</button>`}>
-    <p class="ok-dialog__section">Title</p>
-    <input class="ok-input" value=${title} autofocus onInput=${(e) => setTitle(e.target.value)}
-      onKeyDown=${(e) => e.key === "Enter" && title.trim() && keep()} />
-    <p class="ok-dialog__section">Text</p>
-    <textarea class="ok-input gui-textarea" rows="6" value=${body} onInput=${(e) => setBody(e.target.value)}></textarea>
+        <button class="ok-btn primary" disabled=${!body.trim()} onClick=${keep}>${card ? "Keep it" : "Add it"}</button>`}>
+    <textarea class="ok-input gui-textarea" rows="6" value=${body} autofocus aria-label=${say("Text")}
+      placeholder=${say(card ? "Its text (Ctrl+Enter keeps it)" : "What it is — a short line is its title, a longer text gets one (Ctrl+Enter adds it)")}
+      onInput=${(e) => setBody(e.target.value)} onKeyDown=${keys}></textarea>
   </${Dialog}>`;
 }
 
