@@ -337,6 +337,12 @@ logins work.
   a daily ceiling
   in the tower's settings, past it the source waits like the Lookout does out of 🪙. A
   subscription's turns count against its limits (⏳ Limits shows them).
+- **The model copies, the tower composes.** The schema asks for the service's own fields,
+  verbatim — `key` (an issue key, a content id, a thread id, `channel` + `ts`) and `version` (a
+  version number, an `updated` string exactly as the tool gave it) — and the tower builds the
+  id from them. An id the model writes itself drifts between looks (§7.5), and a drifting id
+  sends everything again. The prompt also keeps the query to what is heard (Confluence:
+  `type in (page, blogpost, comment)`, no attachments).
 - **An empty answer is not proof.** A look whose tool failed (a wrong site, a CQL the service
   refused) still ends `success` with `items: []` — the schema gets an `error` field (what the
   tool said, or "") and a look with one fails as *failing: the answer*, never as "nothing new".
@@ -399,7 +405,9 @@ Claude Code 2.1.291 on macOS, agy 1.3.1.
 | One Jira look (JQL about me, last day) | 4 issues, the same ids twice (`KEY:updated`); 5–7 turns, 23–42 s, $0.028–0.076 |
 | A new Jira comment (an @-mention of myself) | seen: that issue's id changed to the new time, `mention: true` — a self-mention counts |
 | One Confluence look (CQL mentions of me) | 0 items, `success`, every time; one run took 13 turns and tried a tool not allowed (refused) — the same ask, a different path |
-| Why Confluence was empty | asked in words: the site's resources list no Confluence for this login, and every CQL got `403 The app is not installed on this instance` — **a failure the structured answer hid as "nothing new"** (hence the `error` field, §7.2) |
+| Confluence, once the login had it | 9 items (the starter pages, an attachment among them); 5 turns, ~37 s, $0.036–0.052; `mention: false` on all — the self-mention on the new page was not told *(check)* |
+| **Ids the model composed** | **not stable**: the same 9 pages came back as `65912:2026-10-07T15:56Z` and then `65912:2026-10-07T15:30:00Z` — the model reformatted, and even changed, the time it was asked to append. Every look would have sent all nine again |
+| Why Confluence was empty at first | asked in words: the site's resources list no Confluence for this login, and every CQL got `403 The app is not installed on this instance` — **a failure the structured answer hid as "nothing new"** (hence the `error` field, §7.2) |
 | One Slack look (mentions and DMs) | an empty workspace: 0 items both times; 3–8 turns, 15–22 s, $0.011–0.043 |
 | A new Slack message (an @-mention of myself) | seen, `mention: true`, the same id twice (`channel:ts`); 5 turns both times, 16–23 s, $0.022–0.034. A plain message posted beside it was not returned *(check: search lag, or the search kept to mentions)* |
 | agy | its MCP config holds firebase and dart servers only: nothing to listen with there |
