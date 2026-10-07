@@ -26,6 +26,11 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
   least 24 px tall, and a border stays flat under the words of the two lands it parts, so no name or
   status line touches it. Up to six lands fit (the map grows to 184 px for the sixth); seven and eight
   scroll.
+- **Terraces, not a coast.** Each land is a step (8 px) shorter than the one above it, the fog of war
+  filling the wedge at the right: the ragged coast read as untidy.
+- **A title and a foot.** "War Map" heads the frame (Office: *Workspaces*), "Add orkspace +" is the
+  fog's label; the title and the lands' names are in Pixelify Sans (OFL, `design-system/fonts/`, with
+  Cyrillic for names people give in Russian).
 - **Names are white** (the ink) on every land, the open one too: a dark or gold name does not read on
   six grounds. The open land is told by its gold bar, its height and its status line.
 - **The call** rings for a new question in an orkspace that is not open, at most once in 30 s a land,

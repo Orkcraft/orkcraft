@@ -1,5 +1,6 @@
 /* The look's faces, kept with the design system so the app needs no network (SIL OFL 1.1, the
-   licences sit beside the files). Latin only: every word the app shows is English. */
+   licences sit beside the files). Latin only: every word the app shows is English; the pixel face has
+   Cyrillic too, for the names people give their orkspaces. */
 
 @font-face { font-family: "Almendra SC"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("almendra-sc-latin-400-normal.woff2") format("woff2"); }
@@ -13,3 +14,9 @@
   src: url("jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700; font-display: swap;
   src: url("jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Pixelify Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("pixelify-sans-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF; }
+@font-face { font-family: "Pixelify Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("pixelify-sans-cyrillic-500-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }

@@ -402,6 +402,8 @@ button { font: inherit; color: inherit; }
    gold bar and its height. */
 .gui-map { position: relative; flex: none; padding: 5px; background: var(--panel-raised);
   box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo), 2px 2px 0 #000; }
+.gui-map__title { margin: -1px 0 5px; text-align: center; font: 500 12px/14px "Pixelify Sans", var(--ok-font);
+  color: var(--ink-gold); letter-spacing: .08em; text-transform: uppercase; text-shadow: 1px 1px 0 var(--bevel-lo); }
 .gui-map__view { width: 160px; max-height: 184px; overflow-y: auto; overflow-x: hidden; position: relative;
   box-shadow: 0 0 0 2px var(--frame); scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
 .gui-map__ground { position: relative; background: var(--fog); }
@@ -411,7 +413,7 @@ button { font: inherit; color: inherit; }
 .gui-map__land:focus-visible { filter: brightness(1.2); }
 .gui-map__land:focus-visible .gui-map__name { text-decoration: underline dotted var(--frame-focus); text-underline-offset: 3px; }
 .gui-map__land > * { position: absolute; pointer-events: none; }
-.gui-map__name { left: 9px; max-width: 136px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
+.gui-map__name { left: 9px; max-width: 136px; font-family: "Pixelify Sans", var(--ok-font); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
   text-shadow: 1px 1px 0 var(--bevel-lo); }
 .gui-map__fog .gui-map__name { color: var(--ink-muted); }
 .gui-map__fog:hover .gui-map__name { color: var(--ink); }

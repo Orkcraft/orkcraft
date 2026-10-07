@@ -1,6 +1,7 @@
 // The War Map (docs/design/war-map.md): the orkspaces as lands stacked in a framed square at the town's
 // bottom left, each in its biome's colour, the open one tall with its status and its buildings as dots, the
-// fog of war at the foot (+ Orkspace) and in a ragged strip at the right. Every land is a real button cut to
+// fog of war at the foot (Add orkspace +) and in a wedge at the right, each land a step shorter than the
+// one above. Its title and the lands' names are in the pixel face. Every land is a real button cut to
 // its shape by a clip path, so clicks follow the shape; ↑ / ↓ walk the lands, Enter opens, the right click
 // renames, changes the biome or removes. When an ork asks in another orkspace the map calls: rings from the
 // land's ■, the land flashes, an arrow at the frame's edge when it is out of sight (§2.5).
@@ -35,7 +36,7 @@ function stepped(seed, len, lo, hi, runs) {
   }
   return out.slice(0, len);
 }
-const COAST = stepped(hash("coast"), 600, 0, 2, [3, 4, 5]);   // by absolute row: a new land never moves it
+const TAPER = 2, TAPER_MAX = 14;           // cells each land is shorter than the one above it, at most
 
 /** About how wide a land's words are, in px from the map's left: its name (and ■), its status when open. */
 function textWidth(o, isOpen) {
@@ -112,7 +113,7 @@ export function WarMap() {
   const asked = useRef(null);                           // orkspace id → its questions at the last render
   const called = useRef({});                            // orkspace id → when it last called
   const { H, tops, border } = layout(lands, open);
-  const coastAt = (y) => N - 3 - COAST[y % COAST.length];
+  const coastAt = (y, i) => N - Math.min(TAPER * i, TAPER_MAX);   // each land a step shorter: terraces
   const n = lands.length;
 
   const select = (o) => { if (o.id !== open) command("orkspace.select", { id: o.id }).catch(() => {}); };
@@ -185,11 +186,12 @@ export function WarMap() {
   const fogFrom = (x) => border[n][x];
   const fogMid = (tops[n] + (H - tops[n]) / 2) * T - 7;
   return html`<nav ref=${frame} class="gui-map" aria-label=${say("Orkspaces")} onKeyDown=${key}>
+    <div class="gui-map__title">${say("War Map")}</div>
     <div ref=${view} class="gui-map__view">
       <div ref=${land} class="gui-map__ground" style=${`height:${H * T}px;--fog:${FOG}`}>
         ${lands.map((o, i) => {
           const from = (x) => (i === 0 ? 0 : border[i][x]), to = (x) => border[i + 1][x];
-          const inside = (x, y) => y >= from(x) && y < to(x) && x < coastAt(y);
+          const inside = (x, y) => y >= from(x) && y < to(x) && x < coastAt(y, i);
           const path = cellsPath(inside, H, (x, y) => i > 0 && y === from(x));
           const y0 = tops[i] * T, y1 = tops[i + 1] * T, isOpen = o.id === open;
           const label = `${o.name}, ${plural(o.count, "building")}${o.questions ? `, ${plural(o.questions, "question")}` : ""}`;
@@ -210,7 +212,7 @@ export function WarMap() {
         <button class="gui-map__land gui-map__fog" title=${say("A new orkspace from the fog of war")}
             style=${`clip-path:path("${cellsPath((x, y) => y >= fogFrom(x), H, (x, y) => y === fogFrom(x))}");--fill:${FOG}`}
             onClick=${() => setNaming("new")}>
-          <span class="gui-map__name" style=${`top:${fogMid}px`}>+ ${say("Orkspace")}</span>
+          <span class="gui-map__name" style=${`top:${fogMid}px`}>${say("Add orkspace")} +</span>
         </button>
         ${naming === "new" && html`<${NameField} top=${fogMid - 4} onDone=${() => setNaming(null)}
           onName=${(name) => command("orkspace.new", { name }).catch(() => {})} />`}
