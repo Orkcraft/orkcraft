@@ -22,9 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import halt, huts, masonry, naming
+from orkcraft.realm import halt, harnesses, huts, masonry, naming
 from orkcraft.sources import telemetry
-from orkcraft.sources.sessions import agy_bin, claude_bin, codex_bin
 
 MAX_ATTEMPTS = 3
 CALL_TIMEOUT_S = 240
@@ -107,86 +106,108 @@ def extract_json(text: str) -> dict | None:
     return None
 
 
-def _call(tool: str, cmd_in: Callable[[str], list[str]], stdin: str | None = None) -> subprocess.CompletedProcess:
-    """One non-interactive CLI call (`cmd_in(folder)`) in an empty temporary folder, without orkcraft's
-    own variables. Raises RuntimeError when the CLI is missing or silent, Stopped on 🛑 Halt All."""
+def _call(h: harnesses.Harness, prompt: str, model: str | None) -> subprocess.CompletedProcess:
+    """One non-interactive answer of `h` in an empty temporary folder, without orkcraft's own
+    variables. Raises RuntimeError when the CLI is missing or silent, Stopped on 🛑 Halt All."""
     with tempfile.TemporaryDirectory(prefix="orkcraft-mason-") as empty:
         env = {k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}
-        cmd = cmd_in(empty)
+        cmd = h.ask(prompt, empty, model or "")
         try:
-            return halt.run(cmd, input=stdin, cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All stops it
+            return halt.run(cmd, input=h.stdin(prompt), cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All
         except FileNotFoundError as e:
-            raise RuntimeError(f"{TOOL_NAMES[tool]} CLI not found ({cmd[0]}) — install it or set "
-                               f"ORKCRAFT_{tool.upper()}_BIN") from e
+            raise RuntimeError(f"{h.title} CLI not found ({cmd[0]}) — install it or set "
+                               f"ORKCRAFT_{h.id.upper()}_BIN") from e
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"no answer within {CALL_TIMEOUT_S} s") from e
         except halt.Halted as e:
             raise halt.Stopped() from e
 
 
+def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, float | None]:
+    """One answer of a tool in an empty folder (`model`: its own, a tier word, or another tool's model
+    — harnesses.model_on; None keeps its default). Raises RuntimeError on failure."""
+    h = harnesses.need(harness_id)
+    proc = _call(h, prompt, model)
+    if proc.returncode != 0:
+        why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
+        raise RuntimeError(f"{h.id} exited with {proc.returncode}: {why[:300]}")
+    text, cost, _, _ = h.result(proc.stdout, 0)
+    if not text.strip() and (why := h.error(proc.stdout)):
+        raise RuntimeError(f"{h.id} gave no answer: {why[:300]}")
+    telemetry.charge(cost, f"{h.id} -p {model or 'default'}")    # no transcript of this run: 🪙 here
+    return text, cost
+
+
 def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
     """One non-interactive Claude Code call in an empty folder (`model`: an alias such as haiku or
     opus; None keeps the operator's default). Raises RuntimeError on failure."""
-    proc = _call("claude", lambda _: [claude_bin(), "-p", prompt, "--output-format", "json",
-                                      *(["--model", model] if model else [])])
-    if proc.returncode != 0:
-        raise RuntimeError(f"claude exited with {proc.returncode}: {(proc.stderr or proc.stdout).strip()[:300]}")
-    out = proc.stdout.strip()
-    text, cost = out, None
-    try:
-        envelope = json.loads(out)
-    except ValueError:
-        envelope = None
-    if isinstance(envelope, dict) and isinstance(envelope.get("result"), str):
-        raw = envelope.get("total_cost_usd")
-        text, cost = envelope["result"], float(raw) if isinstance(raw, (int, float)) else None
-    telemetry.charge(cost, f"claude -p {model or 'default'}")     # no transcript of this run: 🪙 here
-    return text, cost
+    return ask("claude", prompt, model)
 
 
 def agy_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    """One headless agy call in an empty folder, its shell in agy's sandbox and its edits only in that
-    folder (`model`: one of agy's, realm/tiers.py; None its usual flash). Raises RuntimeError on failure."""
-    from orkcraft.realm import roads
-    proc = _call("agy", lambda empty: [agy_bin(), "--print", prompt, "--model", model or roads.AGY_MODEL,
-                                       "--mode", "accept-edits", "--sandbox", "--add-dir", empty,
-                                       "--output-format", "json"])
-    if proc.returncode != 0:
-        raise RuntimeError(roads.failure("agy", proc.returncode, proc.stdout, proc.stderr))
-    text, cost, _ = roads._result_of(proc.stdout)
-    telemetry.charge(cost, f"agy --print {model or 'default'}")
-    return text, cost
+    return ask("agy", prompt, model)
 
 
 def codex_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    """One `codex exec` in an empty folder and a read-only sandbox, its prompt on stdin (`model`: one
-    of Codex's; None its default). Codex prints no price: the cost is None. Raises RuntimeError on failure."""
-    from orkcraft.realm import roads
-    proc = _call("codex", lambda _: [codex_bin(), *roads.codex_cmd("read-only", model or "")[1:]], stdin=prompt)
-    if proc.returncode != 0:
-        raise RuntimeError(roads.failure("codex", proc.returncode, proc.stdout, proc.stderr))
-    text = roads.codex_result_of(proc.stdout)[0]
-    if not text:
-        raise RuntimeError(f"codex gave no answer: {(roads.codex_error(proc.stdout) or proc.stderr).strip()[:300]}")
-    telemetry.charge(None, f"codex exec {model or 'default'}")
-    return text, None
+    return ask("codex", prompt, model)
 
 
-# The tools a planner (the Town Builder) may call, in the order one is picked when several are on.
-RUNNERS: dict[str, Runner] = {"claude": claude_runner, "codex": codex_runner, "agy": agy_runner}
-TOOL_NAMES = {"claude": "Claude Code", "codex": "Codex", "agy": "agy"}
+def runner_on(harness_id: str, model: str | None = None) -> Runner:
+    """The model call of one tool (a step's or a building's own choice)."""
+    return lambda prompt, m=None: ask(harness_id, prompt, m or model)
 
 
-def planner_tool(enabled) -> str | None:
-    """The tool a planner calls: the first of `RUNNERS` the operator turned on, None when none is."""
-    on = set(enabled)
-    return next((t for t in RUNNERS if t in on), None)
+def main_tool(machine=None) -> str:
+    """The machine's main tool (settings.MachineSettings, read from disk when not given: the chosen one
+    if it is on, else the first on); Claude Code when none is on, as before there was a choice."""
+    if machine is None:
+        machine = _machine()
+    return harnesses.main([t for t, c in machine.tools.items() if c.enabled], machine.main_tool) or "claude"
 
 
-def planner_runner(enabled) -> Runner | None:
-    """`planner_tool`'s model call, None when no tool that plans is on."""
-    tool = planner_tool(enabled)
-    return RUNNERS[tool] if tool else None
+_SETTINGS: dict = {}
+
+
+def _machine():
+    """The machine settings on disk, read again only when the file changed (the map asks often)."""
+    from orkcraft import settings
+    file = settings.path()
+    try:
+        key = (str(file), file.stat().st_mtime_ns)
+    except OSError:
+        key = (str(file), None)
+    if _SETTINGS.get("key") != key:
+        _SETTINGS.update(key=key, machine=settings.load(file))
+    return _SETTINGS["machine"]
+
+
+def main_runner_of(machine) -> Runner:
+    """Decisions on the main tool of this machine's settings as a face holds them."""
+    return runner_on(main_tool(machine))
+
+
+def main_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
+    """A decision on the machine's main tool, read when it is asked (`model`: a tier word or any
+    tool's model, harnesses.model_on)."""
+    return ask(main_tool(), prompt, model)
+
+
+def runner_for(harness_id: str = "", model: str | None = None) -> Runner:
+    """A building's or step's tool when it names one (not `main`), else the main tool's."""
+    if harness_id and harness_id != harnesses.MAIN and harnesses.get(harness_id):
+        return runner_on(harness_id, model)
+    return (lambda prompt, m=None: main_runner(prompt, m or model)) if model else main_runner
+
+
+def planner_tool(enabled, chosen: str = "") -> str | None:
+    """The tool a planner calls: the chosen main one when it is on, else the first on; None when none is."""
+    return harnesses.main(list(enabled), chosen)
+
+
+def planner_runner(enabled, chosen: str = "") -> Runner | None:
+    """`planner_tool`'s model call, None when no tool is on."""
+    tool = planner_tool(enabled, chosen)
+    return runner_on(tool) if tool else None
 
 
 def _feedback(attempts: list[Attempt]) -> str:
@@ -198,7 +219,7 @@ def _feedback(attempts: list[Attempt]) -> str:
 
 
 def build(request: str, repo_root: Path, existing_ids: set[str] | frozenset[str] = frozenset(),
-          runner: Runner = claude_runner, max_attempts: int = MAX_ATTEMPTS) -> BuildResult:
+          runner: Runner = main_runner, max_attempts: int = MAX_ATTEMPTS) -> BuildResult:
     """Run Mason → Artisan until the spec validates or the attempts run out. Never raises."""
     request = request.strip()[:PROMPT_LIMIT]
     catalog = masonry.catalog()
@@ -270,7 +291,7 @@ Answer with ONE JSON object and nothing else:
 
 def propose(request: str, repo_root: Path, type_id: str | None = None,
             existing_ids: set[str] | frozenset[str] = frozenset(),
-            runner: Runner = claude_runner, max_attempts: int = MAX_ATTEMPTS) -> BuildResult:
+            runner: Runner = main_runner, max_attempts: int = MAX_ATTEMPTS) -> BuildResult:
     """The Foreman's prefilled spec for a typed building, checked like any spec; the AI picks the
     type when `type_id` is None. Custom (panes) is retired: none is proposed anew. Never raises."""
     from orkcraft.realm import catalog

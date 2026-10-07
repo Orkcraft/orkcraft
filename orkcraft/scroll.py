@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from orkcraft import autonomy
+from orkcraft.realm import harnesses
 from orkcraft.realm.looks import OLD_ICONS, kind_icon  # noqa: F401 (kind_icon: scroll_garrisons)
 
 SCHEMAS = Path(__file__).resolve().parent / "schemas"
@@ -61,8 +62,10 @@ MAX_GARRISON = 9   # the roster selects orcs with the keys 1–9 (steward includ
 # Orc kinds, tried in this order when an orc is created from a prompt.
 KINDS = ("chain", "script", "agent", "hybrid")
 HARNESS_ROLES = ("run", "plan", "write", "review")
-HARNESSES = ("claude", "agy", "codex")     # plus "pipeline:<repo-relative spec>.json"
-DEFAULT_HARNESS = [{"role": "run", "harness": "claude"}]
+# The tools a step names (realm/harnesses.py), "main" first: the machine's main tool, read when it runs;
+# plus "pipeline:<repo-relative spec>.json"
+HARNESSES = (harnesses.MAIN, *harnesses.ids())
+DEFAULT_HARNESS = [{"role": "run", "harness": harnesses.MAIN}]
 CHAIN_OPS = ("filter", "pick", "extract", "sort", "limit", "count", "group", "template", "join")
 # Re-run policy per kind: cheap kinds rerun at once, agents coalesce a burst and restart.
 RUN_DEFAULTS = {

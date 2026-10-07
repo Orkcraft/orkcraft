@@ -197,7 +197,7 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
                  for r in roads], source, []
 
 
-def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: builders.Runner = builders.claude_runner,
+def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: builders.Runner = builders.main_runner,
             max_attempts: int = MAX_ATTEMPTS, road=None, harnesses: tuple[str, ...] = ("claude", "agy")) -> RecruitResult:
     """Ask the Recruiter until its handler passes the contract or the attempts run out. Never raises.
     `road` (source, event): a road with a rule — exactly that road, and no agent for a rule that

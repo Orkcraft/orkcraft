@@ -348,7 +348,7 @@ def check(data: dict, ps: list[Part], building: str, repo_root: Path, runtime: s
     return (source, []) if not bad else ("", [f"script: {b}" for b in bad])
 
 
-def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.Runner = builders.claude_runner,
+def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.Runner = builders.main_runner,
             runtime: str = "python", mocks: list[dict] | None = None, attempts: int = 2) -> Result:
     """One Council call (a second with its problems). Never raises."""
     refs = feedback.examples(repo_root, cand.building, 3)

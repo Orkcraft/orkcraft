@@ -65,7 +65,7 @@ def daily_job(town: Town, now: dt.datetime) -> Callable[[], optimize.Result] | N
     cfg = (spec or {}).get("config") or {}
     mocks = workshop.load_blueprint(repo, cand.building).get("mocks") or []
     runtime = str(cfg.get("runtime") or "python")
-    return lambda: optimize.propose(repo, cand, ps, runners.OPTIMIZE_RUNNER or builders.claude_runner, runtime, mocks)
+    return lambda: optimize.propose(repo, cand, ps, runners.OPTIMIZE_RUNNER or builders.main_runner, runtime, mocks)
 
 
 def daily_done(town: Town, result: optimize.Result) -> None:
@@ -88,7 +88,7 @@ def weekly_job(town: Town, now: dt.datetime) -> Callable[[], weekly.Result] | No
         return None
     weekly.mark_run(repo, now)
     model = str(fastpath.settings(repo).get("weekly_model") or "opus")
-    runner = runners.WEEKLY_RUNNER or functools.partial(builders.claude_runner, model=model)
+    runner = runners.WEEKLY_RUNNER or functools.partial(builders.main_runner, model=model)
     rules = audit.run(repo, town.scroll, dict(town.custom_specs), town.snapshot.spent_usd,
                       town.scroll.budget.gold_session_limit_usd)
     snapshot, specs = copy.deepcopy(town.scroll), copy.deepcopy(town.custom_specs)

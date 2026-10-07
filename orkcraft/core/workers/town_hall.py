@@ -131,7 +131,7 @@ class TownHallWorker(Worker):
         def work() -> None:
             try:
                 from orkcraft.realm import builders
-                runner = runners.WARCHIEF_RUNNER or functools.partial(builders.claude_runner, model=None)
+                runner = runners.WARCHIEF_RUNNER or builders.main_runner_of(self.town.machine)
                 answer, _cost = runner(prompt)
                 result = (str(answer or "").strip() or "(no answer)", False)
             except Exception as e:             # the CLI missing, a timeout, Halt All: said in the chat
@@ -202,8 +202,7 @@ class TownHallWorker(Worker):
             return
         from orkcraft.realm import builders, town_builder
         repo, taken, order = self.repo_root, self.town.taken_ids(), c["order"]
-        on = [t for t, choice in self.town.machine.tools.items() if choice.enabled]
-        runner = runners.BUILD_RUNNER or builders.planner_runner(on) or builders.claude_runner   # Claude Code, Codex or agy
+        runner = runners.BUILD_RUNNER or builders.main_runner_of(self.town.machine)
 
         def work() -> None:
             try:

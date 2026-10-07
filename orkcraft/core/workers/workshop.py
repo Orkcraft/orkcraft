@@ -116,7 +116,7 @@ class WorkshopWorker(Worker):
             if r.code == workshop.ESCALATE and may_ask:
                 from orkcraft.realm import builders
                 try:
-                    r.steward = (runner or builders.claude_runner)(workshop.steward_prompt(prompt, the_cart, r.out, liked))[0].strip()
+                    r.steward = (runner or builders.main_runner)(workshop.steward_prompt(prompt, the_cart, r.out, liked))[0].strip()
                 except Exception as e:  # the model is out of reach: the cart stays escalated
                     r.err = (r.err + f"\nsteward: {e}").strip()[:workshop.OUT_KEEP]
             try:

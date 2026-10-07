@@ -254,7 +254,7 @@ def _types_of(answer: dict | None) -> set[str]:
 
 
 def plan(order: str, repo_root: Path, taken: set[str] | frozenset[str] = frozenset(),
-         runner: builders.Runner = builders.claude_runner, feedback: str = "",
+         runner: builders.Runner = builders.main_runner, feedback: str = "",
          max_attempts: int = MAX_ATTEMPTS, templates: str = "") -> TownPlan:
     """Ask for a plan until one passes `check` or the attempts run out. Never raises.
     `feedback` is the operator's note on a plan they turned down; `templates` (intents.templates_text)

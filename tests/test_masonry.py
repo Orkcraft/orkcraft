@@ -231,7 +231,7 @@ def test_agy_runner_calls_agy_headless_in_an_empty_folder(tmp_path: Path, monkey
     assert rec["files"] == [] and "orkcraft-mason-" in rec["cwd"] and rec["orkcraft_env"] == []
     assert builders.agy_runner("x", model="gemini-x") and "gemini-x" in json.loads(record.read_text())["argv"]
     monkeypatch.setenv("ORKCRAFT_AGY_BIN", str(tmp_path / "missing"))
-    with pytest.raises(RuntimeError, match="agy CLI not found"):
+    with pytest.raises(RuntimeError, match="Antigravity CLI not found"):
         builders.agy_runner("x")
 
 
@@ -255,6 +255,8 @@ def test_codex_runner_reads_the_last_message_of_a_read_only_exec(tmp_path: Path,
 
 def test_the_planner_is_the_first_tool_turned_on():
     assert builders.planner_tool(["agy", "claude", "codex"]) == "claude"
-    assert builders.planner_tool(t for t in ("agy", "codex")) == "codex"
-    assert builders.planner_runner(["agy"]) is builders.agy_runner
+    assert builders.planner_tool(t for t in ("codex", "agy")) == "agy"                # the registry's order
+    assert builders.planner_tool(["agy", "codex"], chosen="agy") == "agy"          # the chosen main tool
+    assert builders.planner_tool(["codex"], chosen="agy") == "codex"                # … only while it is on
+    assert builders.planner_runner(["agy"]) is not None
     assert builders.planner_tool([]) is None and builders.planner_runner(["cursor"]) is None

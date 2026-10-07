@@ -42,7 +42,7 @@ class GarrisonMixin:
         self.push_screen(OrcProgress("🧙 The Recruiter is choosing chain → script → agent…"))
 
         def _worker() -> None:
-            result = recruiter.recruit(prompt, snapshot, building_id, runner=runners.RECRUIT_RUNNER or builders.claude_runner,
+            result = recruiter.recruit(prompt, snapshot, building_id, runner=runners.RECRUIT_RUNNER or builders.main_runner,
                                        road=road, harnesses=self.harnesses())
             self.call_from_thread(self._on_recruited, building_id, prompt, result, on_rejected)
 

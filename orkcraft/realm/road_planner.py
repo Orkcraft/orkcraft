@@ -168,7 +168,7 @@ def check(answer: dict, target: Target, sources: list[Source],
 
 
 def plan(order: str, target: Target, sources: list[Source], scroll: ts.TownScroll | None = None,
-         runner: builders.Runner = builders.claude_runner, max_attempts: int = MAX_ATTEMPTS) -> RoadPlan:
+         runner: builders.Runner = builders.main_runner, max_attempts: int = MAX_ATTEMPTS) -> RoadPlan:
     """Ask until at least one option holds or the attempts run out. Never raises."""
     order = order.strip()[:ORDER_LIMIT]
     if not order:

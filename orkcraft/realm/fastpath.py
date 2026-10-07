@@ -184,12 +184,12 @@ def save_settings(repo_root: Path, values: dict) -> dict:
 
 
 def light_runner(repo_root: Path) -> Runner | None:
-    """The Fast Path's model call (`claude -p --model <fast_model>`), or None when it is switched off."""
+    """The Fast Path's model call (the main tool on `fast_model`, a light one), or None when it is switched off."""
     s = settings(repo_root)
     if not s.get("fast_llm"):
         return None
     from orkcraft.realm import builders
-    return functools.partial(builders.claude_runner, model=str(s.get("fast_model") or "haiku"))
+    return functools.partial(builders.main_runner, model=str(s.get("fast_model") or "haiku"))
 
 
 # -- the rules ------------------------------------------------------------------------------------

@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from orkcraft.env import getenv
+from orkcraft.realm import harnesses
 
-PROVIDERS = ("claude", "agy", "codex")     # the rows of ⏳ Limits, in this order
+PROVIDERS = harnesses.ids()     # the rows of ⏳ Limits, in this order
 
 
 @dataclass(frozen=True)

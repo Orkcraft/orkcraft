@@ -26,7 +26,7 @@ class RecruiterMixin:
         self._budget()
         snapshot, harnesses = copy.deepcopy(self.town.scroll), self.harnesses()
         work = lambda: recruiter.recruit(prompt, snapshot, building_id,  # noqa: E731
-                                         runner=runners.RECRUIT_RUNNER or builders.claude_runner, road=road,
+                                         runner=runners.RECRUIT_RUNNER or builders.main_runner, road=road,
                                          harnesses=harnesses)
         return self._job("recruit", building_id, "The Recruiter is choosing chain → script → agent…", work,
                          self._recruited)

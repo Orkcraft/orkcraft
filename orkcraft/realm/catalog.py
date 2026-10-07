@@ -15,6 +15,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from orkcraft.realm import harnesses
+
 # -- sizes ------------------------------------------------------------------------------------------
 # Hut sizes in terminal cells (a cell is about twice as tall as it is wide). The full view opens big,
 # like every building; the hut is the preview on the map.
@@ -244,7 +246,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
         config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
                 "topic": (str, ("general", "codebase", "team", "design"), False),
-                "harness": (str, ("claude", "agy", "codex"), False), "model": (str, None, False),
+                "harness": (str, harnesses.ids(), False), "model": (str, None, False),
                 "auto_ingest": (bool, None, False), "commit": (bool, None, False),
                 "review_sample": (int, (0, 10), False), "council": (str, None, False)},
         art="library", orc="Scroll Scrapper"),

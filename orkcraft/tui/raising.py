@@ -103,8 +103,7 @@ class RaisingMixin:
 
     @work(thread=True, exclusive=True, group="town-builder")
     def _plan_town_work(self, order: str, note: str, bar, templates: str = "") -> None:
-        on = [t for t, choice in self.desktop.machine.tools.items() if choice.enabled]
-        runner = runners.BUILD_RUNNER or builders.planner_runner(on) or builders.claude_runner
+        runner = runners.BUILD_RUNNER or builders.main_runner_of(self.desktop.machine)
         result = town_builder.plan(order, self.repo_root, self._taken_building_ids(), runner, feedback=note,
                                    templates=templates)
         self.call_from_thread(self._on_town_plan, order, result, bar)

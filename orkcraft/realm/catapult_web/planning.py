@@ -195,7 +195,7 @@ def map_with_model(page_map: dict, body_sample: dict[str, object],
                    runner: Callable[[str], tuple[str, float | None]] | None = None) -> tuple[dict, float | None]:
     """One model call (the operator's Claude Code, in an empty folder): field index → key path."""
     from orkcraft.realm import builders
-    runner = runner or builders.claude_runner
+    runner = runner or builders.main_runner
     fields = "\n".join(f"{i}: {f.get('kind')}, {f.get('label', '')!r}, {f.get('name', '')!r}"
                        + (f", {f['options'][:12]}" if f.get("options") else "")
                        for i, f in enumerate(page_map.get("fields") or []))
