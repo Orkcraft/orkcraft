@@ -37,15 +37,20 @@ Whoever runs the proxy can change the analytics behind it without a release of O
    curl -i https://orkcraft-usage.<account>.workers.dev/v1/events \
      -H 'User-Agent: orkcraft/0.1.0' -H 'Content-Type: application/json' \
      -d '{"install_id":"0123456789abcdef0123456789abcdef","session_id":1,"app_version":"0.1.0","os":"linux","python":"3.12","events":[{"event":"road_laid","time":0,"props":{}}]}'
-   # HTTP/2 204 with x-amplitude-status: 200; the event shows in Amplitude → User lookup →
-   # device 0123…cdef within a minute
+   # HTTP/2 204; the event shows in Amplitude → User lookup → device 0123…cdef within a minute
    ```
 
-   Nothing in Amplitude? Read `x-amplitude-status`: **400** a wrong or empty `AMPLITUDE_API_KEY`
-   (`npx wrangler secret list` should name it), **401** a key of the other data centre
-   (`AMPLITUDE_REGION` must match where the project lives: `app.amplitude.com` is `"us"`), none at all
-   the event was dropped before Amplitude (an unknown event or a User-Agent not `orkcraft/…`). A change
-   to `wrangler.toml` counts only after `npx wrangler deploy`.
+   Nothing in Amplitude?
+   - `npx wrangler secret list` must show `"name": "AMPLITUDE_API_KEY"`. A secret named after the key
+     itself means `secret put` got the key where the name goes: delete it and put it again.
+   - Send one event to Amplitude itself, without the Worker: `curl -i https://api2.amplitude.com/2/httpapi
+     -H 'Content-Type: application/json' -d '{"api_key":"…","events":[{"device_id":"0123456789abcdef0123456789abcdef","event_type":"road_laid"}]}'`.
+     `"invalid api_key"` means a wrong key, or a project in the EU data centre (`api.eu.amplitude.com`,
+     `AMPLITUDE_REGION = "eu"`).
+   - `npx wrangler tail --format pretty` shows the Worker's requests live while you send one.
+   - The Worker's answer may carry `x-amplitude-status` (Amplitude's own answer), but Cloudflare's edge
+     does not always pass it on: its absence proves nothing.
+   - A change to `wrangler.toml` counts only after `npx wrangler deploy`.
 
 5. **Point Orkcraft at it**: set `ENDPOINT = "https://…/v1/events"` in `orkcraft/core/usage.py` and
    release. Until then, try it on your own machine with
