@@ -13,7 +13,7 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 2 Who are you?                  without --role: all 11 classes in two rows; --role gnome: the 2 gnomes
 3 Tools the orks can use        only when an MCP server is connected to an AI tool
 4 Your first town               the class's towns, drawn · Use this town · Doesn't fit · Empty town
-  4b Tell the town planner      only on "Doesn't fit": in · out · what each tool is best at · words · what hurts
+  4b What should your town do?  only on "Doesn't fit": one sentence (3 examples) · what it uses, prefilled
 5 Setting up the town           over the map: the steps live, the Autonomy card in a corner
 ```
 
@@ -32,7 +32,8 @@ What changed from the TUI, and why:
   screens); what the planner reads of a person's experience comes from the tools and MCP servers they have.
 - **Industry and the typical day are gone.** They only ordered the intents (★); the town step now shows the
   class's towns as tabs, the first one starred.
-- **👍 / 👎 per tool moved to 4b** ("best at" and a note). Only the planner reads it, and only on that path.
+- **👍 / 👎 per tool is gone.** Only the planner read it; how a tool is rated belongs to an Agent pool's window,
+  where it picks the model.
 - **The camp rules are no longer a step.** They are a card over the map while the town goes up (§6): nothing
   waits on them, and Later keeps the defaults.
 
@@ -95,15 +96,25 @@ MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three
 - **Doesn't fit: tell the planner** → 4b. Closed, with a line, when Claude Code is off.
 - **Empty town, I'll build it myself** → step 5 with nothing to raise.
 
-### 4b. Tell the town planner
+### 4b. What should your town do?
 
-One page instead of the TUI's two: **Work comes from** and **…and goes to** as chips (the class's common ones
-first, ✦), each with a field for another; **Your AI tools are best at**, a choice and a note per tool; **What
-should this town do, in your words**; **What hurts**, as chips. **Build my town** saves the order
-(`town_presets.save_order`) and goes to step 5, where the planner draws the town first (`town_builder.plan` on a
-thread). If it fails, the step says so and the order waits in the Town Hall, as before.
+One question, the rest prefilled, so the page asks for one sentence and a glance instead of forty choices:
 
-**To do:** mark the MCP servers that are on among the chips (Amplitude ✓ MCP) and preselect them.
+- **What should your town do?** One or two sentences in the person's words: the only thing asked.
+  **Build my town** waits for it.
+- **Or start from one of these:** three examples for the class (`interview.STARTERS`), not its ready
+  towns, which the person has just passed over. A click puts the sentence in the field to edit.
+- **The planner will use:** at most six chips, already chosen. First the MCP servers turned on in step 3
+  (four at most), then where the class's work usually comes from and goes to (`Role.sources`,
+  `Role.outputs`), skipping one an MCP server already names and a second Slack. A click leaves one out
+  (an MCP server left out here is turned off); **+ add** names one more in a word.
+
+Gone from the first cut: what hurts (the sentence says it), and what each AI tool is best at (the planner
+has the list of tools; how a tool is rated belongs to an Agent pool's window, where it picks the model).
+
+The order (`town_presets.save_order`) is the class, the kept sources and outputs, what was added, the
+MCP servers on and the sentence. Step 5 draws the town from it first (`town_builder.plan` on a thread). If
+that fails, the step says so and the order waits in the Town Hall, as before.
 
 ## 6. Setting up the town
 

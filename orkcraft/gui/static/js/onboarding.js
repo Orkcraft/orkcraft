@@ -119,12 +119,10 @@ function ToolsStep({ o }) {
 
 // -- 2 · Who are you ------------------------------------------------------------------------------------
 
-const KIN_WORD = { orc: "orks", lich: "undead", elf: "elves", gnome: "gnomes" };
-
 function WhoStep({ o }) {
   // From the landing page's class (`--role gnome`): only its two cards, with a lead of their own.
   const lead = o.only_kin
-    ? say(`Two kinds of ${KIN_WORD[o.only_kin] || o.only_kin}. Each gets towns for its own work.`)
+    ? say(`Two kinds of ${o.kin_word}. Each gets towns for its own work.`)
     : "Your class picks your first town, your mascot and the land it stands on.";
   return html`<section class=${cls("gui-onb__card", { "is-wide": !o.only_kin })}>
     <${Head} o=${o} title="Who are you?" lead=${lead} />
@@ -215,49 +213,50 @@ function TownStep({ o }) {
   </section>`;
 }
 
-// -- 4b · Doesn't fit: tell the town planner ------------------------------------------------------------
-
-function Chips({ items, value, onChange }) {
-  const on = new Set(value);
-  return html`<div class="gui-onb__chips">${items.map((c) => html`<button key=${c.id} class=${cls("ok-chip", { "is-on": on.has(c.id) })}
-      aria-pressed=${on.has(c.id)} onClick=${() => onChange(on.has(c.id) ? value.filter((x) => x !== c.id) : [...value, c.id])}>
-    ${c.common ? "✦ " : ""}${c.title}</button>`)}</div>`;
-}
+// -- 4b · Doesn't fit: one question, the rest prefilled ------------------------------------------------
+// The words are all that is asked; three of the class's examples start them, and what the planner will use is
+// already chosen (the MCP servers on, the class's usual sources and places): a click leaves one out.
 
 function SurveyStep({ o }) {
   const s = o.survey;
-  const rows = o.tools.rows;
-  const [a, setA] = useState({ sources: [], outputs: [], pains: [], sources_other: "", outputs_other: "", words: "",
-    best: Object.fromEntries(rows.map((r) => [r.id, { title: r.title, best: "", note: "" }])) });
-  const put = (k) => (v) => setA({ ...a, [k]: v });
-  const best = (id, k) => (e) => setA({ ...a, best: { ...a.best, [id]: { ...a.best[id], [k]: e.target.value } } });
+  const [words, setWords] = useState("");
+  const [out, setOut] = useState([]);           // the prefilled ids left out
+  const [extra, setExtra] = useState([]);       // what the person added
+  const [adding, setAdding] = useState(null);   // the text of the one being added, or null
   if (!s) return null;
-  return html`<section class="gui-onb__card is-wide">
-    <${Head} o=${o} title="Tell the town planner"
-      lead="Pick what fits and skip the rest. The planner draws a town from it, and you watch it go up." />
-    <div class="gui-onb__cols">
-      <div class="gui-field"><span class="ok-font-label">Work comes from</span>
-        <${Chips} items=${s.sources} value=${a.sources} onChange=${put("sources")} />
-        <input class="ok-input" placeholder="…or name another source" value=${a.sources_other}
-          onInput=${(e) => put("sources_other")(e.target.value)} /></div>
-      <div class="gui-field"><span class="ok-font-label">…and goes to</span>
-        <${Chips} items=${s.outputs} value=${a.outputs} onChange=${put("outputs")} />
-        <input class="ok-input" placeholder="…or name another place" value=${a.outputs_other}
-          onInput=${(e) => put("outputs_other")(e.target.value)} /></div>
-      <div class="gui-field"><span class="ok-font-label">Your AI tools are best at</span>
-        ${rows.map((r) => html`<div key=${r.id} class="gui-onb__best">
-          <span class="ok-font-body">${r.title}</span>
-          <select class="ok-input" value=${a.best[r.id]?.best || ""} onChange=${best(r.id, "best")}>
-            <option value="">—</option>${s.best.map((b) => html`<option key=${b.id} value=${b.id}>${b.title}</option>`)}</select>
-          <input class="ok-input" placeholder="a note" value=${a.best[r.id]?.note || ""} onInput=${best(r.id, "note")} />
-        </div>`)}</div>
+  const flip = (id) => setOut(out.includes(id) ? out.filter((x) => x !== id) : [...out, id]);
+  const add = () => {
+    const t = (adding || "").trim();
+    if (t && !extra.includes(t)) setExtra([...extra, t]);
+    setAdding(null);
+  };
+  const build = () => send("onboarding.survey", { words, keep: s.uses.map((u) => u.id).filter((id) => !out.includes(id)), extra });
+  return html`<section class="gui-onb__card">
+    <${Head} o=${o} title="What should your town do?"
+      lead="One or two sentences are enough. The town planner draws it, and you watch it go up." />
+    <label class="gui-onb__hide" for="gui-onb-words">What should your town do</label>
+    <textarea id="gui-onb-words" class="ok-input gui-textarea gui-onb__words" rows="3" value=${words}
+      onInput=${(e) => setWords(e.target.value)}></textarea>
+    ${s.starters.length > 0 && html`<div class="gui-field"><span class="ok-font-label">Or start from one of these</span>
+      <div class="gui-onb__starters">${s.starters.map((t) => html`<button key=${t} class="gui-onb__starter ok-font-body"
+          onClick=${() => setWords(t)}>${t}</button>`)}</div></div>`}
+    <div class="gui-field"><span class="ok-font-label">The planner will use</span>
+      <div class="gui-onb__chips">
+        ${s.uses.map((u) => html`<button key=${u.id} class=${cls("ok-chip", { "is-on": !out.includes(u.id) })}
+            aria-pressed=${!out.includes(u.id)} onClick=${() => flip(u.id)}>
+          ${out.includes(u.id) ? "" : "✓ "}${u.title}${u.mcp ? " · MCP" : ""}</button>`)}
+        ${extra.map((t) => html`<button key=${t} class="ok-chip is-on" aria-pressed="true"
+            onClick=${() => setExtra(extra.filter((x) => x !== t))}>✓ ${t}</button>`)}
+        ${adding === null
+          ? html`<button class="ok-chip" onClick=${() => setAdding("")}>+ add</button>`
+          : html`<input class="ok-input gui-onb__add" value=${adding} placeholder="e.g. Notion" ref=${(el) => el && document.activeElement !== el && el.focus()}
+              onInput=${(e) => setAdding(e.target.value)} onBlur=${add}
+              onKeyDown=${(e) => { if (e.key === "Enter") add(); if (e.key === "Escape") setAdding(null); }} />`}
+      </div>
+      <span class="ok-font-status ok-tone-muted">${say(`From your MCP servers and what ${o.nick ? `${o.nick}s` : "people like you"} usually use. A click leaves one out.`)}</span>
     </div>
-    <label class="gui-field"><span class="ok-font-label">What should this town do, in your words</span>
-      <textarea class="ok-input gui-textarea" rows="3" value=${a.words} onInput=${(e) => put("words")(e.target.value)}></textarea></label>
-    <div class="gui-field"><span class="ok-font-label">What hurts</span>
-      <${Chips} items=${s.pains} value=${a.pains} onChange=${put("pains")} /></div>
-    <${Foot} skip=${false} next=${() => send("onboarding.survey", a)} nextLabel="Build my town">
-      <span class="ok-font-status ok-tone-muted">The planner runs on Claude Code.</span></${Foot}>
+    <${Foot} skip=${false} next=${words.trim() ? build : null} nextLabel="Build my town">
+      ${!words.trim() && html`<span class="ok-font-status ok-tone-muted">Say what the town should do first.</span>`}</${Foot}>
   </section>`;
 }
 

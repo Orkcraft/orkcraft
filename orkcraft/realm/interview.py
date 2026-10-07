@@ -73,6 +73,44 @@ PAINS = _c(("copy_paste", "📋", "Copying data between tools by hand"), ("repor
            ("context", "🔀", "Constant context switching"), ("waiting", "🐢", "Waiting on others and reviews"),
            ("stale", "🕸", "Docs and statuses go stale"), ("repetitive", "🔁", "The same routine every week"),
            ("no_overview", "🌫", "No single view of what is going on"))
+# What a town could do, in a person's words: the GUI's "Doesn't fit" page offers three per role to start from
+# (docs/design/gui-onboarding.md §5). Not the role's ready towns, which the person has just passed over.
+STARTERS: dict[str, tuple[str, str, str]] = {
+    "engineer": ("When a Sentry error repeats, open a ticket with the stack trace and draft a fix in a branch.",
+                 "Every morning, list the PRs waiting on me and summarise what each one changes.",
+                 "Keep the README and the API docs in step with the code after every merge."),
+    "qa": ("When a bug comes in from Slack, reproduce it and file it in Jira with the steps.",
+           "Before a release, run the suites and write a short report of what broke and why.",
+           "Turn every new feature ticket into a test plan I can review."),
+    "eng_manager": ("Every Friday, sum up what the team shipped from GitHub and Jira for Slack.",
+                    "Before each 1:1, gather the person's PRs, tickets and open questions.",
+                    "When an incident ends, draft the postmortem from the alerts and the chat."),
+    "product_manager": ("Every Monday, turn last week's analytics and feedback into three things to look at.",
+                        "From a one-line idea, draft a PRD and list the questions for engineering.",
+                        "Keep the roadmap page in Confluence in step with the Jira epics."),
+    "designer": ("From a brief, draft three layout directions with notes on each.",
+                 "When design tokens change in Figma, update them in the repository and run the checks.",
+                 "Collect feedback on a design from Slack and Jira into one list of changes."),
+    "game_designer": ("When the balance sheet changes, rebuild the configs and flag what got out of range.",
+                      "Turn a feature idea into GDD pages with the open questions marked.",
+                      "Every week, summarise playtest notes into what to change next."),
+    "aso_manager": ("Every Monday, compare our keyword ranks with three competitors and suggest changes.",
+                    "Draft replies to new one- and two-star reviews for me to approve.",
+                    "Before each release, write the What's New text in five languages."),
+    "marketing": ("Every Friday, sum up the campaign numbers and post what to cut to Slack.",
+                  "Turn my ideas into a week of posts I approve before they go out.",
+                  "When a launch date is set, plan the steps and draft every announcement."),
+    "data_analyst": ("Every morning, check yesterday's key metrics and tell me only about anomalies.",
+                     "Answer questions from Slack with a query, a chart and two sentences.",
+                     "Clean the weekly CSV exports and keep one tidy table in Sheets."),
+    "founder": ("Every morning, sort my mail and GitHub into a short list of what needs me today.",
+                "When I merge to main, write the changelog and a post about it.",
+                "Once a week, sum up signups, revenue and support in one page."),
+    "other": ("Turn requests from my mail into tasks and draft a first answer to each.",
+              "Every week, build a report from the files I drop in.",
+              "Keep my notes searchable and answer questions from them."),
+}
+
 USES = (("code", "code"), ("architecture", "architecture"), ("docs", "documentation"),
         ("search", "search: web, Jira"), ("tickets", "tickets"))
 USE_TITLES = dict(USES)

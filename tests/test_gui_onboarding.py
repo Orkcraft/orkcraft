@@ -109,7 +109,7 @@ def test_the_landing_page_s_gnome_shows_only_the_two_gnomes(fake_repo: Path, onb
     host = _host(fake_repo)
     o = host.snapshot()["onboarding"]
     assert o["steps"] == ["tools", "who", "mcp", "town"] and o["only_kin"] == "gnome" and o["role"] == ""
-    assert [c["id"] for c in o["classes"]] == ["aso_manager", "marketing"]
+    assert [c["id"] for c in o["classes"]] == ["aso_manager", "marketing"] and o["kin_word"] == "gnomes"
     host.command("onboarding.tools", {"next": True})
     o = host.command("onboarding.role", {"role": "aso_manager"})
     assert o["step"] == "mcp" and o["nick"] == "Keyword Gnome"
@@ -144,28 +144,33 @@ def test_back_and_skip(fake_repo: Path, onboard):
         host.command("onboarding.role", {"role": "engineer"})
 
 
-def test_doesn_t_fit_the_survey_and_the_planner(fake_repo: Path, onboard, monkeypatch):
+def test_doesn_t_fit_one_question_and_the_planner(fake_repo: Path, onboard, monkeypatch):
     from tests.test_town_builder import GOOD, _runner
     run = _runner(GOOD)
     monkeypatch.setattr(runners, "BUILD_RUNNER", run)
     settings.preset_role("marketing")
     host = _host(fake_repo)
     host.command("onboarding.tools", {"next": True})
-    host.command("onboarding.mcp", {"on": ["github"], "next": True})
+    host.command("onboarding.mcp", {"on": ["github", "amplitude"], "next": True})
     o = host.command("onboarding.town", {"custom": True})
-    assert o["step"] == "survey" and {c["id"] for c in o["survey"]["sources"]} >= {"analytics", "gsheets"}
-    assert o["survey"]["sources"][0]["common"]                               # the class's own first
-    o = host.command("onboarding.survey", {"sources": ["analytics"], "outputs": ["slack"], "pains": ["reports_slow"],
-                                           "words": "a Friday report", "best": {"claude": {"title": "Claude Code",
-                                                                                         "best": "copy", "note": "fast"}}})
-    assert o["raising"]["phase"] in ("planning", "raising")                 # the planner draws on a thread
-    host.onboarding._planner.join(10)
+    s = o["survey"]
+    assert o["step"] == "survey" and len(s["starters"]) == 3                 # the class's own examples
+    uses = [u["id"] for u in s["uses"]]
+    # the MCP servers on first, then the class's usual: Amplitude's MCP stands for "Amplitude / Mixpanel / GA",
+    # one Slack, no more than six
+    assert uses == ["mcp:github", "mcp:amplitude", "src:gsheets", "src:crm", "src:slack", "src:notion"]
+    with pytest.raises(CommandError, match="what the town should do"):
+        host.command("onboarding.survey", {"words": " ", "keep": uses})
+    keep = [u for u in uses if u not in ("mcp:github", "src:notion")]       # two left out
+    o = host.command("onboarding.survey", {"words": s["starters"][0], "keep": keep, "extra": ["Looker"]})
+    assert o["raising"]["phase"] in ("planning", "raising") and o["mcp"]["on"] == ["amplitude"]
+    host.onboarding._planner.join(10)                                       # the planner draws on a thread
     o = _raise_all(host)
     assert o["raising"]["phase"] == "done"
     prompt = run.calls[0]
-    assert "a Friday report" in prompt and "MCP servers the orks may use: github." in prompt
-    assert "Claude Code: fast" in prompt and "Reports take hours" in prompt
-    assert "best at: Claude Code — copy and content." in prompt
+    assert s["starters"][0] in prompt and "MCP servers the orks may use: amplitude." in prompt
+    assert "Google Sheets" in prompt and "Notion" not in prompt and "Also: Looker." in prompt
+    assert settings.load().profile["mcp"] == ["amplitude"]
     assert town_presets.pending_order(fake_repo) is None                     # the order was answered
 
 

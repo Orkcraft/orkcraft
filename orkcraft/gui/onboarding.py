@@ -27,9 +27,10 @@ from orkcraft.realm import biomes, builders, checkpoint, intents, interview, mcp
 TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
-BEST = ("code", "copy", "data", "search", "tickets")      # what a tool is best at, on the survey
-BEST_TITLES = {"code": "Code", "copy": "Copy and content", "data": "Data and numbers", "search": "Search and research",
-               "tickets": "Tickets"}
+KIN_WORDS = {"orc": "orks", "lich": "undead", "elf": "elves", "gnome": "gnomes", "goblin": "goblins",
+             "knight": "knights", "skeleton": "skeletons"}     # "Two kinds of gnomes" on step 2
+USES_MAX = 6                # the chips "The planner will use" starts with: the MCP servers on, then the class's usual
+USES_MCP = 4                # …of which MCP servers at most, so the class's usual always shows too
 
 
 class OnboardingError(Exception):
@@ -142,14 +143,26 @@ class Onboarding:
                           for r in plan.get("roads", [])]})
         return out
 
+    def _uses(self) -> list[dict]:
+        """What the planner will use, prefilled: the MCP servers on, then where this class's work usually comes
+        from and goes to; a source an MCP server already names is left out, and so is a second Slack."""
+        role = intents.role(self.profile.get("role") or "")
+        on = [x for x in self.servers if x.id in self.mcp_on][:USES_MCP]
+        out = [{"id": f"mcp:{x.id}", "title": x.title, "mcp": True} for x in on]
+        seen = {x.title.lower() for x in on}
+        titles = {"src": {c.id: c.title for c in interview.SOURCES}, "out": {c.id: c.title for c in interview.OUTPUTS}}
+        for kind, ids in (("src", role.sources), ("out", role.outputs)):
+            for cid in ids:
+                title = titles[kind].get(cid, "")
+                low = title.lower()
+                if not title or low in seen or any(m in low for m in seen):
+                    continue
+                seen.add(low)
+                out.append({"id": f"{kind}:{cid}", "title": title, "mcp": False})
+        return out[:USES_MAX]
+
     def _survey(self) -> dict:
-        role = self.profile.get("role") or ""
-        out: dict[str, Any] = {}
-        for page in interview.INTERVIEW:
-            for q in page.questions:
-                out[q.id] = [{"id": c.id, "title": c.title, "common": common} for c, common in page.options(q, role)]
-        out["best"] = [{"id": b, "title": BEST_TITLES[b]} for b in BEST]
-        return out
+        return {"starters": list(interview.STARTERS.get(self.profile.get("role") or "", ())), "uses": self._uses()}
 
     def snapshot(self) -> dict[str, Any] | None:
         if not self.active:
@@ -164,6 +177,7 @@ class Onboarding:
                       "missing": [st.tool.title for st in self.statuses or [] if not st.found],
                       "others": [{"id": o.id, "title": o.title} for o in self.others], "warder": self.warder},
             "classes": self._classes(), "only_kin": self.only_kin,
+            "kin_word": KIN_WORDS.get(self.only_kin, self.only_kin),
             "kin": self.kin, "role": self.profile.get("role", ""),
             "nick": intents.nick(self.profile["role"]) if self.profile.get("role") else "",
             "biome": biomes.home_of(self.profile),
@@ -254,35 +268,28 @@ class Onboarding:
         return self._begin(it, "")
 
     def set_survey(self, args: dict) -> dict | None:
-        """The survey's answers become the Town planner's order; the town is drawn from it, then raised."""
+        """What the town should do in the person's words, and the prefilled list of what the planner will use
+        less what they left out (`keep`), plus what they added (`extra`). It becomes the Town planner's order;
+        the town is drawn from it, then raised."""
         self._live()
-        answers: dict[str, Any] = {}
-        for qid in interview.ALL_QUESTIONS:
-            picked = [str(x)[:40] for x in args.get(qid) or [] if isinstance(x, str)][:20]
-            if picked:
-                answers[qid] = picked
-        for key in ("sources_other", "outputs_other"):
-            if str(args.get(key) or "").strip():
-                answers[key] = str(args[key]).strip()[:200]
-        best, notes = [], []
-        for tid, r in (args.get("best") or {}).items():
-            if not isinstance(r, dict):
-                continue
-            title = str(r.get("title") or tid)[:40]
-            if r.get("best") in BEST:
-                best.append(f"{title} — {BEST_TITLES[r['best']].lower()}")
-            if str(r.get("note") or "").strip():
-                notes.append(f"{title}: {str(r['note']).strip()[:200]}")
         words = str(args.get("words") or "").strip()[:2000]
+        if not words:
+            raise OnboardingError("Say in a sentence or two what the town should do")
+        keep = {str(x) for x in args.get("keep") or [] if isinstance(x, str)}
+        shown = [u["id"] for u in self._uses()]
+        answers: dict[str, Any] = {}
+        for kind, qid in (("src", "sources"), ("out", "outputs")):
+            ids = [u.split(":", 1)[1] for u in shown if u in keep and u.startswith(kind + ":")]
+            if ids:
+                answers[qid] = ids
+        self.mcp_on = [m for m in self.mcp_on if f"mcp:{m}" in keep or f"mcp:{m}" not in shown]   # left out: off
+        extra = [str(x).strip()[:80] for x in args.get("extra") or [] if isinstance(x, str) and str(x).strip()][:10]
         prompt = interview.summary(self.profile, answers)
-        if best:
-            prompt += "\nMy AI tools are best at: " + "; ".join(best) + "."
-        if notes:
-            prompt += "\nNotes on my tools: " + "; ".join(notes)
-        if words:
-            prompt += f"\nIn my words: {words}"
+        if extra:
+            prompt += "\nAlso: " + "; ".join(extra) + "."
         if self.mcp_on:
             prompt += "\nMCP servers the orks may use: " + ", ".join(self.mcp_on) + "."
+        prompt += f"\nIn my words: {words}"
         return self._begin(None, prompt, answers)
 
     def skip(self, args: dict) -> dict | None:
