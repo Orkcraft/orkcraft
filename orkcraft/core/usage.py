@@ -32,7 +32,7 @@ from orkcraft.env import getenv
 from orkcraft.realm import catalog, growth
 
 # The proxy's address (tools/usage-worker/README.md). Empty: nothing leaves the machine.
-ENDPOINT = ""
+ENDPOINT = "https://orkcraft-usage.vadim-sidoryk.workers.dev/v1/events"
 FLUSH_S = 60.0           # a batch at most this often
 BATCH = 50               # …or as soon as this many wait
 KEEP = 200               # what waits when the proxy cannot be reached: the oldest go first
