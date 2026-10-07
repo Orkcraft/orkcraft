@@ -8,7 +8,7 @@ import { Dialog } from "./dialog.js";
 import { showSession } from "./tent.js";
 import { openBuilding } from "./windows.js";
 
-export const ordersOpen = signal(false);
+const ordersOpen = signal(false);
 const picked = signal(null);
 
 export function openOrders(id = null) {

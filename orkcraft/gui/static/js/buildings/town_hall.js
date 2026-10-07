@@ -25,7 +25,7 @@ const changePlan = () => fill("Change the plan: ");
 const keep = (e) => e.stopPropagation();          // a press on a control is not a press on the hut
 
 /** A question for the Warchief (Camp's hut asks it); its answer comes in the town's line and the hall's Chat. */
-export function askWarchief(id, text) {
+function askWarchief(id, text) {
   return act(id, "ask", { text }).then(() => true, () => false);
 }
 
