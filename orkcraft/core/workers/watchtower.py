@@ -4,7 +4,8 @@ Sources, each on when its settings are there:
 
     mail      IMAP, read-only (host — or `gmail` —, user_env, password_env, folder, port) — every 2 min
     github    events of owner/repo through `gh` (github)                   — every 2 min
-    feeds     Slack, Jira, Confluence, Figma: comments and mentions (feeds) — every 2 min
+    feeds     Slack, Jira, Confluence, Figma, GitHub (many repos, notifications), GitLab, Discord:
+              comments and mentions (feeds) — every 2 min
     cron      a schedule (cron: `every 15m`, `daily 05:00`, …)             — checked every 30 s
     webhook   POSTs to http://127.0.0.1:<webhook_port>/… (webhook_secret_env to require a secret);
               /slack, /jira, /confluence, /figma become comments and mentions (realm/inbound.py)
@@ -20,6 +21,9 @@ says is `reading`); `open_new` reads the newest new one, `mark_read` marks them 
 The face runs the clocks: `refresh_data` every `REFRESH_S`, `tick` (the schedule) every `CRON_S`,
 `drain` (what the webhook heard, from its server's thread) every `DRAIN_S` — or `pulse` once a
 second, which does each when it is due. `close` stops the webhook when the face goes.
+
+A source that fails says which way (`fails(key)`: `login`, `target` or `network`), so its line
+offers the one fix: Log in again, Edit, or nothing — it tries again (watchtower_add.py).
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ import re
 import textwrap
 import threading
 import time
+import urllib.request
 from dataclasses import asdict
 
 from orkcraft.core.workers import Worker
@@ -47,7 +52,7 @@ RAW_KEEP = 20000                                        # a raw webhook's body, 
 ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 LABEL = {"webhook": "hooks", "confluence": "confl"}     # six cells on the hut
 PREVIEW_W = 14                                          # a hut this wide previews the newest message
-ORDER = ("mail", "slack", "jira", "confluence", "figma", "github", "webhook", "cron")
+ORDER = ("mail", "slack", "discord", "jira", "confluence", "figma", "github", "gitlab", "webhook", "cron")
 
 
 def count(n: int) -> str:
@@ -67,6 +72,7 @@ class WatchtowerWorker(Worker):
         self.look: mailbox.Look | None = None
         self.signals: list[watch.Signal] = []
         self.errors: dict[str, str] = {}
+        self.kinds: dict[str, str] = {}                       # an error's key → login | target | network
         self.checked = ""
         self.hook: watch.Webhook | None = None
         self.inbox: queue.SimpleQueue = queue.SimpleQueue()   # webhook signals, from the server's thread
@@ -83,8 +89,9 @@ class WatchtowerWorker(Worker):
     def sources(self) -> list[str]:
         c = self.config
         kinds = [f.kind for f in self.feeds]
-        return [s for s, on in (("mail", c.get("host")), ("github", c.get("github")), ("cron", c.get("cron")),
-                                ("webhook", c.get("webhook_port"))) if on] + sorted(set(kinds), key=kinds.index)
+        out = [s for s, on in (("mail", c.get("host")), ("github", c.get("github")), ("cron", c.get("cron")),
+                               ("webhook", c.get("webhook_port"))) if on]
+        return out + [k for k in sorted(set(kinds), key=kinds.index) if k not in out]
 
     @property
     def polled(self) -> list[feeds.Feed]:
@@ -330,7 +337,7 @@ class WatchtowerWorker(Worker):
                 look = mailbox.look(cfg, factory) if cfg.get("host") else None
                 gh = watch.github_events(str(cfg["github"]), gh_last, *([runner] if runner else [])) \
                     if cfg.get("github") else None
-                looks = [(f, feeds.look(f, *([opener] if opener else []))) for f in watched]
+                looks = [(f, feeds.look(f, opener or urllib.request.urlopen, runner)) for f in watched]
             except Exception as e:                       # a look that broke never stops the tower
                 self.town.call(self._failed, str(e))
                 return
@@ -340,8 +347,9 @@ class WatchtowerWorker(Worker):
 
     def _simulated_look(self) -> None:
         """The demo asks no server: the signals stay as the sandbox left them, and a source fails
-        only as its state says (`simulated_errors`: source or `feed:<line>` → why)."""
+        only as its state says (`simulated_errors`: source or `feed:<line>` → why; `simulated_kinds`: → how)."""
         sim = self._state().get("simulated_errors") or {}
+        self.kinds.update({str(k): str(v) for k, v in (self._state().get("simulated_kinds") or {}).items()})
         for key in [k for k in self.errors if k in ("mail", "github", "look") or k.startswith("feed:")]:
             del self.errors[key]
         self.errors.update({str(k): str(v) for k, v in sim.items()})
@@ -361,6 +369,8 @@ class WatchtowerWorker(Worker):
         if gh is not None:
             signals, newest, err = gh
             self.errors.pop("github", None) if not err else self.errors.update(github=err)
+            if err:
+                self.kinds["github"] = watch.error_kind(err)
             for s in signals:
                 self.add_signal(s)
             if newest:
@@ -385,6 +395,7 @@ class WatchtowerWorker(Worker):
         for feed, got in looks:
             if got.error:
                 self.errors[f"feed:{feed.line}"] = got.error
+                self.kinds[f"feed:{feed.line}"] = got.kind or "network"
                 continue
             if got.me:
                 me[feed.kind] = got.me                    # the webhook tells mentions by it
@@ -409,6 +420,7 @@ class WatchtowerWorker(Worker):
         self.look = look
         if look.error:
             self.errors["mail"] = look.error
+            self.kinds["mail"] = look.kind or "network"
             self.changed()
             return
         self.errors.pop("mail", None)
@@ -494,6 +506,12 @@ class WatchtowerWorker(Worker):
 
     def failing(self, source: str) -> bool:
         return source in self.errors or any(k.startswith(f"feed:{source}") for k in self.errors)
+
+    def fails(self, key: str) -> str:
+        """How the source under `key` (`mail`, `github`, `feed:<line>`) fails: login, target, network, or ""."""
+        if key not in self.errors:
+            return ""
+        return self.kinds.get(key) or "network"
 
     def why(self, source: str) -> str:
         """What is wrong with a source, or ""."""

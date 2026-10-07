@@ -1,4 +1,4 @@
-"""🗼 The Watchtower's feeds: comments and mentions in Slack, Jira, Confluence and Figma.
+"""🗼 The Watchtower's feeds: comments and mentions in Slack, Jira, Confluence, Figma, GitHub, GitLab and Discord.
 
 These services push their webhooks only to a public URL, and the Watchtower listens on 127.0.0.1
 alone, so it asks them instead: every two minutes, read-only, through their REST APIs. One line of
@@ -17,6 +17,18 @@ the token itself (the Town Hall's Warder flags a spec that does) — or a login 
         the spaces listed (or what `cql=` picks — it takes the rest of the line)
     figma: token=FIGMA_TOKEN files=AbC123,XyZ789
         new comments in the files listed; one that @-mentions you or answers yours is a mention
+    github: repos=owner/app,owner/api notifications=on
+        your notifications (review requests, mentions, assignments, threads you are in — all mentions)
+        and the events of the repos listed; `gh`'s login, or `token=` (realm/feeds_git.py)
+    gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on
+        your to-dos (mentions) and the events of the projects listed (realm/feeds_git.py)
+    discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789
+        new messages in the channels a bot you invited can see; one that mentions you (`me=`, your
+        user id) or the bot, or answers you, is a mention (realm/feeds_discord.py)
+
+A look that fails says which of three it is (`Look.kind`), so the fix is one button: `login` (the
+token was refused or is gone — log in again), `target` (a channel, repo or file is gone or out of
+reach — edit what it hears) or `network` (it could not get through — it tries again by itself).
 
 Every feed's first look only marks what is there as seen; from then on each new item is one
 signal, `watch.mention` when it is about you, else `watch.comment`. Your own messages are skipped.
@@ -48,12 +60,24 @@ KINDS = {                       # kind: (required options, optional options, the
     "jira": (("site", "user", "token"), ("jql", "secret"), "jql"),
     "confluence": (("site", "user", "token"), ("spaces", "secret", "cql"), "cql"),
     "figma": (("token", "files"), ("secret",), ""),
+    "github": ((), ("repos", "notifications", "token"), ""),
+    "gitlab": ((), ("host", "token", "projects", "todos"), ""),
+    "discord": (("token", "channels"), ("me",), ""),
 }
-ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨"}
+ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨", "github": "🐙", "gitlab": "🦊", "discord": "🎮"}
+HOST = {"slack": "slack.com", "figma": "api.figma.com", "github": "api.github.com", "discord": "discord.com"}
+FAILS = ("login", "target", "network")          # what a failed look says to do: log in again, edit, wait
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
 SITE = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$")
 IDS = re.compile(r"^[A-Za-z0-9_-]+(,[A-Za-z0-9_-]+)*$")
+PATH = r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+"
+PATHS = re.compile(rf"^{PATH}(,{PATH})*$")      # GitLab's group/sub/project, GitHub's owner/repo
+REPOS = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(,[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)*$")
+SWITCH = ("on", "off")
 SLACK_NAMES: dict[str, str] = {}     # user id → name, for the app's life
+SLACK_LOGIN = ("invalid_auth", "not_authed", "token_revoked", "token_expired", "account_inactive", "missing_scope",
+               "no_permission")
+SLACK_TARGET = ("channel_not_found", "not_in_channel", "is_archived")
 JIRA_JQL = "watcher = currentUser() OR assignee = currentUser() OR reporter = currentUser()"
 
 
@@ -77,7 +101,16 @@ class Feed:
     @property
     def identity(self) -> str:
         """Who is asked and as whom: what it has seen survives a change of channels, files or query."""
-        return "|".join([self.kind] + [self.opts.get(k, "") for k in ("site", "user", "token")])
+        site = self.opts.get("site", "") or (self.host if self.kind == "gitlab" else "")
+        return "|".join([self.kind, site] + [self.opts.get(k, "") for k in ("user", "token")])
+
+    @property
+    def host(self) -> str:
+        """The host a look goes to: what `could not reach` names."""
+        return self.opts.get("site") or self.opts.get("host") or HOST.get(self.kind, "gitlab.com")
+
+    def on(self, name: str) -> bool:
+        return self.opts.get(name, "off") == "on"
 
     def ids(self, name: str) -> list[str]:
         return [x for x in self.opts.get(name, "").split(",") if x]
@@ -98,6 +131,20 @@ class Look:
     items: list[Item] = field(default_factory=list)      # oldest first
     error: str = ""
     me: dict = field(default_factory=dict)                 # who you are there: webhooks tell mentions by it
+    kind: str = ""                                         # when it failed: login | target | network (FAILS)
+
+
+class Failed(Exception):
+    """A look that cannot go on, and which of the three failures it is."""
+
+    def __init__(self, text: str, kind: str = "network") -> None:
+        super().__init__(text)
+        self.kind = kind if kind in FAILS else "network"
+
+
+def fail_kind(status: int) -> str:
+    """An HTTP status as the failure it is: 401/403 the login, 400/404/410 a target, the rest the network."""
+    return "login" if status in (401, 403) else "target" if status in (400, 404, 410) else "network"
 
 
 # -- the setting ----------------------------------------------------------------------------------------
@@ -131,6 +178,23 @@ def parse(line: str) -> tuple[Feed | None, str]:
     for k in ("channels", "files", "spaces"):
         if k in opts and not IDS.match(opts[k]):
             return None, f"{kind}: {k}= is a comma-separated list of ids"
+    if "repos" in opts and not REPOS.match(opts["repos"]):
+        return None, f"{kind}: repos= is a comma-separated list of owner/repo"
+    if "projects" in opts and not PATHS.match(opts["projects"]):
+        return None, f"{kind}: projects= is a comma-separated list of group/project"
+    if "host" in opts:
+        opts["host"] = opts["host"].removeprefix("https://").rstrip("/")
+        if not SITE.match(opts["host"]):
+            return None, f"{kind}: host= is a host name, like gitlab.com"
+    for k in ("notifications", "todos"):
+        if k in opts and opts[k] not in SWITCH:
+            return None, f"{kind}: {k}= is on or off"
+    if kind == "github" and not (opts.get("repos") or opts.get("notifications") == "on"):
+        return None, "github: set repos= or notifications=on"
+    if kind == "gitlab" and not (opts.get("projects") or opts.get("todos") == "on"):
+        return None, "gitlab: set projects= or todos=on"
+    if kind == "discord" and opts.get("me") and not opts["me"].isdigit():
+        return None, "discord: me= is your user id (digits)"
     return Feed(kind, opts, line.strip(), poll=not missing), ""
 
 
@@ -168,13 +232,18 @@ def _iso(value) -> str:
 def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
     token = feed.env("token")
     if not token:
-        return Look(error=feed.missing("token", "a user token, xoxp-…"))
+        return Look(error=feed.missing("token", "a user token, xoxp-…"), kind="login")
     head = {"Authorization": f"Bearer {token}"}
 
     def call(method: str, **params) -> dict:
         data = get_json(f"https://slack.com/api/{method}?{urllib.parse.urlencode(params)}", head, opener)
         if not (data or {}).get("ok"):
-            raise ValueError(f"{method}: {(data or {}).get('error', 'no answer')}")
+            why = (data or {}).get("error", "no answer")
+            if why in SLACK_TARGET:
+                raise Failed(f"slack: {params.get('channel', '?')} is gone or the app was removed from it ({why})",
+                             "target")
+            raise Failed(f"slack: {method}: {why}" + (" — log in again" if why in SLACK_LOGIN else ""),
+                         "login" if why in SLACK_LOGIN else "network")
         return data
 
     me = call("auth.test")
@@ -186,7 +255,7 @@ def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
             try:
                 u = call("users.info", user=user).get("user") or {}
                 SLACK_NAMES[user] = (u.get("profile") or {}).get("display_name") or u.get("real_name") or u.get("name") or user
-            except (OSError, ValueError):
+            except (OSError, ValueError, Failed):
                 SLACK_NAMES[user] = user
         return SLACK_NAMES.get(user, user or "?")
 
@@ -247,7 +316,7 @@ def adf_text(node) -> str:
 def jira(feed: Feed, opener=urllib.request.urlopen) -> Look:
     head = _atlassian(feed)
     if isinstance(head, str):
-        return Look(error=head)
+        return Look(error=head, kind="login")
     base = f"https://{feed.opts['site']}"
     me = get_json(f"{base}/rest/api/3/myself", head, opener).get("accountId", "")
     jql = f"({feed.opts.get('jql') or JIRA_JQL}) AND updated >= -2d ORDER BY updated DESC"
@@ -273,7 +342,7 @@ def jira(feed: Feed, opener=urllib.request.urlopen) -> Look:
 def confluence(feed: Feed, opener=urllib.request.urlopen) -> Look:
     head = _atlassian(feed)
     if isinstance(head, str):
-        return Look(error=head)
+        return Look(error=head, kind="login")
     base = f"https://{feed.opts['site']}/wiki"
     queries = [("mention = currentUser()", True)]
     if feed.opts.get("cql"):
@@ -305,13 +374,18 @@ def confluence(feed: Feed, opener=urllib.request.urlopen) -> Look:
 def figma(feed: Feed, opener=urllib.request.urlopen) -> Look:
     token = feed.env("token")
     if not token:
-        return Look(error=feed.missing("token", "a personal access token"))
+        return Look(error=feed.missing("token", "a personal access token"), kind="login")
     head = {"X-Figma-Token": token}
     me = get_json("https://api.figma.com/v1/me", head, opener)
     uid, handle = me.get("id", ""), str(me.get("handle", "")).lower()
     items = []
     for key in feed.ids("files"):
-        comments = get_json(f"https://api.figma.com/v1/files/{key}/comments", head, opener).get("comments") or []
+        try:
+            comments = get_json(f"https://api.figma.com/v1/files/{key}/comments", head, opener).get("comments") or []
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 404):          # the token is good (`/v1/me` answered): this file is out of reach
+                raise Failed(f"figma: the file {key} is gone or this login may not open it", "target") from None
+            raise
         mine = {c.get("id") for c in comments if (c.get("user") or {}).get("id") == uid}
         for c in sorted(comments, key=lambda c: c.get("created_at", ""))[-LOOK:]:
             who = c.get("user") or {}
@@ -329,16 +403,31 @@ def figma(feed: Feed, opener=urllib.request.urlopen) -> Look:
 READERS = {"slack": slack, "jira": jira, "confluence": confluence, "figma": figma}
 
 
-def look(feed: Feed, opener=urllib.request.urlopen) -> Look:
-    """One feed, every network trouble turned into the look's error."""
+def reader(kind: str):
+    """The function that looks at a feed of `kind`; GitHub, GitLab and Discord live in their own modules."""
+    if kind in READERS:
+        return READERS[kind]
+    from orkcraft.realm import feeds_discord, feeds_git     # they import this module
+    return {"github": feeds_git.github, "gitlab": feeds_git.gitlab, "discord": feeds_discord.discord}[kind]
+
+
+def look(feed: Feed, opener=urllib.request.urlopen, runner=None) -> Look:
+    """One feed, every trouble turned into the look's error and which of the three it is (`kind`).
+    `runner` is the `gh` / `glab` a GitHub or GitLab feed without a token asks (subprocess.run)."""
     try:
-        return READERS[feed.kind](feed, opener)
+        if feed.kind in ("github", "gitlab"):
+            return reader(feed.kind)(feed, opener, runner)
+        return reader(feed.kind)(feed, opener)
     except urllib.error.HTTPError as e:
-        why = {401: "the token was refused", 403: "the token may not read this", 404: "not found",
-               429: "too many requests, later"}.get(e.code, e.reason)
-        return Look(error=f"{feed.kind}: {e.code} {why}")
+        why = {401: "the token was refused — log in again", 403: "the token may not read this — log in again",
+               404: "not found — edit what it hears", 429: "too many requests, later"}.get(e.code, e.reason)
+        return Look(error=f"{feed.kind}: {e.code} {why}", kind=fail_kind(e.code))
+    except Failed as e:
+        return Look(error=str(e)[:200], kind=e.kind)
+    except urllib.error.URLError as e:
+        return Look(error=f"{feed.kind}: could not reach {feed.host} ({e.reason})"[:200], kind="network")
     except (OSError, ValueError, AttributeError, TypeError) as e:
-        return Look(error=f"{feed.kind}: {e}"[:200])
+        return Look(error=f"{feed.kind}: {e}"[:200], kind="network")
 
 
 def _when(at: str) -> dt.datetime | None:

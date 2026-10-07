@@ -72,7 +72,8 @@ ACCEPTS: dict[str, frozenset[str]] = {
 
 # What a building does outside the camp on its own: the network, merges, money.
 EFFECTS: dict[str, str] = {
-    "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma) over the network; "
+    "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma, GitHub, GitLab, Discord) "
+                  "over the network; "
                   "listens for webhooks on 127.0.0.1; an `intent` runs a light model",
     "barracks": "runs agents (spends money) in git worktrees; pushes an accepted task's branch and opens a pull request "
                 "(code and documents that go out; local documents stay)",
@@ -96,7 +97,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "password_env": "the environment variable that holds the mail password, e.g. MAIL_PASSWORD, or a login kept on this machine (keychain:gmail-ann@gmail.com)",
         "folder": "the mail folder to read (default INBOX)",
         "port": "IMAP port (default 993, SSL)",
-        "github": "owner/repo whose events to watch through `gh`, e.g. acme/api",
+        "github": "owner/repo whose events to watch through `gh`, e.g. acme/api (a `github:` feeds line hears many "
+                  "repos and your notifications)",
         "cron": "when watch.cron fires: `every 15m`, `every 2h`, `hourly`, `daily 05:00`, "
                 "`weekly mon 09:00` or a 5-field cron",
         "webhook_port": "listen for POSTs on http://127.0.0.1:<port>/",
@@ -104,7 +106,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                               "(X-Orkcraft-Token, or GitHub's X-Hub-Signature-256)",
         "feeds": "one line per service, options naming environment variables, never tokens: "
                  "`slack: token=SLACK_TOKEN channels=C0123`, `jira: site=acme.atlassian.net user=ATL_EMAIL "
-                 "token=ATL_TOKEN`, `confluence: … spaces=DOC`, `figma: token=FIGMA_TOKEN files=AbC123`; "
+                 "token=ATL_TOKEN`, `confluence: … spaces=DOC`, `figma: token=FIGMA_TOKEN files=AbC123`, "
+                 "`github: repos=acme/app,acme/api notifications=on` (gh's login, or token=), "
+                 "`gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on`, "
+                 "`discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789`; "
                  "`secret=` names a webhook's secret",
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",
