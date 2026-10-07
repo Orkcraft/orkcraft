@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="design-system/logo/orkcraft-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="design-system/logo/orkcraft-light.svg">
-    <img src="design-system/logo/orkcraft-dark.svg" alt="Orkcraft" width="415">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/wordmark-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/img/wordmark-light.png">
+    <img src="docs/img/wordmark-dark.png" alt="Orkcraft" width="380">
   </picture>
 </p>
 
