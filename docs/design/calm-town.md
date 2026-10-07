@@ -67,7 +67,8 @@ building's window no longer compete for that half: they are **one panel**.
 
 On a hut (`js/menu.js`): Open, Info, Listen to…, Ask the Warchief about it, Pin / Unpin, Demolish… — what
 the Command Card had, without opening the panel. On the bare map: Build here… (the catalog, the
-building raised where the click was), Settings. An entry names the `/` command that does the same,
+building raised where the click was), Tidy up (every hut that is not pinned laid out along its roads,
+left to right, from the top left: `js/tidy.js`), Settings. An entry names the `/` command that does the same,
 so the menu teaches the line.
 
 ## 4. The Warchief's line

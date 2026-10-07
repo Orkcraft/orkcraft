@@ -106,7 +106,8 @@ function Keeper({ garrison, alert }) {
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const busy = garrison.some((o) => o.status === "busy");
   const more = garrison.length - 1;
-  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}`}>
+  const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
+  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""} · ${doing}`}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
 }
 
@@ -173,7 +174,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
-  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
+  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>${number}</span>
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
@@ -182,7 +183,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
+                                        "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
     <div class="ok-head"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}

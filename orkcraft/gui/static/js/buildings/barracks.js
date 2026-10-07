@@ -120,15 +120,22 @@ function Acts({ id, data, inline }) {
 
 // -- closed ------------------------------------------------------------------------------------------
 
-/** Closed: `active 2/4 · queue 3` and `✓5 ✗1 · $1.20`, with `<keeper> asks` first when it asks. */
+const keep = (e) => e.stopPropagation();          // a press on the card's control is not a press on the hut
+
+/** Closed: `active 2/4 · queue 3` and `✓5 ✗1 · $1.20`, with `<keeper> asks` first when it asks. Paused, its
+ *  first line says so with what waits and Resume beside it: a stopped queue is the one thing to fix here. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   return html`<div>
     ${c.asks && html`<div class="ok-tone-fire">${c.asks} asks</div>`}
+    ${c.paused && html`<div class="gui-hut__row"><span class="ok-tone-wait">⚠ paused${c.queue ? ` · ${c.queue} waiting` : ""}</span>
+      <button class="ok-act gui-hut__act" onPointerDown=${keep}
+        onClick=${(e) => { keep(e); act(b.id, "pause").catch(() => {}); }}><span class="ok-act__label">Resume</span></button></div>`}
     ${(c.working || []).map((w) => html`<div key=${w.ork} class="ok-tone-accent gui-hut__line">⚒ <b>${w.ork}</b> · ${w.task}</div>`)}
-    <div>active ${c.active}/${c.max} · queue ${c.queue}${c.paused ? html` · <span class="ok-tone-wait">⚠ paused</span>` : ""}</div>
-    <div>✓${c.done} ✗${c.failed} · ${c.spent}</div>
+    <div>active ${c.active}/${c.max} · queue ${c.queue}</div>
+    <div><span class=${c.done ? "ok-tone-ok" : ""}>✓${c.done}</span> <span class=${c.failed ? "ok-tone-error" : ""}
+      title=${c.failed ? say("Failed tasks: open the building to see why") : ""}>✗${c.failed}</span> · ${c.spent}</div>
   </div>`;
 }
 

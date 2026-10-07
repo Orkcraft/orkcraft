@@ -66,6 +66,7 @@ class Host:
         self._telemetry_at = 0.0
         self._refreshed: dict[str, float] = {}     # building id → when its worker last looked again
         self._attached: dict[str, Any] = {}        # building id → the worker its view's `attach` was given
+        self.raised_for: dict[tuple[str, str], str] = {}   # (type, request) → the building raised for it (gui/builder.py)
         self.town.bus.subscribe(bus.ANY, self._event)
         self.commands: dict[str, Callable[[dict], Any]] = {
             "orkspace.select": self._select_orkspace,

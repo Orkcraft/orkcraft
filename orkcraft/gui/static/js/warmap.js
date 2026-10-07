@@ -83,10 +83,13 @@ function cellsPath(inside, H, isTop) {
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 
+/** What the open land says after its count: what waits on the person first, "all quiet" only when nothing does. */
 function state(o) {
-  if (o.questions) return plural(o.questions, "question");
-  if (o.working) return `${o.working} at work`;
-  return "all quiet";
+  const parts = [];
+  if (o.questions) parts.push(plural(o.questions, "question"));
+  if (o.paused) parts.push(`${o.paused} paused`);
+  if (o.working) parts.push(`${o.working} at work`);
+  return parts.length ? parts.join(" · ") : "all quiet";
 }
 
 /** A name typed in place: a new orkspace in the fog, or a land renamed. */
@@ -197,8 +200,10 @@ export function WarMap() {
             ${isOpen && html`<span class="gui-map__bar" style=${`top:${y0 + 5}px;height:${y1 - y0 - 10}px`}></span>`}
             <span class="gui-map__name" style=${`top:${isOpen ? y0 + 6 : (y0 + y1) / 2 - 7}px`}>${say(o.name)}${o.questions
               ? html`<span class="gui-map__ask" aria-hidden="true"></span>` : null}</span>
-            ${isOpen && html`<span class="gui-map__state" style=${`top:${y0 + 21}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
-            ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 10}px`}>
+            ${isOpen && html`<span class=${cls("gui-map__state", { "ok-tone-wait": !!o.paused && !o.questions })}
+              style=${`top:${y0 + 21}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
+            ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 10}px`}
+              title=${say(`${plural(o.count, "building")}${o.working ? ` · ${o.working} at work` : ""}`)}>
               ${Array.from({ length: Math.min(o.count, 16) }, (_, j) => html`<i key=${j} class=${j < o.working ? "is-busy" : ""}></i>`)}</span>`}
           </button>`;
         })}
