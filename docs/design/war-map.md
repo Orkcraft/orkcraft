@@ -24,8 +24,9 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 - **A 160 px square** (40 × 40 cells of 4 px), not 240: at 240 it took too much of the town and its
   edges looked rough. The lands are even stripes: straight borders, and each land 2 cells shorter
   than the one above it (14 at most), so the right edge is a neat terrace (the wandering borders read
-  as dirt at this size). A closed land is at least 28 px tall (the open one 48 px). Up to six lands fit (the map grows to 212 px for them);
-  seven and eight scroll.
+  as dirt at this size). A closed land is at least 28 px tall (the open one 48 px). The map is always
+  square: up to four lands fit it; from five they scroll inside the frame (it used to grow to 212 px for
+  six, which made it tall and narrow).
 - **A new land picks its ground.** The fog's field takes its name and, under it, a row of the seven
   biomes' swatches, the suggested one lit (the first nobody has); a click or ← / → (before typing)
   picks another, Enter raises it (`orkspace.new` takes `biome`).
@@ -100,8 +101,8 @@ and said in it.
 - **The coast** is a terrace: each land 2 cells shorter than the one above it, at most 14 cells in;
   the fog fills the wedge on the right.
 - **A seam of 1 px** (the frame's dark) parts two lands; the biome colours do the rest.
-- **The heights**: the open land gets what the closed ones (≥ 5 cells, 30 px) and the fog leave, and at least 11 cells. Up to **six orkspaces** fit the square.
-  From seven (the Town Scroll allows eight, F1–F8) the lands scroll inside the frame, and the open
+- **The heights**: the open land gets what the closed ones (≥ 5 cells, 30 px) and the fog leave, and at least 11 cells. Up to **four orkspaces** fit the square.
+  From five (the Town Scroll allows eight, F1–F8) the lands scroll inside the frame, and the open
   one is kept in sight.
 
 ### 2.3 The parts, in code
@@ -246,7 +247,7 @@ snow, so on ice the flag's cloth gets a 1 px dark edge. The gold of III reads ev
 | the call (§2.5) | loud enough to see, calm enough to keep | "Attack: …" in the prototype, with a building panel open |
 | a flag on **ice** | ivory on snow (§4) | a level I flag on an ice roof |
 | the map beside an open panel | the panel takes the town's right half | "Building panel" in the prototype: the map keeps its corner and the town's huts move left |
-| seven and eight orkspaces | the scroll inside the frame | "+ 4 orkspaces" |
+| five to eight orkspaces | the scroll inside the frame | "+ 4 orkspaces" |
 | one orkspace | the map from the first day | Delete down to one |
 
 ## 6. Open questions
