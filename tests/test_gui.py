@@ -104,6 +104,8 @@ def test_the_snapshot_carries_growth_and_a_buildings_level(fake_repo, isolated_l
     snap = host.snapshot()
     you = snap["growth"]["you"]
     assert you["stage"] >= 1 and you["kin"] and you["name"] and len(you["deeds"]) == 8
+    sprites = Path(__file__).resolve().parent.parent / "design-system" / "sprites" / "mascots"
+    assert (sprites / f"{you['sprite']}-{you['stage']}@2x.png").is_file()           # the role's own head
     assert next(d for d in you["deeds"] if d["id"] == "town")["done"]          # a building beside the Hall
     hut = next(b for b in snap["buildings"] if b["id"] == pit)
     assert hut["level"] == 2 and hut["goal"] == "balance"

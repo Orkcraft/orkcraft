@@ -21,7 +21,7 @@ function You({ y }) {
   return html`<section class="gui-you">
     <span class="gui-you__home" title=${say(`Home: ${y.home}`)}
         style=${`--ground:${(BIOMES[y.home] || BIOMES.dirt).ground};--land:${(BIOMES[y.home] || BIOMES.dirt).land};--glyphs:${terrainUrl(y.home) ? `url("${terrainUrl(y.home)}")` : "none"}`}>
-      <${MascotHead} kin=${y.kin} stage=${y.stage} size=${4} />
+      <${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${4} />
     </span>
     <div class="gui-you__who">
       <span class="gui-you__name">${y.name}</span>

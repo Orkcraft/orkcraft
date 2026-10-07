@@ -3,9 +3,10 @@ docs/design/war-map.md):
 
     python tools/growth_sprites.py
 
-- `design-system/sprites/mascots/<kin>-<stage>.png` (and `@2x`): the operator's mascot, a head on the
-  ork mark's grid per kin, its four stages drawn by adding to it (a band, horns, then gold eyes and a
-  gem), never a crown: the crown is the Warchief's.
+- `design-system/sprites/mascots/<role>-<stage>.png` (and `@2x`): the operator's mascot, a head on the
+  landing's 12 × 11 class grid per onboarding role, each of its four stages adding its own headgear or
+  prop (a red bandana, then a horned helm; a keyword tag, then rating stars…), never a crown: the crown
+  is the Warchief's.
 - `design-system/sprites/flags/`: a building's renown and goal, drawn at the header sprites' scale (2 px
   a pixel). `level-<n>.png`, the flag on its roof at I–III (ivory, taller at II, gold at III; the pole's
   foot at the bottom left, `js/icons.js` `FLAG_AT` says where on each roof it stands); `footing-<n>.png`,
@@ -52,92 +53,281 @@ def save_pair(img1x: Image.Image, path: pathlib.Path) -> None:
 
 
 # -- the mascots ---------------------------------------------------------------------------------------
-# F face, D eyes and mouth, T tusks, teeth or beard, N nose, M metal, H hair and S its shade. 12 × 8, as
-# the ork mark.
-HEADS = {
-    "orc": ["...FFFFFF...",
-            "F.FFFFFFFF.F",
-            "FFFFFFFFFFFF",
-            ".FFDDFFDDFF.",
-            "..FFFFFFFF..",
-            "..FTFFFFTF..",
-            "..FTFFFFTF..",
-            "...FFFFFF..."],
-    "elf": ["...HHHHHH...",
-            "..SHHFFHHS..",
-            "FFFFFFFFFFFF",
-            "SFFDDFFDDFFS",
-            ".SFFFFFFFFS.",
-            ".SFFFFFFFFS.",
-            "...FFDDFF...",
-            "....FFFF...."],
-    "lich": ["...FFFFFF...",
-             "..FFFFFFFF..",
-             ".FFFFFFFFFF.",
-             ".FDDDFFDDDF.",
-             ".FFFFFFFFFF.",
-             "..FFFDDFFF..",
-             "..FTFTFTFF..",
-             "...FFFFFF..."],
-    "skeleton": ["...FFFFFF...",
-                 "..FFFFFFFF..",
-                 ".FFFFFFFFFF.",
-                 ".FDDFFFFDDF.",
-                 ".FDDFFFFDDF.",
-                 "..FFFDDFFF..",
-                 "...FDFDFD...",
-                 "...FFFFFF..."],
-    "gnome": ["..FFFFFFFF..",
-              ".FFFFFFFFFF.",
-              ".FFDDFFDDFF.",
-              ".FFFFNNFFFF.",
-              ".TFFFNNFFFT.",
-              ".TTTFFFFTTT.",
-              "..TTTTTTTT..",
-              "...TTTTTT..."],
-    "goblin": ["...FFFFFF...",
-               "FF.FFFFFF.FF",
-               ".FFFFFFFFFF.",
-               "..FDDFFDDF..",
-               "..FFFFFFFF..",
-               "..FDTDTDTF..",
-               "...FFFFFF...",
+# The operator's mascot by role (realm/intents.py `ROLES`) and stage: a head on the 12 × 11 grid of the
+# landing's class sprites, each stage adding its own headgear or prop. A grid is a base head and an
+# overlay: '.' keeps the base, '_' clears it. Never a crown: the crown is the Warchief's.
+
+PALETTE = {
+    "K": "#1a1813",                                   # eyes, mouths, outlines
+    "I": "#ece4cf",                                   # ivory: tusks, teeth, beards, bone
+    "G": "#e8b94a", "Y": "#facc15", "W": "#a8781e",   # gold, bright gold, gold shade
+    "R": "#e8411c", "r": "#8a1f10", "O": "#ff8c1a",   # red, dark red, orange
+    "L": "#3fb950", "l": "#2a7a3a",                   # leaf green, its shade
+    "B": "#3b6fd8", "b": "#82aaff", "c": "#cfe9ff",   # blue, light blue, glass
+    "P": "#c084fc", "p": "#6b5a7e", "q": "#3e3352",   # purple, plum, deep plum
+    "M": "#9aa0a8", "m": "#5e646c", "H": "#d7dbe0",   # metal, dark metal, highlight
+    "t": "#8a5a32", "T": "#4e3420",                   # leather, dark leather
+    "k": "#f29ac0",                                   # pink plume
+    "o": "#86c062", "d": "#5d8a40",                   # ork skin, its brows
+    "g": "#a8c040",                                   # goblin
+    "n": "#e3b58c", "N": "#c99a74",                   # gnome skin, nose
+    "e": "#eadcc2",                                   # elf skin
+    "h": "#e8c76a", "j": "#b08a3a",                   # blonde hair, its shade
+    "a": "#a8552e", "A": "#6e3418",                   # auburn hair, its shade
+    "v": "#8e88a8",                                   # lich
+    "w": "#c4ced8", "x": "#5f6f80",                   # wraith face, its hood
+    "s": "#fffbe6",                                   # lamp light
+    "z": "#3b8f8f",                                   # visor green
+}
+
+BASES = {
+    "orc": ["............",
+            "............",
+            "............",
+            "...oooooo...",
+            "o.oooooooo.o",
+            "oooddooddooo",
+            ".ooKKooKKoo.",
+            "..oooooooo..",
+            "..oIooooIo..",
+            "..oIooooIo..",
+            "...oooooo..."],
+    "goblin": ["............",
+               "............",
+               "............",
+               "...gggggg...",
+               "gg.gggggg.gg",
+               ".gggggggggg.",
+               "..gKKggKKg..",
+               "..gggggggg..",
+               "..gKIKIKIg..",
+               "...gggggg...",
                "............"],
-    "knight": ["...MMMMMM...",
+    "gnome": ["............",
+              "............",
+              "............",
+              "..nnnnnnnn..",
+              ".nnnnnnnnnn.",
+              ".nnKKnnKKnn.",
+              ".nnnnNNnnnn.",
+              ".InnnNNnnnI.",
+              ".IIInnnnIII.",
+              "..IIIIIIII..",
+              "...IIIIII..."],
+    "elf": ["............",
+            "............",
+            "....eeee....",
+            "...eeeeee...",
+            "..eeeeeeee..",
+            "eeeeeeeeeeee",
+            ".eeKKeeKKee.",
+            "..eeeeeeee..",
+            "..eeeeeeee..",
+            "...eeKKee...",
+            "....eeee...."],
+    "lich": ["............",
+             "...vvvvvv...",
+             "..vvvvvvvv..",
+             ".vvvvvvvvvv.",
+             ".vKKKvvKKKv.",
+             ".vvvvvvvvvv.",
+             "..vvvKKvvv..",
+             "..vIvIvIvv..",
+             "...vvvvvv...",
+             "............",
+             "............"],
+    "wraith": ["............",
+               "....xxxx....",
+               "..xxxxxxxx..",
+               ".xxwwwwwwxx.",
+               ".xwwwwwwwwx.",
+               ".xwKKwwKKwx.",
+               ".xwwwwwwwwx.",
+               ".xwwwKKwwwx.",
+               "..xwwwwwwx..",
+               "..xwxwwxwx..",
+               "...x.ww.x..."],
+    "knight": ["............",
+               "............",
+               "............",
+               "...MMMMMM...",
                "..MMMMMMMM..",
                ".MMMMMMMMMM.",
-               ".MMDDDDDDMM.",
+               ".MMKKKKKKMM.",
                ".MMMMMMMMMM.",
-               ".MMDMDMDMMM.",
+               ".MMKMKMKMMM.",
                "..MMMMMMMM..",
                "...MMMMMM..."],
+    "skeleton": ["............",
+                 "............",
+                 "............",
+                 "...IIIIII...",
+                 "..IIIIIIII..",
+                 ".IIIIIIIIII.",
+                 ".IKKIIIIKKI.",
+                 ".IKKIIIIKKI.",
+                 "..IIIKKIII..",
+                 "...IKIKIK...",
+                 "...IIIIII..."],
 }
-SKINS = {"orc": GREEN, "elf": "#eadcc2", "lich": "#8e88a8", "skeleton": IVORY, "gnome": "#e3b58c",
-         "goblin": "#a8c040", "knight": "#9aa0a8"}
-KINS = tuple(HEADS)
-# Three rows over the head: what each stage adds (W a band of dark green, T ivory horns, G gold).
-STAGE_MARKS = {
-    1: ["............", "............", "............"],
-    2: ["............", "............", "..WWWWWWWW.."],
-    3: ["............", "T..........T", ".TWWWWWWWWT."],
-    4: ["T..........T", "TT...GG...TT", ".TWWWGGWWWT."],
+
+E = ["............"] * 11                             # an empty overlay
+
+
+def ov(**rows: str) -> list[str]:
+    """An overlay from its non-empty rows: ov(r3="...RRRR.....")."""
+    out = list(E)
+    for k, v in rows.items():
+        assert len(v) == 12, (k, v)
+        out[int(k[1:])] = v
+    return out
+
+
+# Hair the elves share; the designer's is blonde, the lore elf's auburn (h/j → a/A).
+ELF_HAIR = ov(r1="....jhhj....", r2="..jhhhhhhj..", r3=".jhhh..hhhj.", r4=".h........h.",
+              r6="j..........j", r7=".j........j.", r8=".j........j.")
+ELF_LONG = ov(r1="....jhhj....", r2="..jhhhhhhj..", r3=".jhhh..hhhj.", r4=".h........h.",
+              r6="h..........h", r7="hj........jh", r8="hj........jh", r9="hh........hh", r10=".h........h.")
+
+
+def auburn(o: list[str]) -> list[str]:
+    return [r.replace("h", "a").replace("j", "A") for r in o]
+
+
+RAINBOW = ov(r9="........RObL", r10=".......OYLbP")
+
+# role → (base, [overlay stage 1, 2, 3, 4]); an overlay may be a list of overlays, laid in order.
+ROLES = {
+    # Engineer — Burnout Peon: a plain grunt, then the sweat and the bags, a red bandana and war paint,
+    # a warlord's horned iron helm with gold eyes.
+    "engineer": ("orc", [
+        E,
+        ov(r2="..........c.", r3="..........b.", r7="..oppooppo.."),
+        ov(r1="..........R.", r2=".........RR.", r3="...RRRRRRR..", r4="o.RRRRRRRR.o", r5="ooodKoodKooo",
+           r7="..oRooooRo.."),
+        ov(r0="I..........I", r1="I..........I", r2=".ImmmmmmmmI.", r3=".mMMMGGMMMm.", r4="omMMMMMMMMmo",
+           r5="ooommoommooo", r6=".ooYYooYYoo."),
+    ]),
+    # QA — Bug Ork: a beetle on the head, then a magnifier on the eye, goggles up and the beetle caught,
+    # a golden beetle-shell helm.
+    "qa": ("orc", [
+        ov(r1=".....K.K....", r2="....KPPPK...", r3="...opPpPpo.."),
+        ov(r1=".....K.K....", r2="....KPPPK...", r3="...opPpPpo..", r5="ooodd.MMMMoo", r6=".ooKKoMKKMo.",
+           r7="..ooooMMMMo.", r8="..oIooooIot.", r9="..oIooooIoot"),
+        ov(r0="........K.K.", r1=".......KPPPK", r2="..mmmmmmmPpP", r3="..mccmmccm..", r4="o.mccmmccm.o"),
+        ov(r0="...K....K...", r1="....K..K....", r2="..GGGGKGGGG.", r3=".GYGGGKGGGYG", r4="oGGGGGKGGGGo",
+           r5="ooodWooWdooo", r6=".ooYYooYYoo."),
+    ]),
+    # Engineering manager — The Jira Lich: a sticky note on the brow, then the bow tie, a headset for the
+    # calls, a release-night collar and a gold tie with gold eyes.
+    "eng_manager": ("lich", [
+        ov(r2="......YY....", r3="......YG...."),
+        ov(r9="...RRrrRR...", r10="...RR..RR..."),
+        ov(r0="..mmmmmmmm..", r1=".m........m.", r2=".m........m.", r3="mM........Mm", r4="mM........Mm",
+           r5=".m........m.", r6="..m.........", r7="..m.........", r8="...mK.......", r9="...RRrrRR...",
+           r10="...RR..RR..."),
+        ov(r1="q..........q", r2="qq........qq", r3="qq........qq", r4="qvYYYvvYYYvq", r5="qq........qq",
+           r6="qqq......qqq", r7="qqq......qqq", r8="qqqP....Pqqq", r9="qqqGGWWGGqqq", r10="...GG..GG..."),
+    ]),
+    # Product manager — Roadmap Wraith: a pale wraith in its hood, then a rolled roadmap, a map pin over
+    # the hood, a gold-hemmed hood and the roadmap unrolled with its milestones.
+    "product_manager": ("wraith", [
+        E,
+        ov(r8="..xwwwwwwxtI", r9="..xwxwwxwIRI", r10="...x.ww.IIt."),
+        ov(r0="....RRR.....", r1="....RsRx....", r2="..xxxRxxxx..", r8="..xwwwwwwxtI",
+           r9="..xwxwwxwIRI", r10="...x.ww.IIt."),
+        ov(r0="....GGGG....", r1="...GxxxxG...", r2="..GxxxxxxG..", r5=".xwccwwccwx.", r8="IIIIIIIIIIII",
+           r9="IRIIYIIRIIYI", r10="tIIIIIIIIIIt"),
+    ]),
+    # Product designer — Gradient-Sick Elf: a sprout of a designer, then the hair and the rainbow, a
+    # ranger's green hood with a pencil, long hair, gold pins and gold eyes, swatches at the ears.
+    "designer": ("elf", [
+        [ov(r0=".....lL.....", r1="....lL......"), ELF_HAIR, ov(r0=".....lL.....", r1="....lLhj....")],
+        [ELF_HAIR, RAINBOW],
+        [ov(r0="....llll....", r1="...lLLLLl...", r2="..lLLLLLLl..", r3=".lLLe..eLLl.", r4=".l........l.",
+            r6="l..........l", r7=".l........l.", r8=".l........l."),
+         ov(r2=".........Yk.", r3="........YW..")],
+        [ELF_LONG, ov(r2="..Y......Y..", r6="RjeYYeeYYejB", r5="OeeeeeeeeeeL")],
+    ]),
+    # Game designer — Lore Elf: auburn hair, then a quill in it, a bard's plum beret with the quill, and
+    # long hair, gold eyes and a d20.
+    "game_designer": ("elf", [
+        auburn(ELF_HAIR),
+        [auburn(ELF_HAIR), ov(r0=".........II.", r1="........II..", r2=".......AI...")],
+        [auburn(ELF_HAIR), ov(r0="...pppppp.I.", r1="..pPPPPPPpI.", r2=".pPPPPPPPPI.", r3="..pppppppp..")],
+        [auburn(ELF_LONG), ov(r0="..........P.", r1=".........PIP", r2="..........P.", r6=".eeYYeeYYee.")],
+    ]),
+    # ASO manager — Keyword Gnome: a red cap, then a keyword tag on it, brass goggles on the brim, a
+    # gold-banded cap under five rating stars.
+    "aso_manager": ("gnome", [
+        ov(r0="......R.....", r1="....RORR....", r2="..RRRRRRRR.."),
+        ov(r0="......R...I.", r1="....RORR.IKI", r2="..RRRRRRRRI."),
+        ov(r0="......R...I.", r1="....RORR.IKI", r2="..RRRRRRRRI.", r3="..GccGGccG..", r4=".nGccGGccGn."),
+        ov(r0="Y.Y...Y...Y.", r1="....RORR..Y.", r2="..GGGGGGGG..", r5=".nnYYnnYYnn."),
+    ]),
+    # Marketing — Growth-Hack Gnome: a blue cap, then its gold star, a megaphone, a gold-banded cap with
+    # the green arrow of growth.
+    "marketing": ("gnome", [
+        ov(r0="......B.....", r1="....BbBB....", r2="..BBBBBBBB.."),
+        ov(r0="......B...Y.", r1="....BbBB.YYY", r2="..BBBBBBBBY."),
+        ov(r0="......B...Y.", r1="....BbBB.YYY", r2="..BBBBBBBBY.", r6="RRnnnNNnnnn.", r7="RIRnnNNnnnI.",
+           r8="RRIInnnnIII."),
+        ov(r0="......B...L.", r1="....BbBB.LLL", r2="..GGGGGGGGL.", r3="..nnnnnnnnL.", r5=".nnYYnnYYnn."),
+    ]),
+    # Data analyst — Data-Mining Goblin: an accountant's green visor, then the miner's lamp, a pickaxe
+    # over the shoulder, a tycoon's top hat, a monocle and a gold tooth.
+    "data_analyst": ("goblin", [
+        ov(r2="...zzzzzz...", r3="..zzzzzzzz.."),
+        ov(r0=".........ss.", r1=".......ss...", r2="....GsWG....", r3="...GGGGGG..."),
+        ov(r0="MM.......ss.", r1=".MMt...ss...", r2="...tGsWG....", r3="...GGGGGG..."),
+        ov(r0="...qqqqqq...", r1="...qpqqqq...", r2="...GGGGGG...", r3="..qqqqqqqq..", r6="..gKKgGKKG..",
+           r7="..ggggggggG.", r8="..gKIKYKIg.."),
+    ]),
+    # Founder — Indie Knight: a squire's leather coif, then the steel helm and its pink plume, a seed of a
+    # sprout and a gold trim, a paladin's white-and-gold helm with a gold plume and a glowing visor.
+    "founder": ("knight", [
+        [ov(r3="...tttttt...", r4="..tttttttt..", r5=".tttttttttt.", r6=".ttnnnnnntt.", r7=".ttnnnnnntt.", r8=".ttnnKKnntt.", r9="..tttttttt..", r10="...tttttt..."),
+         ov(r6=".ttnKnnKntt.")],
+        ov(r0="......I.....", r1="......k.....", r2=".....kI....."),
+        ov(r0=".....lL.....", r1="......l.....", r2=".....kI.....", r5=".MGGGGGGGGM.", r7=".MMMMMMMMMM."),
+        ov(r0="......Y.....", r1=".....YG.....", r2=".....GY.....", r3="...HHHHHH...", r4="..HHHHHHHH..",
+           r5=".HGGGGGGGGH.", r6=".HHYYYYYYHH.", r7=".HHHHHHHHHH.", r8=".HHGHGHGHHH.", r9="..HHHHHHHH..",
+           r10="...HHHHHH..."),
+    ]),
+    # Someone else — Wandering Skeleton: a bare skull, then a wanderer's straw hat, a pirate captain's
+    # hat and an eye patch, and a crest of a thousand open tabs with gold eyes.
+    "other": ("skeleton", [
+        E,
+        ov(r1="....htth....", r2="...hhhhhh...", r3="jhhhhhhhhhhj"),
+        ov(r0="....qqqq....", r1="..qqqIqqqq..", r2="GqqqqqqqqqqG", r6=".IKKIIKKKKI.", r7=".IKKIIIKKKI."),
+        ov(r0="BB.RR.LL.PP.", r1="BBBRRRLLLPPP", r2="ccccccccccc.", r6=".IYYIIIIYYI."),
+    ]),
 }
+
+
+def mascot_grid(role: str, stage: int) -> list[str]:
+    base, stages = ROLES[role]
+    grid = [list(r) for r in BASES[base]]
+    layers = stages[stage - 1]
+    if not isinstance(layers[0], list):              # one overlay, not a list of them
+        layers = [layers]
+    for layer in layers:
+        for y, row in enumerate(layer):
+            for x, ch in enumerate(row):
+                if ch == ".":
+                    continue
+                grid[y][x] = "." if ch == "_" else ch
+    return ["".join(r) for r in grid]
+
 STAGES = (1, 2, 3, 4)
 
 
-def mascot_grid(kin: str, stage: int) -> list[str]:
-    head = [row for row in HEADS[kin]]
-    if stage >= 4:                                   # the top stage: the eyes glow gold
-        head = [row.replace("D", "G") if i in (3, 4) else row for i, row in enumerate(head)]
-    return STAGE_MARKS[stage] + head
-
-
 def mascots() -> None:
-    for kin in KINS:
-        colours = {"F": SKINS[kin], "D": NIGHT, "T": IVORY, "N": "#c99a74", "M": SKINS[kin], "W": DARK_GREEN,
-                   "G": GOLD, "H": "#e8c76a", "S": "#b08a3a"}
+    for old in (SPRITES / "mascots").glob("*.png"):        # the kin heads they replace, and any role gone
+        old.unlink()
+    for role in ROLES:
         for stage in STAGES:
-            save_pair(grid_image(mascot_grid(kin, stage), colours, 2), SPRITES / "mascots" / f"{kin}-{stage}.png")
+            save_pair(grid_image(mascot_grid(role, stage), PALETTE, 2), SPRITES / "mascots" / f"{role}-{stage}.png")
 
 
 # -- a building's renown and goal (docs/design/growth.md §5) ---------------------------------------------

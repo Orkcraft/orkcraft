@@ -1,5 +1,8 @@
 # Design — onboarding
 
+> **The GUI has its own onboarding now: [gui-onboarding.md](gui-onboarding.md).** This page describes the TUI's,
+> which keeps working (and gets only fixes) until the TUI is removed.
+
 Status: design notes, written 2026-10-03, reworked on 2026-10-04: five steps on the usual path.
 How well the operator knows orkestration picks the path; who they are and their day are one
 screen; the AI tools installed are one screen, rated 👍 / 👎; then the town; the camp rules last.

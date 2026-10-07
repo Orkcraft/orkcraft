@@ -191,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
             known = ", ".join([*intents.CLASSES, *(r.id for r in intents.ROLES)])
             sys.stderr.write(f"orkcraft error: no role {args.role!r}; one of: {known}\n")
             return 2
-        machine_settings.preset_role(role_id)
+        machine_settings.preset_role(role_id, kin=intents.class_kin(args.role))   # gnome: the GUI asks which gnome
 
     if args.subcommand == "hooks":
         from orkcraft.hooks import install as hooks_install

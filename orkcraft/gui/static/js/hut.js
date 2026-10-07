@@ -152,7 +152,7 @@ function Card({ b }) {
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
-export function Hut({ b, spot, number, dim = false, onMoved }) {
+export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
   const ref = useRef(null);
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
@@ -217,7 +217,8 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
-                                        "is-free": free, "is-target": pulling.value?.over === b.id })}
+                                        "is-free": free, "is-target": pulling.value?.over === b.id,
+                                        "is-fresh": fresh })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>

@@ -243,9 +243,13 @@ def test_role_from_the_landing_page_opens_the_onboarding_on_it(monkeypatch, tmp_
     (tmp_path / ".git").mkdir()
     assert main(["--repo", str(tmp_path), "--role", "knight"]) == 0
     assert settings.load(file).profile["role"] == "founder"
+    assert "kin" not in settings.load(file).profile                       # one kind of knight: nothing to ask
     assert intents.nick(settings.load(file).profile["role"]) == "Indie Knight"
+    assert main(["--repo", str(tmp_path), "--role", "gnome"]) == 0         # two kinds: the GUI asks which gnome
+    assert settings.load(file).profile["kin"] == "gnome"
     assert main(["--repo", str(tmp_path), "--role", "eng-manager"]) == 0
     assert settings.load(file).profile["role"] == "eng_manager"
+    assert "kin" not in settings.load(file).profile                       # a role's own id says it exactly
     assert main(["--repo", str(tmp_path), "--role", "wizard"]) == 2
     assert "no role 'wizard'" in capsys.readouterr().err
     done = settings.load(file)
