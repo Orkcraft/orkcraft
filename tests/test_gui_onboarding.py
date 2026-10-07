@@ -86,12 +86,16 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     assert machine.onboarded and machine.profile["role"] == "marketing" and machine.profile["kin"] == "gnome"
     assert machine.profile["mcp"] == ["amplitude"] and not machine.tools["codex"].enabled
     assert all(b["state"] == "planned" for b in o["raising"]["buildings"])
+    assert [b["hut"] for b in o["raising"]["buildings"]][:2] == [[0.0, 0.0], [0.333, 0.0]]   # spots known first
+    space = host.town.scroll.orkspaces[0]
+    assert space.biome == "lava"                                            # the gnomes' ground at once
 
     host.tick(1000.0 + onboarding.RAISE_STEP_S)                            # one step a tick: the map fills
     assert host.snapshot()["onboarding"]["raising"]["steps"][0]["state"] == "done"
     o = _raise_all(host)
     assert o["raising"]["phase"] == "done"
     assert all(b["state"] == "standing" for b in o["raising"]["buildings"])
+    assert host.town.scroll.building("analysts").hut == [0.333, 0.0]          # each stands where it was planned
     raised = {b.id for b in host.town.scroll.buildings}
     assert {"schedule", "analysts", "report", "reports"} <= raised
     assert (fake_repo / ".claude" / "settings.json").exists()               # the Security reviewer
@@ -176,11 +180,41 @@ def test_doesn_t_fit_one_question_and_the_planner(fake_repo: Path, onboard, monk
     assert town_presets.pending_order(fake_repo) is None                     # the order was answered
 
 
+def test_quiet_hours_on_the_autonomy_card(fake_repo: Path, onboard):
+    host = _host(fake_repo)
+    host.command("onboarding.skip", {})
+    assert host.command("onboarding.quiet", {"on": True})["quiet"] and settings.load().quiet is not None
+    assert not host.command("onboarding.quiet", {"on": False})["quiet"] and settings.load().quiet is None
+
+
+def test_set_up_again_from_the_map(fake_repo: Path, onboard, monkeypatch):
+    host = _host(fake_repo)
+    host.command("onboarding.skip", {})
+    _raise_all(host)
+    host.command("onboarding.close", {})
+    assert host.snapshot()["onboarding"] is None
+    standing = len(host.town.scroll.buildings)
+    host.command("onboarding.start", {})                                     # the map's menu → Set up again
+    host.onboarding._finder.join(5)
+    o = host.snapshot()["onboarding"]
+    assert o["again"] and o["steps"] == ["tools", "who", "mcp"]              # never a town step
+    assert o["tools"]["rows"][0]["enabled"]                                  # what was chosen stays
+    host.command("onboarding.tools", {"tools": {"codex": {"enabled": False}}, "next": True})
+    host.command("onboarding.role", {"role": "data_analyst"})
+    assert host.command("onboarding.mcp", {"on": ["github"], "next": True}) is None   # saved, closed
+    m = settings.load()
+    assert m.profile["role"] == "data_analyst" and m.profile["mcp"] == ["github"] and not m.tools["codex"].enabled
+    assert host.snapshot()["onboarding"] is None and len(host.town.scroll.buildings) == standing   # no town
+    host.command("onboarding.start", {})
+    host.command("onboarding.skip", {})                                      # Cancel: nothing saved
+    assert host.snapshot()["onboarding"] is None and settings.load().profile["role"] == "data_analyst"
+
+
 def test_the_planner_needs_claude_code(fake_repo: Path, onboard, monkeypatch):
     monkeypatch.setattr(runners, "BUILD_RUNNER", None)
     host = _host(fake_repo)
     host.command("onboarding.tools", {"tools": {"claude": {"enabled": False}}})
-    with pytest.raises(CommandError, match="Claude Code"):
+    with pytest.raises(CommandError, match="AI tool"):
         host.command("onboarding.town", {"custom": True})
 
 

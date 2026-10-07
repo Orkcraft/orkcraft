@@ -16,6 +16,8 @@ import { settingsOpen } from "./settings.js";
 import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
+import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
+import { activeBiome } from "./icons.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
@@ -285,6 +287,7 @@ function bareMenu(e, buildings, roads) {
     { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
     buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
+    { label: "Set up again…", hint: "AI tools · class · MCP", run: () => command("onboarding.start").catch(() => {}) },
   ]);
 }
 
@@ -368,11 +371,15 @@ export function Town({ buildings, roads }) {
   const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
   useCamera(ref.current, rects, here, panelW);
   numbered = buildings.map((b) => b.id);
+  const fresh = risen();                   // raised by the onboarding: each rises into place as it appears
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
     <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${room.value.h}px`}>
       <${Roads} roads=${here} rects=${rects} ports=${ports}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
-      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} onMoved=${moved} />`)}
+      ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
+          spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
+      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)}
+          fresh=${fresh.has(b.id)} onMoved=${moved} />`)}
       <${Signs} paths=${paths} roads=${here} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
     </div>

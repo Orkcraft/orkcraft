@@ -45,7 +45,8 @@ function Head({ o, title, lead }) {
 function Foot({ back = true, skip = true, next, nextLabel = "Next", children }) {
   return html`<footer class="gui-onb__foot">
     ${back && html`<button class="ok-btn" onClick=${() => send("onboarding.back")}>Back</button>`}
-    ${skip && html`<button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.skip")}>Skip: empty town</button>`}
+    ${skip && html`<button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.skip")}>
+      ${town.value?.onboarding?.again ? "Cancel" : "Skip: empty town"}</button>`}
     <span class="gui-onb__spacer">${children}</span>
     ${next && html`<button class="ok-btn primary" onClick=${next}>${nextLabel}</button>`}
   </footer>`;
@@ -106,12 +107,12 @@ function ToolsStep({ o }) {
           t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
         <button class="ok-btn" onClick=${() => { asking.value = true; }}>Request a tool</button>
       </div>
-      <label class="ok-check gui-onb__warder">
+      ${!o.again && html`<label class="ok-check gui-onb__warder">
         <input type="checkbox" class="gui-onb__hide" checked=${t.warder} onChange=${() => send("onboarding.tools", { warder: !t.warder })} />
         <i>${t.warder ? "✓" : ""}</i>
         <span><b>Guard this project with the Security reviewer</b> (recommended)<br />
           <span class="ok-font-status ok-tone-muted">Adds hooks to .claude/settings.json that stop risky commands and secrets before an ork runs them.</span></span>
-      </label>`}
+      </label>`}`}
     <${Foot} back=${false} next=${t.ready ? () => send("onboarding.tools", { next: true }) : null} />
     ${asking.value && html`<${RequestTool} />`}
   </section>`;
@@ -140,8 +141,6 @@ function WhoStep({ o }) {
 
 // -- 3 · The tools the orks can use (MCP) ---------------------------------------------------------------
 
-const TOOL_TITLE = { claude: "Claude Code", codex: "Codex", agy: "Antigravity" };
-
 function McpStep({ o }) {
   const on = new Set(o.mcp.on);
   const flip = (id) => {
@@ -157,7 +156,7 @@ function McpStep({ o }) {
           <i>${on.has(s.id) ? "✓" : ""}</i></span>
         <${Glyph} id=${s.glyph || s.id} />
         <span class="gui-onb__tool">${s.title}<code class="ok-font-status ok-tone-muted">${s.id}</code></span>
-        <span class="ok-font-status">${s.tools.map((x) => TOOL_TITLE[x] || x).join(" · ")}</span>
+        <span class="ok-font-status">${s.tools.map((x) => o.tool_titles[x] || x).join(" · ")}</span>
       </label>`)}
     </div>
     <p class="ok-font-status ok-tone-muted">Read from ~/.claude.json, .mcp.json, ~/.codex/config.toml and ~/.gemini/settings.json:
@@ -201,7 +200,7 @@ function TownStep({ o }) {
         <div><span class="ok-font-label">How it works</span><p class="ok-font-body">${it.summary || it.blurb}</p></div>
         <div class="gui-onb__choose">
           <button class="ok-btn primary" onClick=${() => send("onboarding.town", { preset: it.id })}>Use this town</button>
-          <button class="ok-btn" disabled=${!o.planner} title=${o.planner ? "" : say("The town planner runs on Claude Code, and it is off")}
+          <button class="ok-btn" disabled=${!o.planner} title=${o.planner ? "" : say("No AI tool that can plan a town is on")}
             onClick=${() => send("onboarding.town", { custom: true })}>Doesn't fit: tell the planner</button>
           <button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.town", { empty: true })}>Empty town, I'll build it myself</button>
         </div>
@@ -276,11 +275,11 @@ function Raising({ o }) {
       ${r.error && html`<p class="ok-font-status ok-tone-error">${r.error}</p>`}
       ${done && html`<button class="ok-btn primary" onClick=${() => send("onboarding.close")}>Open the town</button>`}
     </section>
-    ${!autonomyLater.value && html`<${AutonomyCard} />`}
+    ${!autonomyLater.value && html`<${AutonomyCard} o=${o} />`}
   </div>`;
 }
 
-function AutonomyCard() {
+function AutonomyCard({ o }) {
   const [s, setS] = useState(null);
   if (s === null) { command("town.settings").then(setS, () => {}); return null; }
   const pick = (id) => command("town.settings.set", { autonomy: id }).then(setS, () => {});
@@ -292,11 +291,43 @@ function AutonomyCard() {
           class=${cls("gui-onb__level", { "is-on": s.autonomy === lv.id })} onClick=${() => pick(lv.id)}>
         <span class="ok-font-body"><b>${say(lv.title)}</b></span><span class="ok-font-status ok-tone-muted">${say(lv.questions)}</span></button>`)}
     </div>
-    <p class="ok-font-status ok-tone-muted">This and the quiet hours change any time in Settings.</p>
+    <label class="ok-check">
+      <input type="checkbox" class="gui-onb__hide" checked=${o.quiet} onChange=${() => send("onboarding.quiet", { on: !o.quiet })} />
+      <i>${o.quiet ? "✓" : ""}</i><span>🌙 Quiet hours 23:00–08:00: no alerts, questions wait</span></label>
+    <p class="ok-font-status ok-tone-muted">Both change any time in Settings.</p>
     <div class="gui-onb__foot"><span class="gui-onb__spacer"></span>
       <button class="ok-btn" onClick=${() => { autonomyLater.value = true; }}>Later</button>
       <button class="ok-btn primary" onClick=${() => { autonomyLater.value = true; }}>Done</button></div>
   </section>`;
+}
+
+// -- the town's plan on the map (js/town.js draws these where each building will stand) --------------------
+
+/** The buildings the onboarding is raising that do not stand yet: a dashed plan, or scaffolding over the one
+ *  going up now. */
+export function planned() {
+  const r = town.value?.onboarding?.raising;
+  return r ? r.buildings.filter((b) => b.state === "planned" || b.state === "raising") : [];
+}
+
+/** The ids of the buildings that came up in this raising: their huts rise into place once, when they appear. */
+export function risen() {
+  const r = town.value?.onboarding?.raising;
+  return new Set(r ? r.buildings.filter((b) => b.state === "standing").map((b) => b.id) : []);
+}
+
+export function Ghost({ g, spot, biome }) {
+  const now = g.state === "raising";
+  return html`<div class=${cls("gui-onb__ghost", { "is-raising": now })} style=${`left:${spot.x}px;top:${spot.y}px`}
+      aria-label=${say(now ? `${g.title}: being built` : `${g.title}: planned`)}>
+    <div class="gui-onb__ghost-roof">
+      <img class="ok-sprite gui-onb__ghost-plan" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
+      ${now && html`<img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
+        <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>`}
+    </div>
+    <div class="gui-onb__ghost-card"><span class="gui-onb__plate-name">${say(g.title)}</span>
+      <span class="ok-font-status ok-tone-muted">${now ? "building…" : "planned"}</span></div>
+  </div>`;
 }
 
 // -- the whole -------------------------------------------------------------------------------------------

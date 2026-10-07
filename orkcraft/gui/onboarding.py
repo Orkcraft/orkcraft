@@ -19,12 +19,14 @@ from dataclasses import replace
 from typing import Any, Callable
 from urllib.parse import urlencode
 
-from orkcraft import settings, tools
+from orkcraft import schedule, settings, tools
 from orkcraft.core import buildings, roads, runners
 from orkcraft.env import getenv
 from orkcraft.realm import biomes, builders, checkpoint, intents, interview, mcp, town_builder, town_presets
 
 TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
+WARDED = ("claude", "codex", "agy")    # the tools the Security reviewer's hooks guard (hooks/install.py)
+GRID = (4, 3)               # where the planned buildings stand: four across, as js/town.js lays out a hut without a spot
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
 KIN_WORDS = {"orc": "orks", "lich": "undead", "elf": "elves", "gnome": "gnomes", "goblin": "goblins",
@@ -47,6 +49,7 @@ class Onboarding:
                  servers: Callable[[], list[mcp.Server]] | None = None) -> None:
         self.host = host
         self.active = wanted(host.town)
+        self.again = False              # opened from the map's menu on a town that stands: no town step
         self.step = TOOLS
         machine = host.town.machine
         self.profile = dict(machine.profile)
@@ -67,13 +70,34 @@ class Onboarding:
         self._queue: list[tuple[str, Callable[[], Any], str]] = []    # (label, act, building id or "")
         self._next_at = 0.0
         self._plan_title = ""
+        self._find = servers or (lambda: mcp.found(repo=host.town.repo_root))
+        self._detectors = (detect or (lambda: tools.detect()), detect_others or (lambda: tools.detect_others()))
         if self.active:
-            find = servers or (lambda: mcp.found(repo=host.town.repo_root))
-            self.servers = find()
-            self.mcp_on = [s.id for s in self.servers]
-            self._finder = threading.Thread(target=self._detect, daemon=True,
-                                            args=(detect or (lambda: tools.detect()), detect_others or (lambda: tools.detect_others())))
-            self._finder.start()
+            self._look()
+
+    def _look(self) -> None:
+        """The MCP servers at once (files only), the AI tools on a thread (`--version` runs for each)."""
+        self.servers = self._find()
+        known = set(self.profile.get("mcp") or []) if self.again else None
+        self.mcp_on = [s.id for s in self.servers if known is None or s.id in known]
+        self.statuses = None
+        self._finder = threading.Thread(target=self._detect, args=self._detectors, daemon=True)
+        self._finder.start()
+
+    def start(self, args: dict) -> dict | None:
+        """The map's menu → Set up again: your AI tools, who you are and the MCP servers once more, on a town
+        that stands (never a town step). Saved when the last step is answered."""
+        if self.active:
+            return self.snapshot()
+        machine = self.host.town.machine
+        self.active, self.again, self.step = True, True, TOOLS
+        self.profile = dict(machine.profile)
+        self.only_kin, self.role_given = "", False
+        self.kin = intents.role(self.profile["role"]).mascot if self.profile.get("role") else ""
+        self.raising = None
+        self._look()
+        self.host.on_change()
+        return self.snapshot()
 
     # -- what the page sees ------------------------------------------------------------------------
 
@@ -87,7 +111,9 @@ class Onboarding:
 
     def _detected(self, found: list[tools.ToolStatus], others: list[tools.Other]) -> None:
         self.statuses, self.others = found, others
-        self.picked = {st.id: settings.ToolChoice(enabled=st.found and st.tool.available, billing=st.billing)
+        kept = self.host.town.machine.tools if self.again else {}    # set up again: what was chosen stays
+        self.picked = {st.id: kept.get(st.id) or settings.ToolChoice(enabled=st.found and st.tool.available,
+                                                                      billing=st.billing)
                        for st in found}
         self.host.on_change()
 
@@ -98,7 +124,8 @@ class Onboarding:
             out.append(WHO)
         if self.servers:
             out.append(MCP)
-        out.append(TOWN)
+        if not self.again:
+            out.append(TOWN)
         return out
 
     def _classes(self) -> list[dict]:
@@ -164,7 +191,6 @@ class Onboarding:
             return None
         steps = self.steps()
         machine = self.host.town.machine
-        claude_on = self.picked.get("claude", machine.tools.get("claude", settings.ToolChoice())).enabled
         return {
             "step": self.step, "steps": steps,
             "n": steps.index(self.step) if self.step in steps else len(steps) - 1,
@@ -178,7 +204,9 @@ class Onboarding:
             "biome": biomes.home_of(self.profile),
             "mcp": {"servers": [s.to_dict() for s in self.servers], "on": list(self.mcp_on)},
             "towns": self._towns(), "survey": self._survey() if self.step == SURVEY else None,
-            "planner": runners.BUILD_RUNNER is not None or claude_on,
+            "planner": self._planner_runner() is not None,
+            "tool_titles": {t.id: t.title for t in tools.TOOLS},
+            "again": self.again, "quiet": bool(machine.quiet),
             "raising": self.raising,
         }
 
@@ -188,7 +216,37 @@ class Onboarding:
         return {"onboarding.tools": self.set_tools, "onboarding.request": self.request,
                 "onboarding.role": self.set_role, "onboarding.mcp": self.set_mcp,
                 "onboarding.town": self.set_town, "onboarding.survey": self.set_survey,
-                "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close}
+                "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close,
+                "onboarding.start": self.start, "onboarding.cancel": self.cancel, "onboarding.quiet": self.set_quiet}
+
+    def _enabled(self) -> list[str]:
+        machine = self.host.town.machine
+        return [t for t, c in {**machine.tools, **self.picked}.items() if c.enabled]
+
+    def _planner_runner(self):
+        """What draws a town from the person's words: the tests' runner, else the main tool once the registry
+        has one (builders.planner_runner: the chosen main tool if it is on, else the first on), else Claude
+        Code when it is on; None when nothing can."""
+        if runners.BUILD_RUNNER is not None:
+            return runners.BUILD_RUNNER
+        pick = getattr(builders, "planner_runner", None)
+        if pick is not None:
+            return pick(self._enabled(), getattr(self.host.town.machine, "main_tool", ""))
+        return builders.claude_runner if "claude" in self._enabled() else None
+
+    def cancel(self, args: dict) -> None:
+        """Set up again, left without saving (a first run has no way out but Skip)."""
+        if self.again:
+            self.active = self.again = False
+            self.host.on_change()
+
+    def set_quiet(self, args: dict) -> dict | None:
+        """The Autonomy card's quiet hours: 23:00–08:00 on, or off (the hours themselves: Settings)."""
+        m = self.host.town.machine
+        m.quiet = (m.quiet or schedule.DEFAULT_QUIET) if args.get("on") else None
+        settings.save(m)
+        self.host.on_change()
+        return self.snapshot()
 
     def _live(self) -> None:
         if not self.active or self.step == RAISING:
@@ -197,6 +255,12 @@ class Onboarding:
     def _go(self, after: str) -> dict | None:
         steps = self.steps()
         i = steps.index(after) if after in steps else -1
+        if i + 1 >= len(steps) and self.again:           # set up again: the last step answered, nothing to raise
+            self._save_machine()
+            self.active = self.again = False
+            self.host.town.toast("Your AI tools, your class and the MCP servers are saved", title="Set up again")
+            self.host.on_change()
+            return None
         self.step = steps[i + 1] if i + 1 < len(steps) else TOWN
         self.host.on_change()
         return self.snapshot()
@@ -251,7 +315,7 @@ class Onboarding:
         self._live()
         if args.get("custom"):
             if not self.snapshot()["planner"]:
-                raise OnboardingError("The town planner runs on Claude Code, and it is off")
+                raise OnboardingError("No AI tool that can plan a town is on")
             self.step = SURVEY
             self.host.on_change()
             return self.snapshot()
@@ -288,7 +352,9 @@ class Onboarding:
         return self._begin(None, prompt, answers)
 
     def skip(self, args: dict) -> dict | None:
-        """An empty town, the tools found kept on, no Security reviewer."""
+        """An empty town, the tools found kept on, no Security reviewer (set up again: leave, nothing saved)."""
+        if self.again:
+            return self.cancel(args)
         self._live()
         self.warder = False
         return self._begin(None, "")
@@ -319,7 +385,8 @@ class Onboarding:
         self.step = RAISING
         self.raising = {"title": title, "phase": "raising", "steps": [], "buildings": [], "error": ""}
         self._step("The camp's records", lambda: checkpoint.ensure(town.repo_root))
-        if self.warder and self.picked.get("claude", settings.ToolChoice()).enabled:
+        self._home()
+        if self.warder and any(t in WARDED for t in self._enabled()):
             def guard() -> None:
                 from orkcraft.hooks import install as hooks_install
                 hooks_install.install_all(town.repo_root, agy=None if town.machine.agy_warder_checked else False)
@@ -343,17 +410,28 @@ class Onboarding:
         self.host.on_change()
         return self.snapshot()
 
+    def _home(self) -> None:
+        """The first town stands on its class's ground at once (realm/biomes.py), not at the next growth tick."""
+        scroll = self.host.town.scroll
+        space = next((o for o in scroll.orkspaces if o.id == scroll.active_orkspace_id), None)
+        if space is not None:
+            space.biome = biomes.home_of(self.profile)
+            scroll.meta[biomes.SETTLED] = 1
+
     def _step(self, label: str, act: Callable[[], Any], building: str = "") -> None:
         self._queue.append((label, act, building))
         self.raising["steps"].append({"label": label, "state": "next"})
 
     def _plan(self, plan: town_builder.TownPlan) -> None:
         town = self.host.town
-        for spec in plan.specs:
+        cols, rows = GRID
+        for i, spec in enumerate(plan.specs):
+            # Each building's spot is known before it stands, so the map draws it there as a plan first.
+            hut = [round((i % cols) / (cols - 1), 3), round(min(i // cols / (rows - 1), 1.0), 3)]
             self.raising["buildings"].append({"id": spec["id"], "title": spec.get("title", spec["id"]),
-                                              "type": spec.get("type", ""), "state": "planned"})
+                                              "type": spec.get("type", ""), "state": "planned", "hut": hut})
             self._step(f"Raising {spec.get('title', spec['id'])}",
-                       lambda spec=spec: buildings.raise_spec(town, spec, None), spec["id"])
+                       lambda spec=spec, hut=hut: buildings.raise_spec(town, spec, hut), spec["id"])
         for r in plan.roads:
             self._step(f"A road {r.source} → {r.target}",
                        lambda r=r: roads.lay(town, r.target, r.source, r.subscription, None, quiet=True))
@@ -363,7 +441,7 @@ class Onboarding:
         """The Town planner draws the town from the survey, on a thread (a model call)."""
         town = self.host.town
         role = self.profile.get("role", "")
-        runner = runners.BUILD_RUNNER or builders.claude_runner
+        runner = self._planner_runner() or builders.claude_runner
         try:
             result = town_builder.plan(prompt, town.repo_root, town.taken_ids(), runner,
                                        templates=intents.templates_text(role) if role else "")

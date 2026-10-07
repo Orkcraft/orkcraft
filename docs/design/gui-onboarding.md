@@ -82,7 +82,8 @@ calls, not a source of events: an **External listener** that should hear a servi
 webhook (the Watchtower's own Add a source), never an MCP server.
 
 **To do:** give each Agent pool raised from the onboarding the servers it needs in its agents' settings
-(the allow-list of `mcp__<server>__*`), and show them in its window.
+(the allow-list of `mcp__<server>__*`), and show them in its window. It belongs with each tool's own way of
+allowing a server (`realm/harnesses.py`), so it waits for the registry of tools (Hermes, pi, Cursor) to land.
 
 ## 5. Your first town
 
@@ -91,7 +92,7 @@ the buildings' header sprites in a row joined by roads, a plate with each one's 
 MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three buttons.
 
 - **Use this town** → step 5 with that plan (`town_builder.check`; no model call).
-- **Doesn't fit: tell the planner** → 4b. Closed, with a line, when Claude Code is off.
+- **Doesn't fit: tell the planner** → 4b. Closed, with a line, when no AI tool that can plan is on.
 - **Empty town, I'll build it myself** → step 5 with nothing to raise.
 
 ### 4b. What should your town do?
@@ -124,12 +125,18 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
   **Open the town**, which closes the onboarding.
 - **Bottom right, the Autonomy card:** "While they build: how free are your orks?" with the three levels
   (`town.settings`, `town.settings.set`, as Settings uses them). Later and Done put it away; the default stands.
-- **To do:** draw the planned buildings on the map before they stand: a dashed outline of the header where it
-  will be, then a scaffold over the rising sprite (the canvas's screen 5), and the roads as they are laid. Today
-  a building appears when it stands.
-- **To do:** quiet hours on the Autonomy card (today: Settings).
-- **To do:** the town's orkspace takes the class's biome at once (`biomes.settle`): today it follows on the next
-  growth tick.
+- **On the map, the plan first.** Each building's spot is chosen before it stands (four across, as a hut
+  without a spot), so the whole town is drawn at once as dashed plans where it will be (`js/town.js` with
+  `Ghost`). The one going up now is scaffolding, its sprite rising out of the ground; when it stands, its hut
+  rises into the same place once (`is-fresh`). No motion under `prefers-reduced-motion`.
+- **Quiet hours** on the Autonomy card: 23:00–08:00 on or off (`onboarding.quiet`; the hours themselves in
+  Settings).
+- **The class's ground at once:** the first orkspace takes the class's biome when the town is chosen
+  (`biomes.home_of`), so the plan is drawn on it.
+
+The planner (4b) runs on the machine's main tool when the registry of tools names one
+(`builders.planner_runner`: the chosen main tool if it is on, else the first on), on Claude Code before that.
+The Security reviewer is installed when any tool its hooks guard is on (Claude Code, Codex, Antigravity).
 
 ## 7. Where it lives
 
@@ -142,7 +149,10 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
 
 The host turns it on for a first run (`Town.first_run`: no layout for the project yet), unless
 `ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.request` · `.role` · `.mcp` ·
-`.town` · `.survey` · `.back` · `.skip` · `.close`.
+`.town` · `.survey` · `.back` · `.skip` · `.close` · `.quiet` · `.start` · `.cancel`.
 
-**To do:** F10 → Onboarding in the GUI menu: steps 1–3 again on a project that has a town (never step 4).
+**Set up again** (the bare map's right-click menu, `onboarding.start`): your AI tools, who you are (every class)
+and the MCP servers once more, on a town that stands, never the town step. What was chosen before is kept on
+the first screen; the answers are saved when the last step is answered; Cancel leaves with nothing saved.
+
 **To do:** move the shared parts of `screens/onboarding/flow.py` here once the TUI is gone.
