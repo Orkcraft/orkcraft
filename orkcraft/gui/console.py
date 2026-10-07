@@ -134,9 +134,9 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         self.host.refresh_roster()
 
     def harnesses(self) -> tuple[str, ...]:
-        """The agent CLIs this machine runs (onboarding's tools); Claude and agy when none is chosen."""
+        """The agent CLIs this machine runs (onboarding's tools); the main tool when none is chosen."""
         enabled = tuple(t for t, c in self.town.machine.tools.items() if c.enabled and t in scroll.HARNESSES)
-        return enabled or ("claude", "agy")
+        return enabled or ("main",)
 
     def _budget(self) -> None:
         if self.host.treasury.exhausted():
@@ -163,7 +163,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         """What the orders and model dialogs edit: orders, trigger, tier and each harness step."""
         steps = []
         for step in member.harness:
-            harness = str(step.get("harness", "claude"))
+            harness = str(step.get("harness", "main"))
             steps.append({"role": str(step.get("role", "run")), "harness": harness,
                           "tier": (tiers.step_tier(step) or "") if (step.get("tier") or step.get("model")) else "",
                           "editable": harness in scroll.HARNESSES})
@@ -309,7 +309,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         out: list[dict] = []
         for i, step in enumerate(member.harness):
             pick = wanted[i] if i < len(wanted) and isinstance(wanted[i], dict) else None
-            if pick is None or str(step.get("harness", "claude")) not in scroll.HARNESSES:
+            if pick is None or str(step.get("harness", "main")) not in scroll.HARNESSES:
                 out.append(dict(step))            # a pipeline keeps its own models
                 continue
             harness = str(pick.get("harness") or step.get("harness"))

@@ -262,7 +262,7 @@ class ScrollsWorker(Worker):
         return set(wiki.manual_pages(self.wiki_root)) | wiki.uncommitted(self.repo_root, self.wiki_root)
 
     def _run(self, what: str, prompt: str, summary: str, trigger: str, on_success, message: str) -> bool:
-        harness = str(self.config.get("harness") or "claude")
+        harness = str(self.config.get("harness") or "main")
         model = str(self.config.get("model") or "")
         root, repo = self.wiki_root, self.repo_root
         job = jobs.Job(uuid.uuid4().hex[:8], f"{what}: {self.spec.get('title', self.building_id)}", harness,
@@ -368,9 +368,9 @@ class ScrollsWorker(Worker):
         repo = self.repo_root
         self._review_cancel = cancel = threading.Event()
         state = repo / ".orkcraft" / "council" / council_id
-        harness, _, model = str(cfg.get("moderator") or "claude").partition(":")
+        harness, _, model = str(cfg.get("moderator") or "main").partition(":")
         steward = tm.Steward(f"{REVIEW_BRIEF} {str(cfg.get('steward_prompt') or '').strip()}".strip(),
-                             harness.strip() or "claude", model.strip())
+                             harness.strip() or "main", model.strip())
 
         def brief_of(m: tm.Member) -> tuple[str, str]:
             path = state / "roles" / f"{tm.slug(m.role)}.md"

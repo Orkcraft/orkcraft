@@ -408,7 +408,7 @@ def migrate(spec: dict) -> dict:
         out["type"], out["config"] = "mill", ({"steps": [f"script: {cfg['skill']}"]} if cfg.get("skill") else {})
     else:
         out["type"] = "barracks"
-        out["config"] = {"max_orcs": 1, "providers": [cfg.get("harness") or "claude"],
+        out["config"] = {"max_orcs": 1, "providers": [cfg.get("harness") or "main"],
                          **({"orders": cfg["skill"]} if cfg.get("skill") else {})}
     return out
 SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never offered in the wizard

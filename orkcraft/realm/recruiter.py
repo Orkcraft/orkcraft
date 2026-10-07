@@ -26,12 +26,13 @@ import re
 
 from orkcraft import scroll as ts
 from orkcraft.realm import builders, pipes
+from orkcraft.realm import harnesses as harnesses_
 
 MAX_ATTEMPTS = 3
 PROMPT_LIMIT = 2000
 SCRIPT_LIMIT = 20_000
 
-HARNESS_NAMES = {"claude": "Claude", "agy": "agy", "codex": "Codex"}
+HARNESS_NAMES = {"main": "the main tool", **{h.id: h.title for h in harnesses_.REGISTRY.values()}}
 RECRUITER = """You are the Recruiter of orkcraft, a terminal harness over a Markdown knowledge graph where
 windows ("buildings") pass events to each other along roads. The operator wants a new handler orc
 for the building {building_id} ({building_title}). A handler works on incoming roads: it keeps the
@@ -198,7 +199,7 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
 
 
 def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: builders.Runner = builders.main_runner,
-            max_attempts: int = MAX_ATTEMPTS, road=None, harnesses: tuple[str, ...] = ("claude", "agy")) -> RecruitResult:
+            max_attempts: int = MAX_ATTEMPTS, road=None, harnesses: tuple[str, ...] = ("main",)) -> RecruitResult:
     """Ask the Recruiter until its handler passes the contract or the attempts run out. Never raises.
     `road` (source, event): a road with a rule — exactly that road, and no agent for a rule that
     needs no judgement. `harnesses`: the CLIs this machine runs, the only ones it may pick."""
