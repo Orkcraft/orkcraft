@@ -328,7 +328,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         self.town.checkpoint("update", bs.id, f"before {member.name} goes to the steward")
         try:
             scroll.update_orc(self.town.scroll, bs.id, member.id, kind="steward", harness=[], avatar="📜",
-                              why=f"handed to the steward (was an agent on its own tools)")
+                              why="handed to the steward (was an agent on its own tools)")
         except ValueError as e:
             raise ConsoleError(str(e)) from None
         self._saved()
