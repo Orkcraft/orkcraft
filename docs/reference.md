@@ -623,7 +623,10 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
 - **Retros** never apply themselves (design: `docs/design/retros-and-goals.md`). The daily
   🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
   24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
-  will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
+  will eat before it resets (`realm/pressure.py`). What is left comes from the quota's tokens per
+  1 %, measured from a 🪨 Tally Crag's samples once the quota climbed 10 points under sampling in a
+  week (the ledger's tokens over the points climbed, stretches cut at a reset or a gap), else
+  estimated from the camp's own spend. It takes the first that got no 👍 since its last
   change, or a 👎 today, reads its recent runs and proposes one checked change towards the building's
   **goal** — 🪙 thrift · ⚖️ balance · 💎 quality, a click on the goal button beside 👍 / 👎 in the Info
   panel cycles it (`buildings[].goal` in the Town Scroll; missing = balance). 💎 buildings the operator
