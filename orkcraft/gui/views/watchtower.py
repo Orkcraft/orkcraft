@@ -7,9 +7,10 @@ from __future__ import annotations
 import datetime as dt
 import re
 
+from orkcraft.core.workers import watchtower_add
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import watch
+from orkcraft.realm import quickadd, watch
 
 REFRESH_S = 1.0
 CARD_ROWS = 4                   # counters on the closed card; more sources fold into `+N more`
@@ -84,6 +85,7 @@ def detail(w) -> dict:
         "listening": w.hook.port if w.hook is not None else 0,
         "mailbox": w.look.unread if w.look is not None and not w.look.error else None,
         "intent": w.intent, "intent_error": w.errors.get("intent", ""), "error": w.errors.get("look", ""),
+        "adding": w.adding.view(), "listed": watchtower_add.listed(w),
         "settings": {"host": str(cfg.get("host") or ""), "folder": str(cfg.get("folder") or ""),
                      "github": str(cfg.get("github") or ""), "cron": str(cfg.get("cron") or ""),
                      "webhook_port": cfg.get("webhook_port") or "", "feeds": [str(x) for x in cfg.get("feeds") or []]},
@@ -133,4 +135,89 @@ def _simulate(w, args: dict) -> str:
     return sig.key
 
 
-ACTS = {"simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}
+# -- Add a source (docs/design/watchtower-quick-add.md): the steps are the worker's (watchtower_add.py) -------
+
+def _adding(fn):
+    """An Add-a-source act: a Refused from the steps is shown to the person."""
+    def act(w, args: dict):
+        try:
+            return fn(w, args)
+        except quickadd.Refused as e:
+            raise ActError(str(e)) from None
+    return act
+
+
+def _strings(args: dict, key: str, limit: int = 200) -> list[str]:
+    value = args.get(key) or []
+    if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
+        raise ActError(f"{key} is not a list of text")
+    return [x[:120] for x in value[:limit]]
+
+
+@_adding
+def _add_open(w, args: dict) -> None:
+    w.adding.open()
+
+
+@_adding
+def _add_link(w, args: dict) -> str:
+    """A pasted link or address: its service starts, what it names ticked."""
+    link = w.adding.recognise(text(args, "link", 2000))
+    if link is None:
+        raise ActError("Not a link this can listen to yet — pick the service instead")
+    w.adding.start(link.service, link)
+    return link.service
+
+
+@_adding
+def _add_start(w, args: dict) -> None:
+    w.adding.start(text(args, "service", 40))
+
+
+@_adding
+def _add_login(w, args: dict) -> None:
+    values = args.get("values") or {}
+    if not isinstance(values, dict):
+        raise ActError("values is not a form")
+    w.adding.log_in({k: text(values, k, 500) for k in ("site", "email", "token", "password") if k in values})
+
+
+@_adding
+def _add_use(w, args: dict) -> None:
+    w.adding.use_kept(text(args, "account", 200))
+
+
+@_adding
+def _add_files(w, args: dict) -> None:
+    w.adding.add_files(text(args, "links", 4000))
+
+
+@_adding
+def _add_what(w, args: dict) -> None:
+    w.adding.what(_strings(args, "picks"), bool(args.get("about_me", True)), text(args, "folder", 100) or "INBOX")
+
+
+@_adding
+def _add_save(w, args: dict) -> str:
+    return w.adding.save()
+
+
+@_adding
+def _add_back(w, args: dict) -> None:
+    w.adding.back()
+
+
+@_adding
+def _add_close(w, args: dict) -> None:
+    w.adding.close()
+
+
+@_adding
+def _remove(w, args: dict) -> bool:
+    return watchtower_add.remove(w, text(args, "source", 2000))
+
+
+ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
+        "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
+        "add_back": _add_back, "add_close": _add_close, "remove": _remove,
+        "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

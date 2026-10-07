@@ -1,6 +1,9 @@
 # Design — adding a source to the Watchtower in a minute
 
-Status: a plan, written 2026-10-07; nothing of it is built. Items marked *(check)* have not been
+Status: written 2026-10-07. Built: Logins (§3), the flow in the panel (§4) with the link, the picker and
+the three steps, for GitHub (gh), Gmail, Slack, Jira, Confluence and Figma (§5), Remove in Sources &
+intent. Not yet: GitLab, Discord, many GitHub repos and notifications, the failure kinds and Log in
+again (§8), Everything (§6), the agent source (§7). Items marked *(check)* have not been
 verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop
 (OAuth apps, a background service, tunnels, webhooks registered for them); this one makes the

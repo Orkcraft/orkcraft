@@ -91,8 +91,9 @@ EFFECTS: dict[str, str] = {
 CONFIG_HELP: dict[str, dict[str, str]] = {
     "watchtower": {
         "host": "IMAP server for mail, e.g. imap.gmail.com (mail is off without it)",
+        "user": "the mailbox address as written (no secret), e.g. ann@gmail.com — in place of user_env",
         "user_env": "the environment variable that holds the mail login, e.g. MAIL_USER",
-        "password_env": "the environment variable that holds the mail password, e.g. MAIL_PASSWORD",
+        "password_env": "the environment variable that holds the mail password, e.g. MAIL_PASSWORD, or a login kept on this machine (keychain:gmail-ann@gmail.com)",
         "folder": "the mail folder to read (default INBOX)",
         "port": "IMAP port (default 993, SSL)",
         "github": "owner/repo whose events to watch through `gh`, e.g. acme/api",

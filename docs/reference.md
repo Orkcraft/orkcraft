@@ -301,6 +301,22 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   - 🛑 Halt All stops the running browser; the queue waits for 🎯. The hut's line starts with 🌐 in
     browser mode. Fields inside iframes are not marked yet. The 🔍 Audit flags a Catapult that
     presses submit with no schema and no confirmation.
+- **Add a source** (the GUI; design/watchtower-quick-add.md). A tower with no source opens its panel on
+  it, and its card says **+ Add a source**; later the **+** chip and Sources & intent open it. It stays
+  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a Slack channel, a Jira
+  issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, Gmail, Slack, Jira,
+  Confluence or Figma, then three steps: **Log in** (gh's own login for GitHub, nothing to paste; else
+  one paste — an app password, a token — with the link to the page that makes it; Slack's app comes
+  from a ready manifest), **What** (repos, channels, projects, spaces or files, this project's repo
+  ticked; *about me* on), **Check** (the first look, made now: as whom, what it hears, how many are
+  there — marked seen, not sent) and **Add**. A source's row in Sources & intent says what it hears and
+  whether it fails, with Remove (confirmed). Not yet: GitLab, Discord, many GitHub repos and GitHub
+  notifications, listening through Claude's connectors.
+- **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
+  when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
+  moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,
+  `password_env: keychain:gmail-ann@gmail.com` (and `user:` holds a mailbox's address as written) — and
+  no model, toast or project file sees the token. A login that is gone reads `log in again`.
 - The Watchtower's `feeds` are asked every two minutes over HTTPS, read-only (those services send
   webhooks only to a public URL). One line a feed; options name environment variables, never the
   token itself:
@@ -943,6 +959,7 @@ onboarding (*Punk ork*).
 | ork slots | meat |
 | ork slots | food |
 | Budget | Treasury |
+| Login | — |
 | Stop all | War Horn |
 | Terminals | War Tent |
 | Answers | Orders |

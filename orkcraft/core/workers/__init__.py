@@ -127,8 +127,8 @@ class Worker:
         return True
 
     def save_config(self, changes: dict[str, Any]) -> bool:
-        """Change the building's settings and save its spec (checked like any spec)."""
-        spec = dict(self.spec, config={**self.config, **changes})
+        """Change the building's settings and save its spec (checked like any spec); a None takes a setting out."""
+        spec = dict(self.spec, config={k: v for k, v in {**self.config, **changes}.items() if v is not None})
         others = set(self.town.custom_specs) - {self.building_id}
         problems = masonry.save_spec(self.repo_root, spec, existing_ids=others)
         if problems:
