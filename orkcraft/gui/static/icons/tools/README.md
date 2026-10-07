@@ -1,10 +1,11 @@
 # AI tool glyphs
 
 One glyph per AI tool the orks run on (`realm/harnesses.py` `REGISTRY`): they tell *which tool* a row is
-about, beside its name. They follow every rule of the service glyphs
+about, beside its name. They follow the rules of the service glyphs
 ([../services/README.md](../services/README.md)): Simple Icons only (CC0-1.0, from the npm package, these
-from simple-icons 16.34.0), a path only, under 2 KB, drawn as a mask in the town's gold, in a well,
-`aria-hidden` with the name written next to it. The file is named by the tool's id in orkcraft.
+from simple-icons 16.34.0), a path only, under 2 KB, drawn as a mask in the town's gold, `aria-hidden` with
+the name written next to it. One difference: no well. The row's checkbox beside it is one already, and two
+in a row look odd. The file is named by the tool's id in orkcraft.
 
 A tool without a glyph shows its harness `mark` (the one the terminal and the settings show) as a text
 mark instead.

@@ -20,11 +20,11 @@ const GLYPHS = new Set(["github", "gitlab", "gmail", "discord", "jira", "conflue
 const TOOL_GLYPHS = new Set(["claude", "cursor", "pi"]);   // icons/tools
 
 /** A service's glyph (icons/services); a service without one shows its first letter, Slack its `#`.
- *  An AI tool's (`tool`, icons/tools); a tool without one shows its harness mark. */
+ *  An AI tool's (`tool`, icons/tools) stands bare beside its checkbox; a tool without one shows its harness mark. */
 function Glyph({ id, big = false, tool = false, mark = "" }) {
   const has = (tool ? TOOL_GLYPHS : GLYPHS).has(id);
   const text = has ? "" : mark || (id === "slack" ? "#" : (id[0] || "?").toUpperCase());
-  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${tool ? "tool-" : ""}${id}`, { "is-big": big, "has-glyph": has })}
+  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${tool ? "tool-" : ""}${id}`, { "is-big": big, "is-bare": tool, "has-glyph": has })}
     aria-hidden="true">${text}</span>`;
 }
 
