@@ -41,7 +41,7 @@ from dataclasses import asdict
 
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.watchtower_add import Adding
-from orkcraft.realm import fastpath, feeds, halt, inbound, lookout, mailbox, watch
+from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mailbox, watch
 
 REFRESH_S = 120.0
 CRON_S = 30.0
@@ -52,7 +52,7 @@ RAW_KEEP = 20000                                        # a raw webhook's body, 
 ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 LABEL = {"webhook": "hooks", "confluence": "confl"}     # six cells on the hut
 PREVIEW_W = 14                                          # a hut this wide previews the newest message
-ORDER = ("mail", "slack", "discord", "jira", "confluence", "figma", "github", "gitlab", "webhook", "cron")
+ORDER = ("mail", "slack", "discord", "jira", "confluence", "figma", "github", "gitlab", "agent", "webhook", "cron")
 
 
 def count(n: int) -> str:
@@ -65,6 +65,7 @@ class WatchtowerWorker(Worker):
     gh_runner = None                                    # and a fake `gh` here
     feed_opener = None                                  # and fake Slack / Jira / Confluence / Figma here
     judge_runner = None                                 # and a fake light model here
+    agent_runner = None                                 # and a fake `claude -p` for the agent source here
     clock = staticmethod(dt.datetime.now)
 
     def __init__(self, town, building_id: str) -> None:
@@ -73,6 +74,7 @@ class WatchtowerWorker(Worker):
         self.signals: list[watch.Signal] = []
         self.errors: dict[str, str] = {}
         self.kinds: dict[str, str] = {}                       # an error's key → login | target | network
+        self.waiting: dict[str, str] = {}                     # an agent source's line → why it does not look now
         self.checked = ""
         self.hook: watch.Webhook | None = None
         self.inbox: queue.SimpleQueue = queue.SimpleQueue()   # webhook signals, from the server's thread
@@ -329,21 +331,56 @@ class WatchtowerWorker(Worker):
         self._looking = True
         self.changed()
         cfg, factory, runner = self.config, type(self).imap_factory, type(self).gh_runner
-        gh_last = str(self._state().get("gh_last", ""))
-        opener, watched = type(self).feed_opener, self.polled
+        st = self._state()
+        gh_last = str(st.get("gh_last", ""))
+        opener, watched = type(self).feed_opener, self._due(st)
+        seen, since, ask = dict(st.get("feeds_seen") or {}), dict(st.get("feeds_at") or {}), type(self).agent_runner
+
+        def one(f: feeds.Feed) -> feeds.Look:
+            if f.kind == "agent":                          # through Claude: the last look's time and what it saw
+                return feeds_agent.look(f, since.get(f.identity, ""), seen.get(f.identity) or [], ask)
+            return feeds.look(f, opener or urllib.request.urlopen, runner)
 
         def work() -> None:
             try:
                 look = mailbox.look(cfg, factory) if cfg.get("host") else None
                 gh = watch.github_events(str(cfg["github"]), gh_last, *([runner] if runner else [])) \
                     if cfg.get("github") else None
-                looks = [(f, feeds.look(f, opener or urllib.request.urlopen, runner)) for f in watched]
+                looks = [(f, one(f)) for f in watched]
             except Exception as e:                       # a look that broke never stops the tower
                 self.town.call(self._failed, str(e))
                 return
             self.town.call(self.apply, look, gh, looks)
 
         self._thread(work, "watch-look")
+
+    def spent_today(self, feed: feeds.Feed, st: dict | None = None) -> float:
+        """What an agent source spent today, in dollars."""
+        day = ((st or self._state()).get("agent_spend") or {}).get(feed.identity) or {}
+        return float(day.get("usd") or 0.0) if day.get("day") == dt.date.today().isoformat() else 0.0
+
+    def _due(self, st: dict) -> list[feeds.Feed]:
+        """The feeds to look at now: every one but an agent source whose time has not come, whose ceiling
+        is reached, or while the run is out of 🪙. An agent source's look is marked started (`agent_at`),
+        so one that fails waits its `every=` too."""
+        out, started, at = [], dict(st.get("agent_at") or {}), (st.get("agent_at") or {})
+        self.waiting = {}
+        for f in self.polled:
+            if f.kind != "agent":
+                out.append(f)
+                continue
+            why = feeds_agent.due(f, at.get(f.identity, ""), self.spent_today(f, st))
+            if not why and not self.simulated and self.out_of_gold():
+                why = "🪙 budget exhausted — it waits"
+            if why:
+                if why != "not yet":
+                    self.waiting[f.line] = why
+                continue
+            started[f.identity] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+            out.append(f)
+        if started != at:
+            self._save_state(agent_at=started)
+        return out
 
     def _simulated_look(self) -> None:
         """The demo asks no server: the signals stay as the sandbox left them, and a source fails
@@ -392,7 +429,12 @@ class WatchtowerWorker(Worker):
         for key in [k for k in self.errors if k.startswith("feed:")]:
             del self.errors[key]
         sent: set[str] = set()
+        spend, today = dict(st.get("agent_spend") or {}), dt.date.today().isoformat()
         for feed, got in looks:
+            if got.cost is not None:                      # an agent source's look, paid: today's spend
+                day = spend.get(feed.identity) or {}
+                usd = (float(day.get("usd") or 0.0) if day.get("day") == today else 0.0) + got.cost
+                spend[feed.identity] = {"day": today, "usd": round(usd, 4)}
             if got.error:
                 self.errors[f"feed:{feed.line}"] = got.error
                 self.kinds[f"feed:{feed.line}"] = got.kind or "network"
@@ -409,10 +451,11 @@ class WatchtowerWorker(Worker):
                 self.add_signal(watch.Signal(watch.local_iso(item.at) if item.at else watch.now_iso(), feed.kind,
                                              item.title, f"{item.body}\n\n{item.url}".strip(), item.url,
                                              item.mention))
-        live = {f.identity for f, _ in looks}
+        live = {f.identity for f, _ in looks} | {f.identity for f in self.feeds}   # an agent source not due keeps its own
         self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live},
                          feeds_at={k: v for k, v in last.items() if k in live},
-                         feeds_line={k: v for k, v in lines.items() if k in live}, feeds_me=me)
+                         feeds_line={k: v for k, v in lines.items() if k in live}, feeds_me=me,
+                         agent_spend={k: v for k, v in spend.items() if k in live})
         self.changed()
 
     def apply_look(self, look: mailbox.Look) -> None:

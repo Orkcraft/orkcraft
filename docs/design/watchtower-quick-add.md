@@ -4,8 +4,10 @@ Status: written 2026-10-07. Built: Logins (§3), the flow in the panel (§4) wit
 the three steps, for GitHub (gh or a token; many repos and the notifications), GitLab (glab or a
 token; to-dos and projects), Gmail, Slack, Discord (a bot, its invite link, *me*), Jira, Confluence
 and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), **Everything** (§6) for
-GitHub, Slack, Discord, Jira, Confluence and Gmail, Remove in Sources & intent. Not yet: the agent
-source (§7), Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
+GitHub, Slack, Discord, Jira, Confluence and Gmail, Remove in Sources & intent, and the agent source's
+listening (§7: the `agent:` line, its look, cost, ceiling and failures). Not yet: the agent source in
+the picker (§7.3 — its tiles, *Use Claude's connection*, step 2 through the agent; a line is written
+by hand or by the steward meanwhile), agy as a carrier, Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
 panel (GitHub without gh asks for a token instead), pushes (GitLab's webhook, Discord's Gateway). Items
 marked *(check)* have not been verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop
@@ -413,6 +415,20 @@ logins work.
 - **Halt All** stops a look in flight; the next one starts from the same time.
 - **Spec:** `agent: tool=claude server=atlassian every=15m ask=new comments and mentions in Jira`
   (`ask=` takes the rest of the line; `tool=agy` for agy).
+
+**Built** (`realm/feeds_agent.py`): `agent: tool=claude server=<name> tools=<read-only tools> every=30m
+ceiling=0.50 ask=<the rest of the line>`. `tools=` is the allow-list, by hand for now (the tools the
+setup would pick, §7.5's list for Atlassian); a run is `claude -p` with `--output-format stream-json
+--verbose --json-schema`, `--allowedTools` exactly those (as `mcp__<server>__<tool>`), the usual
+`--disallowedTools` for the shell and files, the light model, stdin empty, 90 s, Stop all stops it.
+The init event fails a look whose server is missing (*a target*) or `needs-auth` (*the login* — run
+`/mcp`); a schema `error` fails it as a target; a refused tool drops its items; an answer not by
+schema is asked once more. Each run's cost goes to Spend (`telemetry.charge`) and to the source's
+day; past `ceiling=` (0.50 a day by default) or out of 🪙 it waits, its line saying why. A look
+that fails still waits its `every=`. The source's line reads `via Claude · atlassian · every 30 min
+· … · ≈ $0.12 today`. Not built: the Town Hall's audit entry for a refused tool, the model's
+thinking switched off *(check: how, headless)*, the ids a look learns kept for the next (§7.2 *The
+same path every time*), agy.
 
 ### 7.3 Where it fits in the flow
 

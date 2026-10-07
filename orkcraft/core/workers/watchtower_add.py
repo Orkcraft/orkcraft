@@ -374,6 +374,9 @@ def _hears(feed: feeds.Feed) -> list[str]:
     """What a feed line hears, in words: `acme.atlassian.net · about you · projects WEB`."""
     o = feed.opts
     out = [o["site"]] if o.get("site") else []
+    if feed.kind == "agent":
+        from orkcraft.realm import feeds_agent
+        return [f"via Claude · {o.get('server', '')}", f"every {feeds_agent.every(feed)} min", o.get("ask", "")]
     if (feed.on("everything") or o.get("notifications") == "all" or o.get("guilds")
             or o.get("jql") == feeds.EVERYTHING_JQL or o.get("cql") == feeds.EVERYTHING_CQL):
         out.append("everything" + (f" · servers {o['guilds']}" if o.get("guilds") else ""))
@@ -435,7 +438,12 @@ def listed(worker) -> list[dict]:
         how = ("a login" if feed and any(v.startswith("keychain:") for v in feed.opts.values()) else
                "gh" if kind == "github" and not feed.opts.get("token") else
                "glab" if kind == "gitlab" and not feed.opts.get("token") else "the environment")
-        out.append(_entry(worker, f"feed:{line}", kind, quickadd.SERVICES[kind].label if kind in quickadd.SERVICES else kind,
+        if kind == "agent":                               # no login here: what it costs instead
+            how = f"≈ ${worker.spent_today(feed):.2f} today"
+            if line in worker.waiting:
+                how += f" · {worker.waiting[line]}"
+        out.append(_entry(worker, f"feed:{line}", kind, quickadd.SERVICES[kind].label if kind in quickadd.SERVICES else
+                          "Through Claude" if kind == "agent" else kind,
                           f"{what} · {how}".strip(" ·"), worker.errors.get(f"feed:{line}", "")))
     if c.get("cron"):
         out.append(_entry(worker, "cron", "cron", "Schedule", str(c["cron"]), ""))

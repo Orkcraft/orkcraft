@@ -26,6 +26,9 @@ the token itself (the Town Hall's Warder flags a spec that does) — or a login 
     discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789
         new messages in the channels a bot you invited can see; one that mentions you (`me=`, your
         user id) or the bot, or answers you, is a mention (realm/feeds_discord.py)
+    agent: tool=claude server=atlassian tools=searchJiraIssuesUsingJql every=30m ask=new comments in Jira
+        the person's own connector, asked by a headless Claude allowed only those read-only tools;
+        `ask=` takes the rest of the line (realm/feeds_agent.py)
 
 A look that fails says which of three it is (`Look.kind`), so the fix is one button: `login` (the
 token was refused or is gone — log in again), `target` (a channel, repo or file is gone or out of
@@ -64,8 +67,10 @@ KINDS = {                       # kind: (required options, optional options, the
     "github": ((), ("repos", "notifications", "token"), ""),
     "gitlab": ((), ("host", "token", "projects", "todos"), ""),
     "discord": (("token",), ("channels", "guilds", "me"), ""),
+    "agent": (("server", "tools"), ("tool", "every", "ceiling"), "ask"),
 }
-ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨", "github": "🐙", "gitlab": "🦊", "discord": "🎮"}
+ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨", "github": "🐙", "gitlab": "🦊", "discord": "🎮",
+        "agent": "🤖"}
 HOST = {"slack": "slack.com", "figma": "api.figma.com", "github": "api.github.com", "discord": "discord.com"}
 FAILS = ("login", "target", "network")          # what a failed look says to do: log in again, edit, wait
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
@@ -104,6 +109,8 @@ class Feed:
     @property
     def identity(self) -> str:
         """Who is asked and as whom: what it has seen survives a change of channels, files or query."""
+        if self.kind == "agent":                 # no login of its own: the server and the ask say who
+            return "|".join(["agent", self.opts.get("server", ""), self.opts.get("ask", "")])
         site = self.opts.get("site", "") or (self.host if self.kind == "gitlab" else "")
         return "|".join([self.kind, site] + [self.opts.get(k, "") for k in ("user", "token")])
 
@@ -135,6 +142,7 @@ class Look:
     error: str = ""
     me: dict = field(default_factory=dict)                 # who you are there: webhooks tell mentions by it
     kind: str = ""                                         # when it failed: login | target | network (FAILS)
+    cost: float | None = None                              # what a look through a model cost (feeds_agent.py)
 
 
 class Failed(Exception):
@@ -198,6 +206,17 @@ def parse(line: str) -> tuple[Feed | None, str]:
         return None, "discord: set channels= (or guilds= for every channel of a server)"
     if kind == "gitlab" and not (opts.get("projects") or opts.get("todos") == "on"):
         return None, "gitlab: set projects= or todos=on"
+    if kind == "agent":
+        if opts.get("tool", "claude") not in ("claude", "agy"):
+            return None, "agent: tool= is claude or agy"
+        if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", opts.get("server", "")):
+            return None, "agent: server= is the MCP server's name, like atlassian"
+        if not all(re.fullmatch(r"[A-Za-z0-9_.-]{1,120}", t) for t in opts["tools"].split(",")):
+            return None, "agent: tools= is a comma-separated list of the server's read-only tools"
+        if opts.get("every") and not re.fullmatch(r"\d{1,4}m?", opts["every"]):
+            return None, "agent: every= is minutes, like 30m"
+        if opts.get("ceiling") and not re.fullmatch(r"\d{1,4}(\.\d{1,2})?", opts["ceiling"]):
+            return None, "agent: ceiling= is dollars a day, like 0.50"
     if kind == "discord" and opts.get("me") and not opts["me"].isdigit():
         return None, "discord: me= is your user id (digits)"
     return Feed(kind, opts, line.strip(), poll=not missing), ""
@@ -426,8 +445,9 @@ def reader(kind: str):
     """The function that looks at a feed of `kind`; GitHub, GitLab and Discord live in their own modules."""
     if kind in READERS:
         return READERS[kind]
-    from orkcraft.realm import feeds_discord, feeds_git     # they import this module
-    return {"github": feeds_git.github, "gitlab": feeds_git.gitlab, "discord": feeds_discord.discord}[kind]
+    from orkcraft.realm import feeds_agent, feeds_discord, feeds_git     # they import this module
+    return {"github": feeds_git.github, "gitlab": feeds_git.gitlab, "discord": feeds_discord.discord,
+            "agent": lambda feed, opener: feeds_agent.look(feed)}[kind]
 
 
 def look(feed: Feed, opener=urllib.request.urlopen, runner=None) -> Look:

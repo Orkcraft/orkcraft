@@ -48,7 +48,7 @@
 .gui-svc.is-big { width: 34px; height: 34px; font-size: 18px; }
 .gui-svc::before { content: ""; width: 62%; height: 62%; background: var(--ink-gold);
   -webkit-mask: var(--svc) center / contain no-repeat; mask: var(--svc) center / contain no-repeat; }
-.gui-svc--slack::before, .gui-svc--cron::before, .gui-svc--webhook::before, .gui-svc--mail::before, .gui-svc--\?::before { display: none; }
+.gui-svc--slack::before, .gui-svc--agent::before, .gui-svc--cron::before, .gui-svc--webhook::before, .gui-svc--mail::before, .gui-svc--\?::before { display: none; }
 .gui-svc--github { --svc: url("../../icons/services/github.svg"); }
 .gui-svc--gitlab { --svc: url("../../icons/services/gitlab.svg"); }
 .gui-svc--gmail { --svc: url("../../icons/services/gmail.svg"); }

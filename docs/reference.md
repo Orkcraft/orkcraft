@@ -354,7 +354,15 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   (`everything=on`), every channel of the servers a Discord bot is in (`guilds=`), every issue of a
   Jira site (`jql=updated >= -1d`), every Confluence page and comment, the whole Gmail mailbox (All
   Mail); a tower with no intent asks for one there (empty keeps everything). Figma's whole team waits
-  for push. Not yet: listening through Claude's connectors.
+  for push.
+- **Through Claude** (design/watchtower-quick-add.md §7): a `feeds` line `agent: tool=claude
+  server=atlassian tools=searchJiraIssuesUsingJql,getJiraIssue every=30m ceiling=0.50 ask=new comments
+  and mentions in Jira` hears a service through the person's own connector in Claude Code, no token
+  on this machine: a headless `claude -p` on the light model, allowed only the tools listed (name
+  read-only ones), the answer by schema. Every 30 min by default (10 at the fastest); each look's cost
+  goes to Spend and to the source's line (`≈ $0.12 today`); past its `ceiling=` dollars a day it
+  waits until tomorrow. A server that needs a login says *run /mcp in Claude Code*. The picker does
+  not offer it yet: write the line, or ask the steward.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,

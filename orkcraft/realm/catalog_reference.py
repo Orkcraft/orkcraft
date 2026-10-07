@@ -74,7 +74,8 @@ ACCEPTS: dict[str, frozenset[str]] = {
 EFFECTS: dict[str, str] = {
     "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma, GitHub, GitLab, Discord) "
                   "over the network; "
-                  "listens for webhooks on 127.0.0.1; an `intent` runs a light model",
+                  "listens for webhooks on 127.0.0.1; an `intent` runs a light model; an `agent:` feed runs Claude "
+                  "(spends money) with read-only tools",
     "barracks": "runs agents (spends money) in git worktrees; pushes an accepted task's branch and opens a pull request "
                 "(code and documents that go out; local documents stay)",
     "council": "runs agents (spends money); members read the repository and the web",
@@ -109,7 +110,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "token=ATL_TOKEN`, `confluence: … spaces=DOC`, `figma: token=FIGMA_TOKEN files=AbC123`, "
                  "`github: repos=acme/app,acme/api notifications=on` (gh's login, or token=), "
                  "`gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on`, "
-                 "`discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789`; "
+                 "`discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789`, "
+                 "`agent: tool=claude server=atlassian tools=searchJiraIssuesUsingJql every=30m ask=new comments in Jira` "
+                 "(through Claude's own connector, read-only tools only, costs a model run each look); "
                  "`secret=` names a webhook's secret",
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",

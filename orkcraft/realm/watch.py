@@ -28,7 +28,7 @@ from orkcraft.realm.feeds_git import describe   # noqa: F401 (watch.describe, as
 
 GH_TIMEOUT_S = 15
 MAX_BODY = 1024 * 1024
-FEEDS = ("slack", "jira", "confluence", "figma", "gitlab", "discord")      # realm/feeds.py: comments and mentions
+FEEDS = ("slack", "jira", "confluence", "figma", "gitlab", "discord", "agent")      # realm/feeds.py: comments and mentions
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
