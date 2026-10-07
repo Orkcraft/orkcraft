@@ -1,4 +1,4 @@
-"""🪙 Gold and 🪵 Lumber for one orkcraft run, read from the Claude Code transcripts it started.
+"""🪙 Gold and 🪵 Lumber for one orkcraft run, read from the transcripts of the sessions it started.
 
 Every War Tent terminal gets `ORKCRAFT_RUN` (this run's id) and `ORKCRAFT_TERMINAL` (its key);
 `scripts/session_hook.py` writes them next to the session's transcript path in
@@ -6,8 +6,9 @@ Every War Tent terminal gets `ORKCRAFT_RUN` (this run's id) and `ORKCRAFT_TERMIN
 each refresh) and prices every assistant message with `pricing.usage_cost`, counting only
 messages timestamped after the run started — a resumed session's old history is not this run's.
 
-Costs are API-equivalent estimates (see `pricing`); agy sessions have no published prices and
-are counted as unpriced, never as $0.
+Costs are API-equivalent estimates (see `pricing`). pi prices each message itself (its session
+JSONL, `usage.cost.total`) and Hermes each session (`estimated_cost_usd` in its `state.db`): their
+own figures count. agy, Codex and Cursor print no price: unpriced, never $0.
 
 Model calls that leave no transcript of this run — the Council's Fast Path, the Elders, the Builder,
 the Recruiter, the daily proposal and the weekly self-audit (`claude -p` in an empty folder), the
@@ -136,6 +137,100 @@ class _Meter:
 
 
 @dataclass
+class _PiMeter:
+    """A pi session file (`~/.pi/agent/sessions/…/<ts>_<id>.jsonl`): each assistant message's own price."""
+    offset: int = 0
+    seen: set[str] = field(default_factory=set)
+    cost: float = 0.0
+    unpriced: set[str] = field(default_factory=set)
+    context: int = 0
+    model: str = ""
+
+    def feed(self, path: Path, since: dt.datetime) -> None:
+        try:
+            size = path.stat().st_size
+        except OSError:
+            return
+        if size < self.offset:
+            self.__init__()
+        if size == self.offset:
+            return
+        with path.open("rb") as f:
+            f.seek(self.offset)
+            data = f.read(size - self.offset)
+        end = data.rfind(b"\n")
+        if end < 0:
+            return
+        self.offset += end + 1
+        for raw in data[: end + 1].splitlines():
+            if len(raw) > MAX_LINE or b'"assistant"' not in raw:
+                continue
+            try:
+                e = json.loads(raw)
+            except ValueError:
+                continue
+            msg = e.get("message") if isinstance(e, dict) and isinstance(e.get("message"), dict) else {}
+            usage = msg.get("usage") if isinstance(msg.get("usage"), dict) else None
+            if e.get("type") != "message" or msg.get("role") != "assistant" or usage is None:
+                continue
+            mid = str(e.get("id") or "")
+            if mid and mid in self.seen:
+                continue
+            self.seen.add(mid)
+            self.context = sum(int(usage.get(k) or 0) for k in ("input", "cacheRead", "cacheWrite"))
+            self.model = str(msg.get("model") or self.model)
+            when = _ts(e.get("timestamp"))
+            if when is not None and when < since:
+                continue
+            total = (usage.get("cost") or {}).get("total") if isinstance(usage.get("cost"), dict) else None
+            if isinstance(total, (int, float)):
+                self.cost += float(total)
+            else:
+                self.unpriced.add(self.model or "pi")
+
+
+@dataclass
+class _HermesMeter:
+    """A Hermes session: its running `estimated_cost_usd` in `$HERMES_HOME/state.db`, less what it had
+    cost before this run when it started earlier (a resumed session)."""
+    session: str = ""
+    base: float | None = None
+    cost: float = 0.0
+    unpriced: set[str] = field(default_factory=set)
+    context: int = 0
+    model: str = ""
+
+    def feed(self, db: Path, since: dt.datetime) -> None:
+        import sqlite3
+        try:
+            con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
+            try:
+                row = con.execute("SELECT estimated_cost_usd, started_at, model, input_tokens, cache_read_tokens "
+                                  "FROM sessions WHERE id = ?", (self.session,)).fetchone()
+            finally:
+                con.close()
+        except sqlite3.Error:
+            return
+        if row is None:
+            return
+        usd, started, model, fresh, cached = row
+        self.model, self.context = str(model or ""), int(fresh or 0) + int(cached or 0)
+        if not isinstance(usd, (int, float)):
+            self.unpriced.add(self.model or "hermes")
+            return
+        if self.base is None:
+            begun = isinstance(started, (int, float)) and started >= since.timestamp()
+            self.base = 0.0 if begun else float(usd)
+        self.cost = max(float(usd) - self.base, 0.0)
+
+
+def hermes_db(env: dict | None = None) -> Path:
+    import os
+    env = os.environ if env is None else env
+    return Path(env.get("HERMES_HOME") or Path.home() / ".hermes") / "state.db"
+
+
+@dataclass
 class Snapshot:
     spent_usd: float = 0.0
     sessions: int = 0                                  # sessions of this run with a transcript
@@ -152,11 +247,12 @@ class Telemetry:
         self.repo_root = repo_root
         self.run_id = run_id
         self.started = started or dt.datetime.now().astimezone()
-        self._meters: dict[str, _Meter] = {}
+        self._meters: dict[str, _Meter | _PiMeter | _HermesMeter] = {}
 
-    def _this_run(self) -> tuple[dict[str, str], set[str]]:
-        """terminal key → transcript path for this run's Claude sessions; unpriced harnesses."""
-        transcripts: dict[str, str] = {}
+    def _this_run(self) -> tuple[dict[str, tuple[str, str]], set[str]]:
+        """terminal key → (harness, transcript path or Hermes session id) for this run's sessions that
+        say what they cost (Claude Code, pi, Hermes); the harnesses that do not."""
+        transcripts: dict[str, tuple[str, str]] = {}
         unpriced: set[str] = set()
         try:
             lines = log_file(self.repo_root).read_text(encoding="utf-8").splitlines()
@@ -172,19 +268,25 @@ class Telemetry:
             if e.get("run") != self.run_id:
                 continue
             terminal = str(e.get("terminal") or e.get("session") or "")
-            if e.get("harness") != "claude":
-                unpriced.add(str(e.get("harness") or "unknown"))
-                continue
-            if e.get("transcript"):
-                transcripts[terminal] = str(e["transcript"])
+            harness = str(e.get("harness") or "unknown")
+            if harness == "hermes" and e.get("session"):
+                transcripts[terminal] = (harness, str(e["session"]))
+            elif harness in ("claude", "pi") and e.get("transcript"):
+                transcripts[terminal] = (harness, str(e["transcript"]))
+            elif harness not in ("claude", "pi", "hermes"):
+                unpriced.add(harness)
         return transcripts, unpriced
 
     def refresh(self) -> Snapshot:
         snap = Snapshot()
         transcripts, snap.unpriced = self._this_run()
-        for terminal, path in transcripts.items():
-            meter = self._meters.setdefault(path, _Meter())
-            meter.feed(Path(path), self.started)
+        for terminal, (harness, path) in transcripts.items():
+            if harness == "hermes":
+                meter = self._meters.setdefault(f"hermes:{path}", _HermesMeter(session=path))
+                meter.feed(hermes_db(), self.started)
+            else:
+                meter = self._meters.setdefault(path, _PiMeter() if harness == "pi" else _Meter())
+                meter.feed(Path(path), self.started)
             snap.spent_usd += meter.cost
             snap.unpriced |= meter.unpriced
             snap.context_by_terminal[terminal] = meter.context

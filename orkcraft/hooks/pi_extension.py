@@ -35,6 +35,10 @@ function sid(ctx: any): string {
   try { return String(ctx.sessionManager.getSessionId() || ""); } catch { return ""; }
 }
 
+function file(ctx: any): string {
+  try { return String(ctx.sessionManager.getSessionFile() || ""); } catch { return ""; }
+}
+
 export default function (pi: any) {
   pi.on("tool_call", async (event: any, ctx: any) => {
     const v = call("warder", { hook_event_name: "PreToolUse", tool_name: event.toolName, tool_input: event.input,
@@ -48,11 +52,11 @@ export default function (pi: any) {
     return undefined;
   });
   pi.on("session_start", async (event: any, ctx: any) => {
-    call("session", { hook_event_name: "SessionStart", session_id: sid(ctx), cwd: ctx.cwd });
+    call("session", { hook_event_name: "SessionStart", session_id: sid(ctx), cwd: ctx.cwd, transcript_path: file(ctx) });
   });
   pi.on("input", async (event: any, ctx: any) => {
     call("session", { hook_event_name: "UserPromptSubmit", session_id: sid(ctx), cwd: ctx.cwd,
-                      prompt: String(event.text || "") });
+                      transcript_path: file(ctx), prompt: String(event.text || "") });
     return { action: "continue" };
   });
 }
