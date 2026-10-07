@@ -59,13 +59,17 @@ code → hands-on work), so ★ still finds the towns that fit.
 
 | Role | Kin | Mascot |
 |---|---|---|
-| Software engineer · QA engineer | orks | Merge Ork · Bug Ork |
-| Engineering manager · Product manager | undead | Jira Lich · Roadmap Wraith |
-| Product designer · Game designer | elves | Figma Elf · Lore Elf |
-| ASO manager · Marketing / growth | gnomes | Keyword Gnome · Funnel Gnome |
-| Data analyst | goblins | Dashboard Goblin |
+| Software engineer · QA engineer | orks | Burnout Peon · Bug Ork |
+| Engineering manager · Product manager | undead | The Jira Lich · Roadmap Wraith |
+| Product designer · Game designer | elves | Gradient-Sick Elf · Lore Elf |
+| ASO manager · Marketing / growth | gnomes | Keyword Gnome · Growth-Hack Gnome |
+| Data analyst | goblins | Data-Mining Goblin |
 | Founder / indie maker | knights | Indie Knight |
 | Someone else | skeletons | Wandering Skeleton |
+
+The nicks of the first role of each kin are the classes of orkcraft.dev. The page hands its pick to
+`orkcraft --role <class>` (or a role id): it is kept in `profile.role` before the first run, so this
+screen opens on it (`intents.CLASSES`, `settings.preset_role`); a role picked in a finished onboarding stays.
 
 Stored: `profile.orchestration`, `role`, `role_other`, `industry`, `industry_other`, `day`, `day_other`.
 

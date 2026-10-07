@@ -35,7 +35,7 @@ class Role:
     mascot: str                               # orc · elf · lich · gnome · goblin · knight · skeleton
     sources: tuple[str, ...] = ()             # interview options most people in the role use
     outputs: tuple[str, ...] = ()
-    nick: str = ""                            # the mascot's name: Merge Ork, Jira Lich, Indie Knight…
+    nick: str = ""                            # the mascot's name: Burnout Peon, The Jira Lich, Indie Knight…
 
     @property
     def label(self) -> str:
@@ -113,24 +113,24 @@ MASCOTS: dict[str, tuple[str, ...]] = {
 
 ROLES: tuple[Role, ...] = (
     Role("engineer", "🛠", "Software engineer", "orc",
-         ("github", "jira", "slack", "sentry", "repo"), ("github", "jira", "slack"), "Merge Ork"),
+         ("github", "jira", "slack", "sentry", "repo"), ("github", "jira", "slack"), "Burnout Peon"),
     Role("qa", "🧪", "QA engineer", "orc",
          ("jira", "github", "sentry", "repo"), ("jira", "slack", "md_reports"), "Bug Ork"),
     Role("eng_manager", "🧭", "Engineering manager", "lich",
-         ("jira", "github", "slack", "gcal", "confluence"), ("confluence", "slack", "md_reports"), "Jira Lich"),
+         ("jira", "github", "slack", "gcal", "confluence"), ("confluence", "slack", "md_reports"), "The Jira Lich"),
     Role("product_manager", "📋", "Product manager", "lich",
          ("jira", "confluence", "analytics", "slack", "mail"), ("confluence", "jira", "slack"), "Roadmap Wraith"),
     Role("designer", "🎨", "Product designer", "elf",
-         ("figma", "jira", "notion", "slack"), ("figma", "jira", "slack"), "Figma Elf"),
+         ("figma", "jira", "notion", "slack"), ("figma", "jira", "slack"), "Gradient-Sick Elf"),
     Role("game_designer", "🎮", "Game designer", "elf",
          ("confluence", "gsheets", "jira", "files"), ("confluence", "gsheets", "jira"), "Lore Elf"),
     Role("aso_manager", "📈", "ASO manager", "gnome",
          ("app_store", "google_play", "aso_tools", "analytics", "gsheets"), ("gsheets", "app_store", "slack"),
          "Keyword Gnome"),
     Role("marketing", "📣", "Marketing / growth manager", "gnome",
-         ("analytics", "gsheets", "crm", "slack", "notion"), ("gdocs", "slack", "asana"), "Funnel Gnome"),
+         ("analytics", "gsheets", "crm", "slack", "notion"), ("gdocs", "slack", "asana"), "Growth-Hack Gnome"),
     Role("data_analyst", "📊", "Data analyst", "goblin",
-         ("analytics", "gsheets", "files", "jira"), ("gsheets", "md_reports", "slack"), "Dashboard Goblin"),
+         ("analytics", "gsheets", "files", "jira"), ("gsheets", "md_reports", "slack"), "Data-Mining Goblin"),
     Role("founder", "🛡", "Founder / indie maker", "knight",
          ("mail", "github", "analytics", "notion"), ("github", "notion", "mail"), "Indie Knight"),
     Role(OTHER, "🧩", "Someone else", "skeleton", ("mail", "slack", "gdrive", "files"), ("gdocs", "slack", "mail"),
@@ -533,6 +533,23 @@ INTENTS: tuple[Intent, ...] = (
 
 def role(role_id: str) -> Role:
     return next((r for r in ROLES if r.id == role_id), ROLES[-1])
+
+
+# The classes of orkcraft.dev, each the role its card stands for: the page hands its pick to
+# `orkcraft --role <class>`, and the onboarding opens on that role (its nick is the class's name).
+CLASSES: dict[str, str] = {
+    "peon": "engineer", "knight": "founder", "elf": "designer",
+    "lich": "eng_manager", "gnome": "marketing", "goblin": "data_analyst",
+}
+
+
+def role_id_of(word: str) -> str | None:
+    """A role from what `--role` was given: a role's id (`founder`) or a class of orkcraft.dev
+    (`knight`); None for anything else."""
+    w = (word or "").strip().lower().replace("-", "_")
+    if w in CLASSES:
+        return CLASSES[w]
+    return w if any(r.id == w for r in ROLES) else None
 
 
 def industry(industry_id: str) -> Choice | None:
