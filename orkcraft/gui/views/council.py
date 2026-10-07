@@ -26,15 +26,16 @@ def card(w) -> dict:
     """Closed (docs/design/building-views.md): `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` while it reviews, else the last
     outcome; what it reviews, `N queued`, and the last turn (who said what, when)."""
     d = w.current
-    out = {"state": "none", "queued": len(w.waiting), "triage": bool(w.routes), "of": len(w.team)}
+    out = {"state": "none", "queued": len(w.waiting), "triage": bool(w.routes), "of": len(w.team),
+           "set_up": w.set_up, "phase": w.phase(), "exits": [e.name for e in w.exits] if w.named else []}
     if d is None:
         return out
     out.update({"state": "running" if d.outcome == "running" else d.outcome, "cycle": d.cycle, "max": w.max_cycles,
-                "route": d.route, "title": d.title[:80],
+                "route": d.route, "exit": d.exit, "title": d.title[:80],
                 "spent": _money(d.spent), "outcome": OUTCOME.get(d.outcome, d.outcome), **_tally(d)})
     if d.turns:
         t = d.turns[-1]
-        out["last"] = {"who": "Steward" if t.kind == "decide" else t.role, "kind": t.kind, "verdict": t.verdict,
+        out["last"] = {"who": "Steward" if t.kind == "decide" and t.role != "Operator" else t.role, "kind": t.kind, "verdict": t.verdict,
                        "at": t.at[11:16]}
     return out
 
@@ -53,11 +54,12 @@ def _review(w, d: tm.Discussion, full: bool) -> dict:
     row = {"id": d.id, "title": d.title, "cycle": d.cycle, "outcome": d.outcome,
            "outcome_word": OUTCOME.get(d.outcome, d.outcome), "spent": _money(d.spent),
            "started": d.started.replace("T", " ")[:16], "route": d.route, "task": d.task, "when": d.when,
+           "exit": d.exit,
            **_tally(d)}
     if full:
         row.update({"doc": d.doc[:KEEP], "doc_html": markdown.render(d.doc), "doc_path": d.doc_path,
                     "question": d.question if d.outcome == "asked" else "", "decision": d.decision, "error": d.error,
-                    "turns": [_turn(t) for t in d.turns],
+                    "turns": [_turn(t) for t in d.turns], "out": d.out, "vetoed": tm.vetoed(d),
                     "report": tm.report_markdown(d, w.team), "report_html": markdown.render(tm.report_markdown(d, w.team))})
     return row
 
@@ -85,6 +87,11 @@ def detail(w) -> dict:
         "steward": {"label": steward.harness + (f":{steward.model}" if steward.model else ""),
                     "brief": w.rel(w.steward_file), "briefed": bool(steward.brief), "prompt": steward.prompt},
         "max_cycles": w.max_cycles, "budget": _money(w.budget), "busy": w.busy, "routes": w.routes,
+        "set_up": w.set_up, "purpose": str(w.config.get("purpose") or w.steward().prompt or ""), "phase": w.phase(),
+        "named": w.named, "exits": [{"id": e.id, "name": e.name, "when": e.when, "connected": w.connected(e)} for e in w.exits],
+        "answers": [{"id": i, "words": t, "open": w.open_exit(i)} for i, t in w.answers()] if d is not None and d.outcome in
+                   ("asked", "budget", "error", "stopped") and not w.busy else [],
+        "setup": w.setup.view(),
         "current": _review(w, d, True) if d is not None else None,
         "cycles": cycles,
         "queued": [x[0] for x in w.waiting],
@@ -138,4 +145,83 @@ def _show(w, args: dict) -> dict:
     return _review(w, d, True)
 
 
-ACTS = {"review": _review_act, "answer": _answer, "add_member": _add_member, "stop": _stop, "show": _show}
+# -- the exits, the ways on, the line (docs/design/review-board.md) ------------------------------------
+
+def _decide(w, args: dict) -> str:
+    """The person sends the review down an exit (its id, or `back`), their comment as the verdict's words."""
+    try:
+        return w.decide_now(text(args, "exit", 40), text(args, "comment", 20_000))
+    except ValueError as e:
+        raise ActError(str(e)) from None
+
+
+def _go_on(w, args: dict) -> bool:
+    if not w.go_on():
+        raise ActError("Nothing to go on with")
+    return True
+
+
+def _review_next(w, args: dict) -> bool:
+    if not w.review_next():
+        raise ActError("Nothing waits, or a review is under way")
+    return True
+
+
+def _drop(w, args: dict) -> bool:
+    try:
+        index = int(args.get("index"))
+    except (TypeError, ValueError):
+        raise ActError("Which one?") from None
+    if not w.drop(index):
+        raise ActError("That one is gone")
+    return True
+
+
+# -- the setup: purpose → clan → exits, in the panel (core/workers/council_setup.py) -------------------
+
+def _setup(fn):
+    def act(w, args: dict):
+        try:
+            return fn(w, args)
+        except ValueError as e:
+            raise ActError(str(e)) from None
+    return act
+
+
+@_setup
+def _setup_open(w, args: dict) -> None:
+    w.setup.open(text(args, "step", 20) or "purpose")
+
+
+@_setup
+def _setup_go(w, args: dict) -> None:
+    w.setup.go(text(args, "step", 20))
+
+
+@_setup
+def _propose(w, args: dict) -> None:
+    w.setup.propose(text(args, "purpose", 2000))
+
+
+def _list(args: dict, key: str) -> list:
+    value = args.get(key) or []
+    if not isinstance(value, list) or not all(isinstance(x, dict) for x in value):
+        raise ActError(f"{key} is not a list")
+    return value[:20]
+
+
+@_setup
+def _setup_save(w, args: dict) -> bool:
+    return w.setup.save(text(args, "purpose", 2000), _list(args, "members"), _list(args, "exits"))
+
+
+@_setup
+def _setup_close(w, args: dict) -> None:
+    w.setup.close()
+    w.changed()
+
+
+ACTS = {"review": _review_act, "answer": _answer, "add_member": _add_member, "stop": _stop, "show": _show,
+        "decide": _decide, "go_on": _go_on, "review_next": _review_next, "drop": _drop,
+        "setup_open": _setup_open, "setup_go": _setup_go, "propose": _propose, "setup_save": _setup_save,
+        "setup_close": _setup_close}

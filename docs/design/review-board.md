@@ -1,6 +1,6 @@
 # Design — the Review board: a purpose, a clan, named exits
 
-Status: a plan, written 2026-10-07; nothing of it is built. The Review board is the catalog's
+Status: written and built 2026-10-07 — all four stages of §8. Not built: the exits drawn as signed roads on the map (§2) and Go on resuming from the very turn it stopped at (it resumes with the members not yet heard). The Review board is the catalog's
 `council` (the Clan Fire of old: `core/workers/council.py`, `realm/team.py`, `gui/views/council.py`,
 `js/buildings/council.js`). Screenshots of every state it has today:
 https://claude.ai/artifact/HXs4DvsBndSTyyKrF5t3Uv

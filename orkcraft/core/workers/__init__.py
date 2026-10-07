@@ -101,6 +101,15 @@ class Worker:
         """One word for its state (WORKING, ERROR, …); "" when it has nothing to say."""
         return ""
 
+    def orders_alert(self):
+        """A question this building asks the person — (key, title, context, [(answer key, words)]) — which sets its
+        hut on fire and waits in Answers; None when it asks nothing (the GUI's roster reads it: gui/host.py)."""
+        return None
+
+    def answer_alert(self, key: str) -> str | None:
+        """The person picked answer `key` to `orders_alert()`; "dismiss" to put the question away."""
+        return None
+
     # -- telling the town -----------------------------------------------------------------------
 
     def changed(self) -> None:
