@@ -201,6 +201,24 @@ def question_of(text: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+# What an orc may publish, named first on its `PUBLISH:` line (`PUBLISH: ticket, Jira, project APP`), so a
+# Loot shows it before anyone opens the draft (realm/content.py has these among its types).
+PUBLISH_KINDS: tuple[tuple[str, str], ...] = (
+    ("message", "Slack, mail, a chat"), ("doc", "Confluence, Notion, a wiki page"),
+    ("ticket", "Jira, Linear, an issue"), ("code", "a pull request"), ("image", "a picture"),
+    ("data", "a JSON or CSV payload to an API"))
+_KIND = re.compile(rf"^\s*({'|'.join(k for k, _ in PUBLISH_KINDS)})\b\s*(?:[,:;|·—–-]\s*|$)", re.I)
+
+
+def publish_kind(target: str) -> tuple[str, str]:
+    """(kind, where) of a `PUBLISH:` target: the kind it names first, "" when it names none (an older
+    draft: `PUBLISH: Jira, APP`)."""
+    m = _KIND.match(target or "")
+    if m is None:
+        return "", (target or "").strip()
+    return m.group(1).lower(), target[m.end():].strip()
+
+
 def publish_of(text: str) -> tuple[str, str, str]:
     """(report, target, draft) when the orc prepared something to go out — a `PUBLISH: <where>` line and,
     below it, exactly what to post; else (text, "", "")."""
@@ -213,8 +231,11 @@ def publish_of(text: str) -> tuple[str, str, str]:
 APPROVE = frozenset({"yes", "y", "ok", "approve", "approved", "publish", "go", "да", "ок", "ага", "постить"})
 OUTSIDE_RULE = ("Never act outside this repository yourself: do not post, send or change anything in Jira, Confluence, "
                 "Slack, mail or any other service. When the task asks for that, prepare it instead: end your answer "
-                "with one line `PUBLISH: <where>` (e.g. `PUBLISH: Jira, project APP, a new Bug`) and below it exactly "
-                "what goes out — the title, the fields, the text. The operator approves it first; then you post it.")
+                "with one line `PUBLISH: <kind>, <where>` — the kind is what goes out, one of "
+                + "; ".join(f"{k} ({what})" for k, what in PUBLISH_KINDS)
+                + " — (e.g. `PUBLISH: ticket, Jira, project APP, a new Bug` or `PUBLISH: message, Slack #release`) and "
+                "below it exactly what goes out — the title, the fields, the text. The operator approves it first; "
+                "then you post it.")
 
 ANSWER_RULE = ("When the task only asks a question or for information (find, explain, compare), your report is the "
                "answer: write it there in full; it needs no commit.")
@@ -223,7 +244,7 @@ ANSWER_RULE = ("When the task only asks a question or for information (find, exp
 def publish_prompt(task: PoolTask) -> str:
     return "\n\n".join(p for p in [
         f"## Approved: {task.title}",
-        f"The operator approved what you prepared. Post it now to {task.target or 'where the task says'}, exactly as "
+        f"The operator approved what you prepared. Post it now to {publish_kind(task.target)[1] or 'where the task says'}, exactly as "
         "below (it may have been edited) — nothing more, nothing else. Then answer with a short report: where it "
         "went, with a link or an id.",
         f"PUBLISH: {task.target}" if task.target else "", task.publish] if p)

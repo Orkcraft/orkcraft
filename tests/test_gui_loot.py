@@ -34,7 +34,7 @@ def cart(value: str, ref: str, cost: float = 0.05) -> pipes.Payload:
 def test_the_card_counts_what_waits_and_what_it_cost(loot):
     host, bid, w = loot
     card = lambda: next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
-    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": "", "latest": "", "at": ""}
+    assert card() == {"to_review": 0, "needs_you": 0, "files": 0, "passed": 0, "cost": "", "latest": "", "at": "", "first": None, "pics": []}
     w.receive(cart("one", "A"), "Doc A", "one")
     w.receive(cart("two", "B", 0.10), "Doc B", "two")
     assert card()["to_review"] == 2 and card()["cost"] == "8.0k tok $0.15"
@@ -102,3 +102,57 @@ def test_changed_files_are_accepted_rejected_and_restored(loot):
 def test_the_worker_registers_itself():
     from orkcraft.core import workers
     assert workers.registry()["loot"] is LootWorker
+
+
+def test_each_cart_says_what_it_is_and_a_picture_shows_closed(loot):
+    host, bid, w = loot
+    root = host.town.repo_root
+    (root / "art").mkdir()
+    (root / "art" / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0" * 32)
+    w.receive(pipes.Payload(pipes.FILE, "art/logo.png", "camp", "pool.done", "The logo", (), "L"), "The logo", "")
+    w.receive(pipes.Payload(pipes.TEXT, "Wrote it.\n\nPUBLISH: Slack #release\n\nv2 is out", "camp", "pool.question",
+                            "Release note", (), "M"), "Release note", "")
+    queue = {i["label"]: i["what"] for i in host.detail(bid)["data"]["queue"]}
+    assert queue["The logo"]["type"] == "image" and queue["The logo"]["images"] == ["art/logo.png"]
+    msg = queue["Release note"]
+    assert (msg["type"], msg["where"], msg["body"], msg["lines"]) == ("message", "Slack #release", "v2 is out", ["v2 is out"])
+    card = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["card"]
+    assert card["first"]["type"] == "image" and [p["path"] for p in card["pics"]] == ["art/logo.png"]
+    assert msg["html"] == "<p>v2 is out</p>\n"                  # Markdown, as HTML
+    assert queue["The logo"]["html"] == ""                      # a file is not prose
+    item = next(i for i in w.queue.open() if i.ref == "L")
+    assert act(host, bid, "thumb", item=item.id, path="art/logo.png").startswith("data:image/png;base64,")
+    assert act(host, bid, "thumb", item=item.id, path="README.md") == ""          # not a picture
+    assert act(host, bid, "thumb", item=item.id, path="../logo.png") == ""        # not the cart's
+
+
+def test_accept_all_takes_the_person_s_edits_and_lets_drafts_be_published(loot):
+    host, bid, w = loot
+    w.receive(cart("## Plan\n\n- a", "A"), "Doc A", "## Plan\n\n- a")
+    draft = (pipes.hop("camp", "grub", "agent", 3000, 0.07, outcome=gate.APPROVAL),)
+    w.receive(pipes.Payload(pipes.TEXT, "Did it.\n\nPUBLISH: message, Slack #release\n\nv2 is out", "camp",
+                            "pool.question", "Release note", draft, "M"), "Release note", "")
+    a = next(i for i in w.queue.open() if i.ref == "A")
+    path = host.town.repo_root / act(host, bid, "edit", item=a.id)["path"]
+    path.write_text("## Today\n\n- a")                          # the person's edit, in Lake
+    plan = {x["label"]: x for x in act(host, bid, "accept_all_plan")["items"]}
+    assert plan["Doc A"]["edited"] and not plan["Doc A"]["out"]
+    assert plan["Release note"]["out"] and plan["Release note"]["type"] == "message"
+    published = []
+    w.approved_back = lambda source, payload: published.append(payload.ref) or "camp"
+    assert act(host, bid, "accept_all", items=[x["id"] for x in plan.values()]) == 2
+    kept = {x.title: (host.town.repo_root / x.path).read_text() for x in w.stored}
+    assert "## Today" in kept["Doc A"] and not path.exists()
+    assert published == ["M"]
+
+
+def test_accept_all_accepts_only_what_the_person_saw(loot):
+    host, bid, w = loot
+    w.receive(cart("one", "A"), "Doc A", "one")
+    seen = [x["id"] for x in act(host, bid, "accept_all_plan")["items"]]
+    w.receive(cart("two", "B"), "Doc B", "two")                 # it came while the dialog was open
+    assert act(host, bid, "accept_all", items=seen) == 1
+    assert [i.ref for i in w.queue.open()] == ["B"]
+    with pytest.raises(CommandError):
+        act(host, bid, "accept_all", items="B")
+    assert act(host, bid, "accept_all") == 1                     # the Steward's and the TUI's: every held one

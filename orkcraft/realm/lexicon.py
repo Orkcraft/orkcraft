@@ -64,6 +64,7 @@ TERMS: tuple[Term, ...] = (
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview", "", "ghost"),
     _t("loot", "output", "", "loot"),
+    _t("cart_type", "content type", "content types"),            # message, doc, ticket… (realm/content.py)
     _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
     # resources (HUD)
     _t("gold", "spend", "", "gold"),

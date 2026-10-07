@@ -73,6 +73,12 @@ send a held cart back (a chip for the reason, and a note) · `d` drop a cart · 
 rejected file · `o` open the highlighted file in the system viewer. Quick actions: ✓ Accept all
 (held carts), ✓ Accept files.
 
+**Accept all asks first.** It lists what it would accept — each held cart with its type, the
+drafts that go out as soon as they are accepted (and where), the person's edits — and accepts
+exactly those, not a cart that came while the dialog was open. Each cart is accepted as accepting it
+alone would be: the person's edit of it (its draft file), a draft handed back to its ork to be
+published. **Drop asks too**: a dropped cart is gone for good and its maker hears it was not wanted.
+
 **A cart's files.** Under each waiting cart the list shows the files its task committed on its
 branch: the latest hop that names a worktree and a branch (`gate.branch_of`), read there as
 `git diff --name-status <base>...<branch>` (`generated.Branch`; `origin/<base>` when the worktree
@@ -101,6 +107,19 @@ change in the working tree.
 
 ## 5. The views
 
+- **What a cart is** — every cart says it before it is opened (`realm/content.py`): a **message**
+  (Slack, mail, Telegram…), a **doc** (Confluence, Notion, a Markdown page), a **ticket** (Jira,
+  Linear, an issue), **code**, an **image**, **data** (JSON, CSV…) or **text**. Nothing in a cart says
+  so on its own; it is read off what the cart carries: a draft waiting for approval names it first
+  on its `PUBLISH: <kind>, <where>` line (`PUBLISH: ticket, Jira, project APP` — the orks are told
+  the kinds, `barracks.PUBLISH_KINDS`; an older draft without one is read by its place), and the
+  place is shown beside it (`Message · Slack #release`); a file cart by its
+  name, the files its work committed on its branch, else the text (JSON is data, Markdown with a
+  heading a doc). A card in the queue shows the type, where it goes, the title and the first lines of
+  what goes out — a draft without the ork's report — or thumbnails of its pictures. The closed card
+  names the first waiting cart's type and shows the waiting carts' pictures small: a picture is judged
+  by looking at it. An open cart shows what goes out first, rendered (Markdown with raw HTML off), the
+  pictures large, the whole cart with the report folded under it.
 - **Hut** — counters and the queue only: `3 held · 1 needs you`, the first titles, `passed: 12`,
   the total cost of what passed today. No preview.
 - **Full window** — list | diff or preview | the trail with cost. Diffs, images and editing live
