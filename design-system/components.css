@@ -538,7 +538,7 @@
 [data-theme="office"] .ok-road.is-vertical .ok-cart.is-sprite { align-self: center; }
 
 /* The ork sprite replaces 🧌: a 16×15 head that sits inside the badge plate. */
-.ok-badge img[data-kind="ork"] { width: var(--ork-w); height: var(--ork-h); margin: 0; }
+.ok-badge img[data-kind="ork"] { width: auto; height: var(--ork-h); margin: 0; }
 img.ok-sprite.portrait { object-fit: none; object-position: center; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
 
 /* Fire sprite: fx/fire.png is a 64×16 strip of 4 frames, played in order. */

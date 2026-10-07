@@ -174,6 +174,12 @@ export function hints() {
   const t = town.value;
   const out = [];
   if (t.alerts.length) out.push({ label: `❓ ${say("Answer")} ${t.alerts.length} ${t.alerts.length === 1 ? "question" : "questions"}`, run: () => openOrders() });
+  // A stopped Barracks comes next: its queue waits on the person as surely as a question does.
+  for (const p of here().filter((x) => x.paused && x.type === "barracks").slice(0, 1)) {
+    const pn = say(p.title);
+    out.push({ label: `⚠ ${say(`Resume ${pn}`)}`, run: () => act(p.id, "pause").catch(() => {}) });
+    if (p.card && p.card.failed) out.push({ label: say(`Why did ${pn}'s tasks fail?`), ask: "Why did its tasks fail?", about: [p.id] });
+  }
   const b = opened.value.active && opened.value.active !== HALL && t.buildings.find((x) => x.id === opened.value.active);
   const name = b && say(b.title);
   if (b) {

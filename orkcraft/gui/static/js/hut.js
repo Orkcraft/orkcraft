@@ -20,7 +20,7 @@ const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
 export const dragging = signal(null);      // {id, dx, dy}: the hut under the mouse, so its roads follow it
-export const pulling = signal(null);       // {from, x, y}: a road being pulled out of a hut, to the pointer
+export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
 const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
 const warned = signal({});                 // building id → true while its pin says it holds the hut
 const warnings = new Map();                // building id → the timer that lets the pin go back
@@ -62,14 +62,17 @@ function pull(e, b) {
     const r = room.getBoundingClientRect();
     return { x: ev.clientX - r.left, y: ev.clientY - r.top };
   };
-  const move = (ev) => { pulling.value = { from: b.id, ...at(ev) }; };
+  const under = (ev) => {
+    const to = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".gui-hut")?.dataset.id;
+    return to && to !== b.id ? to : null;
+  };
+  const move = (ev) => { pulling.value = { from: b.id, ...at(ev), over: under(ev) }; };
   const up = (ev) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     pulling.value = null;
-    const hut = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".gui-hut");
-    const to = hut && hut.dataset.id;
-    if (to && to !== b.id) laying.value = { from: b.id, to };
+    const to = under(ev);
+    if (to) laying.value = { from: b.id, to };
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
@@ -103,7 +106,8 @@ function Keeper({ garrison, alert }) {
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const busy = garrison.some((o) => o.status === "busy");
   const more = garrison.length - 1;
-  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}`}>
+  const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
+  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""} · ${doing}`}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
 }
 
@@ -170,7 +174,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
-  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no">${number}</span>
+  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>${number}</span>
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
@@ -179,15 +183,16 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-dragging": !!drag, "is-dim": dim,
-                                        "is-free": free })}
+                                        "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
+                                        "is-free": free, "is-target": pulling.value?.over === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
     <div class="ok-head"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /></div>
     <div class="ok-hut__card">
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
-        onPointerDown=${(e) => pull(e, b)}>+</button>
+        onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
+        srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
       <span class="ok-hut__dot gui-hut__dot"></span>
       <${Card} b=${b} />
     </div>

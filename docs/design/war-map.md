@@ -74,7 +74,7 @@ art stays and the words change (*Orkspace* → *Workspace*, *War Map* → *Works
 - **One land per orkspace, top to bottom** in the Town Scroll's order. It is the same list as today,
   so names read, order is kept and the keyboard walks it, but drawn as a map.
 - **The open land is large**, about 2.4 closed ones: name, a status line ("9 buildings · 2 at work",
-  "· 1 question", "· all quiet") and a dot per building (gold while it works). The others are one
+  "· 1 question", "· 1 paused" in the warning colour, "· all quiet" only when nothing waits) and a dot per building (gold while it works). The others are one
   line each.
 - **Large is the open one, never the busy one.** Sizing by activity would reshape the map every time an
   ork starts or stops: it would breathe and be hard to hit. Activity shows inside a land (the status,

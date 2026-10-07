@@ -8,15 +8,27 @@ import { signal } from "@preact/signals";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
-import { opened, closeBuilding, panelShown, panelWidth } from "./windows.js";
+import { opened, openBuilding, closeBuilding, panelShown, panelWidth } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad, building as buildOpen } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
 import { Hut, sizes, dragging, pulling, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
+import { tidySpots } from "./tidy.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
+let numbered = [];                         // the huts' ids in the order of the numbers on their names
+
+// 1–9 open the building with that number on its name, from anywhere but a field, a terminal or a dialog.
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || !/^[1-9]$/.test(e.key) || document.querySelector(".gui-modal, .gui-menu")) return;
+  if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
+  const id = numbered[Number(e.key) - 1];
+  if (!id) return;
+  e.preventDefault();
+  openBuilding(id);
+});
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
 
 // The room never gets smaller than four huts across and three down: a narrower town scrolls, so
@@ -70,10 +82,34 @@ function lifts(full) {
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
 let planned = { key: "", paths: [] };
 
+const pair = (x) => `${x.from}\u0000${x.to}`;
+
+/** The roads from one building into the same other one, the first of them first: they run as one road. */
+function together(roads) {
+  const out = new Map();
+  for (const x of roads) {
+    if (!out.has(pair(x))) out.set(pair(x), []);
+    out.get(pair(x)).push(x);
+  }
+  return out;
+}
+
 function plannedPaths(rects, roads, ports = rects) {
   const r = room.value;
   const key = JSON.stringify([rects, ports, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
-  if (key !== planned.key) planned = { key, paths: plan(rects, roads, r.w, r.h, ports) };
+  if (key !== planned.key) {
+    // Two roads between the same two buildings run as one, with both labels: the later ones take the
+    // first one's path (their carts run on it), and only the first is drawn.
+    const groups = [...together(roads).values()];
+    const firsts = plan(rects, groups.map((g) => g[0]), r.w, r.h, ports);
+    const byFirst = Object.fromEntries(firsts.map((p) => [p.id, p]));
+    const paths = [...firsts];
+    for (const g of groups) {
+      const p = byFirst[g[0].id];
+      if (p) for (const x of g.slice(1)) paths.push({ ...p, id: x.id, mate: g[0].id });
+    }
+    planned = { key, paths };
+  }
   return planned.paths;
 }
 
@@ -192,29 +228,39 @@ const HEADS = [["gui-road-head", "--road"], ["gui-road-head-live", "--road-live"
 function Roads({ roads, rects, ports, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
+  const groups = together(roads);
   const active = opened.value.active;
+  // A press on a road picks it; a press again on roads that run as one picks the next of them.
+  const pick = (g) => {
+    const i = g.findIndex((x) => x.id === pickedRoad.value);
+    pickedRoad.value = g[(i + 1) % g.length].id;
+  };
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
     <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
       markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
-    ${plannedPaths(rects, roads, ports).map((p) => {
+    ${plannedPaths(rects, roads, ports).filter((p) => !p.mate).map((p) => {
       const road = byId[p.id];
+      const g = groups.get(pair(road)) || [road];
       const out = active === road.from, into = active === road.to;
       const d = pathOf(p.points, BEND_PX);
       const spot = labelSpot(p.points);
-      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": out || into || pickedRoad.value === p.id,
-                                                         "is-out": out, "is-in": into && !out, "is-live": !!road.handler,
-                                                         "is-return": road.returns })}>
+      const label = g.filter((x) => !x.sign).map((x) => x.label).join(" · ");
+      return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": out || into || g.some((x) => x.id === pickedRoad.value),
+                                                         "is-out": out, "is-in": into && !out, "is-live": g.some((x) => !!x.handler),
+                                                         "is-return": g.some((x) => x.returns) })}>
         <path d=${d} class="gui-road__halo" />
         <path d=${d} class="gui-road__line" />
         ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} class="gui-road__tint" style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
-        <path d=${d} class="gui-road__hit" onClick=${() => { pickedRoad.value = p.id; }} />
+        <path d=${d} class="gui-road__hit" onClick=${() => pick(g)} />
         <circle cx=${p.exit[0]} cy=${p.exit[1]} r="3" class="gui-road__out" /><circle cx=${p.entry[0]} cy=${p.entry[1]} r="4" class="gui-road__in" />
-        ${!road.sign && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${road.label}</text>`}
+        ${label && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${label}</text>`}
       </g>`;
     })}
     ${pulling.value && rects[pulling.value.from] && html`<line class="gui-road__pull"
       x1=${rects[pulling.value.from].x + rects[pulling.value.from].w} y1=${rects[pulling.value.from].y + rects[pulling.value.from].h / 2}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
+    ${pulling.value && html`<rect class="gui-road__pull-end" x=${Math.round(pulling.value.x) - 3} y=${Math.round(pulling.value.y) - 3}
+      width="6" height="6" />`}
   </svg>`;
 }
 
@@ -224,13 +270,20 @@ function spotAt(x, y) {
   return [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
 }
 
-/** The right click on the bare town: Build here, the town's settings. */
-function bareMenu(e) {
+/** Tidy up: every hut that may move goes to its spot along the roads (js/tidy.js). */
+function tidy(buildings, roads) {
+  const spots = tidySpots(buildings.filter((b) => b.id !== CORNER), roads, (id) => !!buildings.find((b) => b.id === id)?.pinned);
+  for (const [id, [x, y]] of Object.entries(spots)) command("hut.move", { id, x, y }).catch(() => {});
+}
+
+/** The right click on the bare town: Build here, Tidy up, the town's settings. */
+function bareMenu(e, buildings, roads) {
   if (e.target.closest(".gui-hut, .gui-road")) return;
   const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
   const hut = spotAt(e.clientX - r.left, e.clientY - r.top);
   openMenu(e, [
     { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
+    buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
   ]);
 }
@@ -314,7 +367,8 @@ export function Town({ buildings, roads }) {
   const near = new Set(active ? here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])) : []);
   const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
   useCamera(ref.current, rects, here, panelW);
-  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${bareMenu}>
+  numbered = buildings.map((b) => b.id);
+  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
     <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${room.value.h}px`}>
       <${Roads} roads=${here} rects=${rects} ports=${ports}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />

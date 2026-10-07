@@ -87,6 +87,10 @@ button { font: inherit; color: inherit; }
 .gui-hut__pin:hover { color: var(--ink); background: var(--selection); }
 .gui-hut__pin.is-on { color: var(--frame-focus); }
 .gui-hut__pin.is-on > svg { fill: currentColor; }
+/* An unpinned hut's pin waits for the mouse or the focus: six grey pins on six cards said nothing. It is
+   only see-through, so it stays where a click or Tab finds it. */
+.gui-hut__pin:not(.is-on):not(.is-warn) { opacity: 0; }
+.gui-hut:hover .gui-hut__pin, .gui-hut:focus-within .gui-hut__pin, .gui-hut.is-selected .gui-hut__pin { opacity: 1; }
 /* A drag on a pinned hut: its pin turns red for a moment (js/hut.js warnPinned). */
 .gui-hut__pin.is-warn { color: var(--danger); animation: gui-pin-warn .4s ease-out 2; }
 @keyframes gui-pin-warn { 50% { transform: scale(1.35); } }
@@ -94,6 +98,9 @@ button { font: inherit; color: inherit; }
 .gui-hut__title { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
 .gui-hut__title .ok-badge { flex: none; }
 .gui-hut__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A hut's name on the map is a label, not a heading: the Camp UI face in caps (camp-label), which stays
+   legible at this size where the display face ran words together; an opened window keeps the display face. */
+.gui-hut .ok-hut__label .gui-hut__name { font: 600 13px/1 var(--font-camp); text-transform: uppercase; letter-spacing: .06em; }
 .gui-type-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; color: var(--ink-muted); }
 .gui-hut.is-selected .gui-type-icon { color: var(--frame-focus); }
 .gui-hut__spin { flex: none; width: 10px; height: 10px; box-sizing: border-box; border-radius: 50%;
@@ -106,10 +113,24 @@ button { font: inherit; color: inherit; }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
+/* A building that stopped taking work (Barracks after Halt All or ⏸): a warning frame and Resume on its card,
+   so a stopped queue never reads as a quiet one (a question's fire wins over it). */
+.gui-hut.is-paused:not(.is-alert) .ok-hut__card { box-shadow: var(--shadow-window), inset 4px 0 0 var(--warning); }
+.gui-hut__row { display: flex; align-items: center; gap: var(--space-2); }
+.gui-hut__act { flex: none; margin-left: auto; }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
-/* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. */
+/* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. On the
+   Task Fields' card it is a tray on the card's top edge instead, out while the mouse is on the hut, it has
+   the focus or it is selected: it takes no room, so a setting of the view never crowds what the board says,
+   and the top edge stays put when a part is hidden, so the tray stays under the mouse (the War Drum keeps
+   its row: there it is the legend). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
+.gui-hut .gui-fhut > .gui-parts { position: absolute; z-index: 2; bottom: 100%; left: 0; right: 0; padding: var(--space-1) var(--space-3);
+  background: var(--panel); border: 1px solid var(--frame); border-bottom: 0; visibility: hidden; }
+.gui-hut:hover .gui-fhut > .gui-parts, .gui-hut:focus-within .gui-fhut > .gui-parts,
+.gui-hut.is-selected .gui-fhut > .gui-parts { visibility: visible; }
+.gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
 .gui-parts .ok-check.is-off { color: var(--ink-muted); }
@@ -298,12 +319,18 @@ button { font: inherit; color: inherit; }
 
 /* Changing the town: a road pulled out of a hut, a road picked, the catalog. */
 .gui-hut .ok-hut__card { position: relative; }
-.gui-hut__road { position: absolute; right: -9px; top: 50%; transform: translateY(-50%); z-index: 2;
-  width: 16px; height: 16px; padding: 0; border-radius: var(--radius-full, 50%); cursor: crosshair; line-height: 14px;
-  font-size: 11px; color: var(--ink-muted); background: var(--panel-raised); border: 1px solid var(--frame-strong); opacity: 0; }
+/* The handle and the target are pixel sprites (tools/road_sprites.py): a gold + on a plate in a round rim, and
+   four corner brackets round the hut the road would land on. */
+.gui-hut__road { position: absolute; right: -12px; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: crosshair; opacity: 0; }
+.gui-hut__road > img { display: block; width: 22px; height: 22px; image-rendering: pixelated; }
+.gui-hut__road:hover > img { filter: brightness(1.2); }
 .gui-hut:hover .gui-hut__road, .gui-hut__road:focus-visible { opacity: 1; }
+.gui-hut.is-target::after { content: ""; position: absolute; inset: -10px; z-index: 3; pointer-events: none;
+  border: 12px solid transparent; border-image: url("/ds/sprites/icons/road-target@2x.png") 16 / 12px; image-rendering: pixelated; }
 .gui-road__hit { stroke: transparent !important; stroke-width: 10; fill: none; pointer-events: stroke; cursor: pointer; }
-.gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 6 4; }
+.gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 4 4; shape-rendering: crispEdges; }
+.gui-road__pull-end { fill: var(--ink-gold); stroke: var(--canvas); stroke-width: 1; shape-rendering: crispEdges; }
 .gui-roadbar { position: fixed; left: 50%; top: calc(30px + var(--space-3)); transform: translateX(-50%); z-index: 9;   /* clear of the line */
   display: flex; align-items: center; gap: var(--space-3); }
 .gui-catalog { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; display: grid; gap: var(--space-2); }
@@ -437,5 +464,6 @@ button { font: inherit; color: inherit; }
 .gui-you__camp { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
 
 /* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
-.gui-warchief__face .gui-warchief__crowned { width: 36px; height: 30px; }
+.gui-warchief__face .gui-warchief__crowned { width: auto; height: 30px; }
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }
+.gui-map__state.ok-tone-wait { color: var(--warning); }   /* a paused building in the open orkspace */

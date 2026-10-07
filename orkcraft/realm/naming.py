@@ -3,7 +3,9 @@
 `from_prompt` reads the request itself (no model): it drops the asking ("What should I build?",
 "I need", "please"), the small words (articles, pronouns, most prepositions), and keeps the first
 four words that carry the meaning, the first one capitalised: "sort my inbox into tasks" → "Sort
-inbox into tasks". `clip` keeps any title — one a model proposed too — to four words.
+inbox into tasks". A request that only asks for a building ("add a task building", "Добавь здание
+тасков") says no job to name it after: the type's own title stays. `clip` keeps any title — one a
+model proposed too — to four words.
 """
 from __future__ import annotations
 
@@ -16,8 +18,12 @@ MAX_CHARS = 40
 _ASKING = re.compile(
     r"^\s*(?:what should i build\??|can you|could you|would you|please|i (?:want|need|would like)(?: to)?|"
     r"i'd like(?: to)?|we need(?: to)?|help me(?: to)?|build (?:me )?(?:a |an |the )?|make (?:me )?(?:a |an |the )?|"
-    r"create (?:a |an |the )?|something (?:that|to)|a building (?:that|to)|one (?:that|to))\s*",
+    r"create (?:a |an |the )?|add (?:a |an |the )?|something (?:that|to)|(?:a )?building (?:that|to|which)|one (?:that|to)|"
+    r"пожалуйста|(?:мне )?нужн(?:о|а|ы|ен)|(?:добав(?:ь|ьте|ить)|созда(?:й|йте|ть)|сдела(?:й|йте|ть)|постро(?:й|йте|ить))(?!\w)|"
+    r"(?:здание|постройк\w*),? (?:котор\w+|чтобы))\s*",
     re.IGNORECASE)
+# The request names a building, not a job (what is left still says "building"): nothing to name it after.
+_ONLY_A_BUILDING = re.compile(r"(?<!\w)(?:building|block|hut|здани\w*|постройк\w*)(?!\w)", re.IGNORECASE)
 
 _SMALL = frozenset("""
 a an the my our your their his her its me us them i we you it this that these those some any
@@ -51,6 +57,8 @@ def from_prompt(prompt: str, fallback: str = "") -> str:
             break
         text = cut
     text = re.split(r"[.!?;\n]", text, maxsplit=1)[0]     # the first sentence names it
+    if _ONLY_A_BUILDING.search(text):
+        return clip(fallback)
     out: list[str] = []
     for w in _words(text):
         low = w.lower()
