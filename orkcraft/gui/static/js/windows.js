@@ -8,7 +8,7 @@ import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online, say } from "./link.js";
 import { Layout } from "./layout.js";
-import { HALL, deploy } from "./tent.js";
+import { HALL } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
