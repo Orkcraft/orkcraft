@@ -8,12 +8,12 @@
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, town, say } from "../link.js";
+import { act, town, details, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
-import { showBuilding } from "../windows.js";
+import { showBuilding, usePeek } from "../windows.js";
 import { OrkHead } from "../icons.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
@@ -65,6 +65,19 @@ function NewTask({ id }) {
   </div>`;
 }
 
+function TaskDialog({ id, onClose }) {
+  const [brief, setBrief] = useState("");
+  const send = () => act(id, "task", { brief }).then(onClose, () => {});
+  return html`<${Dialog} title=${say("New task for the barracks")} text=${say("Its first words become its title; the foreman gives it to an ork.")}
+      onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
+        <button class="ok-btn primary" disabled=${!brief.trim()} onClick=${send}>Send</button>`}>
+    <textarea class="ok-input gui-textarea" rows="5" value=${brief} autofocus aria-label=${say("New task")}
+      placeholder=${say("What to do, where, what done looks like (Ctrl+Enter sends it)")} onInput=${(e) => setBrief(e.target.value)}
+      onKeyDown=${(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && brief.trim()) { e.preventDefault(); send(); } }}></textarea>
+  </${Dialog}>`;
+}
+
 function AnswerDialog({ id, data, task, onClose }) {
   const [answer, setAnswer] = useState("");
   const send = (text) => act(id, "answer", { task: task.id, text }).then((rule) => {
@@ -102,6 +115,8 @@ function Dialogs({ id, data }) {
   const d = dialogs.value[id];
   if (!d) return null;
   const close = () => closeDialog(id);
+  if (d.kind === "task") return html`<${TaskDialog} id=${id} onClose=${close} />`;
+  if (!data.asked) return null;
   if (d.kind === "rule") return html`<${RuleDialog} id=${id} data=${data} rule=${d.rule} onClose=${close} />`;
   const task = data.asked.find((t) => t.id === d.task) || data.asked[0];
   return task ? html`<${AnswerDialog} key=${task.id} id=${id} data=${data} task=${task} onClose=${close} />` : null;
@@ -345,7 +360,6 @@ function PoolHead({ id, data }) {
       <span class="pool-ask__what" title=${ask.question}>${ask.title}: ${ask.question}</span>
       <button class="ok-btn primary" onClick=${() => setIn(chosen, id, ask.id)}>Answer</button>
     </div>`}
-    <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
 
@@ -359,4 +373,23 @@ export function panes(id, data) {
     orks: () => html`<${Orks} id=${id} data=${data} />`,
     rules: () => html`<${Rules} id=${id} data=${data} />`,
   };
+}
+
+/** Its quick actions, from its Info or its closed card: New task and Answer open their own small window,
+ *  Pause / resume is done at once. */
+export function quick(id, action) {
+  if (action === "pool.task") { openDialog(id, { kind: "task" }); return true; }
+  if (action === "pool.answer") { openDialog(id, { kind: "answer" }); return true; }
+  if (action === "pool.pause") { act(id, "pause").catch(() => {}); return true; }
+  return false;
+}
+
+/** Its dialogs, over the town, whether the building is open or not (js/types.js). */
+function Peeked({ id }) {
+  usePeek(id);
+  return html`<${Dialogs} id=${id} data=${(details.value[id] || {}).data || {}} />`;
+}
+
+export function overlay() {
+  return html`${Object.keys(dialogs.value).filter((id) => dialogs.value[id]).map((id) => html`<${Peeked} key=${id} id=${id} />`)}`;
 }

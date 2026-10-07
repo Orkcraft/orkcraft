@@ -86,6 +86,9 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "has_worker": worker is not None,
             "paused": _paused(worker),
             "card": _card(type_id, worker),
+            # its quick actions, on its closed card while the mouse is on it (js/hut.js): each opens its own small
+            # window or just does it, never the whole building
+            "quick": [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else [],
             "page": (PAGES / f"{type_id}.js").is_file(),
         })
     return out

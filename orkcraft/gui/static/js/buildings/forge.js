@@ -11,6 +11,7 @@ import { html, cls } from "../html.js";
 import { act, details, toast, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
+import { showBuilding } from "../windows.js";
 
 const sheet = new URL("./forge.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -47,7 +48,7 @@ export function quick(id, action) {
   const d = (details.value[id] || {}).data;
   if (action !== "forge.merge" && action !== "git.open_pr") return false;
   const name = d && d.picked;
-  if (!name) { toast("Pick a branch first"); return true; }
+  if (!name) { showBuilding(id); toast(say("Pick a branch first")); return true; }     // from its closed card: the list to pick from
   if (action === "forge.merge") merge(id, name);
   else openPr(id, name);
   return true;

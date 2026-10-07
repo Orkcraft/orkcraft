@@ -12,7 +12,7 @@ import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
-import { typeModule } from "./types.js";
+import { typeModule, runQuick } from "./types.js";
 import { town, say, command } from "./link.js";
 import { TypeIcon, HutSprite, OrkHead, activeBiome } from "./icons.js";
 
@@ -111,6 +111,18 @@ function Keeper({ garrison, alert }) {
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
 }
 
+/** Its quick actions on the card's bottom edge, out while the mouse is on the hut, it has the focus or it is
+ *  selected: a press does that one thing — a small window of its own when it asks for words, else it is
+ *  done — and never opens the building. */
+function QuickTray({ b }) {
+  if (!b.quick || !b.quick.length) return null;
+  const keep = (e) => e.stopPropagation();
+  return html`<div class="gui-hut__quick" onPointerDown=${keep} role="group" aria-label=${say(`${b.title}: quick actions`)}>
+    ${b.quick.map((a) => html`<button key=${a.id} class="ok-btn gui-hut__quick-one"
+        onClick=${(e) => { keep(e); runQuick(b, a.id); }}>${say(a.label)}</button>`)}
+  </div>`;
+}
+
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 function Card({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
@@ -195,6 +207,7 @@ export function Hut({ b, spot, number, dim = false, onMoved }) {
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
       <span class="ok-hut__dot gui-hut__dot"></span>
       <${Card} b=${b} />
+      <${QuickTray} b=${b} />
     </div>
   </div>`;
 }

@@ -99,7 +99,15 @@ button { font: inherit; color: inherit; }
   border-top: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); font-size: 11px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; }
 .gui-hut__foot > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .gui-hut__when { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
-.gui-hut__body-in { display: contents; }     /* a type's card as one element whose parts are the body's own */
+.gui-hut__body-in { display: contents; }
+/* A closed card's quick actions (js/hut.js QuickTray): a row on its bottom edge, out while the mouse is on the hut,
+   it has the focus or it is selected — they take no room on the town. */
+.gui-hut__quick { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
+  display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: var(--panel);
+  border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window); visibility: hidden; }
+.gui-hut:hover .gui-hut__quick, .gui-hut:focus-within .gui-hut__quick, .gui-hut.is-selected .gui-hut__quick { visibility: visible; }
+.gui-hut.is-selected .gui-hut__quick { border-color: var(--frame-focus); }
+.gui-hut__quick .gui-hut__quick-one { height: 24px; min-height: 0; padding: 0 var(--space-2); font-size: 11px; line-height: 24px; }     /* a type's card as one element whose parts are the body's own */
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
 .gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
 .gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }

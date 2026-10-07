@@ -10,10 +10,11 @@
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, details, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
+import { usePeek } from "../windows.js";
 
 const sheet = new URL("./council.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -234,7 +235,6 @@ function Head({ id, data }) {
       <span class="council-ask__what" title=${data.current.question}>${data.current.question}</span>
       <button class="ok-btn primary" onClick=${() => setIn(dialogs, id, "answer")}>Answer</button>
     </div>`}
-    <${Dialogs} id=${id} data=${data} />
   </div>`;
 }
 
@@ -252,4 +252,21 @@ export function panes(id, data) {
     document: () => null,
     history: () => html`<${History} id=${id} data=${data} />`,
   };
+}
+
+/** Its quick actions, from its Info or its closed card: each opens its own small window. */
+export function quick(id, action) {
+  if (action === "team.add") { setIn(dialogs, id, "member"); return true; }
+  if (action === "team.start") { setIn(dialogs, id, "review"); return true; }
+  return false;
+}
+
+/** Its dialogs, over the town, whether the building is open or not (js/types.js). */
+function Peeked({ id }) {
+  usePeek(id);
+  return html`<${Dialogs} id=${id} data=${(details.value[id] || {}).data || {}} />`;
+}
+
+export function overlay() {
+  return html`${Object.keys(dialogs.value).filter((id) => dialogs.value[id]).map((id) => html`<${Peeked} key=${id} id=${id} />`)}`;
 }
