@@ -17,52 +17,12 @@ const asking = signal(null);       // {id, lane, kind}: a New task / note / chor
 // The closed card's three parts, each one the person may hide (js/parts.js).
 const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My chores" }, { key: "scribbles", label: "Scribbles" }];
 
-// Every rule is this building's own: the closed card (`.gui-fhut`, and the hut that holds one) stands
-// larger than other huts — about a fifth of the window high while it has work or chores — so its three
-// parts read at a glance; a quiet board is as tall as what it says.
-const CSS = `
-.gui-town__room > .gui-hut.ok-hut[class]:has(.gui-fhut) { width: clamp(340px, 26vw, 460px); max-width: none; }
-.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded):not(.is-quiet)) { min-height: 20vh; box-sizing: border-box; }
-.gui-hut__body:has(> .gui-fhut) { flex: 1 1 auto; display: flex; }
-.gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
-  gap: var(--space-2) var(--space-3); min-width: 0; }
-.gui-fhut__part { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.gui-fhut__part--work { grid-column: 1 / -1; }
-.gui-fhut__part--solo { grid-column: 1 / -1; }
-.gui-fhut__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
-.gui-fhut__item { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow-wrap: anywhere; }
-.gui-fhut__mark { color: var(--ink-muted); margin-right: 4px; }
-.gui-fields--mini .ok-lane { min-height: 0; }
-.gui-fields--mini .ok-card { padding: var(--space-1) var(--space-2); }
-.gui-fields--mini .ok-card__title > span:not(.ok-word) { min-width: 0; overflow-wrap: anywhere; }
-.gui-fields--mini .ok-card__title > .ok-word { flex: none; }
-.gui-counters__notes { flex-basis: 100%; }
-.gui-fields__folded { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.gui-fields__folded .ok-chip.gui-drop { box-shadow: inset 0 0 0 1px var(--frame-focus); }
-.gui-fields__part { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-.gui-fields__part > h3 { margin: 0; }
-.gui-fields__lower { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: var(--space-3); align-items: start; }
-.gui-fields--mini .gui-fields__lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); }
-.gui-todos { list-style: none; margin: 0; padding: var(--space-2); display: flex; flex-direction: column; gap: 2px;
-  background: var(--panel-inset); box-shadow: var(--bevel-sunken); min-height: 40px; }
-.gui-todos.gui-drop { box-shadow: inset 0 0 0 1px var(--frame-focus); }
-.gui-todo { display: flex; align-items: flex-start; gap: var(--space-2); padding: 2px var(--space-1); cursor: grab; }
-.gui-todo:hover, .gui-todo.is-selected { background: var(--selection); }
-.gui-todo .ok-check { flex: none; padding-top: 2px; }
-.gui-todo__title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.gui-todo.is-done .gui-todo__title { text-decoration: line-through; color: var(--ink-muted); }
-.gui-todo__add { display: flex; gap: var(--space-1); }
-.gui-fields--mini .gui-todos { padding: var(--space-1); min-height: 0; }
-.gui-fields--mini .gui-todo { font-size: 12px; line-height: 16px; padding: 1px 2px; }
-.gui-fields--mini .gui-todo .ok-check { padding-top: 0; }
-.gui-todo__add .ok-input { flex: 1 1 auto; min-width: 0; }
-`;
-if (typeof document !== "undefined" && !document.getElementById("gui-css-fields")) {
-  const style = document.createElement("style");
-  style.id = "gui-css-fields";
-  style.textContent = CSS;
-  document.head.append(style);
+const sheet = new URL("./fields.css", import.meta.url).href;
+if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
 }
 
 /** A card dragged onto a lane (a folded lane, the checklist) moves there. */

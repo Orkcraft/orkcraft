@@ -305,7 +305,7 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     brief.wait_for(state="visible", timeout=WAIT_MS)
     work.get_by_role("button", name="Pause", exact=True).first.click()
     brief.fill("tidy the readme headings and nothing else")
-    work.locator(".gui-newtask").get_by_role("button", name="Send it").click()
+    work.locator(".gui-newtask").get_by_role("button", name="Send", exact=True).click()
     pg.wait_for_function("() => document.querySelector('.gui-newtask textarea').value === ''", timeout=WAIT_MS)
     assert pg.locator(".gui-modal").count() == 0                  # no window opened for it
     work.get_by_text("Tidy the readme headings").first.wait_for(state="visible", timeout=WAIT_MS)

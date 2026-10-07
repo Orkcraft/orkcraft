@@ -69,7 +69,7 @@ def test_the_pit_card_is_a_drop_zone_and_its_window_follows_each_drop(fake_repo,
     pit_id = _raised(host, "pit")
     lake_id = _raised(host, "lake")
     ts.subscribe(host.town.scroll, lake_id, pit_id, "pit.text")
-    assert _card(host, pit_id) == {"n": 0}
+    assert _card(host, pit_id) == {"n": 0, "last": None, "spent": 0.0}
     assert host.command("act", {"id": pit_id, "act": "drop", "args": {"text": "remember: ship on Friday"}}) == 1
     data = base64.b64encode(b"%PDF-1.4 tiny").decode()
     assert host.command("act", {"id": pit_id, "act": "drop_file",
@@ -96,7 +96,8 @@ def test_the_pit_card_is_a_drop_zone_and_its_window_follows_each_drop(fake_repo,
                       name="keeper")                                                     # the same hop counts once
     note = host.detail(pit_id)["data"]["items"][1]
     assert note["cost"] == 0.5
-    assert _card(host, pit_id) == {"n": 2}
+    c = _card(host, pit_id)
+    assert (c["n"], c["last"]["kind"], c["spent"]) == (2, "doc", 0.5)
 
 
 def test_the_pit_paste_is_its_quick_action(fake_repo, isolated_layout_file, monkeypatch):

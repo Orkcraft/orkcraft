@@ -1,0 +1,45 @@
+/* ⚒️ The Forge, made for the half panel (js/buildings/forge.js): the branches take the room, a branch opens
+   over them; a merge that waits for a yes is a strip with Merge; the settings fold to one line. */
+
+/* The head: the counters on one line, Look again as a quiet action. */
+.forge-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.forge-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.forge-head__last, .forge-head__err { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.forge-note { margin: var(--space-1) 0 0; font-size: 12px; color: var(--ink-muted); }
+
+/* A merge a road brought: a strip that asks, Merge beside it. */
+.forge-ask { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.forge-ask__who { flex: none; font-weight: 700; color: var(--alert); }
+.forge-ask__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+[data-theme="office"] .forge-ask { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* The branches: a row each, its PR's title (or its last commit) beside the name. */
+.forge-list { padding: var(--space-1) 0; }
+.forge-row { padding-top: 6px; padding-bottom: 6px; }
+.forge-row > .ok-branch__name { flex: 0 1 auto; max-width: 40%; }
+.forge-row__sub { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 400; font-size: 12px; color: var(--ink-muted); }
+.forge-row__when { color: var(--ink-comment); }
+.forge-row:hover { background: var(--panel-raised); }
+.forge-row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+
+/* A branch open, over the list: ← back to it. */
+.forge-open { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.forge-open__back { align-self: flex-start; }
+.forge-open__name { min-width: 0; }
+.forge-open__name > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forge-open .gui-pre { max-height: 240px; overflow: auto; }
+
+/* The closed card: the merge that asks, Merge beside it. */
+.forge-card__ask { display: flex; align-items: center; gap: var(--space-2); }
+.forge-card__ask > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Settings: one line until opened. */
+.forge-fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; cursor: pointer; color: var(--ink-muted); white-space: nowrap; }
+.forge-fold > summary::-webkit-details-marker { display: none; }
+.forge-fold > summary::before { content: "▸"; flex: none; }
+.forge-fold[open] > summary::before { content: "▾"; }
+.forge-fold > summary:hover { color: var(--ink); }
+.forge-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.forge-fold__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.forge-fold > .gui-form { margin-top: var(--space-2); }

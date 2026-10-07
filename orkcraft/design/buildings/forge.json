@@ -1,21 +1,18 @@
 {
   "type": "forge",
-  "about": "⚒️ The Forge: the repository's branches with their pull requests, their tests and the merge into the base.",
+  "about": "⚒️ The Forge: the repository's branches with their pull requests, their tests and the merge into the base; a branch opens over the list.",
   "panes": {
-    "head":     {"about": "the base, how many branches and PRs, what is merging or testing, a merge that waits for a yes", "components": ["status"], "required": true},
-    "branches": {"about": "every branch with its PR, its tests and its +/− against the base", "components": ["list", "table"], "required": true},
-    "detail":   {"about": "the chosen branch: its PR with the comments, commits, files, test output, its merges and their conflicts", "components": ["text", "markdown"], "required": true},
-    "settings": {"about": "the base, the test command, whether a merge a road brings asks first", "components": ["form", "status"]}
+    "head":     {"about": "how many branches and PRs, what is merging or testing, the last merge; a merge a road brought waits for a yes with Merge; Look again", "components": ["status"], "required": true},
+    "branches": {"about": "every branch with its PR, its last commit, its tests and its +/− against the base; a branch opens here, over the list (its PR with the comments, commits, files, test output, merges; Merge, Run tests, Diff)", "components": ["list", "table"], "required": true},
+    "detail":   {"about": "kept for older documents: a branch now opens over the list, in the branches pane", "components": ["text", "markdown"], "dynamic": true},
+    "settings": {"about": "the base, the test command, whether a merge a road brings asks first; one line until opened", "components": ["form", "status"]}
   },
   "default": {
     "version": 1, "type": "forge", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"id": "branches", "component": "list", "size": 2, "font": "body"},
-        {"id": "detail", "component": "text", "size": 3, "font": "body"}
-      ]},
-      {"id": "settings", "component": "form", "size": "auto", "font": "body"}
+      {"id": "branches", "component": "list", "size": 1, "font": "body"},
+      {"id": "settings", "component": "form", "size": "auto", "font": "status"}
     ]
   }
 }

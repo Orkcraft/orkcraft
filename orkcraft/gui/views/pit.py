@@ -15,8 +15,12 @@ FILE_LIMIT = 5 * 1024 * 1024   # a file dropped on the page comes over the socke
 
 
 def card(w) -> dict:
-    """Closed: only the drop zone (the page says "drag & drop"); `n` lets it say there is history."""
-    return {"n": len(w.items)}
+    """Closed: the card is the drop zone; `n` how many were dropped, `last` the newest drop, `spent` what
+    the drops' chains cost."""
+    it = w.items[0] if w.items else None
+    return {"n": len(w.items),
+            "last": {"title": it.title or it.value, "kind": it.kind, "at": it.at} if it else None,
+            "spent": round(sum(float(c.get("cost") or 0.0) for c in w.chains.values()), 4)}
 
 
 def detail(w) -> dict:

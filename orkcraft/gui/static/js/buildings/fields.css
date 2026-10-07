@@ -1,0 +1,63 @@
+/* 🌾 Task board (js/buildings/fields.js), made for the half panel: the counters on one line, the selected
+   card's acts in a strip under them, then the board — the orks' lanes, the person's to-dos, the notes.
+   Empty lanes stay low so the cards take the room. Tokens only (design-system/tokens.css). */
+
+/* -- closed --------------------------------------------------------------------------------------------- */
+/* The board's card stands larger than other huts — about a fifth of the window high while it has work or
+   to-dos — so its three parts read at a glance; a quiet board is as tall as what it says. */
+.gui-town__room > .gui-hut.ok-hut[class]:has(.gui-fhut) { width: clamp(340px, 26vw, 460px); max-width: none; }
+.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded):not(.is-quiet)) { min-height: 20vh; box-sizing: border-box; }
+.gui-hut__body:has(> .gui-fhut) { flex: 1 1 auto; display: flex; min-height: 0; }
+.gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
+  gap: var(--space-2) var(--space-3); min-width: 0; }
+.gui-fhut__part { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gui-fhut__part--work { grid-column: 1 / -1; }
+.gui-fhut__part--solo { grid-column: 1 / -1; }
+.gui-fhut__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+.gui-fhut__head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.gui-fhut__item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-fhut__mark { color: var(--ink-muted); margin-right: 4px; }
+.gui-counters__notes { flex-basis: 100%; }
+
+/* -- open: the head ------------------------------------------------------------------------------------- */
+.gui-fields { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.fields-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.fields-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fields-head__spacer { flex: 1; }
+.fields-head__hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+
+/* The selected card: a strip with its title and its acts — Open first, the rest quiet. */
+.fields-sel { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--panel-raised); box-shadow: var(--bevel-raised); }
+.fields-sel__what { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 700; }
+.fields-sel__acts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+[data-theme="office"] .fields-sel { background: transparent; box-shadow: inset 0 0 0 1px var(--frame-focus); border-radius: var(--radius-md); }
+
+/* -- open: the board ------------------------------------------------------------------------------------ */
+.gui-fields__part { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-fields__part > h3 { margin: 0; display: flex; align-items: baseline; gap: var(--space-2); }
+.gui-fields__part > h3 > small { font: 600 12px/16px var(--ok-font); color: var(--ink-muted); text-transform: none; letter-spacing: 0; }
+.gui-fields__lower { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); gap: var(--space-3); align-items: start; }
+/* An empty lane is as low as its head and its + New: the cards, not the frames, take the room. */
+.gui-fields .ok-lane { min-height: 0; }
+.gui-fields .ok-card__title > span:not(.ok-word) { min-width: 0; overflow-wrap: anywhere; }
+.gui-fields .ok-card__title > .ok-word { flex: none; }
+
+/* The person's to-dos: a checklist, the box ticks one off; a line under it adds one. */
+.gui-todos { list-style: none; margin: 0; padding: var(--space-2); display: flex; flex-direction: column; gap: 2px;
+  background: var(--panel-inset); box-shadow: var(--bevel-sunken); min-height: 40px; }
+.gui-todos.gui-drop { box-shadow: inset 0 0 0 1px var(--frame-focus); }
+.gui-todo { display: flex; align-items: flex-start; gap: var(--space-2); padding: 2px var(--space-1); cursor: grab; }
+.gui-todo:hover, .gui-todo.is-selected { background: var(--selection); }
+.gui-todo .ok-check { flex: none; padding-top: 2px; }
+.gui-todo__title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.gui-todo.is-done .gui-todo__title { text-decoration: line-through; color: var(--ink-muted); }
+.gui-todo__add { display: flex; gap: var(--space-1); }
+.gui-todo__add .ok-input { flex: 1 1 auto; min-width: 0; }
+[data-theme="office"] .gui-todos { background: transparent; box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+
+/* Narrow (a half panel under ~640px): the to-dos over the notes. */
+@container fields (max-width: 620px) {
+  .gui-fields__lower { grid-template-columns: minmax(0, 1fr); }
+}
+.gui-fields { container: fields / inline-size; }
