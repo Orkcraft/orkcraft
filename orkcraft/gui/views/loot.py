@@ -10,6 +10,7 @@ import mimetypes
 import re
 import time
 
+from orkcraft.core.workers.loot import goes_out
 from orkcraft.core.workers.loot import label as _label
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
@@ -201,8 +202,24 @@ def _drop(w, args: dict) -> None:
     w.drop(_held(w, args))
 
 
+def _accept_all_plan(w, args: dict) -> dict:
+    """What Accept all would accept, for the person to say yes to: every held cart, what it is, where it goes,
+    whether it goes out as soon as it is accepted, whether it is the person's edit."""
+    held = [i for i in w.queue.open() if i.status == gate.HELD]
+    rows = []
+    for it in held:
+        c = _content(w, it)
+        rows.append({"id": it.id, "label": _label(it), "type": c.type, "where": c.where, "out": goes_out(it),
+                     "edited": w.edited(it)})
+    return {"items": rows, "leaves": bool(rows) and w.leaves_town()}
+
+
 def _accept_all(w, args: dict) -> int:
-    return w.accept_all()
+    """Accept the held carts the person saw (`items`); every held one when it names none."""
+    ids = args.get("items")
+    if ids is not None and not (isinstance(ids, list) and all(isinstance(x, str) for x in ids)):
+        raise ActError("Name the carts to accept")
+    return w.accept_all(ids)
 
 
 def _accept_files(w, args: dict) -> int:
@@ -282,5 +299,5 @@ def _thumb(w, args: dict) -> str:
 
 
 ACTS = {"accept": _accept, "edit": _edit, "discard_edit": _discard_edit, "rework": _rework, "drop": _drop,
-        "accept_all": _accept_all, "accept_files": _accept_files, "file_accept": _file_accept,
+        "accept_all": _accept_all, "accept_all_plan": _accept_all_plan, "accept_files": _accept_files, "file_accept": _file_accept,
         "file_reject": _file_reject, "file_restore": _file_restore, "preview": _preview, "thumb": _thumb}

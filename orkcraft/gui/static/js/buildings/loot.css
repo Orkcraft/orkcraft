@@ -68,6 +68,13 @@
 .loot-what__body.gui-prose { max-height: 320px; overflow: auto; }
 .loot-what__pic.is-empty { display: inline-flex; align-items: center; justify-content: center; width: 96px; height: 96px; box-shadow: inset 0 0 0 1px var(--frame); }
 
+/* Accept all's yes: what it would accept, a row each. */
+.loot-plan { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.loot-plan__row { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.loot-plan__row > .loot-kind { flex: none; }
+.loot-plan__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.loot-plan__mark { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
 /* The changed files, what passed, what was rejected: a row each. */
 .loot-files { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0 var(--space-4); }
 .loot-file { display: flex; align-items: baseline; gap: var(--space-2); width: 100%; min-width: 0; padding: 3px var(--space-1); border: 0; background: none;

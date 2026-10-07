@@ -124,3 +124,35 @@ def test_each_cart_says_what_it_is_and_a_picture_shows_closed(loot):
     assert act(host, bid, "thumb", item=item.id, path="art/logo.png").startswith("data:image/png;base64,")
     assert act(host, bid, "thumb", item=item.id, path="README.md") == ""          # not a picture
     assert act(host, bid, "thumb", item=item.id, path="../logo.png") == ""        # not the cart's
+
+
+def test_accept_all_takes_the_person_s_edits_and_lets_drafts_be_published(loot):
+    host, bid, w = loot
+    w.receive(cart("## Plan\n\n- a", "A"), "Doc A", "## Plan\n\n- a")
+    draft = (pipes.hop("camp", "grub", "agent", 3000, 0.07, outcome=gate.APPROVAL),)
+    w.receive(pipes.Payload(pipes.TEXT, "Did it.\n\nPUBLISH: message, Slack #release\n\nv2 is out", "camp",
+                            "pool.question", "Release note", draft, "M"), "Release note", "")
+    a = next(i for i in w.queue.open() if i.ref == "A")
+    path = host.town.repo_root / act(host, bid, "edit", item=a.id)["path"]
+    path.write_text("## Today\n\n- a")                          # the person's edit, in Lake
+    plan = {x["label"]: x for x in act(host, bid, "accept_all_plan")["items"]}
+    assert plan["Doc A"]["edited"] and not plan["Doc A"]["out"]
+    assert plan["Release note"]["out"] and plan["Release note"]["type"] == "message"
+    published = []
+    w.approved_back = lambda source, payload: published.append(payload.ref) or "camp"
+    assert act(host, bid, "accept_all", items=[x["id"] for x in plan.values()]) == 2
+    kept = {x.title: (host.town.repo_root / x.path).read_text() for x in w.stored}
+    assert "## Today" in kept["Doc A"] and not path.exists()
+    assert published == ["M"]
+
+
+def test_accept_all_accepts_only_what_the_person_saw(loot):
+    host, bid, w = loot
+    w.receive(cart("one", "A"), "Doc A", "one")
+    seen = [x["id"] for x in act(host, bid, "accept_all_plan")["items"]]
+    w.receive(cart("two", "B"), "Doc B", "two")                 # it came while the dialog was open
+    assert act(host, bid, "accept_all", items=seen) == 1
+    assert [i.ref for i in w.queue.open()] == ["B"]
+    with pytest.raises(CommandError):
+        act(host, bid, "accept_all", items="B")
+    assert act(host, bid, "accept_all") == 1                     # the Steward's and the TUI's: every held one

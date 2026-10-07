@@ -73,6 +73,12 @@ send a held cart back (a chip for the reason, and a note) · `d` drop a cart · 
 rejected file · `o` open the highlighted file in the system viewer. Quick actions: ✓ Accept all
 (held carts), ✓ Accept files.
 
+**Accept all asks first.** It lists what it would accept — each held cart with its type, the
+drafts that go out as soon as they are accepted (and where), the person's edits — and accepts
+exactly those, not a cart that came while the dialog was open. Each cart is accepted as accepting it
+alone would be: the person's edit of it (its draft file), a draft handed back to its ork to be
+published. **Drop asks too**: a dropped cart is gone for good and its maker hears it was not wanted.
+
 **A cart's files.** Under each waiting cart the list shows the files its task committed on its
 branch: the latest hop that names a worktree and a branch (`gate.branch_of`), read there as
 `git diff --name-status <base>...<branch>` (`generated.Branch`; `origin/<base>` when the worktree

@@ -28,6 +28,11 @@ EGRESS = ("catapult",)                   # types that send things out of the tow
 STATUS = {gate.NEEDS_YOU: "🔥", gate.HELD: "⏸", gate.REWORK: "↩"}
 
 
+def goes_out(item: gate.Item) -> bool:
+    """A draft its maker waits to publish (to Jira, Slack…) as soon as the person accepts it."""
+    return bool(item.trail) and pipes.trail_of(item.trail[-1:])[0].outcome == gate.APPROVAL
+
+
 def label(item: gate.Item) -> str:
     first = item.value.strip().splitlines()[0][:60] if item.value.strip() else ""
     return item.title or first or item.ref
@@ -120,7 +125,7 @@ class LootWorker(Worker):
                 pass
         if (found := self.branch(payload.trail)) is not None:       # and what it committed on its branch
             files += [g.path for g in found[1] if g.path not in files]
-        return gate.Context(files, self._leaves_town())
+        return gate.Context(files, self.leaves_town())
 
     def branch(self, trail: tuple) -> tuple[generated.Branch, list[generated.Generated]] | None:
         """The branch a cart's work was committed on, with its files; None without one (or no git)."""
@@ -133,7 +138,7 @@ class LootWorker(Worker):
         except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
             return None
 
-    def _leaves_town(self) -> bool:
+    def leaves_town(self) -> bool:
         scroll = self.town.scroll
         if scroll is None:
             return False
@@ -177,16 +182,20 @@ class LootWorker(Worker):
 
     def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
         """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
+        if to := self._accept(item, value, source):
+            self.toast(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
+        self.refresh()
+
+    def _accept(self, item: gate.Item, value: str | None, source: str) -> str:
+        """One cart accepted: it passes, its maker hears what the person thought, a draft waiting for approval
+        is handed back to be published (who took it, "" when none), and its draft file goes. No refresh."""
         before, gave_up = item.value, item.status == gate.NEEDS_YOU
         self.queue.accept(item, value)
         payload = item.payload()
         self._pass(payload)
         self._judge_accept(item, before, value, source, gave_up)
-        last = payload.trail[-1] if payload.trail else None
-        if last is not None and last.outcome == gate.APPROVAL and (to := self._give_back("approved", item.source, payload)):
-            self.toast(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
         self.draft_path(item, make=False).unlink(missing_ok=True)
-        self.refresh()
+        return self._give_back("approved", item.source, payload) if goes_out(item) else ""
 
     def _judge_accept(self, item: gate.Item, before: str, value: str | None, source: str,
                       gave_up: bool = False) -> None:
@@ -251,15 +260,15 @@ class LootWorker(Worker):
         self.draft_path(item, make=False).unlink(missing_ok=True)
         self.refresh()
 
-    def accept_all(self) -> int:
-        """Accept every held cart (not the ones that need you). How many passed."""
-        held = [i for i in self.queue.items if i.status == gate.HELD]
-        for item in held:
-            self.queue.accept(item)
-            self._pass(item.payload())
-            self._judge_accept(item, item.value, None, "loot.accepted_all")
+    def accept_all(self, ids: list[str] | None = None) -> int:
+        """Accept every held cart (not the ones that need you) — or of them the ones in `ids`, what the person
+        saw when they said yes — each as accepting it alone would: the person's edit of it, a draft handed
+        back to be published. How many passed."""
+        held = [i for i in self.queue.items if i.status == gate.HELD and (ids is None or i.id in ids)]
+        published = [to for item in held if (to := self._accept(item, self.draft_value(item), "loot.accepted_all"))]
         self.refresh()
-        self.toast(f"{len(held)} cart{'s' if len(held) != 1 else ''} passed", title="📦 Loot")
+        self.toast(f"{len(held)} cart{'s' if len(held) != 1 else ''} passed"
+                   + (f"; {len(published)} to publish" if published else ""), title="📦 Loot")
         return len(held)
 
     # -- a cart edited in Lake --------------------------------------------------------------------
@@ -280,11 +289,18 @@ class LootWorker(Worker):
         except OSError:
             return False
 
+    def draft_value(self, item: gate.Item) -> str | None:
+        """The person's version of a text cart (its draft file), None when they did not change it."""
+        p = self.draft_path(item, make=False)
+        try:
+            value = p.read_text(encoding="utf-8") if p.is_file() else None
+        except OSError:
+            return None
+        return value if value is not None and value != item.value else None
+
     def accept_draft(self, item: gate.Item) -> None:
         """Accept the person's version: what the draft file says now."""
-        p = self.draft_path(item, make=False)
-        value = p.read_text(encoding="utf-8") if p.is_file() else None
-        self.accept_item(item, value if value is not None and value != item.value else None)
+        self.accept_item(item, self.draft_value(item))
 
     # -- decisions on files -----------------------------------------------------------------------
 

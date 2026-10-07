@@ -11,7 +11,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, say, toast } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { KeeperDialog } from "../keeper.js";
@@ -26,6 +26,8 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
 
 const chosen = signal({});        // building id → {kind: item | file | rejected | stored, key}
 const reworking = signal({});     // building id → the item sent back, while its dialog is open
+const accepting = signal({});     // building id → what Accept all would accept, while it waits for a yes
+const dropping = signal({});      // building id → the cart to drop, while it waits for a yes
 
 const MARK = { held: "", needs_you: "! ", rework: "↩ " };
 const WORD = { held: "held", needs_you: "needs you", rework: "in rework" };
@@ -88,9 +90,59 @@ function edit(id, it) {
   act(id, "edit", { item: it.id }).then((d) => openInLake({ path: d.path, title: d.title, from: id }), () => {});
 }
 
+/** Accept all asks first, with what it would accept: it lists the held carts, the ones that go out of the town
+ *  as soon as they are accepted and the person's edits. */
+function askAcceptAll(id) {
+  act(id, "accept_all_plan").then((plan) => {
+    if (!plan.items.length) { toast(say("No cart waits to be accepted")); return; }
+    accepting.value = { ...accepting.value, [id]: plan };
+  }, () => {});
+}
+
+function AcceptAllDialog({ id }) {
+  const plan = accepting.value[id];
+  if (!plan) return null;
+  const close = () => { accepting.value = { ...accepting.value, [id]: null }; };
+  const yes = () => { close(); act(id, "accept_all", { items: plan.items.map((x) => x.id) }).catch(() => {}); };
+  const n = plan.items.length;
+  const out = plan.items.filter((x) => x.out).length;
+  const warn = out > 0 || plan.leaves;
+  return html`<${Dialog} title=${`${say("Accept")} ${n} ${say(n === 1 ? "cart" : "carts")}?`} warn=${warn}
+      meta=${say("The held carts; not the ones that need you.")}
+      text=${out ? `${out} ${say(out === 1 ? "goes out as soon as you accept it: its ork posts it." : "go out as soon as you accept them: their orks post them.")}`
+        : plan.leaves ? say("What passes here leaves the town.") : ""}
+      onCancel=${close}
+      actions=${html`<button class="ok-btn" onClick=${close}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${yes}>${say("Accept")} ${n}</button>`}>
+    <ul class="loot-plan">${plan.items.map((x) => html`<li key=${x.id} class="loot-plan__row">
+      <${Kind} what=${{ type: x.type, where: "", files: 0 }} />
+      <span class="loot-plan__label" title=${x.label}>${x.label}</span>
+      ${x.out && html`<span class="loot-plan__mark ok-tone-fire" title=${x.where}>↗ ${x.where || say("goes out")}</span>`}
+      ${x.edited && html`<span class="loot-plan__mark ok-tone-wait">${say("your edit")}</span>`}
+    </li>`)}</ul>
+  </${Dialog}>`;
+}
+
+function DropDialog({ id, data }) {
+  const iid = dropping.value[id];
+  const it = iid && data.queue.find((x) => x.id === iid);
+  if (!it) return null;
+  const close = () => { dropping.value = { ...dropping.value, [id]: null }; };
+  const yes = () => { close(); act(id, "drop", { item: it.id }).catch(() => {}); };
+  return html`<${Dialog} title=${`${say("Drop")} “${it.label}”?`} warn=${true} onCancel=${close}
+      text=${say("It leaves the queue for good: it is not sent on, nor back to its maker, who hears it was not wanted.")}
+      actions=${html`<button class="ok-btn" onClick=${close}>${say("Cancel")}</button>
+        <button class="ok-btn danger" onClick=${yes}>${say("Drop")}</button>`} />`;
+}
+
+/** Its own small windows over the town: Accept all asked from the closed card waits for its yes there. */
+export function overlay() {
+  return html`${Object.keys(accepting.value).filter((id) => accepting.value[id]).map((id) => html`<${AcceptAllDialog} key=${id} id=${id} />`)}`;
+}
+
 /** The quick actions in its Info (catalog: Accept all, Accept files). */
 export function quick(id, action) {
-  if (action === "loot.accept_all") { act(id, "accept_all").catch(() => {}); return true; }
+  if (action === "loot.accept_all") { askAcceptAll(id); return true; }
   if (action === "generator.accept_all") { act(id, "accept_files").catch(() => {}); return true; }
   return false;
 }
@@ -155,7 +207,7 @@ function Head({ id, data }) {
       <span class="gui-head__spacer"></span>
       <button class="ok-btn" title=${`${say("Review")}: ${data.review}`} onClick=${() => setRules(true)}>${say("Rules")}</button>
       ${files > 0 && html`<button class="ok-btn" onClick=${() => act(id, "accept_files").catch(() => {})}>${say("Accept files")}</button>`}
-      ${c.held > 0 && html`<button class="ok-btn primary" onClick=${() => act(id, "accept_all").catch(() => {})}>${say("Accept all")}</button>`}
+      ${c.held > 0 && html`<button class="ok-btn primary" onClick=${() => askAcceptAll(id)}>${say("Accept all")} · ${c.held}</button>`}
     </div>
     ${asks && html`<div class="loot-ask">
       <span class="loot-ask__who">! ${say("Needs you")}${c.needs_you > 1 ? ` · ${c.needs_you}` : ""}</span>
@@ -164,6 +216,7 @@ function Head({ id, data }) {
     </div>`}
     ${rules && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setRules(false)} />`}
     <${ReworkDialog} id=${id} data=${data} />
+    <${DropDialog} id=${id} data=${data} />
   </div>`;
 }
 
@@ -232,7 +285,7 @@ function ItemDetail({ id, it }) {
       <span class="gui-head__spacer"></span>
       ${it.edited && html`<button class="ok-btn" onClick=${() => act(id, "discard_edit", { item: it.id }).catch(() => {})}>Forget your edit</button>`}
       <button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>
-      <button class="ok-btn danger" onClick=${() => act(id, "drop", { item: it.id }).catch(() => {})}>Drop</button>
+      <button class="ok-btn danger" onClick=${() => { dropping.value = { ...dropping.value, [id]: it.id }; }}>${say("Drop")}</button>
     </div>
     ${it.edited && html`<p class="ok-detail__meta ok-tone-wait">Edited in Lake: Accept takes your version.</p>`}
     <${What} id=${id} it=${it} />
@@ -269,7 +322,10 @@ function Open({ id, data }) {
   const body = Cart({ id, data });
   if (!body) return null;
   const back = () => { chosen.value = { ...chosen.value, [id]: null }; };
-  return html`<div class="loot-open" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
+  const esc = (e) => {                     // a dialog over it (Rework, Drop) takes Escape first
+    if (e.key === "Escape" && !document.querySelector(".gui-modal")) { e.stopPropagation(); back(); }
+  };
+  return html`<div class="loot-open" onKeyDown=${esc}>
     <button class="ok-btn loot-open__back" onClick=${back}>← ${say("All carts")} · ${data.queue.length}</button>
     ${body}
   </div>`;
