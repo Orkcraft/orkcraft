@@ -184,12 +184,14 @@ async def _until(pilot, cond, n: int = 60) -> None:
 async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.CHAINS, quiet=schedule.DEFAULT_QUIET))
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
+    # The roster's 1 s timer binds refresh_roster when the app mounts: still it before then, or a
+    # tick under load rebuilds the roster and drops the question the test set (a flaky 'watch').
+    monkeypatch.setattr(OrkcraftApp, "refresh_roster", lambda self: None)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         monkeypatch.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
-        monkeypatch.setattr(app, "refresh_roster", lambda: None)
         alert = _alert()
         app.roster.alerts = [alert]
         app._elders_consider()
@@ -208,12 +210,14 @@ async def test_advice_is_left_and_only_the_operator_answers(fake_repo: Path, qui
 async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.FREE, quiet=schedule.DEFAULT_QUIET))
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1", "why": "runs the tests"}))
+    # The roster's 1 s timer binds refresh_roster when the app mounts: still it before then, or a
+    # tick under load rebuilds the roster and drops the question the test set (a flaky 'watch').
+    monkeypatch.setattr(OrkcraftApp, "refresh_roster", lambda self: None)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         monkeypatch.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
-        monkeypatch.setattr(app, "refresh_roster", lambda: None)
         alert = _alert()
         app.roster.alerts = [alert]
         app._elders_consider()
@@ -239,12 +243,14 @@ async def test_free_orcs_get_answered_by_the_elders(fake_repo: Path, quiet, monk
 @pytest.mark.asyncio
 async def test_a_question_that_changed_meanwhile_is_not_answered(fake_repo: Path, quiet, monkeypatch):
     settings.save(settings.MachineSettings(onboarded=True, autonomy=autonomy.FREE, quiet=schedule.DEFAULT_QUIET))
+    # The roster's 1 s timer binds refresh_roster when the app mounts: still it before then, or a
+    # tick under load rebuilds the roster and drops the question the test set (a flaky 'watch').
+    monkeypatch.setattr(OrkcraftApp, "refresh_roster", lambda self: None)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     sent: list = []
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         monkeypatch.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
-        monkeypatch.setattr(app, "refresh_roster", lambda: None)
         app.roster.alerts = [_alert("pytest -q --lf")]                        # the screen moved on
         app._elders_done(_alert(), "", elders.Decision("1", "routine", "model"))
         assert sent == [] and app.advice                                      # kept as advice instead
@@ -314,10 +320,12 @@ async def test_the_advice_survives_a_restart_and_the_hall_lists_the_night(fake_r
     elders.log(fake_repo, a, elders.Decision("1", "runs the tests", "model", 0.001), who="Grunt")
     calls: list = []
     monkeypatch.setattr(runners, "ELDERS_RUNNER", _runner({"answer": "1"}, calls))
+    # The roster's 1 s timer binds refresh_roster when the app mounts: still it before then, or a
+    # tick under load rebuilds the roster and drops the question the test set (a flaky 'watch').
+    monkeypatch.setattr(OrkcraftApp, "refresh_roster", lambda self: None)
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
-        monkeypatch.setattr(app, "refresh_roster", lambda: None)
         app.roster.alerts = [a]
         assert app.advice_for(a) is not None and app._elders_count == 1
         app._elders_consider()
