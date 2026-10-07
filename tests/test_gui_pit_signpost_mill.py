@@ -125,6 +125,7 @@ def test_the_signpost_counts_per_road_out_in_its_colour_and_tests_a_text(fake_re
     counts = {r["label"]: (r["count"], r["color"]) for r in card["roads"]}
     assert counts["bugs"][0] == 2 and counts["links"][0] == 1 and counts["no rule"][0] == 0
     assert len({col for _, col in counts.values()}) == 3                       # a colour per road
+    assert card["total"] == 4 and card["last"]["route"] == "rest" and card["last"]["title"] == "hello"
     assert set(card["tints"]) == {r["key"] for r in card["roads"]}           # the town paints their starts
     roads = {r["id"] for r in host.snapshot()["roads"]}
     assert set(card["tints"]) <= roads
@@ -167,6 +168,7 @@ def test_the_mill_shows_every_step_of_a_run_and_its_steps_are_edited(fake_repo, 
     d = host.detail(grinder)["data"]
     assert not d["runs"][0]["ok"] and d["failed"] == 2 and d["runs"][0]["failed"] == 2
     assert "error" in d["runs"][0]["steps"][-1] and _card(host, grinder)["state"] == "failed"
+    assert _card(host, grinder)["failed"] == 2 and _card(host, grinder)["runs"] == 2
 
 
 def test_the_mill_queues_while_it_mills(fake_repo, isolated_layout_file):
@@ -178,5 +180,6 @@ def test_the_mill_queues_while_it_mills(fake_repo, isolated_layout_file):
     w.run_steps("two", title="second")
     d = host.detail(grinder)["data"]
     assert d["running"] and d["current"]["title"] == "first" and [q["title"] for q in d["queue"]] == ["second"]
-    assert _card(host, grinder) == {"state": "running", "at": d["current"]["started"], "queue": 1}
+    assert _card(host, grinder) == {"state": "running", "at": d["current"]["started"], "queue": 1, "title": "first",
+                                    "steps": 1, "runs": 0}
     _wait(lambda: len(w.runs) == 2 and not w.running)

@@ -1,19 +1,16 @@
 {
   "type": "scrolls",
-  "about": "🗑️ Scroll Dump: the wiki its ork keeps — the tree of pages and the page that is open.",
+  "about": "🗑️ Scroll Dump: the wiki its ork keeps — the pages changed lately over the tree of pages and sources; a page opens over them.",
   "panes": {
-    "head": {"about": "the librarian's state: what waits to be taken in, what runs, the last note", "components": ["status"], "required": true},
-    "tree": {"about": "the wiki's pages, folder by folder", "components": ["tree"], "required": true},
-    "page": {"about": "the open page, rendered", "components": ["markdown", "text"], "required": true}
+    "head": {"about": "the pages, the sources, what waits to be taken in with Take in, what runs with Stop; Check the wiki, Add a folder", "components": ["status"], "required": true},
+    "tree": {"about": "the pages changed lately, then the wiki's pages and its sources folder by folder; a page picked opens here, over them, rendered", "components": ["tree"], "required": true},
+    "page": {"about": "kept for older documents: a page now opens over the tree, in the tree pane", "components": ["markdown", "text"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "scrolls", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"id": "tree", "component": "tree", "size": 2, "font": "body"},
-        {"id": "page", "component": "markdown", "size": 3, "font": "body"}
-      ]}
+      {"id": "tree", "component": "tree", "size": 1, "font": "body"}
     ]
   }
 }

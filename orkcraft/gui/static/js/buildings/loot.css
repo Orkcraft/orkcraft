@@ -1,0 +1,65 @@
+/* 📦 Loot Vault, made for the half panel (js/buildings/loot.js): the waiting carts take the room as one flow
+   of cards, the changed files as rows; what passed and what was rejected fold to a line; a cart opens over
+   them. */
+
+/* The head: the counters on one line, the acts on the right. */
+.loot-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.loot-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.loot-head__err { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.loot-head > .ok-btn { margin-left: calc(var(--space-2) - var(--space-4)); }
+.loot-head > .gui-head__spacer + .ok-btn { margin-left: 0; }
+
+/* A cart that needs you: a strip that says what it is, Look beside it. */
+.loot-ask { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.loot-ask__who { flex: none; font-weight: 700; color: var(--alert); }
+.loot-ask__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+[data-theme="office"] .loot-ask { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* The waiting carts as one flow of cards, the one that needs you first. */
+.loot-queue { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.loot-flow { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2); }
+.loot-card { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; min-height: 76px; box-sizing: border-box;
+  padding: var(--space-2) 10px; background: var(--panel); box-shadow: var(--bevel-raised); cursor: pointer;
+  border: 0; text-align: left; font: inherit; color: inherit; }
+.loot-card:hover { background: var(--panel-raised); }
+.loot-card:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+.loot-card.is-asks { background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.loot-card__state { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.loot-card__title { font-weight: 700; font-size: 13px; line-height: 18px; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.loot-card__foot { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin-top: auto; font-size: 11px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; }
+.loot-card__from { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.loot-card__cost { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
+[data-theme="office"] .loot-card { background: var(--panel); box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+[data-theme="office"] .loot-card:hover { box-shadow: inset 0 0 0 1px var(--frame-strong); }
+[data-theme="office"] .loot-card.is-asks { background: var(--panel); box-shadow: inset 0 0 0 1px var(--alert-hot); }
+.loot-empty { margin: 0; color: var(--ink-muted); }
+
+/* The changed files, what passed, what was rejected: a row each. */
+.loot-files { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0 var(--space-4); }
+.loot-file { display: flex; align-items: baseline; gap: var(--space-2); width: 100%; min-width: 0; padding: 3px var(--space-1); border: 0; background: none;
+  font: 400 12px/18px var(--font-mono); color: var(--ink); text-align: left; white-space: nowrap; cursor: pointer; }
+.loot-file:hover { background: var(--panel-raised); }
+.loot-file:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.loot-file.is-done { color: var(--ink-muted); }
+.loot-file__mark { flex: none; width: 1em; color: var(--ink-muted); }
+.loot-file__path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.loot-file__meta { flex: none; font-family: var(--ok-font); font-size: 11px; color: var(--ink-muted); }
+
+.loot-fold > summary { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; cursor: pointer; color: var(--ink-muted);
+  list-style: none; white-space: nowrap; }
+.loot-fold > summary::-webkit-details-marker { display: none; }
+.loot-fold > summary::before { content: "▸"; flex: none; }
+.loot-fold[open] > summary::before { content: "▾"; }
+.loot-fold > summary:hover { color: var(--ink); }
+.loot-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.loot-fold__last { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: auto; }
+
+/* A cart open, over the queue: ← back to it. */
+.loot-open { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.loot-open__back { align-self: flex-start; }
+.loot-open__title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loot-open .gui-pre { max-height: 320px; overflow: auto; }
+.loot-open .gui-diff { width: 100%; }

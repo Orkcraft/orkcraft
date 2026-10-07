@@ -1,25 +1,20 @@
 {
   "type": "council",
-  "about": "🪔 Clan Fire: the clan reviews a document turn by turn and cycle by cycle until the steward decides; its members, the review, the document with its comments and the report, the past reviews.",
+  "about": "🪔 Clan Fire: the clan reviews a document turn by turn and cycle by cycle until the steward decides; the clan as a row of chips, the review with the document and the report as tabs, the past reviews and the rules folded to a line.",
   "panes": {
-    "head":     {"about": "the review shown, its cycle, how it stands and what it spent; Review, Add member, Answer, Stop", "components": ["status"], "required": true},
-    "members":  {"about": "the steward and the members (role, tier, veto, verdict now) with their briefs, and asking the keeper to change them in plain words", "components": ["list", "table"], "required": true},
-    "review":   {"about": "the review turn by turn, the earlier cycles folded", "components": ["text", "markdown", "log"], "required": true},
-    "document": {"about": "the document under review beside the clan's comments, and the report", "components": ["markdown", "text"], "required": true},
-    "history":  {"about": "what waits in line and the past reviews; a click shows one", "components": ["list", "table"], "dynamic": true}
+    "head":     {"about": "the review shown, its cycle, how it stands and what it spent; the steward's question with Answer; Review, Stop", "components": ["status"], "required": true},
+    "members":  {"about": "the steward and the members as chips (role, veto, verdict now); a click opens a brief; Add member", "components": ["list", "table"], "required": true},
+    "review":   {"about": "the review turn by turn (the earlier cycles folded), the document and the report, a tab each", "components": ["text", "markdown", "log"], "required": true},
+    "document": {"about": "kept for older documents: the document is now a tab of the review pane", "components": ["markdown", "text"], "dynamic": true},
+    "history":  {"about": "what waits in line, the past reviews (a click shows one) and asking the keeper to change the rules; one line until opened", "components": ["list", "table"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "council", "split": "column",
     "panes": [
       {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"split": "row", "size": 1, "panes": [
-        {"split": "column", "size": 1, "panes": [
-          {"id": "members", "component": "list", "size": 2, "font": "body"},
-          {"id": "history", "component": "list", "size": 1, "font": "body"}
-        ]},
-        {"id": "review", "component": "text", "size": 2, "font": "body"},
-        {"id": "document", "component": "markdown", "size": 3, "font": "body"}
-      ]}
+      {"id": "members", "component": "list", "size": "auto", "font": "status"},
+      {"id": "review", "component": "text", "size": 1, "font": "body"},
+      {"id": "history", "component": "list", "size": "auto", "font": "status"}
     ]
   }
 }

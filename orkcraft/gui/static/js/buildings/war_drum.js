@@ -1,9 +1,10 @@
 // 🥁 War Drum: the day's rhythm from a calendar (core/workers/war_drum.py), with the town's scheduled
 // runs and ≈ when its limits are reached laid over the meetings (realm/drumbeat.py). Each kind wears
 // its role (`b.tone`) and its mark: ▪ meeting, ↻ scheduled run, ≈ limit (an estimate). Closed: the
-// next beats of all three kinds over a strip of the next hours, a checkbox per kind hiding it there;
-// command: today's beats, now marked, a meeting's document a click away, the limits; full: today by
-// the hour and the week with all three, the chosen meeting, the settings. A meeting's document opens in Lake.
+// next meeting as its headline, the next beats of all three kinds over a strip of the next hours, a
+// checkbox per kind hiding it there. Open, made for the half panel: the head with the limits, the agenda
+// taking the room (a meeting opens over it, ← back), today by the hour beside it when the window is
+// wide, the settings folded to a line. A meeting's document opens in Lake.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -119,19 +120,26 @@ const KINDS = [
   { key: "limit", label: "limits", mark: MARK.limit, tone: "wait", title: "limits, estimated" },
 ];
 
-/** Closed: the next beats of the kinds shown (meetings, scheduled runs, ≈ limits) over a strip of the
- * next hours; a checkbox over them hides a kind. */
+/** Closed: the headline is the next meeting (its time, its title; `now` while it runs); under it the next
+ * beats of the kinds shown (meetings, scheduled runs, ≈ limits) over a strip of the next hours, a checkbox
+ * over them hiding a kind; the foot how many meetings are left today. */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   const kinds = KINDS.filter((k) => !c.kinds || c.kinds.includes(k.key));   // its `beats`: a calendar may hold meetings alone
   const on = (x) => shown(b.id, x.kind);
   const beats = c.beats.filter(on);
+  const next = c.beats.find((x) => x.kind === "meeting");
   return html`<div class=${cls("gui-drum", { "is-folded": hidden(b.id).length > 0 })}>
     ${kinds.length > 1 && html`<${PartToggles} id=${b.id} parts=${kinds} />`}
+    ${c.error ? html`<div class="gui-hut__big ok-tone-wait">⚠ ${say("Unread")}<small>${say("the calendar cannot be read")}</small></div>`
+      : next ? html`<div class="gui-hut__big"><span class=${next.now ? "ok-tone-fire" : ""}>${next.now ? say("now") : beatWhen(next)}</span>
+          <small title=${next.title}>${next.title}</small></div>`
+      : html`<div class="gui-hut__big">${say("Free")}<small>${say("no meeting ahead")}</small></div>`}
     <${Strip} c=${{ ...c, strip: c.strip.filter(on) }} />
     ${beats.length ? html`<ul class="gui-drum__beats">${beats.map((x) => html`<${Beat} key=${beatKey(x)} b=${x} />`)}</ul>`
-      : html`<p class="ok-tone-muted">${c.error ? "the calendar cannot be read" : "nothing ahead"}</p>`}
+      : html`<p class="ok-tone-muted">${say("Nothing ahead — New event in its window adds one.")}</p>`}
+    <div class="gui-hut__foot"><span>${c.left ? say(`${c.left} meetings left today`) : say("no more meetings today")}</span></div>
   </div>`;
 }
 
@@ -148,9 +156,10 @@ export function quick(id, action) {
 
 /** A day's beats in time order: the meetings (a click picks one, its document a click away), the
  * scheduled runs and the limits reached that day. `once`: a job's first run only. */
-function DayRows({ id, day, once = false }) {
+function DayRows({ id, day, once = false, runs = true }) {
   const seen = new Set();
-  const beats = day.beats.filter((b) => {
+  const hid = runs ? 0 : day.beats.filter((b) => b.kind === "schedule").length;
+  const beats = day.beats.filter((b) => runs || b.kind !== "schedule").filter((b) => {
     if (!once || b.kind !== "schedule") return true;
     const key = `${b.ref}|${b.title}`;
     if (seen.has(key)) return false;
@@ -160,7 +169,8 @@ function DayRows({ id, day, once = false }) {
   const rows = [...day.events.map((e) => ({ e, min: e.all_day ? -1 : e.from_min, order: 0 })),
                 ...beats.map((b) => ({ b, min: b.min, order: b.kind === "schedule" ? 1 : 2 }))]
     .sort((x, y) => x.min - y.min || x.order - y.order);
-  if (!rows.length) return html`<p class="ok-tone-muted">—</p>`;
+  const more = hid > 0 && html`<p class="drum-more ok-tone-muted">↻ ${say(`${hid} scheduled runs`)}</p>`;
+  if (!rows.length) return more || html`<p class="ok-tone-muted">${say("Nothing this day.")}</p>`;
   return html`<ul class="gui-drum__beats">${rows.map((r) => r.e ? html`<li key=${r.e.id}
       class=${cls("gui-drum__beat is-meeting is-pick", { "is-selected": chosen.value[id] === r.e.id, "is-now": r.e.now,
                                                          "is-past": r.e.past && !r.e.now })}
@@ -168,7 +178,7 @@ function DayRows({ id, day, once = false }) {
     <span class=${cls("gui-drum__glyph", { "ok-tone-fire": r.e.now })} aria-hidden="true">▪</span>
     <b class="gui-drum__when">${r.e.all_day ? say("all day") : r.e.start}</b><span class="gui-drum__title">${r.e.title}</span>
     <span class="gui-drum__meta">${r.e.now ? say("now") : ""}</span><${DocMark} id=${id} e=${r.e} /></li>`
-    : html`<${Beat} key=${beatKey(r.b)} b=${{ ...r.b, day: "" }} />`)}</ul>`;
+    : html`<${Beat} key=${beatKey(r.b)} b=${{ ...r.b, day: "" }} />`)}</ul>${more}`;
 }
 
 /** The limits: where each stands, its burn rate and ≈ when it is reached. */
@@ -185,19 +195,23 @@ function Limits({ d }) {
       : l.at ? `≈ ${l.day} ${l.at}`.replace("  ", " ") : say("not at this rate")}</span></li>`)}</ul>`;
 }
 
+/** The head: the date, what is on now and next, how many are left; New event, Prepare doc quiet; the
+ *  limits with where they stand and ≈ when they are reached on the line under it. */
 function Head({ id, d }) {
   const all = today(d);
   const cur = all.find((e) => e.id === d.current), nxt = all.find((e) => e.id === d.next);
-  return html`<div class="gui-head">
-    <span class="gui-head__what"><b>${d.date}</b>
-      ${cur && html` · ${say("now")}: ${cur.title}`}${nxt && html` · ${say("next")} ${nxt.start}: ${nxt.title}`}${" · "}${d.left} left today</span>
-    ${d.errors.map((err) => html`<span key=${err} class="ok-tone-wait">⚠ ${err}</span>`)}
-    ${d.limits.filter((l) => l.known && (l.at || l.reached)).map((l) => html`<span key=${l.what}
-      class=${`gui-drum__est ok-tone-${l.reached ? "error" : "wait"}`} title=${say(ESTIMATE)}>${`≈ ${say(LIMIT[l.what])} `}${
-      l.reached ? say("reached") : `${l.day} ${l.at}`.trim()}</span>`)}
-    <span class="gui-head__spacer"></span>
-    <button class="ok-act" onClick=${() => { adding.value = { ...adding.value, [id]: true }; }}><span class="ok-act__label">New event</span></button>
-    <button class="ok-act" onClick=${() => prepare(id, meeting(id, d))}><span class="ok-act__label">Prepare doc</span></button>
+  return html`<div class="drum-head">
+    <div class="drum-head__row">
+      <span class="drum-head__what"><b>${d.date}</b>
+        ${cur && html` · <span class="ok-tone-fire">${say("now")}</span> ${cur.title}`}${nxt && html` · ${say("next")} <b>${nxt.start}</b> ${nxt.title}`}</span>
+      <span class="drum-head__left"><b>${d.left}</b> ${say("left today")}</span>
+      <span class="drum-head__spacer"></span>
+      <button class="ok-act" title=${say("Ask for the document of the chosen meeting, else the one on now or next")}
+        onClick=${() => prepare(id, meeting(id, d))}><span class="ok-act__label">Prepare doc</span></button>
+      <button class="ok-btn primary" onClick=${() => { adding.value = { ...adding.value, [id]: true }; }}>New event</button>
+    </div>
+    ${d.errors.map((err) => html`<p key=${err} class="drum-head__err ok-tone-wait">⚠ ${err}</p>`)}
+    <${Limits} d=${d} />
     ${adding.value[id] && html`<${NewEvent} id=${id} />`}
   </div>`;
 }
@@ -229,33 +243,37 @@ function Hours({ id, d }) {
   </div>`;
 }
 
+/** The agenda: day by day, the meetings with the runs and limits between them — each job once a day, its
+ *  cadence beside it (today by the hour shows every run); after tomorrow the runs only counted. A meeting
+ *  picked opens over it. */
 function Week({ id, d }) {
-  return html`<div>${d.days.map((day) => html`<section key=${day.date}>
+  const e = meeting(id, d);
+  if (e) return html`<${Meeting} id=${id} d=${d} e=${e} />`;
+  return html`<div class="drum-week">${d.days.map((day, i) => html`<section key=${day.date}>
     <p class="ok-list__head">${say(day.label)}</p>
-    <${DayRows} id=${id} day=${day} />
+    <${DayRows} id=${id} day=${day} once=${true} runs=${i < 2} />
   </section>`)}</div>`;
 }
 
-function Meeting({ id, d }) {
-  const e = meeting(id, d);
-  if (!e) return html`<div class="gui-rows">
-    <p class="ok-tone-muted">Pick a meeting in the day or the week.</p>
-    <${Limits} d=${d} />
-  </div>`;
-  return html`<div class="gui-rows">
-    <h3 class="ok-font-heading">${e.title}</h3>
-    <p>${e.day} · ${e.all_day ? say("all day") : e.when}${e.location ? ` · ${e.location}` : ""}</p>
-    <p class="ok-tone-muted">${e.calendar}</p>
-    <div class="ok-row">
-      ${e.doc ? html`<button class="ok-act" onClick=${() => openDoc(id, e)}><span class="ok-act__label">Open the document</span></button>
-                     <span class="ok-tone-muted">${e.doc}</span>`
-              : html`<span class="ok-tone-muted">No document yet.</span>`}
-      ${!e.all_day && html`<button class="ok-act" onClick=${() => prepare(id, e)}><span class="ok-act__label">Prepare doc</span></button>`}
+/** A meeting open over the agenda: ← back, when and where, its document (open it or ask for it). */
+function Meeting({ id, d, e }) {
+  const back = () => { chosen.value = { ...chosen.value, [id]: null }; };
+  return html`<div class="drum-meet" onKeyDown=${(ev) => { if (ev.key === "Escape") { ev.stopPropagation(); back(); } }}>
+    <button class="ok-btn drum-meet__back" onClick=${back}>← ${say("The agenda")}</button>
+    <h3 class="ok-detail__head drum-meet__title">${e.title}</h3>
+    <p class="ok-detail__meta">${say((d.days.find((x) => x.date === e.day) || {}).label || e.day)} · ${e.all_day ? say("all day") : e.when}${e.location ? ` · ${e.location}` : ""}
+      ${e.now ? html` · <span class="ok-tone-fire">${say("now")}</span>` : ""}</p>
+    <p class="ok-detail__meta ok-tone-muted">${e.calendar}</p>
+    <div class="ok-detail__actions">
+      ${e.doc && html`<button class="ok-btn primary" onClick=${() => openDoc(id, e)}>Open the document</button>`}
+      ${!e.all_day && html`<button class=${e.doc ? "ok-btn" : "ok-btn primary"} onClick=${() => prepare(id, e)}>${e.doc ? "Prepare it again" : "Prepare doc"}</button>`}
     </div>
-    <${Limits} d=${d} />
+    <p class="ok-tone-muted drum-meet__doc">${e.doc ? html`${say("Its document")}: <span class="drum-meet__path" title=${e.doc}>${e.doc}</span>`
+      : say("No document yet — Prepare doc asks the orks for one.")}</p>
   </div>`;
 }
 
+/** The calendar's settings: one line until opened — they are set once. */
 function Settings({ id, d }) {
   const s = d.settings;
   const [form, setForm] = useState(s);
@@ -263,24 +281,30 @@ function Settings({ id, d }) {
   const field = (key, label, hint) => html`<label class="gui-field">${label}
     <input class="ok-input" placeholder=${hint} value=${form[key]} onInput=${(e) => setForm({ ...form, [key]: e.target.value })} /></label>`;
   const changed = ["ics", "day_starts", "lead"].some((k) => form[k] !== s[k]);
-  return html`<div class="gui-head">
-    ${field("ics", "Calendar (.ics file or URL)", "calendar.ics")}
-    ${field("day_starts", "Day's digest at", "08:00")}
-    ${field("lead", "Document asked for before a meeting", "2h")}
-    <button class="ok-act" disabled=${!changed}
-      onClick=${() => act(id, "settings", { ics: form.ics, day_starts: form.day_starts, lead: form.lead }).catch(() => {})}>
-      <span class="ok-act__label">Save</span></button>
-    <span class="ok-tone-muted">New events go to ${s.writes_to}</span>
-  </div>`;
+  return html`<details class="drum-settings">
+    <summary><span>${say("Settings")}</span>
+      <span class="drum-settings__sum ok-font-status">${s.ics || say("no calendar")} · ${say("digest")} ${s.day_starts || "—"} · ${s.lead ? say(`document ${s.lead} before`) : say("no document asked")}</span></summary>
+    <div class="drum-settings__form">
+      ${field("ics", "Calendar (.ics file or URL)", "calendar.ics")}
+      ${field("day_starts", "Day's digest at", "08:00")}
+      ${field("lead", "Document asked for before a meeting", "2h")}
+      <button class="ok-btn" disabled=${!changed}
+        onClick=${() => act(id, "settings", { ics: form.ics, day_starts: form.day_starts, lead: form.lead }).catch(() => {})}>Save</button>
+    </div>
+    <p class="ok-tone-muted">New events go to ${s.writes_to}</p>
+  </details>`;
 }
 
-/** Full: today by the hour and the week with the runs and limits over them, the chosen meeting, the settings. */
+/** The window by its UI document (design/buildings/war_drum.json), made for the half panel: the head with
+ *  the limits, the agenda taking the room (a meeting opens over it), today by the hour beside it when the
+ *  window is wide, the settings folded to a line. `meeting` shows nothing of its own: an older document
+ *  that still has the pane loses nothing. */
 export function panes(id, d) {
   return {
     head: () => html`<${Head} id=${id} d=${d} />`,
     day: () => html`<${Hours} id=${id} d=${d} />`,
     week: () => html`<${Week} id=${id} d=${d} />`,
-    meeting: () => html`<${Meeting} id=${id} d=${d} />`,
+    meeting: () => null,
     settings: () => html`<${Settings} id=${id} d=${d} />`,
   };
 }

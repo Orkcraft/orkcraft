@@ -1,0 +1,41 @@
+/* ⚙️ The Mill (js/buildings/mill.js), made for the half panel: the chain of steps with Run on one line,
+   the runs one line each, a run open over them with what every step made. Tokens only. */
+
+/* The head: the steps as a chain, Run and Edit steps on the right. */
+.gui-mill__head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); min-width: 0; }
+.gui-mill__chain { flex: 1 1 260px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+.gui-mill__link { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; max-width: 100%; }
+.gui-mill__arrow { flex: none; color: var(--ink-muted); }
+.gui-mill__step { min-width: 0; max-width: 28em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 0 var(--space-2); font: 12px/22px var(--font-mono); color: var(--ink); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-mill__step.is-failed { color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+[data-theme="office"] .gui-mill__step { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-sm); }
+[data-theme="office"] .gui-mill__step.is-failed { box-shadow: inset 0 0 0 1px var(--danger); }
+.gui-mill__acts { flex: none; display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+.gui-mill__problem { flex-basis: 100%; margin: 0; }
+
+/* The runs: one line each — ✓/✗, when, how it came, its first words, its cost. */
+.gui-mill__runs { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-mill__sum { margin: 0; color: var(--ink-muted); }
+.gui-mill__sum b { color: var(--ink); }
+.gui-mill__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-mill__row { display: grid; grid-template-columns: 1em 7.5em minmax(0, 5em) minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+  width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.gui-mill__row:hover { background: var(--selection); }
+.gui-mill__row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.gui-mill__at, .gui-mill__trigger, .gui-mill__cost { color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gui-mill__trigger, .gui-mill__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-mill__cost { font-size: 12px; }
+
+/* A run open over the rows. */
+.gui-mill__run { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-mill__back { align-self: flex-start; }
+.gui-mill__state { display: flex; align-items: baseline; gap: var(--space-2); margin: 0; min-width: 0; }
+.gui-mill__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-mill__out { padding: var(--space-2) var(--space-3); background: var(--panel-inset); max-height: 16em; overflow: auto; }
+[data-theme="office"] .gui-mill__out { border-radius: var(--radius-sm); }
+.gui-mill__trace.is-failed > .ok-detail__section { color: var(--danger); }
+.gui-mill__trace > p { margin: 0 0 var(--space-1); }
+.gui-mill__queue > p { margin: 0 0 var(--space-1); }

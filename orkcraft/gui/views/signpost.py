@@ -20,12 +20,15 @@ def _roads(w) -> list[dict]:
 
 
 def card(w) -> dict:
-    """Closed: a counter per road out in its colour; `tints` tells the town which road starts in which."""
+    """Closed: how many carts it routed, a counter per road out in its colour, the last cart; `tints` tells
+    the town which road starts in which."""
     roads = _roads(w)
     return {"roads": [{"key": r["key"], "label": r["label"], "count": r["count"], "color": r["color"],
                        "unmatched": r["unmatched"]} for r in roads],
             "tints": {r["key"]: r["color"] for r in roads},
-            "rules": len(w.rules_text)}
+            "rules": len(w.rules_text), "total": sum(w.counts.values()),
+            "last": ({"title": w.history[0].get("title", ""), "route": w.history[0].get("route", ""),
+                      "at": w.history[0].get("at", "")} if w.history else None)}
 
 
 def detail(w) -> dict:

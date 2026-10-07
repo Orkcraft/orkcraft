@@ -1,0 +1,72 @@
+/* 🪔 Clan Fire, made for the half panel (js/buildings/council.js): the review itself — turn by turn, the
+   document, the report — takes the room; the clan is one row of chips; the past reviews and the rules fold
+   to one line. */
+
+/* The head: the review on one line, Review as a quiet action. */
+.council-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
+.council-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.council-head b.ok-tone-ok { color: var(--success); }
+.council-head b.ok-tone-error { color: var(--danger); }
+.council-head__title { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* The steward's question: a strip that says what it asks, Answer beside it. */
+.council-ask { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  background: var(--fire-ground); box-shadow: inset 0 0 0 2px var(--alert); }
+.council-ask__who { flex: none; font-weight: 700; color: var(--alert); }
+.council-ask__what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+[data-theme="office"] .council-ask { background: transparent; box-shadow: inset 0 0 0 1px var(--alert-hot); border-radius: var(--radius-md); }
+
+/* The clan: a chip per member — who, its verdict now; a click opens its brief. */
+.council-clan { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.council-chip { display: inline-flex; align-items: baseline; gap: var(--space-2); max-width: 100%; min-width: 0; padding: var(--space-1) var(--space-3);
+  border: 0; font: inherit; font-size: 13px; line-height: 18px; color: var(--ink); text-align: left; white-space: nowrap; cursor: pointer;
+  background: var(--panel); box-shadow: var(--bevel-raised); }
+.council-chip > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.council-chip:hover { background: var(--panel-raised); }
+.council-chip:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 2px; }
+.council-chip.is-approve { box-shadow: var(--bevel-raised), inset 3px 0 0 var(--success); }
+.council-chip.is-changes, .council-chip.is-rework { box-shadow: var(--bevel-raised), inset 3px 0 0 var(--warning); }
+.council-chip.is-veto { box-shadow: var(--bevel-raised), inset 3px 0 0 var(--danger); }
+.council-chip.is-ask { box-shadow: var(--bevel-raised), inset 3px 0 0 var(--alert); }
+[data-theme="office"] .council-chip { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+[data-theme="office"] .council-chip.is-approve { box-shadow: inset 0 0 0 1px var(--frame), inset 3px 0 0 var(--success); }
+[data-theme="office"] .council-chip.is-changes, [data-theme="office"] .council-chip.is-rework { box-shadow: inset 0 0 0 1px var(--frame), inset 3px 0 0 var(--warning); }
+[data-theme="office"] .council-chip.is-veto { box-shadow: inset 0 0 0 1px var(--frame), inset 3px 0 0 var(--danger); }
+[data-theme="office"] .council-chip.is-ask { box-shadow: inset 0 0 0 1px var(--frame), inset 3px 0 0 var(--alert); }
+.council-clan__add { flex: none; color: var(--ink-muted); background: transparent; box-shadow: inset 0 0 0 1px var(--frame); }
+.council-clan__add:hover { color: var(--ink); }
+
+/* The review: tabs over turn by turn, the document, the report. */
+.council-paper { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; min-height: 0; }
+.council-paper__tabs { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.council-paper__path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.council-turns { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.council-turns > details > summary, .council-turn > summary { display: flex; align-items: baseline; gap: var(--space-1); min-width: 0; cursor: pointer; white-space: nowrap; }
+.council-turns > details > summary > *, .council-turn > summary > * { flex: none; }
+.council-turns > details > summary { list-style: none; }
+.council-turns > details > summary::-webkit-details-marker, .council-turn > summary::-webkit-details-marker { display: none; }
+.council-turns > details > summary::before, .council-turn > summary::before { content: "▸"; flex: none; width: 1em; color: var(--ink-muted); }
+.council-turns > details[open] > summary::before, .council-turn[open] > summary::before { content: "▾"; }
+.council-turns > details > summary:focus-visible, .council-turn > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.council-turn__note { flex: 1 1 auto !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink-muted); }
+.council-turn__when { margin-left: auto; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.council-turn > .gui-prose { padding: 0 0 var(--space-2) calc(1em + var(--space-1)); }
+.council-turn-list > li { padding: var(--space-1) 0; }
+.council-turn-list > li { border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); }
+.council-turns > details > .council-turn-list { padding-left: var(--space-4); }
+
+/* Past reviews, the line, the rules: one line until opened. */
+.council-fold > summary { list-style: none; display: flex; gap: var(--space-3); align-items: center; cursor: pointer; color: var(--ink-muted); white-space: nowrap; }
+.council-fold > summary::-webkit-details-marker { display: none; }
+.council-fold > summary::before { content: "▸"; flex: none; }
+.council-fold[open] > summary::before { content: "▾"; }
+.council-fold > summary:hover { color: var(--ink); }
+.council-fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.council-fold__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.council-fold > .gui-section:first-of-type { margin-top: var(--space-2); }
+.council-past { display: flex; align-items: baseline; gap: var(--space-2); width: 100%; min-width: 0; padding: 0; border: 0; background: none;
+  font: inherit; color: var(--ink); text-align: left; cursor: pointer; white-space: nowrap; }
+.council-past:hover .council-past__title { text-decoration: underline; }
+.council-past:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+.council-past__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.council-past > :last-child { margin-left: auto; flex: none; }

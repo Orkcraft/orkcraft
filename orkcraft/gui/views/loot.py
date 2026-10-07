@@ -4,6 +4,7 @@ decision is the worker's (core/workers/loot.py); a cart is edited in Lake, in it
 from __future__ import annotations
 
 import re
+import time
 
 from orkcraft.core.workers.loot import label as _label
 from orkcraft.gui.views import ActError, text
@@ -29,13 +30,13 @@ def _waiting_cost(items) -> str:
 
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): `N to review` or `all reviewed ✓`, `passed: N` and what
-    the waiting carts cost; what came of the newest one that passed."""
+    the waiting carts cost; what came of the newest one that passed, and when."""
     if w.error:
         return {"error": " ".join(w.error.split())[:60]}
     waiting = [i for i in w.queue.items if i.status in (gate.HELD, gate.NEEDS_YOU)]
     return {"to_review": len(waiting), "needs_you": sum(1 for i in waiting if i.status == gate.NEEDS_YOU),
             "files": sum(1 for g in w.rows if not g.reviewed), "passed": len(w.stored),
-            "cost": _waiting_cost(waiting), "latest": _latest(w)}
+            "cost": _waiting_cost(waiting), "latest": _latest(w), "at": _latest_at(w)}
 
 
 _OUTCOMES: dict[str, str] = {}          # a kept cart's path → what came of it (kept carts do not change)
@@ -49,6 +50,14 @@ def _latest(w) -> str:
     if newest.path not in _OUTCOMES:
         _OUTCOMES[newest.path] = (_gist(w, newest.path).get("outcome") or newest.title)[:80]
     return _OUTCOMES[newest.path]
+
+
+def _latest_at(w) -> str:
+    """When the newest kept cart passed: `HH:MM` today, else `MM-DD` ("" when nothing passed)."""
+    if not w.stored:
+        return ""
+    at = max(x.at for x in w.stored).replace("T", " ")
+    return at[11:16] if at[:10] == time.strftime("%Y-%m-%d") else at[5:10]
 
 
 def _chain(hops, names: dict[str, str]) -> list[dict]:

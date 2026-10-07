@@ -22,9 +22,9 @@ def _short(title: str) -> str:
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): a counter per status lane with its top cards, then the
     note folders with theirs (`notes`), each `new` when it holds unseen cards; in notes mode only the
-    folders. In board mode also the person's open to-dos (`todos`) and the latest notes (`ideas`)."""
+    folders (`mode` says which). In board mode also the person's open to-dos (`todos`) and the latest notes (`ideas`)."""
     if w.error:
-        return {"error": w.error[:60], "lanes": [], "notes": [], "todos": None, "ideas": None}
+        return {"error": w.error[:60], "mode": w.mode, "lanes": [], "notes": [], "todos": None, "ideas": None}
     seen = w.seen()
     lanes, notes = [], []
     for ln in w.visible_lanes():
@@ -42,7 +42,7 @@ def card(w) -> dict:
         latest = w.notes[::-1]
         ideas = {"count": len(latest), "new": any(c.id not in seen for c in latest),
                  "top": [_short(c.title) for c in latest[:TOP + 1]]}
-    return {"error": "", "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas}
+    return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas}
 
 
 def detail(w) -> dict:

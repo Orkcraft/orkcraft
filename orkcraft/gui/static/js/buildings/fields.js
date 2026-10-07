@@ -15,7 +15,7 @@ import { PartToggles, shown, hidden } from "../parts.js";
 const selected = signal({});       // building id → card id
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
 // The closed card's three parts, each one the person may hide (js/parts.js).
-const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My chores" }, { key: "scribbles", label: "Scribbles" }];
+const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My to-dos" }, { key: "scribbles", label: "Notes" }];
 
 const sheet = new URL("./fields.css", import.meta.url).href;
 if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
@@ -45,7 +45,7 @@ function CardDialog({ id, card, lane, onClose }) {
   const [title, setTitle] = useState(card ? card.title : "");
   const [body, setBody] = useState(card ? card.body : "");
   const kind = card ? card.kind : lane.kind;
-  const what = kind === "task" ? "task" : kind === "mine" ? "chore" : "note";
+  const what = kind === "task" ? "task" : kind === "mine" ? "to-do" : "note";
   const head = card ? what[0].toUpperCase() + what.slice(1) : `New ${what}`;
   function keep() {
     const call = card ? act(id, "edit", { card: card.id, title, body }) : act(id, "add", { lane: lane.id, title, body });
@@ -107,16 +107,16 @@ function Todos({ id, todos, sel, onOpen, top }) {
     <ul class=${cls("gui-todos", { "gui-drop": over })} ...${drop}>
       ${cards.map((c) => html`<li key=${c.id} class=${cls("gui-todo", { "is-done": c.done, "is-selected": c.id === sel })}
           draggable="true" onDragStart=${dragCard(c.id)} onClick=${() => pick(id, c.id)} onDblClick=${() => onOpen && onOpen(c)}>
-        <label class="ok-check" title=${say(c.done ? "Put it back on my chores" : "Tick it off")}
+        <label class="ok-check" title=${say(c.done ? "Put it back on my to-dos" : "Tick it off")}
           onClick=${(e) => { e.stopPropagation(); act(id, "check", { card: c.id }).catch(() => {}); }}><i>${c.done ? "✓" : ""}</i></label>
         <span class="gui-todo__title">${c.title}${c.new ? html`<span class="ok-word gui-new"> new</span>` : ""}</span>
       </li>`)}
-      ${cards.length === 0 && html`<li class="ok-tone-muted ok-font-status">${todos.cards.length ? "All done ✓" : "No chores yet"}</li>`}
+      ${cards.length === 0 && html`<li class="ok-tone-muted ok-font-status">${todos.cards.length ? "All done ✓" : "No to-dos yet — add one below"}</li>`}
       ${top && todos.cards.filter((c) => !c.done).length > top
         && html`<li class="ok-font-status ok-tone-muted">+${todos.cards.filter((c) => !c.done).length - top} more</li>`}
     </ul>
     ${!top && html`<div class="gui-todo__add">
-      <input class="ok-input" placeholder=${say("A chore of my own…")} value=${title}
+      <input class="ok-input" placeholder=${say("A to-do of my own…")} value=${title}
         onInput=${(e) => setTitle(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && add()} />
       <button class="ok-btn" disabled=${!title.trim()} onClick=${add}>Add</button></div>`}
   </div>`;
@@ -140,18 +140,40 @@ function noteLanes(data) {
   return notes.length ? notes : [{ id: "ideas", label: "Ideas", kind: "note", cards: [] }];
 }
 
-/** The acts of the selected card: open, colour, where it goes next (the orks, a note, my chores), send, delete. */
+/** The selected card in a strip: its title, Open, where it goes next (the orks, a note, my to-dos) and
+ *  Send; Colour and Delete quiet after them; × lets it go. */
 function Acts({ id, sel, setDialog }) {
   const a = (label, onClick) => html`<button class="ok-act" onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
-  return html`<span class="gui-head__what"><b>${sel.title}</b></span>
-    <span class="gui-head__spacer"></span>
-    ${a("Open", () => setDialog({ card: sel }))}
-    ${a("Colour", () => act(id, "color", { card: sel.id }))}
-    ${sel.kind !== "task" && a("Give it to the orks", () => act(id, "flip", { card: sel.id }))}
-    ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
-    ${sel.kind !== "mine" && sel.mine && a("Make it my chore", () => act(id, "mine", { card: sel.id }))}
-    ${a("Send", () => act(id, "send", { card: sel.id }))}
-    ${a("Delete", () => setDialog({ remove: sel }))}`;
+  return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
+    <span class="fields-sel__what" title=${sel.title}>${sel.title}</span>
+    <span class="fields-sel__acts">
+      <button class="ok-btn primary" onClick=${() => setDialog({ card: sel })}>Open</button>
+      ${sel.kind !== "task" && a("Give it to the orks", () => act(id, "flip", { card: sel.id }))}
+      ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
+      ${sel.kind !== "mine" && sel.mine && a("Make it my to-do", () => act(id, "mine", { card: sel.id }))}
+      ${a("Send", () => act(id, "send", { card: sel.id }))}
+      ${a("Colour", () => act(id, "color", { card: sel.id }))}
+      ${a("Delete", () => setDialog({ remove: sel }))}
+      <button class="ok-act" aria-label=${say("Let the card go")} title=${say("Let the card go")} onClick=${() => pick(id, null)}>
+        <span class="ok-act__label">×</span></button>
+    </span>
+  </div>`;
+}
+
+/** The counters on one line: the orks' lanes, my to-dos open of all, the notes; New note folder quiet on
+ *  the right. How the mouse works is its tooltip: a click selects a card and its strip says the rest. */
+function Head({ id, data, setDialog }) {
+  const lanes = data.lanes.filter((ln) => (data.todos ? ln.kind === "task" : true));
+  const notes = data.todos ? data.lanes.filter((ln) => ln.kind === "note").reduce((n, ln) => n + ln.cards.length, 0) : 0;
+  const open = data.todos ? data.todos.cards.filter((c) => !c.done).length : 0;
+  return html`<div class="fields-head" title=${say("Drag a card to another lane · click to select · double-click to open")}>
+    ${lanes.map((ln) => html`<span key=${ln.id}><b>${ln.cards.length}</b> ${ln.label}</span>`)}
+    ${data.todos && html`<span><b>${open}</b>/${data.todos.cards.length} ${say("to-dos open")}</span>
+      <span><b>${notes}</b> ${say("notes")}</span>`}
+    <span class="fields-head__spacer"></span>
+    <button class="ok-act" title=${say("A lane of its own for notes")} onClick=${() => setDialog({ folder: true })}>
+      <span class="ok-act__label">${say("New note folder")}</span></button>
+  </div>`;
 }
 
 function Board({ id, data }) {
@@ -169,20 +191,17 @@ function Board({ id, data }) {
         onOpen=${open} onAdd=${(lane) => setDialog({ lane })} />`)}
     </div>`;
   if (data.error) return html`<p class="ok-tone-error">⚠ ${data.error}</p>`;
+  const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
-    <div class="gui-head">
-      ${sel ? html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} />`
-      : html`<span class="ok-tone-muted">Drag a card to another lane · click to select · double-click to open</span>
-        <span class="gui-head__spacer"></span>`}
-      <button class="ok-act" onClick=${() => setDialog({ folder: true })}><span class="ok-act__label">New note folder</span></button>
-    </div>
+    <${Head} id=${id} data=${data} setDialog=${setDialog} />
+    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} />`}
     ${parts ? html`
       <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
         ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>
       <div class="gui-fields__lower">
-        <section class="gui-fields__part"><h3 class="ok-font-heading">My chores</h3>
+        <section class="gui-fields__part"><h3 class="ok-font-heading">My to-dos <small>${todoOpen}/${data.todos.cards.length}</small></h3>
           <${Todos} id=${id} todos=${data.todos} sel=${sel && sel.id} onOpen=${open} /></section>
-        <section class="gui-fields__part"><h3 class="ok-font-heading">Scribbles</h3>
+        <section class="gui-fields__part"><h3 class="ok-font-heading">Notes</h3>
           ${lanes(noteLanes(data))}</section>
       </div>` : lanes(data.lanes)}
     ${dialog && dialog.remove && html`<${Confirm} title=${`Delete “${dialog.remove.title.slice(0, 60)}”?`}
@@ -207,9 +226,16 @@ export function card(b) {
   const counter = (l) => html`<span key=${l.label} class="gui-counter">
     <span class="ok-tone-muted">${say(l.label)}</span> <b>${l.count}</b>${l.new ? "*" : ""}</span>`;
   const notes = c.notes || [];
-  if (!c.todos) {
-    return html`<div class="gui-counters">${c.lanes.map(counter)}
-      ${notes.length > 0 && html`<div class="gui-counters gui-counters__notes">${notes.map(counter)}</div>`}</div>`;
+  if (!c.todos) {             // a kanban or a wall of notes: the one number, the lanes under it, the card in work
+    const wall = c.mode === "notes";
+    const open = c.lanes.filter((l) => l.id !== "done");
+    const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top).concat(open.flatMap((l) => l.top))[0];
+    return html`<div class="gui-hut__body-in">
+      <div class="gui-hut__big">${open.reduce((n, l) => n + l.count, 0)}<small>${say(wall ? "notes" : "open tasks")}</small></div>
+      <div class="gui-hut__text gui-counters">${c.lanes.map(counter)}</div>
+      ${notes.length > 0 && html`<div class="gui-hut__text gui-counters">${notes.map(counter)}</div>`}
+      ${doing && html`<div class="gui-hut__foot"><span>${wall ? "✎" : "⚒"} ${doing}</span></div>`}
+    </div>`;
   }
   const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, 1));
   const next = c.lanes.filter((l) => l.id === "todo").flatMap((l) => l.top).slice(0, 2 - doing.length);
@@ -225,12 +251,12 @@ export function card(b) {
       ${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}
     </section>`}
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
-      <div class="gui-fhut__head"><span class="ok-font-label">My chores</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
+      <div class="gui-fhut__head"><span class="ok-font-label">My to-dos</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
       ${t.top.map((x, i) => mark("☐", x, i))}
       ${!t.top.length && t.count > 0 && html`<span class="ok-tone-ok">all done ✓</span>`}
     </section>`}
     ${on("scribbles") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
-      <div class="gui-fhut__head"><span class="ok-font-label">Scribbles</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
+      <div class="gui-fhut__head"><span class="ok-font-label">Notes</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
       ${idea.top.map((x, i) => mark("✎", x, i))}
     </section>`}
   </div>`;

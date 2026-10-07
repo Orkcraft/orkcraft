@@ -31,9 +31,12 @@ def _state(w) -> str:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): the pages and what waits to be taken in, nothing more."""
+    """Closed (docs/design/building-views.md): the pages and what waits to be taken in; the page changed
+    last (`last`: its title and when) for the foot."""
+    recent = _recent(w)[:1]
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
-            "error": bool(w.last_error), "lent": _lent(w)}
+            "error": bool(w.last_error), "lent": _lent(w),
+            "last": {"title": recent[0]["title"][:60], "mtime": recent[0]["mtime"]} if recent else None}
 
 
 def _lent(w) -> dict | None:

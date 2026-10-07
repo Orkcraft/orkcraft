@@ -1,0 +1,48 @@
+/* 🚏 Signpost (js/buildings/signpost.js), made for the half panel: the rules and the test take one line
+   each, the carts take the room. Tokens only (design-system/tokens.css). */
+
+/* Closed: a counter per road out, on one line. */
+.gui-sign__roads { display: block; }
+.gui-sign__road { margin-right: var(--space-3); white-space: nowrap; }
+.gui-sign__swatch { font-size: 10px; }
+
+/* The rules: one per line, numbered, first match wins. */
+.gui-sign__rules { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-sign__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-sign__list > li { display: flex; gap: var(--space-2); align-items: baseline; min-width: 0; }
+.gui-sign__list code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 13px/20px var(--font-mono); color: var(--ink); }
+.gui-sign__n { flex: none; width: 1.5em; text-align: right; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+/* A line to write in that grows while it is written, its button beside it. */
+.gui-sign__line { display: flex; gap: var(--space-2); align-items: flex-start; min-width: 0; }
+.gui-sign__line > textarea.gui-textarea { flex: 1; min-width: 0; min-height: 32px; height: 32px; resize: none; padding-top: 6px; padding-bottom: 6px; }
+.gui-sign__line > textarea.gui-textarea:focus, .gui-sign__line > textarea.gui-textarea.has-text { height: 72px; }
+.gui-sign__got { margin: var(--space-1) 0 0; min-width: 0; overflow-wrap: anywhere; }
+.gui-sign__got code { font: 12px var(--font-mono); }
+
+/* What is rare folds to one line. */
+.gui-sign__fold > summary { list-style: none; display: flex; gap: var(--space-2); align-items: center; padding: var(--space-1) 0; cursor: pointer;
+  color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-sign__fold > summary::-webkit-details-marker { display: none; }
+.gui-sign__fold > summary::before { content: "▸"; flex: none; }
+.gui-sign__fold[open] > summary::before { content: "▾"; }
+.gui-sign__fold > summary:hover { color: var(--ink); }
+.gui-sign__fold > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
+
+/* The carts: the routes as chips, then one line each — when, where it went, what, where from. */
+.gui-sign__carts { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-sign__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.gui-sign__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.gui-sign__row { display: grid; grid-template-columns: 3.5em minmax(0, 9em) minmax(0, 1fr) minmax(0, max-content); align-items: baseline;
+  gap: var(--space-2); width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.gui-sign__row:hover { background: var(--selection); }
+.gui-sign__row:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: -2px; }
+.gui-sign__at { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.gui-sign__route, .gui-sign__what, .gui-sign__from { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-sign__from { max-width: 12em; font-size: 12px; color: var(--ink-muted); }
+
+/* A cart open over the rows. */
+.gui-sign__cart { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-sign__back { align-self: flex-start; }

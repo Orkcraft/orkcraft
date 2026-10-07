@@ -15,14 +15,24 @@ def _cut(s: str) -> str:
     return s if len(s) <= CUT else s[:CUT] + "…"
 
 
+def _first(s: str) -> str:
+    """A result's or an error's first non-empty line, short, for the closed card's foot."""
+    line = next((ln.strip() for ln in (s or "").splitlines() if ln.strip()), "")
+    return line[:120]
+
+
 def card(w) -> dict:
-    """Closed: the last run's state and time (or milling, or how many steps)."""
+    """Closed: the last run's state and time (or milling, or no runs yet); every state also says how many
+    steps and runs, and a finished run its first line (`line`) and, failed, the step it stopped at."""
+    base = {"steps": len(w.steps), "runs": len(w.runs)}
     if w.running:
-        return {"state": "running", "at": w.current.started if w.current else "", "queue": len(w.queue)}
+        return {"state": "running", "at": w.current.started if w.current else "", "queue": len(w.queue),
+                "title": (w.current.title if w.current else ""), **base}
     if w.runs:
         j = w.runs[0]
-        return {"state": "ok" if j.ok else "failed", "at": j.started, "queue": 0}
-    return {"state": "none", "at": "", "steps": len(w.steps), "queue": 0}
+        return {"state": "ok" if j.ok else "failed", "at": j.started, "queue": 0, "failed": failed_step(j),
+                "line": _first(j.result if j.ok else j.error), **base}
+    return {"state": "none", "at": "", "queue": 0, **base}
 
 
 def _run(j, full: bool) -> dict:
