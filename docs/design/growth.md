@@ -17,6 +17,7 @@ no Camp-only jokes (mascot names, the Warchief's address).
 |---|---|---|
 | 1 | the feedback loop closed: "your 👎 led to this" (§3) | done |
 | 2 | a building's level I–III and its goal flag on the roof (§4, §5) | done |
+| 2b | the renown as a flag and a footing, the goal as an annex (§5) | done |
 | 3 | the Info panel's large header with the level (§6) | done |
 | 4 | the Warchief's crown (§8) | done |
 | 5 | the operator's mascot grows, in the head of Settings, with deeds (§7) | done |
@@ -106,10 +107,10 @@ about delight, not about data.
 
 A building has a **level**: none, I, II or III. The level measures **maturity**: how well the orks in
 it have learned to work the way the operator wants. It does not depend on the goal. The **goal**
-(🪙 Thrift · ⚖️ Balance · 💎 Quality) gives the level its direction, and it shows as the **shape of the
-flag** (§5).
+(🪙 Thrift · ⚖️ Balance · 💎 Quality) gives the level its direction, and it shows as an **annex** beside
+the building (§5).
 
-- Changing the goal changes the flag's shape and keeps the level. No progress is kept per goal, so
+- Changing the goal changes the annex and keeps the level. No progress is kept per goal, so
   trying another goal costs nothing.
 - ⚖️ Balance, the default, grows like the others. Most buildings are on it, and a town where they
   never grew would never show growth.
@@ -160,32 +161,40 @@ may propose a reviewer ork for the building's output. This is not in stages 1–
 - A level that goes up publishes `growth.level` on the bus (`core/bus.py`). The GUI says it in the
   Warchief's line ("The Forge grew to 💎 II"). The service never shows a toast itself.
 
-## 5. The goal flag
+## 5. The flag, the footing and the annex
 
-![Base → 🪙 I–III → ⚖️ I–III → 💎 I–III on the Forge, the Watchtower and the Barracks](../img/growth/flags.png)
+![⚖️ 0–III → 🪙 0–III → 💎 0–III on the Forge, the Watchtower and the Barracks](../img/growth/renown.png)
 
-A small flag on the roof of the hut's header sprite. It is the only mark of growth on the map.
+The first version told both in one flag on the roof: its shape the goal, its colour the level. On the map
+a hut's sprite is drawn at four ninths, a pixel of it under one screen pixel, so the flag was three
+pixels across: its shape could not be read, and the muted cloth of level 0 hardly differed from the
+ivory of I. Each building flew one too, so a flag said nothing. Now each thing has a mark of its own:
 
-| | none yet (0) | I | II | III |
-|---|---|---|---|
-| 🪙 Thrift | a square banner with a hole (a coin), muted cloth | ivory | taller pole | gold |
-| ⚖️ Balance | a plain flag, muted cloth | ivory | taller pole | gold |
-| 💎 Quality | a pennant, muted cloth | ivory | taller pole | gold |
+| | none (0) | I | II | III |
+|---|---|---|---|---|
+| **flag** on the roof (renown) | none | ivory | a taller pole | gold |
+| **footing** under the hut (renown) | none | one course of stones | two courses, an ivory edge | three courses |
 
-- **12 overlays in all**, the same for the 19 buildings, drawn from code grids in the flat palette:
-  ivory cloth, a dark-green pole, gold at III. No sprite is redrawn.
-- **The anchor** (where the pole stands) is one point per building type, kept in a table next to
-  the sprites. A script that looks for the roof's highest point puts the flag on the Town Hall's horn
-  and on the Forge's chimney, so the anchor is set by hand. That is 19 points.
-- **At map size**, I and II of different goals are hard to tell apart, and that is accepted. The map
-  says *has a flag · how tall · gold or not*; the goal itself is said in Info and in the hut's tooltip.
-- **Gold at III is a deliberate exception** to "one gold accent per building"
-  (building-sprites.md), because the gold flag is the reward. That rule gets a line about it.
-- **None yet (level 0)** flies its goal's shape in a muted cloth: the goal is a choice the map shows
-  at once (switching it redraws the hut), the renown is what turns the cloth ivory and then gold.
-- **With Office words** the flag stays; its tooltip says "Maturity 2 / 3 · Goal: Quality".
+| goal | **annex** beside the hut, on the ground at its right |
+|---|---|
+| ⚖️ Balance | none: the default, so a goal chosen stands out |
+| 🪙 Thrift | a lean-to over a stack of logs: kept, counted, reused (wide and low) |
+| 💎 Quality | a crystal on a whetstone: cut, polished, checked (tall and narrow) |
 
-![A mixed town, at about the app's size](../img/growth/flags-town.png)
+- **The renown is said twice.** The footing raises the hut and widens its base, mass that reads at map
+  size; the flag says *gold or not*. The annex says the goal at once, from level 0: choosing it is a
+  decision the map shows.
+- **The annexes differ by silhouette**, wide against tall, not by a detail, so they read at four ninths.
+- **Drawn from code grids** in the flat palette (`tools/growth_sprites.py`): three flags, three footing
+  tiles repeated under any width, two annexes; 8 drawings for the 19 buildings. No sprite is redrawn.
+  The footing's stones are the road's tan (`#8f8166`) with a darker mortar.
+- **The anchor** of the flag is one point per building type, set by hand (`js/icons.js` `FLAG_AT`): a
+  script that looks for the roof's highest point puts it on the Town Hall's horn.
+- **Gold at III is a deliberate exception** to "one gold accent per building" (building-sprites.md),
+  because the gold flag is the reward.
+- **Info** says it in words: "💎 II · Quality".
+
+![A mixed town, at the map's size](../img/growth/renown-town.png)
 
 ## 6. The Info panel's header
 
@@ -314,7 +323,9 @@ leader. It is the **role's mark, not a reward**: always there, never grown.
 
 - Points of any kind: for Apply, for reviews, for logins.
 - A rank separate from the mascot.
-- Separate sprites per level or per goal (114 drawings, and the style would drift).
+- Separate sprites per level or per goal (114 drawings, and the style would drift). Copies of a
+  building as its level (two towers at II) neither: a camp may already build two of a type, and a
+  copy would read as a second building.
 - XP bars, numbers on the map, level-up dialogs, the mascot in the HUD.
 - Detailed paintings in Info.
 - Anything in the TUI: it is deprecated (calm-town.md §9). All of this is GUI only.
@@ -351,8 +362,6 @@ case the thresholds of §4.2 go up, or the flag waits for stage 1's numbers.
 
 ## 12. Open questions
 
-- The ⚖️ flag's shape: the slotted flag of the sketch reads as a hook at map size; a plain rectangle
-  is proposed (§5).
 - Whether a building's level should count the operator's own edits at all, or only the orks'.
 - Mascot stage thresholds for a camp with very few buildings (a one-building camp should still reach
   stage 3).

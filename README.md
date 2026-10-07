@@ -117,9 +117,10 @@ Buildings and their operator grow, from what the orks learned — never from cli
 ([docs/design/growth.md](docs/design/growth.md)).
 
 - **🚩 Renown I–III.** A building earns it from the changes of its orks that passed probation and
-  what you liked since; it never drops. Its **goal** (🪙 thrift · ⚖️ balance · 💎 quality) flies as a
-  banner on its roof from the start — a coin banner, a plain flag, a pennant — ivory at I, taller at
-  II, gold at III. Info says what the next level asks.
+  what you liked since; it never drops. It shows as a flag on its roof (ivory at I, taller at II,
+  gold at III) and the stones it stands on, a course more at each level. Its **goal** (🪙 thrift ·
+  ⚖️ balance · 💎 quality) shows as an annex beside it from the start: a lean-to over logs, none, a
+  crystal. Info says what the next level asks.
 
   ![A building's Info: its sprite with its banner, its renown and goal, its garrison](docs/img/info.png)
 - **Your mascot.** Settings opens with you: the mascot of the role you gave in the onboarding (an

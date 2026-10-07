@@ -68,15 +68,29 @@ const FLAG_AT = {
   town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
 };
 
-/** A building's header sprite in its biome, with its goal flag: its shape is the goal from the start (a
- *  muted cloth with no renown yet), ivory at I, taller at II, gold at III. */
+const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level
+
+/** A building's header sprite in its biome, its renown told twice and its goal once (docs/design/growth.md §5):
+ *  from I a flag on the roof (ivory, taller at II, gold at III) and stones under it, a course more at each
+ *  level; beside it an annex by its goal, a lean-to over logs for thrift, a crystal for quality, none for
+ *  balance. */
 export function HutSprite({ type, biome, goal, level, className = "", onError }) {
   const at = FLAG_AT[spriteName(type)];
-  return html`<span class=${`gui-sprite ${className}`}>
-    <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
-    ${at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
-      src=${`/ds/sprites/flags/${goal || "balance"}-${level || 0}.png`} alt="" draggable="false"
-      style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}
+  const n = Math.min(Math.max(level || 0, 0), 3);
+  const annex = goal === "thrift" || goal === "quality" ? goal : "";
+  return html`<span class=${`gui-sprite ${className}`} data-goal=${goal || "balance"} data-level=${n}>
+    <span class="gui-sprite__hut">
+      <span class="gui-sprite__walls">
+        <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
+        ${n > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
+          src=${`/ds/sprites/flags/level-${n}.png`} alt="" draggable="false"
+          style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}
+      </span>
+      ${n > 0 && html`<span class="gui-sprite__footing"
+        style=${`height:${FOOTING_ROWS[n] * 2}px;background-image:url(/ds/sprites/flags/footing-${n}.png)`}></span>`}
+    </span>
+    ${annex && html`<img class="ok-sprite gui-sprite__annex" src=${`/ds/sprites/flags/annex-${annex}.png`}
+      alt="" draggable="false" />`}
   </span>`;
 }
 

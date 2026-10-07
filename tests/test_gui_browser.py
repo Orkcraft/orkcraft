@@ -220,17 +220,18 @@ def test_huts_move_until_the_person_pins_them(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
-def test_a_huts_banner_follows_its_goal_from_the_start(page):
-    """docs/design/growth.md §5: the flag's shape is the goal before any renown; switching it redraws the hut."""
+def test_a_huts_annex_follows_its_goal_and_its_flag_waits_for_renown(page):
+    """docs/design/growth.md §5: balance has no annex, another goal builds one at once; no flag before renown."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
     pg.keyboard.press("Escape")
-    flag = _hut(pg, bid).locator(".gui-sprite__flag")
-    flag.wait_for(state="attached", timeout=WAIT_MS)
-    assert flag.get_attribute("src").endswith("/flags/balance-0.png")
+    sprite = _hut(pg, bid).locator(".gui-sprite")
+    sprite.wait_for(state="attached", timeout=WAIT_MS)
+    assert sprite.get_attribute("data-level") == "0"
+    assert _hut(pg, bid).locator(".gui-sprite__flag, .gui-sprite__footing, .gui-sprite__annex").count() == 0
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('building.goal', { id, value: 'thrift' }))", bid)
-    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-sprite__flag`)"
-                         ".getAttribute('src').endsWith('/flags/thrift-0.png')", arg=bid, timeout=WAIT_MS)
+    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-sprite__annex`)"
+                         "?.getAttribute('src').endsWith('/flags/annex-thrift.png')", arg=bid, timeout=WAIT_MS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
