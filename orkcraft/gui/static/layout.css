@@ -436,5 +436,5 @@ button { font: inherit; color: inherit; }
 .gui-you__camp { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
 
 /* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
-.gui-warchief__face .gui-warchief__crowned { width: 36px; height: 30px; }
+.gui-warchief__face .gui-warchief__crowned { width: auto; height: 30px; }
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }

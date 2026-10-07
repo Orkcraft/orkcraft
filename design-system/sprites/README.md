@@ -10,11 +10,12 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
   - Sheet 2 (`--cell 16.6 --scale 2`, the sheet's labels painted over first): mill (52×44), horn (50×46),
     signpost (46×48), pit (42×48), catapult (50×36), workshop (50×46), fields (50×52), council (46×46).
   - Sheet 3 (`--cell 16.6 --scale 2`): forest, crag, custom.
-- `orks/ork.png`, `ork-idle.png`, `ork-busy.png`, `ork-waiting.png` (24×16): the ork, the ork mark's flat
-  head (`../logo/`), and its states, drawn by `tools/logo.py` (`js/icons.js` `OrkHead`): eyes shut and a
-  sleep mark; a pale-blue drop of sweat; a flame on the crown.
-- `orks/warchief*.png` (24×20): the Warchief, the ork's head under a gold crown, and its states (the crown's
-  points burn while it waits), drawn by `tools/logo.py` (`js/icons.js` `WarchiefHead`; docs/design/growth.md §8).
+- `orks/ork.png` (24×16): the ork, the ork mark's flat head (`../logo/`); `ork-idle.png`, `ork-busy.png`,
+  `ork-waiting.png`, `ork-frozen.png`, `ork-draft.png` (40×16): its states, the head with a glyph beside it,
+  drawn by `tools/logo.py` (`js/icons.js` `OrkHead`): eyes shut and a pale-blue Zz; a gold gear; a flame on
+  the crown and an orange `!`; a snowflake; a page.
+- `orks/warchief*.png` (24×20, its states 40×20): the Warchief, the ork's head under a gold crown, and its
+  states with the ork's glyphs beside it (the crown's points burn while it waits), drawn by `tools/logo.py` (`js/icons.js` `WarchiefHead`; docs/design/growth.md §8).
 - `buildings/<type>/header-<biome>.png`: each header redrawn by `tools/growth_sprites.py` for ice (snow), dust
   (dry olive, sand), void (ashen violet) and lava (basalt, embers); dirt and forest wear `header.png`
   (`js/icons.js` `headerSprite`; docs/design/war-map.md §3).

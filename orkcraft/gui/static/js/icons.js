@@ -2,7 +2,7 @@
 // usual UI sets (Lucide, VS Code's codicons), drawn here on a 16px grid in the text's colour. Camp
 // shows the type's header sprite instead (js/hut.js). A type without one of its own gets the box.
 import { html } from "./html.js";
-import { town } from "./link.js";
+import { town, say } from "./link.js";
 
 const PATHS = {
   pit: "M2 9.5v4h12v-4M2 9.5h3.5l1 1.5h3l1-1.5H14M8 2v6M5.5 5.5 8 8l2.5-2.5",                      // inbox tray
@@ -80,13 +80,16 @@ export function HutSprite({ type, biome, goal, level, className = "", onError })
 
 // Camp: an ork of a garrison as its head in its state (design-system/sprites/orks/, the ork mark's
 // head); a chain or script as its signpost. Office hides both (`.ok-sprite`) and keeps the words.
-const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle" };
+// A state's sprite is wider than the bare head: its glyph (Zz, a gear, `!`, a snowflake, a page) stands
+// beside it, 40 × 16 against the head's 24 × 16 (tools/logo.py).
+const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle", frozen: "ork-frozen", draft: "ork-draft" };
+const ORK_STATE_WORD = { busy: "busy", alert: "waiting", idle: "resting", frozen: "frozen", draft: "draft" };
 
 /** The Warchief: the ork's head under its gold crown (docs/design/growth.md §8); waiting, the crown burns. */
 export function WarchiefHead({ state = "" }) {
   const name = state ? `warchief-${state}` : "warchief";
   return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${name}.png`}
-    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width="24" height="20" alt="" />`;
+    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width=${state ? 40 : 24} height="20" alt="" />`;
 }
 
 /** The operator's mascot (docs/design/growth.md §7): its kin's head at its stage. */
@@ -106,7 +109,9 @@ export function OrkHead({ o, alert }) {
   if (o.kind === "chain" || o.kind === "script") {
     return html`<img class="ok-sprite" data-kind="chain" src="/ds/sprites/icons/chain.png" width="16" height="16" alt="" />`;
   }
-  const state = alert ? "ork-waiting" : ORK_STATE[o.status] || "ork";
+  const status = alert ? "alert" : o.status;
+  const state = ORK_STATE[status] || "ork";
   return html`<img class="ok-sprite" data-kind="ork" src=${`/ds/sprites/orks/${state}.png`}
-    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width="24" height="16" alt="" />`;
+    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width=${state === "ork" ? 24 : 40} height="16"
+    alt="" title=${say(ORK_STATE_WORD[status] || "")} />`;
 }
