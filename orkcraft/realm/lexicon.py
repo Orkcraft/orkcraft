@@ -96,7 +96,8 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    _t("elders", "Advisor", "Advisors", "Elder", "Elders"),
+    # the night's advisors were only ever "the Elders": a lone "Elder" is the heaviest model tier (realm/tiers.py)
+    _t("elders", "Advisor", "Advisors", "", "Elders"),
     _t("builders", "Building designer", "", "Mason & Artisan"),
     # the Town Hall's own orks
     _t("orc.mason", "Data planner", "", "Mason"),
@@ -172,9 +173,10 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
-        if not t.was:
+        if not t.was and not t.was_many:
             continue
-        out.setdefault(t.was, t.word)
+        if t.was:
+            out.setdefault(t.was, t.word)
         if t.was_many:
             out.setdefault(t.was_many, t.many or t.word)
         if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
@@ -243,4 +245,4 @@ def table() -> list[tuple[str, str]]:
 
 def glossary() -> list[tuple[str, str, str]]:
     """(key, word, the Camp word it replaced or "") for every concept, in the glossary's order."""
-    return [(t.key, t.word, t.was) for t in TERMS]
+    return [(t.key, t.word, t.was or t.was_many) for t in TERMS]

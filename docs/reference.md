@@ -1005,7 +1005,7 @@ onboarding (*Punk ork*).
 | Apply if unanswered | On the clock |
 | Apply at once | Unchained |
 | History | Chronicles |
-| Advisor | Elder |
+| Advisor | Elders |
 | Building designer | Mason & Artisan |
 | Data planner | Mason |
 | Layout designer | Artisan |
