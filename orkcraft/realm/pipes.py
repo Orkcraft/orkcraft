@@ -20,7 +20,6 @@ from pathlib import Path
 
 NODE, FILE, TEXT = "node", "file", "text"
 ON_SELECTION, ON_TASK, ON_STREAM = "on_selection_change", "on_task_completed", "on_stream"
-IMPLEMENTED_MODES = (ON_SELECTION, ON_TASK)
 
 # Who shows what. Scrying Spire renders anything; the Loot Chest keeps reports as files.
 RECEIVES: dict[str, frozenset[str]] = {

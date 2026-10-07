@@ -15,9 +15,7 @@ from typing import Any
 # Every piece: 4 lines, at most ART_W cells, plain ASCII (no wide glyphs, so the width is exact).
 ART_W = 18
 ART_H = 4
-STATUS_W = 22         # status lines may run wider than the art
 STATUS_LINES = 3      # a compact hut (the default) shows three lines
-ART_STATUS_LINES = 2  # with the art switched on (preferences.huts = "art") the art takes the room
 
 # name → (lines, what it suits — the Mason prompt lists these)
 ART: dict[str, tuple[tuple[str, ...], str]] = {
@@ -105,7 +103,6 @@ BUILTIN_ART: dict[str, str] = {
 
 ROW_FIELDS = ("title", "id", "status", "priority", "assignee", "type", "deadline", "when", "meta")
 TEXT_FIELDS = ("last", "first", "heading", "count")
-TEMPLATE_MAX = 80
 _PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
 EMPTY = "—"
 

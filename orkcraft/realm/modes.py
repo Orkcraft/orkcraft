@@ -19,7 +19,6 @@ from orkcraft.realm import lexicon
 PERSON = "🧑"
 QUESTION = "?"
 ROCK = "🪨"
-SQUARE = "■"
 
 # A building whose orc waits for an answer burns in stages (seconds since the question came up):
 # orange flickers first, then it turns red, then its roof turns to 🔥 bit by bit until it is all fire.

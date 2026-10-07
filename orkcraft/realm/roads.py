@@ -92,7 +92,6 @@ AGENT_TIMEOUT_S = 600
 SNAPSHOT_CHARS = 4000          # per road, in an agent prompt
 EXAMPLES_DIR = Path(".orkcraft") / "history" / "handlers"
 EXAMPLE_OUTPUT_CHARS = 8000
-AGY_MODEL = harnesses.need("agy").default_model
 CLAUDE_READ_ONLY, CLAUDE_READ_WEB = harnesses.CLAUDE_READ_ONLY, harnesses.CLAUDE_READ_WEB   # 🪔 Clan Fire: web
 CODEX_WEB = harnesses.CODEX_WEB
 # harnesses that read the repository; the others (agy) work in an empty folder
