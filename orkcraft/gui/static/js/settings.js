@@ -8,7 +8,8 @@ import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
-import { MascotHead } from "./icons.js";
+import { MascotHead, BIOMES } from "./icons.js";
+import { terrainUrl } from "./terrain.js";
 import { Dialog } from "./dialog.js";
 
 export const settingsOpen = signal(false);
@@ -16,7 +17,10 @@ export const settingsOpen = signal(false);
 /** You: the mascot (per machine, every camp's), its name and stage, the next stage, the deeds. */
 function You({ y }) {
   return html`<section class="gui-you">
-    <${MascotHead} kin=${y.kin} stage=${y.stage} size=${4} />
+    <span class="gui-you__home" title=${say(`Home: ${y.home}`)}
+        style=${`--ground:${(BIOMES[y.home] || BIOMES.dirt).ground};--land:${(BIOMES[y.home] || BIOMES.dirt).land};--glyphs:${terrainUrl(y.home) ? `url("${terrainUrl(y.home)}")` : "none"}`}>
+      <${MascotHead} kin=${y.kin} stage=${y.stage} size=${4} />
+    </span>
     <div class="gui-you__who">
       <span class="gui-you__name">${say(y.name)}</span>
       <span class="ok-font-status ok-tone-muted">${say(`${y.role} · stage ${y.stage} of 4`)}</span>

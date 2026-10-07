@@ -223,6 +223,13 @@ six biomes, §3.3's "any but its neighbour's" has five to choose from. The proto
 
 ### 3.3 Who picks it
 
+**Each kin has a home** (`realm/biomes.py` `HOMES`): orks dirt, knights meadow, elves forest, the undead
+ice, goblins dust, skeletons void, gnomes lava. The kin is the onboarding's role (`realm/intents.py`), so a
+new camp's first orkspace opens on the operator's home ground (`biomes.settle(scroll, home)`; a camp
+settled before keeps its lands), and in Settings the mascot stands on its home: the biome's colour and
+glyphs, its land as the ground line (`js/settings.js` `You`).
+
+
 - A **new orkspace** gets the first biome no orkspace has. When all five are taken, it gets any biome
   but its upper neighbour's, so two lands that touch never share a colour.
 - **Right click → Biome ▸** changes it. It is stored in the Town Scroll, `orkspaces[].biome`, which

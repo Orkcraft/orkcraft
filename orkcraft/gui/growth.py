@@ -31,7 +31,8 @@ class Growth:
         self.host = host
         self._at: float | None = None          # when it last settled (None: at the next tick)
         self._news: list[dict] = [asdict(n) for n in growth.news(host.town.repo_root)][-NEWS_SHOWN:]
-        if biomes.settle(host.town.scroll):    # once per camp: the old default spread over its orkspaces
+        # once per camp: the old default spread over its orkspaces, the first on the operator's home ground
+        if biomes.settle(host.town.scroll, biomes.home_of(host.town.machine.profile)):
             host.town.save()
 
     # -- the clock --------------------------------------------------------------------------------------
@@ -74,7 +75,7 @@ class Growth:
         stage = int(grown.get("stage") or 1)
         done = grown.get("deeds") or {}
         role = intents.role(str(profile.get("role") or ""))
-        return {"kin": growth.kin_of(profile), "stage": stage, "name": growth.stage_name(profile, stage),
+        return {"kin": growth.kin_of(profile), "home": biomes.home_of(profile), "stage": stage, "name": growth.stage_name(profile, stage),
                 "role": role.title, "next": growth.STAGE_NEXT.get(stage, ""),
                 "deeds": [{"id": d.id, "icon": d.icon, "title": d.title, "hint": d.hint, "done": done.get(d.id, "")}
                           for d in growth.DEEDS]}

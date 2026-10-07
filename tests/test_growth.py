@@ -176,3 +176,19 @@ def test_the_old_default_is_spread_once_and_chosen_biomes_stay():
     assert [o.biome for o in camp.orkspaces] == ["dirt", "ice", "forest"]
     camp.orkspaces[0].biome = "forest"
     assert biomes.settle(camp) is False and camp.orkspaces[0].biome == "forest"
+
+
+def test_each_kin_has_a_home_and_a_new_camp_opens_on_it():
+    """docs/design/war-map.md §3.3: the onboarding's role gives the kin, the kin its home ground."""
+    assert biomes.home_of({"role": "eng_manager"}) == "ice"           # a lich: the frozen north
+    assert biomes.home_of({"role": "founder"}) == "meadow"            # a knight: the open field
+    assert biomes.home_of({"role": "designer"}) == "forest"
+    assert biomes.home_of({"role": "engineer"}) == "dirt"
+    assert biomes.home_of({}) == "dirt"                               # no role yet: the camp's own ground
+    assert set(biomes.HOMES.values()) == set(biomes.ORDER)            # every biome is someone's home
+    camp = TownScroll("a", [Orkspace("a", "A", "forest"), Orkspace("b", "B", "forest")], [])
+    assert biomes.settle(camp, home="ice") is True
+    assert [o.biome for o in camp.orkspaces] == ["ice", "dirt"]       # the first on the home, the next by pick
+    taken = TownScroll("a", [Orkspace("a", "A", "forest"), Orkspace("b", "B", "ice")], [])
+    biomes.settle(taken, home="ice")                                   # the home already chosen elsewhere
+    assert [o.biome for o in taken.orkspaces] == ["dirt", "ice"]
