@@ -189,6 +189,8 @@ class CatapultView(TypedView):
 
     def orders_alert(self):
         """The hut's 🔥: the site wants a login (the app shows it as the lead ork's alert)."""
+        if self.worker.mcp_mode:
+            return self.worker.orders_alert()
         if not self.login_needed:
             return None
         waiting = len(self.queue)
@@ -197,6 +199,8 @@ class CatapultView(TypedView):
                 [("1", "Log in now (opens a browser)"), ("2", "Later")])
 
     def answer_alert(self, key: str):
+        if self.worker.mcp_mode:
+            return self.worker.answer_alert(key)
         if key == "1":
             self.action_login()
         return None

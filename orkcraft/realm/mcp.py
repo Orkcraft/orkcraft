@@ -8,6 +8,8 @@ agent keeps them; a server named in several places is one row with every tool th
 
 Only the server's name leaves its file: no command, no argument, no environment, no header, no URL —
 those may hold a token (`--api-key …`, `Authorization: …`). Nothing is run and nothing is written.
+The one exception is `launch(server)`: a Catapult whose person allowed it to start that one local
+server reads its entry to start it (docs/design/catapult-mcp.md §4.2), and keeps nothing of it.
 """
 from __future__ import annotations
 
@@ -145,3 +147,61 @@ def found(home: Path | None = None, repo: Path | None = None) -> list[Server]:
             if tool not in tools:
                 tools.append(tool)
     return [Server(n, title_of(n), tuple(t), glyph_of(n)) for n, t in sorted(where.items())]
+
+
+# -- one local server's launch entry, for a Catapult you allowed to start it -----------------------
+
+@dataclass(frozen=True)
+class Launch:
+    """How a local (stdio) server is started, as the tool's config says. Read only for a Catapult whose
+    person allowed it to start that one server (docs/design/catapult-mcp.md §4.2); never kept, never
+    shown but `command` and where it was found."""
+    server: str
+    command: str
+    args: tuple[str, ...]
+    env: tuple[tuple[str, str], ...]
+    where: str                  # the file it was read from, with ~ for home
+
+
+def _entry(block, server: str):
+    if not isinstance(block, dict):
+        return None
+    for name, entry in block.items():
+        if isinstance(name, str) and name.lower() == server.lower() and isinstance(entry, dict):
+            return entry
+    return None
+
+
+def launch(server: str, home: Path | None = None, repo: Path | None = None) -> Launch | None:
+    """The first stdio entry named `server` in the AI tools' configs (Claude Code's, the project's
+    .mcp.json, Cursor's, pi's, agy's, Codex's); None when there is none or it is a remote server."""
+    home = Path.home() if home is None else home
+    places: list[tuple[Path, object]] = []
+    data = _json(home / ".claude.json")
+    places.append((home / ".claude.json", data.get("mcpServers")))
+    projects = data.get("projects")
+    if repo is not None and isinstance(projects, dict):
+        mine = projects.get(str(repo)) or projects.get(str(repo.resolve()))
+        if isinstance(mine, dict):
+            places.append((home / ".claude.json", mine.get("mcpServers")))
+    if repo is not None:
+        places.append((repo / ".mcp.json", _json(repo / ".mcp.json").get("mcpServers")))
+        places.append((repo / ".cursor" / "mcp.json", _json(repo / ".cursor" / "mcp.json").get("mcpServers")))
+    places.append((home / ".cursor" / "mcp.json", _json(home / ".cursor" / "mcp.json").get("mcpServers")))
+    pi = _json(home / ".pi" / "agent" / "mcp.json")
+    places.append((home / ".pi" / "agent" / "mcp.json", pi.get("mcpServers") or pi.get("mcp_servers") or pi.get("servers")))
+    places.append((home / ".gemini" / "settings.json", _json(home / ".gemini" / "settings.json").get("mcpServers")))
+    places.append((home / ".codex" / "config.toml", _toml(home / ".codex" / "config.toml").get("mcp_servers")))
+    for path, block in places:
+        entry = _entry(block, server)
+        if entry is None or not isinstance(entry.get("command"), str) or entry.get("url") \
+                or entry.get("type") in ("http", "sse", "streamable-http"):
+            continue
+        args = tuple(str(a) for a in entry.get("args") or [] if isinstance(a, (str, int, float)))
+        env = entry.get("env") if isinstance(entry.get("env"), dict) else {}
+        try:
+            where = "~/" + str(path.relative_to(home))
+        except ValueError:
+            where = str(path)
+        return Launch(server, entry["command"], args, tuple((str(k), str(v)) for k, v in env.items()), where)
+    return None

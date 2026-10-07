@@ -1,9 +1,11 @@
 // 🎯 The Catapult: the strict way out. Closed: the headline says how it stands (`2/3` loaded, `Firing…`,
 // `⚠ Log in`, `✓ 201`), under it where it sends and what the schema says of the load, the last shot in the
-// foot. Open, made for the half panel: a shot that waits for your yes as a strip with Fire right there;
+// foot. Open, made for the half panel: a shot that waits for your yes as a strip with Fire right there (put
+// off, it waits at the front of the queue as a strip with Resume and Drop);
 // where it sends with Fire, Dry run (and Scout, Log in in browser mode); what is loaded as JSON with the
 // schema check; the shots one line each, a shot opening over them (← back): the request, the answer, the
-// pictures of the forms; in browser mode the forms. Ask before every shot and the schema and address
+// pictures of the forms; in browser mode the forms; in mode mcp the path: which track a shot takes, what it
+// sends, the direct path the ork learned (Use it / Keep the carrier) and a local server it may start. Ask before every shot and the schema and address
 // (the steward's to write) fold to a line. The work is the worker's (core/workers/catapult.py).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
@@ -61,8 +63,15 @@ function headline(c) {
   const n = /^(\d+) loaded(.*)$/.exec(line);
   if (n) return [n[1], `${say("loaded")}${n[2]}`, ""];
   if (line === "log in") return [`⚠ ${say("Log in")}`, say("the site wants you"), "fire"];
+  if (line === "token refused") return [`⚠ ${say("Token refused")}`, say("fix it, then Resume"), "fire"];
+  const wt = /^waits(.*)$/.exec(line);
+  if (wt) return [say("Waits"), `${say("no carrier or no budget — see the window")}${wt[1]}`, "fire"];
   if (line === "waits for your yes") return [`? ${say("Fire?")}`, say("a shot waits for your yes"), "fire"];
   if (line === "idle") return [say("Ready"), say("fires when its carts are loaded"), ""];
+  const h = /^put off(.*)$/.exec(line);
+  if (h) return [`? ${say("Put off")}`, `${say("a shot waits — Resume or Drop")}${h[1]}`, "fire"];
+  const p = /^stopped(.*)$/.exec(line);
+  if (p) return [say("Stopped"), `${say("by Stop all — Resume goes on")}${p[1]}`, "wait"];
   if (c.last && line.startsWith(c.last.mark)) return [line, `${say("last shot")} · ${stamp(c.last.at)}`, c.tone];
   return [say(line), "", c.tone === "muted" ? "" : c.tone];
 }
@@ -88,21 +97,40 @@ export function card(b) {
 
 // -- open: the head ----------------------------------------------------------------------------------------
 
-/** A shot that waits for the person: a strip that says where it goes, Fire and Not now beside it. */
+/** A shot that waits for the person: a strip that says where it goes, Fire, Later and Drop beside it. Later
+ *  keeps the shot at the front of the queue (the queue holds); Drop lets it go. */
 function Asking({ id, data }) {
   if (!data.asking) return null;
+  const answer = (args) => act(id, "answer", args).catch(() => {});
   return html`<div class="gui-cat__ask">
     <div class="gui-cat__askline">
       <span class="gui-cat__askwho">? ${say("Fire?")}</span>
       <span class="gui-cat__askwhat" title=${data.asking.title}>${data.asking.title}</span>
-      <button class="ok-btn" onClick=${() => act(id, "answer", { yes: false }).catch(() => {})}>${say("Not now")}</button>
-      <button class="ok-btn primary" onClick=${() => act(id, "answer", { yes: true }).catch(() => {})}>Fire</button>
+      <button class="ok-btn" title=${say("The shot is let go: nothing is sent")} onClick=${() => answer({ yes: false, drop: true })}>${say("Drop")}</button>
+      <button class="ok-btn" title=${say("The shot waits at the front of the queue; Resume asks again")}
+        onClick=${() => answer({ yes: false })}>${say("Later")}</button>
+      <button class="ok-btn primary" onClick=${() => answer({ yes: true })}>Fire</button>
     </div>
     <details class="gui-cat__fold"><summary>${say("What it sends")}</summary><pre class="gui-pre">${data.asking.text}</pre></details>
   </div>`;
 }
 
+/** A shot put off: it holds the queue until Resume (it asks again) or Drop. */
+function Held({ id, data }) {
+  if (!data.held || data.asking) return null;
+  return html`<div class="gui-cat__ask">
+    <div class="gui-cat__askline">
+      <span class="gui-cat__askwho">? ${say("Put off")}</span>
+      <span class="gui-cat__askwhat">${say("A shot waits at the front of the queue; the queue holds.")}</span>
+      <button class="ok-btn" onClick=${() => act(id, "drop", { what: "next" }).catch(() => {})}>${say("Drop")}</button>
+      <button class="ok-btn primary" onClick=${() => act(id, "resume").catch(() => {})}>${say("Resume")}</button>
+    </div>
+    <details class="gui-cat__fold"><summary>${say("What it sends")}</summary><pre class="gui-pre">${data.held}</pre></details>
+  </div>`;
+}
+
 function target(data) {
+  if (data.mode === "mcp") return data.target;
   if (data.mode === "browser") {
     return `${data.forms.map((f) => f.name + (f.scouted ? "" : " (not scouted)")).join(" → ") || "no forms set"} · then ${data.finish === "press" ? "press submit" : "hand over"}`;
   }
@@ -126,16 +154,21 @@ function Settings({ id, data }) {
 }
 
 function Head({ id, data }) {
+  // a shot put off has its own strip with Resume; a refused token in mode mcp is fixed outside, then Resume
+  const resume = (data.paused || (data.mcp && (data.mcp.waiting || data.login))) && !data.held;
   return html`<div class="gui-cat__head">
     <${Asking} id=${id} data=${data} />
+    <${Held} id=${id} data=${data} />
     <div class="gui-cat__bar">
       <span class="gui-cat__target" title=${say(target(data))}>${say(target(data))}</span>
       ${data.state && html`<span class=${`gui-cat__state ${data.login ? "ok-tone-fire" : "ok-tone-wait"}`}>${say(data.state)}</span>`}
       <span class="gui-cat__acts">
-        ${data.login && html`<button class="ok-btn primary" onClick=${() => act(id, "login").catch(() => {})}>${say("Log in")}</button>`}
+        ${data.login && data.mode === "browser" && html`<button class="ok-btn primary" onClick=${() => act(id, "login").catch(() => {})}>${say("Log in")}</button>`}
         ${data.mode === "browser" && html`<button class="ok-btn" onClick=${() => act(id, "scout").catch(() => {})}>Scout</button>`}
         <button class="ok-btn" onClick=${() => act(id, "dry_run").catch(() => {})}>${say("Dry run")}</button>
-        <button class=${cls("ok-btn", { primary: !data.login })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
+        ${resume && html`<button class="ok-btn primary" title=${say("The queue goes on; nothing loaded is fired")}
+          onClick=${() => act(id, "resume").catch(() => {})}>${say("Resume")}</button>`}
+        <button class=${cls("ok-btn", { primary: !(data.login && data.mode === "browser") && !resume && !data.held })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
       </span>
     </div>
     <${Settings} id=${id} data=${data} />
@@ -160,10 +193,20 @@ function Check({ data }) {
     : html`<span class="ok-tone-ok">✓ ${say("passes the schema")}</span>`;
 }
 
-function Load({ data }) {
+/** The last shot failed: Fire sends it again, Drop lets it go. */
+function Failed({ id, data }) {
+  if (!data.failed) return null;
+  return html`<p class="gui-cat__loadline"><span class="ok-tone-error">✗ ${say("The last shot failed — Fire sends it again.")}</span>
+    <button class="ok-btn" onClick=${() => act(id, "drop", { what: "failed" }).catch(() => {})}>${say("Drop it")}</button></p>`;
+}
+
+function Load({ id, data }) {
   return html`<div class="gui-cat__load">
+    <${Failed} id=${id} data=${data} />
     <p class="gui-cat__loadline"><${Waits} data=${data} /> · <${Check} data=${data} />
-      ${data.queued > 0 && html` · <b>${data.queued}</b> ${say("queued")}`}</p>
+      ${data.queued > 0 && html` · <b>${data.queued}</b> ${say("queued")}`}
+      ${data.loaded.length > 0 && html` <button class="ok-btn" title=${say("What is loaded and not yet a shot is let go")}
+        onClick=${() => act(id, "drop", { what: "load" }).catch(() => {})}>${say("Drop the load")}</button>`}</p>
     ${data.problems.length > 0 && html`<ul class="gui-cat__problems">${data.problems.map((p, i) => html`<li key=${i} class="ok-tone-error">✗ ${p}</li>`)}</ul>`}
     ${data.body ? html`<pre class=${cls("gui-pre gui-cat__json", { "is-bad": data.problems.length > 0 })}>${data.body}</pre>`
       : html`<p class="ok-tone-muted">${say("Nothing is loaded — a road brings the carts.")}</p>`}
@@ -173,7 +216,7 @@ function Load({ data }) {
 // -- open: the shots -------------------------------------------------------------------------------------------
 
 function ShotLine({ s }) {
-  const mark = s.dry ? say("dry run") : s.ok ? (s.status ? `✓ ${s.status}` : `✓ ${say("filled")}`) : `✗ ${s.error || s.status}`;
+  const mark = s.dry ? (s.ok ? say("dry run") : `✗ ${say("dry run")}: ${s.error}`) : s.ok ? (s.status ? `✓ ${s.status}` : `✓ ${say(s.track ? "sent" : "filled")}`) : `✗ ${s.error || s.status}`;
   return html`<span class=${`gui-cat__mark ${s.dry ? "ok-tone-muted" : s.ok ? "ok-tone-ok" : "ok-tone-error"}`}>${mark}</span>`;
 }
 
@@ -244,12 +287,63 @@ function Forms({ id, data }) {
   </div>`;
 }
 
+// -- open: the path (mode mcp) ---------------------------------------------------------------------------
+
+const TRACK = { direct: "direct — no model", local: "local server — no model", carrier: "carried — a model call per shot" };
+
+/** Mode mcp: the track the next shot takes, what it sends, the direct path learned, a local server. */
+function Path({ id, data }) {
+  const m = data.mcp;
+  if (!m) return null;
+  const options = m.options || [];
+  const offered = options.length > 0 && !m.on && !m.kept;
+  const best = options[0];
+  return html`<div class="gui-section">
+    <div class="gui-head">
+      <span class="gui-head__what">${m.server || say("no server")} · ${m.tool || say("learns its tool")}</span>
+      <span class="gui-head__spacer"></span>
+      <span class=${m.track === "carrier" ? "ok-tone-wait" : "ok-tone-ok"}>${say(TRACK[m.track] || m.track)}</span>
+    </div>
+    ${m.waiting && html`<p class="gui-cat__loadline ok-tone-error">${say("Waits")}: ${m.waiting}</p>`}
+    ${offered && html`<div class="gui-cat__ask">
+      <div class="gui-cat__askline">
+        <span class="gui-cat__askwho">${say("A direct path")}</span>
+        <span class="gui-cat__askwhat">${data.overseer} ${say("learned it from the carried shot")}: ${best.title}${best.missing.length
+          ? ` — ${say("set")} ${best.missing.map((n) => "$" + n).join(", ")}` : ""}</span>
+        <button class="ok-btn" onClick=${() => act(id, "keep_carrier").catch(() => {})}>${say("Keep the carrier")}</button>
+        <button class="ok-btn primary" onClick=${() => act(id, "use_direct", { pick: 0 }).catch(() => {})}>${say("Use it")}</button>
+      </div>
+      ${best.note && html`<p class="ok-detail__meta">${best.note}</p>`}
+    </div>`}
+    ${m.track === "carrier" && html`<p class="ok-detail__meta">${m.carrier
+      ? `${say("Carried by")} ${m.carrier}${m.tool ? "" : ` — ${say("the first shot lets it pick the tool, and")} ${data.overseer} ${say("learns from it")}`}`
+      : m.no_carrier}</p>`}
+    ${m.args && html`<p class="ok-detail__section">${say("What it sends")}</p><pre class="gui-pre gui-cat__json">${m.args}</pre>`}
+    ${options.length > 0 && html`<p class="ok-detail__section">${say("Direct paths")}</p>
+      <ul class="gui-cat__rows">${options.map((o, i) => html`<li key=${o.title} class="gui-cat__pathrow">
+        <span class=${m.on && m.pick === i ? "ok-tone-ok" : ""}>${m.on && m.pick === i ? "● " : "○ "}${o.title}</span>
+        <span class="ok-tone-muted">${o.needs.map((n) => (o.missing.includes(n) ? `✗ $${n}` : `✓ $${n}`)).join(" ")}</span>
+        <span class="ok-tone-muted">${m.on && m.pick === i ? say(m.proven ? "proved" : "its first shot asks") : ""}</span>
+        ${m.on && m.pick === i
+          ? html`<button class="ok-btn" onClick=${() => act(id, "keep_carrier").catch(() => {})}>${say("Back to the carrier")}</button>`
+          : html`<button class="ok-btn" onClick=${() => act(id, "use_direct", { pick: i }).catch(() => {})}>${say("Use it")}</button>`}
+      </li>`)}</ul>`}
+    ${m.launch && html`<div class="gui-cat__settings">
+      <button class="ok-check" role="checkbox" aria-checked=${m.local} title=${say("It starts the server as your AI tool's config says, and keeps nothing of it")}
+        onClick=${() => act(id, "allow_local", { on: !m.local }).catch(() => {})}><i>${m.local ? "✓" : ""}</i>
+        ${say("Start the local server itself — no model")} (${m.launch.command}, ${m.launch.where})</button>
+    </div>`}
+  </div>`;
+}
+
 /** The window by its UI document (design/buildings/catapult.json). */
+
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
-    load: () => html`<${Load} data=${data} />`,
+    load: () => html`<${Load} id=${id} data=${data} />`,
     shots: () => html`<${Shots} id=${id} data=${data} />`,
-    forms: () => (data.mode === "browser" ? html`<${Forms} id=${id} data=${data} />` : null),
+    forms: () => (data.mode === "browser" ? html`<${Forms} id=${id} data=${data} />`
+      : data.mode === "mcp" ? html`<${Path} id=${id} data=${data} />` : null),
   };
 }

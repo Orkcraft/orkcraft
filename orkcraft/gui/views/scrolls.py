@@ -7,7 +7,7 @@ import time
 
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import shelves, wiki
+from orkcraft.realm import quicknote, shelves, wiki
 from orkcraft.sources import lore
 
 REFRESH_S = 30.0              # as the TUI
@@ -34,8 +34,13 @@ def card(w) -> dict:
     """Closed (docs/design/building-views.md): the pages and what waits to be taken in; the page changed
     last (`last`: its title and when) for the foot."""
     recent = _recent(w)[:1]
+    meetings = w.agenda_cache["meetings"]
+    nxt = next((m for m in meetings if any(not i["done"] for i in m["items"])), None)
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
             "error": bool(w.last_error), "lent": _lent(w),
+            "quality": w.quality_total,
+            "discuss": {"title": nxt["title"][:60], "when": nxt["when"],
+                        "count": sum(1 for i in nxt["items"] if not i["done"])} if nxt else None,
             "last": {"title": recent[0]["title"][:60], "mtime": recent[0]["mtime"]} if recent else None}
 
 
@@ -74,7 +79,9 @@ def detail(w) -> dict:
         "topic": w.topic, "root": rel, "pages_count": count, "state": _state(w),
         "state_plain": _state(w).replace("⚠ ", ""), "running": w.running, "error": bool(w.last_error),
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
-        "recent": _recent(w), "lent": _lent(w),
+        "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
+        "sections": wiki.sections(w.wiki_root, w.topic), "agenda": w.agenda_view(),
+        "quality": w.quality_view(), "model_hint": w.model_hint,
     }
 
 
@@ -104,7 +111,21 @@ def _ingest(w, args: dict) -> bool:
 
 
 def _lint(w, args: dict) -> bool:
-    return w.lint()
+    return w.check_now()
+
+
+def _fix(w, args: dict) -> bool:
+    return w.fix()
+
+
+def _check(w, args: dict) -> str:
+    """How often the quality check runs: weekly, daily, ingest (after each take-in) or off."""
+    value = text(args, "check", 20).strip().lower()
+    if value not in ("weekly", "daily", "ingest", "off"):
+        raise ActError("weekly, daily, ingest or off")
+    w.save_config({"check": value})
+    w.changed()
+    return value
 
 
 def _stop(w, args: dict) -> None:
@@ -117,4 +138,39 @@ def _add_folder(w, args: dict) -> None:
         raise ActError(problem)
 
 
-ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder}
+def _suggest(w, args: dict) -> dict:
+    """What a Quick note should get here, as it is typed: section, tags, links (rules, no model)."""
+    body = text(args, "text", quicknote.MAX_CHARS)
+    hint = w.suggest(body)
+    return {**hint.as_dict(), "thinking": w.ask_model(body, hint)}
+
+
+def _find(w, args: dict) -> list[dict]:
+    """The pages and notes that match what is typed in the window's search."""
+    return w.find(text(args, "query", 200))
+
+
+def _strings(args: dict, key: str, most: int, chars: int = 200) -> list[str]:
+    got = args.get(key) or []
+    return [str(x)[:chars] for x in got[:most] if str(x).strip()] if isinstance(got, list) else []
+
+
+def _note(w, args: dict) -> str:
+    """Keep a Quick note: its path."""
+    body = text(args, "text", quicknote.MAX_CHARS)
+    if not body.strip():
+        raise ActError("Write the note first.")
+    try:
+        meeting = args.get("meeting") if isinstance(args.get("meeting"), dict) else None
+        if meeting:
+            meeting = {k: str(meeting.get(k) or "")[:200] for k in ("id", "title", "when")}
+        return w.note(body, text(args, "section", 80).strip(), _strings(args, "tags", 8, 60),
+                      _strings(args, "links", 6, 400), text(args, "source", 20) or "quick note",
+                      args.get("take_in", True) is not False, meeting, _strings(args, "people", 8, 80))
+    except ValueError as e:
+        raise ActError(str(e)) from None
+
+
+ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder,
+        "suggest": _suggest, "note": _note, "fix": _fix, "check": _check,
+        "find": _find}

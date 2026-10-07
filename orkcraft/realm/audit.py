@@ -83,7 +83,11 @@ def _security(repo_root: Path, specs: dict[str, dict]) -> list[Finding]:
             forms = ", ".join(str(f).split("=")[0].strip() for f in cfg.get("forms") or [])[:60]
             out.append(Finding("warder", f"{spec.get('title', bid)}: presses submit on its forms ({forms}) "
                                          "unchecked and unasked — set schema, or c", bid, "warn"))
-        elif kind == "catapult" and cfg.get("url") and not cfg.get("schema") and cfg.get("mode") != "browser":
+        elif kind == "catapult" and cfg.get("mode") == "mcp" and not cfg.get("confirm"):
+            out.append(Finding("warder", f"{spec.get('title', bid)}: sends through {str(cfg.get('to') or 'an MCP server')[:30]} "
+                                         "unasked (a model carries its shots until a direct path is learned) — turn on "
+                                         "Ask before every shot", bid, "warn"))
+        elif kind == "catapult" and cfg.get("url") and not cfg.get("schema") and cfg.get("mode") not in ("browser", "mcp"):
             out.append(Finding("warder", f"{spec.get('title', bid)}: sends to {str(cfg['url'])[:40]} without a schema "
                                          "check — set schema", bid, "warn"))
         if kind == "barracks" and cfg.get("worktrees") is False:

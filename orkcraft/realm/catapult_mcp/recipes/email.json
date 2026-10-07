@@ -1,0 +1,19 @@
+{
+  "service": "email", "title": "Email", "match": ["gmail", "mail", "email", "outlook", "smtp"],
+  "tools": [
+    {"what": "an email", "match": ["send_email", "send_mail", "gmail_send", "sendemail", "send_message", "draft"],
+     "args": {"to": ["to", "recipient", "recipients"], "subject": ["subject", "title"],
+              "text": ["body", "text", "content", "message"], "cc": ["cc"]},
+     "need": ["to", "subject", "text"],
+     "routes": [
+       {"title": "SMTP", "transport": "smtp",
+        "env": {"host": "SMTP_HOST", "user": "SMTP_USER", "password": "SMTP_PASSWORD", "from": "SMTP_FROM"},
+        "port_env": "SMTP_PORT",
+        "message": {"to": "@to", "subject": "@subject", "text": "@text", "cc": "@cc?"},
+        "note": "an app password of your mail account, never the account's own"},
+       {"title": "Resend API", "method": "POST", "url": "https://api.resend.com/emails",
+        "auth": {"kind": "bearer", "env": "RESEND_API_KEY"}, "body_env": {"from": "EMAIL_FROM"},
+        "body": {"to": "@to", "subject": "@subject", "text": "@text", "cc": "@cc?"}}
+     ]}
+  ]
+}

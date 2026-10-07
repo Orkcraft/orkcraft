@@ -37,6 +37,7 @@ class Shot:
     answer: str = ""
     error: str = ""
     dry: bool = False
+    track: str = ""         # mode mcp: direct, local or carrier (realm/catapult_mcp)
 
 
 def parse(value: str):

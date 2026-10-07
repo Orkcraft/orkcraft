@@ -243,11 +243,15 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                    "it, for the agent to read from (also when a Barracks reads it first: `notes`)"),
                 _e("wiki.updated", "wiki updated", TEXT, "an ingest finished: the pages added, changed, marked stale"),
                 _e("wiki.linted", "wiki linted", TEXT, "a lint finished: the problems it found"),
-                _e("wiki.review", "spot-check", TEXT, "a sample of freshly written pages, for the Council to check")),
-        actions=(_a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki now"),
+                _e("wiki.review", "spot-check", TEXT, "a sample of freshly written pages, for the Council to check"),
+                _e("wiki.noted", "note kept", FILE, "a Quick note was kept in the wiki's inbox: the note's file")),
+        actions=(_a("wiki.note", "Quick note", "✎", "leave a note for the wiki: its section, tags and links suggested"),
+                 _a("wiki.ingest", "Ingest", "⟳", "take the new and changed sources into the wiki now"),
                  _a("wiki.lint", "Lint", "🧹", "check the wiki for contradictions, stale facts, orphans"),
                  _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
         config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
+                "inbox": (str, None, False), "calendar": (str, None, False),
+                "check": (str, ("weekly", "daily", "ingest", "off"), False), "suggest_model": (bool, None, False),
                 "topic": (str, ("general", "codebase", "team", "design"), False),
                 "harness": (str, harnesses.ids(), False), "model": (str, None, False),
                 "auto_ingest": (bool, None, False), "commit": (bool, None, False),
@@ -317,8 +321,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
-        "and sends it to an external API — or, where a site has no API, closes a whole intent in the browser: "
-        "its ork finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
+        "and sends it to an external API — or through an MCP server your AI tools have (the tool that has it carries "
+        "the first shot, then its ork learns a direct path) — or, where a site has no API, closes a whole intent in the "
+        "browser: its ork finds each form, a Playwright script fills them in turn and presses submit or hands them to you",
         "what it waits for, the last shot", "the loaded data, the check, the request or the form, and its answer",
         events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
                 _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
@@ -329,9 +334,11 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),
                 "token_env": (str, None, False), "confirm": (bool, None, False),
-                "mode": (str, ("api", "browser"), False), "forms": (list, None, False),
+                "mode": (str, ("api", "browser", "mcp"), False), "forms": (list, None, False),
                 "fields": (list, None, False), "finish": (str, ("leave", "press"), False),
-                "repair": (bool, None, False), "key": (str, None, False), "ttl": (int, (0, 10080), False)},
+                "repair": (bool, None, False), "key": (str, None, False), "ttl": (int, (0, 10080), False),
+                "to": (str, None, False), "tool": (str, None, False), "via": (str, None, False),
+                "args": (list, None, False), "goal": (str, None, False), "local": (bool, None, False)},
         art="workshop", orc="Loader"),
     BuildingType(
         "town_hall", "Town Hall", "🏰", "L",

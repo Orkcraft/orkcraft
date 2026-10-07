@@ -1,0 +1,24 @@
+{
+  "service": "jira", "title": "Jira", "match": ["jira", "atlassian"],
+  "tools": [
+    {"what": "an issue", "match": ["create_issue", "createjiraissue", "create_jira_issue", "issue_create"],
+     "args": {"project": ["projectkey", "project_key", "project"], "type": ["issuetypename", "issue_type", "issuetype", "type"],
+              "summary": ["summary", "title"], "description": ["description", "body"]},
+     "need": ["project", "summary"],
+     "routes": [
+       {"title": "Jira API", "method": "POST", "url": "{$JIRA_URL}/rest/api/2/issue",
+        "auth": {"kind": "basic", "user_env": "JIRA_EMAIL", "env": "JIRA_API_TOKEN"},
+        "body": {"fields": {"project": {"key": "@project"}, "issuetype": {"name": "@type?"},
+                            "summary": "@summary", "description": "@description?"}},
+        "defaults": {"type": "Task"}}
+     ]},
+    {"what": "a comment", "match": ["add_comment", "addcommenttojiraissue", "comment"],
+     "args": {"issue": ["issueidorkey", "issue_key", "issuekey", "issue", "key"], "text": ["commentbody", "body", "comment", "text"]},
+     "need": ["issue", "text"],
+     "routes": [
+       {"title": "Jira API", "method": "POST", "url": "{$JIRA_URL}/rest/api/2/issue/{@issue}/comment",
+        "auth": {"kind": "basic", "user_env": "JIRA_EMAIL", "env": "JIRA_API_TOKEN"},
+        "body": {"body": "@text"}}
+     ]}
+  ]
+}

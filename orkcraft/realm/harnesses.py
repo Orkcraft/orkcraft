@@ -4,6 +4,7 @@
     h.ask(prompt, folder, model)             # argv of a one-shot answer in an empty folder (no edits)
     h.read(prompt, workdir, model, web)      # argv of an agent that reads (the repository when `in_repo`)
     h.work(prompt, workdir, model, resume)   # argv of an agent that may change files in `workdir`
+    h.call(prompt, workdir, allow, model)    # argv of an agent allowed only the MCP tools in `allow` (None: it cannot)
     h.result(stdout, before)                 # (text, cost USD | None, tokens | None, session id)
     harnesses.main(enabled, chosen)          # the tool decisions run on: the chosen one, else the first on
     harnesses.model_on("agy", "haiku")       # a model or tier of any tool, on this one
@@ -134,6 +135,10 @@ class Harness:
     deploy_args: tuple[str, ...] = ()   # what goes before a first prompt in an interactive session
     env_cmd: Callable[["Harness", str, str], dict] | None = None   # (h, ask|read|work, workdir) → variables
     priced: bool = False             # its answers say what they cost
+    # (h, prompt, workdir, model, allow) → argv: an agent allowed exactly the MCP tools in `allow` and
+    # nothing else, its events as JSON lines (a Catapult's carrier, docs/design/catapult-mcp.md §3).
+    # None until the tool's headless mode is checked to hold to them.
+    call_cmd: Cmd | None = None
     extra: dict = field(default_factory=dict)
 
     @property
@@ -148,6 +153,16 @@ class Harness:
 
     def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "") -> list[str]:
         return self.work_cmd(self, prompt, str(workdir), model_on(self.id, model), resume)
+
+    @property
+    def carries(self) -> bool:
+        """It can carry a Catapult's shot: held to one MCP tool."""
+        return self.call_cmd is not None
+
+    def call(self, prompt: str, workdir: str | Path, allow: list[str], model: str = "") -> list[str] | None:
+        if self.call_cmd is None:
+            return None
+        return self.call_cmd(self, prompt, str(workdir), model_on(self.id, model), list(allow))
 
     def stdin(self, prompt: str) -> str | None:
         return prompt if self.stdin_prompt else None
@@ -188,6 +203,15 @@ def _claude_ask(h, prompt, folder, model):
 def _claude_read(h, prompt, workdir, model, web):
     return [h.bin, "-p", prompt, "--output-format", "json", *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY),
             *_model("--model", model)]
+
+
+# Every built-in tool a carrier must not have; MCP tools not in --allowedTools are refused in -p.
+CLAUDE_NO_TOOLS = "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Read,Grep,Glob,Task,TodoWrite"
+
+
+def _claude_call(h, prompt, workdir, model, allow):
+    return [h.bin, "-p", prompt, "--output-format", "stream-json", "--verbose",
+            "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model)]
 
 
 def _claude_work(h, prompt, workdir, model, resume):
@@ -363,7 +387,7 @@ register(Harness(
     {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     _claude_ask, _claude_read, _claude_work,
     resumable=True, deploys=True, web=True, priced=True, mark="✻", color="bold #f59e0b",
-    resume_cmd=lambda h, sid: [h.bin, "--resume", sid]))
+    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
     {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},

@@ -202,6 +202,11 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
                    "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
+        "inbox": "where Quick notes are written, a source of the wiki (default notes/inbox)",
+        "calendar": "the id of the War Drum meetings are matched in (default: every one in the town)",
+        "check": "the quality check: weekly (default), daily, ingest (after each take-in) or off",
+        "suggest_model": "ask the light model for a Quick note's section and tags when the rules find nothing "
+                         "(default true; one short call per note)",
         "topic": "codebase, team, design or general: the sections and rules it starts with",
         "harness": "the librarian's agent: main (the main tool, default) or one of claude, agy, codex, hermes, pi, cursor",
         "model": "the librarian's model, e.g. sonnet",
@@ -250,12 +255,21 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                     "road into the Catapult. Without it every cart fires",
         "token_env": "the environment variable whose token goes as Authorization: Bearer",
         "confirm": "true asks before every shot",
-        "mode": "api (default: an HTTP request) or browser (fill the web forms of `forms`)",
+        "mode": "api (default: an HTTP request), browser (fill the web forms of `forms`) or mcp (send through the MCP "
+                "server `to`: the AI tool that has it carries a shot, then the ork learns a direct path)",
+        "to": "mode mcp: the MCP server, as your AI tools name it (slack, atlassian, notion, claude_ai_Gmail)",
+        "tool": "mode mcp: its tool (post_message); without it the first shot lets the carrier pick and the ork learns it",
+        "via": "mode mcp: the AI tool that carries (claude); without it a tool that has the server and is on",
+        "args": "mode mcp: what the tool gets, a line each: `channel = \"C0123\"`, `text = notes` (a cart path); "
+                "without it the ork learns them from the first shot",
+        "goal": "mode mcp: what a first shot is for, in plain words (post the release notes to #releases)",
+        "local": "mode mcp: true lets the Catapult start the server itself when it is local — no model per shot",
         "forms": "browser mode, in fill order: `name = start address | what to open | button` (the last two optional)",
         "fields": "browser mode, which field gets what: `Event name = title`, `Category = \"Major update\"`, "
                   "`images/Banner = banner` for one form",
         "finish": "browser mode: leave (default: you check and press) or press (submit by itself)",
-        "repair": "browser mode: false stops the ork repairing a script the site broke (default true)",
+        "repair": "browser and mcp mode: false stops the ork repairing a script the site broke or learning a path "
+                  "again when the service refuses it (default true)",
         "key": "a body path grouping carts into one shot, e.g. version.tag (two releases never mix)",
         "ttl": "minutes a loaded cart may wait before it is dropped (0: forever)",
     },

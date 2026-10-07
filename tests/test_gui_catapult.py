@@ -100,12 +100,72 @@ def test_confirm_is_a_setting_and_a_shot_waits_for_the_yes(catapult):
     d = host.detail(bid)["data"]
     assert d["asking"]["title"].startswith("Send to https://api.example.com") and not net.requests
     assert card(host, bid)["tone"] == "fire"
-    act(host, bid, "answer", yes=False)
-    assert not net.requests and not w.firing and host.detail(bid)["data"]["asking"] is None
+    act(host, bid, "answer", yes=False)                                 # Later: put off, not lost
+    d = host.detail(bid)["data"]
+    assert not net.requests and not w.firing and d["asking"] is None
+    assert '"v1"' in d["held"] and d["queued"] == 1 and card(host, bid)["line"] == "put off"
     with pytest.raises(CommandError):
         act(host, bid, "answer", yes=True)                              # nothing waits now
-    assert act(host, bid, "dry_run") is False                           # a declined shot is gone: nothing to show
+    assert act(host, bid, "resume") is True                             # Resume asks again
+    assert host.detail(bid)["data"]["asking"] and not net.requests
+    act(host, bid, "answer", yes=False, drop=True)                      # Drop: it is let go
+    d = host.detail(bid)["data"]
+    assert not net.requests and d["held"] == "" and d["queued"] == 0 and d["asking"] is None
+    assert act(host, bid, "dry_run") is False                           # nothing is left to show
     assert act(host, bid, "confirm", on=False) is False
+
+
+def test_a_shot_put_off_holds_the_queue_until_resume_or_drop(catapult):
+    host, bid, w, net = catapult
+    act(host, bid, "confirm", on=True)
+    for tag in ("v1", "v2"):
+        w.receive(pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"), "", "")
+        w.receive(pipes.Payload(pipes.TEXT, json.dumps({"tag": tag}), "version", "mill.done", "v"), "", "")
+    act(host, bid, "answer", yes=False)
+    assert host.detail(bid)["data"]["asking"] is None and len(w.queue) == 2   # v2 waits behind v1
+    assert card(host, bid)["line"] == "put off +1"
+    act(host, bid, "drop", what="next")                                 # v1 goes, v2 asks
+    assert '"v2"' in host.detail(bid)["data"]["asking"]["text"] and len(w.queue) == 0
+    act(host, bid, "answer", yes=True)
+    wait(lambda: not w.firing and net.requests)
+    assert len(net.requests) == 1 and b'"v2"' in net.requests[0].data
+
+
+def test_resume_goes_on_after_stop_all_and_fires_nothing_loaded(catapult):
+    host, bid, w, net = catapult
+    w.halt()
+    w.receive(pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"), "", "")
+    assert card(host, bid)["line"] == "stopped" and host.detail(bid)["data"]["paused"]
+    assert act(host, bid, "resume") is True
+    assert not net.requests and w.load.items == {"notes": "n"}         # the half load stays loaded
+    with pytest.raises(CommandError):
+        act(host, bid, "resume")                                        # it is not stopped now
+
+
+def test_a_dry_run_that_fails_the_check_fails_nothing_downstream(catapult, monkeypatch):
+    host, bid, w, _ = catapult
+    sent = []
+    monkeypatch.setattr(w, "emit", lambda event, *a, **k: sent.append(event) or True)
+    w.receive(pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"), "", "")
+    assert act(host, bid, "dry_run") is False
+    s = host.detail(bid)["data"]["shots"][0]
+    assert s["dry"] and not s["ok"] and "version" in s["error"]
+    assert sent == [] and w.failed is None and card(host, bid)["last"]["mark"] == "✗ dry run"
+
+
+def test_drop_lets_go_of_the_failed_shot_and_the_load(catapult):
+    host, bid, w, net = catapult
+    w.receive(pipes.Payload(pipes.TEXT, "n", "notes", "mill.done", "n"), "", "")
+    act(host, bid, "fire")                                              # half a load: it fails the schema
+    assert host.detail(bid)["data"]["failed"]
+    assert act(host, bid, "drop", what="failed") is True and not host.detail(bid)["data"]["failed"]
+    with pytest.raises(CommandError):
+        act(host, bid, "drop", what="failed")                           # nothing failed now
+    w.receive(pipes.Payload(pipes.TEXT, "n2", "notes", "mill.done", "n"), "", "")
+    assert act(host, bid, "drop", what="load") is True and host.detail(bid)["data"]["loaded"] == []
+    with pytest.raises(CommandError):
+        act(host, bid, "drop", what="everything")
+    assert not net.requests
 
 
 def test_browser_acts_refuse_outside_browser_mode_and_pictures_are_its_own(catapult, fake_repo: Path):
