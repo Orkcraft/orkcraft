@@ -405,12 +405,15 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
-def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_saves(page, gui):
+def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_saves(page, gui, monkeypatch):
     """`/note`: the Wiki's meeting, section and tags stand over the bar; Tab picks another meeting; Enter
     saves what was shown, and the Calendar's meeting says what the Wiki keeps for it
     (docs/design/wiki-librarian.md §4, §6)."""
     pg = page
     server, _ = gui
+    from orkcraft.core.workers.scrolls import ScrollsWorker
+    # the note's take-in runs no agent here (on a machine with one it would really start)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", staticmethod(lambda *a: ("taken in", 0.0, None, "")))
     repo = server.host.town.repo_root
     day = dt.date.today() + dt.timedelta(days=1)
     rows = []
@@ -440,8 +443,11 @@ def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_sav
     pg.locator(".ok-toast", has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
     assert field.input_value() == ""
     _hut(pg, drum).locator(".gui-drum__wiki", has_text="1").wait_for(state="visible", timeout=WAIT_MS)
-    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", wiki)
-    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", drum)
+    w = server.host.town.worker(wiki)
+    assert not pg.locator(".ok-toast.is-error").count() and not w.last_error
+    for bid in (wiki, drum):                    # the next test's buildings stand where these stood
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+        _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
