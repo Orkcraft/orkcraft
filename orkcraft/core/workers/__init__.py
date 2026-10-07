@@ -14,13 +14,15 @@ goes through `town.call` (the TUI hops to its UI thread), and so do `changed()` 
 """
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any
 
 from orkcraft.core import bus
-from orkcraft.realm import catalog, masonry
+from orkcraft.realm import catalog, masonry, pressure
 
 STATE_ROOT = Path(".orkcraft")
+QUOTA_READ_S = 60.0                 # how long one measure of the quota is good for
 
 
 def state_dir(repo_root: Path, type_id: str, building_id: str) -> Path:
@@ -79,6 +81,42 @@ class Worker:
     @property
     def state_dir(self) -> Path:
         return state_dir(self.repo_root, self.TYPE or self.btype.id, self.building_id)
+
+    # -- its goal and the quota --------------------------------------------------------------------
+
+    @property
+    def aim(self) -> str:
+        """Its building's goal (docs/design/retros-and-goals.md §3), balance when none is set."""
+        scroll = getattr(self.town, "scroll", None)
+        b = scroll.building(self.building_id) if scroll is not None else None
+        return b.aim if b is not None else "balance"
+
+    @property
+    def aim_now(self) -> str:
+        """The goal in force: its own, 🪙 thrift whatever it is while the camp's quota is tight."""
+        camp = self.quota()
+        return "thrift" if camp is not None and camp.tight else self.aim
+
+    def quota(self) -> pressure.Camp | None:
+        """What is left of the binding subscription quota (realm/pressure.py, from the town's last quota
+        read); None with no read, no subscription or nothing spent yet. Measured once a minute."""
+        from orkcraft.core import treasury
+        now = time.monotonic()
+        cached = getattr(self, "_quota_cache", None)
+        if cached is not None and now - cached[0] < QUOTA_READ_S:
+            return cached[1]
+        camp = None
+        machine = getattr(self.town, "machine", None)
+        subs = treasury.subscriptions(machine) if machine is not None else []
+        limits = getattr(self.town, "limits", None) or []
+        if subs and limits and not self.simulated:
+            try:
+                camp = pressure.measure(self.repo_root, limits, providers=subs)
+            except Exception:  # a quota that cannot be measured never stops the work
+                camp = None
+        camp = camp if camp is not None and camp.left is not None else None
+        self._quota_cache = (now, camp)
+        return camp
 
     # -- its life -------------------------------------------------------------------------------
 

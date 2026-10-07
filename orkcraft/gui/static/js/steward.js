@@ -48,11 +48,14 @@ export function StewardTitle({ i, open }) {
 }
 
 /** Which tier the steward runs each of its tasks on: every building's (watch, redesign, rules) and its
- * type's own; "" is the default (the CLI's own model, or the type's setting). */
+ * type's own; "" is the default — for its work (realm/steward.py WORK) the tier its goal names, else the
+ * CLI's own model (or the type's setting). */
 export function StewardModels({ b, i, onClose, onDone }) {
   const s = i.steward;
   const [picked, setPicked] = useState(Object.fromEntries(s.uses.map((u) => [u.id, u.tier])));
-  const choices = (i.tiers || []).map(([v, label]) => [v, v ? label : say(`Default${s.default ? ` (${s.default})` : ""}`)]);
+  const fallback = (u) => u.work ? say(`Default — ${i.goal_title}: ${u.by_goal || "the default model"}`)
+                                  : say(`Default${s.default ? ` (${s.default})` : ""}`);
+  const choices = (u) => (i.tiers || []).map(([v, label]) => [v, v ? label : fallback(u)]);
   const save = () => command("steward.models", { id: b.id, models: picked }).then(() => { onClose(); onDone(); }, () => {});
   return html`<${Dialog} title=${say(`${s.name}'s models — ${b.title}`)} text=${say("Which model the steward runs each of its tasks on.")}
       onCancel=${onClose}
@@ -60,7 +63,7 @@ export function StewardModels({ b, i, onClose, onDone }) {
         <button class="ok-btn primary" onClick=${save}>${say("Save")}</button>`}>
     <div class="gui-form">${s.uses.map((u) => html`<label key=${u.id} class="gui-field"><span class="ok-font-label">${say(u.label)}</span>
       <select class="ok-input" value=${picked[u.id]} onChange=${(e) => setPicked({ ...picked, [u.id]: e.target.value })}>
-        ${choices.map(([v, label]) => html`<option key=${v} value=${v} selected=${v === picked[u.id]}>${label}</option>`)}
+        ${choices(u).map(([v, label]) => html`<option key=${v} value=${v} selected=${v === picked[u.id]}>${label}</option>`)}
       </select></label>`)}</div>
   </${Dialog}>`;
 }
@@ -73,9 +76,13 @@ function Steps({ label, title, children }) {
 
 function Goal({ b, i, redo }) {
   const set = (value) => command("building.goal", { id: b.id, value }).then(redo, () => {});
-  return html`<${Steps} label=${say("Goal")} title=${say("Goal: what the retros improve it towards")}>
+  const hints = i.goal_hints || {};                // core/buildings.py goal_words: the retros, and the models
+  const what = Object.keys(hints).length ? "Goal: what the retros improve it towards, and the models its work runs on"
+                                         : "Goal: what the retros improve it towards";
+  const tip = (v, name, hint) => `${say("Goal")}: ${say(name)} — ${say(hints[v] || hint)}`;
+  return html`<${Steps} label=${say("Goal")} title=${say(what)}>
     ${GOALS.map(([v, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": i.goal === v })}
-        aria-pressed=${i.goal === v} title=${`${say("Goal")}: ${say(name)} — ${say(hint)}`} onClick=${() => i.goal !== v && set(v)}>${say(name)}</button>`)}
+        aria-pressed=${i.goal === v} title=${tip(v, name, hint)} onClick=${() => i.goal !== v && set(v)}>${say(name)}</button>`)}
   </${Steps}>`;
 }
 

@@ -29,6 +29,8 @@ of its own.
   the machine's main tool) and at its tier for a new task, **listen** — "Carry out the road rules".
   `roads` (finding a road, writing a rule) and `listen` (running a rule on every cart) stay separate
   tiers: one is a rare setup call, the other runs on every cart and is where the money goes.
+- **listen is the steward's work**, so the building's goal names its tier when none is picked, and a
+  tight quota runs it as 🪙 (`steward.WORK` and `steward.pick`, docs/design/steward-at-work.md §2–3).
 - The steward runs a rule with the building's purpose in its prompt (its role and orders), so every
   rule works toward the same goal.
 - **Code stays code.** `chain` and `script` handlers keep their place: they have no head, they cost
@@ -134,7 +136,8 @@ state off the handler, and needs a second engine path.
   Keep `agent` for that case only, or let the steward's own harness steps be a pipeline too?
   Proposed: keep `agent` as the explicit exception; the Recruiter says why it picked it.
 - **A rule that needs a heavier tier** than the steward's *listen*. Proposed: one optional `tier` on the
-  rule, shown in its panel; empty follows the steward.
+  rule, shown in its panel; empty follows the steward. It is `own` in `steward.pick`'s order, above the
+  tier picked for *listen* and above the goal's.
 - **Parallel runs.** Several rules of one steward may run at once (each its own session, as handlers
   do today). Should a building cap how many of its rules think at the same time? Proposed: no cap at
   first; the jam at the entry gate already shows when it matters.

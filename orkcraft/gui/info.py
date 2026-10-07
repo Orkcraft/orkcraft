@@ -16,6 +16,7 @@ from typing import Any
 
 from orkcraft import autonomy
 from orkcraft import scroll as ts
+from orkcraft.core import buildings as core_buildings
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
@@ -118,8 +119,11 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     term = terminal_of(lead)
     models = inventory.models_of(lead, town.snapshot.model_by_terminal.get(term, "") if term else "")
     bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
-    uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use)}
-            for use, label in steward.uses(catalog.type_of(spec).id if spec else "").items()]
+    type_id = catalog.type_of(spec).id if spec else ""
+    aim = bs.aim if bs is not None else "balance"
+    uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use), "work": steward.is_work(type_id, use),
+             "by_goal": modes.plain(tiers.label(steward.goal_tier(type_id, use, aim)))}
+            for use, label in steward.uses(type_id).items()]
     picked = [u["tier"] for u in uses if u["tier"]]
     default = models[0][1] if models else ""
     first = modes.plain(tiers.label(picked[0])) if picked else default
@@ -163,6 +167,8 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "week": {"runs": j["runs"], "ok": j["ok"], "failed": j["failed"], "results": j["results"]},
         "likes": j["likes"], "dislikes": j["dislikes"],
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
+        "goal_hints": {g: core_buildings.goal_words(town, building_id, g) for g in ts.GOALS}  # its work's models
+        if catalog.type_of(spec).id in steward.WORK else {},
         "level": bs.level or 0, "level_mark": growth.mark(aim, bs.level or 0),
         "next": growth.next_step(town.repo_root, building_id, bs.level or 0),
         "pinned": bool(bs.pinned),
