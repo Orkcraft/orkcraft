@@ -95,6 +95,23 @@ class LootWorker(Worker):
         """A cart waits for the person: the hut burns."""
         return any(i.status in (gate.HELD, gate.NEEDS_YOU) for i in self.queue.items)
 
+    def orders_alert(self):
+        """While a cart waits for the person its ork asks them (gui/host.py, the roster): the hut burns and the
+        question waits in Answers — the first cart (one that needs you first) and what else waits; its answer puts
+        it away until another cart comes first."""
+        waiting = [i for i in self.queue.open() if i.status != gate.REWORK]
+        if not waiting:
+            return None
+        first, n = waiting[0], len(waiting)
+        why = "needs you" if first.status == gate.NEEDS_YOU else (first.why[0] if first.why else "waits for review")
+        title = (f"{n} carts wait for review — " if n > 1 else "") + f"{label(first)[:60]}: {why}"
+        context = [f"{'! ' if i.status == gate.NEEDS_YOU else ''}{label(i)[:70]}" + (f" — {i.why[0]}" if i.why else "")
+                   for i in waiting[:6]] + ([f"… and {n - 6} more"] if n > 6 else [])
+        return (f"review:{first.id}", title, context, [("1", "Stop asking until another cart comes first")])
+
+    def answer_alert(self, key: str) -> str | None:
+        return "dismiss" if key == "1" else None
+
     # -- the checkpoint ---------------------------------------------------------------------------
 
     def receive(self, payload, title: str, markdown: str) -> None:
@@ -103,7 +120,7 @@ class LootWorker(Worker):
             payload = pipes.Payload(payload.kind, markdown, payload.source, payload.mode, payload.title or title,
                                     payload.trail, payload.ref)
         back = self.queue.by_ref(payload.ref)
-        why = gate.reasons(payload, self.config, self._rule_context(payload))
+        why = gate.reasons(payload, self.config, self._rule_context(payload), self.names())
         if back is not None:
             why = [f"back from rework (round {back.attempts})"] + why
         if not why:
@@ -183,7 +200,7 @@ class LootWorker(Worker):
     def accept_item(self, item: gate.Item, value: str | None = None, source: str = "loot.accepted") -> None:
         """Accept a held cart — as it is, or `value`, the person's edit of it — and say so to its maker."""
         if to := self._accept(item, value, source):
-            self.toast(f"approved: {to} may publish {item.title or item.ref}", title="📦 Loot")
+            self.toast(f"approved: {self.names().get(to, to)} may publish {item.title or item.ref}", title="📦 Loot")
         self.refresh()
 
     def _accept(self, item: gate.Item, value: str | None, source: str) -> str:
@@ -239,12 +256,12 @@ class LootWorker(Worker):
                                  f"rework: {item.title or item.ref}", item.hops, item.ref)
             if to := self._give_back("rework", item.source, back):
                 self.emit("loot.rework", md, back.title, trail=item.hops, ref=item.ref)
-                self.toast(f"sent back to {to} (round {item.attempts}): {reason}", title="📦 Loot")
+                self.toast(f"sent back to {self.names().get(to, to)} (round {item.attempts}): {reason}", title="📦 Loot")
                 self.refresh()
                 return item.status
             item.attempts -= 1
             item.notes.pop()
-            why = f"{item.source} cannot take work back"
+            why = f"{self.names().get(item.source, item.source)} cannot take work back"
         self.queue.needs_you(item, f"{reason} — not sent back: {why}")
         self.emit("loot.needs_you", f"**{item.title or item.ref}** needs you: {why}\n\n{reason}", item.title,
                   trail=item.hops, ref=item.ref)

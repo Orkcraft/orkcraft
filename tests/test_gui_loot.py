@@ -157,3 +157,27 @@ def test_accept_all_accepts_only_what_the_person_saw(loot):
     with pytest.raises(CommandError):
         act(host, bid, "accept_all", items="B")
     assert act(host, bid, "accept_all") == 1                     # the Steward's and the TUI's: every held one
+
+
+def test_a_waiting_cart_makes_its_ork_ask_the_person(loot):
+    host, bid, w = loot
+    assert w.orders_alert() is None
+    w.receive(cart("one", "A"), "Doc A", "one")
+    w.receive(cart("two", "B"), "Doc B", "two")
+    host.refresh_roster()
+    building = next(b for b in host.snapshot()["buildings"] if b["id"] == bid)
+    assert building["alert"] and building["alert"]["title"].startswith("2 carts wait for review — Doc A")
+    alert = next(a for a in host.snapshot()["alerts"] if a["ref"] == bid)
+    assert alert["options"] == [["1", "Stop asking until another cart comes first"]] and alert["context"][1].startswith("Doc B")
+    host.command("orders.answer", {"id": alert["id"], "key": "1"})                  # put away
+    assert not next(b for b in host.snapshot()["buildings"] if b["id"] == bid)["alert"]
+    act(host, bid, "accept_all")
+    assert w.orders_alert() is None
+
+
+def test_why_a_cart_waits_names_buildings_by_their_titles():
+    trail = (pipes.hop("camp", "grub", "agent", outcome="error"),)
+    payload = pipes.Payload(pipes.TEXT, "x", "camp", "pool.done", "X", trail, "X")
+    why = gate.reasons(payload, {"sources": ["camp"]}, None, {"camp": "Agent pool"})
+    assert why == ["from Agent pool", "Agent pool ended error"]
+    assert gate.reasons(payload, {"sources": ["camp"]}) == ["from camp", "camp ended error"]   # no names: ids

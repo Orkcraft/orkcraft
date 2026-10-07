@@ -53,8 +53,11 @@ that matching, not a language of their own.
 - **Rework limit.** A cart goes back at most **3 times** (`max_rework`, configurable) or until the
   chain spent `rework_tokens` tokens. After that it is not sent back again: it stays in the queue
   marked `needs you`, highlighted on the hut, for the person to review and fix by hand.
-- **Reminders** — a held cart sets the hut on 🔥 like an ork waiting for an answer: orange, red,
-  then the roof burns (`realm/modes.py`), respecting quiet hours; `!` (🔥 Orders) lists it.
+- **Reminders** — a held cart sets the hut on 🔥 like an ork waiting for an answer: its ork asks
+  (`LootWorker.orders_alert`), the card glows, then the roof burns, respecting quiet hours; Answers
+  lists it — the first cart, why it waits and what else waits — with *Open it* to go to the
+  building and *Stop asking until another cart comes first*. The reasons name buildings by their
+  titles.
 
 **A draft waiting for approval.** A cart whose last hop ended `approval` (a Barracks ork's post to Jira or Confluence, sent as `pool.question`) is always held, whatever the rules. ✓ accept also tells its maker directly (`app.return_approved`), and the ork posts the accepted text, edits included; ✗ reject sends the draft back with the reason.
 
