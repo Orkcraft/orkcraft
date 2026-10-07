@@ -6,6 +6,7 @@ import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { showSession } from "./tent.js";
+import { openBuilding } from "./windows.js";
 
 export const ordersOpen = signal(false);
 const picked = signal(null);
@@ -30,6 +31,7 @@ export function Orders() {
   return html`<${Dialog} title=${`Awaiting an answer (${alerts.length})`} onCancel=${close}
       actions=${html`
         ${a.source === "terminal" && html`<button class="ok-btn" onClick=${() => { close(); showSession(a.ref); }}>Open its terminal</button>`}
+        ${a.source === "view" && a.ref && html`<button class="ok-btn" onClick=${() => { close(); openBuilding(a.ref, "work"); }}>${say("Open it")}</button>`}
         ${a.advice && html`<button class="ok-btn primary" onClick=${() => command("orders.follow", { id: a.id }).then(() => {
           if (alerts.length <= 1) close();
         }, () => {})}>${say("Follow the Elders")}</button>`}

@@ -68,12 +68,14 @@ APPROVAL = "approval"                         # a hop's outcome: a draft waits f
 CLEAN = ("", "done", "approved", "rework", APPROVAL)   # a Clan Fire's verdict is how its review ended, not a failure
 
 
-def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) -> list[str]:
-    """Why a cart is held; empty when it passes."""
+def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None,
+            names: dict[str, str] | None = None) -> list[str]:
+    """Why a cart is held, buildings named by `names` (id → title); empty when it passes."""
     ctx = ctx or Context()
+    name = lambda bid: (names or {}).get(bid, bid)
     last = payload.trail[-1] if payload.trail else None
     if last is not None and last.outcome == APPROVAL:       # its maker waits for the person: never waved through
-        return [f"{last.building} waits for your approval before it goes out"]
+        return [f"{name(last.building)} waits for your approval before it goes out"]
     mode = str(config.get("review") or "rules")
     if mode == "never":
         return []
@@ -81,7 +83,7 @@ def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) ->
         return ["every cart is reviewed"]
     why = []
     if payload.source in _list(config, "sources") or any(h.building in _list(config, "sources") for h in payload.trail):
-        why.append(f"from {payload.source}")
+        why.append(f"from {name(payload.source)}")
     if globs := _list(config, "paths"):
         files = ([payload.value] if payload.kind == pipes.FILE else []) + list(ctx.files)
         if hit := next((f for f in files if _matches(f, globs)), None):
@@ -95,7 +97,7 @@ def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None) ->
         why.append(f"{len(ctx.files)} files > {int(limit)}")
     last = payload.trail[-1] if payload.trail else None        # how the run that made it ended; an earlier
     if config.get("on_failed", True) and last is not None and last.outcome not in CLEAN:   # failed round was redone
-        why.append(f"{last.building} ended {last.outcome}")
+        why.append(f"{name(last.building)} ended {last.outcome}")
     if config.get("external") and ctx.external:
         why.append("leaves the town")
     return why
