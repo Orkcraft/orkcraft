@@ -39,11 +39,17 @@ def detail(w) -> dict:
     return {"items": items, "count": len(w.items), "file_limit": FILE_LIMIT}
 
 
+def _client_id(args: dict) -> str:
+    """A drop's own id from the client that sent it (a phone's offline queue), so a retry drops once."""
+    cid = args.get("client_id")
+    return cid[:64] if isinstance(cid, str) else ""
+
+
 def _drop(w, args: dict) -> int:
     value = text(args, "text", 200_000)
     if not value.strip():
         raise ActError("Nothing to drop")
-    return w.drop(value, paths=args.get("paths") is not False)
+    return w.once(_client_id(args), lambda: w.drop(value, paths=args.get("paths") is not False))
 
 
 def _drop_file(w, args: dict) -> int:
@@ -57,7 +63,7 @@ def _drop_file(w, args: dict) -> int:
         raise ActError("A dropped file needs its name")
     if len(data) > FILE_LIMIT:
         raise ActError(f"{name}: larger than {FILE_LIMIT // (1024 * 1024)} MB — put it in the project and drop its path")
-    return w.drop_file(name, data)
+    return w.once(_client_id(args), lambda: w.drop_file(name, data))
 
 
 def _paste(w, args: dict) -> int:

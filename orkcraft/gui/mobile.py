@@ -6,6 +6,7 @@ host's own command table, so the GUI's page and tests reach it today the same wa
     host.command("mobile.hello")                     # {"name", "version", "api", "commands", ...}
     host.command("mobile.snapshot")                  # the town, small: HUD, questions, buildings
     host.command("mobile.snapshot", {"since": rev})  # {"v", "rev", "same": True} when nothing changed
+    host.command("mobile.chat")                      # the Town Hall's last messages, Markdown as plain text
     news(before, after)                              # what a push would say between two snapshots
 
 The compact snapshot is derived from the page's (`Host.snapshot`, gui/state.py), never from the
@@ -16,19 +17,23 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any, Callable
 
 from orkcraft import __version__
+from orkcraft.gui import markdown
 from orkcraft.realm import lexicon, modes
 
 API = 1                  # the mobile API's version: a change that breaks a client raises it
 CONTEXT_LINES = 3        # of a question's screen, the last lines a phone shows
+CHAT_MESSAGES = 20       # of the Town Hall's chat, the most a phone reads at once
 
 # What a phone may ask of the host (v1): the host's command → the acts it may name, when it is
 # "act" (type id → acts). Everything else stays on the desktop (docs/design/mobile.md §3).
 COMMANDS: dict[str, Any] = {
     "mobile.hello": None,
     "mobile.snapshot": None,
+    "mobile.chat": None,
     "orders.answer": None,
     "orders.follow": None,
     "halt": None,
@@ -141,6 +146,48 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
     return out
 
 
+def plain_markdown(text: str) -> str:
+    """Markdown as the text a person reads: no marks, no markup; a code block keeps its lines."""
+    out: list[str] = []
+    for tok in markdown._md().parse((text or "")[:markdown.LIMIT]):
+        if tok.type == "inline":
+            for child in tok.children or []:
+                if child.type in ("text", "code_inline"):
+                    out.append(child.content)
+                elif child.type in ("softbreak", "hardbreak"):
+                    out.append("\n")
+        elif tok.type in ("fence", "code_block"):
+            out.append(tok.content.rstrip("\n") + "\n\n")
+        elif tok.type in ("paragraph_close", "heading_close") and not tok.hidden:
+            out.append("\n\n")
+        elif tok.type == "list_item_open":
+            out.append("- ")
+        elif tok.type in ("list_item_close", "tr_close", "bullet_list_close", "ordered_list_close", "table_close"):
+            out.append("\n")
+        elif tok.type in ("th_close", "td_close"):
+            out.append("  ")
+    return re.sub(r"\n{3,}", "\n\n", "".join(out)).strip()
+
+
+def chat(host, args: dict | None = None) -> dict[str, Any]:
+    """`mobile.chat`: the last messages of the Town Hall's chat (`limit`, at most CHAT_MESSAGES), so a
+    phone that asked the Warchief reads his answer. Markdown comes as plain text in the words it was
+    written in (emoji aside: `modes.strip_emoji`, never `modes.plain`); a card he gave (a
+    building to raise, work for a specialist) is only `offer`: it is answered at the desk."""
+    hall = host.town.worker("town_hall")
+    if hall is None:
+        return {"warchief": "", "thinking": False, "chat": []}
+    try:
+        limit = min(max(int((args or {}).get("limit") or CHAT_MESSAGES), 1), CHAT_MESSAGES)
+    except (TypeError, ValueError):
+        limit = CHAT_MESSAGES
+    msgs = [{"who": m.get("who", ""), "text": modes.strip_emoji(plain_markdown(str(m.get("text", "")))),
+             "ts": str(m.get("ts", "")), "error": bool(m.get("error")), "offer": isinstance(m.get("card"), dict)}
+            for m in hall.chat[-limit:]]
+    return {"warchief": hall.warchief, "thinking": bool(hall.thinking), "chat": msgs}
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     """The host's commands this module adds (`Host.commands`)."""
-    return {"mobile.hello": lambda a: hello(host), "mobile.snapshot": lambda a: snapshot(host, a)}
+    return {"mobile.hello": lambda a: hello(host), "mobile.snapshot": lambda a: snapshot(host, a),
+            "mobile.chat": lambda a: chat(host, a)}

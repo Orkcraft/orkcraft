@@ -46,7 +46,7 @@ from websockets.http11 import Request, Response
 
 from orkcraft import __version__
 from orkcraft.design import tokens
-from orkcraft.gui import mobile, phones
+from orkcraft.gui import mobile, notify, phones
 from orkcraft.gui.host import CommandError, Host
 
 STATIC = Path(__file__).with_name("static")
@@ -97,6 +97,7 @@ class Server:
         # The listener for phones (gui/phones.py): on the LAN, TLS, a device token; only while one is paired.
         self.phones = phones.Listener(host)
         host.commands.update(self.phones.commands())
+        self.notifier = notify.Notifier(host, self.phones)   # what came, to the phones that are open
 
     @property
     def origin(self) -> str:

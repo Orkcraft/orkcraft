@@ -166,7 +166,7 @@ class Listener:
         self.address = ""                          # https://<ip>:<port> while it listens
         self.fingerprint = ""
         self.phones: set[Phone] = set()
-        self.on_open: Callable[[Phone], None] = lambda phone: None   # gui/notify.py: what came while away
+        self.on_push: Callable[[dict | None], None] = lambda snap: None   # gui/notify.py: what came, said once
         self._pushed = 0.0
         self._snap: dict | None = None             # the last compact snapshot, while one is open
         self._said_locked = False                  # the desktop was told pairing locked (once a code)
@@ -247,7 +247,10 @@ class Listener:
             return
         if self.phones and now - self._pushed >= PUSH_S:
             self._pushed = now
-            self.push()
+            self.on_push(self.push())
+        elif not self.phones:
+            self._snap = None
+            self.on_push(None)
 
     def compact(self) -> dict:
         return mobile.compact(self.host.snapshot())
@@ -380,7 +383,6 @@ class Listener:
             snap = self._snap if self._snap is not None and time.monotonic() - self._pushed < PUSH_S else self.compact()
             phone.rev = snap["rev"]
             phone.send({"t": "state", "state": snap})
-            self.on_open(phone)
             while not writer.is_closing():
                 data = await reader.read(65536)
                 if not data:

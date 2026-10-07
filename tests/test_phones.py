@@ -420,3 +420,23 @@ def test_an_act_a_phone_may_send_is_guarded_on_the_way(fake_repo, isolated_layou
     assert reply["ok"], reply
     kept = list((fake_repo / ".orkcraft" / "pit").glob("*")) if (fake_repo / ".orkcraft" / "pit").exists() else []
     assert not any(p.read_text(errors="ignore") == "not for the orks" for p in kept if p.is_file())
+
+
+@pytest.mark.asyncio
+async def test_an_open_phone_hears_what_came_and_reads_the_chat(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        _, token = await _pair(server)
+        async with connect(_ws_url(server), ssl=_pinned(), additional_headers={"Authorization": f"Bearer {token}"}) as ws:
+            await asyncio.wait_for(ws.recv(), 5)
+            server.host.town.toast("a stack trace with secrets", title="Town clock", severity="error")
+            while (msg := json.loads(await asyncio.wait_for(ws.recv(), 5)))["t"] != "news":
+                pass
+            assert msg["news"] == [{"kind": "error", "line": "Something failed: Town clock"}]
+            await ws.send(json.dumps({"t": "cmd", "id": 1, "name": "mobile.chat", "args": {}}))
+            while (msg := json.loads(await asyncio.wait_for(ws.recv(), 5)))["t"] != "reply":
+                pass
+            assert msg["ok"] and msg["result"]["chat"] == []
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
