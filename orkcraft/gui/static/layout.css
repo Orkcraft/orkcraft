@@ -78,9 +78,28 @@ button { font: inherit; color: inherit; }
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
 .gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
-/* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js), and
-   the card is as wide as what it holds, within bounds. */
-.gui-town__room > .gui-hut.ok-hut[class] { width: max-content; min-width: 120px; max-width: 320px; }
+/* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). Every
+   card is at least as wide as the narrowest size and as tall as a headline and two lines, so the town
+   reads as a grid of like cards, not a scatter of strips; a wider card (Task board, Calendar) sets its own. */
+.gui-town__room > .gui-hut.ok-hut[class] { width: max-content; min-width: 240px; max-width: 360px; }
+/* One anatomy for every type's card: the headline — the one number that says how the building is — up to two
+   lines under it, and the foot: the last thing that happened and when. A type that has no number leads with
+   a word (`✓ Ran`, `⚠ Paused`). */
+.gui-hut .gui-hut__body { display: flex; flex-direction: column; gap: 2px; min-height: 60px; box-sizing: border-box; }
+.gui-hut__big { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; white-space: nowrap;
+  font: 700 20px/24px var(--ok-font); color: var(--ink); font-variant-numeric: tabular-nums; }
+.gui-hut__big > small { overflow: hidden; text-overflow: ellipsis; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
+.gui-hut__big.ok-tone-ok, .gui-hut__big .ok-tone-ok { color: var(--success); }
+.gui-hut__big.ok-tone-error, .gui-hut__big .ok-tone-error { color: var(--danger); }
+.gui-hut__big.ok-tone-wait, .gui-hut__big .ok-tone-wait { color: var(--warning); }
+.gui-hut__big.ok-tone-fire, .gui-hut__big .ok-tone-fire { color: var(--alert); }
+.gui-hut__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-hut__text b { color: var(--ink); }
+.gui-hut__foot { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin-top: auto; padding-top: var(--space-1);
+  border-top: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); font-size: 11px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; }
+.gui-hut__foot > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gui-hut__when { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
+.gui-hut__body-in { display: contents; }     /* a type's card as one element whose parts are the body's own */
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
 .gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
 .gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -199,7 +218,6 @@ button { font: inherit; color: inherit; }
 .gui-steward__more { flex: none; margin-left: auto; padding: 0 var(--space-1); border: 0; background: none; color: var(--ink-muted);
   font: inherit; cursor: pointer; }
 .gui-steward__more:hover { color: var(--ink); background: var(--selection); }
-.gui-newtask { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
 .gui-history { max-height: 50vh; overflow: auto; }
 .gui-form { display: flex; flex-direction: column; gap: var(--space-2); max-height: 60vh; overflow: auto; }
 .gui-form > p { margin: 0; }
@@ -293,7 +311,28 @@ button { font: inherit; color: inherit; }
 .gui-tree__item.is-selected { background: var(--selection); box-shadow: inset 0 0 0 1px var(--frame-focus); }
 
 .gui-modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: color-mix(in srgb, var(--canvas) 70%, transparent); }
-.gui-modal .ok-dialog { width: min(560px, calc(100vw - 32px)); }
+.gui-modal .ok-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+.gui-modal .ok-dialog.is-wide { width: min(680px, calc(100vw - 32px)); }
+.gui-dialog__meta { margin-top: calc(-1 * var(--space-2)); }
+.gui-dialog__body { display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; overflow: auto; margin: 0 calc(-1 * var(--space-2)); padding: 0 var(--space-2); }
+.gui-dialog__body:empty { display: none; }
+.ok-dialog__actions { flex-wrap: wrap; align-items: center; }
+.gui-dialog__note { flex: 1; color: var(--ink-muted); font-size: 12px; }
+/* A steward's report (js/acts.js ReportView): its findings as a list, each proposal a block with its own
+   Apply / Skip on the right; taken ones stay, quieter, with what they did. */
+.gui-findings { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); line-height: 1.45; }
+.gui-proposals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-proposal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3); align-items: start;
+  padding: var(--space-2) var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-proposal__title { font-weight: 700; line-height: 20px; }
+.gui-proposal__kind { display: inline-block; margin-right: var(--space-2); padding: 0 5px; font: 700 10px/16px var(--ok-font); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-gold); box-shadow: inset 0 0 0 1px var(--frame); vertical-align: 1px; }
+.gui-proposal__why, .gui-proposal__more { grid-column: 1; margin: 0; font-size: 12px; line-height: 17px; color: var(--ink-muted); }
+.gui-proposal__more { color: var(--ink); }
+.gui-proposal__acts { grid-column: 2; grid-row: 1 / span 3; display: flex; gap: var(--space-1); align-items: center; font-size: 12px; white-space: nowrap; }
+.gui-proposal.is-done, .gui-proposal.is-skipped { opacity: .6; }
+[data-theme="office"] .gui-proposal { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+[data-theme="office"] .gui-proposal__kind { border-radius: var(--radius-full); color: var(--ink-muted); }
 
 /* The War Tent: the sessions beside the selected one's terminal. */
 .gui-tent { display: flex; gap: var(--space-3); flex: 1 1 auto; min-height: 360px; }

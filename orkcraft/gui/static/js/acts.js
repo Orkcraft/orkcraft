@@ -3,7 +3,7 @@
 // model call makes (gui/console.py): the Recruiter's handler to hire, the Council's notes, the
 // steward's findings and proposals.
 import { useEffect, useState } from "preact/hooks";
-import { html } from "./html.js";
+import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { selectOrk } from "./windows.js";
@@ -107,21 +107,52 @@ function RecruitView({ v }) {
   </div>`;
 }
 
-function ReportView({ job, v }) {
+/** A steward's report: what it found, then each proposal as a block with its own Apply and Skip. A proposal
+ *  taken stays in the list, quieter, saying what it did; the report closes on Done or when all are taken. */
+function ReportView({ job, v, skipped, onSkip }) {
   const apply = (index) => command("job.accept", { job: job.id, index }).catch(() => {});
   return html`<div class="gui-form">
-    ${v.ts && html`<p class="ok-font-status ok-tone-muted">Watched ${v.ts}${v.cost ? ` · cost ${v.cost}` : ""}</p>`}
-    <h3 class="ok-font-heading">${job.kind === "redesign" ? "Asked" : "Findings"}</h3>
-    ${v.findings.length ? html`<ul class="gui-rows">${v.findings.map((f, k) => html`<li key=${k}>${f}</li>`)}</ul>`
+    <p class="ok-dialog__section">${job.kind === "redesign" ? say("Asked") : say("Findings")}${v.findings.length ? ` · ${v.findings.length}` : ""}</p>
+    ${v.findings.length ? html`<ul class="gui-findings">${v.findings.map((f, k) => html`<li key=${k}>${f}</li>`)}</ul>`
       : html`<p class="ok-font-status ok-tone-muted">${say("Nothing found: it runs as it should.")}</p>`}
-    <h3 class="ok-font-heading">${say("Proposals")}</h3>
-    ${v.proposals.length ? html`<ul class="gui-rows">${v.proposals.map((p) => html`<li key=${p.index}>
-        <b>${p.type}</b>${p.replay && html` <span class="ok-tone-muted">· ${p.replay}</span>`}
-        ${p.ready && html` <button class="ok-act" onClick=${() => apply(p.index)}><span class="ok-act__label">${say("Apply")}</span></button>`}
-        <div class="ok-font-status ok-tone-muted">${p.why}</div>
-        ${p.outline && html`<div class="ok-font-status">${p.outline}</div>`}</li>`)}</ul>`
+    <p class="ok-dialog__section">${say("Proposals")}${v.proposals.length ? ` · ${v.proposals.length}` : ""}</p>
+    ${v.proposals.length ? html`<ul class="gui-proposals">${v.proposals.map((p) => {
+        const skip = skipped.has(p.index);
+        return html`<li key=${p.index} class=${cls("gui-proposal", { "is-done": !!p.applied, "is-skipped": skip })}>
+          <div class="gui-proposal__title"><span class="gui-proposal__kind">${say(p.type)}</span>${p.why}</div>
+          ${p.replay && html`<p class="gui-proposal__why">${p.replay}</p>`}
+          ${p.outline && html`<p class="gui-proposal__more">${p.outline}</p>`}
+          ${p.applied && html`<p class="gui-proposal__why ok-tone-ok">✓ ${p.applied}</p>`}
+          <div class="gui-proposal__acts">
+            ${p.applied ? html`<span class="ok-tone-ok">✓ ${say("Applied")}</span>`
+              : skip ? html`<button class="ok-btn" onClick=${() => onSkip(p.index)}>${say("Undo skip")}</button>`
+              : p.ready ? html`<button class="ok-btn" onClick=${() => onSkip(p.index)}>${say("Skip")}</button>
+                  <button class="ok-btn primary" onClick=${() => apply(p.index)}>${say("Apply")}</button>`
+              : html`<span class="ok-tone-muted" title=${say("A note, or a change its replay did not back")}>${say("note only")}</span>`}
+          </div></li>`;
+      })}</ul>`
       : html`<p class="ok-font-status ok-tone-muted">${say("No proposals.")}</p>`}
   </div>`;
+}
+
+/** The report as a dialog: its body scrolls, its foot keeps Apply the rest and Done. */
+function ReportDialog({ job, title, drop }) {
+  const [skipped, setSkipped] = useState(() => new Set());
+  const v = job.view;
+  const flip = (i) => setSkipped((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+  const rest = v.proposals.filter((p) => p.ready && !p.applied && !skipped.has(p.index));
+  const taken = v.proposals.filter((p) => p.applied).length;
+  const applyRest = async () => {
+    for (const p of rest) {
+      try { await command("job.accept", { job: job.id, index: p.index }); } catch { return; }
+    }
+  };
+  const meta = [v.ts && `${say("Watched")} ${v.ts}`, v.cost && `${say("cost")} ${v.cost}`].filter(Boolean).join(" · ");
+  return html`<${Dialog} title=${title} meta=${meta} onCancel=${drop} wide
+      actions=${html`<span class="gui-dialog__note">${v.proposals.length ? say(`${taken} of ${v.proposals.length} applied`) : ""}</span>
+        ${rest.length > 1 && html`<button class="ok-btn" onClick=${applyRest}>${say("Apply the rest")} · ${rest.length}</button>`}
+        <button class="ok-btn primary" onClick=${drop}>${say("Done")}</button>`}>
+    <${ReportView} job=${job} v=${v} skipped=${skipped} onSkip=${flip} /></${Dialog}>`;
 }
 
 const JOB_TITLE = { recruit: "Recruiter", watch: "Steward", redesign: "Redesign", road: "Listen" };
@@ -170,7 +201,5 @@ export function Jobs() {
           ${!blocked && html`<button class="ok-btn primary" onClick=${accept}>${job.state === "verdict" ? "Hire anyway" : "Hire"}</button>`}`}>
       <${RecruitView} v=${job.view} /></${Dialog}>`;
   }
-  return html`<${Dialog} title=${title} onCancel=${drop}
-      actions=${html`<button class="ok-btn primary" onClick=${drop}>${say("Close")}</button>`}>
-    <${ReportView} job=${job} v=${job.view} /></${Dialog}>`;
+  return html`<${ReportDialog} key=${job.id} job=${job} title=${title} drop=${drop} />`;
 }

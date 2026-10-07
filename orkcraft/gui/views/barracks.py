@@ -27,16 +27,18 @@ def _money(x: float) -> str:
 
 
 def card(w) -> dict:
-    """Closed (docs/design/building-views.md): `active 2/4 · queue 3`, `✓5 ✗1 · $1.20`, `<keeper> asks` first;
-    who works on what (two at most)."""
+    """Closed (docs/design/building-views.md): how many orks work of how many, `queue 3`, `✓5 ✗1 · $1.20`,
+    `<keeper> asks`; who works on what (two at most), else the last task that ended."""
     st, f = w.state, w.foreman
+    ended = next((t for t in reversed(st.tasks) if t.status in ("done", "failed")), None)
     return {"asks": w.keeper if st.asked else "",
             "active": sum(1 for o in st.orcs if o.status == "working"), "max": f.max_orcs, "queue": len(st.queue),
             "done": sum(1 for t in st.tasks if t.status == "done"),
             "failed": sum(1 for t in st.tasks if t.status == "failed"),
             "spent": _money(st.spent), "paused": st.paused,
             "working": [{"ork": o.name, "task": t.title} for o in st.orcs if o.status == "working"
-                        and (t := st.task(o.task)) is not None][:2]}
+                        and (t := st.task(o.task)) is not None][:2],
+            "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None}
 
 
 def _tier(o: bk.PoolOrc) -> str:

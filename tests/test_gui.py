@@ -881,3 +881,25 @@ def test_a_paused_building_says_so_on_its_hut_and_its_orkspace(fake_repo, monkey
     snap = host.snapshot()
     assert next(b for b in snap["buildings"] if b["id"] == bid)["paused"] is True
     assert next(o for o in snap["orkspaces"] if o["id"] == snap["active_orkspace"])["paused"] == 1
+
+
+def test_a_stewards_report_keeps_its_other_proposals_open_after_one_is_applied(fake_repo, monkeypatch):
+    """Applying one proposal of a report marks it and leaves the rest waiting: the report closes when every
+    proposal that can be applied is taken (or the person closes it), never after the first."""
+    from orkcraft.gui import steward
+    host = _host(fake_repo)
+    applied = []
+    monkeypatch.setattr(steward.core_buildings, "apply_steward",
+                        lambda town, bid, data, index, by="": applied.append(index) or f"change {index}")
+    data = {"ts": "2026-10-07T09:12", "cost_usd": 0.03, "findings": [{"summary": "slow"}],
+            "proposals": [{"type": "rule", "why": "one"}, {"type": "rule", "why": "two"}, {"type": "note", "why": "a note"}]}
+    jid = "j-test"
+    job = {"id": jid, "kind": "watch", "building": "town_hall", "title": "Hall", "state": "running", "text": ""}
+    host.console.jobs[jid] = job
+    host.console._show_report(job, data)
+    assert host.command("job.accept", {"job": jid, "index": 0}) == "change 0"
+    left = next(j for j in host.snapshot()["jobs"] if j["id"] == jid)
+    assert [p.get("applied", "") for p in left["view"]["proposals"]] == ["change 0", "", ""]
+    assert host.command("job.accept", {"job": jid, "index": 0}) == "change 0" and applied == [0]   # taken once
+    host.command("job.accept", {"job": jid, "index": 1})
+    assert not any(j["id"] == jid for j in host.snapshot()["jobs"]) and applied == [0, 1]       # the note needs nothing
