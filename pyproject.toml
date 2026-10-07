@@ -27,9 +27,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0"]
+dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0", "cryptography>=41", "segno>=1.5"]
 browser = ["playwright>=1.45"]              # the Catapult's browser mode
-gui = ["pywebview>=5.0", "websockets>=13.0"]   # orkcraft gui: the window and its socket
+# orkcraft gui: the window and its socket; a phone's TLS certificate and the QR code that pairs it (gui/phones.py)
+gui = ["pywebview>=5.0", "websockets>=13.0", "cryptography>=41", "segno>=1.5"]
 
 [project.urls]
 Homepage = "https://github.com/Orkcraft/orkcraft"
