@@ -188,7 +188,8 @@ class PersonStep(ModalScreen[dict | str | None]):
             yield Vertical(id="ob-day-chips")
             yield Input(self.profile.get("day_other", ""), placeholder="…or your day in your own words",
                         id="ob-day-other")
-            yield Static("", id="ob-who-line", markup=False)
+            # the mascot's nick is a name (orkcraft.dev's class): said as written, never in today's words
+            yield Static("", id="ob-who-line", markup=False, classes="-as-written")   # tui/wording.py AS_WRITTEN
             yield Static("", id="ob-who-note", classes="ob-note", markup=False)
             yield _nav(self.can_back)
 
