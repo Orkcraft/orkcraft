@@ -155,7 +155,7 @@ function TaskCard({ id, t, n }) {
   const working = t.status === "working" || t.status === "planned";
   return html`<button class=${cls("pool-card", { "is-asks": t.asks })} onClick=${() => setIn(chosen, id, t.id)}
       title=${t.title}>
-    <span class=${cls("pool-card__state", STATE_TONE[t.status] || "")}>
+    <span class=${`pool-card__state ${STATE_TONE[t.status] || ""}`}>
       ${t.ork ? html`<${Head} ork=${t.ork} asks=${t.asks} working=${working} /><span class="pool-card__who">${t.ork}</span> · ` : ""}
       ${t.status === "done" ? "✓ " : t.status === "failed" ? "✗ " : ""}${say(WORD[t.status] || t.status)}${n ? ` #${n}` : ""}
       ${!t.ork && t.wait_for ? ` · ${say("waits for")} ${t.wait_for}` : ""}</span>
