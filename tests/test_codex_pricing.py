@@ -141,3 +141,12 @@ def test_a_codex_session_without_a_rollout_stays_unpriced(tmp_path):
     (repo / ".orkcraft" / "sessions.jsonl").write_text(json.dumps(
         {"harness": "codex", "session": "th", "run": run_id, "terminal": "new:codex:1"}) + "\n", encoding="utf-8")
     assert telemetry.Telemetry(repo, run_id).refresh().unpriced == {"codex"}
+
+
+def test_a_resumed_worker_whose_thread_is_not_found_stays_unpriced(priced, tmp_path, monkeypatch):
+    from tests.test_codex import fake_codex
+    fake_codex(tmp_path, monkeypatch)
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "none"))         # no rollout: the earlier usage is unknown
+    _, cost, tokens, _ = jobs.run_work("codex", "go on", tmp_path, threading.Event(), model="gpt-6-luna",
+                                       resume="th-gone", env={"ORKCRAFT_RUN": "x"})
+    assert tokens == 12 and cost is None
