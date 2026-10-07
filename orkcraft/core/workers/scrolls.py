@@ -385,36 +385,38 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
 
     def finish(self, what: str, job: jobs.Job, cost: float | None, started: float, on_success,
                protected: dict[str, str] | None = None, before: dict | None = None, message: str = "") -> None:
-        self.running, self._cancel = "", None
-        root, repo = self.wiki_root, self.repo_root
-        notes = []
-        put_back = wiki.restore(root, protected or {})
-        if put_back:
-            notes.append(f"put back {len(put_back)} page(s) people own: {', '.join(put_back[:3])}")
-        outside = wiki.outside_changes(before or {}, repo, root)
-        if outside:
-            notes.append(f"files outside the wiki changed while it worked: {', '.join(outside[:3])}")
-        ok = job.outcome == "done"
-        if ok and on_success is not None:
-            try:
-                on_success()
-            except OSError as e:
-                ok, job.error, job.outcome = False, f"manifest: {e}", "error"
-        sha = ""
-        if ok and self.config.get("commit", True) is not False and not self.simulated:
-            sha, why = wiki.commit(repo, root, message)
-            if why:
-                notes.append(f"not committed: {why}")
-        if notes:
-            self.last_note = "; ".join(notes)
-            job.meta["notes"] = notes
-            self.toast(self.last_note, title=f"📜 The {what}", severity="warning")
-        if sha:
-            job.meta["commit"] = sha
         try:
-            self.log.append(job)
-        except OSError:
-            pass
+            root, repo = self.wiki_root, self.repo_root
+            notes = []
+            put_back = wiki.restore(root, protected or {})
+            if put_back:
+                notes.append(f"put back {len(put_back)} page(s) people own: {', '.join(put_back[:3])}")
+            outside = wiki.outside_changes(before or {}, repo, root)
+            if outside:
+                notes.append(f"files outside the wiki changed while it worked: {', '.join(outside[:3])}")
+            ok = job.outcome == "done"
+            if ok and on_success is not None:
+                try:
+                    on_success()
+                except OSError as e:
+                    ok, job.error, job.outcome = False, f"manifest: {e}", "error"
+            sha = ""
+            if ok and self.config.get("commit", True) is not False and not self.simulated:
+                sha, why = wiki.commit(repo, root, message)
+                if why:
+                    notes.append(f"not committed: {why}")
+            if notes:
+                self.last_note = "; ".join(notes)
+                job.meta["notes"] = notes
+                self.toast(self.last_note, title=f"📜 The {what}", severity="warning")
+            if sha:
+                job.meta["commit"] = sha
+        finally:                                           # done once its job (and cost) is in the log
+            try:
+                self.log.append(job)
+            except OSError:
+                pass
+            self.running, self._cancel = "", None
         delivery.ran(self.town, roads.HandlerRun(self.building_id, "librarian", "agent", job.id, started, time.time(),
                                                  outcome=job.outcome, markdown=job.result, error=job.error,
                                                  cost_usd=cost))
