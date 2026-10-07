@@ -156,13 +156,9 @@ def _script_path(orc_id: str, building_id: str) -> str:
 
 
 def stewards_own(harness: list | None, b: ts.BuildingSpec | None) -> bool:
-    """Whether an agent's tools are nothing its building's steward lacks: one step, on the steward's own tool
-    (`main` read as the machine's main tool) — then it is the steward's work, not an agent's."""
-    from orkcraft.realm import roads, steward
-    steps = [s for s in harness or [] if isinstance(s, dict)]
-    if len(steps) != 1:
-        return False
-    return roads.resolve(str(steps[0].get("harness") or "")) == roads.resolve(steward.harness_for(b))
+    """Whether an agent's tools are nothing its building's steward lacks (realm/steward.py `stewards_own`)."""
+    from orkcraft.realm import steward
+    return steward.stewards_own(harness, b)
 
 
 def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict | None, list[dict], str, list[str]]:

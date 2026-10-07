@@ -116,13 +116,17 @@ function ReportView({ job, v, skipped, onSkip }) {
     <p class="ok-dialog__section">${job.kind === "redesign" ? say("Asked") : say("Findings")}${v.findings.length ? ` · ${v.findings.length}` : ""}</p>
     ${v.findings.length ? html`<ul class="gui-findings">${v.findings.map((f, k) => html`<li key=${k}>${f}</li>`)}</ul>`
       : html`<p class="ok-font-status ok-tone-muted">${say("Nothing found: it runs as it should.")}</p>`}
+    ${v.rules && v.rules.length > 0 && html`<p class="ok-dialog__section">${say("What its rules and agents cost")}</p>
+      <ul class="gui-findings">${v.rules.map((r, k) => html`<li key=${k}>${r}</li>`)}</ul>`}
     <p class="ok-dialog__section">${say("Proposals")}${v.proposals.length ? ` · ${v.proposals.length}` : ""}</p>
     ${v.proposals.length ? html`<ul class="gui-proposals">${v.proposals.map((p) => {
         const skip = skipped.has(p.index);
         return html`<li key=${p.index} class=${cls("gui-proposal", { "is-done": !!p.applied, "is-skipped": skip })}>
           <div class="gui-proposal__title"><span class="gui-proposal__kind">${say(p.type)}</span>${p.why}</div>
           ${p.replay && html`<p class="gui-proposal__why">${p.replay}</p>`}
+          ${p.saves && html`<p class="gui-proposal__why">${say("Spend")}: ${p.saves}</p>`}
           ${p.outline && html`<p class="gui-proposal__more">${p.outline}</p>`}
+          ${p.script && html`<pre class="gui-pre gui-orders__context">${p.script}</pre>`}
           ${p.applied && html`<p class="gui-proposal__why ok-tone-ok">✓ ${p.applied}</p>`}
           <div class="gui-proposal__acts">
             ${p.applied ? html`<span class="ok-tone-ok">✓ ${say("Applied")}</span>`
@@ -166,8 +170,8 @@ function RoadOptions({ job, v }) {
   return html`<ul class="gui-rows">${v.options.map((o) => html`<li key=${o.index}>
       <div>${o.say}</div>
       <div class="ok-font-status ok-tone-muted">${o.from} · ${o.event}${o.match ? ` · only “${o.match}”` : ""}
-        ${o.rule ? html` · ${say("an ork by the rule:")} ${o.rule}` : ""}</div>
-      <button class="ok-act" onClick=${() => take(o.index)}><span class="ok-act__label">${o.rule ? say("Hire an ork for it") : say("Lay it")}</span></button>
+        ${o.rule ? html` · ${say("a road rule:")} ${o.rule}` : ""}</div>
+      <button class="ok-act" onClick=${() => take(o.index)}><span class="ok-act__label">${o.rule ? say("Set up the rule") : say("Lay it")}</span></button>
     </li>`)}</ul>
     ${v.cost && html`<p class="ok-font-status ok-tone-muted">${v.cost}</p>`}`;
 }

@@ -74,6 +74,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
             "ork.dismiss": self.dismiss,
             "ork.halt": self.halt_ork,
             "ork.orders": self.orders,
+            "ork.hand": self.hand_to_steward,
             "ork.model": self.model,
             "ork.watch": self.watch,
             "ork.report": self.report,
@@ -149,6 +150,9 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         bs = self._spec(args)
         ref = args.get("ork")
         if ref:
+            member = bs.garrison.handler(str(ref).partition("/")[2]) if str(ref).startswith(f"{bs.id}/") else None
+            if member is not None and member.kind == "steward":           # a road rule: its own panel
+                return {**info.rule(self.town, bs.id, member), **self._orders_of(member), "rule": True}
             found = info.ork(self.town, self.host.muster, str(ref))
             if found is not None and found["garrison"]:
                 _, member, _ = self._member({"ork": str(ref)})
@@ -278,8 +282,18 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         return True
 
     def orders(self, args: dict) -> None:
-        """T: an ork's orders and trigger (and a handler's tier), kept in the Town Scroll."""
+        """T: an ork's orders and trigger (and a handler's tier), kept in the Town Scroll. Without `trigger` only
+        the orders change (a road rule's words: its roads start it)."""
         bs, member, orc = self._member(args)
+        if "trigger" not in args:
+            try:
+                scroll.update_orc(self.town.scroll, bs.id, member.id, orders=self._text(args, "orders", 4000))
+            except ValueError as e:
+                raise ConsoleError(str(e)) from None
+            self._saved()
+            self._record(bs.id, "orders_changed", orc=member.name, trigger="its roads")
+            self.town.toast(f"{member.name}: words saved", title="Road rule" if member.kind == "steward" else "Orders")
+            return
         t = args.get("trigger") if isinstance(args.get("trigger"), dict) else {}
         kind = str(t.get("type") or "on_demand")
         if kind not in TRIGGERS:
@@ -299,6 +313,29 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         self._saved()
         self._record(bs.id, "orders_changed", orc=member.name, trigger=trigger.label)
         self.town.toast(f"{member.name}: orders saved ({trigger.label})", title="Orders")
+
+    def hand_to_steward(self, args: dict) -> dict | str:
+        """*Hand to the steward*: an agent handler's orders become a road rule of its steward, its own tools are
+        dropped, its roads stay (docs/design/steward-listens.md §4). `preview`: only what would change. Revert
+        takes it back like any change (a checkpoint before and after)."""
+        bs, member, orc = self._member(args)
+        if member.kind != "agent" or orc.lead:
+            raise ConsoleError(f"{member.name}: only an agent handler is handed to the steward")
+        if not member.orders.strip():
+            raise ConsoleError(f"{member.name} has no orders to become a rule")
+        if args.get("preview"):
+            return info.hand_over(self.town, bs.id, member)
+        self.town.checkpoint("update", bs.id, f"before {member.name} goes to the steward")
+        try:
+            scroll.update_orc(self.town.scroll, bs.id, member.id, kind="steward", harness=[], avatar="📜",
+                              why=f"handed to the steward (was an agent on its own tools)")
+        except ValueError as e:
+            raise ConsoleError(str(e)) from None
+        self._saved()
+        self.town.checkpoint("update", bs.id, f"{member.name} handed to the steward")
+        self._record(bs.id, "orc_handed", orc=member.name)
+        self.town.toast(f"{member.name} is now a road rule of {bs.title}'s steward", title="Road rule")
+        return f"{bs.id}/{member.id}"
 
     def model(self, args: dict) -> str:
         """🎒 The Inventory's model: harness and tier per step (a tier replaces a model named outright)."""

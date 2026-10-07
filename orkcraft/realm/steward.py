@@ -8,8 +8,10 @@ only when they find a reason.
     report.proposals         # only when there were findings: validated, demotions replayed
     apply_proposal(scroll, "scrying", report.proposals[0])
 
-Proposals: `demote` (an agent handler → a chain, replayed on its recorded runs before it can
-replace the agent), `set_run` (quiet period / restart), `filter` (a road's source filter),
+Proposals: `demote` (an agent handler or a road rule → a chain, replayed on its recorded runs before it
+can replace it; or → a script / a hybrid, replayed only once the Council and the operator reviewed it),
+`hand` (an agent on the steward's own tool → a road rule), `rule` (code that came from a rule and keeps
+failing → back to its words), `set_run` (quiet period / restart), `filter` (a road's source filter),
 `new_road` (a road from another building), `ui` (a new layout of its window: a UI document,
 docs/design-system.md), `note` (anything else, for the operator). `redesign` asks for a `ui`
 proposal alone, from what the operator wants changed. Each is
@@ -20,9 +22,11 @@ a high score means "the chain agrees with the agent", not "the chain is right".
 """
 from __future__ import annotations
 
+import ast
 import copy
 import datetime as dt
 import difflib
+import hashlib
 import json
 import re
 from collections import Counter
@@ -32,7 +36,7 @@ from typing import Any, Iterable
 
 from orkcraft import scroll as ts
 from orkcraft.design import ui as design_ui
-from orkcraft.realm import builders, chains, chronicles, roads, tiers
+from orkcraft.realm import builders, chains, chronicles, looks, roads, tiers
 
 # -- which model for which of its tasks ----------------------------------------------------------------
 
@@ -164,6 +168,7 @@ def set_models(b: ts.BuildingSpec, models: dict[str, str]) -> dict[str, str]:
     return kept
 
 MAX_ATTEMPTS = 3
+SCRIPT_LIMIT = 20_000           # characters of a script the steward writes
 WINDOW_DAYS = 7
 PROPOSALS_DIR = Path(".orkcraft") / "steward"
 READY_SCORE = 0.8               # replay agreement needed for a demotion to be "ready"
@@ -274,6 +279,8 @@ class Metrics:
     examples: dict[str, int] = field(default_factory=dict)           # agent orc id → recorded runs
     similarity: dict[str, float] = field(default_factory=dict)       # agent orc id → output likeness
     wiki_reads: dict[str, int] = field(default_factory=dict)         # wiki building id → its agents' own trips there
+    run_spend: dict[str, float] = field(default_factory=dict)        # model handler id → 🪙 of its runs in the window
+    run_count: dict[str, int] = field(default_factory=dict)          # model handler id → its runs in the window
 
     @property
     def total_spend(self) -> float:
@@ -364,7 +371,24 @@ def collect(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: 
             if ex:
                 m.examples[orc.id] = len(ex)
                 m.similarity[orc.id] = output_similarity([e["output"] for e in ex], [e["inputs"] for e in ex])
+            recent = [e for e in ex if _within(e, since)]
+            if recent:                                   # what a rule (or an agent) costs on its tier: the signal
+                m.run_count[orc.id] = len(recent)
+                m.run_spend[orc.id] = round(sum(float(e.get("cost_usd") or 0) for e in recent), 4)
     return m
+
+
+def _within(example: dict, since: dt.datetime) -> bool:
+    """A recorded run in the window (one without a time counts: older logs had none)."""
+    try:
+        return dt.datetime.fromisoformat(str(example["ts"])) >= since
+    except (KeyError, ValueError):
+        return True
+
+
+def weekly_spend(m: Metrics, orc_id: str) -> float:
+    """What a model handler's runs cost per week, from the window's runs."""
+    return round(m.run_spend.get(orc_id, 0.0) * 7 / max(1, m.days), 2)
 
 
 def wikis(repo_root: Path) -> dict[str, str]:
@@ -405,11 +429,22 @@ def wiki_trips(repo_root: Path, building_id: str, sessions: list, since: dt.date
 
 @dataclass
 class Finding:
-    kind: str            # handler_errors | jam | repeats | noisy_filter | spend | unused | wiki_bypass
+    kind: str            # handler_errors | jam | repeats | noisy_filter | spend | unused | wiki_bypass | hand | code_failing
     summary: str
     orc_id: str = ""
     road_id: str = ""
     evidence: dict = field(default_factory=dict)
+
+
+def stewards_own(harness: list | None, b: ts.BuildingSpec | None) -> bool:
+    """Whether an agent's tools are nothing its building's steward lacks: one step, on the steward's own tool
+    (`main` read as the machine's main tool) — then it is the steward's work, a road rule."""
+    steps = [s for s in harness or [] if isinstance(s, dict)]
+    return len(steps) == 1 and roads.resolve(str(steps[0].get("harness") or "")) == roads.resolve(harness_for(b))
+
+
+def _on_stewards_tool(orc: ts.OrcSpec, b: ts.BuildingSpec) -> bool:
+    return stewards_own(orc.harness, b)
 
 
 def findings(m: Metrics, scroll: ts.TownScroll) -> list[Finding]:
@@ -426,12 +461,25 @@ def findings(m: Metrics, scroll: ts.TownScroll) -> list[Finding]:
         if interrupted >= 3 and interrupted >= done:
             out.append(Finding("jam", f"{orc_id} was restarted {interrupted} times and finished {done}: "
                                       f"events arrive faster than it works", orc_id=orc_id, evidence=dict(outcomes)))
-    for orc_id, n in m.examples.items():
+    # Code over thinking (docs/design/steward-listens.md §2a): the rule that costs most is looked at first.
+    for orc_id, n in sorted(m.examples.items(), key=lambda kv: -m.run_spend.get(kv[0], 0.0)):
         sim = m.similarity.get(orc_id, 0.0)
+        orc = b.garrison.handler(orc_id)
+        what = "a road rule" if orc is not None and orc.kind == "steward" else "an agent"
         if n >= MIN_EXAMPLES and sim >= REPEAT_SIMILARITY:
-            out.append(Finding("repeats", f"{orc_id} (an agent) gave {n} answers of the same shape "
-                                          f"(likeness {sim:.2f}): a chain may do", orc_id=orc_id,
-                               evidence={"examples": n, "similarity": sim}))
+            cost = f", ${weekly_spend(m, orc_id):.2f}/week" if m.run_spend.get(orc_id) else ""
+            out.append(Finding("repeats", f"{orc_id} ({what}) gave {n} answers of the same shape "
+                                          f"(likeness {sim:.2f}{cost}): code may do", orc_id=orc_id,
+                               evidence={"examples": n, "similarity": sim, "usd_week": weekly_spend(m, orc_id)}))
+    for orc in b.garrison.handlers:
+        if orc.kind == "agent" and _on_stewards_tool(orc, b):
+            out.append(Finding("hand", f"{orc.name} (an agent) thinks on the steward's own tool: hand it to the "
+                                       f"steward as a road rule", orc_id=orc.id))
+        errors = m.runs.get(orc.id, {}).get("error", 0)
+        if orc.kind in ("chain", "script", "hybrid") and orc.orders.strip() and errors >= 3 \
+                and errors * 2 >= sum(m.runs.get(orc.id, {}).values()):
+            out.append(Finding("code_failing", f"{orc.name}'s code failed {errors} times: back to its rule in words "
+                                               f"until the carts settle", orc_id=orc.id))
     for road_id, statuses in m.carts_in.items():
         total = sum(statuses.values())
         filtered = statuses.get("filtered", 0)
@@ -461,6 +509,7 @@ class Replay:
     exact: int = 0
     total: int = 0
     samples: list[dict] = field(default_factory=list)    # a few {expected, got, likeness}
+    escalated: int = 0          # a hybrid's carts it handed to the steward (left out of the score)
 
     @property
     def ready(self) -> bool:
@@ -488,11 +537,43 @@ def replay(chain: list[dict], examples: list[dict]) -> Replay:
     return rep
 
 
+def replay_script(source: str, examples: list[dict], repo_root: Path, hybrid: bool = False) -> Replay:
+    """Run a reviewed script on recorded inputs and compare with the outputs (as `replay`). Only ever called
+    once the Council and the operator reviewed it. A hybrid's exit 3 hands a cart to the steward: such a cart
+    is left out of the score (`escalated`), and a script that hands every cart over is not ready."""
+    import tempfile
+    import threading
+    rep = Replay(total=len(examples))
+    ratios = []
+    with tempfile.TemporaryDirectory(prefix="orkcraft-replay-") as tmp:
+        path = Path(tmp) / "handler.py"
+        path.write_text(source, encoding="utf-8")
+        for e in examples:
+            try:
+                code, got, err = roads.run_handler_script(path, e["inputs"], repo_root, threading.Event(), timeout_s=20)
+            except (RuntimeError, InterruptedError, OSError) as x:
+                code, got, err = 1, "", str(x)
+            if hybrid and code == roads.ESCALATE:
+                rep.escalated += 1
+                continue
+            ratio = 0.0 if code != 0 else difflib.SequenceMatcher(None, _norm(e["output"]), _norm(got)).ratio()
+            ratios.append(ratio)
+            rep.exact += int(code == 0 and _norm(e["output"]) == _norm(got))
+            if len(rep.samples) < 3 and ratio < 1.0:
+                rep.samples.append({"expected": e["output"][:400], "got": (got or err)[:400], "likeness": round(ratio, 3)})
+    rep.total -= rep.escalated
+    rep.score = round(sum(ratios) / len(ratios), 3) if ratios else 0.0
+    return rep
+
+
 # -- proposals (the escalation) --------------------------------------------------------------------
 
-PROPOSE = """You are the steward of the {title} building in orkcraft, a terminal harness where windows pass
-events along roads to handler orcs (chain = declarative ops, script = reviewed Python, agent = Claude / agy,
-hybrid = script + agent). Cheaper is better: an agent should be demoted to a chain when a chain can do its job.
+PROPOSE = """You are the steward of the {title} building in orkcraft, a harness where buildings pass events along
+roads to handlers (chain = declarative ops, script = reviewed Python, steward = a road rule in words that YOU carry
+out on every cart, agent = its own model tools, hybrid = a script that hands the carts it cannot decide to you).
+Code over thinking: do not spend tokens on what code can do. A road rule or an agent that only processes its
+carts (picks fields, filters, reformats, counts, sorts by a keyword, fills a template) becomes a chain when the
+ops can do it, else a script; where only part is routine, a hybrid. The rule that costs most goes first.
 
 THE BUILDING:
 {building}
@@ -503,8 +584,10 @@ METRICS OVER {days} DAYS:
 FINDINGS (why you were woken up):
 {findings}
 
-RECORDED AGENT RUNS (one input record and its output per agent, for demotions):
+RECORDED RUNS (one input record and its output per road rule or agent, for demotions):
 {samples}
+
+WHAT THE RULES AND AGENTS COST ({days} days): {spend}
 
 Chain ops (records have fields road, source, event, kind, value, title, id, path, text, type, status, outcome):
 filter {{field, cmp: eq|ne|in|contains|matches, value}} · pick {{fields}} · extract {{field, regex, as}} ·
@@ -512,7 +595,8 @@ sort {{by, desc}} · limit {{n}} · count {{as}} · group {{by}} · template {{m
 Road filter keys: node_type, node_status, exclude_personal, path_prefix, outcome, match, route.
 {feedback}
 Answer with ONE JSON object and nothing else: {{"proposals": [ ... 1-4 items ... ]}}, each one of
-{{"type": "demote", "orc": "<agent handler id>", "chain": [ops], "why": "..."}}
+{{"type": "demote", "orc": "<rule or agent handler id>", "chain": [ops], "why": "..."}}
+{{"type": "demote", "orc": "<rule or agent handler id>", "script": "<python: JSON records on stdin, Markdown on stdout; a hybrid exits 3 for a cart you should decide>", "hybrid": bool, "why": "..."}}
 {{"type": "set_run", "orc": "<handler id>", "run": {{"quiet_s": N, "restart_on_new": bool}}, "why": "..."}}
 {{"type": "filter", "road": "<road id>", "filter": {{...}}, "why": "..."}}
 {{"type": "new_road", "from": "<building id>", "event": "...", "filter": {{...}}, "handler": "<handler id or null>", "why": "..."}}
@@ -528,12 +612,15 @@ class Proposal:
 
     @property
     def ready(self) -> bool:
-        return self.type != "demote" or (self.replay is not None and self.replay.ready)
+        """Applicable now: a chain once its replay agrees; a script once reviewed (it is replayed then)."""
+        if self.type != "demote" or self.data.get("script"):
+            return True
+        return self.replay is not None and self.replay.ready
 
     def to_dict(self) -> dict:
         d = {"type": self.type, "why": self.why, **self.data}
         if self.replay is not None:
-            d["replay"] = asdict(self.replay)
+            d["replay"] = {**asdict(self.replay), "ready": self.replay.ready}   # the night reads it (core/night.py)
         return d
 
 
@@ -559,10 +646,33 @@ def apply_proposal(scroll: ts.TownScroll, building_id: str, p: Proposal | dict) 
         b = scroll.building(building_id)
         orc = b.garrison.handler(str(d.get("orc"))) if b else None
         if orc is None or not orc.uses_model:
-            raise ValueError(f"{d.get('orc')!r} is not an agent handler of {building_id}")
+            raise ValueError(f"{d.get('orc')!r} is not an agent handler or a road rule of {building_id}")
+        if d.get("script"):                           # its words (`orders`) stay next to the code: the way back
+            source = str(d["script"])
+            kind = "hybrid" if d.get("hybrid") else "script"
+            ts.update_orc(scroll, building_id, orc.id, kind=kind, chain=[], harness=[], avatar=looks.kind_icon(kind),
+                          why=p.why, run=None, script={"path": script_path(building_id, orc.id),
+                                                       "sha256": hashlib.sha256(source.encode()).hexdigest(),
+                                                       "reviewed": bool(d.get("reviewed"))})
+            return f"{orc.name} turned into a {'hybrid (script, the steward for the rest)' if kind == 'hybrid' else 'script'}"
         ts.update_orc(scroll, building_id, orc.id, kind="chain", chain=list(d.get("chain") or []), harness=[],
-                      avatar="🪧", why=p.why, run=None)
+                      avatar="🪧", why=p.why, run=None, script=None)
         return f"{orc.name} demoted to a chain"
+    if p.type == "hand":
+        b = scroll.building(building_id)
+        orc = b.garrison.handler(str(d.get("orc"))) if b else None
+        if orc is None or orc.kind != "agent" or not orc.orders.strip():
+            raise ValueError(f"{d.get('orc')!r} is not an agent handler with orders in {building_id}")
+        ts.update_orc(scroll, building_id, orc.id, kind="steward", harness=[], avatar="📜", why=p.why)
+        return f"{orc.name} handed to the steward as a road rule"
+    if p.type == "rule":
+        b = scroll.building(building_id)
+        orc = b.garrison.handler(str(d.get("orc"))) if b else None
+        if orc is None or orc.kind not in ("chain", "script", "hybrid") or not orc.orders.strip():
+            raise ValueError(f"{d.get('orc')!r} is no code with a rule's words in {building_id}")
+        ts.update_orc(scroll, building_id, orc.id, kind="steward", chain=[], script=None, harness=[], avatar="📜",
+                      why=p.why, run=None)
+        return f"{orc.name} back to its rule in words"
     if p.type == "set_run":
         b = scroll.building(building_id)
         if b is None or b.garrison.handler(str(d.get("orc"))) is None:
@@ -594,6 +704,34 @@ def apply_proposal(scroll: ts.TownScroll, building_id: str, p: Proposal | dict) 
             raise ValueError("a note needs text")
         return "note"
     raise ValueError(f"unknown proposal type {p.type!r}")
+
+
+def script_path(building_id: str, orc_id: str) -> str:
+    """Where a handler's script lives (repo-relative), as the Recruiter keeps one."""
+    return f".orkcraft/scripts/{building_id}-{orc_id}"[:60].replace("_", "-") + ".py"
+
+
+def free_moves(scroll: ts.TownScroll, b: ts.BuildingSpec, found: list[Finding]) -> list[Proposal]:
+    """What the findings say by themselves, no model needed: an agent on the steward's own tool is handed to
+    the steward; code that came from a rule and keeps failing goes back to the rule's words."""
+    out = []
+    for f in found:
+        if f.kind == "hand":
+            out.append(Proposal("hand", f.summary, {"orc": f.orc_id}))
+        elif f.kind == "code_failing":
+            out.append(Proposal("rule", f.summary, {"orc": f.orc_id}))
+    trial = copy.deepcopy(scroll)
+    kept = []
+    for p in out:
+        try:
+            apply_proposal(copy.deepcopy(trial), b.id, p)
+            kept.append(p)
+        except (ValueError, TypeError, KeyError):
+            continue
+    return kept
+
+
+FREE_KINDS = ("wiki_bypass", "hand", "code_failing")
 
 
 def _summary(scroll: ts.TownScroll, b: ts.BuildingSpec) -> str:
@@ -640,7 +778,18 @@ def _check(answer: Any, repo_root: Path, scroll: ts.TownScroll, building_id: str
         except (ValueError, TypeError, KeyError) as e:
             errors.append(f"proposal {i} ({p.type}): {e}")
             continue
-        if p.type == "demote":
+        if p.type == "demote" and p.data.get("script"):
+            source = p.data["script"]
+            if not isinstance(source, str) or len(source) > SCRIPT_LIMIT:
+                errors.append(f"proposal {i} (demote): script must be Python text up to {SCRIPT_LIMIT} characters")
+                continue
+            try:
+                ast.parse(source)
+            except SyntaxError as e:
+                errors.append(f"proposal {i} (demote): the script does not parse: line {e.lineno}: {e.msg}")
+                continue
+            p.data = {**p.data, "reviewed": False}       # replayed once the Council and the operator reviewed it
+        elif p.type == "demote":
             p.replay = replay(list(p.data.get("chain") or []), roads.read_examples(repo_root, building_id, str(p.data["orc"])))
         out.append(p)
     return (out, []) if not errors else ([], errors)
@@ -656,9 +805,9 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
     b = scroll.building(building_id)
     if b is None or not report.findings:
         return report
-    known = wiki_loop(scroll, b, [f for f in report.findings if f.kind == "wiki_bypass"])
-    if known and all(f.kind == "wiki_bypass" for f in report.findings):
-        report.proposals = known                          # free: no model needed to say this
+    known = wiki_loop(scroll, b, [f for f in report.findings if f.kind == "wiki_bypass"]) + free_moves(scroll, b, report.findings)
+    report.proposals = known                              # free: no model needed to say these
+    if known and all(f.kind in FREE_KINDS for f in report.findings):
         return report
     if not budget_ok:
         report.error = "🪙 budget exhausted — findings only"
@@ -670,7 +819,9 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
             title=b.title, building=_summary(scroll, b), days=m.days,
             metrics=json.dumps({k: v for k, v in asdict(m).items() if k != "building_id"}, ensure_ascii=False),
             findings="\n".join(f"- [{f.kind}] {f.summary}" for f in report.findings),
-            samples=_samples(repo_root, b), feedback=feedback)
+            samples=_samples(repo_root, b), feedback=feedback,
+            spend="; ".join(f"{o}: {m.run_count.get(o, 0)} runs, ${usd:.2f}" for o, usd in
+                            sorted(m.run_spend.items(), key=lambda kv: -kv[1])) or "nothing recorded")
         report.attempts += 1
         try:
             text, cost = runner(prompt)
@@ -681,6 +832,10 @@ def watch(repo_root: Path, scroll: ts.TownScroll, building_id: str, *, carts: It
             report.cost_usd = (report.cost_usd or 0.0) + cost
         proposals, errors = _check(builders.extract_json(text), repo_root, scroll, building_id)
         if proposals:
+            for p in proposals:                          # the spend it saves: the signal (§2a)
+                usd = weekly_spend(m, str(p.data.get("orc") or "")) if p.type == "demote" else 0.0
+                if usd:
+                    p.data = {**p.data, "saves": f"≈ ${usd:.2f}/week → " + ("less" if p.data.get("hybrid") else "$0")}
             report.proposals, report.errors = known + proposals, []
             return report
         report.errors = errors or ["no JSON object in the answer"]
@@ -789,6 +944,12 @@ def wiki_loop(scroll: ts.TownScroll, b: ts.BuildingSpec, found: list[Finding]) -
     return out
 
 
+def rule_spend(m: Metrics) -> list[dict]:
+    """Per model handler, costliest first: its runs and spend in the window (the report's spend lines)."""
+    return [{"orc": o, "runs": m.run_count.get(o, 0), "usd": usd}
+            for o, usd in sorted(m.run_spend.items(), key=lambda kv: -kv[1])]
+
+
 def save_report(repo_root: Path, report: StewardReport) -> Path:
     """`.orkcraft/steward/<building>.json` (git-ignored): the last report, for the UI."""
     path = repo_root / PROPOSALS_DIR / f"{report.building_id}.json"
@@ -797,7 +958,7 @@ def save_report(repo_root: Path, report: StewardReport) -> Path:
         "ts": dt.datetime.now().isoformat(timespec="seconds"), "building": report.building_id,
         "findings": [asdict(f) for f in report.findings], "proposals": [p.to_dict() for p in report.proposals],
         "escalated": report.escalated, "attempts": report.attempts, "cost_usd": report.cost_usd,
-        "error": report.error, "metrics": asdict(report.metrics),
+        "error": report.error, "metrics": asdict(report.metrics), "rules": rule_spend(report.metrics),
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return path
