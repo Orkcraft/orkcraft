@@ -440,3 +440,25 @@ async def test_an_open_phone_hears_what_came_and_reads_the_chat(fake_repo):
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_a_listener_stopped_while_it_comes_up_never_comes_back_by_itself(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        server.host.command("phones.pair")
+        assert not server.host.command("phones.pair_stop")["listening"]       # stopped before it came up
+        offer = server.host.command("phones.pair")                           # and started anew at once
+        await _listening(server)
+        await asyncio.sleep(0.1)
+        status, _, _ = await asyncio.to_thread(_https, offer["address"], "POST", "/api/pair",
+                                               {"code": offer["code"], "name": "p"})
+        assert status == 200
+        server.host.command("phones.forget", {"id": server.host.command("phones.list")["phones"][0]["id"]})
+        await asyncio.sleep(0.1)
+        assert not server.phones.listening
+        with pytest.raises(OSError):
+            await asyncio.to_thread(_https, offer["address"], "GET", "/api/version")
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)

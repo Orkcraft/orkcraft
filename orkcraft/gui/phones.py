@@ -27,6 +27,7 @@ import asyncio
 import base64
 import io
 import json
+import os
 import socket
 import ssl
 import time
@@ -184,7 +185,8 @@ class Listener:
     def _socket(self, ip: str, port: int) -> socket.socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if os.name != "nt":                    # on Windows it would let another program take the port
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind((ip, port))
             sock.listen(16)
         except OSError:
@@ -220,15 +222,20 @@ class Listener:
         self.address = f"https://{ip}:{new}"
         future = asyncio.ensure_future(asyncio.start_server(self._conn, sock=sock, ssl=ctx, limit=HEAD_LIMIT,
                                                             ssl_handshake_timeout=HEAD_S))
-        self.server = _Pending(future, sock)
-        future.add_done_callback(self._started)
+        pending = _Pending(future, sock)
+        self.server = pending
+        future.add_done_callback(lambda f: self._started(f, pending))
 
-    def _started(self, future: asyncio.Future) -> None:
+    def _started(self, future: asyncio.Future, pending: _Pending) -> None:
+        """`start_server` came up: it is the listener, unless it was stopped (or started anew) meanwhile."""
         if future.cancelled() or future.exception() is not None:
-            self.server, self.address = None, ""
+            if self.server is pending:
+                self.server, self.address = None, ""
             return
-        if isinstance(self.server, _Pending):
+        if self.server is pending:
             self.server = future.result()
+        else:
+            future.result().close()
 
     def stop(self) -> None:
         for phone in list(self.phones):
