@@ -10,8 +10,8 @@ import { town, command, say } from "./link.js";
 import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
 
-const N = 40, T = 6;                       // 40 × 40 cells of 6 px: a 240 px square
-const FOG_ROWS = 4, CLOSED_MIN = 5, OPEN_MIN = 11;
+const N = 40, T = 4;                       // 40 × 40 cells of 4 px: a 160 px square
+const FOG_ROWS = 4, CLOSED_MIN = 6, OPEN_MIN = 11;   // a closed land at least 24 px: its name never touches a border
 const FOG = "#221e16";
 const CALL_EVERY_MS = 30_000;              // a land calls at most this often
 
@@ -35,7 +35,13 @@ function stepped(seed, len, lo, hi, runs) {
   }
   return out.slice(0, len);
 }
-const COAST = stepped(hash("coast"), 600, 0, 3, [2, 3, 4]);   // by absolute row: a new land never moves it
+const COAST = stepped(hash("coast"), 600, 0, 2, [3, 4, 5]);   // by absolute row: a new land never moves it
+
+/** About how wide a land's words are, in px from the map's left: its name (and ■), its status when open. */
+function textWidth(o, isOpen) {
+  const name = 9 + (o.name || "").length * 7 + (o.questions ? 11 : 0);
+  return isOpen ? Math.max(name, 9 + (`${o.count} blocks · ${o.questions ? "1 question" : "all quiet"}`).length * 5.5) : name;
+}
 
 function layout(lands, open) {
   const closedN = lands.length - 1, avail = N - FOG_ROWS;
@@ -47,8 +53,13 @@ function layout(lands, open) {
   const tops = [0];
   for (const o of lands) tops.push(tops[tops.length - 1] + (o.id === open ? openH : closed));
   const ids = lands.map((o) => o.id).concat(["fog"]);
-  const border = ids.map((id, k) => (k === 0 ? null
-    : stepped(hash(`${ids[k - 1]}|${id}`), N, -1, 1, [3, 4, 5]).map((o) => tops[k] + o)));
+  // A border wanders only right of the words of the two lands it parts, so no name or status line meets it.
+  const words = lands.map((o) => textWidth(o, o.id === open)).concat([textWidth({ name: "+ Workspace" }, false)]);
+  const border = ids.map((id, k) => {
+    if (k === 0) return null;
+    const clear = Math.ceil(Math.max(words[k - 1], words[k]) / T) + 2;
+    return stepped(hash(`${ids[k - 1]}|${id}`), N, -1, 1, [4, 5, 6]).map((o, x) => tops[k] + (x < clear ? 0 : o));
+  });
   return { H, tops, border };
 }
 
@@ -172,7 +183,7 @@ export function WarMap() {
   }
 
   const fogFrom = (x) => border[n][x];
-  const fogMid = (tops[n] + (H - tops[n]) / 2) * T - 8;
+  const fogMid = (tops[n] + (H - tops[n]) / 2) * T - 7;
   return html`<nav ref=${frame} class="gui-map" aria-label=${say("Orkspaces")} onKeyDown=${key}>
     <div ref=${view} class="gui-map__view">
       <div ref=${land} class="gui-map__ground" style=${`height:${H * T}px;--fog:${FOG}`}>
@@ -186,14 +197,14 @@ export function WarMap() {
               style=${`clip-path:path("${path}");--fill:${(BIOMES[o.biome] || BIOMES.dirt).land}`}
               aria-current=${isOpen ? "true" : "false"} aria-label=${say(label)} title=${say(`${o.name} · ${o.biome}`)}
               onClick=${() => select(o)} onContextMenu=${(e) => menuOf(e, o)}>
-            ${isOpen && html`<span class="gui-map__bar" style=${`top:${y0 + 8}px;height:${y1 - y0 - 16}px`}></span>`}
-            <span class="gui-map__name" style=${`top:${isOpen ? y0 + 12 : (y0 + y1) / 2 - 8}px`}>${say(o.name)}${o.questions
+            ${isOpen && html`<span class="gui-map__bar" style=${`top:${y0 + 5}px;height:${y1 - y0 - 10}px`}></span>`}
+            <span class="gui-map__name" style=${`top:${isOpen ? y0 + 6 : (y0 + y1) / 2 - 7}px`}>${say(o.name)}${o.questions
               ? html`<span class="gui-map__ask" aria-hidden="true"></span>` : null}</span>
             ${isOpen && html`<span class=${cls("gui-map__state", { "ok-tone-wait": !!o.paused && !o.questions })}
-              style=${`top:${y0 + 31}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
-            ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 16}px`}
+              style=${`top:${y0 + 21}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
+            ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 10}px`}
               title=${say(`${plural(o.count, "building")}${o.working ? ` · ${o.working} at work` : ""}`)}>
-              ${Array.from({ length: Math.min(o.count, 24) }, (_, j) => html`<i key=${j} class=${j < o.working ? "is-busy" : ""}></i>`)}</span>`}
+              ${Array.from({ length: Math.min(o.count, 16) }, (_, j) => html`<i key=${j} class=${j < o.working ? "is-busy" : ""}></i>`)}</span>`}
           </button>`;
         })}
         <button class="gui-map__land gui-map__fog" title=${say("A new orkspace from the fog of war")}
@@ -201,12 +212,12 @@ export function WarMap() {
             onClick=${() => setNaming("new")}>
           <span class="gui-map__name" style=${`top:${fogMid}px`}>+ ${say("Orkspace")}</span>
         </button>
-        ${naming === "new" && html`<${NameField} top=${fogMid - 6} onDone=${() => setNaming(null)}
+        ${naming === "new" && html`<${NameField} top=${fogMid - 4} onDone=${() => setNaming(null)}
           onName=${(name) => command("orkspace.new", { name }).catch(() => {})} />`}
         ${naming && naming !== "new" && (() => {
           const i = lands.findIndex((o) => o.id === naming);
           if (i < 0) return null;
-          return html`<${NameField} top=${tops[i] * T + 6} value=${lands[i].name} onDone=${() => setNaming(null)}
+          return html`<${NameField} top=${tops[i] * T + 2} value=${lands[i].name} onDone=${() => setNaming(null)}
             onName=${(name) => command("orkspace.rename", { id: naming, name }).catch(() => {})} />`;
         })()}
       </div>

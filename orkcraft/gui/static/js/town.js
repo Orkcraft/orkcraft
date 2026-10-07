@@ -259,6 +259,8 @@ function Roads({ roads, rects, ports, tints = {} }) {
     ${pulling.value && rects[pulling.value.from] && html`<line class="gui-road__pull"
       x1=${rects[pulling.value.from].x + rects[pulling.value.from].w} y1=${rects[pulling.value.from].y + rects[pulling.value.from].h / 2}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
+    ${pulling.value && html`<rect class="gui-road__pull-end" x=${Math.round(pulling.value.x) - 3} y=${Math.round(pulling.value.y) - 3}
+      width="6" height="6" />`}
   </svg>`;
 }
 

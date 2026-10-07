@@ -166,13 +166,13 @@ may propose a reviewer ork for the building's output. This is not in stages 1–
 
 A small flag on the roof of the hut's header sprite. It is the only mark of growth on the map.
 
-| | I | II | III |
+| | none yet (0) | I | II | III |
 |---|---|---|---|
-| 🪙 Thrift | a small square banner with a hole (a coin) | taller pole, larger banner | gold |
-| ⚖️ Balance | a small plain rectangle | taller pole, larger flag | gold |
-| 💎 Quality | a small pennant | taller pole, larger pennant | gold |
+| 🪙 Thrift | a square banner with a hole (a coin), muted cloth | ivory | taller pole | gold |
+| ⚖️ Balance | a plain flag, muted cloth | ivory | taller pole | gold |
+| 💎 Quality | a pennant, muted cloth | ivory | taller pole | gold |
 
-- **9 overlays in all**, the same for the 19 buildings, drawn from code grids in the flat palette:
+- **12 overlays in all**, the same for the 19 buildings, drawn from code grids in the flat palette:
   ivory cloth, a dark-green pole, gold at III. No sprite is redrawn.
 - **The anchor** (where the pole stands) is one point per building type, kept in a table next to
   the sprites. A script that looks for the roof's highest point puts the flag on the Town Hall's horn
@@ -181,7 +181,8 @@ A small flag on the roof of the hut's header sprite. It is the only mark of grow
   says *has a flag · how tall · gold or not*; the goal itself is said in Info and in the hut's tooltip.
 - **Gold at III is a deliberate exception** to "one gold accent per building"
   (building-sprites.md), because the gold flag is the reward. That rule gets a line about it.
-- **None (level 0)** shows no flag, whatever the goal.
+- **None yet (level 0)** flies its goal's shape in a muted cloth: the goal is a choice the map shows
+  at once (switching it redraws the hut), the renown is what turns the cloth ivory and then gold.
 - **With Office words** the flag stays; its tooltip says "Maturity 2 / 3 · Goal: Quality".
 
 ![A mixed town, at about the app's size](../img/growth/flags-town.png)
