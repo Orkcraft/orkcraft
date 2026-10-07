@@ -12,7 +12,8 @@ docs/design/war-map.md):
   bottom left; `js/icons.js` `FLAG_AT` says where on each roof it stands.
 - `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`): each flat header redrawn
   for ice (snow on the edges facing the sky), dust (dry olive, sand at the foot), void (ashen violet)
-  and lava (basalt, embers at the foot). Dirt and forest keep `header.png`.
+  lava (basalt, embers at the foot) and meadow (spring green, daisies at the foot). Dirt and forest keep
+  `header.png`.
 
 Needs Pillow.
 """
@@ -180,7 +181,8 @@ def biome_sprite(native: Image.Image, biome: str) -> Image.Image:
                     if y + 1 < h and _near(px[x, y + 1], GREEN):
                         px[x, y + 1] = rgb(IVORY)
                 break
-    swaps = {"dust": ("#a8a05c", "#7a7040"), "void": ("#8e88a8", "#5e587a"), "lava": ("#5e5652", "#3c3634")}
+    swaps = {"dust": ("#a8a05c", "#7a7040"), "void": ("#8e88a8", "#5e587a"), "lava": ("#5e5652", "#3c3634"),
+             "meadow": ("#7fbf9a", "#4f8a6c")}
     if biome in swaps:
         light, dark = swaps[biome]
         for x in range(w):
@@ -190,7 +192,7 @@ def biome_sprite(native: Image.Image, biome: str) -> Image.Image:
                     px[x, y] = rgb(light)
                 elif c[3] and _near(c, DARK_GREEN):
                     px[x, y] = rgb(dark)
-        foot = {"dust": ("#c9a46a", 5, 3), "lava": ("#8a2a10", 6, 2)}.get(biome)
+        foot = {"dust": ("#c9a46a", 5, 3), "lava": ("#8a2a10", 6, 2), "meadow": ("#ece4cf", 5, 1)}.get(biome)
         if foot:
             colour, every, of = foot
             for x in range(w):
@@ -199,7 +201,7 @@ def biome_sprite(native: Image.Image, biome: str) -> Image.Image:
     return im
 
 
-BIOME_VARIANTS = ("ice", "dust", "void", "lava")
+BIOME_VARIANTS = ("ice", "dust", "void", "lava", "meadow")
 
 
 def biome_huts() -> None:

@@ -159,7 +159,7 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
 
 ![Five biomes, the huts changed by code, nothing redrawn](../img/war-map/biomes.png)
 
-### 3.1 Five, and lava
+### 3.1 Five, lava and meadow
 
 | biome | the town's ground | the land on the map | the huts |
 |---|---|---|---|
@@ -169,6 +169,7 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
 | **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
 | **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
 | **lava** | `#161212` | `#342c2a` | basalt, embers at the foot (§3.4) |
+| **meadow** | `#0d1a16` | `#24443a` | spring green with a turn to teal (not forest's), daisies at the foot; glyphs `· , ʷ ✿` — the knights' open field |
 
 - **One flat colour per biome**, dark and low in saturation, as sprites.md has it: the cards, their
   text, the gold and the fire must read on all five.

@@ -170,7 +170,8 @@
             "ice",
             "dirt",
             "dust",
-            "lava"
+            "lava",
+            "meadow"
           ]
         },
         "git": {

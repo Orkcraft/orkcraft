@@ -1,0 +1,81 @@
+{
+  "dirt": {
+    "ground": "#1a1813",
+    "land": "#3a3326",
+    "glyphs": [
+      "·",
+      ".",
+      "`",
+      "°"
+    ],
+    "ink": "#2a251c",
+    "tile": "dirt.png"
+  },
+  "forest": {
+    "ground": "#101a0b",
+    "land": "#22341a",
+    "glyphs": [
+      "·",
+      ",",
+      "\"",
+      "↟"
+    ],
+    "ink": "#1f3823",
+    "tile": "forest.png"
+  },
+  "ice": {
+    "ground": "#070d14",
+    "land": "#1c2c3c",
+    "glyphs": [
+      "·",
+      "'",
+      "*",
+      "⁕"
+    ],
+    "ink": "#162736",
+    "tile": "ice.png"
+  },
+  "dust": {
+    "ground": "#2a2014",
+    "land": "#5a462a",
+    "glyphs": [
+      "·",
+      "~",
+      "∴",
+      "˜"
+    ],
+    "ink": "#3a2d1b",
+    "tile": "dust.png"
+  },
+  "void": {
+    "ground": "#0e0c14",
+    "land": "#2c263c",
+    "glyphs": [],
+    "ink": null,
+    "tile": null
+  },
+  "lava": {
+    "ground": "#161212",
+    "land": "#342c2a",
+    "glyphs": [
+      "·",
+      "^",
+      "∴",
+      "⁘"
+    ],
+    "ink": "#2a201e",
+    "tile": "lava.png"
+  },
+  "meadow": {
+    "ground": "#0d1a16",
+    "land": "#24443a",
+    "glyphs": [
+      "·",
+      ",",
+      "ʷ",
+      "✿"
+    ],
+    "ink": "#1c3a30",
+    "tile": "meadow.png"
+  }
+}

@@ -42,9 +42,10 @@ export const BIOMES = {
   dust: { ground: "#2a2014", land: "#5a462a" },
   void: { ground: "#0e0c14", land: "#2c263c" },
   lava: { ground: "#161212", land: "#342c2a" },
+  meadow: { ground: "#0d1a16", land: "#24443a" },   // the knights' open field: cool spring green, not forest's
 };
 export const BIOME_ORDER = Object.keys(BIOMES);
-const DRAWN_FOR = new Set(["ice", "dust", "void", "lava"]);   // header-<biome>.png (tools/growth_sprites.py)
+const DRAWN_FOR = new Set(["ice", "dust", "void", "lava", "meadow"]);   // header-<biome>.png (tools/growth_sprites.py)
 
 function spriteName(type) {
   return type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
