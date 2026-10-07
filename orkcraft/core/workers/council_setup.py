@@ -13,7 +13,7 @@ import re
 import threading
 from pathlib import Path
 
-from orkcraft.realm import fastpath, tiers
+from orkcraft.realm import fastpath, harnesses, tiers
 from orkcraft.realm import team as tm
 
 MAX_MEMBERS = 6
@@ -190,7 +190,7 @@ class Setup:
         if not exits:
             raise ValueError("A board needs at least one exit")
         changes = {"purpose": purpose or None, "steward_prompt": purpose or w.config.get("steward_prompt"),
-                   "members": [f"{m['role']}:claude" + (f":{m['tier']}" if m["tier"] else "") for m in members],
+                   "members": [f"{m['role']}:{harnesses.MAIN}" + (f":{m['tier']}" if m["tier"] else "") for m in members],
                    "veto": [m["role"] for m in members if m["veto"]] or None,
                    "exits": [f"{e['name']}: {e['when']}".rstrip(": ") for e in exits]}
         if not w.save_config(changes):

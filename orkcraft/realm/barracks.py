@@ -48,17 +48,17 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft import scroll as ts
-from orkcraft.realm import tiers
+from orkcraft.realm import harnesses, tiers
 
-DEFAULT_PROVIDERS = ("claude", "agy")
+DEFAULT_PROVIDERS = (harnesses.MAIN,)        # the machine's main tool
 DEFAULT_MAX_ORCS = 3
-AGY_CODE, AGY_DOCS = "gemini-3.8-flash-high", "gemini-3.1-pro-high"
+AGY_CODE, AGY_DOCS = harnesses.need("agy").task_models["code"], harnesses.need("agy").task_models["docs"]
 TICKET = re.compile(r"\b([A-Z]{1,5}-?\d{2,6})\b")
 FOLLOW_UP = re.compile(r"^\s*(follow[- ]?up|re:|also|and also|fix (the )?review|уточн|ещё|еще|также|доработ|поправ)",
                        re.I)
 DOCS_WORDS = re.compile(r"\b(doc|docs|readme|write[- ]?up|research|summar|explain|report|документ|исследу|опиши)",
                         re.I)
-RESUMABLE = frozenset({"claude", "codex"})   # harnesses whose session can be resumed (`--resume`, `exec resume`)
+RESUMABLE = frozenset(h.id for h in harnesses.REGISTRY.values() if h.resumable)   # a session it can resume
 DEFAULT_SESSION_TASKS = 5                  # tasks one session carries before it is rolled over
 RELATED = 0.2                              # word overlap from which a task counts as the orc's kind of work
 LOOKAHEAD = 5                              # a freed orc looks this far into the queue for related work
@@ -312,9 +312,11 @@ def words(text: str) -> set[str]:
 
 
 def parse_provider(entry: str) -> tuple[str, str]:
-    """`claude`, `agy:gemini-3.1-pro-high`, or a tier in place of the model: `claude:laborer`."""
+    """`claude`, `agy:gemini-3.1-pro-high`, or a tier in place of the model: `claude:laborer`; `main`
+    is the machine's main tool, as it is when the foreman reads it."""
     harness, _, model = str(entry).partition(":")
-    return harness.strip(), tiers.resolve(harness.strip(), model.strip())
+    harness = tiers.tool_of({"harness": harness.strip()})
+    return harness, tiers.resolve(harness, model.strip())
 
 
 class Foreman:
@@ -338,14 +340,15 @@ class Foreman:
         for harness, model in self.providers:
             if not model and task.tier:
                 model = tiers.MODELS.get(harness, {}).get(task.tier, "")
-            if harness == "agy" and not model:
-                model = AGY_DOCS if docs else AGY_CODE
+            h = harnesses.get(harness)
+            if h is not None and h.task_models and not model:
+                model = h.task_models.get("docs" if docs else "code", "")
             key = f"{harness}:{model}" if model else harness
             st = self.stats.get(key, {})
             runs, ok, cost = int(st.get("runs", 0)), int(st.get("ok", 0)), float(st.get("cost", 0.0))
             rate = (ok + 1) / (runs + 2)                         # Laplace: unknown providers start at ½
             avg_cost = cost / runs if runs else 0.0
-            fit = 0.1 if (docs and harness == "agy") or (not docs and harness in ("claude", "codex")) else 0.0
+            fit = 0.1 if h is not None and ("docs" if docs else "code") in h.fits else 0.0
             score = rate - 0.2 * min(avg_cost, 2.0) + fit
             if score > best_score:
                 why = f"{key}: {ok}/{runs} ok" + (f", ${avg_cost:.2f}/task" if runs else ", no record yet")

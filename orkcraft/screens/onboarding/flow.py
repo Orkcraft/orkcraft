@@ -6,7 +6,7 @@ from dataclasses import replace
 from typing import Callable
 
 from orkcraft import settings, tools
-from orkcraft.realm import interview
+from orkcraft.realm import builders, interview
 from orkcraft.screens.autonomy import AutonomyStep
 from orkcraft.screens.onboarding.common import CUSTOM, EMPTY, agy_warder_line, hide_skip
 from orkcraft.screens.onboarding.person import PersonStep, QuestionsStep, XpStep
@@ -102,6 +102,12 @@ class Onboarding:
         tools_ = {**self.machine.tools, **(self.picked or {})}
         return tools_.get("claude", settings.ToolChoice()).enabled
 
+    @property
+    def builder_on(self) -> bool:
+        """A tool the Town Builder plans with (Claude Code, Codex or agy) is on."""
+        tools_ = {**self.machine.tools, **(self.picked or {})}
+        return builders.planner_tool(t for t, c in tools_.items() if c.enabled) is not None
+
     def _show(self) -> None:
         name, back, last = self.steps[self.i], self.i > 0, self.i == len(self.steps) - 1
         done = lambda result: self._done(name, result)  # noqa: E731
@@ -115,7 +121,7 @@ class Onboarding:
         elif name == INTENT:
             screen = IntentStep(self.profile, self.step, back, last and not self._interviewing,
                                 show_warder=TOOLS not in self.steps and self.claude_on, choice=self.choice,
-                                builder=self.claude_on,
+                                builder=self.builder_on,
                                 agy_line=agy_warder_line(self.machine.agy_warder_checked,
                                                          self.detected[0] if self.detected else None))
         elif name in INTERVIEW_STEPS:

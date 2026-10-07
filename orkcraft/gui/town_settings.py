@@ -3,7 +3,8 @@
 question waits and hours you are around a change waits. As the TUI's F10 → Ork autonomy. Whether flames
 climb the roof of a building whose ork waits for you (`fire`, per machine). And whether
 anonymous usage stats are shared (core/usage.py), asked once by its own small dialog. Which updates
-install by themselves (`updates`; its commands are gui/updates.py's).
+install by themselves (`updates`; its commands are gui/updates.py's). And the AI tools: which are on
+(`tools`) and the main tool every decision runs on, and every step that names `main` (realm/harnesses.py).
 
     host.commands.update(town_settings.commands(host))
 """
@@ -13,6 +14,14 @@ from typing import Any, Callable
 
 from orkcraft import __version__, autonomy, settings
 from orkcraft.core import updates, usage
+from orkcraft.realm import builders, harnesses
+
+
+def _tools(m) -> dict[str, Any]:
+    on = {t for t, c in m.tools.items() if c.enabled}
+    return {"tools": [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on}
+                      for h in harnesses.REGISTRY.values()],
+            "main_tool": m.main_tool, "main_now": builders.main_tool(m)}
 
 
 def read(host) -> dict[str, Any]:
@@ -23,7 +32,7 @@ def read(host) -> dict[str, Any]:
                         "improves": lv.improves} for lv in autonomy.LEVELS],
             "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire,
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
-            "version": __version__}
+            "version": __version__, **_tools(m)}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -36,6 +45,17 @@ def change(host, args: dict) -> dict[str, Any]:
         m.autonomy_wait = autonomy.wait_of(args.get("wait"))
     if args.get("rebuild") is not None:
         m.rebuild_wait = autonomy.rebuild_of(args.get("rebuild"))
+    if isinstance(args.get("tools"), dict) or "main_tool" in args:      # the AI tools: said apart
+        for t, on in (args.get("tools") or {}).items():
+            if t in m.tools and isinstance(on, bool):
+                m.tools[t] = settings.ToolChoice(enabled=on, billing=m.tools[t].billing)
+        if "main_tool" in args:
+            m.main_tool = args["main_tool"] if args["main_tool"] in harnesses.REGISTRY else ""
+        settings.save(m)
+        now = builders.main_tool(m)
+        host.town.toast(f"Decisions and steps on main run on {harnesses.title(now)}", title="Main tool")
+        host.on_change()
+        return read(host)
     if isinstance(args.get("fire"), bool):            # the flames over a building that waits: a look, said apart
         m.fire = args["fire"]
         settings.save(m)

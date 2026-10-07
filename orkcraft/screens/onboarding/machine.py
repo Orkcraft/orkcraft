@@ -135,7 +135,10 @@ class ToolsStep(ModalScreen[dict | str | None]):
                        compact=True, id=f"ob-billing-{st.id}", classes="ob-billing"),
                 *self._rating_cells(st.id), Static(note, classes="ob-tool-note", markup=False),
                 classes="ob-tool"))
+        led = {st.id for st in statuses if st.tool.available and st.found}
         for o in others:
+            if o.id in led:                       # Cursor's CLI is led above: its editor is not asked about twice
+                continue
             rows.append(Horizontal(Static(o.title, classes="ob-tool-name", markup=False),
                                    Static("", classes="ob-billing-gap"), *self._rating_cells(o.id),
                                    classes="ob-tool"))
@@ -143,8 +146,8 @@ class ToolsStep(ModalScreen[dict | str | None]):
         self.query_one(".ob-head").display = bool(rows)
         text = ""
         if not rows:
-            text = "No AI tools found here. Agents and the Builder need Claude Code or Antigravity — or try " \
-                   "`orkcraft --demo` first."
+            text = (f"No AI tools found here. Agents and the Builder need one of "
+                    f"{', '.join(t.title for t in tools.TOOLS)} — or try `orkcraft --demo` first.")
         elif missing:
             text = "Not found: " + " · ".join(missing)
         self.query_one("#ob-tools-missing", Static).update(text)

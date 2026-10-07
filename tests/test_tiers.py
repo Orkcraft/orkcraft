@@ -45,7 +45,7 @@ def test_an_orc_shows_its_heaviest_tier_but_a_steward_none():
 def test_the_scroll_keeps_a_tier_and_recruit_sets_it():
     scroll = ts.default_scroll(PRESETS)
     orc = ts.recruit(scroll, "scrying", "Grunt", tier="laborer")
-    assert orc.harness == [{"role": "run", "harness": "claude", "tier": "laborer"}]
+    assert orc.harness == [{"role": "run", "harness": "main", "tier": "laborer"}]
     assert ts.validate(scroll.to_dict()) == []
     ts.update_orc(scroll, "scrying", orc.id, harness=tiers.with_tier(orc.harness, "warrior"))
     again = ts.TownScroll.from_dict(scroll.to_dict())
@@ -57,7 +57,7 @@ def test_the_scroll_keeps_a_tier_and_recruit_sets_it():
 def test_the_engine_runs_a_step_on_its_tiers_model():
     scroll = ts.default_scroll(PRESETS)
     ts.add_handler(scroll, "scrying", "Seer", orders="summarise", run={"quiet_s": 0},
-                   harness=[{"role": "run", "harness": "claude", "tier": "laborer"}])
+                   harness=[{"role": "run", "harness": "main", "tier": "laborer"}])
     ts.subscribe(scroll, "scrying", "forge", "on_selection_change", handler="seer")
     models: list[str] = []
     rig = Rig(scroll, lambda harness, prompt, repo, env, cancel, model="": (models.append(model) or "ok", 0.0))
@@ -98,7 +98,7 @@ async def test_recruit_by_hand_with_a_tier_shows_its_icon_in_the_roster(fake_rep
         for _ in range(3):
             await pilot.pause()
         sage = next(o for o in app.scroll.building("town_hall").garrison.handlers if o.name == "Sage")
-        assert sage.harness == [{"role": "run", "harness": "claude", "tier": "elder"}]
+        assert sage.harness == [{"role": "run", "harness": "main", "tier": "elder"}]
         app.refresh_roster()
         await pilot.pause()
         lst = app.screen.query_one("#roster-list", OptionList)
@@ -111,7 +111,7 @@ async def test_recruit_by_hand_with_a_tier_shows_its_icon_in_the_roster(fake_rep
         app.screen.query_one("#unit-tier", Select).value = "laborer"
         await pilot.click("#unit-save")
         await pilot.pause()
-        assert sage.harness == [{"role": "run", "harness": "claude", "tier": "laborer"}]
+        assert sage.harness == [{"role": "run", "harness": "main", "tier": "laborer"}]
         steward = app.scroll.building("town_hall").garrison.steward
         app.open_unit(app.desktop.get_window("town_hall"), steward)                  # a steward: no picker
         await pilot.pause()
@@ -141,7 +141,7 @@ async def test_the_inventory_shows_the_model_and_the_tools_and_changes_the_tier(
         {"ts": "2026-10-01T10:00:00", "harness": "claude", "event": "SessionStart", "session": "s1", "tickets": [],
          "cwd": str(fake_repo), "transcript": str(transcript), "prompt": "go", "orc": "town_hall/sage"}) + "\n")
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.add_handler(app.scroll, "town_hall", "Sage", harness=[{"role": "run", "harness": "claude", "tier": "elder"}])
+    ts.add_handler(app.scroll, "town_hall", "Sage", harness=[{"role": "run", "harness": "main", "tier": "elder"}])
     async with app.run_test(size=(200, 50)) as pilot:
         for _ in range(3):
             await pilot.pause()

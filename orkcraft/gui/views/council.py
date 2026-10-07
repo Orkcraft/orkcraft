@@ -126,7 +126,7 @@ def _add_member(w, args: dict) -> str:
         raise ActError("A member needs a role")
     if any(m.role.lower() == role.lower() for m in w.team):
         raise ActError(f"{role} is in the clan already")
-    member = w.add_member(role, text(args, "harness", 100).strip() or "claude")
+    member = w.add_member(role, text(args, "harness", 100).strip() or "main")
     if member is None:
         raise ActError("A member is a role and claude, agy or codex[:model]")
     return member.role

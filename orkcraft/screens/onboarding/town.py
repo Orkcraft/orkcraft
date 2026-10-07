@@ -54,7 +54,7 @@ class IntentStep(ModalScreen[dict | str | None]):
         self.last = last
         self.show_warder = show_warder
         self.agy_line = agy_line          # what the Warder step says about agy (common.agy_warder_line)
-        self.builder = builder            # the Town Builder plans with Claude Code: is it chosen?
+        self.builder = builder            # the Town Builder plans with Claude Code, Codex or agy: is one chosen?
         self.choice = dict(choice or {})
         self.role = self.choice.get("role") or self.profile.get("role") or intents.OTHER
 
@@ -108,7 +108,7 @@ class IntentStep(ModalScreen[dict | str | None]):
         if self.builder:
             lst.add_option(Option("❓ None fits — tell the Builder about your work", id=CUSTOM))
         else:
-            lst.add_option(Option("❓ None fits — needs Claude Code for the Builder", id=CUSTOM, disabled=True))
+            lst.add_option(Option("❓ None fits — the Builder needs Claude Code, Codex or agy", id=CUSTOM, disabled=True))
         lst.highlighted = 0
         self.show_choice()
 
@@ -119,8 +119,8 @@ class IntentStep(ModalScreen[dict | str | None]):
     def show_choice(self) -> None:
         it = intents.intent(self.choice_id)
         note = self.query_one("#ob-town-note", Static)
-        note.update("" if self.builder else "The Builder plans a town with Claude Code: turn it on on the tools "
-                    "step (Back) to describe your own — a ready town or an empty one needs no model.")
+        note.update("" if self.builder else "The Builder plans a town with Claude Code, Codex or agy: turn one on "
+                    "on the tools step (Back) to describe your own — a ready town or an empty one needs no model.")
         blurb = intent_blurb(it) if it else Text(
             f"Two short questions: where your work comes from and goes, and what hurts. The Builder adapts a "
             f"{intents.role(self.role).title.lower()} town to your answers; you approve the plan before "

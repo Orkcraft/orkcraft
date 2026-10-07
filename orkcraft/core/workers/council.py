@@ -166,8 +166,8 @@ class CouncilWorker(Worker):
     def steward(self) -> tm.Steward:
         own = str(self.config.get("steward_prompt") or self.config.get("goal") or "").strip()
         known = tm.brief_text(self.steward_file)
-        harness, _, model = str(self.config.get("moderator") or "claude").partition(":")
-        return tm.Steward(own, harness.strip() or "claude", model.strip(), known,
+        harness, _, model = str(self.config.get("moderator") or "main").partition(":")
+        return tm.Steward(own, harness.strip() or "main", model.strip(), known,
                           self.rel(self.steward_file) if known else "")
 
     # -- its life -------------------------------------------------------------------------------
@@ -429,7 +429,7 @@ class CouncilWorker(Worker):
         self._run()
         return True
 
-    def add_member(self, role: str, harness: str = "claude") -> tm.Member | None:
+    def add_member(self, role: str, harness: str = "main") -> tm.Member | None:
         """A new member of the clan (`role`, `harness[:model]`), its brief an empty template."""
         member = tm.parse_member(f"{role.strip()}:{harness.strip() or 'claude'}")
         if member is None:

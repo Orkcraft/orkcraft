@@ -42,7 +42,7 @@ from typing import Callable
 from orkcraft import scroll as ts
 from orkcraft.realm import roads, tiers
 
-DEFAULT_MEMBERS = ("Product manager:claude", "Architect:claude")
+DEFAULT_MEMBERS = ("Product manager:main", "Architect:main")
 DEFAULT_CYCLES = 3
 DEFAULT_BUDGET = 2.0
 INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read our files)
@@ -115,7 +115,7 @@ def slug(role: str) -> str:
 @dataclass
 class Member:
     role: str
-    harness: str = "claude"
+    harness: str = "main"            # the machine's main tool
     model: str = ""
 
     @property
@@ -131,7 +131,7 @@ class Member:
 def parse_member(entry: str) -> Member | None:
     role, _, rest = str(entry).partition(":")
     harness, _, model = rest.partition(":")
-    role, harness = role.strip(), (harness.strip() or "claude")
+    role, harness = role.strip(), (harness.strip() or "main")
     if not role or harness not in ts.HARNESSES:
         return None
     return Member(role, harness, tiers.resolve(harness, model.strip()))   # `Critic:claude:elder` → opus
@@ -197,7 +197,7 @@ class Discussion:
 @dataclass
 class Steward:
     prompt: str = ""                # the building's steward_prompt (short, in the settings)
-    harness: str = "claude"
+    harness: str = "main"            # the machine's main tool
     model: str = ""
     brief: str = ""                 # steward.md: as long as the knowledge needs
     brief_path: str = ""            # where Claude reads it
@@ -415,7 +415,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         if i in d.reviewed:
             continue
         path, text = brief_of(m)
-        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=m.harness not in roads.IN_REPO))
+        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO))
         if got is None:
             return _end(d)
         verdict, body = parse_verdict(got[0])
@@ -427,7 +427,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
 
     routes = [e.id for e in exits] or list(routes)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
-                                                             inline=steward.harness not in roads.IN_REPO,
+                                                             inline=roads.resolve(steward.harness) not in roads.IN_REPO,
                                                              routes=routes, exits=exits))
     if got is None:
         return _end(d)

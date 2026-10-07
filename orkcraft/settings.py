@@ -28,9 +28,10 @@ from pathlib import Path
 
 from orkcraft import autonomy as autonomy_
 from orkcraft.env import getenv
+from orkcraft.realm import harnesses
 from orkcraft.schedule import Span
 
-TOOLS = ("claude", "agy", "codex")
+TOOLS = harnesses.ids()
 BILLINGS = ("subscription", "api")
 PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other", "kin")
 PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
@@ -60,6 +61,7 @@ class MachineSettings:
     install_id: str = ""          # a random id while they share them; forgotten when they stop
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
+    main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on
 
     def to_dict(self) -> dict:
         return {
@@ -75,6 +77,7 @@ class MachineSettings:
             "usage": {"share": self.usage, "id": self.install_id},
             "fire": self.fire,
             "updates": self.updates,
+            "main_tool": self.main_tool,
         }
 
     @classmethod
@@ -99,6 +102,7 @@ class MachineSettings:
         s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
         s.fire = data.get("fire") is not False
         s.updates = data["updates"] if data.get("updates") in UPDATES else "critical"
+        s.main_tool = data["main_tool"] if data.get("main_tool") in TOOLS else ""
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)

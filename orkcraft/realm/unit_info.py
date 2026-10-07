@@ -11,7 +11,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from orkcraft.realm import tiers
+from orkcraft.realm import harnesses, tiers
 from orkcraft.realm.looks import HARNESS_LETTER, HARNESS_STYLE
 from orkcraft.realm.orcs import COUNCIL, RESIDENT, WORKER, Orc
 
@@ -103,12 +103,12 @@ def models_of(orc: Orc, live_model: str = "") -> list[tuple[str, str, str]]:
     if orc.kind in FREE_KINDS and orc.category == RESIDENT:
         return [("🪧", "", "no model — free")]
     out = []
-    for step in orc.harness or ([{"harness": "claude"}] if orc.category == RESIDENT else []):
-        harness = step.get("harness", "claude")
+    for step in orc.harness or ([{"harness": "main"}] if orc.category == RESIDENT else []):
+        harness = tiers.tool_of(step)
         letter = HARNESS_LETTER.get(harness, "P" if harness == "pipeline" else "?")
         model = tiers.step_model(step)
         name = short_model(model) if model else \
-            {"claude": "Claude", "agy": "agy (Gemini)", "codex": "Codex"}.get(harness, harness)
+            harnesses.title(harness)
         label = f"{step.get('role', '')} · {name}".strip(" ·")
         out.append((letter, HARNESS_STYLE.get(harness, "bold"), label))
     if live_model:

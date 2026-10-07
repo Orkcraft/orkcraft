@@ -92,7 +92,7 @@ class RetrosMixin:
                         title="🔧 Building retro")
 
         def _worker() -> None:
-            result = optimize.propose(self.repo_root, cand, ps, runners.OPTIMIZE_RUNNER or builders.claude_runner, runtime, mocks)
+            result = optimize.propose(self.repo_root, cand, ps, runners.OPTIMIZE_RUNNER or builders.main_runner, runtime, mocks)
             self.call_from_thread(self._on_proposal, result, interactive)
 
         self.run_worker(_worker, thread=True, name="council_optimize")
@@ -153,7 +153,7 @@ class RetrosMixin:
     def weekly_audit_now(self, interactive: bool = True) -> None:
         """The heavy model over the whole camp (in a thread), then the report with checkboxes."""
         model = str(fastpath.settings(self.repo_root).get("weekly_model") or "opus")
-        runner = runners.WEEKLY_RUNNER or functools.partial(builders.claude_runner, model=model)
+        runner = runners.WEEKLY_RUNNER or functools.partial(builders.main_runner, model=model)
         snapshot, specs = copy.deepcopy(self.scroll), copy.deepcopy(self.custom_specs)
         rules = audit.run(self.repo_root, self.scroll, dict(self.custom_specs), self.snapshot.spent_usd,
                           self.scroll.budget.gold_session_limit_usd)

@@ -33,7 +33,7 @@ NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 class Server:
     id: str                      # the name as the agents know it, lower case
     title: str
-    tools: tuple[str, ...]       # the AI tools it is connected in: claude · codex · agy
+    tools: tuple[str, ...]       # the AI tools it is connected in (realm/harnesses.py ids)
     glyph: str = ""              # a service with a glyph, or ""
 
     def to_dict(self) -> dict:
@@ -83,6 +83,42 @@ def _agy(home: Path) -> list[str]:
     return _names(_json(home / ".gemini" / "settings.json").get("mcpServers"))
 
 
+def _cursor(home: Path, repo: Path | None) -> list[str]:
+    names = _names(_json(home / ".cursor" / "mcp.json").get("mcpServers"))
+    return names + (_names(_json(repo / ".cursor" / "mcp.json").get("mcpServers")) if repo is not None else [])
+
+
+def _pi(home: Path, repo: Path | None) -> list[str]:
+    out = []
+    for path in [home / ".pi" / "agent" / "mcp.json"] + ([repo / ".pi" / "mcp.json"] if repo is not None else []):
+        data = _json(path)
+        out += _names(data.get("mcpServers") or data.get("mcp_servers") or data.get("servers"))
+    return out
+
+
+def _hermes(home: Path) -> list[str]:
+    """The keys right under `mcp_servers:` in Hermes' config.yaml, read as lines (no YAML library)."""
+    try:
+        lines = (home / ".hermes" / "config.yaml").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    names, inside, step = [], False, None
+    for line in lines:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():
+            inside = line.split("#")[0].strip() == "mcp_servers:"
+            step = None
+            continue
+        if inside:
+            indent = len(line) - len(line.lstrip())
+            step = step or indent
+            key = line.strip().split(":", 1)[0].strip("'\"")
+            if indent == step and line.strip().endswith(":") and NAME.match(key):
+                names.append(key)
+    return names
+
+
 def title_of(name: str) -> str:
     key = name.lower().replace("-", "_")
     if key in TITLES:
@@ -102,7 +138,8 @@ def found(home: Path | None = None, repo: Path | None = None) -> list[Server]:
     """Every MCP server the AI tools here know, once each, with the tools that have it."""
     home = Path.home() if home is None else home
     where: dict[str, list[str]] = {}
-    for tool, names in (("claude", _claude(home, repo)), ("codex", _codex(home)), ("agy", _agy(home))):
+    for tool, names in (("claude", _claude(home, repo)), ("codex", _codex(home)), ("agy", _agy(home)),
+                        ("hermes", _hermes(home)), ("pi", _pi(home, repo)), ("cursor", _cursor(home, repo))):
         for n in names:
             tools = where.setdefault(n.lower(), [])
             if tool not in tools:

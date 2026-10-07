@@ -149,14 +149,14 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "barracks": {
         "max_orcs": "how many orks work at once (default 3)",
         "budget_usd": "the most the barracks may spend, in USD",
-        "providers": "who the steward may hire, `harness[:model]`: claude, agy or codex, e.g. [\"claude\", \"agy\"]; "
+        "providers": "who the steward may hire, `harness[:model]`: main (the main tool), claude, agy, codex, hermes, pi or cursor, e.g. [\"main\", \"agy\"]; "
                      "without a model the task's tier picks it (elder · warrior · laborer), a named model is kept",
         "worktrees": "each ork in its own git worktree (default true)",
         "orders": "standing orders: the steward's rules, given to every ork with each task",
         "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
-        "steward": "`harness[:model]` of the steward that plans, answers and reviews (default claude: an elder plans, "
+        "steward": "`harness[:model]` of the steward that plans, answers and reviews (default main, the main tool: an elder plans, "
                    "a warrior reviews a part, the building's goal picks who looks at the whole)",
         "plan": "false: every task goes whole to one ork, the steward never plans it into parts (default true)",
         "escalate": "false: a task sent back keeps its tier instead of going up one (default true)",
@@ -167,14 +167,14 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "council": {
         "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
                           "(longer briefs live in steward.md)",
-        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Product manager:claude\", \"Architect:agy\"]",
+        "members": "`Role:harness[:model]`, 2-4 of them, e.g. [\"Product manager:main\", \"Architect:agy\"]",
         "purpose": "what the board reviews and what matters, in words; its clan and exits are set up from it",
         "exits": "where a judged document can go, `Name: when to take it`, e.g. [\"To development: ready to build\"]; "
                  "each is a route a road out waits for; Back to the author and Ask me are built in",
         "veto": "roles whose VETO blocks approval, e.g. [\"Security\"]",
         "max_cycles": "reworks of one document before the operator decides (default 3)",
         "budget_usd": "the most one review may spend, in USD (default 2)",
-        "moderator": "`harness[:model]` of the steward (default claude)",
+        "moderator": "`harness[:model]` of the steward (default main, the main tool)",
         "routes": "who it may route what it lets go to, e.g. [\"human\", \"agent\"] (triage): the steward names "
                   "one, team.routed carries it and each road out may wait for one route; when the steward "
                   "also names a time (WHEN:), the document goes on after a `When:` line (a War Drum adds the event)",
@@ -197,7 +197,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                    "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
         "topic": "codebase, team, design or general: the sections and rules it starts with",
-        "harness": "the librarian's agent: claude (default), agy or codex",
+        "harness": "the librarian's agent: main (the main tool, default) or one of claude, agy, codex, hermes, pi, cursor",
         "model": "the librarian's model, e.g. sonnet",
         "auto_ingest": "ingest by itself once the sources settle (default true)",
         "commit": "commit every change of the wiki's folder (default true)",

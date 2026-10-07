@@ -28,9 +28,9 @@ class GarrisonMixin:
         self.open_unit(message.window)
 
     def harnesses(self) -> tuple[str, ...]:
-        """The agent CLIs this machine runs (onboarding's tools); Claude and agy when none is chosen."""
+        """The agent CLIs this machine runs (onboarding's tools); the main tool when none is chosen."""
         enabled = tuple(t for t, c in self.desktop.machine.tools.items() if c.enabled and t in scroll.HARNESSES)
-        return enabled or ("claude", "agy")
+        return enabled or ("main",)
 
     def recruit_from_prompt(self, building_id: str, prompt: str, road=None,
                             on_rejected: Callable[[str], Any] | None = None) -> None:
@@ -42,7 +42,7 @@ class GarrisonMixin:
         self.push_screen(OrcProgress("🧙 The Recruiter is choosing chain → script → agent…"))
 
         def _worker() -> None:
-            result = recruiter.recruit(prompt, snapshot, building_id, runner=runners.RECRUIT_RUNNER or builders.claude_runner,
+            result = recruiter.recruit(prompt, snapshot, building_id, runner=runners.RECRUIT_RUNNER or builders.main_runner,
                                        road=road, harnesses=self.harnesses())
             self.call_from_thread(self._on_recruited, building_id, prompt, result, on_rejected)
 

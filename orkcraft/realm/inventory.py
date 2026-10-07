@@ -85,6 +85,6 @@ def models_of(orc: Orc, live_model: str = "") -> list[tuple[str | None, str]]:
         return []
     out = []
     for step in orc.harness:
-        model = tiers.step_model(step) or tiers.DEFAULT_MODEL.get(str(step.get("harness", "")), "")
-        out.append((tiers.step_tier(step), short_model(model) if model else f"{step.get('harness', '?')} default"))
+        model = tiers.step_model(step) or tiers.DEFAULT_MODEL.get(tiers.tool_of(step), "")
+        out.append((tiers.step_tier(step), short_model(model) if model else f"{tiers.tool_of(step)} default"))
     return out

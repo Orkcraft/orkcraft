@@ -10,33 +10,31 @@ it. An orc's tier is its heaviest step. Stewards carry no tier icon: they keep t
 """
 from __future__ import annotations
 
+from orkcraft.realm import harnesses
+
 TIERS = ("elder", "warrior", "laborer")          # heaviest first
 TIER_ICONS = {"elder": "🔮", "warrior": "⚔", "laborer": "⛏"}
 TIER_LABELS = {"elder": "Elder", "warrior": "Warrior", "laborer": "Laborer"}
 TIER_STYLES = {"elder": "bold #c084fc", "warrior": "bold #f87171", "laborer": "#a8a29e"}
-# The model of each tier, per harness.
-MODELS = {
-    "claude": {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
-    "agy": {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},
-    "codex": {"elder": "gpt-6-astra", "warrior": "gpt-6.1-sol", "laborer": "gpt-6-luna"},
-}
+# The model of each tier, per harness (realm/harnesses.py holds them).
+MODELS = {h.id: dict(h.models) for h in harnesses.REGISTRY.values()}
 # What a step runs on when it names neither: agy's own default is flash-high.
-DEFAULT_MODEL = {"agy": MODELS["agy"]["warrior"]}
+DEFAULT_MODEL = {h.id: h.default_model for h in harnesses.REGISTRY.values() if h.default_model}
+
+
+def tool_of(step: dict) -> str:
+    """The tool a step runs on: `main` (or none) is the machine's main tool, as it is now."""
+    harness = str(step.get("harness") or "")
+    if harness in ("", harnesses.MAIN):
+        from orkcraft.realm import builders
+        return builders.main_tool()
+    return harness
 
 
 def tier_of_model(model: str) -> str | None:
     """opus / gemini pro / gpt astra → elder; sonnet / flash-high / gpt sol → warrior;
-    haiku / flash-low / gpt luna → laborer."""
-    m = (model or "").lower()
-    if not m:
-        return None
-    if "opus" in m or "fable" in m or ("gemini" in m and "pro" in m) or ("gpt" in m and "astra" in m):
-        return "elder"
-    if "haiku" in m or ("flash" in m and ("low" in m or "lite" in m)) or ("gpt" in m and "luna" in m):
-        return "laborer"
-    if "sonnet" in m or "flash" in m or ("gpt" in m and ("sol" in m or "terra" in m)):
-        return "warrior"
-    return None
+    haiku / flash-low / gpt luna → laborer (and every tool's own table, realm/harnesses.py)."""
+    return harnesses.tier_of_model(model)
 
 
 def step_model(step: dict) -> str:
@@ -44,12 +42,12 @@ def step_model(step: dict) -> str:
     if step.get("model"):
         return str(step["model"])
     tier = step.get("tier")
-    return MODELS.get(str(step.get("harness", "")), {}).get(str(tier), "") if tier else ""
+    return MODELS.get(tool_of(step), {}).get(str(tier), "") if tier else ""
 
 
 def resolve(harness: str, model: str) -> str:
     """`claude:elder` → opus: a tier word in place of a model names its model; anything else stays."""
-    return MODELS.get(harness, {}).get(model, model) if model in TIERS else model
+    return MODELS.get(tool_of({"harness": harness}), {}).get(model, model) if model in TIERS else model
 
 
 def model_icon(harness: str, model: str) -> str:
@@ -58,7 +56,7 @@ def model_icon(harness: str, model: str) -> str:
 
 
 def step_tier(step: dict) -> str | None:
-    model = step_model(step) or DEFAULT_MODEL.get(str(step.get("harness", "")), "")
+    model = step_model(step) or DEFAULT_MODEL.get(tool_of(step), "")
     return tier_of_model(model) or (step.get("tier") if step.get("tier") in TIERS else None)
 
 

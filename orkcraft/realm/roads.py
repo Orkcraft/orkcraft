@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, halt, pipes, tiers
+from orkcraft.realm import chains, halt, harnesses, pipes, tiers
 from orkcraft.realm.pipes import FILE, NODE, Payload
 from orkcraft.sources import telemetry
 
@@ -92,13 +92,11 @@ AGENT_TIMEOUT_S = 600
 SNAPSHOT_CHARS = 4000          # per road, in an agent prompt
 EXAMPLES_DIR = Path(".orkcraft") / "history" / "handlers"
 EXAMPLE_OUTPUT_CHARS = 8000
-AGY_MODEL = "gemini-3.8-flash-high"
-CLAUDE_READ_ONLY = ["--allowedTools", "Read,Grep,Glob",
-                    "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"]
-CLAUDE_READ_WEB = ["--allowedTools", "Read,Grep,Glob,WebSearch,WebFetch",        # 🪔 Clan Fire reviewers
-                   "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit"]
-CODEX_WEB = {False: 'web_search="disabled"', True: 'web_search="live"'}   # Codex searches by default
-IN_REPO = ("claude", "codex")    # harnesses that read the repository; agy works in an empty folder
+AGY_MODEL = harnesses.need("agy").default_model
+CLAUDE_READ_ONLY, CLAUDE_READ_WEB = harnesses.CLAUDE_READ_ONLY, harnesses.CLAUDE_READ_WEB   # 🪔 Clan Fire: web
+CODEX_WEB = harnesses.CODEX_WEB
+# harnesses that read the repository; the others (agy) work in an empty folder
+IN_REPO = tuple(h.id for h in harnesses.REGISTRY.values() if h.in_repo)
 
 
 @dataclass(frozen=True)
@@ -219,90 +217,52 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
 
 
 def codex_cmd(sandbox: str, model: str = "", web: bool = False, resume: str = "") -> list[str]:
-    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout, in the folder it is
-    started in. The sandbox goes in as config: `exec resume` takes no `--sandbox`."""
-    return [os.environ.get("ORKCRAFT_CODEX_BIN", "codex"), "exec", *(["resume", resume] if resume else []), "-",
-            "--json", "--skip-git-repo-check", "-c", f'sandbox_mode="{sandbox}"', "-c", CODEX_WEB[web],
-            *(["--model", model] if model else [])]
+    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout (harnesses.codex_exec)."""
+    return harnesses.codex_exec(harnesses.need("codex"), sandbox, model, web, resume)
+
+
+def resolve(harness: str) -> str:
+    """A step's tool as it runs: `main` (or nothing) is the machine's main tool."""
+    if harness and harness != harnesses.MAIN:
+        return harness
+    from orkcraft.realm import builders
+    return builders.main_tool()
 
 
 def harness_stdin(harness: str, prompt: str) -> str | None:
-    """What goes on stdin: Codex reads its prompt there (no argv limit, never taken for a flag);
-    the others take it as an argument."""
-    return prompt if harness == "codex" else None
+    """What goes on stdin: a tool that reads its prompt there (Codex: no argv limit, never taken for a
+    flag); the others take it as an argument."""
+    h = harnesses.get(harness)
+    return h.stdin(prompt) if h else None
 
 
 def _harness_cmd(harness: str, prompt: str, workdir: Path, model: str = "", web: bool = False) -> list[str]:
-    if harness == "claude":
-        return [os.environ.get("ORKCRAFT_CLAUDE_BIN", "claude"), "-p", prompt, "--output-format", "json",
-                *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY), *(["--model", model] if model else [])]
-    if harness == "agy":
-        return [os.environ.get("ORKCRAFT_AGY_BIN", "agy"), "--print", prompt, "--model", model or AGY_MODEL,
-                "--mode", "accept-edits", "--sandbox", "--add-dir", str(workdir), "--output-format", "json"]
-    if harness == "codex":
-        return codex_cmd("read-only", model, web)
-    raise RuntimeError(f"harness {harness!r} is not wired yet (pipelines come later)")
+    h = harnesses.get(harness)
+    if h is None:
+        raise RuntimeError(f"harness {harness!r} is not wired yet (pipelines come later)")
+    return h.read(prompt, workdir, model, web)
 
 
 def _tokens_of(env: dict) -> int | None:
     """All tokens of a `claude -p --output-format json` answer: input, output and cache."""
-    usage = env.get("usage")
-    if not isinstance(usage, dict):
-        return None
-    keys = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
-    vals = [usage[k] for k in keys if isinstance(usage.get(k), int)]
-    return sum(vals) if vals else None
+    return harnesses._tokens_of(env.get("usage"))
 
 
 def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
-    out = stdout.strip()
-    try:
-        env = json.loads(out)
-    except ValueError:
-        return out, None, None
-    if not isinstance(env, dict):
-        return out, None, None
-    cost = env.get("total_cost_usd")
-    for key in ("result", "response", "text", "output"):
-        if isinstance(env.get(key), str):
-            return env[key], float(cost) if isinstance(cost, (int, float)) else None, _tokens_of(env)
-    return out, None, None
+    return harnesses.json_result(stdout)[:3]
+
+
+def result_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, session) of one run of a tool."""
+    h = harnesses.get(harness)
+    return h.result(stdout, before) if h else harnesses.json_result(stdout, before)
 
 
 def _codex_events(stdout: str) -> list[dict]:
-    events = []
-    for line in stdout.splitlines():
-        try:
-            event = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(event, dict):
-            events.append(event)
-    return events
+    return harnesses.json_lines(stdout)
 
 
-def _usage_tokens(usage) -> int | None:
-    vals = [usage[k] for k in ("input_tokens", "output_tokens") if isinstance(usage.get(k), int)] \
-        if isinstance(usage, dict) else []
-    return sum(vals) if vals else None
-
-
-def codex_result_of(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
-    """(text, cost, tokens, session) of `codex exec --json`: the last agent message, the tokens of this
-    run (cached input is part of the input) and the thread id. Codex prints no price: the cost is None,
-    never $0. Each `turn.completed.usage` is the thread's running total (openai/codex
-    `usage_from_last_total`), so the last one counts, less `before`: what the thread had already used
-    when this run resumed it (`codex_thread_total`)."""
-    text, total, session = "", None, ""
-    for event in _codex_events(stdout):
-        kind, item = event.get("type"), event.get("item")
-        if kind == "thread.started":
-            session = str(event.get("thread_id") or "")
-        elif kind == "item.completed" and isinstance(item, dict) and item.get("type") == "agent_message":
-            text = str(item.get("text") or "")
-        elif kind == "turn.completed" and (tokens := _usage_tokens(event.get("usage"))) is not None:
-            total = tokens
-    return text.strip(), None, None if total is None else max(total - before, 0), session
+codex_result_of = harnesses.codex_result
 
 
 def codex_thread_total(thread: str, env: dict | None = None) -> int:
@@ -327,20 +287,12 @@ def codex_thread_total(thread: str, env: dict | None = None) -> int:
             except (ValueError, AttributeError):
                 continue
             info = payload.get("info") if isinstance(payload, dict) and payload.get("type") == "token_count" else None
-            if isinstance(info, dict) and (tokens := _usage_tokens(info.get("total_token_usage"))) is not None:
+            if isinstance(info, dict) and (tokens := harnesses._plain_tokens(info.get("total_token_usage"))) is not None:
                 total = tokens
     return total
 
 
-def codex_error(stdout: str) -> str:
-    """Why a `codex exec --json` run failed, from its events ("" when they do not say)."""
-    for event in reversed(_codex_events(stdout)):
-        error = event.get("error")
-        if event.get("type") == "turn.failed" and isinstance(error, dict) and error.get("message"):
-            return str(error["message"])
-        if event.get("type") == "error" and event.get("message"):
-            return str(event["message"])
-    return ""
+codex_error = harnesses.codex_error
 
 
 def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
@@ -366,7 +318,8 @@ def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
 
 
 def failure(harness: str, code: int, stdout: str, stderr: str) -> str:
-    why = (codex_error(stdout) if harness == "codex" else "") or (stderr or stdout).strip()
+    h = harnesses.get(harness)
+    why = (h.error(stdout) if h else "") or (stderr or stdout).strip()
     return f"{harness} exited with {code}: {why[:300]}"
 
 
@@ -390,13 +343,15 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
                         raise InterruptedError("restarted by a new event")
                     raise RuntimeError(f"no answer within {AGENT_TIMEOUT_S} s")
 
+    harness = resolve(harness)
     with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
         workdir = repo_root if harness in IN_REPO else Path(scratch)
         cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
-        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **env}, harness_stdin(harness, prompt), wait)
+        tool_env = h.env("read", scratch) if (h := harnesses.get(harness)) else {}
+        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:
         raise RuntimeError(failure(harness, code, stdout, stderr))
-    result = codex_result_of(stdout)[:3] if harness == "codex" else _result_of(stdout)
+    result = result_of(harness, stdout)[:3]
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
     return result

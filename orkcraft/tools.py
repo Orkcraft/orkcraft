@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.sources.sessions import agy_bin, claude_bin, codex_bin
+from orkcraft.realm import harnesses
 
 VERSION_TIMEOUT_S = 5
 # The oldest agy the 🛡 Warder guards: `--mode` is honoured in `-p` runs and a project's
@@ -38,11 +38,7 @@ class Tool:
     available: bool = True  # False: listed as "coming soon"
 
 
-TOOLS: tuple[Tool, ...] = (
-    Tool("claude", "Claude Code", "npm i -g @anthropic-ai/claude-code", "claude  (then /login)"),
-    Tool("agy", "Antigravity", "see antigravity.google", "agy login"),
-    Tool("codex", "OpenAI Codex", "npm i -g @openai/codex", "codex login"),
-)
+TOOLS: tuple[Tool, ...] = tuple(Tool(h.id, h.title, h.install, h.login) for h in harnesses.REGISTRY.values())
 
 
 @dataclass
@@ -73,7 +69,8 @@ class ToolStatus:
 
 
 def _bin(tool_id: str) -> str:
-    return {"claude": claude_bin, "agy": agy_bin, "codex": codex_bin}.get(tool_id, lambda: tool_id)()
+    h = harnesses.get(tool_id)
+    return h.bin if h else tool_id
 
 
 def _version(path: str, run: Callable) -> str:
@@ -180,6 +177,59 @@ def codex_login(path: str = "", run: Callable = subprocess.run, env: dict | None
     return _codex_login(dict(os.environ) if env is None else env, Path.home() if home is None else home, path, run)
 
 
+# Keys a provider bills by the token, as Hermes and pi read them from the environment.
+_PROVIDER_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY",
+                  "XAI_API_KEY", "NOUS_API_KEY", "DEEPSEEK_API_KEY", "MISTRAL_API_KEY", "GROQ_API_KEY")
+
+
+def _json(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _hermes_login(env: dict, home: Path) -> tuple[bool | None, str]:
+    """Hermes: an OAuth login (a subscription: Nous, ChatGPT, Claude, Copilot…) in `auth.json`, else a
+    provider key in its `.env` or the environment. Only names are looked at, never values."""
+    root = Path(env["HERMES_HOME"]) if env.get("HERMES_HOME") else home / ".hermes"
+    if _json(root / "auth.json"):
+        return True, "subscription"
+    if any(env.get(k) for k in _PROVIDER_KEYS):
+        return True, "api"
+    try:
+        names = {line.split("=", 1)[0].strip() for line in (root / ".env").read_text(encoding="utf-8").splitlines()
+                 if "=" in line and line.split("=", 1)[1].strip()}
+    except OSError:
+        names = set()
+    return (True, "api") if names & set(_PROVIDER_KEYS) else (None, "subscription")
+
+
+def _pi_login(env: dict, home: Path) -> tuple[bool | None, str]:
+    """pi: `auth.json` holds `{provider: {"type": "oauth" | "api_key"}}`; the environment's keys too."""
+    root = Path(env["PI_CODING_AGENT_DIR"]) if env.get("PI_CODING_AGENT_DIR") else home / ".pi" / "agent"
+    kinds = {str(v.get("type")) for v in _json(root / "auth.json").values() if isinstance(v, dict)}
+    if "oauth" in kinds:
+        return True, "subscription"
+    if "api_key" in kinds or any(env.get(k) for k in _PROVIDER_KEYS):
+        return True, "api"
+    return None, "subscription"
+
+
+def _cursor_login(env: dict, home: Path) -> tuple[bool | None, str]:
+    """Cursor: the plan pays either way; a key in CURSOR_API_KEY, else the login file it keeps (Linux and
+    Windows; macOS keeps it in the Keychain, so there it cannot be told)."""
+    if env.get("CURSOR_API_KEY"):
+        return True, "subscription"
+    config = Path(env["XDG_CONFIG_HOME"]) if env.get("XDG_CONFIG_HOME") else home / ".config"
+    for auth in (config / "cursor" / "auth.json", home / ".cursor" / "auth.json",
+                 Path(env.get("APPDATA") or home / "AppData" / "Roaming") / "Cursor" / "auth.json"):
+        if _json(auth).get("accessToken"):
+            return True, "subscription"
+    return None, "subscription"
+
+
 def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = subprocess.run,
            env: dict | None = None, home: Path | None = None) -> list[ToolStatus]:
     env = dict(os.environ) if env is None else env
@@ -190,8 +240,8 @@ def detect(which: Callable[[str], str | None] = shutil.which, run: Callable = su
         if tool.available and (path := which(_bin(tool.id))):
             status.found, status.path = True, path
             status.version = _version(path, run)
-            login = {"claude": _claude_login, "agy": _agy_login,
-                     "codex": lambda e, h: _codex_login(e, h, path, run)}.get(tool.id)
+            login = {"claude": _claude_login, "agy": _agy_login, "hermes": _hermes_login, "pi": _pi_login,
+                     "cursor": _cursor_login, "codex": lambda e, h: _codex_login(e, h, path, run)}.get(tool.id)
             if login is not None:
                 status.logged_in, status.billing = login(env, home)
         out.append(status)

@@ -71,7 +71,8 @@ TERMS: tuple[Term, ...] = (
     _t("meat", "ork slots", "", "meat"),
     _t("food", "ork slots", "", "food"),
     _t("treasury", "Budget", "", "Treasury"),
-    _t("logins", "Login", "Logins"),                               # tokens kept on this machine (realm/logins.py)
+    _t("logins", "Login", "Logins"),
+    _t("main_tool", "Main tool", "Main tools"),                    # the AI tool decisions run on (realm/harnesses.py)                               # tokens kept on this machine (realm/logins.py)
     # screens and actions
     _t("war_horn", "Stop all", "", "War Horn"),
     _t("war_tent", "Terminals", "", "War Tent"),

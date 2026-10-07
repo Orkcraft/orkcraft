@@ -83,7 +83,9 @@ webhook (the Watchtower's own Add a source), never an MCP server.
 
 **To do:** give each Agent pool raised from the onboarding the servers it needs in its agents' settings
 (the allow-list of `mcp__<server>__*`), and show them in its window. It belongs with each tool's own way of
-allowing a server (`realm/harnesses.py`), so it waits for the registry of tools (Hermes, pi, Cursor) to land.
+allowing a server: a field of each tool in the registry (`realm/harnesses.py`, docs/design/harnesses.md).
+The servers are read from all six tools already (`realm/mcp.py`: Hermes' `mcp_servers`, pi's and Cursor's
+`mcp.json`).
 
 ## 5. Your first town
 
@@ -134,9 +136,8 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
 - **The class's ground at once:** the first orkspace takes the class's biome when the town is chosen
   (`biomes.home_of`), so the plan is drawn on it.
 
-The planner (4b) runs on the machine's main tool when the registry of tools names one
-(`builders.planner_runner`: the chosen main tool if it is on, else the first on), on Claude Code before that.
-The Security reviewer is installed when any tool its hooks guard is on (Claude Code, Codex, Antigravity).
+The planner (4b) runs on the machine's main tool (`builders.planner_runner`: the chosen main tool if it is
+on, else the first on). The Security reviewer is installed when any AI tool is on: its hooks guard all six.
 
 ## 7. Where it lives
 

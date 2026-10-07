@@ -662,3 +662,23 @@ def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down
     shot("rb-5-sent")
     shot("rb-6-card", f'.gui-hut[data-id="{bid}"]')
     call("town.demolish", {"id": bid})
+def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
+    """Settings → AI tools: a tool turned on joins the main tool's choices; picking it says decisions run there."""
+    pg = page
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    tools = modal.get_by_role("group", name="AI tools")
+    tools.get_by_role("button", name="π pi").click()
+    main = modal.get_by_role("group", name="Main tool")
+    main.get_by_role("button", name="π pi").wait_for(timeout=WAIT_MS)
+    main.get_by_role("button", name="π pi").click()
+    pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('Decisions run on pi')",
+                         timeout=WAIT_MS)
+    shot = os.environ.get("ORKCRAFT_SHOT")
+    if shot:
+        modal.screenshot(path=shot)
+    settings = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings'))")
+    assert settings["main_tool"] == "pi" and settings["main_now"] == "pi"
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', "
+                "{ tools: { pi: false }, main_tool: '' }))")

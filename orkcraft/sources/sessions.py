@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from orkcraft.env import getenv
+from orkcraft.realm import harnesses
 
 HARNESS_CLAUDE = "claude"
 HARNESS_AGY = "agy"
@@ -235,35 +236,35 @@ def sessions_for_orc(sessions: list[Session], orc_ref: str) -> list[Session]:
 
 def resume_command(session: Session) -> list[str] | None:
     """Command that reopens a session interactively (None for cloud-only sessions)."""
-    if session.harness == HARNESS_CLAUDE:
-        return [claude_bin(), "--resume", session.id]
-    if session.harness == HARNESS_AGY:
-        return [agy_bin(), "--conversation", session.id]
-    if session.harness == HARNESS_CODEX:
-        return [codex_bin(), "resume", session.id]
-    return None
+    h = harnesses.get(session.harness)
+    return h.interactive(resume=session.id) if h else None
 
 
 def new_command(harness: str) -> list[str]:
-    return [{HARNESS_AGY: agy_bin, HARNESS_CODEX: codex_bin}.get(harness, claude_bin)()]
+    h = harnesses.get(harness) or harnesses.need(HARNESS_CLAUDE)
+    return h.interactive() or [h.bin]
+
+
+def deploy_harness(step: dict) -> str:
+    """The tool a garrison ork's session runs on: its step's (`main`: the machine's main tool), else —
+    when that tool cannot start on a first prompt (agy) — the main tool, else Claude Code."""
+    from orkcraft.realm import tiers
+    tool = tiers.tool_of(step)
+    if (h := harnesses.get(tool)) is not None and h.deploys:
+        return tool
+    main = tiers.tool_of({})
+    return main if (h := harnesses.get(main)) is not None and h.deploys else HARNESS_CLAUDE
 
 
 def deploy_command(harness: str, prompt: str) -> list[str] | None:
     """An interactive session that starts on `prompt` (a garrison orc's orders), or None.
 
-    Claude and Codex take the first prompt as a positional argument. agy's interactive mode has
-    no documented way to do that yet, so there is no agy deployment (None). The prompt goes in as
-    one argv item (no shell) and never starts with "-", so it cannot be read as a flag.
+    A tool that takes the first prompt as an argument (`deploys`) gets it as one argv item (no shell)
+    that never starts with "-", so it cannot be read as a flag. agy's interactive mode has no
+    documented way to do that yet, so there is no agy deployment (None).
     """
-    if harness not in (HARNESS_CLAUDE, HARNESS_CODEX):
-        return None
-    cli = new_command(harness)
-    prompt = prompt.strip()
-    if not prompt:
-        return cli
-    if prompt.startswith("-"):
-        prompt = "Orders: " + prompt
-    return cli + [prompt]
+    h = harnesses.get(harness)
+    return h.interactive(prompt) if h else None
 
 
 def claude_bin() -> str:

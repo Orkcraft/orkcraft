@@ -120,7 +120,7 @@ def agent_scout(form: Form, profile: Path, orc: str = "Loader",
         from playwright.sync_api import Error as PwError, sync_playwright
     except ImportError as e:
         raise RuntimeError(INSTALL_HINT) from e
-    runner = runner or builders.claude_runner
+    runner = runner or builders.main_runner
     ensure_profile(profile)
     cost, history, start, path = 0.0, [], form.url, []
     loads, seen0 = [0], halt.count()
