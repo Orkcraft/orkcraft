@@ -96,3 +96,23 @@ def test_a_decision_runs_on_any_tool(tool, answer, expect, tmp_path, monkeypatch
     assert ("plan it" in rec["argv"]) != (rec["stdin"] == "plan it")
     assert not any(k.startswith("ORKCRAFT_") for k in rec["env"])
     assert roads.resolve("main") in harnesses.ids()
+
+
+def test_logins_of_the_new_tools_are_told_from_disk(tmp_path):
+    from orkcraft import tools
+    home = tmp_path
+    assert tools._hermes_login({}, home) == (None, "subscription")
+    (home / ".hermes").mkdir()
+    (home / ".hermes" / ".env").write_text("OPENROUTER_API_KEY=sk-x\n", encoding="utf-8")
+    assert tools._hermes_login({}, home) == (True, "api")
+    (home / ".hermes" / "auth.json").write_text('{"providers": {"nous": {}}}', encoding="utf-8")
+    assert tools._hermes_login({}, home) == (True, "subscription")
+    (home / ".pi" / "agent").mkdir(parents=True)
+    (home / ".pi" / "agent" / "auth.json").write_text('{"anthropic": {"type": "oauth"}}', encoding="utf-8")
+    assert tools._pi_login({}, home) == (True, "subscription")
+    assert tools._cursor_login({"CURSOR_API_KEY": "k"}, home) == (True, "subscription")
+    assert tools._cursor_login({}, home) == (None, "subscription")
+    found = tools.detect(which=lambda b: f"/bin/{b}" if b in ("pi", "cursor-agent") else None,
+                         run=lambda *a, **k: type("P", (), {"stdout": "1.0.4", "stderr": "", "returncode": 0})(),
+                         env={}, home=home)
+    assert [s.id for s in found if s.found] == ["pi", "cursor"] and found[4].logged_in

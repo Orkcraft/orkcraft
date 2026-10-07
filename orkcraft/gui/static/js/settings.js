@@ -83,6 +83,22 @@ export function UsageAsk() {
         <button class="ok-btn primary" onClick=${() => answer(true)}>${say("Share")}</button>`} />`;
 }
 
+/** The AI tools: which are on, and the main one decisions and `main` steps run on. */
+function ToolsField({ s, set }) {
+  if (!s.tools) return null;
+  const on = s.tools.filter((x) => x.on);
+  const now = (s.tools.find((x) => x.id === s.main_now) || {}).title || s.main_now;
+  return html`<div class="gui-field"><span class="ok-font-label">${say("AI tools")}</span>
+      <span class="gui-steps" role="group" aria-label=${say("AI tools")}>
+        ${s.tools.map((x) => html`<button key=${x.id} class=${cls("gui-steps__one", { "is-on": x.on })} aria-pressed=${x.on}
+            onClick=${() => set({ tools: { [x.id]: !x.on } })}>${x.mark} ${x.title}</button>`)}
+      </span></div>
+    <${Steps} label=${say("Main tool")} value=${s.main_tool}
+      items=${[["", say("First one on")], ...on.map((x) => [x.id, `${x.mark} ${x.title}`])]}
+      onPick=${(v) => set({ main_tool: v })} />
+    <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Warchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>`;
+}
+
 export function SettingsDialog() {
   const [s, setS] = useState(null);
   useEffect(() => { if (settingsOpen.value) command("town.settings").then(setS, () => setS(null)); }, [settingsOpen.value]);
@@ -109,6 +125,7 @@ export function SettingsDialog() {
       <${Steps} label=${say("Fire on the roofs")} value=${s.fire !== false}
         items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ fire: v })} />
       <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
+      <${ToolsField} s=${s} set=${set} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
     </div>
