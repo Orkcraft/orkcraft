@@ -110,7 +110,7 @@ def test_scroll_dump_closed_is_pages_and_pending_and_command_the_last_pages(fake
     bid = _raised(host, "scrolls", paths=["docs"], auto_ingest=False)
     host.tick(now=1e9)
     card = _card(host, bid)
-    assert set(card) == {"pages", "pending", "running", "error", "lent", "last", "discuss"} and card["lent"] is None and card["last"] is None and card["pages"] == 0 and card["pending"] >= 1
+    assert set(card) == {"pages", "pending", "running", "error", "lent", "last", "discuss", "quality"} and card["lent"] is None and card["last"] is None and card["pages"] == 0 and card["pending"] >= 1
     root = fake_repo / "llm-wiki" / "general" / "pages"
     root.mkdir(parents=True)
     (root / "old.md").write_text("# Old\n")

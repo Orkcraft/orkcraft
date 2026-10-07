@@ -442,8 +442,9 @@ Read `{SCHEMA}` (the rules), `{INDEX}`, the section indexes and the pages in `{P
 - pages missing from their section's index or from `{INDEX}`, or listed there but missing
 - pages that break the page format of `{SCHEMA}`
 
-Write `{LINT}`: a title `# Lint {today.isoformat()}`, then one `- ` line per problem, naming the
-page and what to do; `- none` when the wiki is clean. You may fix the indexes and broken links
+Write `{LINT}`: a title `# Lint {today.isoformat()}`, then one line per problem, exactly
+`- [kind] pages/<section>/<page>.md — what to do`, the kind one of structure, link, contradiction,
+orphan, stale, missing; `- none` when the wiki is clean. You may fix the indexes and broken links
 yourself; leave everything else to the next ingest.{_protected(list(manual))}
 
 Write only inside this folder. Do not commit.

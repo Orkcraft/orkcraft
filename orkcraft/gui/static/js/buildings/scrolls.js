@@ -59,6 +59,7 @@ const quiet = (label, onClick, title = "") => html`<button class="ok-act" title=
  *  taken in (or runs, or failed) as a strip under it with its act beside it. */
 function Head({ id, data }) {
   const ingest = () => act(id, "ingest").catch(() => {});
+  const q = data.quality;
   return html`<div>
     <div class="wiki-head">
       <span><b>${data.pages_count}</b> ${say(data.pages_count === 1 ? "page" : "pages")}</span>
@@ -79,9 +80,14 @@ function Head({ id, data }) {
       : data.error ? html`<div class="wiki-strip is-error">
         <span class="wiki-strip__what ok-tone-error" title=${data.state_plain}>✗ ${data.state_plain}</span>
         <button class="ok-btn" onClick=${ingest}>${say("Try again")}</button></div>`
-      : data.pending > 0 && html`<div class="wiki-strip">
+      : data.pending > 0 ? html`<div class="wiki-strip">
         <span class="wiki-strip__what"><span class="ok-tone-wait">●</span> ${say(data.pending === 1 ? "1 note waits to be taken in" : `${data.pending} notes wait to be taken in`)}</span>
-        <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`}
+        <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`
+      : q && q.total > 0 && html`<div class="wiki-strip">
+        <span class="wiki-strip__what"><span class="ok-tone-wait">⚠</span> ${say("Quality check found")} <b>${q.total}</b>
+          ${say(q.total === 1 ? "problem" : "problems")}${q.last ? ` · ${say("checked")} ${q.last}` : ""}</span>
+        ${q.fixable > 0 && html`<button class="ok-btn primary" onClick=${() => act(id, "fix").catch(() => {})}>Fix links and indexes</button>`}
+      </div>`}
   </div>`;
 }
 
@@ -89,6 +95,38 @@ function ago(mtime) {
   const s = Math.max(0, Date.now() / 1000 - mtime);
   return s < 90 ? "just now" : s < 5400 ? `${Math.round(s / 60)} min ago`
     : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
+}
+
+const CHECKS = [["ingest", "After each take-in"], ["daily", "Daily"], ["weekly", "Weekly"], ["off", "Off"]];
+const KINDS = { structure: "Structure", link: "Broken links", contradiction: "Contradictions", orphan: "Orphans",
+  stale: "Stale", missing: "Missing pages", other: "Other" };
+
+/** The quality check: how often it runs, when next, what it cost; a count per kind of problem and the list
+ *  (a page opens on a click). Folded while the wiki is clean. */
+function Quality({ id, data }) {
+  const q = data.quality;
+  if (!q || !data.pages_count) return null;
+  const kinds = Object.keys(KINDS).filter((k) => q.counts[k]);
+  return html`<details class="wiki-recent wiki-quality" open=${q.total > 0}>
+    <summary><h3 class="ok-font-heading">${say("Quality")}</h3>
+      <span class=${q.total ? "ok-tone-wait" : "ok-tone-ok"}>${q.total ? `⚠ ${q.total}` : `✓ ${say("clean")}`}</span></summary>
+    <div class="wiki-quality__when">
+      <span class="ok-font-label">${say("Check")}</span>
+      <div class="wiki-note__chips" role="radiogroup" aria-label=${say("How often the wiki is checked")}>
+        ${CHECKS.map(([v, label]) => html`<button key=${v} role="radio" aria-checked=${q.check === v}
+          class=${cls("wiki-note__chip", { "is-on": q.check === v })} onClick=${() => act(id, "check", { check: v }).catch(() => {})}>${say(label)}</button>`)}
+      </div>
+      ${!data.running && quiet(say("Check now"), () => act(id, "lint").catch(() => {}), say("Look for broken links, gaps and contradictions"))}
+    </div>
+    <p class="ok-font-status ok-tone-muted">${[q.last && `${say("Last check")} ${q.last}`, q.next && `${say("next")} ${q.next}`,
+      q.cost != null && `${say("it cost")} $${q.cost.toFixed(2)}`].filter(Boolean).join(" · ") || say("Not checked yet")}</p>
+    ${kinds.length > 0 && html`<div class="wiki-quality__counts">${kinds.map((k) => html`<span key=${k}>
+      <b>${q.counts[k]}</b> ${say(KINDS[k])}</span>`)}</div>`}
+    <ul>${q.problems.map((p, i) => html`<li key=${i}>
+      <span class=${p.kind === "link" || p.kind === "contradiction" ? "ok-tone-error" : "ok-tone-wait"}>${p.kind === "link" || p.kind === "contradiction" ? "✗" : "⚠"} ${say(KINDS[p.kind] || p.kind)}</span>
+      ${p.page && html` <span class="gui-tree__item" title=${p.page} onClick=${() => read(id, `${data.root}/${p.page}`, true)}>${p.page}</span>`}
+      <span class="ok-tone-muted"> — ${p.text}</span></li>`)}</ul>
+  </details>`;
 }
 
 /** What the coming meetings should cover, from the notes left for them; the open items (a person, no
@@ -251,7 +289,7 @@ function Pages({ id, data }) {
   if (noting.value === id) return html`<${QuickNote} key=${`note-${id}`} id=${id} data=${data} />`;
   const page = open.value[id];
   if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
-  return html`<div><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+  return html`<div><${Quality} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
 }
 
 /** The notes a task was given lately: what it is and the pages named for it. */
@@ -273,6 +311,7 @@ export function card(b) {
   return html`<div class="gui-hut__body-in">
     <div class="gui-hut__big">${c.pages}<small>${say(c.pages === 1 ? "page" : "pages")}</small></div>
     <div class="gui-hut__text">${state}</div>
+    ${c.quality > 0 && html`<div class="gui-hut__text ok-tone-wait">⚠ <b>${c.quality}</b> ${say(c.quality === 1 ? "quality problem" : "quality problems")}</div>`}
     ${c.discuss && html`<div class="gui-hut__text"><span class="ok-tone-accent">${say("To discuss")}:</span>
       <b>${c.discuss.count}</b> · ${c.discuss.title}</div>`}
     ${c.lent && html`<${Lent} lent=${c.lent} />`}

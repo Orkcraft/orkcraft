@@ -22,6 +22,7 @@ from pathlib import Path
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.scrolls_meetings import MeetingsMixin
+from orkcraft.core.workers.scrolls_quality import QualityMixin
 from orkcraft.env import getenv
 from orkcraft.realm import catalog, daybook, jobs, quicknote, roads, shelves, wiki
 from orkcraft.realm import team as tm
@@ -43,7 +44,7 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
     return "_(demo — simulated)_ the librarian would have updated the wiki.", None, None, ""
 
 
-class ScrollsWorker(MeetingsMixin, Worker):
+class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
     TYPE = "scrolls"
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     review_runner = None          # and the Council members' calls (realm/team.py Runner)
@@ -163,6 +164,10 @@ class ScrollsWorker(MeetingsMixin, Worker):
         settled = time.monotonic() - self._settled[1] >= SETTLE_S
         if self.pending and settled and self.auto and not self.running and not self.last_error:
             self.ingest("auto")
+        try:
+            self.keep_quality()                              # the scheduled quality check, when it is due
+        except OSError:
+            pass
 
     def read(self, rel: str, page: bool = False) -> str:
         """A page of the wiki or a document of the sources, as Markdown (code fenced)."""
@@ -369,6 +374,7 @@ class ScrollsWorker(MeetingsMixin, Worker):
                                                  outcome=job.outcome, markdown=job.result, error=job.error,
                                                  cost_usd=cost))
         if ok:
+            self._ingested = self._ingested or what == "ingest"
             self.emit("wiki.updated" if what == "ingest" else "wiki.linted", job.result, job.title)
             if what == "ingest" and sha:
                 self.ask_review(sha)

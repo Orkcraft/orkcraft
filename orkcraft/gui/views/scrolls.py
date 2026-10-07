@@ -38,6 +38,7 @@ def card(w) -> dict:
     nxt = next((m for m in meetings if any(not i["done"] for i in m["items"])), None)
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
             "error": bool(w.last_error), "lent": _lent(w),
+            "quality": w.quality_total,
             "discuss": {"title": nxt["title"][:60], "when": nxt["when"],
                         "count": sum(1 for i in nxt["items"] if not i["done"])} if nxt else None,
             "last": {"title": recent[0]["title"][:60], "mtime": recent[0]["mtime"]} if recent else None}
@@ -80,6 +81,7 @@ def detail(w) -> dict:
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
         "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
         "sections": wiki.sections(w.wiki_root, w.topic), "agenda": w.agenda_view(),
+        "quality": w.quality_view(),
     }
 
 
@@ -109,7 +111,21 @@ def _ingest(w, args: dict) -> bool:
 
 
 def _lint(w, args: dict) -> bool:
-    return w.lint()
+    return w.check_now()
+
+
+def _fix(w, args: dict) -> bool:
+    return w.fix()
+
+
+def _check(w, args: dict) -> str:
+    """How often the quality check runs: weekly, daily, ingest (after each take-in) or off."""
+    value = text(args, "check", 20).strip().lower()
+    if value not in ("weekly", "daily", "ingest", "off"):
+        raise ActError("weekly, daily, ingest or off")
+    w.save_config({"check": value})
+    w.changed()
+    return value
 
 
 def _stop(w, args: dict) -> None:
@@ -149,4 +165,4 @@ def _note(w, args: dict) -> str:
 
 
 ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder,
-        "suggest": _suggest, "note": _note}
+        "suggest": _suggest, "note": _note, "fix": _fix, "check": _check}
