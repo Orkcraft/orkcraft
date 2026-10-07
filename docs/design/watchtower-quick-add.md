@@ -71,10 +71,31 @@ Watchtower uses, kept on this machine, outside the project.
 - The Town Hall's Build: a preset that ends in a Watchtower opens the picker right after it is
   built.
 
-### 4.2 The picker
+### 4.2 In the panel, never in a dialog
+
+Adding a source — the first one too — happens in the building's panel, in its Work tab, over the
+feed (the way a signal and Sources & intent open), with `← Signals` and Esc to go back:
+
+- **Setting up leaves orkcraft.** Making a Slack app, copying a token, `/mcp` in Claude Code happen
+  in a browser or a terminal, minutes at a time. A dialog is lost to an Esc or a stray click; the
+  panel keeps what was typed until the person comes back.
+- **One place.** The same steps serve Edit, Log in again and a second source; a dialog for the first
+  time and the panel for the rest would be two faces of one thing.
+- **The town stays in sight.** Half the window is the panel; where the roads go stays visible.
+  `⤢` makes it the whole town when more room is wanted — still the building's window.
+- Build already says so: *its settings live in its window* (`js/build.js`). A dialog stays for a
+  decision in one click: Build, a road, Demolish, Remove a source or a login, and the price of
+  *Use Claude's connection* (`≈ $2 a day`), confirmed like Demolish.
+- **Right after Build** a building with nothing set up opens its panel on its setup — the Watchtower
+  on the picker — and its card shows the one thing to do (`+ Add a source`) until it is done.
+
+This holds for every building's first setup, not only the Watchtower's
+(building-views.md §2).
+
+### 4.3 The picker
 
 ```
- Add a source                                         ✕
+ Add a source                                  ← Signals
  ┌──────────────────────────────────────────────────┐
  │ Paste a link to what you want to hear…           │   ← detects the service and the target
  └──────────────────────────────────────────────────┘
@@ -101,7 +122,7 @@ The link box recognises:
 | `figma.com/files/team/<id>/…` | Figma, that team's projects to pick from |
 | an e-mail address | Gmail when `@gmail.com` or Google Workspace *(check: MX lookup)*, else Other mail |
 
-### 4.3 The three steps
+### 4.4 The three steps
 
 Every service runs the same three steps in the same panel, over the feed (like a signal or the
 settings, with ← back):
