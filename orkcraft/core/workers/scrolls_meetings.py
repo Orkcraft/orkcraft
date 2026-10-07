@@ -19,6 +19,8 @@ import json
 from orkcraft.realm import agenda, catalog, daybook, quicknote, shelves, wiki
 
 FALLBACK_MINUTES = 30                   # a meeting with no end is over this long after it starts
+COMING_DAYS = 14                        # how far ahead a note's meeting is looked for (§4)
+COMING_MOST = 12                        # the meetings a note may be moved to, at most
 
 
 def _when(text: str) -> dt.datetime | None:
@@ -46,6 +48,10 @@ class MeetingsMixin:
         ids = [bid for bid, spec in self.town.custom_specs.items() if catalog.migrate(spec).get("type") == "war_drum"]
         return [self.town.worker(bid) for bid in ([named] if named in ids else ids)]
 
+    def reads_calendar(self, drum_id: str) -> bool:
+        """Whether this Wiki matches its notes in that War Drum's meetings."""
+        return any(getattr(cal, "building_id", "") == drum_id for cal in self.calendar_workers())
+
     def meetings(self) -> list[agenda.Meeting]:
         """The Calendars' timed events of the coming days, as meetings."""
         out, seen = [], set()
@@ -58,6 +64,13 @@ class MeetingsMixin:
                 out.append(agenda.Meeting(daybook.meet_id(e), e.summary, e.start.replace(tzinfo=None),
                                           end.replace(tzinfo=None) if end else None))
         return out
+
+    def coming(self, now: dt.datetime | None = None) -> list[agenda.Meeting]:
+        """The meetings a note may be for: not over yet and starting in the next `COMING_DAYS`, nearest first."""
+        now = now or self.clock()
+        until = now + dt.timedelta(days=COMING_DAYS)
+        return sorted((m for m in self.meetings() if (m.end or m.start) >= now and m.start <= until),
+                      key=lambda m: m.start)[:COMING_MOST]
 
     def inbox_notes(self) -> list[tuple[str, dict, str]]:
         """The notes of the inbox: (path, front matter, words)."""
@@ -172,7 +185,11 @@ class MeetingsMixin:
             wiki.commit_files(self.repo_root, written + [index], f"wiki({self.topic}): what the meetings should cover")
         if released:                                       # what moved on finds its next meeting now
             return written + self.keep_agenda(now)
-        self.agenda_cache = self.agenda_view(now)
+        view = self.agenda_view(now)
+        if view != self.agenda_cache:                      # the Calendars say what is kept for their meetings
+            self.agenda_cache = view
+            for cal in self.calendar_workers():
+                cal.changed()
         return written
 
     def _after_line(self, mid: str, covered: int, left: int) -> str:
@@ -198,7 +215,8 @@ class MeetingsMixin:
     # -- what it shows and hands over -------------------------------------------------------------
 
     def agenda_view(self, now: dt.datetime | None = None) -> dict:
-        """The meetings with something to discuss, nearest first, and the open items (people, no meeting)."""
+        """The meetings with something to discuss, nearest first (each with its items and the pages its notes
+        link), and the open items (people, no meeting)."""
         now = now or self.clock()
         state = self.load_agenda()
         notes = self.inbox_notes()
@@ -206,10 +224,11 @@ class MeetingsMixin:
         for mid, info in state["meetings"].items():
             if info.get("closed"):
                 continue
-            items = [{"path": p, "line": (w.splitlines()[0] if w else p)[:160]} for p, fm, w in notes
-                     if state["bound"].get(p, fm.get("meeting")) == mid]
-            if not items:
+            mine = [(p, fm, w) for p, fm, w in notes if state["bound"].get(p, fm.get("meeting")) == mid]
+            if not mine:
                 continue
+            items = [{"path": p, "line": (w.splitlines()[0] if w else p)[:160]} for p, fm, w in mine]
+            links = list(dict.fromkeys(x for _, fm, _ in mine for x in _as_list(fm.get("links"))))
             page = info.get("page") or ""
             ticks = {}
             try:
@@ -219,11 +238,23 @@ class MeetingsMixin:
             for i in items:
                 i["done"] = bool(ticks.get(i["path"]))
             meetings.append({"id": mid, "title": info.get("title") or mid, "when": info.get("when") or "",
-                             "page": page, "items": items})
+                             "page": page, "items": items, "links": links})
         meetings.sort(key=lambda m: m["when"])
         open_ = [{"path": p, "line": (w.splitlines()[0] if w else p)[:160], "with": _as_list(fm.get("with"))}
                  for p, fm, w in notes if _as_list(fm.get("with")) and not state["bound"].get(p, fm.get("meeting"))]
         return {"meetings": meetings, "open": open_}
+
+    def kept_for(self, drum_id: str) -> dict[str, dict]:
+        """What this Wiki keeps for the meetings of a War Drum, by meet id (as of its last refresh): how many
+        items are still to discuss and how many pages its notes link. Empty when it reads another Calendar."""
+        if not self.reads_calendar(drum_id):
+            return {}
+        out = {}
+        for m in self.agenda_cache["meetings"]:
+            left = sum(1 for i in m["items"] if not i.get("done"))
+            if left:
+                out[m["id"]] = {"discuss": left, "pages": len(m.get("links") or [])}
+        return out
 
     def meeting_context(self, mid: str) -> tuple[str, list[str]]:
         """What a meeting's brief reads first: its page and what to discuss, as Markdown, and the pages the
