@@ -66,6 +66,10 @@ A three-stop slider, like the autonomy slider: **🪙 Thrift · ⚖️ Balance �
 Town Scroll as `buildings[].goal`: `"thrift" | "balance" | "quality"`; missing means ⚖️ Balance.
 Set under the building's steward in the garrison (GUI: `↳ Goal: …`, a click cycles it; TUI: the goal
 key in the Info panel).
+The goal also picks the models of a building's work: in an Agent pool its orks' tiers (`realm/plans.py`
+`GOALS`, docs/design/barracks-planning.md), and in every building its steward's work tasks
+(`realm/steward.py` `WORK`, docs/design/steward-at-work.md §2) when no model is picked for them; a tight
+quota runs it as 🪙. The goal's hint and toast say which models.
 
 | | 🪙 Thrift | ⚖️ Balance | 💎 Quality |
 |---|---|---|---|

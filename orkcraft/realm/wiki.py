@@ -504,15 +504,22 @@ def context(root: Path, repo_root: Path, task: str = "") -> str:
     return head + (f"**Task:** {task}\n\n" if task else "") + index
 
 
-_WORD = re.compile(r"[A-Za-z][A-Za-z0-9-]{3,}")
+_WORD = re.compile(r"[^\W\d_][\w-]{3,}")          # a word of any script: a to-do in Russian finds its pages too
 _COMMON = frozenset("that this with from have will about what when where which there their them they your "
-                    "were been into over just like some more than then also only each every page pages".split())
+                    "were been into over just like some more than then also only each every page pages "
+                    "этот эта это эти того чтобы когда если только также потом очень после перед через "
+                    "который которая которые нужно надо можно будет есть было свой своя свои".split())
+
+
+def _stem(word: str) -> str:
+    """A word's start, its ending cut: "release" finds "released", "банку" finds "банк"."""
+    return word[:min(5, max(4, len(word) - 2))]
 
 
 def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
     """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
     none that shares none."""
-    words = {w.lower() for w in _WORD.findall(task or "")} - _COMMON
+    stems = {_stem(w) for w in {w.lower() for w in _WORD.findall(task or "")} - _COMMON}
     scored = []
     for n in notes:
         if not is_page(n.path):
@@ -522,7 +529,7 @@ def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> l
         except OSError:
             continue
         have = {w.lower() for w in _WORD.findall(f"{n.title} {text}")}
-        hits = len(words & have)
+        hits = sum(1 for st in stems if st in have or any(w.startswith(st) for w in have))
         if hits:
             scored.append((-hits, n.path, n))
     return [n for *_, n in sorted(scored)[:limit]]

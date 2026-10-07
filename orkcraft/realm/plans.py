@@ -10,7 +10,8 @@ subtasks (design: docs/design/barracks-planning.md §3–4).
                                            where allowed, never a part dropped
     final_prompt(...) / rework_of(...)     the steward's last look at the whole, against the request
 
-The goal of the building (🪙 thrift · ⚖️ balance · 💎 quality) moves the defaults: `GOALS`.
+The goal of the building (🪙 thrift · ⚖️ balance · 💎 quality) moves the orks' defaults: `GOALS`; the tier of
+the steward's own calls (sort, plan, review, the last look) is realm/steward.py `WORK`.
 The steward's answer is untrusted text: a plan is used only when it passes `check`.
 """
 from __future__ import annotations
@@ -40,19 +41,14 @@ class Goal:
     shift: int                   # a subtask's tier against the plan's: -1 lighter, +1 heavier
     parallel: int                # subtasks at once at most (0: as many as the pool has orks)
     sub_review: bool             # a subtask is read by the steward after its tests (else the tests only)
-    final: str                   # the tier of the steward's last look at the whole
-    plan: str = "warrior"        # the tier the steward plans a task on that is worth a plan
     review_trivial: bool = False  # a trivial task is read by the steward too (else its tests only)
 
 
 GOALS = {
-    "thrift": Goal("laborer", -1, 2, False, "warrior", "warrior", False),
-    "balance": Goal("laborer", 0, 0, True, "elder", "warrior", False),
-    "quality": Goal("warrior", 1, 0, True, "elder", "elder", True),
+    "thrift": Goal("laborer", -1, 2, False, False),
+    "balance": Goal("laborer", 0, 0, True, False),
+    "quality": Goal("warrior", 1, 0, True, True),
 }
-TRIAGE_TIER = "laborer"          # the steward's first look at a task: light and quick
-PLAN_TIER = "elder"              # the heaviest a plan ever runs on (a goal names its own: `Goal.plan`)
-REVIEW_TIER = "warrior"          # the steward's read of a task or a subtask
 
 
 def goal_of(aim: str) -> Goal:

@@ -355,7 +355,8 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   a raw `watch.webhook`.
 - **One tower, an intent.** Rather than a tower per source, give one tower every source and say what
   you listen for: `intent: user feedback about the app`. The Lookout puts each new signal (the
-  schedule's aside) to the Fast Path's light model, twenty at a time, fenced as data it must not
+  schedule's aside) to its steward (*Judge what it caught*: the tier picked for it, else the goal's,
+  light under ⚖️), twenty at a time, fenced as data it must not
   obey; what matches goes down the roads with its reason (`🎯 a user complains about login`), the
   rest stays in the list, dimmed and read. With the Fast Path off everything passes, and the head
   says so.
@@ -1004,7 +1005,7 @@ onboarding (*Punk ork*).
 | Apply if unanswered | On the clock |
 | Apply at once | Unchained |
 | History | Chronicles |
-| Advisor | Elder |
+| Advisor | Elders |
 | Building designer | Mason & Artisan |
 | Data planner | Mason |
 | Layout designer | Artisan |
@@ -1014,6 +1015,9 @@ onboarding (*Punk ork*).
 | Review board | Council |
 | to-do | chore |
 | note | scribble |
+| context | — |
+| plan | — |
+| personal | — |
 | Drop file here | The Pit |
 | External listeners | Watchtower |
 | Router | Signpost |

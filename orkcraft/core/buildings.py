@@ -21,6 +21,31 @@ from orkcraft.realm.buildings import Building, custom_building
 GOAL_WORDS = {"thrift": "the retros will make it cheaper",
               "balance": "cheaper where it is liked, better where it is not",
               "quality": "the retros will make its results better — it may spend more (up to twice the prompt)"}
+# An Agent pool's goal also picks the models its orks run on now (realm/plans.py GOALS).
+POOL_GOAL_WORDS = {"thrift": "its orks run on lighter models, at most 2 parts at once; the parts of a plan pass on "
+                             "their tests, without the steward's review",
+                   "balance": "simple tasks on a light model, the parts of a plan on the plan's",
+                   "quality": "its orks run on heavier models; every task is reviewed, a trivial one too"}
+TIER_WORDS = {"elder": "a heavy model", "warrior": "a middle model", "laborer": "a light model", "": "the default model"}
+WORK_NOTE = "While the quota is tight it works as Thrift. A model you pick for a steward's task stays."
+
+
+def goal_words(town: Town, building_id: str, goal: str) -> str:
+    """What `goal` does to this building: the retros' aim, and the models its work runs on — an Agent pool's
+    orks, and the steward's work that the goal moves (realm/steward.py `WORK`)."""
+    type_id = catalog.type_of(town.spec_of(building_id)).id
+    words = [GOAL_WORDS[goal]]
+    if type_id == "barracks":
+        words.append(POOL_GOAL_WORDS[goal])
+    labels = steward.uses(type_id)
+    moved = [f"{labels.get(u, u)} on {TIER_WORDS.get(t.get(goal, ''), 'the default model')}"
+             for u, t in steward.WORK.get(type_id, {}).items() if len(set(t.values())) > 1]
+    if moved:
+        words.append("the steward: " + ", ".join(moved))
+    text = "; ".join(words)
+    return f"{text}. {WORK_NOTE}" if type_id in steward.WORK else text
+
+
 FREEDOM_WORDS = {"chains": "its questions and its changes wait for you",
                  "clock": "a question waits for you some minutes, a change the hours you are around — then the "
                           "steward decides (of the changes, only what makes it cheaper)",
@@ -142,8 +167,8 @@ def revert(town: Town, building_id: str) -> bool:
 # -- a building's goal and 👍 / 👎 -------------------------------------------------------------------
 
 def cycle_goal(town: Town, building_id: str, goal: str = "") -> str | None:
-    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards (`goal`:
-    that one, as the GUI's three steps pick it)."""
+    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards, and in an
+    Agent pool and in the steward's work the models it runs on (`goal`: that one, as the GUI's three steps pick it)."""
     b = town.scroll.building(building_id)
     if b is None:
         return None
@@ -151,7 +176,7 @@ def cycle_goal(town: Town, building_id: str, goal: str = "") -> str | None:
         goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
     b.goal = None if goal == "balance" else goal
     town.save()
-    town.toast(f"{town.title_of(building_id)}: {GOAL_WORDS[goal]}",
+    town.toast(f"{town.title_of(building_id)}: {goal_words(town, building_id, goal)}",
                title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
     return goal
 
