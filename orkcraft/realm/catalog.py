@@ -149,7 +149,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "A cart is a new card: a task, or one of your to-dos when its route is one of `mine_routes`; the result of "
         "a task it sent (a Barracks' `pool.assigned` / `pool.done` on a return road) moves that card",
         "counts per status, the task in work, your open to-dos, the latest notes, * when something is new",
-        "the lanes, your to-dos and the notes; add, move, open, tick off, colour and send cards",
+        "the lanes, your to-dos and the notes; add, move, open, tick off, colour and send cards; a card's "
+        "context from the wikis, a to-do's plan, personal cards that never reach a model",
         events=(_e("tasks.status_changed", "task moved", NODE, "a task changed its status (from → to)"),
                 _e("tasks.created", "task added", NODE, "a new task was added (or a note became one)"),
                 _e("notes.created", "note added", TEXT, "a sticky note was added: its title and text"),
@@ -158,7 +159,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("notes.new", "New note", "🗒", "add a sticky note"),
                  _a("todos.new", "New chore", "☐", "add a to-do of your own")),
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
-                "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False)},
+                "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False),
+                "wikis": (list, None, False), "private_todos": (bool, None, False), "plan_model": (str, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",
