@@ -697,6 +697,34 @@ def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
     call("town.demolish", {"id": bid})
 
 
+def test_a_signposts_route_with_no_road_is_a_stub_pulled_to_a_building(page, gui):
+    """The same stubs for a Signpost: each route of its rules with no road out; pulled to a building, the road is laid
+    for that route and signed with it. `ORKCRAFT_SHOTS` keeps a screenshot."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    post = call("town.build", {"type": "signpost"})
+    to = call("town.build", {"type": "pit"})
+    town = gui[0].host.town                                     # the rules, as the steward would write them
+    town.call(lambda: town.worker(post).set_rules(["bugs: contains error", "rest: else"]))
+    pg.keyboard.press("Escape")
+    stub = pg.locator(f'.gui-loose[aria-label="Connect bugs"]')
+    stub.wait_for(state="visible", timeout=WAIT_MS)
+    if shots:
+        pg.locator(".gui-town").screenshot(path=f"{shots}/sp-1-stubs.png")
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    pg.mouse.move(s["x"] + 4, s["y"] + 1)
+    pg.mouse.down()
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.up()
+    pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
+    assert pg.locator(".gui-signs .gui-sign", has_text="bugs").count() == 1 and pg.locator(".gui-modal").count() == 0
+    if shots:
+        pg.locator(".gui-town").screenshot(path=f"{shots}/sp-2-road.png")
+    call("town.demolish", {"id": to})
+    call("town.demolish", {"id": post})
+
+
 def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     """Settings → AI tools: a tool turned on joins the main tool's choices; picking it says decisions run there."""
     pg = page

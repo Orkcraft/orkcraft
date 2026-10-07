@@ -62,6 +62,10 @@ and always there:
   for that exit at once — no dialog, the stub goes. Its tooltip says what it is: *no road takes this
   exit yet — pull one to a building*.
 - *Back to the author* and *Ask me* draw nothing: they have no road (above).
+- **A Signpost does the same** for each route of its rules with no road out (a road that takes
+  every route takes them all; the *no rule* road is not a route): the stub is signed with the route
+  (`new-meeting` → *new meeting*), and the road pulled from it waits for that route. Any building
+  can draw such stubs: its worker's `loose_ends()` lists them, each with the event its road is laid on.
 
 ## 3. Setting up — in the panel, never a dialog
 
@@ -166,5 +170,4 @@ The states stay those of today (the screenshots), with a way on from each:
 
 1. **The keeper's proposal**: one turn of the light model, or the Warchief's model for a better clan?
 2. **A member's model**: does the keeper choose tiers (an elder for Risks), or all the same by default?
-3. **Exits shared with the Signpost**: the board's roads are signed with its exits now (§2.1); should
-   a Signpost's routes with no road get the same stubs?
+3. **Exits shared with the Signpost**: done — both draw their ways out with no road as stubs (§2.1).

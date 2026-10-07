@@ -103,7 +103,8 @@ def lay(town: Town, target_id: str, source_id: str, event: str, handler: str | N
     src_title = src.title if src else source_id
     town.record(target_id, "road_subscribed", source=src_title, event=pipes.label(event), handler=who)
     if not quiet:
-        what = _exit_name(town, source_id, route) if event == "team.routed" else ""
+        what = (_exit_name(town, source_id, route) if event == "team.routed"
+                else f"route {route}" if route and event == "signpost.routed" else "")
         town.toast(f"🛤 {src_title} → {tgt.title if tgt else target_id} ({what or pipes.label(event)}, {who})", title="Roads")
     return road
 

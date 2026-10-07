@@ -126,6 +126,18 @@ class SignpostWorker(Worker):
                             "label": r.label or ("no rule" if unmatched else ", ".join(routes) or "every route")})
         return out
 
+    def loose_ends(self) -> list[dict]:
+        """The routes no road out takes yet (a road for every route takes them all): stubs on the map."""
+        taken: set[str] = set()
+        for r in self.roads_out():
+            if r["unmatched"]:
+                continue
+            if not r["routes"]:
+                return []
+            taken.update(r["routes"])
+        return [{"route": x, "name": x.replace("-", " ").replace("_", " "), "event": f"signpost.routed#{x}"}
+                for x in signpost.routes(self.rules_text) if x not in taken]
+
     # -- the hut --------------------------------------------------------------------------------
 
     def hut_lines(self, widths: list[int]) -> list[str]:
