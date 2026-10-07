@@ -24,8 +24,6 @@ NOT_WORK = {
     ("core/workers/council.py", "roads.run_agent"): "its members, and its moderator on steward_pick's model",
     ("core/workers/council_setup.py", "fastpath.light_runner"): "setting up its clan: upkeep, not its work",
     ("core/workers/mill.py", "default_agent("): "its agent steps on steward_pick's model",
-    ("core/workers/town_hall.py", "builders.main_runner_of"): "the town's Warchief and Town planner, not a "
-                                                               "building's work",
 }
 EXTRA = {"catapult": ["realm/catapult_web/*.py"]}
 
@@ -99,3 +97,22 @@ def test_the_buildings_think_on_their_steward_s_model_by_their_goal(fake_repo, m
     monkeypatch.setattr(type(fields), "quota", lambda self: type("Camp", (), {"tight": True})())
     town.scroll.building(fields.building_id).goal = "quality"
     assert fields.steward_pick("plan").tier == "laborer"                  # tight: 🪙 thrift
+
+
+def test_the_warchief_and_the_town_planner_think_on_the_town_hall_s_steward(fake_repo, monkeypatch):
+    from orkcraft.core.workers import Worker
+    from orkcraft.gui.host import Host
+    from orkcraft.realm import builders, checkpoint
+    checkpoint.ensure(fake_repo)
+    town = Host(fake_repo, auto_commit=False).town
+    monkeypatch.setattr(Worker, "quota", lambda self: None)
+    calls = []
+    monkeypatch.setattr(builders, "ask", lambda tool, prompt, model=None: calls.append((tool, model)) or ("ok", 0.0))
+    hall, tool = town.worker("town_hall"), builders.main_tool(town.machine)
+    hall.steward_runner("answer")("p")                                    # ⚖️: the main tool's own model, as before
+    town.scroll.building("town_hall").goal = "quality"
+    hall.steward_runner("answer")("p")
+    hall.steward_runner("build")("p")
+    town.scroll.building("town_hall").goal = "thrift"
+    hall.steward_runner("build")("p")
+    assert calls == [(tool, None), (tool, "elder"), (tool, "elder"), (tool, "warrior")]

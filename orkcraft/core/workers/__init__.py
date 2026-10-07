@@ -120,22 +120,32 @@ class Worker:
 
     # -- its steward's model -------------------------------------------------------------------------
 
+    def _steward_of(self):
+        """Its steward's spec and its tool: the one its steward names, else (none, or `main`) the main tool of
+        the machine's settings as the town holds them."""
+        from orkcraft.realm import builders, harnesses, steward
+        scroll = getattr(self.town, "scroll", None)
+        b = scroll.building(self.building_id) if scroll is not None else None
+        tool = steward.harness_for(b)
+        machine = getattr(self.town, "machine", None)
+        if tool in ("", harnesses.MAIN) and machine is not None:
+            tool = builders.main_tool(machine)
+        return b, tool
+
     def steward_pick(self, use: str, setting: str = ""):
         """The model of its steward's `use` now (realm/steward.py `pick`: a tier picked for it, else the
         building's `setting`, else for its work the goal in force)."""
         from orkcraft.realm import steward
-        scroll = getattr(self.town, "scroll", None)
-        b = scroll.building(self.building_id) if scroll is not None else None
-        return steward.pick(b, use, steward.harness_for(b), type_id=self.TYPE or self.btype.id, goal=self.aim_now,
-                            setting=setting)
+        b, tool = self._steward_of()
+        return steward.pick(b, use, tool, type_id=self.TYPE or self.btype.id, goal=self.aim_now, setting=setting)
 
     def steward_runner(self, use: str, setting: str = ""):
         """Its steward's model call for `use` on the model `steward_pick` names, on its steward's tool. Every
         model call that makes the building's results goes through here (tests/test_steward_work.py)."""
-        from orkcraft.realm import steward
-        scroll = getattr(self.town, "scroll", None)
-        b = scroll.building(self.building_id) if scroll is not None else None
-        return steward.runner_for(b, use, type_id=self.TYPE or self.btype.id, goal=self.aim_now, setting=setting)
+        from orkcraft.realm import builders
+        _b, tool = self._steward_of()
+        p = self.steward_pick(use, setting)
+        return builders.runner_for(tool, p.tier or p.model or None)
 
     # -- its life -------------------------------------------------------------------------------
 

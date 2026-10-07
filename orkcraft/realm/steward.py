@@ -52,7 +52,8 @@ TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", 
              "fields": {"title": "Name the cards", "plan": "Plan the to-dos"},
              "watchtower": {"judge": "Judge what it caught"},
              "mill": {"agent": "The agent steps"},
-             "council": {"decide": "Let the document go"}}
+             "council": {"decide": "Let the document go"},
+             "town_hall": {"answer": "Answer as the Warchief", "build": "Plan the town (Town planner)"}}
 
 
 def _g(thrift: str, balance: str, quality: str) -> dict[str, str]:
@@ -67,7 +68,8 @@ WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("
         "fields": {"title": _g("laborer", "laborer", "laborer"), "plan": _g("laborer", "laborer", "warrior")},
         "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
         "mill": {"agent": _g("laborer", "", "elder")},
-        "council": {"decide": _g("warrior", "", "elder")}}
+        "council": {"decide": _g("warrior", "", "elder")},
+        "town_hall": {"answer": _g("warrior", "", "elder"), "build": _g("warrior", "", "elder")}}
 # Not on the steward yet — they call their models on their own, so the goal does not reach them, and they
 # break the rule the test holds (tests/test_steward_work.py): the Wiki (scrolls: its librarian, its review),
 # the Review gate (loot) and the Publisher (catapult: its overseer). Being reworked; until then not done.

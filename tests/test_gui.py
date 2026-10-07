@@ -647,9 +647,10 @@ def test_an_agent_pool_goal_says_which_models_its_tasks_run_on(fake_repo):
     assert set(info["goal_hints"]) == {"thrift", "balance", "quality"}
     final = next(u for u in info["steward"]["uses"] if u["id"] == "final") if info["steward"] else None
     assert final is None or (final["work"] and final["by_goal"])
-    host.command("building.goal", {"id": "town_hall", "value": "thrift"})
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    host.command("building.goal", {"id": pit, "value": "thrift"})
     assert "models" not in toasts[-1]["message_plain"]                 # its steward has no work the goal moves
-    assert host.command("info", {"id": "town_hall"})["goal_hints"] == {}
+    assert host.command("info", {"id": pit})["goal_hints"] == {}
 
 
 def _wait(host, jid, states=("ready", "verdict", "failed")):
