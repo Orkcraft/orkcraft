@@ -102,7 +102,7 @@ export function card(b) {
     ${c.state === "none" ? html`<div class="gui-hut__big">${say("Ready")}<small>${say("a road or Review brings a document")}</small></div>`
       : c.state === "running" && c.triage ? html`<div class="gui-hut__big ok-tone-wait">${c.ok + c.no}/${c.of}<small>${say("have spoken · reading")}</small></div>`
       : c.state === "running" ? html`<div class="gui-hut__big">${c.cycle}/${c.max}<small>${say("cycle")} · <span class="ok-tone-ok">✓${c.ok}</span> <span class=${c.no ? "ok-tone-error" : ""}>✗${c.no}</span> · ${c.spent}</small></div>`
-      : html`<div class=${cls("gui-hut__big", TONE[c.state] || "")}>${BIG[c.state] || ""} ${say(c.outcome)}<small>${c.route ? `→ ${c.route}` : `${say("cycle")} ${c.cycle} · ${c.spent}`}</small></div>`}
+      : html`<div class=${`gui-hut__big ${TONE[c.state] || ""}`}>${BIG[c.state] || ""} ${say(c.outcome)}<small>${c.route ? `→ ${c.route}` : `${say("cycle")} ${c.cycle} · ${c.spent}`}</small></div>`}
     ${c.title && html`<div class="gui-hut__text" title=${c.title}>${c.title}</div>`}
     ${c.queued > 0 && html`<div class="gui-hut__text"><b>${c.queued}</b> ${say("waiting in line")}</div>`}
     ${last && html`<div class="gui-hut__foot"><span><b>${say(last.who)}</b>${" "}<span class=${TONE[last.verdict] || ""}>${last.kind === "answer" ? say("answers") : VERDICT[last.verdict] ?? last.verdict}</span></span>
@@ -123,7 +123,7 @@ function Clan({ id, data }) {
     <button class="council-chip" role="listitem" onClick=${() => brief(data.steward.brief, "Steward")}
         title=${say(`${data.steward.label} · decides · open its brief${data.steward.briefed ? "" : " (empty)"}`)}>
       <b>${say("Steward")}</b><span class="ok-tone-muted">${say("decides")}</span></button>
-    ${data.members.map((m) => html`<button key=${m.role} role="listitem" class=${cls("council-chip", TONE[m.verdict] ? `is-${m.verdict}` : "")}
+    ${data.members.map((m) => html`<button key=${m.role} role="listitem" class=${`council-chip${TONE[m.verdict] ? ` is-${m.verdict}` : ""}`}
         onClick=${() => brief(m.brief, m.role)}
         title=${`${m.label}${m.tier ? ` · ${m.tier}` : ""}${m.veto ? " · veto" : ""} · ${say("open its brief")}${m.briefed ? "" : say(" (empty)")}${m.says ? `\n${m.says}` : ""}`}>
       <b>${m.role}</b>${m.veto && html`<span class="ok-word">veto</span>`}

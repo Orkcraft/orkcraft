@@ -2,19 +2,17 @@
   "type": "catapult",
   "about": "🎯 The Catapult: the strict way out — what is loaded and what it waits for, the check against the schema, and the shots to an API or into a site's forms.",
   "panes": {
-    "head":  {"about": "where it sends, what it waits for, what runs now, a shot that waits for a yes; Fire, Dry run, confirm", "components": ["status"], "required": true},
-    "load":  {"about": "what is loaded, by source, as JSON, with what the schema says of it", "components": ["text", "markdown"], "required": true},
-    "shots": {"about": "the shots, newest first: the request, the answer, the code, the pictures of the forms", "components": ["list", "log", "table"], "required": true},
+    "head":  {"about": "a shot that waits for a yes as a strip with Fire; where it sends, what runs now, Fire, Dry run; ask before every shot and the schema and address folded to a line", "components": ["status"], "required": true},
+    "load":  {"about": "what is loaded and what it waits for, the schema check, the load as JSON", "components": ["text", "markdown"], "required": true},
+    "shots": {"about": "the shots, newest first, one line each; a shot opens here, over the rows: the request, the answer, the pictures of the forms", "components": ["list", "log", "table"], "required": true},
     "forms": {"about": "browser mode: the intent's forms, their fields and what fills each, the last picture of each form", "components": ["table", "list"], "dynamic": true}
   },
   "default": {
     "version": 1, "type": "catapult", "split": "column",
     "panes": [
-      {"id": "head", "component": "status", "size": "auto", "font": "status"},
-      {"split": "row", "size": 3, "panes": [
-        {"id": "load", "component": "text", "size": 2, "font": "mono"},
-        {"id": "shots", "component": "list", "size": 3, "font": "body"}
-      ]},
+      {"id": "head", "component": "status", "size": "auto", "font": "body"},
+      {"id": "load", "component": "text", "size": "auto", "font": "body"},
+      {"id": "shots", "component": "list", "size": 2, "font": "body"},
       {"id": "forms", "component": "table", "size": 2, "font": "body"}
     ]
   }

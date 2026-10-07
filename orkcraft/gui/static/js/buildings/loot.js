@@ -81,7 +81,7 @@ function Acts({ id, it }) {
 function CartCard({ id, it }) {
   return html`<button class=${cls("loot-card", { "is-asks": it.status === "needs_you" })} title=${it.title}
       onClick=${() => choose(id, "item", it.id)}>
-    <span class=${cls("loot-card__state", TONE[it.status] || "")}>${MARK[it.status]}${say(WORD[it.status])}${it.edited ? ` · ${say("edited")}` : ""}</span>
+    <span class=${`loot-card__state ${TONE[it.status] || ""}`}>${MARK[it.status]}${say(WORD[it.status])}${it.edited ? ` · ${say("edited")}` : ""}</span>
     <span class="loot-card__title">${it.label}</span>
     <span class="loot-card__foot"><span class="loot-card__from">${it.source}</span>
       ${it.attempts > 0 && html`<span>↩${it.attempts}</span>`}
@@ -268,10 +268,12 @@ export function card(b) {
   </div>`;
 }
 
+/** The window by its UI document (design/buildings/loot.json). `cart` shows nothing of its own: a cart opens
+ *  over the queue (an older document that still has the pane loses nothing). */
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
-    queue: () => html`<${Queue} id=${id} data=${data} />`,
-    cart: () => html`<${Cart} id=${id} data=${data} />`,
+    queue: () => html`<${QueuePane} id=${id} data=${data} />`,
+    cart: () => null,
   };
 }

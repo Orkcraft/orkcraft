@@ -1,6 +1,7 @@
-// 🌲 File Forest: a folder of the project as a tree that opens folder by folder in place. The files git
-// sees changed are marked; a click picks the target, Send sends it down its roads; a file's mark (or a
-// double-click) opens it in Lake. The work is the worker's (core/workers/forest.py).
+// 🌲 File Forest: a folder of the project as a tree that opens folder by folder in place. Closed: how many
+// files changed and their names, the target. Open, made for the half panel: the counters on one line, the
+// target as a strip with Send beside it, the changed files listed over the tree; a click picks the target,
+// a file's mark (or a double-click) opens it in Lake. The work is the worker's (core/workers/forest.py).
 import { signal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -10,23 +11,12 @@ import { openInLake } from "../lake.js";
 const opened = signal({});         // building id → {folder path: its rows, or null while they come}
 const thumbs = signal({});         // "<building>|<path>" → a data: URL, "" when there is none
 
-const CSS = `
-.gui-forest { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
-.gui-forest .gui-tree ul { margin: 0; }
-.gui-forest__row { display: flex; align-items: center; gap: var(--space-1); }
-.gui-forest__fold { width: var(--space-4); flex: none; text-align: center; color: var(--ink-muted); }
-.gui-forest__name { overflow: hidden; text-overflow: ellipsis; }
-.gui-forest__mark { margin-left: auto; flex: none; padding: 0 var(--space-1); }
-.gui-forest__lake { flex: none; appearance: none; border: 0; background: none; color: var(--info); cursor: pointer; padding: 0 var(--space-1); }
-.gui-forest__thumb { height: calc(var(--space-8) + var(--space-4)); max-width: calc(var(--space-8) * 3); flex: none;
-  object-fit: contain; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
-.gui-forest__changed { color: var(--warning); }
-`;
-if (typeof document !== "undefined" && !document.getElementById("gui-css-forest")) {
-  const style = document.createElement("style");
-  style.id = "gui-css-forest";
-  style.textContent = CSS;
-  document.head.append(style);
+const sheet = new URL("./forest.css", import.meta.url).href;
+if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = sheet;
+  document.head.appendChild(link);
 }
 
 function list(id, path) {
@@ -79,7 +69,7 @@ function Rows({ id, rows, picked, media }) {
         <span class="gui-forest__fold">${r.dir ? (isOpen ? "▾" : "▸") : ""}</span>
         ${media && r.media && html`<${Thumb} id=${id} row=${r} />`}
         <span class=${cls("gui-forest__name", { "gui-forest__changed": !!r.status })}>${r.name}${r.dir ? "/" : ""}</span>
-        ${r.path === picked && html`<span><i class="ok-ico">🎯</i><span class="ok-word">target</span></span>`}
+        ${r.path === picked && html`<span class="gui-forest__target">${say("target")}</span>`}
         ${r.status && html`<span class="gui-forest__mark ok-font-status ok-tone-wait" title=${say("changed")}>${r.status}</span>`}
         ${!r.dir && html`<button class="gui-forest__lake" title=${say("Open in Lake")} aria-label=${say("Open in Lake")}
           onClick=${(e) => { e.stopPropagation(); toLake(id, r.path); }}>↗</button>`}
@@ -98,35 +88,75 @@ function Tree({ id, data, media }) {
     <${Rows} id=${id} rows=${data.top} picked=${data.picked} media=${media} /></ul></div>`;
 }
 
+/** The head: the folder, how many files changed, Open the folder quiet; the target picked as a strip under
+ *  it with Send beside it (and Open in Lake for a file). */
 function Head({ id, data }) {
   const name = data.picked ? data.picked.split("/").pop() : "";
-  return html`<div class="gui-head">
-    <span class="gui-head__what"><b>${data.folder}</b>
-      ${data.error ? html`<span class="ok-tone-fire"> · ⚠ ${data.error}</span>`
-        : html`<span class="ok-tone-muted"> · ${data.changed ? `changed: ${data.changed} files` : "nothing changed"}</span>`}</span>
-    <span class="gui-head__spacer"></span>
-    ${name ? html`<span class="gui-head__what" title=${data.picked}><i class="ok-ico">🎯</i><span class="ok-word">target:</span> ${name}</span>`
-           : html`<span class="ok-tone-muted">click a file to pick it</span>`}
-    <button class="ok-act" disabled=${!name} title=${say("The picked file goes down its roads")}
-      onClick=${() => act(id, "send").catch(() => {})}><span class="ok-act__label">Send</span></button>
+  const file = !!name && !data.top.some((r) => r.path === data.picked && r.dir);
+  return html`<div>
+    <div class="forest-head">
+      <span title=${data.root}><b>${data.folder}</b></span>
+      ${data.error ? html`<span class="ok-tone-fire">⚠ ${data.error}</span>`
+        : data.changed ? html`<span class="ok-tone-wait"><b>${data.changed}</b> ${say(data.changed === 1 ? "file changed" : "files changed")}</span>`
+        : html`<span class="ok-tone-ok">✓ ${say("nothing changed")}</span>`}
+      <span class="forest-head__spacer"></span>
+      <button class="ok-act" title=${say("Open the folder in the system's file manager")}
+        onClick=${() => act(id, "open").catch(() => {})}><span class="ok-act__label">${say("Open the folder")}</span></button>
+    </div>
+    <div class="forest-target">
+      ${name ? html`<span class="forest-target__what" title=${data.picked}><span>${say("Target")}:</span> <b>${name}</b>
+          <span> · ${data.picked}</span></span>
+          ${file && html`<button class="ok-act" onClick=${() => toLake(id, data.picked)}><span class="ok-act__label">${say("Open in Lake")}</span></button>`}`
+        : html`<span class="forest-target__what"><span>${say("Click a file to pick it as the target")}</span></span>`}
+      <button class="ok-btn primary" disabled=${!name} title=${say("The picked file goes down its roads")}
+        onClick=${() => act(id, "send").catch(() => {})}>Send</button>
+    </div>
   </div>`;
 }
 
-/** Closed: `./<folder>`, how many files changed, the target (docs/design/building-views.md). */
+/** The changed files, the ones looked at most: a click picks one, its mark opens it in Lake. */
+function Changed({ id, data }) {
+  const rows = data.changes || [];
+  if (!rows.length) return null;
+  return html`<section class="forest-changed">
+    <h3 class="ok-font-heading">${say("Changed")} <small>${data.changed}</small></h3>
+    <ul>${rows.map((r) => html`<li key=${r.path}>
+      <div class=${cls("gui-tree__item gui-forest__row", { "is-selected": r.path === data.picked })} title=${r.path}
+          onClick=${() => pick(id, r.path)} onDblClick=${() => toLake(id, r.path)}>
+        <span class="gui-forest__mark ok-font-status ok-tone-wait" title=${say("changed")}>${r.status || "M"}</span>
+        <span class="gui-forest__name">${r.name}</span>
+        <span class="gui-forest__dir">${r.path.slice(0, -r.name.length - 1)}</span>
+        <button class="gui-forest__lake" title=${say("Open in Lake")} aria-label=${say("Open in Lake")}
+          onClick=${(e) => { e.stopPropagation(); toLake(id, r.path); }}>↗</button>
+      </div></li>`)}</ul>
+    ${data.changed > rows.length && html`<p class="ok-tone-muted">+${data.changed - rows.length} ${say("more in the tree")}</p>`}
+  </section>`;
+}
+
+/** Closed: the headline is how many files changed (or ✓ nothing changed), the folder and their names
+ *  under it; the foot the target (docs/design/building-views.md). */
 export function card(b) {
   const c = b.card;
   if (!c) return null;
-  if (c.error) return html`<span class="ok-tone-fire">⚠ ${c.error}</span>`;
-  return html`<div>${c.folder}</div>
-    <div class=${c.changed ? "ok-tone-wait" : "ok-tone-muted"}>${c.changed ? `changed: ${c.changed} files` : "changed: nothing"}</div>
-    ${c.picked && html`<div><i class="ok-ico">🎯</i><span class="ok-word">target:</span> ${c.picked}</div>`}`;
+  if (c.error) return html`<div class="gui-hut__body-in">
+    <div class="gui-hut__big ok-tone-error">✗ ${say("Unread")}<small>${c.folder}</small></div>
+    <div class="gui-hut__text ok-tone-error" title=${c.error}>${c.error}</div></div>`;
+  const files = c.files || [];
+  return html`<div class="gui-hut__body-in">
+    ${c.changed ? html`<div class="gui-hut__big"><span class="ok-tone-wait">${c.changed}</span><small>${say(c.changed === 1 ? "file changed" : "files changed")}</small></div>`
+      : html`<div class="gui-hut__big"><span class="ok-tone-ok">✓</span><small>${say("nothing changed")}</small></div>`}
+    <div class="gui-hut__text">${c.folder}</div>
+    ${files.length > 0 && html`<div class="gui-hut__text ok-tone-muted">${files.join(" · ")}${c.changed > files.length ? ` +${c.changed - files.length}` : ""}</div>`}
+    <div class="gui-hut__foot"><span>${c.picked ? html`${say("target")}: <b>${c.picked}</b>` : say("no target picked")}</span></div>
+  </div>`;
 }
 
-/** Full: the head and the tree, with small previews of images and video (design/buildings/forest.json). */
+/** The head with the target, the changed files over the tree, the tree with small previews of images and
+ *  video (design/buildings/forest.json). */
 export function panes(id, data) {
   return {
     head: () => html`<${Head} id=${id} data=${data} />`,
-    tree: () => html`<div class="gui-forest"><${Tree} id=${id} data=${data} media=${true} /></div>`,
+    tree: () => html`<div class="gui-forest"><${Changed} id=${id} data=${data} /><${Tree} id=${id} data=${data} media=${true} /></div>`,
   };
 }
 
