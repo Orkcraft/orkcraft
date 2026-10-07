@@ -81,7 +81,7 @@ def detail(w) -> dict:
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
         "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
         "sections": wiki.sections(w.wiki_root, w.topic), "agenda": w.agenda_view(),
-        "quality": w.quality_view(),
+        "quality": w.quality_view(), "model_hint": w.model_hint,
     }
 
 
@@ -140,7 +140,14 @@ def _add_folder(w, args: dict) -> None:
 
 def _suggest(w, args: dict) -> dict:
     """What a Quick note should get here, as it is typed: section, tags, links (rules, no model)."""
-    return w.suggest(text(args, "text", quicknote.MAX_CHARS)).as_dict()
+    body = text(args, "text", quicknote.MAX_CHARS)
+    hint = w.suggest(body)
+    return {**hint.as_dict(), "thinking": w.ask_model(body, hint)}
+
+
+def _find(w, args: dict) -> list[dict]:
+    """The pages and notes that match what is typed in the window's search."""
+    return w.find(text(args, "query", 200))
 
 
 def _strings(args: dict, key: str, most: int, chars: int = 200) -> list[str]:
@@ -165,4 +172,5 @@ def _note(w, args: dict) -> str:
 
 
 ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder,
-        "suggest": _suggest, "note": _note, "fix": _fix, "check": _check}
+        "suggest": _suggest, "note": _note, "fix": _fix, "check": _check,
+        "find": _find}

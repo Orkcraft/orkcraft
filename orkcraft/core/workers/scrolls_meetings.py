@@ -40,20 +40,20 @@ class MeetingsMixin:
 
     # -- what it reads --------------------------------------------------------------------------
 
-    def calendar_worker(self):
-        """The War Drum meetings are matched in: `calendar` in the settings, else the only one in the town."""
+    def calendar_workers(self) -> list:
+        """The War Drums meetings are matched in: the one `calendar` names, else every one in the town."""
         named = str(self.config.get("calendar") or "").strip()
         ids = [bid for bid, spec in self.town.custom_specs.items() if catalog.migrate(spec).get("type") == "war_drum"]
-        bid = named if named in ids else (ids[0] if len(ids) == 1 else "")
-        return self.town.worker(bid) if bid else None
+        return [self.town.worker(bid) for bid in ([named] if named in ids else ids)]
 
     def meetings(self) -> list[agenda.Meeting]:
-        """The Calendar's timed events of the coming days, as meetings."""
-        cal = self.calendar_worker()
-        events = getattr(getattr(cal, "day", None), "events", None) or []
-        out = []
-        for e in events:
-            if isinstance(e.start, dt.datetime):
+        """The Calendars' timed events of the coming days, as meetings."""
+        out, seen = [], set()
+        for cal in self.calendar_workers():
+            for e in getattr(getattr(cal, "day", None), "events", None) or []:
+                if not isinstance(e.start, dt.datetime) or daybook.meet_id(e) in seen:
+                    continue
+                seen.add(daybook.meet_id(e))
                 end = e.end if isinstance(e.end, dt.datetime) else None
                 out.append(agenda.Meeting(daybook.meet_id(e), e.summary, e.start.replace(tzinfo=None),
                                           end.replace(tzinfo=None) if end else None))
@@ -176,8 +176,7 @@ class MeetingsMixin:
         return written
 
     def _after_line(self, mid: str, covered: int, left: int) -> str:
-        cal = self.calendar_worker()
-        doc = (cal.docs().get(mid) if cal is not None and hasattr(cal, "docs") else None) or {}
+        doc = next((d for cal in self.calendar_workers() if hasattr(cal, "docs") for d in [cal.docs().get(mid)] if d), {})
         parts = [f"{covered} covered" if covered else "", f"{left} not covered — moved on to the next meeting "
                  "with the same person, else kept as open items" if left else ""]
         line = "- " + "; ".join(p for p in parts if p) if covered or left else ""

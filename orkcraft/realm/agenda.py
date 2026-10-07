@@ -121,17 +121,21 @@ def names_person(title: str, person: str, people: dict[str, list[str]]) -> bool:
 
 def match(text: str, meetings: list[Meeting], people: dict[str, list[str]], now: dt.datetime) -> Found:
     """The meeting a note is for, and the people it names. A meeting wins on the day the note names (2),
-    each person it names in its title (2) and the words they share (1 each, 2 at most); it needs 2, the
-    nearest wins a tie. Only meetings not over yet."""
+    each person it names in its title (2) — a person the wiki has a page for, or a capitalised name the
+    title says too (Ann, Сергей) — and the words they share (1 each, 2 at most); it needs 2, the nearest
+    wins a tie. Only meetings not over yet."""
     named = who(text, people)
     day = day_of(text, now.date())
     words = wiki.stems(text)
+    known = {n.lower() for names in people.values() for n in names}
+    names = [w for i, w in enumerate(_NAME.findall(text or "")) if i and w[0].isupper() and w.lower() not in known]
     best, score = None, 1
     for m in sorted(meetings, key=lambda m: m.start):
         if (m.end or m.start) < now:
             continue
         s = (2 if day and m.start.date() == day else 0) \
             + 2 * sum(1 for p in named if names_person(m.title, p, people)) \
+            + 2 * sum(1 for n in names if says_name(m.title, n)) \
             + min(2, len(words & wiki.stems(m.title)))
         if day and m.start.date() != day:
             continue                                      # a note that names a day is for that day

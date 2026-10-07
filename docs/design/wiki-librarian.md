@@ -1,7 +1,9 @@
 # Design — the Wiki's librarian: keeps, finds, places, checks
 
-Status: written 2026-10-07. Built: stage 1 (§11) — Quick note in the window, `/note`, *→ Wiki* on the
-Task board, rules-only suggestions, Unicode `relevant`. Not yet: stages 2–4. The pictures are on the design canvas *Scroll Dump
+Status: written 2026-10-07; stages 1–4 (§11) built the same day. Where the build went another way
+than this text first said, §12 says so. Not built: the Calendar's own line *from the Wiki: 2 to
+discuss* (the Wiki's card says it instead), the search over a note's suggestions in the Warchief bar
+(`/note` saves with the rules' suggestions at once). The pictures are on the design canvas *Scroll Dump
 screens* (rows 4–6: the quality check, Quick note, the librarian and the meetings). It grows the
 🗑️ Scroll Dump (**Wiki**) from "an ork that turns sources into pages" into the town's owner of
 knowledge: a note goes in with one click, lands in the right place of the wiki, comes back out when
@@ -255,3 +257,17 @@ The librarian answers for the wiki's quality, on a schedule, and says what it fo
 
 Not planned: reading attendees from `.ics` (`ATTENDEE` lines) — a later step that makes *Who* and
 *Meeting* match better; syncing people from Slack or mail.
+
+## 12. As built
+
+- **Calendars.** The Wiki reads every War Drum in the town (`calendar` names one to read only it),
+  not "the only one": a town often has several.
+- **Who.** Besides the people the wiki has pages for, a capitalised name in the note that a meeting's
+  title says too (*Ann* → *1:1 with Ann*) counts as a person for matching.
+- **Open items** stay in the Wiki's window (*To discuss → Open items*) until a meeting with the
+  person comes; the worker writes no lines into people's pages (the librarian may, at take-in, as
+  `WIKI.md` says).
+- **Code.** `realm/quicknote.py` (the note), `realm/agenda.py` (meetings, days, people, the page),
+  `realm/wikicheck.py` (the quality check), `realm/wikifind.py` (search, the light model);
+  `core/workers/scrolls_meetings.py` and `scrolls_quality.py` are parts of the Wiki's worker.
+- **Tests.** `test_quicknote.py`, `test_wiki_meetings.py`, `test_wiki_quality.py`, `test_wiki_find.py`.

@@ -249,7 +249,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("knowledge.add", "Add base", "+", "connect a folder as a source")),
         config={"paths": (list, None, False), "sources": (list, None, False), "wiki": (str, None, False),
                 "inbox": (str, None, False), "calendar": (str, None, False),
-                "check": (str, ("weekly", "daily", "ingest", "off"), False),
+                "check": (str, ("weekly", "daily", "ingest", "off"), False), "suggest_model": (bool, None, False),
                 "topic": (str, ("general", "codebase", "team", "design"), False),
                 "harness": (str, harnesses.ids(), False), "model": (str, None, False),
                 "auto_ingest": (bool, None, False), "commit": (bool, None, False),

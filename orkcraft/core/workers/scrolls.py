@@ -24,7 +24,8 @@ from orkcraft.core.workers import Worker
 from orkcraft.core.workers.scrolls_meetings import MeetingsMixin
 from orkcraft.core.workers.scrolls_quality import QualityMixin
 from orkcraft.env import getenv
-from orkcraft.realm import catalog, daybook, jobs, quicknote, roads, shelves, wiki
+from orkcraft.core import runners
+from orkcraft.realm import agenda, catalog, daybook, jobs, quicknote, roads, shelves, wiki, wikifind
 from orkcraft.realm import team as tm
 from orkcraft.sources import lore
 
@@ -209,6 +210,50 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
         """The section, tags and links a note should get here, and the meeting it is for (rules, no model)."""
         return quicknote.suggest(text, self.repo_root, self.pages, wiki.sections(self.wiki_root, self.topic),
                                  self.meetings(), self.clock())
+
+    model_hint: dict = {}                       # the light model's word on the note typed last: {text, section, tags, people}
+    _asking = False
+
+    def ask_model(self, text: str, hint: quicknote.Suggestion) -> bool:
+        """When the rules found nothing for a note, ask the light model once (off the town's thread); its word
+        lands in `model_hint`. True when it was asked."""
+        if self.config.get("suggest_model", True) is False or self._asking or self.model_hint.get("text") == text \
+                or not wikifind.worth_asking(text, hint):
+            return False
+        runner = runners.FASTPATH_RUNNER
+        if runner is None:
+            if self.simulated or self.town.demo or not self.town.budget_ok():
+                return False
+            from orkcraft.realm import fastpath
+            runner = fastpath.light_runner(self.repo_root)
+        if runner is None:
+            return False
+        sections = wiki.sections(self.wiki_root, self.topic)
+        people = list(agenda.people_of(self.repo_root, self.pages))
+        prompt = wikifind.model_prompt(text, self.topic, sections, people)
+        self._asking = True
+
+        def work() -> None:
+            try:
+                answer = runner(prompt)[0]
+            except Exception:  # a model that cannot be reached leaves the rules' word
+                answer = ""
+            try:
+                self.town.call(self._model_answered, text, wikifind.parse_model(answer, sections, people))
+            except Exception:
+                self._asking = False
+
+        threading.Thread(target=work, daemon=True, name=f"wiki-hint-{self.building_id}").start()
+        return True
+
+    def _model_answered(self, text: str, got: dict) -> None:
+        self._asking = False
+        self.model_hint = {"text": text, **got}
+        self.changed()
+
+    def find(self, query: str) -> list[dict]:
+        """The pages and source notes that match what a person types (no model)."""
+        return wikifind.find(self.repo_root, [*self.pages, *self.source_notes()], query)
 
     def note(self, text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
              source: str = "quick note", take_in: bool = True, meeting: dict | None = None,

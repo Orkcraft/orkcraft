@@ -204,7 +204,7 @@ const DELAY_MS = 400;               // the suggestions wait for the typing to st
  *  each dropped with one click; Save note keeps it in the wiki's inbox (and takes it in at once). */
 function QuickNote({ id, data }) {
   const [text, setText] = useState("");
-  const [hint, setHint] = useState({ section: "", tags: [], links: [], meeting: null, people: [] });
+  const [rules, setHint] = useState({ section: "", tags: [], links: [], meeting: null, people: [] });
   const [section, setSection] = useState(null);     // null: the suggested one
   const [dropped, setDropped] = useState([]);        // tags taken off
   const [added, setAdded] = useState([]);            // tags of the person's own
@@ -223,6 +223,10 @@ function QuickNote({ id, data }) {
     return () => clearTimeout(t);
   }, [id, text]);
   const close = () => { noting.value = null; };
+  const said = data.model_hint && data.model_hint.text === text ? data.model_hint : null;   // the light model's word
+  const hint = !said ? rules : { ...rules, section: rules.section || said.section,
+    tags: [...rules.tags, ...said.tags.filter((t) => !rules.tags.includes(t))],
+    people: rules.people && rules.people.length ? rules.people : said.people };
   const picked = section ?? hint.section;
   const tags = [...hint.tags.filter((x) => !dropped.includes(x)), ...added.filter((x) => !hint.tags.includes(x))];
   const links = hint.links.filter((l) => !off.includes(l.path)).map((l) => l.path);
@@ -247,6 +251,7 @@ function QuickNote({ id, data }) {
   return html`<section class="wiki-note" onKeyDown=${keys}>
     <div class="wiki-note__head"><h3 class="ok-font-heading">${say("Quick note")}</h3>
       <span class="ok-font-status ok-tone-muted">Ctrl+Enter ${say("saves")} · Esc ${say("closes")}</span></div>
+    ${hint.thinking && !said && html`<p class="ok-font-status ok-tone-muted">● ${say("The rules found nothing: asking a light model…")}</p>`}
     <textarea class="ok-input gui-textarea" rows="4" value=${text} autofocus aria-label=${say("The note")}
       placeholder=${say("Discuss the pricing tiers with Sergey tomorrow…")} onInput=${(e) => setText(e.target.value)}></textarea>
     ${hint.meeting && html`<div class=${cls("wiki-note__meet", { "is-off": noMeeting })}>
@@ -285,11 +290,36 @@ function QuickNote({ id, data }) {
   </section>`;
 }
 
+/** Search over the pages and the sources' notes, as typed (no model); the hits stand in for the lists. */
+function Search({ id, query, setQuery }) {
+  return html`<input class="ok-input wiki-search" type="search" value=${query} aria-label=${say("Search the wiki")}
+    placeholder=${say("Search the wiki…")} onInput=${(e) => setQuery(e.target.value)}
+    onKeyDown=${(e) => { if (e.key === "Escape" && query) { e.stopPropagation(); setQuery(""); } }} />`;
+}
+
+function Hits({ id, hits }) {
+  if (!hits) return null;
+  if (!hits.length) return html`<p class="ok-tone-muted">${say("Nothing found.")}</p>`;
+  return html`<ul class="wiki-hits">${hits.map((h) => html`<li key=${h.path}>
+    <span class="gui-tree__item" title=${h.path} onClick=${() => read(id, h.path, h.page)}><b>${h.title}</b></span>
+    ${h.page && html`<${LakeMark} id=${id} path=${h.path} title=${h.title} />`}
+    <div class="ok-font-status ok-tone-muted">${h.line}</div></li>`)}</ul>`;
+}
+
 function Pages({ id, data }) {
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState(null);
+  useEffect(() => {
+    if (!query.trim()) { setHits(null); return undefined; }
+    const t = setTimeout(() => act(id, "find", { query }).then(setHits, () => {}), 250);
+    return () => clearTimeout(t);
+  }, [id, query]);
   if (noting.value === id) return html`<${QuickNote} key=${`note-${id}`} id=${id} data=${data} />`;
   const page = open.value[id];
   if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
-  return html`<div><${Quality} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+  const search = html`<${Search} id=${id} query=${query} setQuery=${setQuery} />`;
+  if (hits) return html`<div>${search}<${Hits} id=${id} hits=${hits} /></div>`;
+  return html`<div>${search}<${Quality} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
 }
 
 /** The notes a task was given lately: what it is and the pages named for it. */
@@ -312,8 +342,7 @@ export function card(b) {
     <div class="gui-hut__big">${c.pages}<small>${say(c.pages === 1 ? "page" : "pages")}</small></div>
     <div class="gui-hut__text">${state}</div>
     ${c.quality > 0 && html`<div class="gui-hut__text ok-tone-wait">⚠ <b>${c.quality}</b> ${say(c.quality === 1 ? "quality problem" : "quality problems")}</div>`}
-    ${c.discuss && html`<div class="gui-hut__text"><span class="ok-tone-accent">${say("To discuss")}:</span>
-      <b>${c.discuss.count}</b> · ${c.discuss.title}</div>`}
+    ${c.discuss && html`<div class="gui-hut__text"><span class="ok-tone-accent">${say("To discuss")}:</span> <b>${c.discuss.count}</b> · ${c.discuss.title}</div>`}
     ${c.lent && html`<${Lent} lent=${c.lent} />`}
     ${c.last && html`<div class="gui-hut__foot"><span>✎ ${c.last.title}</span><span class="gui-hut__when">${say(ago(c.last.mtime))}</span></div>`}
   </div>`;

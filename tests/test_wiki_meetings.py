@@ -44,6 +44,7 @@ def test_the_meeting_a_note_is_for():
     assert agenda.match("standup tomorrow: the release", MEETINGS, PEOPLE, NOW).meeting.id == "c"
     assert agenda.match("Анне показать макеты", MEETINGS, PEOPLE, NOW).meeting.id == "d"
     assert agenda.match("buy milk", MEETINGS, PEOPLE, NOW).meeting is None
+    assert agenda.match("show Lee the draft", MEETINGS, {}, NOW).meeting.id == "d"      # a name the wiki has no page for
     assert agenda.match("ask Sergey", MEETINGS, PEOPLE, dt.datetime(2026, 10, 10)).meeting is None   # all over
     assert agenda.next_with("Sergey", MEETINGS, PEOPLE, NOW, {"a"}).id == "b"
 
