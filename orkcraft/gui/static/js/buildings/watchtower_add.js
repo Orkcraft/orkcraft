@@ -1,0 +1,189 @@
+// 🗼 Add a source, in the Watchtower's own panel over the feed — never a dialog (docs/design/watchtower-quick-add.md
+// §4.2): the picker (a pasted link, or a service), then three steps — Log in, What, Check — and Add. The steps'
+// state is the worker's (core/workers/watchtower_add.py), so the panel can close while the person makes a token
+// and open again on the same step; a typed secret stays in this form until Continue sends it, and is not kept here.
+import { useEffect, useState } from "preact/hooks";
+import { html, cls } from "../html.js";
+import { act, say } from "../link.js";
+
+const STEPS = [["login", "Log in"], ["what", "What"], ["check", "Check"]];
+
+/** A service's glyph in the frame's gold (icons/services, Simple Icons CC0); Slack, without one, a `#`. */
+export function Glyph({ service, big = false }) {
+  return html`<span class=${cls(`gui-svc gui-svc--${service}`, { "is-big": big })} aria-hidden="true">${service === "slack" ? "#" : ""}</span>`;
+}
+
+function Steps({ step }) {
+  const at = STEPS.findIndex(([s]) => s === step);
+  return html`<div class="gui-add__steps" aria-label=${say("Steps")}>
+    ${STEPS.map(([s, label], i) => html`<span key=${s} class=${cls({ "is-on": i === at, "is-done": i < at })}>
+      ${i < at ? "✓" : i + 1} ${label}</span>${i < STEPS.length - 1 ? html`<span class="ok-tone-muted">›</span>` : ""}`)}
+  </div>`;
+}
+
+function Head({ a }) {
+  return html`<div class="gui-add__head"><${Glyph} service=${a.service} big=${true} />
+    <div><h3 class="gui-add__title">${a.label}${a.who ? html` <span class="ok-tone-muted">· ${a.who}</span>` : ""}</h3>
+      <${Steps} step=${a.step} /></div></div>`;
+}
+
+function State({ a }) {
+  if (a.busy) return html`<p class="gui-add__busy ok-tone-muted" role="status">${a.busy}</p>`;
+  if (a.error) return html`<p class="gui-add__error ok-tone-error" role="alert">✗ ${a.error}</p>`;
+  return null;
+}
+
+// -- the picker -------------------------------------------------------------------------------------------
+
+function Picker({ id, a, back }) {
+  const [link, setLink] = useState("");
+  const go = () => link.trim() && act(id, "add_link", { link: link.trim() }).catch(() => {});
+  return html`<div class="gui-add">
+    <div>
+      <h3 class="gui-add__title">Add a source</h3>
+      <p class="ok-tone-muted gui-add__sub">Say where to listen. One paste at most, then pick what to hear.</p>
+    </div>
+    <label class="gui-add__label" for=${`add-link-${id}`}>Paste a link to what you want to hear</label>
+    <div class="gui-head">
+      <input id=${`add-link-${id}`} class="ok-input" style="flex: 1; width: auto" value=${link}
+        placeholder=${say("a repo, a Slack channel, a Jira issue, a Figma file, an e-mail address")}
+        onInput=${(e) => setLink(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && go()} />
+      <button class="ok-btn primary" disabled=${!link.trim()} onClick=${go}>Continue</button>
+    </div>
+    <span class="gui-add__label">Or pick a service</span>
+    <div class="gui-add__tiles">
+      ${(a.services || []).map((s) => html`<button key=${s.id} class="gui-add__tile" onClick=${() => act(id, "add_start", { service: s.id }).catch(() => {})}>
+        <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
+        <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
+    </div>
+    <p class="ok-tone-muted gui-add__sub">Tokens stay on this machine, in Logins. No model sees them.</p>
+    ${back && html`<button class="ok-btn gui-tower__back" onClick=${back}>← Signals</button>`}
+  </div>`;
+}
+
+// -- 1 · Log in --------------------------------------------------------------------------------------------
+
+function Login({ id, a }) {
+  const [values, setValues] = useState({});
+  const set = (k, v) => setValues({ ...values, [k]: v });
+  const fields = (a.fields || []).filter((f) => !(f.key === "site" && a.link && a.link.site && a.link.service !== "gmail"));
+  const ready = fields.every((f) => (values[f.key] || "").trim());
+  const send = () => ready && !a.busy && act(id, "add_login", { values }).catch(() => {});
+  return html`<div class="gui-add">
+    <${Head} a=${a} />
+    ${a.kept.length > 0 && html`<div class="gui-add__kept">
+      <span class="gui-add__label">Already logged in on this machine</span>
+      ${a.kept.map((k) => html`<button key=${k.account} class="ok-btn" onClick=${() => act(id, "add_use", { account: k.account }).catch(() => {})}>Use ${k.who}</button>`)}
+      <span class="ok-tone-muted gui-add__sub">or log in with another account below</span></div>`}
+    ${a.note && html`<p class="gui-add__sub">${a.note}</p>`}
+    ${a.how.length > 0 && html`<ol class="gui-add__how">
+      ${a.how.map((h, i) => html`<li key=${i}>${h.text}${h.url && html` — <a href=${h.url} target="_blank" rel="noopener noreferrer">${say("open")} ↗</a>`}</li>`)}
+    </ol>`}
+    ${a.link && a.link.site && a.service !== "gmail" && html`<p class="ok-tone-muted gui-add__sub">${a.link.site}${a.link.says ? ` · ${a.link.says}` : ""}</p>`}
+    ${fields.map((f) => {
+      const v = values[f.key] || "";
+      const off = v && f.shape && !new RegExp(f.shape).test(v.trim());
+      return html`<div key=${f.key} class="gui-add__field">
+        <label class="gui-add__label" for=${`add-${f.key}-${id}`}>${f.label}</label>
+        <input id=${`add-${f.key}-${id}`} class="ok-input" type=${f.secret ? "password" : "text"} autocomplete="off"
+          placeholder=${f.placeholder} value=${v} onInput=${(e) => set(f.key, e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} />
+        ${off && html`<p class="gui-add__hint ok-tone-wait">⚠ ${f.shape_says}</p>`}
+      </div>`;
+    })}
+    <${State} a=${a} />
+    <div class="gui-add__foot">
+      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
+      ${a.service === "github"
+        ? html`<button class="ok-btn primary" disabled=${!!a.busy} onClick=${() => act(id, "add_start", { service: "github" }).catch(() => {})}>Check again</button>`
+        : html`<button class="ok-btn primary" disabled=${!ready || !!a.busy} onClick=${send}>Continue</button>`}
+    </div>
+  </div>`;
+}
+
+// -- 2 · What ----------------------------------------------------------------------------------------------
+
+function What({ id, a }) {
+  const [picks, setPicks] = useState(a.picks || []);
+  const [aboutMe, setAboutMe] = useState(a.about_me !== false);
+  const [folder, setFolder] = useState(a.folder || "INBOX");
+  const [find, setFind] = useState("");
+  const [links, setLinks] = useState("");
+  useEffect(() => setPicks(a.picks || []), [JSON.stringify(a.picks)]);
+  const toggle = (k) => setPicks(picks.includes(k) ? picks.filter((x) => x !== k) : [...picks, k]);
+  const shown = (a.options || []).filter((o) => !find || o.label.toLowerCase().includes(find.toLowerCase()));
+  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder }).catch(() => {});
+  return html`<div class="gui-add">
+    <${Head} a=${a} />
+    ${a.about_me_says && html`<label class="ok-check gui-add__switch"><input type="checkbox" checked=${aboutMe}
+      onChange=${(e) => setAboutMe(e.target.checked)} /><i>${aboutMe ? "✓" : ""}</i>${a.about_me_says}</label>`}
+    ${a.service === "gmail" && html`<div class="gui-add__field"><label class="gui-add__label" for=${`add-folder-${id}`}>Folder</label>
+      <input id=${`add-folder-${id}`} class="ok-input" value=${folder} onInput=${(e) => setFolder(e.target.value)} /></div>`}
+    ${a.service === "figma" && html`<div class="gui-add__field"><label class="gui-add__label" for=${`add-files-${id}`}>Figma file or team links</label>
+      <div class="gui-head"><input id=${`add-files-${id}`} class="ok-input" style="flex: 1; width: auto" value=${links}
+        placeholder="figma.com/design/… or figma.com/files/team/…" onInput=${(e) => setLinks(e.target.value)} />
+        <button class="ok-btn" disabled=${!links.trim()} onClick=${() => act(id, "add_files", { links }).then(() => setLinks(""), () => {})}>Add links</button></div></div>`}
+    ${a.picks_of && a.service !== "figma" && html`<span class="gui-add__label">${{ repos: "Repos — their events", channels: "Channels", projects: "Projects", spaces: "Spaces" }[a.picks_of]}</span>`}
+    ${(a.options || []).length > 8 && html`<input class="ok-input" placeholder=${say("Search")} value=${find} onInput=${(e) => setFind(e.target.value)} />`}
+    ${shown.length > 0 && html`<ul class="gui-add__options">
+      ${shown.map((o) => html`<li key=${o.id}><label class="ok-check"><input type="checkbox" checked=${picks.includes(o.id)}
+        onChange=${() => toggle(o.id)} /><i>${picks.includes(o.id) ? "✓" : ""}</i>${o.label}</label>
+        ${o.meta && html`<span class="ok-tone-muted gui-add__meta">${o.meta}</span>`}</li>`)}
+    </ul>`}
+    ${a.picks_of && !a.busy && !(a.options || []).length && a.service !== "figma" && html`<p class="ok-tone-muted gui-add__sub">Nothing to pick here.</p>`}
+    <${State} a=${a} />
+    <div class="gui-add__foot">
+      <span class="ok-tone-muted gui-add__sub">${picks.length ? `${picks.length} picked` : ""}</span>
+      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
+      <button class="ok-btn primary" disabled=${!!a.busy} onClick=${check}>Check</button>
+    </div>
+  </div>`;
+}
+
+// -- 3 · Check --------------------------------------------------------------------------------------------
+
+function Check({ id, a, done }) {
+  const bad = !!a.error;
+  return html`<div class="gui-add">
+    <${Head} a=${a} />
+    <div class=${cls("gui-add__verdict", { "is-bad": bad })}>
+      <span class=${cls("gui-add__icon", bad ? "ok-tone-error" : "ok-tone-ok")}>${bad ? "✗" : "✓"}</span>
+      <div>
+        <b>${bad ? `${a.label} did not answer as it should` : `It hears ${a.label}`}</b>
+        ${bad && html`<p class="ok-tone-error gui-add__sub">${a.error}</p>`}
+        <dl class="gui-add__kv">
+          <dt>As</dt><dd>${a.who}</dd>
+          <dt>Hears</dt><dd>${a.says}</dd>
+          ${!bad && a.found >= 0 && html`<dt>Found now</dt><dd>${a.found} — marked seen, not sent</dd>`}
+          <dt>Checks</dt><dd>${a.every}</dd>
+        </dl>
+      </div>
+    </div>
+    ${!bad && html`<p class="ok-tone-muted gui-add__sub">From now on each new one becomes a signal.</p>`}
+    ${a.busy && html`<${State} a=${a} />`}
+    <div class="gui-add__foot">
+      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
+      <button class="ok-btn primary" disabled=${bad || !!a.busy} onClick=${() => act(id, "add_save").then(done, () => {})}>Add ${a.label}</button>
+    </div>
+  </div>`;
+}
+
+/** The pane over the feed: opens the picker when nothing is under way; `done` goes back to the signals. */
+export function AddPane({ id, d, done }) {
+  const a = d.adding;
+  useEffect(() => { if (!a) act(id, "add_open").catch(() => {}); }, [!a]);
+  const close = () => act(id, "add_close").then(done, done);
+  const back = d.sources.length ? close : null;
+  const keys = (e) => {
+    if (e.key !== "Escape" || e.target.tagName === "INPUT") return;
+    e.stopPropagation();
+    if (a && a.step !== "pick") act(id, "add_back").catch(() => {});
+    else if (back) back();
+  };
+  if (!a) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  return html`<div class="gui-add__pane" onKeyDown=${keys}>
+    ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} back=${back} />`
+      : a.step === "login" ? html`<${Login} key=${a.service} id=${id} a=${a} />`
+      : a.step === "what" ? html`<${What} key=${a.service} id=${id} a=${a} />`
+      : html`<${Check} id=${id} a=${a} done=${done} />`}
+  </div>`;
+}

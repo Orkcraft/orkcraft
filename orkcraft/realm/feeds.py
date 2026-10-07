@@ -3,7 +3,8 @@
 These services push their webhooks only to a public URL, and the Watchtower listens on 127.0.0.1
 alone, so it asks them instead: every two minutes, read-only, through their REST APIs. One line of
 the `feeds` setting is one feed; a line names the environment variables that hold the login, never
-the token itself (the Town Hall's Warder flags a spec that does):
+the token itself (the Town Hall's Warder flags a spec that does) — or a login kept on this machine,
+`token=keychain:slack-acme` (realm/logins.py: what the Watchtower's Add a source saves):
 
     slack: token=SLACK_TOKEN channels=C0123,D0456
         mentions of you (search.messages, a user token with search:read) and the new messages in
@@ -29,12 +30,13 @@ from __future__ import annotations
 import base64
 import datetime as dt
 import json
-import os
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+
+from orkcraft.realm import logins
 
 TIMEOUT_S = 15
 LOOK = 20                       # items a feed asks for per look
@@ -63,7 +65,14 @@ class Feed:
     poll: bool = True            # False: only `secret=` — it listens to the webhook, never asks
 
     def env(self, name: str) -> str:
-        return os.environ.get(self.opts.get(name, ""), "")
+        """What option `name` names: an environment variable's value, or a login's (`keychain:…`)."""
+        return logins.resolve(self.opts.get(name, ""))
+
+    def missing(self, name: str, what: str) -> str:
+        """Why option `name` gave nothing: the variable to set, or the login to make again."""
+        ref = self.opts.get(name, "")
+        return (f"{self.kind}: the login {ref[len(logins.PREFIX):]} is gone — log in again" if logins.is_ref(ref)
+                else f"{self.kind}: set {ref} in the environment ({what})")
 
     @property
     def identity(self) -> str:
@@ -113,8 +122,8 @@ def parse(line: str) -> tuple[Feed | None, str]:
     if missing and (not opts.get("secret") or len(missing) < len(required)):
         return None, f"{kind}: set {', '.join(k + '=' for k in missing)}"
     for k in ("token", "user", "secret"):
-        if k in opts and not ENV_NAME.match(opts[k]):
-            return None, f"{kind}: {k}= names an environment variable (like ATL_TOKEN), not the value"
+        if k in opts and not logins.is_name(opts[k]):
+            return None, f"{kind}: {k}= names an environment variable (like ATL_TOKEN) or a login, not the value"
     if "site" in opts:
         opts["site"] = opts["site"].removeprefix("https://").rstrip("/")
         if not SITE.match(opts["site"]):
@@ -159,7 +168,7 @@ def _iso(value) -> str:
 def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
     token = feed.env("token")
     if not token:
-        return Look(error=f"slack: set {feed.opts['token']} in the environment (a user token, xoxp-…)")
+        return Look(error=feed.missing("token", "a user token, xoxp-…"))
     head = {"Authorization": f"Bearer {token}"}
 
     def call(method: str, **params) -> dict:
@@ -213,9 +222,9 @@ def slack(feed: Feed, opener=urllib.request.urlopen) -> Look:
 
 def _atlassian(feed: Feed) -> dict | str:
     user, token = feed.env("user"), feed.env("token")
-    missing = [feed.opts[k] for k, v in (("user", user), ("token", token)) if not v]
-    if missing:
-        return f"{feed.kind}: set {' and '.join(missing)} in the environment (your e-mail and an API token)"
+    for k, v in (("user", user), ("token", token)):
+        if not v:
+            return feed.missing(k, "your e-mail and an API token")
     return {"Authorization": "Basic " + base64.b64encode(f"{user}:{token}".encode()).decode()}
 
 
@@ -296,7 +305,7 @@ def confluence(feed: Feed, opener=urllib.request.urlopen) -> Look:
 def figma(feed: Feed, opener=urllib.request.urlopen) -> Look:
     token = feed.env("token")
     if not token:
-        return Look(error=f"figma: set {feed.opts['token']} in the environment (a personal access token)")
+        return Look(error=feed.missing("token", "a personal access token"))
     head = {"X-Figma-Token": token}
     me = get_json("https://api.figma.com/v1/me", head, opener)
     uid, handle = me.get("id", ""), str(me.get("handle", "")).lower()

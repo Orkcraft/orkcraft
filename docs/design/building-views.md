@@ -37,6 +37,10 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
   language (Signpost's rules, Clan Fire's briefs, Tally Crag's charts and thresholds, Catapult's schema,
   Loot Vault's rules, Workshop's script and schedule), the person says what they want in plain words
   and the building's keeper writes it. The views show the result, test it and keep its history.
+- **Setting up is in the panel, never a dialog.** A building's first setup, and every change after
+  it, happens in its own panel (Work tab), over what the panel shows, with ← back; right after Build
+  a building with nothing set up opens its panel there. A dialog is for a decision in one click —
+  Build, a road, Demolish, a removal, a price to agree to (watchtower-quick-add.md §4.2).
 - **Old scrolls.** A Lake building in a Town Scroll leaves the map when the scroll loads; a road into it
   becomes "open in Lake" on its source.
 - **Custom (panes)** leaves the catalog.

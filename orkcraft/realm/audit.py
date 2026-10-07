@@ -95,7 +95,7 @@ def _security(repo_root: Path, specs: dict[str, dict]) -> list[Finding]:
                 if not isinstance(v, str):
                     continue
                 # `password_env: MAIL_PASSWORD` names the variable; `password_env: hunter2` is the secret
-                if _TOKENISH.search(v) or (_SECRET_KEY.search(key) and not _ENV_NAME.match(v)):
+                if _TOKENISH.search(v) or (_SECRET_KEY.search(key) and not (_ENV_NAME.match(v) or v.startswith("keychain:"))):
                     out.append(Finding("warder", f"{spec.get('title', bid)}: setting '{key}' looks like a secret "
                                                  "written in the spec — keep it in an environment variable",
                                        bid, "high"))

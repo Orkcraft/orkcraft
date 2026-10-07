@@ -17,11 +17,12 @@ from __future__ import annotations
 import email
 import email.policy
 import imaplib
-import os
 import re
 from dataclasses import dataclass, field
 from email.header import decode_header, make_header
 from email.utils import parseaddr, parsedate_to_datetime
+
+from orkcraft.realm import logins
 
 LOOK_LIMIT = 20
 PROVIDERS = {"gmail": "imap.gmail.com", "yandex": "imap.yandex.com", "icloud": "imap.mail.me.com"}
@@ -54,10 +55,13 @@ def credentials(cfg: dict) -> tuple[str, int, str, str, str]:
     if not host:
         raise ValueError("set `host` in the building's settings")
     user_env, pw_env = str(cfg.get("user_env", "")), str(cfg.get("password_env", ""))
-    user, password = os.environ.get(user_env, ""), os.environ.get(pw_env, "")
-    missing = [n for n, v in ((user_env or "user_env", user), (pw_env or "password_env", password)) if not v]
-    if missing:
-        raise ValueError(f"set {' and '.join(missing)} in the environment")
+    # the address is no secret: `user` holds it as written; `user_env` / `password_env` name a variable or a login
+    user = str(cfg.get("user") or "").strip() or logins.resolve(user_env)
+    password = logins.resolve(pw_env)
+    for name, value in ((user_env or "user", user), (pw_env or "password_env", password)):
+        if not value:
+            raise ValueError(f"the login {name[len(logins.PREFIX):]} is gone — log in again" if logins.is_ref(name)
+                             else f"set {name} in the environment")
     return host, int(cfg.get("port") or 993), user, password, str(cfg.get("folder") or "INBOX")
 
 

@@ -103,7 +103,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         actions=(_a("mail.open_new", "Open new", "✉", "open the newest new signal"),
                  _a("watch.read_all", "Read all", "✓", "mark every signal read"),
                  _a("mail.refresh", "Check now", "↻", "check every source now")),
-        config={"host": (str, None, False), "user_env": (str, None, False), "password_env": (str, None, False),
+        config={"host": (str, None, False), "user": (str, None, False), "user_env": (str, None, False), "password_env": (str, None, False),
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
                 "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),

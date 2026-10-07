@@ -2,15 +2,19 @@
 // counter per source (a failing one marked), the newest message in the foot. Open, made for the half
 // panel: a chip per source with what is new in it (it filters the feed), when it last looked, Open new,
 // Read all and Check now; a failing source says why; the feed one line per signal, a signal opening over
-// it to be read in full (← back); the sources and the intent open the same way, from Sources & intent.
+// it to be read in full (← back); the sources and the intent open the same way, from Sources & intent, and so
+// does Add a source (+), which a tower with no source opens on (watchtower_add.js) — never a dialog.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
 import { askKeeper } from "../keeper.js";
+import { Dialog } from "../dialog.js";
+import { openBuilding } from "../windows.js";
+import { AddPane, Glyph } from "./watchtower_add.js";
 
 const source = signal({});         // building id → the source whose feed shows ("" all)
-const tab = signal({});            // building id → "signals" | "settings" (the sources and the intent, over the feed)
+const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
 const opened = signal({});         // building id → the key of the signal read over the feed
 
 const read = (id, key) => {
@@ -37,7 +41,9 @@ export function card(b) {
   if (!c.sources.length) {
     return html`<div class="gui-hut__body-in">
       <div class="gui-hut__big">${say("No sources")}<small>${say("yet")}</small></div>
-      <div class="gui-hut__text ok-tone-muted">${say("Open it and say what to listen to")}</div>
+      <button class="ok-btn primary gui-tower__add" onPointerDown=${(e) => e.stopPropagation()}
+        onClick=${(e) => { e.stopPropagation(); tab.value = { ...tab.value, [b.id]: "add" }; openBuilding(b.id, "work"); }}>+ Add a source</button>
+      <div class="gui-hut__text ok-tone-muted">${say("Mail, GitHub, Slack, Jira, Figma…")}</div>
     </div>`;
   }
   const s = (c.latest || [])[0];
@@ -72,9 +78,12 @@ function Failing({ sources }) {
   return bad.map((s) => html`<p key=${s.id} class="gui-tower__failing ok-tone-error" title=${s.why}>✗ <b>${s.label}</b> ${say("is failing")}: ${s.why}</p>`);
 }
 
+const shownTab = (id, d) => tab.value[id] || (d.sources.length ? "signals" : "add");
+
 function Sources({ id, d }) {
+  if (!d.sources.length) return null;          // nothing to filter or check yet: the feed pane is Add a source
   const pick = source.value[id] || "";
-  const on = tab.value[id] || "signals";
+  const on = shownTab(id, d);
   const choose = (key) => {
     source.value = { ...source.value, [id]: key };
     tab.value = { ...tab.value, [id]: "signals" };
@@ -90,6 +99,8 @@ function Sources({ id, d }) {
     <div class="gui-tower__chips" role="group" aria-label=${say("Show the signals of")}>
       ${chip("", say("all"), d.new, "")}
       ${d.sources.map((s) => chip(s.id, s.label, s.new, s.why))}
+      <button class=${cls("ok-chip gui-tower__plus", { "is-on": on === "add" })} title=${say("Add a source")} aria-label=${say("Add a source")}
+        onClick=${() => { tab.value = { ...tab.value, [id]: "add" }; }}>+</button>
     </div>
     <div class="gui-tower__bar">
       <span class="gui-tower__state" title=${state}>${state}</span>
@@ -135,7 +146,9 @@ function Item({ id, d, at }) {
 }
 
 function FeedPane({ id, d }) {
-  if ((tab.value[id] || "signals") === "settings") return html`<${Settings} id=${id} d=${d} />`;
+  const on = shownTab(id, d);
+  if (on === "settings") return html`<${Settings} id=${id} d=${d} />`;
+  if (on === "add") return html`<${AddPane} id=${id} d=${d} done=${() => { tab.value = { ...tab.value, [id]: "signals" }; }} />`;
   const at = opened.value[id];
   return at ? html`<${Item} key=${at} id=${id} d=${d} at=${at} />` : html`<${Feed} id=${id} d=${d} />`;
 }
@@ -143,10 +156,8 @@ function FeedPane({ id, d }) {
 function Settings({ id, d }) {
   const [intent, setIntent] = useState(d.intent);
   const [ask, setAsk] = useState("");
+  const [removing, setRemoving] = useState(null);
   useEffect(() => setIntent(d.intent), [d.intent]);
-  const s = d.settings;
-  const line = (label, value) => value !== "" && value !== undefined && html`<li class="ok-item"><span class="ok-tone-muted">${label}</span>
-    <span>${value}</span></li>`;
   const back = () => { tab.value = { ...tab.value, [id]: "signals" }; };
   return html`<div class="gui-tower__setup" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
     <button class="ok-btn gui-tower__back" onClick=${back}>← ${say("Signals")} · ${d.signals.length}</button>
@@ -157,15 +168,22 @@ function Settings({ id, d }) {
       <button class="ok-btn primary" disabled=${intent === d.intent} onClick=${() => act(id, "intent", { intent }).catch(() => {})}>Keep it</button>
     </div>
     ${d.intent_error && html`<p class="ok-tone-error">${d.intent_error}</p>`}
-    <p class="ok-list__head">Sources</p>
-    <ul class="ok-list__items">
-      ${line(say("mail"), s.host && `${s.host}${s.folder ? ` · ${s.folder}` : ""}`)}
-      ${line("GitHub", s.github)}
-      ${line(say("schedule"), s.cron)}
-      ${line("webhook", s.webhook_port && `127.0.0.1:${s.webhook_port}`)}
-      ${s.feeds.map((f) => html`<li key=${f} class="ok-item"><span class="gui-pre">${f}</span></li>`)}
-      ${!d.sources.length && html`<li class="ok-item ok-tone-muted">No source yet.</li>`}
+    <div class="gui-head"><p class="ok-list__head" style="flex: 1">Sources · ${d.listed.length}</p>
+      <button class="ok-btn primary" onClick=${() => { tab.value = { ...tab.value, [id]: "add" }; }}>+ Add a source</button></div>
+    <ul class="gui-tower__sources">
+      ${d.listed.map((x) => html`<li key=${x.id} class=${cls("gui-tower__source", { "is-bad": !!x.why })}>
+        <${Glyph} service=${x.kind} big=${true} />
+        <div><div class="gui-tower__source-name">${x.label}
+          ${x.why ? html`<span class="ok-tone-error">✗ ${x.why}</span>` : html`<span class="ok-tone-ok">✓ listening</span>`}</div>
+          <div class="ok-tone-muted gui-tower__source-line">${x.line}</div></div>
+        <button class="ok-btn" onClick=${() => setRemoving(x)}>Remove</button>
+      </li>`)}
+      ${!d.listed.length && html`<li class="ok-item ok-tone-muted">No source yet.</li>`}
     </ul>
+    ${removing && html`<${Dialog} title=${`Remove ${removing.label}?`} warn onCancel=${() => setRemoving(null)}
+      text=${say("The tower stops listening to it. Its login stays on this machine, for the next time.")}
+      actions=${html`<button class="ok-btn" onClick=${() => setRemoving(null)}>Cancel</button>
+        <button class="ok-btn danger" onClick=${() => act(id, "remove", { source: removing.id }).finally(() => setRemoving(null))}>Remove</button>`} />`}
     <p class="ok-list__head">Change the sources</p>
     <div class="gui-head">
       <input class="ok-input" style="flex: 1; width: auto" placeholder=${say("Say it in plain words: e.g. also watch #support in Slack")} value=${ask}

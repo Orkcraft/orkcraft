@@ -35,6 +35,7 @@ import time
 from dataclasses import asdict
 
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.watchtower_add import Adding
 from orkcraft.realm import fastpath, feeds, halt, inbound, lookout, mailbox, watch
 
 REFRESH_S = 120.0
@@ -74,6 +75,7 @@ class WatchtowerWorker(Worker):
         self._looking = False
         self._judging = False
         self._clocks = {"look": 0.0, "tick": 0.0}             # monotonic: when `pulse` last did each
+        self.adding = Adding(self)                            # Add a source: its three steps (watchtower_add.py)
 
     # -- settings and state ---------------------------------------------------------------------
 

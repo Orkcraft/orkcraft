@@ -569,3 +569,46 @@ def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, mon
     assert pg.locator(".gui-panel").count() == 0                       # the town changed, the panel did not open
     card.get_by_role("button", name="Undo", exact=True).click()
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length === n", arg=before, timeout=WAIT_MS)
+
+
+def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monkeypatch):
+    """Build a Watchtower: its panel opens on the picker (no dialog); a pasted Jira link, the login, the projects,
+    the first look and Add happen in the panel over the feed, and the new source stands in its chips
+    (docs/design/watchtower-quick-add.md §4). The services are fakes; `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.core.workers.watchtower import WatchtowerWorker
+    from tests.test_watchtower_quickadd import ATL, Opener, _gh
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
+    monkeypatch.setattr(WatchtowerWorker, "gh_runner", staticmethod(_gh))
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
+    add = _hut(pg, bid).locator(".gui-tower__add")              # the empty tower's card: the one thing to do
+    add.wait_for(state="visible", timeout=WAIT_MS)
+    add.click()
+    panel = pg.locator(".gui-panel")
+    tiles = panel.locator(".gui-add__tile")
+    tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
+    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 6
+    panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
+    shot("1-picker")
+    panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator("#add-email-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-site-" + bid).count() == 0          # the link said the site
+    panel.locator("#add-email-" + bid).fill("ann@acme.io")
+    panel.locator("#add-token-" + bid).fill("t" * 24)
+    shot("2-login")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
+    shot("3-what")
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
+    shot("4-check")
+    panel.get_by_role("button", name="Add Jira").click()
+    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    shot("5-feed")
+    panel.get_by_role("button", name="Sources & intent").click()
+    panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
+    shot("6-sources")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
