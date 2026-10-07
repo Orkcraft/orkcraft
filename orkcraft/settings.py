@@ -32,8 +32,8 @@ from orkcraft.schedule import Span
 
 TOOLS = ("claude", "agy", "codex")
 BILLINGS = ("subscription", "api")
-PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other")
-PROFILE_LISTS = ("day",)
+PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other", "kin")
+PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
 UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
 
 

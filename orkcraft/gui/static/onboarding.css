@@ -1,0 +1,124 @@
+/* The onboarding (js/onboarding.js, docs/design/gui-onboarding.md). Roles only: every colour, face, stroke and
+   radius is a token of the design system (design-system/tokens.css, components.css), so Camp and Office both
+   wear it. The steps fill the window over the town; while the town goes up, two cards float over the map. */
+
+.gui-onb { position: fixed; inset: 0; z-index: 30; overflow: auto; background: var(--canvas); color: var(--ink);
+  font-family: var(--ok-font); display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
+  padding: var(--space-6) var(--space-4); box-sizing: border-box; }
+.gui-onb__brand img { height: 36px; display: block; }
+.gui-onb__hide { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+
+.gui-onb__card { width: min(880px, 100%); background: var(--panel); border: var(--ok-frame) solid var(--frame);
+  border-radius: var(--ok-radius-lg); box-shadow: var(--shadow-window); padding: var(--space-6);
+  display: flex; flex-direction: column; gap: var(--space-4); box-sizing: border-box; }
+.gui-onb__card.is-wide { width: min(1120px, 100%); }
+
+.gui-onb__head { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-onb__steps { display: flex; align-items: center; gap: var(--space-1); }
+.gui-onb__steps .ok-font-status { margin-left: var(--space-2); }
+.gui-onb__pip { width: 28px; height: 6px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); border-radius: var(--radius-full); }
+.gui-onb__pip.is-done { background: var(--frame-focus); box-shadow: none; }
+.gui-onb__title { margin: 0; font: 400 30px/1.15 var(--ok-head); color: var(--ink-gold); letter-spacing: 0.01em; }
+.gui-onb__lead { margin: 0; max-width: 70ch; }
+
+.gui-onb__foot { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.gui-onb__spacer { flex: 1; display: flex; justify-content: flex-end; }
+.gui-onb__quiet { background: transparent; box-shadow: none; color: var(--ink-muted); }
+.gui-onb__line { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.gui-onb__line .ok-font-status { flex: 1; min-width: 240px; }
+
+/* A table of rows: the AI tools, the MCP servers. */
+.gui-onb__table { display: flex; flex-direction: column; background: var(--panel-inset); box-shadow: var(--bevel-sunken);
+  border-radius: var(--ok-radius-md); padding: var(--space-1) 0; }
+.gui-onb__row { display: grid; grid-template-columns: 32px minmax(0, 1fr) minmax(0, 220px) 160px; gap: var(--space-3);
+  align-items: center; padding: var(--space-2) var(--space-4); min-height: 44px; position: relative; }
+.gui-onb__row.is-head { min-height: 28px; }
+.gui-onb__row.is-mcp { grid-template-columns: 32px 34px minmax(0, 1fr) minmax(0, 240px); cursor: pointer; }
+.gui-onb__row.is-off { opacity: 0.6; }
+.gui-onb__tool { display: inline-flex; align-items: baseline; gap: var(--space-2); font-weight: 600; min-width: 0; }
+.gui-onb__warder { align-items: flex-start; padding: var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken);
+  border-radius: var(--ok-radius-md); position: relative; }
+
+/* A service's glyph (icons/services, Simple Icons CC0) in the town's gold through a mask; no glyph: a mark. */
+.gui-onb__svc { display: inline-grid; place-items: center; flex: none; width: 22px; height: 22px; background: var(--panel-inset);
+  box-shadow: var(--bevel-sunken); color: var(--ink-gold); font: 700 13px/1 var(--ok-font); border-radius: var(--ok-radius); }
+.gui-onb__svc.is-big { width: 34px; height: 34px; }
+.gui-onb__svc::before { content: ""; width: 62%; height: 62%; background: var(--ink-gold);
+  -webkit-mask: var(--svc) center / contain no-repeat; mask: var(--svc) center / contain no-repeat; }
+.gui-onb__svc:not([class*="--github"]):not([class*="--gitlab"]):not([class*="--gmail"]):not([class*="--discord"]):not([class*="--jira"]):not([class*="--confluence"]):not([class*="--figma"])::before { display: none; }
+.gui-onb__svc--github { --svc: url("icons/services/github.svg"); }
+.gui-onb__svc--gitlab { --svc: url("icons/services/gitlab.svg"); }
+.gui-onb__svc--gmail { --svc: url("icons/services/gmail.svg"); }
+.gui-onb__svc--discord { --svc: url("icons/services/discord.svg"); }
+.gui-onb__svc--jira { --svc: url("icons/services/jira.svg"); }
+.gui-onb__svc--confluence { --svc: url("icons/services/confluence.svg"); }
+.gui-onb__svc--figma { --svc: url("icons/services/figma.svg"); }
+
+/* Who are you: the classes, each on its biome's ground. */
+.gui-onb__ground { background: var(--land) var(--glyphs) repeat; background-size: 240px auto; display: flex;
+  align-items: center; justify-content: center; }
+.gui-onb__kins { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-4); }
+.gui-onb__subs { display: flex; gap: var(--space-6); justify-content: center; flex-wrap: wrap; }
+.gui-onb__kin { display: flex; flex-direction: column; gap: var(--space-1); text-align: left; padding: 0 0 var(--space-3);
+  background: var(--panel); color: var(--ink); border: 0; cursor: pointer; font-family: var(--ok-font);
+  box-shadow: inset 0 0 0 2px var(--panel-raised); border-radius: var(--ok-radius-md); overflow: hidden; }
+.gui-onb__kin > :not(.gui-onb__ground) { padding: 0 var(--space-3); }
+.gui-onb__kin .gui-onb__ground { height: 84px; }
+.gui-onb__kin.is-big { width: min(280px, 100%); }
+.gui-onb__kin.is-big .gui-onb__ground { height: 100px; }
+.gui-onb__kin.is-on { box-shadow: 0 0 0 4px var(--frame-focus); }
+.gui-onb__kin:focus-visible, .gui-onb__level:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+.gui-onb__kin-name { font: 400 17px/1.2 var(--ok-head); color: var(--ink-gold); padding-top: var(--space-2); }
+
+/* Your first town: the template drawn on the ground of the class's biome. */
+.gui-onb__town { gap: 0; padding: var(--space-6) var(--space-4) var(--space-4); align-items: flex-end; min-height: 300px;
+  border-radius: var(--ok-radius-md); overflow-x: auto; justify-content: flex-start; }
+.gui-onb__lot { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1 0 180px; }
+.gui-onb__house { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 140px; }
+.gui-onb__house .ok-sprite { image-rendering: pixelated; display: block; }
+.gui-onb__badges { position: absolute; right: -20px; top: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-onb__plate { width: 170px; display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3);
+  background: var(--panel); box-shadow: inset 0 0 0 2px var(--frame), var(--shadow-window); border-radius: var(--ok-radius-md);
+  box-sizing: border-box; }
+.gui-onb__plate-name { font: 400 16px/1.2 var(--ok-head); color: var(--ink-gold); }
+.gui-onb__road { position: absolute; left: calc(50% + 85px); right: calc(-50% + 85px); bottom: 32px; height: 6px;
+  background: var(--road-bright); box-shadow: inset 0 2px 0 var(--road-selected), inset 0 -2px 0 var(--road); }
+.gui-onb__how { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-6); align-items: start; }
+.gui-onb__how p { margin: var(--space-1) 0 0; }
+.gui-onb__choose { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-onb__choose .ok-btn { justify-content: center; }
+
+/* Doesn't fit: the survey. */
+.gui-onb__cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
+.gui-onb__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.gui-onb__best { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+.gui-onb__best input { grid-column: 2; }
+
+/* Setting up the town: two cards over the map, the town visible between them. */
+.gui-onb__over { position: fixed; inset: auto var(--space-4) var(--space-4) var(--space-4); z-index: 25; pointer-events: none;
+  display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); }
+.gui-onb__over > * { pointer-events: auto; }
+.gui-onb__log, .gui-onb__corner { background: var(--panel); border: var(--ok-frame) solid var(--frame); box-shadow: var(--shadow-window);
+  border-radius: var(--ok-radius-lg); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2);
+  width: min(400px, 45vw); box-sizing: border-box; }
+.gui-onb__steplist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.gui-onb__steplist .is-done span { color: var(--success); }
+.gui-onb__steplist .is-now { color: var(--ink-gold); }
+.gui-onb__steplist .is-now span { display: inline-block; animation: gui-onb-hammer 0.5s steps(2) infinite; }
+.gui-onb__steplist .is-next { color: var(--ink-muted); }
+.gui-onb__steplist .is-failed span { color: var(--danger); }
+.gui-onb__corner-title { margin: 0; font: 400 20px/1.2 var(--ok-head); color: var(--ink-gold); }
+.gui-onb__levels { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-onb__level { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: var(--space-2) var(--space-3); border: 0;
+  cursor: pointer; background: var(--panel-inset); color: var(--ink); box-shadow: var(--bevel-sunken); border-radius: var(--ok-radius); font-family: var(--ok-font); }
+.gui-onb__level.is-on { background: var(--panel-raised); box-shadow: inset 0 0 0 2px var(--frame-focus); }
+@keyframes gui-onb-hammer { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .gui-onb__steplist .is-now span { animation: none; } }
+
+@media (max-width: 760px) {
+  .gui-onb__row { grid-template-columns: 32px minmax(0, 1fr); }
+  .gui-onb__row > :nth-child(n + 3) { grid-column: 2; }
+  .gui-onb__cols, .gui-onb__how { grid-template-columns: minmax(0, 1fr); }
+  .gui-onb__over { flex-direction: column; align-items: stretch; }
+  .gui-onb__log, .gui-onb__corner { width: auto; }
+}
