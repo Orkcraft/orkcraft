@@ -269,7 +269,92 @@ user id (asked once in step 2).
 | Jira / Confluence | 1 + site + e-mail | `/myself` | projects / spaces | about me / mentions | project and space lists |
 | Figma | 1 | `/v1/me` | files from links or a team | — | team → files list |
 
-## 6. The states of a source
+## 6. The whole service, not a list of things
+
+People ask to hear "all of Jira" or "all of Figma", not three channels. How far each service goes
+without a list:
+
+| Service | Everything, polled | Note |
+|---|---|---|
+| Jira / Confluence | yes: `jql=` / `cql=` can span the site (`updated > -1d`, `type = comment`) | loud; offered only with an intent, which keeps it calm |
+| Slack | yes: `search.messages` with `after:<date>` sees every channel the person can, no channel list | search trails real time by seconds |
+| GitHub / GitLab | yes: notifications and to-dos cover every repo and project | — |
+| Discord | the channels the bot can see in the servers it was invited to | a server's every channel is one tick ("all channels") |
+| Gmail | the whole mailbox: every folder, or `[Gmail]/All Mail` | — |
+| Figma | **no**: there is no "my files" or "my notifications" API. A team → its projects → their files → each file's comments is many calls a look and meets the rate limit | the whole team comes with a team-level Webhook v2 `FILE_COMMENT` — push, so it needs a public address (watchtower-automation.md §2 C) |
+
+So step 2 of every service but Figma gets **Everything** at the top of its list (off by default),
+and turning it on with no intent asks for one: *Everything in Jira is a lot — say what you listen
+for, or keep everything*. Figma's **Whole team** stays greyed out with *needs push — not built
+yet* until the tunnel exists.
+
+## 7. Through Claude or agy: the connectors people already have
+
+Many people have Jira, Confluence, Slack, Figma or GitHub connected in Claude Code or agy already
+(MCP servers, claude.ai connectors). The tower can use them without a single token of its own,
+but not the way it uses a token.
+
+### 7.1 What it cannot do
+
+- **Borrow their logins.** Reading Claude Code's or agy's stored OAuth tokens would be posing as
+  another app: fragile and against the services' terms. Never.
+- **Log in to the same servers itself.** The hosted MCP servers admit their own lists of clients:
+  Atlassian's (`mcp.atlassian.com`) does dynamic client registration but only for approved clients
+  (custom redirect addresses are a feature request, ROVO-870); Slack's (`mcp.slack.com`) has no
+  dynamic registration; Figma's (`mcp.figma.com`) serves design context for code, not comments
+  *(check, all three)*. claude.ai's connectors live on Anthropic's side: no token is on the
+  machine at all.
+- **Be told when something happens.** MCP is tools to call, not events: an MCP source is polled
+  like any other, through tools shaped for a model.
+
+### 7.2 What it can: ask the agent
+
+The tower runs the agent headless with the person's own MCP servers (`claude -p`, agy's headless
+mode) and asks it, in a fenced prompt, for what is new. The agent is an approved client, so its
+logins work.
+
+- **One turn per look**, on the light model (the Fast Path's): *list the new comments and mentions
+  in Jira since 2026-10-07T10:12, as JSON: id, title, text, url, author, at, mention*. The tower
+  passes the last look's time and the ids it has seen; dedupe is by `id` like every feed.
+- **Read-only, enforced by the tower, not asked of the model.** At setup the tower lists the
+  server's tools and keeps those that only read (`get…`, `search…`, `list…`, `read…`); the run
+  allows exactly those (`--allowedTools`) and nothing else — no shell, no files, no write tool. A
+  signal's text can tell the agent to do something; it has nothing to do it with.
+- **Slow and paid.** Every 15 min by default (5 at the fastest); each look's cost goes to Spend
+  and shows on the source's line (`via Claude · every 15 min · ≈ $0.08 today`); a daily ceiling
+  in the tower's settings, past it the source waits like the Lookout does out of 🪙. A
+  subscription's turns count against its limits (⏳ Limits shows them).
+- **Halt All** stops a look in flight; the next one starts from the same time.
+- **Spec:** `agent: tool=claude server=atlassian every=15m ask=new comments and mentions in Jira`
+  (`ask=` takes the rest of the line; `tool=agy` for agy).
+
+### 7.3 Where it fits in the flow
+
+- **The picker.** The tower reads the **names** of the person's MCP servers — `claude mcp list`,
+  agy's MCP config *(check: its path)* — never their settings or tokens, and marks the tiles:
+  `Jira ✓ in Claude`. Such a tile offers two ways, the token one first:
+  - **Log in** (§5): free, every 2 min, exact.
+  - **Use Claude's connection**: no token, every 15 min, costs a model turn each look.
+- **Step 2 without a token.** The agent lists what there is (projects, spaces, channels) in one
+  turn, for the agent source's ticks.
+- **From the intent.** Whatever way a source is added, the agent can turn *user feedback about the
+  app* into a proposal — Jira project `SUP`, Slack `#feedback`, a JQL — in one turn
+  (watchtower-automation.md §2 G).
+- claude.ai connectors in a headless `claude -p`: *(check)* whether a logged-in Claude Code sees
+  them; if so, a person who connected Jira on claude.ai needs no setup at all.
+
+### 7.4 Its states
+
+| State | Its chip | Its line |
+|---|---|---|
+| listening | `jira 2` | via Claude · every 15 min · last look 10:12 · ≈ $0.08 today |
+| looking | `jira …` | asking Claude… |
+| waiting: the ceiling | `jira ⏸` | *Today's ceiling ($0.50) reached — looks again tomorrow* · **Raise it** |
+| waiting: limits | `jira ⏸` | *Claude's limit is used up until 14:00* |
+| failing: the connection | `jira ✗ ERR` | *Claude's Jira connection needs a login — run `/mcp` in Claude Code* (the tower cannot log it in) |
+| failing: the answer | `jira ✗ ERR` | *Claude's answer was not the list asked for* — the look is retried once, then waits for the next |
+
+## 8. The states of a source
 
 The Watchtower's states (its card and window) stay as they are; a source adds its own:
 
@@ -291,7 +376,7 @@ A failure reads as which of the three it is, so the fix is one button. `feeds.Lo
 a kind (`login` / `target` / `network`) from the HTTP status (401/403 → login, 404 → target,
 others → network).
 
-## 7. What changes in the code
+## 9. What changes in the code
 
 - `realm/logins.py` (new, no face): the store, `keychain:` refs, `resolve(ref)`; `Feed.env` and
   `mailbox` resolve through it.
@@ -306,9 +391,13 @@ others → network).
   chip, Edit / Log in again / Remove per source. Every label through `say()`; the new word
   *Logins* in `lexicon.TERMS`.
 - The manifest for Slack and the invite link for Discord: data in `realm/feeds.py`.
+- `realm/feeds.py`: an `agent` kind whose look runs `claude -p` / agy headless with the read-only
+  tools picked at setup (`core/workers` runs it in a thread like every look, faked in tests like
+  `judge_runner`); its spend through the Fast Path's accounting.
+- `tools.py`: the names of the MCP servers Claude Code and agy have, for the picker's marks.
 - The TUI gets nothing (deprecated, calm-town.md §9); its view keeps reading the same spec.
 
-## 8. Stages
+## 10. Stages
 
 | # | Stage | Done when |
 |---|---|---|
@@ -319,8 +408,10 @@ others → network).
 | 5 | Discord | a bot invited by the panel hears the ticked channels; mentions of me are told |
 | 6 | Paste a link | every link of §4.2 lands on the right service with its target ticked |
 | 7 | Failure kinds + Log in again / Edit | a revoked token is fixed from the chip in one step |
+| 8 | Everything (§6) | Jira, Slack, GitHub, GitLab, Discord and mail can be heard whole, with an intent asked for |
+| 9 | Through Claude or agy (§7) | a person with Jira only in Claude hears it with no token, read-only, the cost shown |
 
-## 9. Open questions
+## 11. Open questions
 
 1. **Discord's "me".** Is asking the person's user id good enough, or should the bot learn it
    from the first message they write while it watches?
@@ -332,3 +423,8 @@ others → network).
    Login, or only the machine the town runs on?
 5. **The keychain on Linux** without a running secret service: is the 0600 file acceptable as
    the default, or should the panel ask?
+6. **The agent source's price.** Is 15 min and a light model the right default, and should it be
+   offered at all on a subscription whose limits the orks also need?
+7. **Figma's whole team** waits for push; is a slow poll of the team's recently changed files
+   (`last_modified` from the projects' lists, only those asked for comments) good enough
+   meanwhile?
