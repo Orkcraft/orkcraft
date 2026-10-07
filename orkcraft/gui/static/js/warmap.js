@@ -16,33 +16,8 @@ const FOG_ROWS = 4, CLOSED_MIN = 7, OPEN_MIN = 12;   // a closed land at least 2
 const FOG = "#221e16";
 const CALL_EVERY_MS = 30_000;              // a land calls at most this often
 
-// -- deterministic shapes: a border is seeded by the pair of lands it parts, the coast by its row ---------
-function hash(s) {
-  let h = 2166136261;
-  for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
-  return h >>> 0 || 1;
-}
-function rng(seed) {
-  let s = seed;
-  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
-}
-function stepped(seed, len, lo, hi, runs) {
-  const r = rng(seed), out = [];
-  let off = 0;
-  while (out.length < len) {
-    off = Math.max(lo, Math.min(hi, off + (r() < 0.5 ? -1 : 1)));
-    const k = runs[Math.floor(r() * runs.length)];
-    for (let i = 0; i < k; i++) out.push(off);
-  }
-  return out.slice(0, len);
-}
+// Straight borders, and each land a step shorter than the one above it: even stripes, a neat terrace.
 const TAPER = 2, TAPER_MAX = 14;           // cells each land is shorter than the one above it, at most
-
-/** About how wide a land's words are, in px from the map's left: its name (and ■), its status when open. */
-function textWidth(o, isOpen) {
-  const name = 9 + (o.name || "").length * 7 + (o.questions ? 11 : 0);
-  return isOpen ? Math.max(name, 9 + (`${o.count} buildings · ${o.questions ? "1 question" : "all quiet"}`).length * 5.5) : name;
-}
 
 function layout(lands, open) {
   const closedN = lands.length - 1, avail = N - FOG_ROWS;
@@ -53,14 +28,7 @@ function layout(lands, open) {
   const H = Math.max(N, rows);
   const tops = [0];
   for (const o of lands) tops.push(tops[tops.length - 1] + (o.id === open ? openH : closed));
-  const ids = lands.map((o) => o.id).concat(["fog"]);
-  // A border wanders only right of the words of the two lands it parts, so no name or status line meets it.
-  const words = lands.map((o) => textWidth(o, o.id === open)).concat([textWidth({ name: "Add orkspace +" }, false)]);
-  const border = ids.map((id, k) => {
-    if (k === 0) return null;
-    const clear = Math.ceil(Math.max(words[k - 1], words[k]) / T) + 2;
-    return stepped(hash(`${ids[k - 1]}|${id}`), N, -1, 1, [4, 5, 6]).map((o, x) => tops[k] + (x < clear ? 0 : o));
-  });
+  const border = tops.map((y, k) => (k === 0 ? null : Array(N).fill(y)));
   return { H, tops, border };
 }
 
