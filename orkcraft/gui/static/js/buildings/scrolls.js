@@ -2,10 +2,13 @@
 // pages, what waits to be taken in, the page changed last. Open, made for the half panel: the counters
 // on one line, what waits to be taken in as a strip with Take in beside it, the pages changed lately over
 // the tree of the wiki and its sources; a page opens over them (← back). A page's mark opens it in Lake.
+// + Quick note opens a note over the tree: its section, tags and links suggested from the wiki as it is
+// typed (docs/design/wiki-librarian.md §4), each dropped with one click.
 import { signal } from "@preact/signals";
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, say, toast } from "../link.js";
+import { openBuilding } from "../windows.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 
@@ -18,6 +21,7 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 }
 
 const adding = signal(null);       // the building whose "Add a folder" dialog is open
+const noting = signal(null);       // the building whose Quick note is open
 const open = signal({});           // building id → {path, html}: the page open over the tree
 const toLake = (id, path, title) => openInLake({ path, title: title || path.split("/").pop(), from: id });
 
@@ -55,6 +59,7 @@ const quiet = (label, onClick, title = "") => html`<button class="ok-act" title=
  *  taken in (or runs, or failed) as a strip under it with its act beside it. */
 function Head({ id, data }) {
   const ingest = () => act(id, "ingest").catch(() => {});
+  const q = data.quality;
   return html`<div>
     <div class="wiki-head">
       <span><b>${data.pages_count}</b> ${say(data.pages_count === 1 ? "page" : "pages")}</span>
@@ -63,6 +68,7 @@ function Head({ id, data }) {
       ${!data.running && !data.error && !data.pending && html`<span class="ok-tone-ok">✓ ${say("up to date")}</span>`}
       <span class="wiki-head__spacer"></span>
       <span class="wiki-head__acts">
+        ${noting.value !== id && quiet(`+ ${say("Quick note")}`, () => { noting.value = id; }, say("Leave a note for the wiki"))}
         ${!data.running && !data.pending && quiet(say("Take in"), ingest, say("Read the sources again"))}
         ${!data.running && quiet(say("Check the wiki"), () => act(id, "lint").catch(() => {}), say("Look for broken links, gaps and contradictions"))}
         ${quiet(say("Add a folder"), () => { adding.value = id; }, say("Connect a folder of notes"))}
@@ -74,9 +80,14 @@ function Head({ id, data }) {
       : data.error ? html`<div class="wiki-strip is-error">
         <span class="wiki-strip__what ok-tone-error" title=${data.state_plain}>✗ ${data.state_plain}</span>
         <button class="ok-btn" onClick=${ingest}>${say("Try again")}</button></div>`
-      : data.pending > 0 && html`<div class="wiki-strip">
+      : data.pending > 0 ? html`<div class="wiki-strip">
         <span class="wiki-strip__what"><span class="ok-tone-wait">●</span> ${say(data.pending === 1 ? "1 note waits to be taken in" : `${data.pending} notes wait to be taken in`)}</span>
-        <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`}
+        <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`
+      : q && q.total > 0 && html`<div class="wiki-strip">
+        <span class="wiki-strip__what"><span class="ok-tone-wait">⚠</span> ${say("Quality check found")} <b>${q.total}</b>
+          ${say(q.total === 1 ? "problem" : "problems")}${q.last ? ` · ${say("checked")} ${q.last}` : ""}</span>
+        ${q.fixable > 0 && html`<button class="ok-btn primary" onClick=${() => act(id, "fix").catch(() => {})}>Fix links and indexes</button>`}
+      </div>`}
   </div>`;
 }
 
@@ -84,6 +95,59 @@ function ago(mtime) {
   const s = Math.max(0, Date.now() / 1000 - mtime);
   return s < 90 ? "just now" : s < 5400 ? `${Math.round(s / 60)} min ago`
     : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
+}
+
+const CHECKS = [["ingest", "After each take-in"], ["daily", "Daily"], ["weekly", "Weekly"], ["off", "Off"]];
+const KINDS = { structure: "Structure", link: "Broken links", contradiction: "Contradictions", orphan: "Orphans",
+  stale: "Stale", missing: "Missing pages", other: "Other" };
+
+/** The quality check: how often it runs, when next, what it cost; a count per kind of problem and the list
+ *  (a page opens on a click). Folded while the wiki is clean. */
+function Quality({ id, data }) {
+  const q = data.quality;
+  if (!q || !data.pages_count) return null;
+  const kinds = Object.keys(KINDS).filter((k) => q.counts[k]);
+  return html`<details class="wiki-recent wiki-quality" open=${q.total > 0}>
+    <summary><h3 class="ok-font-heading">${say("Quality")}</h3>
+      <span class=${q.total ? "ok-tone-wait" : "ok-tone-ok"}>${q.total ? `⚠ ${q.total}` : `✓ ${say("clean")}`}</span></summary>
+    <div class="wiki-quality__when">
+      <span class="ok-font-label">${say("Check")}</span>
+      <div class="wiki-note__chips" role="radiogroup" aria-label=${say("How often the wiki is checked")}>
+        ${CHECKS.map(([v, label]) => html`<button key=${v} role="radio" aria-checked=${q.check === v}
+          class=${cls("wiki-note__chip", { "is-on": q.check === v })} onClick=${() => act(id, "check", { check: v }).catch(() => {})}>${say(label)}</button>`)}
+      </div>
+      ${!data.running && quiet(say("Check now"), () => act(id, "lint").catch(() => {}), say("Look for broken links, gaps and contradictions"))}
+    </div>
+    <p class="ok-font-status ok-tone-muted">${[q.last && `${say("Last check")} ${q.last}`, q.next && `${say("next")} ${q.next}`,
+      q.cost != null && `${say("it cost")} $${q.cost.toFixed(2)}`].filter(Boolean).join(" · ") || say("Not checked yet")}</p>
+    ${kinds.length > 0 && html`<div class="wiki-quality__counts">${kinds.map((k) => html`<span key=${k}>
+      <b>${q.counts[k]}</b> ${say(KINDS[k])}</span>`)}</div>`}
+    <ul>${q.problems.map((p, i) => html`<li key=${i}>
+      <span class=${p.kind === "link" || p.kind === "contradiction" ? "ok-tone-error" : "ok-tone-wait"}>${p.kind === "link" || p.kind === "contradiction" ? "✗" : "⚠"} ${say(KINDS[p.kind] || p.kind)}</span>
+      ${p.page && html` <span class="gui-tree__item" title=${p.page} onClick=${() => read(id, `${data.root}/${p.page}`, true)}>${p.page}</span>`}
+      <span class="ok-tone-muted"> — ${p.text}</span></li>`)}</ul>
+  </details>`;
+}
+
+/** What the coming meetings should cover, from the notes left for them; the open items (a person, no
+ *  meeting yet) under them. A meeting's title opens its page. */
+function Meetings({ id, data }) {
+  const a = data.agenda || { meetings: [], open: [] };
+  if (!a.meetings.length && !a.open.length) return null;
+  return html`<section class="wiki-recent wiki-meet">
+    <h3 class="ok-font-heading">${say("To discuss")}</h3>
+    ${a.meetings.map((m) => html`<div key=${m.id} class="wiki-meet__one">
+      <div class="wiki-meet__head"><span class="gui-tree__item" title=${m.page} onClick=${() => m.page && read(id, m.page, true)}><b>${m.title}</b></span>
+        <span class="wiki-recent__when">${m.when}</span></div>
+      <ul>${m.items.map((i) => html`<li key=${i.path} class=${cls("", { "ok-tone-muted": i.done })}>
+        <span class="gui-tree__item" title=${i.path} onClick=${() => read(id, i.path, false)}>${i.done ? "✓ " : "▪ "}${i.line}</span></li>`)}</ul>
+    </div>`)}
+    ${a.open.length > 0 && html`<div class="wiki-meet__one">
+      <div class="wiki-meet__head"><b>${say("Open items")}</b><span class="wiki-recent__when">${say("no meeting yet")}</span></div>
+      <ul>${a.open.map((i) => html`<li key=${i.path}><span class="gui-tree__item" title=${i.path}
+        onClick=${() => read(id, i.path, false)}>▪ ${i.line}</span> <span class="ok-tone-muted">· ${i.with.join(", ")}</span></li>`)}</ul>
+    </div>`}
+  </section>`;
 }
 
 /** The pages changed lately: the ones read most, over the tree. */
@@ -134,10 +198,128 @@ function Page({ id, data, page }) {
   </div>`;
 }
 
+const DELAY_MS = 400;               // the suggestions wait for the typing to stop
+
+/** A Quick note: the text, then what the wiki suggests for it — the section, tags, the pages to link —
+ *  each dropped with one click; Save note keeps it in the wiki's inbox (and takes it in at once). */
+function QuickNote({ id, data }) {
+  const [text, setText] = useState("");
+  const [rules, setHint] = useState({ section: "", tags: [], links: [], meeting: null, people: [] });
+  const [section, setSection] = useState(null);     // null: the suggested one
+  const [dropped, setDropped] = useState([]);        // tags taken off
+  const [added, setAdded] = useState([]);            // tags of the person's own
+  const [off, setOff] = useState([]);                // links unticked
+  const [tagging, setTagging] = useState(false);
+  const [tag, setTag] = useState("");
+  const [now, setNow] = useState(true);
+  const [noMeeting, setNoMeeting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const asked = useRef(0);
+  useEffect(() => {
+    const n = ++asked.current;
+    if (!text.trim()) { setHint({ section: "", tags: [], links: [], meeting: null, people: [] }); return undefined; }
+    const t = setTimeout(() => act(id, "suggest", { text })
+      .then((r) => { if (n === asked.current && r) setHint(r); }, () => {}), DELAY_MS);
+    return () => clearTimeout(t);
+  }, [id, text]);
+  const close = () => { noting.value = null; };
+  const said = data.model_hint && data.model_hint.text === text ? data.model_hint : null;   // the light model's word
+  const hint = !said ? rules : { ...rules, section: rules.section || said.section,
+    tags: [...rules.tags, ...said.tags.filter((t) => !rules.tags.includes(t))],
+    people: rules.people && rules.people.length ? rules.people : said.people };
+  const picked = section ?? hint.section;
+  const tags = [...hint.tags.filter((x) => !dropped.includes(x)), ...added.filter((x) => !hint.tags.includes(x))];
+  const links = hint.links.filter((l) => !off.includes(l.path)).map((l) => l.path);
+  const save = () => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    const meeting = noMeeting ? null : hint.meeting;
+    act(id, "note", { text, section: picked, tags, links, take_in: now, meeting, people: hint.people || [] })
+      .then((path) => { toast(`${say("Kept in")} ${path}`, "information", say("Quick note")); close(); },
+        () => setBusy(false));
+  };
+  const keys = (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+  };
+  const addTag = () => {
+    const t = tag.trim().toLowerCase();
+    if (t && !tags.includes(t)) { setAdded([...added, t]); setDropped(dropped.filter((x) => x !== t)); }
+    setTag(""); setTagging(false);
+  };
+  const sections = data.sections || [];
+  return html`<section class="wiki-note" onKeyDown=${keys}>
+    <div class="wiki-note__head"><h3 class="ok-font-heading">${say("Quick note")}</h3>
+      <span class="ok-font-status ok-tone-muted">Ctrl+Enter ${say("saves")} · Esc ${say("closes")}</span></div>
+    ${hint.thinking && !said && html`<p class="ok-font-status ok-tone-muted">● ${say("The rules found nothing: asking a light model…")}</p>`}
+    <textarea class="ok-input gui-textarea" rows="4" value=${text} autofocus aria-label=${say("The note")}
+      placeholder=${say("Discuss the pricing tiers with Sergey tomorrow…")} onInput=${(e) => setText(e.target.value)}></textarea>
+    ${hint.meeting && html`<div class=${cls("wiki-note__meet", { "is-off": noMeeting })}>
+      <span class="ok-font-label">${say("For the meeting")}</span>
+      <span class="wiki-note__meet-what"><b>${hint.meeting.title}</b> · ${hint.meeting.when}</span>
+      <button class="gui-link" onClick=${() => setNoMeeting(!noMeeting)}>${say(noMeeting ? "Back to the meeting" : "Not for a meeting")}</button>
+    </div>`}
+    ${(noMeeting || !hint.meeting) && (hint.people || []).length > 0 && html`<p class="ok-font-status ok-tone-muted">
+      ${say("An open item for")} ${hint.people.join(", ")}: ${say("it goes to the next meeting with them.")}</p>`}
+    ${sections.length > 0 && html`<div class="wiki-note__row"><span class="ok-font-label">${say("Section")}</span>
+      <div class="wiki-note__chips" role="radiogroup" aria-label=${say("Section")}>
+        ${sections.map((s) => html`<button key=${s} role="radio" aria-checked=${s === picked}
+          class=${cls("wiki-note__chip", { "is-on": s === picked })} onClick=${() => setSection(s === picked ? "" : s)}>${s}</button>`)}
+      </div></div>`}
+    <div class="wiki-note__row"><span class="ok-font-label">${say("Tags")}</span>
+      <div class="wiki-note__chips">
+        ${tags.map((t) => html`<span key=${t} class="wiki-note__tag">${t}<button aria-label=${`${say("Drop tag")} ${t}`}
+          onClick=${() => { setDropped([...dropped, t]); setAdded(added.filter((x) => x !== t)); }}>✕</button></span>`)}
+        ${tagging ? html`<input class="ok-input wiki-note__tag-in" value=${tag} autofocus aria-label=${say("New tag")}
+            onInput=${(e) => setTag(e.target.value)} onBlur=${addTag}
+            onKeyDown=${(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); addTag(); } }} />`
+          : html`<button class="gui-link" onClick=${() => setTagging(true)}>+ ${say("Add tag")}</button>`}
+      </div></div>
+    ${hint.links.length > 0 && html`<div class="wiki-note__row"><span class="ok-font-label">${say("Link to")}</span>
+      <ul class="wiki-note__links">${hint.links.map((l) => html`<li key=${l.path}>
+        <label class="ok-check" onClick=${() => setOff(off.includes(l.path) ? off.filter((x) => x !== l.path) : [...off, l.path])}>
+          <i>${off.includes(l.path) ? "" : "✓"}</i> ${l.title}</label>
+        <span class="wiki-note__path" title=${l.path}>${l.path}</span></li>`)}</ul></div>`}
+    <div class="wiki-note__foot">
+      <span class="ok-font-status ok-tone-muted">${say("Saves to")} <code>${data.inbox}/</code></span>
+      <span class="wiki-head__spacer"></span>
+      <label class="ok-check" onClick=${() => setNow(!now)}><i>${now ? "✓" : ""}</i> ${say("Take in now")}</label>
+      <button class="ok-btn" onClick=${close}>Cancel</button>
+      <button class="ok-btn primary" disabled=${!text.trim() || busy} onClick=${save}>Save note</button>
+    </div>
+  </section>`;
+}
+
+/** Search over the pages and the sources' notes, as typed (no model); the hits stand in for the lists. */
+function Search({ id, query, setQuery }) {
+  return html`<input class="ok-input wiki-search" type="search" value=${query} aria-label=${say("Search the wiki")}
+    placeholder=${say("Search the wiki…")} onInput=${(e) => setQuery(e.target.value)}
+    onKeyDown=${(e) => { if (e.key === "Escape" && query) { e.stopPropagation(); setQuery(""); } }} />`;
+}
+
+function Hits({ id, hits }) {
+  if (!hits) return null;
+  if (!hits.length) return html`<p class="ok-tone-muted">${say("Nothing found.")}</p>`;
+  return html`<ul class="wiki-hits">${hits.map((h) => html`<li key=${h.path}>
+    <span class="gui-tree__item" title=${h.path} onClick=${() => read(id, h.path, h.page)}><b>${h.title}</b></span>
+    ${h.page && html`<${LakeMark} id=${id} path=${h.path} title=${h.title} />`}
+    <div class="ok-font-status ok-tone-muted">${h.line}</div></li>`)}</ul>`;
+}
+
 function Pages({ id, data }) {
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState(null);
+  useEffect(() => {
+    if (!query.trim()) { setHits(null); return undefined; }
+    const t = setTimeout(() => act(id, "find", { query }).then(setHits, () => {}), 250);
+    return () => clearTimeout(t);
+  }, [id, query]);
+  if (noting.value === id) return html`<${QuickNote} key=${`note-${id}`} id=${id} data=${data} />`;
   const page = open.value[id];
   if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
-  return html`<div><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+  const search = html`<${Search} id=${id} query=${query} setQuery=${setQuery} />`;
+  if (hits) return html`<div>${search}<${Hits} id=${id} hits=${hits} /></div>`;
+  return html`<div>${search}<${Quality} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
 }
 
 /** The notes a task was given lately: what it is and the pages named for it. */
@@ -159,6 +341,8 @@ export function card(b) {
   return html`<div class="gui-hut__body-in">
     <div class="gui-hut__big">${c.pages}<small>${say(c.pages === 1 ? "page" : "pages")}</small></div>
     <div class="gui-hut__text">${state}</div>
+    ${c.quality > 0 && html`<div class="gui-hut__text ok-tone-wait">⚠ <b>${c.quality}</b> ${say(c.quality === 1 ? "quality problem" : "quality problems")}</div>`}
+    ${c.discuss && html`<div class="gui-hut__text"><span class="ok-tone-accent">${say("To discuss")}:</span> <b>${c.discuss.count}</b> · ${c.discuss.title}</div>`}
     ${c.lent && html`<${Lent} lent=${c.lent} />`}
     ${c.last && html`<div class="gui-hut__foot"><span>✎ ${c.last.title}</span><span class="gui-hut__when">${say(ago(c.last.mtime))}</span></div>`}
   </div>`;
@@ -166,6 +350,7 @@ export function card(b) {
 
 /** The type's quick actions in its Info (realm/catalog.py). */
 const QUICK = {
+  "wiki.note": (id) => { noting.value = id; openBuilding(id, "work"); },
   "wiki.ingest": (id) => act(id, "ingest").catch(() => {}),
   "wiki.lint": (id) => act(id, "lint").catch(() => {}),
   "knowledge.add": (id) => { adding.value = id; },

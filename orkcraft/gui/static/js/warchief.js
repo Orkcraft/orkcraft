@@ -14,7 +14,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { act, command, details, town, say } from "./link.js";
+import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
 import { building as buildOpen, laying, demolishing } from "./build.js";
 import { openOrders } from "./orders.js";
@@ -140,6 +140,19 @@ export const COMMANDS = [
     run: (rest, bs) => (bs.length ? (openBuilding(bs[0].id), null) : "Name the building: /open @Forge") },
   { word: "demolish", args: "@building", about: "take a building down (it asks first)",
     run: (rest, bs) => (bs.length ? ((demolishing.value = bs[0].id), null) : "Name the building: /demolish @Forge") },
+  { word: "note", args: "[@Wiki] text", about: "keep a note in the wiki: its section, tags and links as the wiki suggests",
+    run: (rest, bs) => {
+      const w = bs.find((b) => b.type === "scrolls") || here().find((b) => b.type === "scrolls")
+        || town.value.buildings.find((b) => b.type === "scrolls");
+      if (!w) return "No Wiki in the town yet: /build scrolls";
+      if (!rest.trim()) return "Write the note: /note discuss the pricing tiers with Sergey tomorrow";
+      return act(w.id, "suggest", { text: rest })
+        .then((s) => act(w.id, "note", { text: rest, section: s.section, tags: s.tags,
+          links: s.links.map((l) => l.path), source: "warchief", meeting: s.meeting, people: s.people })
+          .then((path) => toast(s.meeting ? `${say("To discuss at")} ${s.meeting.title} · ${s.meeting.when}` : `${say("Kept in")} ${path}`,
+            "information", say("Quick note"))))
+        .catch(() => {});
+    } },
   { word: "orders", args: "", about: "the orks' questions", run: () => { openOrders(); return null; } },
   { word: "halt", args: "", about: "stop every ork at work", run: () => command("halt").catch(() => {}) },
   { word: "orkspace", args: "name", about: "go to an orkspace, or make a new one",

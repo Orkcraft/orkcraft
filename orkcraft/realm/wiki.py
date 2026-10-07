@@ -55,7 +55,9 @@ _MANUAL = re.compile(r"^owner:\s*[\"']?human[\"']?\s*$|<!--\s*manual\s*-->", re.
 SECTIONS = {
     "general": [("concepts", "ideas, components and terms: what each is, why it exists, how it relates"),
                 ("decisions", "what was decided, when, why, and what was rejected"),
-                ("how-to", "the steps of tasks people repeat")],
+                ("how-to", "the steps of tasks people repeat"),
+                ("people", "one page per person: what they own, how to reach them (no private details), open items"),
+                ("meetings", "one page per meeting: To discuss (kept by the Wiki from notes), background, outcome")],
     "codebase": [("architecture", "the big picture: layers, boundaries, how data moves"),
                  ("modules", "one page per module or package: purpose, entry points, key files, what it uses"),
                  ("flows", "processes that cross modules: a request, a build, a release, step by step"),
@@ -67,7 +69,9 @@ SECTIONS = {
              ("product", "features, customers, goals and the reasons behind them"),
              ("decisions", "what was decided, by whom, when, why, and what was rejected"),
              ("onboarding", "what a newcomer needs in the first weeks"),
-             ("glossary", "the team's terms and abbreviations")],
+             ("glossary", "the team's terms and abbreviations"),
+             ("people", "one page per person: what they own, how to reach them (no private details), open items"),
+             ("meetings", "one page per meeting: To discuss (kept by the Wiki from notes), background, outcome")],
     "design": [("components", "one page per component: purpose, variants, states, props, where it is used, "
                               "its name in the code"),
                ("screens", "one page per screen or flow: what the user does there, the components on it, edge states"),
@@ -126,6 +130,10 @@ same way everywhere (the glossary wins). A page nothing links to is an orphan.
 - Never edit a page whose owner is human (or that carries `<!-- manual -->`): write what you
   would change in `proposals.md` (page, change, source) instead.
 - Never copy secrets, tokens or personal data into the wiki.
+- A meeting's page (`kind: meeting`, `calendar: meet:<id>`) has a **To discuss** list under a
+  `<!-- to-discuss … -->` marker: the Wiki keeps it from people's notes and people tick it off — never
+  edit that list. Write the page's Background from the pages its notes link; a person's page gets a
+  line for each meeting with them.
 
 ## The maps
 
@@ -411,7 +419,12 @@ Take them in:
 2. Update the pages that they touch, or add pages, in the right section, as `{SCHEMA}` says.
    For a gone source, keep what is still true elsewhere and mark the rest stale.
 3. Update the index of every section you touched and `{INDEX}`.
-4. Add one entry at the top of `{LOG}` for {today.isoformat()}: the sources taken in, the pages touched.{_protected(list(manual))}
+4. Add one entry at the top of `{LOG}` for {today.isoformat()}: the sources taken in, the pages touched.
+
+A source whose front matter says `kind: note` is a person's quick note. Its `section`, `tags` and
+`links` were confirmed by the person: file it in that section, make the tags aliases of the page it
+lands on, and link those pages (their paths are relative to the project's root). Keep the note's
+words; a short note may become a line on an existing page rather than a page of its own.{_protected(list(manual))}
 
 Write only inside this folder, never into `{RAW}/`; the sources are read-only. Do not commit.
 Finish with a short Markdown summary: the pages added, changed and marked stale."""
@@ -429,8 +442,9 @@ Read `{SCHEMA}` (the rules), `{INDEX}`, the section indexes and the pages in `{P
 - pages missing from their section's index or from `{INDEX}`, or listed there but missing
 - pages that break the page format of `{SCHEMA}`
 
-Write `{LINT}`: a title `# Lint {today.isoformat()}`, then one `- ` line per problem, naming the
-page and what to do; `- none` when the wiki is clean. You may fix the indexes and broken links
+Write `{LINT}`: a title `# Lint {today.isoformat()}`, then one line per problem, exactly
+`- [kind] pages/<section>/<page>.md — what to do`, the kind one of structure, link, contradiction,
+orphan, stale, missing; `- none` when the wiki is clean. You may fix the indexes and broken links
 yourself; leave everything else to the next ingest.{_protected(list(manual))}
 
 Write only inside this folder. Do not commit.
@@ -505,21 +519,32 @@ def context(root: Path, repo_root: Path, task: str = "") -> str:
 
 
 _WORD = re.compile(r"[^\W\d_][\w-]{3,}")          # a word of any script: a to-do in Russian finds its pages too
+STEM = 5                                           # words are compared by their first letters: Сергеем finds Сергей
 _COMMON = frozenset("that this with from have will about what when where which there their them they your "
                     "were been into over just like some more than then also only each every page pages "
                     "этот эта это эти того чтобы когда если только также потом очень после перед через "
-                    "который которая которые нужно надо можно будет есть было свой своя свои".split())
+                    "который которая которые нужно надо можно будет есть было свой своя свои как что где "
+                    "между".split())
 
 
 def _stem(word: str) -> str:
     """A word's start, its ending cut: "release" finds "released", "банку" finds "банк"."""
-    return word[:min(5, max(4, len(word) - 2))]
+    return word[:min(STEM, max(4, len(word) - 2))]
+
+
+def stems(text: str) -> set[str]:
+    """The words of `text` as sets compare them: lower case, cut to `STEM` letters, the common ones left out."""
+    return {w.lower()[:STEM] for w in _WORD.findall(text or "") if w.lower() not in _COMMON}
+
+
+def _hits(want: set[str], have: set[str]) -> int:
+    return sum(1 for st in want if st in have or any(w.startswith(st) for w in have))
 
 
 def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
     """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
-    none that shares none."""
-    stems = {_stem(w) for w in {w.lower() for w in _WORD.findall(task or "")} - _COMMON}
+    none that shares none. A word in a page's title counts three times."""
+    want = {_stem(w) for w in {w.lower() for w in _WORD.findall(task or "")} - _COMMON}
     scored = []
     for n in notes:
         if not is_page(n.path):
@@ -528,11 +553,20 @@ def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> l
             text = (repo_root / n.path).read_text(encoding="utf-8")
         except OSError:
             continue
-        have = {w.lower() for w in _WORD.findall(f"{n.title} {text}")}
-        hits = sum(1 for st in stems if st in have or any(w.startswith(st) for w in have))
+        title = {w.lower() for w in _WORD.findall(n.title)}
+        hits = _hits(want, title | {w.lower() for w in _WORD.findall(text)}) + 2 * _hits(want, title)
         if hits:
             scored.append((-hits, n.path, n))
     return [n for *_, n in sorted(scored)[:limit]]
+
+
+def sections(root: Path, topic: str = "general") -> list[str]:
+    """The wiki's sections: the folders of `pages/`, else the ones its topic starts with."""
+    try:
+        have = sorted(p.name for p in (root / PAGES).iterdir() if p.is_dir() and not p.name.startswith("."))
+    except OSError:
+        have = []
+    return have or [name for name, _ in SECTIONS.get(topic, SECTIONS["general"])]
 
 
 # -- after the orc ------------------------------------------------------------------------------------
@@ -596,6 +630,24 @@ def commit(repo_root: Path, root: Path, message: str) -> tuple[str, str]:
         return sha, ""
     except (OSError, subprocess.TimeoutExpired) as e:
         return "", str(e)[:200]
+
+
+def commit_files(repo_root: Path, paths: list[str], message: str) -> str:
+    """Commit these files alone (repo-relative), authored by the librarian: the short sha, "" when nothing
+    was committed (no git, nothing changed, git refused)."""
+    try:
+        if not paths or _git(repo_root, "rev-parse", "--git-dir").returncode != 0:
+            return ""
+        if _git(repo_root, "add", "--", *paths).returncode != 0:
+            return ""
+        if _git(repo_root, "diff", "--cached", "--quiet", "--", *paths).returncode == 0:
+            return ""
+        done = _git(repo_root, "commit", "-q", "--author", AUTHOR, "-m", message, "--", *paths,
+                    env={"GIT_COMMITTER_NAME": "Scroll Scrapper (orkcraft)",
+                         "GIT_COMMITTER_EMAIL": "librarian@orkcraft.local"})
+        return _git(repo_root, "rev-parse", "--short", "HEAD").stdout.strip() if done.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
 
 
 def outside_changes(before: dict[str, tuple[str, float]], repo_root: Path, root: Path) -> list[str]:

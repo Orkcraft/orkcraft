@@ -439,6 +439,26 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   page anyway the harness puts it back and says so. A page with edits not yet committed is
   protected the same way for that run. Files outside the wiki that change while it works are
   reported.
+- **Quick note** (docs/design/wiki-librarian.md): *+ Quick note* in the window, the quick action, `/note`
+  to the Warchief, or *→ Wiki* on a note of the Task board. As the note is typed the wiki suggests,
+  without a model, the pages to link (the ones that share its words, in any script and inflection),
+  their section and, as tags, the names of those pages the note says; each is dropped with one click.
+  The note is a Markdown file in `inbox` (default `notes/inbox`, made a source of the wiki by the
+  first note) with that front matter, and the librarian keeps it at take-in (*Take in now*, on by
+  default, starts one at once). Saving sends `wiki.noted`. When rules find nothing, the light model
+  (the Council's `fast_model`) is asked once per note for a section and tags (`suggest_model`).
+- **Meetings.** A note that names a meeting of a Calendar (War Drum) — by its day, a person, its
+  words — or that names only a person, lands under **To discuss** on the meeting's page
+  (`pages/meetings/`, written at once and committed alone); a person ticks items off there. When the
+  Calendar asks for the meeting's brief (`meeting soon`, `[meet:<id>]`), the Wiki hands over that
+  page first; after the meeting what was not ticked moves on to the next meeting with the same
+  person. The window lists what the coming meetings should cover; the card counts the next one's.
+- **Quality check** (`check`: `weekly` by default, `daily`, `ingest`, `off`): the librarian's lint on a
+  schedule, one line per problem with its kind; rules look at every refresh, no model, for links to
+  nowhere, pages missing from their section's index and pages without front matter. The window shows
+  what was found, *Fix links and indexes*, the next check and the last cost; the card the count.
+- **Search** over the window's lists: the pages and the sources' notes, by name first, then by the
+  words they share, in any script.
 - **Every change is committed** (`commit`, default on) — the wiki's folder alone, authored by
   `Scroll Scrapper (orkcraft)`, so the Barracks' worktrees see it and `git log` tells the ork's
   edits from people's. Snapshots in `raw/` stay out of git (`raw/.gitignore`); `raw/manifest.json`
@@ -1076,7 +1096,7 @@ onboarding (*Punk ork*).
 | Reviewer | Chieftain |
 | Scheduler | Drummer |
 | File picker | Woodcutter |
-| Wiki writer | Scroll Scrapper |
+| Librarian | Scroll Scrapper |
 | Inspector | Seer |
 | Merger | Smith |
 | Gatekeeper | Quartermaster |

@@ -168,7 +168,7 @@ function noteLanes(data) {
 
 /** The selected card in a strip: its title, Open, where it goes next (the orks, a note, my to-dos) and
  *  Send; Colour and Delete quiet after them; × lets it go. */
-function Acts({ id, sel, setDialog, onPlan }) {
+function Acts({ id, sel, setDialog, onPlan, wiki }) {
   const a = (label, onClick) => html`<button class="ok-act" onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
     <span class="fields-sel__what" title=${sel.title}>${sel.title}</span>
@@ -182,6 +182,7 @@ function Acts({ id, sel, setDialog, onPlan }) {
       ${a(`📜 Context${sel.pages && sel.pages.length ? ` ${sel.pages.length}` : ""}`, () => setDialog({ context: sel.id }))}
       ${a("Send", () => act(id, "send", { card: sel.id }))}
       ${a(sel.private ? "🔒 Not personal" : "🔒 Personal", () => act(id, "private", { card: sel.id }))}
+      ${wiki && sel.kind === "note" && !sel.private && a("→ Wiki", () => act(id, "to_wiki", { card: sel.id }).catch(() => {}))}
       ${a("Colour", () => act(id, "color", { card: sel.id }))}
       ${a("Delete", () => setDialog({ remove: sel }))}
       <button class="ok-act" aria-label=${say("Let the card go")} title=${say("Let the card go")} onClick=${() => pick(id, null)}>
@@ -292,7 +293,7 @@ function Board({ id, data }) {
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} />`}
+    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki} />`}
     ${parts ? html`
       <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
         ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>
