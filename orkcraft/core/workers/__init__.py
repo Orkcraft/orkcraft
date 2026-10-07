@@ -106,6 +106,10 @@ class Worker:
         hut on fire and waits in Answers; None when it asks nothing (the GUI's roster reads it: gui/host.py)."""
         return None
 
+    def loose_ends(self) -> list[dict]:
+        """Its ways out that no road takes yet — [{"route", "name"}] — drawn on the map as a stub to pull a road from."""
+        return []
+
     def answer_alert(self, key: str) -> str | None:
         """The person picked answer `key` to `orders_alert()`; "dismiss" to put the question away."""
         return None

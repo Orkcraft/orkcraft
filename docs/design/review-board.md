@@ -1,6 +1,6 @@
 # Design — the Review board: a purpose, a clan, named exits
 
-Status: written and built 2026-10-07 — all four stages of §8. Not built: the exits drawn as signed roads on the map (§2) and Go on resuming from the very turn it stopped at (it resumes with the members not yet heard). The Review board is the catalog's
+Status: written and built 2026-10-07 — all four stages of §8, and the exits on the map (§2.1). Not built: Go on resuming from the very turn it stopped at (it resumes with the members not yet heard). The Review board is the catalog's
 `council` (the Clan Fire of old: `core/workers/council.py`, `realm/team.py`, `gui/views/council.py`,
 `js/buildings/council.js`). Screenshots of every state it has today:
 https://claude.ai/artifact/HXs4DvsBndSTyyKrF5t3Uv
@@ -52,6 +52,16 @@ and always there:
   or the screens are unclear"]` — the name before the colon, the rule after; each is a route a road
   waits for (`road.filter.route`), as `routes` are today. `routes` of old keep loading as exits
   without a rule; a clan with neither has the *Decision* template.
+
+### 2.1 Exits on the map
+
+- **A connected exit** is a road signed with the exit's name (*To development*), not its route id;
+  the road dialog offers each exit by name (*plain · exit To development*).
+- **An exit with no road** is a short dashed stub off the board's right edge, with a dashed sign in
+  the warning colour: the exit's name. Pull a road from the stub to a building and the road is laid
+  for that exit at once — no dialog, the stub goes. Its tooltip says what it is: *no road takes this
+  exit yet — pull one to a building*.
+- *Back to the author* and *Ask me* draw nothing: they have no road (above).
 
 ## 3. Setting up — in the panel, never a dialog
 
@@ -156,5 +166,5 @@ The states stay those of today (the screenshots), with a way on from each:
 
 1. **The keeper's proposal**: one turn of the light model, or the Warchief's model for a better clan?
 2. **A member's model**: does the keeper choose tiers (an elder for Risks), or all the same by default?
-3. **Exits shared with the Signpost**: a Review board with many exits looks like a Signpost after
-   it; should the map draw its exits the same way (the signs on the roads)?
+3. **Exits shared with the Signpost**: the board's roads are signed with its exits now (§2.1); should
+   a Signpost's routes with no road get the same stubs?

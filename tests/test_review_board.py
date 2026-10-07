@@ -228,3 +228,19 @@ def test_without_a_model_the_clan_is_picked_by_the_purposes_words(fake_repo):
     assert [m["role"] for m in members] == ["Risk", "Tone", "Priority"] and [e["name"] for e in exits] == ["To an agent", "To a person"]
     members, _ = cs.picked("Review PRDs before development")
     assert [m["veto"] for m in members] == [False, True, False]
+
+
+def test_an_exit_with_no_road_is_a_loose_end_and_its_road_says_its_name(host):
+    """The map draws each exit no road takes as a stub; laying it offers the exit by name; the road's sign says it."""
+    from orkcraft.core import roads
+    from orkcraft.gui import state
+    w = host.town.worker("board")
+    assert w.loose_ends() == [{"route": "to-the-designer", "name": "To the designer"}]
+    choices = roads.choices(host.town, "board", "dev")
+    assert ("team.routed#to-the-designer", None, "plain · exit To the designer") in choices
+    road = next(r for r in state.roads(host.town) if r["from"] == "board" and r["to"] == "dev")
+    assert road["sign"] == "To development"
+    from orkcraft.core.roads import _exit_name
+    assert _exit_name(host.town, "board", "to-the-designer") == "exit To the designer"
+    built = next(b for b in state.buildings(host.town, host.muster) if b["id"] == "board")
+    assert built["loose"] == w.loose_ends()
