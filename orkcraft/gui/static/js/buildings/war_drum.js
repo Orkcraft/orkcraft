@@ -212,7 +212,6 @@ function Head({ id, d }) {
     </div>
     ${d.errors.map((err) => html`<p key=${err} class="drum-head__err ok-tone-wait">⚠ ${err}</p>`)}
     <${Limits} d=${d} />
-    ${adding.value[id] && html`<${NewEvent} id=${id} />`}
   </div>`;
 }
 
@@ -307,4 +306,9 @@ export function panes(id, d) {
     meeting: () => null,
     settings: () => html`<${Settings} id=${id} d=${d} />`,
   };
+}
+
+/** Its New event window, over the town, whether the building is open or not (js/types.js). */
+export function overlay() {
+  return html`${Object.keys(adding.value).filter((id) => adding.value[id]).map((id) => html`<${NewEvent} key=${id} id=${id} />`)}`;
 }

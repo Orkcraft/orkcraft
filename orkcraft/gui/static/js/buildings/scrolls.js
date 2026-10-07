@@ -77,7 +77,6 @@ function Head({ id, data }) {
       : data.pending > 0 && html`<div class="wiki-strip">
         <span class="wiki-strip__what"><span class="ok-tone-wait">●</span> ${say(data.pending === 1 ? "1 note waits to be taken in" : `${data.pending} notes wait to be taken in`)}</span>
         <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`}
-    <${Adding} id=${id} />
   </div>`;
 }
 
@@ -188,4 +187,9 @@ export function panes(id, data) {
     tree: () => html`<${Pages} id=${id} data=${data} />`,
     page: () => null,
   };
+}
+
+/** Its Add a folder window, over the town, whether the building is open or not (js/types.js). */
+export function overlay() {
+  return adding.value ? html`<${Adding} id=${adding.value} />` : null;
 }

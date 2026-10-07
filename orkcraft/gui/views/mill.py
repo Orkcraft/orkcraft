@@ -16,9 +16,10 @@ def _cut(s: str) -> str:
 
 
 def _first(s: str) -> str:
-    """A result's or an error's first non-empty line, short, for the closed card's foot."""
+    """A result's or an error's first non-empty line, short, for the closed card's foot: as words, without the
+    Markdown marks it may start with (`### Daily brief` says `Daily brief`)."""
     line = next((ln.strip() for ln in (s or "").splitlines() if ln.strip()), "")
-    return line[:120]
+    return line.lstrip("#>*-+ ").strip()[:120] or line[:120]
 
 
 def card(w) -> dict:

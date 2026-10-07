@@ -11,6 +11,7 @@ import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { PartToggles, shown, hidden } from "../parts.js";
+import { usePeek } from "../windows.js";
 
 const selected = signal({});       // building id → card id
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
@@ -209,7 +210,6 @@ function Board({ id, data }) {
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
     ${dialog && !dialog.remove && !dialog.folder && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
-    <${Asking} id=${id} data=${data} />
   </div>`;
 }
 
@@ -267,7 +267,7 @@ function Asking({ id, data }) {
   const a = asking.value;
   if (!a || a.id !== id) return null;
   const lane = a.kind === "mine" && data.todos ? { id: data.todos.id, label: data.todos.label, kind: "mine" }
-    : data.lanes.find((ln) => ln.id === a.lane) || { id: a.lane, label: a.lane, kind: a.kind };
+    : (data.lanes || []).find((ln) => ln.id === a.lane) || { id: a.lane, label: a.lane, kind: a.kind };
   return html`<${CardDialog} id=${id} lane=${lane} onClose=${() => { asking.value = null; }} />`;
 }
 
@@ -294,4 +294,14 @@ function noteLane(id) {
 
 export function panes(id, data) {
   return { board: () => html`<${Board} id=${id} data=${data} />` };
+}
+
+function Peeked({ id }) {
+  usePeek(id);
+  return html`<${Asking} id=${id} data=${(details.value[id] || {}).data || {}} />`;
+}
+
+/** Its New task / note / chore window, over the town, whether the board is open or not (js/types.js). */
+export function overlay() {
+  return asking.value ? html`<${Peeked} key=${asking.value.id} id=${asking.value.id} />` : null;
 }
