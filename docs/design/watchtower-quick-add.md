@@ -346,6 +346,10 @@ logins work.
 - **An empty answer is not proof.** A look whose tool failed (a wrong site, a CQL the service
   refused) still ends `success` with `items: []` — the schema gets an `error` field (what the
   tool said, or "") and a look with one fails as *failing: the answer*, never as "nothing new".
+- **A refused tool is news.** A look asks for nothing that writes; a `permission_denials` entry
+  means the model tried anyway — a confused run, or a signal's text that told it to. The look's
+  items are dropped, the denial goes to the Town Hall's audit with the tool's name, and the
+  source shows *failing: the answer*. The run never waits for an approval nobody will give.
 - **The same path every time.** Left to itself the model takes 3 turns one run and 13 the next
   (§7.5). The prompt names the tools in order, and the ids a look learns once — the Atlassian
   cloud id, the person's Slack user id — are kept and passed to the next look, which saves two
@@ -418,7 +422,7 @@ Claude Code 2.1.291 on macOS, agy 1.3.1.
 | Without stdin from `/dev/null` | the run answered and did not exit; ended by hand |
 | One Gmail look (`search_threads` once, 10 items) | 4 turns, ~35 s (half of it thinking), $0.036–0.050 |
 | Twice in a row | the same 10 thread ids: dedupe by id works |
-| Write tools refused | not tried yet (a write prompt with read tools only) |
+| Write tools refused | yes: asked to DM me in Slack with read tools only, the run tried `slack_send_message`, got a permission denial, sent nothing, and ended `success` asking for approval |
 
 ## 8. The states of a source
 
