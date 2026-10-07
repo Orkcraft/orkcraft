@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+from orkcraft.realm.jobs import now_iso
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -108,10 +109,6 @@ def _dir(root: Path) -> Path:
     return root / DIR
 
 
-def _now() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
-
-
 def _append(path: Path, record: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
@@ -139,9 +136,9 @@ def record_output(root: Path, building: str, event: str, value: str, source: str
     path = _dir(root) / "last" / f"{building}.json"
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"ts": _now(), "event": event, "value": str(value)[:OUT_KEEP]},
+        path.write_text(json.dumps({"ts": now_iso(), "event": event, "value": str(value)[:OUT_KEEP]},
                                    ensure_ascii=False), encoding="utf-8")
-        _append(_dir(root) / building / "journal.jsonl", {"ts": _now(), "event": event, "chars": len(str(value))})
+        _append(_dir(root) / building / "journal.jsonl", {"ts": now_iso(), "event": event, "chars": len(str(value))})
     except OSError:
         pass
 
@@ -176,7 +173,7 @@ def record_delivery(root: Path, target: str, source: str) -> None:
     edges.add((source, target))
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"since": data.get("since") or _now(), "edges": sorted(edges)}), encoding="utf-8")
+        path.write_text(json.dumps({"since": data.get("since") or now_iso(), "edges": sorted(edges)}), encoding="utf-8")
     except OSError:
         pass
 
@@ -262,7 +259,7 @@ def like(root: Path, building: str, out: dict | None = None) -> dict | None:
     out = out if out is not None else last_output(root, building)
     if out is None:
         return None
-    _append(_dir(root) / building / "references.jsonl", {"ts": _now(), **out})
+    _append(_dir(root) / building / "references.jsonl", {"ts": now_iso(), **out})
     changes = {building: {"likes": 1}}
     _weighed(changes, building, EXPLICIT, 1.0, True)
     _bump(root, changes)
@@ -286,7 +283,7 @@ def dislike(root: Path, scroll, building: str, kind: str, note: str = "", out: d
         _weighed(changes, b, EXPLICIT, p, False)
     _bump(root, changes)
     out = (out if out is not None else last_output(root, building)) or {}
-    incident = Incident(_now(), building, kind, note.strip()[:1000], str(out.get("value", ""))[:OUT_KEEP], blamed)
+    incident = Incident(now_iso(), building, kind, note.strip()[:1000], str(out.get("value", ""))[:OUT_KEEP], blamed)
     _append(_dir(root) / "incidents.jsonl", asdict(incident))
     return incident
 
@@ -421,7 +418,7 @@ def signal(root: Path, building: str, good: bool, source: str, value: str | None
     if good:
         if not value:
             return None
-        ref = {"ts": _now(), "event": source, "value": str(value)[:OUT_KEEP], "source": source, "weight": w}
+        ref = {"ts": now_iso(), "event": source, "value": str(value)[:OUT_KEEP], "source": source, "weight": w}
         if note:
             ref["note"] = note[:1000]
         _append(_dir(root) / building / "references.jsonl", ref)
@@ -434,7 +431,7 @@ def signal(root: Path, building: str, good: bool, source: str, value: str | None
         changes.setdefault(b, {})["penalty"] = p
         _weighed(changes, b, source, p, False)
     _bump(root, changes)
-    incident = Incident(_now(), building, kind if kind in KINDS else "logic", note.strip()[:1000],
+    incident = Incident(now_iso(), building, kind if kind in KINDS else "logic", note.strip()[:1000],
                         str(value)[:OUT_KEEP], penalties, source, w, tag, edit[:OUT_KEEP])
     _append(_dir(root) / "incidents.jsonl", asdict(incident))
     return incident
@@ -478,7 +475,7 @@ def await_view(root: Path, viewer: str, made_by: str, title: str = "") -> None:
     if not viewer or not made_by or made_by == viewer:
         return
     rows = _views(root)
-    rows.append({"ts": _now(), "viewer": viewer, "by": made_by, "title": str(title)[:120]})
+    rows.append({"ts": now_iso(), "viewer": viewer, "by": made_by, "title": str(title)[:120]})
     _save_views(root, rows)
 
 
@@ -519,5 +516,5 @@ def rate_orc(root: Path, building: str, orc_id: str, good: bool, note: str = "")
     key = orc_key(building, orc_id)
     if not good:
         _append(_dir(root) / "incidents.jsonl",
-                asdict(Incident(_now(), key, "logic", note.strip()[:1000], "", {key: 1.0})))
+                asdict(Incident(now_iso(), key, "logic", note.strip()[:1000], "", {key: 1.0})))
     return _bump(root, {key: {"likes": 1} if good else {"dislikes": 1}})

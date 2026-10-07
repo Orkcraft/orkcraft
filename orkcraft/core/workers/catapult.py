@@ -30,13 +30,10 @@ from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.catapult_mcp import McpShots
 from orkcraft.realm import catapult as cp, catapult_web as cw, halt, roads
+from orkcraft.realm.jobs import now_iso
 
 GLOBE = "🌐"
 SCREENS = 120                    # screenshots kept, newest last
-
-
-def _now() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
 
 
 class CatapultWorker(McpShots, Worker):
@@ -268,7 +265,7 @@ class CatapultWorker(McpShots, Worker):
         return True
 
     def _problem(self, body, url: str, error: str, start: int = 0) -> bool:
-        self._done(cp.Shot(_now(), False, 0, url, str(body)[:2000], error=error), body=body, start=start)
+        self._done(cp.Shot(now_iso(), False, 0, url, str(body)[:2000], error=error), body=body, start=start)
         return False
 
     def _shoot(self, body, start: int = 0) -> bool:
@@ -306,7 +303,7 @@ class CatapultWorker(McpShots, Worker):
         problems = cp.check(body, self.schema_path)
         if problems:
             # a dry run that fails the check is still a dry run: nothing failed downstream, Fire is unchanged
-            self._done(cp.Shot(_now(), False, 0, "", str(body)[:2000], error="; ".join(problems), dry=True), body=None)
+            self._done(cp.Shot(now_iso(), False, 0, "", str(body)[:2000], error="; ".join(problems), dry=True), body=None)
             return False
         if self.browser:
             parts = []
@@ -317,7 +314,7 @@ class CatapultWorker(McpShots, Worker):
             return True
         if self.mcp_mode:
             where, what = self.dry_text(body)
-            shot = cp.Shot(_now(), not what.startswith("✗"), 0, where, json.dumps(body, ensure_ascii=False, indent=2)[:2000],
+            shot = cp.Shot(now_iso(), not what.startswith("✗"), 0, where, json.dumps(body, ensure_ascii=False, indent=2)[:2000],
                            what[:cp.ANSWER_KEEP], what[2:200] if what.startswith("✗") else "", dry=True, track="dry")
             self._done(shot)
             return True
@@ -445,7 +442,7 @@ class CatapultWorker(McpShots, Worker):
                     answers.append(f"[{form.name}] {shot.answer}")
                     continue
                 return
-            final = cp.Shot(_now(), True, 0, ", ".join(f.name for _, f, *_ in runs), json.dumps(body, ensure_ascii=False)[:2000],
+            final = cp.Shot(now_iso(), True, 0, ", ".join(f.name for _, f, *_ in runs), json.dumps(body, ensure_ascii=False)[:2000],
                             "\n\n".join(answers))
             self._later(self._screens, final.at, pictures)
             self._later(self._done, final, body)

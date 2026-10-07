@@ -30,7 +30,6 @@ is `(harness, prompt, model) → (text, cost)`; tests pass a fake one.
 """
 from __future__ import annotations
 
-import datetime as dt
 import json
 import re
 import threading
@@ -41,6 +40,7 @@ from typing import Callable
 
 from orkcraft import scroll as ts
 from orkcraft.realm import roads, tiers
+from orkcraft.realm.jobs import now_iso
 
 DEFAULT_MEMBERS = ("Product manager:main", "Architect:main")
 DEFAULT_CYCLES = 3
@@ -102,10 +102,6 @@ def scripted(script: dict, wait: Callable[[float], bool] | None = None) -> Runne
         return simulated(harness, prompt, model)
 
     return runner
-
-
-def now_iso() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
 
 
 def slug(role: str) -> str:
