@@ -163,7 +163,8 @@ def _to_wiki(w, args: dict) -> str:
     body = card_text(card)
     hint = librarian.suggest(body)
     try:
-        path = librarian.note(body, hint.section, hint.tags, [x["path"] for x in hint.links], "task board")
+        path = librarian.note(body, hint.section, hint.tags, [x["path"] for x in hint.links], "task board",
+                              meeting=hint.meeting, people=hint.people)
     except ValueError as e:
         raise ActError(str(e)) from None
     w.toast(f"{tasklist.plain(card.title)[:60]}: kept in the Wiki ({path})")

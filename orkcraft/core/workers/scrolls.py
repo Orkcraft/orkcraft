@@ -21,8 +21,9 @@ from pathlib import Path
 
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.scrolls_meetings import MeetingsMixin
 from orkcraft.env import getenv
-from orkcraft.realm import catalog, jobs, quicknote, roads, shelves, wiki
+from orkcraft.realm import catalog, daybook, jobs, quicknote, roads, shelves, wiki
 from orkcraft.realm import team as tm
 from orkcraft.sources import lore
 
@@ -42,7 +43,7 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
     return "_(demo — simulated)_ the librarian would have updated the wiki.", None, None, ""
 
 
-class ScrollsWorker(Worker):
+class ScrollsWorker(MeetingsMixin, Worker):
     TYPE = "scrolls"
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     review_runner = None          # and the Council members' calls (realm/team.py Runner)
@@ -151,6 +152,10 @@ class ScrollsWorker(Worker):
                 if self._mtimes.get(path) != stamp:
                     self.emit("knowledge.changed", path, path)
         self._mtimes = now
+        try:
+            self.keep_agenda()
+        except (OSError, ValueError) as e:                   # the meetings must not stop the wiki
+            self.last_note = f"the meetings' pages: {e}"
         self.changed()
         key = (tuple(self.pending.new), tuple(self.pending.changed), tuple(self.pending.gone))
         if key != self._settled[0]:
@@ -196,15 +201,18 @@ class ScrollsWorker(Worker):
         return str(self.config.get("inbox") or quicknote.INBOX).strip().strip("/") or quicknote.INBOX
 
     def suggest(self, text: str) -> quicknote.Suggestion:
-        """The section, tags and links a note should get here (rules, no model)."""
-        return quicknote.suggest(text, self.repo_root, self.pages, wiki.sections(self.wiki_root, self.topic))
+        """The section, tags and links a note should get here, and the meeting it is for (rules, no model)."""
+        return quicknote.suggest(text, self.repo_root, self.pages, wiki.sections(self.wiki_root, self.topic),
+                                 self.meetings(), self.clock())
 
     def note(self, text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
-             source: str = "quick note", take_in: bool = True) -> str:
+             source: str = "quick note", take_in: bool = True, meeting: dict | None = None,
+             people: list[str] = ()) -> str:
         """Keep a note in the inbox, the inbox a source, and take it in now when asked. Its path;
-        ValueError when it cannot be written."""
+        ValueError when it cannot be written. A note for a meeting is on its page at once."""
         try:
-            path = quicknote.write(self.repo_root, self.inbox, text, section, tags, links, source)
+            path = quicknote.write(self.repo_root, self.inbox, text, section, tags, links, source,
+                                   self.clock(), meeting, people)
         except OSError as e:
             raise ValueError(str(e)) from None
         if not any(s.owns(path) for s in self.library.sources):
@@ -469,8 +477,14 @@ class ScrollsWorker(Worker):
         under the task's own title and ref; `by` is the building that asked (a Barracks that reads it
         first). True when a road took it."""
         task = f"{payload.title} {payload.value}".strip()[:500]
-        found = wiki.relevant(self.repo_root, self.pages, task, LENT_PAGES)
+        first, links = self.meeting_context(daybook.meet_tag(f"{payload.title} {payload.value}"))
+        by_path = {n.path: n for n in self.pages}
+        found = [by_path[x] for x in links if x in by_path]
+        found += [n for n in wiki.relevant(self.repo_root, self.pages, task, LENT_PAGES) if n not in found]
+        found = found[:max(LENT_PAGES, len(links))]
         context = wiki.context(self.wiki_root, self.repo_root, task)
+        if first:
+            context = f"{first}\n\n{context}"
         if found:
             context += "\n\n**Notes for this task — read these first:**\n" + \
                 "\n".join(f"- `{n.path}` — {n.title}" for n in found)

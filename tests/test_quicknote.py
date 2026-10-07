@@ -54,7 +54,7 @@ def test_suggest_gives_the_section_the_tags_and_the_links(tmp_path: Path):
     assert "pricing tiers" in hint.tags and "сергей" in hint.tags
     assert all(x["path"].startswith("llm-wiki/team/pages/") for x in hint.links)
     assert quicknote.suggest("   ", tmp_path, _pages(tmp_path, root), []).as_dict() == \
-        {"section": "", "tags": [], "links": []}
+        {"section": "", "tags": [], "links": [], "meeting": None, "people": []}
 
 
 def test_the_note_file_keeps_what_was_confirmed(tmp_path: Path):

@@ -34,8 +34,12 @@ def card(w) -> dict:
     """Closed (docs/design/building-views.md): the pages and what waits to be taken in; the page changed
     last (`last`: its title and when) for the foot."""
     recent = _recent(w)[:1]
+    meetings = w.agenda_cache["meetings"]
+    nxt = next((m for m in meetings if any(not i["done"] for i in m["items"])), None)
     return {"pages": wiki.page_count(w.pages), "pending": w.pending.count, "running": w.running,
             "error": bool(w.last_error), "lent": _lent(w),
+            "discuss": {"title": nxt["title"][:60], "when": nxt["when"],
+                        "count": sum(1 for i in nxt["items"] if not i["done"])} if nxt else None,
             "last": {"title": recent[0]["title"][:60], "mtime": recent[0]["mtime"]} if recent else None}
 
 
@@ -75,7 +79,7 @@ def detail(w) -> dict:
         "state_plain": _state(w).replace("⚠ ", ""), "running": w.running, "error": bool(w.last_error),
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
         "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
-        "sections": wiki.sections(w.wiki_root, w.topic),
+        "sections": wiki.sections(w.wiki_root, w.topic), "agenda": w.agenda_view(),
     }
 
 
@@ -134,9 +138,12 @@ def _note(w, args: dict) -> str:
     if not body.strip():
         raise ActError("Write the note first.")
     try:
+        meeting = args.get("meeting") if isinstance(args.get("meeting"), dict) else None
+        if meeting:
+            meeting = {k: str(meeting.get(k) or "")[:200] for k in ("id", "title", "when")}
         return w.note(body, text(args, "section", 80).strip(), _strings(args, "tags", 8, 60),
                       _strings(args, "links", 6, 400), text(args, "source", 20) or "quick note",
-                      args.get("take_in", True) is not False)
+                      args.get("take_in", True) is not False, meeting, _strings(args, "people", 8, 80))
     except ValueError as e:
         raise ActError(str(e)) from None
 

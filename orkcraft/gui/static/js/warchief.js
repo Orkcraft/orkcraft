@@ -148,8 +148,10 @@ export const COMMANDS = [
       if (!rest.trim()) return "Write the note: /note discuss the pricing tiers with Sergey tomorrow";
       return act(w.id, "suggest", { text: rest })
         .then((s) => act(w.id, "note", { text: rest, section: s.section, tags: s.tags,
-          links: s.links.map((l) => l.path), source: "warchief" }))
-        .then((path) => toast(`${say("Kept in")} ${path}`, "information", say("Quick note")), () => {});
+          links: s.links.map((l) => l.path), source: "warchief", meeting: s.meeting, people: s.people })
+          .then((path) => toast(s.meeting ? `${say("To discuss at")} ${s.meeting.title} · ${s.meeting.when}` : `${say("Kept in")} ${path}`,
+            "information", say("Quick note"))))
+        .catch(() => {});
     } },
   { word: "orders", args: "", about: "the orks' questions", run: () => { openOrders(); return null; } },
   { word: "halt", args: "", about: "stop every ork at work", run: () => command("halt").catch(() => {}) },

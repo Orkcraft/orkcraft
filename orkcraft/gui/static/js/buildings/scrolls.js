@@ -91,6 +91,27 @@ function ago(mtime) {
     : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 }
 
+/** What the coming meetings should cover, from the notes left for them; the open items (a person, no
+ *  meeting yet) under them. A meeting's title opens its page. */
+function Meetings({ id, data }) {
+  const a = data.agenda || { meetings: [], open: [] };
+  if (!a.meetings.length && !a.open.length) return null;
+  return html`<section class="wiki-recent wiki-meet">
+    <h3 class="ok-font-heading">${say("To discuss")}</h3>
+    ${a.meetings.map((m) => html`<div key=${m.id} class="wiki-meet__one">
+      <div class="wiki-meet__head"><span class="gui-tree__item" title=${m.page} onClick=${() => m.page && read(id, m.page, true)}><b>${m.title}</b></span>
+        <span class="wiki-recent__when">${m.when}</span></div>
+      <ul>${m.items.map((i) => html`<li key=${i.path} class=${cls("", { "ok-tone-muted": i.done })}>
+        <span class="gui-tree__item" title=${i.path} onClick=${() => read(id, i.path, false)}>${i.done ? "✓ " : "▪ "}${i.line}</span></li>`)}</ul>
+    </div>`)}
+    ${a.open.length > 0 && html`<div class="wiki-meet__one">
+      <div class="wiki-meet__head"><b>${say("Open items")}</b><span class="wiki-recent__when">${say("no meeting yet")}</span></div>
+      <ul>${a.open.map((i) => html`<li key=${i.path}><span class="gui-tree__item" title=${i.path}
+        onClick=${() => read(id, i.path, false)}>▪ ${i.line}</span> <span class="ok-tone-muted">· ${i.with.join(", ")}</span></li>`)}</ul>
+    </div>`}
+  </section>`;
+}
+
 /** The pages changed lately: the ones read most, over the tree. */
 function Recent({ id, data }) {
   if (!data.recent || !data.recent.length) return null;
@@ -145,7 +166,7 @@ const DELAY_MS = 400;               // the suggestions wait for the typing to st
  *  each dropped with one click; Save note keeps it in the wiki's inbox (and takes it in at once). */
 function QuickNote({ id, data }) {
   const [text, setText] = useState("");
-  const [hint, setHint] = useState({ section: "", tags: [], links: [] });
+  const [hint, setHint] = useState({ section: "", tags: [], links: [], meeting: null, people: [] });
   const [section, setSection] = useState(null);     // null: the suggested one
   const [dropped, setDropped] = useState([]);        // tags taken off
   const [added, setAdded] = useState([]);            // tags of the person's own
@@ -153,11 +174,12 @@ function QuickNote({ id, data }) {
   const [tagging, setTagging] = useState(false);
   const [tag, setTag] = useState("");
   const [now, setNow] = useState(true);
+  const [noMeeting, setNoMeeting] = useState(false);
   const [busy, setBusy] = useState(false);
   const asked = useRef(0);
   useEffect(() => {
     const n = ++asked.current;
-    if (!text.trim()) { setHint({ section: "", tags: [], links: [] }); return undefined; }
+    if (!text.trim()) { setHint({ section: "", tags: [], links: [], meeting: null, people: [] }); return undefined; }
     const t = setTimeout(() => act(id, "suggest", { text })
       .then((r) => { if (n === asked.current && r) setHint(r); }, () => {}), DELAY_MS);
     return () => clearTimeout(t);
@@ -169,7 +191,8 @@ function QuickNote({ id, data }) {
   const save = () => {
     if (!text.trim() || busy) return;
     setBusy(true);
-    act(id, "note", { text, section: picked, tags, links, take_in: now })
+    const meeting = noMeeting ? null : hint.meeting;
+    act(id, "note", { text, section: picked, tags, links, take_in: now, meeting, people: hint.people || [] })
       .then((path) => { toast(`${say("Kept in")} ${path}`, "information", say("Quick note")); close(); },
         () => setBusy(false));
   };
@@ -188,6 +211,13 @@ function QuickNote({ id, data }) {
       <span class="ok-font-status ok-tone-muted">Ctrl+Enter ${say("saves")} · Esc ${say("closes")}</span></div>
     <textarea class="ok-input gui-textarea" rows="4" value=${text} autofocus aria-label=${say("The note")}
       placeholder=${say("Discuss the pricing tiers with Sergey tomorrow…")} onInput=${(e) => setText(e.target.value)}></textarea>
+    ${hint.meeting && html`<div class=${cls("wiki-note__meet", { "is-off": noMeeting })}>
+      <span class="ok-font-label">${say("For the meeting")}</span>
+      <span class="wiki-note__meet-what"><b>${hint.meeting.title}</b> · ${hint.meeting.when}</span>
+      <button class="gui-link" onClick=${() => setNoMeeting(!noMeeting)}>${say(noMeeting ? "Back to the meeting" : "Not for a meeting")}</button>
+    </div>`}
+    ${(noMeeting || !hint.meeting) && (hint.people || []).length > 0 && html`<p class="ok-font-status ok-tone-muted">
+      ${say("An open item for")} ${hint.people.join(", ")}: ${say("it goes to the next meeting with them.")}</p>`}
     ${sections.length > 0 && html`<div class="wiki-note__row"><span class="ok-font-label">${say("Section")}</span>
       <div class="wiki-note__chips" role="radiogroup" aria-label=${say("Section")}>
         ${sections.map((s) => html`<button key=${s} role="radio" aria-checked=${s === picked}
@@ -221,7 +251,7 @@ function Pages({ id, data }) {
   if (noting.value === id) return html`<${QuickNote} key=${`note-${id}`} id=${id} data=${data} />`;
   const page = open.value[id];
   if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
-  return html`<div><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+  return html`<div><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
 }
 
 /** The notes a task was given lately: what it is and the pages named for it. */
@@ -243,6 +273,8 @@ export function card(b) {
   return html`<div class="gui-hut__body-in">
     <div class="gui-hut__big">${c.pages}<small>${say(c.pages === 1 ? "page" : "pages")}</small></div>
     <div class="gui-hut__text">${state}</div>
+    ${c.discuss && html`<div class="gui-hut__text"><span class="ok-tone-accent">${say("To discuss")}:</span>
+      <b>${c.discuss.count}</b> · ${c.discuss.title}</div>`}
     ${c.lent && html`<${Lent} lent=${c.lent} />`}
     ${c.last && html`<div class="gui-hut__foot"><span>✎ ${c.last.title}</span><span class="gui-hut__when">${say(ago(c.last.mtime))}</span></div>`}
   </div>`;

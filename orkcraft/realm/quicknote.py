@@ -32,9 +32,12 @@ class Suggestion:
     section: str = ""
     tags: list[str] = field(default_factory=list)
     links: list[dict] = field(default_factory=list)     # {path, title}: repo-relative
+    meeting: dict | None = None                         # {id, title, when}: the Calendar's meeting it is for
+    people: list[str] = field(default_factory=list)     # the people it names (their pages' titles)
 
     def as_dict(self) -> dict:
-        return {"section": self.section, "tags": list(self.tags), "links": [dict(x) for x in self.links]}
+        return {"section": self.section, "tags": list(self.tags), "links": [dict(x) for x in self.links],
+                "meeting": dict(self.meeting) if self.meeting else None, "people": list(self.people)}
 
 
 def front_matter(text: str) -> dict[str, str | list[str]]:
@@ -69,6 +72,12 @@ def names_of(page_text: str, title: str) -> list[str]:
     return [n for n in dict.fromkeys([title, *(aliases if isinstance(aliases, list) else [aliases])]) if n.strip()]
 
 
+def body_of(text: str) -> str:
+    """A note's words without its front matter."""
+    m = _FRONT.match(text or "")
+    return (text[m.end():] if m else text or "").strip()
+
+
 def section_of(path: str) -> str:
     """The section of a wiki page: the folder under `pages/`."""
     parts = path.split("/")
@@ -76,9 +85,33 @@ def section_of(path: str) -> str:
     return parts[i + 1] if 0 <= i < len(parts) - 2 else ""
 
 
-def suggest(text: str, repo_root: Path, pages: list[Note], sections: list[str]) -> Suggestion:
-    """The section, tags and links a note should get, from the wiki it goes to (no model)."""
+def suggest(text: str, repo_root: Path, pages: list[Note], sections: list[str], meetings: list = (),
+            now: dt.datetime | None = None) -> Suggestion:
+    """The section, tags and links a note should get, from the wiki it goes to, and the meeting it is for
+    among `meetings` (realm/agenda.py), by rules, no model."""
+    from orkcraft.realm import agenda                    # it reads notes as this module writes them
     text = (text or "")[:MAX_CHARS]
+    if not wiki.stems(text) and not text.strip():
+        return Suggestion()
+    people = agenda.people_of(repo_root, pages)
+    found = agenda.match(text, list(meetings), people, now or dt.datetime.now())
+    hint = _suggest(text, repo_root, pages, sections)
+    for person in found.people:
+        tag = person.lower()
+        if tag not in hint.tags:
+            hint.tags.insert(0, tag)
+    if found.meeting or found.people:
+        if "to discuss" not in hint.tags:
+            hint.tags.append("to discuss")
+        if found.meeting:
+            hint.section = agenda.SECTION                 # its page is a meeting's
+    hint.tags = hint.tags[:TAGS + 1]
+    hint.meeting = found.meeting.as_dict() if found.meeting else None
+    hint.people = found.people
+    return hint
+
+
+def _suggest(text: str, repo_root: Path, pages: list[Note], sections: list[str]) -> Suggestion:
     if not wiki.stems(text):
         return Suggestion()
     found = wiki.relevant(repo_root, pages, text, LINKS)
@@ -104,11 +137,18 @@ def file_name(text: str, today: dt.date) -> str:
 
 
 def note_text(text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
-              source: str = "quick note", written: dt.datetime | None = None) -> str:
+              source: str = "quick note", written: dt.datetime | None = None, meeting: dict | None = None,
+              people: list[str] = ()) -> str:
     """The note's file: its front matter, then the text as it was written."""
     written = written or dt.datetime.now()
     clean = lambda s: " ".join(str(s).replace(",", " ").replace("[", " ").replace("]", " ").split())  # noqa: E731
-    lines = ["---", "kind: note"]
+    people = [clean(p) for p in people if clean(p)]
+    lines = ["---", f"kind: {'to-discuss' if meeting or people else 'note'}"]
+    if meeting and clean(meeting.get("id", "")):
+        lines += [f"meeting: {clean(meeting['id'])}", f"meeting_title: {clean(meeting.get('title', ''))}",
+                  f"when: {clean(meeting.get('when', ''))}"]
+    if people:
+        lines.append(f"with: [{', '.join(people)}]")
     if section:
         lines.append(f"section: {clean(section)}")
     tags = [clean(t) for t in tags if clean(t)]
@@ -122,7 +162,8 @@ def note_text(text: str, section: str = "", tags: list[str] = (), links: list[st
 
 
 def write(repo_root: Path, inbox: str, text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
-          source: str = "quick note", now: dt.datetime | None = None) -> str:
+          source: str = "quick note", now: dt.datetime | None = None, meeting: dict | None = None,
+          people: list[str] = ()) -> str:
     """Write a note into the inbox (made when missing); its repo-relative path. ValueError on an empty note
     or an inbox outside the project."""
     if not (text or "").strip():
@@ -135,5 +176,5 @@ def write(repo_root: Path, inbox: str, text: str, section: str = "", tags: list[
     while path.exists():
         path = folder / f"{path.stem.rsplit('~', 1)[0]}~{n}.md"
         n += 1
-    path.write_text(note_text(text, section, tags, links, source, now), encoding="utf-8")
+    path.write_text(note_text(text, section, tags, links, source, now, meeting, people), encoding="utf-8")
     return shelves.rel_to(repo_root, path)

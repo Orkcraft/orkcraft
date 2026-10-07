@@ -55,7 +55,9 @@ _MANUAL = re.compile(r"^owner:\s*[\"']?human[\"']?\s*$|<!--\s*manual\s*-->", re.
 SECTIONS = {
     "general": [("concepts", "ideas, components and terms: what each is, why it exists, how it relates"),
                 ("decisions", "what was decided, when, why, and what was rejected"),
-                ("how-to", "the steps of tasks people repeat")],
+                ("how-to", "the steps of tasks people repeat"),
+                ("people", "one page per person: what they own, how to reach them (no private details), open items"),
+                ("meetings", "one page per meeting: To discuss (kept by the Wiki from notes), background, outcome")],
     "codebase": [("architecture", "the big picture: layers, boundaries, how data moves"),
                  ("modules", "one page per module or package: purpose, entry points, key files, what it uses"),
                  ("flows", "processes that cross modules: a request, a build, a release, step by step"),
@@ -67,7 +69,9 @@ SECTIONS = {
              ("product", "features, customers, goals and the reasons behind them"),
              ("decisions", "what was decided, by whom, when, why, and what was rejected"),
              ("onboarding", "what a newcomer needs in the first weeks"),
-             ("glossary", "the team's terms and abbreviations")],
+             ("glossary", "the team's terms and abbreviations"),
+             ("people", "one page per person: what they own, how to reach them (no private details), open items"),
+             ("meetings", "one page per meeting: To discuss (kept by the Wiki from notes), background, outcome")],
     "design": [("components", "one page per component: purpose, variants, states, props, where it is used, "
                               "its name in the code"),
                ("screens", "one page per screen or flow: what the user does there, the components on it, edge states"),
@@ -126,6 +130,10 @@ same way everywhere (the glossary wins). A page nothing links to is an orphan.
 - Never edit a page whose owner is human (or that carries `<!-- manual -->`): write what you
   would change in `proposals.md` (page, change, source) instead.
 - Never copy secrets, tokens or personal data into the wiki.
+- A meeting's page (`kind: meeting`, `calendar: meet:<id>`) has a **To discuss** list under a
+  `<!-- to-discuss … -->` marker: the Wiki keeps it from people's notes and people tick it off — never
+  edit that list. Write the page's Background from the pages its notes link; a person's page gets a
+  line for each meeting with them.
 
 ## The maps
 
@@ -610,6 +618,24 @@ def commit(repo_root: Path, root: Path, message: str) -> tuple[str, str]:
         return sha, ""
     except (OSError, subprocess.TimeoutExpired) as e:
         return "", str(e)[:200]
+
+
+def commit_files(repo_root: Path, paths: list[str], message: str) -> str:
+    """Commit these files alone (repo-relative), authored by the librarian: the short sha, "" when nothing
+    was committed (no git, nothing changed, git refused)."""
+    try:
+        if not paths or _git(repo_root, "rev-parse", "--git-dir").returncode != 0:
+            return ""
+        if _git(repo_root, "add", "--", *paths).returncode != 0:
+            return ""
+        if _git(repo_root, "diff", "--cached", "--quiet", "--", *paths).returncode == 0:
+            return ""
+        done = _git(repo_root, "commit", "-q", "--author", AUTHOR, "-m", message, "--", *paths,
+                    env={"GIT_COMMITTER_NAME": "Scroll Scrapper (orkcraft)",
+                         "GIT_COMMITTER_EMAIL": "librarian@orkcraft.local"})
+        return _git(repo_root, "rev-parse", "--short", "HEAD").stdout.strip() if done.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
 
 
 def outside_changes(before: dict[str, tuple[str, float]], repo_root: Path, root: Path) -> list[str]:
