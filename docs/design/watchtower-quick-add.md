@@ -301,8 +301,9 @@ but not the way it uses a token.
 - **Log in to the same servers itself.** The hosted MCP servers admit their own lists of clients:
   Atlassian's (`mcp.atlassian.com`) does dynamic client registration but only for approved clients
   (custom redirect addresses are a feature request, ROVO-870); Slack's (`mcp.slack.com`) has no
-  dynamic registration; Figma's (`mcp.figma.com`) serves design context for code, not comments
-  *(check, all three)*. claude.ai's connectors live on Anthropic's side: no token is on the
+  dynamic registration *(check, both)*; Figma's (`mcp.figma.com`, and the claude.ai Figma
+  connector) serves design context for code and has **no tool for comments** (checked, §7.5) —
+  Figma is heard by its token only (§5). claude.ai's connectors live on Anthropic's side: no token is on the
   machine at all.
 - **Be told when something happens.** MCP is tools to call, not events: an MCP source is polled
   like any other, through tools shaped for a model.
@@ -313,15 +314,27 @@ The tower runs the agent headless with the person's own MCP servers (`claude -p`
 mode) and asks it, in a fenced prompt, for what is new. The agent is an approved client, so its
 logins work.
 
-- **One turn per look**, on the light model (the Fast Path's): *list the new comments and mentions
-  in Jira since 2026-10-07T10:12, as JSON: id, title, text, url, author, at, mention*. The tower
-  passes the last look's time and the ids it has seen; dedupe is by `id` like every feed.
+- **One run per look**, on the light model (the Fast Path's): *list the new comments and mentions
+  in Jira since 2026-10-07T10:12*. The tower passes the last look's time and the ids it has seen;
+  dedupe is by `id` like every feed.
+- **The answer by schema, not by asking.** `--json-schema` with `{items: [{id, title, text, url,
+  author, at, mention}]}` (at most N items); the answer is read from the result's
+  `structured_output`. A model asked for "only JSON" in words wraps it in prose or fences — it
+  did, every time (§7.5).
+- **The tower owns the process.** `--output-format stream-json --verbose`, stdin from
+  `/dev/null` (without it the run waited on the terminal and never ended), the `result` event read
+  and the process ended there, a timeout (90 s) over it all. The `system:init` event also tells
+  which servers this run sees and their state, so a look that finds its server `needs-auth`
+  fails at once as *needs a login* instead of asking the model.
 - **Read-only, enforced by the tower, not asked of the model.** At setup the tower lists the
   server's tools and keeps those that only read (`get…`, `search…`, `list…`, `read…`); the run
   allows exactly those (`--allowedTools`) and nothing else — no shell, no files, no write tool. A
   signal's text can tell the agent to do something; it has nothing to do it with.
-- **Slow and paid.** Every 15 min by default (5 at the fastest); each look's cost goes to Spend
-  and shows on the source's line (`via Claude · every 15 min · ≈ $0.08 today`); a daily ceiling
+- **Slow and paid.** A look took ~35 s and $0.04–0.05 on haiku (§7.5): every 15 min that is
+  ≈ $4 a day per source, every 30 min ≈ $2. So every 30 min by default (10 at the fastest), the
+  model's thinking off *(check: how, headless)* — it was half of each look's time. Each look's
+  cost goes to Spend and shows on the source's line (`via Claude · every 30 min · ≈ $0.90 today`);
+  a daily ceiling
   in the tower's settings, past it the source waits like the Lookout does out of 🪙. A
   subscription's turns count against its limits (⏳ Limits shows them).
 - **Halt All** stops a look in flight; the next one starts from the same time.
@@ -330,29 +343,56 @@ logins work.
 
 ### 7.3 Where it fits in the flow
 
-- **The picker.** The tower reads the **names** of the person's MCP servers — `claude mcp list`,
-  agy's MCP config *(check: its path)* — never their settings or tokens, and marks the tiles:
+- **The picker.** The tower reads the **names** of the person's MCP servers — the `mcp_servers` of
+  a headless run's `system:init` (each with `source`: `claudeai`, `plugin`, local, and `status`),
+  and the server keys of agy's `~/.gemini/config/mcp_config.json`,
+  `~/.gemini/antigravity/mcp_config.json` and `~/.gemini/config/plugins/*/mcp_config.json` —
+  never their settings or tokens, and marks the tiles:
   `Jira ✓ in Claude`. Such a tile offers two ways, the token one first:
   - **Log in** (§5): free, every 2 min, exact.
-  - **Use Claude's connection**: no token, every 15 min, costs a model turn each look.
+  - **Use Claude's connection**: no token, every 30 min, costs a model run each look.
+  - A server in `needs-auth` shows as `Jira · in Claude, needs a login` with *run `/mcp` in Claude
+    Code*; the tower cannot log it in.
 - **Step 2 without a token.** The agent lists what there is (projects, spaces, channels) in one
   turn, for the agent source's ticks.
 - **From the intent.** Whatever way a source is added, the agent can turn *user feedback about the
   app* into a proposal — Jira project `SUP`, Slack `#feedback`, a JQL — in one turn
   (watchtower-automation.md §2 G).
-- claude.ai connectors in a headless `claude -p`: *(check)* whether a logged-in Claude Code sees
-  them; if so, a person who connected Jira on claude.ai needs no setup at all.
+- claude.ai connectors **are** seen by a headless `claude -p` of a logged-in Claude Code (§7.5):
+  a person who connected Gmail on claude.ai hears their mail with no app password and no setup.
+  Right after start a connector can read `needs-auth` for a moment before it connects: the
+  picker asks twice before it says so.
 
 ### 7.4 Its states
 
 | State | Its chip | Its line |
 |---|---|---|
-| listening | `jira 2` | via Claude · every 15 min · last look 10:12 · ≈ $0.08 today |
+| listening | `jira 2` | via Claude · every 30 min · last look 10:12 · ≈ $0.90 today |
 | looking | `jira …` | asking Claude… |
 | waiting: the ceiling | `jira ⏸` | *Today's ceiling ($0.50) reached — looks again tomorrow* · **Raise it** |
 | waiting: limits | `jira ⏸` | *Claude's limit is used up until 14:00* |
 | failing: the connection | `jira ✗ ERR` | *Claude's Jira connection needs a login — run `/mcp` in Claude Code* (the tower cannot log it in) |
 | failing: the answer | `jira ✗ ERR` | *Claude's answer was not the list asked for* — the look is retried once, then waits for the next |
+| failing: too slow | `jira ✗ ERR` | *Claude did not answer in 90 s* — the process is ended, the next look tries again |
+
+### 7.5 Checked on a live machine (2026-10-07)
+
+Claude Code 2.1.291 on macOS, agy 1.3.1.
+
+| What | Found |
+|---|---|
+| claude.ai connectors in `claude -p` | seen, `source: claudeai`; tools named `mcp__claude_ai_<Name>__<tool>` |
+| Their state at init | Gmail, Figma, Calendar `connected`; one run earlier read `needs-auth` for Gmail while `claude mcp list` said connected |
+| Plugin servers (Slack, Atlassian, Linear, Notion, Intercom) | `needs-auth` until logged in once with `/mcp`; not tried yet |
+| agy | its MCP config holds firebase and dart servers only: nothing to listen with there |
+| Gmail's read tools | `search_threads`, `get_thread`, `get_message`, `list_labels`, `list_drafts`, `get_draft`; 20 more write (send, reply, forward, trash, label…) — the allow-list matters |
+| Figma connector | design, Code Connect, FigJam, shaders; **no comments** |
+| "Only JSON" asked in words | not JSON (prose or fences) |
+| `--json-schema` | the answer in `structured_output`, valid, `subtype: success` |
+| Without stdin from `/dev/null` | the run answered and did not exit; ended by hand |
+| One Gmail look (`search_threads` once, 10 items) | 4 turns, ~35 s (half of it thinking), $0.036–0.050 |
+| Twice in a row | the same 10 thread ids: dedupe by id works |
+| Write tools refused | not tried yet (a write prompt with read tools only) |
 
 ## 8. The states of a source
 
