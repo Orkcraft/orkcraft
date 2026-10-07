@@ -7,7 +7,7 @@ written until the town is chosen; then the machine's part is saved and the town 
 so the map fills in front of the person while the Autonomy card waits in a corner (js/onboarding.js).
 
     ob = Onboarding(host)                 # active on a first run, unless ORKCRAFT_ONBOARDING=0
-    host.commands.update(ob.commands())   # onboarding.tools · .kin · .role · .mcp · .town · .survey · …
+    host.commands.update(ob.commands())   # onboarding.tools · .role · .mcp · .town · .survey · …
     ob.snapshot()                         # the snapshot's `onboarding`, None when there is none
     ob.tick(now)                          # from the host's clock: the next raising step
 """
@@ -24,11 +24,9 @@ from orkcraft.core import buildings, roads, runners
 from orkcraft.env import getenv
 from orkcraft.realm import biomes, builders, checkpoint, intents, interview, mcp, town_builder, town_presets
 
-TOOLS, WHO, SUB, MCP, TOWN, SURVEY, RAISING = "tools", "who", "sub", "mcp", "town", "survey", "raising"
+TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
-KINS: tuple[tuple[str, str], ...] = (("orc", "Ork"), ("lich", "Undead"), ("elf", "Elf"), ("gnome", "Gnome"),
-                                     ("goblin", "Goblin"), ("knight", "Knight"), ("skeleton", "Skeleton"))
 BEST = ("code", "copy", "data", "search", "tickets")      # what a tool is best at, on the survey
 BEST_TITLES = {"code": "Code", "copy": "Copy and content", "data": "Data and numbers", "search": "Search and research",
                "tickets": "Tickets"}
@@ -92,16 +90,20 @@ class Onboarding:
         out = [TOOLS]
         if not self.role_given:
             out.append(WHO)
-            if self.kin and len(self._roles(self.kin)) > 1:
-                out.append(SUB)
         if self.servers:
             out.append(MCP)
         out.append(TOWN)
         return out
 
     @staticmethod
-    def _roles(kin: str) -> list[intents.Role]:
-        return [r for r in intents.ROLES if r.mascot == kin]
+    def _classes() -> list[dict]:
+        """Every role as a class card, each kin's second role with the next stage's head so the two differ."""
+        out, seen = [], {}
+        for r in intents.ROLES:
+            seen[r.mascot] = seen.get(r.mascot, 0) + 1
+            out.append({"id": r.id, "nick": r.nick, "title": r.title, "kin": r.mascot, "stage": seen[r.mascot],
+                        "biome": biomes.HOMES.get(r.mascot, "dirt")})
+        return out
 
     def _tools_rows(self) -> list[dict]:
         rows = []
@@ -154,9 +156,7 @@ class Onboarding:
             "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(),
                       "missing": [st.tool.title for st in self.statuses or [] if not st.found],
                       "others": [{"id": o.id, "title": o.title} for o in self.others], "warder": self.warder},
-            "kins": [{"id": k, "title": t, "biome": biomes.HOMES.get(k, "dirt"),
-                      "roles": [{"id": r.id, "title": r.title, "nick": r.nick} for r in self._roles(k)]}
-                     for k, t in KINS],
+            "classes": self._classes(),
             "kin": self.kin, "role": self.profile.get("role", ""),
             "nick": intents.nick(self.profile["role"]) if self.profile.get("role") else "",
             "biome": biomes.home_of(self.profile),
@@ -170,7 +170,7 @@ class Onboarding:
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {"onboarding.tools": self.set_tools, "onboarding.request": self.request,
-                "onboarding.kin": self.set_kin, "onboarding.role": self.set_role, "onboarding.mcp": self.set_mcp,
+                "onboarding.role": self.set_role, "onboarding.mcp": self.set_mcp,
                 "onboarding.town": self.set_town, "onboarding.survey": self.set_survey,
                 "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close}
 
@@ -207,19 +207,6 @@ class Onboarding:
                                        f"What orks would do with it: {note}" if note else "") if x)
         return {"url": f"{ISSUES}?{urlencode({'title': f'Support {name}', 'body': body, 'labels': 'tool request'})}"}
 
-    def set_kin(self, args: dict) -> dict | None:
-        self._live()
-        kin = str(args.get("kin") or "")
-        roles = self._roles(kin)
-        if not roles:
-            raise OnboardingError("No such class")
-        self.kin = kin
-        if len(roles) == 1:
-            self.profile["role"] = roles[0].id
-        elif intents.role(self.profile.get("role", "")).mascot != kin:
-            self.profile.pop("role", None)
-        return self._go(WHO)
-
     def set_role(self, args: dict) -> dict | None:
         self._live()
         role = str(args.get("role") or "")
@@ -227,7 +214,7 @@ class Onboarding:
             raise OnboardingError("No such role")
         self.profile["role"] = role
         self.kin = intents.role(role).mascot
-        return self._go(SUB)
+        return self._go(WHO)
 
     def set_mcp(self, args: dict) -> dict | None:
         self._live()

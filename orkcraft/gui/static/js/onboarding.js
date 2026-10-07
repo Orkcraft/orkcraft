@@ -1,5 +1,5 @@
 // The onboarding (gui/onboarding.py, docs/design/gui-onboarding.md): a project with no town yet opens on it.
-// Your AI tools → who you are (only when the landing page did not say) → the MCP servers the orks may use
+// Your AI tools → who you are (every class at once, only when the landing page did not say) → the MCP servers the orks may use
 // (only when some are connected) → your first town, drawn → the town going up on the map, with the Autonomy
 // card in a corner. Every answer goes to the host at once; the host decides the next step and the page draws
 // what the snapshot's `onboarding` says.
@@ -123,28 +123,11 @@ function WhoStep({ o }) {
   return html`<section class="gui-onb__card is-wide">
     <${Head} o=${o} title="Who are you?" lead="Your class picks your first town, your mascot and the land it stands on." />
     <div class="gui-onb__kins">
-      ${o.kins.map((k) => html`<button key=${k.id} class=${cls("gui-onb__kin", { "is-on": o.kin === k.id })}
-          aria-pressed=${o.kin === k.id} onClick=${() => send("onboarding.kin", { kin: k.id })}>
-        <${Ground} biome=${k.biome}><${MascotHead} kin=${k.id} stage=${1} size=${5} /></${Ground}>
-        <span class="gui-onb__kin-name">${k.title}</span>
-        <span class="ok-font-status ok-tone-muted">${k.roles.map((r) => r.title).join(" · ")}</span>
-      </button>`)}
-    </div>
-    <${Foot} skip=${false} />
-  </section>`;
-}
-
-function SubStep({ o }) {
-  const kin = o.kins.find((k) => k.id === o.kin) || o.kins[0];
-  return html`<section class="gui-onb__card is-wide">
-    <${Head} o=${o} title=${say(`Which ${kin.title.toLowerCase()} are you?`)}
-      lead=${say(`${kin.title}s come in two kinds. Each gets towns for its own work.`)} />
-    <div class="gui-onb__subs">
-      ${kin.roles.map((r, i) => html`<button key=${r.id} class=${cls("gui-onb__kin is-big", { "is-on": o.role === r.id })}
-          aria-pressed=${o.role === r.id} onClick=${() => send("onboarding.role", { role: r.id })}>
-        <${Ground} biome=${kin.biome}><${MascotHead} kin=${kin.id} stage=${i + 1} size=${6} /></${Ground}>
-        <span class="gui-onb__kin-name">${r.nick}</span>
-        <span class="ok-font-body">${r.title}</span>
+      ${o.classes.map((c) => html`<button key=${c.id} class=${cls("gui-onb__kin", { "is-on": o.role === c.id })}
+          aria-pressed=${o.role === c.id} onClick=${() => send("onboarding.role", { role: c.id })}>
+        <${Ground} biome=${c.biome}><${MascotHead} kin=${c.kin} stage=${c.stage} size=${5} /></${Ground}>
+        <span class="gui-onb__kin-name">${c.nick}</span>
+        <span class="ok-font-status ok-tone-muted">${c.title}</span>
       </button>`)}
     </div>
     <${Foot} skip=${false} />
@@ -313,7 +296,7 @@ function AutonomyCard() {
 
 // -- the whole -------------------------------------------------------------------------------------------
 
-const STEPS = { tools: ToolsStep, who: WhoStep, sub: SubStep, mcp: McpStep, town: TownStep, survey: SurveyStep };
+const STEPS = { tools: ToolsStep, who: WhoStep, mcp: McpStep, town: TownStep, survey: SurveyStep };
 
 export function Onboarding() {
   const t = town.value;

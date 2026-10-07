@@ -57,18 +57,17 @@
 /* Who are you: the classes, each on its biome's ground. */
 .gui-onb__ground { background: var(--land) var(--glyphs) repeat; background-size: 240px auto; display: flex;
   align-items: center; justify-content: center; }
-.gui-onb__kins { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-4); }
-.gui-onb__subs { display: flex; gap: var(--space-6); justify-content: center; flex-wrap: wrap; }
+/* Every class at once, in two rows (11 cards: 6 + 5); a narrow window takes as many as fit. */
+.gui-onb__kins { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-3); }
+@media (max-width: 1000px) { .gui-onb__kins { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
 .gui-onb__kin { display: flex; flex-direction: column; gap: var(--space-1); text-align: left; padding: 0 0 var(--space-3);
   background: var(--panel); color: var(--ink); border: 0; cursor: pointer; font-family: var(--ok-font);
   box-shadow: inset 0 0 0 2px var(--panel-raised); border-radius: var(--ok-radius-md); overflow: hidden; }
 .gui-onb__kin > :not(.gui-onb__ground) { padding: 0 var(--space-3); }
 .gui-onb__kin .gui-onb__ground { height: 84px; }
-.gui-onb__kin.is-big { width: min(280px, 100%); }
-.gui-onb__kin.is-big .gui-onb__ground { height: 100px; }
 .gui-onb__kin.is-on { box-shadow: 0 0 0 4px var(--frame-focus); }
 .gui-onb__kin:focus-visible, .gui-onb__level:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
-.gui-onb__kin-name { font: 400 17px/1.2 var(--ok-head); color: var(--ink-gold); padding-top: var(--space-2); }
+.gui-onb__kin-name { font: 400 17px/1.2 var(--ok-head); word-spacing: 0.2em; color: var(--ink-gold); padding-top: var(--space-2); }
 
 /* Your first town: the template drawn on the ground of the class's biome. */
 .gui-onb__town { gap: 0; padding: var(--space-6) var(--space-4) var(--space-4); align-items: flex-end; min-height: 300px;

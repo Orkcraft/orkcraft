@@ -10,8 +10,7 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 
 ```
 1 Your AI tools                 always · + Request a tool
-2 Who are you?                  only without --role · 7 classes on their biome's ground
-2b Which gnome are you?         only for a class with two roles (orks, undead, elves, gnomes)
+2 Who are you?                  only without --role · all 11 classes at once, in two rows
 3 Tools the orks can use        only when an MCP server is connected to an AI tool
 4 Your first town               the class's towns, drawn · Use this town · Doesn't fit · Empty town
   4b Tell the town planner      only on "Doesn't fit": in · out · what each tool is best at · words · what hurts
@@ -21,8 +20,7 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 | Who | Screens |
 |---|---|
 | a gnome from orkcraft.dev (`--role marketing`), no MCP | 1 · 4 · 5 |
-| a gnome with no `--role`, MCP connected | 1 · 2 · 2b · 3 · 4 · 5 |
-| a goblin with no `--role` (one role) | 1 · 2 · (3) · 4 · 5 |
+| a gnome with no `--role`, MCP connected | 1 · 2 · 3 · 4 · 5 |
 | "Doesn't fit" | … 4 · 4b · 5 (the planner draws the town first) |
 | Skip, from any step but the first | an empty town; the tools found stay on; no Security reviewer |
 
@@ -53,14 +51,16 @@ person submits it there. No backend, no usage event.
 
 ## 3. Who are you?
 
-Seven classes, each on its biome's ground with its mascot (`design-system/sprites/mascots`, `--glyphs` of
-`js/terrain.js`): Ork, Undead, Elf, Gnome, Goblin, Knight, Skeleton (Someone else). A class with one role
-picks it; a class with two asks which (2b), each with its nick and its stage-1 / stage-2 head.
+Every class at once, one card per role, in two rows (6 + 5): Burnout Peon, Bug Ork, The Jira Lich, Roadmap
+Wraith, Gradient-Sick Elf, Lore Elf, Keyword Gnome, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight,
+Wandering Skeleton (Someone else). Each card is its nick and its role, its mascot on its biome's ground
+(`design-system/sprites/mascots`, `--glyphs` of `js/terrain.js`); a kin's second role wears the next stage's
+head, so the two gnomes are told apart. One click picks it; there is no second question.
 
-- `orkcraft --role <role or class>` (`settings.preset_role`) skips both screens.
-- **To do:** a class from the landing page (`--role gnome`) maps to one role today (`intents.CLASSES`:
-  gnome → marketing). Keep the class as `profile.kin` instead and ask 2b, so a Keyword Gnome is not
-  made a Growth-Hack Gnome.
+- `orkcraft --role <role or class>` (`settings.preset_role`) skips this screen.
+- **To do:** a class from the landing page names a kin (`--role gnome`), and `intents.CLASSES` maps it to one
+  role (gnome → marketing), so a Keyword Gnome is made a Growth-Hack Gnome. For a kin with two roles, open
+  this screen with that kin's two cards marked instead.
 - **To do:** the landing page's class art, larger than the 12 × 11 heads, into `design-system/sprites` and
   onto these cards.
 
@@ -129,7 +129,7 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
 | Their look, from the design system's tokens only | `orkcraft/gui/static/onboarding.css` |
 
 The host turns it on for a first run (`Town.first_run`: no layout for the project yet), unless
-`ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.request` · `.kin` · `.role` · `.mcp` ·
+`ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.request` · `.role` · `.mcp` ·
 `.town` · `.survey` · `.back` · `.skip` · `.close`.
 
 **To do:** F10 → Onboarding in the GUI menu: steps 1–3 again on a project that has a town (never step 4).

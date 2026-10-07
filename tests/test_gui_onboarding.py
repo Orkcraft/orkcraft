@@ -64,10 +64,12 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     host.command("onboarding.tools", {"tools": {"codex": {"enabled": False, "billing": "api"}}})
     o = host.command("onboarding.tools", {"next": True})
     assert o["step"] == "who"
-    o = host.command("onboarding.kin", {"kin": "gnome"})
-    assert o["step"] == "sub" and o["steps"] == ["tools", "who", "sub", "mcp", "town"]   # gnomes come in two kinds
+    classes = {c["id"]: c for c in o["classes"]}                          # every class at once, both gnomes too
+    assert len(classes) == 11 and classes["aso_manager"]["nick"] == "Keyword Gnome"
+    assert classes["aso_manager"]["stage"] == 1 and classes["marketing"]["stage"] == 2   # two heads, told apart
+    assert classes["marketing"]["biome"] == "lava"
     o = host.command("onboarding.role", {"role": "marketing"})
-    assert o["step"] == "mcp" and o["mcp"]["on"] == ["github", "amplitude"]
+    assert o["step"] == "mcp" and o["kin"] == "gnome" and o["mcp"]["on"] == ["github", "amplitude"]
     o = host.command("onboarding.mcp", {"on": ["amplitude", "nope"], "next": True})
     assert o["step"] == "town" and o["mcp"]["on"] == ["amplitude"] and o["biome"] == "lava"
     towns = {t["id"]: t for t in o["towns"]}
@@ -102,11 +104,11 @@ def test_the_landing_page_s_class_skips_who_you_are(fake_repo: Path, onboard):
     assert o["steps"] == ["tools", "mcp", "town"] and o["nick"] == "Growth-Hack Gnome"
 
 
-def test_a_class_with_one_role_has_no_second_question(fake_repo: Path, onboard):
+def test_a_class_that_is_not_one(fake_repo: Path, onboard):
     host = _host(fake_repo)
     host.command("onboarding.tools", {"next": True})
-    o = host.command("onboarding.kin", {"kin": "goblin"})
-    assert o["step"] == "mcp" and o["role"] == "data_analyst" and "sub" not in o["steps"]
+    with pytest.raises(CommandError, match="No such role"):
+        host.command("onboarding.role", {"role": "wizard"})
 
 
 def test_back_and_skip(fake_repo: Path, onboard):
@@ -119,7 +121,7 @@ def test_back_and_skip(fake_repo: Path, onboard):
     assert not (fake_repo / ".claude" / "settings.json").exists()           # skip: no Security reviewer
     assert settings.load().tools["claude"].enabled                          # the tools found stay on
     with pytest.raises(CommandError, match="not open"):
-        host.command("onboarding.kin", {"kin": "orc"})
+        host.command("onboarding.role", {"role": "engineer"})
 
 
 def test_doesn_t_fit_the_survey_and_the_planner(fake_repo: Path, onboard, monkeypatch):
