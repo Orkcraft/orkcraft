@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orkcraft"
-version = "0.1.0"
+dynamic = ["version"]          # orkcraft/__init__.py __version__: the one place it is raised
 description = "A harness for running many coding agents in one project, as a real-time strategy game"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -37,6 +37,9 @@ Issues = "https://github.com/Orkcraft/orkcraft/issues"
 
 [project.scripts]
 orkcraft = "orkcraft.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "orkcraft.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["orkcraft*"]

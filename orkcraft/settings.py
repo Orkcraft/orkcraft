@@ -9,6 +9,7 @@
     s.profile                        # who the operator is and how their day goes (realm/intents.py)
     s.growth                         # the operator's mascot stage and deeds (realm/growth.py)
     s.usage, s.install_id            # anonymous usage stats: None not asked yet (core/usage.py)
+    s.updates                        # auto | critical | ask: which updates install by themselves (core/updates.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
@@ -33,6 +34,7 @@ TOOLS = ("claude", "agy", "codex")
 BILLINGS = ("subscription", "api")
 PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other")
 PROFILE_LISTS = ("day",)
+UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
 
 
 @dataclass
@@ -57,6 +59,7 @@ class MachineSettings:
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
+    updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
 
     def to_dict(self) -> dict:
         return {
@@ -71,6 +74,7 @@ class MachineSettings:
             "agy_warder_checked": self.agy_warder_checked,
             "usage": {"share": self.usage, "id": self.install_id},
             "fire": self.fire,
+            "updates": self.updates,
         }
 
     @classmethod
@@ -94,6 +98,7 @@ class MachineSettings:
         usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
         s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
         s.fire = data.get("fire") is not False
+        s.updates = data["updates"] if data.get("updates") in UPDATES else "critical"
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)

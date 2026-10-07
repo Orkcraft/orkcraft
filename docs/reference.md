@@ -947,6 +947,8 @@ onboarding (*Punk ork*).
 | Terminals | War Tent |
 | Answers | Orders |
 | Phone | War Raven |
+| update | — |
+| critical update | — |
 | Instructions | Standing orders |
 | Awaiting an answer | Awaiting Orders |
 | Orks | Garrison |

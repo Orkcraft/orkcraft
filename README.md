@@ -49,6 +49,9 @@ orkcraft                           # open the town in a window (macOS: the syste
 > now ([docs/design/calm-town.md](docs/design/calm-town.md)). On a machine without a display, use
 > `orkcraft gui --browser` over a forwarded port.
 
+Orkcraft updates itself: a critical fix installs by itself when the town opens, any other update is
+offered (`orkcraft update` installs it now; [docs/updates.md](docs/updates.md)).
+
 You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
 Builder needs `claude`), `gh` (GitHub events in the Watchtower).
 
