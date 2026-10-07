@@ -220,6 +220,20 @@ def test_huts_move_until_the_person_pins_them(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_a_huts_banner_follows_its_goal_from_the_start(page):
+    """docs/design/growth.md §5: the flag's shape is the goal before any renown; switching it redraws the hut."""
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    pg.keyboard.press("Escape")
+    flag = _hut(pg, bid).locator(".gui-sprite__flag")
+    flag.wait_for(state="attached", timeout=WAIT_MS)
+    assert flag.get_attribute("src").endswith("/flags/balance-0.png")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('building.goal', { id, value: 'thrift' }))", bid)
+    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-sprite__flag`)"
+                         ".getAttribute('src').endsWith('/flags/thrift-0.png')", arg=bid, timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
 def test_the_lake_window_shows_text_markdown_and_code(page):
     pg = page
     pg.evaluate("""async () => {

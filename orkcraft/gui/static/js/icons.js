@@ -37,7 +37,7 @@ export function TypeIcon({ type }) {
 // basalt, never red (red is the fire's).
 export const BIOMES = {
   dirt: { ground: "#1a1813", land: "#3a3326" },
-  forest: { ground: "#14260c", land: "#2c4a1e" },
+  forest: { ground: "#101a0b", land: "#22341a" },
   ice: { ground: "#0c1622", land: "#263c52" },
   dust: { ground: "#2a2014", land: "#5a462a" },
   void: { ground: "#0e0c14", land: "#2c263c" },
@@ -67,13 +67,14 @@ const FLAG_AT = {
   town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
 };
 
-/** A building's header sprite in its biome, with its goal flag when it has a level (none at 0). */
+/** A building's header sprite in its biome, with its goal flag: its shape is the goal from the start (a
+ *  muted cloth with no renown yet), ivory at I, taller at II, gold at III. */
 export function HutSprite({ type, biome, goal, level, className = "", onError }) {
   const at = FLAG_AT[spriteName(type)];
   return html`<span class=${`gui-sprite ${className}`}>
     <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
-    ${level > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
-      src=${`/ds/sprites/flags/${goal || "balance"}-${level}.png`} alt="" draggable="false"
+    ${at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
+      src=${`/ds/sprites/flags/${goal || "balance"}-${level || 0}.png`} alt="" draggable="false"
       style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}
   </span>`;
 }
