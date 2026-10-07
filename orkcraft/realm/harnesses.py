@@ -301,8 +301,15 @@ PI_READ = "read,grep,find,ls"
 PI_WORK = "read,grep,find,ls,edit,write,bash"
 
 
+def pi_guard() -> list[str]:
+    """`-e <orkcraft's extension>`: the Warder and the session log in every pi orkcraft starts."""
+    from orkcraft.hooks import pi_extension
+    path = pi_extension.write()
+    return ["-e", str(path)] if path else []
+
+
 def _pi(h, prompt, model, tools, session="", keep=False):
-    return [h.bin, "--mode", "json", *(["--tools", tools] if tools else ["--no-tools"]),
+    return [h.bin, "--mode", "json", *pi_guard(), *(["--tools", tools] if tools else ["--no-tools"]),
             *([] if keep or session else ["--no-session"]), *(["--session", session] if session else []),
             *_model("--model", model), "--", prompt]
 
@@ -391,7 +398,8 @@ register(Harness(
     lambda h, p, w, m, web: _pi(h, p, m, PI_READ),
     lambda h, p, w, m, r: _pi(h, p, m, PI_WORK, session=r, keep=True),
     result=pi_result, error=pi_error, resumable=True, deploys=True, priced=True, mark="π", color="bold #e11d48",
-    resume_cmd=lambda h, sid: [h.bin, "--session", sid]))
+    new_cmd=lambda h: [h.bin, *pi_guard()],
+    resume_cmd=lambda h, sid: [h.bin, *pi_guard(), "--session", sid]))
 register(Harness(
     "cursor", "Cursor", "cursor-agent", "curl https://cursor.com/install -fsS | bash", "cursor-agent login", {},
     lambda h, p, f, m: _cursor(h, m, "ask"),

@@ -54,7 +54,9 @@ def test_pi_sums_its_messages_and_their_price():
     text, cost, tokens, session = harnesses.pi_result(out)
     assert (text, round(cost, 4), tokens, session) == ("done", 0.03, 150, "u-1")
     h = harnesses.need("pi")
-    assert "--no-tools" in h.ask("x", "/f") and h.read("x", "/r")[4] == "read,grep,find,ls"
+    read = h.read("x", "/r")
+    assert "--no-tools" in h.ask("x", "/f") and read[read.index("--tools") + 1] == "read,grep,find,ls"
+    assert read[read.index("-e") + 1].endswith("orkcraft.ts")                         # the Warder rides along
 
 
 def test_cursor_reads_its_result_line():
