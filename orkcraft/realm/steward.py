@@ -48,7 +48,11 @@ USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the wind
         "roads": "Roads: what it listens to"}
 TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
                          "review": "Review their work", "final": "Look at the whole"},
-             "workshop": {"escalate": "Take what the script hands over"}}
+             "workshop": {"escalate": "Take what the script hands over"},
+             "fields": {"title": "Name the cards", "plan": "Plan the to-dos"},
+             "watchtower": {"judge": "Judge what it caught"},
+             "mill": {"agent": "The agent steps"},
+             "council": {"decide": "Let the document go"}}
 
 
 def _g(thrift: str, balance: str, quality: str) -> dict[str, str]:
@@ -59,7 +63,15 @@ def _g(thrift: str, balance: str, quality: str) -> dict[str, str]:
 WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("warrior", "warrior", "elder"),
                      "answer": _g("warrior", "warrior", "warrior"), "review": _g("warrior", "warrior", "warrior"),
                      "final": _g("warrior", "elder", "elder")},
-        "workshop": {"escalate": _g("warrior", "", "elder")}}
+        "workshop": {"escalate": _g("warrior", "", "elder")},
+        "fields": {"title": _g("laborer", "laborer", "laborer"), "plan": _g("laborer", "laborer", "warrior")},
+        "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
+        "mill": {"agent": _g("laborer", "", "elder")},
+        "council": {"decide": _g("warrior", "", "elder")}}
+# Not on the steward yet — they call their models on their own, so the goal does not reach them, and they
+# break the rule the test holds (tests/test_steward_work.py): the Wiki (scrolls: its librarian, its review),
+# the Review gate (loot) and the Publisher (catapult: its overseer). Being reworked; until then not done.
+NOT_YET = {"scrolls": "Wiki", "loot": "Review gate", "catapult": "Publisher"}
 
 
 def uses(type_id: str) -> dict[str, str]:
@@ -128,12 +140,12 @@ def harness_for(b: ts.BuildingSpec | None) -> str:
 
 
 def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None = None, *, type_id: str = "",
-               goal: str | None = None) -> builders.Runner:
+               goal: str | None = None, setting: str = "") -> builders.Runner:
     """The model call for one of its tasks: the test's or demo's fake as it is, else its steward's tool
     (the main one unless it names its own) on the model `pick` names."""
     if fake is not None:
         return fake
-    p = pick(b, use, harness_for(b), type_id=type_id, goal=goal)
+    p = pick(b, use, harness_for(b), type_id=type_id, goal=goal, setting=setting)
     return builders.runner_for(harness_for(b), p.tier or p.model or None)
 
 

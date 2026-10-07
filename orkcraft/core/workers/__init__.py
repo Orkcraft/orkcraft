@@ -118,6 +118,25 @@ class Worker:
         self._quota_cache = (now, camp)
         return camp
 
+    # -- its steward's model -------------------------------------------------------------------------
+
+    def steward_pick(self, use: str, setting: str = ""):
+        """The model of its steward's `use` now (realm/steward.py `pick`: a tier picked for it, else the
+        building's `setting`, else for its work the goal in force)."""
+        from orkcraft.realm import steward
+        scroll = getattr(self.town, "scroll", None)
+        b = scroll.building(self.building_id) if scroll is not None else None
+        return steward.pick(b, use, steward.harness_for(b), type_id=self.TYPE or self.btype.id, goal=self.aim_now,
+                            setting=setting)
+
+    def steward_runner(self, use: str, setting: str = ""):
+        """Its steward's model call for `use` on the model `steward_pick` names, on its steward's tool. Every
+        model call that makes the building's results goes through here (tests/test_steward_work.py)."""
+        from orkcraft.realm import steward
+        scroll = getattr(self.town, "scroll", None)
+        b = scroll.building(self.building_id) if scroll is not None else None
+        return steward.runner_for(b, use, type_id=self.TYPE or self.btype.id, goal=self.aim_now, setting=setting)
+
     # -- its life -------------------------------------------------------------------------------
 
     def start(self) -> None:

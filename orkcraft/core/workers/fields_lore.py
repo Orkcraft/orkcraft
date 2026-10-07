@@ -3,8 +3,8 @@ its methods run with the worker as `self`. What it keeps lives beside the board 
 
     context 📜   `find_context`: the town's Scroll Dumps (`wikis`, default every one) give the pages that
                  share the card's words — no model, nothing leaves the machine
-    plan 🧭      `plan_preview` says what would leave (cleaned by realm/privacy.py), `plan` asks the light
-                 model off the town's thread, `plan_to_todos` makes its steps to-dos
+    plan 🧭      `plan_preview` says what would leave (cleaned by realm/privacy.py), `plan` asks its steward
+                 (its `plan`, realm/steward.py WORK) off the town's thread, `plan_to_todos` makes its steps to-dos
     personal 🔒  `private`, `set_private`: a personal card never reaches a model
 """
 from __future__ import annotations
@@ -98,14 +98,8 @@ class CardLore:
             return None, "No model runs in the demo"
         if not self.town.budget_ok():
             return None, "The budget is spent"
-        from orkcraft.realm import builders, fastpath
-        chosen = str(self.config.get("plan_model") or "").strip()
-        if chosen:
-            return (lambda prompt: builders.main_runner(prompt, chosen)), chosen
-        runner = fastpath.light_runner(self.repo_root)
-        if runner is None:
-            return None, "The light model is switched off (Council settings)"
-        return runner, str(fastpath.settings(self.repo_root).get("fast_model") or "haiku")
+        chosen = str(self.config.get("plan_model") or "").strip()              # its own setting, else the goal's
+        return self.steward_runner("plan", chosen), self.steward_pick("plan", chosen).model or "the default model"
 
     def _outgoing(self, card: tasklist.Task, pages: list[str] | None = None):
         """What a plan of the card would send: the cleaned ask, the scrub, and the pages it takes."""

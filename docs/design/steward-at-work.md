@@ -37,8 +37,21 @@ Every task a steward calls a model for is one of two kinds (`realm/steward.py`):
 | | Review their work (`review`) | middle | middle | middle |
 | | Look at the whole (`final`) | middle | heavy | heavy |
 | Script | Take what the script hands over (`escalate`) | middle | default | heavy |
+| Task board | Name the cards (`title`) | light | light | light |
+| | Plan the to-dos (`plan`; its `plan_model` first) | light | light | middle |
+| External listeners | Judge what it caught (`judge`) | light | light | middle |
+| Transformer | The agent steps (`agent`; its `model` first) | light | default | heavy |
+| Review board | Let the document go (`decide`; its `moderator` model first) | middle | default | heavy |
 
-(light: laborer · middle: warrior · heavy: elder, `realm/tiers.py`.)
+(light: laborer · middle: warrior · heavy: elder, `realm/tiers.py`.) Under ⚖️ each keeps the model it had
+before; the calls that run by themselves on every card or signal (naming a card, the judge) still stop
+when the Council's light model is switched off (`fast_llm`).
+
+**Every building, checked.** A worker calls a model for its work only through `Worker.steward_runner` /
+`steward_pick`; `tests/test_steward_work.py` reads every worker for a call that skips it. What is not a
+building's work says why in that test (`NOT_WORK`): the Agent pool's and the Review board's orks (their
+tiers are their own: realm/plans.py `GOALS`, the members' settings), setting up a Review board's clan
+(upkeep), and the Town Hall's Warchief and Town planner (the town's, not a building's).
 
 **One order** for every call, `steward.pick(building, use, harness, type_id=, goal=, setting=, own=)`:
 
@@ -55,6 +68,11 @@ itself; every worker has it now.
 **What the operator sees**: the goal's hint and its toast say which models the work runs on under each
 goal (`core/buildings.py` `goal_words`), and that a tight quota runs it as Thrift; in the steward's model
 picker a work task's default reads `Default — Quality: Warrior`.
+
+**Not on the steward yet** (`steward.NOT_YET`): the **Wiki** (its librarian and its review), the
+**Review gate** and the **Publisher** (its overseer's scouting, mapping and repairs). They are being
+reworked; until their model calls go through their steward, the goal does not reach them and **the
+building is not done**. The test marks each as expected to fail, and the mark comes off with that change.
 
 **A new work task** (the Task Fields' context loading, the steward's `listen` of §3) is one line in
 `TYPE_USES` (its label) and one in `WORK` (its three tiers), and its calls go through `steward.pick` or
@@ -82,5 +100,7 @@ handler kind, its new task **listen**), code first. In this model:
 
 1. **Done.** Work and upkeep, `steward.pick` in one order, `Worker.aim_now` / `quota` for every worker, the
    Agent pool and the Script building on it, the goal's hint and the picker's default.
-2. The Task Fields' context loading as a work task.
-3. `listen` as a work task when steward-listens.md stage 1 lands; a rule's own tier as `own`.
+2. **Done.** The Task board's naming and plan, the External listeners' judge, the Transformer's agent steps
+   and the Review board's moderator; the check over every worker (`tests/test_steward_work.py`).
+3. The Wiki, the Review gate and the Publisher (`NOT_YET`), with their rework.
+4. `listen` as a work task when steward-listens.md stage 1 lands; a rule's own tier as `own`.

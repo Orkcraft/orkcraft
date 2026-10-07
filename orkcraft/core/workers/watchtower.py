@@ -256,7 +256,10 @@ class WatchtowerWorker(Worker):
         self._judging = True
         batch, self.pending = self.pending[:lookout.BATCH], self.pending[lookout.BATCH:]
         intent = self.intent
-        runner = None if self.simulated else (type(self).judge_runner or fastpath.light_runner(self.repo_root))
+        # its steward judges (its `judge`: realm/steward.py WORK); the Council's light-model switch still stops it,
+        # as it runs by itself on every signal
+        on = fastpath.settings(self.repo_root).get("fast_llm")
+        runner = None if self.simulated else (type(self).judge_runner or (self.steward_runner("judge") if on else None))
 
         def work() -> None:
             try:

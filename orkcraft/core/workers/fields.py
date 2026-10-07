@@ -24,7 +24,7 @@ pressed — a Barracks takes it, and its results come back to the card.
 
     context 📜   a new or edited card asks the town's Scroll Dumps (`wikis`, default every one) for the
                  pages that share its words — no model, nothing leaves the machine; none found, no context
-    plan 🧭      a to-do's steps, asked of a light model (`plan_model`, else the Council's `fast_model`) only
+    plan 🧭      a to-do's steps, asked of its steward (`plan_model`, else its goal's tier: realm/steward.py) only
                  when the person presses Plan, with its context's pages; first it shows what will leave
                  (`plan_preview`), cleaned of e-mails, phones, cards, IBANs and secrets (realm/privacy.py)
     personal 🔒  a card the person marked so (or every to-do, `private_todos`) never reaches a model: no
@@ -188,7 +188,7 @@ class FieldsWorker(CardLore, Worker):
 
     def write(self, text: str, lane: str = "todo", private: bool = False) -> tasklist.Task | None:
         """A card written as one text (the person's New task / New note). A short line is its own title; a
-        longer text is the card's text, and a light model (the Council's `fast_model`) names it in a few words
+        longer text is the card's text, and its steward (its `title`) names it in a few words
         — off the town's thread, the card added once named. Without a model its first words are its title.
         The card when it was added at once, None when it waits for its title (or was not added)."""
         text = text.strip()
@@ -212,13 +212,14 @@ class FieldsWorker(CardLore, Worker):
         return None
 
     def _title_runner(self):
-        """The light model that names a card, None when there is none to call (switched off, the demo, no 🪙)."""
+        """The steward's model that names a card (its `title`), None when there is none to call: the light model
+        switched off in the Council's settings (it runs by itself on every long card), the demo, no 🪙."""
         if runners.FASTPATH_RUNNER is not None:
             return runners.FASTPATH_RUNNER
         if self.simulated or self.town.demo or not self.town.budget_ok():
             return None
         from orkcraft.realm import fastpath
-        return fastpath.light_runner(self.repo_root)
+        return self.steward_runner("title") if fastpath.settings(self.repo_root).get("fast_llm") else None
 
     def add_lane(self, name: str) -> str:
         """A new lane of notes on the board (a folder of notes). Its id, "" when it was not made."""

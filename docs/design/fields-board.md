@@ -143,7 +143,7 @@ file stays the person's to edit by hand, and a hand edit that removes a card rem
 - **Plan 🧭.** Only for a to-do, only when the person presses *Plan*. The first time on a board it shows
   what will leave first (*What goes to the model*): the to-do as it leaves, what was taken out of it and
   the pages it takes along, each one with a box; *Don't ask again on this board* skips it after. The model
-  is a light one (`plan_model`, else the Council's `fast_model`). The steps come back as a 🧭 on the
+  is its steward's (`plan_model`, else the tier picked for *Plan the to-dos*, else the goal's: docs/design/steward-at-work.md §2). The steps come back as a 🧭 on the
   to-do; *Make them to-dos* adds one to-do per step.
 - **Personal 🔒.** A card marked personal (*Personal* in its strip, or the box when it is written; every
   to-do with `private_todos`) never reaches a model: no plan, and its title is its first words. Its
