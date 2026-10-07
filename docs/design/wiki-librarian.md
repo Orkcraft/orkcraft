@@ -1,7 +1,7 @@
 # Design — the Wiki's librarian: keeps, finds, places, checks
 
-Status: written 2026-10-07; stages 1–4 (§11) built the same day; the Calendar's own line *from the
-Wiki: 2 to discuss* and the suggestions over the Warchief bar for `/note` built 2026-10-07. Where the
+Status: written 2026-10-07; stages 1–4 (§11) built the same day, and with them the Calendar's own
+line *from the Wiki: 2 to discuss* and the suggestions over the Warchief bar for `/note`. Where the
 build went another way than this text first said, §12 says so. The pictures are on the design canvas *Scroll Dump
 screens* (rows 4–6: the quality check, Quick note, the librarian and the meetings). It grows the
 🗑️ Scroll Dump (**Wiki**) from "an ork that turns sources into pages" into the town's owner of
