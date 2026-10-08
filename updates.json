@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.4",
+      "date": "2026-10-08",
+      "critical": false,
+      "notes": "Each AI tool now runs on the newest model of its tier's family: agy and Codex are asked once a day which models they have (agy models, codex debug models), so a new Gemini or GPT model is used without an Orkcraft update. When a tool cannot say, Orkcraft names no model and the tool uses its own default. A model you chose by its version in the settings, a building or a task still runs as you wrote it. The tier picker shows the version in use, e.g. Gemini Flash High (3.8). Costs of a model missing from the price table use the nearest version of its family."
+    },
+    {
       "version": "0.2.3",
       "date": "2026-10-08",
       "critical": false,

@@ -45,7 +45,7 @@ GarrisonModal Button {
 
 def tier_options() -> list[tuple[str, str]]:
     """The tier picker: the heavy models first, then the CLI's own default ("")."""
-    out = [(f"{tiers.label(t)} — {' · '.join(m[t] for m in tiers.MODELS.values() if t in m)}", t) for t in tiers.TIERS]
+    out = [(f"{tiers.label(t)} — {' · '.join(tiers.model_label(m[t]) for m in tiers.MODELS.values() if t in m)}", t) for t in tiers.TIERS]
     return out + [("· CLI default model", "")]
 
 

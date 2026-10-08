@@ -8,8 +8,10 @@ Fast mode (Opus 5.5 / 5 / 4.8) replaces the base input / output price and the ca
 apply on top; `inference_geo: "us"` multiplies everything by 1.1 on Claude 4.6 and later.
 
 What this is not: a bill. Subscription plans (Claude Pro / Max) do not charge per token, and
-Bedrock / Vertex price separately; the costs computed here are API-equivalent estimates. When a
-model is not in the table the cost is unknown (None) — never a guess.
+Bedrock / Vertex price separately; the costs computed here are API-equivalent estimates. A model
+not in the table is priced as the nearest version of its family that is (`claude-opus-5-7` as
+`claude-opus-5-5`; a version-less name, `opus` or `gpt-astra`, as the newest); a model of no family
+in the table is unknown (None) — never $0.
 
 OpenAI's prices (Codex runs) are a second table, `OPENAI_PRICES`, with its own source and date. It is
 filled only from OpenAI's pricing page read first-hand by a person; until then it stays empty and
@@ -78,10 +80,47 @@ def normalize(model: str) -> str:
     return ALIASES.get(m, m)
 
 
+_CLAUDE = re.compile(r"^claude-(?:(?P<fam>[a-z]+)-(?P<v>\d+(?:-\d{1,2})?)|(?P<v2>\d+(?:-\d{1,2})?)-(?P<fam2>[a-z]+))$")
+
+
+def _claude_family(model: str) -> tuple[str, tuple[int, ...] | None] | None:
+    """`claude-opus-5-5` → ("opus", (5, 5)); `opus` → ("opus", None); None when it names no family."""
+    if re.fullmatch(r"[a-z]+", model):
+        return model, None
+    m = _CLAUDE.match(model)
+    if not m:
+        return None
+    v = m.group("v") or m.group("v2")
+    return m.group("fam") or m.group("fam2"), tuple(int(p) for p in v.split("-"))
+
+
+def nearest(table: dict, key: str, family_of) -> str | None:
+    """The key of `table` nearest to `key` in its family: the same family, the closest version (the newer
+    on a tie), the newest when `key` names no version; None when its family is not in the table."""
+    want = family_of(key)
+    if want is None:
+        return None
+    fam, version = want
+    same = [(k, kv[1]) for k in table if (kv := family_of(k)) is not None and kv[0] == fam and kv[1] is not None]
+    if not same:
+        return None
+
+    def num(v: tuple[int, ...]) -> float:
+        return v[0] + (v[1] / 100 if len(v) > 1 else 0)
+
+    if version is None:
+        return max(same, key=lambda kv: num(kv[1]))[0]
+    return min(same, key=lambda kv: (abs(num(kv[1]) - num(version)), -num(kv[1])))[0]
+
+
 def price_for(model: str | None) -> Price | None:
     if not model:
         return None
-    return PRICES.get(normalize(model))
+    m = normalize(model)
+    if m in PRICES:
+        return PRICES[m]
+    near = nearest(PRICES, m, _claude_family)
+    return PRICES[near] if near else None
 
 
 def usage_cost(model: str | None, usage: dict) -> float | None:
@@ -145,10 +184,28 @@ class OpenAIPrice:
 OPENAI_PRICES: dict[str, OpenAIPrice] = {}
 
 
+_OPENAI = re.compile(r"^(?P<first>[a-z]+)-(?P<v>\d+(?:\.\d+)?)(?:-(?P<rest>[a-z][a-z-]*))?$")
+
+
+def _openai_family(model: str) -> tuple[str, tuple[int, ...] | None] | None:
+    """`gpt-6.1-sol` → ("gpt-sol", (6, 1)); `gpt-sol` → ("gpt-sol", None)."""
+    if re.fullmatch(r"[a-z]+(?:-[a-z]+)+", model):
+        return model, None
+    m = _OPENAI.match(model)
+    if not m:
+        return None
+    fam = m.group("first") + (f"-{m.group('rest')}" if m.group("rest") else "")
+    return fam, tuple(int(p) for p in m.group("v").split("."))
+
+
 def openai_price_for(model: str | None) -> OpenAIPrice | None:
     if not model:
         return None
-    return OPENAI_PRICES.get(model.strip().lower().removeprefix("openai/"))
+    m = model.strip().lower().removeprefix("openai/")
+    if m in OPENAI_PRICES:
+        return OPENAI_PRICES[m]
+    near = nearest(OPENAI_PRICES, m, _openai_family)
+    return OPENAI_PRICES[near] if near else None
 
 
 def codex_usage_cost(model: str | None, usage: dict, one_request: bool = False) -> float | None:

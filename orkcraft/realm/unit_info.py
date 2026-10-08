@@ -11,7 +11,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from orkcraft.realm import harnesses, tiers
+from orkcraft.realm import harnesses, model_families, tiers
 from orkcraft.realm.looks import HARNESS_LETTER, HARNESS_STYLE
 from orkcraft.realm.orcs import COUNCIL, RESIDENT, WORKER, Orc
 
@@ -67,10 +67,13 @@ def orc_sentences(orc: Orc, building_title: str = "") -> list[str]:
 # -- models -----------------------------------------------------------------------------------------
 
 def short_model(model: str) -> str:
-    """claude-opus-4-1-20250805 → opus 4.1; gemini-3.1-pro-high → gemini 3.1 pro."""
+    """A dated Claude id → `opus 4.1`; a Gemini id → `gemini 3.1 pro`; a family (`gemini-flash-high`) →
+    `Gemini Flash High (3.8)`, the version it runs on."""
     m = (model or "").lower()
     if not m:
         return ""
+    if model_families.is_family(m):
+        return model_families.label(m)
     for family in ("opus", "sonnet", "haiku", "fable"):
         if family in m:
             tail = m.split(family, 1)[1].strip("-").split("-")

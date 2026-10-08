@@ -9,6 +9,11 @@
     h.outcome(stdout, before, model)         # … priced from `model` when the tool prints tokens, no price
     harnesses.main(enabled, chosen)          # the tool decisions run on: the chosen one, else the first on
     harnesses.model_on("agy", "haiku")       # a model or tier of any tool, on this one
+    h.pick("elder")                          # … the model a run of it names: the newest of the family
+
+The tier tables name model **families** (`gemini-flash-high`, `gpt-astra`), never a version: a run
+names the newest model of the family the tool lists (realm/model_families.py), or none at all and the
+tool runs on its own default. A model with a version, chosen by a person, runs as written.
 
 A step names its tool (`{"harness": "codex"}`); `MAIN` ("main") means the machine's main tool,
 resolved when it runs. The prompt goes in as one argv item (or on stdin, `stdin_prompt`), never
@@ -24,6 +29,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from orkcraft.env import getenv
+from orkcraft.realm import model_families
 from orkcraft.sources import pricing
 
 MAIN = "main"                  # a step on the machine's main tool
@@ -151,7 +157,7 @@ class Harness:
     default_bin: str
     install: str                     # how to get it, shown when it is missing
     login: str                       # how to log in, shown when it is not
-    models: dict[str, str]           # tier → model
+    models: dict[str, str]           # tier → model family (`gemini-pro-high`), or the tool's alias (`opus`)
     ask_cmd: Cmd                     # (h, prompt, folder, model) → argv: a one-shot answer
     read_cmd: Cmd                    # (h, prompt, workdir, model, web) → argv: an agent that reads
     work_cmd: Cmd                    # (h, prompt, workdir, model, resume) → argv: an agent that edits workdir
@@ -160,13 +166,13 @@ class Harness:
     in_repo: bool = True             # a reading agent runs in the repository (else in an empty folder)
     resumable: bool = False          # `work(resume=…)` continues a session
     stdin_prompt: bool = False       # the prompt goes on stdin, not argv
-    default_model: str = ""          # what it runs on when a step names no model ("" its own default)
+    default_model: str = ""          # the family it runs on when a step names no model ("" its own default)
     new_cmd: Callable[["Harness"], list[str]] | None = None          # an interactive session
     resume_cmd: Callable[["Harness", str], list[str]] | None = None  # … reopened
     deploys: bool = False            # an interactive session can start on a first prompt (argv)
     web: bool = False                # its reading agent can search the web on request
     fits: tuple[str, ...] = ("code",)   # the work it is liked for in the Barracks: "code", "docs"
-    task_models: dict = field(default_factory=dict)   # "code" / "docs" → model, when a step names none
+    task_models: dict = field(default_factory=dict)   # "code" / "docs" → model family, when a step names none
     mark: str = "?"                  # one cell on the map and in schemes (realm/looks.py)
     color: str = "bold"              # … in its colour
     deploy_args: tuple[str, ...] = ()   # what goes before a first prompt in an interactive session
@@ -183,22 +189,41 @@ class Harness:
     # (folders outside the workdir) → what a working agent's argv gets to read them, never write them (the
     # Wiki's folders outside the project: docs/design/wiki-folders-rules.md §1). None: it reads anywhere.
     read_dirs: Callable[[list[str]], list[str]] | None = None
+    # (h) → the commands that print the models it has, tried in order, and the reader of their output.
+    # None: it cannot say, and a family in its table runs on its own default.
+    models_cmd: Callable[["Harness"], list[list[str]]] | None = None
+    parse_models: Callable[[str], list[str]] | None = None
     extra: dict = field(default_factory=dict)
 
     @property
     def bin(self) -> str:
         return getenv(f"{self.id.upper()}_BIN") or self.default_bin
 
+    def pick(self, model: str = "") -> str:
+        """The model a run names for `model` (any tool's model or tier, or "" for its default): a family
+        becomes its newest listed model, or "" (the tool's own default) when the tool lists none."""
+        family = model_on(self.id, model) or self.default_model
+        if family not in self.families:
+            return family                    # a model someone named: as written
+        cmds = self.models_cmd(self) if self.models_cmd else None
+        return model_families.resolve(self.id, cmds, self.parse_models, family)
+
+    @property
+    def families(self) -> set[str]:
+        """The model families its tables name (`gemini-flash-high`); a tool's aliases (`opus`) are not."""
+        names = {*self.models.values(), self.default_model, *self.task_models.values()}
+        return {n for n in names if model_families.is_family(n)}
+
     def ask(self, prompt: str, folder: str | Path, model: str = "") -> list[str]:
-        return self.ask_cmd(self, prompt, str(folder), model_on(self.id, model))
+        return self.ask_cmd(self, prompt, str(folder), self.pick(model))
 
     def read(self, prompt: str, workdir: str | Path, model: str = "", web: bool = False) -> list[str]:
-        return self.read_cmd(self, prompt, str(workdir), model_on(self.id, model), web)
+        return self.read_cmd(self, prompt, str(workdir), self.pick(model), web)
 
     def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "",
              dirs: Iterable[str] = ()) -> list[str]:
         """`dirs`: folders outside `workdir` it may read too."""
-        cmd = self.work_cmd(self, prompt, str(workdir), model_on(self.id, model), resume)
+        cmd = self.work_cmd(self, prompt, str(workdir), self.pick(model), resume)
         dirs = [str(d) for d in dirs if str(d)]
         return cmd + self.read_dirs(dirs) if dirs and self.read_dirs else cmd
 
@@ -210,12 +235,13 @@ class Harness:
     def call(self, prompt: str, workdir: str | Path, allow: list[str], model: str = "") -> list[str] | None:
         if self.call_cmd is None:
             return None
-        return self.call_cmd(self, prompt, str(workdir), model_on(self.id, model), list(allow))
+        return self.call_cmd(self, prompt, str(workdir), self.pick(model), list(allow))
 
     def outcome(self, stdout: str, before=0, model: str = "") -> tuple[str, float | None, int | None, str]:
         """`result`, given the model the run was asked for when the tool is priced from it."""
         if self.model_priced:
-            return self.result(stdout, before, model_on(self.id, model))
+            # a family no list resolved is priced as its newest priced model (sources/pricing.py)
+            return self.result(stdout, before, self.pick(model) or model_on(self.id, model))
         return self.result(stdout, before)
 
     def stdin(self, prompt: str) -> str | None:
@@ -284,7 +310,7 @@ def _claude_work(h, prompt, workdir, model, resume):
 # agy (Antigravity) -------------------------------------------------------------------------------
 
 def _agy(h, prompt, workdir, model):
-    return [h.bin, "--print", prompt, "--model", model or h.default_model, "--mode", "accept-edits", "--sandbox",
+    return [h.bin, "--print", prompt, *_model("--model", model), "--mode", "accept-edits", "--sandbox",
             "--add-dir", workdir, "--output-format", "json"]
 
 
@@ -453,22 +479,26 @@ register(Harness(
     read_session=lambda sid, reopen: ["--resume", sid] if reopen else ["--session-id", sid]))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
-    {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},
+    {"elder": "gemini-pro-high", "warrior": "gemini-flash-high", "laborer": "gemini-flash-low"},
     lambda h, p, f, m: _agy(h, p, f, m),
     lambda h, p, w, m, web: _agy(h, p, w, m),
     lambda h, p, w, m, r: _agy(h, p, w, m),
-    in_repo=False, default_model="gemini-3.8-flash-high", mark="✦", color="bold #3b82f6", fits=("docs",),
-    task_models={"code": "gemini-3.8-flash-high", "docs": "gemini-3.1-pro-high"},
+    in_repo=False, default_model="gemini-flash-high", mark="✦", color="bold #3b82f6", fits=("docs",),
+    task_models={"code": "gemini-flash-high", "docs": "gemini-pro-high"},
+    models_cmd=lambda h: [[h.bin, "models"]], parse_models=model_families.parse_agy,
     read_dirs=lambda dirs: [a for d in dirs for a in ("--add-dir", d)],    # its sandbox sees only these
     resume_cmd=lambda h, sid: [h.bin, "--conversation", sid]))
 register(Harness(
     "codex", "Codex", "codex", "npm i -g @openai/codex", "codex login",
-    {"elder": "gpt-6-astra", "warrior": "gpt-6.1-sol", "laborer": "gpt-6-luna"},
+    {"elder": "gpt-astra", "warrior": "gpt-sol", "laborer": "gpt-luna"},
     lambda h, p, f, m: codex_exec(h, "read-only", m),
     lambda h, p, w, m, web: codex_exec(h, "read-only", m, web),
     lambda h, p, w, m, r: codex_exec(h, "workspace-write", m, resume=r),
     result=codex_result, error=codex_error, resumable=True, stdin_prompt=True, deploys=True, web=True,
     model_priced=True, mark="⌬", color="bold #10a37f",
+    # the catalog refreshed with its login, else the one its binary ships with
+    models_cmd=lambda h: [[h.bin, "debug", "models"], [h.bin, "debug", "models", "--bundled"]],
+    parse_models=model_families.parse_codex,
     resume_cmd=lambda h, sid: [h.bin, "resume", sid]))
 register(Harness(
     "hermes", "Hermes Agent", "hermes", "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
@@ -538,7 +568,7 @@ def tier_of_model(model: str) -> str | None:
         return m
     for h in REGISTRY.values():
         for tier, name in h.models.items():
-            if m == name.lower():
+            if model_families.family_of(m, [name]):
                 return tier
     if "opus" in m or "fable" in m or ("gemini" in m and "pro" in m) or ("gpt" in m and "astra" in m):
         return "elder"
@@ -551,13 +581,13 @@ def tier_of_model(model: str) -> str | None:
 
 def _owner(model: str) -> str | None:
     """The tool whose tier table names `model`."""
-    m = model.lower()
-    return next((h.id for h in REGISTRY.values() if m in (v.lower() for v in h.models.values())), None)
+    return next((h.id for h in REGISTRY.values() if model_families.family_of(model, h.models.values())), None)
 
 
 def model_on(harness_id: str, model: str) -> str:
-    """`model` as `harness_id` runs it: a tier word names its model there; a model another tool's
-    table names becomes that tier's model here; anything else (its own, or one we do not know) stays."""
+    """`model` as `harness_id` runs it: a tier word names its family there; a model of a family another
+    tool's table names becomes that tier's family here; anything else (its own, or one we do not know)
+    stays. `Harness.pick` then names the newest model of a family."""
     h = REGISTRY.get(harness_id)
     if not model or h is None:
         return model or ""

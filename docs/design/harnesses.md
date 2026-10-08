@@ -17,7 +17,8 @@ chosen (claude, agy, codex, hermes, pi, cursor). Each says:
 | `result(stdout)` → text, cost, tokens, session | every run |
 | `env(mode, workdir)`: variables a run needs | Hermes' write root, its hooks headless |
 | `interactive(prompt, resume)`: a War Tent session | `sources/sessions.py`, `core/sessions.py` |
-| `models` (tier → model), `default_model`, `task_models` | `realm/tiers.py`, the Barracks |
+| `models` (tier → model family), `default_model`, `task_models` | `realm/tiers.py`, the Barracks |
+| `models_cmd`, `parse_models`: what models it has; `pick(model)`: the one a run names | `realm/model_families.py` |
 | `in_repo`, `resumable`, `stdin_prompt`, `deploys`, `web`, `priced`, `fits` | the callers above |
 | `mark`, `color` | `realm/looks.py`, design tokens `harness-<id>` |
 
@@ -42,6 +43,13 @@ on; with none on it is Claude Code, as before there was a choice (`builders.main
   ork's step keeps its own tool.
 - **Models** move between tools by tier: `harnesses.model_on("codex", "haiku")` is Codex's laborer.
   A tool with no tier table (Hermes, pi, Cursor) runs its own default for a tier.
+- **No version in the code.** A tier table names families (`gemini-flash-high`, `gpt-astra`; Claude
+  Code's aliases `opus` / `sonnet` / `haiku` are already its newest). `Harness.pick` names the newest
+  model of the family the tool lists — `agy models` (a line per model, its id first), `codex debug
+  models` (JSON; `--bundled` when the refresh needs a login it has not) — asked once a day and kept in
+  `~/.cache/orkcraft/models.json`. No list, or no such family in it: no `--model`, the tool's own
+  default. A model with a version (a person's choice, an older town scroll) is never resolved. A new
+  model of a family is picked up by the next list, with no release of orkcraft.
 
 ## 3. The new tools (checked against their sources, 2026-10)
 

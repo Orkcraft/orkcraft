@@ -370,7 +370,7 @@ def words(text: str) -> set[str]:
 
 
 def parse_provider(entry: str) -> tuple[str, str]:
-    """`claude`, `agy:gemini-3.1-pro-high`, or a tier in place of the model: `claude:laborer`; `main`
+    """`claude`, `agy:gemini-pro-high` (a family: its newest model), or a tier in place of the model: `claude:laborer`; `main`
     is the machine's main tool, as it is when the foreman reads it."""
     harness, _, model = str(entry).partition(":")
     harness = tiers.tool_of({"harness": harness.strip()})

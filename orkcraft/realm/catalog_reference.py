@@ -308,7 +308,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "language": "auto (the source's own), ru or en (default auto)",
         "minutes": "how long an episode is, 2–20 minutes (default 8)",
         "voice": "a Gemini prebuilt voice, e.g. Charon, Kore, Puck (default Charon)",
-        "tts_model": "the Gemini TTS model (default gemini-3.1-flash-tts-preview)",
+        "tts_model": "the Gemini TTS model (default the newest Gemini Flash TTS: gemini-flash-tts)",
         "model": "the model that writes the script (default its steward's, by its goal)",
         "key": "where the Gemini API key is: an environment variable, e.g. GEMINI_API_KEY (the default), or a login, "
                "e.g. keychain:gemini — never the key itself",

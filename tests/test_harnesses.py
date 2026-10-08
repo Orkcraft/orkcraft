@@ -72,7 +72,8 @@ def test_cursor_reads_its_result_line():
 
 
 def test_a_model_moves_between_tools_by_its_tier():
-    assert harnesses.model_on("codex", "haiku") == "gpt-6-luna"
+    assert harnesses.model_on("codex", "haiku") == "gpt-luna"
+    assert harnesses.model_on("codex", "gemini-3.1-pro-high") == "gpt-astra"   # a version of agy's family
     assert harnesses.model_on("claude", "elder") == "opus"
     assert harnesses.model_on("agy", "my-own-model") == "my-own-model"
     assert harnesses.model_on("pi", "opus") == ""                       # no tiers: its own default

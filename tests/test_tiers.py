@@ -20,7 +20,7 @@ def test_tier_of_a_model():
 
 def test_the_model_follows_the_tier_and_a_named_model_wins():
     assert tiers.step_model({"harness": "claude", "tier": "elder"}) == "opus"
-    assert tiers.step_model({"harness": "agy", "tier": "laborer"}) == "gemini-3.8-flash-low"
+    assert tiers.step_model({"harness": "agy", "tier": "laborer"}) == "gemini-flash-low"       # a family
     assert tiers.step_model({"harness": "claude", "tier": "elder", "model": "haiku"}) == "haiku"
     assert tiers.step_model({"harness": "claude"}) == ""                   # the CLI's own default
     assert tiers.step_tier({"harness": "agy"}) == "warrior"                 # agy defaults to flash-high
@@ -39,7 +39,7 @@ def test_an_orc_shows_its_heaviest_tier_but_a_steward_none():
     steward = Orc("Chief", "keeps it", RESIDENT, lead=True, harness=steps)
     assert steward.tier == "elder" and steward.tier_icon == "" and steward.badge.startswith("🧌 Chief")
     assert Orc("Scribe", "", RESIDENT, kind="chain").tier_icon == ""
-    assert [label for _, _, label in models_of(handler)] == ["write · gemini 3.8 flash", "review · opus"]
+    assert [label for _, _, label in models_of(handler)] == ["write · Gemini Flash Low", "review · opus"]
 
 
 def test_the_scroll_keeps_a_tier_and_recruit_sets_it():

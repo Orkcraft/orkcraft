@@ -35,7 +35,7 @@ from orkcraft.realm.orcs import TRIGGERS, Trigger
 
 def tier_choices() -> list[list[str]]:
     """The tier picker, as the TUI's (screens/garrison_modal.py): the heavy models first, then the CLI's own."""
-    return [[t, plain(f"{tiers.label(t)} — {' · '.join(m[t] for m in tiers.MODELS.values() if t in m)}")] for t in tiers.TIERS] + \
+    return [[t, plain(f"{tiers.label(t)} — {' · '.join(tiers.model_label(m[t]) for m in tiers.MODELS.values() if t in m)}")] for t in tiers.TIERS] + \
         [["", "CLI default model"]]
 
 

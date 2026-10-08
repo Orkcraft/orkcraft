@@ -766,8 +766,11 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `⌬` Codex (green), `P` a pipeline (magenta), e.g. `✦→✻` (agy
   writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
-  gemini pro, gpt-6-astra), ⚔ **warrior** (sonnet, gemini flash high, gpt-6.1-sol), ⛏ **laborer** (haiku,
-  gemini flash low, gpt-6-luna).
+  gemini pro, gpt astra), ⚔ **warrior** (sonnet, gemini flash high, gpt sol), ⛏ **laborer** (haiku,
+  gemini flash low, gpt luna). A tier names a model **family**, never a version: a run takes the newest
+  model of the family the tool lists (`agy models`, `codex debug models`, asked once a day), and with no
+  list the tool runs on its own default. A model with a version named in the settings, a building or a
+  task runs as written.
   A harness step takes a `tier` and the model follows from its harness
   (`{"role": "run", "harness": "claude", "tier": "elder"}` runs `claude --model opus`); a step's own
   `model` wins and its tier is read from it. An ork shows its heaviest step's icon before its name

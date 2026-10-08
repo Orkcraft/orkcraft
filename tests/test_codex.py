@@ -133,9 +133,9 @@ def test_run_work_returns_the_session_and_a_failure_says_why(tmp_path, monkeypat
 
 def test_codex_is_a_harness_everywhere_one_is_picked():
     assert "codex" in ts.HARNESSES and "codex" in jobs.HARNESSES
-    assert team.parse_member("Reviewer:codex:elder") == team.Member("Reviewer", "codex", "gpt-6-astra")
+    assert team.parse_member("Reviewer:codex:elder") == team.Member("Reviewer", "codex", "gpt-astra")
     foreman = bk.Foreman({"providers": ["codex:laborer"]})
-    assert foreman.providers == [("codex", "gpt-6-luna")] and "codex" in bk.RESUMABLE
+    assert foreman.providers == [("codex", "gpt-luna")] and "codex" in bk.RESUMABLE
 
 
 @pytest.mark.parametrize("model, tier", [("gpt-6-astra", "elder"), ("gpt-6.1-sol", "warrior"),

@@ -25,7 +25,7 @@ is a meeting), the routed document begins with a `When:` line, and a War Drum it
 (realm/daybook.py `find_when`). Triage is the usual use: a mail or a message, read by a risk analyst, a tone
 reader and a priority checker, goes to the person or to the agents.
 
-`members` are `Role:harness[:model]` — `Architect:claude`, `Marketing:agy:gemini-3.1-pro-high`. A runner
+`members` are `Role:harness[:model]` — `Architect:claude`, `Marketing:agy:gemini-pro-high`. A runner
 is `(harness, prompt, model) → (text, cost)`; tests pass a fake one.
 """
 from __future__ import annotations

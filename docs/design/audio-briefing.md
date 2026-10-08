@@ -71,8 +71,9 @@ closed reads as stopped; its source is not kept on disk. The building keeps the 
   with `generationConfig.responseModalities: ["AUDIO"]` and
   `speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName`. The audio comes back base64 in
   `candidates[0].content.parts[0].inlineData.data`.
-- **Model:** `tts_model`, `gemini-3.1-flash-tts-preview` by default (a setting, because preview
-  names change).
+- **Model:** `tts_model`, by default the family `gemini-flash-tts`: the newest Gemini Flash TTS the
+  API lists for the key, else the one in `realm/model_families.py` `FALLBACK` (a setting, because
+  preview names change; a model with its version runs as written).
 - **Voice:** `voice`, `Charon` by default: one voice for both languages (Gemini picks the
   language from the text).
 - **The key:** `key` names it the way a Watchtower names a token: an environment variable

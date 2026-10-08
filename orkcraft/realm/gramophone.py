@@ -25,8 +25,11 @@ import wave
 from pathlib import Path
 from typing import Callable
 
+from orkcraft.realm import model_families
+
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-MODEL = "gemini-3.1-flash-tts-preview"
+LIST_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000"
+MODEL = "gemini-flash-tts"          # a family: the newest the API lists (realm/model_families.py)
 VOICE = "Charon"
 KEY = "GEMINI_API_KEY"                  # where the key is, by default: an environment variable
 RATE, WIDTH = 24000, 2                  # Gemini's PCM: 24 kHz, 16-bit, mono
@@ -189,6 +192,33 @@ def _post(url: str, body: dict, key: str) -> dict:
         raise RuntimeError(f"Gemini TTS cannot be reached: {e.reason}"[:300]) from None
 
 
+def _listed(key: str) -> list[str]:
+    """The models the Gemini API offers this key (`models/gemini-…` → `gemini-…`); [] when it cannot say."""
+    req = urllib.request.Request(LIST_ENDPOINT, headers={"x-goog-api-key": key})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError, ValueError):
+        return []
+    return [str(m.get("name", "")).removeprefix("models/") for m in data.get("models") or [] if isinstance(m, dict)]
+
+
+_tts_seen: dict[str, str] = {}
+
+
+def tts_model(model: str, key: str, listed: list[str] | None = None) -> str:
+    """The model a request names: a family (`gemini-flash-tts`) → its newest model the API lists for the
+    key (asked once a run of the app), else the last one known, else model_families.FALLBACK; a model with
+    a version as written."""
+    if not model_families.is_family(model):
+        return model
+    if listed is None:
+        if model not in _tts_seen:
+            _tts_seen[model] = model_families.newest(model, _listed(key)) if key else ""
+        listed = [_tts_seen[model]] if _tts_seen[model] else []
+    return model_families.for_api(model, listed)
+
+
 def request(text: str, voice: str = VOICE) -> dict:
     """The body of one TTS request."""
     return {"contents": [{"parts": [{"text": text}]}],
@@ -218,8 +248,8 @@ def speak(text: str, key: str, model: str = MODEL, voice: str = VOICE, cancel: t
     parts = pieces(text)
     if not parts:
         raise RuntimeError("Nothing to speak")
-    url = ENDPOINT.format(model=model or MODEL)
     fetch = fetch or _post
+    url = ENDPOINT.format(model=tts_model(model or MODEL, key, None if fetch is _post else []))
     out = bytearray()
     for n, part in enumerate(parts, 1):
         if cancel is not None and cancel.is_set():

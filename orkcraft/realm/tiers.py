@@ -10,16 +10,21 @@ it. An orc's tier is its heaviest step. Stewards carry no tier icon: they keep t
 """
 from __future__ import annotations
 
-from orkcraft.realm import harnesses
+from orkcraft.realm import harnesses, model_families
 
 TIERS = ("elder", "warrior", "laborer")          # heaviest first
 TIER_ICONS = {"elder": "🔮", "warrior": "⚔", "laborer": "⛏"}
 TIER_LABELS = {"elder": "Elder", "warrior": "Warrior", "laborer": "Laborer"}
 TIER_STYLES = {"elder": "bold #c084fc", "warrior": "bold #f87171", "laborer": "#a8a29e"}
-# The model of each tier, per harness (realm/harnesses.py holds them).
+# The model family of each tier, per harness (realm/harnesses.py holds them; a run names its newest model).
 MODELS = {h.id: dict(h.models) for h in harnesses.REGISTRY.values()}
 # What a step runs on when it names neither: agy's own default is flash-high.
 DEFAULT_MODEL = {h.id: h.default_model for h in harnesses.REGISTRY.values() if h.default_model}
+
+
+def model_label(model: str) -> str:
+    """What a person reads for a model: a family with the version it runs on (`Gemini Flash High (3.8)`)."""
+    return model_families.label(model)
 
 
 def tool_of(step: dict) -> str:

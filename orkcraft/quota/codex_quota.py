@@ -69,7 +69,7 @@ def _when(value) -> Optional[datetime]:
 
 def _status(bucket: str, note: str, used, minutes, reset: Optional[datetime], now: datetime) -> Optional[QuotaStatus]:
     """One window. The plain `codex` bucket's rows are `5h` / `weekly`; another bucket names itself
-    with its window (`gpt-6-astra 5h`), so each row keeps its own name on the Tally Crag."""
+    with its window (`<model> 5h`), so each row keeps its own name on the Tally Crag."""
     if isinstance(used, bool) or not isinstance(used, (int, float)):
         return None
     left = max(0.0, min(1.0, 1 - float(used) / 100.0))

@@ -222,6 +222,6 @@ class TeamView(TypedView):
                 self.worker.add_member(role, harness)
 
             self.app.push_screen(TextPrompt(f"{ICON} Add a member of the clan", placeholder="role, e.g. Marketing",
-                                            fields=(("claude · agy · codex · agy:gemini-3.1-pro-high", "claude"),)), done)
+                                            fields=(("claude · agy · codex · agy:gemini-pro-high", "claude"),)), done)
             return True
         return False

@@ -14,7 +14,7 @@ from orkcraft.core import buildings
 from orkcraft.core.workers.gramophone import GramophoneWorker
 from orkcraft.gui import mobile
 from orkcraft.gui.host import Host
-from orkcraft.realm import catalog, checkpoint
+from orkcraft.realm import catalog, checkpoint, model_families
 from orkcraft.realm import gramophone as gm
 
 SCRIPT = ("## Итоги дня\n\nСегодня закрыли три задачи в `realm/orcs.py`. Пишите на [email-1].\n\n"
@@ -104,7 +104,7 @@ def test_an_episode_is_scripted_spoken_kept_and_sent_on(fake_repo, monkeypatch, 
     assert "anna@example.org" not in scripted[0] and "[email-1]" in scripted[0]   # shapes taken out before the model
     assert e["lang"] == "ru" and e["kind"] == "wav" and e["seconds"] == len(gemini.calls)
     assert e["cost"] == pytest.approx(0.02 + gm.usd_for(e["seconds"]))
-    assert gemini.calls[0][2] == "k-123" and gm.MODEL in gemini.calls[0][0]
+    assert gemini.calls[0][2] == "k-123" and model_families.FALLBACK[gm.MODEL] in gemini.calls[0][0]   # no list: the fallback
     assert gemini.calls[0][1]["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"] == "Charon"
     assert "[email-1]" not in gemini.calls[0][1]["contents"][0]["parts"][0]["text"]
     assert w.file_of(eid).read_bytes()[:4] == b"RIFF"
