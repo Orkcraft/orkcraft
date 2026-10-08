@@ -1,7 +1,9 @@
 // The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in Warcraft III.
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
 // marks: the stage, 🌙 while Do not disturb holds, a dot while an ork asks (the dot opens Answers). A click
-// opens its menu: You (the head, the stage, Next, the deeds), the look, Do not disturb, Town settings…. The look and Do not disturb are the person's, per machine (gui/you.py).
+// opens its menu: You (the head, the stage, Next, the deeds), then how the town looks and talks to you — the
+// look, Do not disturb, Fire on the roofs — and Town settings… (models, AI tools, how the town works). These
+// are the person's, per machine (gui/you.py).
 import { signal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -47,7 +49,7 @@ function Menu({ y, p }) {
     return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
   }, []);
   const d = p.dnd || {};
-  const set = (args) => command(args.look ? "you.look" : "you.dnd", args).catch(() => {});
+  const set = (args) => command(args.look ? "you.look" : "fire" in args ? "you.fire" : "you.dnd", args).catch(() => {});
   return html`<section ref=${ref} class="gui-portrait__menu" role="dialog" aria-label=${say("You")}>
     <div class="gui-you">
       <${Face} y=${y} p=${p} size=${4} />
@@ -70,6 +72,9 @@ function Menu({ y, p }) {
     <p class="ok-font-status ok-tone-muted">${say(d.on
       ? `${d.label}: sounds, pushes and the Warchief's news wait; only errors show. The orks keep working.`
       : "Do not disturb holds sounds, pushes and the Warchief's news; the orks keep working.")}</p>
+    <${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
+      items=${[[true, "On"], [false, "Off"]]} />
+    <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>

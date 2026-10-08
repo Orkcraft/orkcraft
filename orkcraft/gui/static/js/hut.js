@@ -155,7 +155,7 @@ function Keeper({ garrison, alert }) {
 
 // -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
 // Its card is ablaze from the first second (components.css); from FIRE_FROM s flames climb its roof, one more
-// a minute until FIRE_FULL s covers it. Never in quiet hours, nor when Settings turned them off; under
+// a minute until FIRE_FULL s covers it. Never in quiet hours, nor when the portrait's menu turned them off; under
 // prefers-reduced-motion they stand still (components.css).
 const FIRE_FROM = 60, FIRE_FULL = 300;
 const FLAMES = [[50, 46], [24, 26], [76, 30], [38, 4], [62, 8]];        // where each flame stands: % of the roof
