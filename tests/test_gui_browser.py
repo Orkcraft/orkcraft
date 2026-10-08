@@ -1009,10 +1009,10 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
     tools = modal.get_by_role("group", name="AI tools")
-    tools.get_by_role("button", name="π pi").click()
+    tools.get_by_role("button", name="pi", exact=True).click()
     main = modal.get_by_role("group", name="Main tool")
-    main.get_by_role("button", name="π pi").wait_for(timeout=WAIT_MS)
-    main.get_by_role("button", name="π pi").click()
+    main.get_by_role("button", name="pi", exact=True).wait_for(timeout=WAIT_MS)
+    main.get_by_role("button", name="pi", exact=True).click()
     pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('Decisions run on pi')",
                          timeout=WAIT_MS)
     shot = os.environ.get("ORKCRAFT_SHOT")
