@@ -3,7 +3,12 @@
 Status: design notes, written 2026-10-06. §5.1 (the ⏳ Limits row) is built
 (`orkcraft/quota/codex_quota.py`): the plain `codex` bucket's rows are `5h` / `weekly`, another bucket
 names itself with its window (`gpt-6-astra 5h`), and the plan, credits and `as of` go into the row's
-`note`, so each window keeps its own name on the Tally Crag. §5.2 (pricing) is not built.
+`note`, so each window keeps its own name on the Tally Crag. §5.2 (pricing) is built
+(2026-10-07) with an empty price table: `pricing.OPENAI_PRICES` / `codex_usage_cost`,
+`harnesses.codex_result` priced from the model (`--model`, else `config.toml`), and
+`telemetry._CodexMeter` for War Tent rollouts. openai.com was still blocked from the build machine,
+so no price is in the table and Codex runs stay unpriced (`+`) until a person reads OpenAI's page
+and fills it in with the date.
 Answers the roadmap item "🪙 Codex: its limits and its spend" (`docs/roadmap.md`).
 
 Codex sources were read at `openai/codex` main, commit `685270a` (2026-10-05); the newest stable
@@ -161,8 +166,10 @@ Billing modes:
    `codex_usage_cost(model, usage)`:
    `(input − cached) × in + cached × cached_in + cache_write × write + output × out`, per 1M.
    Codex's `input_tokens` **include** the cached ones ✓ (`TokenUsage::non_cached_input` in
-   `C/codex-rs/protocol/src/protocol.rs` ~2430); reasoning tokens are part of `output_tokens` (?:
-   OpenAI API convention, not re-checked here). Unknown model → `None`, never $0. Fill the table
+   `C/codex-rs/protocol/src/protocol.rs` ~2430) and the cache writes ✓ (the test
+   `parses_cache_write_token_usage` in `C/codex-rs/codex-api/src/sse/responses.rs` ~806: 100 input
+   = 40 cached + 60 written), so the formula is `(input − cached − written) × in + …`; reasoning
+   tokens are part of `output_tokens` ✓ (same test: 10 output with 5 reasoning, total 110). Unknown model → `None`, never $0. Fill the table
    only from the OpenAI page read by a person (§4).
 2. **`orkcraft/realm/roads.py` `codex_result_of`** returns a cost: it needs the model, which
    `exec --json` does not print — use the `--model` orkcraft passed (`codex_cmd`), else

@@ -130,10 +130,11 @@ def test_confluence_and_figma(env):
 
 def test_errors_and_the_first_look(env, monkeypatch):
     assert "refused" in feeds.look(feeds.parse(FIGMA)[0], Opener({"api.figma.com": 401})).error
-    assert feeds.look(feeds.parse(SLACK)[0], Opener({"slack.com": {"ok": False, "error": "invalid_auth"}})).error \
-        == "slack: auth.test: invalid_auth"
+    got = feeds.look(feeds.parse(SLACK)[0], Opener({"slack.com": {"ok": False, "error": "invalid_auth"}}))
+    assert (got.error, got.kind) == ("slack: auth.test: invalid_auth — log in again", "login")
     monkeypatch.delenv("T_ATL_TOKEN")
-    assert "T_ATL_TOKEN" in feeds.look(feeds.parse(JIRA)[0], Opener(API)).error
+    got = feeds.look(feeds.parse(JIRA)[0], Opener(API))
+    assert "T_ATL_TOKEN" in got.error and got.kind == "login"
     items = feeds.Look([feeds.Item("a", "A"), feeds.Item("b", "B")])
     assert feeds.new_items(items, None) == ([], ["a", "b"])                 # a baseline: nothing sent
     fresh, seen = feeds.new_items(feeds.Look(items.items + [feeds.Item("c", "C")]), ["a", "b"])

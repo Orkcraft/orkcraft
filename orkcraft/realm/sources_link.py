@@ -26,8 +26,9 @@ EMAIL = re.compile(r"^[^@\s]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$")
 GOOGLE_MAIL = ("gmail.com", "googlemail.com")
 
 
-def recognise(text: str) -> Link | None:
-    """The service a link or an address points at, or None."""
+def recognise(text: str, gitlab_hosts=()) -> Link | None:
+    """The service a link or an address points at, or None. `gitlab_hosts`: the self-hosted GitLabs
+    this machine has a login for (their links are GitLab's too)."""
     text = (text or "").strip()
     if EMAIL.match(text):
         domain = text.rsplit("@", 1)[1].lower()
@@ -37,13 +38,15 @@ def recognise(text: str) -> Link | None:
     if host in ("github.com", "www.github.com") and len(parts) >= 2:
         repo = f"{parts[0]}/{parts[1].removesuffix('.git')}"
         return Link("github", "github.com", repo, f"the repo {repo}")
-    if host == "gitlab.com" and len(parts) >= 2:
+    if (host == "gitlab.com" or host in {h.lower() for h in gitlab_hosts}) and len(parts) >= 2:
         path = "/".join(parts[:parts.index("-")] if "-" in parts else parts)
         return Link("gitlab", host, path, f"the project {path}")
     if host.endswith(".slack.com"):
         channel = parts[1] if len(parts) >= 2 and parts[0] == "archives" else ""
         return Link("slack", host, channel, f"the channel {channel}" if channel else "")
-    if host in ("discord.com", "discordapp.com") and len(parts) >= 3 and parts[0] == "channels":
+    if host in ("discord.com", "discordapp.com", "www.discord.com") and len(parts) >= 3 and parts[0] == "channels":
+        if parts[1] == "@me" or not parts[2].isdigit():
+            return Link("discord", "", "", "")       # a direct message: no bot hears those
         return Link("discord", parts[1], parts[2], f"the channel {parts[2]}")
     if host.endswith(".atlassian.net"):
         if parts[:1] == ["wiki"]:
