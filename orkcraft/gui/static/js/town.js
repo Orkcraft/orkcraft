@@ -83,7 +83,7 @@ function lifts(full) {
 }
 
 const GAP_PX = 12;                          // the least room between two huts once they settle
-const CORNER_ROOM = { x: 0, y: 0, w: 116, h: 80 };   // the big portrait's corner (js/portrait.js): no hut stands under it
+const CORNER_ROOM = { x: 0, y: 0, w: 88, h: 62 };   // the big portrait's corner (js/portrait.js): no hut stands under it
 
 /** How far each hut is pushed down so none stands on another: a town of many buildings, a spot kept from a
  * smaller window, or a card that grew would otherwise lay one card over the next. Top to bottom, a hut that

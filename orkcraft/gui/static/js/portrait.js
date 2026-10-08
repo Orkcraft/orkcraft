@@ -26,8 +26,8 @@ function ground(home) {
 
 /** The head: the mascot in Camp, the monogram in Office. */
 function Face({ y, p, size }) {
-  if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 2 })} title=${p.mono}>
-    <${RoleIcon} role=${p.role || ""} mono=${p.mono} size=${size > 2 ? 28 : 14} /></span>`;
+  if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 3 })} title=${p.mono}>
+    <${RoleIcon} role=${p.role || ""} mono=${p.mono} size=${size > 3 ? 28 : size > 2 ? 20 : 14} /></span>`;
   return html`<span class="gui-portrait__ground" style=${ground(y.home)}><${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${size} /></span>`;
 }
 
@@ -90,12 +90,12 @@ function Toggles({ p }) {
     <button class=${cls("gui-portrait__toggle", { "is-on": d.on })} aria-pressed=${!!d.on}
         title=${say(d.on ? `Do not disturb: ${d.label} — a click turns it off` : "Do not disturb: off — a click turns it on")}
         aria-label=${say("Do not disturb")} onClick=${() => command("you.dnd", { dnd: d.on ? "off" : "on" }).catch(() => {})}>
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5a5.5 5.5 0 1 0 3 9.6A6 6 0 0 1 10.5 2.5z" /></svg>
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M10.5 2.5a5.5 5.5 0 1 0 3 9.6A6 6 0 0 1 10.5 2.5z" /></svg>
     </button>
     <button class=${cls("gui-portrait__toggle", { "is-on": office })} aria-pressed=${office}
         title=${say(office ? "Office look — a click switches to Camp" : "Camp look — a click switches to Office")}
         aria-label=${say("Office look")} onClick=${() => command("you.look", { look: office ? "camp" : "office" }).catch(() => {})}>
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="8" /><path d="M6 5.5V3.5h4v2" /></svg>
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="8" /><path d="M6 5.5V3.5h4v2" /></svg>
     </button>
   </span>`;
 }
@@ -114,7 +114,7 @@ export function Portrait({ corner = false }) {
     <button class=${cls("gui-portrait", { "is-office": p.look === "office", "is-open": portraitOpen.value, "is-big": corner })}
         aria-expanded=${portraitOpen.value} aria-label=${say(`You: ${who}${d.on ? ` · Do not disturb, ${d.label}` : ""}`)}
         title=${say(`You: ${who}`)} onClick=${() => { portraitOpen.value = !portraitOpen.value; }}>
-      <${Face} y=${y} p=${p} size=${corner ? 4 : 2} />
+      <${Face} y=${y} p=${p} size=${corner ? 3 : 2} />
       ${p.look !== "office" && html`<span class="gui-portrait__stage" aria-hidden="true">${ROMAN[y.stage] || ""}</span>`}
       ${d.on && html`<span class="gui-portrait__dnd" aria-hidden="true">🌙</span>`}
     </button>
