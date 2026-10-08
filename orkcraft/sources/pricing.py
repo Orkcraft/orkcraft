@@ -10,6 +10,10 @@ apply on top; `inference_geo: "us"` multiplies everything by 1.1 on Claude 4.6 a
 What this is not: a bill. Subscription plans (Claude Pro / Max) do not charge per token, and
 Bedrock / Vertex price separately; the costs computed here are API-equivalent estimates. When a
 model is not in the table the cost is unknown (None) — never a guess.
+
+OpenAI's prices (Codex runs) are a second table, `OPENAI_PRICES`, with its own source and date. It is
+filled only from OpenAI's pricing page read first-hand by a person; until then it stays empty and
+every Codex run is unpriced (docs/design/codex-limits.md §4, §5.2).
 """
 from __future__ import annotations
 
@@ -116,3 +120,60 @@ def context_of(usage: dict) -> int:
     """Tokens the model read on that turn: fresh input plus everything read from / written to cache."""
     return (int(usage.get("input_tokens") or 0) + int(usage.get("cache_read_input_tokens") or 0)
             + int(usage.get("cache_creation_input_tokens") or 0))
+
+
+# -- OpenAI (Codex) ---------------------------------------------------------------------------------
+# Read first-hand from the page below, with the date it was read. Empty: not read yet (openai.com
+# could not be reached from where this was built), so Codex runs stay unpriced (`+`), never guessed.
+OPENAI_PRICES_SOURCE = "https://developers.openai.com/api/docs/pricing"
+OPENAI_PRICES_AS_OF = ""
+
+
+@dataclass(frozen=True)
+class OpenAIPrice:
+    input: float                         # $ / MTok, standard tier, short context
+    cached_input: float
+    output: float                        # reasoning tokens are part of the output
+    cache_write: float | None = None     # None: a cache write costs the input price
+    long_input: float | None = None      # long context, from `long_from_tokens` input tokens per request
+    long_cached: float | None = None
+    long_output: float | None = None
+    long_from_tokens: int | None = None
+
+
+# Model id as Codex spells it (`gpt-6-astra`) → price.
+OPENAI_PRICES: dict[str, OpenAIPrice] = {}
+
+
+def openai_price_for(model: str | None) -> OpenAIPrice | None:
+    if not model:
+        return None
+    return OPENAI_PRICES.get(model.strip().lower().removeprefix("openai/"))
+
+
+def codex_usage_cost(model: str | None, usage: dict, one_request: bool = False) -> float | None:
+    """USD for a Codex token usage block (`input_tokens`, `cached_input_tokens`,
+    `cache_write_input_tokens`, `output_tokens`); None when the model has no price.
+
+    Codex's input counts its cached reads and its cache writes (openai/codex `codex-api`
+    `parses_cache_write_token_usage`: 100 in = 40 cached + 60 written), so the fresh input is what is
+    left. Long-context prices apply only to `one_request` usage past the threshold: a run's total
+    sums many requests and is priced at the short-context rates.
+    """
+    p = openai_price_for(model)
+    if p is None or not isinstance(usage, dict):
+        return None
+
+    def n(key: str) -> int:
+        v = usage.get(key)
+        return max(int(v), 0) if isinstance(v, (int, float)) else 0
+
+    total_in, cached, written, out = n("input_tokens"), n("cached_input_tokens"), n("cache_write_input_tokens"), n("output_tokens")
+    fresh = max(total_in - cached - written, 0)
+    long = (one_request and p.long_from_tokens is not None and total_in > p.long_from_tokens
+            and None not in (p.long_input, p.long_cached, p.long_output))
+    rate_in = p.long_input if long else p.input
+    rate_cached = p.long_cached if long else p.cached_input
+    rate_out = p.long_output if long else p.output
+    rate_write = p.cache_write if p.cache_write is not None else rate_in
+    return (fresh * rate_in + cached * rate_cached + written * rate_write + out * rate_out) / 1_000_000

@@ -7,6 +7,7 @@ Skipped where Playwright or Chromium is missing; `-m browser` runs these alone, 
 them out."""
 from __future__ import annotations
 
+import datetime as dt
 import os
 import subprocess
 from pathlib import Path
@@ -404,6 +405,51 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
+def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_saves(page, gui, monkeypatch):
+    """`/note`: the Wiki's meeting, section and tags stand over the bar; Tab picks another meeting; Enter
+    saves what was shown, and the Calendar's meeting says what the Wiki keeps for it
+    (docs/design/wiki-librarian.md §4, §6)."""
+    pg = page
+    server, _ = gui
+    from orkcraft.core.workers.scrolls import ScrollsWorker
+    # the note's take-in runs no agent here (on a machine with one it would really start)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", staticmethod(lambda *a: ("taken in", 0.0, None, "")))
+    repo = server.host.town.repo_root
+    day = dt.date.today() + dt.timedelta(days=1)
+    rows = []
+    for n, (summary, when) in enumerate((("Pricing review", day), ("Roadmap sync", day + dt.timedelta(days=1)))):
+        rows += ["BEGIN:VEVENT", f"UID:note-{n}@x", f"DTSTART:{when:%Y%m%d}T110000", f"DTEND:{when:%Y%m%d}T113000",
+                 f"SUMMARY:{summary}", "END:VEVENT"]
+    (repo / "note-cal.ics").write_text("\r\n".join(["BEGIN:VCALENDAR", *rows, "END:VCALENDAR"]) + "\r\n")
+    build = "t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))"
+    drum = pg.evaluate(build, "war_drum")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.act(id, 'settings', { ics: 'note-cal.ics' }))", drum)
+    wiki = pg.evaluate(build, "scrolls")
+    pg.keyboard.press("Escape")
+    field = pg.locator(".gui-warchief__input")
+    _line(pg, "/note Go over the pricing numbers tomorrow", enter=False)
+    meet = pg.locator(".gui-warchief__note-meet")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert "to discuss" in pg.locator(".gui-warchief__note-rows").inner_text()
+    field.press("Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Tab")
+    meet.filter(has_text="Not for a meeting").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Enter")
+    pg.locator(".ok-toast", has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert field.input_value() == ""
+    _hut(pg, drum).locator(".gui-drum__wiki", has_text="1").wait_for(state="visible", timeout=WAIT_MS)
+    w = server.host.town.worker(wiki)
+    assert not pg.locator(".ok-toast.is-error").count() and not w.last_error
+    for bid in (wiki, drum):                    # the next test's buildings stand where these stood
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+        _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"
@@ -628,7 +674,7 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel = pg.locator(".gui-panel")
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
-    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 6
+    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
     panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
     shot("1-picker")
     panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
@@ -641,6 +687,13 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Continue").click()
     panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     shot("3-what")
+    whole = panel.locator(".gui-add__switch", has_text="Everything")             # §6: the whole site, an intent asked
+    whole.click()
+    panel.locator("#add-intent-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-add__options").count() == 0
+    shot("3b-everything")
+    whole.click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("4-check")
@@ -650,6 +703,28 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
+    # the token is revoked: the next look fails as the login, and Log in again fixes it in one step (§8)
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener({**ATL, "acme.atlassian.net/rest/api/3/myself": 401}))
+    panel.get_by_role("button", name="Check now").click()
+    failing = panel.locator(".gui-tower__failing", has_text="the token was refused")
+    failing.wait_for(state="visible", timeout=WAIT_MS)
+    row = panel.locator(".gui-tower__source.is-bad", has_text="Jira")
+    row.get_by_role("button", name="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    shot("7-failing")
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
+    failing.get_by_role("button", name="Log in again").click()
+    panel.locator(".gui-add__sub", has_text="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-site-" + bid).count() == 0          # the site is kept
+    panel.locator("#add-email-" + bid).fill("ann@acme.io")
+    panel.locator("#add-token-" + bid).fill("n" * 24)
+    shot("8-login-again")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.get_by_role("button", name="Keep it").click()
+    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check now").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-panel .gui-tower__failing')", timeout=WAIT_MS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 

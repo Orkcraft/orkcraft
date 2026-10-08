@@ -139,10 +139,11 @@ def _add_folder(w, args: dict) -> None:
 
 
 def _suggest(w, args: dict) -> dict:
-    """What a Quick note should get here, as it is typed: section, tags, links (rules, no model)."""
+    """What a Quick note should get here, as it is typed: section, tags, links (rules, no model), and the
+    coming meetings it may be moved to (the Warchief bar's Tab)."""
     body = text(args, "text", quicknote.MAX_CHARS)
     hint = w.suggest(body)
-    return {**hint.as_dict(), "thinking": w.ask_model(body, hint)}
+    return {**hint.as_dict(), "thinking": w.ask_model(body, hint), "meetings": [m.as_dict() for m in w.coming()]}
 
 
 def _find(w, args: dict) -> list[dict]:

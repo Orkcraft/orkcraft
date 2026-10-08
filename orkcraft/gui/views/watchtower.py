@@ -179,7 +179,7 @@ def _add_login(w, args: dict) -> None:
     values = args.get("values") or {}
     if not isinstance(values, dict):
         raise ActError("values is not a form")
-    w.adding.log_in({k: text(values, k, 500) for k in ("site", "email", "token", "password") if k in values})
+    w.adding.log_in({k: text(values, k, 500) for k in ("site", "email", "token", "password", "host") if k in values})
 
 
 @_adding
@@ -194,7 +194,24 @@ def _add_files(w, args: dict) -> None:
 
 @_adding
 def _add_what(w, args: dict) -> None:
-    w.adding.what(_strings(args, "picks"), bool(args.get("about_me", True)), text(args, "folder", 100) or "INBOX")
+    w.adding.what(_strings(args, "picks"), bool(args.get("about_me", True)), text(args, "folder", 100) or "INBOX",
+                  text(args, "me", 300), bool(args.get("everything")), text(args, "intent", 500))
+
+
+@_adding
+def _add_again(w, args: dict) -> None:
+    """Step 2 lists again (Discord, after the bot was invited); GitHub's login step asks gh again."""
+    if w.adding.step == "login" and w.adding.service == "github":
+        w.adding.check_gh()
+    else:
+        w.adding.list_again()
+
+
+@_adding
+def _edit(w, args: dict) -> str:
+    """A listed source made again: Edit (step 2, its picks ticked) or Log in again (step 1, the rest kept)."""
+    w.adding.edit(text(args, "source", 2000), bool(args.get("login")))
+    return w.adding.service
 
 
 @_adding
@@ -219,5 +236,5 @@ def _remove(w, args: dict) -> bool:
 
 ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
-        "add_back": _add_back, "add_close": _add_close, "remove": _remove,
+        "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "edit": _edit, "remove": _remove,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}
