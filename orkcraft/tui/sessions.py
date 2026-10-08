@@ -100,12 +100,12 @@ class SessionsMixin:
         """Emergency freeze: everything the camp runs stops — War Tent sessions, road agents, the
         buildings' own work (orcs, reviews, the librarian, scripts, tests, browsers) and every model
         call; queues wait. The TUI stays open."""
+        buildings = self.core.halt()                    # first: the road handlers and every building's worker
         sessions = self.tent.interrupt_all()           # every session the core runs (core/sessions.py)
         killed = halt.halt_all()                        # every agent, script, test and browser process
         for worker in self.workers:                     # the terminals this face runs agents in
             if worker.group.startswith("orkcraft-agent"):
                 worker.cancel()
-        buildings = self.core.halt()                    # the road handlers and every building's worker
         stopped = sessions + max(killed, buildings)
         hud = self._hud
         hud.set_halt(f"HALTED — {stopped} stopped")

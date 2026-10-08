@@ -25,7 +25,7 @@ import wave
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import model_families
+from orkcraft.realm import halt, model_families
 
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 LIST_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000"
@@ -284,8 +284,10 @@ def encode(pcm: bytes, base: Path, ffmpeg: str | None = None) -> Path:
         return wav
     m4a = base.with_suffix(".m4a")
     try:
-        subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "aac", "-b:a", "64k", str(m4a)],
-                       check=True, capture_output=True, timeout=300)
+        done = halt.run([ffmpeg, "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "aac", "-b:a", "64k", str(m4a)],
+                        timeout=300, who="gramophone")         # 🛑 Halt All stops it too (the .wav stays)
+        if done.returncode != 0:
+            raise subprocess.CalledProcessError(done.returncode, done.args)
     except (OSError, subprocess.SubprocessError):
         m4a.unlink(missing_ok=True)
         return wav

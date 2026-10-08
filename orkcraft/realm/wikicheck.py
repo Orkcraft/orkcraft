@@ -34,8 +34,9 @@ class Problem:
 
 
 def schedule_of(config: dict) -> str:
-    value = str(config.get("check") or "weekly").strip().lower()
-    return value if value in (*CHECKS, "ingest", "off") else "weekly"
+    """Off unless the person turned it on: a check by schedule spends."""
+    value = str(config.get("check") or "off").strip().lower()
+    return value if value in (*CHECKS, "ingest", "off") else "off"
 
 
 def due(check: str, last: dt.datetime | None, now: dt.datetime) -> bool:
