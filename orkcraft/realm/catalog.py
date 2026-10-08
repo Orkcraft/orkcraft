@@ -64,6 +64,7 @@ class BuildingType:
     art: str = "workshop"           # hut art piece (realm/huts.py)
     orc: str = "Peon"               # default resident orc
     agentic: bool = False           # its work is done by agents (the Agents group of the wizard)
+    folded: bool = False            # built with its hut folded to the title bar (docs/design/folded-cards.md)
 
     def event(self, event_id: str) -> EventDef | None:
         return next((e for e in self.events if e.id == event_id), None)
@@ -90,7 +91,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("pit.link", "link pasted", TEXT, "a link was pasted"),
                 _e("pit.text", "text pasted", TEXT, "text was pasted")),
         actions=(_a("pit.paste", "Paste", "📋", "take what is in the clipboard"),),
-        art="burrow", orc="Scavenger"),
+        art="burrow", orc="Scavenger", folded=True),
     BuildingType(
         "watchtower", "Watchtower", "🗼", "M",
         "listens to the outside: a mailbox (IMAP, Gmail), GitHub events, comments and mentions in Slack, Jira, "
@@ -118,7 +119,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("signpost.routed", "routed", TEXT, "what arrived, sent down the route its rule picked"),
                 _e("signpost.unmatched", "no rule", TEXT, "no rule matched what arrived")),
         config={"rules": (list, None, False)},
-        art="spire", orc="Grot Pointa"),
+        art="spire", orc="Grot Pointa", folded=True),
     BuildingType(
         "mill", "The Mill", "⚙️", "XS",
         "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
@@ -129,7 +130,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("mill.failed", "mill failed", TEXT, "a step failed: the error")),
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
         config={"steps": (list, None, False), "env": (list, None, False), "model": (str, None, False)},
-        art="mill", orc="Miller"),
+        art="mill", orc="Miller", folded=True),
     BuildingType(
         "horn", "The Horn", "📯", "XS",
         "sound for what comes in: every cart down its roads plays a sound — you pick which sound for which event "

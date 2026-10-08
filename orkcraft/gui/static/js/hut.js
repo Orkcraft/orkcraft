@@ -5,11 +5,14 @@
 // right of its name pins it in place (in the Town Scroll, as from its Info) and unpins it. Before the name a
 // spinner while it works and its type's icon; its type's header sprite stands over the card's left
 // (office.css: two thirds of the sprite's size), and the garrison's lead is its ork's head alone.
+// A hut may fold to its title bar (docs/design/folded-cards.md): a mark says what the card would have said
+// first, and the card peeks out over the huts under it while it wants the person or a drag is held over it.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
+import { keepTall } from "./parts.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
@@ -23,6 +26,10 @@ export const dragging = signal(null);      // {id, dx, dy}: the hut under the mo
 export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
 const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
 const warned = signal({});                 // building id → true while its pin says it holds the hut
+const putAway = signal({});                // building id → the peek reasons the person put away (▸ on a peek)
+const dragOver = signal(null);             // the folded hut a drag is held over: it peeks
+// Caught first, let go after the drop reached the card, so the peek holds till the Pit took what fell on it.
+for (const end of ["drop", "dragend"]) window.addEventListener(end, () => setTimeout(() => { dragOver.value = null; }), true);
 const warnings = new Map();                // building id → the timer that lets the pin go back
 
 /** A drag on a pinned hut: its pin turns red for WARN_MS, so the person sees why it does not move. */
@@ -50,6 +57,38 @@ function PinButton({ b }) {
     <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
       <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
     </svg></button>`;
+}
+
+/** Why a folded hut peeks (docs/design/folded-cards.md §2): an ork of it asks, its worker failed, it is paused. */
+function reasons(b) {
+  return [b.alert && `alert:${b.alert.id}`, b.state === "ERROR" && "error", b.paused && "paused"].filter(Boolean);
+}
+
+const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
+
+function fold(b) {
+  if (!b.folded) keepTall(b.id);            // its full height, so the huts under it rise by what it gives up
+  command("building.fold", { id: b.id }).catch(() => {});
+}
+
+/** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. */
+function FoldButton({ b, peek }) {
+  const label = !b.folded ? say("Fold the card") : peek ? say("Put it away") : say("Unfold the card");
+  const press = (e) => {
+    e.stopPropagation();
+    if (peek) putAway.value = { ...putAway.value, [b.id]: reasons(b) };
+    else fold(b);
+  };
+  return html`<button class=${cls("gui-hut__fold", { "is-on": !!b.folded })} title=${label} aria-label=${label} aria-expanded=${!b.folded || peek}
+      onPointerDown=${(e) => e.stopPropagation()} onClick=${press}>${b.folded ? "▸" : "▾"}</button>`;
+}
+
+/** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
+function Mark({ b }) {
+  const mod = b.page ? typeModule(b.type) : null;
+  const own = mod && mod.mark ? mod.mark(b) : null;
+  const m = b.state === "ERROR" ? { text: "error", tone: "error" } : b.paused ? { text: "paused", tone: "wait" } : own;
+  return m && m.text ? html`<span class=${cls("gui-hut__mark", m.tone && `ok-tone-${m.tone}`)}>${say(String(m.text))}</span>` : null;
 }
 
 /** A road pulled out of a hut's handle: where the pointer lets go over another hut, it goes there. */
@@ -105,6 +144,7 @@ function hutMenu(e, b) {
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
     b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
+    b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", run: () => fold(b) },
     b.id !== CORNER && "-",
     b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
   ]);
@@ -188,6 +228,11 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
   const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
   const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
   const hot = b.alert && b.alert.waited >= 30;
+  const folded = !!b.folded && b.id !== CORNER;
+  const peek = folded && (peekReasons(b).length > 0 || dragOver.value === b.id);
+  // A drag held over a folded hut peeks it, so a drop target (the Pit) is never a title bar alone.
+  const dragIn = folded ? () => { if (dragOver.value !== b.id) dragOver.value = b.id; } : undefined;
+  const dragOut = folded ? (e) => { if (!e.currentTarget.contains(e.relatedTarget) && dragOver.value === b.id) dragOver.value = null; } : undefined;
 
   function down(e) {
     if (e.button !== 0) return;
@@ -223,13 +268,15 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Keeper} garrison=${b.garrison} alert=${b.alert} />
       ${b.alert && html`<span class="ok-word">?</span>`}
-      ${b.id !== CORNER && html`<${PinButton} b=${b} />`}</span>`;
+      ${folded && html`<${Mark} b=${b} />`}
+      ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
+      ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
-                                        "is-fresh": fresh })}
-      onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)}>
+                                        "is-fresh": fresh, "is-folded": folded, "is-peek": peek })}
+      onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>
     <div class="ok-hut__card">
@@ -238,8 +285,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
       <span class="ok-hut__dot gui-hut__dot"></span>
-      <${Card} b=${b} />
-      <${QuickTray} b=${b} />
+      ${!folded ? html`<${Card} b=${b} /><${QuickTray} b=${b} />`
+        : peek ? html`<div class="gui-hut__peek"><${Card} b=${b} /><${QuickTray} b=${b} /></div>`
+        : html`<${QuickTray} b=${b} />`}
     </div>
   </div>`;
 }

@@ -339,10 +339,10 @@ export function Town({ buildings, roads }) {
   }, []);
 
   // A hut stands where its full height (every part shown) would put it; the huts under one with parts
-  // hidden are lifted by what it lost.
+  // hidden, or folded, are lifted by what it lost.
   const fullSize = (b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
-    return { ...size, h: size.h + lost(b.id, size.h) };
+    return { ...size, h: size.h + lost(b.id, size.h, !!b.folded && b.id !== CORNER) };
   };
   const full = {};
   buildings.forEach((b, i) => {

@@ -60,6 +60,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
             "building.waits": lambda a: core_buildings.set_waits(self.town, self._spec(a).id,
                                                                  _int(a.get("question")), _int(a.get("rebuild"))),
             "building.pin": self.pin,
+            "building.fold": self.fold,
             "building.revert": self.revert,
             "building.quick": self.quick,
             "building.recruit": self.recruit,
@@ -192,6 +193,18 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         self.town.toast(f"{bs.title} {'pinned' if bs.pinned else 'unpinned'}", title="Pin")
         self.host.on_change()
         return bs.pinned
+
+    def fold(self, args: dict) -> bool:
+        """▸ A folded hut shows its title bar only (docs/design/folded-cards.md). The Town Hall never folds."""
+        from orkcraft.realm.buildings import TOWN_HALL
+        bs = self._spec(args)
+        if bs.id == TOWN_HALL:
+            raise ConsoleError("The Town Hall never folds")
+        bs.folded = not bs.folded
+        self.town.save()
+        self._record(bs.id, "folded" if bs.folded else "unfolded")
+        self.host.on_change()
+        return bs.folded
 
     def steward_models(self, args: dict) -> dict:
         """Which tier its steward runs each of its tasks on (realm/steward.py USES); "" is the default."""

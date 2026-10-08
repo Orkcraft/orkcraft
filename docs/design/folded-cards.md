@@ -8,7 +8,7 @@ its neighbours, while something on it wants the person.
 
 | stage | what | state |
 |---|---|---|
-| 1 | Fold / Unfold on a hut, kept in the Town Scroll; folded types in the catalog; a peek on trouble and on a drag; a mark in the title | |
+| 1 | Fold / Unfold on a hut, kept in the Town Scroll; folded types in the catalog; a peek on trouble and on a drag; a mark in the title | done |
 | 2 | marks of more types (Watchtower, Barracks, Forge); Fold the quiet ones / Unfold all on the bare map; `/fold @name` | |
 
 ## 1. What a folded hut shows
@@ -60,10 +60,10 @@ A folded card opens by itself — **a peek** — while one of these holds:
 ## 3. Who keeps it
 
 - **The Town Scroll**, as the pin: `folded` on the building (`scroll.py` `BuildingSpec`, `false` by
-  default and then left out of the file). How a town is laid out goes with the town to another machine,
+  default). How a town is laid out goes with the town to another machine,
   unlike a part of a card hidden (that stays in this browser, js/parts.js).
 - **The catalog** says which types are built folded: `BuildingType.folded` (realm/catalog.py). Built
-  folded: **The Pit**, **Signpost**, **The Mill**, **Scroll Dump** — they say little and act on their
+  folded: **The Pit**, **Signpost**, **The Mill** — they say little and act on their
   own; trouble peeks them. Every other type is built open. The type's word counts once, when the building
   is raised (core/buildings.py `raise_spec`); after that it is the person's. A building that stood before
   stays open: an update never folds what the person was looking at.

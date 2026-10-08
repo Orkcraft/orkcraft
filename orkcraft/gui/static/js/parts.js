@@ -55,10 +55,15 @@ export function PartToggles({ id, parts }) {
   </div>`;
 }
 
-/** A hut drawn `h` high: with every part shown that is its full height; with some hidden, the pixels
- * it lost since (0 when it never stood with all shown in this browser). */
-export function lost(id, h) {
-  if (!hidden(id).length) {
+/** Keeps building `id`'s full height for after a reload: it is about to fold (docs/design/folded-cards.md). */
+export function keepTall(id) {
+  if (!hidden(id).length && tall.has(id)) keep(TALL, id, tall.get(id));
+}
+
+/** A hut drawn `h` high: with every part shown that is its full height; with some hidden, or the card
+ * folded, the pixels it lost since (0 when it never stood with all shown in this browser). */
+export function lost(id, h, folded = false) {
+  if (!hidden(id).length && !folded) {
     tall.set(id, h);
     return 0;
   }

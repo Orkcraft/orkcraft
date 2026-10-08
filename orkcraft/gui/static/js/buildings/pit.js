@@ -120,6 +120,12 @@ export function card(b) {
   return html`<${DropCard} b=${b} />`;
 }
 
+/** Folded: how many were dropped. */
+export function mark(b) {
+  const n = (b.card && b.card.n) || 0;
+  return n ? { text: `${n} dropped` } : null;
+}
+
 // -- open: one line to drop into, the drops, a drop over them --------------------------------------------
 
 /** Drop: one line — a link, a path or a text written in, Drop it; Paste takes the clipboard. A file held

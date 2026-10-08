@@ -23,6 +23,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
 from orkcraft.realm import catalog, lexicon, modes, pipes
+from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
 HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
@@ -76,6 +77,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "type": (type_id := catalog.type_of(spec).id if spec else bs.preset_ref or bs.id),
             "hut": list(bs.hut) if bs.hut else None,
             "pinned": bool(bs.pinned),
+            "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],

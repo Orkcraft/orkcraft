@@ -80,6 +80,8 @@ def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Buildi
     placed = town.scroll.building(spec["id"])
     if hut is not None and placed is not None:
         placed.hut = hut
+    if placed is not None:
+        placed.folded = catalog.type_of(spec).folded     # the type's word counts once, when it is raised
     building = custom_building(spec)
     town.buildings.append(building)
     town.custom_specs[spec["id"]] = spec
