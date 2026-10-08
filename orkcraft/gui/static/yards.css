@@ -89,10 +89,13 @@
 [data-look="camp"] .gui-hut.is-yard.is-folded .gui-hut__title { margin: 0; }
 
 /* -- the cards' background off (§3e): the town's ground shows through ------------------------------------------ */
-/* A look to try, chosen in the portrait's menu and kept in this browser (js/portrait.js). The title bar keeps its
-   plate; a card that asks keeps the fire's ground. */
+/* A look to try, chosen in the portrait's menu and kept in this browser (js/portrait.js): Shade lays a light dark veil
+   under the words, Ground nothing. The title bar keeps its plate; a card that asks keeps the fire's ground. */
+[data-look="camp"] { --card-shade: rgb(0 0 0 / .38); }
 [data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="shade"] .gui-hut:not(.is-alert):not(.is-yard) > .ok-hut__card { background: var(--card-shade); }
 [data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: transparent; }
+[data-look="camp"][data-cards="shade"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: var(--card-shade); }
 [data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert):not(.is-folded) > .ok-hut__card { background:
     var(--fence-row) left bottom / 21px 21px repeat-x,
     var(--fence-side) left top / 15px 27px no-repeat space,

@@ -147,8 +147,9 @@ is built folded and is a yard while its steps are code.
 
 ### 3e. A look to try: the cards on the ground
 
-The portrait's menu has **Card background**: *Panel* (the card's own, as always) or *Ground* — the cards drawn
-with no background, the town's biome showing through; yards keep their fence, huts their frame, every title bar
+The portrait's menu has **Card background**: *Panel* (the card's own, as always), *Shade* — a light dark veil
+(black at 38 %) under the words, the biome showing through it while roads and decorations under a card dim — or
+*Ground* — the cards drawn with no background, the town's biome bare; yards keep their fence, huts their frame, every title bar
 its plate, a card that asks the fire's ground. It is this browser's alone (`localStorage`, `js/portrait.js`):
 a look to try before it is decided, not a setting of the town.
 
