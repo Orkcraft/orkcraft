@@ -191,24 +191,35 @@ ROLE_ASK = {
 }
 
 
+PROMPT_DROPS = ("road", "kind", "value")   # a road id, and what `id` / `path` / `text` already say
+
+
+def prompt_record(rec: dict) -> dict:
+    """A road's record as a model reads it: its body once (`text`, `id` or `path`, never `value` too),
+    no road id or kind, no empty field, a long text cut at SNAPSHOT_CHARS."""
+    has_body = any(k in rec for k in ("text", "id", "path"))
+    out = {}
+    for k, v in rec.items():
+        if (k in PROMPT_DROPS and (k != "value" or has_body)) or v in (None, "", [], {}):
+            continue
+        out[k] = v[:SNAPSHOT_CHARS] + "…" if isinstance(v, str) and len(v) > SNAPSHOT_CHARS else v
+    return out
+
+
 def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict], role: str,
                  previous: str = "", liked: list[str] | None = None) -> str:
-    roads = []
-    for rec in snapshot:
-        rec = {k: (v[:SNAPSHOT_CHARS] + "…" if isinstance(v, str) and len(v) > SNAPSHOT_CHARS else v)
-               for k, v in rec.items()}
-        roads.append(rec)
+    roads = [prompt_record(rec) for rec in snapshot]
     parts = [
         f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
         f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
         f"event with the latest payload of each of your incoming roads.",
         f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
-        "Incoming roads (latest payload each; node ids resolve to <ID>.md files):\n"
-        + json.dumps(roads, ensure_ascii=False, indent=1),
+        "Incoming roads (latest payload each, one per line; node ids resolve to <ID>.md files):\n"
+        + "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in roads),
     ]
     if previous:
         parts.append(f"The previous step's result:\n{previous}")
-    if liked:                                          # 👍 references
+    if liked and role != "plan":                       # 👍 references: the shape of a result, not of a plan
         parts.append("Results the operator liked from this building (match their shape):\n"
                      + "\n".join(f"- {x[:600]}" for x in liked[:3]))
     parts.append(f"{ROLE_ASK.get(role, ROLE_ASK['run'])} Answer with the Markdown the operator should "

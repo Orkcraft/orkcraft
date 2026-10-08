@@ -213,7 +213,7 @@ def test_agent_waits_for_quiet_and_coalesces_a_burst():
     wait_for(lambda: rig.runs)
     assert len(prompts) == 1 and rig.outputs == [("scrying", "seer", "## summary")]
     harness, prompt, env = prompts[0]
-    assert harness == "main" and "summarise" in prompt and '"value": "T1001"' in prompt
+    assert harness == "main" and "summarise" in prompt and '"id":"T1001"' in prompt and '"value"' not in prompt
     assert env["ORKCRAFT_ORC"] == "scrying/seer"
     assert rig.runs[0].cost_usd == pytest.approx(0.02)
     [example] = roads.read_examples(rig.repo, "scrying", "seer")
