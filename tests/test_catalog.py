@@ -191,7 +191,7 @@ async def test_a_preset_is_picked_by_intent_then_named_and_set(fake_repo: Path):
     from orkcraft.screens.build_wizard import BuildReview
 
     ids = [t for _, types in catalog.INTENTS for t in types]
-    assert len(ids) == len(set(ids)) == 15                              # every camp type under one intent
+    assert len(ids) == len(set(ids)) == 16                              # every camp type under one intent
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(160, 45)) as pilot:
         await pilot.pause()

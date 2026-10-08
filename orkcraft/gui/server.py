@@ -27,6 +27,10 @@ of this server, so another page open in a browser cannot drive the town.
 other than the page makes first (docs/design/mobile.md): what this server speaks, as JSON.
 
     ← {"name": "orkcraft", "version": "0.1.0", "protocol": 1, "api": 1}
+
+`GET /api/audio/<building>/<episode>` (the same token) is an Audio briefing's episode, to play (`<audio>`) or,
+with `?dl=1`, to download (docs/design/audio-briefing.md §7): only a finished episode of that building,
+named by its id, never a path.
 """
 from __future__ import annotations
 
@@ -37,7 +41,7 @@ import secrets
 import threading
 from http import HTTPStatus
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.datastructures import Headers
@@ -132,6 +136,10 @@ class Server:
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             return _response(HTTPStatus.OK, json.dumps(self.version()).encode(), "application/json")
+        if parts.path.startswith("/api/audio/"):
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return self._audio(parts.path.removeprefix("/api/audio/"), "dl=1" in parts.query.split("&"))
         if parts.path in ("/", "/index.html"):
             return _response(HTTPStatus.OK, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
         if parts.path == "/favicon.ico":                  # the ork mark (design-system/logo)
@@ -145,6 +153,24 @@ class Server:
         if kind.startswith("text/") or kind.endswith(("javascript", "json")):
             kind += "; charset=utf-8"
         return _response(HTTPStatus.OK, target.read_bytes(), kind)
+
+    def _audio(self, rest: str, download: bool) -> Response:
+        bid, _, eid = rest.partition("/")
+        bs = self.host.town.scroll.building(bid) if bid else None
+        if bs is None or bs.demolished or self.host.type_of(bid) != "gramophone":
+            return _response(HTTPStatus.NOT_FOUND, b"Not found")
+        worker = self.host.town.worker(bid)
+        path = worker.file_of(eid) if worker is not None else None
+        if path is None:
+            return _response(HTTPStatus.NOT_FOUND, b"Not found")
+        from orkcraft.realm import gramophone
+        resp = _response(HTTPStatus.OK, path.read_bytes(), gramophone.MIME.get(path.suffix, "application/octet-stream"))
+        e = worker.get(eid) or {}
+        name = "".join(c if c.isalnum() or c in " -_" else "_" for c in str(e.get("title") or eid))[:80].strip() or eid
+        plain = name.encode("ascii", "ignore").decode().strip() or eid
+        resp.headers["Content-Disposition"] = (f'{"attachment" if download else "inline"}; filename="{plain}{path.suffix}"; '
+                                               f"filename*=UTF-8''{quote(name + path.suffix)}")
+        return resp
 
     # -- the socket ----------------------------------------------------------------------------
 

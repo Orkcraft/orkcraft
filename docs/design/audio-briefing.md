@@ -1,8 +1,11 @@
 # Design — the Audio briefing: a result you can listen to on the road
 
-Status: written 2026-10-08. A 📻 **Gramophone** in Camp, an **Audio briefing** in plain words
-(`lexicon.TERMS` `gramophone`). The sprite is `design-system/sprites/buildings/gramophone/`.
-§10 lists the stages.
+Status: written 2026-10-08; stages 1–3 (§10) built the same day: `realm/gramophone.py`,
+`core/workers/gramophone.py`, `gui/views/gramophone.py`, `js/buildings/gramophone.js`, the file route in
+`gui/server.py`, `audio.fetch` and the news line in `gui/mobile.py` / `gui/notify.py`; `tests/test_gramophone.py`.
+A 📻 **Gramophone** in Camp, an **Audio briefing** in plain words (`lexicon.TERMS` `gramophone`; its ork the
+Bard, a **Narrator**). The sprite is `design-system/sprites/buildings/gramophone/`. Where the build went
+another way than this text first said, the text says so.
 
 The orks finish work while the person is away from the desk, and some of it is long to read: a deep
 research report, a day's summary, a wiki page. The Audio briefing turns such a text into a short
@@ -57,8 +60,9 @@ a cart (a report, a summary, a wiki page) ──▶ 📻 Audio briefing ──�
    as `.wav` (about 2.9 MB a minute), and the window says that ffmpeg makes it 6 times smaller.
 
 The episode lives in `.orkcraft/gramophone/<building id>/episodes/<id>.<m4a|wav>` beside
-`<id>.md` (the transcript and its source's title) and a line in `episodes.jsonl` (id, title,
-language, seconds, bytes, cost, when, the file's name). The building keeps the last `keep` episodes
+`<id>.md` (the transcript under its title) and `<id>.json` (id, title, language, state, seconds, bytes,
+the kind of file, what the script and the speech cost, when). An episode that was being made when the town
+closed reads as stopped; its source is not kept on disk. The building keeps the last `keep` episodes
 (30 by default) and deletes older ones with their files.
 
 ## 4. The engine: Gemini TTS
@@ -125,7 +129,7 @@ The phone app is not built yet ([mobile.md](mobile.md) §8.1); the host gets wha
 the app has it from the start.
 
 - **The compact snapshot** gets `episodes`: the last 10 of every Audio briefing (building, id, title,
-  seconds, bytes, kind of file, when). It carries no transcript and no text of the source.
+  seconds, bytes, kind of file, when), read from the building's card in the page's snapshot. It carries no transcript and no text of the source.
 - **`audio.fetch`** `{building, episode, offset}` → `{data (base64), offset, size, done}`,
   in chunks of 512 KB so a frame stays under the socket's 8 MB. It is on `mobile.COMMANDS`, and it
   is the one exception to "a phone reads no file": only an episode of an Audio briefing, named by
@@ -145,6 +149,6 @@ the app has it from the start.
 | stage | what | state |
 |---|---|---|
 | 1 | this page and the sprite | done |
-| 2 | the building: catalog, `realm/gramophone.py` (script prompt, `speakable`, Gemini TTS, encoding, estimate), the worker, the GUI window with ▶ and ⬇, the file route, wording, tests | |
-| 3 | the phone's side on the host: `episodes` in the compact snapshot, `audio.fetch`, the news line | |
+| 2 | the building: catalog, `realm/gramophone.py` (script prompt, `speakable`, Gemini TTS, encoding, estimate), the worker, the GUI window with ▶ and ⬇, the file route, wording, tests | done |
+| 3 | the phone's side on the host: `episodes` in the compact snapshot, `audio.fetch`, the news line | done |
 | later | dialogue of two voices (Gemini's multi-speaker); a daily episode on a rhythm; other engines; the phone app's *Listen* tab | |

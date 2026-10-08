@@ -1,0 +1,34 @@
+/* 📻 The Gramophone (js/buildings/gramophone.js), made for the half panel: a text to speak, the episode being
+   made, the episodes one line each with their player, the settings. Tokens only. */
+
+.gui-gramophone__make { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-gramophone__go { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.gui-gramophone__go > .ok-tone-muted { flex: 1 1 220px; min-width: 0; }
+.gui-gramophone__go > input { flex: 1 1 200px; min-width: 0; }
+
+.gui-gramophone__current { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-gramophone__current p { margin: 0; }
+
+/* The episodes: one line each, the player under the one that plays. */
+.gui-gramophone__episodes { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-gramophone__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-gramophone__row { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.gui-gramophone__line { display: grid; grid-template-columns: auto auto 1fr auto auto; gap: 0 var(--space-2);
+  align-items: center; min-width: 0; }
+.gui-gramophone__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-gramophone__at, .gui-gramophone__cost { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gui-gramophone__mark { display: inline-block; min-width: 1.6em; text-align: center; }
+.gui-gramophone__play { min-width: 2em; }
+.gui-gramophone__audio { width: 100%; }
+.gui-gramophone__acts { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding-left: 2.4em; }
+.gui-gramophone__acts a.ok-btn { text-decoration: none; }
+
+.gui-gramophone__transcript { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-gramophone__text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+
+/* The settings. */
+.gui-gramophone__settings summary { cursor: pointer; color: var(--ink-muted); }
+.gui-gramophone__settings[open] { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-gramophone__settings p { margin: 0; }
+.gui-gramophone__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-2); }
+.gui-gramophone__grid label { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }

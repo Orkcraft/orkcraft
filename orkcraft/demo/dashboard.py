@@ -236,10 +236,13 @@ LIBRARY = {
               members=["Reviewer:claude", "Critic:agy"], max_cycles=2, budget_usd=1.0),
         typed("lib_mine", "mine", "The Mine", "⛏️", "Prospector", "researches the web, checked by more than one mind",
               wiki="team_wiki", limit=3.0),
+        typed("lib_gramophone", "gramophone", "The Gramophone", "📻", "Bard", "the reports, spoken for the road",
+              minutes=6),
     ],
     "huts": {"lib_camp": (0.0, 0.64)},                 # the Barracks clear of the board, Camp's sprite and all
     "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
-               (0.0, 0.54, 0.23, 0.46), (0.25, 0.54, 0.23, 0.46), (0.5, 0.54, 0.24, 0.46), (0.76, 0.54, 0.24, 0.46)],
+               (0.0, 0.54, 0.18, 0.46), (0.205, 0.54, 0.18, 0.46), (0.41, 0.54, 0.18, 0.46), (0.615, 0.54, 0.18, 0.46),
+               (0.82, 0.54, 0.18, 0.46)],
     "roads": [
         ("code_wiki", "lib_tasks", "tasks.created", "on_task", None, None),
         ("lib_camp", "code_wiki", "knowledge.chunks", "with_the_map", None, None),
