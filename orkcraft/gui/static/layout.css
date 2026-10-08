@@ -623,3 +623,22 @@ button { font: inherit; color: inherit; }
 .gui-pocket__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
 .gui-pocket__acts > .ok-btn.primary { margin-left: auto; }
 .gui-pocket__acts .gui-hut__quick { position: static; display: flex; gap: var(--space-2); opacity: 1; transform: none; }
+.gui-pocket__head { touch-action: pan-y; user-select: none; transition: transform .12s ease-out; }
+.gui-pocket__head:focus-visible { outline: var(--ok-stroke, 2px) solid var(--frame-focus); outline-offset: -4px; }
+.gui-pocket__swiped { display: flex; align-items: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-2);
+  overflow-x: auto; animation: gui-peek .15s ease-out both; }
+.gui-pocket__swiped > .ok-btn.primary { margin-left: auto; }
+.gui-pocket__away { flex: none; }
+.gui-pocket__chips { position: sticky; top: calc(-1 * var(--space-3)); z-index: 2; display: flex; gap: var(--space-2);
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) 0; padding: var(--space-2) var(--space-3);
+  background: var(--panel); border-bottom: 1px solid var(--frame); }
+.gui-pocket__chip { flex: 1 1 0; justify-content: center; }
+.gui-pocket__chip.is-hot { color: var(--alert); box-shadow: inset 0 0 0 1px var(--alert); }
+.gui-pocket__jump { border: 0; background: none; padding: 0; color: inherit; font: inherit; letter-spacing: inherit;
+  text-transform: inherit; cursor: pointer; }
+.gui-pocket__jump:hover { color: var(--ink); }
+.gui-pocket__calm { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .gui-pocket__head { transition: none; } .gui-pocket__swiped { animation: none; } }
+.gui-pocket { padding-top: 0; }
+.gui-pocket__head { box-sizing: border-box; }
+.gui-pocket__chips { top: 0; margin: 0 calc(-1 * var(--space-3)); }
