@@ -6,6 +6,7 @@ import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait } from "./portrait.js";
+import { narrow } from "./pocket.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -24,8 +25,7 @@ export function Hud() {
   const hud = t.hud;
   const words = t.resources;
   return html`<header class="ok-hud gui-hud">
-    <${Portrait} />
-    <img class="ok-sprite gui-hud__mark" src="/ds/logo/ork-mark-camp.svg" width="24" height="16" alt="" />
+    ${narrow.value && html`<${Portrait} />`}
     <span class="ok-hud__brand">Orkcraft</span>
     <button class="gui-hud__project gui-hud__menu" title=${say("Town settings: how freely the orks decide, how long they wait")}
       onClick=${() => { settingsOpen.value = true; }}>${t.project}${t.demo ? " · demo" : ""} ▾</button>

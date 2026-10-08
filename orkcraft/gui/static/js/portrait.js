@@ -74,7 +74,28 @@ function Menu({ y, p }) {
   </section>`;
 }
 
-export function Portrait() {
+/** The corner's quick toggles beside the big portrait: Do not disturb on or off (its menu keeps 1 h and Until),
+ *  and the look, Camp or Office. */
+function Toggles({ p }) {
+  const d = p.dnd || {};
+  const office = p.look === "office";
+  return html`<span class="gui-portrait__toggles">
+    <button class=${cls("gui-portrait__toggle", { "is-on": d.on })} aria-pressed=${!!d.on}
+        title=${say(d.on ? `Do not disturb: ${d.label} — a click turns it off` : "Do not disturb: off — a click turns it on")}
+        aria-label=${say("Do not disturb")} onClick=${() => command("you.dnd", { dnd: d.on ? "off" : "on" }).catch(() => {})}>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5a5.5 5.5 0 1 0 3 9.6A6 6 0 0 1 10.5 2.5z" /></svg>
+    </button>
+    <button class=${cls("gui-portrait__toggle", { "is-on": office })} aria-pressed=${office}
+        title=${say(office ? "Office look — a click switches to Camp" : "Camp look — a click switches to Office")}
+        aria-label=${say("Office look")} onClick=${() => command("you.look", { look: office ? "camp" : "office" }).catch(() => {})}>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="8" /><path d="M6 5.5V3.5h4v2" /></svg>
+    </button>
+  </span>`;
+}
+
+/** `corner`: the big portrait over the town's top-left corner, framed, its quick toggles beside it (a wide
+ *  window); else the small one in the HUD (a narrow window, where the list of buildings needs the room). */
+export function Portrait({ corner = false }) {
   const t = town.value;
   const y = t.growth && t.growth.you;
   const p = t.portrait;
@@ -82,16 +103,17 @@ export function Portrait() {
   const d = p.dnd || {};
   const asks = t.hud.alerts > 0;
   const who = p.look === "office" ? y.role : `${y.name}, stage ${y.stage}`;
-  return html`<span class="gui-portrait-slot">
-    <button class=${cls("gui-portrait", { "is-office": p.look === "office", "is-open": portraitOpen.value })}
+  return html`<span class=${cls("gui-portrait-slot", { "is-corner": corner })}>
+    <button class=${cls("gui-portrait", { "is-office": p.look === "office", "is-open": portraitOpen.value, "is-big": corner })}
         aria-expanded=${portraitOpen.value} aria-label=${say(`You: ${who}${d.on ? ` · Do not disturb, ${d.label}` : ""}`)}
         title=${say(`You: ${who}`)} onClick=${() => { portraitOpen.value = !portraitOpen.value; }}>
-      <${Face} y=${y} p=${p} size=${2} />
+      <${Face} y=${y} p=${p} size=${corner ? 4 : 2} />
       ${p.look !== "office" && html`<span class="gui-portrait__stage" aria-hidden="true">${ROMAN[y.stage] || ""}</span>`}
       ${d.on && html`<span class="gui-portrait__dnd" aria-hidden="true">🌙</span>`}
     </button>
     ${asks && html`<button class="gui-portrait__asks" title=${say("An ork asks: Answers")} aria-label=${say("Answers")}
         onClick=${() => openOrders()}></button>`}
+    ${corner && html`<${Toggles} p=${p} />`}
     ${portraitOpen.value && html`<${Menu} y=${y} p=${p} />`}
   </span>`;
 }

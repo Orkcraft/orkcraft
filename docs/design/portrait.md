@@ -18,8 +18,12 @@ you, and whether it may disturb you.
 
 ## As built
 
-- **The portrait** is 28 × 26 in the HUD (the HUD is 28 px high), its marks inside its corners. Its menu
-  is a popover under it (a sheet at the window's foot below 640 px).
+- **The portrait** stands out of the HUD in a wide window: framed (a bevel and 5 px of padding) over the
+  town's top-left corner, the head at 4× (56 × 52), its marks inside its corners, and beside it two quick
+  toggles, 🌙 Do not disturb (on / off; the menu keeps 1 h and Until) and the look (Camp / Office). The town
+  keeps its huts out of that corner (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of
+  buildings (`js/pocket.js`), it is the 28 × 26 one in the HUD. Its menu is a popover under it (a sheet at
+  the window's foot below 640 px).
 - **Office** is `data-theme="office"` + `data-look="office"`: the design system's office theme (flat
   panels, hairlines, the system font) with `gui/static/office.css`'s greys over it. The warm `office`
   palette of `design-system/tokens.json` is left for the design system's previews.

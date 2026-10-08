@@ -83,6 +83,7 @@ function lifts(full) {
 }
 
 const GAP_PX = 12;                          // the least room between two huts once they settle
+const CORNER_ROOM = { x: 0, y: 0, w: 116, h: 80 };   // the big portrait's corner (js/portrait.js): no hut stands under it
 
 /** How far each hut is pushed down so none stands on another: a town of many buildings, a spot kept from a
  * smaller window, or a card that grew would otherwise lay one card over the next. Top to bottom, a hut that
@@ -380,8 +381,8 @@ export function Town({ buildings, roads }) {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     return [b.id, { x: full[b.id].x, y: full[b.id].y - up[b.id], w: size.w, h: size.h }];
   }));
-  const held = new Set([CORNER, ...(dragging.value ? [dragging.value.id] : [])]);
-  const down = settle(standing, held);
+  const held = new Set([CORNER, "\u0000portrait", ...(dragging.value ? [dragging.value.id] : [])]);
+  const down = settle({ ...standing, "\u0000portrait": CORNER_ROOM }, held);
   for (const b of buildings) up[b.id] -= down[b.id];   // `moved` keeps the spot unpushed, as it keeps it unlifted
   const spots = {}, rects = {}, ports = {};
   buildings.forEach((b) => {

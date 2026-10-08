@@ -18,7 +18,6 @@ button { font: inherit; color: inherit; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
-.gui-hud__mark { display: block; image-rendering: pixelated; }
 .gui-hud__project { color: var(--ink-muted); }
 /* The project's name opens the town's settings (js/settings.js); Halt All stands where Ready was. */
 .gui-hud__menu, .gui-hud__stop { padding: 1px var(--space-2); border: 1px solid transparent; border-radius: var(--radius-sm, 0);
@@ -703,3 +702,28 @@ button { font: inherit; color: inherit; }
   border: 1px solid currentColor; border-radius: 50%; font-weight: 600; }
 .gui-acc__body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1; }
 .gui-acc__folder { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+
+/* The big portrait (a wide window): framed over the town's top-left corner, a hero's portrait, out of the HUD;
+   its two quick toggles (Do not disturb, the look) stand at its right. The town keeps its huts out of the corner
+   (js/town.js CORNER_ROOM). */
+.gui-portrait-slot.is-corner { position: fixed; left: var(--space-2); top: calc(var(--bar-hud) + var(--space-2)); z-index: 6;
+  align-items: flex-start; gap: var(--space-1); }
+.gui-portrait.is-big { width: auto; height: auto; padding: 5px; background: var(--panel-raised);
+  box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo), var(--shadow-window); }
+.gui-portrait.is-big .gui-portrait__ground { width: 56px; height: 52px; padding-bottom: 4px; box-shadow: inset 0 -4px 0 var(--land), var(--bevel-sunken); }
+.gui-portrait.is-big:is(:hover, .is-open) .gui-portrait__ground { box-shadow: inset 0 -4px 0 var(--land), inset 0 0 0 2px var(--frame-focus); }
+.gui-portrait.is-big .gui-portrait__mono { width: 52px; height: 52px; font-size: 17px; }
+.gui-portrait.is-big .gui-portrait__stage { right: 3px; bottom: 3px; min-width: 18px; font-size: 11px; line-height: 15px; }
+.gui-portrait.is-big .gui-portrait__dnd { right: 3px; top: 3px; font-size: 13px; }
+.gui-portrait-slot.is-corner .gui-portrait__asks { left: 0; bottom: 0; width: 14px; height: 14px; }
+.gui-portrait__toggles { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-portrait__toggle { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; cursor: pointer;
+  background: var(--panel-raised); color: var(--ink-muted); box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo); }
+.gui-portrait__toggle > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.gui-portrait__toggle:hover { color: var(--ink); }
+.gui-portrait__toggle:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.gui-portrait__toggle.is-on { color: var(--frame-focus); box-shadow: var(--bevel-sunken), 0 0 0 1px var(--frame-focus); }
+.gui-portrait__toggle.is-on > svg { fill: currentColor; fill-opacity: .25; }
+[data-look="office"] .gui-portrait.is-big, [data-look="office"] .gui-portrait__toggle { box-shadow: 0 0 0 1px var(--frame); border-radius: var(--radius-md, 4px); }
+[data-look="office"] .gui-portrait__toggle.is-on { box-shadow: 0 0 0 1px var(--frame-focus); }
+.gui-portrait-slot.is-corner .gui-portrait__menu { left: var(--space-2); top: calc(var(--bar-hud) + 84px); }

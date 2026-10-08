@@ -35,10 +35,9 @@
   }
 }
 
-/* No sprites: the huts' buildings, the orks' heads, the HUD's mark and resource icons, the flames. */
+/* No sprites: the huts' buildings, the orks' heads, the resource icons, the flames. */
 [data-look="office"] .gui-hut__sprite,
 [data-look="office"] .gui-hut__keeper img[data-kind="ork"],
-[data-look="office"] .gui-hud__mark,
 [data-look="office"] .ok-res img,
 [data-look="office"] .gui-hut__flame { display: none; }
 /* A harness scheme in its text marks (✻ ✦ ⌬ ☤ π ◆ P →), never its pixel marks. */
