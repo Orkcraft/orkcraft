@@ -17,6 +17,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Put agents to work", ("barracks", "council")),
     ("Know the project: files, notes, diffs", ("scrolls",)),
     ("Research the web, checked by more than one mind", ("mine",)),
+    ("Listen to the results on the road", ("gramophone",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
     ("Hear what comes in", ("horn",)),
@@ -59,6 +60,8 @@ TAKES: dict[str, str] = {
     "crag": "the first number in the cart: a sample of the `road` source",
     "catapult": "anything: loads it under its source building; fires once every building of `wait_for` has loaded",
     "workshop": "anything (a file as its content): its script runs on the cart",
+    "gramophone": "text, or a file (its content): its steward writes a script for the ear and Gemini TTS speaks it "
+                  "→ gramophone.done (the transcript; the audio stays in the building) / gramophone.failed",
     "mine": "a question (its title, else its first line; the rest of the text is what it must cover): a research "
             "starts, or waits behind the one running → mine.reported (the report) / mine.asked / mine.failed",
 }
@@ -71,7 +74,7 @@ ACCEPTS: dict[str, frozenset[str]] = {
     "workshop": _ANY, "lake": _ANY,
     "mill": frozenset({TEXT, FILE}), "council": frozenset({TEXT, FILE}), "war_drum": frozenset({TEXT, FILE}),
     "scrolls": frozenset({TEXT}), "forge": frozenset({TEXT}), "crag": frozenset({TEXT}),
-    "mine": frozenset({TEXT, FILE}),
+    "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}),
 }
 
 # What a building does outside the camp on its own: the network, merges, money.
@@ -91,6 +94,8 @@ EFFECTS: dict[str, str] = {
                 "and presses submit when `finish: press`",
     "mill": "a `script:` step runs a command; an `agent:` step runs a model (spends money)",
     "workshop": "runs its script; its steward prompt runs a model",
+    "gramophone": "runs a model for the script, then sends the script to Google (Gemini API) to be spoken: spends "
+                  "money, up to `cap_usd` an episode",
     "mine": "runs every AI tool that can search the web (spends money, up to `limit` a research and `month_limit` a "
             "month); they read the open web; writes its reports into the Wiki's inbox",
 }
@@ -283,6 +288,18 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "charts": "its dashboard, a chart per line: `Title = source [1h|24h|7d] [vertical|horizontal] [warn N] [crit N] "
                   "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
                   "without it one chart from the settings above",
+    },
+    "gramophone": {
+        "language": "auto (the source's own), ru or en (default auto)",
+        "minutes": "how long an episode is, 2–20 minutes (default 8)",
+        "voice": "a Gemini prebuilt voice, e.g. Charon, Kore, Puck (default Charon)",
+        "tts_model": "the Gemini TTS model (default gemini-3.1-flash-tts-preview)",
+        "model": "the model that writes the script (default its steward's, by its goal)",
+        "key": "where the Gemini API key is: an environment variable, e.g. GEMINI_API_KEY (the default), or a login, "
+               "e.g. keychain:gemini — never the key itself",
+        "cap_usd": "the most one episode's speech may cost, in USD, 0.05–5 (default 0.50); over it the episode waits "
+                   "with its script for Speak anyway",
+        "keep": "how many episodes it keeps, 1–200 (default 30); older ones are deleted with their files",
     },
     "mine": {
         "tools": "the AI tools that search, e.g. [\"claude\", \"codex\", \"hermes\"] (default every tool on that can "

@@ -1,0 +1,19 @@
+{
+  "type": "gramophone",
+  "about": "📻 The Gramophone: a result spoken as a short episode, to play here or download to the phone.",
+  "panes": {
+    "make":     {"about": "an episode of pasted text, or of the last text that came; what a minute costs", "components": ["form"], "required": true},
+    "current":  {"about": "the episode being made and its step, or one that waits for its price with Speak anyway", "components": ["list"], "dynamic": true},
+    "episodes": {"about": "the episodes, newest first: title, length, cost; ▶ plays it, download saves it, the transcript opens over the rows", "components": ["list"], "required": true},
+    "settings": {"about": "the Gemini key and where the text goes, the language, the length, the voice, the limit per episode, how many to keep", "components": ["form"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "gramophone", "split": "column",
+    "panes": [
+      {"id": "make", "component": "form", "size": "auto", "font": "body"},
+      {"id": "current", "component": "list", "size": "auto", "font": "body"},
+      {"id": "episodes", "component": "list", "size": 1, "font": "body"},
+      {"id": "settings", "component": "form", "size": "auto", "font": "body"}
+    ]
+  }
+}

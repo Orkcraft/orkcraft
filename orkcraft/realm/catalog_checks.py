@@ -114,6 +114,11 @@ def validate(spec: dict) -> list[str]:
             rep = research.parse_repeat(line)
             if rep is None or not watch.schedule_ok(rep["every"]):
                 errors.append(f"config: repeats: {str(line)[:60]!r} is not `<every> | <limit> | <question>`")
+    if tid == "gramophone" and isinstance(config.get("key"), str):
+        from orkcraft.realm import logins
+        if not (logins.is_ref(config["key"]) or logins.ENV_NAME.match(config["key"])):
+            errors.append("config: key names an environment variable (GEMINI_API_KEY) or a login (keychain:gemini), "
+                          "never the key itself")
     if tid == "crag" and isinstance(config.get("charts"), list):
         from orkcraft.realm import metrics
         errors += [f"config: charts: {e}" for e in metrics.parse_charts(config["charts"])[1]]

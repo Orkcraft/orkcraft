@@ -58,6 +58,7 @@ TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", 
              "watchtower": {"judge": "Judge what it caught"},
              "mill": {"agent": "The agent steps"},
              "council": {"decide": "Let the document go"},
+             "gramophone": {"script": "Write the script"},
              "mine": {"plan": "Plan the research", "search": "Search the web", "check": "Group the findings"},
              "town_hall": {"answer": "Answer as the Warchief", "build": "Plan the town (Town planner)"}}
 
@@ -76,6 +77,7 @@ WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("
         "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
         "mill": {"agent": _g("laborer", "", "elder")},
         "council": {"decide": _g("warrior", "", "elder")},
+        "gramophone": {"script": _g("laborer", "warrior", "warrior")},
         "mine": {"plan": _g("warrior", "warrior", "elder"), "search": _g("warrior", "elder", "elder"),
                  "check": _g("laborer", "warrior", "warrior")},
         "town_hall": {"answer": _g("warrior", "", "elder"), "build": _g("warrior", "", "elder")}}

@@ -286,6 +286,22 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "wait_answers": (str, None, False), "wiki": (str, None, False), "repeats": (list, None, False)},
         art="library", orc="Prospector", agentic=True),
     BuildingType(
+        "gramophone", "The Gramophone", "📻", "S",
+        "a result you can listen to on the road: a report, a summary or a wiki page becomes a short spoken episode "
+        "(its steward writes the script, Gemini TTS speaks it) to play here or download to the phone "
+        "(docs/design/audio-briefing.md)",
+        "the last episode and its length, or the one being made",
+        "the episodes with ▶ and download, their transcripts and costs; make one from pasted text; the key, the voice, "
+        "the limit per episode",
+        events=(_e("gramophone.done", "episode", TEXT, "an episode is ready: its transcript; titled by its source and "
+                   "its length"),
+                _e("gramophone.failed", "episode failed", TEXT, "an episode failed: why")),
+        actions=(_a("gramophone.make", "Make an episode", "📻", "an episode of the last text that came, or of text you paste"),),
+        config={"language": (str, ("auto", "ru", "en"), False), "minutes": (int, (2, 20), False),
+                "voice": (str, None, False), "tts_model": (str, None, False), "model": (str, None, False),
+                "key": (str, None, False), "cap_usd": (float, (0.05, 5), False), "keep": (int, (1, 200), False)},
+        art="rookery", orc="Bard", agentic=True),
+    BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
         "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
         "a text file on disk is edited in place and saves by itself",
@@ -455,7 +471,7 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Custom (panes); File tree (its folder watch and its picker go to other buildings); Inspector — the town's
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
-GUI_ONLY = frozenset({"mine"})                 # built after the TUI was deprecated: no terminal view (calm-town.md §9)
+GUI_ONLY = frozenset({"mine", "gramophone"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
 
 

@@ -7,6 +7,7 @@ host's own command table, so the GUI's page and tests reach it today the same wa
     host.command("mobile.snapshot")                  # the town, small: HUD, questions, buildings
     host.command("mobile.snapshot", {"since": rev})  # {"v", "rev", "same": True} when nothing changed
     host.command("mobile.chat")                      # the Town Hall's last messages, Markdown as plain text
+    host.command("audio.fetch", {"building": "g", "episode": "1a2b3c4d", "offset": 0})   # an episode, in chunks
     news(before, after)                              # what a push would say between two snapshots
 
 The compact snapshot is derived from the page's (`Host.snapshot`, gui/state.py), never from the
@@ -15,6 +16,7 @@ town directly, so the two cannot disagree. Text that may carry emoji comes twice
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import re
@@ -28,6 +30,7 @@ from orkcraft.realm import lexicon, modes
 API = 1                  # the mobile API's version: a change that breaks a client raises it
 CONTEXT_LINES = 3        # of a question's screen, the last lines a phone shows
 CHAT_MESSAGES = 20       # of the Town Hall's chat, the most a phone reads at once
+AUDIO_CHUNK = 512 * 1024 # of an episode's file, what one `audio.fetch` sends (base64 keeps it under a frame)
 
 # What a phone may ask of the host (v1): the host's command → the acts it may name, when it is
 # "act" (type id → acts). Everything else stays on the desktop (docs/design/mobile.md §3).
@@ -41,6 +44,7 @@ COMMANDS: dict[str, Any] = {
     "place.report": None,
     "you.dnd": None,             # Do not disturb is the person's, wherever they set it (docs/design/portrait.md §5)
     "you.look": None,
+    "audio.fetch": None,         # an Audio briefing's episode, in chunks: the one file a phone reads (audio-briefing.md §8)
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",)},
 }
 
@@ -110,6 +114,15 @@ def _portrait(p: dict) -> dict[str, Any]:
     return {"look": p.get("look", "camp"), "mono": p.get("mono", ""), "dnd": dict(p.get("dnd") or {})}
 
 
+def _episodes(buildings: list[dict]) -> list[dict[str, Any]]:
+    """The finished episodes of every Audio briefing (its card's), newest first: what a phone may download.
+    No transcript and no text of the source (docs/design/audio-briefing.md §8)."""
+    out = [{**e, "building": b["id"], "building_title": modes.plain(b.get("title", ""))}
+           for b in buildings if b.get("type") == "gramophone"
+           for e in ((b.get("card") or {}).get("episodes") or [])]
+    return sorted(out, key=lambda e: e.get("at", ""), reverse=True)
+
+
 def compact(full: dict[str, Any]) -> dict[str, Any]:
     """The page's snapshot, small enough for a phone on a slow link: the HUD's spend and quota, the
     questions that wait (the longest first), each building as its title, type, state and question,
@@ -125,6 +138,7 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "alerts": [_alert(a) for a in full.get("alerts") or []],
         "buildings": [_building(b) for b in full.get("buildings") or []],
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
+        "episodes": _episodes(full.get("buildings") or []),
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
@@ -151,6 +165,11 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
     for a in after.get("alerts") or []:
         if a["id"] not in seen:
             out.append({"kind": "alert", "id": a["id"], "title": a["title"], "who": a.get("who", "")})
+    had = {(e["building"], e["id"]) for e in before.get("episodes") or []}
+    for e in after.get("episodes") or []:
+        if (e["building"], e["id"]) not in had:
+            out.append({"kind": "episode", "building": e["building"], "id": e["id"], "title": e.get("title", ""),
+                        "seconds": e.get("seconds", 0)})
     old, new = before.get("hud") or {}, after.get("hud") or {}
     for key in ("gold_level", "quota_level"):
         was, now = _LEVELS.get(old.get(key) or "ok", 0), _LEVELS.get(new.get(key) or "ok", 0)
@@ -201,7 +220,29 @@ def chat(host, args: dict | None = None) -> dict[str, Any]:
     return {"warchief": hall.warchief, "thinking": bool(hall.thinking), "chat": msgs}
 
 
+def audio_fetch(host, args: dict | None = None) -> dict[str, Any]:
+    """`audio.fetch` {building, episode, offset}: a chunk of a finished episode's file, base64, and whether it
+    was the last. Only an Audio briefing's own episode, named by its id, never a path."""
+    args = args or {}
+    bid, eid = str(args.get("building", "")), str(args.get("episode", ""))
+    bs = host.town.scroll.building(bid) if bid else None
+    if bs is None or bs.demolished or host.type_of(bid) != "gramophone":
+        raise ValueError("No such Audio briefing")
+    worker = host.town.worker(bid)
+    try:
+        offset = max(0, int(args.get("offset") or 0))
+        data, size = worker.chunk(eid, offset, AUDIO_CHUNK)
+    except (TypeError, ValueError):
+        raise ValueError("offset is not a number") from None
+    except (FileNotFoundError, OSError, AttributeError):
+        raise ValueError("No such episode") from None
+    e = worker.get(eid) or {}
+    return {"building": bid, "episode": eid, "kind": e.get("kind", ""), "offset": offset, "size": size,
+            "data": base64.b64encode(data).decode("ascii"), "done": offset + len(data) >= size}
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     """The host's commands this module adds (`Host.commands`)."""
     return {"mobile.hello": lambda a: hello(host), "mobile.snapshot": lambda a: snapshot(host, a),
-            "mobile.chat": lambda a: chat(host, a), "place.report": lambda a: gui_places.report(host, a)}
+            "mobile.chat": lambda a: chat(host, a), "place.report": lambda a: gui_places.report(host, a),
+            "audio.fetch": lambda a: audio_fetch(host, a)}

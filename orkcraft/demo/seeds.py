@@ -43,7 +43,7 @@ def before_commit(root: Path, now: dt.datetime) -> None:
 def after_commit(root: Path, now: dt.datetime) -> None:
     """The branches are there: each building's state, and the web folder's changes."""
     for seed in (pit, watchtower, signpost, mills, horn, fields, forest, barracks, council, loot, crag,
-                 catapult, workshop, mine, town_hall, sessions, ledger):
+                 catapult, workshop, mine, gramophone, town_hall, sessions, ledger):
         seed(root, now)
 
 
@@ -634,3 +634,21 @@ def mine(root: Path, now: dt.datetime) -> None:
     folder = state_dir(root, "mine", "lib_mine")
     _json(folder / "demo0001.json", r)
     (folder / "demo0001.md").write_text(research.report(r), encoding="utf-8")
+
+
+def gramophone(root: Path, now: dt.datetime) -> None:
+    """The Library's Gramophone: the Mine's report spoken (a hum stands for the voice: the demo asks no model and
+    no network)."""
+    from orkcraft.realm import gramophone as gm
+    folder = state_dir(root, "gramophone", "lib_gramophone") / "episodes"
+    pcm = gm.tone(3.0)
+    path = gm.encode(pcm, folder / "demo0001", ffmpeg="")
+    text = ("Yearly plans: what the research found.\n\nMost products give a yearly plan about two months free. "
+            "Whether the yearly price is shown per month is disputed: the sources disagree.")
+    (folder / "demo0001.md").write_text(f"# How SaaS products price a yearly plan\n\n{text}\n", encoding="utf-8")
+    _json(folder / "demo0001.json", {
+        "id": "demo0001", "title": "How SaaS products price a yearly plan", "lang": "en", "status": "done", "step": "",
+        "trigger": "road", "created": _iso(now - dt.timedelta(hours=4, minutes=35)),
+        "ended": _iso(now - dt.timedelta(hours=4, minutes=33)), "seconds": 3, "bytes": path.stat().st_size,
+        "kind": path.suffix.lstrip("."), "cost": 0.09, "cost_script": 0.02, "cost_speech": 0.07, "estimate": 0.07,
+        "error": "", "trail": [], "ref": "", "minutes": 6})
