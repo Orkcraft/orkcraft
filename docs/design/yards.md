@@ -99,7 +99,7 @@ pseudo-elements, its beam as a tile under the plate.
 ### 3a. The fence
 
 - **Only the edges are wood.** A row of pickets along the bottom: dense and low (pointed, one rail between
-  them, a 7×8 sprite tile), a beam down each side (4 px wide); the inside is the plain `panel` it is today.
+  them, a 7×7 sprite tile, no ground line), a beam down each side (4 px wide); the inside is the plain `panel` it is today.
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
