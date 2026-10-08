@@ -17,12 +17,12 @@ import { RoleIcon } from "./roles.js";
 
 export const portraitOpen = signal(false);
 
-// The cards' background in Camp, this browser's alone (a look to try, docs/design/yards.md §3e): "panel", the
-// card's own; "shade", the biome showing through a light dark veil that dims roads and decorations under the words;
-// or "ground", the biome bare. A card that asks keeps the fire's ground.
+// The cards' background in Camp, this browser's alone (docs/design/yards.md §3e): "shade" (the default), the biome
+// showing through a light dark veil under the words; "panel", the card's own; or "ground", the biome bare. A card
+// that asks keeps the fire's ground.
 const CARDS_KEY = "orkcraft.cards";
 const CARDS = ["panel", "shade", "ground"];
-const readCards = () => { try { const v = localStorage.getItem(CARDS_KEY); return CARDS.includes(v) ? v : "panel"; } catch { return "panel"; } };
+const readCards = () => { try { const v = localStorage.getItem(CARDS_KEY); return CARDS.includes(v) ? v : "shade"; } catch { return "shade"; } };
 const cardGround = signal(readCards());
 document.documentElement.dataset.cards = cardGround.value;
 function setCards(v) {

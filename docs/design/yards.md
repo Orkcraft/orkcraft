@@ -163,6 +163,19 @@ Two rules make the cards' words safe on the ground itself:
   `WINDOW_COST`), so in a crowded town a road may still pass under a card. Before Ground is a choice for everyone,
   the router keeps out from under cards (a road with no way round waits for the person to move a building).
 
+### 3f. The plinth, and where roads meet a building
+
+- **Every building stands on a plinth** in Camp: a paved slab in the road's tan (`#8f8166`), a little wider than its
+  sprite (`design-system/sprites/fence/plinth.png`, `tools/fence_sprites.py`). It is not the renown's footing: the
+  footing's courses still tell the level on top of it (growth.md §5), the flag still flies.
+- **Roads meet a hut at its plinth** (`js/hut.js` measure, `js/town.js` ports): the entrance is at the building, so
+  roads keep over and beside the cards instead of running at them. **Roads meet a yard at its fence**: the fence is
+  its boundary, the house is part of it. Office draws no plinth; its roads meet the card as before.
+- **A yard's house stands at its card's left edge**, its plinth set into the line of the top fence; the top fence's
+  pickets start where the house ends (`--house-w`, measured), and the sides start under the top fence, so nothing
+  stands beside the house.
+- **Card background defaults to Shade** (§3e): the biome under a light veil, the safe way for the words.
+
 ### 3d. Stage 3 — motion
 
 - The ork that comes walks in from the yard's edge to the door (its 16×15 sprite, 300 ms), and out when it

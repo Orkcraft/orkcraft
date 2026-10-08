@@ -310,11 +310,22 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
     const el = ref.current;
     if (!el) return;
     const w = el.offsetWidth, h = el.offsetHeight;
-    const card = el.querySelector(".ok-hut__card");          // where roads meet the hut in Camp: its card's frame
-    const top = card ? card.offsetTop : 0, ch = card ? card.offsetHeight : h;
+    // Where roads meet the hut (docs/design/yards.md §3f): a yard's fence, a hut's plinth in Camp, the card's frame in
+    // Office (no plinth drawn). A yard's top fence leaves a gap the width of its house.
+    const card = el.querySelector(".ok-hut__card");
+    let top = card ? card.offsetTop : 0, ch = card ? card.offsetHeight : h, px = 0, pw = w;
+    const plinth = el.querySelector(".gui-hut__plinth");
+    if (plinth && plinth.offsetWidth) {
+      const hr = el.getBoundingClientRect(), pr = plinth.getBoundingClientRect(), k = hr.width / w || 1;
+      const left = Math.round((pr.left - hr.left) / k), width = Math.round(pr.width / k);
+      el.style.setProperty("--house-w", `${left + width}px`);
+      if (!b.yard) {
+        top = Math.round((pr.top - hr.top) / k); ch = Math.round(pr.height / k); px = left; pw = width;
+      }
+    }
     const old = sizes.value[b.id];
-    if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch) {
-      sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch } };
+    if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch || old.px !== px || old.pw !== pw) {
+      sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch, px, pw } };
     }
   };
   useLayoutEffect(measure);
@@ -390,7 +401,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
-      <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}</span>
+      <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}
+      <span class="gui-hut__plinth" aria-hidden="true"></span></span>
       ${b.alert ? html`<${Caller} b=${b} />` : b.yard && b.visit ? html`<${Visitor} b=${b} />` : null}</div>
     <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""}>
       ${title}

@@ -30,6 +30,14 @@
 @keyframes gui-pace { 50% { transform: translateX(3px); } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-hut__caller { animation: none; } }
 
+/* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
+/* A paved slab in the road's tan under its sprite, a little wider: its roads meet it (js/hut.js measure, js/town.js
+   ports). Office draws no sprite and no plinth: its roads meet the card. */
+.gui-hut__plinth { display: none; }
+[data-look="camp"] .gui-hut__roof { flex-direction: column; align-items: flex-start; }
+[data-look="camp"] .gui-hut__plinth { display: block; align-self: stretch; height: 8px; margin: 0 -4px; image-rendering: pixelated;
+  background: image-set(url("/ds/sprites/fence/plinth.png") 1x, url("/ds/sprites/fence/plinth@2x.png") 2x) 0 0 / 16px 8px repeat-x; }
+
 /* -- a yard: the fence (§3) ---------------------------------------------------------------------------------- */
 
 .gui-hut__yard-name { display: none; }
@@ -41,35 +49,40 @@
 /* Its own width in whole pickets (14 × 21 px), as a card stretched by the person is (js/hut.js YARD_STEP). */
 [data-look="camp"] .gui-hut.is-yard.m:not(.is-sized) { width: 294px; }
 
-/* Pickets along the bottom, a column of them down each side with the rail behind, the plain panel inside: text
-   never sits on wood. The lower half of the bottom row stands on the ground. */
+/* Pickets along the bottom, the plain panel inside: text never sits on wood. The lower half of the bottom row stands
+   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. */
 [data-look="camp"] .gui-hut.is-yard:not(.is-folded) .ok-hut__card {
   border: 0; box-shadow: none; image-rendering: pixelated; padding: 0 15px 21px;
   background:
     var(--fence-row) left bottom / 21px 21px repeat-x,
+    linear-gradient(var(--yard-ground), var(--yard-ground)) 15px var(--titlebar) / calc(100% - 30px) calc(100% - 12px - var(--titlebar)) no-repeat; }
+[data-look="camp"] .gui-hut.is-yard:not(.is-folded) .ok-hut__card::before { content: ""; position: absolute; left: 0; right: 0;
+  top: var(--titlebar); bottom: 14px; pointer-events: none; image-rendering: pixelated; animation: none; background:
     var(--fence-side) left top / 15px 27px no-repeat space,
     var(--fence-side) right top / 15px 27px no-repeat space,
     var(--fence-rail) 4px 0 / 7px 100% no-repeat,
-    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat,
-    linear-gradient(var(--yard-ground), var(--yard-ground)) 15px var(--titlebar) / calc(100% - 30px) calc(100% - 12px - var(--titlebar)) no-repeat; }
-[data-look="camp"] .gui-hut.is-yard .ok-hut__card::before { display: none; }
+    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
+[data-look="camp"] .gui-hut.is-yard.is-folded .ok-hut__card::before { display: none; }
 /* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-yard.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
 [data-look="camp"] .gui-hut.is-yard.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
 [data-look="camp"] .gui-hut.is-yard.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
-/* The title bar is the top fence: pickets from edge to edge, its words over the building; the building stands on it
-   (§3b). Pin and fold keep 26 px clear of the road handle at its right. */
-[data-look="camp"] .gui-hut.is-yard .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 26px 0 15px;
-  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x; }
+/* The title bar is the top fence: its pickets start where the house ends (--house-w, js/hut.js measure) and run to the
+   edge; its words went over the building (§3b). Fold keeps 26 px clear of the road handle at its right. */
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 0 0 var(--house-w, 15px);
+  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x;
+  background-origin: content-box; background-clip: content-box; }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.no, .gui-type-icon, .gui-hut__spin, .gui-hut__name) { display: none; }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > .gui-hut__mark { align-self: center; margin-left: 6px; padding: 2px 4px;
   background: var(--panel-raised); }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.gui-hut__pin, .gui-hut__fold) { background: var(--panel-raised); }
-/* Its building a fifth bigger than a hut's, standing on the top fence's pickets. */
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title > .gui-hut__fold { margin-right: 26px; }
+/* Its building a fifth bigger than a hut's, at the card's left edge, its plinth set into the fence line. */
 [data-look="camp"] .gui-hut.is-yard .gui-hut__sprite { zoom: .8; }
-[data-look="camp"] .gui-hut.is-yard > .ok-head { position: relative; z-index: 1; margin-bottom: -10px; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__plinth { margin-left: 0; }
+[data-look="camp"] .gui-hut.is-yard > .ok-head { position: relative; z-index: 1; padding-left: 0; margin-bottom: calc(-1 * var(--titlebar)); }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__visitor { line-height: 0; align-self: flex-end; margin-left: 2px; }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__visitor img[data-kind="ork"] { zoom: calc(2 / 3); }
 
@@ -92,13 +105,7 @@
 /* A look to try, chosen in the portrait's menu and kept in this browser (js/portrait.js): Shade lays a light dark veil
    under the words, Ground nothing. The title bar keeps its plate; a card that asks keeps the fire's ground. */
 [data-look="camp"] { --card-shade: rgb(0 0 0 / .25); }
-[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-yard) > .ok-hut__card { background: transparent; }
 [data-look="camp"][data-cards="shade"] .gui-hut:not(.is-alert):not(.is-yard) > .ok-hut__card { background: var(--card-shade); }
 [data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: transparent; }
 [data-look="camp"][data-cards="shade"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: var(--card-shade); }
-[data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert):not(.is-folded) > .ok-hut__card { background:
-    var(--fence-row) left bottom / 21px 21px repeat-x,
-    var(--fence-side) left top / 15px 27px no-repeat space,
-    var(--fence-side) right top / 15px 27px no-repeat space,
-    var(--fence-rail) 4px 0 / 7px 100% no-repeat,
-    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
