@@ -1074,6 +1074,8 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
     for event in events[:2]:
         call("roads.lay", {"from": a, "to": b, "event": event, "handler": None})
     pg.keyboard.press("Escape")
+    pg.wait_for_function(f"([a, b]) => {link}.then(m => m.town.value.roads.filter((r) => r.from === a && r.to === b)"
+                         ".length === 2)", arg=[a, b], timeout=WAIT_MS)     # the page has both before it is clicked
     pg.wait_for_function("() => document.querySelectorAll('.gui-road').length === 1", timeout=WAIT_MS)   # one road for two
     pg.locator(".gui-road .gui-road__hit").dispatch_event("click")
     card = pg.locator(".gui-roadbar")
