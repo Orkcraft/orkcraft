@@ -19,7 +19,7 @@ playwright = pytest.importorskip("playwright.sync_api")
 from orkcraft.gui import builder  # noqa: E402
 from orkcraft.gui.host import Host  # noqa: E402
 from orkcraft.gui.server import Server  # noqa: E402
-from orkcraft.realm import checkpoint  # noqa: E402
+from orkcraft.realm import checkpoint, pipes  # noqa: E402
 from orkcraft.realm.buildings import TOWN_HALL  # noqa: E402
 
 pytestmark = pytest.mark.browser
@@ -99,8 +99,19 @@ def server_building(pg, bid: str) -> dict:
     return pg.evaluate("id => import('/static/js/link.js').then(m => m.command('info', { id }))", bid)
 
 
-def _drop_at(pg, bid: str) -> tuple[float, float]:
-    """A point on the hut's title the person can see: a hut placed under another one's card shows only part of it."""
+def _drop_at(pg, bid: str, spot: tuple[float, float] = (0.55, 0.62)) -> tuple[float, float]:
+    """A point on the hut's title the person can see. A new hut may stand under another one's card: it is moved to a
+    free `spot` first, and the point is taken once it stands still, where the hut itself is on top."""
+    pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))",
+                [bid, spot[0], spot[1]])
+    box, still = None, 0
+    for _ in range(50):
+        now = _hut(pg, bid).locator(".gui-hut__title").bounding_box()
+        still = still + 1 if now == box else 0
+        if still >= 3:
+            break
+        box = now
+        pg.wait_for_timeout(100)
     hit = pg.evaluate("""id => {
       const el = document.querySelector(`.gui-hut[data-id="${id}"] .gui-hut__title`);
       const r = el.getBoundingClientRect();
@@ -1083,13 +1094,16 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
     link = "import('/static/js/link.js')"
     call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
     a, b = call("town.build", {"type": "forge"}), call("town.build", {"type": "forge"})
-    events = list(dict.fromkeys(c["event"] for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler")))
+    choices = [c for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler")]
+    events = list(dict.fromkeys(c["event"] for c in choices))
     assert len(events) >= 2
     for event in events[:2]:
         call("roads.lay", {"from": a, "to": b, "event": event, "handler": None})
     pg.keyboard.press("Escape")
-    pg.wait_for_function("() => document.querySelectorAll('.gui-road').length === 1", timeout=WAIT_MS)   # one road for two
-    pg.locator(".gui-road .gui-road__hit").dispatch_event("click")
+    labels = [pipes.label(e) for e in events[:2]]
+    road = pg.locator(".gui-road").filter(has=pg.locator(".gui-road__label", has_text=" · ".join(labels)))
+    road.wait_for(state="attached", timeout=WAIT_MS)                   # one road for two: its label names both
+    road.locator(".gui-road__hit").dispatch_event("click")
     card = pg.locator(".gui-roadbar")
     card.wait_for(state="visible", timeout=WAIT_MS)
     pg.wait_for_function("() => document.querySelectorAll('.gui-roadbar__row').length === 2", timeout=WAIT_MS)
