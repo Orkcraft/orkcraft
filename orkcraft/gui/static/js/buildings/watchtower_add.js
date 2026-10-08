@@ -3,6 +3,8 @@
 // state is the worker's (core/workers/watchtower_add.py), so the panel can close while the person makes a token
 // and open again on the same step; a typed secret stays in this form until Continue sends it, and is not kept here.
 // A source already listed comes back here too: Edit (step 2, its picks ticked) and Log in again (step 1).
+// A service Claude Code has a connection for offers a second way at step 1: Claude's connection, no token, a
+// paid look every 30 min (§7.3); its step 2 asks what to listen for, how often and the most a day.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -93,6 +95,7 @@ function Login({ id, a }) {
         ${off && html`<p class="gui-add__hint ok-tone-wait">⚠ ${f.shape_says}</p>`}
       </div>`;
     })}
+    ${a.claude && html`<${ViaClaude} id=${id} c=${a.claude} />`}
     <${State} a=${a} />
     <div class="gui-add__foot">
       <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
@@ -102,7 +105,45 @@ function Login({ id, a }) {
   </div>`;
 }
 
+/** Step 1's other way: the connection Claude Code already has — no token, but a model run each look. */
+function ViaClaude({ id, c }) {
+  const ok = c.status === "connected";
+  return html`<div class="gui-add__claude">
+    <span class="gui-add__label">Or use Claude's connection</span>
+    ${ok ? html`<p class="gui-add__sub">No token. It looks every 30 min, and each look is a model run you pay for (about $0.05).</p>
+        <div class="gui-add__foot" style="justify-content: flex-start">
+          <button class="ok-btn" onClick=${() => act(id, "add_claude").catch(() => {})}>Use Claude's connection</button></div>`
+      : html`<p class="gui-add__sub ok-tone-wait">In Claude, ${c.status} — run /mcp in Claude Code, then open this again.</p>`}
+  </div>`;
+}
+
 // -- 2 · What ----------------------------------------------------------------------------------------------
+
+/** Step 2 through Claude: what to listen for, how often, the most it may spend a day. */
+function Ask({ id, a }) {
+  const [ask, setAsk] = useState(a.ask || "");
+  const [every, setEvery] = useState(a.every_min || 30);
+  const [ceiling, setCeiling] = useState(String(a.ceiling ?? 0.5));
+  const check = () => act(id, "add_ask", { ask, every, ceiling: parseFloat(ceiling) || 0 }).catch(() => {});
+  return html`<div class="gui-add">
+    <${Head} a=${a} />
+    <div class="gui-add__field"><label class="gui-add__label" for=${`add-ask-${id}`}>What Claude looks for</label>
+      <input id=${`add-ask-${id}`} class="ok-input" value=${ask} onInput=${(e) => setAsk(e.target.value)} /></div>
+    <div class="gui-add__field"><label class="gui-add__label" for=${`add-every-${id}`}>How often</label>
+      <select id=${`add-every-${id}`} class="ok-input" value=${every} onChange=${(e) => setEvery(parseInt(e.target.value, 10))}>
+        ${[10, 15, 30, 60, 120].filter((m) => m >= (a.every_min_least || 10)).map((m) => html`<option key=${m} value=${m}>${say(`every ${m} min`)}</option>`)}
+      </select></div>
+    <div class="gui-add__field"><label class="gui-add__label" for=${`add-ceiling-${id}`}>The most it spends a day, in dollars</label>
+      <input id=${`add-ceiling-${id}`} class="ok-input" inputmode="decimal" value=${ceiling} onInput=${(e) => setCeiling(e.target.value)} />
+      <p class="ok-tone-muted gui-add__sub">Past it the source waits until tomorrow. Each look's cost shows in Spend.</p></div>
+    <p class="ok-tone-muted gui-add__sub">Claude may use only the connection's read tools: nothing it reads can make it write or send.</p>
+    <${State} a=${a} />
+    <div class="gui-add__foot">
+      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
+      <button class="ok-btn primary" disabled=${!!a.busy} onClick=${check}>Check</button>
+    </div>
+  </div>`;
+}
 
 function What({ id, a }) {
   const [picks, setPicks] = useState(a.picks || []);
@@ -215,6 +256,7 @@ export function AddPane({ id, d, done }) {
   return html`<div class="gui-add__pane" onKeyDown=${keys}>
     ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} back=${back} />`
       : a.step === "login" ? html`<${Login} key=${a.service} id=${id} a=${a} />`
+      : a.step === "what" && a.via ? html`<${Ask} key=${`${a.service}-claude`} id=${id} a=${a} />`
       : a.step === "what" ? html`<${What} key=${a.service} id=${id} a=${a} />`
       : html`<${Check} id=${id} a=${a} done=${done} />`}
   </div>`;

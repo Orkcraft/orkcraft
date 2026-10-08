@@ -5,9 +5,9 @@ the three steps, for GitHub (gh or a token; many repos and the notifications), G
 token; to-dos and projects), Gmail, Slack, Discord (a bot, its invite link, *me*), Jira, Confluence
 and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), **Everything** (§6) for
 GitHub, Slack, Discord, Jira, Confluence and Gmail, Remove in Sources & intent, and the agent source's
-listening (§7: the `agent:` line, its look, cost, ceiling and failures). Not yet: the agent source in
-the picker (§7.3 — its tiles, *Use Claude's connection*, step 2 through the agent; a line is written
-by hand or by the steward meanwhile), agy as a carrier, Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
+listening (§7: the `agent:` line, its look, cost, ceiling and failures, the ids it keeps for the next
+look) and the agent source in the picker (§7.3: the tiles, *Use Claude's connection*, its step 2 and
+Edit). Not yet: what the login reaches and step 2 listed through the agent (§7.3), agy as a carrier, Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
 panel (GitHub without gh asks for a token instead), pushes (GitLab's webhook, Discord's Gateway). Items
 marked *(check)* have not been verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop
@@ -426,9 +426,11 @@ The init event fails a look whose server is missing (*a target*) or `needs-auth`
 schema is asked once more. Each run's cost goes to Spend (`telemetry.charge`) and to the source's
 day; past `ceiling=` (0.50 a day by default) or out of 🪙 it waits, its line saying why. A look
 that fails still waits its `every=`. The source's line reads `via Claude · atlassian · every 30 min
-· … · ≈ $0.12 today`. Not built: the Town Hall's audit entry for a refused tool, the model's
-thinking switched off *(check: how, headless)*, the ids a look learns kept for the next (§7.2 *The
-same path every time*), agy.
+· … · ≈ $0.12 today`. The ids a look looked up come back in the schema's `keep` (`cloudId`, the
+person's user id) and go to the next look's prompt as *known, do not look them up again*; only
+id-shaped names and values are kept (at most 6), so what a signal says never rides into the next
+prompt. Not built: the Town Hall's audit entry for a refused tool, the model's thinking switched off
+*(check: how, headless)*, agy.
 
 ### 7.3 Where it fits in the flow
 
@@ -455,6 +457,24 @@ same path every time*), agy.
   a person who connected Gmail on claude.ai hears their mail with no app password and no setup.
   Right after start a connector can read `needs-auth` for a moment before it connects: the
   picker asks twice before it says so.
+
+**Built** (`feeds_agent.connectors`, `core/workers/watchtower_add.py`): the picker reads
+`claude mcp list` instead of a headless run's init — the same names and states, no model asked, in a
+thread when the picker opens; each line is `<name>: <command or url> - ✓ Connected` (`!` needs a login,
+`✗` failed), and only the name and the state are kept. A server's name says its service (`atlassian` →
+Jira and Confluence, `slack`, `gmail`; `claude.ai Gmail` and `plugin:slack:slack` too), and `server=` is
+the name as its tools carry it (`claude_ai_Gmail`). A tile with no login of its own reads `✓ in Claude`
+or `in Claude, needs a login`. Step 1 of such a service shows, under the token form, **Or use Claude's
+connection** (*No token. It looks every 30 min, and each look is a model run you pay for*); a server
+that needs a login says *run /mcp in Claude Code* and offers no button. Its step 2 asks what Claude
+looks for (the service's default ask), how often (10–120 min) and the most a day ($0.50); Check makes
+one look — paid, about half a minute — and Add writes `agent: tool=claude server=… tools=… every=…
+ceiling=… ask=…` with the service's read-only tools (`feeds_agent.READS`: Atlassian's §7.5 list, Gmail's
+`search_threads`, `get_thread`; Slack's `slack_search_public_and_private`, `slack_read_channel`,
+`slack_read_thread`, `slack_read_user_profile` *(check)*). That first look counts: what it found is
+seen, its ids kept, its cost in the source's day, the next look in `every`. **Edit** on such a line opens
+its step 2. Not built: what the login reaches, step 2 listed by the agent, the proposal from the intent,
+the second ask after a `needs-auth`.
 
 ### 7.4 Its states
 

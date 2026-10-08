@@ -8,17 +8,22 @@ service runs in a thread and comes back through `town.call`; the state lives her
 close and open again — or the person go make a token — and find the step where they left it. A
 typed secret is never kept: it goes to realm/logins.py on a good login, and is dropped on a bad one.
 
+A service Claude Code has a connector for (`claude mcp list`, names only) offers a second way at
+step 1: *Use Claude's connection* — no token, an `agent:` line (realm/feeds_agent.py), step 2 asks
+what to listen for and how often, Check makes one paid look (§7.3).
+
 docs/design/watchtower-quick-add.md §4.
 """
 from __future__ import annotations
 
+import datetime as dt
 import re
 import subprocess
 import threading
 import urllib.request
 from dataclasses import asdict
 
-from orkcraft.realm import feeds, logins, quickadd, sources_link
+from orkcraft.realm import feeds, feeds_agent, logins, quickadd, sources_link
 from orkcraft.realm.quickadd import Refused, Verified
 
 
@@ -27,6 +32,7 @@ class Adding:
     def __init__(self, worker) -> None:
         self.w = worker
         self.gh = ""                      # who gh is logged in as ("" not yet known or not logged in)
+        self.claude: list[feeds_agent.Connector] = []     # the servers Claude Code has (asked when the picker opens)
         self.reset()
 
     def reset(self) -> None:
@@ -49,6 +55,11 @@ class Adding:
         self.everything = False           # the whole service at once (§6)
         self.intent = ""                  # what to listen for, asked with Everything when the tower has none
         self.guilds: tuple[str, ...] = ()     # Discord: the servers the bot is in
+        self.via: feeds_agent.Connector | None = None     # through Claude's connection instead of a login
+        self.ask = ""
+        self.every = feeds_agent.EVERY_DEFAULT
+        self.ceiling = feeds_agent.CEILING_DEFAULT
+        self.first: feeds.Look | None = None  # the agent source's first look: what it saw, its ids, its cost
 
     # -- the runners: the worker's, so tests fake one place ----------------------------------------------
 
@@ -90,13 +101,22 @@ class Adding:
         self.step = "pick"
         self.w.changed()
         if not self.w.simulated:
-            runner = self._runner()
+            runner, mcp = self._runner(), type(self.w).mcp_runner
             threading.Thread(target=lambda: self.w.town.call(self._gh, quickadd.gh_login(runner)),
                              daemon=True, name=f"watch-gh-{self.w.building_id}").start()
+            threading.Thread(target=lambda: self.w.town.call(self._claude, feeds_agent.connectors(mcp)),
+                             daemon=True, name=f"watch-mcp-{self.w.building_id}").start()
 
     def _gh(self, who: str) -> None:
         self.gh = who
         self.w.changed()
+
+    def _claude(self, found: list) -> None:
+        self.claude = found
+        self.w.changed()
+
+    def connector(self, service: str = "") -> feeds_agent.Connector | None:
+        return feeds_agent.connector_for(service or self.service, self.claude)
 
     def recognise(self, text: str) -> sources_link.Link | None:
         link = sources_link.recognise(text, [e["account"] for e in logins.listed("gitlab")])
@@ -198,6 +218,56 @@ class Adding:
         self.options = kept + found
         self.picks = list(self.picks) + [o.id for o in found if o.picked and o.id not in self.picks]
 
+    # -- through Claude's connection (§7.3): no token, a paid look every `every` minutes -----------------
+
+    def use_claude(self) -> None:
+        c = self.connector()
+        if c is None:
+            raise Refused(f"Claude Code has no {quickadd.SERVICES[self.service].label} connection here")
+        if c.status != "connected":
+            raise Refused(f"Claude's {c.name} connection {c.status} — run /mcp in Claude Code, then try again")
+        self.via, self.login, self.step, self.error = c, None, "what", ""
+        self.ask = self.ask or feeds_agent.READS[self.service][2]
+        self.w.changed()
+
+    def what_claude(self, ask: str, every: int, ceiling: float) -> None:
+        """The agent line, and its first look — one model run, paid — before anything is saved."""
+        if self.via is None:
+            raise Refused("Pick Claude's connection first")
+        self.ask = " ".join(ask.split())[:300] or feeds_agent.READS[self.service][2]
+        self.every, self.ceiling = max(feeds_agent.EVERY_MIN, every), max(0.0, ceiling)
+        text = feeds_agent.line(self.service, self.via.server, self.ask, self.every, self.ceiling)
+        feed, err = feeds.parse(text)
+        if feed is None:
+            raise Refused(err)
+        run, label = type(self.w).agent_runner, quickadd.SERVICES[self.service].label
+
+        def done(got: feeds.Look) -> None:
+            self.plan = quickadd.Plan({}, f"{label} through Claude's {self.via.name} — {self.ask}", text)
+            self.first, self.found, self.step, self.error = got, len(got.items), "check", got.error
+
+        self._thread("Asking Claude — about half a minute…", lambda: feeds_agent.look(feed, run=run), done)
+
+    def _seed(self, line: str) -> None:
+        """The first look counts: what it saw is seen, its ids kept, its cost spent, the next look in `every`."""
+        feed, _ = feeds.parse(line)
+        got = self.first
+        if feed is None or got is None or got.error:
+            return
+        st, ident = self.w._state(), feed.identity
+        now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+        spend = dict(st.get("agent_spend") or {})
+        today = dt.date.today().isoformat()
+        day = spend.get(ident) or {}
+        spend[ident] = {"day": today, "usd": round((float(day.get("usd") or 0.0) if day.get("day") == today else 0.0)
+                                                    + (got.cost or 0.0), 4)}
+        self.w._save_state(feeds_seen={**(st.get("feeds_seen") or {}), ident: [i.key for i in got.items][-feeds.SEEN_KEEP:]},
+                           feeds_at={**(st.get("feeds_at") or {}), ident: now},
+                           feeds_line={**(st.get("feeds_line") or {}), ident: line},
+                           agent_at={**(st.get("agent_at") or {}), ident: now}, agent_spend=spend,
+                           agent_keep={**(st.get("agent_keep") or {}), ident: got.keep} if got.keep else
+                           dict(st.get("agent_keep") or {}))
+
     def add_files(self, text: str) -> None:
         """Figma: pasted file (or team) links join the list."""
         keys = []
@@ -266,6 +336,8 @@ class Adding:
             changes["github"] = None                      # the old one-repo setting moves into the line
         if not self.w.save_config(changes):
             raise Refused("Not saved")
+        if self.via is not None and self.plan.feed:
+            self._seed(self.plan.feed)
         service = self.service
         self.reset()
         self.w.restart()
@@ -275,6 +347,16 @@ class Adding:
         """A listed source made again: Edit at step 2 with its picks, Log in again at step 1, the rest kept."""
         if self.w.simulated:
             raise Refused("The demo asks no service: change sources in a real town")
+        agent = _agent(source)
+        if agent is not None:                             # through Claude: step 2, what it asks and how often
+            feed, service = agent
+            keep_gh = self.gh
+            self.reset()
+            self.gh, self.service, self.editing, self.step = keep_gh, service, source, "what"
+            self.via = feeds_agent.Connector(feed.opts["server"], "connected")
+            self.ask, self.every, self.ceiling = feed.opts.get("ask", ""), feeds_agent.every(feed), feeds_agent.ceiling(feed)
+            self.w.changed()
+            return
         made = quickadd.from_source(self.w.config, source)
         keep_gh = self.gh
         self.reset()
@@ -300,6 +382,8 @@ class Adding:
     def back(self) -> None:
         before = {"login": "pick", "what": "login", "check": "what"}.get(self.step, "pick")
         self.step = "pick" if before == "login" and self.service == "github" else before   # gh's login is no step
+        if self.step == "login":
+            self.via = None                               # back to the choice: a login, or Claude's connection
         if self.step == "pick":                           # back to the picker: no longer the source being edited
             self.service, self.login, self.link, self.editing, self.prefill = "", None, None, "", {}
         self.error = ""
@@ -315,8 +399,11 @@ class Adding:
         out = []
         for s in quickadd.SERVICES.values():
             kept = quickadd.kept(s.id)
+            c = self.connector(s.id)
             mark = (f"✓ gh · {self.gh}" if s.id == "github" and self.gh else
                     f"✓ {kept[0].account}" if kept else
+                    "✓ in Claude" if c and c.status == "connected" else
+                    f"in Claude, {c.status}" if c else
                     {"github": "gh or a token", "gitlab": "glab or a token", "gmail": "an app password",
                      "discord": "a bot"}.get(s.id, "a token"))
             out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓")})
@@ -331,6 +418,11 @@ class Adding:
         if self.step == "pick":
             out["services"] = self.services()
             return out
+        c = self.connector()
+        out["claude"] = {"name": c.name, "status": c.status} if c and self.service in feeds_agent.READS else None
+        out["via"] = self.via.name if self.via else ""
+        if self.via:
+            out.update(ask=self.ask, every_min=self.every, ceiling=self.ceiling, every_min_least=feeds_agent.EVERY_MIN)
         host = self.prefill.get("host") or (self.link.site if self.link and self.service == "gitlab" else "") or "gitlab.com"
         out.update(label=s.label, note=s.note, picks_of=s.picks, about_me_says=s.about_me,
                    fields=[asdict(f) for f in s.fields],
@@ -341,12 +433,17 @@ class Adding:
                    whole_team="Whole team — needs push, not built yet" if self.service == "figma" else "",
                    kept=[] if self.editing and self.step == "login" else       # Log in again: not the refused one
                    [{"account": x.account, "who": x.who} for x in self.logins_here()],
-                   who=self.login.who if self.login else "",
+                   who=self.login.who if self.login else f"Claude's {self.via.name} connection" if self.via else "",
                    options=[asdict(o) for o in self.options], picks=list(self.picks), about_me=self.about_me,
                    folder=self.folder)
         if self.step == "check" and self.plan is not None:
-            out.update(says=self.plan.says, found=self.found, line=self.plan.feed or "",
-                       every="every 2 min", listens_for=str(self.plan.changes.get("intent") or self.w.intent or ""))
+            every = "every 2 min"
+            if self.via:                                  # through Claude: what each look costs
+                cost = self.first.cost if self.first else None
+                every = (f"every {self.every} min, a model run each look"
+                         + (f" — this one ≈ ${cost:.2f}" if cost is not None else "") + f", at most ${self.ceiling:.2f} a day")
+            out.update(says=self.plan.says, found=self.found, line=self.plan.feed or "", every=every,
+                       listens_for=str(self.plan.changes.get("intent") or self.w.intent or ""))
         return out
 
 
@@ -407,7 +504,18 @@ def _hears(feed: feeds.Feed) -> list[str]:
 FIX = {"login": "Log in again", "target": "Edit", "network": ""}      # what a failing source's line offers
 
 
+def _agent(source: str) -> tuple[feeds.Feed, str] | None:
+    """An `agent:` line the steps can make again: the feed and its service."""
+    feed, _ = feeds.parse(source.removeprefix("feed:")) if source.startswith("feed:") else (None, "")
+    if feed is None or feed.kind != "agent" or feed.opts.get("tool", "claude") != "claude":
+        return None
+    service = feeds_agent.service_of(feed)
+    return (feed, service) if service else None
+
+
 def _editable(worker, source: str) -> bool:
+    if _agent(source) is not None:
+        return True
     try:
         quickadd.from_source(worker.config, source)
     except Refused:
