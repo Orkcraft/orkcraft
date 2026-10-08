@@ -40,7 +40,8 @@ BILLINGS = ("subscription", "api")
 PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other", "kin")
 PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
 UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
-LOOKS = ("camp", "office")               # the GUI's two looks; camp the default
+LOOKS = ("camp", "office")
+RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
 
 @dataclass
@@ -73,6 +74,7 @@ class MachineSettings:
     phone_port: int = 0           # the phone listener's port, kept so a paired phone finds it again; 0 not chosen
     look: str = "camp"            # how the GUI draws the town for this person: camp | office (docs/design/portrait.md)
     dnd_until: str = ""           # Do not disturb: "" off, "on" until turned off, else when it ends (disturb.py)
+    recent_folders: list = field(default_factory=list)   # the folders last connected to a Wiki, newest first (gui/folders.py)
 
     def to_dict(self) -> dict:
         return {
@@ -93,6 +95,7 @@ class MachineSettings:
             "phone_port": self.phone_port,
             "look": self.look,
             "dnd_until": self.dnd_until,
+            "recent_folders": list(self.recent_folders),
         }
 
     @classmethod
@@ -123,6 +126,9 @@ class MachineSettings:
         s.phone_port = port if isinstance(port, int) and not isinstance(port, bool) and 1024 <= port <= 65535 else 0
         s.look = data["look"] if data.get("look") in LOOKS else "camp"
         s.dnd_until = clean_dnd(data.get("dnd_until"))
+        recent = data.get("recent_folders")
+        s.recent_folders = [str(x)[:1000] for x in recent if isinstance(x, str) and x.strip()][:RECENT_FOLDERS] \
+            if isinstance(recent, list) else []
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
