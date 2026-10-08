@@ -83,14 +83,12 @@ frame is a fence, its title bar is the gate.** Camp only: a look changes how thi
 word ([portrait.md](portrait.md) §3). Office draws a yard as any card: nothing of this stage is drawn there.
 
 A first prototype (a stylesheet over the dashboard demo's real cards) is on the design canvas *Yards
-and Huts*: the pickets and side rails as background tiles of the card, the gate's posts as the title bar's
-pseudo-elements, its beam as a tile under the plate.
+and Huts*: the pickets and side rails as background tiles of the card, the title bar's background the picket
+row, its children on the plate, the posts as its pseudo-elements.
 
 ```
- ▲                                   ▲
- █┌─────────────────────────────────┐█   ← two posts, their tops above the bar
- █│ 3 ⑂ Router              📌  ▾   │█   ← the title bar: its dark plate, as on a hut
- █╞═════════════════════════════════╡█   ← the beam under it
+ ▲┌───────────────────┐               ▲   ← two posts, their tops above the bar
+ █│ 3 ⑂ Router        │▲═▲═▲═▲═▲═▲═▲═█   ← a plate as wide as its words; pickets fill the rest
  ▴│ 12 sent · 0 dropped             │▴   ← the inside: the card's plain `panel`, never wood
  ▴│ last: release-notes → mill      │▴   ← each side: short pickets, tips up, a rail down behind
  ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
@@ -114,18 +112,21 @@ pseudo-elements, its beam as a tile under the plate.
 
 ### 3b. The gate
 
-- **The title bar keeps its dark plate** (`panel-raised`, as on a hut), and all its content on it:
-  number, icon, name, the visiting ork, `?`, mark, pin, fold. The gate is drawn round it, never under it.
-- **Two posts** stand at its ends, taller than the bar, their pointed tops above it: that is what makes
-  it a gate. **A beam** runs under the bar (5 sprite px) and the side beams start from it.
-- The road handle stays where it is, on the right post.
-- The type's header sprite stays where it stands on a hut: on the top edge, between the posts. A yard
-  is told by its fence and gate, never by losing its building.
+- **The title bar is the top fence.** It keeps its height (`--titlebar`, 28 px) and nothing more:
+  no beam under it.
+- **A dark plate as wide as its words**: number, icon, name, the visiting ork, `?`, mark — on
+  `panel-raised`, as on a hut, bevelled. The rest of the bar to the right is the same pickets as the
+  bottom row, standing on its lower edge; the plate rises above them like a sign on the fence.
+- **Two posts** at its ends (5×12 sprite px), a little taller than the bar, their tops above it.
+- Pin and fold stay at the right end, on a small plate of their own, shown on hover as now. The road
+  handle stays on the right post.
+- The type's header sprite stays where it stands on a hut: on the top edge. A yard is told by its fence,
+  never by losing its building.
 
-### 3c. Fold is the gate alone
+### 3c. Fold is the top fence alone
 
-A folded card ([folded-cards.md](folded-cards.md)) is **the gate alone**: posts, plate and beam, the
-fence gone. A peek (a question, an error, a drag) brings the fence back with the inside, over the
+A folded card ([folded-cards.md](folded-cards.md)) is **the top fence alone**: posts, plate and
+pickets, the rest gone. A peek (a question, an error, a drag) brings the fence back with the inside, over the
 neighbours as a peek does now. Drop file here and Router are yards and are built folded; a Transformer
 is built folded and is a yard while its steps are code.
 
