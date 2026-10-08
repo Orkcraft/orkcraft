@@ -49,6 +49,22 @@ function DocMark({ id, e }) {
     onClick=${(ev) => { ev.stopPropagation(); openDoc(id, e); }}>📄 doc</button>`;
 }
 
+/** What the Wiki keeps for a meeting (docs/design/wiki-librarian.md §6): the items to discuss, and the pages
+ *  its notes link once the brief is back. */
+function wikiWords(k) {
+  const items = k.discuss === 1 ? "1 to discuss" : `${k.discuss} to discuss`;
+  const pages = k.pages ? ` · ${k.pages === 1 ? "1 page" : `${k.pages} pages`}` : "";
+  return say(`from the Wiki: ${items}${pages}`);
+}
+
+/** The same as a pill beside the meeting; `short` (the closed card, narrow) the count alone, the words on hover. */
+function WikiMark({ k, short = false }) {
+  if (!k) return null;
+  const about = say("Notes left in the Wiki for this meeting; its brief reads them first");
+  return html`<span class="ok-chip gui-drum__wiki" title=${short ? `${wikiWords(k)} — ${about}` : about}
+    aria-label=${short ? wikiWords(k) : null}>${short ? `✎ ${k.discuss}` : wikiWords(k)}</span>`;
+}
+
 function NewEvent({ id }) {
   const [title, setTitle] = useState("");
   const [when, setWhen] = useState("");
@@ -98,6 +114,7 @@ function Beat({ b }) {
     <b class="gui-drum__when">${beatWhen(b)}</b>
     <span class="gui-drum__title">${beatTitle(b)}</span>
     ${b.doc && html`<span class="ok-chip is-on gui-drum__doc" title=${say("Its document is ready")}>📄 doc</span>`}
+    <${WikiMark} k=${b.wiki} short=${true} />
     <span class="gui-drum__meta">${beatMeta(b)}</span></li>`;
 }
 
@@ -177,7 +194,7 @@ function DayRows({ id, day, once = false, runs = true }) {
       onClick=${() => pick(id, r.e)}>
     <span class=${cls("gui-drum__glyph", { "ok-tone-fire": r.e.now })} aria-hidden="true">▪</span>
     <b class="gui-drum__when">${r.e.all_day ? say("all day") : r.e.start}</b><span class="gui-drum__title">${r.e.title}</span>
-    <span class="gui-drum__meta">${r.e.now ? say("now") : ""}</span><${DocMark} id=${id} e=${r.e} /></li>`
+    <span class="gui-drum__meta">${r.e.now ? say("now") : ""}</span><${WikiMark} k=${r.e.wiki} /><${DocMark} id=${id} e=${r.e} /></li>`
     : html`<${Beat} key=${beatKey(r.b)} b=${{ ...r.b, day: "" }} />`)}</ul>${more}`;
 }
 
@@ -263,6 +280,7 @@ function Meeting({ id, d, e }) {
     <p class="ok-detail__meta">${say((d.days.find((x) => x.date === e.day) || {}).label || e.day)} · ${e.all_day ? say("all day") : e.when}${e.location ? ` · ${e.location}` : ""}
       ${e.now ? html` · <span class="ok-tone-fire">${say("now")}</span>` : ""}</p>
     <p class="ok-detail__meta ok-tone-muted">${e.calendar}</p>
+    ${e.wiki && html`<p class="ok-detail__meta drum-meet__wiki">${wikiWords(e.wiki)}</p>`}
     <div class="ok-detail__actions">
       ${e.doc && html`<button class="ok-btn primary" onClick=${() => openDoc(id, e)}>Open the document</button>`}
       ${!e.all_day && html`<button class=${e.doc ? "ok-btn" : "ok-btn primary"} onClick=${() => prepare(id, e)}>${e.doc ? "Prepare it again" : "Prepare doc"}</button>`}

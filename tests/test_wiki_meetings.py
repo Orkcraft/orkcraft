@@ -149,3 +149,53 @@ def test_a_note_for_a_meeting_reaches_its_brief_and_moves_on(fake_repo: Path, mo
     nxt = host.detail(bid)["data"]["agenda"]["meetings"]
     assert [(m["when"], [i["line"] for i in m["items"]]) for m in nxt] == [("2026-10-13 11:00", ["Invoices for Q4"])]
     assert nxt[0]["page"] != first
+
+
+def test_the_calendar_says_what_the_wiki_keeps_for_a_meeting(fake_repo: Path, monkeypatch):
+    clock = {"now": NOW}
+    monkeypatch.setattr(WarDrumWorker, "clock", staticmethod(lambda: clock["now"]))
+    monkeypatch.setattr(ScrollsWorker, "clock", staticmethod(lambda: clock["now"]))
+    _ics(fake_repo)
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    drum = _raised(host, "war_drum", ics="cal.ics")
+    other = _raised(host, "war_drum", ics="cal.ics")
+    bid = _raised(host, "scrolls", topic="team", auto_ingest=False, commit=False)
+    host.town.worker(drum).refresh()
+    hint = host.command("act", {"id": bid, "act": "suggest", "args": {"text": "Pricing tiers with Sergey tomorrow"}})
+    links = [x["path"] for x in hint["links"]]
+    assert links
+    # the meetings the Warchief bar's Tab walks: the coming ones, nearest first
+    assert [(m["title"], m["when"]) for m in hint["meetings"]] == [
+        ("Sergey 1:1", "2026-10-07 17:00"), ("Pricing review with Sergey", "2026-10-08 11:00"),
+        ("Pricing review with Sergey", "2026-10-13 11:00")]
+    for words in ("Pricing tiers with Sergey tomorrow", "Discounts for the Team plan"):
+        host.command("act", {"id": bid, "act": "note", "args": {
+            "text": words, "links": links, "meeting": hint["meeting"], "people": ["Sergey"], "take_in": False}})
+    mid = hint["meeting"]["id"]
+
+    def drum_meeting(view):
+        return next(e for day in view["days"] for e in day["events"] if e["id"] == mid)
+
+    # two items to discuss; the pages wait for the brief
+    assert drum_meeting(host.detail(drum)["data"])["wiki"] == {"discuss": 2, "pages": 0}
+    other_meetings = [e for day in host.detail(drum)["data"]["days"] for e in day["events"] if e["id"] != mid]
+    assert all(e["wiki"] is None for e in other_meetings)
+    clock["now"] = dt.datetime(2026, 10, 8, 9, 30)
+    host.tick()
+    beat = next(b for b in next(x for x in host.snapshot()["buildings"] if x["id"] == drum)["card"]["beats"]
+                if b["ref"] == mid)
+    assert beat["wiki"] == {"discuss": 2, "pages": 0}
+
+    # the brief is back: the pages its notes link are counted too
+    monkeypatch.setattr(WarDrumWorker, "docs", lambda self: {mid: {"path": "briefs/pricing.md"}})
+    assert drum_meeting(host.detail(drum)["data"])["wiki"] == {"discuss": 2, "pages": len(links)}
+
+    # a person ticks one off; a Wiki that reads another calendar says nothing here
+    page = fake_repo / host.detail(bid)["data"]["agenda"]["meetings"][0]["page"]
+    page.write_text(page.read_text(encoding="utf-8").replace("- [ ] Discounts", "- [x] Discounts"), encoding="utf-8")
+    host.town.worker(bid).refresh()
+    assert drum_meeting(host.detail(drum)["data"])["wiki"]["discuss"] == 1
+    host.town.worker(bid).save_config({"calendar": other})
+    host.town.worker(bid).refresh()
+    assert drum_meeting(host.detail(drum)["data"])["wiki"] is None

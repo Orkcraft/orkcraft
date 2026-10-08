@@ -73,14 +73,15 @@ def _free(path: Path) -> Path:
     return out
 
 
-def sort(repo_root: Path, text: str, now: dt.datetime | None = None) -> list[Item]:
-    """What a paste or a drop brought, sorted and kept. Writes the pit; returns the items."""
+def sort(repo_root: Path, text: str, now: dt.datetime | None = None, paths: bool = True) -> list[Item]:
+    """What a paste or a drop brought, sorted and kept. Writes the pit; returns the items. `paths` False:
+    a text that names files is kept as a note, never read as those files."""
     now = now or dt.datetime.now()
     at, folder = now.isoformat(timespec="seconds"), repo_root / PIT_DIR
     items: list[Item] = []
-    paths = shelves.dropped_paths(text)
-    if paths:
-        for p in paths:
+    found = shelves.dropped_paths(text) if paths else []
+    if found:
+        for p in found:
             rel = shelves.rel_to(repo_root, p)
             if rel != str(p):                                   # inside the project: point at it
                 items.append(Item(at, kind_of(p), rel, p.name))

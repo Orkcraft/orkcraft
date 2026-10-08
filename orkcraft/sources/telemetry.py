@@ -8,7 +8,9 @@ messages timestamped after the run started — a resumed session's old history i
 
 Costs are API-equivalent estimates (see `pricing`). pi prices each message itself (its session
 JSONL, `usage.cost.total`) and Hermes each session (`estimated_cost_usd` in its `state.db`): their
-own figures count. agy, Codex and Cursor print no price: unpriced, never $0.
+own figures count. Codex prints tokens and no price: its rollout (the SessionStart hook's
+`transcript_path`) is priced from its model with `pricing.codex_usage_cost`, unpriced while OpenAI's
+table has no price for it. agy and Cursor print no price: unpriced, never $0.
 
 Model calls that leave no transcript of this run — the Council's Fast Path, the Elders, the Builder,
 the Recruiter, the daily proposal and the weekly self-audit (`claude -p` in an empty folder), the
@@ -224,10 +226,74 @@ class _HermesMeter:
         self.cost = max(float(usd) - self.base, 0.0)
 
 
+@dataclass
+class _CodexMeter:
+    """A Codex rollout (`~/.codex/sessions/YYYY/MM/DD/rollout-<ts>-<thread>.jsonl`), read incrementally:
+    the model from the latest `turn_context`, each request's `token_count` `last_token_usage` priced
+    once (a repeated count, same running total, is not a new request)."""
+    offset: int = 0
+    total: int = -1
+    cost: float = 0.0
+    unpriced: set[str] = field(default_factory=set)
+    context: int = 0
+    model: str = ""
+
+    def feed(self, path: Path, since: dt.datetime) -> None:
+        try:
+            size = path.stat().st_size
+        except OSError:
+            return
+        if size < self.offset:
+            self.__init__()
+        if size == self.offset:
+            return
+        with path.open("rb") as f:
+            f.seek(self.offset)
+            data = f.read(size - self.offset)
+        end = data.rfind(b"\n")
+        if end < 0:
+            return
+        self.offset += end + 1
+        for raw in data[: end + 1].splitlines():
+            if len(raw) > MAX_LINE or (b'"turn_context"' not in raw and b'"token_count"' not in raw):
+                continue
+            try:
+                e = json.loads(raw)
+            except ValueError:
+                continue
+            payload = e.get("payload") if isinstance(e, dict) else None
+            if not isinstance(payload, dict):
+                continue
+            if e.get("type") == "turn_context":
+                self.model = str(payload.get("model") or self.model)
+                continue
+            info = payload.get("info") if payload.get("type") == "token_count" else None
+            if not isinstance(info, dict) or not isinstance(info.get("last_token_usage"), dict):
+                continue
+            last, total = info["last_token_usage"], info.get("total_token_usage")
+            running = int(total.get("total_tokens") or 0) if isinstance(total, dict) else -1
+            if running >= 0 and running == self.total:
+                continue                  # the same count again
+            self.total = running
+            self.context = int(last.get("input_tokens") or 0)
+            when = _ts(e.get("timestamp"))
+            if when is not None and when < since:
+                continue
+            cost = pricing.codex_usage_cost(self.model, last, one_request=True)
+            if cost is None:
+                self.unpriced.add(self.model or "codex")
+            else:
+                self.cost += cost
+
+
 def hermes_db(env: dict | None = None) -> Path:
     import os
     env = os.environ if env is None else env
     return Path(env.get("HERMES_HOME") or Path.home() / ".hermes") / "state.db"
+
+
+# harness → the meter of its transcript file
+METERED = {"claude": _Meter, "pi": _PiMeter, "codex": _CodexMeter}
 
 
 @dataclass
@@ -247,13 +313,14 @@ class Telemetry:
         self.repo_root = repo_root
         self.run_id = run_id
         self.started = started or dt.datetime.now().astimezone()
-        self._meters: dict[str, _Meter | _PiMeter | _HermesMeter] = {}
+        self._meters: dict[str, _Meter | _PiMeter | _HermesMeter | _CodexMeter] = {}
 
     def _this_run(self) -> tuple[dict[str, tuple[str, str]], set[str]]:
         """terminal key → (harness, transcript path or Hermes session id) for this run's sessions that
-        say what they cost (Claude Code, pi, Hermes); the harnesses that do not."""
+        say what they cost (Claude Code, pi, Hermes, Codex); the harnesses that do not."""
         transcripts: dict[str, tuple[str, str]] = {}
         unpriced: set[str] = set()
+        bare: set[tuple[str, str]] = set()
         try:
             lines = log_file(self.repo_root).read_text(encoding="utf-8").splitlines()
         except OSError:
@@ -271,10 +338,13 @@ class Telemetry:
             harness = str(e.get("harness") or "unknown")
             if harness == "hermes" and e.get("session"):
                 transcripts[terminal] = (harness, str(e["session"]))
-            elif harness in ("claude", "pi") and e.get("transcript"):
+            elif harness in METERED and e.get("transcript"):
                 transcripts[terminal] = (harness, str(e["transcript"]))
-            elif harness not in ("claude", "pi", "hermes"):
+            elif harness not in (*METERED, "hermes"):
                 unpriced.add(harness)
+            else:
+                bare.add((terminal, harness))
+        unpriced |= {harness for terminal, harness in bare if terminal not in transcripts}   # no transcript: no price
         return transcripts, unpriced
 
     def refresh(self) -> Snapshot:
@@ -285,7 +355,7 @@ class Telemetry:
                 meter = self._meters.setdefault(f"hermes:{path}", _HermesMeter(session=path))
                 meter.feed(hermes_db(), self.started)
             else:
-                meter = self._meters.setdefault(path, _PiMeter() if harness == "pi" else _Meter())
+                meter = self._meters.setdefault(path, METERED[harness]())
                 meter.feed(Path(path), self.started)
             snap.spent_usd += meter.cost
             snap.unpriced |= meter.unpriced

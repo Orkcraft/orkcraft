@@ -1,9 +1,8 @@
 # Design — the Wiki's librarian: keeps, finds, places, checks
 
-Status: written 2026-10-07; stages 1–4 (§11) built the same day. Where the build went another way
-than this text first said, §12 says so. Not built: the Calendar's own line *from the Wiki: 2 to
-discuss* (the Wiki's card says it instead), the search over a note's suggestions in the Warchief bar
-(`/note` saves with the rules' suggestions at once). The pictures are on the design canvas *Scroll Dump
+Status: written 2026-10-07; stages 1–4 (§11) built the same day, and with them the Calendar's own
+line *from the Wiki: 2 to discuss* and the suggestions over the Warchief bar for `/note`. Where the
+build went another way than this text first said, §12 says so. The pictures are on the design canvas *Scroll Dump
 screens* (rows 4–6: the quality check, Quick note, the librarian and the meetings). It grows the
 🗑️ Scroll Dump (**Wiki**) from "an ork that turns sources into pages" into the town's owner of
 knowledge: a note goes in with one click, lands in the right place of the wiki, comes back out when
@@ -270,4 +269,15 @@ Not planned: reading attendees from `.ics` (`ATTENDEE` lines) — a later step t
 - **Code.** `realm/quicknote.py` (the note), `realm/agenda.py` (meetings, days, people, the page),
   `realm/wikicheck.py` (the quality check), `realm/wikifind.py` (search, the light model);
   `core/workers/scrolls_meetings.py` and `scrolls_quality.py` are parts of the Wiki's worker.
-- **Tests.** `test_quicknote.py`, `test_wiki_meetings.py`, `test_wiki_quality.py`, `test_wiki_find.py`.
+- **The Calendar's line.** The War Drum's view reads, by meet id, what each Wiki that reads it keeps
+  (`kept_for`: the items not ticked off, the pages the notes link); nothing is sent for it, and a Wiki
+  whose agenda changed asks the Calendars it reads to draw again. The window says *from the Wiki: 2 to
+  discuss* beside the meeting (*· 3 pages* once its brief is back); the closed card, narrow, a pill
+  *✎ 2* with the words on hover.
+- **`/note` in the Warchief bar.** The suggestions stand over the bar as the text is typed (after
+  400 ms, as the panel's): the meeting, the section, the tags, the pages to link. Tab walks the coming
+  meetings (the next 14 days, the suggested one first; `suggest` returns them as `meetings`) and *Not
+  for a meeting*, Shift+Tab back; Enter saves what is shown. `@Wiki` names the wiki, as any `@name`.
+  The bar has no ✕ per tag or link: what it should not keep is dropped in the Wiki's own Quick note.
+- **Tests.** `test_quicknote.py`, `test_wiki_meetings.py`, `test_wiki_quality.py`, `test_wiki_find.py`;
+  the bar's `/note` in `test_gui_browser.py`.

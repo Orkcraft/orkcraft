@@ -1,7 +1,10 @@
 # Design — the town in your pocket: a mobile client
 
 Status: a plan, written 2026-10-06; stage 0 of §9 is built (`orkcraft/gui/mobile.py`,
-`GET /api/version` in `orkcraft/gui/server.py`, `tests/test_mobile.py`), the rest is not.
+`GET /api/version` in `orkcraft/gui/server.py`, `tests/test_mobile.py`); stage 1 and 2 are built on the
+host's side (the listener `gui/phones.py`, pairing `gui/pairing.py`, the certificate `gui/phone_tls.py`,
+Settings → Phones `gui/static/js/phones.js`, `mobile.chat`, the notifier `gui/notify.py`;
+`tests/test_phones.py`), with `tools/phone.py` as a phone in a terminal; the phone app is not (§8.1).
 Builds on the GUI's host and socket ([gui-migration.md](gui-migration.md) §5) and the daemon it
 leads to (§1 there).
 
@@ -69,6 +72,15 @@ page  ──127.0.0.1── Server /ws ──────────┘
 The page's own token (`Server.token`, new each run) is never shown to a phone: it would die with
 the run, and it opens the full socket.
 
+As built (stage 1): the QR code's text is `orkcraft://pair?v=1&addr=<address>&fp=<fingerprint, hex>&code=<code>`.
+Before it pairs, the phone's `GET /api/version` shows the code it scanned as its Bearer token; a wrong
+one counts as a pairing attempt. `POST /api/pair` takes only `Content-Type: application/json` and at
+most 4 KB (a browser's simple POST cannot reach it), and answers `{"id", "token", "name"}` once. The
+listener listens only while a phone is paired or a code is shown, on the LAN address the machine
+reaches out by (`ORKCRAFT_PHONE_HOST` overrides it), and keeps its port in the settings (`phone_port`)
+so a paired phone finds it next run. Only `settings.save_phones` writes the paired phones: a town that
+loaded the settings before a phone was forgotten never brings it back when it saves its own.
+
 ### TLS
 
 The listener makes a self-signed certificate on its first start (kept beside the settings, `0600`)
@@ -111,6 +123,7 @@ are not on it.
 | `orders.follow` | `id` | `true`: the Elders' advice sent as the person's answer | yes |
 | `halt` | — | how many it stopped | yes |
 | `act` | `id`, `act`, `args` | as the act; only `pit`: `drop`, `drop_file` and `town_hall`: `ask` | yes |
+| `mobile.chat` | `limit` (at most 20) | the hall's last messages: `who`, `text` (plain), `ts`, `error`, `offer` | new (stage 2) |
 
 The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)
@@ -212,7 +225,10 @@ on iOS, FCM on Android).
 - **Halt All from a phone** is allowed on purpose (stopping is always safe) and asks once to
   confirm; it says on the desktop which device stopped it (a toast).
 - **Files** from the phone go through the Pit's own limits (`views.pit.FILE_LIMIT`, 5 MB; the
-  socket's 8 MB frame) and land where a dropped file always lands; a phone names no path.
+  socket's 8 MB frame) and land where a dropped file always lands; a phone names no path. A text
+  the desktop drops is read as paths when it names files (they are copied in); a phone's never is
+  (`mobile.guard` sets `paths: false` on its `drop`), so a phone cannot pull a file of the machine into
+  the project.
 - **What a phone reads** is the compact snapshot: no Town Scroll, no file contents, no terminal
   output beyond a question's last three lines. Stage 2's `mobile.chat` is the Warchief's answers,
   which already avoid secrets as the hall's chat does.
@@ -235,7 +251,7 @@ on iOS, FCM on Android).
 | stage | scope | state |
 |---|---|---|
 | 0 | the surface, inside the host: `mobile.API`, `server.PROTOCOL`, `GET /api/version` (the run's token), `mobile.hello`, `mobile.snapshot` (compact, with `rev` / `since`), `mobile.COMMANDS` and `mobile.allowed`, `mobile.news`, the `war_raven` term; tests. No phone talks to it yet; the page could | done |
-| 1 | LAN: the phone listener (TLS, a device token, `mobile.allowed`, compact snapshots only), pairing by QR code, Settings → Phones (list, forget), the glossary in `mobile.hello`; a first app: glance, Orders, Halt All, spend and quotas | — |
-| 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Warchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | — |
+| 1 | LAN: the phone listener (TLS, a device token, `mobile.allowed`, compact snapshots only), pairing by QR code, Settings → Phones (list, forget), the glossary in `mobile.hello`; a first app: glance, Orders, Halt All, spend and quotas | done on the host; the app waits on §8.1 (`tools/phone.py` stands in) |
+| 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Warchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | done on the host (the client id, `mobile.chat`, the notifier's `news`); the share sheet and the offline queue are the app's |
 | 3 | away from home: the relay (end to end TLS, push through APNs / FCM), or the operator's tunnel; per-kind mute and quiet hours | — |
 | 4 | when the daemon comes: the phone reaches a town with no window open; a town picker for several projects | — |

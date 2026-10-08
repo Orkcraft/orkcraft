@@ -115,3 +115,89 @@ async def test_the_version_handshake_takes_the_token(fake_repo):
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)
+
+
+# -- stage 2: the drop's client id, the Warchief's answers, the notifier ---------------------------
+
+def test_a_drop_with_a_client_id_is_made_once_an_hour(fake_repo, isolated_layout_file):
+    import base64
+    from orkcraft.core.workers import pit as pit_worker
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    drop = lambda args: host.command("act", {"id": pit, "act": "drop", "args": args})      # noqa: E731
+    assert drop({"text": "ship on Friday", "client_id": "phone-1"}) == 1
+    assert drop({"text": "ship on Friday", "client_id": "phone-1"}) == 1                    # a retry: the same answer…
+    assert drop({"text": "ship on Friday"}) == 1                                            # …no id: dropped again
+    data = base64.b64encode(b"photo").decode()
+    file = lambda: host.command("act", {"id": pit, "act": "drop_file",                      # noqa: E731
+                                        "args": {"name": "IMG_1.jpg", "data": data, "client_id": "phone-2"}})
+    assert file() == 1 and file() == 1
+    assert len(host.detail(pit)["data"]["items"]) == 3
+    w = host.town.worker(pit)
+    made = []
+    assert w.once("x", lambda: made.append(1) or 1, now=0.0) == 1
+    assert w.once("x", lambda: made.append(1) or 1, now=pit_worker.CLIENT_ID_S - 1) == 1 and made == [1]
+    assert w.once("x", lambda: made.append(1) or 1, now=pit_worker.CLIENT_ID_S + 1) == 1 and made == [1, 1]
+
+
+def test_the_chat_comes_to_a_phone_as_plain_text(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    assert mobile.allowed(host, "mobile.chat") and "mobile.chat" in host.commands
+    hall = host.town.worker("town_hall")
+    hall._say("you", "What should I build?")
+    hall._say("warchief", "Build a **Lake**:\n\n- for notes\n- for `links`", card={"kind": "build", "type": "lake"})
+    got = host.command("mobile.chat", {"limit": 1})
+    json.dumps(got)
+    (m,) = got["chat"]
+    assert m["who"] == "warchief" and m["text"] == "Build a Lake:\n\n- for notes\n- for links" and m["offer"]
+    assert [x["who"] for x in host.command("mobile.chat")["chat"]][-2:] == ["you", "warchief"]
+    assert len(host.command("mobile.chat", {"limit": 999})["chat"]) <= mobile.CHAT_MESSAGES
+
+
+class _Listener:
+    def __init__(self):
+        self.phones, self.sent = {"open"}, []
+        self.on_push = None
+
+    def broadcast(self, msg):
+        self.sent.append(msg)
+
+
+def test_the_notifier_says_each_new_question_once_in_one_line(fake_repo):
+    from orkcraft.gui import notify
+    host = _host(fake_repo)
+    listener = _Listener()
+    n = notify.Notifier(host, listener)
+    assert listener.on_push == n.after
+
+    def snap(alerts=(), gold="ok"):
+        return {"resources": {"gold": "Spend", "quota": "Quota"},
+                "alerts": [{"id": i, "title": "Proceed?", "who": "Grunt"} for i in alerts],
+                "hud": {"gold": "$4.10 / $5.00", "gold_level": gold, "quota_level": "ok"}}
+    n.after(snap(["a"]))
+    assert listener.sent == []                                          # the first look wakes nobody
+    n.after(snap(["a", "b"], gold="warn"))
+    (msg,) = listener.sent
+    assert [x["line"] for x in msg["news"]] == ["Worker asks: Proceed?", "Spend is near its limit: $4.10 / $5.00"]
+    n.after(snap(["a", "b"], gold="warn"))
+    assert len(listener.sent) == 1
+    n.after(None)                                                       # no phone open: the next look is a first look
+    n.after(snap(["a", "b", "c"]))
+    assert len(listener.sent) == 1
+
+
+def test_the_notifier_says_an_error_by_its_title_only_and_a_session_that_ended(fake_repo):
+    from orkcraft.core import bus
+    from orkcraft.gui import notify
+    host = _host(fake_repo)
+    listener = _Listener()
+    notify.Notifier(host, listener)
+    host.town.toast("token=sk-secret in /home/me/.env", title="🛣 Roads", severity="error")
+    host.town.toast("all good", title="Roads")
+    host.town.publish(bus.SESSION, key="new:claude:1", state="exited", code=1)
+    lines = [x["line"] for m in listener.sent for x in m["news"]]
+    assert lines == ["Something failed: Roads", "A session stopped with an error"]
+    assert "secret" not in json.dumps(listener.sent)
+    listener.phones = set()
+    host.town.toast("again", title="Roads", severity="error")
+    assert len(listener.sent) == 2                                      # no phone open: nothing to say it to

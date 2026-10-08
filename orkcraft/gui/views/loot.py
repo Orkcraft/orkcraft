@@ -1,6 +1,8 @@
 """📦 Loot Vault in the GUI: the queue of held carts (what, from where, what the chain cost), the
 changed files, what passed; the chosen cart with the chain it came through, step by step. Every
-decision is the worker's (core/workers/loot.py); a cart is edited in Lake, in its draft file. Each
+decision is the worker's (core/workers/loot.py); a text cart is edited in the window or in Lake, in its
+draft file; a file of a cart's branch is rejected and brought back on its own. A picture — a cart's, a
+file of its branch, a changed file — shows in the window. Each
 cart says what it is before it is opened (realm/content.py): a message, a doc, a ticket, code, an
 image (a thumbnail, even on the closed card), data or text."""
 from __future__ import annotations
@@ -8,13 +10,14 @@ from __future__ import annotations
 import base64
 import mimetypes
 import re
+import subprocess
 import time
 
 from orkcraft.core.workers.loot import goes_out
 from orkcraft.core.workers.loot import label as _label
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import content, feedback, gate, pipes
+from orkcraft.realm import content, feedback, gate, generated, pipes
 
 REFRESH_S = 10.0              # as the TUI
 ITEMS = 50
@@ -101,9 +104,17 @@ def _item(w, it: gate.Item, names: dict[str, str]) -> dict:
             "attempts": it.attempts, "why": list(it.why), "notes": list(it.notes), "at": it.at[:16].replace("T", " "),
             "value": it.value[:VALUE], "cut": len(it.value) > VALUE, "chain": _chain(it.hops, names),
             "total": pipes.spent(*pipes.trail_totals(it.hops)), "maker": names.get(w.maker(it), w.maker(it)),
-            "edited": w.edited(it), "worktree": it.worktree, "what": _what(w, it),
+            "edited": w.edited(it), "draft": _draft(w, it), "worktree": it.worktree, "what": _what(w, it),
             "branch": {"name": files[0].branch, "files": [{"path": g.path, "change": g.change} for g in files[1]]}
-            if files else None}
+            if files else None,
+            "rejected": [{"index": i, "path": r.get("path", ""), "at": r.get("at", ""), "change": r.get("change", "")}
+                         for i, r in enumerate(it.rejected)]}
+
+
+def _draft(w, it: gate.Item) -> str | None:
+    """The person's version of a text cart, for the editor in the window (None: not edited, or too long)."""
+    value = w.draft_value(it) if it.kind == pipes.TEXT else None
+    return value if value is not None and len(value) <= VALUE else None
 
 
 def _what(w, it: gate.Item) -> dict:
@@ -179,6 +190,19 @@ def _edit(w, args: dict) -> dict:
         raise ActError("Only a text cart is edited — this one is a file: open it")
     path = w.draft_path(item)
     return {"path": str(path.relative_to(w.repo_root)), "title": f"edit: {item.title or item.ref}"}
+
+
+def _save_edit(w, args: dict) -> dict:
+    """The person's version of a text cart, written in the window: its draft file; Accept then takes it."""
+    item = _held(w, args, (gate.HELD, gate.NEEDS_YOU))
+    if item.kind != pipes.TEXT:
+        raise ActError("Only a text cart is edited — this one is a file: open it")
+    if len(item.value) > VALUE:
+        raise ActError("This cart is too long to edit here: edit it in Lake")
+    value = args.get("value")
+    if not isinstance(value, str) or len(value) > VALUE * 2:
+        raise ActError("Nothing to save")
+    return {"edited": w.save_draft(item, value)}
 
 
 def _discard_edit(w, args: dict) -> None:
@@ -259,8 +283,39 @@ def _file_restore(w, args: dict) -> None:
     w.refresh()
 
 
+def _branch_file(w, args: dict) -> tuple[gate.Item, str]:
+    item = _held(w, args, (gate.HELD, gate.NEEDS_YOU))
+    rel = text(args, "path", 2000)
+    found = w.branches.get(item.id)
+    if found is None or not any(g.path == rel for g in found[1]):
+        raise ActError("That file is no longer on the cart's branch")
+    return item, rel
+
+
+def _branch_reject(w, args: dict) -> None:
+    """One file of a held cart's branch rejected: put back there as the base has it, kept aside."""
+    item, rel = _branch_file(w, args)
+    try:
+        w.reject_branch_file(item, rel)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as e:
+        raise ActError(str(e)) from None
+
+
+def _branch_restore(w, args: dict) -> None:
+    item = _held(w, args, (gate.HELD, gate.NEEDS_YOU))
+    try:
+        entry = item.rejected[int(args.get("index", -1))]
+    except (IndexError, TypeError, ValueError):
+        raise ActError("That file is no longer kept aside") from None
+    try:
+        w.restore_branch_file(item, entry)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as e:
+        raise ActError(str(e)) from None
+
+
 def _preview(w, args: dict) -> dict:
-    """A changed file's diff (or a file on a waiting cart's branch), as text."""
+    """A changed file's diff (or a file on a waiting cart's branch), as text; `image` when it is a picture,
+    which the window shows (`thumb`)."""
     rel = text(args, "path", 2000)
     iid = text(args, "item", 200)
     try:
@@ -268,30 +323,44 @@ def _preview(w, args: dict) -> dict:
             found = w.branches.get(iid)
             if found is None or not any(g.path == rel for g in found[1]):
                 raise ActError("That file is no longer on the cart's branch")
-            return {"path": rel, "text": found[0].preview(rel)}
-        return {"path": rel, "text": w.review.preview(_rel(w, args))}
+            shown = found[0].preview(rel)
+        else:
+            shown = w.review.preview(_rel(w, args))
     except (RuntimeError, OSError, ValueError) as e:
         raise ActError(str(e)) from None
+    hint = f" · {generated.OPEN_HINT})"                  # the TUI's key: here the picture shows itself
+    if shown.startswith("(") and shown.endswith(hint):
+        shown = shown[:-len(hint)] + ")"
+    return {"path": rel, "text": shown, "image": content.is_image(rel)}
+
+
+def _repo_file(w, rel: str) -> bytes:
+    """A file of the repository as it is now, when it is small enough to show (b"" otherwise)."""
+    root = w.repo_root.resolve()
+    p = (root / rel).resolve()
+    if p.is_relative_to(root) and p.is_file() and p.stat().st_size <= THUMB_BYTES:
+        return p.read_bytes()
+    return b""
 
 
 def _thumb(w, args: dict) -> str:
-    """A cart's picture as a data: URL — the file a file cart names, or one on its branch ("" when it is
-    too large, gone or not a picture)."""
-    item = _held(w, args)
+    """A picture as a data: URL — the file a file cart names, one on a cart's branch, or a changed file of the
+    working tree (no `item`) — "" when it is too large, gone or not a picture."""
     rel = text(args, "path", 2000)
     if not content.is_image(rel):
         return ""
     data = b""
     try:
-        found = w.branches.get(item.id)
-        if found is not None and any(g.path == rel for g in found[1]):
-            data = found[0].blob(rel)
-        elif item.kind == pipes.FILE and item.value == rel:
-            root = w.repo_root.resolve()
-            p = (root / rel).resolve()
-            if p.is_relative_to(root) and p.is_file() and p.stat().st_size <= THUMB_BYTES:
-                data = p.read_bytes()
-    except (RuntimeError, OSError, ValueError):
+        if not text(args, "item", 200):
+            data = _repo_file(w, _rel(w, args))
+        else:
+            item = _held(w, args)
+            found = w.branches.get(item.id)
+            if found is not None and any(g.path == rel for g in found[1]):
+                data = found[0].blob(rel)
+            elif item.kind == pipes.FILE and item.value == rel:
+                data = _repo_file(w, rel)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
         return ""
     if not data or len(data) > THUMB_BYTES:
         return ""
@@ -299,6 +368,7 @@ def _thumb(w, args: dict) -> str:
     return f"data:{kind};base64," + base64.b64encode(data).decode("ascii")
 
 
-ACTS = {"accept": _accept, "edit": _edit, "discard_edit": _discard_edit, "rework": _rework, "drop": _drop,
+ACTS = {"accept": _accept, "edit": _edit, "save_edit": _save_edit, "discard_edit": _discard_edit, "rework": _rework,
+        "drop": _drop, "branch_reject": _branch_reject, "branch_restore": _branch_restore,
         "accept_all": _accept_all, "accept_all_plan": _accept_all_plan, "accept_files": _accept_files, "file_accept": _file_accept,
         "file_reject": _file_reject, "file_restore": _file_restore, "preview": _preview, "thumb": _thumb}
