@@ -35,7 +35,7 @@ export function Orders() {
         ${a.advice && html`<button class="ok-btn primary" onClick=${() => command("orders.follow", { id: a.id }).then(() => {
           if (alerts.length <= 1) close();
         }, () => {})}>${say("Follow the Elders")}</button>`}
-        <button class="ok-btn" onClick=${close}>Later</button>`}>
+        <button class="ok-btn gui-orders__later" onClick=${close}>Later</button>`}>
     ${alerts.length > 1 && html`<ul class="ok-list__items gui-orders__list">${alerts.map((x) => html`<li key=${x.id}
         class=${cls("ok-item", { "is-selected": x.id === a.id, "is-alert": x.waited >= 30 })}
         onClick=${() => { picked.value = x.id; }}>${x.who || "Alert"}<span class="meta" title=${x.title}>${x.title}</span></li>`)}</ul>`}

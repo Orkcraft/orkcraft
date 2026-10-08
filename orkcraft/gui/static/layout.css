@@ -141,13 +141,14 @@ button { font: inherit; color: inherit; }
   background-size: 80px 20px; z-index: 1; animation-name: gui-fire; }
 @keyframes gui-fire { from { background-position: 0 0; } to { background-position: -80px 0; } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__flame.ok-flame.is-sprite { animation: none; } }
-/* A closed card's quick actions (js/hut.js QuickTray): a row on its bottom edge, out while the mouse is on the hut,
-   it has the focus or it is selected — they take no room on the town. */
+/* A closed card's quick actions (js/hut.js QuickTray): a row on its bottom edge, out while the mouse is on the hut
+   or it has the focus — they take no room on the town. Its building open, the panel's Info has them: one place
+   is enough, so the card's row stays in (ui.md U11). */
 .gui-hut__quick { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
   display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: var(--panel);
   border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window); visibility: hidden; }
-.gui-hut:hover .gui-hut__quick, .gui-hut:focus-within .gui-hut__quick, .gui-hut.is-selected .gui-hut__quick { visibility: visible; }
-.gui-hut.is-selected .gui-hut__quick { border-color: var(--frame-focus); }
+.gui-hut:hover .gui-hut__quick, .gui-hut:focus-within .gui-hut__quick { visibility: visible; }
+.gui-town .gui-hut.is-selected .gui-hut__quick { visibility: hidden; }
 .gui-hut__quick .gui-hut__quick-one { height: 24px; min-height: 0; padding: 0 var(--space-2); font-size: 11px; line-height: 24px; }     /* a type's card as one element whose parts are the body's own */
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
 .gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0 -4px auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
@@ -464,7 +465,9 @@ button { font: inherit; color: inherit; }
 .gui-orders__list .ok-item { white-space: nowrap; }
 .gui-orders__list .ok-item .meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* the question, cut with … */
 .gui-orders__context { max-height: 220px; overflow: auto; background: var(--panel-inset); padding: var(--space-2); }
-.gui-orders__options { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+/* The answers in a row (they wrap); "Later" stands apart at the right of the actions row, the dialog's dismiss (ui.md U14). */
+.gui-orders__options { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
+.gui-orders__later { margin-left: auto; }
 .gui-link { border: 0; background: none; cursor: pointer; font: inherit; color: inherit; padding: 0; }
 .gui-alert .ok-act { margin-left: var(--space-2); }
 .gui-term .xterm-viewport { background-color: var(--panel-inset) !important; }   /* xterm paints the strip under the rows black */

@@ -42,6 +42,9 @@
 [data-look="office"] .gui-hut__flame,
 [data-look="office"] .gui-hut__doing,
 [data-look="office"] .gui-out { display: none; }
+/* The name takes only its width, so its ork's tool mark (✻) stands right after it, not mid-row; the pin keeps
+   the right edge (its margin-left: auto, layout.css) (ui.md U08). */
+[data-look="office"] .gui-hut__title .gui-hut__name { flex: 0 1 auto; }
 /* A harness scheme's P and arrow as text (P →), never pixel marks; an AI tool's mark as its small SVG, in the
    tool's colours: small, they tell the tools apart at a glance (js/icons.js ToolMark). */
 [data-look="office"] .gui-scheme__mark > img[data-kind="harness"] { display: none; }
