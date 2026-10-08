@@ -54,7 +54,8 @@
 
 ### D3 — GUI fixes from the queue (designer + engineer)
 - Done (342c758): **U07** the Warchief's line squeezed by an open panel says the waiting question as ❓ + how many wait, so the field keeps its whole hint; **U22** on a yard the ork's 👍/👎 bubble stands left of the ork, never on the yard's name; **U10** opening a building no longer slides its card under the portrait's corner buttons (the camera keeps it right of the corner and the War Map). Then (78ba046): **U23** a folded Transformer / Router says its state in its title.
+- Then the design-docs queue: **B12, first half** (d5a7249) — a Router rule may name the kind of work (`bugs, change: contains traceback`); its second half (§5, a code-like reply asks the person) is left open.
 - Left: the UI queue is empty. U10's rest: a card that is *not* the open one's neighbour can still slide under the War Map while the panel is open, as at any scroll.
 - May be broken: nothing known; critical tests, `test_gui.py`, `test_gui_pit_signpost_mill.py`, `test_gui_browser.py`, `test_gui_script_first_browser.py` green. Signpost's colour helper renamed `mark` → `tint` (it clashed with the new `mark` export and would have broken the whole Router page).
-- Question for the morning: none.
+- Question for the morning: B12 — I made a Router rule's kind *set* a kind only on a cart that has none and only *lower* one a cart came with (the rule matches on text; §5 says the text may lower a path, never raise it). The design's table says simply "its rule's". Should a rule be allowed to raise a kind (e.g. a *reply* → *code change*)?
 
