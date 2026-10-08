@@ -123,7 +123,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "`gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on`, "
                  "`discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789`, "
                  "`agent: tool=claude server=atlassian tools=searchJiraIssuesUsingJql every=30m ask=new comments in Jira` "
-                 "(through Claude's own connector, read-only tools only, costs a model run each look); "
+                 "(through Claude's own connector, read-only tools only, costs a model run each look), "
+                 "`gmail: login=keychain:google-ann@gmail.com query=in:inbox` (a Google sign-in, Settings → Accounts); "
                  "`secret=` names a webhook's secret",
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",
@@ -237,6 +238,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                        "document is prepared right away",
         "beats": "what the timeline shows: [\"meeting\", \"schedule\", \"limit\"] (default all three); "
                  "[\"meeting\"] for a calendar of meetings alone",
+        "google": "a Google sign-in, `keychain:google-<e-mail>` (Settings → Accounts): the week comes from its "
+                  "Google Calendar and New event adds there",
         "imports": "imported calendars, set by Import calendar: a .ics file taken in, or a subscription to an ICS "
                    "link fetched again every `every` minutes (15–1440, default 30); a link is kept in the keychain, "
                    "here only its reference (`keychain:calendar.<building>.<id>`) and its host: {id: {kind, name, secret, host, every}}",
@@ -245,7 +248,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "scrolls": {
         "paths": "folders of notes (the older `sources`), e.g. [\"docs\", \"notes\"]",
         "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
-                   "`confluence:<SPACE>[@<site>]`, e.g. [\"docs\", \"code:src\"]",
+                   "`confluence:<SPACE>[@<site>]`, Google Drive `gdrive:google-<e-mail>[/<folder id>]` (Docs as Markdown, "
+                   "text files), e.g. [\"docs\", \"code:src\"]",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
         "inbox": "where Quick notes are written, a source of the wiki (default notes/inbox)",
         "calendar": "the id of the War Drum meetings are matched in (default: every one in the town)",

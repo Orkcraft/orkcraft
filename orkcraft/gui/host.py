@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, console, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
+from orkcraft.gui import accounts, builder, console, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -100,6 +100,7 @@ class Host:
         self.console = console.Console(self)
         self.commands.update(self.console.commands())
         self.commands.update(town_settings.commands(self))   # the HUD's menu: autonomy and its waits
+        self.commands.update(accounts.commands(self))        # Settings → Accounts: a Google sign-in (gui/accounts.py)
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())
@@ -339,7 +340,7 @@ class Host:
         try:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
-                you.YouError) as e:
+                you.YouError, accounts.AccountsError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result

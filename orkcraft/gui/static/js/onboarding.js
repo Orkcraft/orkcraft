@@ -2,7 +2,7 @@
 // Your AI tools → who you are (every class at once, only when the landing page did not say) → the MCP servers the orks may use
 // (only when some are connected) → your first town, drawn → the town going up on the map, with the Autonomy
 // card in a corner. Every answer goes to the host at once; the host decides the next step and the page draws
-// what the snapshot's `onboarding` says.
+// what the snapshot's `onboarding` says. The card over the map offers Connect Google (js/accounts.js): it can wait.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -11,6 +11,7 @@ import { Dialog } from "./dialog.js";
 import { MascotHead, BIOMES, headerSprite } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { USAGE_WHAT } from "./settings.js";
+import { googleOpen } from "./accounts.js";
 
 const asking = signal(false);          // the Request a tool dialog
 
@@ -298,6 +299,11 @@ function Raising({ o }) {
       </ul>`}
       ${r.error && html`<p class="ok-font-status ok-tone-error">${r.error}</p>`}
       <${Freedom} o=${o} />
+      <div class="gui-onb__google">
+        <h2 class="gui-onb__corner-title">Your Google account</h2>
+        <p class="ok-font-status ok-tone-muted">Gmail for External listeners, your calendar for the Calendar, Drive for the Wiki: one sign-in of your own, about 6 minutes.</p>
+        <span><button class="ok-btn" onClick=${() => { googleOpen.value = true; }}>Connect Google</button></span>
+      </div>
       ${ask && html`<label class="ok-check">
         <input type="checkbox" class="gui-onb__hide" checked=${share} onChange=${() => setShare(!share)} />
         <i>${share ? "✓" : ""}</i><span>${say("Share anonymous usage stats")}</span></label>

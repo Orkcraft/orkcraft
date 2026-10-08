@@ -14,6 +14,7 @@ import { Orders } from "./js/orders.js";
 import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
+import { GoogleWizard } from "./js/accounts.js";
 import { UpdateAsk } from "./js/update.js";
 import { Onboarding } from "./js/onboarding.js";
 import { Menu } from "./js/menu.js";
@@ -43,6 +44,7 @@ function App() {
     <${Panel} />
     <${Toasts} />
     <${SettingsDialog} />
+    <${GoogleWizard} />
     <${UsageAsk} />
     <${UpdateAsk} />
     <${Orders} />

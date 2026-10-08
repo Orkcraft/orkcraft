@@ -126,7 +126,7 @@ def detail(w) -> dict:
                  for j in w.jobs()],
         "imports": w.import_rows(),
         "settings": {"ics": _shown_ics(w.configured), "day_starts": str(w.config.get("day_starts") or ""),
-                     "lead": str(w.config.get("lead") or ""), "writes_to": w.writable.name},
+                     "lead": str(w.config.get("lead") or ""), "writes_to": w.writes_to},
     }
 
 
