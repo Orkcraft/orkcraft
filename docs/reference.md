@@ -769,6 +769,13 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   steward does not have (`write: agy → review: claude`). Scripts are saved as drafts under
   `.orkcraft/scripts/` and run once reviewed. The name / role / orders fields below still recruit an
   agent by hand.
+- **Script-first** (docs/design/script-first.md): a building whose work is code calls no model on its carts or
+  schedules: Drop file here, Sound alerts, Router, File tree, Metrics, Calendar, Review gate, Branches & PRs, a
+  Transformer without an `agent:` step and a Script without a steward prompt, so long as no handler of
+  theirs thinks. Its ork wakes once when the building fails (its ERROR, a failed handler run), and once per
+  👎. The ork is its keeper, and it proposes a fix in the console for you to apply. The steward's window
+  says *Script-first · no model · its ork wakes on an error or a 👎*, or what in it thinks. The Building
+  retro skips these buildings.
 - **Road rules in the GUI**: a rule is never drawn as an ork. The steward's part of Info lists them
   under **Road rules** (`📜 Boss's mail · 🗼 Inbox · new mail → here · 🪙 $0.05 · 4 runs`); a click opens
   the rule — its words (*Edit*), its roads, the steward's tier it runs at, its spend and latest runs,

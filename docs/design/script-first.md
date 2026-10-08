@@ -1,7 +1,6 @@
 # Design — script-first buildings: code does the work, the ork wakes on an error or a 👎
 
-Status: written 2026-10-07; stage 1 (the rule, the wakes, the retro's guard) is built, stage 2 (the GUI) is
-not yet (§7). Part of the simplification
+Status: written 2026-10-07; stages 1 (the rule, the wakes, the retro's guard) and 2 (the GUI) are built (§6). Part of the simplification
 ([simplify.md](simplify.md) §7). Builds on the steward ([steward-at-work.md](steward-at-work.md)), its
 keeper (`core/keeper.py`), the 👍 / 👎 (`realm/feedback.py`) and the Building retro (`realm/optimize.py`).
 
@@ -140,8 +139,7 @@ The Town retro still reads the whole town once a week.
   **`Script-first · no model · its ork wakes on an error or a 👎`**. Its tooltip names what is checked.
   A building of a script-first type that thinks (a Transformer's `agent:` step, a handler) says instead
   **`Thinks on its carts: <parts>`**, so the person sees why it is not.
-- **Its card** on the town: a script-first building's spend line reads `no model` where today it reads
-  `🪙 nothing spent`.
+- **Its Info**: a script-first building that has spent nothing reads `🪙 no model` on its spend line.
 - **A wake**: a toast, *"<building>: its ork woke on an error — a fix waits in its console"* (or *on a
   👎*). The console's job is the keeper's proposal, titled by what woke it. Closing it puts the wake away.
   The next error spell or 👎 can wake it again.
@@ -180,6 +178,17 @@ cost should be.
 - `core/retros.py` `daily_job` leaves script-first buildings out of the Building retro's goals.
 - Incidents are stamped to the second, so the memory keeps the keys of the ones at its cursor's second:
   two 👎s in one second are two wakes.
+
+**Built (stage 2):**
+- `gui/info.py` gives a building's info a `script_first` part (`on`, `thinking`, `woke`), None for a
+  type that thinks by its nature.
+- `js/steward.js` `ScriptFirst` draws the line under the steward's commands, with *woke HH:MM on an
+  error / a 👎* from the wake log.
+- The Info's spend line says `🪙 no model`.
+- `TERMS` has `script_first`.
+- `tests/test_gui_script_first_browser.py` checks it in Chromium on the dashboard demo: Drop file here
+  says Script-first, a 👎 wakes its ork and the line says when, and the Release notes Transformer says
+  *Thinks on its carts: agent: step 3*.
 
 ## 7. Stages
 
