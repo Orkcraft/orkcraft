@@ -37,6 +37,16 @@ function select(id, tab) {
 }
 
 /** A click on a building's hut: it opens in the panel (its Work tab, or the tab it had). */
+/** A building's number as its card shows it: its place among the open orkspace's buildings, the hall left out
+ * (app.js, js/town.js `numbered`), not among the whole town's. */
+function numberOf(b) {
+  const t = town.value;
+  const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
+  const ids = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
+  ids.delete(HALL);
+  return t.buildings.filter((x) => ids.has(x.id)).indexOf(b) + 1 || "";
+}
+
 export function openBuilding(id, tab) {
   select(id, tab);
 }
@@ -212,7 +222,7 @@ export function Panel() {
       aria-label=${b ? say(b.title) : say("Lake")}>
     <div class="ok-win__frame">
       <div class="ok-win__bar" onDblClick=${toggleFull}>
-        ${b && html`<span class="ok-win__no">${town.value.buildings.indexOf(b) + 1}</span>`}
+        ${b && html`<span class="ok-win__no">${numberOf(b)}</span>`}
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
         ${b && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
         <span class="gui-head__spacer"></span>

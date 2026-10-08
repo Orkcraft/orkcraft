@@ -69,4 +69,27 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [ ] U16 External listeners (Camp): two green primary buttons ("+ Add source", "Open new") and "Open new"
   wraps alone onto a second toolbar row — `ui/camp-win-post.png` — `gui/static/js/buildings/` (post) — S — one
   primary per view (design-system/components.md); "Open new" is a plain button in the row.
+- [x] U17 A building's window showed another number than its card ("34 External listeners" over card "5"): the
+  panel counted the whole town's buildings, the card only the open orkspace's — `ui/camp-watchtower-number.png`
+  → `ui/after-U17-camp-watchtower.png` — `js/windows.js` — S — done by D1: the window counts as the town does.
+- [ ] U18 A raw git error is the whole message: "fatal: not a git repository (or any of the parent directories):
+  .git", twice in Branches & PRs (bar and body), in Review gate's bar, on both cards and in a warning toast —
+  `ui/camp-forge.png`, `ui/camp-loot.png` — `gui/static/js/buildings/forge.js`, `loot.js` (+ the toast's source
+  in `realm/`) — S/M — say what it means and what to do ("This folder is not a git repository — run `git init`,
+  or open the project's folder"), the tool's words behind Details (as `chrome.js` does for a tool's failure).
+- [ ] U19 Agent pool's empty window: "No open tasks" at the top and "No orks yet…" 400 px lower, in the middle of
+  nothing — `ui/camp-barracks.png` — `gui/static/js/buildings/barracks.js` — S — one empty state under the task
+  field; the orks' line only when there is a task.
+- [ ] U20 Publisher: the card says "Fire · Dry run", its window "Dry run · Fire" — `ui/camp-catapult.png` —
+  `buildings/catapult.js` — S — the same order in both, the safe one first (and "Fire" the primary only where
+  an address is set: with none it can only dry-run).
+- [ ] U21 Metrics writes money "0 $", the HUD "$0.00" — `ui/camp-crag.png` — `buildings/crag.js` — S — one
+  format for money, the HUD's.
+- [ ] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
+  of its name ("OUTER", "OUND ALERTS") while the mouse is over it — `ui/camp-signpost.png`, `ui/camp-horn.png`
+  — `js/hut.js` / `yards.css` (the bubble from 9b87d76) — S — the bubble stands left of or above the title
+  plate, never on it.
+- [ ] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
+  ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
+  a card always says its state in one line.
 
