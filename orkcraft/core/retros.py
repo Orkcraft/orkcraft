@@ -4,6 +4,9 @@
     daily_job(town, now)          the Building retro when `optimize_at` is due: a function to run in a
                                   thread (the Council's one proposal) and `daily_done` with its result
     weekly_job(town, now)         the Town retro when `weekly_at` is due, and `weekly_done`
+    round_job(town, now)          the Night round when `round_at` is due (or asked now): the boards' rules on
+                                  the town's thread, a function for the models, and `round_done` with what
+                                  they said (docs/design/night-round.md)
     apply_weekly_item(town, …)    one Town retro item applied, checked again against the town as it is
     apply_change(town, c)         a change the orks may make themselves tonight (core/night.py `candidates`)
     probation(town, now)          their changes on probation: one with a 👎 or more failed runs since is
@@ -16,6 +19,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import dataclasses
 import datetime as dt
 import functools
 from typing import Any, Callable, Iterator
@@ -23,8 +27,8 @@ from typing import Any, Callable, Iterator
 from orkcraft.core import buildings as core_buildings
 from orkcraft.core import bus, runners, treasury
 from orkcraft.core.town import Town
-from orkcraft.realm import (audit, builders, checkpoint, evolution, fastpath, feedback, optimize, script_first,
-                            steward, weekly, workshop)
+from orkcraft.realm import (audit, builders, checkpoint, evolution, fastpath, feedback, growth, nightround, optimize,
+                            script_first, steward, weekly, workshop)
 
 
 @contextlib.contextmanager
@@ -157,6 +161,122 @@ def decline_weekly_item(town: Town, report: weekly.Report, n: int) -> None:
     report.declined = sorted(set(report.declined) | {n})
     weekly.save(town.repo_root, report)
     town.publish(bus.HALL)
+
+
+# -- 🌙 the Night round (daily, before the morning) -------------------------------------------------------
+
+@dataclasses.dataclass
+class Round:
+    """A night's work between the town's thread and the models: the asks per board, the ideas' ask."""
+    night: nightround.Night
+    asks: dict[str, list[dict]]
+    ideas_board: str = ""
+    ideas_ask: dict | None = None
+    ideas: list[dict] = dataclasses.field(default_factory=list)
+    paused: bool = False
+
+
+def round_boards(town: Town) -> list:
+    """The Task Fields boards that take part (a board's `night_round: false` leaves it out)."""
+    from orkcraft.core.workers import type_id
+    out = []
+    for b in town.scroll.buildings:
+        spec = town.custom_specs.get(b.id)
+        if b.demolished or spec is None or type_id(spec) != "fields":
+            continue
+        try:
+            w = town.worker(b.id)
+        except Exception:  # a board that cannot start is left out tonight
+            continue
+        if w is not None and getattr(w, "round_takes_part", False):
+            out.append(w)
+    return out
+
+
+def round_job(town: Town, now: dt.datetime, force: bool = False) -> Callable[[], Round] | None:
+    """When `round_at` is due (or `force`: Look now): the rules over every board, here; a function for the
+    models (run it in a thread). None when nothing is due or there is nothing for a model: then the night
+    is already done (its marks made, its line written)."""
+    repo = town.repo_root
+    expr = "" if nightround.off_by_env() else str(fastpath.settings(repo).get("round_at") or "")
+    if town.demo or (not force and (not expr or not steward.due(expr, nightround.last_run(repo), now))):
+        return None
+    after = nightround.since(repo, now)
+    nightround.mark_run(repo, now)
+    boards = round_boards(town)
+    night = nightround.Night(now.isoformat(timespec="seconds"), [w.building_id for w in boards])
+    if not boards:
+        night.skipped = "no Task Fields board takes part"
+        nightround.record(repo, night)
+        return None
+    found = nightround.commits(repo, after)
+    night.commits = len(found)
+    nightround.settle_ideas(repo, {w.building_id: w.round_ideas_where() for w in boards}, now)
+    asks = {w.building_id: w.round_look(found, after.timestamp(), now) for w in boards}
+    cap = nightround.ideas_cap(repo)
+    job = Round(night, asks, paused=bool(found) and cap == 0)
+    board = next((w for w in boards if w.mode != "tasks"), None)
+    if found and cap and board is not None:
+        job.ideas_ask = board.round_ideas_ask(found, nightround.diff(repo, found), cap)
+        job.ideas_board = board.building_id if job.ideas_ask else ""
+    if not any(a.get("prompt") for items in asks.values() for a in items) and job.ideas_ask is None:
+        if not any(asks.values()) and not job.paused:
+            night.skipped = "nothing changed since the last round" if not found else "nothing new for the cards"
+        round_done(town, job)
+        return None
+    return lambda: round_work(job)
+
+
+def round_work(job: Round) -> Round:
+    """The models, off the town's thread: a few words per marked card (or the mark trimmed), the ideas."""
+    from orkcraft.core.workers import fields_round
+    for items in job.asks.values():
+        for ask in items:
+            if not ask.get("prompt"):
+                continue
+            job.night.calls += 1
+            try:
+                words = nightround.parse_news(fields_round.ask_model(ask)[0])
+            except Exception as e:  # a model that cannot be reached leaves the rules' mark without words
+                job.night.errors.append(str(e)[:120])
+                continue
+            ask["words"], ask["trimmed"] = words, not words
+            job.night.told += 1 if words else 0
+    if job.ideas_ask is not None:
+        job.night.calls += 1
+        try:
+            job.ideas = fields_round.parse_ideas(fields_round.ask_model(job.ideas_ask)[0], job.ideas_ask)
+        except Exception as e:  # no ideas tonight
+            job.night.errors.append(str(e)[:120])
+    for items in job.asks.values():                 # what goes back to the town's thread: no runners
+        for ask in items:
+            ask.pop("runner", None)
+    if job.ideas_ask is not None:
+        job.ideas_ask.pop("runner", None)
+    return job
+
+
+def round_done(town: Town, job: Round) -> None:
+    """On the boards: the 🌙 marks and the ideas; the night written down; one line for the morning."""
+    repo, night = town.repo_root, job.night
+    first = ""
+    for bid, items in job.asks.items():
+        w = town.workers.get(bid)
+        marked = w.round_mark(items) if w is not None else 0
+        night.news += marked
+        first = first or (bid if marked else "")
+    w = town.workers.get(job.ideas_board) if job.ideas_board else None
+    if w is not None and job.ideas:
+        keys = w.round_add_ideas(job.ideas, night.at)
+        if keys:
+            nightround.keep_ideas(repo, w.building_id, keys, w.round_lane(), dt.datetime.now())
+            night.ideas = len(keys)
+            first = first or w.building_id
+    nightround.record(repo, night)
+    words = nightround.summary(night, job.paused)
+    if words:
+        growth.tell(repo, growth.News("round", f"Night round: {words}", first or (night.boards or [""])[0], "🌙", "work"))
+        town.publish(bus.HALL)
 
 
 # -- 🌙 the orks' own changes ---------------------------------------------------------------------------

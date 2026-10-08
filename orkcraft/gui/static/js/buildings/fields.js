@@ -3,7 +3,8 @@
 // lanes of their own. The mouse does it all: drag a card to another lane or part, click it to select
 // it, double-click it to open it; the selected card's acts sit over the board; a to-do is ticked off
 // by its box. A card's marks: 📜 its context (wiki pages, no model), 🧭 a to-do's plan, 🔒 personal
-// (never sent to a model) — docs/design/fields-board.md §5b. A task that waits to go says when (⏳, 🐢 when
+// (never sent to a model) — docs/design/fields-board.md §5b — and 🌙 what the Night round found for a card
+// that lies (docs/design/night-round.md). A task that waits to go says when (⏳, 🐢 when
 // Not urgent), what joined it and what it looks like (docs/design/settle-and-join.md). The closed card shows
 // all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
 // board file (core/workers/fields.py).
@@ -81,16 +82,18 @@ function Confirm({ title, text, yes, onYes, onClose }) {
 
 const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardId }; };
 
-/** A card's small marks: 🔒 personal, 📜 its context (pale when a page changed since), 🧭 its plan (… while
- *  it is written). A click on 📜 or 🧭 opens it; the card stays as it is. */
+/** A card's small marks: 🌙 what the Night round found, 🔒 personal, 📜 its context (pale when a page changed
+ *  since), 🧭 its plan (… while it is written). A click on 🌙, 📜 or 🧭 opens it; the card stays as it is. */
 function Marks({ card, onMark }) {
   const n = (card.pages || []).length;
   const plan = (card.plan || []).length > 0;
-  if (!card.private && !n && !plan && !card.planning) return null;
+  if (!card.private && !n && !plan && !card.planning && !card.news && !card.idea) return null;
   const mark = (what, label, title, extra) => html`<button class=${cls("fields-mark", extra)} title=${say(title)}
       aria-label=${say(title)} onClick=${(e) => { e.stopPropagation(); onMark && onMark(what, card); }}
       onDblClick=${(e) => e.stopPropagation()}>${label}</button>`;
   return html`<span class="fields-marks">
+    ${card.news && mark("news", "🌙", "What's new: the Night round found something for it")}
+    ${!card.news && card.idea && html`<span class="fields-mark is-still" title=${say("An idea from the Night round: move it to take it, delete it to say no")}>🌙</span>`}
     ${card.private && html`<span class="fields-mark is-still" title=${say("Personal: never sent to a model")}>🔒</span>`}
     ${n > 0 && mark("context", `📜 ${n}`, card.stale ? "Context: the wiki changed since — look again" : "Context: pages from the wiki",
       { "is-stale": card.stale })}
@@ -246,6 +249,28 @@ function ContextDialog({ id, card, onClose }) {
   </${Dialog}>`;
 }
 
+/** What the Night round found for a card that lies: its words (when a model said them), the commits and
+ *  the wiki pages that are about it. Seen takes the 🌙 off. */
+function NewsDialog({ id, card, onClose }) {
+  const news = card.news || {};
+  const seen = () => act(id, "news_seen", { card: card.id }).then(onClose, () => {});
+  return html`<${Dialog} title=${say(`What's new · ${card.title}`)} onCancel=${onClose}
+      meta=${say(`Found by the Night round${news.at ? ` · ${news.at.slice(0, 16).replace("T", " ")}` : ""}`)}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Later")}</button>
+        <button class="ok-btn primary" onClick=${seen}>${say("Seen")}</button>`}>
+    ${news.words ? html`<p>${news.words}</p>`
+      : html`<p class="ok-tone-muted">${say("Found by its words, nothing sent to a model.")}</p>`}
+    ${(news.commits || []).length > 0 && html`<div class="fields-pages">
+      <p class="ok-font-label">${say("Commits")}</p>
+      <ul class="fields-pages">${news.commits.map(([sha, subject]) => html`<li key=${sha}>
+        <code class="ok-font-mono">${sha}</code> ${subject}</li>`)}</ul></div>`}
+    ${(news.pages || []).length > 0 && html`<div class="fields-pages">
+      <p class="ok-font-label">${say("Pages from the wiki, new or changed")}</p>
+      <ul class="fields-pages">${news.pages.map(([path, title]) => html`<li key=${path}>
+        <button class="gui-link fields-page" onClick=${() => openInLake({ path, title, from: id })}>📜 ${title}</button></li>`)}</ul></div>`}
+  </${Dialog}>`;
+}
+
 /** What goes to the model, before a plan is asked: the to-do as it leaves (cleaned), what was taken out,
  *  the pages it takes along — each one may stay home — and the model. */
 function PreviewDialog({ id, card, preview, onClose, onSent }) {
@@ -322,7 +347,7 @@ function SettleSelect({ id, data }) {
 }
 
 function Board({ id, data }) {
-  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan|join: id} | {preview, of}
+  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan|join|news: id} | {preview, of}
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const parts = !!data.todos;                       // board mode: the three parts
   const cards = data.lanes.flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
@@ -362,6 +387,7 @@ function Board({ id, data }) {
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
     ${dialog && dialog.join && byId(dialog.join) && html`<${JoinDialog} id=${id} card=${byId(dialog.join)} cards=${cards} onClose=${close} />`}
+    ${dialog && dialog.news && byId(dialog.news) && html`<${NewsDialog} id=${id} card=${byId(dialog.news)} onClose=${close} />`}
     ${dialog && dialog.context && byId(dialog.context) && html`<${ContextDialog} id=${id} card=${byId(dialog.context)} onClose=${close} />`}
     ${dialog && dialog.plan && byId(dialog.plan) && html`<${PlanDialog} id=${id} card=${byId(dialog.plan)} onPlan=${plan} onClose=${close} />`}
     ${dialog && dialog.preview && byId(dialog.of) && html`<${PreviewDialog} id=${id} card=${byId(dialog.of)} preview=${dialog.preview}

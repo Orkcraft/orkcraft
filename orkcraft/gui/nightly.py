@@ -1,8 +1,9 @@
 """The retros and the orks' own changes in the GUI, as the TUI's night (tui/night.py, tui/retros.py) and
 with the same core (core/retros.py, core/night.py): the host's clock calls `tick` once a second.
 
-    the retros     the Building retro (`optimize_at`, daily) and the Town retro (`weekly_at`) when due, each
-                   in a thread; their proposals wait in the Town Hall (Apply / Dismiss)
+    the retros     the Night round (`round_at`, daily: docs/design/night-round.md), the Building retro
+                   (`optimize_at`, daily) and the Town retro (`weekly_at`) when due, each in a thread; the
+                   retros' proposals wait in the Town Hall (Apply / Dismiss), the round's notes on the boards
     quiet hours    one change at a time that the town's level or the building's own autonomy lets the orks
                    apply (core/night.py `candidates`): the Council's Fast Path looks first (a thread), and
                    only while it is still quiet and the Council lets it is it applied, hushed
@@ -21,9 +22,10 @@ from typing import Any, Callable
 
 from orkcraft import schedule
 from orkcraft.core import retros, runners
-from orkcraft.realm import fastpath
+from orkcraft.realm import fastpath, nightround
 
 RETRO_CHECK_S = 60.0          # how often the retros' schedules are looked at
+TITLES = {"round": "🌙 Night round", "daily": "🔧 Building retro", "weekly": "🗓 Town retro"}
 
 
 class Nightly:
@@ -43,12 +45,15 @@ class Nightly:
         if now - self.checked_at >= RETRO_CHECK_S and not exhausted:
             self.checked_at = now
             today = dt.datetime.now()
-            for name, job, done in (("daily", retros.daily_job, retros.daily_done),
+            for name, job, done in (("round", retros.round_job, retros.round_done),
+                                    ("daily", retros.daily_job, retros.daily_done),
                                     ("weekly", retros.weekly_job, retros.weekly_done)):
                 if name not in self.busy:
                     work = job(self.town, today)
                     if work is not None:
                         self._thread(name, work, done)
+                    if name == "round":
+                        self.host.growth.soon()          # its morning line, when it had one
         taken = self.host.night.next_change(quiet, self.town.machine.autonomy, exhausted)
         if taken is not None:
             self._consider(*taken)
@@ -72,11 +77,28 @@ class Nightly:
     def _finished(self, name: str, done: Callable[[Any, Any], None], result: Any) -> None:
         self.busy.discard(name)
         done(self.town, result)
+        if name == "round":
+            self.host.growth.soon()
 
     def _failed(self, name: str, e: Exception) -> None:
         self.busy.discard(name)
-        self.town.toast(f"{type(e).__name__}: {e}", title="🔧 Building retro" if name == "daily" else "🗓 Town retro",
-                        severity="warning")
+        self.town.toast(f"{type(e).__name__}: {e}", title=TITLES.get(name, name), severity="warning")
+
+    # -- 🌙 the Night round, now ------------------------------------------------------------------------
+
+    def round_now(self) -> str:
+        """Settings' Look now: the round at once, whatever its clock. What it says has started or been found."""
+        if "round" in self.busy:
+            return "The Night round is looking already."
+        if self.host.treasury.exhausted(quiet=True):
+            return "The budget is spent: the Night round waits."
+        work = retros.round_job(self.town, dt.datetime.now(), force=True)
+        if work is None:
+            self.host.growth.soon()
+            last = nightround.nights(self.town.repo_root, 1)
+            return nightround.said(last[-1] if last else None)
+        self._thread("round", work, retros.round_done)
+        return "The Night round is looking now; what it finds goes on the boards."
 
     # -- 🌙 the orks' own changes -----------------------------------------------------------------------
 

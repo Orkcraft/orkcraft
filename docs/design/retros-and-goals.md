@@ -26,6 +26,7 @@ retro that collects the ratings the goals need. The two reviews get names that s
 |---|---|---|
 | Self-improvement (daily proposal) | 🔧 **Building retro** | daily, `optimize_at` (06:20) — one building |
 | Weekly self-audit | 🗓 **Town retro** | weekly, `weekly_at` (Sunday 05:00) — the whole camp |
+| — | 🌙 **Night round** | daily, `round_at` (04:40) — the work, not the town (docs/design/night-round.md) |
 
 Only the names change in the UI and the docs; modules, settings keys (`optimize_at`, `weekly_at`,
 `weekly_model`), files under `.orkcraft/optimize/` and `.orkcraft/weekly/` and checkpoint kinds
