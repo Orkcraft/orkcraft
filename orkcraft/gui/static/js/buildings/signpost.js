@@ -23,7 +23,7 @@ const filter = signal({});          // building id → the route the history sho
 const chosen = signal({});          // building id → the index of the cart open over the rows
 
 const MARKS = new Set(["blue", "green", "purple", "yellow", "red"]);
-const mark = (c) => (MARKS.has(c) ? `color: var(--mark-${c})` : "");
+const tint = (c) => (MARKS.has(c) ? `color: var(--mark-${c})` : "");
 const when = (at) => (at || "").slice(11, 16);
 /** A time as a card says it: today's as 09:21, an older one as 10-06. */
 function stamp(at) {
@@ -34,12 +34,12 @@ function stamp(at) {
 }
 
 function Swatch({ color }) {
-  return html`<span class="gui-sign__swatch" aria-hidden="true" style=${mark(color)}>■</span>`;
+  return html`<span class="gui-sign__swatch" aria-hidden="true" style=${tint(color)}>■</span>`;
 }
 
 function Route({ data, route }) {
   if (!route) return html`<span class="ok-tone-wait">⚠ ${say("no rule")}</span>`;
-  return html`<span style=${mark(data.colors[route])}>${route}</span>`;
+  return html`<span style=${tint(data.colors[route])}>${route}</span>`;
 }
 
 // -- closed ----------------------------------------------------------------------------------------------
@@ -70,6 +70,16 @@ export function card(b) {
         <${Swatch} color=${r.color} /> <span class=${r.unmatched ? "ok-tone-wait" : "ok-tone-muted"}>${say(r.label)}</span> <b>${r.count}</b></span>`)}</div>
     ${last}
   </div>`;
+}
+
+/** Folded: what its card's headline says, in a word — no rules, no road out, the carts with no rule, else
+ *  how many it routed. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (!c.roads.length) return c.rules ? { text: "no road out", tone: "wait" } : { text: "no rules yet" };
+  const unmatched = c.roads.filter((r) => r.unmatched).reduce((n, r) => n + r.count, 0);
+  return unmatched ? { text: `${unmatched} no rule`, tone: "wait" } : { text: `${c.total ?? 0} routed` };
 }
 
 // -- open: the rules, the test, the carts ------------------------------------------------------------------

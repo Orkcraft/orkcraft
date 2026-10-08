@@ -64,6 +64,16 @@ export function card(b) {
   </div>`;
 }
 
+/** Folded: the last run's state in a word, as its card's headline says it. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.state === "running") return { text: "milling", tone: "wait" };
+  if (c.state === "failed") return { text: "failed", tone: "error" };
+  if (c.state === "none") return { text: c.steps ? "no runs yet" : "no steps yet" };
+  return { text: plural(c.runs ?? 0, "run") };
+}
+
 // -- open: the steps, Run, Edit steps ------------------------------------------------------------------------
 
 function StepsDialog({ id, data, onClose }) {
