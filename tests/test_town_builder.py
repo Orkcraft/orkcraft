@@ -18,7 +18,7 @@ GOOD = {
     "title": "Podcast Town", "summary": "Episodes from notes to release.",
     "buildings": [
         {"key": "inbox", "type": "pit", "title": "Episode Drops", "icon": "🎙", "why": "drop raw notes and links"},
-        {"key": "board", "type": "lake", "title": "Episode Preview", "icon": "📋", "why": "reads what was pasted"},
+        {"key": "board", "type": "fields", "title": "Episode Board", "icon": "📋", "why": "reads what was pasted"},
         {"key": "notes", "type": "scrolls", "title": "Show Notes", "icon": "📜", "why": "what was said"},
     ],
     "roads": [{"from": "inbox", "event": "pit.text", "to": "board", "why": "a pasted script shows up to read"}],
@@ -45,6 +45,17 @@ def test_a_good_plan_passes(tmp_path: Path):
     assert [(r.source, r.event, r.target) for r in plan.roads] == [("inbox", "pit.text", "board")]
 
 
+def test_a_road_to_lake_opens_in_the_lake_window_and_lake_is_no_building(tmp_path: Path):
+    answer = {**GOOD, "roads": [*GOOD["roads"], {"from": "inbox", "event": "pit.link", "to": "lake", "why": "read it"},
+                                {"from": "inbox", "event": "mail.received", "to": "lake", "why": "not its event"}]}
+    plan, problems = town_builder.check(answer, tmp_path, set())
+    assert plan.opens == [("inbox", "pit.link")] and len(plan.roads) == 1
+    assert problems == ["roads/2: inbox (pit) does not send 'mail.received'; it sends drop.file, on_selection_change, "
+                        "pit.link, pit.text"]
+    lake_town = {**GOOD, "buildings": [*GOOD["buildings"], {"key": "view", "type": "lake", "title": "View", "icon": "🌊", "why": "x"}]}
+    assert any("type 'lake' is not in the catalog" in p for p in town_builder.check(lake_town, tmp_path, set())[1])
+
+
 def test_taken_ids_get_a_number(tmp_path: Path):
     plan, problems = town_builder.check(GOOD, tmp_path, {"inbox", "board"})
     assert problems == [] and [s["id"] for s in plan.specs][:2] == ["inbox_1", "board_1"]
@@ -59,7 +70,7 @@ def test_taken_ids_get_a_number(tmp_path: Path):
     (lambda a: a["buildings"].append({"key": "inbox", "type": "pit"}), "must be unique"),
     (lambda a: a.update(buildings=a["buildings"][:1], roads=[]), "at least two"),
     (lambda a: a["buildings"][0].update(config={"rm": "-rf"}), "inbox"),
-    (lambda a: a["roads"].append({"from": "board", "event": "lake.viewed", "to": "inbox"}), "does nothing with a cart"),
+    (lambda a: a["roads"].append({"from": "board", "event": "tasks.created", "to": "inbox"}), "does nothing with a cart"),
     (lambda a: a["roads"][0].update(route="urgent"), "only a road from a signpost"),
 ])
 def test_bad_plans_are_refused(tmp_path: Path, change, expect):

@@ -43,9 +43,9 @@ def build(host, args: dict) -> str:
     """A building straight from the catalog (the type's defaults, no model call), in the active
     orkspace; it is committed in the camp's own git as the TUI's presets are."""
     town = host.town
-    spec = buildings.type_spec(town, _id(args, "type"))
-    if spec is not None and spec.get("type") in lake.WINDOW_TYPES:
+    if catalog.ALIASES.get(_id(args, "type"), _id(args, "type")) in lake.WINDOW_TYPES:
         raise BuildError("Lake is the town's window, not a building: a document's mark opens it")
+    spec = buildings.type_spec(town, _id(args, "type"))
     if spec is None:
         raise BuildError("That type cannot be raised here")
     prompt = args.get("prompt")

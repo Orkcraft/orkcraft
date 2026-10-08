@@ -15,7 +15,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Sort and transform it — no model", ("signpost", "mill")),
     ("Plan and track the work", ("fields", "war_drum")),
     ("Put agents to work", ("barracks", "council")),
-    ("Know the project: files, notes, diffs", ("forest", "scrolls", "lake")),
+    ("Know the project: files, notes, diffs", ("scrolls",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
     ("Hear what comes in", ("horn",)),

@@ -67,8 +67,8 @@ def test_mill_trace_and_agent_cost():
 def test_the_pit_card_is_a_drop_zone_and_its_window_follows_each_drop(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     pit_id = _raised(host, "pit")
-    lake_id = _raised(host, "lake")
-    ts.subscribe(host.town.scroll, lake_id, pit_id, "pit.text")
+    loot_id = _raised(host, "loot")
+    ts.subscribe(host.town.scroll, loot_id, pit_id, "pit.text")
     assert _card(host, pit_id) == {"n": 0, "last": None, "spent": 0.0}
     assert host.command("act", {"id": pit_id, "act": "drop", "args": {"text": "remember: ship on Friday"}}) == 1
     data = base64.b64encode(b"%PDF-1.4 tiny").decode()
@@ -83,16 +83,16 @@ def test_the_pit_card_is_a_drop_zone_and_its_window_follows_each_drop(fake_repo,
     [pdf, note] = d["data"]["items"]
     assert pdf["kind"] == "doc" and pdf["copied"] and pdf["value"].startswith(".orkcraft/pit/")
     assert pdf["value"].endswith("-report.pdf") and (fake_repo / pdf["value"]).read_bytes() == b"%PDF-1.4 tiny"
-    assert note["followed"] and [s["building"] for s in note["stops"]] == [lake_id]    # the text went on to Lake
+    assert note["followed"] and [s["building"] for s in note["stops"]] == [loot_id]    # the text went on to Lake
     assert note["stops"][0]["event"] == "pit.text" and "ship on Friday" in note["stops"][0]["value"]
     assert not pdf["stops"]                                                              # no road takes files
     # a handler further down the chain ran on it: its cost is the drop's
     from orkcraft.realm import pipes, roads
     ref = f"{pit_id}:{note['id']}"
-    hop = pipes.hop(lake_id, "keeper", "agent", cost=0.5, outcome="done")
-    host.town.publish(bus.RUN, run=roads.HandlerRun(lake_id, "keeper", "agent", "r1", 0.0, trail=(hop,), ref=ref),
+    hop = pipes.hop(loot_id, "keeper", "agent", cost=0.5, outcome="done")
+    host.town.publish(bus.RUN, run=roads.HandlerRun(loot_id, "keeper", "agent", "r1", 0.0, trail=(hop,), ref=ref),
                       name="keeper")
-    host.town.publish(bus.RUN, run=roads.HandlerRun(lake_id, "keeper", "agent", "r1", 0.0, trail=(hop,), ref=ref),
+    host.town.publish(bus.RUN, run=roads.HandlerRun(loot_id, "keeper", "agent", "r1", 0.0, trail=(hop,), ref=ref),
                       name="keeper")                                                     # the same hop counts once
     note = host.detail(pit_id)["data"]["items"][1]
     assert note["cost"] == 0.5
@@ -113,7 +113,7 @@ def test_the_pit_paste_is_its_quick_action(fake_repo, isolated_layout_file, monk
 def test_the_signpost_counts_per_road_out_in_its_colour_and_tests_a_text(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     post = _raised(host, "signpost", rules=["bugs: matches (?i)traceback|error", "links: contains http", "rest: else"])
-    a, b, c = _raised(host, "lake"), _raised(host, "lake"), _raised(host, "lake")
+    a, b, c = _raised(host, "loot"), _raised(host, "loot"), _raised(host, "loot")
     ts.subscribe(host.town.scroll, a, post, "signpost.routed", {"route": ["bugs"]})
     ts.subscribe(host.town.scroll, b, post, "signpost.routed", {"route": ["links"]})
     ts.subscribe(host.town.scroll, c, post, "signpost.unmatched")
@@ -189,7 +189,7 @@ def test_a_signpost_route_no_road_takes_is_a_stub_on_the_map(fake_repo, isolated
     """A route of the rules with no road out is drawn as a stub to pull a road from; a road for every route takes all."""
     host = _host(fake_repo)
     post = _raised(host, "signpost", rules=["bugs: contains error", "new-meeting: contains invite", "rest: else"])
-    a, b = _raised(host, "lake"), _raised(host, "lake")
+    a, b = _raised(host, "loot"), _raised(host, "loot")
     ts.subscribe(host.town.scroll, a, post, "signpost.routed", {"route": ["bugs"]})
     ts.subscribe(host.town.scroll, b, post, "signpost.unmatched")
     w = host.town.worker(post)
