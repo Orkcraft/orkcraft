@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from orkcraft.app import OrkcraftApp
-from orkcraft.config import find_project_root
+from orkcraft.config import NOT_A_PROJECT_HINT, default_town_root, find_project_root
 
 
 TUI_DEPRECATED = ("orkcraft: the terminal UI is deprecated and gets no new features; "
@@ -198,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n")
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         try:
             if args.action == "install":
@@ -230,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n")
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
@@ -268,8 +268,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         repo_root = find_project_root(args.repo)
     except FileNotFoundError as e:
-        sys.stderr.write(f"orkcraft error: {e}\n")
-        return 1
+        if args.repo is not None:          # a project was named: it has to be one
+            sys.stderr.write(f"orkcraft error: {e}\n")
+            return 1
+        repo_root = default_town_root()    # opened outside any project (often ~ right after install)
+        repo_root.mkdir(parents=True, exist_ok=True)
+        sys.stderr.write(f"orkcraft: no project here, so the town is in {repo_root}. "
+                         "To open a project's town: cd <project> && orkcraft, or orkcraft --repo <project>.\n")
 
     auto_commit = not args.no_commit
     if args.subcommand == "gui":

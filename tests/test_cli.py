@@ -268,3 +268,33 @@ def test_the_landing_page_classes_are_the_first_role_of_each_kin():
         assert intents.role(role_id).id == role_id
         assert intents.nick(role_id) == names[cls]
         assert intents.role_id_of(cls.upper()) == role_id
+
+
+def test_outside_a_project_the_town_settles_in_the_default_folder(tmp_path: Path, monkeypatch, capsys):
+    import orkcraft.cli as cli
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(home)
+    opened = {}
+
+    class Launch:
+        @staticmethod
+        def run(root, *a, **kw):
+            opened["root"] = root
+            return 0
+
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
+    monkeypatch.setattr(cli, "_launching", lambda args: False)    # no update check in a test
+    assert cli.main(["gui"]) == 0
+    assert opened["root"] == home / "Orkcraft" and opened["root"].is_dir()
+    err = capsys.readouterr().err
+    assert str(home / "Orkcraft") in err and "--repo" in err
+
+
+def test_hooks_outside_a_project_says_what_to_do(tmp_path: Path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert main(["hooks", "install"]) == 1
+    err = capsys.readouterr().err
+    assert "project root" in err and "cd <project>" in err and "--repo" in err
