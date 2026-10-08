@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gitinfo, jobs, pipes, plans
+from orkcraft.realm import briefs, daybook, feedback, gitinfo, jobs, pipes, plans
 
 if TYPE_CHECKING:
     from orkcraft.core.workers.barracks import RunOutcome
@@ -57,7 +57,7 @@ class ReviewMixin:
             return [state_of(t) for t in self.state.tasks
                     if t is not task and t.pr and t.title.strip().lower() == title]
 
-        settled = 0
+        settled, done = 0, []
         for task in self.state.tasks:
             if task.status != "done" or not task.pr or task.pr_state:
                 continue
@@ -73,11 +73,13 @@ class ReviewMixin:
                     continue                                    # wait: it may be the twin that merges
                 duplicate = "MERGED" in others or bool(set(getattr(pr, "labels", ())) & DUPLICATE_LABELS)
             task.pr_state, settled = state, settled + 1
+            done.append(task)
             if duplicate:
                 continue
             feedback.signal(self.repo_root, self.building_id, good, "pr.merged" if good else "pr.closed",
                             value=task.result or task.title,
                             note=f"{task.title}: pull request {'merged' if good else 'closed without merging'} {task.pr}")
+        self.release_settled(done)                  # merged or closed: its area is free
         if settled:
             self.state.save()
             self.changed()
@@ -113,6 +115,7 @@ class ReviewMixin:
                 out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
                 return
             tests = f"`{cmd}` passes"
+        extra, out.clashes, met = self._review_context(task, files, git, task.branch)
         if task.parent:                                   # a part: no pull request of its own
             if self.goal.sub_review:
                 verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, bk.LOCAL),
@@ -130,14 +133,24 @@ class ReviewMixin:
                 body = f"{task.text}\n\n---\n\n{out.text}\n\n_Trivial: not reviewed by {self.keeper}_"
                 out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
             return
-        verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule),
+        verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule, extra),
                                 workdir, cancel, out)
         out.accepted, out.notes = bk.verdict_of(verdict)
-        out.notes = bk.SCOPE.sub("", out.notes).strip()
+        out.notes = briefs.strip(bk.SCOPE.sub("", out.notes)).strip()
         out.scope = rule or bk.scope_of(verdict)
+        out.designs = briefs.states(met, files, verdict)
         if out.accepted and git is not None and commits and out.scope == bk.EXTERNAL:
-            body = f"{task.text}\n\n---\n\n{out.text}\n\n_Reviewed by {self.keeper}: {out.notes or 'accepted'}_"
+            body = f"{task.text}\n\n---\n\n{out.text}\n\n_Reviewed by {self.keeper}: {out.notes or 'accepted'}_" \
+                + self.pr_notes(task, out)
             out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
+
+    def pr_notes(self, task: bk.PoolTask, out: RunOutcome) -> str:
+        """What the pull request's body adds: the briefs the change met, the branches it would conflict with."""
+        titles = {o.get("key"): o.get("title") for o in task.overlaps}
+        lines = [briefs.pr_line(out.designs)] + [
+            f"Overlaps “{titles.get(k) or k}”: merged together they conflict in {', '.join(f)}" for k, f in out.clashes.items()]
+        lines = [ln for ln in lines if ln]
+        return ("\n\n" + "\n".join(f"- {ln}" for ln in lines)) if lines else ""
 
     @staticmethod
     def _meeting(task: bk.PoolTask) -> bool:
@@ -204,6 +217,8 @@ class ReviewMixin:
         if task.persona_waits:                      # a new persona waits for its approval
             self._persona_answer(task, text)
             return ""
+        if task.ask_kind == "conflict":             # its plan goes against a design brief
+            return self.conflict_answer(task, text)
         if task.plan:                               # the whole was sent back too often: the operator's word
             return self._plan_answer(task, text) if text.strip() else ""
         if task.draft:                              # a draft waits: nothing typed approves it, else what to change

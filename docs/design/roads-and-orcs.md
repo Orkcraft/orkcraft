@@ -36,6 +36,9 @@ what leaves a building) + an optional handler at the receiver.
   move, the road is re-routed gate to gate.
 - `Y` flips meaning: on a selected building it **subscribes** it to another building's output
   (pick the source, then the handler or "none").
+- **One road per direction** ([road-sound.md](road-sound.md) §2): the roads from one building into
+  the same other one are drawn as one road, and its card lists each event with its handler; a road the
+  other way stays its own (the two make a loop, which only a return road may close).
 
 ### Visibility — three levels
 

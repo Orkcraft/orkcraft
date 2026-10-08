@@ -9,7 +9,7 @@ import pytest
 
 from orkcraft.core import buildings
 from orkcraft.gui.host import CommandError, Host
-from orkcraft.realm import checkpoint
+from orkcraft.realm import catalog, checkpoint
 from orkcraft import scroll as ts
 
 
@@ -19,7 +19,12 @@ def _host(repo: Path) -> Host:
 
 
 def _raised(host: Host, type_id: str, **config) -> str:
+    """A building raised from the catalog; a retired type (File tree) as an old project file has it."""
     spec = buildings.type_spec(host.town, type_id)
+    if spec is None:                                   # retired: written as type_spec did before
+        t = catalog.TYPES[type_id]
+        spec = {"id": type_id, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
+                "orc": {"name": t.orc, "role": t.preview[:80]}}
     if config:
         spec["config"] = {**(spec.get("config") or {}), **config}
     built = buildings.raise_spec(host.town, spec)

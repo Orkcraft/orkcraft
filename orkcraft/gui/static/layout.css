@@ -414,7 +414,10 @@ button { font: inherit; color: inherit; }
 .gui-road__pull { stroke: var(--road-selected); stroke-width: 2; stroke-dasharray: 4 4; shape-rendering: crispEdges; }
 .gui-road__pull-end { fill: var(--ink-gold); stroke: var(--canvas); stroke-width: 1; shape-rendering: crispEdges; }
 .gui-roadbar { position: fixed; left: 50%; top: calc(30px + var(--space-3)); transform: translateX(-50%); z-index: 9;   /* clear of the line */
-  display: flex; align-items: center; gap: var(--space-3); }
+  display: flex; flex-direction: column; gap: var(--space-2); width: max-content; max-width: min(720px, calc(100vw - 32px)); }
+.gui-roadbar__head, .gui-roadbar__row { display: flex; align-items: center; gap: var(--space-3); }
+.gui-roadbar__head > span:first-child, .gui-roadbar__what { flex: 1; min-width: 0; }
+.gui-roadbar__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); max-height: 40vh; overflow: auto; }
 .gui-catalog { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; display: grid; gap: var(--space-2); }
 .gui-catalog__item { cursor: pointer; padding: var(--space-2) var(--space-3); border: 1px solid var(--frame);
   border-radius: var(--ok-radius-md, 0); }
