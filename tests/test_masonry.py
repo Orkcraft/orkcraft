@@ -181,7 +181,7 @@ def test_build_gives_up_and_reports(tmp_path: Path):
     assert not result.ok and "not found" in result.error
 
 
-def test_claude_runner_calls_the_cli_in_an_empty_folder(tmp_path: Path, monkeypatch):
+def test_ask_claude_calls_the_cli_in_an_empty_folder(tmp_path: Path, monkeypatch):
     fake = tmp_path / "fake-claude"
     record = tmp_path / "record.json"
     fake.write_text(
@@ -194,7 +194,7 @@ def test_claude_runner_calls_the_cli_in_an_empty_folder(tmp_path: Path, monkeypa
     fake.chmod(0o755)
     monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(fake))
     monkeypatch.setenv("ORKCRAFT_TICKET", "T1093")
-    text, cost = builders.claude_runner("design it")
+    text, cost = builders.ask("claude", "design it")
     assert (text, cost) == ('{"ok": 1}', 0.05)
     rec = json.loads(record.read_text())
     assert rec["argv"] == ["-p", "design it", "--output-format", "json"]
@@ -202,7 +202,7 @@ def test_claude_runner_calls_the_cli_in_an_empty_folder(tmp_path: Path, monkeypa
     assert rec["orkcraft_env"] == []                      # no ORKCRAFT_* leaks into the builders
     monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(tmp_path / "missing"))
     with pytest.raises(RuntimeError, match="not found"):
-        builders.claude_runner("x")
+        builders.ask("claude", "x")
 
 
 def _fake_cli(tmp_path: Path, name: str, answer: str) -> tuple[Path, Path]:

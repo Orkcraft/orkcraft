@@ -18,7 +18,7 @@ SIZE = (200, 50)
 async def test_clear_rally_point(fake_repo: Path, isolated_layout_file: Path):
     """U on the receiver removes its road."""
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    scroll.set_rally_point(app.scroll, "town_hall", "loot", pipe_mode="on_task_completed")
+    scroll.subscribe(app.scroll, "loot", "town_hall", "on_task_completed")
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()
         loot_win = app.desktop.get_window("loot")
@@ -39,11 +39,11 @@ async def test_clear_rally_point(fake_repo: Path, isolated_layout_file: Path):
 @pytest.mark.asyncio
 async def test_task_completed_pipe(fake_repo: Path, monkeypatch: pytest.MonkeyPatch):
     """Task completed: recruit + deploy a Chat orc with deploy_command replaced by
-    echo done-marker, Chat -> Loot on_task_completed set via scroll.set_rally_point ->
+    echo done-marker, Chat -> Loot on_task_completed set via scroll.subscribe ->
     after exit a file in loot/pipes/ contains done-marker."""
     monkeypatch.setattr("orkcraft.sources.sessions.deploy_command", lambda harness, prompt: ["sh", "-c", "echo done-marker"])
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    scroll.set_rally_point(app.scroll, "town_hall", "loot", pipe_mode="on_task_completed")
+    scroll.subscribe(app.scroll, "loot", "town_hall", "on_task_completed")
 
     async with app.run_test(size=SIZE) as pilot:
         await pilot.pause()

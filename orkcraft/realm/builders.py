@@ -139,12 +139,6 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     return text, cost
 
 
-def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    """One non-interactive Claude Code call in an empty folder (`model`: an alias such as haiku or
-    opus; None keeps the operator's default). Raises RuntimeError on failure."""
-    return ask("claude", prompt, model)
-
-
 def runner_on(harness_id: str, model: str | None = None) -> Runner:
     """The model call of one tool (a step's or a building's own choice)."""
     return lambda prompt, m=None: ask(harness_id, prompt, m or model)

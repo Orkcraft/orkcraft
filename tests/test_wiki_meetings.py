@@ -55,7 +55,6 @@ def test_the_page_keeps_its_ticks_and_the_rest(tmp_path: Path):
     items = [agenda.Item("notes/inbox/one.md", "Pricing tiers"), agenda.Item("notes/inbox/two.md", "Invoices")]
     text = agenda.page_text(tmp_path, page, m, ["Sergey"], items)
     assert "calendar: meet:b" in text and "- [ ] Pricing tiers — [note](../../../../notes/inbox/one.md)" in text
-    assert agenda.meeting_of_page(text) == "b"
     text = text.replace("- [ ] Pricing tiers", "- [x] Pricing tiers") + "\nA person's line.\n"
     text = text.replace("## Background\n", "## Background\nThe librarian's words.\n")
     again = agenda.with_items(tmp_path, page, text, items + [agenda.Item("notes/inbox/three.md", "Discounts")])

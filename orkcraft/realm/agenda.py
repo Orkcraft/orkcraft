@@ -208,9 +208,3 @@ def with_after(text: str, line: str) -> str:
     if not m:
         return text.rstrip("\n") + f"\n\n## After the meeting\n{line}\n"
     return text[:m.end()] + line + "\n" + text[m.end():]
-
-
-def meeting_of_page(text: str) -> str:
-    """The meet id a page belongs to (`calendar: meet:<id>`), or ""."""
-    cal = quicknote.front_matter(text).get("calendar") or ""
-    return cal[5:] if isinstance(cal, str) and cal.startswith("meet:") else ""

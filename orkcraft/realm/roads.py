@@ -319,11 +319,6 @@ def codex_thread_usage(thread: str, env: dict | None = None) -> dict | None:
     return usage
 
 
-def codex_thread_total(thread: str, env: dict | None = None) -> int:
-    """The tokens a Codex thread has used so far (`codex_thread_usage`); 0 when there is none."""
-    return harnesses._plain_tokens(codex_thread_usage(thread, env)) or 0
-
-
 codex_error = harnesses.codex_error
 
 

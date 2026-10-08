@@ -310,7 +310,7 @@ def test_garrison_recruit_dismiss_and_lead():
         pass
     else:
         raise AssertionError("dismissed the lead")
-    ts.set_lead(scroll, "forge", "coder")
+    ts.set_steward(scroll, "forge", "coder")
     assert forge.garrison.lead is coder
     ts.dismiss_orc(scroll, "forge", "smith")
     assert [m.id for m in forge.garrison.members] == ["coder", "coder_2"]

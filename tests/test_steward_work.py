@@ -15,7 +15,7 @@ import pytest
 from orkcraft.realm import catalog, steward
 
 ROOT = Path(__file__).resolve().parent.parent / "orkcraft"
-CALL = re.compile(r"builders\.(?:main_runner_of|main_runner|claude_runner|runner_on|ask|runner_for)\b"
+CALL = re.compile(r"builders\.(?:main_runner_of|main_runner|runner_on|ask|runner_for)\b"
                   r"|fastpath\.light_runner|roads\.run_agent|jobs\.run_work|default_agent\(")
 # Model calls in a worker that are not its steward's work, and why.
 NOT_WORK = {

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 
-from orkcraft.scroll import (HISTORY_DIR, MAX_ROADS, ROAD_EVENTS, BuildingSpec, Garrison, OrcSpec, RallyPoint, Road,
+from orkcraft.scroll import (HISTORY_DIR, MAX_ROADS, ROAD_EVENTS, BuildingSpec, Garrison, OrcSpec, Road,
                              TownScroll, _typed_events)
 from orkcraft.scroll_checks import _cycle, filter_problems
 from orkcraft.scroll_garrisons import _building, _orc_id
@@ -130,40 +130,6 @@ def set_road_filter(scroll: TownScroll, target_id: str, road_id: str, filter: di
         raise ValueError("filter: " + "; ".join(problems))
     road.filter = flt
     return road
-
-
-# v2 rally points as seen by the current UI: one plain outgoing road per source.
-
-def set_rally_point(scroll: TownScroll, source_id: str, target_id: str,
-                    pipe_mode: str = "on_selection_change") -> RallyPoint:
-    """Replace the source's plain outgoing roads with one plain road to `target_id`."""
-    src, dst = scroll.building(source_id), scroll.building(target_id)
-    if src is None or dst is None:
-        raise ValueError(f"unknown building {source_id!r} or {target_id!r}")
-    if source_id == target_id:
-        raise ValueError("a rally point cannot target its own building")
-    if pipe_mode not in ROAD_EVENTS:
-        raise ValueError(f"unknown pipe mode {pipe_mode!r}")
-    old = [(t, r) for t, r in outgoing(scroll, source_id) if r.plain]
-    for t, r in old:
-        t.roads.remove(r)
-    try:
-        road = subscribe(scroll, target_id, source_id, pipe_mode)
-    except ValueError as e:
-        for t, r in old:
-            t.roads.append(r)
-        if "loop" in str(e):
-            raise ValueError(f"{src.title} → {dst.title} would close a loop of rally points") from None
-        raise
-    return RallyPoint(target_id, pipe_mode, road.id)
-
-
-def clear_rally_point(scroll: TownScroll, source_id: str) -> bool:
-    """Remove the source's plain outgoing roads; False when it had none."""
-    old = [(t, r) for t, r in outgoing(scroll, source_id) if r.plain]
-    for t, r in old:
-        t.roads.remove(r)
-    return bool(old)
 
 
 # -- custom buildings (Mason & Artisan) ---------------------------------------------------------------

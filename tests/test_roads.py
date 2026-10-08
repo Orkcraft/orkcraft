@@ -205,19 +205,6 @@ def test_road_handler_and_filter_can_change():
     valid(scroll)
 
 
-def test_rally_compat_replaces_only_plain_roads():
-    scroll = fresh()
-    ts.add_handler(scroll, "loot", "Keeper", kind="chain", chain=CHAIN)
-    ts.subscribe(scroll, "loot", "forge", "on_task_completed", handler="keeper")
-    ts.set_rally_point(scroll, "forge", "scrying")
-    ts.set_rally_point(scroll, "forge", "scrying", "on_task_completed")
-    assert sorted((t.id, r.event, r.handler or "") for t, r in ts.outgoing(scroll, "forge")) == [
-        ("loot", "on_task_completed", "keeper"), ("scrying", "on_task_completed", "")]
-    assert ts.clear_rally_point(scroll, "forge") is True
-    assert [(t.id, r.handler) for t, r in ts.outgoing(scroll, "forge")] == [("loot", "keeper")]
-    valid(scroll)
-
-
 def test_preferences_have_road_and_cart_modes():
     scroll = fresh()
     assert scroll.preferences["carts"] == "selected" and scroll.preferences["roads"] == "faint"

@@ -477,7 +477,7 @@ async def test_agy_alone_plans_a_town_but_brings_no_claude_warder(fake_repo: Pat
 @pytest.mark.asyncio
 async def test_the_town_builder_never_calls_claude_code_when_it_is_off(fake_repo: Path, onboard, monkeypatch):
     monkeypatch.setattr(runners, "BUILD_RUNNER", None)
-    monkeypatch.setattr(builders, "claude_runner",
+    monkeypatch.setattr(builders, "ask",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("claude was called")))
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")
     settings.save(settings.MachineSettings(onboarded=True))

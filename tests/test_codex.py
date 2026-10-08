@@ -69,9 +69,9 @@ def _codex_home(tmp_path: Path) -> Path:
 
 def test_a_threads_total_so_far_comes_from_its_rollout(tmp_path):
     env = {"CODEX_HOME": str(_codex_home(tmp_path))}
-    assert roads.codex_thread_total(THREAD, env) == 34612 + 121      # the last total; a null `info` is skipped
-    assert roads.codex_thread_total("another-thread", env) == 0
-    assert roads.codex_thread_total("", env) == 0
+    assert harnesses._plain_tokens(roads.codex_thread_usage(THREAD, env)) == 34612 + 121   # the last total; a null `info` is skipped
+    assert roads.codex_thread_usage("another-thread", env) is None
+    assert roads.codex_thread_usage("", env) is None
 
 
 def test_a_resumed_codex_run_counts_only_its_own_tokens(tmp_path, monkeypatch):

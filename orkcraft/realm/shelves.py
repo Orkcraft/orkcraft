@@ -106,14 +106,6 @@ def scan_base(repo_root: Path, rel: str) -> Base:
     return Base(rel, notes)
 
 
-def note_changes(before: dict[str, str | float] | None, bases: list[Base]) -> list[str]:
-    """Notes added or changed since the last look (the first look only sets the baseline)."""
-    now = {n.path: n.stamp for b in bases for n in b.notes}
-    if before is None:
-        return []
-    return [p for p, m in now.items() if before.get(p) != m]
-
-
 # -- the file tree ------------------------------------------------------------------------------------
 
 def top_entries(root: Path, limit: int = 6) -> list[str]:

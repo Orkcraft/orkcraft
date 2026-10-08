@@ -31,10 +31,6 @@ def test_knowledge_scan_and_changes(fake_repo: Path):
     by = {n.path: n for n in base.notes}
     assert set(by) == {"docs/guide.md", "docs/notes.md"}
     assert by["docs/guide.md"].title == "The Guide" and by["docs/guide.md"].headings == ["Setup", "Usage"]
-    before = {n.path: n.mtime for n in base.notes}
-    assert shelves.note_changes(None, [base]) == []
-    (fake_repo / "docs" / "new.md").write_text("# New")
-    assert shelves.note_changes(before, [shelves.scan_base(fake_repo, "docs")]) == ["docs/new.md"]
     assert shelves.scan_base(fake_repo, "../x").error
 
 

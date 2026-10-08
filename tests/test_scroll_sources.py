@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft.realm import catalog, shelves
+from orkcraft.realm import catalog
 from orkcraft.sources import lore
 
 UPLOAD = '''"""Uploads to the bucket."""
@@ -85,7 +85,6 @@ def test_code_folder_and_git_revision(shop: Path):
     commit(shop)
     after = {n.path: n.stamp for n in git.scan().notes}
     assert after["git:HEAD:docs/handbook.md"] != stamp
-    assert shelves.note_changes({p: n.stamp for p, n in by.items()}, [git.scan()]) == ["git:HEAD:docs/handbook.md"]
     whole = {n.path: n.kind for n in lore.parse("git:HEAD", shop).scan().notes}
     assert whole["git:HEAD:src/shop/net.py"] == "code" and whole["git:HEAD:README.md"] == "doc"
     assert lore.parse("git:nope", shop).scan().error

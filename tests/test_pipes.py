@@ -1,4 +1,4 @@
-"""Rally pipes: scroll operations, capabilities and the safe payload helpers."""
+"""Rally pipes: loops in a scroll, capabilities and the safe payload helpers."""
 from __future__ import annotations
 
 import os
@@ -13,33 +13,6 @@ PRESETS = {
     "scrying": {"title": "Scrying Spire", "icon": "🔮", "orc": "Shaman", "role": "preview", "category": "core"},
     "town_hall": {"title": "War Tent", "icon": "💬", "orc": "Peon", "role": "sessions", "category": "core"},
 }
-
-
-def test_rally_points_set_replace_clear_and_refuse_loops():
-    scroll = ts.default_scroll(PRESETS)
-    rp = ts.set_rally_point(scroll, "forge", "scrying")
-    assert (rp.target_building_id, rp.pipe_mode) == ("scrying", "on_selection_change")
-    ts.set_rally_point(scroll, "forge", "loot", "on_task_completed")
-    assert scroll.rally_of("forge").target_building_id == "loot"
-    assert [r.source for r in scroll.building("scrying").roads] == []   # replaced, not added
-    assert ts.validate(scroll.to_dict()) == []
-    ts.set_rally_point(scroll, "loot", "scrying")
-    for args in (("forge", "forge"), ("forge", "nope"), ("forge", "scrying", "telepathy")):
-        try:
-            ts.set_rally_point(scroll, *args)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError(f"accepted {args}")
-    try:
-        ts.set_rally_point(scroll, "scrying", "forge")  # forge → loot → scrying → forge
-    except ValueError as e:
-        assert "loop" in str(e)
-    else:
-        raise AssertionError("accepted a loop")
-    assert ts.clear_rally_point(scroll, "forge") is True
-    assert ts.clear_rally_point(scroll, "forge") is False
-    assert ts.validate(scroll.to_dict()) == []
 
 
 def test_validate_reports_a_loop_written_by_hand():

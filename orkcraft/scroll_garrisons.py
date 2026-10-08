@@ -229,7 +229,7 @@ def update_orc(scroll: TownScroll, building_id: str, orc_id: str, **changes: Any
 
 
 # v2 operations, kept for the current UI: recruit adds an agent handler (or the steward when
-# there is none), dismiss removes a handler, set_lead promotes to steward.
+# there is none), dismiss removes a handler.
 
 def recruit(scroll: TownScroll, building_id: str, name: str, role: str = "", orders: str = "",
             trigger: dict | None = None, tier: str | None = None) -> OrcSpec:
@@ -251,6 +251,3 @@ def dismiss_orc(scroll: TownScroll, building_id: str, orc_id: str) -> None:
         raise ValueError(f"{b.garrison.steward.name} leads {b.title} and cannot be dismissed")
     remove_handler(scroll, building_id, orc_id)
 
-
-def set_lead(scroll: TownScroll, building_id: str, orc_id: str) -> None:
-    set_steward(scroll, building_id, orc_id)

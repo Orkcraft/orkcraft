@@ -588,9 +588,9 @@ from orkcraft.scroll_checks import (  # noqa: E402, F401
 from orkcraft.scroll_garrisons import (  # noqa: E402, F401
     HOTKEYS, MAX_ORKSPACES, ensure_presets, _slug, new_orkspace, orkspace_by_hotkey, move_building,
     remove_orkspace, _orc_id, _building, _unique_orc_id, add_handler, remove_handler, set_steward, update_orc,
-    recruit, dismiss_orc, set_lead,
+    recruit, dismiss_orc,
 )
 from orkcraft.scroll_roads import (  # noqa: E402, F401
     incoming, outgoing, road_key, split_key, find_road, has_outgoing, _road_edges, subscribe, unsubscribe,
-    set_road_handler, set_road_filter, set_rally_point, clear_rally_point, add_custom_building,
+    set_road_handler, set_road_filter, add_custom_building,
 )
