@@ -3,6 +3,7 @@ lint wrote, and the schedule that starts the lint — never at once, never twice
 from __future__ import annotations
 
 import datetime as dt
+import os
 from pathlib import Path
 
 import pytest
@@ -51,7 +52,7 @@ def test_the_lint_lines_and_the_schedule(tmp_path: Path):
     assert not wikicheck.due("weekly", NOW - dt.timedelta(days=6), NOW)
     assert wikicheck.due("weekly", NOW - dt.timedelta(days=7), NOW)
     assert wikicheck.due("daily", NOW - dt.timedelta(days=1), NOW) and not wikicheck.due("off", NOW - dt.timedelta(days=99), NOW)
-    assert wikicheck.schedule_of({}) == "weekly" and wikicheck.schedule_of({"check": "hourly"}) == "weekly"
+    assert wikicheck.schedule_of({}) == "off" and wikicheck.schedule_of({"check": "hourly"}) == "off"   # on only when asked
 
 
 def test_the_check_runs_on_its_schedule_and_fixes_what_rules_found(fake_repo: Path, monkeypatch):
@@ -73,6 +74,8 @@ def test_the_check_runs_on_its_schedule_and_fixes_what_rules_found(fake_repo: Pa
     w = host.town.worker(bid)
     w.refresh()
     assert not w.running and w.load_quality()["seen"] == "2026-10-07T09:00:00"     # seen: nothing spent
+    assert host.detail(bid)["data"]["quality"]["check"] == "off"                   # off until the person turns it on
+    assert host.command("act", {"id": bid, "act": "check", "args": {"check": "weekly"}}) == "weekly"
     q = host.detail(bid)["data"]["quality"]
     assert q["check"] == "weekly" and q["next"] == "2026-10-14 09:00" and q["total"] == 4 and q["fixable"] == 4
     assert q["counts"]["link"] == 1 and q["counts"]["structure"] == 3
@@ -84,6 +87,14 @@ def test_the_check_runs_on_its_schedule_and_fixes_what_rules_found(fake_repo: Pa
     assert w.load_quality()["last"] == "2026-10-14T09:00:00"
     w.refresh()
     assert not w.running and len(prompts) == 1                                     # once for the week
+    clock["now"] = NOW + dt.timedelta(days=14)
+    w.refresh()
+    assert not w.running and len(prompts) == 1                                     # due, but no page changed
+    page = fake_repo / w.pages[0].path
+    os.utime(page, (page.stat().st_atime, page.stat().st_mtime + 60))
+    w.refresh()
+    _wait(w)
+    assert len(prompts) == 2                                                       # a page changed: checked
     assert host.detail(bid)["data"]["quality"]["cost"] == 0.05
 
     assert host.command("act", {"id": bid, "act": "fix", "args": {}})

@@ -252,7 +252,13 @@ async def test_auto_ingest_waits_for_the_sources_to_settle(fake_repo: Path, monk
         await pilot.pause()
         dump = app.desktop.get_window("dump").query_one(KnowledgeView)
         dump.refresh_data()
-        assert dump.pending and not librarian.calls                        # not settled yet
+        monkeypatch.setattr(scrolls, "SETTLE_S", 0)
+        dump.refresh_data()
+        assert dump.pending and not librarian.calls                        # the first look's backlog: the button's
+        (fake_repo / "docs" / "notes.md").write_text("# Notes\n\nchanged\n")
+        monkeypatch.setattr(scrolls, "SETTLE_S", 3600)
+        dump.refresh_data()
+        assert not librarian.calls                                          # changed, not settled yet
         (fake_repo / "kb" / "pages" / "how-to").mkdir(parents=True)
         monkeypatch.setattr(scrolls, "SETTLE_S", 0)
         dump.refresh_data()

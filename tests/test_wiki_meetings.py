@@ -144,6 +144,8 @@ def test_a_note_for_a_meeting_reaches_its_brief_and_moves_on(fake_repo: Path, mo
     clock["now"] = dt.datetime(2026, 10, 8, 12, 0)
     host.town.worker(drum).refresh()
     w.refresh()
+    assert page.read_text(encoding="utf-8") == text                  # a look only reads: no page is written
+    w.keep_agenda()                                                   # the next note or take-in writes them
     after = page.read_text(encoding="utf-8")
     assert "- 1 covered\n" in after and "- [x] Обсудить" in after and "Invoices" not in after
     nxt = host.detail(bid)["data"]["agenda"]["meetings"]

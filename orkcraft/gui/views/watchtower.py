@@ -208,6 +208,13 @@ def _add_claude(w, args: dict) -> None:
 
 
 @_adding
+def _add_via_claude(w, args: dict) -> None:
+    """The picker's Through Claude: the service starts, straight on Claude's connection (step 2)."""
+    w.adding.start(text(args, "service", 40))
+    w.adding.use_claude()
+
+
+@_adding
 def _add_ask(w, args: dict) -> None:
     """Step 2 through Claude: what to listen for, how often, the most a day — then one paid look."""
     try:
@@ -275,6 +282,7 @@ def _places_clear(w, args: dict) -> None:
 ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
         "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "add_claude": _add_claude,
+        "add_via_claude": _add_via_claude,
         "add_ask": _add_ask, "edit": _edit, "remove": _remove,
         "places_save": _places_save, "places_clear": _places_clear,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

@@ -204,8 +204,9 @@ ends up in Alex's brief.
 
 The librarian answers for the wiki's quality, on a schedule, and says what it found.
 
-- **When.** `config.check`: `weekly` (default, Monday at `day_starts` or 09:00), `daily`,
-  `ingest` (after each take-in) or `off`. *Check now* in the window, as *Check the wiki* is today.
+- **When.** `config.check`: `off` (default: a check spends, so the person turns it on), `weekly`
+  (Monday at `day_starts` or 09:00), `daily` or `ingest` (after each take-in). A due check is skipped
+  while no page changed since the last one ended (`quality.json` `pages`). *Check now* in the window, as *Check the wiki* is today.
   Each check is a `lint` job with its cost in the job log.
 - **Rules every refresh (no model):** a relative link to a file that is not there; a page missing
   from its section's `index.md`, or listed and missing; a page without front matter or without
@@ -226,7 +227,7 @@ The librarian answers for the wiki's quality, on a schedule, and says what it fo
 |---|---|---|
 | `inbox` | `notes/inbox` | where Quick notes are written (a source of the wiki) |
 | `calendar` | the only War Drum | the Calendar meetings are matched in |
-| `check` | `weekly` | the quality check: `weekly`, `daily`, `ingest`, `off` |
+| `check` | `off` | the quality check: `off`, `weekly`, `daily`, `ingest` |
 | `suggest_model` | on | ask the light model when rules find nothing |
 
 ## 10. Where the code goes
@@ -281,3 +282,10 @@ Not planned: reading attendees from `.ics` (`ATTENDEE` lines) — a later step t
   The bar has no ✕ per tag or link: what it should not keep is dropped in the Wiki's own Quick note.
 - **Tests.** `test_quicknote.py`, `test_wiki_meetings.py`, `test_wiki_quality.py`, `test_wiki_find.py`;
   the bar's `/note` in `test_gui_browser.py`.
+- **A look only reads (2026-10-08).** A refresh (every 30 s, the window opening) writes nothing: not the
+  meetings' pages (`keep_agenda(write=False)` only shows them; they are written when a note is kept and
+  after a librarian's run), not the sources, not the rules. The librarian starts by itself only for a
+  source whose fingerprint differs from what it last saw (`auto.json`): the backlog of the first look,
+  a batch a run already tried, and what waited when Stop all came wait for *Take in* or a new change.
+  The quality check is `off` unless turned on, and a due one is skipped while no page changed
+  (`test_stop_all.py`).

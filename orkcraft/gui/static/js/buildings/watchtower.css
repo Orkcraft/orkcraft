@@ -20,7 +20,7 @@
 
 /* The feed: one line per signal — new, source, from · what, when. */
 .gui-tower__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
-.gui-tower__row { display: grid; grid-template-columns: 1em minmax(0, 4.5em) minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+.gui-tower__row { display: grid; grid-template-columns: 1em minmax(0, 6.5em) minmax(0, 1fr) auto; align-items: center; gap: var(--space-2);
   width: 100%; min-width: 0; box-sizing: border-box; padding: var(--space-1) var(--space-2); border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent); background: none; font: inherit; color: var(--ink);
   text-align: left; cursor: pointer; }
@@ -30,7 +30,14 @@
 .gui-tower__row.is-read b { font-weight: 600; }
 .gui-tower__row.is-out { color: var(--ink-comment); }
 .gui-tower__src, .gui-tower__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gui-tower__src { color: var(--ink-muted); font-size: 12px; }
+.gui-tower__src { color: var(--ink-muted); font-size: 12px; display: flex; align-items: center; gap: var(--space-1); }
+.gui-tower__src .gui-svc { width: 18px; height: 18px; font-size: 11px; }
+.gui-tower__src-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gui-tower__addsrc { flex: none; }
+/* Sources, nothing in yet: the hint and its two buttons. */
+.gui-tower__empty.gui-tower__waiting { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--space-2); padding: var(--space-3) 0; }
+.gui-tower__waiting-head { font-weight: 700; margin: 0; }
+.gui-tower__waiting-acts { display: flex; gap: var(--space-2); }
 .gui-tower__at { color: var(--ink-muted); white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* A signal, or the sources and the intent, over the feed. */
@@ -40,7 +47,6 @@
 
 /* The empty tower's card: the one thing to do. */
 .gui-tower__add { align-self: flex-start; margin: var(--space-1) 0; }
-.gui-tower__plus { min-width: 28px; font-weight: 700; color: var(--ink-gold); }
 
 /* A service's glyph (icons/services, Simple Icons CC0) in the frame's gold, through a mask; Slack's is a `#`. */
 .gui-svc { display: inline-grid; place-items: center; flex: none; width: 22px; height: 22px; background: var(--panel-inset);
