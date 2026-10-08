@@ -50,3 +50,24 @@
 [data-look="office"] .gui-map__land { background: var(--panel-raised); box-shadow: inset 0 -1px 0 var(--frame); }
 [data-look="office"] .gui-map__title, [data-look="office"] .gui-map__name { font-family: var(--ok-font); text-shadow: none; }
 [data-look="office"] .gui-map__title { color: var(--ink-muted); }
+/* The onboarding: the grounds without their biomes, a planned town as a scheme — each building its type's
+   icon in a tile on a hairline road — and the map's plans the same, never a sprite. */
+[data-look="office"] .gui-onb__ground { background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+[data-look="office"] .gui-onb__house .ok-sprite, [data-look="office"] .gui-onb__ghost-roof .ok-sprite,
+[data-look="office"] .gui-onb__scaffold, [data-look="office"] .gui-onb__hammer { display: none; }
+[data-look="office"] .gui-onb__icon { display: grid; place-items: center; width: 44px; height: 44px; box-sizing: border-box;
+  background: var(--panel); border: 1px solid var(--hut-frame); border-radius: var(--ok-radius-md); margin-bottom: var(--space-2); }
+[data-look="office"] .gui-onb__icon .gui-type-icon { width: 22px; height: 22px; color: var(--ink); stroke-width: 1.2; }
+[data-look="office"] .gui-onb__house { min-height: 0; }
+[data-look="office"] .gui-onb__town { min-height: 0; align-items: flex-start; }
+[data-look="office"] .gui-onb__plate { box-shadow: inset 0 0 0 1px var(--frame); }
+[data-look="office"] .gui-onb__plate-name, [data-look="office"] .gui-onb__ghost-name { font: 600 13px/1.2 var(--ok-font); color: var(--ink); }
+[data-look="office"] .gui-onb__road { top: 22px; bottom: auto; left: calc(50% + 22px); right: calc(-50% + 22px); height: 0;
+  background: none; box-shadow: none; border-top: 1px solid var(--road); }
+[data-look="office"] .gui-onb__ghost-roof .gui-onb__icon { width: 30px; height: 30px; margin-bottom: var(--space-1); border-style: dashed; }
+[data-look="office"] .gui-onb__ghost.is-raising .gui-onb__icon { border-style: solid; border-color: var(--frame-focus); }
+[data-look="office"] .gui-onb__ghost-roof .gui-type-icon { width: 16px; height: 16px; }
+[data-look="office"] .gui-onb__ghost-card { border-width: 1px; }
+[data-look="office"] .gui-onb__badges { right: auto; left: calc(100% + 4px); top: 2px; display: grid;
+  grid-template-columns: repeat(2, 18px); gap: 2px; }
+[data-look="office"] .gui-onb__badges .gui-onb__svc { width: 18px; height: 18px; font-size: 11px; }

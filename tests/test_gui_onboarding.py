@@ -3,6 +3,7 @@ says, each skipped when its answer is known, and the town going up one step a ti
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
@@ -262,3 +263,64 @@ def test_the_guard_step_says_agy_is_unguarded_until_checked_live(fake_repo: Path
     host.town.machine.agy_warder_checked = True
     o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "billing": "subscription"}}})
     assert "guards agy too" in o["tools"]["warder_agy"]
+
+
+def _until(host: Host, done, what: str) -> dict:
+    for _ in range(100):
+        host.tick()
+        o = host.snapshot()["onboarding"]
+        if done(o):
+            return o
+        time.sleep(0.02)
+    raise AssertionError(what)
+
+
+def test_check_sends_a_short_request_and_says_what_went_wrong(fake_repo: Path, onboard):
+    from orkcraft.realm import tool_errors
+    asked = []
+
+    def ask(tool, prompt, model=None):
+        asked.append((tool, model))
+        if tool == "codex":
+            raise tool_errors.ToolError("codex", "Error: Not logged in. Please run codex login", 1)
+        return "ok", None
+    host = _host(fake_repo)
+    host.onboarding._ask = ask
+    o = host.command("onboarding.check", {"tool": "claude"})
+    assert o["tools"]["rows"][0]["check"]["state"] in ("running", "ok")
+    host.command("onboarding.check", {"tool": "codex"})
+    rows = _until(host, lambda o: all((r["check"] or {}).get("state") not in (None, "running")
+                                      for r in o["tools"]["rows"]), "no answer")["tools"]["rows"]
+    ok, failed = rows
+    assert ok["check"]["state"] == "ok" and ok["check"]["ms"] >= 0
+    assert failed["check"]["state"] == "failed" and failed["check"]["kind"] == "login"
+    assert failed["check"]["line"] == "Codex is not signed in, or its sign-in has expired."
+    assert failed["check"]["action"] == "Sign in again in a terminal: codex login"
+    assert sorted(asked) == [("claude", "laborer"), ("codex", "laborer")]       # the cheapest tier
+    with pytest.raises(CommandError):
+        host.command("onboarding.check", {"tool": "agy"})                       # not found here
+
+
+def test_no_ai_tool_offers_three_to_install_and_check_again(fake_repo: Path, onboard, monkeypatch):
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: [tools.ToolStatus(t, found=False) for t in tools.TOOLS])
+    host = _host(fake_repo)
+    t = host.snapshot()["onboarding"]["tools"]
+    assert t["ready"] and t["rows"] == []
+    rec = {r["id"]: r for r in t["recommended"]}
+    assert list(rec) == ["claude", "codex", "cursor"]
+    assert rec["claude"]["install"] == "npm i -g @anthropic-ai/claude-code" and rec["codex"]["login"] == "codex login"
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: _statuses())          # one was installed meanwhile
+    host.command("onboarding.detect", {})
+    o = _until(host, lambda o: o["tools"]["ready"], "never looked again")
+    assert [r["id"] for r in o["tools"]["rows"]] == ["claude", "codex"]
+
+
+def test_a_service_two_servers_reach_is_used_through_one(fake_repo: Path, onboard, monkeypatch):
+    monkeypatch.setattr(mcp, "found", lambda *a, **k: [
+        mcp.Server("amplitude", "Amplitude", ("codex",)),
+        mcp.Server("github-enterprise", "GitHub", ("claude",), "github"),
+        mcp.Server("github", "GitHub", ("claude", "codex"), "github")])
+    o = _host(fake_repo).snapshot()["onboarding"]
+    assert o["mcp"]["services"] == [{"title": "Amplitude", "glyph": "", "ids": ["amplitude"]},
+                                    {"title": "GitHub", "glyph": "github", "ids": ["github", "github-enterprise"]}]
+    assert o["mcp"]["on"] == ["amplitude", "github"]                         # the one in the most AI tools
