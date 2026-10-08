@@ -372,7 +372,7 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
 
     def wait(proc: subprocess.Popen) -> None:
         deadline = time.monotonic() + AGENT_TIMEOUT_S
-        with halt.running(proc):                       # 🛑 Halt All kills it: Halted
+        with halt.running(proc, env.get("ORKCRAFT_ORC") or harness, agent=True):   # 🛑 Halt All kills it: Halted
             while proc.poll() is None:
                 if cancel.wait(0.2) or time.monotonic() > deadline:
                     proc.terminate()

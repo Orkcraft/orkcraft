@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from orkcraft import schedule
 from orkcraft.core import treasury
+from orkcraft.realm import halt
 from orkcraft.widgets.hud import Resources
 
 
@@ -49,7 +50,8 @@ class TreasuryMixin:
         self._hud.set_resources(Resources(
             budget=self.scroll.budget,
             supply=self.roster.active, supply_max=self.scroll.budget.supply_max_workers,
-            agents=len(self.roster.agents), agents_working=self.roster.working,
+            agents=max(len(self.roster.agents), working := self.roster.working + halt.agents()),
+            agents_working=working,                     # the buildings' agent processes too (realm/halt.py)
             alerts=len(self.roster.alerts), commit=self.config.auto_commit,
             gold=gold, gold_level=gold_level, lumber=lumber, lumber_level=lumber_level,
             quota=quota, quota_level=quota_level, show_gold=show_gold, hour=hour,

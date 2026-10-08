@@ -116,3 +116,9 @@
 .drum-imports__row { display: flex; align-items: baseline; gap: var(--space-2); }
 .drum-imports__name { flex: 1; min-width: 0; }
 .drum-imports > .ok-act { align-self: flex-start; }
+
+/* The empty week: how to bring a calendar in. */
+.drum-bring { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2); background: var(--panel-inset); box-shadow: var(--bevel-sunken); border-radius: var(--ok-radius); }
+.drum-bring p { margin: 0; }
+.drum-bring__head { font-weight: 700; }

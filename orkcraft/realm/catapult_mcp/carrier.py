@@ -156,7 +156,8 @@ def carry(harness_id: str, server: str, tool: str, args, goal: str, cart, workdi
         if run is not None:
             proc = run(argv, workdir, env)
         else:
-            proc = halt.run(argv, input="", cwd=str(workdir), env=env, timeout=CARRY_TIMEOUT_S)
+            proc = halt.run(argv, input="", cwd=str(workdir), env=env, timeout=CARRY_TIMEOUT_S,
+                            who="catapult", agent=True)
     except FileNotFoundError:
         return Carried(False, error=f"{h.title} CLI not found ({argv[0]})", kind="auth")
     except subprocess.TimeoutExpired:

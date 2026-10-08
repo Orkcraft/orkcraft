@@ -6,7 +6,9 @@
 // A service Claude Code has a connection for offers a second way at step 1: Claude's connection, no token, a
 // paid look every 30 min (§7.3); its step 2 asks what to listen for, how often and the most a day.
 // Past the picker, ← Back stands in the panel's top right corner (js/setup.js), not in a step's foot; Add
-// opens the tower's Info (§4.4). The picker's services stand in groups: Messengers, Mail, Code, Calendar, Other.
+// opens the tower's Info (§4.4); on the picker it goes back to the messages. The picker's services stand in
+// groups: Messengers, Mail, Code, Calendar, Other — and Through Claude: the services Claude Code has a
+// connector (MCP) for, each straight to Claude's connection (realm/feeds_agent.py).
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -14,9 +16,13 @@ import { useSetupBack } from "../setup.js";
 
 const STEPS = [["login", "Log in"], ["what", "What"], ["check", "Check"]];
 
-/** A service's glyph in the frame's gold (icons/services, Simple Icons CC0); Slack, without one, a `#`. */
+// The sources without a service's glyph: a sign of their own.
+const SIGN = { slack: "#", mail: "@", agent: "✦", cron: "⏱", webhook: "↯" };
+
+/** A service's glyph in the frame's gold (icons/services, Simple Icons CC0); Slack, mail, Claude, the
+ *  schedule and a webhook a sign. */
 export function Glyph({ service, big = false }) {
-  return html`<span class=${cls(`gui-svc gui-svc--${service}`, { "is-big": big })} aria-hidden="true">${service === "slack" ? "#" : ""}</span>`;
+  return html`<span class=${cls(`gui-svc gui-svc--${service}`, { "is-big": big })} aria-hidden="true">${SIGN[service] || ""}</span>`;
 }
 
 function Steps({ step }) {
@@ -42,7 +48,25 @@ function State({ a }) {
 
 // -- the picker -------------------------------------------------------------------------------------------
 
-function Picker({ id, a, back }) {
+/** The services Claude Code has a connector for: each a source through Claude's connection, no token. */
+function ThroughClaude({ id, a }) {
+  const found = a.claude || [];
+  return html`<section class="gui-add__group" aria-label=${say("Through Claude")}>
+    <h4 class="gui-add__group-title">${say("Through Claude (MCP)")}</h4>
+    <p class="ok-tone-muted gui-add__sub">${say("No token: Claude reads through the connector it already has. Each look is a model run you pay for.")}</p>
+    ${found.length ? html`<div class="gui-add__tiles">
+        ${found.map((c) => html`<button key=${c.service} class="gui-add__tile" title=${c.server}
+            onClick=${() => act(id, "add_via_claude", { service: c.service }).catch(() => {})}>
+          <span class="gui-add__tile-top"><${Glyph} service=${c.service} />${c.label}</span>
+          <span class=${cls("gui-add__mark", { "ok-tone-ok": c.status === "connected", "ok-tone-wait": c.status !== "connected" })}>
+            ${c.status === "connected" ? `✓ ${c.server}` : c.status}</span></button>`)}</div>`
+      : html`<p class="ok-tone-muted gui-add__sub">${say(a.claude_asked
+        ? "None found. Connect Jira, Confluence, Slack or Gmail in Claude Code (/mcp), then open this again."
+        : "Asking Claude Code which connectors it has…")}</p>`}
+  </section>`;
+}
+
+function Picker({ id, a }) {
   const [link, setLink] = useState("");
   const go = () => link.trim() && act(id, "add_link", { link: link.trim() }).catch(() => {});
   return html`<div class="gui-add">
@@ -65,8 +89,8 @@ function Picker({ id, a, back }) {
           <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
           <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
       </div></section>`)}
+    <${ThroughClaude} id=${id} a=${a} />
     <p class="ok-tone-muted gui-add__sub">Tokens stay on this machine, in Logins. No model sees them.</p>
-    ${back && html`<button class="ok-btn gui-tower__back" onClick=${back}>← Signals</button>`}
   </div>`;
 }
 
@@ -249,14 +273,15 @@ export function editSource(id, source, login) {
 }
 
 /** The pane over the feed: opens the picker when nothing is under way; `done` goes back to the signals,
- *  `saved` follows Add (the tower's Info). Past the picker, the panel's ← Back takes a step back. */
+ *  `saved` follows Add (the tower's Info). The panel's ← Back takes a step back; on the picker, back to the
+ *  messages (none while the tower has no source: the picker is all it has). */
 export function AddPane({ id, d, done, saved }) {
   const a = d.adding;
   if (a) awaited.delete(id);
-  useSetupBack(id, a && a.step !== "pick" ? () => act(id, "add_back").catch(() => {}) : null);
-  useEffect(() => { if (!a && !awaited.has(id)) act(id, "add_open").catch(() => {}); }, [!a]);
   const close = () => act(id, "add_close").then(done, done);
   const back = d.sources.length ? close : null;
+  useSetupBack(id, a && a.step !== "pick" ? () => act(id, "add_back").catch(() => {}) : back);
+  useEffect(() => { if (!a && !awaited.has(id)) act(id, "add_open").catch(() => {}); }, [!a]);
   const keys = (e) => {
     if (e.key !== "Escape" || e.target.tagName === "INPUT") return;
     e.stopPropagation();
@@ -265,7 +290,7 @@ export function AddPane({ id, d, done, saved }) {
   };
   if (!a) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
   return html`<div class="gui-add__pane" onKeyDown=${keys}>
-    ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} back=${back} />`
+    ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} />`
       : a.step === "login" ? html`<${Login} key=${a.service} id=${id} a=${a} />`
       : a.step === "what" && a.via ? html`<${Ask} key=${`${a.service}-claude`} id=${id} a=${a} />`
       : a.step === "what" ? html`<${What} key=${a.service} id=${id} a=${a} />`

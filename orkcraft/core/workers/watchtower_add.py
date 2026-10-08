@@ -33,6 +33,7 @@ class Adding:
         self.w = worker
         self.gh = ""                      # who gh is logged in as ("" not yet known or not logged in)
         self.claude: list[feeds_agent.Connector] = []     # the servers Claude Code has (asked when the picker opens)
+        self.claude_asked = False         # Claude Code answered which servers it has (the picker says "asking…" before)
         self.reset()
 
     def reset(self) -> None:
@@ -100,6 +101,7 @@ class Adding:
         """The picker: which services already have a login here (gh asked in a thread)."""
         self.reset()
         self.step = "pick"
+        self.claude_asked = bool(self.w.simulated)
         self.w.changed()
         if not self.w.simulated:
             runner, mcp = self._runner(), type(self.w).mcp_runner
@@ -113,7 +115,7 @@ class Adding:
         self.w.changed()
 
     def _claude(self, found: list) -> None:
-        self.claude = found
+        self.claude, self.claude_asked = found, True
         self.w.changed()
 
     def connector(self, service: str = "") -> feeds_agent.Connector | None:
@@ -418,6 +420,15 @@ class Adding:
             out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓"), "group": s.group})
         return out
 
+    def through_claude(self) -> list[dict]:
+        """The picker's Through Claude: each service Claude Code has a connector (MCP) for, and its state."""
+        out = []
+        for service in feeds_agent.READS:
+            c = self.connector(service)
+            if c is not None and service in quickadd.SERVICES:
+                out.append({"service": service, "label": quickadd.SERVICES[service].label, "server": c.name, "status": c.status})
+        return out
+
     @staticmethod
     def groups() -> list[dict]:
         """The picker's groups in their order, each with its word; one with no service does not show."""
@@ -443,6 +454,8 @@ class Adding:
         if self.step == "pick":
             out["services"] = self.services()
             out["groups"] = self.groups()
+            out["claude"] = self.through_claude()
+            out["claude_asked"] = self.claude_asked
             return out
         c = self.connector()
         out["claude"] = {"name": c.name, "status": c.status} if c and self.service in feeds_agent.READS else None

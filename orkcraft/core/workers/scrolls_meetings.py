@@ -1,12 +1,13 @@
 """The Wiki's meetings (docs/design/wiki-librarian.md §5–6): a part of `ScrollsWorker` (scrolls.py); its
 methods run with the worker as `self`.
 
-`keep_agenda()` (every refresh) reads the notes in the inbox: a note that names a meeting (its
+`keep_agenda()` reads the notes in the inbox: a note that names a meeting (its
 `meeting:` id) goes under To discuss on that meeting's page; a note that names people but no meeting is
 an open item and binds to the next meeting of the Calendar named after one of them. The page is
-written at once, by rules (realm/agenda.py), and committed alone; the librarian writes the rest of it
-at take-in. When a meeting is over, what was not ticked off is released: an open item for the next
-meeting with the same person. `meeting_context` is what a meeting's brief reads first (`lend`).
+written by rules (realm/agenda.py) when a person keeps a note and after a librarian's run, and
+committed alone; the librarian writes the rest of it at take-in. A refresh only reads
+(`write=False`): it shows what each meeting has, and writes nothing. When a meeting is over, what was
+not ticked off is released at the next write: an open item for the next meeting with the same person. `meeting_context` is what a meeting's brief reads first (`lend`).
 
 Its state is `agenda.json`: `bound` (a note → the meeting it was bound to; "" released), `done` (a
 note → the meetings it was on), `meetings` (an id → title, when, end, page, closed).
@@ -107,10 +108,14 @@ class MeetingsMixin:
 
     # -- keeping it -----------------------------------------------------------------------------
 
-    def keep_agenda(self, now: dt.datetime | None = None) -> list[str]:
+    def keep_agenda(self, now: dt.datetime | None = None, write: bool = True) -> list[str]:
         """Bind the notes to their meetings, write the meetings' pages, close the meetings that are over.
-        The pages written (repo-relative)."""
+        The pages written (repo-relative). `write=False` (a refresh): only what the meetings have, for
+        the card and the Calendars; no page, no state, no commit."""
         now = now or self.clock()
+        if not write:
+            self._show_agenda(now)
+            return []
         state = self.load_agenda()
         bound, done, known = state["bound"], state["done"], state["meetings"]
         cal = {m.id: m for m in self.meetings()}
@@ -185,12 +190,15 @@ class MeetingsMixin:
             wiki.commit_files(self.repo_root, written + [index], f"wiki({self.topic}): what the meetings should cover")
         if released:                                       # what moved on finds its next meeting now
             return written + self.keep_agenda(now)
+        self._show_agenda(now)
+        return written
+
+    def _show_agenda(self, now: dt.datetime) -> None:
         view = self.agenda_view(now)
         if view != self.agenda_cache:                      # the Calendars say what is kept for their meetings
             self.agenda_cache = view
             for cal in self.calendar_workers():
                 cal.changed()
-        return written
 
     def _after_line(self, mid: str, covered: int, left: int) -> str:
         doc = next((d for cal in self.calendar_workers() if hasattr(cal, "docs") for d in [cal.docs().get(mid)] if d), {})
