@@ -2,7 +2,9 @@
 
 Status: research note, written 2026-10-06, for the roadmap item *Research: guarding agy as Claude
 Code is guarded*. §7 is built (`warder.py agy`, `hooks install`, the version gate) but stays
-unclaimed in onboarding until the smoke test of §8 passes on a live agy. agy could not be installed here (its installer and docs at
+unclaimed in onboarding until the smoke test of §8 passes on a live agy. Since 2026-10-07 the
+window's onboarding says so too (`hooks/install.py` `agy_warder_line`, shared with the terminal's).
+The smoke test is still open. agy could not be installed here (its installer and docs at
 antigravity.google are blocked by this machine's network), so nothing below was tried on a live agy.
 Each claim is marked **[v]** verified, with its source, or **[u]** unverified.
 
@@ -129,7 +131,7 @@ to `_WIDENS` (a one-word change) before trusting the Elders' answers on agy.
   The status line's payload has had a `cost` field ("unrounded estimated cost of the current
   session") since 1.1.21 [v CL]. The engine holds per-model prices and `estimated_cost_usd`
   [v ENG strings]; whether print mode outputs it is [u].
-- `roads._result_of` reads `total_cost_usd`, and its token reader uses Claude's key names, so agy runs
+- `harnesses.json_result` reads `total_cost_usd`, and its token reader uses Claude's key names, so agy runs
   come out unpriced and probably without tokens [u: the exact JSON keys of agy's result].
 - A subscription (Google sign-in) is paid in quota, not dollars. Its windows are already read from
   `agy -p /usage`, so "unpriced" is the honest 🪙 answer there. Only a `GEMINI_API_KEY` run has a

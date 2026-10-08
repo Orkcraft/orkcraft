@@ -540,6 +540,45 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
         call("town.demolish", {"id": bid})
 
 
+def test_the_stewards_road_rules_are_listed_under_it_and_an_agent_is_handed_over(page, gui):
+    """docs/design/steward-listens.md §4: a road rule is no ork — it is listed under the steward, opens its own
+    panel (its words, roads, runs); an agent handler's Info hands it to the steward, showing what changes."""
+    from orkcraft import scroll as ts
+    pg, host = page, gui[0].host
+    link = "import('/static/js/link.js')"
+    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
+    src, dst = call("town.build", {"type": "forge"}), call("town.build", {"type": "pit"})
+    ts.add_handler(host.town.scroll, dst, "Boss's mail", kind="steward", orders="Only the boss's patches.")
+    mailman = call("building.recruit", {"id": dst, "name": "Mailman", "role": "reads", "orders": "Summarise it."})
+    choices = call("roads.choices", {"from": src, "to": dst})
+    for handler in ("boss_s_mail", mailman.split("/", 1)[1]):
+        pick = next(c for c in choices if c.get("handler") == handler)
+        call("roads.lay", {"from": src, "to": dst, "event": pick["event"], "handler": handler})
+    _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _hut(pg, dst).locator(".gui-hut__title").click()
+    _info(pg)
+    rules = pg.locator(".gui-steward__group", has_text="Road rules")
+    rules.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Boss's mail" in rules.inner_text() and "→ here" in rules.inner_text()
+    assert not pg.locator(".gui-panel .gui-section", has_text="Garrison").filter(has_text="Boss's mail").count()
+    rules.locator(".gui-steward__rule").first.click()
+    pg.locator(".gui-rule").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Only the boss's patches." in pg.locator(".gui-rule__words").inner_text()
+    pg.locator(".gui-info__back").click()
+    pg.locator(".gui-steward__road", has_text="Mailman").locator(".gui-steward__more").click()
+    pg.get_by_role("button", name="Hand to the steward").click()
+    modal = pg.locator(".gui-modal")
+    modal.locator(".gui-hand").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Summarise it." in modal.inner_text()
+    modal.get_by_role("button", name="Hand it over").click()
+    pg.locator(".gui-rule").wait_for(state="visible", timeout=WAIT_MS)
+    assert host.town.scroll.building(dst).garrison.handler("mailman").kind == "steward"
+    pg.keyboard.press("Escape")
+    for bid in (src, dst):
+        call("town.demolish", {"id": bid})
+
+
 def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(page):
     """The project's name opens the town's settings: its autonomy and, on the clock, its two waits;
     Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
@@ -635,7 +674,7 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel = pg.locator(".gui-panel")
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
-    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 6
+    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
     panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
     shot("1-picker")
     panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
@@ -648,6 +687,13 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Continue").click()
     panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     shot("3-what")
+    whole = panel.locator(".gui-add__switch", has_text="Everything")             # §6: the whole site, an intent asked
+    whole.click()
+    panel.locator("#add-intent-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-add__options").count() == 0
+    shot("3b-everything")
+    whole.click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("4-check")
@@ -657,6 +703,28 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
+    # the token is revoked: the next look fails as the login, and Log in again fixes it in one step (§8)
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener({**ATL, "acme.atlassian.net/rest/api/3/myself": 401}))
+    panel.get_by_role("button", name="Check now").click()
+    failing = panel.locator(".gui-tower__failing", has_text="the token was refused")
+    failing.wait_for(state="visible", timeout=WAIT_MS)
+    row = panel.locator(".gui-tower__source.is-bad", has_text="Jira")
+    row.get_by_role("button", name="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    shot("7-failing")
+    monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
+    failing.get_by_role("button", name="Log in again").click()
+    panel.locator(".gui-add__sub", has_text="Log in again").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-site-" + bid).count() == 0          # the site is kept
+    panel.locator("#add-email-" + bid).fill("ann@acme.io")
+    panel.locator("#add-token-" + bid).fill("n" * 24)
+    shot("8-login-again")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.get_by_role("button", name="Keep it").click()
+    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Check now").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-panel .gui-tower__failing')", timeout=WAIT_MS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 

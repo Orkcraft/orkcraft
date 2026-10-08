@@ -37,11 +37,6 @@ def find_project_root(start_path: Path | None = None) -> Path:
     )
 
 
-def get_editor() -> str:
-    """Return the preferred editor from environment variables, defaulting to nano."""
-    return os.environ.get("EDITOR") or os.environ.get("VISUAL") or "nano"
-
-
 @dataclass
 class Config:
     """orkcraft configuration settings."""

@@ -191,7 +191,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence, Figma, GitHub (many repos, notifications), GitLab and Discord, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own (a route no road takes is a dashed stub off the post on the map: pull a road from it to a building); a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
@@ -334,15 +334,35 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     presses submit with no schema and no confirmation.
 - **Add a source** (the GUI; design/watchtower-quick-add.md). A tower with no source opens its panel on
   it, and its card says **+ Add a source**; later the **+** chip and Sources & intent open it. It stays
-  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a Slack channel, a Jira
-  issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, Gmail, Slack, Jira,
-  Confluence or Figma, then three steps: **Log in** (gh's own login for GitHub, nothing to paste; else
-  one paste — an app password, a token — with the link to the page that makes it; Slack's app comes
-  from a ready manifest), **What** (repos, channels, projects, spaces or files, this project's repo
-  ticked; *about me* on), **Check** (the first look, made now: as whom, what it hears, how many are
-  there — marked seen, not sent) and **Add**. A source's row in Sources & intent says what it hears and
-  whether it fails, with Remove (confirmed). Not yet: GitLab, Discord, many GitHub repos and GitHub
-  notifications, listening through Claude's connectors.
+  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a GitLab project — on
+  gitlab.com or a host this machine has a GitLab login for —, a Slack channel, a Discord channel, a
+  Jira issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, GitLab, Gmail, Slack,
+  Jira, Confluence, Figma or Discord, then three steps: **Log in** (gh's own login for GitHub and
+  glab's for GitLab, nothing to paste — else a token; else one paste — an app password, a token — with
+  the link to the page that makes it; Slack's app comes from a ready manifest; Discord's bot is made
+  in its developer portal and invited by the link the next step gives), **What** (repos, projects,
+  channels, spaces or files, this project's repo ticked; *about me* on — GitHub's notifications,
+  GitLab's to-dos, mentions; Discord asks who **Me** is, by user id or a link to a message you wrote),
+  **Check** (the first look, made now: as whom, what it hears, how many are there — marked seen, not
+  sent) and **Add**. A source's row in Sources & intent says what it hears and whether it fails, with
+  **Edit** (step 2, its picks ticked), **Log in again** when its login fails (step 1, what it hears
+  kept; the new line takes the old one's place) and Remove (confirmed). A failing source says which
+  way, and offers that one fix in the panel's head too: *the token was refused* → Log in again; *a
+  channel, repo, project or file is gone or out of reach* → Edit; *could not reach* the service → no
+  button, it tries again by itself. **Everything** (step 2, off by default) hears a whole service at
+  once — GitHub's every notification (`notifications=all`), every Slack message the login can see
+  (`everything=on`), every channel of the servers a Discord bot is in (`guilds=`), every issue of a
+  Jira site (`jql=updated >= -1d`), every Confluence page and comment, the whole Gmail mailbox (All
+  Mail); a tower with no intent asks for one there (empty keeps everything). Figma's whole team waits
+  for push.
+- **Through Claude** (design/watchtower-quick-add.md §7): a `feeds` line `agent: tool=claude
+  server=atlassian tools=searchJiraIssuesUsingJql,getJiraIssue every=30m ceiling=0.50 ask=new comments
+  and mentions in Jira` hears a service through the person's own connector in Claude Code, no token
+  on this machine: a headless `claude -p` on the light model, allowed only the tools listed (name
+  read-only ones), the answer by schema. Every 30 min by default (10 at the fastest); each look's cost
+  goes to Spend and to the source's line (`≈ $0.12 today`); past its `ceiling=` dollars a day it
+  waits until tomorrow. A server that needs a login says *run /mcp in Claude Code*. The picker does
+  not offer it yet: write the line, or ask the steward.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,
@@ -361,11 +381,17 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     - "jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN"            # jql=… takes the rest
     - "confluence: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN spaces=DOC"   # cql=… too
     - "figma: token=FIGMA_TOKEN files=AbC123,XyZ789"
+    - "github: repos=acme/app,acme/api notifications=on"   # gh's login; or token=GH_TOKEN (classic, for notifications)
+    - "gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on"   # read_api; no token: glab's login
+    - "discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789"   # a bot with Message Content Intent
   ```
 
-  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
-  `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
-  service). Your own messages are skipped; each feed's first look only marks what is there as seen.
+  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment, a
+  GitHub notification (a review asked, a mention, an assignment, a thread you are in), a GitLab
+  to-do, a Discord message that mentions you (`me=`) or the bot or answers you → `watch.mention`; any
+  other new comment or message → `watch.comment` (its title starts with the service); a GitHub repo's
+  events → `watch.github`, as the `github:` setting's. Your own messages are skipped; each feed's
+  first look only marks what is there as seen.
 - The same services can **push** instead (no two-minute wait): the Watchtower's webhook listens on
   127.0.0.1 only, so give it a public address with a tunnel (`cloudflared tunnel --url
   http://127.0.0.1:8787`, ngrok, tailscale funnel; `smee.io` for GitHub) and point each service at
@@ -591,15 +617,25 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   the mocks.
 - **Roads in words.** *➕ Listen* in the GUI (or an arrow drawn from a building's + to another) asks
   what it should listen to and what should happen to it — *"unread messages become to-dos"*. The
-  receiver's steward offers up to three roads (an event, a filter, or a rule an ork handles); picking
+  receiver's steward offers up to three roads (an event, a filter, or a **road rule** — *Set up the rule*
+  sends it to the Recruiter); picking
   the event or the building by hand is folded below. In the TUI: `Y`, the source, *💬 Say it in words…*
   (docs/design/roads-and-orcs.md §5b).
 - **Roads with a prompt.** `Y`, then click the source building (or press its number); "✨ Listen
   with a prompt…" takes one or several of its events and says how to handle them. The Recruiter
-  makes the handler — a chain or a script whenever the rule needs no judgement — then the Council
-  reviews it; a rejection comes back to the dialog with the prompt emptied. Script handlers run once
-  approved (`python3 -I`, records on stdin) and are held again if the file changes; a hybrid's
-  exit 3 hands over to its agent.
+  makes the handler — a chain or a script whenever the rule needs no judgement, else a **road rule**
+  the building's steward carries out — then the Council reviews it; a rejection comes back to the
+  dialog with the prompt emptied. Script handlers run once approved (`python3 -I`, records on stdin)
+  and are held again if the file changes; a hybrid's exit 3 hands over to the steward (or, for a
+  hybrid of old with tools of its own, to its agent).
+- **Road rules** (docs/design/steward-listens.md). A rule needing judgement is no new ork: it is a
+  handler of kind `steward`, its words in `orders`, with no tools of its own. On every cart the
+  steward carries it out on its own tool (its first harness step, else the main tool) with the
+  building's purpose (the steward's role and orders) in the prompt, at its tier for **listen** —
+  the one picked in the steward's models, else the one the goal names (🪙 laborer · ⚖️ warrior ·
+  💎 elder; 🪙 while the quota is tight). Runs, spend and 👍 / 👎 stay the rule's own (its chronicle,
+  `.orkcraft/history/handlers/`); the 🪙 budget and Stop all apply as to any agent. An `agent`
+  handler of old keeps running on its own tools.
 - **👍 / 👎** sit beside the steward in the console (or `K` / `F`). 👍 keeps a building's last
   result as a reference — up to three are shown to its agents and steward prompt. `F` asks what went wrong:
   broken inputs penalise its suppliers along the roads that delivered this session (1, ½, ¼ by
@@ -630,7 +666,10 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
 - **Retros** never apply themselves (design: `docs/design/retros-and-goals.md`). The daily
   🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
   24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
-  will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
+  will eat before it resets (`realm/pressure.py`). What is left comes from the quota's tokens per
+  1 %, measured from a 🪨 Tally Crag's samples once the quota climbed 10 points under sampling in a
+  week (the ledger's tokens over the points climbed, stretches cut at a reset or a gap), else
+  estimated from the camp's own spend. It takes the first that got no 👍 since its last
   change, or a 👎 today, reads its recent runs and proposes one checked change towards the building's
   **goal** — 🪙 thrift · ⚖️ balance · 💎 quality, a click on the goal button beside 👍 / 👎 in the Info
   panel cycles it (`buildings[].goal` in the Town Scroll; missing = balance). 💎 buildings the operator
@@ -684,13 +723,15 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   pi through orkcraft's extension (`-e`, and `.pi/extensions/orkcraft.ts`), Hermes in a marked block
   of `~/.hermes/config.yaml`, written only after asking (`--hermes-global` / `--no-hermes-global`).
   pi has no approvals or sandbox of its own: reading orks get only its reading tools.
-- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); agy, Codex and
-  Cursor do not (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
+- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); Codex is priced
+  from its model and token counts once OpenAI's table in `sources/pricing.py` has that model (it is
+  empty until a person reads OpenAI's page, so Codex runs are unpriced for now); agy and Cursor print
+  no price (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
   month (its stored login); pi keeps no windows.
 
 ## Orks: steward, handlers, Recruiter
 
-- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
+- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid, 📜 road rule; the marks are the
   harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `⌬` Codex (green), `P` a pipeline (magenta), e.g. `✦→✻` (agy
   writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
@@ -721,16 +762,31 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orks, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.
-- **`R` Recruit**: describe what the ork should do and press *Ask the Recruiter* — Claude picks the
-  cheapest kind (chain → script → agent → hybrid), explains why, proposes its roads; the preview
-  shows it all with attempts and cost, Enter recruits (handler + roads). Scripts are saved as drafts
-  under `.orkcraft/scripts/` and do not run yet. The name / role / orders fields below still recruit
-  an agent by hand.
+- **`R` Recruit**: describe what the ork should do and press *Ask the Recruiter* — the steward's tool
+  picks the cheapest kind (chain → script → road rule → hybrid), explains why, proposes its roads; the
+  preview shows it all with attempts and cost (a road rule: the steward's listen tier it will run at),
+  Enter recruits (handler + roads). An `agent` with tools of its own only for a pipeline of tools the
+  steward does not have (`write: agy → review: claude`). Scripts are saved as drafts under
+  `.orkcraft/scripts/` and run once reviewed. The name / role / orders fields below still recruit an
+  agent by hand.
+- **Road rules in the GUI**: a rule is never drawn as an ork. The steward's part of Info lists them
+  under **Road rules** (`📜 Boss's mail · 🗼 Inbox · new mail → here · 🪙 $0.05 · 4 runs`); a click opens
+  the rule — its words (*Edit*), its roads, the steward's tier it runs at, its spend and latest runs,
+  *Remove* (its roads stay, plain). The steward's models list **Listen: carry out the road rules** with
+  what the rules spent. An agent handler's Info has **Hand to the steward**: it shows what changes (tools,
+  tier, the spend per run now and an estimate on the steward's tier) and turns its orders into a rule;
+  its roads stay; *Revert* takes it back.
 - **`W` Steward** (Unit state on a ★ steward): watch now — free metrics (errors, jams, noisy filters,
-  🪙, an agent repeating itself); a model is asked only when something was found. Proposals
-  (demote an agent to a chain — replayed on its recorded runs first —, rerun policy, filter, new
-  road) open in a list; Enter applies a ready one. A steward whose trigger is `cron` watches on its
-  schedule in the background (`* * * * *` or `daily 05:00`).
+  🪙, a rule or an agent repeating itself, the costliest first); a model is asked only when something
+  was found. Proposals: demote a rule or an agent to a **chain** (replayed on its recorded runs first;
+  shown with the spend it saves, *≈ $1.80/week → $0*) or to a **script** / a **hybrid** (never run
+  before review: *Apply* is your review, then the Council's Fast Path reads it, then it is replayed and
+  replaces the rule only if it agrees); **hand** an agent on the steward's own tool to the steward;
+  **back to the rule** when code that came from a rule keeps failing (its words stay next to its code);
+  rerun policy, filter, new road. The report lists what each rule and agent spent. A ready chain may be
+  applied by the orks themselves under the building's Autonomy (🕰 / ⛓️‍💥, in quiet hours, with the
+  Council and probation); a script never is. A steward whose trigger is `cron` watches on its schedule
+  in the background (`* * * * *` or `daily 05:00`).
 
 ## Custom buildings (Mason & Artisan, retired)
 
@@ -806,7 +862,7 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder (`claude -p`, or Codex or agy, which print no price), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
+  Town Builder (`claude -p`, or Codex or agy, which print no price — Codex is priced from its tokens), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
   Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
@@ -815,8 +871,13 @@ the CLI paths.
 - Prices are the published first-party Claude API rates (`orkcraft/sources/pricing.py`, with the
   source URL and date), including cache-write TTLs, fast mode and `inference_geo: "us"`. They are
   **API-equivalent estimates**, not a bill: Claude Pro / Max plans don't charge per token, and
-  Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
-  price (agy, Codex and Cursor sessions, unknown models) — it is never counted as $0.
+  Bedrock / Vertex price separately. Codex (`codex exec` runs and War Tent sessions, read from the
+  session's rollout file) is priced from its model and tokens with a second table, OpenAI's rates,
+  with its own source and date. The model is the one orkcraft passed with `--model`, or `model` in
+  `$CODEX_HOME/config.toml`. For a ChatGPT login this is an API-equivalent estimate too. That
+  table is still empty, so Codex runs show `+` for now. A `+` after the amount means some usage had
+  no published price (agy and Cursor sessions, Codex until its table is filled, unknown models). It
+  is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
   shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
@@ -847,9 +908,10 @@ the CLI paths.
   file tools, read once agy trusts the folder; it answers only deny or ask, never allow (agy ignores
   a hook's allow in headless runs). agy's headless steps run in a temp folder and read only
   `~/.gemini/config/hooks.json`, which `orkcraft hooks install` writes only after asking
-  (`--agy-global` / `--no-agy-global` answer for it). Onboarding says the Warder guards agy only once
-  its hook was checked on a live agy (`agy_warder_checked` in the machine settings,
-  [agy-guard](design/agy-guard.md) §8).
+  (`--agy-global` / `--no-agy-global` answer for it). Onboarding (in the window and in the terminal)
+  says the Warder guards agy only once its hook was checked on a live agy (`agy_warder_checked` in
+  the machine settings, [agy-guard](design/agy-guard.md) §8). Until then, when agy is chosen, the
+  guard step says agy is unguarded, and a raised town gets no agy hook.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 
@@ -1051,6 +1113,7 @@ onboarding (*Punk ork*).
 | Warchief | — |
 | Town Hall | — |
 | Road planner | — |
+| Road rule | — |
 | Building retro | — |
 | Ork work | — |
 | Renown | — |

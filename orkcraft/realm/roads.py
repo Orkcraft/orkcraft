@@ -14,7 +14,10 @@ Rules (docs/design/roads-and-orcs.md):
   new events, and with `restart_on_new` a new event interrupts a running agent, which then
   starts again with the fresh snapshot (its spent 🪙 is still counted: the session carries
   `ORKCRAFT_RUN`).
-- Scripts (and so hybrids) are in the spec but do not run yet: their carts are `held`.
+- Scripts (and so hybrids) run only once reviewed (`script_problem`); until then their carts are `held`.
+- A road rule (`steward`) is carried out by the building's steward: on its tool and at its tier for
+  `listen` (realm/steward.py `pick`, the goal in force from `aim`), with the building's purpose in the
+  prompt. A hybrid with no tools of its own escalates (exit 3) to the steward the same way.
 - Agents run only while the 🪙 budget allows (`budget_ok`), in the repository with read-only
   tools (Claude) or a read-only sandbox (Codex), or in an empty temp dir (agy). A pipeline harness
   is not wired yet.
@@ -92,7 +95,6 @@ AGENT_TIMEOUT_S = 600
 SNAPSHOT_CHARS = 4000          # per road, in an agent prompt
 EXAMPLES_DIR = Path(".orkcraft") / "history" / "handlers"
 EXAMPLE_OUTPUT_CHARS = 8000
-AGY_MODEL = harnesses.need("agy").default_model
 CLAUDE_READ_ONLY, CLAUDE_READ_WEB = harnesses.CLAUDE_READ_ONLY, harnesses.CLAUDE_READ_WEB   # 🪔 Clan Fire: web
 CODEX_WEB = harnesses.CODEX_WEB
 # harnesses that read the repository; the others (agy) work in an empty folder
@@ -207,14 +209,37 @@ def prompt_record(rec: dict) -> dict:
     return out
 
 
+def _purpose(building: ts.BuildingSpec) -> str:
+    """What its steward is for: its role and its orders (the building's purpose), "" when it has none."""
+    stew = building.garrison.steward
+    if stew is None:
+        return ""
+    return "\n".join(x for x in (stew.role.strip(), stew.orders.strip()) if x)
+
+
 def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict], role: str,
                  previous: str = "", liked: list[str] | None = None) -> str:
     roads = [prompt_record(rec) for rec in snapshot]
+    if orc.on_steward:                                 # a road rule: the steward thinks, toward its building's goal
+        stew = building.garrison.steward
+        purpose = _purpose(building)
+        head = [
+            f"You are {stew.name if stew else 'the steward'}, the steward of the {building.title} building in "
+            f"Orkcraft, a harness for a Markdown knowledge graph (the current directory). You carry out its "
+            f"road rule \"{orc.name}\": you are re-run on every new event with the latest payload of each road "
+            f"the rule listens to.",
+            *([f"What the building is for (every rule works toward it):\n{purpose}"] if purpose else []),
+            f"The rule:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        ]
+    else:
+        head = [
+            f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
+            f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
+            f"event with the latest payload of each of your incoming roads.",
+            f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        ]
     parts = [
-        f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
-        f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
-        f"event with the latest payload of each of your incoming roads.",
-        f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        *head,
         "Incoming roads (latest payload each, one per line; node ids resolve to <ID>.md files):\n"
         + "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in roads),
     ]
@@ -226,11 +251,6 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     parts.append(f"{ROLE_ASK.get(role, ROLE_ASK['run'])} Answer with the Markdown the operator should "
                  "see and nothing else. Never quote personal context nodes.")
     return "\n\n".join(parts)
-
-
-def codex_cmd(sandbox: str, model: str = "", web: bool = False, resume: str = "") -> list[str]:
-    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout (harnesses.codex_exec)."""
-    return harnesses.codex_exec(harnesses.need("codex"), sandbox, model, web, resume)
 
 
 def resolve(harness: str) -> str:
@@ -260,32 +280,23 @@ def _tokens_of(env: dict) -> int | None:
     return harnesses._tokens_of(env.get("usage"))
 
 
-def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
-    return harnesses.json_result(stdout)[:3]
-
-
-def result_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
-    """(text, cost, tokens, session) of one run of a tool."""
+def result_of(harness: str, stdout: str, before: int | dict = 0,
+              model: str = "") -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, session) of one run of a tool; `model` is what it was asked to run on
+    (a tool that prints tokens and no price is priced from it)."""
     h = harnesses.get(harness)
-    return h.result(stdout, before) if h else harnesses.json_result(stdout, before)
+    return h.outcome(stdout, before, model) if h else harnesses.json_result(stdout, before)
 
 
-def _codex_events(stdout: str) -> list[dict]:
-    return harnesses.json_lines(stdout)
-
-
-codex_result_of = harnesses.codex_result
-
-
-def codex_thread_total(thread: str, env: dict | None = None) -> int:
-    """The tokens a Codex thread has used so far: the last `token_count` total in its rollout
+def codex_thread_usage(thread: str, env: dict | None = None) -> dict | None:
+    """What a Codex thread has used so far: the last `token_count` total in its rollout
     (`$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<thread>.jsonl`), which `exec resume` starts its
-    running total from. 0 when there is none (a compressed rollout is not read)."""
+    running total from. None when there is none (a compressed rollout is not read)."""
     env = os.environ if env is None else env
     if not thread:
-        return 0
+        return None
     home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else Path.home() / ".codex"
-    total = 0
+    usage = None
     for rollout in sorted((home / "sessions").glob(f"*/*/*/rollout-*-{glob.escape(thread)}.jsonl")):
         try:
             lines = rollout.read_text(encoding="utf-8").splitlines()
@@ -299,9 +310,15 @@ def codex_thread_total(thread: str, env: dict | None = None) -> int:
             except (ValueError, AttributeError):
                 continue
             info = payload.get("info") if isinstance(payload, dict) and payload.get("type") == "token_count" else None
-            if isinstance(info, dict) and (tokens := harnesses._plain_tokens(info.get("total_token_usage"))) is not None:
-                total = tokens
-    return total
+            total = info.get("total_token_usage") if isinstance(info, dict) else None
+            if harnesses._plain_tokens(total) is not None:
+                usage = total
+    return usage
+
+
+def codex_thread_total(thread: str, env: dict | None = None) -> int:
+    """The tokens a Codex thread has used so far (`codex_thread_usage`); 0 when there is none."""
+    return harnesses._plain_tokens(codex_thread_usage(thread, env)) or 0
 
 
 codex_error = harnesses.codex_error
@@ -373,7 +390,7 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:
         raise RuntimeError(failure(harness, code, stdout, stderr))
-    result = result_of(harness, stdout)[:3]
+    result = result_of(harness, stdout, model=model)[:3]
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
     return result
@@ -400,6 +417,20 @@ def read_examples(repo_root: Path, building_id: str, orc_id: str, limit: int = 5
     return out
 
 
+def steward_steps(b: ts.BuildingSpec, goal: str | None = None) -> list[dict]:
+    """The one step a road rule runs as: its steward's tool (its first harness step, else the machine's
+    main tool) at the tier `steward.pick` names for `listen` under `goal` (the goal in force)."""
+    from orkcraft.realm import steward          # it imports this module
+    tool = steward.harness_for(b) or harnesses.MAIN
+    p = steward.pick(b, "listen", tool, goal=goal)
+    step = {"role": "run", "harness": tool}
+    if p.tier:
+        step["tier"] = p.tier
+    elif p.model:
+        step["model"] = p.model
+    return [step]
+
+
 # -- the engine -------------------------------------------------------------------------------------------
 
 class Engine:
@@ -414,7 +445,8 @@ class Engine:
                  call: Callable[..., Any] | None = None,
                  clock: Callable[[], float] = time.monotonic,
                  run_env: dict | None = None,
-                 travel: Callable[[], float] | None = None) -> None:
+                 travel: Callable[[], float] | None = None,
+                 aim: Callable[[str], str | None] | None = None) -> None:
         self._scroll, self.repo_root = scroll, repo_root
         self._travel = travel or (lambda: 0.0)   # seconds a cart is on a plain road before it arrives (0: at once)
         self._deliver, self._on_output, self._meta = deliver, on_output, meta or (lambda p: {})
@@ -422,6 +454,7 @@ class Engine:
         self._agent_runner, self._clock = agent_runner, clock
         self._call = call or (lambda fn, *a: fn(*a))
         self._run_env = dict(run_env or {})
+        self._aim = aim or (lambda building_id: None)   # building id → the goal in force (None: its own)
         self._lock = threading.RLock()
         self.states: dict[tuple[str, str], HandlerState] = {}
         self.carts: list[Cart] = []          # recent carts, newest last (the UI reads / animates)
@@ -593,7 +626,8 @@ class Engine:
         liked = [str(r.get("value", "")) for r in feedback.examples(self.repo_root, b.id, 3)]
         try:
             used: list[str] = []
-            for step in orc.harness or ts.DEFAULT_HARNESS:
+            steps = self.steps_of(b, orc)
+            for step in steps:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)
                 model = tiers.step_model(step)       # a runner is called with a model only when there is one
                 if (said := model or str(step.get("harness") or "")) and said not in used:
@@ -619,6 +653,16 @@ class Engine:
         self._finish(b, orc, run, outcome, text, error)
         if outcome == "interrupted":
             self.tick()                     # the fresh snapshot is waiting (dirty)
+
+    def steps_of(self, b: ts.BuildingSpec, orc: ts.OrcSpec) -> list[dict]:
+        """The harness steps a handler thinks with: a road rule's are its steward's, the others' their own."""
+        if orc.on_steward:
+            try:
+                goal = self._aim(b.id)
+            except Exception:  # the goal cannot be read: the building's own
+                goal = None
+            return steward_steps(b, goal)
+        return orc.harness or ts.DEFAULT_HARNESS
 
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:

@@ -134,7 +134,8 @@ def watchtower(root: Path, now: dt.datetime) -> None:
     sd = state_dir(root, "watchtower", "post")
     _jsonl(sd / "signals.jsonl", [asdict(s) for s in signals])
     _json(sd / "state.json", {"read": [s.key for s in signals if s.read], "last_uid": 104, "cron_last": ago(600),
-                              "simulated_errors": {f"feed:{FEEDS[1]}": "jira: 401 the token was refused"}})
+                              "simulated_errors": {f"feed:{FEEDS[1]}": "jira: 401 the token was refused — log in again"},
+                              "simulated_kinds": {f"feed:{FEEDS[1]}": "login"}})
 
 
 def signpost(root: Path, now: dt.datetime) -> None:
@@ -351,8 +352,6 @@ def general_wiki(root: Path, now: dt.datetime) -> None:
 
 
 # -- 3. agents ------------------------------------------------------------------------------------------
-
-PRICING_BASE = "PRICE = 9\n"
 
 
 def forge(root: Path, now: dt.datetime) -> None:

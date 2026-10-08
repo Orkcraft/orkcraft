@@ -15,12 +15,11 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 
 NODE, FILE, TEXT = "node", "file", "text"
 ON_SELECTION, ON_TASK, ON_STREAM = "on_selection_change", "on_task_completed", "on_stream"
-IMPLEMENTED_MODES = (ON_SELECTION, ON_TASK)
 
 # Who shows what. Scrying Spire renders anything; the Loot Chest keeps reports as files.
 RECEIVES: dict[str, frozenset[str]] = {
@@ -187,10 +186,6 @@ def merge_trails(*trails: tuple[Hop, ...]) -> tuple[Hop, ...]:
     return tuple(sorted(out, key=lambda h: h.at))
 
 
-def with_hop(payload: Payload, h: Hop) -> Payload:
-    return replace(payload, trail=payload.trail + (h,))
-
-
 def trail_totals(trail: tuple[Hop, ...]) -> tuple[int | None, float | None]:
     """(tokens, cost) of the whole chain; None when no hop said."""
     toks = [h.tokens for h in trail if h.tokens is not None]
@@ -264,10 +259,6 @@ def modes_for(source_id: str, target_id: str) -> list[str]:
         modes.append(ON_TASK)
     modes += [ev for ev in TYPED.get(source_id, ()) if _typed_kind(ev) in kinds]
     return modes
-
-
-def can_receive(building_id: str) -> bool:
-    return bool(accepts(building_id))
 
 
 def read_file_payload(repo_root: Path, path: str | Path) -> tuple[str, str]:

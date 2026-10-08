@@ -7,7 +7,7 @@ import time
 import pytest
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, roads
+from orkcraft.realm import chains, harnesses, roads
 from orkcraft.realm.pipes import Payload
 
 PRESETS = {
@@ -346,11 +346,11 @@ def test_harness_commands_are_read_only_or_sandboxed(tmp_path):
     assert "--dangerously-skip-permissions" not in agy and "--effort" not in agy
     with pytest.raises(RuntimeError, match="not wired"):
         roads._harness_cmd("pipeline:product-studio/pipelines/sprint.json", "hi", tmp_path)
-    assert roads._result_of('{"result": "ok", "total_cost_usd": 0.5}') == ("ok", 0.5, None)
-    assert roads._result_of("plain text") == ("plain text", None, None)
+    assert harnesses.json_result('{"result": "ok", "total_cost_usd": 0.5}')[:3] == ("ok", 0.5, None)
+    assert harnesses.json_result("plain text")[:3] == ("plain text", None, None)
     usage = '{"result": "ok", "total_cost_usd": 0.5, "usage": {"input_tokens": 10, "output_tokens": 5, ' \
             '"cache_read_input_tokens": 1000, "cache_creation_input_tokens": 200}}'
-    assert roads._result_of(usage) == ("ok", 0.5, 1215)                 # every token, cache included
+    assert harnesses.json_result(usage)[:3] == ("ok", 0.5, 1215)                 # every token, cache included
 
 
 def test_run_agent_interrupts_the_process(tmp_path, monkeypatch):

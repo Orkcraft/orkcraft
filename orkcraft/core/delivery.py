@@ -28,7 +28,15 @@ def engine(town) -> roads.Engine:
         call=lambda fn, *a: town.call(fn, *a),
         run_env={"ORKCRAFT_RUN": town.run_id},
         travel=lambda: getattr(town, "cart_travel_s", 0.0),
+        aim=lambda building_id: aim_now(town, building_id),
     )
+
+
+def aim_now(town, building_id: str) -> str | None:
+    """The goal in force for a building's road rules: its worker's (thrift while the quota is tight), else
+    its own (None: the engine reads it from the scroll). Read on a run's thread: a worker is never made here."""
+    worker = (getattr(town, "workers", None) or {}).get(building_id)
+    return worker.aim_now if worker is not None else None
 
 
 def markdown_of(town, payload: pipes.Payload) -> tuple[str, str]:

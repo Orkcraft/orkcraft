@@ -20,7 +20,7 @@ function toCells(r) {
 }
 
 /** The side of `a` that faces `b` (cells are square here: no aspect to make up for). */
-export function facingSide(a, b) {
+function facingSide(a, b) {
   const horizontal = b.x >= a.x + a.w ? "right" : b.x + b.w <= a.x ? "left" : "";
   const vertical = b.y >= a.y + a.h ? "bottom" : b.y + b.h <= a.y ? "top" : "";
   if (horizontal && vertical) {

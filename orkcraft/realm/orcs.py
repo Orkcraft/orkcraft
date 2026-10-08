@@ -78,7 +78,7 @@ class Orc:
     ref: str = ""                 # terminal key (workers), agent key (council), "<building_id>/<orc_id>" (residents)
     lead: bool = False            # the building's steward (v3) / lead (v2)
     session: str = ""             # War Tent terminal key when deployed
-    kind: str = "agent"           # chain | script | agent | hybrid
+    kind: str = "agent"           # chain | script | steward | agent | hybrid
     harness: list[dict] = field(default_factory=list)
     roads: list[str] = field(default_factory=list)   # labels of the incoming roads it works on
     run: dict = field(default_factory=dict)           # effective re-run policy
@@ -178,15 +178,3 @@ def detect_prompt(lines: list[str]) -> tuple[str, list[tuple[str, str]]] | None:
         return question.strip("│ ╭╮╰╯─:? ") + "?", [("y", "Yes"), ("n", "No")]
 
     return None
-
-
-def clarification_text(body: str) -> str:
-    """Open questions of a ticket (`## Clarification Needed` without comments)."""
-    m = re.search(r"^##\s+Clarification Needed\s*$", body, re.MULTILINE)
-    if not m:
-        return ""
-    rest = body[m.end():]
-    nxt = re.search(r"^##\s", rest, re.MULTILINE)
-    text = rest[: nxt.start()] if nxt else rest
-    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
-    return text.strip()

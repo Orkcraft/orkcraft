@@ -131,7 +131,7 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     if proc.returncode != 0:
         why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
         raise RuntimeError(f"{h.id} exited with {proc.returncode}: {why[:300]}")
-    text, cost, _, _ = h.result(proc.stdout, 0)
+    text, cost, _, _ = h.outcome(proc.stdout, 0, model or "")
     if not text.strip() and (why := h.error(proc.stdout)):
         raise RuntimeError(f"{h.id} gave no answer: {why[:300]}")
     telemetry.charge(cost, f"{h.id} -p {model or 'default'}")    # no transcript of this run: 🪙 here
@@ -142,14 +142,6 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
     """One non-interactive Claude Code call in an empty folder (`model`: an alias such as haiku or
     opus; None keeps the operator's default). Raises RuntimeError on failure."""
     return ask("claude", prompt, model)
-
-
-def agy_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    return ask("agy", prompt, model)
-
-
-def codex_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    return ask("codex", prompt, model)
 
 
 def runner_on(harness_id: str, model: str | None = None) -> Runner:

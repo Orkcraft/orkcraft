@@ -11,7 +11,7 @@ import pytest
 from orkcraft import scroll as ts
 from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, looks, orcs, roads, roster, team, tiers
+from orkcraft.realm import harnesses, jobs, looks, orcs, roads, roster, team, tiers
 from orkcraft.sources import sessions as ss
 
 FIXTURE = Path(__file__).parent / "fixtures" / "codex_exec.jsonl"
@@ -39,11 +39,11 @@ print(json.dumps({{"type": "turn.completed", "usage": {{"input_tokens": 10, "cac
 
 
 def test_the_real_events_give_the_last_message_the_tokens_and_the_thread():
-    text, cost, tokens, session = roads.codex_result_of(FIXTURE.read_text(encoding="utf-8"))
+    text, cost, tokens, session = harnesses.codex_result(FIXTURE.read_text(encoding="utf-8"))
     assert text == "done" and cost is None                    # Codex prints no price: unpriced, never $0
     assert tokens == 34612 + 121                                # cached input is part of the input
     assert session == "01a10872-003f-76b1-84f2-bc6657c93545"
-    assert roads.codex_result_of("not json\n") == ("", None, None, "")
+    assert harnesses.codex_result("not json\n") == ("", None, None, "")
 
 
 RESUMED = Path(__file__).parent / "fixtures" / "codex_exec_resumed.jsonl"
@@ -52,11 +52,11 @@ THREAD = "01a10872-003f-76b1-84f2-bc6657c93545"
 
 
 def test_turn_usage_is_a_running_total_so_the_last_one_counts():
-    text, _, tokens, session = roads.codex_result_of(RESUMED.read_text(encoding="utf-8"))
+    text, _, tokens, session = harnesses.codex_result(RESUMED.read_text(encoding="utf-8"))
     assert text == "done again" and session == THREAD
     assert tokens == 52000 + 450                                # not 40300 + 52450: each turn repeats the ones before
-    assert roads.codex_result_of(RESUMED.read_text(encoding="utf-8"), before=34612 + 121)[2] == 52450 - 34733
-    assert roads.codex_result_of(FIXTURE.read_text(encoding="utf-8"), before=10 ** 9)[2] == 0
+    assert harnesses.codex_result(RESUMED.read_text(encoding="utf-8"), before=34612 + 121)[2] == 52450 - 34733
+    assert harnesses.codex_result(FIXTURE.read_text(encoding="utf-8"), before=10 ** 9)[2] == 0
 
 
 def _codex_home(tmp_path: Path) -> Path:

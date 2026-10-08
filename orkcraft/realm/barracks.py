@@ -41,7 +41,6 @@ State lives in `.orkcraft/pool/<id>/`: `barracks.json` (orcs, queue, recent task
 """
 from __future__ import annotations
 
-import datetime as dt
 import json
 import re
 from dataclasses import asdict, dataclass, field
@@ -49,6 +48,7 @@ from pathlib import Path
 
 from orkcraft import scroll as ts
 from orkcraft.realm import harnesses, tiers
+from orkcraft.realm.jobs import now_iso
 
 DEFAULT_PROVIDERS = (harnesses.MAIN,)        # the machine's main tool
 DEFAULT_MAX_ORCS = 3
@@ -80,10 +80,6 @@ STOP = frozenset("this that with from have will what when where which into your 
                  "should could would also make sure some them then than only just like need want task".split())
 NAMES = ("Grub", "Mogka", "Thrak", "Ugluk", "Snaga", "Lurtz", "Gorbag", "Shagrat", "Muzgash", "Radbug")
 KEEP_TASKS = 50
-
-
-def now_iso() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
 
 
 @dataclass

@@ -47,6 +47,7 @@ class Look:
     unread: int = 0
     messages: list[Message] = field(default_factory=list)     # newest first
     error: str = ""
+    kind: str = ""              # when it failed: login | target (the folder) | network (realm/feeds.py FAILS)
 
 
 def credentials(cfg: dict) -> tuple[str, int, str, str, str]:
@@ -84,10 +85,17 @@ def _snippet(raw: bytes) -> str:
     return re.sub(r"\s+", " ", " ".join(keep)).strip()[:SNIPPET]
 
 
+class Refused(imaplib.IMAP4.error):
+    """The server would not log in with this address and password."""
+
+
 def _open(cfg: dict, factory):
     host, port, user, password, folder = credentials(cfg)
     conn = factory(host, port)
-    conn.login(user, password)
+    try:
+        conn.login(user, password)
+    except imaplib.IMAP4.error as e:
+        raise Refused(f"the login was refused — log in again ({e})") from None
     typ, data = conn.select(f'"{folder}"' if " " in folder else folder, readonly=True)
     if typ != "OK":
         conn.logout()
@@ -98,10 +106,14 @@ def _open(cfg: dict, factory):
 def look(cfg: dict, factory=imaplib.IMAP4_SSL, limit: int = LOOK_LIMIT) -> Look:
     try:
         conn = _open(cfg, factory)
-    except (ValueError, RuntimeError) as e:
-        return Look(error=str(e))
+    except ValueError as e:                                  # nothing to log in with
+        return Look(error=str(e), kind="login")
+    except RuntimeError as e:                                # the folder
+        return Look(error=f"{e} — edit the folder", kind="target")
+    except Refused as e:
+        return Look(error=f"IMAP: {e}"[:200], kind="login")
     except (imaplib.IMAP4.error, OSError) as e:
-        return Look(error=f"IMAP: {e}"[:200])
+        return Look(error=f"IMAP: {e}"[:200], kind="network")
     try:
         out = Look()
         _, unseen = conn.uid("search", None, "UNSEEN")
@@ -128,7 +140,7 @@ def look(cfg: dict, factory=imaplib.IMAP4_SSL, limit: int = LOOK_LIMIT) -> Look:
                                         "(no subject)", date, unread, snippet))
         return out
     except (imaplib.IMAP4.error, OSError) as e:
-        return Look(error=f"IMAP: {e}"[:200])
+        return Look(error=f"IMAP: {e}"[:200], kind="network")
     finally:
         try:
             conn.logout()

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm.orcs import clarification_text, detect_prompt
+from orkcraft.realm.orcs import detect_prompt
 from orkcraft.screens.console import Console
 from orkcraft.screens.orders import AlertModal, AwaitingOrdersModal, UnitModal
 from orkcraft.widgets.hud import Hud
@@ -72,13 +72,6 @@ def test_detect_prompt_ignores_plain_output_and_broken_numbering():
     assert detect_prompt(["1. only one option", "some output"]) is None
     assert detect_prompt(["1. a", "3. c"]) is None
     assert detect_prompt(["hello", "world"]) is None
-
-
-def test_clarification_text_skips_comments_and_empty_sections():
-    body = "## Clarification Needed\n\n<!-- open items -->\n\n## Result\n"
-    assert clarification_text(body) == ""
-    body = "## Clarification Needed\n\n- Which terminal?\n\n## Agent Report\n"
-    assert clarification_text(body) == "- Which terminal?"
 
 
 # -- helpers ------------------------------------------------------------------------------------

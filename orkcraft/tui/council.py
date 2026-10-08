@@ -59,7 +59,7 @@ class CouncilMixin:
         through at once."""
         existing = set(self._taken_building_ids()) if subject.kind == "building" else set()
         runner = None
-        if not self.demo and (subject.kind != "road" or subject.data.get("handler_kind") in ("agent", "hybrid", "script")):
+        if not self.demo and (subject.kind != "road" or subject.data.get("handler_kind") in ("agent", "hybrid", "steward", "script")):
             runner = runners.FASTPATH_RUNNER or fastpath.light_runner(self.repo_root)
         model = str(fastpath.settings(self.repo_root).get("fast_model") or "")
         went: list[bool] = []

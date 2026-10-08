@@ -16,13 +16,9 @@
 .crag-line.is-warn { stroke: var(--warning); }
 .crag-line.is-crit { stroke: var(--danger); }
 
-.crag-front { display: flex; flex-direction: column; gap: var(--space-1); height: 100%; min-height: 120px; }
-.crag-front .crag-chart { flex: 1 1 auto; }
 .crag-head { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
 .crag-head__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crag-head__now { margin-left: auto; white-space: nowrap; }
-.crag-dots { display: flex; gap: var(--space-1); justify-content: center; color: var(--ink-comment); }
-.crag-dots .is-front { color: var(--frame-focus); }
 
 .crag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); align-content: start; }
 .crag-tile { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); min-height: 170px;
@@ -36,7 +32,6 @@
 .crag-ask .ok-input { flex: 1 1 auto; min-width: 0; }
 .crag-meters { display: flex; flex-direction: column; gap: var(--space-1); }
 .crag-thumb svg { background: var(--panel-inset); border-radius: var(--radius-sm); }
-.crag-front .crag-chart__plot { height: 160px; }
 .crag-ask .ok-act { flex: none; white-space: nowrap; }
 .crag-window.is-chosen { padding: 0 var(--space-1); border-bottom: 1px solid var(--frame-focus); }
 

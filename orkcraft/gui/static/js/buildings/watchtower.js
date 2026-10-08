@@ -11,7 +11,7 @@ import { act, say } from "../link.js";
 import { askKeeper } from "../keeper.js";
 import { Dialog } from "../dialog.js";
 import { openBuilding } from "../windows.js";
-import { AddPane, Glyph } from "./watchtower_add.js";
+import { AddPane, Glyph, editSource } from "./watchtower_add.js";
 
 const source = signal({});         // building id → the source whose feed shows ("" all)
 const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
@@ -73,9 +73,18 @@ export function quick(id, action) {
 
 // -- open: the head -------------------------------------------------------------------------------------------
 
-function Failing({ sources }) {
-  const bad = sources.filter((s) => s.why);
-  return bad.map((s) => html`<p key=${s.id} class="gui-tower__failing ok-tone-error" title=${s.why}>✗ <b>${s.label}</b> ${say("is failing")}: ${s.why}</p>`);
+/** Make a listed source again in the pane over the feed: Edit (step 2) or Log in again (step 1). */
+const fix = (id, x, login) => editSource(id, x.id, login).then(() => { tab.value = { ...tab.value, [id]: "add" }; }, () => {});
+
+/** The one button a failing source offers: Log in again, Edit — or none, when it only could not get through. */
+function Fix({ id, x }) {
+  if (!x.fix || !x.editable) return x.fails === "network" ? html`<span class="ok-tone-muted gui-tower__retry">${say("it tries again by itself")}</span>` : null;
+  return html`<button class="ok-btn" onClick=${() => fix(id, x, x.fails === "login")}>${say(x.fix)}</button>`;
+}
+
+function Failing({ id, listed }) {
+  return listed.filter((x) => x.why).map((x) => html`<p key=${x.id} class="gui-tower__failing ok-tone-error" title=${x.why}>
+    <span>✗ <b>${x.label}</b> ${say("is failing")}: ${x.why}</span> <${Fix} id=${id} x=${x} /></p>`);
 }
 
 const shownTab = (id, d) => tab.value[id] || (d.sources.length ? "signals" : "add");
@@ -110,7 +119,7 @@ function Sources({ id, d }) {
       <button class="ok-btn" onClick=${() => act(id, "read_all", { source: pick }).catch(() => {})}>${say("Read all")}</button>
       <button class="ok-btn primary" disabled=${!d.new} onClick=${() => act(id, "open_new").then((key) => { if (key) opened.value = { ...opened.value, [id]: key }; }, () => {})}>${say("Open new")}</button>
     </div>
-    <${Failing} sources=${d.sources} />
+    <${Failing} id=${id} listed=${d.listed} />
     ${d.error && html`<p class="gui-tower__failing ok-tone-error">✗ ${d.error}</p>`}
   </div>`;
 }
@@ -176,7 +185,10 @@ function Settings({ id, d }) {
         <div><div class="gui-tower__source-name">${x.label}
           ${x.why ? html`<span class="ok-tone-error">✗ ${x.why}</span>` : html`<span class="ok-tone-ok">✓ listening</span>`}</div>
           <div class="ok-tone-muted gui-tower__source-line">${x.line}</div></div>
-        <button class="ok-btn" onClick=${() => setRemoving(x)}>Remove</button>
+        <div class="gui-tower__source-acts">
+          ${x.fails === "login" && x.editable && html`<button class="ok-btn primary" onClick=${() => fix(id, x, true)}>Log in again</button>`}
+          ${x.editable && html`<button class=${cls("ok-btn", { primary: x.fails === "target" })} onClick=${() => fix(id, x, false)}>Edit</button>`}
+          <button class="ok-btn" onClick=${() => setRemoving(x)}>Remove</button></div>
       </li>`)}
       ${!d.listed.length && html`<li class="ok-item ok-tone-muted">No source yet.</li>`}
     </ul>

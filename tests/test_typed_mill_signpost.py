@@ -166,7 +166,7 @@ async def test_the_mill_queues_every_cart_and_flat_maps_records(fake_repo: Path,
               {"id": "sink", "title": "Sink", "icon": "⚙️", "orc": {"name": "Miller"}, "type": "mill",
                "config": {"steps": ["trim"]}}):
         assert masonry.save_spec(fake_repo, s) == []
-    assert catalog.size_of({"type": "mill"}) == catalog.SIZES["XS"]
+    assert catalog.type_of({"type": "mill"}).size == "XS"
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(200, 46)) as pilot:
         await pilot.pause()
