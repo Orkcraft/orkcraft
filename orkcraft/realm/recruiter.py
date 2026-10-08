@@ -4,8 +4,11 @@
     if result.ok:
         orc = apply(scroll, "scrying", result, repo_root)   # adds the handler and subscribes its roads
 
-The Recruiter picks the cheapest kind that can do the job, in the order chain → script → agent
-→ hybrid, and says why a cheaper kind was not enough (`why`). Like Mason it is one
+The Recruiter picks the cheapest kind that can do the job, in the order chain → script → steward
+→ hybrid, and says why a cheaper kind was not enough (`why`). A `steward` handler is a road rule: its
+words (`orders`) carried out by the building's steward on its own tool (docs/design/steward-listens.md);
+a hybrid's script escalates to the steward too. An `agent` (its own tools) only for a pipeline of tools
+the steward does not have. Like Mason it is one
 `claude -p` call in an empty temp folder: it sees only the request, the building catalog (ids,
 titles, the events each building emits) and the contract below — never the graph's content.
 Its answer is untrusted text: it is used only when it passes `scroll.orc_problems` and a trial
@@ -58,18 +61,21 @@ KINDS — pick the FIRST that can do the job and explain in "why" what a cheaper
    Field names are lowercase letters and _ only.
 2. "script": a small Python script (stdin: JSON list of records, stdout: Markdown); give its source in
    "script_source". It will not run until the operator reviews it.
-3. "agent": a {harness_names} session with "orders" (its prompt) and a "harness" scheme: a list of steps
-   {{"role":"run|plan|write|review","harness":"{harness_choice}"}}, e.g. [{{"role":"run","harness":"claude"}}] or
-   [{{"role":"write","harness":"agy"}},{{"role":"review","harness":"claude"}}]. Only these harnesses are here.
-   Each step takes a "tier", the lightest that will do: "laborer" (haiku / gemini flash low: sorting,
-   summaries, routine checks), "warrior" (sonnet / gemini flash high: most coding and writing), "elder"
-   (opus / gemini pro: hard reasoning, architecture, reviews that matter).
-4. "hybrid": a script that escalates to an agent: both "script_source" and "harness".
+3. "steward": a road rule — the building's steward ({steward}) reads every cart with the building's purpose
+   in mind and does what "orders" (the rule, in plain words) say. No "harness": it thinks on the steward's
+   tool, at the steward's tier. This is the kind for anything that needs judgement.
+4. "hybrid": a script that does the routine and exits 3 for the carts it cannot decide; those go to the
+   steward with "orders". Give "script_source" and "orders", no "harness".
+5. "agent" — ONLY when the operator asks for a pipeline of tools the steward does not have: "orders" and a
+   "harness" scheme of 2+ steps {{"role":"run|plan|write|review","harness":"{harness_choice}"}}, e.g.
+   [{{"role":"write","harness":"agy"}},{{"role":"review","harness":"claude"}}] ({harness_names}; only these are here).
+   Each step takes a "tier", the lightest that will do: "laborer" (haiku / gemini flash low), "warrior"
+   (sonnet / gemini flash high), "elder" (opus / gemini pro). Say in "why" why the steward will not do.
 Optional "run": {{"quiet_s": 0-3600, "restart_on_new": bool}} (agents default to 30 s of quiet).
 {feedback}
 Answer with ONE JSON object and nothing else:
-{{"name": "<an orc name, max 32 chars>", "role": "<what it does, short>", "kind": "chain|script|agent|hybrid",
-  "why": "<one or two sentences>", "orders": "<the agent's prompt or empty>", "harness": [..], "chain": [..],
+{{"name": "<an orc name, max 32 chars>", "role": "<what it does, short>", "kind": "chain|script|steward|hybrid|agent",
+  "why": "<one or two sentences>", "orders": "<the rule in words, or the agent's prompt, or empty>", "harness": [..], "chain": [..],
   "script_source": "<python or empty>", "run": {{..}},
   "roads": [{{"from": "<building id>", "event": "<road event>", "filter": {{..}}}}]}}
 Use 1-4 roads, never from {building_id} itself."""
@@ -112,7 +118,7 @@ JUDGEMENT = re.compile(r"\b(summar|explain|classif|categori[sz]|decide|judge|ass
 ROAD_RULE = """
 THESE ARE ROADS WITH A RULE: the handler works on exactly these roads — {roads} — give exactly these
 (a filter is allowed). If the rule is deterministic (filter, pick, reformat, count, extract, route by a
-pattern) it MUST be a chain or a script, never an agent."""
+pattern) it MUST be a chain or a script, never the steward or an agent."""
 
 
 def _wanted(road) -> list[tuple[str, str]]:
@@ -133,8 +139,8 @@ def _road_problems(orc: dict | None, roads: list[dict], road, rule: str) -> list
     problems = []
     if {(r.get("from"), r.get("event")) for r in roads} != wanted or len(roads) != len(wanted):
         problems.append("give exactly these roads: " + "; ".join(f"from {s} on {e}" for s, e in sorted(wanted)))
-    if orc and orc.get("kind") in ("agent", "hybrid") and not needs_judgement(rule):
-        problems.append("the rule is deterministic — make it a chain or a script, not an agent")
+    if orc and orc.get("kind") in ("agent", "hybrid", "steward") and not needs_judgement(rule):
+        problems.append("the rule is deterministic — make it a chain or a script, not a model")
     return problems
 
 
@@ -149,6 +155,12 @@ def _script_path(orc_id: str, building_id: str) -> str:
     return f".orkcraft/scripts/{building_id}-{orc_id}"[:60].replace("_", "-") + ".py"
 
 
+def stewards_own(harness: list | None, b: ts.BuildingSpec | None) -> bool:
+    """Whether an agent's tools are nothing its building's steward lacks (realm/steward.py `stewards_own`)."""
+    from orkcraft.realm import steward
+    return steward.stewards_own(harness, b)
+
+
 def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict | None, list[dict], str, list[str]]:
     """(orc, roads, script source, problems) — the trial runs on a copy of the scroll."""
     if not isinstance(answer, dict):
@@ -161,8 +173,13 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
         source = ""
     if kind in ("script", "hybrid") and not source.strip():
         problems.append(f"a {kind} needs script_source")
-    if kind in ("chain", "agent") and source.strip():
+    if kind in ("chain", "agent", "steward") and source.strip():
         problems.append(f"a {kind} has no script_source")
+    if kind in ("steward", "hybrid") and answer.get("harness"):
+        problems.append(f"a {kind} thinks on the steward's tool — give no harness")
+    if kind == "agent" and stewards_own(answer.get("harness"), scroll.building(building_id)):
+        problems.append("one step on the steward's own tool is the steward's work — make it a steward rule "
+                        "(an agent only for a pipeline of tools the steward does not have)")
     if not str(answer.get("why") or "").strip():
         problems.append("why is required: say what a cheaper kind could not do")
     roads = answer.get("roads")
@@ -176,6 +193,8 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
         if spec is None:
             raise ValueError(f"unknown building {building_id!r}")
         kw = {k: answer[k] for k in ("role", "orders", "harness", "chain", "run", "why") if answer.get(k) not in (None, "", [], {})}
+        if kind in ("steward", "hybrid"):
+            kw["harness"] = []                       # the steward's tool, not one of its own
         if kind in ("script", "hybrid"):
             kw["script"] = {"path": _script_path(ts._orc_id(str(answer.get("name") or "orc")), building_id),
                             "sha256": hashlib.sha256(source.encode()).hexdigest(), "reviewed": False}
@@ -198,6 +217,17 @@ def check(answer: dict, scroll: ts.TownScroll, building_id: str) -> tuple[dict |
                  for r in roads], source, []
 
 
+def _steward_words(b: ts.BuildingSpec) -> str:
+    """Who the steward is, for the prompt: its name, its tool and what the building is for."""
+    from orkcraft.realm import steward
+    stew = b.garrison.steward
+    if stew is None:
+        return "none yet: the machine's main tool stands in"
+    tool = HARNESS_NAMES.get(steward.harness_for(b) or "main", steward.harness_for(b))
+    purpose = " ".join(x for x in (stew.role.strip(), stew.orders.strip()[:300]) if x)
+    return f"{stew.name}, on {tool}" + (f"; the building is for: {purpose}" if purpose else "")
+
+
 def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: builders.Runner = builders.main_runner,
             max_attempts: int = MAX_ATTEMPTS, road=None, harnesses: tuple[str, ...] = ("main",)) -> RecruitResult:
     """Ask the Recruiter until its handler passes the contract or the attempts run out. Never raises.
@@ -215,7 +245,7 @@ def recruit(request: str, scroll: ts.TownScroll, building_id: str, runner: build
         prompt = RECRUITER.format(request=request, building_id=building_id, building_title=spec.title,
                                   catalog=catalog(scroll, building_id), feedback=_feedback(attempts),
                                   harness_names=" / ".join(HARNESS_NAMES.get(h, h) for h in harnesses),
-                                  harness_choice="|".join(harnesses))
+                                  harness_choice="|".join(harnesses), steward=_steward_words(spec))
         try:
             text, cost = runner(prompt)
         except RuntimeError as e:

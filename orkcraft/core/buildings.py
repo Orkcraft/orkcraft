@@ -292,11 +292,18 @@ def apply_steward(town: Town, building_id: str, data: dict, index: int, by: str)
     """One steward proposal applied, with its own checkpoint (Z takes it back) and a line in the
     ledger of changes (realm/evolution.py). None when it could not be applied."""
     proposal = data["proposals"][index]
+    if proposal.get("type") == "demote" and proposal.get("script") and not proposal.get("reviewed"):
+        town.toast("not applied: a script waits for the Council and your review", title="Steward", severity="warning")
+        return None
     try:
         what = steward.apply_proposal(town.scroll, building_id, proposal)
     except (ValueError, TypeError, KeyError) as e:
         town.toast(f"not applied: {e}", title="Steward", severity="warning")
         return None
+    if proposal.get("type") == "demote" and proposal.get("script"):         # the reviewed script, kept with the camp
+        path = town.repo_root / steward.script_path(building_id, str(proposal.get("orc")))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(str(proposal["script"]), encoding="utf-8")
     town.publish(bus.ROADS)
     town.publish(bus.ROSTER)
     if proposal.get("type") == "ui":

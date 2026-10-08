@@ -82,7 +82,9 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],
             "state": worker.status() if worker is not None else "",
-            "garrison": [_ork(o) for o in garrison],
+            # road rules are the steward's work, not orks: listed under it (`rules`), never drawn
+            "garrison": [_ork(o) for o in garrison if o.kind != "steward"],
+            "rules": [{"ref": o.ref, "name": o.name, "status": o.status} for o in garrison if o.kind == "steward"],
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,

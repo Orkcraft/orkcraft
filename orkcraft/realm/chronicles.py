@@ -25,6 +25,7 @@ EVENTS: dict[str, tuple[str, str]] = {
     "orc_recruited": ("🧌", "{orc} joined the garrison"),
     "orc_dismissed": ("🗑", "{orc} left the garrison"),
     "orders_changed": ("📜", "{orc}: orders / trigger changed ({trigger})"),
+    "orc_handed": ("📜", "{orc} handed to the steward: its orders are a road rule now"),
     "orc_deployed": ("⚔", "{orc} deployed ({harness})"),
     "orc_returned": ("🏁", "{orc}'s session ended"),
     "orc_halted": ("🛑", "{orc} halted"),

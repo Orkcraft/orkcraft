@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from orkcraft.realm import harnesses
 
-KIND_ICONS = {"chain": "🪧", "script": "🪧", "agent": "🧌", "hybrid": "🪧🧌"}
+KIND_ICONS = {"chain": "🪧", "script": "🪧", "agent": "🧌", "hybrid": "🪧🧌", "steward": "📜"}
 OLD_ICONS = {"🗿": "🪧", "🗿🧌": "🪧🧌"}     # a scroll saved before the 🪧 keeps loading with it
-KIND_LABELS = {"chain": "chain", "script": "script (runs later)", "agent": "agent", "hybrid": "hybrid (script + agent)"}
+KIND_LABELS = {"chain": "chain", "script": "script (runs later)", "agent": "agent", "hybrid": "hybrid (script + agent)",
+               "steward": "road rule (the steward carries it out)"}
 # One cell each, from the registry (Claude's spark, Gemini's sparkle, OpenAI's hexagon…)
 HARNESS_LETTER = {h.id: h.mark for h in harnesses.REGISTRY.values()}
 HARNESS_STYLE = {**{h.id: h.color for h in harnesses.REGISTRY.values()}, "pipeline": "bold #e879f9"}
