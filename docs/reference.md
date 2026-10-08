@@ -1129,6 +1129,7 @@ onboarding (*Punk ork*).
 | preview | ghost |
 | output | loot |
 | new orkspace | fog of war |
+| rhythm | — |
 | spend | gold |
 | context | lumber |
 | ork slots | meat |

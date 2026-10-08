@@ -31,7 +31,7 @@ What changed from the TUI, and why:
   ork's path is **Empty town, I'll build it myself** on step 4; Skip is allowed everywhere (the run is 3–5
   screens); what the planner reads of a person's experience comes from the tools and MCP servers they have.
 - **Industry and the typical day are gone.** They only ordered the intents (★); the town step now shows the
-  class's towns as tabs, the first one starred.
+  class's towns as tabs, every day · every week · every month, the day's one starred.
 - **👍 / 👎 per tool is gone.** Only the planner read it; how a tool is rated belongs to an Agent pool's window,
   where it picks the model.
 - **The camp rules are no longer a step.** They are a card over the map while the town goes up (§6): nothing
@@ -89,7 +89,17 @@ The servers are read from all six tools already (`realm/mcp.py`: Hermes' `mcp_se
 
 ## 5. Your first town
 
-The class's towns (`intents.for_role`), one tab each, the first starred. Each is drawn on the class's ground:
+The class's three towns (`intents.for_role`), one tab each, named by how often they work (`intents.RHYTHMS`):
+
+| Tab | What it does | How it starts |
+|---|---|---|
+| ★ **Every day** | the class's daily loop: a developer's Jira tickets to merged branches, a manager's mail sorted and every meeting with its brief | from what comes in (mail, mentions, tickets, a paste, the calendar) |
+| **Every week** | what the class does once a week: a retro board with its facts, the week's report, the full regression run | a Schedule (a Watchtower's `cron`, e.g. `weekly fri 14:00`) |
+| **Every month** | what it does every month or quarter: the goals' status, the investor update, the design system's audit | a Schedule on the first of the month (`0 9 1 * *`) |
+
+The day's town comes first and starred: it pays off on the first day, while the week's and the month's wait for
+their schedule. The week's and the month's are built the same way: the Schedule → (a wiki) → an Agent pool whose
+instructions (`orders`) say what to prepare → a Review board → an Output to accept. Each is drawn on the class's ground:
 the buildings' header sprites in a row joined by roads, a plate with each one's name and what it does, and the
 MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three buttons.
 

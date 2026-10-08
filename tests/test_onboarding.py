@@ -10,7 +10,7 @@ from textual.widgets import Button, Checkbox, Input, OptionList, Select, Selecti
 from orkcraft import schedule, settings, tools
 from orkcraft.core import runners
 from orkcraft.app import OrkcraftApp
-from orkcraft.realm import builders, intents, interview, town_builder, town_presets
+from orkcraft.realm import builders, intents, interview, lexicon, town_builder, town_presets, watch
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.screens import onboarding
 from orkcraft.screens.autonomy import AutonomySlider, AutonomyStep
@@ -146,12 +146,33 @@ def test_a_day_is_asked_in_the_role_s_words():
     assert [c.id for c in interview.day_options("engineer")][:3] == ["code", "tests", "deploys"]
     assert [c.id for c in interview.day_options("designer")][:3] == ["mockups", "design_system", "playtests"]
     assert [c.id for c in interview.day_options("other")] == [c.id for c in interview.DAY]
-    assert intents.for_role("engineer", ["code", "firefight"])[0].id == "bug_hunt"   # code counts as hands-on
+    assert intents.for_role("eng_manager", ["status"])[0].id == "team_pulse"      # status updates count as reports
 
 
 def test_the_intents_that_fit_the_day_come_first():
-    assert intents.for_role("aso_manager")[0].id == "keyword_tracker"
-    assert intents.for_role("aso_manager", ["users"])[0].id == "review_desk"
+    assert intents.for_role("aso_manager")[0].id == "review_desk"
+    assert intents.for_role("aso_manager", ["metrics"])[0].id == "keyword_tracker"
+
+
+def test_a_ready_town_says_itself_in_today_s_words():
+    for it in intents.INTENTS:
+        texts = [it.title, it.blurb, it.plan["summary"], *(r["why"] for r in it.plan["roads"]),
+                 *(t for b in it.plan["buildings"] for t in (b["title"], b["why"]))]
+        assert all(lexicon.words(t) == t for t in texts), (it.id, [t for t in texts if lexicon.words(t) != t])
+
+
+def test_a_role_s_three_towns_are_its_day_its_week_and_its_month():
+    for r in intents.ROLES:
+        assert [i.rhythm for i in intents.for_role(r.id)] == list(intents.RHYTHMS), r.id
+    for it in intents.INTENTS:
+        if it.rhythm == "day":
+            continue
+        towers = {b["key"]: b for b in it.plan["buildings"] if b["type"] == "watchtower"}
+        starts = [r for r in it.plan["roads"] if r["event"] == "watch.cron" and r["from"] in towers]
+        assert starts, it.id                                                 # it runs by itself
+        cron = towers[starts[0]["from"]]["config"]["cron"]
+        assert watch.schedule_ok(cron), (it.id, cron)
+        assert ("weekly" in cron) == (it.rhythm == "week"), (it.id, cron)
 
 
 def test_the_role_s_common_options_come_first():
@@ -234,7 +255,7 @@ def test_the_builder_starts_from_the_role_s_templates(tmp_path: Path):
     from tests.test_town_builder import GOOD, _runner
     run = _runner(GOOD)
     town_builder.plan("I am ASO manager.", tmp_path, set(), run, templates=intents.templates_text("aso_manager"))
-    assert "START FROM A TEMPLATE" in run.calls[0] and "Review War Tent" in run.calls[0]
+    assert "START FROM A TEMPLATE" in run.calls[0] and "Review Lodge" in run.calls[0]
     town_builder.plan("I am ASO manager.", tmp_path, set(), run)
     assert "START FROM A TEMPLATE" not in run.calls[1]
 
@@ -286,9 +307,9 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
         lst = app.screen.query_one("#ob-presets", OptionList)
         assert [lst.get_option_at_index(i).id for i in range(lst.option_count)] == [
-            "bug_hunt", "solo_forge", "review_gate", "custom"]
-        assert "★" in str(lst.get_option_at_index(0).prompt) and "triaged" in str(lst.get_option_at_index(0).prompt)
-        assert "Review Gatehouse" in str(lst.get_option_at_index(2).prompt)
+            "solo_forge", "debt_sweep", "release_chronicle", "custom"]
+        assert "★" in str(lst.get_option_at_index(0).prompt) and "Jira" in str(lst.get_option_at_index(0).prompt)
+        assert "Release Chronicle" in str(lst.get_option_at_index(2).prompt)
         assert app.screen.query(".ob-buttons #ob-empty")                        # the empty town at the bottom
         await _press(app, pilot, "ob-back")                                      # Back keeps the tools
         await _tools_ready(app, pilot)
@@ -298,7 +319,7 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         await _press(app, pilot, "ob-next")
         await _on(pilot, app, IntentStep)
         await _until(pilot, lambda: app.screen.query_one("#ob-presets", OptionList).option_count)
-        await _pick(app, pilot, "ob-presets", "bug_hunt")
+        await _pick(app, pilot, "ob-presets", "solo_forge")
         await _press(app, pilot, "ob-next")
 
         await _on(pilot, app, AutonomyStep)                                      # camp rules
@@ -307,8 +328,8 @@ async def test_the_whole_flow_with_an_intent(fake_repo: Path, onboard):
         app.screen.query_one("#au-quiet", Checkbox).value = True
         await _press(app, pilot, "au-next")
 
-        await _until(pilot, lambda: app.scroll.building("fixers") is not None
-                     and any(r.source == "triage" for r in app.scroll.building("fixers").roads)
+        await _until(pilot, lambda: app.scroll.building("crew") is not None
+                     and any(r.source == "board" for r in app.scroll.building("crew").roads)
                      and not app.query(RaiseBar), n=200)
         machine = settings.load()
         assert machine.onboarded and machine.autonomy == 1
@@ -374,7 +395,7 @@ async def test_none_fits_the_interview_and_the_builder(fake_repo: Path, onboard,
         assert "Results go to: Asana." in prompt and "Reports take hours" in prompt
         assert "orkestration: new to it" in prompt and "Claude Code — 👎 tickets" in prompt
         assert "EVERY WEBHOOK COMES IN THROUGH A WATCHTOWER" in prompt
-        assert "START FROM A TEMPLATE" in prompt and "Keyword Lookout" in prompt
+        assert "START FROM A TEMPLATE" in prompt and "Keyword Watch" in prompt
 
 
 @pytest.mark.asyncio
@@ -393,7 +414,7 @@ async def test_a_known_operator_starts_at_the_town(fake_repo: Path, onboard):
         assert town.query_one("#ob-warder", Checkbox).display                    # claude on: here
         assert town.query_one("#ob-warder-agy").display and "--sandbox" in str(town.query_one("#ob-warder-agy").render())
         assert str(town.query_one("#ob-next", Button).label) == "Build"
-        assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "bug_hunt"
+        assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "solo_forge"
         town.query_one("#ob-role-browse", Select).value = "designer"             # other roles' towns
         await _settle(pilot)
         assert town.query_one("#ob-presets", OptionList).get_option_at_index(0).id == "mockup_grove"

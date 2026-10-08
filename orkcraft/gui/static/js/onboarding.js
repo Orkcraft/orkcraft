@@ -199,7 +199,7 @@ function TownStep({ o }) {
     ${it ? html`
       <div class="ok-tabs" role="tablist">
         ${o.towns.map((x, i) => html`<button key=${x.id} role="tab" aria-selected=${i === pick}
-            class=${cls("ok-tab", { "is-active": i === pick })} onClick=${() => setPick(i)}>${i === 0 ? "★ " : ""}${say(x.title)}</button>`)}
+            class=${cls("ok-tab", { "is-active": i === pick })} onClick=${() => setPick(i)}>${i === 0 ? "★ " : ""}${x.rhythm ? `${say(x.rhythm)} · ` : ""}${say(x.title)}</button>`)}
       </div>
       <${TownPreview} it=${it} biome=${o.biome} />
       <div class="gui-onb__how">

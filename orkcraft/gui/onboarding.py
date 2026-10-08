@@ -169,6 +169,7 @@ class Onboarding:
             plan = it.plan
             out.append({
                 "id": it.id, "title": it.title, "icon": it.icon, "blurb": it.blurb,
+                "rhythm": intents.RHYTHMS.get(it.rhythm, ""),
                 "summary": plan.get("summary", ""),
                 "buildings": [{"key": b["key"], "type": b["type"], "title": b["title"], "why": b.get("why", ""),
                                # what an agent uses shows on the building that runs agents or sends things out
