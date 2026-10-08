@@ -26,6 +26,8 @@ on a machine with agy:
 
 Drummer, Taskmaster, Alchemist and Keeper are still draft agents in `watchers/`; only the Warder
 runs. Taskmaster's budget duty is covered by the 🪙 / 🪵 limits.
+Their jobs, new names (Pacer, Treasurer, Alchemist, Peon) and stages are in
+[design/simplify.md](design/simplify.md) §6.
 
 ## 🪙 Codex: its prices
 

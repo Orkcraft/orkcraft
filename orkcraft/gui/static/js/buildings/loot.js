@@ -5,13 +5,14 @@
 // changed files of the working tree with what was rejected; a cart or a file opens over them (← back)
 // with its acts, what it is first, why it waits and the chain it came through, and a decision opens the
 // next cart. In the whole town's width the list stays on the left and the chosen one opens beside it.
-// A cart opens in Lake and is edited there (its draft file) before it is accepted; the rules are the
-// keeper's, read out in plain words. The decisions are the worker's (core/workers/loot.py).
+// A text cart is edited in the window, or in Lake (its draft file), before it is accepted; a file its task
+// committed on its branch is rejected on its own (put back as the base has it) and brought back, and the
+// rest of the cart goes on; a picture shows in the window. The rules are the keeper's, read out in plain words. The decisions are the worker's (core/workers/loot.py).
 // Every cart says what it is before it is opened (realm/content.py): a message, a doc, a ticket, code,
 // an image, data or text — with where it goes and its first line, or a thumbnail of its picture, which
 // the closed card shows too.
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, toast } from "../link.js";
 import { Dialog } from "../dialog.js";
@@ -193,14 +194,15 @@ function ReworkDialog({ id, data }) {
 
 /** A cart's acts. A held one: Accept first. One that needs you ran out of rounds or could not go back, so
  *  the person fixes it: Edit (a file: open it) comes first, Accept as it is after; once edited, Accept
- *  takes the edit. */
-function Acts({ id, it, data }) {
+ *  takes the edit. A text cart is edited in the window (`onEdit`); one too long for it, in Lake. */
+function Acts({ id, it, data, onEdit }) {
   if (it.status === "rework") return html`<span class="ok-tone-muted">with ${it.source} for rework</span>`;
   const accept = (label, primary) => html`<button class=${cls("ok-btn", { primary })}
       onClick=${() => act(id, "accept", { item: it.id }).then(() => advance(id, data, it.id), () => {})}>${say(label)}</button>`;
   const fix = (primary) => it.kind === "file"
     ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`
-    : html`<button class=${cls("ok-btn", { primary })} onClick=${() => edit(id, it)}>${say("Edit in Lake")}</button>`;
+    : it.cut ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => edit(id, it)}>${say("Edit in Lake")}</button>`
+    : html`<button class=${cls("ok-btn", { primary })} onClick=${onEdit}>${say("Edit")}</button>`;
   if (it.edited) return html`${accept("Accept your version", true)}${fix(false)}`;
   if (it.status === "needs_you") return html`${fix(true)}${accept("Accept as it is", false)}`;
   return html`${accept("Accept", true)}
@@ -331,6 +333,7 @@ function Chain({ chain, total }) {
   </table>${total && chain.length > 1 && html`<p class="ok-detail__meta">The chain: ${total}</p>`}`;
 }
 
+/** A file's diff or content; a picture shows itself above what is said of it. */
 function Preview({ id, item, path }) {
   const [shown, setShown] = useState(null);
   useEffect(() => {
@@ -338,34 +341,83 @@ function Preview({ id, item, path }) {
     act(id, "preview", item ? { item, path } : { path }).then(setShown, () => setShown({ text: "" }));
   }, [id, item, path]);
   if (!shown) return html`<p class="ok-tone-muted">Looking…</p>`;
-  return html`<pre class="gui-pre">${shown.text}</pre>`;
+  return html`${shown.image && html`<div class="loot-what__pics"><${Thumb} id=${id} item=${item} path=${path} className="loot-what__pic" /></div>`}
+    <pre class="gui-pre">${shown.text}</pre>`;
+}
+
+/** The person's version of a text cart, written in the window (its draft file, as Lake's): saved, or saved and
+ *  accepted at once. Escape leaves it unsaved. */
+function Editor({ id, it, data, onClose }) {
+  const [value, setValue] = useState(it.draft ?? it.value);
+  const box = useRef(null);
+  useEffect(() => { box.current && box.current.focus(); }, []);      // it closes when another cart opens
+  const save = () => act(id, "save_edit", { item: it.id, value });
+  const acceptIt = () => save().then(() => act(id, "accept", { item: it.id }))
+    .then(() => { onClose(); advance(id, data, it.id); }, () => {});
+  const esc = (e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+  return html`<div class="loot-edit" onKeyDown=${esc}>
+    <p class="ok-detail__section">${say("Your version")}</p>
+    <textarea ref=${box} class="ok-input gui-textarea loot-edit__text" rows="18" spellcheck="true" aria-label=${say("Your version")}
+      value=${value} onInput=${(e) => setValue(e.target.value)}></textarea>
+    <div class="ok-detail__actions">
+      <button class="ok-btn primary" onClick=${acceptIt}>${say("Accept this version")}</button>
+      <button class="ok-btn" onClick=${() => save().then(onClose, () => {})}>${say("Save")}</button>
+      <button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+      <span class="gui-head__spacer"></span>
+      <button class="ok-btn" onClick=${() => save().then(() => { onClose(); edit(id, it); }, () => {})}>${say("Edit in Lake")}</button>
+    </div>
+  </div>`;
+}
+
+/** The files a held cart's task committed on its branch: the chosen one's diff (its picture), and Reject — it is
+ *  put back on the branch as the base has it, kept aside, and the rest of the cart goes on. Under them the
+ *  rejected ones, each brought back with one click. */
+function BranchFiles({ id, it }) {
+  const [file, setFile] = useState(null);
+  useEffect(() => setFile(null), [it.id]);
+  const decides = it.status === "held" || it.status === "needs_you";
+  const files = it.branch ? it.branch.files : [];
+  const on = files.some((g) => g.path === file) ? file : null;
+  const reject = () => act(id, "branch_reject", { item: it.id, path: on }).then(() => setFile(null), () => {});
+  return html`
+    ${it.branch && html`<p class="ok-detail__section">${say("On")} ${it.branch.name} · ${files.length} ${say(files.length === 1 ? "file" : "files")}</p>
+      <ul class="ok-files">${files.map((g) => html`<li key=${g.path} class=${cls("ok-file gui-tree__item", { "is-selected": on === g.path })}
+        onClick=${() => setFile(g.path)}><span>${CHANGE[g.change] || "~"} ${g.path}</span></li>`)}</ul>
+      ${on && html`<div class="loot-branch-file">
+        <div class="ok-detail__actions"><span class="loot-branch-file__path" title=${on}>${on}</span>
+          <span class="gui-head__spacer"></span>
+          ${decides && html`<button class="ok-btn" title=${say("Put back on the branch as the base has it; the rest of the cart goes on")}
+            onClick=${reject}>${say("Reject this file")}</button>`}</div>
+        <${Preview} id=${id} item=${it.id} path=${on} /></div>`}`}
+    ${it.rejected.length > 0 && html`<p class="ok-detail__section ok-tone-error">✗ ${it.rejected.length} ${say(it.rejected.length === 1 ? "file rejected" : "files rejected")}</p>
+      <ul class="loot-files">${it.rejected.map((r) => html`<li key=${r.index} class="loot-rejected">
+        <span class="loot-file__mark">✗</span><span class="loot-file__path" title=${r.path}>${r.path}</span>
+        ${decides && html`<button class="ok-btn" onClick=${() => act(id, "branch_restore", { item: it.id, index: r.index }).catch(() => {})}>${say("Bring it back")}</button>`}
+      </li>`)}</ul>`}`;
 }
 
 /** An open cart: its head and acts, then what it is (the main column), and beside it — under it in the half
  *  panel — why it waits and the chain it came through. */
 function ItemDetail({ id, it, data }) {
-  const [file, setFile] = useState(null);
-  useEffect(() => setFile(null), [it.id]);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => setEditing(false), [it.id]);
   return html`<div class="ok-detail loot-detail">
     <div class="loot-detail__top">
       <div class="ok-detail__head loot-open__title" title=${it.title}>${it.title}</div>
       <p class=${cls("ok-detail__meta", { "ok-tone-fire": it.status === "needs_you" })}>${say(WORD[it.status])} · ${say("from")} ${it.source} · ${it.at}${it.spent ? ` · ${it.spent}` : ""}
         ${it.attempts > 0 ? ` · ${say("reworked")} ${it.attempts}×` : ""}</p>
       <div class="ok-detail__actions">
-        <${Acts} id=${id} it=${it} data=${data} />
+        ${!editing && html`<${Acts} id=${id} it=${it} data=${data} onEdit=${() => setEditing(true)} />`}
         <span class="gui-head__spacer"></span>
         ${it.edited && html`<button class="ok-btn" onClick=${() => act(id, "discard_edit", { item: it.id }).catch(() => {})}>${say("Forget your edit")}</button>`}
         ${it.kind !== "file" && html`<button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`}
         <button class="ok-btn danger" onClick=${() => { dropping.value = { ...dropping.value, [id]: it.id }; }}>${say("Drop")}</button>
       </div>
-      ${it.edited && html`<p class="ok-detail__meta ok-tone-wait">${say("Edited in Lake: Accept takes your version.")}</p>`}
+      ${it.edited && !editing && html`<p class="ok-detail__meta ok-tone-wait">${say("Edited: Accept takes your version.")}</p>`}
     </div>
     <div class="loot-detail__main">
-      <${What} id=${id} it=${it} />
-      ${it.branch && html`<p class="ok-detail__section">${say("On")} ${it.branch.name} · ${it.branch.files.length} ${say("files")}</p>
-        <ul class="ok-files">${it.branch.files.map((g) => html`<li key=${g.path} class=${cls("ok-file gui-tree__item", { "is-selected": file === g.path })}
-          onClick=${() => setFile(g.path)}><span>${CHANGE[g.change] || "~"} ${g.path}</span></li>`)}</ul>
-        ${file && html`<${Preview} id=${id} item=${it.id} path=${file} />`}`}
+      ${editing ? html`<${Editor} id=${id} it=${it} data=${data} onClose=${() => setEditing(false)} />` : html`<${What} id=${id} it=${it} />`}
+      <${BranchFiles} id=${id} it=${it} />
     </div>
     <div class="loot-detail__side">
       <p class="ok-detail__section">${say("Why it waits")}</p>

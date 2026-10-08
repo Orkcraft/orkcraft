@@ -119,3 +119,35 @@ async def test_a_held_cart_shows_its_branch_files_and_opens_the_picture(fake_rep
         view.accept_item(item)                                       # passed: its branch rows go
         ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
         assert not any(i and i.startswith("bf:") for i in ids) and view.branches == {}
+
+
+def test_one_file_of_the_branch_is_rejected_and_brought_back(fake_repo: Path, tmp_path: Path):
+    wt, branch, base = task_branch(fake_repo)
+    git(wt, "checkout", "-q", "--detach")                    # the ork moved on: the branch is checked out nowhere
+    br = generated.Branch(wt, branch, base)
+    before = git(fake_repo, "rev-parse", branch)
+    added = br.reject("art/notes.md", tmp_path / "keep")
+    assert added["change"] == "A" and Path(added["kept"]).read_text() == "# The logo\n\nred on black\n"
+    assert [g.path for g in br.files()] == ["README.md", "art/logo.png"]          # the rest goes on
+    assert git(fake_repo, "rev-parse", f"{branch}~1") == before                   # one commit on top, nothing rewritten
+    deleted = br.reject("README.md", tmp_path / "keep")                            # a deletion: the file comes back
+    assert deleted["kept"] == "" and git(fake_repo, "show", f"{branch}:README.md").startswith("# Demo project")
+    assert [g.path for g in br.files()] == ["art/logo.png"]
+    br.restore(added)
+    br.restore(deleted)
+    assert [(g.change, g.path) for g in br.files()] == [("D", "README.md"), ("A", "art/logo.png"), ("A", "art/notes.md")]
+    with pytest.raises(ValueError):
+        br.reject("src/app.py", tmp_path / "keep")                                 # not the branch's
+
+
+def test_a_worktree_that_has_the_branch_follows_it(fake_repo: Path, tmp_path: Path):
+    wt, branch, base = task_branch(fake_repo)
+    br = generated.Branch(wt, branch, base)
+    entry = br.reject("art/logo.png", tmp_path / "keep")
+    assert not (wt / "art" / "logo.png").exists() and git(wt, "status", "--porcelain") == ""
+    br.restore(entry)
+    assert (wt / "art" / "logo.png").read_bytes() == PNG and git(wt, "status", "--porcelain") == ""
+    (wt / "art" / "notes.md").write_text("half done\n")                            # someone's uncommitted change
+    with pytest.raises(RuntimeError, match="uncommitted"):
+        br.reject("art/notes.md", tmp_path / "keep")
+    assert (wt / "art" / "notes.md").read_text() == "half done\n"
