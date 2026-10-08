@@ -132,6 +132,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--role", default=None, metavar="ROLE",
                         help="Who you are, as orkcraft.dev asked: a role (engineer, founder…) or a class "
                              "(peon, knight, elf, lich, gnome, goblin); the onboarding opens on it"),
+    parser.add_argument("--look", choices=("camp", "office"), default=None,
+                        help="How the town is drawn, as orkcraft.dev asked: camp (the pixel town) or office "
+                             "(calm, no sprites); switch it any time in Settings")
     parser.add_argument("--demo", nargs="?", const="", default=None, metavar="DIR",
                         help="Open the showcase sandbox: simulated data (default ~/.orkcraft-demo)")
     parser.add_argument("--demo-reset", action="store_true", help="Rebuild the showcase sandbox")
@@ -192,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"orkcraft error: no role {args.role!r}; one of: {known}\n")
             return 2
         machine_settings.preset_role(role_id, kin=intents.class_kin(args.role))   # gnome: the GUI asks which gnome
+
+    if args.look is not None:
+        from orkcraft import settings as machine_settings
+        machine_settings.preset_look(args.look)
 
     if args.subcommand == "hooks":
         from orkcraft.hooks import install as hooks_install

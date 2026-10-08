@@ -259,6 +259,34 @@ def test_role_from_the_landing_page_opens_the_onboarding_on_it(monkeypatch, tmp_
     assert settings.load(file).profile["role"] == "designer"
 
 
+def test_look_from_the_landing_page_is_how_the_town_first_opens(monkeypatch, tmp_path: Path, capsys):
+    """`orkcraft --look office` (the pick on orkcraft.dev) is kept as the person's look before the window
+    opens; an unknown look is refused; after a finished onboarding the look from Settings stays."""
+    import orkcraft.cli as cli
+    from orkcraft import settings
+
+    class Launch:
+        @staticmethod
+        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
+            return 0
+
+    file = tmp_path / "settings.json"
+    monkeypatch.setenv("ORKCRAFT_SETTINGS_FILE", str(file))
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
+    (tmp_path / ".git").mkdir()
+    assert settings.load(file).look == "camp"
+    assert main(["--repo", str(tmp_path), "--role", "peon", "--look", "office"]) == 0
+    assert settings.load(file).look == "office" and settings.load(file).profile["role"] == "engineer"
+    with pytest.raises(SystemExit):
+        main(["--repo", str(tmp_path), "--look", "neon"])
+    assert "invalid choice: 'neon'" in capsys.readouterr().err
+    done = settings.load(file)
+    done.onboarded, done.look = True, "camp"
+    settings.save(done, file)
+    assert main(["--repo", str(tmp_path), "--look", "office"]) == 0
+    assert settings.load(file).look == "camp"
+
+
 def test_the_landing_page_classes_are_the_first_role_of_each_kin():
     """Every class of orkcraft.dev names a real role, and its nick is the class's name on the page."""
     from orkcraft.realm import intents
