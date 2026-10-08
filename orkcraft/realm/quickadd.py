@@ -352,12 +352,6 @@ def origin(repo_root: Path, runner=subprocess.run) -> tuple[str, str]:
     return (m.group(1) or m.group(2) or m.group(3)).lower(), m.group(4).removesuffix(".git")
 
 
-def origin_repo(repo_root: Path, runner=subprocess.run) -> str:
-    """This project's GitHub repo (`owner/repo`) from its `origin`, or ""."""
-    host, path = origin(repo_root, runner)
-    return path if host == "github.com" and path.count("/") == 1 else ""
-
-
 def options(login: Verified, opener=urllib.request.urlopen, runner=subprocess.run, repo_root: Path | None = None,
             files: list[str] | None = None) -> list[Option]:
     """What there is to pick for this login, the likely ones ticked."""

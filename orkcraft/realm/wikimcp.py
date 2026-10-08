@@ -16,7 +16,6 @@ import re
 from pathlib import Path
 
 CLAUDE, CURSOR, CODEX = Path(".mcp.json"), Path(".cursor") / "mcp.json", Path(".codex") / "config.toml"
-SERVES = ("claude", "codex", "cursor")             # the tools that read a project's MCP servers
 
 
 def name_of(building_id: str) -> str:

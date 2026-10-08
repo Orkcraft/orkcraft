@@ -505,7 +505,6 @@ class MineWorker(Worker):
         if prev is not None:
             r["changes"] = research.changes(prev, r) or ["Nothing changed since the last time"]
         md = research.report(r) if not r.get("error") else f"# {r['question']}\n\n> **Failed:** {r['error']}\n"
-        r["status"] = "failed" if r.get("error") else "done"
         r["ended"] = self.clock().isoformat(timespec="seconds")
         r["counts"] = research.counts(r)
         r["sources"] = research.per_tool(r)
@@ -513,6 +512,7 @@ class MineWorker(Worker):
             self._file(r["id"], "md").write_text(md, encoding="utf-8")
         except OSError:
             pass
+        r["status"] = "failed" if r.get("error") else "done"      # done only once its report is there to read
         quiet = prev is not None and r["changes"] == ["Nothing changed since the last time"]
         if not r.get("error") and not quiet:
             r["wiki_note"] = self._to_wiki(r, md)

@@ -543,11 +543,6 @@ def drive_folders(ref: str, parent: str = "root", opener=None) -> list[dict]:
     return sorted(({"id": f["id"], "name": f.get("name", "")} for f in got), key=lambda f: f["name"].lower())
 
 
-def drive_folder_name(ref: str, folder: str, opener=None) -> str:
-    return str(call(ref, f"/drive/v3/files/{urllib.parse.quote(folder)}", "drive", {"fields": "name"},
-                    opener=opener).get("name") or folder)
-
-
 def drive_text(ref: str, f: dict, opener=None) -> str:
     """A Doc as Markdown (plain text when Markdown is refused); a text file as it is."""
     fid = urllib.parse.quote(str(f.get("id", "")))

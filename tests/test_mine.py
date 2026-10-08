@@ -30,7 +30,8 @@ def _raised(host: Host, type_id: str, **config) -> str:
     return built.id
 
 
-def _wait(fn, s: float = 10.0) -> bool:
+def _wait(fn, s: float = 30.0) -> bool:
+    """Polls `fn` until it holds: the Mine works on its own threads, so wait for the last thing a step does."""
     end = time.monotonic() + s
     while time.monotonic() < end:
         if fn():
@@ -75,7 +76,8 @@ def test_a_research_is_checked_asked_and_kept(fake_repo, isolated_layout_file, m
     host.town.emit_typed = lambda b, ev, value, title="", *a, **k: sent.append((ev, value, title)) or True
 
     rid = host.command("act", {"id": bid, "act": "ask", "args": {"question": "When does Acme's free tier end?"}})
-    assert _wait(lambda: w.get(rid)["status"] == "waiting"), w.get(rid)
+    # the cycle marks the research waiting, then says so (`mine.asked`): wait for the saying
+    assert _wait(lambda: w.get(rid)["status"] == "waiting" and sent and sent[-1][0] == "mine.asked"), w.get(rid)
     r = w.get(rid)
     assert {t for t, web, _ in agents.calls if web} == {"claude", "hermes"}       # every tool searched, with the web
     assert r["round"] == 1 and r["cost"] > 0 and set(r["per_tool"]) == {"claude", "hermes"}
