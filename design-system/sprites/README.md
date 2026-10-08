@@ -31,6 +31,11 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
 - `icons/res-quota.png`, `res-gold.png`, `res-lumber.png`, `res-meat.png` (16×16): the HUD resources, an
   hourglass, a stack of coins, two crossed logs and meat on the bone (`js/chrome.js`; the gold also rides
   on carts, `js/town.js`).
+- `icons/harness-claude.png`, `harness-agy.png`, `harness-codex.png`, `harness-hermes.png`, `harness-pi.png`,
+  `harness-cursor.png`, `harness-pipeline.png` (16×16) and `harness-arrow.png` (10×16): a harness scheme's marks in
+  Camp, each in its harness colour (`realm/harnesses.py`) with the house's dark outline: an eight-ray burst (✻), a
+  four-point star (✦), a hexagon with a ring (⌬), a caduceus (☤), a π, a diamond (◆), a P for a pipeline, and the
+  grey arrow between steps (`js/icons.js` `Scheme`; Office keeps the text marks).
 - `icons/chain.png` (16×16): a wooden signpost with a gold stud, the chain-or-script marker in place of an
   ork (`js/icons.js`).
 

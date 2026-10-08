@@ -4,6 +4,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
+import { Scheme } from "./icons.js";
 import { town, command } from "./link.js";
 import { Terminal } from "./terminal.js";
 import { showBuilding } from "./windows.js";
@@ -41,7 +42,7 @@ function Earlier({ onClose }) {
       : !list.length ? html`<p class="ok-tone-muted">No earlier sessions in this project.</p>`
       : html`<ul class="gui-rows">${list.map((s) => html`<li key=${s.key} class="gui-tent__row"
             onClick=${() => command("sessions.resume", { key: s.key }).then((k) => { onClose(); showSession(k); }, () => {})}>
-          <span class="gui-scheme">${MARK[s.harness] || ""}</span> ${s.title}
+          <${Scheme} scheme=${MARK[s.harness] || ""} /> ${s.title}
           <span class="ok-font-status ok-tone-muted"> · ${s.when.replace("T", " ")}${s.live ? " · open" : ""}</span></li>`)}</ul>`}
   </div>`;
 }
@@ -57,7 +58,7 @@ export function WarTent() {
       <ul class="gui-rows">${sessions.map((s) => html`<li key=${s.key}
           class=${cls("gui-tent__row", { "is-selected": current && s.key === current.key })}
           onClick=${() => { tentKey.value = s.key; }}>
-        <span class="gui-scheme">${MARK[s.harness] || ""}</span> ${s.title}
+        <${Scheme} scheme=${MARK[s.harness] || ""} /> ${s.title}
         <span class="ok-font-status ok-tone-muted"> · ${s.running ? "running" : `exited${s.exit_code ? ` ${s.exit_code}` : ""}`}</span>
       </li>`)}
       ${!sessions.length && html`<li class="ok-tone-muted">No sessions in this run yet.</li>`}</ul>

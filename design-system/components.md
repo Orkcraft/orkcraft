@@ -9,14 +9,14 @@ A garrison badge: who lives in a building, which harnesses run it and what it is
 - `.ok-badge` holds, in order:
   - The kind: the 24×16 ork head (the ork mark), in its state: `orks/ork.png` at rest, `ork-idle` asleep with its eyes shut (was 💤), `ork-busy` with a drop of sweat (was ⚙), `ork-waiting` with a flame on its head (was 🔥). The base ork head (`orks/ork.png`, `<img class="ok-sprite" data-kind="ork">`) for an agent, the 16×16 signpost (`icons/chain.png`, `data-kind="chain"`, was 🪧) for a chain or script, and both for a hybrid. It sits inside the plate. Office hides the sprite and shows the name alone.
   - The name.
-  - The harness scheme: `ok-h-claude` ✻, `ok-h-agy` ✦, `ok-h-codex` ⌬ or `ok-h-pipe` P, with steps joined by `ok-arrow` →. A scheme longer than three steps is written `first→last·N`.
+  - The harness scheme: `ok-h-claude` ✻, `ok-h-agy` ✦, `ok-h-codex` ⌬ or `ok-h-pipe` P, with steps joined by `ok-arrow` →. A scheme longer than three steps is written `first→last·N`. Camp draws each mark as its 16×16 pixel sprite (`icons/harness-*.png`, `<img data-kind="harness">`) and the arrow as `icons/harness-arrow.png` (js/icons.js `Scheme`); Office shows the text marks.
 - States: `is-alert`. Tiers are coloured with `tier-*` and carry their 16×16 icon (`icons/tier-elder.png` an orb, `tier-warrior` crossed swords, `tier-laborer` a pickaxe; `data-kind="tier"`), which Office hides.
 
 **Camp.** A sunken square plate.
 
 **Office.** A pill with a hairline.
 
-**Both.** The harness marks are text, never emoji, so they stay in Office.
+**Both.** The harness marks are never emoji: pixel sprites in Camp, text in Office. On a hut card the lead's head and its scheme stand bare after the name, no plate (js/hut.js `Keeper`).
 
 ## Button
 A command. Use `ok-btn` for buttons in dialogs and panels, with one `primary` per dialog. Use `ok-act` for the actions a building offers.

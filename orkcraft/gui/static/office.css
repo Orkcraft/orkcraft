@@ -41,6 +41,9 @@
 [data-look="office"] .gui-hud__mark,
 [data-look="office"] .ok-res img,
 [data-look="office"] .gui-hut__flame { display: none; }
+/* A harness scheme in its text marks (✻ ✦ ⌬ ☤ π ◆ P →), never its pixel marks. */
+[data-look="office"] .gui-scheme__mark > img[data-kind="harness"] { display: none; }
+[data-look="office"] .gui-scheme__glyph { display: inline; }
 [data-look="office"] .gui-hut > .ok-head { padding-left: var(--space-2); }
 [data-look="office"] body, [data-look="office"] .gui { background-image: none; }
 /* The War Map: its lands without their biomes' colours, in the office type. */
