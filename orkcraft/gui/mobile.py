@@ -22,6 +22,7 @@ from typing import Any, Callable
 
 from orkcraft import __version__
 from orkcraft.gui import markdown
+from orkcraft.gui import places as gui_places
 from orkcraft.realm import lexicon, modes
 
 API = 1                  # the mobile API's version: a change that breaks a client raises it
@@ -37,6 +38,7 @@ COMMANDS: dict[str, Any] = {
     "orders.answer": None,
     "orders.follow": None,
     "halt": None,
+    "place.report": None,
     "you.dnd": None,             # Do not disturb is the person's, wherever they set it (docs/design/portrait.md §5)
     "you.look": None,
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",)},
@@ -61,10 +63,13 @@ def allowed(host, name: str, args: dict | None = None) -> bool:
     return str(args.get("act", "")) in acts.get(host.type_of(bid), ())
 
 
-def guard(name: str, args: dict) -> dict:
+def guard(name: str, args: dict, device: dict | None = None) -> dict:
     """A phone's command as the host gets it, after `allowed`: a drop into The Pit is the phone's own
-    text, never read as paths on this machine (a phone names no path, docs/design/mobile.md §7)."""
+    text, never read as paths on this machine (a phone names no path, docs/design/mobile.md §7); a place
+    report names the phone it came from, as the listener knows it, whatever the report says."""
     args = dict(args)
+    if name == "place.report":
+        args["device"], args["device_id"] = (device or {}).get("name", ""), (device or {}).get("id", "")
     if name == "act" and args.get("act") == "drop":
         args["args"] = {**(args.get("args") if isinstance(args.get("args"), dict) else {}), "paths": False}
     return args
@@ -75,7 +80,8 @@ def hello(host) -> dict[str, Any]:
     glossary (key, word, the Camp word it replaced), so an app built once says words added later."""
     return {"name": "orkcraft", "version": __version__, "api": API,
             "commands": sorted(COMMANDS), "acts": {k: list(v) for k, v in COMMANDS["act"].items()},
-            "words": [{"key": k, "word": w, "was": was} for k, w, was in lexicon.glossary()]}
+            "words": [{"key": k, "word": w, "was": was} for k, w, was in lexicon.glossary()],
+            "places": gui_places.names(host)}
 
 
 def _alert(a: dict) -> dict[str, Any]:
@@ -198,4 +204,4 @@ def chat(host, args: dict | None = None) -> dict[str, Any]:
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     """The host's commands this module adds (`Host.commands`)."""
     return {"mobile.hello": lambda a: hello(host), "mobile.snapshot": lambda a: snapshot(host, a),
-            "mobile.chat": lambda a: chat(host, a)}
+            "mobile.chat": lambda a: chat(host, a), "place.report": lambda a: gui_places.report(host, a)}

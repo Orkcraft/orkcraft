@@ -102,7 +102,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("watch.cron", "schedule", TEXT, "the schedule fired"),
                 _e("watch.webhook", "webhook", TEXT, "a webhook arrived on localhost: its body"),
                 _e("watch.comment", "comment", TEXT, "a new comment or message in Slack, Jira, Confluence or Figma"),
-                _e("watch.mention", "mention", TEXT, "you were mentioned or written to: Slack, Jira, Confluence, Figma")),
+                _e("watch.mention", "mention", TEXT, "you were mentioned or written to: Slack, Jira, Confluence, Figma"),
+                _e("watch.place", "place", TEXT, "a paired phone came to a place or left it: what the road was made for, "
+                   "never the place or the time")),
         actions=(_a("mail.open_new", "Open new", "✉", "open the newest new signal"),
                  _a("watch.read_all", "Read all", "✓", "mark every signal read"),
                  _a("mail.refresh", "Check now", "↻", "check every source now")),
@@ -110,7 +112,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
                 "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),
-                "feeds": (list, None, False), "intent": (str, None, False), "wants": (dict, None, False)},
+                "feeds": (list, None, False), "intent": (str, None, False), "wants": (dict, None, False),
+                "places": (list, None, False), "places_keep_days": (int, (1, 365), False)},
         art="watchtower", orc="Lookout"),
     BuildingType(
         "signpost", "Signpost", "🚏", "S",

@@ -12,6 +12,7 @@ import { askKeeper } from "../keeper.js";
 import { Dialog } from "../dialog.js";
 import { openBuilding } from "../windows.js";
 import { AddPane, Glyph, editSource } from "./watchtower_add.js";
+import { Places } from "./watchtower_places.js";
 
 const source = signal({});         // building id → the source whose feed shows ("" all)
 const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
@@ -204,6 +205,7 @@ function Settings({ id, d }) {
       text=${say("The tower stops listening to it. Its login stays on this machine, for the next time.")}
       actions=${html`<button class="ok-btn" onClick=${() => setRemoving(null)}>Cancel</button>
         <button class="ok-btn danger" onClick=${() => act(id, "remove", { source: removing.id }).finally(() => setRemoving(null))}>Remove</button>`} />`}
+    ${d.places && html`<${Places} id=${id} p=${d.places} />`}
     <p class="ok-list__head">Change the sources</p>
     <div class="gui-head">
       <input class="ok-input" style="flex: 1; width: auto" placeholder=${say("Say it in plain words: e.g. also watch #support in Slack")} value=${ask}

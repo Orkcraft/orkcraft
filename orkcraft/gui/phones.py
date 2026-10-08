@@ -8,6 +8,8 @@ is paired or a pairing code is shown: a machine with no phone opens no port on t
          ← {"name": "orkcraft", "version": "0.1.0", "protocol": 1, "api": 1}
     POST /api/pair      {"code": "<pairing code>", "name": "Vadim's phone"}   (Content-Type: application/json)
          ← {"id": "<device id>", "token": "<device token>", "name": "Vadim's phone"}
+    POST /api/place     Authorization: Bearer <device token>; {"id", "place", "change", "at"} (gui/places.py)
+         ← {"outcome": "asked"}      for a client with no socket: Shortcuts, Tasker (docs/design/phone-places.md)
     GET  /ws            Authorization: Bearer <device token>; a WebSocket:
          ← {"t": "state", "state": {...}}     the compact snapshot (gui/mobile.py), at most every PUSH_S
          → {"t": "cmd", "id": 7, "name": "orders.answer", "args": {"id": "…", "key": "1"}}
@@ -41,9 +43,11 @@ from websockets.http11 import Request
 from websockets.server import ServerProtocol
 
 from orkcraft import env
-from orkcraft.gui import mobile, phone_tls
+from orkcraft.gui import mobile, phone_tls, tailnet
+from orkcraft.gui import places as places_http
 from orkcraft.gui.host import CommandError
 from orkcraft.gui.pairing import Bucket, PairError, Pairing, clean_name
+from orkcraft.realm import places
 
 PUSH_S = 2.0             # a phone gets the compact snapshot at most this often, and only when its rev changed
 HEAD_LIMIT = 16 * 1024   # an HTTP request's head
@@ -70,10 +74,12 @@ def lan_ip() -> str | None:
     return None if ip.startswith("127.") or ip == "0.0.0.0" else ip
 
 
-def pair_link(address: str, fingerprint: str, code: str) -> str:
-    """What the QR code says: where the town is, the certificate to pin and the one-time code."""
+def pair_link(address: str, fingerprint: str, code: str, tail: str = "") -> str:
+    """What the QR code says: where the town is, the certificate to pin and the one-time code; `ts`, the
+    address on the tailnet too, when Tailscale runs here (a phone on the road tries it)."""
     return (f"orkcraft://pair?v={mobile.API}&addr={quote(address, safe='')}"
-            f"&fp={fingerprint.replace(':', '')}&code={quote(code, safe='')}")
+            f"&fp={fingerprint.replace(':', '')}&code={quote(code, safe='')}"
+            + (f"&ts={quote(tail, safe='')}" if tail else ""))
 
 
 def qr_data_uri(text: str) -> str | None:
@@ -166,17 +172,26 @@ class Listener:
         self.server: asyncio.AbstractServer | None = None
         self.address = ""                          # https://<ip>:<port> while it listens
         self.fingerprint = ""
+        # Tailscale (gui/tailnet.py): the same listener on the tailnet's address, so a phone on the road
+        # reaches the town at home; with the machine's *.ts.net certificate when the tailnet gives one.
+        self.tail_server: asyncio.AbstractServer | None = None
+        self.tail_address = ""                     # https://<name>.ts.net:<port>, or https://100.x.y.z:<port>
+        self.tail_trusted = False                  # its certificate is one a phone trusts as it is
+        self.tail_find: Callable[[], tailnet.Tail | None] = tailnet.find
+        self.tail_cert: Callable[[tailnet.Tail], tuple[Path, Path] | None] = \
+            lambda tail: tailnet.cert(tail, self.cert_folder)
         self.phones: set[Phone] = set()
         self.on_push: Callable[[dict | None], None] = lambda snap: None   # gui/notify.py: what came, said once
         self._pushed = 0.0
         self._snap: dict | None = None             # the last compact snapshot, while one is open
         self._said_locked = False                  # the desktop was told pairing locked (once a code)
+        self._place_buckets: dict[str, Bucket] = {}  # a device's place reports (POST /api/place)
 
     # -- its life ------------------------------------------------------------------------------------
 
     @property
     def listening(self) -> bool:
-        return self.server is not None
+        return self.server is not None or self.tail_server is not None
 
     def wanted(self) -> bool:
         """It listens while a phone is paired or a pairing code is live, and only then."""
@@ -196,44 +211,81 @@ class Listener:
         return sock
 
     def start(self, move: bool = False) -> None:
-        """Listen on the LAN (on the loop that runs now). The port is the one phones were given; a
-        `move` (a new pairing) takes another when that one is taken."""
-        if self.server is not None:
+        """Listen on the LAN, and on the tailnet when Tailscale runs here (on the loop that runs now). The
+        port is the one phones were given; a `move` (a new pairing) takes another when that one is taken."""
+        if self.listening:
             return
         ip = self.bind or lan_ip()
-        if not ip:
-            raise PhoneError("No network found: connect this machine to the Wi-Fi the phone is on")
+        tail = None if self.bind else self.tail_find()
+        if not ip and tail is None:
+            raise PhoneError("No network found: connect this machine to the Wi-Fi the phone is on, or to Tailscale")
         try:
             cert, key = phone_tls.ensure(self.cert_folder)
             ctx = phone_tls.context(cert, key)
         except (phone_tls.TlsError, OSError, ssl.SSLError) as e:
             raise PhoneError(str(e)) from None
+        self.fingerprint = phone_tls.fingerprint(cert)
         port = self.pairing.port()
-        try:
-            sock = self._socket(ip, port)
-        except OSError as e:
-            if not (move and port):
-                raise PhoneError(f"Cannot listen for phones on {ip}:{port}: {e.strerror or e}") from None
-            sock = self._socket(ip, 0)
-        new = sock.getsockname()[1]
+        new = port
+        if ip and ip != (tail.ip if tail else None):
+            try:
+                sock = self._socket(ip, port)
+            except OSError as e:
+                if not (move and port):
+                    raise PhoneError(f"Cannot listen for phones on {ip}:{port}: {e.strerror or e}") from None
+                sock = self._socket(ip, 0)
+            new = sock.getsockname()[1]
+            self.address = f"https://{ip}:{new}"
+            self._serve("server", sock, ctx)
+        if tail is not None:
+            new = self._start_tail(tail, new, ctx, move or not ip)
         if new != port:
             self.pairing.save_port(new)
-        self.fingerprint = phone_tls.fingerprint(cert)
-        self.address = f"https://{ip}:{new}"
+
+    def _start_tail(self, tail: tailnet.Tail, port: int, fallback: ssl.SSLContext, move: bool) -> int:
+        """The listener on the tailnet's address, on the LAN's port; the port it took (the LAN's, unless
+        that one is taken there and it may `move`)."""
+        try:
+            sock = self._socket(tail.ip, port)
+        except OSError:
+            if not move:
+                return port
+            try:
+                sock = self._socket(tail.ip, 0)
+            except OSError:
+                return port
+        new = sock.getsockname()[1]
+        ctx, trusted = fallback, False
+        got = self.tail_cert(tail) if tail.name else None
+        if got is not None:
+            try:
+                ctx, trusted = phone_tls.context(*got), True
+            except (OSError, ssl.SSLError):
+                ctx = fallback
+        self.tail_trusted = trusted
+        self.tail_address = f"https://{tail.name if trusted else tail.ip}:{new}"
+        self._serve("tail_server", sock, ctx)
+        return new
+
+    def _serve(self, which: str, sock: socket.socket, ctx: ssl.SSLContext) -> None:
         future = asyncio.ensure_future(asyncio.start_server(self._conn, sock=sock, ssl=ctx, limit=HEAD_LIMIT,
                                                             ssl_handshake_timeout=HEAD_S))
         pending = _Pending(future, sock)
-        self.server = pending
-        future.add_done_callback(lambda f: self._started(f, pending))
+        setattr(self, which, pending)
+        future.add_done_callback(lambda f: self._started(f, pending, which))
 
-    def _started(self, future: asyncio.Future, pending: _Pending) -> None:
+    def _started(self, future: asyncio.Future, pending: _Pending, which: str = "server") -> None:
         """`start_server` came up: it is the listener, unless it was stopped (or started anew) meanwhile."""
         if future.cancelled() or future.exception() is not None:
-            if self.server is pending:
-                self.server, self.address = None, ""
+            if getattr(self, which) is pending:
+                setattr(self, which, None)
+                if which == "server":
+                    self.address = ""
+                else:
+                    self.tail_address = ""
             return
-        if self.server is pending:
-            self.server = future.result()
+        if getattr(self, which) is pending:
+            setattr(self, which, future.result())
         else:
             future.result().close()
 
@@ -242,14 +294,16 @@ class Listener:
             phone.close(1001, "The town stopped listening")
         self.phones.clear()
         server, self.server, self.address = self.server, None, ""
-        if server is not None:
-            server.close()
+        tail, self.tail_server, self.tail_address, self.tail_trusted = self.tail_server, None, "", False
+        for s in (server, tail):
+            if s is not None:
+                s.close()
 
     def tick(self, now: float | None = None) -> None:
         """Once a second from the server's clock: the snapshot to the phones that are open (every PUSH_S,
         only when it changed), and the listener stops when nothing is paired and no code is live."""
         now = time.monotonic() if now is None else now
-        if self.server is not None and not self.wanted():
+        if self.listening and not self.wanted():
             self.stop()
             return
         if self.phones and now - self._pushed >= PUSH_S:
@@ -304,6 +358,8 @@ class Listener:
                 writer.write(self._version(method, headers))
             elif path == "/api/pair":
                 writer.write(await self._pair(method, headers, reader))
+            elif path == "/api/place":
+                writer.write(await self._place(method, headers, reader))
             else:
                 writer.write(_response(HTTPStatus.NOT_FOUND))
         except Exception:                          # one phone's broken request never stops the listener
@@ -356,6 +412,9 @@ class Listener:
         self.host.town.toast(f"{name} is paired: it can answer the orks' questions and stop all",
                              title="Phone paired")
         return _json(HTTPStatus.OK, {"id": device_id, "token": token, "name": name})
+
+    async def _place(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader) -> bytes:
+        return await places_http.post(self, method, headers, reader)
 
     def _locked(self) -> None:
         if not self._said_locked:
@@ -442,7 +501,7 @@ class Listener:
             return {"t": "reply", "id": cid, "ok": False, "error": f"Not from a phone: {name}"}
         self.pairing.seen(phone.id)
         try:
-            result = self.host.command(name, mobile.guard(name, args))
+            result = self.host.command(name, mobile.guard(name, args, {"id": phone.id, "name": phone.name}))
         except CommandError as e:
             return {"t": "reply", "id": cid, "ok": False, "error": str(e)}
         except Exception as e:                       # a broken command never closes the phone
@@ -455,6 +514,8 @@ class Listener:
 
     def read(self) -> dict[str, Any]:
         return {"phones": self.pairing.public(), "listening": self.listening, "address": self.address,
+                "tail_address": self.tail_address, "tail_trusted": self.tail_trusted,
+                "tailscale": bool(tailnet.command()) and not tailnet.off(),
                 "fingerprint": self.fingerprint, "open": sorted({p.id for p in self.phones}),
                 "pairing": self.pairing.expires_in()}
 
@@ -467,7 +528,8 @@ class Listener:
         except PhoneError:
             self.pairing.void()
             raise
-        link = pair_link(self.address, self.fingerprint, code)
+        link = pair_link(self.address or self.tail_address, self.fingerprint, code,
+                         self.tail_address if self.address else "")
         return {**self.read(), "link": link, "qr": qr_data_uri(link), "code": code}
 
     def pair_stop(self) -> dict[str, Any]:
@@ -480,12 +542,30 @@ class Listener:
         if not self.pairing.forget(device_id):
             raise PhoneError("No such phone")
         self.close_device(device_id)
+        self._place_buckets.pop(device_id, None)
+        places.forget_device(device_id)                # what it said of places goes with it
         if not self.wanted():
             self.stop()
         return self.read()
 
+    def recipe(self, name: str) -> dict[str, Any]:
+        """A token for a Shortcuts or Tasker recipe (docs/design/phone-places.md §7): a device of its own,
+        listed and forgotten like a phone, shown once with the address and the call to make."""
+        device_id, token, label = self.pairing.add(name or "Shortcuts")
+        try:
+            self.start()
+        except PhoneError:
+            self.pairing.forget(device_id)
+            raise
+        address = self.tail_address or self.address
+        self.host.town.toast(f"{label} can report places", title="Phones")
+        return {**self.read(), "recipe": {"id": device_id, "name": label, "token": token,
+                                          "url": f"{address}/api/place" if address else "",
+                                          "trusted": bool(self.tail_address and self.tail_trusted)}}
+
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {"phones.list": lambda a: self.read(), "phones.pair": lambda a: self.pair(),
+                "phones.recipe": lambda a: self.recipe(clean_name(a.get("name") or "Shortcuts")),
                 "phones.pair_stop": lambda a: self.pair_stop(),
                 "phones.forget": lambda a: self.forget(str(a.get("id") or ""))}
 

@@ -192,6 +192,11 @@ class Pairing:
         if not self.code_ok(code, now):
             raise PairError("That code is not the one on the desktop, or it ran out")
         self._code = None                      # once
+        return self.add(name)
+
+    def add(self, name: object) -> tuple[str, str, str]:
+        """A new device with a token of its own, made at the desktop: (device id, token, name). Pairing makes
+        one for a phone that scanned the code; Settings → Phones one for a Shortcuts or Tasker recipe."""
         devices = self.devices()
         token, ids = secrets.token_urlsafe(32), {d["id"] for d in devices}
         device_id = secrets.token_hex(8)
