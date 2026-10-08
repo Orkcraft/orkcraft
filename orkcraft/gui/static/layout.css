@@ -25,6 +25,15 @@ button { font: inherit; color: inherit; }
 .gui-hud__menu:hover { color: var(--ink); border-color: var(--frame); background: var(--selection); }
 .gui-hud__stop { color: var(--danger); }
 .gui-hud__stop:hover { color: var(--panel); background: var(--danger); }
+/* A narrow window: the portrait stands for the brand, and the resources wrap to a second row instead of
+   running off the right edge (Answers and Stop all must stay in sight). */
+@media (max-width: 640px) {
+  .gui-hud.ok-hud { height: auto; min-height: var(--bar-hud); flex-wrap: wrap; row-gap: var(--space-1); column-gap: var(--space-2);
+    padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .gui-hud .ok-hud__brand { display: none; }
+  .gui-hud .ok-hud__spacer { flex-basis: 100%; height: 0; }
+  .gui-hud__project { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 .gui-settings .gui-steps { align-self: flex-start; }
 
 /* The town's foot (docs/design/calm-town.md §1): the War Map at the left (js/warmap.js), the Warchief's line in the
@@ -702,7 +711,7 @@ button { font: inherit; color: inherit; }
 .gui-pocket { padding: var(--space-3) var(--space-3) 96px; display: flex; flex-direction: column; gap: var(--space-3); }
 .gui-pocket__group > .ok-list__head { margin: 0 0 var(--space-2); }
 .gui-pocket__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.gui-pocket__row.ok-hut { position: static; width: auto; background: var(--panel); border: var(--ok-frame, 2px) solid var(--frame); }
+.gui-pocket__row.ok-hut, [data-theme] .gui-pocket__row.ok-hut[class] { position: static; width: auto; background: var(--panel); border: var(--ok-frame, 2px) solid var(--frame); }
 .gui-pocket__row.is-alert { border-color: var(--alert); }
 .gui-pocket__row.is-open { border-color: var(--frame-focus); }
 .gui-pocket__head { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: 48px; padding: 0 var(--space-3);
