@@ -66,6 +66,7 @@ class WatchtowerWorker(Worker):
     feed_opener = None                                  # and fake Slack / Jira / Confluence / Figma here
     judge_runner = None                                 # and a fake light model here
     agent_runner = None                                 # and a fake `claude -p` for the agent source here
+    mcp_runner = None                                   # and a fake `claude mcp list` for the picker
     clock = staticmethod(dt.datetime.now)
 
     def __init__(self, town, building_id: str) -> None:
@@ -335,10 +336,12 @@ class WatchtowerWorker(Worker):
         gh_last = str(st.get("gh_last", ""))
         opener, watched = type(self).feed_opener, self._due(st)
         seen, since, ask = dict(st.get("feeds_seen") or {}), dict(st.get("feeds_at") or {}), type(self).agent_runner
+        keep = dict(st.get("agent_keep") or {})
 
         def one(f: feeds.Feed) -> feeds.Look:
-            if f.kind == "agent":                          # through Claude: the last look's time and what it saw
-                return feeds_agent.look(f, since.get(f.identity, ""), seen.get(f.identity) or [], ask)
+            if f.kind == "agent":                          # through Claude: the last look's time, what it saw, its ids
+                return feeds_agent.look(f, since.get(f.identity, ""), seen.get(f.identity) or [], ask,
+                                        keep=keep.get(f.identity))
             return feeds.look(f, opener or urllib.request.urlopen, runner)
 
         def work() -> None:
@@ -430,7 +433,10 @@ class WatchtowerWorker(Worker):
             del self.errors[key]
         sent: set[str] = set()
         spend, today = dict(st.get("agent_spend") or {}), dt.date.today().isoformat()
+        keep = dict(st.get("agent_keep") or {})
         for feed, got in looks:
+            if got.keep:                                  # the ids it looked up: the next look skips those turns
+                keep[feed.identity] = feeds_agent.kept({**(keep.get(feed.identity) or {}), **got.keep})
             if got.cost is not None:                      # an agent source's look, paid: today's spend
                 day = spend.get(feed.identity) or {}
                 usd = (float(day.get("usd") or 0.0) if day.get("day") == today else 0.0) + got.cost
@@ -455,7 +461,8 @@ class WatchtowerWorker(Worker):
         self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live},
                          feeds_at={k: v for k, v in last.items() if k in live},
                          feeds_line={k: v for k, v in lines.items() if k in live}, feeds_me=me,
-                         agent_spend={k: v for k, v in spend.items() if k in live})
+                         agent_spend={k: v for k, v in spend.items() if k in live},
+                         agent_keep={k: v for k, v in keep.items() if k in live})
         self.changed()
 
     def apply_look(self, look: mailbox.Look) -> None:

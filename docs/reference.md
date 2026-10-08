@@ -368,8 +368,11 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   on this machine: a headless `claude -p` on the light model, allowed only the tools listed (name
   read-only ones), the answer by schema. Every 30 min by default (10 at the fastest); each look's cost
   goes to Spend and to the source's line (`≈ $0.12 today`); past its `ceiling=` dollars a day it
-  waits until tomorrow. A server that needs a login says *run /mcp in Claude Code*. The picker does
-  not offer it yet: write the line, or ask the steward.
+  waits until tomorrow. A server that needs a login says *run /mcp in Claude Code*. Add a source
+  offers it: a service Claude Code has a connection for (`claude mcp list`) reads `✓ in Claude`, and its
+  step 1 has **Use Claude's connection** — what to look for, how often, the most a day, one paid look
+  to check. The ids a look looked up (a cloud id, your user id) go to the next look, which skips
+  looking them up.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,
