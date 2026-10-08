@@ -494,7 +494,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
         decisions = "## Decisions so far\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in qa) if qa else ""
         if task.warm:                    # the session already holds the briefing, the rules and the earlier work
             return "\n\n".join(p for p in [
-                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text, decisions,
+                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}",
+                bk.without_own_work(bk.body_of(task), self._earlier_result(task)), decisions,
                 sent_back,
                 f"Your branch is now `{task.branch}`." if task.branch else "",
                 "Same rules as before: commit on your branch, then a short Markdown report."] if p)
@@ -505,7 +506,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
                  "Do the task below in this directory. Commit your work on the branch with a clear message; do not "
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
-                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
+                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
                  "no pull request." if self._meeting(task) else "",
@@ -514,11 +515,18 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
 
+    def _earlier_result(self, task: bk.PoolTask) -> str:
+        """The report of the task this one reworks (the same `ref`), "" when there is none."""
+        prior = next((t for t in reversed(self.state.tasks) if t.id != task.id and t.ref == task.ref and t.result), None)
+        return prior.result if prior is not None else ""
+
     def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
                                                        task.cost_usd, orc.worktree, task.branch, outcome,
-                                                       base=task.base),)
+                                                       base=task.base, since=task.arrived,
+                                                       model=orc.model or orc.harness, decision=task.decided,
+                                                       round=task.attempts, run=task.id),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state

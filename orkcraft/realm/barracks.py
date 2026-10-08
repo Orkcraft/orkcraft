@@ -182,6 +182,33 @@ def task_key(kind: str, value: str, title: str = "") -> str:
     return m.group(1) if m else ""
 
 
+QUOTE = "\n\n---\n\n"           # a rework (gate / team `rework_markdown`) quotes the work it sends back after it
+
+
+def body_of(task: PoolTask) -> str:
+    """The task's text as a prompt gives it under `## Task: <title>`: without a first line that only
+    says the title again (a card, a note and a meeting line often start with it)."""
+    text = task.text.strip()
+    first, _, rest = text.partition("\n")
+    if rest.strip() and " ".join(first.strip(" #*-").split()).lower() == " ".join(task.title.split()).lower():
+        return rest.strip()
+    return text
+
+
+def without_own_work(text: str, earlier: str) -> str:
+    """A rework into the session that wrote `earlier`: the notes, not the quote of that work after them
+    (the session holds it). The text as it is when it does not quote it."""
+    earlier = earlier.strip()
+    if not earlier or QUOTE not in text:
+        return text
+    i = text.find(QUOTE)
+    while i >= 0:
+        if earlier in text[i + len(QUOTE):]:
+            return text[:i].rstrip() + "\n\n_(Your earlier report, quoted here, is in this session already.)_"
+        i = text.find(QUOTE, i + 1)
+    return text
+
+
 def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40]
 
@@ -294,7 +321,7 @@ def _rules(orders: str) -> str:
 def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: str) -> str:
     return "\n\n".join([
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge.",
-        _rules(orders), f"## The task: {task.title}", task.text,
+        _rules(orders), f"## The task: {task.title}", body_of(task),
         f"## The orc working on it asks\n\n{question}",
         "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
         "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
@@ -307,7 +334,7 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
     cut = diff if len(diff) <= DIFF_LIMIT else diff[:DIFF_LIMIT] + "\n… (cut)"
     return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge their work.",
-        _rules(orders), f"## The task: {task.title}", task.text,
+        _rules(orders), f"## The task: {task.title}", body_of(task),
         "## Earlier notes\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in task.qa) if task.qa else "",
         f"## The orc's report\n\n{report.strip() or '(none)'}",
         f"## Tests\n\n{tests}" if tests else "",
