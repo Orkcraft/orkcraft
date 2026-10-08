@@ -10,6 +10,7 @@ import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.core import buildings, retros, runners, wakes
+from orkcraft.gui import state
 from orkcraft.gui.host import Host
 from orkcraft.realm import builders, checkpoint, fastpath, roads, script_first
 
@@ -270,3 +271,38 @@ def test_a_road_rule_the_steward_carries_out_thinks_too(fake_repo):
     b = host.town.scroll.building(horn)
     assert script_first.thinking(host.town.spec_of(horn), b) == ["road rule Loud ones"]
     assert not script_first.is_script_first(host.town.spec_of(horn), b)
+
+
+# -- yards: no ork lives in a building whose work is code; one visits (docs/design/yards.md §2) -------------
+
+def _seen(host: Host, bid: str) -> dict:
+    return next(b for b in host.snapshot()["buildings"] if b["id"] == bid)
+
+
+def test_why_an_ork_is_in_a_yard():
+    yard = {"id": "drop", "yard": True, "alert": None}
+    assert state.visit(yard, []) == ""
+    assert state.visit(yard, [{"building": "other", "_wake": True}]) == ""
+    assert state.visit(yard, [{"building": "drop", "kind": "keeper"}]) == "asked"
+    assert state.visit(yard, [{"building": "drop", "kind": "keeper"}, {"building": "drop", "_wake": True}]) == "wake"
+    assert state.visit({**yard, "alert": {"id": "a1"}}, []) == "alert"
+    assert state.visit({**yard, "yard": False, "alert": {"id": "a1"}}, [{"building": "drop"}]) == ""   # a hut
+
+
+def test_a_yard_has_no_ork_of_its_own_and_one_visits_on_a_wake(fake_repo, keeper_calls):
+    host = _host(fake_repo)
+    tree = _raised(host, "forest", path="web")
+    board = _raised(host, "fields")
+    thinker = _raised(host, "mill", steps=["agent: shorten it"])
+    assert _seen(host, tree)["yard"] and _seen(host, tree)["visit"] == ""
+    assert not _seen(host, board)["yard"] and not _seen(host, thinker)["yard"]     # their work is a model's
+
+    w = host.town.worker(tree)
+    w.refresh = lambda: None
+    w.status = lambda: "ERROR"
+    w.error = "web/ cannot be read"
+    host.tick(time.monotonic() + wakes.WAKE_CHECK_S + 1)
+    _wait(lambda: _keeper_jobs(host, tree) and _keeper_jobs(host, tree)[0]["state"] == "ready")
+    assert _seen(host, tree)["visit"] == "wake"                     # its proposal waits: the ork is there
+    host.command("job.drop", {"job": _keeper_jobs(host, tree)[0]["id"]})
+    assert _seen(host, tree)["visit"] == ""                         # closed: it left

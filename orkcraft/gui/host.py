@@ -131,6 +131,8 @@ class Host:
         snap = state.snapshot(self.town, self.muster, self.treasury, self.limits(), live=self.sessions,
                               night=self.night)
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
+        for b in snap["buildings"]:                     # an ork visits a yard while one of them is its (yards.md §2b)
+            b["visit"] = state.visit(b, self.console.jobs.values())
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)

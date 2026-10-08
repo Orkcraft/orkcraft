@@ -160,16 +160,17 @@ export function buildingMenu(e, b) {
   ]);
 }
 
-/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme. */
-function Keeper({ garrison, alert }) {
-  if (!garrison.length) return null;
+/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme.
+ *  A yard has no ork of its own (docs/design/yards.md §2): its head stands there only while one visits, with the word. */
+function Keeper({ garrison, alert, yard, visit }) {
+  if (!garrison.length || (yard && !visit)) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const busy = garrison.some((o) => o.status === "busy");
   const more = garrison.length - 1;
   const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
-  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""} · ${doing}`}>
+  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}${visit ? ` · ${say("visiting")}` : ""} · ${doing}`}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
-    <${Scheme} scheme=${lead.scheme} /></span>`;
+    <${Scheme} scheme=${lead.scheme} />${visit && html`<span class="gui-hut__visit">visiting</span>`}</span>`;
 }
 
 // -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
@@ -327,13 +328,13 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
-      <${Keeper} garrison=${b.garrison} alert=${b.alert} />
+      <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
       ${b.alert && html`<span class="ok-word">?</span>`}
       ${folded && html`<${Mark} b=${b} />`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${b.size[0]}px` : "")}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
+      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,

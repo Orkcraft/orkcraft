@@ -108,3 +108,17 @@ def test_a_script_first_building_says_so_and_a_thumbs_down_wakes_its_ork(demo_pa
     line.wait_for(state="visible", timeout=WAIT_MS)
     assert "Thinks on its carts" in line.inner_text() and "agent: step 3" in line.inner_text()
     assert "is-on" not in (line.get_attribute("class") or "")
+
+
+def test_a_yard_shows_no_ork_of_its_own_and_a_hut_does(demo_page):
+    """docs/design/yards.md §2: a building whose work is code is a yard; its card has no ork head until one
+    visits. The Task board's work is its orks', so its head stays."""
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    yard = pg.locator('.gui-hut[data-id="drop"]')
+    hut = pg.locator('.gui-hut[data-id="todo"]')
+    yard.wait_for(state="visible", timeout=WAIT_MS)
+    assert "is-yard" in (yard.get_attribute("class") or "")
+    assert yard.locator(".gui-hut__keeper").count() == 0
+    assert "is-yard" not in (hut.get_attribute("class") or "")
+    assert hut.locator(".gui-hut__keeper").count() == 1

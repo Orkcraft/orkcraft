@@ -125,6 +125,17 @@ row, its children on the plate, the posts as its pseudo-elements.
 - The type's header sprite stays where it stands on a hut: on the top edge. A yard is told by its fence,
   never by losing its building.
 
+### 3b′. A yard is sized by its pickets
+
+- **A yard's card is stretched in whole pickets**: its width in steps of one bottom picket and its gap
+  (21 px), its height in steps of one side picket and its gap (27 px). No picket is ever cut at a corner.
+  The grips (`js/hut.js` `Grips`) round to the step while dragging.
+- `hut_size` stays in pixels in the Town Scroll, a multiple of the step. A size saved before is rounded
+  when drawn and never rewritten, so a town opens as it was.
+- A card with no size of its own is rounded in width (its type's size class); its height follows its
+  content, and the side pickets repeat with even gaps (`background-repeat: space`) so no seam shows.
+- A hut is not stepped: its stone frame has no pattern to cut.
+
 ### 3c. Fold is the top fence alone
 
 A folded card ([folded-cards.md](folded-cards.md)) is **the top fence alone**: posts, plate and

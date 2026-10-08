@@ -22,7 +22,7 @@ from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, halt, lexicon, modes, pipes
+from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -89,6 +89,9 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,
+            # its work is code: no ork lives in it, one visits (docs/design/yards.md §2); `visit` is the host's
+            "yard": bool(spec) and script_first.is_script_first(spec, bs),
+            "visit": "",
             "paused": _paused(worker),
             "card": _card(type_id, worker),
             # its quick actions, on its closed card while the mouse is on it (js/hut.js): each opens its own small
@@ -98,6 +101,20 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "loose": _loose(worker),                       # its exits with no road yet: stubs on the map
         })
     return out
+
+
+def visit(b: dict[str, Any], jobs) -> str:
+    """Why an ork is in a yard now (docs/design/yards.md §2b): "alert" while it asks, "wake" while a wake's
+    proposal waits, "asked" while a job of its own runs or waits (the keeper, Redesign, Ork setup); "" for none
+    and for every building that is no yard."""
+    if not b.get("yard"):
+        return ""
+    if b.get("alert"):
+        return "alert"
+    mine = [j for j in jobs if j.get("building") == b["id"]]
+    if any(j.get("_wake") for j in mine):
+        return "wake"
+    return "asked" if mine else ""
 
 
 def _loose(worker) -> list[dict]:
