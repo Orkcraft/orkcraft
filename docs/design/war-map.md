@@ -60,8 +60,8 @@ Two changes, one idea:
 - **The orkspaces are a map**: lands stacked in a framed square at the bottom left, where a strategy
   game keeps its minimap. Each land is coloured by its biome, so their edges need no help.
 
-The GUI has one look (gui-design-system.md) and one vocabulary (`lexicon.TERMS`); all of this is drawn
-and said in it.
+The GUI has one vocabulary (`lexicon.TERMS`) and two looks (portrait.md §3): this is Camp; Office draws
+the lands without their biomes' colours.
 
 ## 2. The War Map
 

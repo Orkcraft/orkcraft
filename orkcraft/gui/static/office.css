@@ -1,42 +1,50 @@
-/* The GUI's one look, Office, over the layout (layout.css), scoped to [data-look="office"]. It wears the Camp
-   design system (data-theme="camp": bevels, gold, the faces, the agents' heads) on its own plain dark
-   ground, its building sprites smaller and at the card's left, its roads as a block diagram and its own words
-   (docs/design/gui-design-system.md). */
-[data-look="office"] { --canvas: #141210; --terrain: #141210; --road: #8f8166; --road-bright: #7a6e55;
-  --road-selected: #e8b94a; --road-live: #6aa84f; }
-/* A hut keeps its building, two thirds of its sprite's size, standing at the card's left over its name. */
-[data-look="office"] .gui-hut > .ok-head { justify-content: flex-start; padding-left: var(--space-3); }
-[data-look="office"] .gui-hut__sprite { zoom: calc(2 / 3); }
-/* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
-[data-look="office"] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
-[data-look="office"] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }
+/* Office, the calm look (docs/design/portrait.md §3), over town.css and the design system's office theme
+   (data-theme="office": flat panels, hairlines, the system font). Monochrome greys, light or dark as the
+   system says, one accent (the Camp gold, muted) for what is selected and for focus. What says money or
+   risk keeps its colour and its mark: success ✓, warning ⚠, danger ✗, a question waiting. No sprites:
+   the huts are cards with their name and status lines, the Warchief's line has no face. */
+[data-look="office"] {
+  --canvas: #161616; --terrain: #161616; --terrain-image: none;
+  --panel: #1f1f1f; --panel-inset: #191919; --panel-raised: #2a2a2a;
+  --bevel-hi: #3a3a3a; --bevel-lo: #0d0d0d; --selection: #34322c;
+  --frame: #333333; --hut-frame: #5a5a5a; --frame-strong: #7a7a7a; --frame-focus: #b8a06a;
+  --ink: #e6e6e6; --ink-muted: #a3a3a3; --ink-comment: #7a7a7a; --ink-gold: #e6e6e6;
+  --action: #b8a06a; --on-action: #161616; --info: #c8c8c8; --meter: #a3a3a3;
+  --unit-active: #d4d4d4; --day: #8a8a8a; --day-quiet: #3a3a3a; --day-office: #5a5a5a; --quiet-ink: #a3a3a3;
+  --road: #8a8a8a; --road-bright: #a3a3a3; --road-selected: #b8a06a; --road-live: #d4d4d4;
+  --cart-filtered: #7a7a7a; --cart-held: #b8a06a; --fire-ground: #1f1f1f;
+  --sticky-yellow: #1f1f1f; --sticky-green: #1f1f1f; --sticky-blue: #1f1f1f; --sticky-red: #1f1f1f; --sticky-purple: #1f1f1f;
+  --bevel-sunken: inset 0 0 0 1px #333333; --shadow-window: 0 6px 20px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  [data-look="office"] {
+    --canvas: #f4f4f4; --terrain: #f4f4f4;
+    --panel: #ffffff; --panel-inset: #f0f0f0; --panel-raised: #e8e8e8;
+    --bevel-hi: #d4d4d4; --bevel-lo: #bdbdbd; --selection: #ece6d6;
+    --frame: #d6d6d6; --hut-frame: #9a9a9a; --frame-strong: #7a7a7a; --frame-focus: #7a6630;
+    --ink: #1c1c1c; --ink-muted: #5c5c5c; --ink-comment: #8a8a8a; --ink-gold: #1c1c1c;
+    --action: #7a6630; --on-action: #ffffff; --info: #3a3a3a; --meter: #5c5c5c;
+    --unit-active: #3a3a3a; --day: #8a8a8a; --day-quiet: #d4d4d4; --day-office: #bdbdbd; --quiet-ink: #5c5c5c;
+    --road: #7a7a7a; --road-bright: #5c5c5c; --road-selected: #7a6630; --road-live: #3a3a3a;
+    --cart-filtered: #9a9a9a; --cart-held: #7a6630; --fire-ground: #ffffff;
+    --sticky-yellow: #ffffff; --sticky-green: #ffffff; --sticky-blue: #ffffff; --sticky-red: #ffffff; --sticky-purple: #ffffff;
+    --success: #2f7d32; --danger: #c0392b; --warning: #8a6d00; --alert: #c25e00; --alert-hot: #c0392b; --unit-alert: #c0392b;
+    --bevel-sunken: inset 0 0 0 1px #d6d6d6; --shadow-window: 0 6px 20px rgba(0, 0, 0, .15);
+    color-scheme: light;
+  }
+}
 
-/* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
-   road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;
-   every road says what it carries; a later road's halo breaks the ones it crosses over. With a building
-   selected its roads out turn gold, its roads in keep their colour and the rest of the town dims. */
-[data-look="office"] .gui-road__line { stroke-dasharray: 6 6; stroke-linejoin: round; marker-end: url(#gui-road-head); }
-[data-look="office"] .gui-road.is-live .gui-road__line { stroke: var(--road-live); stroke-dasharray: none; marker-end: url(#gui-road-head-live); }
-[data-look="office"] .gui-road.is-live .gui-road__out { fill: var(--road-live); }
-[data-look="office"] .gui-road.is-return .gui-road__line { stroke-dasharray: 6 4; }
-[data-look="office"] .gui-road__in { display: none; }
-[data-look="office"] .gui-road__halo { display: inline; fill: none; stroke: var(--canvas); stroke-width: 8; }
-[data-look="office"] .gui-road__label { display: inline; fill: var(--ink-muted); paint-order: stroke; stroke: var(--canvas);
-  stroke-width: 4px; stroke-linejoin: round; }
-[data-look="office"] .gui-road.is-selected .gui-road__line { marker-end: url(#gui-road-head-selected); }
-[data-look="office"] .gui-road.is-selected .gui-road__label { fill: var(--road-selected); font-weight: 600; }
-[data-look="office"] .gui-road.is-in .gui-road__line { stroke: var(--road); marker-end: url(#gui-road-head); }
-[data-look="office"] .gui-road.is-in.is-live .gui-road__line { stroke: var(--road-live); marker-end: url(#gui-road-head-live); }
-[data-look="office"] .gui-road.is-in .gui-road__out { fill: var(--road); }
-[data-look="office"] .gui-road.is-in.is-live .gui-road__out { fill: var(--road-live); }
-[data-look="office"] .gui-road.is-in .gui-road__label { fill: var(--ink); font-weight: 400; }
-[data-look="office"] .gui-road { transition: opacity .15s; }
-[data-look="office"] .gui-roads.has-focus .gui-road:not(.is-selected) { opacity: .4; }
-
-/* A selected building keeps itself and its neighbours; the rest dims. A question never dims. */
-[data-look="office"] .gui-hut { transition: opacity .15s; }
-[data-look="office"] .gui-hut.is-dim:not(.is-alert) { opacity: .4; }
-
-/* Gold is selection only: the working spinner turns the meter's tan. */
-[data-look="office"] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
-
+/* No sprites: the huts' buildings, the orks' heads, the HUD's mark and resource icons, the flames. */
+[data-look="office"] .gui-hut__sprite,
+[data-look="office"] .gui-hut__keeper img[data-kind="ork"],
+[data-look="office"] .gui-hud__mark,
+[data-look="office"] .ok-res img,
+[data-look="office"] .gui-hut__flame { display: none; }
+[data-look="office"] .gui-hut > .ok-head { padding-left: var(--space-2); }
+[data-look="office"] body, [data-look="office"] .gui { background-image: none; }
+/* The War Map: its lands without their biomes' colours, in the office type. */
+[data-look="office"] .gui-map__ground { background: var(--panel-inset); }
+[data-look="office"] .gui-map__land { background: var(--panel-raised); box-shadow: inset 0 -1px 0 var(--frame); }
+[data-look="office"] .gui-map__title, [data-look="office"] .gui-map__name { font-family: var(--ok-font); text-shadow: none; }
+[data-look="office"] .gui-map__title { color: var(--ink-muted); }

@@ -10,10 +10,28 @@ you, and whether it may disturb you.
 
 | stage | what | state |
 |---|---|---|
-| 1 | the portrait and its menu; You leaves Settings (§1, §2) | |
-| 2 | Do not disturb (§4) | |
-| 3 | two looks, Camp and Office; the old Office leaves the docs (§3, §6) | |
-| 4 | the phone: the portrait in its top bar, the menu as a sheet (§5) | |
+| 1 | the portrait and its menu; You leaves Settings (§1, §2) | done (`js/portrait.js`) |
+| 2 | Do not disturb (§4) | done (`disturb.py`, `gui/you.py`, the Horn, `gui/notify.py`) |
+| 3 | two looks, Camp and Office; the old Office leaves the docs (§3, §6) | done (`town.css`, `office.css`) |
+| 4 | the phone: the portrait in its top bar, the menu as a sheet (§5) | the host's part done (`portrait` in the compact snapshot, `you.dnd` and `you.look` allowed); the sheet is the app's |
+| later | Change role from the menu; a new stage's glow; the Warchief addressing you by your stage | |
+
+## As built
+
+- **The portrait** is 28 × 26 in the HUD (the HUD is 28 px high), its marks inside its corners. Its menu
+  is a popover under it (a sheet at the window's foot below 640 px).
+- **Office** is `data-theme="office"` + `data-look="office"`: the design system's office theme (flat
+  panels, hairlines, the system font) with `gui/static/office.css`'s greys over it. The warm `office`
+  palette of `design-system/tokens.json` is left for the design system's previews.
+- **The CSS both looks share** (the huts' sprites small at the left, the roads as a block diagram) moved
+  from `office.css` to `town.css`, scoped `[data-look]`; `index.html` opens on `data-look="camp"`.
+- **The Horn** asks `town.hushed()` (the GUI host sets it from `gui/you.py`) and logs a call it kept as
+  `dnd` ("do not disturb" in its window). The TUI never sets it.
+- **The summary** shows in the Warchief's line until ✕; its click opens Answers when a question waits,
+  else the Horn that kept a sound. It goes to the phones as one news line (`kind: "dnd"`).
+- **Not built:** Change role (the onboarding has no way back to Who are you? yet), the new stage's glow,
+  and the Warchief's address by stage (it addresses no one by stage yet, in either look);
+  `orkcraft gui --look` stays gone: the look is set in the window.
 
 ## 1. The portrait
 
@@ -53,8 +71,7 @@ A click (or Enter) opens a popover under the portrait; Esc or a click outside cl
 - **You** (`settings.js` `You`) moves here whole: the head at 4×, the name, the stage, Next, the deeds
   with their hints. Settings loses it and with it the "Camp: orkcraft" divider: Settings is the town's
   rules only.
-- **Change role** is the onboarding's Who are you? (gui-onboarding.md §3), as the link under the
-  portrait in Settings was.
+- **Change role** (later) is the onboarding's Who are you? (gui-onboarding.md §3).
 - **Town settings…** opens Settings, as the town's name in the HUD does.
 - In Office the head is the monogram at 2× and the deeds row is plain marks, no emoji.
 
@@ -79,11 +96,11 @@ as `data-look` always did; the words, the panel, the line and every action are t
   say what costs money or risks work; monochrome never hides them.
 - **The onboarding** keeps its voice and its sprites in both looks: it is where the mascot is chosen.
 - **Stored** per machine, the person's and not the town's: `~/.config/orkcraft/settings.json` →
-  `look` (`camp` | `office`), default `camp`. `orkcraft gui --look office` opens one session in it.
-- **Tokens:** Office is a theme of the design system (`data-theme="office"`, light and dark under
-  `prefers-color-scheme`), not hand-made colours: a building's window, being a UI document of roles
-  (design-system.md), follows it with no change. It replaces the warm `office` theme in
-  `design-system/tokens.json`, which only the design system's previews still show.
+  `look` (`camp` | `office`), default `camp`.
+- **Tokens:** Office is the design system's office theme (`data-theme="office"`) with its colour tokens
+  redrawn in greys (`office.css`, light and dark under `prefers-color-scheme`), never hand-made colours
+  in a component: a building's window, being a UI document of roles (design-system.md), follows it with
+  no change.
 
 ## 4. Do not disturb
 

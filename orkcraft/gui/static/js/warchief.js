@@ -19,6 +19,7 @@ import { opened, openBuilding } from "./windows.js";
 import { building as buildOpen, laying, demolishing } from "./build.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
+import { portraitOpen } from "./portrait.js";
 import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
 import { WarchiefHead } from "./icons.js";
@@ -366,19 +367,34 @@ function Thread({ data }) {
 function Speaks({ hidden }) {
   const t = town.value;
   const a = t.alerts[0];
+  const p = t.portrait || {};
   if (hidden) return null;
+  if (p.summary) {                             // Do not disturb ended: what gathered, said once (gui/you.py)
+    const s = p.summary;
+    const seen = () => command("you.seen").catch(() => {});
+    const go = () => {
+      seen();
+      if (s.open === "orders") openOrders();
+      else if (s.building) openBuilding(s.building, "work");
+    };
+    return html`<span class="gui-warchief__speaks ok-font-status gui-warchief__news">
+      <button class="gui-link" title=${say(s.text)} onPointerDown=${(e) => e.preventDefault()} onClick=${go}>${say(s.text)}</button>
+      <button class="gui-link" title=${say("Seen")} aria-label=${say("Seen")} onPointerDown=${(e) => e.preventDefault()}
+        onClick=${seen}>✕</button></span>`;
+  }
+  if (p.dnd && p.dnd.on) return null;          // Do not disturb: the Warchief does not speak first
   if (a) {
     return html`<button class="gui-warchief__speaks ok-font-status ok-tone-fire" title=${a.title}
         onPointerDown=${(e) => e.preventDefault()} onClick=${() => openOrders(a.id)}>
       ❓ ${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></button>`;
   }
-  const news = t.growth && t.growth.news.length ? t.growth.news[t.growth.news.length - 1] : null;
+  const news = p.look !== "office" && t.growth && t.growth.news.length ? t.growth.news[t.growth.news.length - 1] : null;
   if (news) {                                  // what grew (docs/design/growth.md §3): said once, then seen
     const seen = () => command("growth.seen", { id: news.id }).catch(() => {});
     const go = () => {
       seen();
       if (news.building) openBuilding(news.building, news.tab || "info");
-      else settingsOpen.value = true;
+      else portraitOpen.value = true;
     };
     return html`<span class="gui-warchief__speaks ok-font-status gui-warchief__news">
       <button class="gui-link" title=${say(news.text)} onPointerDown=${(e) => e.preventDefault()} onClick=${go}>
@@ -491,7 +507,9 @@ export function WarchiefLine() {
     <div key="bar" class="gui-warchief__bar">
       <button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
         onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>
-        <${WarchiefHead} state=${b.alert ? "waiting" : data && data.thinking ? "busy" : ""} />
+        ${(t.portrait || {}).look === "office"
+          ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
+          : html`<${WarchiefHead} state=${b.alert ? "waiting" : data && data.thinking ? "busy" : ""} />`}
         ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
       </button>
       <${Speaks} hidden=${focused || !!l.text || chips.length > 0} />

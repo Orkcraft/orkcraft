@@ -24,10 +24,14 @@ import { Pocket, narrow } from "./js/pocket.js";
 function App() {
   const t = town.value;
   if (!t) return html`<div class="gui-loading ok-font-body">Opening the town…</div>`;
-  // One look, Office, on the Camp design system (index.html: data-theme camp, data-look office; office.css).
+  // Two looks, the person's (docs/design/portrait.md §3): Camp on the camp theme, Office, calm, on the office
+  // theme (town.css draws both, office.css only Office). The words are the same in both.
+  const look = t.look === "office" ? "office" : "camp";
+  const root = document.documentElement;
+  if (root.dataset.look !== look) { root.dataset.look = look; root.dataset.theme = look; }
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   // The town's ground is the open orkspace's biome, its colour and its glyphs (docs/design/war-map.md §3).
-  wearGround(space ? space.biome : "dirt");
+  wearGround(space ? space.biome : "dirt", look);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
   ids.delete(HALL);                                      // the Warchief's line is the hall's way in
   const buildings = t.buildings.filter((b) => ids.has(b.id));

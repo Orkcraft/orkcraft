@@ -22,7 +22,7 @@ is the map, one panel on the right, and one line to the Warchief, who does the r
 ## 1. The screen
 
 ```
-┌ HUD: project ▾ · Stop all · Answers (2) ·············· Spend · Context · Agents ┬──────────────────┐
+┌ HUD: [you] project ▾ · Stop all · Answers (2) ········ Spend · Context · Agents ┬──────────────────┐
 │                                                     │ Forge  ? a question  ⤢ ✕   │
 │        the map (it scrolls so that the open         │ [Work] [Info] │ a.py ✕     │
 │        building and its neighbours stay seen)       │ …                          │
@@ -31,8 +31,9 @@ is the map, one panel on the right, and one line to the Warchief, who does the r
 └─────────────────────────────────────────────────────┴────────────────────────────┘
 ```
 
-- **The HUD** keeps what must never hide: the project (its settings), Halt All, **Orders** (the orks'
-  questions, *Answers* in the Office; the status bar held it) and the treasury (`js/chrome.js`).
+- **The HUD** keeps what must never hide: the portrait (you, your look and Do not disturb: portrait.md),
+  the project (its settings), Stop all, **Answers** (the orks' questions; the status bar held it) and the
+  treasury (`js/chrome.js`).
 - **The map** is the screen. Nothing floats over it but the two controls at its foot.
 - **The orkspaces**, bottom left, grow with use: one orkspace shows only `+ Orkspace`; two or more show
   their list (the one that asks marked) with `+` at its end. `+` asks a name (`orkspace.new` on the host).
@@ -174,4 +175,4 @@ the TUI opens as before.
 ## 10. Words
 
 The road planner got its Office word (*Link planner*) in `realm/lexicon.py` `TERMS`; the Warchief is the
-*Lead agent* there already. The panel, the line and a card are plain words in both modes.
+*Lead agent* there already. The panel, the line and a card are plain words.

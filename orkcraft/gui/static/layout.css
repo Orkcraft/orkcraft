@@ -1,7 +1,8 @@
 /* The GUI's own layout: where the design system's components stand in the
    window. Only tokens (design-system/tokens.css) and the component knobs: no colour or font of its
    own. The components themselves (huts, windows, lists, the HUD) are design-system/components.css;
-   what the Office look adds goes in office.css, scoped to data-look="office" (on data-theme camp). */
+   what both looks draw alike is town.css; what only Office changes is office.css, scoped to data-look="office"
+   (on data-theme office; Camp is data-look="camp" on data-theme camp: docs/design/portrait.md §3). */
 
 html, body, #app { height: 100%; margin: 0; }
 body { background: var(--canvas); color: var(--ink); font-family: var(--ok-font, var(--font-office)); overflow: hidden; }
@@ -562,13 +563,45 @@ button { font: inherit; color: inherit; }
 .gui-info__head .gui-sprite { zoom: 1.5; }
 .gui-info__renown { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
-/* The head of Settings: the operator's mascot, its stage and deeds (js/settings.js, docs/design/growth.md §7). */
+/* The portrait (js/portrait.js, docs/design/portrait.md): the person in the HUD's left corner, its marks
+   (the stage, 🌙 Do not disturb, a dot while an ork asks) and its menu, headed by You: the mascot, its stage
+   and deeds (docs/design/growth.md §7). Office draws the role's two letters instead of the head. */
+.gui-portrait-slot { position: relative; flex: none; display: inline-flex; align-items: center; }
+.gui-portrait { position: relative; display: grid; place-items: center; width: 30px; height: 28px; padding: 0; border: 0;
+  background: none; cursor: pointer; }
+.gui-portrait:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.gui-portrait__ground { display: grid; place-items: end center; box-sizing: border-box; width: 28px; height: 26px;
+  background: var(--glyphs) 0 0 / 240px 216px, var(--ground);
+  box-shadow: inset 0 -2px 0 var(--land), inset 0 0 0 1px var(--frame); }
+.gui-portrait:is(:hover, .is-open) .gui-portrait__ground { box-shadow: inset 0 -2px 0 var(--land), inset 0 0 0 1px var(--frame-focus); }
+.gui-portrait__ground > img { display: block; image-rendering: pixelated; }
+.gui-portrait__mono { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px var(--frame-strong); background: var(--panel-raised); color: var(--ink);
+  font: 600 10px/1 var(--ok-font); letter-spacing: .04em; }
+.gui-portrait:is(:hover, .is-open) .gui-portrait__mono { box-shadow: inset 0 0 0 1px var(--frame-focus); }
+.gui-portrait__mono.is-big { width: 56px; height: 56px; font-size: 18px; }
+.gui-portrait__stage { position: absolute; right: 0; bottom: 0; min-width: 14px; padding: 0 2px; box-sizing: border-box;
+  background: var(--panel-inset); box-shadow: 0 0 0 1px var(--frame); color: var(--ink-gold); font: 700 9px/13px var(--ok-font);
+  text-align: center; }
+.gui-portrait__dnd { position: absolute; right: -2px; top: 0; font-size: 10px; line-height: 1; }
+.gui-portrait__asks { position: absolute; left: -2px; bottom: 0; width: 11px; height: 11px; padding: 0; border: 2px solid var(--panel-raised);
+  border-radius: var(--radius-full); background: var(--alert); cursor: pointer; }
+.gui-portrait__menu { position: fixed; left: var(--space-2); top: calc(var(--bar-hud) + 8px); z-index: 60; width: 340px; display: flex;
+  flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--panel);
+  box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); color: var(--ink); cursor: auto; }
+[data-look="office"] .gui-portrait__menu { box-shadow: 0 0 0 1px var(--frame), var(--shadow-window); border-radius: var(--radius-lg); }
+.gui-portrait__menu .gui-you { margin-bottom: 0; }
+.gui-portrait__menu .gui-portrait__ground { width: 72px; height: 68px; padding-bottom: 8px; flex: none;
+  box-shadow: inset 0 -6px 0 var(--land), var(--bevel-sunken); }
+.gui-portrait__row { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-portrait__menu > p { margin: 0; white-space: normal; }
+.gui-portrait__links { display: flex; gap: var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--frame); }
+.gui-warchief__mono { display: grid; place-items: center; width: 24px; height: 20px; color: var(--ink-muted); font: 700 18px/1 var(--ok-font); }
+@media (max-width: 640px) {
+  .gui-portrait__menu { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; padding-bottom: var(--space-6); }
+}
 .gui-you { display: flex; gap: var(--space-3); align-items: center; padding-bottom: var(--space-3);
   border-bottom: 2px solid var(--frame); margin-bottom: var(--space-3); }
-/* the mascot on its kin's home ground: the biome's colour and glyphs, its land as the ground line */
-.gui-you__home { flex: none; display: grid; place-items: end center; width: 72px; height: 68px; padding-bottom: 8px;
-  box-sizing: border-box; background: var(--glyphs) 0 0 / 240px 216px, var(--ground);
-  box-shadow: inset 0 -6px 0 var(--land), var(--bevel-sunken); }
 .gui-you__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gui-you__name { font: 700 15px/20px var(--ok-font); color: var(--ink-gold); }
 .gui-you__deeds { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }

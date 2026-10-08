@@ -12,17 +12,23 @@ Orkcraft runs many coding agents in one project as a real-time strategy game. Th
 | **Camp** | `camp` (forest, the default), `camp-ice`, `camp-void` | Warcraft 2 × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
 | **Office** | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites but the huts' buildings (smaller, at the left), every concept by its Office name (`realm/lexicon.py`). Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
 
-**One design system in the GUI.** The GUI's Office now wears the Camp theme too (`data-theme="camp"`):
-the bevels, the gold, Almendra and Titillium, the agents' heads, the HUD's resource sprites. What stays
-Office is set by `data-look="office"` (`gui/static/office.css`): its plain dark ground (`canvas`
-`#1a1813`), the huts' building sprites small at the card's left, the roads as a block diagram, the
-dimming, and every word by its Office name. The `office` theme described below is what the design
-system's own previews still show.
+**Two looks in the GUI, one vocabulary** ([portrait.md](portrait.md) §3). The person picks one in the
+portrait's menu; it is kept per machine (`settings.json` → `look`). A look changes only how the town is
+drawn, never a word (CLAUDE.md, Wording), so "its Office name" below means a concept's one word.
 
-**The GUI has one look, Office.** Its Camp look (road tiles, mine carts, the sideways gates,
-`camp.css`, `orkcraft gui --look camp`) was dropped; Camp below is the design system's theme and the
-deprecated TUI's look. There are no modes any more: no Shift, no switch, and one vocabulary
-(CLAUDE.md, Wording), so "its Office name" below means a concept's one word.
+- **Camp** (the default): `data-theme="camp"`, `data-look="camp"`. The bevels, the gold, Almendra and
+  Titillium, the agents' heads, the HUD's resource sprites, the mascot, the flames; the huts' building
+  sprites small at the card's left and the roads as a block diagram (`gui/static/town.css`, which both
+  looks share).
+- **Office**, calm: `data-theme="office"`, `data-look="office"` (`gui/static/office.css` over the office
+  theme). Monochrome greys, light or dark as the system says (`prefers-color-scheme`), one muted gold
+  accent for what is selected and for focus, the system font, no sprites (the huts are cards, the
+  Warchief's line has no face, the portrait is the role's monogram), no flames, no growth news. What
+  says money or risk keeps its colour and its mark (✓ ⚠ ✗, a question waiting). The `office` theme's
+  warm palette below is what the design system's own previews still show; `office.css` draws the GUI's
+  greys over it.
+
+The old Camp map (road tiles, mine carts, the sideways gates, `orkcraft gui --look camp`) stays dropped.
 
 There is no terminal styling in the GUI. ASCII silhouettes, box drawing and `[bracket]` buttons belong to the TUI only. The mono face (`code`) is used only for code, diffs, logs and terminals.
 

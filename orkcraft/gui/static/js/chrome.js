@@ -1,10 +1,11 @@
-// The chrome around the town (docs/design/calm-town.md §1): the HUD (the project's name opens the town's
+// The chrome around the town (docs/design/calm-town.md §1): the HUD (the portrait, js/portrait.js; the project's name opens the town's
 // settings, js/settings.js; Halt All; the orks' questions, Orders; the treasury) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
+import { Portrait } from "./portrait.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -23,9 +24,10 @@ export function Hud() {
   const hud = t.hud;
   const words = t.resources;
   return html`<header class="ok-hud gui-hud">
+    <${Portrait} />
     <img class="ok-sprite gui-hud__mark" src="/ds/logo/ork-mark-camp.svg" width="24" height="16" alt="" />
     <span class="ok-hud__brand">Orkcraft</span>
-    <button class="gui-hud__project gui-hud__menu" title=${say("Settings: how freely the orks decide, how long they wait")}
+    <button class="gui-hud__project gui-hud__menu" title=${say("Town settings: how freely the orks decide, how long they wait")}
       onClick=${() => { settingsOpen.value = true; }}>${t.project}${t.demo ? " · demo" : ""} ▾</button>
     ${online.value
       ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Halt All</button>`

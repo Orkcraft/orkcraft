@@ -353,7 +353,7 @@ found by its files, so a port touches no shared list and parallel ports do not c
 1. A road an ork handles by a rule (Listen with a prompt: the Recruiter and the Council), the
    building wizard with the Builder, and a building's settings in its window.
 2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
-3. ~~Camp (stage 5).~~ Dropped: the GUI keeps one look, Office (on the Camp design system), and
-   `orkcraft gui --look` is gone. The snapshot keeps `look: "office"` for the phone.
+3. ~~Camp (stage 5).~~ Dropped as a mode. The GUI now has two looks, picked in the portrait's menu
+   (portrait.md §3): Camp, today's look, and Office, calm and monochrome. `orkcraft gui --look` is gone.
 4. A phone over the same host: glance, Orders, the Pit, the Warchief, Halt All, pushes —
    [mobile.md](mobile.md); stage 0 (`gui/mobile.py`, `GET /api/version`) stands.

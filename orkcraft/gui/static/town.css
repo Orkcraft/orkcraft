@@ -1,0 +1,41 @@
+/* The town as both looks draw it, Camp and Office (docs/design/portrait.md §3), over the layout (layout.css):
+   the building sprites smaller and at the card's left, its roads as a block diagram. What only Office changes
+   (the monochrome, no sprites, the system font) is office.css. */
+[data-look] { --canvas: #141210; --terrain: #141210; --road: #8f8166; --road-bright: #7a6e55;
+  --road-selected: #e8b94a; --road-live: #6aa84f; }
+/* A hut keeps its building, two thirds of its sprite's size, standing at the card's left over its name. */
+[data-look] .gui-hut > .ok-head { justify-content: flex-start; padding-left: var(--space-3); }
+[data-look] .gui-hut__sprite { zoom: calc(2 / 3); }
+/* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
+[data-look] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
+[data-look] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }
+
+/* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
+   road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;
+   every road says what it carries; a later road's halo breaks the ones it crosses over. With a building
+   selected its roads out turn gold, its roads in keep their colour and the rest of the town dims. */
+[data-look] .gui-road__line { stroke-dasharray: 6 6; stroke-linejoin: round; marker-end: url(#gui-road-head); }
+[data-look] .gui-road.is-live .gui-road__line { stroke: var(--road-live); stroke-dasharray: none; marker-end: url(#gui-road-head-live); }
+[data-look] .gui-road.is-live .gui-road__out { fill: var(--road-live); }
+[data-look] .gui-road.is-return .gui-road__line { stroke-dasharray: 6 4; }
+[data-look] .gui-road__in { display: none; }
+[data-look] .gui-road__halo { display: inline; fill: none; stroke: var(--canvas); stroke-width: 8; }
+[data-look] .gui-road__label { display: inline; fill: var(--ink-muted); paint-order: stroke; stroke: var(--canvas);
+  stroke-width: 4px; stroke-linejoin: round; }
+[data-look] .gui-road.is-selected .gui-road__line { marker-end: url(#gui-road-head-selected); }
+[data-look] .gui-road.is-selected .gui-road__label { fill: var(--road-selected); font-weight: 600; }
+[data-look] .gui-road.is-in .gui-road__line { stroke: var(--road); marker-end: url(#gui-road-head); }
+[data-look] .gui-road.is-in.is-live .gui-road__line { stroke: var(--road-live); marker-end: url(#gui-road-head-live); }
+[data-look] .gui-road.is-in .gui-road__out { fill: var(--road); }
+[data-look] .gui-road.is-in.is-live .gui-road__out { fill: var(--road-live); }
+[data-look] .gui-road.is-in .gui-road__label { fill: var(--ink); font-weight: 400; }
+[data-look] .gui-road { transition: opacity .15s; }
+[data-look] .gui-roads.has-focus .gui-road:not(.is-selected) { opacity: .4; }
+
+/* A selected building keeps itself and its neighbours; the rest dims. A question never dims. */
+[data-look] .gui-hut { transition: opacity .15s; }
+[data-look] .gui-hut.is-dim:not(.is-alert) { opacity: .4; }
+
+/* Gold is selection only: the working spinner turns the meter's tan. */
+[data-look] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
+

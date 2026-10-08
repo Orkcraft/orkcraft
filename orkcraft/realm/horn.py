@@ -239,7 +239,7 @@ class Call:
     event: str
     title: str
     sound: str
-    played: str             # how: player | bell | page | muted | quiet | cooldown | none
+    played: str             # how: player | bell | page | muted | quiet | cooldown | dnd | none
 
     @property
     def heard(self) -> bool:
