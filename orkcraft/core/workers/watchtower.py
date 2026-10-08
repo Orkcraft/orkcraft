@@ -53,7 +53,7 @@ RAW_KEEP = 20000                                        # a raw webhook's body, 
 ICON = {"mail": "✉", "github": "🐙", "cron": "⏰", "webhook": "🪝", **feeds.ICON}
 LABEL = {"webhook": "hooks", "confluence": "confl"}     # six cells on the hut
 PREVIEW_W = 14                                          # a hut this wide previews the newest message
-ORDER = ("mail", "slack", "discord", "jira", "confluence", "figma", "github", "gitlab", "agent", "webhook", "cron")
+ORDER = ("mail", "gmail", "slack", "discord", "jira", "confluence", "figma", "github", "gitlab", "agent", "webhook", "cron")
 
 
 def count(n: int) -> str:

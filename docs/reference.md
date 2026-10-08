@@ -848,7 +848,16 @@ Subscribe to Google Calendar with each calendar's *Secret address in iCal format
 ```
 
 Feeds are cached in `~/.cache/orkcraft/ics/` for 15 minutes; offline, the cached copy
-is used. Limits are read by the bundled `orkcraft.quota` (`claude -p /usage`, `agy -p /usage`:
+is used.
+
+**A Google account of your own** (Settings → Accounts → Connect Google, or the onboarding's last card): one
+sign-in with a Google Cloud client you make yourself, kept on this machine, never in the project. Gmail goes to
+External listeners (`gmail: login=keychain:google-<e-mail>`, read-only), Google Calendar to the Calendar (its
+`google` setting: the week from Google, New event adds there) and Drive to the Wiki (`gdrive:google-<e-mail>`, the
+whole Drive or one folder: Docs as Markdown, text files). Disconnect revokes it at Google. Design:
+[design/google-account.md](design/google-account.md).
+
+Limits are read by the bundled `orkcraft.quota` (`claude -p /usage`, `agy -p /usage`:
 answered locally, no quota spent), refreshed every 10 minutes; `ORKCRAFT_LIMITS=0` turns them off.
 Codex's 5-hour and weekly windows come from `codex app-server` (`account/rateLimits/read`, Codex
 0.53.0 and later; no model turn), with the plan and its credits; when that fails they are taken from

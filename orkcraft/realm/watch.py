@@ -28,7 +28,7 @@ from orkcraft.realm.feeds_git import describe   # noqa: F401 (watch.describe, as
 
 GH_TIMEOUT_S = 15
 MAX_BODY = 1024 * 1024
-FEEDS = ("slack", "jira", "confluence", "figma", "gitlab", "discord", "agent")      # realm/feeds.py: comments and mentions
+FEEDS = ("slack", "jira", "confluence", "figma", "gitlab", "discord", "agent", "gmail")      # realm/feeds.py: comments and mentions
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
@@ -50,6 +50,8 @@ class Signal:
 
     @property
     def event(self) -> str:
+        if self.source == "gmail":                      # mail through a Google sign-in is mail (realm/feeds_google.py)
+            return "mail.received"
         if self.source in FEEDS or self.mention:        # a GitHub notification is about you too
             return "watch.mention" if self.mention else "watch.comment"
         return {"mail": "mail.received", "github": "watch.github", "cron": "watch.cron"}.get(self.source,

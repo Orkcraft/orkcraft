@@ -57,6 +57,7 @@ class CalendarSource:
     name: str
     url: str | None = None
     path: str | None = None
+    google: str | None = None      # a Google sign-in (`keychain:google-…`): its primary calendar, by the API
 
 
 # -- config & fetching -----------------------------------------------------------
@@ -119,6 +120,12 @@ def load_events(start: dt.date, end: dt.date, sources: list[CalendarSource] | No
     events: list[CalendarEvent] = []
     errors: list[str] = []
     for src in sources:
+        if src.google:
+            got, err = read_google(src, start, end)
+            events += got
+            if err:
+                errors.append(err)
+            continue
         text, err = read_source(src)
         if err:
             errors.append(err)
@@ -126,6 +133,77 @@ def load_events(start: dt.date, end: dt.date, sources: list[CalendarSource] | No
             events += parse_ics(text, src.name, start, end)
     events.sort(key=lambda e: (e.day, not e.all_day, e.start if isinstance(e.start, dt.datetime) else dt.datetime.min))
     return events, errors
+
+
+# -- a Google calendar (realm/google.py, docs/design/google-account.md) ---------------------------------
+
+GOOGLE_TTL_S = 5 * 60
+
+
+def google_cache(ref: str) -> Path:
+    return cache_dir() / ("google-" + hashlib.sha256(ref.encode()).hexdigest()[:24] + ".json")
+
+
+def forget_google(ref: str) -> None:
+    """An event was just added: the next load asks Google again."""
+    try:
+        google_cache(ref).unlink()
+    except OSError:
+        pass
+
+
+def _google_time(value: dict) -> dt.datetime | dt.date | None:
+    if value.get("dateTime"):
+        when = dt.datetime.fromisoformat(str(value["dateTime"]).replace("Z", "+00:00"))
+        return when.astimezone().replace(tzinfo=None) if when.tzinfo else when
+    if value.get("date"):
+        return dt.date.fromisoformat(str(value["date"]))
+    return None
+
+
+def google_events(items: list[dict], calendar: str) -> list[CalendarEvent]:
+    out = []
+    for it in items:
+        if it.get("status") == "cancelled":
+            continue
+        try:
+            start, end = _google_time(it.get("start") or {}), _google_time(it.get("end") or {})
+        except (TypeError, ValueError):
+            continue
+        if start is None:
+            continue
+        out.append(CalendarEvent(calendar, str(it.get("summary") or "(no title)"), start, end,
+                                 str(it.get("location") or ""), str(it.get("iCalUID") or it.get("id") or "")))
+    return out
+
+
+def read_google(src: CalendarSource, start: dt.date, end: dt.date,
+                now: float | None = None) -> tuple[list[CalendarEvent], str | None]:
+    """The events of a Google calendar, from a cache younger than `GOOGLE_TTL_S` or from Google; offline, the cache."""
+    from orkcraft.realm import google
+    assert src.google
+    now = now or time.time()
+    cached = google_cache(src.google)
+    try:
+        held = json.loads(cached.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        held = None
+    fits = isinstance(held, dict) and held.get("window") == [start.isoformat(), end.isoformat()]
+    if fits and now - float(held.get("at") or 0) < GOOGLE_TTL_S:
+        return google_events(held.get("items") or [], src.name), None
+    try:
+        items = google.calendar_events(src.google, start, end)
+    except google.GoogleError as e:
+        if fits:
+            return google_events(held.get("items") or [], src.name), f"{src.name}: {e} (the last copy shows)"
+        return [], f"{src.name}: {e}"
+    try:
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        cached.write_text(json.dumps({"at": now, "window": [start.isoformat(), end.isoformat()], "items": items}),
+                          encoding="utf-8")
+    except OSError:
+        pass
+    return google_events(items, src.name), None
 
 
 # -- parsing -----------------------------------------------------------------------

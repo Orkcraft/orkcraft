@@ -38,14 +38,14 @@ class Day:
     errors: list[str]
 
 
-def sources(repo_root: Path, configured: str, own: Path) -> list[ics.CalendarSource]:
-    out = []
+def sources(repo_root: Path, configured: str, own: Path, google: str = "") -> list[ics.CalendarSource]:
+    out = [ics.CalendarSource("Google Calendar", google=google)] if google else []
     if configured.startswith(("http://", "https://")):
         out.append(ics.CalendarSource("calendar", url=configured))
     elif configured:
         p = Path(configured).expanduser()
         out.append(ics.CalendarSource("calendar", path=str(p if p.is_absolute() else repo_root / p)))
-    else:
+    elif not google:
         out += ics.load_sources()
     if own.exists() and all(s.path != str(own) for s in out):
         out.append(ics.CalendarSource("local", path=str(own)))

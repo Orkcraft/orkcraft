@@ -207,7 +207,8 @@ What each service needs, the shortest login, what step 2 lists, and what becomes
   it). Paste the 16 letters; Continue logs in over IMAP. IMAP is always on for personal Gmail
   since 2025 *(check)*.
   - A Workspace account whose admin forbids app passwords gets the plain fail: *Your
-    organisation does not allow app passwords — Gmail needs a Google sign-in (not built yet)*,
+    organisation does not allow app passwords — Gmail needs a Google sign-in* (Settings → Accounts,
+    google-account.md),
     and the link to the automation plan's OAuth (§2 E, open question 1).
 - **What:** the folder (`INBOX` ticked; the labels listed from IMAP `LIST`), and **Only unread**
   on. Optional: **From** and **Subject contains** — a cheap filter before the intent.

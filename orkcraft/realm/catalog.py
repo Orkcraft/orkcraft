@@ -229,7 +229,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         actions=(_a("calendar.new", "New event", "+", "add an event"),
                  _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now")),
         config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False),
-                "prepare_new": (bool, None, False), "beats": (list, None, False)},
+                "prepare_new": (bool, None, False), "beats": (list, None, False), "google": (str, None, False)},
         art="war_tent", orc="Drummer"),
     # -- 3. storage, code and inspection ---------------------------------------------------------------
     BuildingType(

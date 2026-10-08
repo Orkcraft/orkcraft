@@ -7,6 +7,8 @@ A building's `sources` (and the older `paths`) are strings, one per source:
     git:main                     the notes and code of a revision (`git:<rev>[:<folder>]`), via git
     confluence:ENG               a Confluence space; the site is `$ORKCRAFT_CONFLUENCE_URL`, or
     confluence:ENG@https://acme.atlassian.net/wiki
+    gdrive:google-ann@gmail.com  the Google Drive of a Google sign-in (Settings → Accounts): its Docs as
+    gdrive:google-ann@gmail.com/<folder id>   Markdown and its text files, the whole Drive or one folder
 
 Every source lists its documents as a `shelves.Base` of `shelves.Note`s (each with its kind: doc,
 code or design) and reads one by its path. Project files keep their repo-relative path (what
@@ -43,7 +45,7 @@ MAX_DOCS = shelves.MAX_NOTES
 REMOTE_TTL_S = 15 * 60
 FETCH_TIMEOUT_S = 20
 FETCHING = "fetching…"
-ICONS = {"fs": "📁", "code": "🧩", "git": "🌿", "confluence": "📘"}
+ICONS = {"fs": "📁", "code": "🧩", "git": "🌿", "confluence": "📘", "gdrive": "🗂"}
 KINDS = tuple(ICONS)
 
 
@@ -397,6 +399,38 @@ def storage_to_markdown(html: str) -> str:
 
 
 # -- the config -----------------------------------------------------------------------------------------
+class GoogleDriveSource(RemoteSource):
+    """`gdrive:<login>[/<folder id>]` — the Docs (as Markdown) and text files of a Google Drive, or of one folder
+    and the folders in it; read-only (realm/google.py). A file whose version is the cache's is not read again."""
+    kind = "gdrive"
+
+    def __init__(self, spec: str, repo_root: Path, arg: str) -> None:
+        super().__init__(spec, repo_root)
+        name, _, self.folder = arg.strip().partition("/")
+        self.ref = f"keychain:{name.strip()}"
+        self.folder = self.folder.strip()
+
+    @property
+    def label(self) -> str:
+        account = self.ref.removeprefix("keychain:google-")
+        return f"Google Drive · {account}" + (" · a folder" if self.folder else "")
+
+    def fetch(self) -> list[dict]:
+        from orkcraft.realm import google
+        try:
+            files = google.drive_files(self.ref, self.folder, MAX_DOCS)
+            held = {d.get("id"): d for d in self.load()[0]}
+            docs = []
+            for f in files:
+                fid, version = str(f.get("id")), str(f.get("modifiedTime") or "")
+                old = held.get(fid)
+                text = old.get("text") if old and old.get("version") == version else google.drive_text(self.ref, f)
+                docs.append({"id": fid, "title": f.get("name") or fid, "text": text or "", "version": version,
+                             "url": f.get("webViewLink") or "", "kind": "doc"})
+        except google.GoogleError as e:
+            raise ValueError(str(e)) from None
+        return docs
+
 
 def parse(spec: str, repo_root: Path) -> Source:
     """One config string → its source (a bare path is a folder of notes)."""
@@ -409,6 +443,8 @@ def parse(spec: str, repo_root: Path) -> Source:
     if kind == "git":
         rev, _, path = arg.partition(":")
         return GitSource(spec, repo_root, rev.strip(), path.strip())
+    if kind == "gdrive":
+        return GoogleDriveSource(spec, repo_root, arg)
     return ConfluenceSource(spec, repo_root, arg)
 
 

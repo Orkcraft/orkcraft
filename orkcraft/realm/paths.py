@@ -62,7 +62,8 @@ def by_source(table: dict[str, str], source: str, source_type: str = "") -> str:
 # is a code change, a message wants a reply; a design or a wiki page has no kind (the pool's sort decides).
 SOURCE_CHOICES = (pipes.CHANGE, pipes.REPLY, pipes.KNOW)
 SOURCE_DEFAULTS = {"github": pipes.CHANGE, "gitlab": pipes.CHANGE, "jira": pipes.CHANGE,
-                   "mail": pipes.REPLY, "slack": pipes.REPLY, "discord": pipes.REPLY}
+                   "mail": pipes.REPLY, "gmail": pipes.REPLY, "slack": pipes.REPLY,
+                   "discord": pipes.REPLY}
 
 
 def source_of(service: str) -> str:

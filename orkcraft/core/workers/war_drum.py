@@ -11,7 +11,8 @@ as `calendar.day_schedule`, and every `RELOAD_S` the calendar is loaded again.
 meeting's document (`docs.json`): a file it names, else its Markdown kept in `docs/<id>.md`, and the
 first link it gives. `open_doc` sends it as `calendar.doc_opened` when a road carries that; otherwise
 the face shows it in Lake. `prepare` sends `meeting soon` for a meeting at once, and `add` puts an
-event in the calendar it may write (its own when the calendar is a URL).
+event in the calendar it may write (its own when the calendar is a URL). With `google` (a Google sign-in,
+Settings → Accounts) the week comes from the account's Google Calendar and `add` puts the event there.
 
 Any other cart that names a time in a `When:` line (a Clan Fire's `team.routed` for a meeting) is an
 event to add, titled as the cart is (realm/daybook.py `find_when`). With `prepare_new`, an event added
@@ -32,7 +33,8 @@ import time
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import daybook, drumbeat, pipes, shelves
+from orkcraft.realm import daybook, drumbeat, google, pipes, shelves
+from orkcraft.sources import ics
 
 TICK_S = 30.0
 RELOAD_S = 300.0
@@ -67,6 +69,15 @@ class WarDrumWorker(Worker):
         return str(self.config.get("ics", ""))
 
     @property
+    def google(self) -> str:
+        """A Google sign-in (`keychain:google-…`, Settings → Accounts): its calendar is read and written by the API."""
+        return str(self.config.get("google", ""))
+
+    @property
+    def writes_to(self) -> str:
+        return "Google Calendar" if self.google else self.writable.name
+
+    @property
     def writable(self) -> Path:
         """Where a new event goes: the calendar file, or its own when the calendar is a URL."""
         return daybook.writable(self.repo_root, self.configured, self.own_ics)
@@ -80,7 +91,7 @@ class WarDrumWorker(Worker):
         """Load the calendar again; what was added or removed goes out."""
         now = self.clock()
         self._loaded = time.monotonic()
-        srcs = daybook.sources(self.repo_root, self.configured, self.own_ics)
+        srcs = daybook.sources(self.repo_root, self.configured, self.own_ics, self.google)
         self.day = daybook.load(srcs, now.date())
         for event_id, e in daybook.changes(self._last_events, self.day.events):
             self.emit(event_id, daybook.line(e) + f" ({e.day:%a %d})", e.summary)
@@ -293,7 +304,14 @@ class WarDrumWorker(Worker):
         if not title:
             raise ValueError("an event needs a title")
         start = when if isinstance(when, dt.datetime) else daybook.parse_when(when, self.clock().date())
-        daybook.add_event(self.writable, title, start, int(minutes or 30))
+        if self.google:                              # into the Google calendar itself (realm/google.py)
+            try:
+                google.calendar_add(self.google, title, start, int(minutes or 30))
+            except google.GoogleError as e:
+                raise ValueError(str(e)) from None
+            ics.forget_google(self.google)
+        else:
+            daybook.add_event(self.writable, title, start, int(minutes or 30))
         self.refresh()
         if self.prepare_new:
             e = next((x for x in self.day.events if x.summary == title and x.start == start), None)
