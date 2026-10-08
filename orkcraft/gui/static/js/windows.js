@@ -3,7 +3,8 @@
 // `buildings/<type>.js` `panes`) and Info (js/console.js: about, garrison, steward, roads), then the
 // documents opened from it (Lake, js/lake.js). An ork picked in the garrison opens in the same panel with
 // ← back. ⤢ takes the whole town; Esc steps back: whole → half, an ork → its building, then closed. Closed
-// with documents open, the panel waits as a handle at the right edge.
+// with documents open, the panel waits as a handle at the right edge. A setup in steps (js/setup.js) has its
+// ← Back in the bar's top right corner, past its first step; done, the panel opens the building's Info.
 import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online, say } from "./link.js";
@@ -16,6 +17,7 @@ import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
 import { OrkHead } from "./icons.js";
+import { setupBack } from "./setup.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
 // `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
@@ -49,6 +51,11 @@ export function closeBuilding(id) {
 }
 
 /** ✕: the panel closes, its documents wait at the handle. */
+/** A setup in steps is done (a source added, a board saved): the building's Info, not its last step. */
+export function setupDone(id) {
+  if (opened.value.active === id) opened.value = { ...opened.value, tab: "info", ork: null };
+}
+
 function closePanel() {
   closeBuilding();
   lake.value = { ...lake.value, shown: false, front: false };
@@ -205,6 +212,8 @@ export function Panel() {
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
         ${b && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
         <span class="gui-head__spacer"></span>
+        ${b && !front && setupBack.value[b.id] && html`<button class="ok-btn gui-panel__back" title=${say("One step back")}
+          onClick=${setupBack.value[b.id]}>← ${say("Back")}</button>`}
         <button class="gui-tab__close gui-panel__full" title=${o.full ? say("Half the town") : say("The whole town")}
           aria-label=${o.full ? say("Half") : say("Full")} onClick=${toggleFull}>${o.full ? "⤡" : "⤢"}</button>
         <button class="gui-tab__close gui-win__close" title=${say("Close (Esc)")} aria-label=${say("Close")}

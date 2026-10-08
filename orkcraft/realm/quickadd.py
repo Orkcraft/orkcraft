@@ -52,6 +52,7 @@ class Service:
     about_me: str = ""                          # the "about me" switch, on by default, when the service has one
     note: str = ""
     everything: str = ""                        # the Everything switch (§6), off by default; "" none
+    group: str = "other"                        # where it shows in Add a source: one of GROUPS
 
 
 ATL_SITE = Field("site", "Your Atlassian site", placeholder="acme.atlassian.net")
@@ -71,6 +72,10 @@ SLACK_NEW_APP = "https://api.slack.com/apps?new_app=1&manifest_json=" + urllib.p
 GH_TOKEN_PAGE = "https://github.com/settings/personal-access-tokens/new"
 GITLAB_TOKEN_PAGE = "https://{host}/-/user_settings/personal_access_tokens?name=orkcraft&scopes=read_api"
 
+# The groups of Add a source's services, in their order (their words: lexicon `source_group.<id>`). A group
+# with no service yet (a calendar) does not show.
+GROUPS = ("messengers", "mail", "code", "calendar", "other")
+
 SERVICES: dict[str, Service] = {s.id: s for s in (
     Service("github", "GitHub",
             (Field("token", "Or a token", True, "github_pat_… or ghp_…", r"^(github_pat_|gh[pousr]_)\S+$",
@@ -80,14 +85,14 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
             picks="repos", about_me="My notifications — review requests, mentions, assignments",
             everything="Everything — the notifications of the repos I watch too",
             note="Uses the gh command's login: nothing to paste. Not logged in? Run `gh auth login` in a terminal "
-                 "and Check again — or paste a token."),
+                 "and Check again — or paste a token.", group="code"),
     Service("gitlab", "GitLab",
             (Field("host", "Your GitLab", placeholder="gitlab.com", optional=True),
              Field("token", "Personal access token", True, "glpat-…", r"^glpat-\S+$",
                    "a GitLab token starts with glpat-", optional=True)),
             (("Make a token — the page opens filled in (read_api); Create, then copy it", GITLAB_TOKEN_PAGE),),
             picks="projects", about_me="My to-dos — mentions, assignments, review requests",
-            note="Logged in with glab? Leave the token empty and Continue."),
+            note="Logged in with glab? Leave the token empty and Continue.", group="code"),
     Service("gmail", "Gmail",
             (Field("email", "Your Gmail address", placeholder="you@gmail.com"),
              Field("password", "App password", True, "16 letters", r"^[a-zA-Z]{4}( ?[a-zA-Z]{4}){3}$",
@@ -95,14 +100,14 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
             (("Turn on 2-Step Verification, if it is off", "https://myaccount.google.com/signinoptions/twosv"),
              ("Create an app password (any name) and copy its 16 letters", "https://myaccount.google.com/apppasswords")),
             note="Read-only: the tower never marks mail read in the mailbox.",
-            everything="Everything — the whole mailbox (All Mail), not only the inbox"),
+            everything="Everything — the whole mailbox (All Mail), not only the inbox", group="mail"),
     Service("slack", "Slack",
             (Field("token", "User OAuth Token", True, "xoxp-…", r"^xoxp-\S+$", "a user token starts with xoxp-"),),
             (("Create the app — Slack opens with it filled in; pick the workspace, Create", SLACK_NEW_APP),
              ("Install it: Install to Workspace → Allow", ""),
              ("On OAuth & Permissions, copy the User OAuth Token (xoxp-…)", "")),
             picks="channels", about_me="Mentions and direct messages",
-            everything="Everything — every message I can see, in every channel"),
+            everything="Everything — every message I can see, in every channel", group="messengers"),
     Service("jira", "Jira", (ATL_SITE, ATL_EMAIL, ATL_TOKEN), ATL_HOW, picks="projects",
             about_me="Issues I watch, am assigned or reported",
             everything="Everything — new comments on every issue of the site"),
@@ -120,7 +125,7 @@ SERVICES: dict[str, Service] = {s.id: s for s in (
              ("On the same page switch on Message Content Intent, then Save", ""),
              ("Paste the token here; the next step gives the link that invites it to your server", "")),
             picks="channels", everything="Everything — every channel of the servers it is in",
-            note="Discord lets a tool listen only as a bot you invite: it hears the channels it can see."),
+            note="Discord lets a tool listen only as a bot you invite: it hears the channels it can see.", group="messengers"),
 )}
 ATLASSIAN = ("jira", "confluence")
 

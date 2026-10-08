@@ -415,8 +415,14 @@ class Adding:
                     f"in Claude, {c.status}" if c else
                     {"github": "gh or a token", "gitlab": "glab or a token", "gmail": "an app password",
                      "discord": "a bot"}.get(s.id, "a token"))
-            out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓")})
+            out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓"), "group": s.group})
         return out
+
+    @staticmethod
+    def groups() -> list[dict]:
+        """The picker's groups in their order, each with its word; one with no service does not show."""
+        have = {s.group for s in quickadd.SERVICES.values()}
+        return [{"id": g, "label": lexicon.term(f"source_group.{g}")} for g in quickadd.GROUPS if g in have]
 
     def _want_now(self) -> str:
         """What the What step shows picked: the person's pick, else the source's setting, else its service's default."""
@@ -436,6 +442,7 @@ class Adding:
                      "link": asdict(self.link) if self.link else None}
         if self.step == "pick":
             out["services"] = self.services()
+            out["groups"] = self.groups()
             return out
         c = self.connector()
         out["claude"] = {"name": c.name, "status": c.status} if c and self.service in feeds_agent.READS else None

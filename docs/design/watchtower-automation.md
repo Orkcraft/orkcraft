@@ -119,6 +119,29 @@ operator, or their admin, has to make — and polls meanwhile.
   examples in its prompt — the filter learns the operator's taste.
 - The Crag shows the filter's spend per day; a ceiling in the tower's settings.
 
+### H. What is read, and what the window shows
+
+One rule, the person's: **a signal is read when the person has seen it in the tower** — opened in
+full (a click on its row, or *Open new*), or marked by *Read all* (of all sources, or of the chip
+picked). Nothing else reads it:
+
+- **A road does not read it.** A signal goes down the tower's roads the moment it comes (a to-do, a
+  draft reply, a Review board); that is the town working on it, not the person seeing it. It stays
+  unread in the tower until they look, or say *Read all*.
+- **The mailbox is not touched.** Mail is fetched read-only; read in the tower is not read in Gmail,
+  and the other way round.
+- **What is not news is never unread:** the items the first look of a new source finds (listed, *marked
+  seen, not sent*), and what the Lookout let pass by as a miss of the intent.
+
+What the window shows by it (`gui/views/watchtower.py`, `js/buildings/watchtower.js`):
+
+- **Closed (the card on the town):** how many are unread, a counter per source, and the preview of the
+  newest *unread* signal — its sender, else its source; the start of its text; its time. With nothing
+  unread: `✓ All read`, the newest one dimmed under it.
+- **Open (the panel's Work):** the unread, newest first, counted (`Unread · 3`); the source chips filter
+  them. *Read too · N* adds the read ones, *Only unread* takes them away. A signal opened leaves the
+  unread list when the person goes back.
+
 ## 3. Stages
 
 Each stage is useful alone, in this order:

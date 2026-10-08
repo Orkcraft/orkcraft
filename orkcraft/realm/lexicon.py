@@ -139,6 +139,12 @@ TERMS: tuple[Term, ...] = (
     _t("want.doc", "Document"),                                     # a design, a decision, a brief
     _t("want.routine", "Routine"),                                  # what is already scripted
     _t("want.know", "Keep"),                                        # a page or a note in the Wiki
+    # where a source of External listeners speaks: the groups of its Add a source (realm/quickadd.py GROUPS)
+    _t("source_group.messengers", "Messengers"),                    # Slack, Discord
+    _t("source_group.mail", "Mail"),                                # Gmail
+    _t("source_group.code", "Code"),                                # GitHub, GitLab
+    _t("source_group.calendar", "Calendar"),                        # none yet: the group shows once a service has it
+    _t("source_group.other", "Other"),                              # Jira, Confluence, Figma
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover

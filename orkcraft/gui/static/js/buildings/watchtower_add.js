@@ -5,9 +5,12 @@
 // A source already listed comes back here too: Edit (step 2, its picks ticked) and Log in again (step 1).
 // A service Claude Code has a connection for offers a second way at step 1: Claude's connection, no token, a
 // paid look every 30 min (§7.3); its step 2 asks what to listen for, how often and the most a day.
+// Past the picker, ← Back stands in the panel's top right corner (js/setup.js), not in a step's foot; Add
+// opens the tower's Info (§4.4). The picker's services stand in groups: Messengers, Mail, Code, Calendar, Other.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
+import { useSetupBack } from "../setup.js";
 
 const STEPS = [["login", "Log in"], ["what", "What"], ["check", "Check"]];
 
@@ -55,11 +58,13 @@ function Picker({ id, a, back }) {
       <button class="ok-btn primary" disabled=${!link.trim()} onClick=${go}>Continue</button>
     </div>
     <span class="gui-add__label">Or pick a service</span>
-    <div class="gui-add__tiles">
-      ${(a.services || []).map((s) => html`<button key=${s.id} class="gui-add__tile" onClick=${() => act(id, "add_start", { service: s.id }).catch(() => {})}>
-        <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
-        <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
-    </div>
+    ${(a.groups || []).map((g) => html`<section key=${g.id} class="gui-add__group" aria-label=${say(g.label)}>
+      <h4 class="gui-add__group-title">${say(g.label)}</h4>
+      <div class="gui-add__tiles">
+        ${(a.services || []).filter((s) => s.group === g.id).map((s) => html`<button key=${s.id} class="gui-add__tile" onClick=${() => act(id, "add_start", { service: s.id }).catch(() => {})}>
+          <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
+          <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
+      </div></section>`)}
     <p class="ok-tone-muted gui-add__sub">Tokens stay on this machine, in Logins. No model sees them.</p>
     ${back && html`<button class="ok-btn gui-tower__back" onClick=${back}>← Signals</button>`}
   </div>`;
@@ -98,7 +103,6 @@ function Login({ id, a }) {
     ${a.claude && html`<${ViaClaude} id=${id} c=${a.claude} />`}
     <${State} a=${a} />
     <div class="gui-add__foot">
-      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
       ${a.service === "github" && html`<button class="ok-btn" disabled=${!!a.busy} onClick=${() => act(id, "add_again").catch(() => {})}>Check gh again</button>`}
       <button class="ok-btn primary" disabled=${!ready || !!a.busy} onClick=${send}>Continue</button>
     </div>
@@ -139,7 +143,6 @@ function Ask({ id, a }) {
     <p class="ok-tone-muted gui-add__sub">Claude may use only the connection's read tools: nothing it reads can make it write or send.</p>
     <${State} a=${a} />
     <div class="gui-add__foot">
-      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
       <button class="ok-btn primary" disabled=${!!a.busy} onClick=${check}>Check</button>
     </div>
   </div>`;
@@ -203,7 +206,6 @@ function What({ id, a }) {
     <${State} a=${a} />
     <div class="gui-add__foot">
       <span class="ok-tone-muted gui-add__sub">${picking && picks.length ? `${picks.length} picked` : ""}</span>
-      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
       <button class="ok-btn primary" disabled=${!!a.busy} onClick=${check}>Check</button>
     </div>
   </div>`;
@@ -211,7 +213,7 @@ function What({ id, a }) {
 
 // -- 3 · Check --------------------------------------------------------------------------------------------
 
-function Check({ id, a, done }) {
+function Check({ id, a, saved }) {
   const bad = !!a.error;
   return html`<div class="gui-add">
     <${Head} a=${a} />
@@ -232,8 +234,7 @@ function Check({ id, a, done }) {
     ${!bad && html`<p class="ok-tone-muted gui-add__sub">From now on each new one becomes a signal.</p>`}
     ${a.busy && html`<${State} a=${a} />`}
     <div class="gui-add__foot">
-      <button class="ok-btn" onClick=${() => act(id, "add_back").catch(() => {})}>← Back</button>
-      <button class="ok-btn primary" disabled=${bad || !!a.busy} onClick=${() => act(id, "add_save").then(done, () => {})}>${a.editing ? "Keep it" : `Add ${a.label}`}</button>
+      <button class="ok-btn primary" disabled=${bad || !!a.busy} onClick=${() => act(id, "add_save").then(saved, () => {})}>${a.editing ? "Keep it" : `Add ${a.label}`}</button>
     </div>
   </div>`;
 }
@@ -247,10 +248,12 @@ export function editSource(id, source, login) {
   return act(id, "edit", { source, login }).catch((e) => { awaited.delete(id); throw e; });
 }
 
-/** The pane over the feed: opens the picker when nothing is under way; `done` goes back to the signals. */
-export function AddPane({ id, d, done }) {
+/** The pane over the feed: opens the picker when nothing is under way; `done` goes back to the signals,
+ *  `saved` follows Add (the tower's Info). Past the picker, the panel's ← Back takes a step back. */
+export function AddPane({ id, d, done, saved }) {
   const a = d.adding;
   if (a) awaited.delete(id);
+  useSetupBack(id, a && a.step !== "pick" ? () => act(id, "add_back").catch(() => {}) : null);
   useEffect(() => { if (!a && !awaited.has(id)) act(id, "add_open").catch(() => {}); }, [!a]);
   const close = () => act(id, "add_close").then(done, done);
   const back = d.sources.length ? close : null;
@@ -266,6 +269,6 @@ export function AddPane({ id, d, done }) {
       : a.step === "login" ? html`<${Login} key=${a.service} id=${id} a=${a} />`
       : a.step === "what" && a.via ? html`<${Ask} key=${`${a.service}-claude`} id=${id} a=${a} />`
       : a.step === "what" ? html`<${What} key=${a.service} id=${id} a=${a} />`
-      : html`<${Check} id=${id} a=${a} done=${done} />`}
+      : html`<${Check} id=${id} a=${a} saved=${saved || done} />`}
   </div>`;
 }

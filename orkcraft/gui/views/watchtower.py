@@ -52,14 +52,16 @@ def _fresh(at: str, now: dt.datetime) -> bool:
 
 def card(w) -> dict:
     """Closed: how many are new (`new`) and how many sources fail; what is new per source (`gmail 3`,
-    `slack 99+`, `jira ERR`), more than four → `+N more`; then the newest signals kept (source, from,
-    title, time), the one that just arrived marked `fresh`."""
+    `slack 99+`, `jira ERR`), more than four → `+N more`; then the preview: the newest unread signal (source,
+    from, the start of its text, time), else the newest kept one, read; the one that just arrived marked
+    `fresh` (docs/design/watchtower-automation.md §2 H)."""
     if not w.sources:
         return {"sources": [], "more": None, "latest": [], "new": 0, "failing": 0}
     shown, more = w.counters(CARD_ROWS)
     now = dt.datetime.now()
     latest = []
-    for s in [x for x in w.signals if x.kept is not False][:CARD_LATEST]:
+    kept = [x for x in w.signals if x.kept is not False]
+    for s in ([x for x in kept if not x.read] or kept)[:CARD_LATEST]:
         who, title = _who(s.title, s.source)
         latest.append({"key": s.key, "source": s.source, "label": w.label(s.source), "from": who, "title": title,
                        "at": s.at[11:16], "read": s.read, "fresh": _fresh(s.at, now)})
