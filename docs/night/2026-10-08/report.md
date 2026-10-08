@@ -32,7 +32,8 @@
 
 ### D2 — GUI fixes from the queue (designer + engineer)
 - Done (7338c3d): **U02** road labels no longer sit on card text — each label takes the first free stretch of its road that clears every card and label (Calendar's footer, Office `on_digest`, Office dark `on_patch` all clear); **U03** Town settings and the War Map fade at the edge that has more (one shared `.gui-scrolls` cue, both looks); **U24** a wake toast says the building's own error line instead of "it says ERROR".
-- Left for D3, best first: U07 (Warchief's line squeezed by an open panel), U10/U11 (open card covers neighbours, repeats its window's actions), U14, U16, U19–U23.
+- Then (33d906b): **U14** Answers' "Later" stands apart at the right, the answers in a row; **U11** an open building's card no longer repeats its panel's actions under it; **U08** Office's ✻ follows the card's name.
+- Left for D3, best first: U07 (Warchief's line squeezed by an open panel), U10 (an open Office card covers its neighbours), U16, U19–U23.
 - May be broken: nothing known; critical tests, `test_script_first.py`, `test_gui_browser.py`, `test_gui_script_first_browser.py` and the War Map/Settings tests are green. A label with no free stretch anywhere still falls back to the old spot. The U24 toast was not seen live (no wake fired in the demo sandboxes); it rests on a unit test.
 - Question for the morning: none.
 
