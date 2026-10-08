@@ -111,7 +111,7 @@ def _hud(h: dict) -> dict[str, Any]:
 
 def _portrait(p: dict) -> dict[str, Any]:
     """The portrait's sheet on the phone: the look, the monogram and Do not disturb (docs/design/portrait.md §5)."""
-    return {"look": p.get("look", "camp"), "mono": p.get("mono", ""), "dnd": dict(p.get("dnd") or {})}
+    return {"look": p.get("look", "camp"), "mono": p.get("mono", ""), "role": p.get("role", ""), "dnd": dict(p.get("dnd") or {})}
 
 
 def _episodes(buildings: list[dict]) -> list[dict[str, Any]]:

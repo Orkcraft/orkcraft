@@ -52,8 +52,10 @@ you, and whether it may disturb you.
   the menu). Not Renown: Renown is a building's.
 - **A new stage** glows softly until the menu is opened (it glowed in Settings before). The Warchief's
   line still says it once, and its link opens the menu.
-- **Office** (§3) draws a monogram instead of the head: the role's two letters in a circle (SE, QA,
-  EM, PM, PD, GD, AS, MK, DA, FO, and `··` for someone else), no stage mark. 🌙 and the dot stay.
+- **Office** (§3) draws the role's mark instead of the head: a line icon in a circle (`js/roles.js`: code
+  brackets, a lens, a team tree, a flag, a pen nib, a gamepad, a rising phone, a horn, bars, a rocket, and a
+  plain figure for someone else), the role's two letters (SE, QA, EM, PM, PD, GD, AS, MK, DA, FO, `··`) as
+  its name; no stage mark. 🌙 and the dot stay.
 
 ## 2. Its menu
 

@@ -119,7 +119,8 @@ class You:
         m = self.machine
         now = dt.datetime.now()
         morning = disturb.morning(m, now)
-        return {"look": m.look, "mono": MONOGRAMS.get(intents.role(str((m.profile or {}).get("role") or "")).id, "··"),
+        role = intents.role(str((m.profile or {}).get("role") or "")).id
+        return {"look": m.look, "mono": MONOGRAMS.get(role, "··"), "role": role if role in MONOGRAMS else "",
                 "dnd": {"on": disturb.holds(m, now), "choice": disturb.choice(m, now), "label": disturb.label(m, now),
                         "morning": schedule.fmt(morning.hour * 60 + morning.minute)},
                 "summary": self.summary}

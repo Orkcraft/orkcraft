@@ -10,6 +10,7 @@ import { MascotHead, BIOMES } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
+import { RoleIcon } from "./roles.js";
 
 export const portraitOpen = signal(false);
 
@@ -23,7 +24,8 @@ function ground(home) {
 
 /** The head: the mascot in Camp, the monogram in Office. */
 function Face({ y, p, size }) {
-  if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 2 })}>${p.mono}</span>`;
+  if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 2 })} title=${p.mono}>
+    <${RoleIcon} role=${p.role || ""} mono=${p.mono} size=${size > 2 ? 28 : 14} /></span>`;
   return html`<span class="gui-portrait__ground" style=${ground(y.home)}><${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${size} /></span>`;
 }
 
