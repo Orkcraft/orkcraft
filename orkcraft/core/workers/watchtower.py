@@ -41,7 +41,7 @@ from dataclasses import asdict
 
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.watchtower_add import Adding
-from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mailbox, watch
+from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mailbox, paths, watch
 
 REFRESH_S = 120.0
 CRON_S = 30.0
@@ -256,7 +256,7 @@ class WatchtowerWorker(Worker):
             body = f"{title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body
             if sig.why:
                 body += f"\n\n🎯 {sig.why}"
-            self.emit(sig.event, body, title)
+            self.emit(sig.event, body, title, want=paths.source_want(self.config, sig.source))   # §4: by its source
         self.changed()
 
     def judge(self) -> None:

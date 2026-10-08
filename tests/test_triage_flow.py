@@ -173,7 +173,7 @@ def test_the_front_desk_stands_in_the_dashboard_set():
     assert summary[fd.ID]["hotkey"] == "F5"
     scroll = demo.make_scroll(demo.SETS["dashboard"])
     desk = scroll.orkspace(fd.ID)
-    assert set(desk.buildings) == {fd.POST, fd.TRIAGE, fd.BOARD, fd.CAMP, fd.LOOT}
+    assert set(desk.buildings) == {fd.POST, fd.TRIAGE, fd.BOARD, fd.CAMP, fd.LOOT, fd.CHECK, fd.SEND}
     board = scroll.building(fd.BOARD)
     signs = {r.label: r.filter for r in board.roads if r.source == fd.TRIAGE}
     assert signs == {"task-for-human": {"route": ["human"]}, "task-for-agent": {"route": ["agent"]}}
@@ -184,7 +184,9 @@ def test_what_a_person_reads_of_the_front_desk_says_ork_never_orc():
     texts += [b["title"] + " " + b["summary"] for b in fd.FRONT_DESK["buildings"]]
     texts += [r[3] for r in fd.FRONT_DESK["roads"]]
     assert not [t for t in texts if WORDING.search(t)]
-    assert [b["title"] for b in fd.FRONT_DESK["buildings"]] == ["Inbox", "Triage", "Tasks", "Agents at work", "Results"]
+    assert [b["title"] for b in fd.FRONT_DESK["buildings"]] == ["Inbox", "Triage", "Tasks", "Agents at work", "Results",
+                                                                 "Reply check", "Send replies"]
+    assert not WORDING.search(json.dumps(fd.CHECK_SCRIPT))
 
 
 def test_the_front_desk_plays_the_whole_flow(tmp_path: Path):
@@ -213,6 +215,37 @@ def test_the_front_desk_plays_the_whole_flow(tmp_path: Path):
         _wait(lambda: len(loot.stored) > 0)
         assert len(loot.stored) == 1 and len([c for c in board.cards if "Summarize" in c.title]) == 1
         assert not any(c.kind == tasklist.TASK and "Dana" in c.title for c in board.cards)
+    finally:
+        host.close()
+
+
+def test_the_front_desk_answers_a_mail_through_the_reply_check_and_your_yes(tmp_path: Path):
+    """docs/design/barracks-flows.md: Mail → Triage → Tasks → Agent pool (a reply, read mode) → Reply check →
+    Results (held for your yes) → Send replies."""
+    root = demo.build(tmp_path / "dash", set_name="dashboard")
+    for kind, bid in (("council", fd.TRIAGE), ("barracks", fd.CAMP), ("council", fd.CHECK)):
+        path = root / ".orkcraft" / kind / bid / "simulated.json"
+        script = json.loads(path.read_text(encoding="utf-8"))
+        for rules in [script.get("steward", []), script.get("work", [])] + list(script.get("members", {}).values()):
+            for rule in rules:
+                rule["seconds"] = 0.05
+        path.write_text(json.dumps(script), encoding="utf-8")
+    host = Host(root, False, root / ".orkcraft.json", demo=True)
+    try:
+        host.town.call = lambda fn, *a: fn(*a)
+        host.command("act", {"id": fd.POST, "act": "simulate", "args": fd.INVOICE})
+        camp, loot = host.town.worker(fd.CAMP), host.town.worker(fd.LOOT)
+        _wait(lambda: any(t.want == "reply" and t.status == "done" for t in camp.state.tasks))
+        task = next(t for t in camp.state.tasks if t.want == "reply")
+        assert task.branch == "" and task.kind == "reply" and fd.REPLY in task.result
+        _wait(lambda: any(i.want == "reply" for i in loot.queue.items))
+        item = next(i for i in loot.queue.items if i.want == "reply")
+        assert item.status == "held" and fd.REPLY in item.value
+        assert any(h.building == fd.CHECK for h in item.hops)                 # the Reply check read it first
+        send = host.town.worker(fd.SEND)
+        loot.accept_item(item)
+        _wait(lambda: len(send.shots) > 0)
+        assert send.ask_next == 0 and send.asking is None                     # through the gate: no second ask
     finally:
         host.close()
 

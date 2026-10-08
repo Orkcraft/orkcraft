@@ -32,6 +32,8 @@ from orkcraft.core.workers.council_setup import Setup
 from orkcraft.realm import pipes, roads, shelves
 from orkcraft.realm import team as tm
 
+WIKI_CHARS = 1500                 # of each page lent to the members, its start (they may read the rest)
+
 ICON = "🪔"
 OUTCOME = {"approved": "approved ✓", "rework": "sent back ↩", "budget": "stopped: budget", "asked": "🔥 waits for you",
            "error": "failed", "stopped": "stopped", "running": "reviewing…"}
@@ -148,6 +150,29 @@ class CouncilWorker(Worker):
 
     def rel(self, path: Path) -> str:
         return shelves.rel_to(self.repo_root, path)
+
+    # -- the Wiki its members check against (config `notes`: Scroll Dump ids) --------------------------
+
+    @property
+    def notes(self) -> list[str]:
+        got = self.config.get("notes") or []
+        return [str(x) for x in ([got] if isinstance(got, str) else got) if str(x) != self.building_id]
+
+    def wiki_notes(self, title: str, text: str) -> str:
+        """The Wiki's pages that matter for the document (no model: the words they share), lent by each Scroll
+        Dump of `notes`: a line per page with its path, and the start of its text. "" when none lends one."""
+        lines: list[str] = []
+        for bid in self.notes:
+            look_up = getattr(self.town.worker(bid), "look_up", None)
+            if look_up is None:
+                continue
+            for n in look_up(f"{title} {text}", self.building_id, title):
+                try:
+                    start = (self.repo_root / n.path).read_text(encoding="utf-8")[:WIKI_CHARS].strip()
+                except OSError:
+                    start = ""
+                lines.append(f"- `{n.path}` — {n.title}" + (f"\n\n{start}\n" if start else ""))
+        return "\n".join(lines)
 
     def ensure_briefs(self) -> None:
         """Empty templates for the steward and every member, so the operator knows where to write."""
@@ -316,6 +341,7 @@ class CouncilWorker(Worker):
             return False
         cycle = tm.cycle_of(tm.load_all(self.state_dir, 200), title)
         d = tm.new(title, text, path, cycle)
+        d.notes = self.wiki_notes(title, text) if self.notes else ""
         if not path:                       # Claude reads it from disk; the prompt stays small
             try:
                 f = self.state_dir / "documents" / f"{d.id}.md"

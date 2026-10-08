@@ -50,6 +50,9 @@ function Purpose({ id, s, draft, set }) {
     <span class="council-setup__label">Or start from</span>
     <div class="council-setup__row">${STARTS.map(([label, text]) => html`<button key=${label} class="ok-chip"
       onClick=${() => set({ purpose: text })}>${label}</button>`)}</div>
+    ${(s.presets || []).length > 0 && html`<span class="council-setup__label">${say("Or set it up in one click")}</span>
+      <div class="council-setup__row">${s.presets.map((p) => html`<button key=${p.id} class="ok-chip" title=${say(p.purpose)}
+        onClick=${() => act(id, "setup_preset", { preset: p.id }).catch(() => {})}>${say(p.title)}</button>`)}</div>`}
     <div class="council-setup__foot">
       <span class="ok-tone-muted council-setup__sub">The keeper proposes in one turn</span>
       <button class="ok-btn primary" disabled=${!draft.purpose.trim() || !!s.busy}

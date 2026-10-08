@@ -251,3 +251,29 @@ def test_a_failed_login_stays_on_its_step_and_keeps_nothing(host, monkeypatch):
         act("add_save")
     with pytest.raises(CommandError, match="Not a link"):
         act("add_link", link="https://example.com")
+
+
+def test_the_what_step_asks_what_is_wanted_done_with_the_source(host):
+    """docs/design/barracks-flows.md §9: one more question per source, with its service's default; the answer is
+    the tower's `wants` for that source, and it goes with each cart as its kind of work."""
+    act = lambda name, **args: host.command("act", {"id": "tower", "act": name, "args": args})
+    w = host.town.worker("tower")
+    adding = lambda: host.detail("tower")["data"]["adding"]
+    act("add_open")
+    assert _until(lambda: w.adding.gh == "ann")
+    act("add_start", service="github")
+    assert _until(lambda: adding()["step"] == "what" and not adding()["busy"])
+    a = adding()
+    assert a["want"] == "change" and [x["label"] for x in a["wants"]] == ["Code change", "Reply", "Keep"]
+    act("add_what", picks=["acme/orkcraft"], about_me=False, want="reply")
+    assert _until(lambda: adding()["step"] == "check" and not adding()["busy"])
+    act("add_save")
+    assert w.config["wants"] == {"github": "reply"}
+    act("add_open")
+    act("add_start", service="github")
+    assert _until(lambda: adding()["step"] == "what" and not adding()["busy"])
+    assert adding()["want"] == "reply"                                       # what was set before
+    act("add_what", picks=["acme/orkcraft"], about_me=False, want="")
+    assert _until(lambda: adding()["step"] == "check" and not adding()["busy"])
+    act("add_save")
+    assert "wants" not in w.config                                           # nothing set: the pool decides

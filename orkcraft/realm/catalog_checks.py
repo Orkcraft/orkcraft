@@ -90,6 +90,10 @@ def validate(spec: dict) -> list[str]:
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
         if config.get("mode") == "browser" and not config.get("forms"):
             errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
+    if tid == "watchtower" and isinstance(config.get("wants"), dict):
+        from orkcraft.realm import pipes
+        if any(not isinstance(k, str) or not pipes.want_of(v) for k, v in config["wants"].items()):
+            errors.append(f"config: wants: a source → one of {', '.join(pipes.WANTS)}")
     if tid == "barracks":
         from orkcraft.realm import paths, pipes
         kinds = ", ".join(paths.DEFAULT_WANTS)

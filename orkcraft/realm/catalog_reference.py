@@ -116,6 +116,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "`secret=` names a webhook's secret",
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",
+        "wants": "what is wanted done with each source's carts, a source → change · reply · know (e.g. {\"mail\": "
+                 "\"reply\", \"jira\": \"change\"}): it goes with each cart as its kind of work; the quick-add asks it",
     },
     "signpost": {
         "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
@@ -208,6 +210,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                   "also names a time (WHEN:), the document goes on after a `When:` line (a War Drum adds the event)",
         "goal": "an older debate's setting: read as the steward's brief when steward_prompt is empty",
         "max_rounds": "an older debate's setting; still loads, not used",
+        "notes": "Scroll Dumps whose pages its members check claims against, e.g. [\"notes\"]: the pages that share "
+                 "the document's words go with it (the Reply check sets every Scroll Dump of the town)",
     },
     "war_drum": {
         "ics": "an .ics file in the project or an https URL (+ adds events to its own file)",
