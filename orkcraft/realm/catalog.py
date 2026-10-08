@@ -162,7 +162,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
                 "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False),
                 "settle": (int, (0, 3600), False), "later_minutes": (int, (1, 1440), False),
-                "wikis": (list, None, False), "private_todos": (bool, None, False), "plan_model": (str, None, False)},
+                "wikis": (list, None, False), "private_todos": (bool, None, False), "plan_model": (str, None, False),
+                "night_round": (bool, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
         "barracks", "Barracks", "🏕️", "M",

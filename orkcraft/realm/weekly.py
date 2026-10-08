@@ -3,7 +3,8 @@
     when     `weekly_at` (Sunday 05:00 by default, the operator's morning window) or F10 on demand
     model    `claude -p --model <weekly_model>` (opus by default, the operator's subscription)
     sees     the rules audit, the week's spend per building, 👍 / 👎 and incidents, the Council's
-             reviews, every building's type, settings and model prompts, the roads
+             reviews, every building's type, settings and model prompts, the roads; and THE WORK: the
+             boards' open cards, how long they lay, what the Night rounds found (realm/nightround.py)
     answers  a report: a summary and items. An item is applied only through one of these changes,
              each checked like everything else in the camp:
                  shrink · chain · script   a model part, as in the local proposals (realm/optimize.py)
@@ -24,7 +25,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import builders, catalog, feedback, metrics, optimize
+from orkcraft.realm import builders, catalog, feedback, metrics, nightround, optimize
 
 DIR = Path(".orkcraft") / "weekly"
 CHANGES = ("shrink", "chain", "script", "enrich", "set_config", "remove_road", "remove_building", "add_building", "note")
@@ -39,6 +40,12 @@ spend more) — work towards it: never make a 💎 building cheaper at the cost 
 
 THE CAMP:
 {camp}
+
+THE WORK (the operator's boards: the cards that lie open and for how long, what the night rounds found):
+{work}
+Besides the camp's items you may give at most 2 "note" items about the work itself, each titled "Work: …":
+a card lying for weeks to drop, split or re-think; a goal the boards no longer serve; a direction the week's
+commits point to. Say only what the boards above show.
 
 Each item applies ONE change:
 - {{"change": "shrink", "building": id, "target": "orc:<id>|steward|orders", "prompt": "<at most 70% as long>"}}
@@ -228,7 +235,8 @@ def parse(data: dict, repo_root: Path, scroll, specs: dict[str, dict]) -> list[I
 def run(repo_root: Path, scroll, specs: dict[str, dict], runner: builders.Runner, model: str = "",
         audit_report=None) -> Result:
     """One heavy-model call; never raises."""
-    prompt = PROMPT.format(camp=camp_text(repo_root, scroll, specs, audit_report), types=", ".join(camp_types()))
+    prompt = PROMPT.format(camp=camp_text(repo_root, scroll, specs, audit_report), types=", ".join(camp_types()),
+                           work=nightround.work_text(repo_root, specs) or "(no Task Fields board)")
     try:
         text, cost = runner(prompt)
     except Exception as e:  # the CLI missing, a timeout

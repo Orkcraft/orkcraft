@@ -691,8 +691,18 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   makes each one a `weekly(<id>)` checkpoint, saves the Town Scroll, restarts the touched daemons
   and, when buildings changed or the report asks, offers to restart orkcraft. Both: F10 →
   Building retro / Town retro; F10 → ⚙ Retro settings sets the models and the schedules.
+- The 🌙 **Night round** (`round_at`, 04:40; design: `docs/design/night-round.md`) looks over the
+  work, not the town: on every 🌾 Task Fields board the tasks in To Do and the open to-dos that lie get a
+  🌙 when a commit since the last round or a wiki page new or changed shares their words (rules, no
+  model); for up to 5 cards a board, not personal, the board's steward says in a sentence what is new or
+  takes the mark off. When there were commits, the day's diff gives at most 3 cleanup ideas as notes in
+  **Ideas** — fewer after three deleted in a row, none after six, three again once one is taken. It never
+  makes a task or sends a cart; a night with nothing changed calls no model. Its line in the morning is
+  the Warchief's (said once); Settings → Night round turns it off and has Look now; a board's
+  `night_round: false` leaves it out. The Town retro also sees THE WORK: what lies and for how long, and
+  may add two `Work:` notes. Nights in `.orkcraft/round/nights.jsonl`.
 - Settings live in `.orkcraft/council/settings.json`: `fast_llm`, `fast_model`, `optimize_at`,
-  `weekly_model`, `weekly_at`, and the Elders' `elders_per_night` (40; 0–200) and `elders_context`
+  `weekly_model`, `weekly_at`, `round_at` (`""` is off), and the Elders' `elders_per_night` (40; 0–200) and `elders_context`
   (lines of the agent's screen they read, 14; 4–60). `--demo --demo-set dashboard` shows the pipeline seeded (F3 Gates
   has a Workshop; the Town Hall lists reviews, ratings, an incident, a proposal and a report).
 
@@ -1129,6 +1139,7 @@ onboarding (*Punk ork*).
 | Road planner | — |
 | Road rule | — |
 | Building retro | — |
+| Night round | — |
 | Ork work | — |
 | Renown | — |
 | mascot | — |
