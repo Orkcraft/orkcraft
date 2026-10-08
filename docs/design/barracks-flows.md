@@ -189,7 +189,8 @@ The code of §5 starts after that work is merged, so the two meet in one place
 
 ## 14. As built
 
-Stages 1–3 are built; stage 4 is not (below, with why). What was decided while building:
+Stages 1–3 are built; stage 4 is not (below, with why). What is left is on the
+[roadmap](../roadmap.md#-agent-pool-what-is-wanted-decides-the-way--what-is-left). What was decided while building:
 
 **Stage 1 — the field.**
 - `Payload.want` (`realm/pipes.py`: `WANTS`, `want_of`). A worker's `emit(want=)` carries it. The Router, the Review

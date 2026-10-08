@@ -43,3 +43,62 @@ unpriced (`+`).
   than input. The numbers in the design note's §4 are unverified.
 
 Done when a Codex run on a known model shows 🪙 instead of `+`.
+
+## 🏕️ Agent pool: what is wanted decides the way — what is left
+
+[design/barracks-flows.md](design/barracks-flows.md) stages 1–3 are built: the cart's kind of work, the pool's
+order, the `reply` path in `read` mode held by the Review gate, the Reply check, the External listeners' per-source
+kind. Its §14 *As built* says what was decided. These parts are not built yet.
+
+### The `doc` path (§6, stage 4)
+
+A document (a design, a decision, a brief) still takes the code change's way, and its ork still runs in `work`
+mode.
+
+- The `doc` path: one ork on the goal's planning tier, in `read` mode with write access to its one document only.
+- With `debate` on, a Review board's members argue first.
+- The document goes where the pool's `doc_to` says: the Review gate (default), the Wiki's inbox, or a docs pull
+  request.
+- Nothing it writes leaves the camp without the Review gate (`gate.HELD_WANTS` gains `doc`).
+- Meet the design briefs the planning pool already leaves ([design/barracks-designs.md](design/barracks-designs.md))
+  rather than duplicate them.
+
+Done when a Calendar's *meeting soon* brief is written by a `doc` ork that cannot touch any other file, and waits
+in the Review gate.
+
+### The Lookout names the kind (§6.1, stage 4)
+
+The Lookout's one call per batch of signals gains one optional word per signal: the kind of work, among those
+the source allows (a Slack source may say `reply` or `change`). This adds no extra model call. The text still
+only lowers a path; the word only chooses within the source's kinds.
+
+Decide first, from how people use the per-source setting, whether one source with two kinds or two sources is
+the answer (§13).
+
+Done when a developer channel's message asking for a fix reaches the pool as a code change and a question in the
+same channel as a reply, both from one source.
+
+### Kinds set by a Router rule and a routing Review board (§4)
+
+Today both pass on the kind their cart came with; neither sets one.
+
+- A Router rule may name a kind: `match → route, want`.
+- A Review board that routes names `WANT:` beside `ROUTE:`, and the kind goes on `team.routed`.
+
+Neither may raise what the cart already carries, unless the person wrote the rule.
+
+Done when the demo's Triage names *Reply* for a mail it gives an agent, so the tower need not.
+
+### A reply that reads like code: the autonomy's say (§5)
+
+The steward always leaves a to-do (*Looks like a code task — from …*). By the pool's autonomy it should instead
+ask the person (🔥) when the autonomy is *Propose only*, and keep the to-do otherwise.
+
+Done when, at *Propose only*, the question names the message and offers *Make it a code task*.
+
+### The quick-add question through Claude
+
+*What do you want done with these?* is asked on the token path of the External listeners' quick-add, not yet on
+the *through Claude* path (`watchtower_add.what_claude`).
+
+Done when a source added through Claude's connection keeps its kind in `wants`.
