@@ -1,6 +1,6 @@
 # Design — landscape: what needs no ork is part of the land
 
-Status: written 2026-10-08, agreed with the owner; nothing built yet. Part of the simplification
+Status: written 2026-10-08, agreed with the owner; stage 1 (§9) built the same night — see §11 *As built*. Part of the simplification
 ([simplify.md](simplify.md)). Builds on script-first buildings ([script-first.md](script-first.md)),
 folded cards ([folded-cards.md](folded-cards.md)), growth ([growth.md](growth.md)) and the steward's
 road rules (`realm/lexicon.py` `road_rule`).
@@ -137,3 +137,17 @@ The data does not change: ids, specs, roads and event ids stay. The change is a 
 - Does a Sound alerts with sounds for several buildings become one horn on each roof, or stay one horn
   in the land?
 - Is a landscape object's old garrison dropped from the file after some releases, or kept for good?
+
+## 11. As built
+
+**Stage 1** (night audit 2026-10-08, P1):
+- `BuildingType.landscape` (`realm/catalog.py`), set on the seven types of §2; `catalog.LANDSCAPE` is their set.
+  File tree and Inspector are retired (`RETIRED_TYPES`: never built anew) but keep the flag, so an old
+  town's carry it.
+- `custom` was already out of the wizard's list (`RETIRED_TYPES`, `gui/builder.py`); nothing to do.
+- The GUI's Build list (`gui/builder.py` `catalog_types`) puts buildings first, by their intent, then the
+  landscape as one group, *Landscape: works by itself, needs no ork* (`LANDSCAPE_GROUP`); each item carries
+  `landscape` for the face. The TUI's preset picker is unchanged (the TUI is deprecated).
+- `TERMS` has `landscape`. The onboarding's one line (§6) is not said yet: it waits for the stage that
+  draws the land (stage 3), so the line names something the person can see.
+- Test: `tests/test_catalog.py` `test_the_landscape_is_the_seven_types_that_need_no_ork`.

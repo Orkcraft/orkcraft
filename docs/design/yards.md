@@ -1,6 +1,6 @@
 # Design — yards and huts: an ork lives only where it thinks
 
-Status: built on the branch `claude/great-cray-5i993w` 2026-10-08, not merged: real screenshots go to a design,
+Status: built 2026-10-08 (stages 1, 2, 2′; merged into `main` with PR #131; stage 3 not yet). Real screenshots go to a design,
 product and marketing review first. Builds on [script-first.md](script-first.md) (the rule of which buildings
 call a model), [folded-cards.md](folded-cards.md) (a card folded to its title bar) and the Camp look of
 [gui-design-system.md](gui-design-system.md). GUI only: the TUI is deprecated

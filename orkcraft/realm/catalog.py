@@ -65,6 +65,7 @@ class BuildingType:
     orc: str = "Peon"               # default resident orc
     agentic: bool = False           # its work is done by agents (the Agents group of the wizard)
     folded: bool = False            # built with its hut folded to the title bar (docs/design/folded-cards.md)
+    landscape: bool = False         # part of the land, not a building: no ork of its own (docs/design/landscape.md)
 
     def event(self, event_id: str) -> EventDef | None:
         return next((e for e in self.events if e.id == event_id), None)
@@ -91,7 +92,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("pit.link", "link pasted", TEXT, "a link was pasted"),
                 _e("pit.text", "text pasted", TEXT, "text was pasted")),
         actions=(_a("pit.paste", "Paste", "📋", "take what is in the clipboard"),),
-        art="burrow", orc="Scavenger", folded=True),
+        art="burrow", orc="Scavenger", folded=True, landscape=True),
     BuildingType(
         "watchtower", "Watchtower", "🗼", "M",
         "listens to the outside: a mailbox (IMAP, Gmail), GitHub events, comments and mentions in Slack, Jira, "
@@ -122,7 +123,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("signpost.routed", "routed", TEXT, "what arrived, sent down the route its rule picked"),
                 _e("signpost.unmatched", "no rule", TEXT, "no rule matched what arrived")),
         config={"rules": (list, None, False)},
-        art="spire", orc="Grot Pointa", folded=True),
+        art="spire", orc="Grot Pointa", folded=True, landscape=True),
     BuildingType(
         "mill", "The Mill", "⚙️", "XS",
         "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
@@ -133,7 +134,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("mill.failed", "mill failed", TEXT, "a step failed: the error")),
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
         config={"steps": (list, None, False), "env": (list, None, False), "model": (str, None, False)},
-        art="mill", orc="Miller", folded=True),
+        art="mill", orc="Miller", folded=True, landscape=True),
     BuildingType(
         "horn", "The Horn", "📯", "XS",
         "sound for what comes in: every cart down its roads plays a sound — you pick which sound for which event "
@@ -144,7 +145,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("horn.mute", "Mute", "🔇", "mute or unmute the horn")),
         config={"sounds": (list, None, False), "default": (str, None, False), "muted": (bool, None, False),
                 "quiet": (str, None, False), "cooldown": (int, (0, 600), False)},
-        art="watchtower", orc="Hornblower"),
+        art="watchtower", orc="Hornblower", landscape=True),
     # -- 2. queues and execution -----------------------------------------------------------------------
     BuildingType(
         "fields", "Task Fields", "🌾", "M",
@@ -242,7 +243,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("files.selected", "path picked", FILE, "a file or folder was picked")),
         actions=(_a("files.open", "Open in OS", "↗", "open the folder in the system file manager"),),
         config={"path": (str, None, False)},
-        art="library", orc="Woodcutter"),
+        art="library", orc="Woodcutter", landscape=True),
     BuildingType(
         "scrolls", "Scroll Dump", "🗑️", "S",
         "one LLM wiki (codebase, team, design or general): the Scroll Scrapper turns read-only sources "
@@ -316,7 +317,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         actions=(_a("lake.open", "Open in browser", "↗", "open what it shows in the browser"),
                  _a("lake.edit", "Edit", "✎", "edit the file it shows (again: save and close the editor)")),
         config={"url": (str, None, False), "autosave": (int, (1, 600), False)},
-        art="spire", orc="Seer"),
+        art="spire", orc="Seer", landscape=True),
     BuildingType(
         "forge", "The Forge", "⚒️", "M",
         "the repository's state: what comes in (branches, commits, pull requests) and what goes out "
@@ -366,7 +367,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "window": (str, ("1h", "24h", "7d"), False),
                 "warn": (float, (0, 1e9), False), "crit": (float, (0, 1e9), False),
                 "charts": (list, None, False)},
-        art="rookery", orc="Crag Carver"),
+        art="rookery", orc="Crag Carver", landscape=True),
     BuildingType(
         "catapult", "The Catapult", "🎯", "S",
         "the strict way out: waits for data from several roads (fan-in), checks it against a JSON Schema "
@@ -474,6 +475,7 @@ SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never
 RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's still loads, none is built anew:
 # Custom (panes); File tree (its folder watch and its picker go to other buildings); Inspector — the town's
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
+LANDSCAPE = frozenset(t.id for t in TYPES.values() if t.landscape)   # the land between the buildings: no ork
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
 GUI_ONLY = frozenset({"mine", "gramophone"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2

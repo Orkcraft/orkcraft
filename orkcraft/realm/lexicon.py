@@ -44,6 +44,7 @@ TERMS: tuple[Term, ...] = (
     _t("orkestrate", "orkestrate"),
     _t("town", "town", "towns"),
     _t("building", "building", "buildings"),
+    _t("landscape", "landscape"),                                  # the things in the land that need no ork (docs/design/landscape.md)
     _t("hut", "hut", "huts"),
     _t("road", "road", "roads"),
     _t("cart", "cart", "carts"),

@@ -230,3 +230,19 @@ def test_list_settings_take_json_and_semicolons():
     assert _parse(list, "join: , ; upper") == ["join: ,", "upper"]
     assert _parse(list, '[{"if": "x", "route": "y"}]') == [{"if": "x", "route": "y"}]
     assert _show([{"a": 1}]) == '[{"a": 1}]' and _show(["a", "b"]) == "a, b"
+
+
+def test_the_landscape_is_the_seven_types_that_need_no_ork():
+    """docs/design/landscape.md §2: seven types are land, not buildings; the wizard lists buildings first and
+    the land as a group of its own after them; the word is in the glossary."""
+    from orkcraft.gui import builder
+    from orkcraft.realm import lexicon
+
+    assert catalog.LANDSCAPE == {"signpost", "mill", "pit", "lake", "forest", "crag", "horn"}
+    assert not {"town_hall", "workshop", "war_drum", "loot", "forge"} & catalog.LANDSCAPE
+    listed = builder.catalog_types()
+    flags = [t["landscape"] for t in listed]
+    assert flags == sorted(flags) and any(flags) and not flags[0]          # buildings first, then the land
+    assert {t["intent"] for t in listed if t["landscape"]} == {builder.LANDSCAPE_GROUP}
+    assert builder.LANDSCAPE_GROUP not in {t["intent"] for t in listed if not t["landscape"]}
+    assert "landscape" in {t.key for t in lexicon.TERMS}

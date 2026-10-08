@@ -19,17 +19,22 @@ class BuildError(Exception):
     """What the page asked for cannot be done; its text is shown to the person."""
 
 
+LANDSCAPE_GROUP = "Landscape: works by itself, needs no ork"   # the wizard's last group (landscape.md §6)
+
+
 def catalog_types() -> list[dict[str, Any]]:
     """Every type a building can be raised from, as the wizard lists them, each with what it is for
-    (`intent`: the catalog's "What do you need?" groups, in their order)."""
+    (`intent`: the catalog's "What do you need?" groups, in their order). Buildings come first;
+    the landscape (no ork, docs/design/landscape.md) is a group of its own after them."""
     hidden = (catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES | lake.WINDOW_TYPES
               | {catalog.DEFAULT_TYPE})
     intent = {tid: need for need, ids in catalog.INTENTS for tid in ids}
     order = {tid: n for n, tid in enumerate(tid for _, ids in catalog.INTENTS for tid in ids)}
-    types = sorted((t for t in catalog.TYPES.values() if t.id not in hidden), key=lambda t: order.get(t.id, len(order)))
+    types = sorted((t for t in catalog.TYPES.values() if t.id not in hidden),
+                   key=lambda t: (t.landscape, order.get(t.id, len(order))))
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
-             "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],
-             "intent": intent.get(t.id, "Something else")} for t in types]
+             "landscape": t.landscape, "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],
+             "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else")} for t in types]
 
 
 def _id(args: dict, key: str) -> str:
