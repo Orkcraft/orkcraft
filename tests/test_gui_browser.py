@@ -1345,7 +1345,8 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
 
 def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
     """The person framed over the town's top-left corner (docs/design/portrait.md): its menu heads with You, Camp
-    turns to Office (no sprites, the monogram, the office theme) and back, Do not disturb puts 🌙 on it, and
+    turns to Office (no sprites, the monogram, the office theme) and back, Do not disturb strikes the horn on its
+    toggle (never a mark on the head), and
     Fire on the roofs turns off and on there, no longer in Town settings."""
     pg = page
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
@@ -1362,7 +1363,9 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     assert pg.locator(".gui-warchief__crowned").count() == 0
     dnd_row = menu.get_by_role("group", name="Do not disturb", exact=True)
     dnd_row.get_by_role("button", name="On", exact=True).click()
-    pg.locator(".gui-portrait__dnd").wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Do not disturb", exact=True).and_(pg.locator("[aria-pressed=true]")).wait_for(
+        state="visible", timeout=WAIT_MS)
+    assert "🌙" not in portrait.inner_text()
     dnd_row.get_by_role("button", name="Off", exact=True).click()
     pg.locator(".gui-warchief__news").wait_for(state="visible", timeout=WAIT_MS)   # what gathered, said once
     assert "While you were away" in pg.locator(".gui-warchief__news").inner_text()
@@ -1385,11 +1388,13 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     menu.wait_for(state="hidden", timeout=WAIT_MS)                       # Town settings… closed the menu
     # its quick toggles beside it: Do not disturb on and off, the look to Office and back, without the menu
     dnd, look = pg.get_by_role("button", name="Do not disturb", exact=True), pg.get_by_role("button", name="Office look", exact=True)
+    horn = lambda: dnd.locator("img.gui-portrait__horn").get_attribute("src")
+    assert horn() == "/ds/sprites/icons/notify-on.png"                    # Camp: the horn, the town may call
     dnd.click()
-    pg.locator(".gui-portrait__dnd").wait_for(state="visible", timeout=WAIT_MS)
-    assert dnd.get_attribute("aria-pressed") == "true"
+    pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-off.png')", timeout=WAIT_MS)
+    assert dnd.get_attribute("aria-pressed") == "true" and "🌙" not in portrait.inner_text()   # struck through
     dnd.click()
-    pg.locator(".gui-portrait__dnd").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-on.png')", timeout=WAIT_MS)
     look.click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
     look.click()
@@ -1483,8 +1488,9 @@ def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, mon
     toast.get_by_role("button", name="Details").click()
     assert "overloaded_error" in toast.locator("pre").inner_text()
     toast.screenshot(path=str(tmp_path / "tool-error.png"))
-    page.evaluate("document.documentElement.dataset.look = 'office'")    # Office: the glyphs, no sprites
-    assert toast.locator(".gui-toolerr__title").inner_text().startswith("✻")
+    page.evaluate("document.documentElement.dataset.look = 'office'")    # Office: the small coloured SVG, no sprites
+    assert toast.locator(".gui-toolerr__title .gui-toolmark__svg").is_visible()
+    assert not toast.locator(".gui-toolerr__title img[data-kind=harness]").is_visible()
     toast.screenshot(path=str(tmp_path / "tool-error-office.png"))
     page.evaluate("document.documentElement.dataset.look = 'camp'")
     toast.get_by_role("button", name="Retry").click()

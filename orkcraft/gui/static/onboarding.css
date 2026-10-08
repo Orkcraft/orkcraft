@@ -53,12 +53,6 @@
 .gui-onb__svc--jira { --svc: url("icons/services/jira.svg"); }
 .gui-onb__svc--confluence { --svc: url("icons/services/confluence.svg"); }
 .gui-onb__svc--figma { --svc: url("icons/services/figma.svg"); }
-/* An AI tool's glyph (icons/tools), with no well: the checkbox beside it is one already; no glyph: its harness mark. */
-.gui-onb__svc.is-bare { background: none; box-shadow: none; font-size: 17px; }
-.gui-onb__svc.is-bare::before { width: 82%; height: 82%; }
-.gui-onb__svc--tool-claude { --svc: url("icons/tools/claude.svg"); }
-.gui-onb__svc--tool-cursor { --svc: url("icons/tools/cursor.svg"); }
-.gui-onb__svc--tool-pi { --svc: url("icons/tools/pi.svg"); }
 
 /* Who are you: the classes, each on its biome's ground. */
 .gui-onb__ground { background: var(--land) var(--glyphs) repeat; background-size: 240px auto; display: flex;

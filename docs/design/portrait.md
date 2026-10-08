@@ -20,7 +20,10 @@ you, and whether it may disturb you.
 
 - **The portrait** stands out of the HUD in a wide window: framed (a bevel and 4 px of padding) over the
   town's top-left corner, the head at 3× (40 × 36), its marks inside its corners, and beside it two quick
-  toggles, 🌙 Do not disturb (on / off; the menu keeps 1 h and Until) and the look (Camp / Office). The town
+  toggles, Do not disturb (on / off; the menu keeps 1 h and Until) and the look (Camp / Office). Do not
+  disturb's toggle wears a speaking horn while the town may call and the horn struck through while it holds
+  (Camp's pixel sprite `icons/notify-on.png` / `notify-off.png` from `tools/icon_sprites.py`, Office's line
+  icon); the head itself never shows it. The town
   keeps its huts out of that corner (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of
   buildings (`js/pocket.js`), it is the 28 × 26 one in the HUD. Its menu is a popover under it (a sheet at
   the window's foot below 640 px, scrolling past 85 % of the height).
@@ -52,13 +55,13 @@ you, and whether it may disturb you.
 
 ```
 ┌[▣]┬ orkcraft ▾ · Stop all · Answers (2) ············ Spend · Context · Agents ┐
-│ II🌙                                                                          │
+│ II                                                                            │
 │                                                                               │
 ```
 
 - **Where:** the HUD's first item, before the town's name (`js/chrome.js`). The map stays clear.
 - **Size:** 32 × 32. The head (12 × 11 grid) at 2×, on its kin's biome ground, in a bevelled frame.
-- **Marks:** the stage I–IV at the bottom right; 🌙 at the top right while Do not disturb holds; an
+- **Marks:** the stage I–IV at the bottom right; an
   `alert` dot at the bottom left while an ork asks (a click on the dot opens Answers, a click elsewhere
   the menu). Not Renown: Renown is a building's.
 - **A new stage** glows softly until the menu is opened (it glowed in Settings before). The Warchief's
@@ -66,7 +69,7 @@ you, and whether it may disturb you.
 - **Office** (§3) draws the role's mark instead of the head: a line icon in a circle (`js/roles.js`: code
   brackets, a lens, a team tree, a flag, a pen nib, a gamepad, a rising phone, a horn, bars, a rocket, and a
   plain figure for someone else), the role's two letters (SE, QA, EM, PM, PD, GD, AS, MK, DA, FO, `··`) as
-  its name; no stage mark. 🌙 and the dot stay.
+  its name; no stage mark. The dot stays.
 
 ## 2. Its menu
 
