@@ -34,21 +34,21 @@ Order: value / risk, best first. First version — refined below as the audit go
   — `ui/after-U01-camp-phone.png` — `gui/static/js/pocket.js` (`asks`) — S/M — two numbers for "what waits for
   me" that disagree; the chip should count what Answers counts (or open Answers when the town waits on a
   non-building). — done by D1: the chip counts what Answers counts and opens Answers when no building asks (`ui/after-U06-camp-phone.png`).
-- [~] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
+- [x] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
   Warchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
   `ui/camp-win-todo.png` — `gui/static/js/warchief*.js` / `layout.css` — S/M — when space is short, drop the
-  waiting question to an icon + count rather than cut both. — taken by Night D3: GUI fixes from the queue
+  waiting question to an icon + count rather than cut both. — done by D3 (342c758): a container query on the bar — squeezed, the question says ❓ and how many wait (the HUD's Answers count), the field keeps its whole hint, the question in the tooltip — `ui/after-U07-camp-open.png`
 - [x] U08 Office: the orange ✻ (busy Claude mark) floats in the middle of a card's title row, far from the
   title — `ui/office-town.png` — `office.css` hut title — S — the mark belongs to the card's title, at its
   right edge or right after the name. — done by D2 (33d906b): Office's name takes only its width (`office.css`), the ✻ follows it, the pin keeps the right edge — `ui/after-U08-office-town.png`
 - [x] U09 Office, phone: the building rows were 240 px wide on a 390 px screen (the Office theme's fixed
   `.ok-hut[class]` width won over the pocket's `width: auto`) — `ui/office-phone-town.png` → `ui/after-U01-office-phone.png` —
   `layout.css` — S — done by D1.
-- [~] U10 Office: a building's card, opened, grows in place and covers its neighbours and the portrait's two
+- [x] U10 Office: a building's card, opened, grows in place and covers its neighbours and the portrait's two
   quick buttons (Calendar over Wiki's left half and over 🔕/look at the top-left); the War Map covers the
   External listeners card — `ui/office-win-days.png` — `layout.css` / `office.css` (z-order, the open card's
   room) — M — the town under an open panel should stay readable; the open card at least must not cover the
-  HUD corner's controls. — taken by Night D3: GUI fixes from the queue
+  HUD corner's controls. — done by D3 (342c758): the cards no longer grow in place (U11 hid the quick row); what covered was the camera (`js/town.js` `useCamera`) sliding the open card under the portrait's corner — it now keeps it right of the corner and the War Map where they stand at its height — `ui/after-U10-office-open.png`. Left: a card that is not the open one's neighbour can still slide under the War Map (External listeners here), as at any scroll
 - [x] U11 An open card repeats its window's actions ("New event", "Prepare doc" under the Calendar card, while
   the panel's top row has the same two) — `ui/office-win-days.png`, `ui/camp-win-todo.png` ("New task",
   "New note") — `gui/static/js/hut.js` — S — with the panel open, one place for the actions is enough; hide the
@@ -86,13 +86,13 @@ Order: value / risk, best first. First version — refined below as the audit go
   an address is set: with none it can only dry-run). — done by D2 (3b034e8): Dry run first in the catalog (`realm/catalog.py`), so the card and the window agree; Fire is the primary only with an address (or MCP / browser mode) — `ui/after-U20-camp-catapult.png`
 - [x] U21 Metrics writes money "0 $", the HUD "$0.00" — `ui/camp-crag.png` — `buildings/crag.js` — S — one
   format for money, the HUD's. — done by D2 (3b034e8): `core/workers/crag.py` `with_unit` writes money $0.00 ($— for none) in the window, the card and the threshold toast; the TUI's own Crag view keeps its format (TUI: fixes only) — `ui/after-U21-camp-crag.png`
-- [~] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
+- [x] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
   of its name ("OUTER", "OUND ALERTS") while the mouse is over it — `ui/camp-signpost.png`, `ui/camp-horn.png`
   — `js/hut.js` / `yards.css` (the bubble from 9b87d76) — S — the bubble stands left of or above the title
-  plate, never on it. — taken by Night D3: GUI fixes from the queue
-- [ ] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
+  plate, never on it. — done by D3 (342c758): on a yard the bubble stands left of its ork, the tail turned to it (`yards.css`) — `ui/after-U22-camp-yard-bubble.png`
+- [~] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
   ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
-  a card always says its state in one line.
+  a card always says its state in one line. — taken by Night D3: GUI fixes from the queue
 - [x] U24 A building's ork waking on an error says nothing: the toast reads "Branches & PRs — its ork woke on an
   error: it says ERROR" — `ui/after-U18-camp-forge.png` — `gui/keeper.py` (`wake.detail`) and where the detail
   is made in `realm/` — S — say the building's own error line (as the card shows it), not its status word. — done by D2 (7338c3d): `core/wakes.py` `_detail` reads the error the worker keeps (a snapshot's, `last_error`, `errors`) or its card's ⚠ line; with none, "its card shows a failure with no reason given — open it to see". A unit test; no wake fired in the demo sandboxes (their folders are git repositories), so no screenshot
