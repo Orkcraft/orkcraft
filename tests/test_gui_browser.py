@@ -784,3 +784,57 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     assert settings["main_tool"] == "pi" and settings["main_now"] == "pi"
     pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', "
                 "{ tools: { pi: false }, main_tool: '' }))")
+
+
+def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(page, gui):
+    """A held cart in the whole town's width: a file its task committed on its branch is rejected (it leaves the
+    branch's list, kept aside) and brought back; its picture shows in the window; Edit writes the person's version
+    there, and Accept takes it. `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.realm import pipes
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    town = gui[0].host.town
+    root = town.repo_root
+    git = lambda cwd, *a: subprocess.run(["git", "-c", "user.email=test@orkcraft.local", "-c", "user.name=Test Runner", *a],
+                                         cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+    base = git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    wt = root / ".orkcraft" / "worktrees" / "loot-browser"
+    git(root, "worktree", "add", "-q", "-b", "pool/camp/loot-browser", str(wt), "HEAD")
+    (wt / "notes.md").write_text("# Notes\n")
+    (wt / "shot.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="red"/></svg>')
+    git(wt, "add", "-A")
+    git(wt, "commit", "-qm", "work")
+    git(wt, "config", "user.email", "test@orkcraft.local")
+    git(wt, "config", "user.name", "Test Runner")
+    bid = call("town.build", {"type": "loot"})
+    hop = pipes.hop("camp", "grub", "agent", 900, 0.04, str(wt.relative_to(root)), "pool/camp/loot-browser", "error", base=base)
+    cart = pipes.Payload(pipes.TEXT, "## Done\n\nthe notes", "camp", "pool.done", "The notes", (hop,), "LB-1")
+    town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    pg.locator(".gui-panel .gui-panel__full").click()
+    pg.locator(".loot-card", has_text="The notes").click()
+    files = pg.locator(".loot-detail .ok-file")
+    files.first.wait_for(state="visible", timeout=WAIT_MS)
+    files.filter(has_text="shot.svg").click()
+    pg.locator(".loot-branch-file img.loot-what__pic").wait_for(state="visible", timeout=WAIT_MS)   # the picture, here
+    files.filter(has_text="notes.md").click()
+    pg.get_by_role("button", name="Reject this file", exact=True).click()
+    pg.locator(".loot-rejected", has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
+    assert files.filter(has_text="notes.md").count() == 0 and not (wt / "notes.md").exists()
+    if shots:
+        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-1-rejected.png")
+    pg.locator(".loot-rejected").get_by_role("button", name="Bring it back", exact=True).click()
+    files.filter(has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".loot-detail").get_by_role("button", name="Edit", exact=True).click()
+    box = pg.locator(".loot-edit__text")
+    box.fill("## Done\n\nthe notes, checked")
+    if shots:
+        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-2-editor.png")
+    pg.get_by_role("button", name="Accept this version", exact=True).click()
+    pg.wait_for_function("() => !document.querySelector('.loot-card')", timeout=WAIT_MS)
+    stored = town.worker(bid).stored
+    assert len(stored) == 1 and "the notes, checked" in (root / stored[0].path).read_text()
+    pg.keyboard.press("Escape")
+    call("town.demolish", {"id": bid})
