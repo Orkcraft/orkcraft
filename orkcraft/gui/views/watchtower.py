@@ -199,6 +199,22 @@ def _add_what(w, args: dict) -> None:
 
 
 @_adding
+def _add_claude(w, args: dict) -> None:
+    """Step 1's other way: Claude's connection, no token."""
+    w.adding.use_claude()
+
+
+@_adding
+def _add_ask(w, args: dict) -> None:
+    """Step 2 through Claude: what to listen for, how often, the most a day — then one paid look."""
+    try:
+        every, ceiling = int(args.get("every") or 30), float(args.get("ceiling") or 0.5)
+    except (TypeError, ValueError):
+        raise ActError("every is minutes and ceiling is dollars") from None
+    w.adding.what_claude(text(args, "ask", 300), every, ceiling)
+
+
+@_adding
 def _add_again(w, args: dict) -> None:
     """Step 2 lists again (Discord, after the bot was invited); GitHub's login step asks gh again."""
     if w.adding.step == "login" and w.adding.service == "github":
@@ -236,5 +252,6 @@ def _remove(w, args: dict) -> bool:
 
 ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
-        "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "edit": _edit, "remove": _remove,
+        "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "add_claude": _add_claude,
+        "add_ask": _add_ask, "edit": _edit, "remove": _remove,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

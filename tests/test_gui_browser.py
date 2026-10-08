@@ -728,6 +728,47 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, monkeypatch):
+    """A service Claude Code has a connection for reads ✓ in Claude; its step 1 offers Claude's connection, step 2
+    asks what to look for, how often and the most a day, Check makes one (recorded) look, and Add writes the
+    agent line (docs/design/watchtower-quick-add.md §7.3). `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.core.workers.watchtower import WatchtowerWorker
+    from tests.test_watchtower_agent import MCP_LIST, Run, events, mcp_list
+    monkeypatch.setattr(WatchtowerWorker, "mcp_runner", staticmethod(mcp_list(MCP_LIST)))
+    monkeypatch.setattr(WatchtowerWorker, "agent_runner", staticmethod(Run(events())))
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
+    add = _hut(pg, bid).locator(".gui-tower__add")
+    add.wait_for(state="visible", timeout=WAIT_MS)
+    add.click()
+    panel = pg.locator(".gui-panel")
+    jira = panel.locator(".gui-add__tile", has_text="Jira")
+    jira.locator(".ok-tone-ok", has_text="in Claude").wait_for(timeout=WAIT_MS)
+    panel.locator(".gui-add__tile", has_text="Slack").locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
+    shot("c1-picker")
+    jira.click()
+    use = panel.get_by_role("button", name="Use Claude's connection")
+    use.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-token-" + bid).count() == 1           # the token way stays, first
+    shot("c2-login")
+    use.click()
+    panel.locator("#add-ask-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator("#add-ask-" + bid).fill("mentions of me in project WEB")
+    panel.locator("#add-every-" + bid).select_option("15")
+    shot("c3-ask")
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
+    assert "every 15 min, a model run each look" in panel.locator(".gui-add__verdict").inner_text()
+    shot("c4-check")
+    panel.get_by_role("button", name="Add Jira").click()
+    panel.get_by_role("button", name="Sources & intent").click()
+    panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 15 min").wait_for(state="visible", timeout=WAIT_MS)
+    shot("c5-sources")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
 def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down_an_exit(page, monkeypatch):
     """A new Review board: its card says Set up the review; the purpose, the clan picked for it and the exits happen
     in the panel; a review that asks sets the hut on fire, and an exit's button sends the document on with the

@@ -49,6 +49,11 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     monkeypatch.setattr(scroll, "DEFAULT_VIEW", "tiles")
     # They also predate the camp that starts with the Town Hall alone (T1107): every preset stands.
     monkeypatch.setattr(scroll, "STARTING", None)
+    # The Watchtower's picker asks `claude mcp list`: never the machine's own servers (tests put theirs).
+    import subprocess
+    from orkcraft.core.workers.watchtower import WatchtowerWorker
+    monkeypatch.setattr(WatchtowerWorker, "mcp_runner",
+                        staticmethod(lambda argv: subprocess.CompletedProcess(argv, 0, "No MCP servers configured.\n", "")))
     return path
 
 

@@ -143,6 +143,7 @@ class Look:
     me: dict = field(default_factory=dict)                 # who you are there: webhooks tell mentions by it
     kind: str = ""                                         # when it failed: login | target | network (FAILS)
     cost: float | None = None                              # what a look through a model cost (feeds_agent.py)
+    keep: dict = field(default_factory=dict)               # the ids such a look looked up, for the next one
 
 
 class Failed(Exception):

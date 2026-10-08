@@ -83,6 +83,7 @@
 .gui-add__switch.is-off { opacity: .5; cursor: not-allowed; }
 .gui-add__kept { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .gui-add__kept > .gui-add__label { width: 100%; }
+.gui-add__claude { display: grid; gap: var(--space-1); padding-top: var(--space-2); border-top: var(--ok-stroke) solid var(--frame); }
 .gui-add .ok-check input, .gui-add__switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .gui-add .ok-check:focus-within i { outline: var(--ok-stroke) solid var(--frame-focus); outline-offset: 1px; }
 .gui-add__options { list-style: none; margin: 0; padding: var(--space-1) 0; max-height: 260px; overflow: auto;
