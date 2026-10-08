@@ -9,11 +9,11 @@ import { Dialog } from "./dialog.js";
 import { selectOrk } from "./windows.js";
 import { KeeperJob } from "./keeper.js";
 
-function Field({ label, children }) {
+export function Field({ label, children }) {
   return html`<label class="gui-field"><span class="ok-font-label">${label}</span>${children}</label>`;
 }
 
-function Select({ value, options, onChange }) {
+export function Select({ value, options, onChange }) {
   return html`<select class="ok-input" value=${value} onChange=${(e) => onChange(e.target.value)}>
     ${options.map(([v, label]) => html`<option key=${v} value=${v} selected=${v === value}>${label}</option>`)}
   </select>`;

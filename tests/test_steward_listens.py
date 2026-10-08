@@ -123,3 +123,19 @@ def test_a_hybrid_with_no_tools_escalates_to_the_steward():
     [call] = [c for c in calls if "Sorter" in c["prompt"]]
     assert call["harness"] == "codex" and "the steward of the Loot Chest" in call["prompt"]
     assert "looked: nothing routine" in call["prompt"]                      # what the script found
+
+
+def test_a_rules_own_tier_comes_before_the_stewards_listen_and_the_goal():
+    """steward-listens.md §7: a rule that needs a heavier model names its own tier; empty follows the steward."""
+    calls: list = []
+    scroll = ruled(goal="thrift", picked="laborer")
+    ts.update_orc(scroll, "scrying", "boss_s_mail", tier="elder")
+    rule = ts.TownScroll.from_dict(scroll.to_dict()).building("scrying").garrison.handler("boss_s_mail")
+    assert rule.tier == "elder" and ts.validate(scroll.to_dict()) == []
+    rig = Rig(scroll, recording(calls))
+    rig.engine.emit(node("T1001"))
+    wait_for(lambda: rig.runs)
+    assert calls[0]["model"] == tiers.MODELS["claude"]["elder"]
+    ts.update_orc(scroll, "scrying", "boss_s_mail", tier="")
+    assert "tier" not in scroll.building("scrying").garrison.handler("boss_s_mail").to_dict()
+    assert roads.steward_steps(scroll.building("scrying"))[0]["tier"] == "laborer"

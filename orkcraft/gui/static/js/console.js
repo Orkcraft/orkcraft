@@ -16,7 +16,7 @@ import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
-import { OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
+import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
 import { OrkHead, HutSprite, activeBiome, Scheme } from "./icons.js";
 
@@ -288,16 +288,22 @@ function HandDialog({ b, o, onClose }) {
   </${Dialog}>`;
 }
 
-/** A road rule's words, edited: what the steward does with the carts of its roads. */
+/** A road rule's words, edited: what the steward does with the carts of its roads, and its own tier when it
+ *  needs a heavier (or lighter) model than the steward's listen (docs/design/steward-listens.md §7). */
 function RuleDialog({ b, i, onClose, onDone }) {
   const [words, setWords] = useState(i.orders || "");
-  const save = () => command("ork.orders", { id: b.id, ork: i.ref, orders: words })
+  const [tier, setTier] = useState(i.own_tier || "");
+  const tiers = (i.tiers || []).map(([v, label]) => [v, v ? label : say("Follow the steward")]);
+  const save = () => command("ork.orders", { id: b.id, ork: i.ref, orders: words, tier })
     .then(() => { onClose(); onDone(); }, () => {});
   return html`<${Dialog} title=${say(`Road rule — ${i.name}`)} text=${say("What the steward does with every cart of its roads, in your words.")}
       onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
         <button class="ok-btn primary" onClick=${save} disabled=${!words.trim()}>${say("Save")}</button>`}>
-    <textarea class="ok-input gui-textarea" rows="4" value=${words} onInput=${(e) => setWords(e.target.value)}></textarea>
+    <div class="gui-form">
+      <textarea class="ok-input gui-textarea" rows="4" value=${words} onInput=${(e) => setWords(e.target.value)}></textarea>
+      ${tiers.length > 0 && html`<${Field} label=${say("Model tier")}><${Select} value=${tier} options=${tiers} onChange=${setTier} /></${Field}>`}
+    </div>
   </${Dialog}>`;
 }
 
@@ -319,7 +325,7 @@ export function RuleView({ b, ruleRef }) {
         <p class="ok-font-body gui-info__about gui-rule__words">${i.orders}</p>
         <ul class="gui-rows ok-font-status">
           <li>${say("Roads")}: ${i.roads.map(say).join(", ") || say("none yet")}</li>
-          <li class="ok-tone-muted">${say("Carried out by the steward on its own tool")}${i.tier ? ` · ${say(i.tier)}` : ""}</li>
+          <li class="ok-tone-muted">${say("Carried out by the steward on its own tool")}${i.tier ? ` · ${say(i.tier)}` : ""}${i.own_tier ? ` · ${say("the rule's own tier")}` : ""}</li>
           <li>${say(i.spend)}${i.last ? ` · ${say("last")}: ${i.last}` : ""}${i.last_error ? ` — ${i.last_error}` : ""}</li></ul>
       </section>
       <section class="gui-section"><h3 class="ok-font-heading">${say("Runs")}</h3>

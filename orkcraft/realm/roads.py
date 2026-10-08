@@ -422,12 +422,13 @@ def read_examples(repo_root: Path, building_id: str, orc_id: str, limit: int = 5
     return out
 
 
-def steward_steps(b: ts.BuildingSpec, goal: str | None = None) -> list[dict]:
+def steward_steps(b: ts.BuildingSpec, goal: str | None = None, own: str = "") -> list[dict]:
     """The one step a road rule runs as: its steward's tool (its first harness step, else the machine's
-    main tool) at the tier `steward.pick` names for `listen` under `goal` (the goal in force)."""
+    main tool) at the tier `steward.pick` names for `listen` under `goal` (the goal in force); `own`, the
+    rule's own tier, comes before them all (docs/design/steward-listens.md §7)."""
     from orkcraft.realm import steward          # it imports this module
     tool = steward.harness_for(b) or harnesses.MAIN
-    p = steward.pick(b, "listen", tool, goal=goal)
+    p = steward.pick(b, "listen", tool, goal=goal, own=own)
     step = {"role": "run", "harness": tool}
     if p.tier:
         step["tier"] = p.tier
@@ -668,7 +669,7 @@ class Engine:
                 goal = self._aim(b.id)
             except Exception:  # the goal cannot be read: the building's own
                 goal = None
-            return steward_steps(b, goal)
+            return steward_steps(b, goal, orc.tier)
         return orc.harness or ts.DEFAULT_HARNESS
 
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,

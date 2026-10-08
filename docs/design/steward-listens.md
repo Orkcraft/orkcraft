@@ -176,7 +176,9 @@ rule's words as an agent's orders (`optimize.parts`).
 - **Pipelines of tools.** An agent handler today can be `[plan: claude, write: agy, review: claude]`.
   Keep `agent` for that case only, or let the steward's own harness steps be a pipeline too?
   Proposed: keep `agent` as the explicit exception; the Recruiter says why it picked it.
-- **A rule that needs a heavier tier** than the steward's *listen*. Proposed: one optional `tier` on the
+- **A rule that needs a heavier tier** than the steward's *listen*. *Built 2026-10-08 as proposed:*
+  `OrcSpec.tier` (the scroll schema's `tier`), `roads.steward_steps(own=)`, *Model tier* in the rule's Edit
+  dialog (empty: *Follow the steward*). Proposed: one optional `tier` on the
   rule, shown in its panel; empty follows the steward. It is `own` in `steward.pick`'s order, above the
   tier picked for *listen* and above the goal's.
 - **Self-applied chains.** Built on the night's existing rules (🕰 after its wait, ⛓️‍💥 in quiet hours).

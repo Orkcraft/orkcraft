@@ -98,6 +98,7 @@ class OrcSpec:
     script: dict | None = None    # {"path", "sha256"?, "reviewed"?}
     why: str = ""                 # the recruiter's reason for this kind
     models: dict | None = None    # a steward's tier per task (realm/steward.py USES): {"watch": "laborer", …}
+    tier: str = ""                # a road rule's own tier, above its steward's listen (steward-listens.md §7); "" follows it
 
     def __post_init__(self) -> None:
         self.avatar = OLD_ICONS.get(self.avatar, self.avatar)
@@ -117,7 +118,7 @@ class OrcSpec:
 
     def to_dict(self) -> dict:
         d = asdict(self)
-        for key, empty in (("run", None), ("chain", []), ("script", None), ("why", ""), ("models", None)):
+        for key, empty in (("run", None), ("chain", []), ("script", None), ("why", ""), ("models", None), ("tier", "")):
             if d[key] == empty:
                 d.pop(key)
         return d  # harness always: an empty list must not load back as the default

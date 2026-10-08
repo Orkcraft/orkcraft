@@ -154,7 +154,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         if ref:
             member = bs.garrison.handler(str(ref).partition("/")[2]) if str(ref).startswith(f"{bs.id}/") else None
             if member is not None and member.kind == "steward":           # a road rule: its own panel
-                return {**info.rule(self.town, bs.id, member), **self._orders_of(member), "rule": True}
+                return {**info.rule(self.town, bs.id, member), **self._orders_of(member), "rule": True,
+                        "tiers": tier_choices()}
             found = info.ork(self.town, self.host.muster, str(ref))
             if found is not None and found["garrison"]:
                 _, member, _ = self._member({"ork": str(ref)})
@@ -323,8 +324,12 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         the orders change (a road rule's words: its roads start it)."""
         bs, member, orc = self._member(args)
         if "trigger" not in args:
+            words: dict[str, Any] = {"orders": self._text(args, "orders", 4000)}
+            if "tier" in args and member.kind == "steward":     # a road rule's own tier; "" follows its steward
+                tier = str(args.get("tier") or "")
+                words["tier"] = tier if tier in tiers.TIERS else ""
             try:
-                scroll.update_orc(self.town.scroll, bs.id, member.id, orders=self._text(args, "orders", 4000))
+                scroll.update_orc(self.town.scroll, bs.id, member.id, **words)
             except ValueError as e:
                 raise ConsoleError(str(e)) from None
             self._saved()

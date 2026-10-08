@@ -114,11 +114,12 @@ def _others(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any]
             if h.id not in on_roads and h.kind != "steward"]
 
 
-def listen_tier(town: Town, building_id: str) -> str:
-    """The tier its steward carries out its road rules at now (picked, else the goal in force), "" for the default."""
+def listen_tier(town: Town, building_id: str, own: str = "") -> str:
+    """The tier its steward carries out its road rules at now (a rule's `own` tier, else the one picked, else the
+    goal in force), "" for the default."""
     from orkcraft.core import delivery
     b = town.scroll.building(building_id)
-    return roads.steward_steps(b, delivery.aim_now(town, building_id))[0].get("tier", "") if b is not None else ""
+    return roads.steward_steps(b, delivery.aim_now(town, building_id), own)[0].get("tier", "") if b is not None else ""
 
 
 def _road_line(town: Town, road) -> str:
@@ -142,7 +143,8 @@ def rule(town: Town, building_id: str, orc) -> dict[str, Any]:
             "last": runs[-1].outcome if runs else "", "last_error": runs[-1].error if runs else "",
             "recent": [{"ts": str(e.get("ts", ""))[:16].replace("T", " "), "output": modes.plain(str(e.get("output", "")))[:300],
                         "cost": e.get("cost_usd")} for e in reversed(kept)],
-            "tier": modes.plain(tiers.label(listen_tier(town, building_id))) or "its tool's default model",
+            "tier": modes.plain(tiers.label(listen_tier(town, building_id, orc.tier))) or "its tool's default model",
+            "own_tier": orc.tier if orc.tier in tiers.TIERS else "",
             "script": str((orc.script or {}).get("path") or "")}
 
 

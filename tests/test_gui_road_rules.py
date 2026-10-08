@@ -56,6 +56,13 @@ def test_a_rules_panel_says_its_words_roads_and_runs_and_its_words_change(fake_r
     assert [r["output"] for r in panel["recent"]][0] == "letter 2" and "Warrior" in panel["tier"]
     host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss; with the deadline."})
     assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").orders == "Only the boss; with the deadline."
+    assert panel["own_tier"] == "" and [t for t, _ in panel["tiers"]][-1] == ""
+    host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss.", "tier": "elder"})
+    assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").tier == "elder"
+    panel = host.command("info", {"id": fields, "ork": ref})
+    assert panel["own_tier"] == "elder" and "Elder" in panel["tier"]                  # the rule's own, over listen's
+    host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss.", "tier": "no such tier"})
+    assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").tier == ""
 
 
 def test_hand_an_agent_to_the_steward_says_what_changes_and_revert_takes_it_back(fake_repo, isolated_layout_file):

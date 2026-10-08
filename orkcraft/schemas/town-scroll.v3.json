@@ -377,6 +377,10 @@
           "additionalProperties": {
             "enum": ["elder", "warrior", "laborer"]
           }
+        },
+        "tier": {
+          "enum": ["", "elder", "warrior", "laborer"],
+          "description": "A road rule's own tier, before its steward's listen tier and the goal's; empty follows the steward."
         }
       }
     },

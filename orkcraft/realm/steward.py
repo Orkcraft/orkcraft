@@ -125,7 +125,7 @@ def pick(b: ts.BuildingSpec | None, use: str, harness: str = "", *, type_id: str
     """The model one of its steward's calls runs on (`harness`: its tool, "" or `main` for the machine's
     main tool), in one order for every building:
 
-        own       a tier set closer to the work than the steward (a road's, later; "" for none)
+        own       a tier set closer to the work than the steward (a road rule's own `tier`; "" for none)
         picked    the tier picked for this task in its steward's window
         setting   the model of the building's own steward setting (the Barracks' `steward`)
         goal      for its work, the tier its goal names (`goal`: the one in force, thrift when tight)

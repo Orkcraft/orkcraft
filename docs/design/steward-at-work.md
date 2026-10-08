@@ -1,7 +1,7 @@
 # Design — the steward at work
 
 Status: written 2026-10-07. §2 (the model of the steward's work by the goal) is implemented; §3 (the
-steward's road rules, docs/design/steward-listens.md) is implemented but for a rule's own tier.
+steward's road rules, docs/design/steward-listens.md) is implemented, a rule's own tier too (2026-10-08).
 Builds on the building goals (docs/design/retros-and-goals.md §3), the Barracks' steward
 (docs/design/barracks-planning.md) and the steward's tasks (`realm/steward.py`).
 
@@ -108,4 +108,5 @@ handler kind, its new task **listen**), code first. In this model:
    and the Review board's moderator, the Town Hall's Warchief and Town planner; the check over every
    worker (`tests/test_steward_work.py`).
 3. The Wiki, the Review gate and the Publisher (`NOT_YET`), with their rework.
-4. **Done**: `listen` as a work task (`WORK_ALL`). Not yet: a rule's own tier as `own` (steward-listens.md §7).
+4. **Done**: `listen` as a work task (`WORK_ALL`), and a rule's own tier as `own` (steward-listens.md §7; built
+   2026-10-08 night: `OrcSpec.tier`, `roads.steward_steps(own=)`, the *Model tier* picker in the rule's Edit dialog).
