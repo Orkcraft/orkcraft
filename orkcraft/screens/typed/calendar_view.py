@@ -232,6 +232,9 @@ class CalendarView(TypedView):
             else:
                 self.app.notify(f"{daybook.line(e)}", title=f"{DOC} Preparing")
             return True
+        if action_id == "calendar.import":
+            self.app.notify("Import calendar is in the window: orkcraft gui", title="🥁 Import calendar")
+            return True
         if action_id != "calendar.new":
             return False
         target = self.worker.writable

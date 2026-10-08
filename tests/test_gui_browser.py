@@ -1274,3 +1274,70 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     menu.wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gui, tmp_path, monkeypatch):
+    """The Calendar's Info: Import calendar opens a page in steps over it — a file or a link; every step after
+    the first has ← Back at the window's top right; once imported, the usual Info is back and the settings
+    list the calendar, a link by its host alone (docs/design/calendar-import.md)."""
+    from orkcraft.realm import calendar_imports
+    pg = page
+    server, _ = gui
+    day = dt.date.today() + dt.timedelta(days=1)
+    event = lambda uid, title: (f"BEGIN:VEVENT\r\nUID:{uid}\r\nDTSTART:{day:%Y%m%d}T110000\r\n"
+                                f"DTEND:{day:%Y%m%d}T113000\r\nSUMMARY:{title}\r\nEND:VEVENT\r\n")
+    secret = "https://calendar.example.com/ical/private-0c9e1d/basic.ics"
+    monkeypatch.setattr(calendar_imports, "fetch",
+                        lambda url: "BEGIN:VCALENDAR\r\n" + event("w@x", "Team sync") + "END:VCALENDAR\r\n")
+    drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
+    _hut(pg, drum).locator(".gui-hut__title").click()
+    _info(pg)
+    panel = pg.locator(".gui-panel")
+    panel.get_by_role("button", name="Import calendar", exact=True).click()
+    steps = panel.locator(".gui-infopage")
+    steps.locator(".gui-infopage__title", has_text="Import calendar").wait_for(state="visible", timeout=WAIT_MS)
+    assert steps.locator(".gui-infopage__back").count() == 0 and panel.locator(".gui-info__head").count() == 0
+
+    steps.get_by_role("button", name="A file (.ics)").click()
+    back = steps.locator(".gui-infopage__back")
+    back.wait_for(state="visible", timeout=WAIT_MS)
+    head, b = steps.locator(".gui-infopage__head").bounding_box(), back.bounding_box()
+    assert b["x"] + b["width"] >= head["x"] + head["width"] - 2 and b["y"] - head["y"] < 8     # the top right
+    back.click()
+    steps.get_by_role("button", name="A link (iCal address)").wait_for(state="visible", timeout=WAIT_MS)
+    steps.get_by_role("button", name="A file (.ics)").click()
+    ics_file = tmp_path / "Offsite.ics"
+    ics_file.write_text("BEGIN:VCALENDAR\r\n" + event("o@x", "Offsite prep") + "END:VCALENDAR\r\n")
+    steps.locator(".drum-import__input").set_input_files(str(ics_file))
+    steps.get_by_text("Offsite.ics").wait_for(state="visible", timeout=WAIT_MS)
+    assert steps.get_by_label("Name").input_value() == "Offsite"
+    steps.get_by_role("button", name="Import", exact=True).click()
+    pg.locator(".ok-toast", has_text="Offsite — 1 events").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-info__head").wait_for(state="visible", timeout=WAIT_MS)       # the usual Info again
+    assert panel.locator(".gui-infopage").count() == 0
+
+    panel.get_by_role("button", name="Import calendar", exact=True).click()
+    steps.get_by_role("button", name="A link (iCal address)").click()
+    link = steps.get_by_label("Link")
+    assert link.get_attribute("type") == "password"
+    link.fill(secret.replace("https://", "webcal://"))
+    steps.get_by_label("Name").fill("Team")
+    steps.get_by_label("Updated").select_option("60")
+    steps.get_by_role("button", name="Subscribe", exact=True).click()
+    pg.locator(".ok-toast", has_text="Team — 1 events, updated every hour").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-info__head").wait_for(state="visible", timeout=WAIT_MS)
+    w = server.host.town.worker(drum)
+    assert sorted(e.summary for e in w.day.events) == ["Offsite prep", "Team sync"]
+    assert all("private-0c9e1d" not in p.read_text(errors="replace") for p in server.host.town.repo_root.rglob("*")
+               if p.is_file() and ".git" not in p.parts)                    # the link is in no file of the project
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
+    settings = panel.locator(".drum-settings")
+    settings.locator("summary").click()
+    rows = settings.locator(".drum-imports__row")
+    rows.filter(has_text="Team").filter(has_text="calendar.example.com").wait_for(state="visible", timeout=WAIT_MS)
+    assert rows.count() == 2 and "private-0c9e1d" not in pg.content()
+    pg.keyboard.press("Escape")
+    for row in w.import_rows():                 # a demolished Calendar's worker stays: its meetings go with its imports
+        pg.evaluate("([id, imp]) => import('/static/js/link.js').then(m => m.act(id, 'import_remove', { id: imp }))", [drum, row["id"]])
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", drum)
+    _hut(pg, drum).wait_for(state="detached", timeout=WAIT_MS)

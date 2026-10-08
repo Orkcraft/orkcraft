@@ -10,6 +10,8 @@
 //                    needs the panel open: what asks for words opens its own small window (`overlay`); true
 //                    when it did, else the host does it (`building.quick`)
 //   overlay()        the type's own small windows, drawn over the town whether its building is open or not
+//   infoActs(b)      [{id, label, title, run}]: actions its Info offers beside the quick ones (a setup)
+//   infoPage(b, p)   a page of its own drawn over its Info while one is open (js/infopage.js)
 //
 // A type that exports none of them still draws: its status lines in Work, its Info.
 import { signal } from "@preact/signals";
