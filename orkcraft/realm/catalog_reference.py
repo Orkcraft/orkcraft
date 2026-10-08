@@ -159,6 +159,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "later_minutes": "how long a task marked Not urgent waits before it goes (default 60)",
         "wikis": "the Scroll Dumps a card's context comes from, e.g. [\"kb\"] (default every one in the town; [] none)",
         "private_todos": "true: every to-do of your own is personal — never sent to a model (no plan, its title its first words)",
+        "night_round": "false: the 🌙 Night round leaves this board out (docs/design/night-round.md)",
         "plan_model": "the model a to-do's plan is asked of: a tier (laborer, warrior) or a model (default its "
                       "steward's: the tier picked for Plan the to-dos, else the building's goal's)",
     },

@@ -541,10 +541,20 @@ def _hits(want: set[str], have: set[str]) -> int:
     return sum(1 for st in want if st in have or any(w.startswith(st) for w in have))
 
 
+def wanted(text: str) -> set[str]:
+    """The words of `text` a match looks for: each one's start (`_stem`), the common ones left out."""
+    return {_stem(w) for w in {w.lower() for w in _WORD.findall(text or "")} - _COMMON}
+
+
+def shared(want: set[str], text: str) -> int:
+    """How many of the `wanted` words `text` has (by their start)."""
+    return _hits(want, {w.lower() for w in _WORD.findall(text or "")})
+
+
 def relevant(repo_root: Path, notes: list[Note], task: str, limit: int = 3) -> list[Note]:
     """The pages that share the most words with `task` (its title and text), best first — at most `limit`,
     none that shares none. A word in a page's title counts three times."""
-    want = {_stem(w) for w in {w.lower() for w in _WORD.findall(task or "")} - _COMMON}
+    want = wanted(task)
     scored = []
     for n in notes:
         if not is_page(n.path):

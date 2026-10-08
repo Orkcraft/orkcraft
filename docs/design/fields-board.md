@@ -149,6 +149,10 @@ file stays the person's to edit by hand, and a hand edit that removes a card rem
   to-do with `private_todos`) never reaches a model: no plan, and its title is its first words. Its
   context still works — that never leaves the machine.
 
+- **Night 🌙.** Once a night the board's steward looks over the cards that lie (To Do, open to-dos): a
+  commit or a wiki page about one gives it a 🌙 with what is new; the day's code gives a few cleanup ideas
+  as notes in Ideas. docs/design/night-round.md.
+
 Before anything goes, realm/privacy.py takes out what has a shape — e-mails, phone numbers, card numbers,
 IBANs, secrets — as marks (`[email-1]`), and puts them back into the answer here. Names, sums or
 diagnoses written in words are not caught: personal is the first line, this the second. What left is
