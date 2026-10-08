@@ -11,7 +11,8 @@ import { busy as busyOf } from "./fold.js";
 import { Card, Mark, QuickTray } from "./hut.js";
 import { runQuick } from "./types.js";
 import { TypeIcon, OrkHead } from "./icons.js";
-import { say } from "./link.js";
+import { say, town } from "./link.js";
+import { openOrders } from "./orders.js";
 
 const WIDTH = "(max-width: 640px)";
 const query = typeof matchMedia === "function" ? matchMedia(WIDTH) : null;
@@ -146,6 +147,9 @@ function jump(list) {
 export function Pocket({ buildings }) {
   const numbered = buildings.map((b, i) => ({ b, n: i + 1 }));
   const asks = numbered.filter((x) => x.b.alert);
+  // What waits for the person, counted as the HUD's Answers counts it: a question need not be a building's
+  // (the Quartermaster's carts), and then the chip opens Answers instead of jumping to a card.
+  const waiting = Math.max(asks.length, ((town.value && town.value.alerts) || []).length);
   const working = numbered.filter((x) => !x.b.alert && busyOf(x.b));
   // The quiet ones by how likely this viewer opens them: the likeliest stand out as "Usually open", the rest fold.
   const quiet = numbered.filter((x) => !x.b.alert && !busyOf(x.b))
@@ -158,8 +162,8 @@ export function Pocket({ buildings }) {
       ${say(label)} <span class=${tone}>${list.length}</span></button></h2>`;
   return html`<main class="ok-ground gui-town gui-pocket">
     <nav class="gui-pocket__chips" aria-label=${say("Jump to")}>
-      <button class=${cls("ok-btn gui-pocket__chip", { "is-hot": asks.length > 0 })} disabled=${!asks.length}
-        onClick=${() => jump(asks)}>❓ ${say("Asks you")} ${asks.length}</button>
+      <button class=${cls("ok-btn gui-pocket__chip", { "is-hot": waiting > 0 })} disabled=${!waiting}
+        onClick=${() => (asks.length ? jump(asks) : openOrders())}>❓ ${say("Asks you")} ${waiting}</button>
       <button class="ok-btn gui-pocket__chip" disabled=${!working.length} onClick=${() => jump(working)}>⚙ ${say("At work")} ${working.length}</button>
     </nav>
     ${asks.length > 0 && html`<section class="gui-pocket__group">${head("Asks you", asks, "ok-tone-wait")}${rows(asks)}</section>`}

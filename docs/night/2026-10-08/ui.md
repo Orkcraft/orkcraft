@@ -29,11 +29,11 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [-] U05 HUD "Spend $— / $5.00" — left: the dash is deliberate (`core/treasury.py`: "—" until a session
   reports, so the HUD never claims a $0.00 it has not measured) and the TUI's tests hold it. A question for the
   morning in `report.md` (a tooltip "no agent has reported yet" would be the small step).
-- [ ] U06 Phone: the HUD says "Answers (3)" while the chip under it says "❓ Asks you 0" (disabled) — the
+- [x] U06 Phone: the HUD says "Answers (3)" while the chip under it says "❓ Asks you 0" (disabled) — the
   Quartermaster's three carts wait for review but no *building* is alerted, and the chips count only buildings
   — `ui/after-U01-camp-phone.png` — `gui/static/js/pocket.js` (`asks`) — S/M — two numbers for "what waits for
   me" that disagree; the chip should count what Answers counts (or open Answers when the town waits on a
-  non-building).
+  non-building). — done by D1: the chip counts what Answers counts and opens Answers when no building asks (`ui/after-U06-camp-phone.png`).
 - [ ] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
   Warchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
   `ui/camp-win-todo.png` — `gui/static/js/warchief*.js` / `layout.css` — S/M — when space is short, drop the
@@ -63,9 +63,9 @@ Order: value / risk, best first. First version — refined below as the audit go
   then "Later" under it), so "Later" reads as one more answer — `ui/after-U12-camp-answers.png` — `js/orders.js`,
   `.gui-orders__options` — S — options in a row (they wrap), "Later" right-aligned in the actions row as every
   dialog's dismiss.
-- [ ] U15 Answers is called three things: "Answers (4)" in the HUD, "Awaiting an answer (4)" as the dialog's
-  title, "Asks you" on the phone — `ui/camp-answers.png` — `js/orders.js`, `js/pocket.js`, `realm/lexicon.py` —
-  S — one word per concept (CLAUDE.md, Wording): the dialog's title should be the HUD's word.
+- [-] U15 Answers is called three things: "Answers (4)" in the HUD, "Awaiting an answer (4)" as the dialog's
+  title, "Asks you" on the phone — `ui/camp-answers.png` — left: "Awaiting an answer" is its own lexicon term
+  (`realm/lexicon.py` `awaiting_orders`), so this is a wording decision for the owner (question in `report.md`).
 - [ ] U16 External listeners (Camp): two green primary buttons ("+ Add source", "Open new") and "Open new"
   wraps alone onto a second toolbar row — `ui/camp-win-post.png` — `gui/static/js/buildings/` (post) — S — one
   primary per view (design-system/components.md); "Open new" is a plain button in the row.
