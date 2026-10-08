@@ -1,7 +1,7 @@
 # Design — the steward at work
 
-Status: written 2026-10-07. §2 (the model of the steward's work by the goal) is implemented; §3 says how
-the steward's road rules (docs/design/steward-listens.md, a proposal) fit into it.
+Status: written 2026-10-07. §2 (the model of the steward's work by the goal) is implemented; §3 (the
+steward's road rules, docs/design/steward-listens.md) is implemented but for a rule's own tier.
 Builds on the building goals (docs/design/retros-and-goals.md §3), the Barracks' steward
 (docs/design/barracks-planning.md) and the steward's tasks (`realm/steward.py`).
 
@@ -88,7 +88,8 @@ docs/design/steward-listens.md proposes that the steward carries out a road's ru
 handler kind, its new task **listen**), code first. In this model:
 
 - **`listen` is work**, not upkeep: it runs on every cart and is where the money goes, so it goes into
-  `WORK` with its three tiers (suggested: 🪙 light · ⚖️ middle · 💎 heavy) and through `steward.pick`.
+  `WORK_ALL` (work every type's steward has) with its three tiers (🪙 light · ⚖️ middle · 💎 heavy) and
+  through `steward.pick`; it is listed in `USES` so every steward's model picker shows it.
   `roads` (a rare setup call) stays upkeep.
 - **A rule's own tier** (steward-listens.md §7, "a rule that needs a heavier tier") is `own` in §2's
   order: above the tier picked for `listen` and above the goal's.
@@ -107,4 +108,4 @@ handler kind, its new task **listen**), code first. In this model:
    and the Review board's moderator, the Town Hall's Warchief and Town planner; the check over every
    worker (`tests/test_steward_work.py`).
 3. The Wiki, the Review gate and the Publisher (`NOT_YET`), with their rework.
-4. `listen` as a work task when steward-listens.md stage 1 lands; a rule's own tier as `own`.
+4. **Done**: `listen` as a work task (`WORK_ALL`). Not yet: a rule's own tier as `own` (steward-listens.md §7).

@@ -177,8 +177,8 @@ class Night:
             data = steward.load_report(root, b.id)
             for i, prop in enumerate((data or {}).get("proposals") or []):
                 replay = prop.get("replay") or {}
-                if prop.get("type") == "demote" and not replay.get("ready"):
-                    continue
+                if prop.get("type") == "demote" and (prop.get("script") or not replay.get("ready")):
+                    continue                            # a chain once its replay agrees; a script waits for review
                 out.append({"key": f"steward:{b.id}:{data.get('ts', '')}:{i}", "change": str(prop.get("type")),
                             "source": "steward", "building": b.id, "data": data, "index": i,
                             "made": str(data.get("ts") or "")})
@@ -197,7 +197,7 @@ class Night:
             b = town.scroll.building(bid)
             orc = b.garrison.handler(str(prop.get("orc"))) if b is not None else None
             data = {k: v for k, v in dataclasses.asdict(orc).items() if v is not None} if orc is not None else {"id": str(prop.get("orc"))}
-            data.update({"kind": "chain", "chain": prop.get("chain") or []} if c["change"] == "demote"
+            data.update({"kind": "chain", "chain": prop.get("chain") or [], "harness": []} if c["change"] == "demote"
                         else {"run": prop.get("run") or {}})
             return fastpath.Subject("agent", bid, {"orc": data})
         if c["source"] == "weekly" and c["change"] == "add_building":

@@ -119,8 +119,8 @@ def test_feature_shots_pass_the_real_checks(tmp_path: Path):
     assert masonry.validate_spec(ft.ARTISAN_ANSWER, root, {s.id for s in scroll.buildings}) == []
     ft.seed_steward_examples(root)
     report = steward.watch(root, scroll, "dc_loot", sessions=[], runner=ft.runner_of([ft.STEWARD_PROPOSAL]))
-    [p] = report.proposals
-    assert [f.kind for f in report.findings] == ["repeats"] and p.ready and p.replay.exact == 6
+    [p] = [x for x in report.proposals if x.type == "demote"]        # (and a free "hand": its agent is on the steward's tool)
+    assert [f.kind for f in report.findings] == ["repeats", "hand"] and p.ready and p.replay.exact == 6
 
 
 @pytest.mark.asyncio
