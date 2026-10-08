@@ -58,6 +58,21 @@ class Snapshot:
     prs_known: bool = False      # gh answered: a branch without a PR really has none
 
 
+# What git says when the folder cannot be read, and the same in plain words (an error a person reads).
+PLAIN_ERRORS = (
+    ("not a git repository", "this folder is not a git repository — run git init in it, or open the project's folder"),
+    ("does not have any commits yet", "the repository has no commits yet — make a first commit"),
+    ("ambiguous argument 'HEAD'", "the repository has no commits yet — make a first commit"),
+    ("dubious ownership", "git does not trust this folder (another user owns it) — see git config safe.directory"),
+)
+
+
+def plain_error(text: str) -> str:
+    """Git's message in plain words when it is one of the known ones (PLAIN_ERRORS), else as git said it."""
+    low = text.lower()
+    return next((plain for said, plain in PLAIN_ERRORS if said.lower() in low), text)
+
+
 def _git(repo: Path, *args: str) -> str:
     out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, timeout=GIT_TIMEOUT_S)
     if out.returncode != 0:
@@ -123,7 +138,7 @@ def snapshot(repo: Path, configured_base: str = "", with_prs: bool = True, pr_ru
                     "--format=%(refname:short)%09%(objectname:short)%09%(committerdate:relative)%09%(HEAD)%09%(subject)",
                     "refs/heads").splitlines()
     except (RuntimeError, OSError, subprocess.SubprocessError) as e:
-        snap.error = str(e)[:200]
+        snap.error = plain_error(str(e))[:200]
         return snap
     for row in rows:
         parts = row.split("\t", 4)

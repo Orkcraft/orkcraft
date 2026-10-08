@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import shelves
+from orkcraft.realm import gitinfo, shelves
 
 TITLE = "🌲 File Forest"
 MAX_EVENTS = 5
@@ -67,7 +67,7 @@ class ForestWorker(Worker):
         try:
             self.changes, self.error = shelves.changed_files(self.repo_root, self.rel), ""
         except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as e:
-            self.changes, self.error = {}, str(e)[:200]
+            self.changes, self.error = {}, gitinfo.plain_error(str(e))[:200]
         self._seen, fresh = shelves.file_changes(self._seen, self.repo_root, self.changes)
         for path in fresh[:MAX_EVENTS]:
             self.emit("files.changed", path, path)

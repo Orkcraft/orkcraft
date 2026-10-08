@@ -132,7 +132,7 @@ function Head({ id, data }) {
 
 function Branches({ id, data }) {
   if (data.looking) return html`<p class="ok-tone-muted">${say("Looking at the branches…")}</p>`;
-  if (data.error) return html`<p class="ok-tone-error">${data.error}</p>`;
+  if (data.error) return html`<p class="ok-tone-muted">${say("No branches to show until git can read this folder (the line above says why).")}</p>`;
   const open = opened.value[id];
   if (open && data.chosen && data.chosen.name === open) return html`<${Detail} id=${id} data=${data} />`;
   const rows = data.branches;

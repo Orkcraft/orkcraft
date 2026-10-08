@@ -72,11 +72,12 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [x] U17 A building's window showed another number than its card ("34 External listeners" over card "5"): the
   panel counted the whole town's buildings, the card only the open orkspace's — `ui/camp-watchtower-number.png`
   → `ui/after-U17-camp-watchtower.png` — `js/windows.js` — S — done by D1: the window counts as the town does.
-- [~] U18 A raw git error is the whole message: "fatal: not a git repository (or any of the parent directories):
-  .git", twice in Branches & PRs (bar and body), in Review gate's bar, on both cards and in a warning toast —
-  `ui/camp-forge.png`, `ui/camp-loot.png` — `gui/static/js/buildings/forge.js`, `loot.js` (+ the toast's source
-  in `realm/`) — S/M — say what it means and what to do ("This folder is not a git repository — run `git init`,
-  or open the project's folder"), the tool's words behind Details (as `chrome.js` does for a tool's failure).  — taken by Night D1: GUI audit + quick fixes
+- [x] U18 A raw git error was the whole message: "fatal: not a git repository (or any of the parent
+  directories): .git", twice in Branches & PRs, in Review gate's bar, on both cards and in a warning toast —
+  `ui/camp-forge.png`, `ui/camp-loot.png` → `ui/after-U18-camp-forge.png`, `ui/after-U18-camp-loot.png` — done
+  by D1: `realm/gitinfo.py` `plain_error` says git's known messages (no repository, no commits yet, dubious
+  ownership) in plain words with what to do, at the source (Branches & PRs, Review gate, File tree); an unknown
+  message stays git's; Branches & PRs' body no longer repeats its bar.
 - [ ] U19 Agent pool's empty window: "No open tasks" at the top and "No orks yet…" 400 px lower, in the middle of
   nothing — `ui/camp-barracks.png` — `gui/static/js/buildings/barracks.js` — S — one empty state under the task
   field; the orks' line only when there is a task.
@@ -92,4 +93,7 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [ ] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
   ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
   a card always says its state in one line.
+- [ ] U24 A building's ork waking on an error says nothing: the toast reads "Branches & PRs — its ork woke on an
+  error: it says ERROR" — `ui/after-U18-camp-forge.png` — `gui/keeper.py` (`wake.detail`) and where the detail
+  is made in `realm/` — S — say the building's own error line (as the card shows it), not its status word.
 

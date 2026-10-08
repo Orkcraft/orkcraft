@@ -125,3 +125,11 @@ def test_pr_comments_come_from_gh():
 def test_the_worker_registers_itself():
     from orkcraft.core import workers
     assert workers.registry()["forge"] is ForgeWorker
+
+
+def test_a_folder_that_is_no_repository_is_said_plainly(tmp_path: Path):
+    """Git's "fatal: not a git repository …" becomes what it means and what to do; an unknown message stays git's."""
+    snap = gitinfo.snapshot(tmp_path, with_prs=False)
+    assert snap.error.startswith("this folder is not a git repository — run git init")
+    assert "fatal" not in snap.error
+    assert gitinfo.plain_error("fatal: bad object deadbeef") == "fatal: bad object deadbeef"

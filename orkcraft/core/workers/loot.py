@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Callable
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import catalog, edits, feedback, gate, generated, jobs, lake, pipes, vault
+from orkcraft.realm import catalog, edits, feedback, gate, generated, gitinfo, jobs, lake, pipes, vault
 
 EGRESS = ("catapult",)                   # types that send things out of the town
 STATUS = {gate.NEEDS_YOU: "🔥", gate.HELD: "⏸", gate.REWORK: "↩"}
@@ -82,7 +82,7 @@ class LootWorker(Worker):
         try:
             self.rows, self.error = self.review.files(), ""
         except (RuntimeError, OSError, ValueError) as e:
-            self.rows, self.error = [], str(e)[:200]
+            self.rows, self.error = [], gitinfo.plain_error(str(e))[:200]
         self.stored = vault.stored(self.state_dir)
         self.branches = {it.id: found for it in self.queue.open() if (found := self.branch(it.hops)) is not None}
         try:
