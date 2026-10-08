@@ -190,7 +190,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "plan": (bool, None, False), "escalate": (bool, None, False),
                 "notes": (list, None, False), "claims": (str, ("wait", "flag", "off"), False),
                 "claim_wait": (int, (1, 1440), False), "claim_days": (int, (1, 90), False),
-                "briefs": (bool, None, False), "briefs_dir": (str, None, False)},
+                "briefs": (bool, None, False), "briefs_dir": (str, None, False),
+                "wants": (list, None, False), "want_by_source": (dict, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Clan Fire", "🪔", "M",

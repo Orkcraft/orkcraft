@@ -85,3 +85,7 @@
 .pool-rules > summary:hover { color: var(--ink); }
 .pool-rules > summary:focus-visible { outline: var(--ok-stroke) solid var(--frame-focus); }
 .pool-rules__sum { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.pool-kinds__take { display: inline-flex; align-items: center; gap: var(--space-1); margin-right: var(--space-3); }
+.pool-kinds__row { display: flex; align-items: center; gap: var(--space-2); }
+.pool-kinds__row select { width: auto; }

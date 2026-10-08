@@ -137,7 +137,7 @@ class McpShots:
             text = json.dumps(args if args is not None else body, ensure_ascii=False, indent=1)
         if first and not self.config.get("confirm"):
             text = "The first shot through this path asks.\n\n" + text
-        if self.config.get("confirm") or first:
+        if self.must_confirm() or first:
             self._ask(title, text[:900], go, body, start)
             return True
         go()

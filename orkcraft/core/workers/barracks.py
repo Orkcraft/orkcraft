@@ -49,6 +49,7 @@ from pathlib import Path
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_claims import ClaimsMixin
+from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
@@ -134,7 +135,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
+class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
@@ -239,10 +240,11 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             meet = ""                           # its ref finds the meeting: the title stays as it is
         if meet and daybook.meet_tag(title[:80]) != meet:          # the task keeps 80 characters
             title = f"{title.replace(f'[meet:{meet}]', '').strip()[:80 - len(meet) - 8]} [meet:{meet}]"
-        want = pipes.want_of(getattr(payload, "want", ""))
+        want, want_by = self.kind_of(payload)              # §5: the cart's kind, else the table's, else the sort
+        if self.not_mine(payload, title, text, want):
+            return
         self.add_task(title, text, bk.task_key(payload.kind, payload.value, payload.title),
-                      ref=payload.ref, trail=payload.trail, want=want,
-                      want_by=pipes.want_by(payload.trail, want, payload.source))
+                      ref=payload.ref, trail=payload.trail, want=want, want_by=want_by, source=payload.source)
 
     @property
     def notes(self) -> list[str]:
@@ -264,10 +266,11 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         return sent
 
     def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = (), want: str = "",
-                 want_by: str = "") -> bk.PoolTask:
+                 want_by: str = "", source: str = "") -> bk.PoolTask:
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
         of that task — the same orc, the same branch. `want`: the kind of work its cart asked for, and
-        `want_by` the building that named it (shown on the task's line; no path reads it yet)."""
+        `want_by` who named it (a building, or the pool's table: shown on the task's line); `source`, the
+        building it came from."""
         key = key or bk.task_key("text", text, title)
         queued = next((t for t in self.state.queue if ref and t.ref == ref), None)
         if queued is not None and self._amend(queued, text):
@@ -277,7 +280,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             key = prior.key or prior.id               # the orc that did it knows it by that
         task_id = uuid.uuid4().hex[:8]
         task = bk.PoolTask(task_id, title[:80], text, key, bk.now_iso(), ref=ref or f"{self.building_id}:{task_id}",
-                           trail=[h.as_dict() for h in trail], want=want, want_by=want_by if want else "")
+                           trail=[h.as_dict() for h in trail], want=want, want_by=want_by if want else "",
+                           source=source)
         if prior is not None:
             task.branch, task.base = prior.branch, prior.base
         st = self.state
@@ -410,7 +414,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         if (task.key or task.id) not in orc.keys:     # a rework of a task without a ticket comes back by its id
             orc.keys.append(task.key or task.id)
         repo = self.repo_root
-        if self.uses_git:
+        if self.uses_git and task.want != pipes.REPLY:      # a reply gets no branch: it changes no file
             task.branch = task.branch or bk.task_branch(self.building_id, task)
             task.base = task.base or self.task_git.base_of(repo, str(self.config.get("base") or ""))
         orc.branch = task.branch
@@ -439,6 +443,9 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             out.text, out.cost, out.tokens = text, out.cost + (cost or 0.0), out.tokens + (tokens or 0)
             out.session = session or out.session
 
+        if task.want == pipes.REPLY and not task.publish:     # a reply only reads: never `work` mode (§7)
+            self.work_reply(task, orc, cancel)
+            return
         if task.publish:                         # the approved post: no branch, no review — the operator decided
             git = None
         try:
@@ -515,6 +522,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         sent_back = f"## {self.keeper}, the steward, sent it back\n\n{task.feedback}" if task.feedback else ""
         ask = ("If you cannot go on without a decision, stop and end your answer with one line `QUESTION: …`; "
                f"{self.keeper}, the steward, will answer.")
+        if task.want == pipes.REPLY and not task.publish:
+            return self.reply_prompt(task, orc)
         if task.publish:                 # the approved draft goes out
             intro = [] if task.warm else [
                 f"You are {orc.name}, one of several agents of a barracks.",
@@ -601,6 +610,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                           trail=self._trail(task, orc, "error"), ref=task.ref, want=task.want)
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks", kind="question")
+        elif ok and task.want == pipes.REPLY and not task.publish:
+            self.reply_done(task, orc, out)
         elif ok and task.parent:
             self._part_done(task, orc, out)
         elif ok and not task.publish and (draft := bk.publish_of(out.text))[2]:

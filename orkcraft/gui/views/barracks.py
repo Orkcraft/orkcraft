@@ -7,7 +7,7 @@ import os
 
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import harnesses, lexicon, tiers
+from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, tiers
 from orkcraft.sources import sessions as past
 
 OWN_QUICK = True              # its quick actions are in its preview (js/buildings/), not the generic buttons
@@ -51,9 +51,33 @@ def _names(w) -> dict[str, str]:
     return {b.id: b.title for b in getattr(scroll, "buildings", ())} if scroll is not None else {}
 
 
+WANT_BY = {paths.TABLE: "by its table", paths.SORT: "by the sort"}
+
+
 def _want(t: bk.PoolTask, names: dict[str, str]) -> dict:
-    """Its kind of work and who named it (docs/design/barracks-flows.md §9): `Reply` · `External listeners`."""
-    return {"want": lexicon.want_word(t.want), "want_by": names.get(t.want_by, t.want_by) if t.want else ""}
+    """Its kind of work and who named it (docs/design/barracks-flows.md §9): `Reply` · `from External listeners`,
+    `by the sort`, `by its table`; a task no one named a kind for says nothing."""
+    by = t.want_by if t.want else ""
+    note = WANT_BY.get(by) or (f"from {names.get(by, by)}" if by else "")
+    return {"want": lexicon.want_word(t.want), "want_note": note, "code_card": t.code_card}
+
+
+def _kinds(w, names: dict[str, str]) -> dict:
+    """What the pool takes and its table *source → kind of work*, one row per building a road brings carts
+    from (its own setting, else the default for its type)."""
+    table = w.want_table
+    rows, seen = [], set()
+    for road in getattr(w.town.scroll.building(w.building_id), "roads", ()) if w.town.scroll else ():
+        src = road.source
+        if src in seen:
+            continue
+        seen.add(src)
+        spec = w.town.custom_specs.get(src)
+        type_id = catalog.type_of(spec).id if spec else ""
+        rows.append({"source": src, "title": names.get(src, src), "want": paths.by_source(table, src, type_id),
+                     "own": src in (w.config.get("want_by_source") or {})})
+    return {"wants": list(w.wants), "all": [{"id": k, "label": lexicon.want_word(k)} for k in paths.DEFAULT_WANTS],
+            "table": rows}
 
 
 def _task(t: bk.PoolTask, full: bool = False, names: dict[str, str] | None = None) -> dict:
@@ -113,6 +137,7 @@ def detail(w) -> dict:
         "asked": [_task(t, True, names) for t in st.asked],
         "decisions": [{"at": d.at[11:16], "action": d.action, "ork": d.orc, "why": d.why} for d in st.decisions(30)],
         "areas": _areas(w),
+        "kinds": _kinds(w, names),
     }
 
 
@@ -144,6 +169,29 @@ def _add_rule(w, args: dict) -> bool:
     if not rule:
         raise ActError("An empty rule")
     return w.add_rule(rule)
+
+
+def _wants(w, args: dict) -> list[str]:
+    """The kinds of work it takes (`wants`: a list of change · reply · doc); what it takes now."""
+    got = args.get("wants")
+    if not isinstance(got, list) or any(pipes.want_of(x) not in paths.DEFAULT_WANTS for x in got):
+        raise ActError("wants: a list of change, reply, doc")
+    if not w.save_config({"wants": [x for x in paths.DEFAULT_WANTS if x in got]}):
+        raise ActError("Not saved")
+    return list(w.wants)
+
+
+def _want_by_source(w, args: dict) -> str:
+    """One row of its table: carts from `source` are `want` (change · reply · doc; "" takes the row out)."""
+    source, want = text(args, "source", 100), str(args.get("want") or "")
+    if not source or (want and pipes.want_of(want) not in paths.DEFAULT_WANTS):
+        raise ActError("want_by_source: a source and change, reply, doc or nothing")
+    table = {k: v for k, v in dict(w.config.get("want_by_source") or {}).items() if k != source}
+    if want:
+        table[source] = want
+    if not w.save_config({"want_by_source": table or None}):
+        raise ActError("Not saved")
+    return want
 
 
 def _diff(w, args: dict) -> dict:
@@ -199,4 +247,4 @@ def _terminal(w, args: dict) -> str:
 
 
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal}
+        "diff": _diff, "terminal": _terminal, "wants": _wants, "want_by_source": _want_by_source}

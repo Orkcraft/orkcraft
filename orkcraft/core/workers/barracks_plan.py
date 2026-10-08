@@ -74,6 +74,9 @@ class PlanMixin:
     def _triaged(self, task: bk.PoolTask) -> bool:
         """True when the task can go to the foreman now; False when the steward plans it first. A simple
         one gets the tier its goal names; a follow-up, a rework or a post keeps its ork's."""
+        if task.want == pipes.REPLY and not task.publish:   # a reply: one light ork, never planned (§6)
+            self.reply_ready(task)
+            return True
         if task.tier or task.parent or task.plan:
             return True
         st = self.state
@@ -131,6 +134,9 @@ class PlanMixin:
             task.claimed = claims.narrow(sort.touches)   # its likely area: the briefs it concerns, the claim
         if out.error == "stopped":
             self._whole(task, "", "the sort was stopped")
+        elif sort is not None and self.sorted_want(task, sort.want):  # only a reply: a lower path (§5 step 3)
+            self.reply_ready(task)
+            self._whole(task, task.tier, f"{self.keeper}: a reply" + (f" — {sort.why}" if sort.why else ""))
         elif short and (sort is None or sort.kind != plans.TRIVIAL):     # no plan for it: one light ork, reviewed
             task.kind = plans.SINGLE
             self._claim(task, sort.touches if sort else [], True)

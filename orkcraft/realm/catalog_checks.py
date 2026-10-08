@@ -90,6 +90,16 @@ def validate(spec: dict) -> list[str]:
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
         if config.get("mode") == "browser" and not config.get("forms"):
             errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
+    if tid == "barracks":
+        from orkcraft.realm import paths, pipes
+        kinds = ", ".join(paths.DEFAULT_WANTS)
+        if isinstance(config.get("wants"), list) and any(pipes.want_of(w) not in paths.DEFAULT_WANTS for w in config["wants"]):
+            errors.append(f"config: wants: choose among {kinds}")
+        table = config.get("want_by_source")
+        if isinstance(table, dict) and (len(table) > 20 or any(
+                not isinstance(k, str) or not isinstance(v, str) or (v and pipes.want_of(v) not in paths.DEFAULT_WANTS)
+                for k, v in table.items())):
+            errors.append(f"config: want_by_source: a building id or type → one of {kinds} (at most 20)")
     if tid == "crag" and isinstance(config.get("charts"), list):
         from orkcraft.realm import metrics
         errors += [f"config: charts: {e}" for e in metrics.parse_charts(config["charts"])[1]]
