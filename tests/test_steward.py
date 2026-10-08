@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chronicles, roads, steward
+from orkcraft.realm import chronicles, cron, roads, steward
 from orkcraft.realm.pipes import Payload
 
 PRESETS = {
@@ -20,15 +20,15 @@ NOW = dt.datetime(2026, 9, 30, 5, 30)
 
 
 def test_schedule_forms():
-    assert steward.to_cron("daily 05:00") == ["0", "5", "*", "*", "*"]
-    assert steward.to_cron("weekly mon 05:15") == ["15", "5", "*", "*", "1"]
-    assert steward.to_cron("rm -rf /") is None and steward.to_cron("on-demand") is None
-    assert steward.due("daily 05:00", NOW - dt.timedelta(days=1), NOW)            # 05:00 passed since
-    assert not steward.due("daily 05:00", NOW.replace(hour=5, minute=1), NOW)       # already ran today
-    assert steward.due("*/15 * * * *", NOW - dt.timedelta(minutes=16), NOW)
-    assert not steward.due("0 6 * * *", NOW - dt.timedelta(hours=1), NOW)
-    assert steward.due("30 5 * * 3", NOW - dt.timedelta(minutes=5), NOW)             # 2026-09-30 is a Wednesday
-    assert not steward.due("daily 05:30", None, NOW.replace(minute=40))             # never run: only the last minute
+    assert cron.to_cron("daily 05:00") == ["0", "5", "*", "*", "*"]
+    assert cron.to_cron("weekly mon 05:15") == ["15", "5", "*", "*", "1"]
+    assert cron.to_cron("rm -rf /") is None and cron.to_cron("on-demand") is None
+    assert cron.due("daily 05:00", NOW - dt.timedelta(days=1), NOW)            # 05:00 passed since
+    assert not cron.due("daily 05:00", NOW.replace(hour=5, minute=1), NOW)       # already ran today
+    assert cron.due("*/15 * * * *", NOW - dt.timedelta(minutes=16), NOW)
+    assert not cron.due("0 6 * * *", NOW - dt.timedelta(hours=1), NOW)
+    assert cron.due("30 5 * * 3", NOW - dt.timedelta(minutes=5), NOW)             # 2026-09-30 is a Wednesday
+    assert not cron.due("daily 05:30", None, NOW.replace(minute=40))             # never run: only the last minute
 
 
 def test_similarity_masks_the_inputs():
@@ -109,7 +109,7 @@ def test_findings_errors_jams_filters_spend_unused(tmp_path: Path):
     carts = [roads.Cart("forge-selection", "forge", "scrying", "filtered", Payload("node", "T1", "forge", "on_selection_change"))] * 24
     class S:  # a session of the Seer that spent $6
         orcs, last, transcript = {"scrying/seer"}, NOW, "t"
-    import orkcraft.realm.steward as st
+    import orkcraft.realm.steward_metrics as st
     orig = st._session_cost
     st._session_cost = lambda t: 6.0
     try:

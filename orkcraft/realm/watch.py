@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable
 
-from orkcraft.realm import inbound, steward
+from orkcraft.realm import cron, inbound
 from orkcraft.realm.feeds_git import describe   # noqa: F401 (watch.describe, as before)
 
 GH_TIMEOUT_S = 15
@@ -118,11 +118,11 @@ def to_schedule(expr: str) -> str:
 
 
 def schedule_ok(expr: str) -> bool:
-    return steward.to_cron(to_schedule(expr)) is not None
+    return cron.to_cron(to_schedule(expr)) is not None
 
 
 def cron_due(expr: str, last: dt.datetime | None, now: dt.datetime) -> bool:
-    return steward.due(to_schedule(expr), last, now)
+    return cron.due(to_schedule(expr), last, now)
 
 
 # -- the webhook ----------------------------------------------------------------------------------------

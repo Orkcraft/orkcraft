@@ -27,8 +27,8 @@ from typing import Any, Callable, Iterator
 from orkcraft.core import buildings as core_buildings
 from orkcraft.core import bus, runners, treasury
 from orkcraft.core.town import Town
-from orkcraft.realm import (audit, builders, checkpoint, evolution, fastpath, feedback, growth, nightround, optimize,
-                            script_first, steward, weekly, workshop)
+from orkcraft.realm import (audit, builders, checkpoint, cron, evolution, fastpath, feedback, growth, nightround, optimize,
+                            script_first, weekly, workshop)
 
 
 @contextlib.contextmanager
@@ -55,7 +55,7 @@ def daily_job(town: Town, now: dt.datetime) -> Callable[[], optimize.Result] | N
     work that asks the Council for one proposal (run it in a thread). None when nothing is due."""
     repo = town.repo_root
     expr = str(fastpath.settings(repo).get("optimize_at") or "")
-    if town.demo or not expr or not steward.due(expr, optimize.last_run(repo), now):
+    if town.demo or not expr or not cron.due(expr, optimize.last_run(repo), now):
         return None
     optimize.mark_run(repo, now)
     # a script-first building has no prompt to improve: its ork wakes on its own errors and 👎s (core/wakes.py)
@@ -90,7 +90,7 @@ def weekly_job(town: Town, now: dt.datetime) -> Callable[[], weekly.Result] | No
     """When `weekly_at` is due: the heavy model over the whole town (run it in a thread)."""
     repo = town.repo_root
     expr = str(fastpath.settings(repo).get("weekly_at") or "")
-    if town.demo or not expr or not steward.due(expr, weekly.last_run(repo), now):
+    if town.demo or not expr or not cron.due(expr, weekly.last_run(repo), now):
         return None
     weekly.mark_run(repo, now)
     model = str(fastpath.settings(repo).get("weekly_model") or "opus")
@@ -199,7 +199,7 @@ def round_job(town: Town, now: dt.datetime, force: bool = False) -> Callable[[],
     is already done (its marks made, its line written)."""
     repo = town.repo_root
     expr = "" if nightround.off_by_env() else str(fastpath.settings(repo).get("round_at") or "")
-    if town.demo or (not force and (not expr or not steward.due(expr, nightround.last_run(repo), now))):
+    if town.demo or (not force and (not expr or not cron.due(expr, nightround.last_run(repo), now))):
         return None
     after = nightround.since(repo, now)
     nightround.mark_run(repo, now)

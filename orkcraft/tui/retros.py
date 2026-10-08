@@ -9,7 +9,7 @@ import functools
 import datetime as dt
 
 from orkcraft import scroll
-from orkcraft.realm import audit, checkpoint, fastpath, feedback, housekeeping, optimize, weekly, builders, steward
+from orkcraft.realm import audit, checkpoint, cron, fastpath, feedback, housekeeping, optimize, weekly, builders
 from orkcraft.screens.proposal_modal import ProposalModal
 from orkcraft.screens.retro_survey import RetroSurveyModal
 from orkcraft.screens.weekly_modal import WeeklyReportModal
@@ -61,7 +61,7 @@ class RetrosMixin:
         if self.demo or self.gold_exhausted():
             return
         expr = str(fastpath.settings(self.repo_root).get("optimize_at") or "")
-        if expr and steward.due(expr, optimize.last_run(self.repo_root), now):
+        if expr and cron.due(expr, optimize.last_run(self.repo_root), now):
             optimize.mark_run(self.repo_root, now)
             self.optimize_now(interactive=False)
 
@@ -138,7 +138,7 @@ class RetrosMixin:
         if self.demo or self.gold_exhausted():
             return
         expr = str(fastpath.settings(self.repo_root).get("weekly_at") or "")
-        if expr and steward.due(expr, weekly.last_run(self.repo_root), now):
+        if expr and cron.due(expr, weekly.last_run(self.repo_root), now):
             weekly.mark_run(self.repo_root, now)
             self.weekly_audit_now(interactive=False)
 

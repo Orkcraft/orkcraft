@@ -11,7 +11,7 @@ from orkcraft import scroll as ts
 from orkcraft.core.town import Town
 from orkcraft.core.workers.war_drum import WarDrumWorker
 from orkcraft.gui.views import war_drum as view
-from orkcraft.realm import drumbeat, lexicon, masonry, steward
+from orkcraft.realm import cron, drumbeat, lexicon, masonry
 from orkcraft.sources import ics
 
 DAY = dt.date(2026, 10, 2)                      # a Friday
@@ -45,12 +45,12 @@ def at(h: int, m: int = 0, day: dt.date = DAY) -> dt.datetime:
 # -- the pure parts -----------------------------------------------------------------------------------
 
 def test_next_due_finds_the_next_scheduled_minute():
-    assert steward.next_due("daily 05:00", at(9, 10)) == at(5, 0, DAY + dt.timedelta(days=1))
-    assert steward.next_due("daily 05:00", at(4, 59)) == at(5, 0)
-    assert steward.next_due("*/15 * * * *", at(9, 10)) == at(9, 15)
-    assert steward.next_due("weekly mon 09:00", at(9, 10)) == at(9, 0, dt.date(2026, 10, 5))
-    assert steward.next_due("0 12 * * *", at(9, 10), dt.timedelta(hours=1)) is None       # not within the hour
-    assert steward.next_due("soon", at(9, 10)) is None
+    assert cron.next_due("daily 05:00", at(9, 10)) == at(5, 0, DAY + dt.timedelta(days=1))
+    assert cron.next_due("daily 05:00", at(4, 59)) == at(5, 0)
+    assert cron.next_due("*/15 * * * *", at(9, 10)) == at(9, 15)
+    assert cron.next_due("weekly mon 09:00", at(9, 10)) == at(9, 0, dt.date(2026, 10, 5))
+    assert cron.next_due("0 12 * * *", at(9, 10), dt.timedelta(hours=1)) is None       # not within the hour
+    assert cron.next_due("soon", at(9, 10)) is None
     runs, more = drumbeat.next_runs("every 2h", at(9, 10), at(18, 0), cap=3)
     assert runs == [at(10), at(12), at(14)] and more == 2                                   # 16:00, 18:00 left off
 

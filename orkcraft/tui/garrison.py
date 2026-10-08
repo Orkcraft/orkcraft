@@ -10,7 +10,7 @@ from typing import Any, Callable
 
 from orkcraft import scroll
 from orkcraft.scroll import OrcSpec
-from orkcraft.realm import fastpath, builders, chronicles, recruiter, steward
+from orkcraft.realm import fastpath, builders, chronicles, cron, recruiter, steward
 from orkcraft.screens.orc_flow import OrcProgress, RecruitFailed, RecruitPreview, StewardView
 from orkcraft.realm.orcs import Trigger, RESIDENT, Orc
 from orkcraft.screens.garrison_modal import OrcModelModal
@@ -165,7 +165,7 @@ class GarrisonMixin:
                 last = dt.datetime.fromisoformat(last_report["ts"]) if last_report else None
             except (KeyError, ValueError):
                 last = None
-            if steward.due(expr, last, now):
+            if cron.due(expr, last, now):
                 self.watch_building(b.id)
 
     def open_unit(self, w: Window, member: OrcSpec | None = None) -> None:

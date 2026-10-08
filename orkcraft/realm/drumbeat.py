@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from orkcraft.realm import daybook, steward, watch
+from orkcraft.realm import cron, daybook, watch
 
 KINDS = ("meeting", "schedule", "limit")
 TONE = {"meeting": "text", "schedule": "accent", "limit": "wait"}     # colour roles (docs/design-system.md)
@@ -110,11 +110,11 @@ def jobs(scroll, specs: dict[str, dict]) -> list[Job]:
 
 def next_runs(expr: str, after: dt.datetime, until: dt.datetime, cap: int = PER_JOB) -> tuple[list[dt.datetime], int]:
     """The runs of `expr` after `after` up to `until`: the first `cap` of them and how many more."""
-    cron = watch.to_schedule(expr)
+    schedule = watch.to_schedule(expr)
     runs: list[dt.datetime] = []
     more, t = 0, after
     while t < until:
-        nxt = steward.next_due(cron, t, until - t)
+        nxt = cron.next_due(schedule, t, until - t)
         if nxt is None or nxt > until:
             break
         if len(runs) < cap:
