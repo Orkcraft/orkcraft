@@ -1172,3 +1172,37 @@ def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_setting
     pg.keyboard.press("Escape")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
+    """A phone-wide window (js/pocket.js): no map — the quiet buildings fold under one line, a tap opens a card in
+    place, a swipe to the left lays out its actions, Open takes the whole building."""
+    server, browser = gui
+    pg = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+    errors: list[str] = []
+    pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    pg.goto(server.url)
+    pg.wait_for_selector(".gui-pocket", timeout=WAIT_MS)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    assert pg.locator(".gui-town__room, .gui-map").count() == 0           # no map, no roads, no War Map
+    row = pg.locator(f"#pocket-{bid}")
+    if not row.count():                                                    # quiet: folded under Buildings
+        pg.locator(".gui-pocket__jump", has_text="uildings").click()
+    row.wait_for(state="visible", timeout=WAIT_MS)
+    row.locator(".gui-pocket__head").click()
+    row.locator(".gui-pocket__body").wait_for(state="visible", timeout=WAIT_MS)
+    box = row.locator(".gui-pocket__head").bounding_box()
+    y = box["y"] + box["height"] / 2
+    pg.mouse.move(box["x"] + box["width"] - 20, y)
+    pg.mouse.down()
+    pg.mouse.move(box["x"] + 40, y, steps=8)
+    pg.mouse.up()
+    row.locator(".gui-pocket__swiped").wait_for(state="visible", timeout=WAIT_MS)
+    row.locator(".gui-pocket__swiped .ok-btn.primary", has_text="Open").click()
+    pg.locator(".gui-panel").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    pg.close()
+    assert not errors, "\n".join(errors)

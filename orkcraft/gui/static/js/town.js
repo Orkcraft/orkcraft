@@ -82,6 +82,31 @@ function lifts(full) {
   return up;
 }
 
+const GAP_PX = 12;                          // the least room between two huts once they settle
+
+/** How far each hut is pushed down so none stands on another: a town of many buildings, a spot kept from a
+ * smaller window, or a card that grew would otherwise lay one card over the next. Top to bottom, a hut that
+ * meets one already settled moves to just under it; the spots kept stay as the person left them.
+ * `rects`: id → {x, y, w, h}; `fixed`: ids that never move (the Hall in its corner, the hut being dragged). */
+function settle(rects, fixed = new Set()) {
+  const ids = Object.keys(rects).sort((a, b) => rects[a].y - rects[b].y || rects[a].x - rects[b].x);
+  const down = {};
+  const done = ids.filter((id) => fixed.has(id)).map((id) => rects[id]);
+  for (const id of ids) {
+    if (fixed.has(id)) { down[id] = 0; continue; }
+    const r = { ...rects[id] };
+    for (let guard = 0; guard <= done.length; guard++) {
+      const hit = done.find((o) => o.x < r.x + r.w + GAP_PX && r.x < o.x + o.w + GAP_PX
+                                   && o.y < r.y + r.h + GAP_PX && r.y < o.y + o.h + GAP_PX);
+      if (!hit) break;
+      r.y = hit.y + hit.h + GAP_PX;
+    }
+    down[id] = r.y - rects[id].y;
+    done.push(r);
+  }
+  return down;
+}
+
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
 let planned = { key: "", paths: [] };
 
@@ -351,6 +376,13 @@ export function Town({ buildings, roads }) {
     full[b.id] = { ...place(b, i, size), w: size.w, h: size.h, lost: size.h - (sizes.value[b.id] || size).h };
   });
   const up = lifts(full);
+  const standing = Object.fromEntries(buildings.map((b) => {
+    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    return [b.id, { x: full[b.id].x, y: full[b.id].y - up[b.id], w: size.w, h: size.h }];
+  }));
+  const held = new Set([CORNER, ...(dragging.value ? [dragging.value.id] : [])]);
+  const down = settle(standing, held);
+  for (const b of buildings) up[b.id] -= down[b.id];   // `moved` keeps the spot unpushed, as it keeps it unlifted
   const spots = {}, rects = {}, ports = {};
   buildings.forEach((b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
@@ -386,9 +418,11 @@ export function Town({ buildings, roads }) {
   const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
   useCamera(ref.current, rects, here, panelW);
   numbered = buildings.map((b) => b.id);
+  // Huts pushed under the fold make the room taller, so the town scrolls to them rather than hiding them under the foot.
+  const tall = Math.max(room.value.h, ...Object.values(rects).map((r) => r.y + r.h + MARGIN + room.value.strip));
   const fresh = risen();                   // raised by the onboarding: each rises into place as it appears
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
-    <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${room.value.h}px`}>
+    <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${tall}px`}>
       <${Roads} roads=${here} rects=${rects} ports=${ports}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}

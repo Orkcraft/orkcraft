@@ -265,10 +265,23 @@ function Hours({ id, d }) {
 function Week({ id, d }) {
   const e = meeting(id, d);
   if (e) return html`<${Meeting} id=${id} d=${d} e=${e} />`;
-  return html`<div class="drum-week">${d.days.map((day, i) => html`<section key=${day.date}>
-    <p class="ok-list__head">${say(day.label)}</p>
-    <${DayRows} id=${id} day=${day} once=${true} runs=${i < 2} />
-  </section>`)}</div>`;
+  // Days in a row with nothing in them stand as one line: five "Nothing this day." pushed the next meeting off the window.
+  const groups = [];
+  d.days.forEach((day, i) => {
+    const empty = !day.events.length && !day.beats.length;
+    const last = groups[groups.length - 1];
+    if (empty && last && last.empty) last.days.push(day);
+    else groups.push({ empty, i, days: [day] });
+  });
+  return html`<div class="drum-week">${groups.map((g) => g.empty && g.days.length > 1
+    ? html`<section key=${g.days[0].date}>
+        <p class="ok-list__head">${say(g.days[0].label)} – ${say(g.days[g.days.length - 1].label)}</p>
+        <p class="ok-tone-muted">${say("Nothing these days.")}</p>
+      </section>`
+    : html`<section key=${g.days[0].date}>
+        <p class="ok-list__head">${say(g.days[0].label)}</p>
+        <${DayRows} id=${id} day=${g.days[0]} once=${true} runs=${g.i < 2} />
+      </section>`)}</div>`;
 }
 
 /** A meeting open over the agenda: ← back, when and where, its document (open it or ask for it). */
