@@ -10,7 +10,6 @@ call a model), [folded-cards.md](folded-cards.md) (a card folded to its title ba
 | 1 | a script-first building shows no ork on its card; the ork comes to it while it is woken or asked (§2) | |
 | 2 | the yard's card: a fence for its frame, a gate for its title bar, the gate shut when folded (§3) | |
 | 3 | the gate opens and shuts with a short move; the ork walks in through it (§3d) | |
-| later | a yard's own ground sprite (a fenced plot) instead of a house on its top edge | |
 
 ## 1. Why
 
@@ -79,9 +78,13 @@ head stands in the title bar, while one of these holds:
 
 ## 3. Stage 2 — the yard's card: a fence and a gate
 
-A hut is a house: its header sprite stands on its card's top edge. A yard is a fenced plot: **its card's
+Both keep their building's header sprite on the card's top edge. A yard is a fenced plot: **its card's
 frame is a fence, its title bar is the gate.** Camp only: a look changes how things are drawn, never a
-word ([portrait.md](portrait.md) §3). Office draws a yard as any card.
+word ([portrait.md](portrait.md) §3). Office draws a yard as any card: nothing of this stage is drawn there.
+
+A first prototype (a stylesheet over the dashboard demo's real cards) is on the design canvas *Yards
+and Huts*: the fence as a `border-image` of pickets on the card, the gate as the title bar's planks
+with two posts in pseudo-elements, the fold as the planks upright with a brace.
 
 ```
       ╻            ╻            ╻
@@ -109,8 +112,8 @@ word ([portrait.md](portrait.md) §3). Office draws a yard as any card.
 - The title bar is the gate: **two posts** on its ends, **a crossbar** over it, the title bar's content
   (number, icon, name, the visiting ork, `?`, mark, pin, fold) on the crossbar's planks.
 - The road handle stays where it is, on the fence's right post.
-- No roof sprite above it. Instead, the yard's own small sign hangs over the gate: the type's icon,
-  16 px, on a board.
+- The type's header sprite stays where it stands on a hut: on the top edge, over the gate. A yard is
+  told by its fence and gate, never by losing its building.
 
 ### 3c. Fold is a shut gate
 
