@@ -104,6 +104,12 @@ def validate(spec: dict) -> list[str]:
                 not isinstance(k, str) or not isinstance(v, str) or (v and pipes.want_of(v) not in paths.DEFAULT_WANTS)
                 for k, v in table.items())):
             errors.append(f"config: want_by_source: a building id or type → one of {kinds} (at most 20)")
+    if tid == "mine" and isinstance(config.get("repeats"), list):
+        from orkcraft.realm import research, watch
+        for line in config["repeats"]:
+            rep = research.parse_repeat(line)
+            if rep is None or not watch.schedule_ok(rep["every"]):
+                errors.append(f"config: repeats: {str(line)[:60]!r} is not `<every> | <limit> | <question>`")
     if tid == "crag" and isinstance(config.get("charts"), list):
         from orkcraft.realm import metrics
         errors += [f"config: charts: {e}" for e in metrics.parse_charts(config["charts"])[1]]

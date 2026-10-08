@@ -276,6 +276,29 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
             self.ingest("note")
         return path
 
+    def keep_file(self, name: str, markdown: str, source: str = "research") -> str:
+        """Keep a whole Markdown file another building wrote (a Research report: docs/design/mine.md §7) in the
+        inbox, as a note is kept, and take it in. Its path; ValueError when it cannot be written."""
+        folder = shelves.inside(self.repo_root, self.inbox)
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / quicknote.file_name(name, self.clock().date())
+        n = 2
+        while path.exists():
+            path = folder / f"{path.stem.rsplit('~', 1)[0]}~{n}.md"
+            n += 1
+        path.write_text(markdown, encoding="utf-8")
+        rel = shelves.rel_to(self.repo_root, path)
+        if not any(s.owns(rel) for s in self.library.sources):
+            problem = self.add_folder(self.inbox)
+            if problem:
+                raise ValueError(problem)
+        else:
+            self.refresh()
+        self.emit("wiki.noted", rel, f"{source}: {name[:70]}")
+        if self.pending and not self.running:
+            self.ingest("note")
+        return rel
+
     # -- the librarian's work -------------------------------------------------------------------
 
     def items(self) -> tuple[list[wiki.Item], list[str]]:

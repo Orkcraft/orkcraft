@@ -264,6 +264,25 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "review_sample": (int, (0, 10), False), "council": (str, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
+        "mine", "The Mine", "⛏️", "M",
+        "deep research on the open web, checked by more than one mind: every AI tool that can search the web "
+        "searches the question on its own, their findings are checked against each other (two models, two sites), "
+        "what is open is searched again or debated, what stays disputed you decide; the report goes to the Wiki "
+        "(docs/design/mine.md)",
+        "the question in work and its round; the sources each tool found, confirmed and disputed, the cost",
+        "the plan, a column per tool, the findings marked confirmed / disputed / one source, the disputes waiting "
+        "on you, the reports",
+        events=(_e("mine.reported", "report", FILE, "a research is done: its report (in the Wiki's inbox, or the "
+                   "Mine's own file); titled by the question with its counts"),
+                _e("mine.asked", "disputed", TEXT, "a research waits on you: findings the tools disagree on"),
+                _e("mine.failed", "research failed", TEXT, "a research failed: why")),
+        actions=(_a("mine.new", "New research", "⛏", "ask a question: the plan, the tools and the limit before it starts"),),
+        config={"tools": (list, None, False), "limit": (float, (0.1, 100), False),
+                "month_limit": (float, (0, 1000), False), "rounds": (int, (0, 6), False),
+                "min_models": (int, (1, 5), False), "min_domains": (int, (1, 10), False),
+                "wait_answers": (str, None, False), "wiki": (str, None, False), "repeats": (list, None, False)},
+        art="library", orc="Prospector", agentic=True),
+    BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
         "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
         "a text file on disk is edited in place and saves by itself",
@@ -433,6 +452,7 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Custom (panes); File tree (its folder watch and its picker go to other buildings); Inspector — the town's
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
+GUI_ONLY = frozenset({"mine"})                 # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
 
 

@@ -43,7 +43,7 @@ def before_commit(root: Path, now: dt.datetime) -> None:
 def after_commit(root: Path, now: dt.datetime) -> None:
     """The branches are there: each building's state, and the web folder's changes."""
     for seed in (pit, watchtower, signpost, mills, horn, fields, forest, barracks, council, loot, crag,
-                 catapult, workshop, town_hall, sessions, ledger):
+                 catapult, workshop, mine, town_hall, sessions, ledger):
         seed(root, now)
 
 
@@ -601,3 +601,36 @@ def png(size: int, rgb: tuple[int, int, int]) -> bytes:
     raw = b"".join(b"\x00" + bytes(rgb) * size for _ in range(size))
     return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
+def mine(root: Path, now: dt.datetime) -> None:
+    """The Library's Mine: one research done (example sites only: the demo asks no model and no network)."""
+    from orkcraft.realm import research
+    src = lambda site, path, quote="": {"url": f"https://{site}/{path}", "title": f"{site} — {path}",  # noqa: E731
+                                        "date": "", "quote": quote}
+    r = {"id": "demo0001", "question": "How do SaaS products price a yearly plan against a monthly one?",
+         "must": [], "skip": [], "limit": 3.0, "tools": ["claude", "codex", "hermes"],
+         "created": _iso(now - dt.timedelta(hours=5)), "ended": _iso(now - dt.timedelta(hours=4, minutes=40)),
+         "status": "done", "trigger": "manual", "round": 2, "cost": 1.42, "trail": [], "ref": "", "repeat": "",
+         "plan": [{"q": "What discount does a yearly plan usually get?", "answer_if": "price pages"},
+                  {"q": "Do teams show the yearly price per month?", "answer_if": "price pages"}],
+         "findings": [
+             {"mind": "anthropic", "tool": "claude", "sub": 1, "claim": "A yearly plan is usually about two months free.",
+              "sources": [src("example.com", "pricing")], "sure": "high", "round": 0},
+             {"mind": "openai", "tool": "codex", "sub": 1, "claim": "Yearly plans are usually two months free.",
+              "sources": [src("example.org", "plans")], "sure": "high", "round": 0},
+             {"mind": "anthropic", "tool": "claude", "sub": 2, "claim": "Most show the yearly price per month.",
+              "sources": [src("example.net", "billing")], "sure": "medium", "round": 0},
+             {"mind": "hermes", "tool": "hermes", "sub": 2, "claim": "Most show the yearly total, not per month.",
+              "sources": [src("example.edu", "study")], "sure": "low", "round": 1}],
+         "groups": [], "conflicts": [],
+         "per_tool": {"claude": {"mind": "anthropic", "cost": 0.61, "error": ""},
+                      "codex": {"mind": "openai", "cost": 0.48, "error": ""},
+                      "hermes": {"mind": "hermes", "cost": 0.33, "error": ""}}}
+    research.regroup(r, [[0, 1], [2], [3]], [(1, 2)])
+    r["groups"][1]["decided"], r["groups"][2]["decided"] = "keep", "keep"
+    research.check(r)
+    r["counts"], r["sources"] = research.counts(r), research.per_tool(r)
+    folder = state_dir(root, "mine", "lib_mine")
+    _json(folder / "demo0001.json", r)
+    (folder / "demo0001.md").write_text(research.report(r), encoding="utf-8")
