@@ -6,9 +6,14 @@ Config: `~/.config/orkcraft/calendars.json` (`$ORKCRAFT_CALENDARS_FILE`):
      {"name": "Local", "path": "~/cal/export.ics"}]
 
 Feeds are cached in `~/.cache/orkcraft/ics/` and refetched after `CACHE_TTL_S`; a
-failed fetch falls back to the cache. Standard library only: VEVENT with
-UID/DTSTART/DTEND/SUMMARY/LOCATION (no UID: a stable hash of calendar, summary and start), TZID via zoneinfo, RRULE DAILY/WEEKLY/MONTHLY/
-YEARLY with INTERVAL/COUNT/UNTIL/BYDAY, EXDATE, STATUS:CANCELLED.
+failed fetch falls back to the cache.
+
+Parsing: with the `calendar` extra (`icalendar` + `recurring-ical-events`) every RRULE, RDATE, EXDATE,
+a moved or cancelled occurrence (RECURRENCE-ID), VTIMEZONE and Windows time-zone names are read as
+RFC 5545 says. Without it, the standard library alone: VEVENT with UID/DTSTART/DTEND/SUMMARY/LOCATION,
+TZID via zoneinfo, RRULE DAILY/WEEKLY/MONTHLY/YEARLY with INTERVAL/COUNT/UNTIL/BYDAY, EXDATE,
+STATUS:CANCELLED. Either way an event without a UID gets a stable hash of calendar, summary and start,
+times are local and naive, and an event shows on the day it starts.
 """
 from __future__ import annotations
 
@@ -27,6 +32,12 @@ try:
     from zoneinfo import ZoneInfo
 except ImportError:  # pragma: no cover
     ZoneInfo = None  # type: ignore[assignment]
+
+try:                    # the `calendar` extra: `pip install 'orkcraft[calendar]'`
+    import icalendar                                    # type: ignore[import-not-found]
+    import recurring_ical_events                        # type: ignore[import-not-found]
+except ImportError:     # pragma: no cover - depends on the machine
+    icalendar = recurring_ical_events = None
 
 CACHE_TTL_S = 15 * 60
 FETCH_TIMEOUT_S = 10
@@ -294,6 +305,52 @@ def _expand(start, rule: dict[str, str], win_start: dt.date, win_end: dt.date, e
 
 
 def parse_ics(text: str, calendar: str, win_start: dt.date, win_end: dt.date) -> list[CalendarEvent]:
+    """The events of `text` that start from `win_start` to `win_end`, each occurrence of a recurring one
+    on its own; by the `calendar` extra when it is installed, else by the standard library."""
+    if icalendar is not None and recurring_ical_events is not None:
+        try:
+            return _parse_rfc(text, calendar, win_start, win_end)
+        except Exception:               # a calendar the library will not read: the plain parser tries
+            pass
+    return parse_plain(text, calendar, win_start, win_end)
+
+
+def _local(v):
+    """A time as the town keeps it: local and naive (a date stays a date, a floating time as written)."""
+    if isinstance(v, dt.datetime) and v.tzinfo is not None:
+        return v.astimezone().replace(tzinfo=None)
+    return v
+
+
+def _text(v) -> str:
+    return " ".join(str(v).split()) if v is not None else ""
+
+
+def _parse_rfc(text: str, calendar: str, win_start: dt.date, win_end: dt.date) -> list[CalendarEvent]:
+    cal = icalendar.Calendar.from_ical(text)
+    found = recurring_ical_events.of(cal, skip_bad_series=True).between(win_start, win_end + dt.timedelta(days=1))
+    events: list[CalendarEvent] = []
+    for comp in found:
+        if comp.name != "VEVENT" or str(comp.get("STATUS", "")).upper() == "CANCELLED" or "DTSTART" not in comp:
+            continue
+        start = _local(comp.decoded("DTSTART"))
+        if not win_start <= _day(start) <= win_end:
+            continue                    # a multi-day event shows on its first day only
+        end = _local(comp.decoded("DTEND")) if "DTEND" in comp else None
+        if end is not None and (type(end) is not type(start) or end == start):
+            end = None                  # none written (the library makes it the start): as the plain parser
+        summary = _text(comp.get("SUMMARY")) or "(no title)"
+        uid = _text(comp.get("UID"))
+        if not uid:
+            seed = f"{calendar}|{summary}|{start.isoformat()}"
+            uid = hashlib.sha256(seed.encode()).hexdigest()[:16] + "@hash"
+        events.append(CalendarEvent(calendar, summary, start, end, _text(comp.get("LOCATION")), uid))
+    events.sort(key=lambda e: (e.day, not e.all_day, e.start if isinstance(e.start, dt.datetime) else dt.datetime.min))
+    return events
+
+
+def parse_plain(text: str, calendar: str, win_start: dt.date, win_end: dt.date) -> list[CalendarEvent]:
+    """`parse_ics` by the standard library alone (the subset the module's doc names)."""
     events: list[CalendarEvent] = []
     cur: dict | None = None
     for line in _unfold(text):

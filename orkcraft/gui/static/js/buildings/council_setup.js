@@ -1,9 +1,12 @@
 // 🪔 Setting up a Review board, in its own panel — never a dialog (docs/design/review-board.md §3): the purpose,
 // the clan the keeper proposes for it, the exits. The steps' state is the worker's (core/workers/council_setup.py);
-// what the person edits stays in a draft here until Save sends it.
+// what the person edits stays in a draft here until Save sends it. Past the purpose, ← Back stands in the
+// panel's top right corner (js/setup.js); Save opens the board's Info.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
+import { useSetupBack } from "../setup.js";
+import { setupDone } from "../windows.js";
 import { openInLake } from "../lake.js";
 
 const STEPS = [["purpose", "Purpose"], ["clan", "Clan"], ["exits", "Exits"]];
@@ -36,7 +39,7 @@ function Draft({ id, s, data, briefOf }) {
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   return s.step === "purpose" ? html`<${Purpose} id=${id} s=${s} draft=${draft} set=${set} />`
     : s.step === "clan" ? html`<${Clan} id=${id} s=${s} draft=${draft} set=${set} briefOf=${briefOf} />`
-    : html`<${Exits} id=${id} s=${s} draft=${draft} set=${set} data=${data} onSaved=${() => {}} />`;
+    : html`<${Exits} id=${id} s=${s} draft=${draft} set=${set} data=${data} onSaved=${() => setupDone(id)} />`;
 }
 
 function Purpose({ id, s, draft, set }) {
@@ -88,7 +91,6 @@ function Clan({ id, s, draft, set, briefOf }) {
     ${s.error && html`<p class="ok-tone-wait">⚠ ${s.error}</p>`}
     <div class="council-setup__foot">
       <span class="ok-tone-muted council-setup__sub">${draft.members.length} ${draft.members.length === 1 ? "member" : "members"}</span>
-      <button class="ok-btn" onClick=${() => act(id, "setup_go", { step: "purpose" }).catch(() => {})}>← Back</button>
       <button class="ok-btn primary" disabled=${!draft.members.length || !!s.busy}
         onClick=${() => act(id, "setup_go", { step: "exits" }).catch(() => {})}>Next: the exits</button>
     </div>
@@ -125,7 +127,6 @@ function Exits({ id, s, draft, set, data, onSaved }) {
     </div>
     <p class="ok-tone-muted council-setup__sub">An exit with no road is never taken: the board asks you instead. Connect one by pulling a road from this building. At most ${data.max_cycles} cycles and ${data.budget} a review.</p>
     <div class="council-setup__foot">
-      <button class="ok-btn" onClick=${() => act(id, "setup_go", { step: "clan" }).catch(() => {})}>← Back</button>
       <button class="ok-btn primary" disabled=${!draft.exits.length || !draft.members.length} onClick=${save}>Save the board</button>
     </div>
   </div>`;
@@ -134,6 +135,8 @@ function Exits({ id, s, draft, set, data, onSaved }) {
 /** The setup, in the review pane: opens itself on a board that was never set up. */
 export function Setup({ id, data, briefOf }) {
   const s = data.setup;
+  const before = s && { clan: "purpose", exits: "clan" }[s.step];
+  useSetupBack(id, before ? () => act(id, "setup_go", { step: before }).catch(() => {}) : null);
   useEffect(() => { if (!s) act(id, "setup_open", { step: "purpose" }).catch(() => {}); }, [!s]);
   if (!s) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
   return html`<div class="council-setup__pane">

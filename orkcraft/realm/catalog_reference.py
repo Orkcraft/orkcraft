@@ -240,6 +240,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "[\"meeting\"] for a calendar of meetings alone",
         "google": "a Google sign-in, `keychain:google-<e-mail>` (Settings → Accounts): the week comes from its "
                   "Google Calendar and New event adds there",
+        "imports": "imported calendars, set by Import calendar: a .ics file taken in, or a subscription to an ICS "
+                   "link fetched again every `every` minutes (15–1440, default 30); a link is kept in the keychain, "
+                   "here only its reference (`keychain:calendar.<building>.<id>`) and its host: {id: {kind, name, secret, host, every}}",
     },
     "forest": {"path": "the folder to show (default the project)"},
     "scrolls": {

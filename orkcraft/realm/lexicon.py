@@ -140,9 +140,17 @@ TERMS: tuple[Term, ...] = (
     _t("want.doc", "Document"),                                     # a design, a decision, a brief
     _t("want.routine", "Routine"),                                  # what is already scripted
     _t("want.know", "Keep"),                                        # a page or a note in the Wiki
+    # where a source of External listeners speaks: the groups of its Add a source (realm/quickadd.py GROUPS)
+    _t("source_group.messengers", "Messengers"),                    # Slack, Discord
+    _t("source_group.mail", "Mail"),                                # Gmail
+    _t("source_group.code", "Code"),                                # GitHub, GitLab
+    _t("source_group.calendar", "Calendar"),                        # none yet: the group shows once a service has it
+    _t("source_group.other", "Other"),                              # Jira, Confluence, Figma
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
-    _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
+    _t("to_discuss", "To discuss"),
+    _t("calendar_import", "Imported calendar", "Imported calendars"),  # a .ics file or an iCal link a Calendar reads (realm/calendar_imports.py)
+    _t("ical_link", "iCal link", "iCal links"),                     # a calendar's secret address: kept in the keychain                                 # an item a meeting should cover
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)

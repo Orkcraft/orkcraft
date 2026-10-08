@@ -67,6 +67,9 @@
   letter-spacing: .06em; color: var(--ink-comment); }
 .gui-add__steps .is-on { color: var(--ink-gold); }
 .gui-add__steps .is-done { color: var(--success); }
+/* The picker's services in groups (realm/quickadd.py GROUPS): Messengers, Mail, Code, Calendar, Other. */
+.gui-add__group { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-add__group-title { margin: 0; font: 600 12px/16px var(--ok-font); color: var(--ink); }
 .gui-add__tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: var(--space-2); }
 .gui-add__tile { appearance: none; border: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: var(--space-1);
   padding: var(--space-2); min-height: 64px; background: var(--panel-raised); box-shadow: var(--bevel-raised); color: var(--ink);
@@ -125,3 +128,8 @@
 .gui-tower__heard { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 .gui-tower__heard li { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: baseline; }
 .gui-tower__place > .ok-btn { justify-self: end; }
+
+/* The feed: the unread, counted; Read too adds the read ones. */
+.gui-tower__count-head { display: flex; align-items: center; gap: var(--space-2); }
+.gui-tower__count-head > .gui-tower__readtoo { margin-left: auto; }
+.gui-tower__empty { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }

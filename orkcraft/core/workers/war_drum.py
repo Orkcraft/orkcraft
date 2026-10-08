@@ -23,6 +23,10 @@ scheduled runs of every standing building, `limits()` the 🪙 spend and 🪵 co
 each is reached at the burn rate it samples on every tick (`burn.jsonl`; the demo's is seeded, as
 agents never run there), and `beats(until)` all three on one timeline — or only the kinds `beats` names (a calendar of meetings alone:
 `["meeting"]`).
+
+Its imported calendars (realm/calendar_imports.py, `imports`) are read beside the `ics` one: a `.ics`
+file taken in, or a subscription to a secret ICS link fetched again every `every` minutes on the tick.
+Their events are the calendar's like any other: `meeting soon`, documents, the Wiki's items.
 """
 from __future__ import annotations
 
@@ -33,7 +37,7 @@ import time
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import daybook, drumbeat, google, pipes, shelves
+from orkcraft.realm import calendar_imports, daybook, drumbeat, google, pipes, shelves
 from orkcraft.sources import ics
 
 TICK_S = 30.0
@@ -91,7 +95,8 @@ class WarDrumWorker(Worker):
         """Load the calendar again; what was added or removed goes out."""
         now = self.clock()
         self._loaded = time.monotonic()
-        srcs = daybook.sources(self.repo_root, self.configured, self.own_ics, self.google)
+        srcs = daybook.sources(self.repo_root, self.configured, self.own_ics, self.google) + \
+            calendar_imports.sources(self.state_dir, self.imports)
         self.day = daybook.load(srcs, now.date())
         for event_id, e in daybook.changes(self._last_events, self.day.events):
             self.emit(event_id, daybook.line(e) + f" ({e.day:%a %d})", e.summary)
@@ -103,7 +108,8 @@ class WarDrumWorker(Worker):
     def tick(self) -> None:
         """The clock moved: what starts, what comes soon, the morning digest; a new day loads its events."""
         now = self.clock()
-        if (self._since is not None and now.date() != self._since.date()) or \
+        fetched = self.refresh_links(now)
+        if fetched or (self._since is not None and now.date() != self._since.date()) or \
                 time.monotonic() - self._loaded >= RELOAD_S:
             self.refresh()
         since, self._since = self._since or now, now
@@ -134,6 +140,63 @@ class WarDrumWorker(Worker):
         """The meeting a quick action is about when none is picked: the one on now, else the next."""
         cur, nxt, _ = self.now_and_next()
         return nxt or cur
+
+    # -- imported calendars (realm/calendar_imports.py) ------------------------------------------
+
+    @property
+    def imports(self) -> list[dict]:
+        return calendar_imports.entries(self.config)
+
+    def import_rows(self) -> list[dict]:
+        return calendar_imports.rows(self.state_dir, self.imports)
+
+    def _keep_imports(self, items: list[dict]) -> None:
+        if not self.save_config({"imports": calendar_imports.as_config(items) or None}):
+            raise calendar_imports.NotImported("The calendar's settings could not be saved")
+
+    def import_file(self, name: str, text: str) -> dict:
+        """A `.ics` file's calendar taken in; NotImported when it is none. Its events go out as added."""
+        entry = calendar_imports.take_file(self.state_dir, self.imports, name, text, self.clock())
+        self._keep_imports(self.imports + [entry])
+        self.refresh()
+        return entry
+
+    def subscribe(self, name: str, url: str, minutes=None) -> dict:
+        """A subscription to an ICS link: fetched once now, the link kept as a secret, fetched again every
+        `minutes`. NotImported (in plain words, never the link) when it cannot be."""
+        entry = calendar_imports.take_link(self.state_dir, self.building_id, self.imports, name, url, minutes,
+                                           self.clock())
+        try:
+            self._keep_imports(self.imports + [entry])
+        except calendar_imports.NotImported:
+            calendar_imports.forget(self.state_dir, entry)
+            raise
+        self.refresh()
+        return entry
+
+    def remove_import(self, import_id: str) -> bool:
+        entry = next((e for e in self.imports if e["id"] == import_id), None)
+        if entry is None:
+            return False
+        self._keep_imports([e for e in self.imports if e["id"] != import_id])
+        calendar_imports.forget(self.state_dir, entry)
+        self.refresh()
+        return True
+
+    def refresh_links(self, now: dt.datetime | None = None, force: bool = False) -> bool:
+        """Fetch the subscriptions whose time has come (all with `force`); True when one was fetched.
+        A failure keeps the last copy and is said once, by name."""
+        now = now or self.clock()
+        links = [e for e in self.imports if e["kind"] == "link"] if force else \
+            calendar_imports.due(self.state_dir, self.imports, now)
+        got = False
+        for e in links:
+            was = calendar_imports.status(self.state_dir).get(e["id"], {}).get("error", "")
+            why = calendar_imports.refresh(self.state_dir, e, now)
+            got = got or not why
+            if why and why != was:
+                self.toast(f"{e.get('name') or e['id']}: {why}", title="🥁 Calendar not updated", severity="warning")
+        return got
 
     # -- the timeline: meetings, the town's schedules, its limits -----------------------------
 

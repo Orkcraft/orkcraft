@@ -9,7 +9,8 @@ import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
-import { runQuick } from "./types.js";
+import { runQuick, typeModule } from "./types.js";
+import { infoPage } from "./infopage.js";
 import { selectOrk, DemolishButton } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
@@ -17,7 +18,7 @@ import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
-import { OrkHead, HutSprite, activeBiome } from "./icons.js";
+import { OrkHead, HutSprite, activeBiome, Scheme } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -218,7 +219,7 @@ function Garrison({ garrison, b }) {
     <h3 class="ok-font-heading">${say("Garrison")}</h3>
     <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
       <${OrkHead} o=${o} /> <button class="gui-link ok-font-label" title=${say("The ork itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(o.ref)}>${o.name}</button>
-      ${o.scheme && html` <span class="gui-scheme">${o.scheme}</span>`}
+      ${o.scheme && html` <${Scheme} scheme=${o.scheme} />`}
       <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
       ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>
         <span class="ok-act__label">${o.session ? "Its session" : "Deploy"}</span></button>`}
@@ -230,8 +231,11 @@ function Garrison({ garrison, b }) {
 // -- the building's own quick actions (the TUI's keys of its type) --------------------------------------
 
 function Quick({ b, i }) {
-  if (!i || !i.quick.length) return null;                 // a type may do its quick actions itself (js/types.js)
-  return html`<div class="gui-info__acts">${i.quick.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => runQuick(b, a.id)} />`)}</div>`;
+  const mod = b.page ? typeModule(b.type) : null;
+  const own = mod && mod.infoActs ? mod.infoActs(b) : [];  // what only its Info offers (a setup: Import calendar)
+  if (!i || (!i.quick.length && !own.length)) return null; // a type may do its quick actions itself (js/types.js)
+  return html`<div class="gui-info__acts">${i.quick.map((a) => html`<${Act} key=${a.id} label=${a.label} onClick=${() => runQuick(b, a.id)} />`)}
+    ${own.map((a) => html`<${Act} key=${a.id} label=${say(a.label)} title=${say(a.title || a.label)} onClick=${a.run} />`)}</div>`;
 }
 
 function OrkCommands({ b, o, open }) {
@@ -353,8 +357,18 @@ function useDialog(key) {
   return [dialog, open, () => setDialog(null)];
 }
 
-/** Info: the building, its quick actions, its garrison, its steward, its roads out, Demolish. */
+/** Info: the building, its quick actions, its garrison, its steward, its roads out, Demolish — or a page
+ *  of its type's own over it while one is open (js/infopage.js: a setup in steps). */
 export function InfoTab({ b }) {
+  const page = infoPage(b.id);
+  const mod = page && b.page ? typeModule(b.type) : null;
+  if (mod && mod.infoPage) {
+    return html`<div class="ok-win__body gui-win__body gui-info-tab">${mod.infoPage(b, page)}</div>`;
+  }
+  return html`<${UsualInfo} b=${b} />`;
+}
+
+function UsualInfo({ b }) {
   const i = useInfo(b.id, null);
   const [dialog, open, close] = useDialog(b.id);
   const redo = () => ask(b.id, null, true);

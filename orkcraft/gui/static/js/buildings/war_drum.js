@@ -5,6 +5,9 @@
 // checkbox per kind hiding it there. Open, made for the half panel: the head with the limits, the agenda
 // taking the room (a meeting opens over it, ← back), today by the hour beside it when the window is
 // wide, the settings folded to a line. A meeting's document opens in Lake.
+// Import calendar (its Info's quick action) opens a page in steps over its Info (js/infopage.js): a file
+// (picked or dropped) or a link (a calendar's secret iCal address, subscribed and fetched again); the
+// imported ones are listed in its settings, each with Remove, the links with Update now.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -12,6 +15,8 @@ import { act, say, toast } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
+import { InfoSteps, openInfoPage, closeInfoPage, nextStep, stepOf } from "../infopage.js";
+import { googleOpen } from "../accounts.js";
 
 
 const sheet = new URL("./war_drum.css", import.meta.url).href;
@@ -162,6 +167,7 @@ export function card(b) {
 
 /** Its Info's quick actions, done here: New event opens its dialog, Prepare doc the chosen meeting's. */
 export function quick(id, action) {
+  if (action === "calendar.import") { openInfoPage(id, { kind: "import" }); return true; }
   if (action === "calendar.new") { adding.value = { ...adding.value, [id]: true }; return true; }
   if (action === "calendar.prepare") {
     const e = chosen.value[id];
@@ -322,7 +328,138 @@ function Settings({ id, d }) {
         onClick=${() => act(id, "settings", { ics: form.ics, day_starts: form.day_starts, lead: form.lead }).catch(() => {})}>Save</button>
     </div>
     <p class="ok-tone-muted">New events go to ${s.writes_to}</p>
+    <${Imported} id=${id} d=${d} />
   </details>`;
+}
+
+// -- Import calendar: a page in steps over its Info (js/infopage.js) --------------------------------------
+
+const EVERY = [[15, "15 minutes"], [30, "30 minutes"], [60, "hour"], [360, "6 hours"], [1440, "day"]];
+
+function everyWords(n) {
+  const got = EVERY.find(([m]) => m === n);
+  return got ? `every ${got[1]}` : `every ${n} minutes`;
+}
+
+/** The imported calendars in its settings: each by its name and kind, a link by its host alone. */
+function Imported({ id, d }) {
+  const rows = d.imports || [];
+  return html`<div class="drum-imports">
+    <p class="ok-dialog__section">Imported calendars</p>
+    ${rows.length ? html`<ul class="gui-rows">${rows.map((r) => html`<li key=${r.id} class="drum-imports__row">
+        <span class="drum-imports__name"><b>${r.name}</b>
+          <span class="ok-font-status ok-tone-muted"> · ${r.kind === "link" ? `${say("link")} · ${r.host} · ${say(everyWords(r.every))}` : say("file")}
+            · ${r.events} ${say("events")}${r.fetched ? ` · ${say("updated")} ${r.fetched.replace("T", " ").slice(0, 16)}` : ""}</span>
+          ${r.error && html`<span class="ok-font-status ok-tone-wait"> · ⚠ ${r.error}</span>`}</span>
+        <button class="ok-act" title=${say("Take it out of the calendar")}
+          onClick=${() => act(id, "import_remove", { id: r.id }).then(() => toast(r.name, "information", say("Calendar removed")), () => {})}>
+          <span class="ok-act__label">Remove</span></button></li>`)}</ul>
+      <button class="ok-act" title=${say("Fetch every subscribed calendar again now")}
+        onClick=${() => act(id, "import_refresh").then((bad) => toast(bad ? say(`${bad} could not be updated`) : say("Every calendar is up to date"),
+          bad ? "warning" : "information", say("Update now")), () => {})}><span class="ok-act__label">Update now</span></button>`
+      : html`<p class="ok-tone-muted">None yet — Import calendar in its Info takes in a file or a link.</p>`}
+    <button class="ok-act" onClick=${() => openInfoPage(id, { kind: "import" })}><span class="ok-act__label">Import calendar</span></button>
+  </div>`;
+}
+
+function done(id, got) {
+  const what = got.kind === "link" ? say(`${got.events} events, updated ${everyWords(got.every)}`) : say(`${got.events} events`);
+  toast(`${got.name} — ${what}`, "information", say("Calendar imported"));
+  closeInfoPage(id);
+}
+
+/** Step 1: a file or a link. */
+function ImportChoice({ b }) {
+  const way = (step, glyph, title, about) => html`<button class="drum-import__way" onClick=${() => nextStep(b.id, step)}>
+    <span class="drum-import__glyph" aria-hidden="true">${glyph}</span>
+    <span><b>${title}</b><span class="ok-font-status ok-tone-muted drum-import__about">${about}</span></span></button>`;
+  return html`<${InfoSteps} id=${b.id} title=${say("Import calendar")} sub=${say(`Its events join ${b.title}: meeting soon, documents, the Wiki's notes.`)}
+      actions=${html`<button class="ok-btn" onClick=${() => closeInfoPage(b.id)}>Cancel</button>`}>
+    <div class="drum-import__ways">
+      ${way("file", "📄", "A file (.ics)", "Exported from a calendar app. Taken in once.")}
+      ${way("link", "🔗", "A link (iCal address)", "The secret address of a Google, Apple or Outlook calendar. Updated by itself.")}
+      <button class="drum-import__way" onClick=${() => { closeInfoPage(b.id); googleOpen.value = true; }}>
+        <span class="drum-import__glyph" aria-hidden="true">📅</span>
+        <span><b>${say("Your Google account")}</b><span class="ok-font-status ok-tone-muted drum-import__about">${say("Sign in once: your Google Calendar, and New event adds there. Gmail and Drive too, if you want (Settings → Accounts).")}</span></span></button>
+    </div>
+  </${InfoSteps}>`;
+}
+
+/** Step 2 for a file: picked or dropped, read here, sent as text. */
+function ImportFile({ b }) {
+  const [file, setFile] = useState(null);           // {name, size, text}
+  const [name, setName] = useState("");
+  const [over, setOver] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const take = (f) => {
+    if (!f) return;
+    if (f.size > 7 * 1024 * 1024) { toast(say("The file is larger than 7 MB"), "error", say("Import calendar")); return; }
+    f.text().then((text) => { setFile({ name: f.name, size: f.size, text }); if (!name) setName(f.name.replace(/\.ics$/i, "")); });
+  };
+  const send = () => {
+    setBusy(true);
+    act(b.id, "import_file", { name: name || file.name, text: file.text }).then((got) => done(b.id, got), () => setBusy(false));
+  };
+  return html`<${InfoSteps} id=${b.id} title=${say("Import a file")} sub=${say("A .ics file: Export in Google, Apple or Outlook Calendar makes one.")}
+      actions=${html`<button class="ok-btn primary" disabled=${!file || busy} onClick=${send}>${busy ? "Importing…" : "Import"}</button>`}>
+    <label class=${cls("drum-import__drop", { "is-over": over, "is-set": !!file })}
+        onDragOver=${(e) => { e.preventDefault(); setOver(true); }} onDragLeave=${() => setOver(false)}
+        onDrop=${(e) => { e.preventDefault(); setOver(false); take(e.dataTransfer.files[0]); }}>
+      <input type="file" class="drum-import__input" accept=".ics,text/calendar" aria-label=${say("Choose a .ics file")}
+        onChange=${(e) => take(e.target.files[0])} />
+      ${file ? html`<span>📄 <b>${file.name}</b> <span class="ok-tone-muted">· ${Math.max(1, Math.round(file.size / 1024))} KB</span></span>
+          <span class="ok-font-status ok-tone-muted">Choose another, or drop it here</span>`
+        : html`<span><b>Choose a file</b> or drop it here</span><span class="ok-font-status ok-tone-muted">.ics, up to 7 MB</span>`}
+    </label>
+    <label class="gui-field">Name
+      <input class="ok-input" placeholder=${say("as the calendar is called")} value=${name} onInput=${(e) => setName(e.target.value)} /></label>
+  </${InfoSteps}>`;
+}
+
+/** Step 2 for a link: where to find it, the link (sent once, kept as a secret), how often it is fetched. */
+function ImportLink({ b }) {
+  const [url, setUrl] = useState("");
+  const [name, setName] = useState("");
+  const [every, setEvery] = useState(30);
+  const [busy, setBusy] = useState(false);
+  const send = () => {
+    setBusy(true);
+    act(b.id, "subscribe", { url, name, every }).then((got) => { setUrl(""); done(b.id, got); }, () => setBusy(false));
+  };
+  const ready = /^(https?|webcal):\/\/\S+$/i.test(url.trim()) && !busy;
+  return html`<${InfoSteps} id=${b.id} title=${say("Subscribe to a link")} sub=${say("The calendar's secret address in iCal format: whoever has it reads the calendar.")}
+      actions=${html`<button class="ok-btn primary" disabled=${!ready} onClick=${send}>${busy ? "Checking the link…" : "Subscribe"}</button>`}>
+    <ul class="ok-font-status drum-import__where">
+      <li><b>Google</b> — Settings → the calendar → Integrate calendar → Secret address in iCal format</li>
+      <li><b>Apple</b> — iCloud Calendar → Share the calendar → Public calendar → Copy link</li>
+      <li><b>Outlook</b> — Settings → Calendar → Shared calendars → Publish a calendar → ICS link</li>
+    </ul>
+    <label class="gui-field">Link
+      <input class="ok-input drum-import__secret" type="password" autocomplete="off" spellcheck=${false}
+        placeholder="https://… .ics · webcal://…" value=${url} onInput=${(e) => setUrl(e.target.value)}
+        onKeyDown=${(e) => e.key === "Enter" && ready && send()} /></label>
+    <label class="gui-field">Name
+      <input class="ok-input" placeholder=${say("e.g. Work")} value=${name} onInput=${(e) => setName(e.target.value)} /></label>
+    <label class="gui-field">Updated
+      <select class="ok-input" value=${every} onChange=${(e) => setEvery(Number(e.target.value))}>
+        ${EVERY.map(([m, words]) => html`<option key=${m} value=${m}>every ${words}</option>`)}</select></label>
+    <p class="ok-font-status ok-tone-muted">The link is kept in this machine's keychain, never in the project or its logs.</p>
+  </${InfoSteps}>`;
+}
+
+/** Its Info offers Import calendar beside its quick actions (the hut keeps two: New event, Prepare doc). */
+export function infoActs(b) {
+  return [{ id: "calendar.import", label: "Import calendar", title: "Take in a .ics file, or subscribe to a calendar's iCal link",
+            run: () => openInfoPage(b.id, { kind: "import" }) }];
+}
+
+/** Its page over its Info (js/infopage.js): Import calendar, in steps. */
+export function infoPage(b, page) {
+  if (page.kind !== "import") return null;
+  const step = stepOf(page);
+  if (step === "file") return html`<${ImportFile} b=${b} />`;
+  if (step === "link") return html`<${ImportLink} b=${b} />`;
+  return html`<${ImportChoice} b=${b} />`;
 }
 
 /** The window by its UI document (design/buildings/war_drum.json), made for the half panel: the head with

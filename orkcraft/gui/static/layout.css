@@ -221,6 +221,14 @@ button { font: inherit; color: inherit; }
 .gui-info__acts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-info__back { align-self: flex-start; color: var(--ink-muted); }
 .gui-info__back:hover { color: var(--ink); }
+/* A page of the building's own over its Info, in steps (js/infopage.js): ← Back at the top right. */
+.gui-infopage { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.gui-infopage__head { display: flex; align-items: flex-start; gap: var(--space-2); }
+.gui-infopage__titles { flex: 1; min-width: 0; }
+.gui-infopage__title, .gui-infopage__sub { margin: 0; }
+.gui-infopage__back { flex: none; margin-left: auto; }
+.gui-infopage__body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.gui-infopage__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .gui-thumb { gap: 3px; }
 .gui-thumb__n { font-size: .9em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .gui-console__sep { padding: var(--space-1) 0 0; }
@@ -282,6 +290,8 @@ button { font: inherit; color: inherit; }
 .gui-panel__tabs { flex: none; overflow-x: auto; overflow-y: hidden; }
 .gui-panel__tabs > .ok-tab { flex: none; }
 .gui-panel__full { font-size: 14px; }
+/* A setup's ← Back past its first step (js/setup.js): the bar's top right corner, before ⤢ and ×. */
+.gui-panel__back { padding: 0 var(--space-2); min-height: 0; line-height: 1.6; margin-right: var(--space-2); }
 .gui-panel__handle { grid-area: town; z-index: 7; justify-self: end; align-self: start; margin: var(--space-3); }
 .gui-panel > .ok-win__frame > .gui-alert { padding: var(--space-1) var(--space-3); }
 .gui-tab__close { border: 0; background: none; padding: 0 var(--space-1); cursor: pointer; color: var(--ink-muted); line-height: 1; }
@@ -293,7 +303,11 @@ button { font: inherit; color: inherit; }
 .gui-section > h3 { margin: 0 0 var(--space-1); color: var(--ink-muted); }
 .gui-rows { list-style: none; margin: 0; padding: 0; }
 .gui-rows > li { padding: var(--space-1) 0; }
-.gui-scheme { color: var(--ink-muted); }
+.gui-scheme { color: var(--ink-muted); display: inline-flex; align-items: center; gap: 2px; }
+/* Camp draws a harness as its pixel mark (js/icons.js Scheme); Office shows the text mark instead (office.css). */
+.gui-scheme__mark { display: inline-flex; align-items: center; }
+.gui-scheme__mark > img[data-kind="harness"] { image-rendering: pixelated; }
+.gui-scheme__glyph { display: none; }
 
 .gui-toasts { position: fixed; right: var(--space-4); bottom: calc(56px + var(--space-4)); z-index: 10;
   display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }

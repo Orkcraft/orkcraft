@@ -17,7 +17,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
 import { town, say, command } from "./link.js";
-import { TypeIcon, HutSprite, OrkHead, activeBiome } from "./icons.js";
+import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -141,7 +141,7 @@ function hutMenu(e, b) {
   ]);
 }
 
-/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info). */
+/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme. */
 function Keeper({ garrison, alert }) {
   if (!garrison.length) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
@@ -149,7 +149,8 @@ function Keeper({ garrison, alert }) {
   const more = garrison.length - 1;
   const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
   return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""} · ${doing}`}>
-    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} /></span>`;
+    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
+    <${Scheme} scheme=${lead.scheme} /></span>`;
 }
 
 // -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
