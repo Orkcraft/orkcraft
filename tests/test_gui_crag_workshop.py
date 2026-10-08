@@ -90,7 +90,7 @@ def test_an_old_crag_keeps_its_one_chart_and_next_charts_the_next_source(fake_re
     host = _host(fake_repo)
     bid = _raised(host, "crag", source="spend")
     w = host.town.worker(bid)
-    assert [c.source for c in w.charts()] == ["spend"] and w.mini_status() == ["spend 0 $"]
+    assert [c.source for c in w.charts()] == ["spend"] and w.mini_status() == ["spend $0.00"]
     host.command("building.quick", {"id": bid, "action": "crag.next"})
     assert host.town.custom_specs[bid]["config"]["source"] == "tokens"
     w.receive(pipes.Payload(pipes.TEXT, "temperature 21.5", "pit", "pit.text"), "", "")

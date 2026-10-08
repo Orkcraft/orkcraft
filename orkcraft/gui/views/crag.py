@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from orkcraft.core.workers.crag import fmt
+from orkcraft.core.workers.crag import with_unit
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import metrics, pressure
 
@@ -67,7 +67,7 @@ def _chart(w, i: int, c: metrics.Chart) -> dict:
     s = w.series.get(i) or metrics.Series(c.source, metrics.UNITS.get(c.source, ""))
     return {"index": i, "title": c.name, "source": c.source, "unit": s.unit, "window": w.window or c.window,
             "orientation": c.orientation, "show": c.show, "warn": c.warn, "crit": c.crit, "scale": s.scale,
-            "now": s.now, "now_text": f"{fmt(s.now)} {s.unit}".strip(), "note": s.note,
+            "now": s.now, "now_text": with_unit(s.now, s.unit), "note": s.note,
             "level": w.level(c, s.now), "line": metrics.chart_line(c),
             "buckets": [[lab, v] for lab, v in s.buckets], "parts": [[lab, v] for lab, v in s.parts[:12]]}
 

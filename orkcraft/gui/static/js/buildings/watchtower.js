@@ -126,13 +126,13 @@ function Sources({ id, d }) {
     </div>
     <div class="gui-tower__bar">
       <button class="ok-btn primary gui-tower__addsrc" onClick=${() => addSource(id)}>+ ${say("Add source")}</button>
-      <span class="gui-tower__state" title=${state}>${state}</span>
       <button class=${cls("ok-btn", { "is-pressed": on === "settings" })} aria-pressed=${on === "settings"}
         onClick=${() => { tab.value = { ...tab.value, [id]: on === "settings" ? "signals" : "settings" }; }}>${say("Sources & intent")}</button>
       <button class="ok-btn" onClick=${() => act(id, "check_now").catch(() => {})}>${say("Check now")}</button>
       <button class="ok-btn" onClick=${() => act(id, "read_all", { source: pick }).catch(() => {})}>${say("Read all")}</button>
       <button class="ok-btn" disabled=${!d.new} onClick=${() => act(id, "open_new").then((key) => { if (key) opened.value = { ...opened.value, [id]: key }; }, () => {})}>${say("Open new")}</button>
     </div>
+    ${state && html`<span class="gui-tower__state" title=${state}>${state}</span>`}
     <${Failing} id=${id} listed=${d.listed} />
     ${d.error && html`<p class="gui-tower__failing ok-tone-error">✗ ${d.error}</p>`}
   </div>`;

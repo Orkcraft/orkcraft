@@ -37,6 +37,13 @@ def fmt(v: float | None) -> str:
     return f"{v:.2f}" if abs(v) < 10 else f"{v:.1f}"
 
 
+def with_unit(v: float | None, unit: str) -> str:
+    """A value with its unit; money as the HUD writes it ($0.00, $— for none), never "0 $"."""
+    if unit == "$":
+        return "$—" if v is None else f"${v:.2f}"
+    return f"{fmt(v)} {unit}".strip()
+
+
 class CragWorker(Worker):
     TYPE = "crag"
     ERROR_IS_FAILURE = False            # its ERROR is a reading over its red line: what it is for
@@ -134,7 +141,7 @@ class CragWorker(Worker):
         level = self.level(c, s.now)
         if level > self.levels.get(key, 0):
             line = c.crit if level == 2 else c.warn
-            text = f"{c.name} {fmt(s.now)} {s.unit} ≥ {fmt(line)} ({LEVELS[level]})".replace("  ", " ")
+            text = f"{c.name} {with_unit(s.now, s.unit)} ≥ {with_unit(line, s.unit)} ({LEVELS[level]})"
             self.emit("charts.threshold", text, c.name)
             self._keep_crossing(c, s.now, line, level, now)
         self.levels[key] = level
@@ -242,4 +249,4 @@ class CragWorker(Worker):
         pairs = [(c, s) for c, s in self._pairs() if c.shows_in("closed")] or self._pairs()[:1]
         if not pairs:
             return ["carving…"]
-        return [f"{c.name} {fmt(s.now)} {s.unit}".strip() for c, s in pairs[:3]]
+        return [f"{c.name} {with_unit(s.now, s.unit)}" for c, s in pairs[:3]]

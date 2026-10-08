@@ -66,9 +66,9 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [-] U15 Answers is called three things: "Answers (4)" in the HUD, "Awaiting an answer (4)" as the dialog's
   title, "Asks you" on the phone — `ui/camp-answers.png` — left: "Awaiting an answer" is its own lexicon term
   (`realm/lexicon.py` `awaiting_orders`), so this is a wording decision for the owner (question in `report.md`).
-- [~] U16 External listeners (Camp): two green primary buttons ("+ Add source", "Open new") and "Open new"
+- [x] U16 External listeners (Camp): two green primary buttons ("+ Add source", "Open new") and "Open new"
   wraps alone onto a second toolbar row — `ui/camp-win-post.png` — `gui/static/js/buildings/` (post) — S — one
-  primary per view (design-system/components.md); "Open new" is a plain button in the row. — taken by Night D2: GUI fixes from the queue
+  primary per view (design-system/components.md); "Open new" is a plain button in the row. — done by D2 (3b034e8): "Open new" was already a plain button (the green was the screenshot's scaling); its wrap was the cause — when it looked is now a line of its own under the actions, the five actions fit one row — `ui/after-U16-camp-post.png`
 - [x] U17 A building's window showed another number than its card ("34 External listeners" over card "5"): the
   panel counted the whole town's buildings, the card only the open orkspace's — `ui/camp-watchtower-number.png`
   → `ui/after-U17-camp-watchtower.png` — `js/windows.js` — S — done by D1: the window counts as the town does.
@@ -78,14 +78,14 @@ Order: value / risk, best first. First version — refined below as the audit go
   by D1: `realm/gitinfo.py` `plain_error` says git's known messages (no repository, no commits yet, dubious
   ownership) in plain words with what to do, at the source (Branches & PRs, Review gate, File tree); an unknown
   message stays git's; Branches & PRs' body no longer repeats its bar.
-- [~] U19 Agent pool's empty window: "No open tasks" at the top and "No orks yet…" 400 px lower, in the middle of
+- [x] U19 Agent pool's empty window: "No open tasks" at the top and "No orks yet…" 400 px lower, in the middle of
   nothing — `ui/camp-barracks.png` — `gui/static/js/buildings/barracks.js` — S — one empty state under the task
-  field; the orks' line only when there is a task. — taken by Night D2: GUI fixes from the queue
-- [~] U20 Publisher: the card says "Fire · Dry run", its window "Dry run · Fire" — `ui/camp-catapult.png` —
+  field; the orks' line only when there is a task. — done by D2 (3b034e8): with no task and no ork the orks' pane says nothing; the pool's one empty line stays under the task field — `ui/after-U19-camp-barracks.png`
+- [x] U20 Publisher: the card says "Fire · Dry run", its window "Dry run · Fire" — `ui/camp-catapult.png` —
   `buildings/catapult.js` — S — the same order in both, the safe one first (and "Fire" the primary only where
-  an address is set: with none it can only dry-run). — taken by Night D2: GUI fixes from the queue
-- [~] U21 Metrics writes money "0 $", the HUD "$0.00" — `ui/camp-crag.png` — `buildings/crag.js` — S — one
-  format for money, the HUD's. — taken by Night D2: GUI fixes from the queue
+  an address is set: with none it can only dry-run). — done by D2 (3b034e8): Dry run first in the catalog (`realm/catalog.py`), so the card and the window agree; Fire is the primary only with an address (or MCP / browser mode) — `ui/after-U20-camp-catapult.png`
+- [x] U21 Metrics writes money "0 $", the HUD "$0.00" — `ui/camp-crag.png` — `buildings/crag.js` — S — one
+  format for money, the HUD's. — done by D2 (3b034e8): `core/workers/crag.py` `with_unit` writes money $0.00 ($— for none) in the window, the card and the threshold toast; the TUI's own Crag view keeps its format (TUI: fixes only) — `ui/after-U21-camp-crag.png`
 - [ ] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
   of its name ("OUTER", "OUND ALERTS") while the mouse is over it — `ui/camp-signpost.png`, `ui/camp-horn.png`
   — `js/hut.js` / `yards.css` (the bubble from 9b87d76) — S — the bubble stands left of or above the title
