@@ -32,8 +32,6 @@ SESSION = "session"  # key, state ("opened" | "exited" | "forgotten"), code: an 
 ORDER = "order"      # kind, building, source, order, card: the Warchief gave an order a face runs as its job
                      # (a road for the road planner, an ork for the Recruiter, a change for a keeper)
 
-SEVERITIES = ("information", "warning", "error")
-
 
 @dataclass(frozen=True)
 class Event:

@@ -161,7 +161,6 @@ button { font: inherit; color: inherit; }
 /* A building that stopped taking work (Barracks after Halt All or ⏸): a warning frame and Resume on its card,
    so a stopped queue never reads as a quiet one (a question's fire wins over it). */
 .gui-hut.is-paused:not(.is-alert) .ok-hut__card { box-shadow: var(--shadow-window), inset 4px 0 0 var(--warning); }
-.gui-hut__row { display: flex; align-items: center; gap: var(--space-2); }
 .gui-hut__act { flex: none; margin-left: auto; }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
@@ -231,6 +230,7 @@ button { font: inherit; color: inherit; }
 .gui-steps__one:hover { background: var(--selection); color: var(--ink); }
 .gui-steps__one.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
 .gui-steward__commands { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.gui-steward__script-first { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-steward__group { border-top: 1px solid var(--frame); padding-top: var(--space-1); }
 .gui-steward__group > summary { display: flex; align-items: center; gap: var(--space-1); cursor: pointer; color: var(--ink-muted);
   list-style: none; }
@@ -289,8 +289,6 @@ button { font: inherit; color: inherit; }
 .gui-pane > .gui-pane__title { flex: none; margin: 0 0 var(--space-1); color: var(--ink-muted); }
 .gui-win__foot { flex: none; display: flex; align-items: flex-start; gap: var(--space-2);
   border-top: var(--ok-stroke, 1px) solid var(--frame); padding-top: var(--space-2); }
-.gui-about { flex: 1; min-width: 0; }
-.gui-about > summary { cursor: pointer; color: var(--ink-muted); }
 .gui-alert { margin: 0; flex: none; }
 
 .gui-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); flex: none; }
@@ -468,7 +466,6 @@ button { font: inherit; color: inherit; }
 [data-theme^="camp"] .gui-win__body .ok-font-heading:not([class*="ok-tone-"]) { color: var(--ink-gold); }
 .gui-rows .ok-sprite, .ok-item .meta .ok-sprite { vertical-align: middle; image-rendering: pixelated; }
 .ok-item .meta .ok-sprite { margin-right: 2px; }
-.gui-win__banner { display: block; image-rendering: pixelated; }
 
 /* The War Map (js/warmap.js, docs/design/war-map.md): the orkspaces as lands in a framed square. Every name
    is in the ink (white): on six grounds a dark or gold name would not read; the open land is told by its

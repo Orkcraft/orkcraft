@@ -18,6 +18,7 @@ from orkcraft.realm.orcs import COUNCIL, RESIDENT, WORKER, Orc
 MAX_SENTENCES = 3
 SENTENCE_CHARS = 170
 KIND_TEXT = {"chain": "a free chain (no model)", "script": "a script (no model)", "agent": "an agent",
+             "steward": "a road rule its steward carries out",
              "hybrid": "a chain with an agent step"}
 FREE_KINDS = ("chain", "script")
 
@@ -60,24 +61,6 @@ def orc_sentences(orc: Orc, building_title: str = "") -> list[str]:
         out.append(_sentence(f"Working on {orc.task}" if orc.status == "busy" else f"Orders: {orc.task}"))
     elif orc.why:
         out.append(_sentence(_first_sentence(orc.why)))
-    return [s for s in out if s][:MAX_SENTENCES]
-
-
-def building_sentences(title: str, role: str, orcs: list[Orc], roads_in: int, roads_out: int) -> list[str]:
-    out = [_sentence(f"{title}: {role}" if role else title)]
-    if orcs:
-        names = ", ".join(f"{'★' if o.lead else ''}{o.tier_icon + ' ' if o.tier_icon else ''}{o.name} ({o.kind})"
-                          for o in orcs[:3])
-        more = f" and {len(orcs) - 3} more" if len(orcs) > 3 else ""
-        out.append(_sentence(f"{len(orcs)} ork{'s' if len(orcs) != 1 else ''}: {names}{more}"))
-    else:
-        out.append(_sentence("No garrison yet — R recruits an ork"))
-    burning = [o for o in orcs if o.alert is not None]
-    if burning:
-        out.append(_sentence(f"{len(burning)} waiting for you: {burning[0].alert.title}"))
-    else:
-        out.append(_sentence(f"Listens to {roads_in} road{'s' if roads_in != 1 else ''}, "
-                             f"feeds {roads_out}"))
     return [s for s in out if s][:MAX_SENTENCES]
 
 

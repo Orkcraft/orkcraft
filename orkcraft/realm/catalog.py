@@ -433,12 +433,6 @@ def type_of(spec: dict | None) -> BuildingType:
     return TYPES.get(ALIASES.get(tid, tid), TYPES[DEFAULT_TYPE])
 
 
-def size_of(spec: dict | None) -> tuple[int, int]:
-    """The hut size (w, h) a spec asks for, else its type's."""
-    t = type_of(spec)
-    return SIZES.get((spec or {}).get("size") or t.size, SIZES[t.size])
-
-
 def events_of(spec: dict | None) -> list[str]:
     """The typed events this building sends: the spec's pick, else every event of its type."""
     t = type_of(spec)

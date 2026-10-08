@@ -1,8 +1,13 @@
 # Design — the steward listens: a road's rule is carried out by its building's steward
 
-Status: proposal, written 2026-10-07. Nothing below is built yet. The first step is done: the road
-planner (*Listen in words*) and the Recruiter already think on the receiver's steward's tool, at its
-tier for **roads** (`realm/steward.py` `USES`, `gui/road_planner.py`, `gui/recruiter.py`).
+Status: written 2026-10-07; stages 1–4 (§6) are built. The road planner (*Listen in words*) and the
+Recruiter think on the receiver's steward's tool, at its tier for **roads**; a road rule is a `steward`
+handler the steward carries out at its tier for **listen** (`realm/roads.py`, `realm/steward.py`); the
+Recruiter offers it, the Council reviews it, the GUI lists it under the steward, and the steward's Watch
+turns its rules into code. Not built: a rule's own tier (§7), a cap on parallel rules (§7), migrating
+old `agent` handlers by itself (never: *Hand to the steward* is the person's or a proposal), and a
+rule looked at for code at once when written (§2a "When": it needs recorded runs to replay on). What
+was decided while building is under each section as **Built:**.
 Builds on [roads-and-orcs.md](roads-and-orcs.md) §1–3 and §5b.
 
 ## 1. Why
@@ -64,6 +69,18 @@ reformats, counts, sorts by a keyword, fills a template), it writes the code for
 - **Spend is the signal.** The steward's report shows, per rule, its runs and spend on the *listen* tier;
   a rule that costs much and keeps answering alike is the first one it tries to turn into code.
 
+**Built:** `steward.watch` finds a repeating rule (or agent) with its spend per week, costliest first,
+and the model may answer `demote` with a `chain` (replayed at once) or a `script` (+ `hybrid`). A script
+is never run before review: in the report *Apply* is the person's review, then the Council's Fast Path
+reads it, then `replay_script` replays it on the recorded runs (a hybrid's exit 3 is left out of the
+score) and it replaces the rule only when the replay is ready (`gui/steward.py` `_review_script`).
+"Lets the steward change its own handlers" is the existing self-apply of the night (`core/night.py`,
+`realm/evolution.py`: a `demote` is a *cheaper* change — 🕰 after its wait, ⛓️‍💥 in the next quiet hours,
+with the Council and 24 h probation); a saved report now keeps its replay's `ready`, which the night
+reads, and a script demotion is never self-applied. Code that came from a rule (a chain / script /
+hybrid that still has `orders`) and fails ≥ 3 times, at least half its runs, gets a free `rule`
+proposal: back to its words. A demotion shows `saves` (≈ $X/week → $0).
+
 ## 3. Schema
 
 The smallest change that keeps the road engine as it is: a handler of a new kind, **`steward`**.
@@ -87,6 +104,12 @@ The smallest change that keeps the road engine as it is: a handler of a new kind
 - Old scrolls load as they are: an `agent` handler keeps running on its own tools. Nothing is migrated
   behind the person's back (§5).
 
+**Built** as written; also `OrcSpec.on_steward` (a `steward` handler, or a `hybrid` with an empty
+`harness`, which escalates to the steward) and `roads.steward_steps(b, goal)`: one step on the steward's
+tool with the tier `steward.pick(b, "listen", …)` names. The engine learns the goal in force from the
+town (`Engine(aim=…)`, `core/delivery.py` `aim_now`: the building's worker's `aim_now`, else its own goal).
+The rule's prompt names the steward, the building's purpose (the steward's role and orders) and the rule.
+
 Rejected: a `rule` field on each road. It loses "several roads, one rule, one snapshot", moves the run
 state off the handler, and needs a second engine path.
 
@@ -102,6 +125,14 @@ state off the handler, and needs a second engine path.
   spend per run on the steward's tier); Z takes it back like any change.
 - **Wording.** "Rule" is a new concept: it gets its one word in `realm/lexicon.py` `TERMS`
   ("Road rule" / "rules"), and the GUI says it in every label.
+
+**Built:** the snapshot's `garrison` leaves rules out and lists them as `rules` (`gui/state.py`); Info's
+steward part has a *Road rules* group (`js/steward.js`), a rule opens `RuleView` (`js/console.js`: words
+with *Edit*, roads, tier, spend, latest runs, *Remove*); the steward's models show what the rules spent
+next to *Listen*; `ork.hand` (`gui/console.py`) previews and hands over, with a checkpoint before and
+after so *Revert* takes it back. The estimate per run on the steward's tier scales the agent's recorded
+cost per run by a rough tier ratio (`gui/info.py` `TIER_COST`, laborer : warrior : elder ≈ 1 : 3 : 5),
+said as "≈". The planner's option reads *Set up the rule*.
 
 ## 5. What else changes
 
@@ -130,6 +161,16 @@ state off the handler, and needs a second engine path.
    applied by itself under Autonomy) and proposes *Hand to the steward*. This document's
    status and [roads-and-orcs.md](roads-and-orcs.md) §1, §3 updated to the new model.
 
+**Built (stage 2):** the Recruiter's prompt lists chain → script → steward → hybrid → agent, describes the
+steward (its name, tool and purpose) and refuses: a harness on a `steward` or a new `hybrid`, and an
+`agent` of one step on the steward's own tool (`steward.stewards_own`) — "make it a steward rule". A rule
+that needs no judgement still has to be a chain or a script. The Fast Path's Chief warns on a rule as on
+an agent (no *why*, no quiet time, every selection wakes a model).
+
+**Built (stage 4):** the Watch's free findings `hand` (an agent on the steward's own tool) and
+`code_failing` come with their proposals without a model (`steward.free_moves`); the retros read a
+rule's words as an agent's orders (`optimize.parts`).
+
 ## 7. Open questions
 
 - **Pipelines of tools.** An agent handler today can be `[plan: claude, write: agy, review: claude]`.
@@ -138,6 +179,11 @@ state off the handler, and needs a second engine path.
 - **A rule that needs a heavier tier** than the steward's *listen*. Proposed: one optional `tier` on the
   rule, shown in its panel; empty follows the steward. It is `own` in `steward.pick`'s order, above the
   tier picked for *listen* and above the goal's.
+- **Self-applied chains.** Built on the night's existing rules (🕰 after its wait, ⛓️‍💥 in quiet hours).
+  Should ⛓️‍💥 apply a ready chain at once, on the watch, instead of waiting for the quiet hours?
+- **Council notes on a reviewed script.** A script whose Fast Path notes are warnings (not a block) is
+  still replayed and applied, since *Apply* was the person's review. Should warnings stop it and show the
+  verdict first, as the Recruiter does?
 - **Parallel runs.** Several rules of one steward may run at once (each its own session, as handlers
   do today). Should a building cap how many of its rules think at the same time? Proposed: no cap at
   first; the jam at the entry gate already shows when it matters.

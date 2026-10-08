@@ -26,13 +26,6 @@ class WorktreeError(Exception):
 
 
 @dataclass
-class Worktree:
-    path: Path
-    branch: str          # "" when detached
-    head: str
-
-
-@dataclass
 class Status:
     dirty: bool
     changes: int         # porcelain lines: modified, staged, untracked
@@ -103,21 +96,6 @@ def remove(repo_root: Path, path: Path, force: bool = False) -> None:
     proc = _git(repo_root, *args)
     if proc.returncode != 0:
         raise WorktreeError((proc.stderr or proc.stdout).strip() or "git worktree remove failed")
-
-
-def list_worktrees(repo_root: Path) -> list[Worktree]:
-    proc = _git(repo_root, "worktree", "list", "--porcelain")
-    out, cur = [], {}
-    for line in proc.stdout.splitlines() + [""]:
-        if not line:
-            if cur.get("worktree"):
-                out.append(Worktree(Path(cur["worktree"]), cur.get("branch", "").removeprefix("refs/heads/"),
-                                    cur.get("HEAD", "")))
-            cur = {}
-            continue
-        key, _, value = line.partition(" ")
-        cur[key] = value
-    return out
 
 
 def link(scroll: ts.TownScroll, orkspace_id: str, repo_root: Path, path: Path, branch: str) -> None:

@@ -94,7 +94,9 @@ def _latest_at(w) -> str:
 
 def _chain(hops, names: dict[str, str]) -> list[dict]:
     return [{"building": names.get(h.building, h.building), "who": h.orc, "kind": h.kind,
-             "spent": pipes.spent(h.tokens, h.cost), "outcome": h.outcome, "branch": h.branch} for h in hops]
+             "spent": pipes.spent(h.tokens, h.cost), "outcome": h.outcome, "branch": h.branch,
+             "took": pipes.took(h.ms), "model": h.model, "decision": h.decision, "round": h.round or 0,
+             "at": h.at[11:16]} for h in hops]
 
 
 def _item(w, it: gate.Item, names: dict[str, str]) -> dict:

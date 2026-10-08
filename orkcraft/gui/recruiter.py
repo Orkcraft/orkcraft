@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 
 from orkcraft.core import bus, runners
+from orkcraft.gui import info
 from orkcraft.gui.jobs import ConsoleError, plain
 from orkcraft.realm import fastpath, pipes, recruiter, steward, tiers
 
@@ -29,7 +30,7 @@ class RecruiterMixin:
         runner = steward.runner_for(snapshot.building(building_id), "roads", runners.RECRUIT_RUNNER)
         work = lambda: recruiter.recruit(prompt, snapshot, building_id,  # noqa: E731
                                          runner=runner, road=road, harnesses=harnesses)
-        return self._job("recruit", building_id, "The Recruiter is choosing chain → script → agent…", work,
+        return self._job("recruit", building_id, "The Recruiter is choosing chain → script → steward…", work,
                          self._recruited)
 
     def _recruited(self, job: dict, result: recruiter.RecruitResult) -> None:
@@ -39,16 +40,29 @@ class RecruiterMixin:
             return
         orc = result.orc or {}
         titles = {b.id: b.title for b in self.town.scroll.buildings}
+        kind = orc.get("kind", "agent")
         job["view"] = {
-            "name": orc.get("name", ""), "kind": orc.get("kind", "agent"), "why": plain(str(orc.get("why", ""))),
+            "name": orc.get("name", ""), "kind": kind, "kind_label": info.KINDS.get(kind, kind),
+            "why": plain(str(orc.get("why", ""))),
             "role": plain(str(orc.get("role", ""))), "orders": plain(str(orc.get("orders", ""))),
-            "tier": plain(tiers.label(tiers.orc_tier(orc.get("harness") or [], orc.get("kind", "agent"))) or ""),
+            "tier": plain(self._listen_tier(job["building"]) if kind == "steward" or (kind == "hybrid" and not orc.get("harness"))
+                          else tiers.label(tiers.orc_tier(orc.get("harness") or [], kind)) or ""),
             "chain": len(orc.get("chain") or []), "script": result.script_source[:1500],
             "roads": [{"from": titles.get(r["from"], r["from"]), "event": pipes.label(r["event"])} for r in result.roads],
             "attempts": len(result.attempts),
             "cost": f"${result.cost_usd:.2f}" if result.cost_usd is not None else "",
         }
         job.update(state="ready", text="Hire it?", _result=result, _accept=self._council)
+
+    def _listen_tier(self, building_id: str) -> str:
+        """What a road rule will think on: the steward's tool at its tier for listen, as the goal in force names it."""
+        from orkcraft.core import delivery
+        from orkcraft.realm import roads
+        b = self.town.scroll.building(building_id)
+        [step] = roads.steward_steps(b, delivery.aim_now(self.town, building_id))
+        tool = recruiter.HARNESS_NAMES.get(step["harness"], step["harness"])
+        tier = tiers.label(step.get("tier")) or "its default model"
+        return f"{tier} — the steward's listen tier, on {tool}"
 
     def _council(self, job: dict, args: dict) -> str | None:
         """Hire → the Council's Fast Path first (rules, then a light model); a clean review hires."""

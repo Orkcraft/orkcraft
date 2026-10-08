@@ -1,5 +1,4 @@
 /* 🛠 Workshop: its runs and results on the design system's tokens only (design-system/tokens.css). */
-.ws-card { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .ws-runs { list-style: none; margin: 0; padding: 0; }
 .ws-run { display: flex; gap: var(--space-2); align-items: baseline; padding: var(--space-1) var(--space-1); cursor: pointer;
   white-space: nowrap; overflow: hidden; }
@@ -19,8 +18,6 @@
 .ws-fields { display: grid; grid-template-columns: max-content 1fr; gap: 2px var(--space-3); margin: 0; }
 .ws-fields dt { color: var(--ink-muted); }
 .ws-fields dd { margin: 0; overflow-wrap: anywhere; }
-.ws-link { cursor: pointer; text-decoration: underline dotted; }
-.ws-scroll { max-height: 60vh; overflow: auto; }
 .ws-ask { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
 
 /* Made for the half panel: the script on one line with Run, the ask as one line that grows, the last run

@@ -9,7 +9,7 @@ import { Terminal } from "./terminal.js";
 import { showBuilding } from "./windows.js";
 
 export const HALL = "town_hall";
-export const tentKey = signal(null);       // the session the War Tent shows
+const tentKey = signal(null);       // the session the War Tent shows
 export const hallTab = signal("chat");     // the Town Hall's tab open: chat | hall | sessions | limits
 
 const HARNESSES = [["claude", "Claude"], ["codex", "Codex"], ["agy", "agy"], ["hermes", "Hermes"], ["pi", "pi"],
@@ -23,7 +23,7 @@ export function showSession(key) {
   showBuilding(HALL);
 }
 
-export function newSession(harness) {
+function newSession(harness) {
   return command("sessions.new", { harness }).then(showSession, () => {});
 }
 

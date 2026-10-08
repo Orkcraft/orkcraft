@@ -394,7 +394,9 @@ class CouncilWorker(Worker):
             path = pipes.write_loot(root, self.building_id, d.title[:80], tm.report_markdown(d, self.team))
             ref, trail, source = self._cart
             ref = ref or f"{self.building_id}:{d.id}"   # the rework comes back under it
-            trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome),)
+            said = " ".join(x for x in (self.tally(d), f"→ {d.route}" if d.route else "", d.decision) if x)
+            trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome,
+                                       since=d.started, decision=said, round=d.cycle, run=d.id),)
             self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
             if d.outcome == "approved":
                 taken = next((e for e in self.exits if e.id == d.route), None)

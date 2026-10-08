@@ -99,11 +99,12 @@ def test_agent_and_hybrid(tmp_path: Path):
     assert orc.kind == "agent" and orc.run_policy["quiet_s"] == 10 and orc.harness[0]["harness"] == "agy"
 
     hybrid = {**agent, "name": "Warden", "kind": "hybrid", "script_source": "import sys, json\nprint(len(json.load(sys.stdin)))\n",
-              "roads": [{"from": "town_hall", "event": "on_task_completed"}]}
+              "roads": [{"from": "town_hall", "event": "on_task_completed"}], "harness": []}
     runner, _ = scripted(hybrid)
     result = recruiter.recruit("count, escalate when odd", scroll, "loot", runner=runner)
     orc = recruiter.apply(scroll, "loot", result, tmp_path)
     assert orc.status == "draft" and orc.script["reviewed"] is False
+    assert orc.harness == [] and orc.on_steward                       # it escalates to the steward
     path = tmp_path / orc.script["path"]
     assert path.read_text() == hybrid["script_source"] and orc.script["path"] == ".orkcraft/scripts/loot-warden.py"
     import hashlib
@@ -123,7 +124,42 @@ def test_runner_failure_is_reported():
 def test_the_recruiter_offers_only_the_harnesses_of_this_machine():
     runner, prompts = scripted(CHAIN_ANSWER)
     recruiter.recruit("digest", ts.default_scroll(PRESETS), "scrying", runner=runner, harnesses=("claude", "codex"))
-    assert '"harness":"claude|codex"' in prompts[0] and "a Claude Code / Codex session" in prompts[0]
+    assert '"harness":"claude|codex"' in prompts[0] and "(Claude Code / Codex; only these are here)" in prompts[0]
     runner, prompts = scripted(CHAIN_ANSWER)
     recruiter.recruit("digest", ts.default_scroll(PRESETS), "scrying", runner=runner)
     assert '"harness":"main"' in prompts[0]                                # none chosen: the main tool
+
+
+STEWARD_ANSWER = {"name": "Boss's mail", "role": "to-dos from the boss's letters", "kind": "steward",
+                  "why": "Telling a deadline from a mention needs judgement; a chain cannot read.",
+                  "orders": "Only my boss's mail; one to-do per letter, with the deadline if it names one.",
+                  "roads": [{"from": "forge", "event": "on_task_completed"}]}
+
+
+def test_a_rule_that_needs_judgement_becomes_the_stewards(tmp_path: Path):
+    """docs/design/steward-listens.md stage 2: chain → script → steward → hybrid; no tools of its own."""
+    scroll = ts.default_scroll(PRESETS)
+    scroll.building("loot").garrison.steward.harness = [{"role": "run", "harness": "codex"}]
+    runner, prompts = scripted(STEWARD_ANSWER)
+    result = recruiter.recruit("make to-dos from the boss's mail", scroll, "loot", runner=runner)
+    assert result.ok and result.orc["kind"] == "steward" and result.orc["harness"] == []
+    assert '"steward": a road rule' in prompts[0] and "Quartermaster, on Codex" in prompts[0]
+    assert prompts[0].index('"steward"') < prompts[0].index('"hybrid"') < prompts[0].index('"agent"')
+    orc = recruiter.apply(scroll, "loot", result, tmp_path)
+    assert orc.kind == "steward" and orc.avatar == "📜" and orc.orders.startswith("Only my boss's mail")
+    assert ts.validate(scroll.to_dict()) == []
+
+
+def test_the_steward_gets_no_tools_and_an_agent_is_kept_for_pipelines():
+    scroll = ts.default_scroll(PRESETS)
+    loot = scroll.building("loot")
+    loot.garrison.steward.harness = [{"role": "run", "harness": "claude"}]
+    with_tools = {**STEWARD_ANSWER, "harness": [{"role": "run", "harness": "claude"}]}
+    assert any("give no harness" in p for p in recruiter.check(with_tools, scroll, "loot")[3])
+    one_step = {**STEWARD_ANSWER, "kind": "agent", "harness": [{"role": "run", "harness": "claude"}]}
+    assert any("make it a steward rule" in p for p in recruiter.check(one_step, scroll, "loot")[3])
+    other_tool = {**one_step, "harness": [{"role": "run", "harness": "agy"}]}
+    assert recruiter.check(other_tool, scroll, "loot")[3] == []        # a tool the steward does not have
+    pipeline = {**one_step, "harness": [{"role": "write", "harness": "claude"}, {"role": "review", "harness": "claude"}]}
+    assert recruiter.check(pipeline, scroll, "loot")[3] == []
+    assert recruiter.stewards_own([{"role": "run", "harness": "main"}], scroll.building("scrying")) is True

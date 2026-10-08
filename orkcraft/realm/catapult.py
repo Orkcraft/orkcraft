@@ -22,6 +22,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import jsonschema
+from orkcraft.realm.jobs import now_iso
 
 SEND_TIMEOUT_S = 20
 ANSWER_KEEP = 2000
@@ -63,7 +64,7 @@ class Load:
             self.groups: dict[str, dict[str, dict]] = raw["groups"]
             self.seq = int(raw.get("seq", 0))
         else:                                     # the old flat {source: value}
-            now = _now()
+            now = now_iso()
             self.groups = {"#0": {k: {"v": v, "at": now} for k, v in raw.items()}} if raw else {}
             self.seq = 1
 
@@ -85,7 +86,7 @@ class Load:
 
     def put(self, source: str, value: str, key: str = "", now: str | None = None) -> str:
         """Load a cart; returns its group."""
-        v, now = parse(value), now or _now()
+        v, now = parse(value), now or now_iso()
         named = _pick(v, key) if key else None
         if named is not None and not isinstance(named, (dict, list)):
             group = f"={named}"
@@ -158,10 +159,6 @@ class Load:
         return self._body_of(items, wait_for)
 
 
-def _now() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
-
-
 def _pick(body, path: str):
     cur = body
     for part in path.split("."):
@@ -189,7 +186,7 @@ class Queue:
         self.file.write_text(json.dumps(self.items, ensure_ascii=False, indent=1), encoding="utf-8")
 
     def push(self, body, start: int = 0, front: bool = False) -> None:
-        item = {"body": body, "start": start, "at": _now()}
+        item = {"body": body, "start": start, "at": now_iso()}
         self.items.insert(0, item) if front else self.items.append(item)
         self.save()
 

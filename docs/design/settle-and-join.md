@@ -93,7 +93,9 @@ card; marking it Not urgent marks the whole task.
 
 A related card can come after its task went. Then it does not wait: it joins the task it belongs to
 (**↳ with “X”**) and goes at once as an **addition** — `tasks.sent` with the first card's `ref` and only
-the new text, under the same "Added later" line. The Barracks knows the task by that `ref`:
+the new text, under the same "Added later" line. The Barracks knows the task by that `ref`, and the
+addition by that line (another cart with the same `ref` — a meeting's second prep, say — stays a task of
+its own):
 
 | the task in the Barracks | the addition |
 |---|---|

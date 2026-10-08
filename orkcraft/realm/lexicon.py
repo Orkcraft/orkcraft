@@ -55,7 +55,9 @@ TERMS: tuple[Term, ...] = (
     _t("orc.town_hall", "Warchief"),                               # the hall's steward: the chat behind Ask me anything
     _t("town_hall", "Town Hall"),
     _t("road_planner", "Road planner"),                            # lays a road from words (realm/road_planner.py)
+    _t("road_rule", "Road rule", "Road rules"),                    # what a building's steward does with a road's carts (a `steward` handler)
     _t("building_retro", "Building retro"),
+    _t("script_first", "Script-first"),                            # its work is code; its ork wakes on an error or a 👎
     _t("ork_work", "Ork work"),                                    # the Task Fields' orks' kanban
     # -- growth (docs/design/growth.md) ---------------------------------------------------------------
     _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)

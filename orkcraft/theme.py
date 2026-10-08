@@ -52,10 +52,6 @@ SOLID_BLACK = "#000000"
 
 MAX_DENSITY = 0.12          # share of canvas cells that may carry a glyph
 TERRAIN_DENSITY = 0.09      # what the generator actually aims for
-UNIT_ACTIVE = "#e5c07b"
-UNIT_ALERT = "#e06c75"
-DIFF_ADD = "#3fb950"
-DIFF_REMOVE = "#f85149"
 
 
 def _mix64(v: int) -> int:
