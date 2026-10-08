@@ -16,8 +16,8 @@
   Project file). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
   gets its one word there, and new code writes that word. A renamed concept keeps its old Camp
   spelling in `was`, and the interface says an old spelling in today's word: the TUI every widget's
-  text (`tui/wording.py`), the GUI the literal text of every `html` template (`gui/static/js/html.js`;
-  attributes and data go through `say()`). A widget that shows what people or agents wrote gets the
+  text (`tui/wording.py`), the GUI through `say()` for attributes and data. A GUI `html` template's
+  own text is written in today's word at the source (`tests/test_gui_wording.py` checks). A widget that shows what people or agents wrote gets the
   `-as-written` class (TUI) so it keeps its words; Markdown, inputs, logs and terminals keep theirs.
 - The voice stays the camp's: the Warchief's lines, growth news and the onboarding may joke; labels,
   settings and anything about money or safety say plainly what happens.

@@ -54,7 +54,7 @@ function RunRow({ r, selected, onPick, test = false }) {
     <span class="ok-tone-muted">${r.time}</span>
     <span class="ws-run__code">exit ${r.code}</span>
     ${test ? html`<span>${r.event}</span>` : r.sent && html`<span>→ ${SENT[r.sent] || r.sent}</span>`}
-    ${r.keeper && html`<span class="ok-tone-wait">keeper</span>`}
+    ${r.keeper && html`<span class="ok-tone-wait">steward</span>`}
     <span class="ws-run__what">${firstLine(r.result || r.err)}</span>
   </li>`;
 }

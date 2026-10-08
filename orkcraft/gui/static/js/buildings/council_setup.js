@@ -44,7 +44,7 @@ function Draft({ id, s, data, briefOf }) {
 
 function Purpose({ id, s, draft, set }) {
   return html`<div class="council-setup">
-    <p class="ok-tone-muted council-setup__sub">Say what this board reviews and what matters. The keeper picks the clan for it, and you check the pick.</p>
+    <p class="ok-tone-muted council-setup__sub">Say what this board reviews and what matters. The steward picks the clan for it, and you check the pick.</p>
     <label class="council-setup__label" for=${`purpose-${id}`}>What does this board review, and what matters?</label>
     <textarea id=${`purpose-${id}`} class="ok-input gui-textarea" rows="4" value=${draft.purpose}
       placeholder=${say("e.g. PRDs before development: scope, risks, whether marketing can sell it")}
@@ -57,7 +57,7 @@ function Purpose({ id, s, draft, set }) {
       <div class="council-setup__row">${s.presets.map((p) => html`<button key=${p.id} class="ok-chip" title=${say(p.purpose)}
         onClick=${() => act(id, "setup_preset", { preset: p.id }).catch(() => {})}>${say(p.title)}</button>`)}</div>`}
     <div class="council-setup__foot">
-      <span class="ok-tone-muted council-setup__sub">The keeper proposes in one turn</span>
+      <span class="ok-tone-muted council-setup__sub">The steward proposes in one turn</span>
       <button class="ok-btn primary" disabled=${!draft.purpose.trim() || !!s.busy}
         onClick=${() => act(id, "propose", { purpose: draft.purpose }).catch(() => {})}>Propose the clan</button>
     </div>
@@ -70,7 +70,7 @@ function Clan({ id, s, draft, set, briefOf }) {
   const add = () => { if (role.trim()) { set({ members: [...draft.members, { role: role.trim(), checks: "", tier: "", veto: false }] }); setRole(""); } };
   return html`<div class="council-setup">
     ${s.busy ? html`<p class="ok-tone-muted" role="status">${s.busy}</p>`
-      : html`<p class="ok-tone-muted council-setup__sub">The keeper read the purpose and proposes these. Each brief is a file you can open and change.</p>`}
+      : html`<p class="ok-tone-muted council-setup__sub">The steward read the purpose and proposes these. Each brief is a file you can open and change.</p>`}
     <ul class="council-setup__list">${draft.members.map((m, i) => html`<li key=${i} class="council-setup__item">
       <div class="council-setup__name"><b>${m.role}</b>
         <button class="council-setup__tag" title=${say("The model tier: a click changes it")}

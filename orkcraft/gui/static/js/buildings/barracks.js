@@ -257,11 +257,11 @@ function TaskDetail({ id, data, t }) {
         .filter(Boolean).map((x) => ` · ${x}`)}</p>
     ${t.asks && html`<${AnswerHere} key=${t.id} id=${id} data=${data} t=${t} />`}
     <div class="ok-detail__actions">
-      ${t.branch && html`<button class="ok-btn" onClick=${diff}>Diff in Lake</button>`}
-      <button class="ok-btn" onClick=${() => openInLake({ text: t.brief, title: `Brief — ${t.title}`, from: id })}>Brief in Lake</button>
-      ${t.report && html`<button class="ok-btn" onClick=${() => openInLake({ text: t.report, title: `Report — ${t.title}`, from: id })}>Report in Lake</button>`}
+      ${t.branch && html`<button class="ok-btn" onClick=${diff}>Diff in Inspector</button>`}
+      <button class="ok-btn" onClick=${() => openInLake({ text: t.brief, title: `Brief — ${t.title}`, from: id })}>Brief in Inspector</button>
+      ${t.report && html`<button class="ok-btn" onClick=${() => openInLake({ text: t.report, title: `Report — ${t.title}`, from: id })}>Report in Inspector</button>`}
       ${t.pr && html`<a class="ok-btn" href=${t.pr} target="_blank" rel="noreferrer">${say("Open PR")} ↗</a>`}
-      ${t.design && html`<button class="ok-btn" onClick=${() => openInLake({ path: t.design, from: id })}>Design brief in Lake</button>`}
+      ${t.design && html`<button class="ok-btn" onClick=${() => openInLake({ path: t.design, from: id })}>Design brief in Inspector</button>`}
     </div>
     ${t.code_card && html`<p class="ok-tone-wait">${say("It reads like a code task: a card waits for you on the Task board —")} “${t.code_card}”</p>`}
     <${Overlaps} id=${id} t=${t} />

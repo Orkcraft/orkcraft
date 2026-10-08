@@ -147,7 +147,7 @@ function Actions({ id, data, name }) {
   return html`<div class="ok-detail__actions">
     ${!base && html`<button class="ok-btn primary" disabled=${!!data.merging} onClick=${() => merge(id, name)}>Merge</button>`}
     <button class="ok-btn" disabled=${b.tests === "running"} onClick=${() => act(id, "test", { branch: name }).catch(() => {})}>Run tests</button>
-    ${!base && html`<button class="ok-btn" onClick=${() => diff(id, name)}>Diff in Lake</button>`}
+    ${!base && html`<button class="ok-btn" onClick=${() => diff(id, name)}>Diff in Inspector</button>`}
     ${b.pr && html`<button class="ok-btn" onClick=${() => openPr(id, name)}>${say("Open PR")} ↗</button>`}
   </div>`;
 }

@@ -32,7 +32,7 @@ export function Hud() {
     <button class="gui-hud__project gui-hud__menu" title=${say("Town settings: how freely the orks decide, how long they wait")}
       onClick=${() => { settingsOpen.value = true; }}>${t.project}${t.demo ? " · demo" : ""} ▾</button>
     ${online.value
-      ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Halt All</button>`
+      ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Stop all</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     <button class=${cls("gui-hud__orders gui-link", { "ok-hud__fire": hud.alerts > 0 })} title=${say("The orks' questions")}
       onClick=${() => openOrders()}>${say("Orders")}${hud.alerts > 0 ? ` (${hud.alerts})` : ""}</button>

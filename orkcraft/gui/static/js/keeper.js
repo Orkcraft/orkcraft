@@ -27,7 +27,7 @@ export function KeeperAsk({ id, selection = null, placeholder = "e.g. send bugs 
   return html`<div class="gui-form__row">
     <input class="ok-input" value=${request} placeholder=${say(placeholder)}
       onInput=${(e) => setRequest(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && send()} />
-    <button class="ok-btn" disabled=${!request.trim()} onClick=${send}>Ask the keeper</button>
+    <button class="ok-btn" disabled=${!request.trim()} onClick=${send}>Ask the steward</button>
   </div>`;
 }
 
