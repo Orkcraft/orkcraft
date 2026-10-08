@@ -13,6 +13,10 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
 - `fence/row.png`, `fence/side.png`, `fence/post.png` (21×21, 15×27, 15×36): a yard's picket fence — a picket
   and its rails, a side picket and its gap, a gate post — in muted bronze wood, drawn by `tools/fence_sprites.py`
   at 3 px a pixel (`gui/static/yards.css`, docs/design/yards.md).
+- `orks/ork-stand.png`, `orks/ork-walk-a.png`, `orks/ork-walk-b.png` (24×18): the ork's head out of its building on
+  the plinth, facing you, and two steps of its walk facing left (mirrored as it walks back in); `icons/thumb-up.png`,
+  `icons/thumb-down.png` (20×20): its bubble's green 👍 and 👎; `icons/bubble.png`, `icons/bubble-tail.png`: the
+  bubble, a nine-slice, and its tail. Drawn by `tools/visit_sprites.py` (`js/visit.js`, docs/design/yards.md §4).
 - `icons/road-handle.png`, `icons/road-target.png` (22×22, 18×18): the small gate a road is pulled out of a hut by, and the
   four corner brackets round the hut it would land on, drawn by `tools/road_sprites.py` (`js/hut.js`; the
   brackets are a nine-slice, layout.css `.gui-hut.is-target`).

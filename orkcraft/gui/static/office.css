@@ -41,7 +41,7 @@
 [data-look="office"] .ok-res img,
 [data-look="office"] .gui-hut__flame,
 [data-look="office"] .gui-hut__doing,
-[data-look="office"] .gui-hut__caller { display: none; }
+[data-look="office"] .gui-out { display: none; }
 /* A harness scheme's P and arrow as text (P →), never pixel marks; an AI tool's mark as its small SVG, in the
    tool's colours: small, they tell the tools apart at a glance (js/icons.js ToolMark). */
 [data-look="office"] .gui-scheme__mark > img[data-kind="harness"] { display: none; }

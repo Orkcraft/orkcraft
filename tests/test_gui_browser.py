@@ -391,7 +391,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     pg.wait_for_timeout(600)
     title, other = _hut(pg, a).locator(".gui-hut__title").bounding_box(), _hut(pg, b).locator(".ok-hut__card").bounding_box()
     start = _hut(pg, a).bounding_box()
-    pg.mouse.move(title["x"] + 10, title["y"] + 5)
+    pg.mouse.move(title["x"] + 60, title["y"] + 5)
     pg.mouse.down()
     pg.mouse.move(other["x"] + 30, other["y"] + 30, steps=6)
     pg.locator(".gui-footprint.is-blocked").wait_for(state="visible", timeout=WAIT_MS)
@@ -402,9 +402,9 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     assert _hut(pg, a).bounding_box() == start and pg.locator(".gui-footprint").count() == 0
     spot = f"() => {link}.then(m => m.town.value.buildings.find(x => x.id === '{a}').hut)"
     hut_before = pg.evaluate(spot)
-    pg.mouse.move(title["x"] + 10, title["y"] + 5)
+    pg.mouse.move(title["x"] + 60, title["y"] + 5)
     pg.mouse.down()
-    pg.mouse.move(title["x"] + 10, title["y"] + 305, steps=6)          # a free place under it
+    pg.mouse.move(title["x"] + 60, title["y"] + 305, steps=6)          # a free place under it
     assert pg.locator(".gui-footprint.is-blocked").count() == 0
     pg.mouse.up()
     pg.wait_for_function(f"([id, y]) => document.querySelector(`.gui-hut[data-id='${{id}}']`).getBoundingClientRect().y > y + 200",

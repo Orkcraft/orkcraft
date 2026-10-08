@@ -124,22 +124,23 @@ def test_a_yard_shows_no_ork_of_its_own_and_a_hut_does(demo_page):
     assert hut.locator(".gui-hut__keeper").count() == 1
 
 
-def test_a_yard_is_fenced_and_the_ork_that_asks_stands_in_its_gate(demo_page):
+def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
     """docs/design/yards.md §3–§4 in Camp: a yard's name stands over its building, which stands on its title bar —
-    a picket fence; a hut says what its orks do over its roof; the ork that asks comes out by the door, and a press
-    on it opens its question."""
+    a picket fence; a hut says what its orks do over its roof; the ork that asks comes out onto its plinth by itself,
+    and a press on it opens its question."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     calendar = pg.locator('.gui-hut[data-id="days"]')
     calendar.wait_for(state="visible", timeout=WAIT_MS)
     assert calendar.locator(".gui-hut__yard-title").inner_text().strip().lower() == "calendar"
-    assert calendar.locator(".gui-hut__caller").count() == 0                # nobody asks: nobody out by the door
+    pg.mouse.move(1, 500)
+    assert calendar.locator(".gui-out").count() == 0                      # nobody asks, no mouse: nobody out
     assert not calendar.locator(".gui-hut__name").is_visible()            # the name left the title bar
     assert pg.locator('.gui-hut[data-id="todo"] .gui-hut__doing').is_visible()   # a hut: Zz or a wheel on its roof
     assert calendar.locator(".gui-hut__doing").count() == 0               # a yard: nobody lives in it
 
     _call(pg, "orkspace.select", {"id": "agent_yard"})
-    caller = pg.locator('.gui-hut[data-id="outputs"] .ok-head .gui-hut__caller')   # the Review gate's ork asks
+    caller = pg.locator('.gui-hut[data-id="outputs"] .ok-head .gui-out.is-asking')   # the Review gate's ork asks
     caller.wait_for(state="visible", timeout=WAIT_MS)
     caller.click()
     dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
@@ -147,6 +148,33 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_stands_in_its_gate(demo_page):
     assert "carts wait" in dialog.inner_text()
     if os.environ.get("ORKCRAFT_SHOTS"):
         pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "yards-caller.png"))
+
+
+def test_under_the_mouse_an_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
+    """docs/design/yards.md §4: the mouse over a building, its ork walks out onto the plinth's left end, beside the
+    house, and its bubble holds 👍, 👎 and (a hut's) its AI tool; a 👎 asks what went wrong; the mouse gone, it walks
+    back in."""
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    hut = pg.locator('.gui-hut[data-id="todo"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    assert hut.locator(".gui-out").count() == 0
+    hut.locator(".ok-hut__card").hover()
+    bubble = hut.locator(".gui-out__bubble")
+    bubble.wait_for(state="visible", timeout=WAIT_MS)
+    ork, plinth, house = (hut.locator(s).bounding_box() for s in (".gui-out", ".gui-hut__plinth", ".gui-hut__sprite"))
+    assert plinth["x"] <= ork["x"] and ork["x"] + ork["width"] <= house["x"] + 1     # on the plinth, left of the house
+    assert abs(ork["y"] + ork["height"] - (plinth["y"] + 4)) <= 1                  # its feet on the slab
+    assert bubble.locator("button").count() == 3                                   # 👍, 👎, its AI tool
+    bubble.locator('button[aria-label="Bad"]').click()
+    pg.locator(".ok-dialog", has_text="Bad work").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.mouse.move(1, 500)
+    hut.locator(".gui-out").wait_for(state="detached", timeout=WAIT_MS)
+    days = pg.locator('.gui-hut[data-id="days"]')
+    days.locator(".ok-hut__card").hover()
+    days.locator(".gui-out__bubble").wait_for(state="visible", timeout=WAIT_MS)
+    assert days.locator(".gui-out__bubble button").count() == 2                    # a yard: 👍 and 👎, on the building
 
 
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):
