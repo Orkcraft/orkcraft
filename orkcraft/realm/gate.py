@@ -157,6 +157,7 @@ class Item:
     worktree: str = ""
     at: str = ""
     updated: str = ""
+    rejected: list[dict] = field(default_factory=list)   # files of its branch the person rejected (Branch.reject)
 
     @property
     def hops(self) -> tuple[pipes.Hop, ...]:
@@ -279,6 +280,17 @@ class Queue:
         self.save()
         return item
 
+    def file_rejected(self, item: Item, entry: dict) -> Item:
+        """One file of the cart's branch rejected: rolled back there, kept aside (`entry`, Branch.reject)."""
+        item.rejected.append(entry)
+        self.save()
+        return item
+
+    def file_restored(self, item: Item, entry: dict) -> Item:
+        item.rejected = [r for r in item.rejected if r != entry]
+        self.save()
+        return item
+
     def drop(self, item: Item, now: dt.datetime | None = None) -> Item:
         item.status, item.updated = DROPPED, _now(now)
         self.save()
@@ -288,7 +300,10 @@ class Queue:
 def rework_markdown(item: Item, reason: str, building_title: str) -> str:
     """What goes back to the source: the reason, the earlier reasons, and what it sent."""
     earlier = "".join(f"- {n}\n" for n in item.notes[:-1])
+    files = "".join(f"- `{r['path']}`\n" for r in item.rejected)
     body = item.value if item.kind == pipes.TEXT else f"`{item.value}`"
     return (f"## Sent back for rework by {building_title} (round {item.attempts})\n\n**Why:** {reason}\n\n"
             + (f"Earlier notes:\n{earlier}\n" if earlier else "")
+            + (f"Files the person rejected, put back on the branch as the base has them — leave them so:\n{files}\n"
+               if files else "")
             + f"Keep the reference `{item.ref}` and send the fixed version.\n\n---\n\n{body}\n")

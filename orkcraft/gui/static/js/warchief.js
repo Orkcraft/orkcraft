@@ -140,18 +140,23 @@ const COMMANDS = [
     run: (rest, bs) => (bs.length ? (openBuilding(bs[0].id), null) : "Name the building: /open @Forge") },
   { word: "demolish", args: "@building", about: "take a building down (it asks first)",
     run: (rest, bs) => (bs.length ? ((demolishing.value = bs[0].id), null) : "Name the building: /demolish @Forge") },
-  { word: "note", args: "[@Wiki] text", about: "keep a note in the wiki: its section, tags and links as the wiki suggests",
+  { word: "note", args: "[@Wiki] text", about: "keep a note in the wiki: its meeting, section and tags show before Enter saves",
     run: (rest, bs) => {
-      const w = bs.find((b) => b.type === "scrolls") || here().find((b) => b.type === "scrolls")
-        || town.value.buildings.find((b) => b.type === "scrolls");
+      const w = wikiFor(bs);
       if (!w) return "No Wiki in the town yet: /build scrolls";
       if (!rest.trim()) return "Write the note: /note discuss the pricing tiers with Sergey tomorrow";
-      return act(w.id, "suggest", { text: rest })
-        .then((s) => act(w.id, "note", { text: rest, section: s.section, tags: s.tags,
-          links: s.links.map((l) => l.path), source: "warchief", meeting: s.meeting, people: s.people })
-          .then((path) => toast(s.meeting ? `${say("To discuss at")} ${s.meeting.title} · ${s.meeting.when}` : `${say("Kept in")} ${path}`,
-            "information", say("Quick note"))))
-        .catch(() => {});
+      const shown = noted.value;                 // what stood over the bar, the meeting Tab picked included
+      const ready = shown.hint && shown.text === rest && shown.wiki === w.id
+        ? Promise.resolve(shown) : act(w.id, "suggest", { text: rest }).then((h) => ({ hint: h, pick: h.meeting ? 0 : -1 }));
+      noted.value = NO_NOTE;
+      return ready.then((n) => {
+        const s = noteShown(w, n.hint, rest);
+        const meeting = meetingsOf(n.hint)[n.pick] || null;
+        return act(w.id, "note", { text: rest, section: s.section, tags: s.tags, links: s.links.map((l) => l.path),
+          source: "warchief", meeting, people: s.people })
+          .then((path) => toast(meeting ? `${say("To discuss at")} ${meeting.title} · ${meeting.when}` : `${say("Kept in")} ${path}`,
+            "information", say("Quick note")));
+      }).catch(() => {});
     } },
   { word: "orders", args: "", about: "the orks' questions", run: () => { openOrders(); return null; } },
   { word: "halt", args: "", about: "stop every ork at work", run: () => command("halt").catch(() => {}) },
@@ -170,6 +175,83 @@ const COMMANDS = [
 ];
 
 const buildTypes = signal(null);           // the catalog, asked once for /build
+
+// -- /note: the Wiki's suggestions over the bar before Enter saves (docs/design/wiki-librarian.md §4) ----
+
+const NOTE_DELAY_MS = 400;                 // the suggestions wait for the typing to stop
+const NO_NOTE = { text: "", wiki: "", hint: null, pick: -1 };
+// What the Wiki suggested for the note typed: `pick` the meeting it is for (an index of `meetingsOf`), -1 none.
+const noted = signal(NO_NOTE);
+
+/** The Wiki a note goes to: the one named, else one in this orkspace, else the town's first. */
+function wikiFor(bs) {
+  return bs.find((b) => b.type === "scrolls") || here().find((b) => b.type === "scrolls")
+    || town.value.buildings.find((b) => b.type === "scrolls");
+}
+
+/** The meetings a note may be for, the one the Wiki suggests first; Tab walks them. */
+function meetingsOf(hint) {
+  if (!hint) return [];
+  const rest = (hint.meetings || []).filter((m) => !hint.meeting || m.id !== hint.meeting.id);
+  return hint.meeting ? [hint.meeting, ...rest] : rest;
+}
+
+/** The rules' suggestion, with the light model's word when the Wiki has one for the same text. */
+function noteShown(w, hint, text) {
+  const d = details.value[w.id];
+  const said = d && d.data && d.data.model_hint && d.data.model_hint.text === text ? d.data.model_hint : null;
+  if (!said) return hint;
+  return { ...hint, section: hint.section || said.section,
+    tags: [...hint.tags, ...(said.tags || []).filter((t) => !hint.tags.includes(t))],
+    people: hint.people && hint.people.length ? hint.people : (said.people || []) };
+}
+
+/** Tab: the next meeting for the note, then none, then the first again (Shift+Tab back). */
+function nextMeeting(back) {
+  const n = noted.value;
+  const count = meetingsOf(n.hint).length;
+  if (!n.hint) return false;
+  const next = ((n.pick + 1 + (back ? -1 : 1) + count + 1) % (count + 1)) - 1;
+  noted.value = { ...n, pick: next, picked: true };
+  return true;
+}
+
+function NoteOver({ rest, w }) {
+  useEffect(() => {
+    if (!w || !rest.trim()) { noted.value = NO_NOTE; return undefined; }
+    const t = setTimeout(() => act(w.id, "suggest", { text: rest }).then((hint) => {
+      const before = noted.value;
+      if (!hint) return;
+      // a meeting Tab picked (or none) stays picked while the words change, as long as it is still coming
+      const picked = before.picked && before.wiki === w.id;
+      const was = picked ? meetingsOf(before.hint)[before.pick] : null;
+      const pick = !picked ? (hint.meeting ? 0 : -1) : was ? meetingsOf(hint).findIndex((m) => m.id === was.id) : -1;
+      noted.value = { text: rest, wiki: w.id, hint, pick, picked };
+    }, () => {}), NOTE_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [w && w.id, rest]);
+  if (!w) return html`<p class="ok-font-status ok-tone-wait gui-warchief__note">${say("No Wiki in the town yet: /build scrolls")}</p>`;
+  const n = noted.value;
+  const fresh = n.hint && n.text === rest && n.wiki === w.id;
+  const head = html`<p class="gui-warchief__note-head"><b>${say("Quick note")}</b> → ${say(w.title)}</p>`;
+  if (!rest.trim()) return html`<div class="gui-warchief__note">${head}
+    <p class="ok-tone-muted">${say("Write the note: the Wiki suggests its meeting, section and tags")}</p></div>`;
+  if (!fresh) return html`<div class="gui-warchief__note">${head}<p class="ok-tone-muted">● ${say("The Wiki is reading the note…")}</p></div>`;
+  const s = noteShown(w, n.hint, rest);
+  const list = meetingsOf(n.hint);
+  const m = list[n.pick];
+  return html`<div class="gui-warchief__note" aria-live="polite">${head}
+    <dl class="gui-warchief__note-rows">
+      <dt>${say("For the meeting")}</dt>
+      <dd class="gui-warchief__note-meet">${m ? html`<b>${m.title}</b> · ${m.when}` : html`<span class="ok-tone-muted">${say("Not for a meeting")}</span>`}
+        ${!m && (s.people || []).length > 0 && html`<span class="ok-tone-muted"> — ${say("an open item for")} ${s.people.join(", ")}</span>`}</dd>
+      ${s.section && html`<dt>${say("Section")}</dt><dd>${s.section}</dd>`}
+      ${s.tags.length > 0 && html`<dt>${say("Tags")}</dt><dd>${s.tags.join(", ")}</dd>`}
+      ${s.links.length > 0 && html`<dt>${say("Link to")}</dt><dd>${s.links.map((l) => l.title).join(" · ")}</dd>`}
+    </dl>
+    <p class="ok-font-status ok-tone-muted">Enter ${say("saves")}${list.length ? ` · Tab ${say("another meeting")}` : ""} · Esc ${say("clears")}</p>
+  </div>`;
+}
 
 function commandOf(text) {
   const m = text.match(/^\/(\S*)\s*(.*)$/s);
@@ -219,8 +301,12 @@ function Chip({ b, onDrop }) {
 }
 
 /** What stands over the line: the hints, the commands as typed, the buildings an @ may name. */
-function Over({ text, onPick }) {
+function Over({ text, about, onPick }) {
   const c = commandOf(text);
+  if (c && c.word === "note" && text.includes(" ") && !/@[^@\s]*$/.test(text)) {
+    const { found, rest } = takeNames(c.rest, about);
+    return html`<${NoteOver} rest=${rest} w=${wikiFor(found)} />`;
+  }
   if (c && !text.includes(" ")) {
     const list = COMMANDS.filter((x) => x.word.startsWith(c.word));
     return html`<ul class="ok-list__items gui-warchief__list" role="listbox">
@@ -362,6 +448,9 @@ export function WarchiefLine() {
       setBack(i); set(i >= 0 ? history[i] : "");
     } else if (e.key === "Backspace" && !l.text && l.about.length) {
       line.value = { ...l, about: l.about.slice(0, -1) };
+    } else if (e.key === "Tab" && /^\/note\s/i.test(e.currentTarget.value)) {
+      e.preventDefault();
+      nextMeeting(e.shiftKey);
     } else if (e.key === "Tab" && e.currentTarget.value.startsWith("/") && !e.currentTarget.value.includes(" ")) {
       const c = COMMANDS.find((x) => x.word.startsWith(e.currentTarget.value.slice(1).toLowerCase()));
       if (c) { e.preventDefault(); set(`/${c.word} `); }
@@ -377,7 +466,7 @@ export function WarchiefLine() {
       <div class="ok-win__frame"><div class="ok-win__body">
         ${thread && html`<${Thread} data=${data} />`}
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}
-        ${focused && html`<${Over} text=${l.text} onPick=${pick} />`}
+        ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
     <div key="bar" class="gui-warchief__bar">
       <button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}

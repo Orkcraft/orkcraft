@@ -306,11 +306,19 @@ def failure(harness: str, code: int, stdout: str, stderr: str) -> str:
     return f"{harness} exited with {code}: {why[:300]}"
 
 
+def names_session(harness: str) -> bool:
+    """Whether a reading agent of this tool can be given its session's id up front and reopen it later."""
+    h = harnesses.get(resolve(harness))
+    return bool(h and h.read_session and resolve(harness) in IN_REPO)
+
+
 def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
-              cancel: threading.Event, model: str = "", web: bool = False) -> tuple[str, float | None, int | None]:
+              cancel: threading.Event, model: str = "", web: bool = False, session: str = "",
+              reopen: bool = False) -> tuple[str, float | None, int | None]:
     """One harness step. Claude reads the repository (read-only tools, plus web search and fetch
     when `web`), Codex too (a read-only sandbox, live web search when `web`); agy works in an
-    empty temp dir. Raises RuntimeError on failure, InterruptedError when `cancel` is set."""
+    empty temp dir. `session` names its session (a tool that `names_session`), `reopen` goes on in it
+    with `prompt` as the next message. Raises RuntimeError on failure, InterruptedError when `cancel` is set."""
 
     def wait(proc: subprocess.Popen) -> None:
         deadline = time.monotonic() + AGENT_TIMEOUT_S
@@ -330,6 +338,8 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
     with tempfile.TemporaryDirectory(prefix="orkcraft-handler-") as scratch:
         workdir = repo_root if harness in IN_REPO else Path(scratch)
         cmd = _harness_cmd(harness, prompt, Path(scratch), model, web)
+        if session and (h := harnesses.get(harness)) and h.read_session:
+            cmd = cmd + h.read_session(session, reopen)
         tool_env = h.env("read", scratch) if (h := harnesses.get(harness)) else {}
         code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:

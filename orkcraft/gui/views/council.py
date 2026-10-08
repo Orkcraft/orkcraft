@@ -50,11 +50,21 @@ def _turn(t: tm.Turn) -> dict:
             "html": markdown.render(t.text)}
 
 
+def _goes_on(w, d: tm.Discussion) -> dict:
+    """Where Go on takes a stopped review up: the turn under way when it stopped (`reopens`: in the session
+    it stopped in), else the first member not heard yet, else the steward."""
+    if d.outcome not in ("budget", "error", "stopped"):
+        return {"goes_on_at": "", "reopens": False}
+    turn = d.under_way.get("turn") or next((m.role for i, m in enumerate(w.team) if i not in d.reviewed),
+                                           tm.STEWARD_TURN)
+    return {"goes_on_at": turn, "reopens": bool(d.under_way.get("session"))}
+
+
 def _review(w, d: tm.Discussion, full: bool) -> dict:
     row = {"id": d.id, "title": d.title, "cycle": d.cycle, "outcome": d.outcome,
            "outcome_word": OUTCOME.get(d.outcome, d.outcome), "spent": _money(d.spent),
            "started": d.started.replace("T", " ")[:16], "route": d.route, "task": d.task, "when": d.when,
-           "exit": d.exit,
+           "exit": d.exit, **_goes_on(w, d),
            **_tally(d)}
     if full:
         row.update({"doc": d.doc[:KEEP], "doc_html": markdown.render(d.doc), "doc_path": d.doc_path,

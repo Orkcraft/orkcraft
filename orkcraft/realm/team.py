@@ -174,6 +174,8 @@ class Discussion:
     turns: list[Turn] = field(default_factory=list)
     exit: str = ""                  # the exit it went down, by name (a board with `exits`)
     out: str = ""                   # what went out down it: the verdict, then the document (cut)
+    under_way: dict = field(default_factory=dict)   # the turn being taken: {"turn": role, "session": id};
+    # left when it stops, so Go on reopens that very session ("" when its tool cannot name one)
 
     @property
     def finished(self) -> bool:
@@ -372,18 +374,54 @@ def parse_decision(text: str) -> tuple[str, str]:
 # -- the gathering ------------------------------------------------------------------------------------
 
 BriefOf = Callable[[Member], tuple[str, str]]          # member → (repo-relative path, text)
+GO_ON = ("You were stopped in the middle of this. Go on from where you were, and answer in the form asked "
+         "for above.")
+STEWARD_TURN = "Steward"
 
 
 def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max_cycles: int, budget: float,
         runner: Runner, on_turn: Callable[[Discussion, Turn], None] | None = None,
         cancel: threading.Event | None = None, brief_of: BriefOf | None = None,
-        routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = ()) -> Discussion:
-    """Run (or resume after the operator answered) until the steward decides, or it stops. A clan that
-    routes (`routes`) names who takes an approved document on (`d.route`)."""
+        routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = (),
+        sessions: Callable[[str], bool] | None = None,
+        on_call: Callable[[Discussion], None] | None = None) -> Discussion:
+    """Run (or resume after the operator answered, or after it stopped) until the steward decides, or it
+    stops. A clan that routes (`routes`) names who takes an approved document on (`d.route`).
+
+    The members already heard are not asked again. With `sessions` (a harness → whether its session can
+    be named up front), each turn's session gets an id before it starts (`d.under_way`, told to
+    `on_call`), and the runner is called as `runner(h, prompt, model, session=…, reopen=…)`: a turn that
+    was stopped (or failed) goes on in its own session with `GO_ON`, and starts again only when that
+    session cannot be reopened."""
     cancel = cancel or threading.Event()
     brief_of = brief_of or (lambda _m: ("", ""))
 
-    def call(harness: str, model: str, prompt: str) -> tuple[str, float | None] | None:
+    def take(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool]:
+        """One turn's call: (text, cost, whether it went on where it had stopped)."""
+        if sessions is None or not sessions(harness):
+            d.under_way = {"turn": turn, "session": ""}
+            if on_call is not None:
+                on_call(d)
+            text, cost = runner(harness, prompt, model)
+            return text, cost, False
+        was = d.under_way.get("session") if d.under_way.get("turn") == turn else ""
+        if was:
+            if on_call is not None:
+                on_call(d)
+            try:
+                text, cost = runner(harness, GO_ON, model, session=was, reopen=True)
+                return text, cost, True
+            except InterruptedError:
+                raise
+            except Exception:  # a session that cannot be reopened: the turn starts again
+                pass
+        d.under_way = {"turn": turn, "session": str(uuid.uuid4())}
+        if on_call is not None:
+            on_call(d)
+        text, cost = runner(harness, prompt, model, session=d.under_way["session"], reopen=False)
+        return text, cost, False
+
+    def call(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool] | None:
         if cancel.is_set():
             d.outcome = "stopped"
             return None
@@ -391,7 +429,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
             d.outcome = "budget"
             return None
         try:
-            text, cost = runner(harness, prompt, model)
+            text, cost, went_on = take(harness, model, prompt, turn)
         except InterruptedError:                 # 🛑 Halt All (or leaving): stopped, not failed
             d.outcome = "stopped"
             return None
@@ -399,7 +437,8 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
             d.outcome, d.error = "error", f"{e}"[:300]
             return None
         d.spent = round(d.spent + (cost or 0.0), 4)
-        return text or "", cost
+        d.under_way = {}
+        return text or "", cost, went_on
 
     def add(turn: Turn) -> None:
         d.turns.append(turn)
@@ -411,24 +450,25 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         if i in d.reviewed:
             continue
         path, text = brief_of(m)
-        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO))
+        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO),
+                   m.role)
         if got is None:
             return _end(d)
         verdict, body = parse_verdict(got[0])
-        note = ""
+        note = WENT_ON if got[2] else ""
         if verdict == "veto" and m.role.lower() not in veto:
-            verdict, note = "changes", "a veto from a role without one counts as changes"
+            verdict, note = "changes", _notes(note, "a veto from a role without one counts as changes")
         add(Turn(m.role, "review", body, verdict, got[1], now_iso(), note))
         d.reviewed.append(i)
 
     routes = [e.id for e in exits] or list(routes)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
                                                              inline=roads.resolve(steward.harness) not in roads.IN_REPO,
-                                                             routes=routes, exits=exits))
+                                                             routes=routes, exits=exits), STEWARD_TURN)
     if got is None:
         return _end(d)
     decision, body = parse_decision(got[0])
-    note = ""
+    went_on, note = got[2], ""
     if routes:
         d.route, body = parse_route(body, routes)
         d.task, body = parse_task(body)
@@ -445,10 +485,17 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         decision, note = "ask", f"sent back {max_cycles - 1} times already: the operator decides"
         body = (f"The steward would send it back again (cycle {d.cycle} of {max_cycles}). Approve it as it is, "
                 f"or send it back with these comments?\n\n{body}")
-    add(Turn("Steward", "decide", body, decision, got[1], now_iso(), note))
+    add(Turn("Steward", "decide", body, decision, got[1], now_iso(), _notes(WENT_ON if went_on else "", note)))
     d.decision = body
     d.outcome = {"approve": "approved", "rework": "rework", "ask": "asked"}[decision]
     return _end(d)
+
+
+WENT_ON = "went on from where it stopped"
+
+
+def _notes(*notes: str) -> str:
+    return "; ".join(n for n in notes if n)
 
 
 def answer(d: Discussion, text: str) -> None:

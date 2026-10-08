@@ -7,6 +7,7 @@ Skipped where Playwright or Chromium is missing; `-m browser` runs these alone, 
 them out."""
 from __future__ import annotations
 
+import datetime as dt
 import os
 import subprocess
 from pathlib import Path
@@ -404,6 +405,51 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
+def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_saves(page, gui, monkeypatch):
+    """`/note`: the Wiki's meeting, section and tags stand over the bar; Tab picks another meeting; Enter
+    saves what was shown, and the Calendar's meeting says what the Wiki keeps for it
+    (docs/design/wiki-librarian.md §4, §6)."""
+    pg = page
+    server, _ = gui
+    from orkcraft.core.workers.scrolls import ScrollsWorker
+    # the note's take-in runs no agent here (on a machine with one it would really start)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", staticmethod(lambda *a: ("taken in", 0.0, None, "")))
+    repo = server.host.town.repo_root
+    day = dt.date.today() + dt.timedelta(days=1)
+    rows = []
+    for n, (summary, when) in enumerate((("Pricing review", day), ("Roadmap sync", day + dt.timedelta(days=1)))):
+        rows += ["BEGIN:VEVENT", f"UID:note-{n}@x", f"DTSTART:{when:%Y%m%d}T110000", f"DTEND:{when:%Y%m%d}T113000",
+                 f"SUMMARY:{summary}", "END:VEVENT"]
+    (repo / "note-cal.ics").write_text("\r\n".join(["BEGIN:VCALENDAR", *rows, "END:VCALENDAR"]) + "\r\n")
+    build = "t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))"
+    drum = pg.evaluate(build, "war_drum")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.act(id, 'settings', { ics: 'note-cal.ics' }))", drum)
+    wiki = pg.evaluate(build, "scrolls")
+    pg.keyboard.press("Escape")
+    field = pg.locator(".gui-warchief__input")
+    _line(pg, "/note Go over the pricing numbers tomorrow", enter=False)
+    meet = pg.locator(".gui-warchief__note-meet")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert "to discuss" in pg.locator(".gui-warchief__note-rows").inner_text()
+    field.press("Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Tab")
+    meet.filter(has_text="Not for a meeting").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Roadmap sync").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Shift+Tab")
+    meet.filter(has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    field.press("Enter")
+    pg.locator(".ok-toast", has_text="Pricing review").wait_for(state="visible", timeout=WAIT_MS)
+    assert field.input_value() == ""
+    _hut(pg, drum).locator(".gui-drum__wiki", has_text="1").wait_for(state="visible", timeout=WAIT_MS)
+    w = server.host.town.worker(wiki)
+    assert not pg.locator(".ok-toast.is-error").count() and not w.last_error
+    for bid in (wiki, drum):                    # the next test's buildings stand where these stood
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+        _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"
@@ -745,3 +791,57 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
     assert settings["main_tool"] == "pi" and settings["main_now"] == "pi"
     pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', "
                 "{ tools: { pi: false }, main_tool: '' }))")
+
+
+def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(page, gui):
+    """A held cart in the whole town's width: a file its task committed on its branch is rejected (it leaves the
+    branch's list, kept aside) and brought back; its picture shows in the window; Edit writes the person's version
+    there, and Accept takes it. `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.realm import pipes
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    town = gui[0].host.town
+    root = town.repo_root
+    git = lambda cwd, *a: subprocess.run(["git", "-c", "user.email=test@orkcraft.local", "-c", "user.name=Test Runner", *a],
+                                         cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+    base = git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    wt = root / ".orkcraft" / "worktrees" / "loot-browser"
+    git(root, "worktree", "add", "-q", "-b", "pool/camp/loot-browser", str(wt), "HEAD")
+    (wt / "notes.md").write_text("# Notes\n")
+    (wt / "shot.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="red"/></svg>')
+    git(wt, "add", "-A")
+    git(wt, "commit", "-qm", "work")
+    git(wt, "config", "user.email", "test@orkcraft.local")
+    git(wt, "config", "user.name", "Test Runner")
+    bid = call("town.build", {"type": "loot"})
+    hop = pipes.hop("camp", "grub", "agent", 900, 0.04, str(wt.relative_to(root)), "pool/camp/loot-browser", "error", base=base)
+    cart = pipes.Payload(pipes.TEXT, "## Done\n\nthe notes", "camp", "pool.done", "The notes", (hop,), "LB-1")
+    town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
+    pg.keyboard.press("Escape")
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    pg.locator(".gui-panel .gui-panel__full").click()
+    pg.locator(".loot-card", has_text="The notes").click()
+    files = pg.locator(".loot-detail .ok-file")
+    files.first.wait_for(state="visible", timeout=WAIT_MS)
+    files.filter(has_text="shot.svg").click()
+    pg.locator(".loot-branch-file img.loot-what__pic").wait_for(state="visible", timeout=WAIT_MS)   # the picture, here
+    files.filter(has_text="notes.md").click()
+    pg.get_by_role("button", name="Reject this file", exact=True).click()
+    pg.locator(".loot-rejected", has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
+    assert files.filter(has_text="notes.md").count() == 0 and not (wt / "notes.md").exists()
+    if shots:
+        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-1-rejected.png")
+    pg.locator(".loot-rejected").get_by_role("button", name="Bring it back", exact=True).click()
+    files.filter(has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".loot-detail").get_by_role("button", name="Edit", exact=True).click()
+    box = pg.locator(".loot-edit__text")
+    box.fill("## Done\n\nthe notes, checked")
+    if shots:
+        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-2-editor.png")
+    pg.get_by_role("button", name="Accept this version", exact=True).click()
+    pg.wait_for_function("() => !document.querySelector('.loot-card')", timeout=WAIT_MS)
+    stored = town.worker(bid).stored
+    assert len(stored) == 1 and "the notes, checked" in (root / stored[0].path).read_text()
+    pg.keyboard.press("Escape")
+    call("town.demolish", {"id": bid})

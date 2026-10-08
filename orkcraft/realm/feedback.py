@@ -51,6 +51,7 @@ WEIGHTS = {
     "loot.rework": 0.5,            # sent back with a reason
     "loot.needs_you": 0.5,         # the rework rounds did not fix it
     "loot.dropped": 0.5,           # thrown away
+    "loot.file_rejected": 0.34,    # one file of a held cart's branch rejected, the rest kept
     "lake.touched": 0.2,           # an ork's file: small fixes
     "lake.reshaped": 0.5,          # … its format changed
     "lake.rewritten": 0.5,         # … rewritten
@@ -64,6 +65,7 @@ LABELS = {EXPLICIT: "👍 / 👎", "loot.accepted": "accepted in a Loot", "loot.
           "loot.filled": "filled in and accepted", "loot.touched": "fixed and accepted",
           "loot.reshaped": "reformatted and accepted", "loot.rewritten": "rewritten and accepted",
           "loot.rework": "sent back", "loot.needs_you": "rework did not fix it", "loot.dropped": "dropped in a Loot",
+          "loot.file_rejected": "a file of it rejected in a Loot",
           "lake.touched": "fixed in a Lake", "lake.reshaped": "reformatted in a Lake", "lake.rewritten": "rewritten in a Lake",
           "pr.merged": "pull request merged", "pr.closed": "pull request closed", "revert": "taken back with Z",
           "usage.ignored": "nobody opened it"}

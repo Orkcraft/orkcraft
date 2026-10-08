@@ -49,6 +49,7 @@ def title_of(text: str) -> str:
 class CouncilWorker(Worker):
     TYPE = "council"
     runner = None              # tests put a (harness, prompt, model) → (text, cost) here
+    sessions = staticmethod(roads.names_session)   # a member's tool whose stopped turn Go on reopens
     setup_runner = None        # and the keeper's proposal call, prompt → (text, cost), here
 
     def __init__(self, town, building_id: str) -> None:
@@ -185,11 +186,16 @@ class CouncilWorker(Worker):
         self.refresh()
 
     def refresh(self) -> None:
-        """The briefs' templates and the past reviews, read again."""
+        """The briefs' templates and the past reviews, read again. A review kept as running that no thread
+        runs any more (the app was closed mid-review) is stopped: Go on takes it up at its turn."""
         self.ensure_briefs()
         self.history = tm.load_all(self.state_dir, KEEP_HISTORY)
         if self.current is None and self.history:
             self.current = self.history[0]
+        live = self.current.id if self._busy and self.current is not None else ""
+        for d in self.history + ([self.current] if self.current is not None else []):
+            if d.outcome == "running" and d.id != live:
+                d.outcome = "stopped"
         self.changed()
 
     def status(self) -> str:
@@ -339,19 +345,27 @@ class CouncilWorker(Worker):
         self._busy, self._cancel = True, threading.Event()
         cancel = self._cancel
         repo, env = self.repo_root, {"ORKCRAFT_ORC": f"{self.building_id}/clan"}
+        real = type(self).runner is None and not self.simulated
         runner = type(self).runner or (self.sandbox_runner(cancel) if self.simulated else
-                                       (lambda h, p, m: roads.run_agent(h, p, repo, env, cancel, m, web=True)[:2]))
+                                       (lambda h, p, m, session="", reopen=False: roads.run_agent(
+                                           h, p, repo, env, cancel, m, web=True, session=session, reopen=reopen)[:2]))
         steward, veto, cycles, budget, routes = self.steward(), self.veto, self.max_cycles, self.budget, self.routes
         exits = self.exits if self.named else []
         briefs = {m.role: self.brief_of(m) for m in team}
 
-        def on_turn(_d: tm.Discussion, _t: tm.Turn) -> None:
+        def kept(_d: tm.Discussion, _t: tm.Turn | None = None) -> None:
+            """Each turn is kept as it is taken: Go on finds it after a stop, or after the app was closed."""
+            try:
+                tm.save(self.state_dir, d)
+            except OSError:
+                pass
             self.changed()
 
         def work() -> None:
             try:
-                tm.run(d, team, steward, veto, cycles, budget, runner, on_turn, cancel,
-                       lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits)
+                tm.run(d, team, steward, veto, cycles, budget, runner, kept, cancel,
+                       lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits,
+                       sessions=type(self).sessions if real else None, on_call=kept)
             except Exception as e:  # the town goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:

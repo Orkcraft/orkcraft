@@ -51,6 +51,9 @@
 .gui-drum__hour .ok-chip { white-space: nowrap; }
 /* A meeting's document: a pill beside it, the same in the closed card and the Command Card. */
 .ok-chip.gui-drum__doc { flex: none; padding: 0 var(--space-2); line-height: 1.4; font-size: .85em; white-space: nowrap; }
+/* What the Wiki keeps for a meeting: a pill as the document's, the first to give way in a narrow card. */
+.gui-drum__beat .ok-chip.gui-drum__wiki { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  padding: 0 var(--space-2); line-height: 1.4; font-size: .85em; white-space: nowrap; }
 
 /* -- open, made for the half panel ------------------------------------------------------------------- */
 /* The head: the date and what is now and next on one line, Prepare doc quiet and New event; the limits
