@@ -796,10 +796,10 @@ def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
     assert "no road" in stub.get_attribute("title") and pg.locator(".gui-loose").count() == 2
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/rb-7-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
     pg.mouse.up()
     pg.locator(".gui-sign", has_text="To development").and_(pg.locator(":not(.gui-loose__sign)")) \
         .wait_for(state="visible", timeout=WAIT_MS)                          # the road, signed with the exit
@@ -826,10 +826,10 @@ def test_a_signposts_route_with_no_road_is_a_stub_pulled_to_a_building(page, gui
     stub.wait_for(state="visible", timeout=WAIT_MS)
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/sp-1-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
     pg.mouse.up()
     pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
     assert pg.locator(".gui-signs .gui-sign", has_text="bugs").count() == 1 and pg.locator(".gui-modal").count() == 0
