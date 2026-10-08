@@ -35,17 +35,28 @@ from one building into the same other one are one road, and its card lists every
   a voice line (§4), an audio file of the person's own, or nothing, with ▶ to hear it. *All events* sets
   one sound for every row.
 - **Local, not in the scroll.** The Town Scroll is the project file and goes to git and to the team. One
-  person's siren must not sound for everyone, so a sound is kept in this machine's settings, by the road's
-  town-wide key (`scroll.road_key`). The scroll keeps only the roads.
+  person's siren must not sound for everyone, so a sound is kept in this machine's settings, by what the
+  road joins and carries: source building, target building, event (with a Signpost's route). Not by the
+  road's id (`scroll.road_key`): an event removed from a road and added again gets a new id, and its sound
+  must stay. The scroll keeps only the roads.
 - **One cart, one sound.** An event that goes down three roads plays one sound, not three: within a short
   window, one sound per cart (its `ref`), and the most urgent wins (needs you > failed > done > the rest).
 - **Quiet by default.** A new road makes no sound. The picker offers a sound right away for the events
-  that ask for a person (`loot.needs_you`, `*.failed`, `signpost.unmatched`, `workshop.alert`).
+  that ask for a person (`pool.question` — an ork asks you —, `loot.needs_you`, `*.failed`,
+  `forge.conflict`, `signpost.unmatched`, `workshop.alert`, `charts.threshold`).
 - **What the Horn held moves to Settings → Sound:** mute, volume, quiet hours (`22:00-08:00`), the voice
   pack. Quiet hours stay: they keep the town calm at night.
 - **The Horn goes.** A scroll with a Horn still loads: its lines move onto the roads they name where they
   can (`building/event`, `event`), `*` and `default` become the sound of Settings, and the Horn is
-  demolished with one line saying where its sounds went.
+  demolished with one line saying where its sounds went. What else goes with it:
+  - `horn` joins `catalog.RETIRED_TYPES` (as File tree and Inspector did): nothing builds one anew;
+  - the onboarding templates `incident_room` and `anomaly_watch` (`realm/intents.py`) lose their Horn: its
+    roads become sounds on the roads into the buildings they came from;
+  - the catalog group "Hear what comes in" (`realm/catalog_reference.py` `INTENTS`) holds only the Horn
+    and goes;
+  - the Town planner's prompt (`realm/town_builder.py` `PLANNER`) no longer names "a horn's sounds"
+    among the settings that name buildings; a plan does not set sounds (they are local);
+  - the catalog's tests count one type fewer.
 - **Wording.** "Sound" gets its word in `realm/lexicon.py` `TERMS`, and its old Camp spelling "Horn" goes
   into `was`.
 
@@ -67,11 +78,11 @@ ours: we take the genre, never a game's lines or voices.
 | Work taken | `tasks.created`, `pool.assigned`, `tasks.sent` | "Fine. Ork go." · "More work? Grr." · "On it, boss." |
 | Done | `pool.done`, `workshop.done`, `mill.done`, `team.artifact_ready` | "Built it. Mostly." · "Finished! Where's grub?" · "Smashed it good." |
 | Failed | `workshop.failed`, `pool.failed`, `mill.failed` | "It broke. Not me." · "Bah! Thing fight back." · "Ork tried. Ork sad." |
-| Needs you | `loot.needs_you`, `signpost.unmatched` | "Warchief! Need your eyes." · "Where this go?" · "Ork stuck. Help?" |
-| Alarm | `workshop.alert`, `catapult.failed` | "Trouble at the walls!" · "Loud thing broke!" |
+| Needs you | `pool.question`, `loot.needs_you`, `forge.conflict`, `signpost.unmatched` | "Warchief! Need your eyes." · "Where this go?" · "Ork stuck. Help?" |
+| Alarm | `workshop.alert`, `catapult.failed`, `charts.threshold` | "Trouble at the walls!" · "Loud thing broke!" |
 | Yes / again | `team.approved` / `team.rework`, `loot.rework` | "Warchief say yes!" · "Again?! Fine…" |
 | Word came | `mail.received`, `watch.webhook`, `watch.github` | "Scroll come!" · "Raven bring word." |
-| Git | `git.pr_opened`, `pr.merged`, `pr.closed` | "New road dug." · "Road is open!" · "Road gone. Oh well." |
+| Git | `git.pr_opened`, `git.pr_merged`, `forge.merged` | "New road dug." · "Road is open!" |
 | Sent on | `signpost.routed` | "That way!" · "Off you go." |
 | Time | `watch.cron` | "Drum say: time." |
 | Poked | clicked again and again | "Poke me again, I bite." · "Ork busy being ork." |
@@ -123,7 +134,7 @@ grammar on purpose, a small grunt before or after. Not a monster, not scary: tir
 13. **Alarm** — "Shouted, out of breath, from far away: *Trouble at the walls!*"
 14. **Yes / again** — "Delighted, a short laugh: *Warchief say yes!*" / "Outraged, then giving in: *Again?! … Fine.*"
 15. **Word came** — "Excited, announcing: *Scroll come!*" / "Matter-of-fact: *Raven bring word.*"
-16. **Git** — "Pleased, like opening a gate: *Road is open!*" / "Shrugging: *Road gone. Oh well.*"
+16. **Git** — "Pleased, like opening a gate: *Road is open!*" / "Digging, satisfied: *New road dug.*"
 17. **Poked** — "Fed up, through the teeth, then a small growl: *Poke me again, I bite.*"
 
 ### Effect prompts (Stable Audio Open; 1–3 s, then the same `norm -1` and fade)
