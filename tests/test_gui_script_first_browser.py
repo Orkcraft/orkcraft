@@ -122,3 +122,28 @@ def test_a_yard_shows_no_ork_of_its_own_and_a_hut_does(demo_page):
     assert yard.locator(".gui-hut__keeper").count() == 0
     assert "is-yard" not in (hut.get_attribute("class") or "")
     assert hut.locator(".gui-hut__keeper").count() == 1
+
+
+def test_a_yard_is_fenced_and_the_ork_that_asks_stands_in_its_gate(demo_page):
+    """docs/design/yards.md §3–§4 in Camp: a yard's name stands over its building and its title bar is a fence with a
+    gate, shut while no ork is there; a hut says what its orks do over its roof; the ork that asks comes out, and a
+    press on it opens its question."""
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    calendar = pg.locator('.gui-hut[data-id="days"]')
+    calendar.wait_for(state="visible", timeout=WAIT_MS)
+    assert calendar.locator(".gui-hut__yard-title").inner_text().strip().lower() == "calendar"
+    assert calendar.locator(".gui-hut__gate.is-shut").is_visible()
+    assert not calendar.locator(".gui-hut__name").is_visible()            # the name left the title bar
+    assert pg.locator('.gui-hut[data-id="todo"] .gui-hut__doing').is_visible()   # a hut: Zz or a wheel on its roof
+    assert calendar.locator(".gui-hut__doing").count() == 0               # a yard: nobody lives in it
+
+    _call(pg, "orkspace.select", {"id": "agent_yard"})
+    gate = pg.locator('.gui-hut[data-id="outputs"] .gui-hut__gate.is-open')   # the Review gate's ork asks
+    gate.wait_for(state="visible", timeout=WAIT_MS)
+    gate.locator(".gui-hut__caller").click()
+    dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    assert "carts wait" in dialog.inner_text()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "yards-caller.png"))

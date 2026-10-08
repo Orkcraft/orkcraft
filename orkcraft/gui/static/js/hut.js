@@ -21,6 +21,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
 import { town, say, command } from "./link.js";
+import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
@@ -29,6 +30,11 @@ export const sizes = signal({});           // building id → {w, h} of its card
 export const dragging = signal(null);      // {id, dx, dy}: the hut being dragged; its ghost stands this far from it
 export const resizing = signal(null);      // {id, w, h}: the card being stretched; its ghost has this size
 export const HUT_MIN = { w: 240, h: 60 }, HUT_MAX = { w: 960, h: 900 };   // as the host keeps them (gui/host.py)
+// A yard is stretched in whole pickets in Camp (docs/design/yards.md §3b′): one bottom picket and its gap across,
+// one side picket and its gap down, so no picket is cut at a corner. Office draws no fence: no step.
+export const YARD_STEP = { w: 21, h: 27 };
+const stepOf = (b) => (b.yard && document.documentElement.dataset.look !== "office" ? YARD_STEP : null);
+const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
 export function levelOf(b) {
@@ -173,6 +179,52 @@ function Keeper({ garrison, alert, yard, visit }) {
     <${Scheme} scheme=${lead.scheme} />${visit && html`<span class="gui-hut__visit">visiting</span>`}</span>`;
 }
 
+// -- its orks, seen from outside (docs/design/yards.md §4) -----------------------------------------------------
+// In Camp the head left the title bar: a building says what its orks do over its roof — Zz while they sleep, a
+// wheel while they work — and the one that asks comes out by the door, where a press answers it. A yard shows
+// nothing: no ork lives in it; one that comes stands in its gate. Office keeps its words (office.css).
+
+function Doing({ b, busy }) {
+  if (b.yard || b.alert || !b.garrison.length) return null;
+  return html`<i class=${cls("gui-hut__doing", busy ? "is-busy" : "is-idle")} aria-hidden="true"
+    title=${say(busy ? "at work" : "idle")}></i>`;
+}
+
+const asker = (b) => b.garrison.find((o) => o.status === "alert") || b.garrison.find((o) => o.lead) || b.garrison[0];
+
+/** The ork that asks, out by the door (or in a yard's gate): a press opens its question (js/orders.js), the
+ *  building stays shut. */
+function Caller({ b }) {
+  if (!b.alert) return null;
+  const o = asker(b);
+  const who = o ? o.name : say(b.title);
+  const stop = (e) => e.stopPropagation();
+  return html`<button class="gui-hut__caller" title=${`${who}: ${b.alert.title}`} aria-label=${`${say("Answer")} ${who}`}
+      onPointerDown=${stop} onClick=${(e) => { stop(e); openOrders(b.alert.id); }}>
+    <img class="ok-sprite" src="/ds/sprites/orks/ork-waiting.png" srcset="/ds/sprites/orks/ork-waiting@2x.png 2x"
+      width="40" height="16" alt="" draggable="false" /></button>`;
+}
+
+/** An ork come to a yard for a wake or a job of its own: it stands in the gate while it is there. */
+function Visitor({ b }) {
+  const o = asker(b);
+  if (!o) return null;
+  return html`<span class="gui-hut__visitor" title=${`${o.name} · ${say("visiting")}`}><${OrkHead} o=${{ ...o, status: "busy" }} /></span>`;
+}
+
+/** A yard's gate in its top fence (Camp): shut, or holding the ork that came; a post right after it. */
+function Gate({ b }) {
+  const inside = b.alert ? html`<${Caller} b=${b} />` : b.visit ? html`<${Visitor} b=${b} />` : null;
+  return html`<span class=${cls("gui-hut__gate", inside ? "is-open" : "is-shut")}>${inside}</span>
+    <span class="gui-hut__post" aria-hidden="true"></span>`;
+}
+
+/** A yard's name stands over its building, on the ground, with no plate (Camp). */
+function YardName({ b, number }) {
+  return html`<span class="gui-hut__yard-name" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>
+    <span class="no">${number}</span><${TypeIcon} type=${b.type} /><span class="gui-hut__yard-title">${say(b.title)}</span></span>`;
+}
+
 // -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
 // Its card is ablaze from the first second (components.css); from FIRE_FROM s flames climb its roof, one more
 // a minute until FIRE_FULL s covers it. Never in quiet hours, nor when the portrait's menu turned them off; under
@@ -227,10 +279,11 @@ function Grips({ b, onSized }) {
     el.setPointerCapture(e.pointerId);
     let gone = false;
     const clamp = (v, lo, hi) => Math.round(Math.min(Math.max(v, lo), hi));
+    const step = stepOf(b);
     const move = (ev) => {
       resizing.value = { id: b.id,
-        w: sides.includes("e") ? clamp(from.w + ev.clientX - from.x, HUT_MIN.w, HUT_MAX.w) : from.w,
-        h: sides.includes("s") ? clamp(from.h + ev.clientY - from.y, HUT_MIN.h, HUT_MAX.h) : from.h };
+        w: sides.includes("e") ? snap(clamp(from.w + ev.clientX - from.x, HUT_MIN.w, HUT_MAX.w), step && step.w) : from.w,
+        h: sides.includes("s") ? snap(clamp(from.h + ev.clientY - from.y, HUT_MIN.h, HUT_MAX.h), step && step.h) : from.h };
     };
     const key = (ev) => { if (ev.key === "Escape") { ev.stopImmediatePropagation(); gone = true; end(); } };
     const end = () => {
@@ -321,19 +374,21 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
   const x = spot.x, y = spot.y;
   const level = levelOf(b);
   const sized = b.size && !folded;
+  const step = stepOf(b);                  // a yard's size, as saved before, is drawn in whole pickets
+  const w = sized ? snap(b.size[0], step && step.w) : 0, h = sized ? snap(b.size[1], step && step.h) : 0;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
-  const title = html`<span class="ok-hut__label gui-hut__title"><span class="no" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>${number}</span>
+  const title = html`<span class="ok-hut__label gui-hut__title">${b.yard && html`<${Gate} b=${b} />`}<span class="no" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>${number}</span>
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
-      ${b.alert && html`<span class="ok-word">?</span>`}
+      ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
       ${folded && html`<${Mark} b=${b} />`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
-  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${b.size[0]}px` : "")}
+  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
@@ -342,8 +397,10 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
-      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>
-    <div class="ok-hut__card" style=${sized ? `height:${b.size[1]}px` : ""}>
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
+      <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}</span>
+      ${!b.yard && html`<${Caller} b=${b} />`}</div>
+    <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""}>
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"

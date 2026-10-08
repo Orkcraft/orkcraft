@@ -1,14 +1,16 @@
 # Design — yards and huts: an ork lives only where it thinks
 
-Status: proposed 2026-10-08. Builds on [script-first.md](script-first.md) (the rule of which buildings
+Status: built on the branch `claude/great-cray-5i993w` 2026-10-08, not merged: real screenshots go to a design,
+product and marketing review first. Builds on [script-first.md](script-first.md) (the rule of which buildings
 call a model), [folded-cards.md](folded-cards.md) (a card folded to its title bar) and the Camp look of
 [gui-design-system.md](gui-design-system.md). GUI only: the TUI is deprecated
 ([calm-town.md](calm-town.md) §9).
 
 | stage | what | state |
 |---|---|---|
-| 1 | a script-first building shows no ork on its card; the ork comes to it while it is woken or asked (§2) | |
-| 2 | the yard's card: a picket fence round its inside, a gate round its title bar, the gate alone when folded (§3) | |
+| 1 | a script-first building shows no ork on its card; the ork comes to it while it is woken or asked (§2) | built |
+| 2 | the yard's card: a picket fence round its inside, the title bar a fence with a gate, the name over the building (§3) | built |
+| 2′ | every building's orks seen from outside: Zz or a wheel over its roof, the asking ork out by the door (§4) | built |
 | 3 | the gate opens and shuts with a short move; the ork walks in through it (§3d) | |
 
 ## 1. Why
@@ -49,9 +51,8 @@ head stands in the title bar, while one of these holds:
 | the person asked it: keeper in plain words, Redesign, Watch, Ork setup | its job ends |
 | it asks the person (`alert`) | the question is answered |
 
-- Its head is drawn as on a hut (`OrkHead`, the scheme, the flash when it asks), with the word
-  **visiting** in its title (`Keeper` gets `visiting`), so the tooltip reads *Grot Pointa · visiting ·
-  at work*.
+- In Camp it stands **in the yard's gate** (§3b): its head while it works, the asking ork with its `!` while it
+  asks. In Office its head's place in the title bar says **visiting** after the name (`Keeper` gets `visiting`).
 - The rest of the time, where the head stood, nothing: the name gets the room.
 - Info (the right panel) still shows the steward and its line (`js/steward.js`): who comes and what
   wakes it. Nothing about the steward is removed; only its head on the card.
@@ -79,19 +80,18 @@ head stands in the title bar, while one of these holds:
 ## 3. Stage 2 — the yard's card: a fence and a gate
 
 Both keep their building's header sprite on the card's top edge. A yard is a fenced plot: **its card's
-frame is a fence, its title bar is the gate.** Camp only: a look changes how things are drawn, never a
-word ([portrait.md](portrait.md) §3). Office draws a yard as any card: nothing of this stage is drawn there.
-
-A first prototype (a stylesheet over the dashboard demo's real cards) is on the design canvas *Yards
-and Huts*: the pickets and side rails as background tiles of the card, the title bar's background the picket
-row, its children on the plate, the posts as its pseudo-elements.
+frame is a fence, its title bar is the top fence with a gate, its name stands over its building on the
+ground.** Camp only: a look changes how things are drawn, never a word ([portrait.md](portrait.md) §3).
+Office draws a yard as any card: nothing of this stage is drawn there (`yards.css` is Camp's alone).
 
 ```
- ▲┌───────────────────┐▲                  ← two posts: the left end, and right after the plate
- █│ 3 ⑂ Router        │█═▲═▲═▲═▲═▲═▲═▲   ← a plate as wide as its words; pickets fill the rest
- ▴│ 12 sent · 0 dropped             │▴   ← the inside: the card's plain `panel`, never wood
- ▴│ last: release-notes → mill      │▴   ← each side: full pickets, tips up, a narrow rail down the middle
- ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
+ 4 ⑂ ROUTER                                ← its name over the building, on the ground, no plate
+  [sprite]
+ ▲┌──────┐▲                               ← a post, the gate, a post
+ █│▥▥▥▥▥▥│█═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← the gate shut (or the ork that came, in it); pickets to the edge
+ ▴│ 12 sent · 0 dropped               │▴   ← the inside: the card's plain `panel`, never wood
+ ▴│ last: release-notes → mill        │▴   ← each side: full pickets, tips up, a narrow rail down the middle
+ ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
 ```
 
 ### 3a. The fence
@@ -111,21 +111,22 @@ row, its children on the plate, the posts as its pseudo-elements.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
   `alert` frame and the halo, as a card does, and the flames stand on the gate.
 
-### 3b. The gate
+### 3b. The gate and the name
 
-- **The title bar is the top fence.** It keeps its height (`--titlebar`, 28 px) and nothing more:
-  no beam under it.
-- **A dark plate as wide as its words**: number, icon, name, the visiting ork, `?`, mark — on
-  `panel-raised`, as on a hut, bevelled. The rest of the bar to the right is the same pickets as the
-  bottom row, standing on its lower edge; the plate rises above them like a sign on the fence.
-- **Two posts** (5×12 sprite px, pointed like the pickets), a little taller than the bar: one at its left end,
-  one **right after the plate**, so the plate is a gate between them. The second post is a `span` the title
-  bar gets after its last plate item (`js/hut.js`).
-- Pin and fold stay at the right end, on a small plate of their own, shown on hover as now. The road
-  handle — on every card now a small gate (`tools/road_sprites.py`): two posts, a door of upright planks,
-  a gold latch — stays where it is.
-- The type's header sprite stays where it stands on a hut: on the top edge. A yard is told by its fence,
-  never by losing its building.
+- **The title bar is the top fence**, its height (`--titlebar`, 28 px) and nothing more: a post, **the gate**,
+  a post, then pickets to the right edge.
+- **The gate holds only an ork.** Shut — upright planks, a gold latch, the road handle's door — while
+  nobody is there; open, with the ork that came standing in it (§2b), while one is: its head while it works,
+  the asking ork with its `!` while it asks, and a press on that one opens its question (§4).
+- **The name goes over the building**: number, type icon, name, on the ground with no plate — muted caps
+  with a pixel outline, gold while selected, the fire's colour while it asks, cut short at 260 px. A press on
+  the building or the fence opens it as the title bar did. Office keeps the name in the title bar.
+- Pin and fold stay at the right end of the bar, on a small plate, shown on hover; the bar keeps 26 px
+  clear at its right for the road handle, so neither is ever under it.
+- The road handle on every card is a small gate (`tools/road_sprites.py`): two posts, a door of upright
+  planks, a gold latch.
+- Code: `js/hut.js` `Gate`, `YardName`; `yards.css`; the sprites by `tools/fence_sprites.py` into
+  `design-system/sprites/fence/`.
 
 ### 3b′. A yard is sized by its pickets
 
@@ -140,8 +141,8 @@ row, its children on the plate, the posts as its pseudo-elements.
 
 ### 3c. Fold is the top fence alone
 
-A folded card ([folded-cards.md](folded-cards.md)) is **the top fence alone**: posts, plate and
-pickets, the rest gone. A peek (a question, an error, a drag) brings the fence back with the inside, over the
+A folded card ([folded-cards.md](folded-cards.md)) is **its name, its building and the top fence alone**:
+the gate and the pickets, the rest gone. A peek (a question, an error, a drag) brings the fence back with the inside, over the
 neighbours as a peek does now. Drop file here and Router are yards and are built folded; a Transformer
 is built folded and is a yard while its steps are code.
 
@@ -152,7 +153,26 @@ is built folded and is a yard while its steps are code.
   leaves.
 - None of it under `prefers-reduced-motion`; nothing of it in Office.
 
-## 4. What we measure
+## 4. Stage 2′ — its orks, seen from outside
+
+The ork's head in the title bar said little: it was on every card and nearly always said *idle*. In Camp it
+leaves the title bar on every card, hut and yard; the building says what its orks do, as an RTS does.
+
+- **Over its roof**, a hut that has orks says what they do: **Zz** while they sleep, a **wheel** while they work
+  (the right half of the ork's state sprites, `orks/ork-idle.png`, `ork-busy.png`). A yard shows nothing: no ork
+  lives in it.
+- **The ork that asks comes out**: by the door, at the sprite's right, its head and its `!` (`ork-waiting.png`),
+  pacing a step to and fro; in a yard it stands in the gate. **A press on it opens its question**
+  (`js/orders.js` `openOrders(id)`); the building stays shut. The hit area is wider than the sprite and it stops
+  under the mouse. Answers in the HUD stays the way to every question; this is the short way to one.
+- Fire stays on the roof as before; the card burns as before.
+- Under `prefers-reduced-motion`, nothing paces or floats. Office draws none of it: it keeps its words
+  (`busy`, `?`, `visiting`) in the title bar.
+- What the head told — its name, its AI tool — is in Info and in the caller's tooltip.
+- Code: `js/hut.js` `Doing`, `Caller`, `Visitor`; `yards.css`; `office.css` hides them.
+- Later: a running cycle for the caller, a building's own "at work" (smoke, sparks) instead of the wheel.
+
+## 5. What we measure
 
 - **The screenshot.** The README's town (`docs/img/town.png`) before and after: can a person who never
   ran Orkcraft point at the buildings that spend money? Asked of five people.
@@ -160,7 +180,7 @@ is built folded and is a yard while its steps are code.
   If the fences make it go elsewhere, stage 2 waits on a quieter fence, never on more decoration.
 - **Spend.** No change: stage 1 is a picture of a rule that already holds.
 
-## 5. Not doing
+## 6. Not doing
 
 - Taking the steward out of a yard. It writes the yard's rules (building-views.md §2: no rule editors),
   and script-first.md made it cost nothing while it sleeps.
