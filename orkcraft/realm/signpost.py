@@ -16,12 +16,18 @@ One rule per line, the first that matches wins:
 
 The match goes out as `signpost.routed` with the route as its title; each road from the Signpost waits
 for its own route (a road filter). Nothing matched → `signpost.unmatched`.
+
+A rule may also name the kind of work its carts ask for (docs/design/barracks-flows.md §4), after the
+route: `bugs, change: contains stack trace`. It is set on a cart that came with none; on a cart that
+came with one it may only lower it (`pipes.least_want`), never give the path more rights.
 """
 from __future__ import annotations
 
 import json
 import re
 from dataclasses import dataclass
+
+from orkcraft.realm import pipes
 
 ROUTE = re.compile(r"^[a-z0-9_-]{1,32}$")
 FIELDS = ("title", "value", "source", "event", "kind")
@@ -33,24 +39,28 @@ class Rule:
     how: str              # contains | matches | kind | source | event | eq | ne | else
     field: str = ""
     value: str = ""
+    want: str = ""        # the kind of work it names (pipes.WANTS), "" for none
 
 
 def parse(line: str) -> Rule:
-    route, _, cond = str(line).partition(":")
-    route, cond = route.strip().lower(), cond.strip()
+    head, _, cond = str(line).partition(":")
+    route, _, want = head.partition(",")
+    route, want, cond = route.strip().lower(), want.strip().lower(), cond.strip()
     if not ROUTE.match(route):
         raise ValueError(f"route {route!r}: lowercase letters, digits, - and _")
+    if want and not pipes.want_of(want):
+        raise ValueError(f"kind of work {want!r}: {', '.join(pipes.WANTS)}")
     if cond.lower() in ("else", "*", "always"):
-        return Rule(route, "else")
+        return Rule(route, "else", want=want)
     for word in ("contains", "matches", "kind", "source", "event"):
         if cond.lower().startswith(word + " "):
             value = cond[len(word) + 1:].strip()
             if word == "matches":
                 re.compile(value)
-            return Rule(route, word, value=value)
+            return Rule(route, word, value=value, want=want)
     m = re.match(r"^([a-z_][a-z0-9_.]*)\s*(==|!=)\s*(.+)$", cond)
     if m:
-        return Rule(route, "eq" if m.group(2) == "==" else "ne", m.group(1), m.group(3).strip().strip("\"'"))
+        return Rule(route, "eq" if m.group(2) == "==" else "ne", m.group(1), m.group(3).strip().strip("\"'"), want)
     raise ValueError(f"cannot read {cond!r}: contains, matches, kind, source, event, field == value, else")
 
 
@@ -98,5 +108,21 @@ def match(rule: Rule, payload) -> bool:
     return (have == rule.value) if rule.how == "eq" else (have != rule.value)
 
 
+def pick(rules: list[Rule], payload) -> Rule | None:
+    """The first rule that matches, else None."""
+    return next((r for r in rules if match(r, payload)), None)
+
+
 def route(rules: list[Rule], payload) -> str | None:
-    return next((r.route for r in rules if match(r, payload)), None)
+    r = pick(rules, payload)
+    return r.route if r else None
+
+
+def want(rule: Rule | None, payload) -> str:
+    """The kind of work the cart goes on with: the rule's on a cart that came with none, else the one of the
+    two whose path may do least (a rule never raises a cart's rights)."""
+    came = pipes.want_of(getattr(payload, "want", ""))
+    named = rule.want if rule else ""
+    if not named:
+        return came
+    return pipes.least_want(came, named) if came else named

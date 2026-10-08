@@ -4,7 +4,7 @@ carts that came by. The routing is the worker's (core/workers/signpost.py)."""
 from __future__ import annotations
 
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import modes, signpost
+from orkcraft.realm import lexicon, modes, signpost
 
 # The design system's marks (design-system/tokens.json, `--mark-*`), one per road out, in this order.
 MARKS = ("blue", "green", "purple", "yellow", "red")
@@ -42,7 +42,8 @@ def detail(w) -> dict:
             colour.setdefault("", r["color"])
     history = [{"at": h.get("at", ""), "route": h.get("route", ""), "source": h.get("source", ""),
                 "source_title": modes.plain(w.town.title_of(h["source"])) if h.get("source") else "",
-                "event": h.get("event", ""), "title": h.get("title", ""), "value": h.get("value", "")}
+                "event": h.get("event", ""), "title": h.get("title", ""), "value": h.get("value", ""),
+                "want": lexicon.want_word(h.get("want", ""))}            # the kind its rule set, in words
                for h in w.history]
     return {"rules": w.rules_text, "problems": problems, "routes": signpost.routes(w.rules_text),
             "roads": roads, "colors": colour, "history": history, "counts": w.counts}

@@ -77,15 +77,18 @@ class SignpostWorker(Worker):
 
     def receive(self, payload, title: str, markdown: str) -> None:
         rules, _ = signpost.rules_of(self.rules_text)
-        route = signpost.route(rules, payload)
+        rule = signpost.pick(rules, payload)
+        route = rule.route if rule else None
+        want = signpost.want(rule, payload)
         rec = {"at": jobs.now_iso(), "route": route or "", "source": payload.source, "event": payload.mode,
                "title": payload.title or title, "value": payload.value[:4000]}
+        if want and want != pipes.want_of(getattr(payload, "want", "")):
+            rec["want"] = want                        # its rule set the kind: the window says so
         self.state_dir.mkdir(parents=True, exist_ok=True)
         with self.log_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         if route:                                     # the cart goes on: its trail and ref with it
-            self.emit("signpost.routed", payload.value, route, trail=payload.trail, ref=payload.ref,
-                      want=getattr(payload, "want", ""))
+            self.emit("signpost.routed", payload.value, route, trail=payload.trail, ref=payload.ref, want=want)
         else:
             self.emit("signpost.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref,
                       want=getattr(payload, "want", ""))

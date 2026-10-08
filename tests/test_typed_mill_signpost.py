@@ -116,6 +116,24 @@ def test_signpost_rules():
     assert not roads.passes({"route": ["bugs"]}, Payload("text", "x", "t", "signpost.routed", "links"), {})[0]
 
 
+def test_a_signpost_rule_may_name_a_kind_of_work_and_never_raises_one():
+    """docs/design/barracks-flows.md §4: `route, want: condition`. On a cart with no kind the rule's is set; on a
+    cart with one, the two give the one whose path may do least."""
+    rules, problems = signpost.rules_of(["bugs, change: contains traceback", "mail, Reply: else", "x, frob: else"])
+    assert [(r.route, r.want) for r in rules] == [("bugs", "change"), ("mail", "reply")]
+    assert problems == ["rule 3: kind of work 'frob': change, reply, doc, routine, know"]
+    assert signpost.rules_of(["a: contains x, y"])[0][0] == signpost.Rule("a", "contains", value="x, y")
+    bug, plain = P("a Traceback"), P("hello")
+    assert signpost.want(signpost.pick(rules, bug), bug) == "change"
+    assert signpost.want(signpost.pick(rules, plain), plain) == "reply"
+    asked = Payload("text", "a Traceback", "t", "e", "", want="reply")       # came as a reply: never a change
+    assert signpost.want(signpost.pick(rules, asked), asked) == "reply"
+    doc = Payload("text", "hi", "t", "e", "", want="doc")                    # came as a document: a reply does less
+    assert signpost.want(signpost.pick(rules, doc), doc) == "reply"
+    assert signpost.want(signpost.pick(signpost.rules_of(["a: else"])[0], doc), doc) == "doc"   # no kind named: kept
+    assert signpost.want(None, plain) == ""
+
+
 @pytest.mark.asyncio
 async def test_the_signpost_routes_into_the_mill(fake_repo: Path, monkeypatch):
     for s in ({"id": "crossroads", "title": "Signpost", "icon": "🚏", "orc": {"name": "Grot Pointa"}, "type": "signpost",

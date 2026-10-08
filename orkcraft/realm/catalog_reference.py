@@ -140,7 +140,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "
                  "`<route>: kind <text|file|node>`, `<route>: source <building>`, `<route>: event <event id>`, "
                  "`<route>: <field> == <value>` (or !=; field: title, value, source, event, kind or a JSON key), "
-                 "`<route>: else` last. A route is lowercase a-z 0-9 _ -. "
+                 "`<route>: else` last. A route is lowercase a-z 0-9 _ -. A rule may name the kind of work its "
+                 "carts ask for after the route, `<route>, <change|reply|doc|routine|know>: ...`, only when the "
+                 "person asked for it: it is set on a cart with none and never raises one a cart came with. "
                  "e.g. [\"urgent: contains urgent\", \"bugs: matches (?i)bug|crash\", \"rest: else\"]",
     },
     "mill": {

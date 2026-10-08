@@ -148,7 +148,7 @@ function Carts({ id, data }) {
     ${rows.length ? html`<ul class="gui-sign__rows">${rows.map(({ h, n }) => html`<li key=${n}>
         <button class="gui-sign__row" onClick=${() => { chosen.value = { ...chosen.value, [id]: n }; }} title=${h.title}>
           <span class="gui-sign__at">${when(h.at)}</span>
-          <span class="gui-sign__route">→ <${Route} data=${data} route=${h.route} /></span>
+          <span class="gui-sign__route">→ <${Route} data=${data} route=${h.route} />${h.want ? ` · ${h.want}` : ""}</span>
           <span class="gui-sign__what">${h.title}</span>
           <span class="gui-sign__from">${h.source_title}</span></button></li>`)}</ul>`
       : html`<p class="ok-tone-muted">${data.history.length ? say("None on this route yet.") : say("No carts yet — a road brings them here.")}</p>`}
@@ -160,7 +160,7 @@ function Cart({ id, data, h }) {
   const back = () => { chosen.value = { ...chosen.value, [id]: null }; };
   return html`<div class="gui-sign__cart" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
     <button class="ok-btn gui-sign__back" onClick=${back}>← ${say("All carts")} · ${data.history.length}</button>
-    <p class="gui-sign__got">→ <b><${Route} data=${data} route=${h.route} /></b> <span>${h.title}</span></p>
+    <p class="gui-sign__got">→ <b><${Route} data=${data} route=${h.route} /></b>${h.want ? ` · ${h.want}` : ""} <span>${h.title}</span></p>
     <p class="ok-detail__meta">${h.at.replace("T", " ")} · ${say("from")} <b>${h.source_title || h.source}</b> · ${h.event}</p>
     <div class="ok-detail__actions"><button class="ok-btn" onClick=${() => openInLake({ text: h.value, title: h.title, from: id })}>
       ${say("Open in the Inspector")}</button></div>

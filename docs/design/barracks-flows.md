@@ -1,6 +1,6 @@
 # Design — what is wanted decides the way: the Agent pool's paths
 
-Status: written 2026-10-07; stages 1–3 (§12) built, of stage 4 the Lookout's refinement (§6.1) — see §14 *As built*. Builds on the Agent pool's planning
+Status: written 2026-10-07; stages 1–3 (§12) built, of stage 4 the Lookout's refinement (§6.1), and a Router rule's kind (§4) — see §14 *As built*. Builds on the Agent pool's planning
 ([barracks-planning.md](barracks-planning.md)), roads and their filters ([roads-and-orcs.md](roads-and-orcs.md),
 `realm/roads.py` `passes`), the External listeners' intent and Lookout (`core/workers/watchtower.py`,
 `realm/lookout.py`), the Review board ([review-board.md](review-board.md)), the Review gate
@@ -250,8 +250,8 @@ Stages 1–3 are built; stage 4 is not (below, with why). What is left is on the
 - The `doc` path with `debate` and `doc_to` (§6). It overlaps the design briefs the planning pool already leaves
   ([barracks-designs.md](barracks-designs.md)) and the Review board's routing. A document takes today's way
   meanwhile; its harness mode is still `work`.
-- A Router rule's `want` (§4) and a routing Review board's `WANT:` (§4). Both still pass on the kind their cart
-  came with; neither sets one.
+- A routing Review board's `WANT:` (§4). It still passes on the kind its cart came with. (A Router rule's
+  `want` is built: below.)
 
 **Stage 4, the Lookout's refinement (§6.1) — built 2026-10-08** (the night session P3).
 - A tower's `wants` may map a source to a list, its default first: `{"slack": ["reply", "change"]}`
@@ -266,3 +266,15 @@ Stages 1–3 are built; stage 4 is not (below, with why). What is left is on the
   kind). Question for the owner: should the quick-add offer *reply, or a code change when it asks for one* for
   Slack and Discord?
 - Tests: `tests/test_lookout_kind.py` (the choice within the kinds, the unchanged prompt, the setting, the cart).
+
+**A Router rule's kind (§4) — built 2026-10-08** (the night session D3).
+- A rule names it after its route: `bugs, change: contains traceback` (`realm/signpost.py` `Rule.want`; a word
+  not in `pipes.WANTS` is a rule that cannot be read). A rule with none passes on the cart's kind, as before.
+- **Changed, the safer way:** the rule's kind is set on a cart that came with **none**. On a cart that came with
+  one, the cart goes on with the one of the two whose path may do least (`pipes.least_want`), so a rule over the
+  text can lower a path and never raise it (§5: moving to more rights is a building's or the person's decision —
+  a rule is the person's, but its match reads the text). Question for the owner: may a rule raise one?
+- The Router's window says a kind its rule set on the cart's line (*→ bugs · Code change*); the catalog
+  reference tells the steward the syntax, to use only when the person asks for it.
+- Tests: `tests/test_typed_mill_signpost.py` (the syntax, set and lowered), `tests/test_gui_pit_signpost_mill.py`
+  (what the worker sends on, what the window shows).

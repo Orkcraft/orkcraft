@@ -68,9 +68,9 @@ in the Review gate.
 
 ### Kinds set by a Router rule and a routing Review board (§4)
 
-Today both pass on the kind their cart came with; neither sets one.
+A Router rule names one since 2026-10-08 (`route, want: match`; barracks-flows.md §14). A Review board that
+routes still passes on the kind its cart came with.
 
-- A Router rule may name a kind: `match → route, want`.
 - A Review board that routes names `WANT:` beside `ROUTE:`, and the kind goes on `team.routed`.
 
 Neither may raise what the cart already carries, unless the person wrote the rule.

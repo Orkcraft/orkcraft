@@ -142,6 +142,22 @@ def test_the_signpost_counts_per_road_out_in_its_colour_and_tests_a_text(fake_re
         host.command("act", {"id": post, "act": "test", "args": {"text": ""}})
 
 
+def test_a_signpost_rule_sets_the_kind_of_work_its_cart_goes_on_with(fake_repo, isolated_layout_file, monkeypatch):
+    host = _host(fake_repo)
+    post = _raised(host, "signpost", rules=["bugs, change: contains traceback", "rest: else"])
+    w = host.town.worker(post)
+    sent = []
+    monkeypatch.setattr(w, "emit", lambda event, value, title="", **k: sent.append((event, title, k.get("want", ""))))
+    from orkcraft.realm.pipes import Payload
+    w.receive(Payload("text", "Traceback: boom", "town_hall", "pit.text", "boom"), "boom", "")
+    w.receive(Payload("text", "Traceback: again", "town_hall", "pit.text", "again", want="reply"), "again", "")
+    w.receive(Payload("text", "hello", "town_hall", "pit.text", "hello", want="doc"), "hello", "")
+    assert sent == [("signpost.routed", "bugs", "change"), ("signpost.routed", "bugs", "reply"),
+                    ("signpost.routed", "rest", "doc")]
+    history = host.detail(post)["data"]["history"]
+    assert [(h["title"], h["want"]) for h in history] == [("hello", ""), ("again", ""), ("boom", "Code change")]
+
+
 def test_the_mill_shows_every_step_of_a_run_and_its_steps_are_edited(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     grinder = _raised(host, "mill", steps=["lines", "grep: ERROR", "count"])
