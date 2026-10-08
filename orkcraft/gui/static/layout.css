@@ -282,6 +282,8 @@ button { font: inherit; color: inherit; }
 .gui-panel__tabs { flex: none; overflow-x: auto; overflow-y: hidden; }
 .gui-panel__tabs > .ok-tab { flex: none; }
 .gui-panel__full { font-size: 14px; }
+/* A setup's ← Back past its first step (js/setup.js): the bar's top right corner, before ⤢ and ×. */
+.gui-panel__back { padding: 0 var(--space-2); min-height: 0; line-height: 1.6; margin-right: var(--space-2); }
 .gui-panel__handle { grid-area: town; z-index: 7; justify-self: end; align-self: start; margin: var(--space-3); }
 .gui-panel > .ok-win__frame > .gui-alert { padding: var(--space-1) var(--space-3); }
 .gui-tab__close { border: 0; background: none; padding: 0 var(--space-1); cursor: pointer; color: var(--ink-muted); line-height: 1; }

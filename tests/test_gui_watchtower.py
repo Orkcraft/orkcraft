@@ -115,3 +115,33 @@ def test_a_mail_title_says_who_it_is_from():
     assert _who("@ ann in #dev: the build is red", "slack") == ("ann in #dev", "the build is red")
     assert _who("PR #12 opened: Login form", "github") == ("", "PR #12 opened: Login form")
     assert _who("⏰ every 15m") == ("", "⏰ every 15m")
+
+
+def test_the_closed_card_previews_the_newest_unread_signal(fake_repo, gh):
+    """The card's preview is the newest unread signal, not the newest one; with all read, the newest (read)
+    (docs/design/watchtower-automation.md §2 H)."""
+    from orkcraft.gui.views import watchtower as view
+    _tower(fake_repo)
+    host = _host(fake_repo)
+    w = host.town.worker("tower")
+    assert _until(lambda: w.checked)
+    w.add_signal(watch.Signal("2026-10-02T05:10:00", "webhook", "POST /older", "{}", "/older"))
+    w.add_signal(watch.Signal("2026-10-02T05:20:00", "webhook", "POST /newer", "{}", "/newer"))
+    w.mark_read([w.signals[0]])                                             # the newest is read
+    latest = view.card(w)["latest"]
+    assert [(s["title"], s["read"], s["at"]) for s in latest] == [("POST /older", False, "05:10")]
+    w.mark_read()
+    assert [(s["title"], s["read"]) for s in view.card(w)["latest"]] == [("POST /newer", True)]
+    assert view.card(w)["new"] == 0
+
+
+def test_add_a_source_shows_its_services_in_groups():
+    """The picker's groups in their order, each with its word from the glossary; Calendar has no service yet."""
+    from orkcraft.core.workers.watchtower_add import Adding
+    from orkcraft.realm import lexicon, quickadd
+    groups = Adding.groups()
+    assert [g["label"] for g in groups] == ["Messengers", "Mail", "Code", "Other"]
+    assert lexicon.term("source_group.calendar") == "Calendar"
+    assert {s.id for s in quickadd.SERVICES.values() if s.group == "messengers"} == {"slack", "discord"}
+    assert {s.id for s in quickadd.SERVICES.values() if s.group == "code"} == {"github", "gitlab"}
+    assert all(s.group in quickadd.GROUPS for s in quickadd.SERVICES.values())

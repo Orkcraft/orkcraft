@@ -1,7 +1,8 @@
 // 🗼 Watchtower: what comes in from outside (core/workers/watchtower.py). Closed: how many are new, a
 // counter per source (a failing one marked), the newest message in the foot. Open, made for the half
 // panel: a chip per source with what is new in it (it filters the feed), when it last looked, Open new,
-// Read all and Check now; a failing source says why; the feed one line per signal, a signal opening over
+// Read all and Check now; a failing source says why; the feed one line per unread signal (Read too adds the
+// read ones), a signal opening over
 // it to be read in full (← back); the sources and the intent open the same way, from Sources & intent, and so
 // does Add a source (+), which a tower with no source opens on (watchtower_add.js) — never a dialog.
 import { signal } from "@preact/signals";
@@ -10,13 +11,14 @@ import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
 import { askKeeper } from "../keeper.js";
 import { Dialog } from "../dialog.js";
-import { openBuilding } from "../windows.js";
+import { openBuilding, setupDone } from "../windows.js";
 import { AddPane, Glyph, editSource } from "./watchtower_add.js";
 import { Places } from "./watchtower_places.js";
 
 const source = signal({});         // building id → the source whose feed shows ("" all)
 const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
 const opened = signal({});         // building id → the key of the signal read over the feed
+const readToo = signal({});        // building id → the feed shows the read ones too (else only the unread)
 
 const read = (id, key) => {
   opened.value = { ...opened.value, [id]: key };
@@ -144,11 +146,24 @@ function Row({ id, s }) {
     <span class="gui-tower__at">${s.at.slice(5)}</span></button></li>`;
 }
 
+/** The feed: every unread signal, newest first; Read too adds the read ones (docs/design/watchtower-automation.md §2 H,
+ *  What is read: opened here, or marked by Read all / Open new — a road taking it on does not read it). */
 function Feed({ id, d }) {
   const pick = source.value[id] || "";
-  const rows = d.signals.filter((s) => !pick || s.source === pick);
-  if (!rows.length) return html`<p class="ok-tone-muted">${say(d.sources.length ? "Nothing here yet — Check now looks again." : "No source yet — Sources & intent says what to listen to.")}</p>`;
-  return html`<ul class="gui-tower__rows">${rows.map((s) => html`<${Row} key=${s.key} id=${id} s=${s} />`)}</ul>`;
+  const all = readToo.value[id];
+  const here = d.signals.filter((s) => !pick || s.source === pick);
+  const rows = all ? here : here.filter((s) => !s.read);
+  const read = here.length - here.filter((s) => !s.read).length;
+  const toggle = read > 0 && html`<button class=${cls("ok-btn gui-tower__readtoo", { "is-pressed": all })} aria-pressed=${!!all}
+      onClick=${() => { readToo.value = { ...readToo.value, [id]: !all }; }}>${all ? say("Only unread") : `${say("Read too")} · ${read}`}</button>`;
+  if (!rows.length) {
+    return html`<div class="gui-tower__empty">
+      <p class="ok-tone-muted">${say(!d.sources.length ? "No source yet — Sources & intent says what to listen to."
+        : here.length ? "✓ All read — nothing new." : "Nothing here yet — Check now looks again.")}</p>${toggle}</div>`;
+  }
+  return html`<div class="gui-tower__list">
+    <p class="ok-list__head gui-tower__count-head">${all ? `${say("All")} · ${rows.length}` : `${say("Unread")} · ${rows.length}`}${toggle}</p>
+    <ul class="gui-tower__rows">${rows.map((s) => html`<${Row} key=${s.key} id=${id} s=${s} />`)}</ul></div>`;
 }
 
 /** A signal read over the feed: ← back, then the signal in full. */
@@ -166,7 +181,8 @@ function Item({ id, d, at }) {
 function FeedPane({ id, d }) {
   const on = shownTab(id, d);
   if (on === "settings") return html`<${Settings} id=${id} d=${d} />`;
-  if (on === "add") return html`<${AddPane} id=${id} d=${d} done=${() => { tab.value = { ...tab.value, [id]: "signals" }; }} />`;
+  const signals = () => { tab.value = { ...tab.value, [id]: "signals" }; };
+  if (on === "add") return html`<${AddPane} id=${id} d=${d} done=${signals} saved=${() => { signals(); setupDone(id); }} />`;
   const at = opened.value[id];
   return at ? html`<${Item} key=${at} id=${id} d=${d} at=${at} />` : html`<${Feed} id=${id} d=${d} />`;
 }

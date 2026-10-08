@@ -681,7 +681,7 @@ def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, mon
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length === n", arg=before, timeout=WAIT_MS)
 
 
-def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monkeypatch):
+def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui, monkeypatch):
     """Build a Watchtower: its panel opens on the picker (no dialog); a pasted Jira link, the login, the projects,
     the first look and Add happen in the panel over the feed, and the new source stands in its chips
     (docs/design/watchtower-quick-add.md §4). The services are fakes; `ORKCRAFT_SHOTS` keeps screenshots."""
@@ -700,12 +700,23 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
     assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
+    groups = panel.locator(".gui-add__group-title").all_inner_texts()            # in groups; Calendar has none yet
+    assert groups == ["Messengers", "Mail", "Code", "Other"]
+    assert "Slack" in panel.locator(".gui-add__group", has_text="Messengers").inner_text()
+    assert panel.locator(".gui-panel__back").count() == 0                        # the first step: no ← Back
     panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
     shot("1-picker")
     panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
     panel.get_by_role("button", name="Continue").click()
     panel.locator("#add-email-" + bid).wait_for(state="visible", timeout=WAIT_MS)
     assert panel.locator("#add-site-" + bid).count() == 0          # the link said the site
+    back = panel.locator(".gui-panel__back")                                      # past it: ← Back in the top right
+    assert back.is_visible() and panel.locator(".gui-add__foot", has_text="Back").count() == 0
+    back.click()
+    tiles.first.wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
+    panel.get_by_role("button", name="Continue").click()
+    panel.locator("#add-email-" + bid).wait_for(state="visible", timeout=WAIT_MS)
     panel.locator("#add-email-" + bid).fill("ann@acme.io")
     panel.locator("#add-token-" + bid).fill("t" * 24)
     shot("2-login")
@@ -723,8 +734,25 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("4-check")
     panel.get_by_role("button", name="Add Jira").click()
+    panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)       # done: the tower's Info
+    assert panel.locator(".gui-panel__back").count() == 0
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("5-feed")
+    # the feed lists the unread; Read too adds the read ones (docs/design/watchtower-automation.md §2 H)
+    from orkcraft.realm import watch
+    w = gui[0].host.town.worker(bid)
+    for i, title in enumerate(["Ann in WEB-5: the old one", "Ben in WEB-7: Login loops after the update"]):
+        w.add_signal(watch.Signal(f"2026-10-02T05:{10 + i}:00", "jira", title, "", f"WEB-{5 + i}"))
+    w.mark_read([w.signals[1]])
+    w.changed()
+    panel.locator(".gui-tower__count-head", has_text="Unread · 1").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-tower__row").count() == 1 and "Login loops" in panel.locator(".gui-tower__row").inner_text()
+    card = _hut(pg, bid).locator(".gui-tower__msg")
+    assert "Ben" in card.inner_text() and "05:11" in card.inner_text()            # the closed card: the newest unread
+    panel.get_by_role("button", name="Read too · ").click()
+    panel.locator(".gui-tower__row", has_text="the old one").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Only unread").click()
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
@@ -747,6 +775,8 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     panel.locator(".gui-add__options li", has_text="SUP").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.get_by_role("button", name="Keep it").click()
+    panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Check now").click()
     pg.wait_for_function("() => !document.querySelector('.gui-panel .gui-tower__failing')", timeout=WAIT_MS)
@@ -788,6 +818,8 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     assert "every 15 min, a model run each look" in panel.locator(".gui-add__verdict").inner_text()
     shot("c4-check")
     panel.get_by_role("button", name="Add Jira").click()
+    panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 15 min").wait_for(state="visible", timeout=WAIT_MS)
     shot("c5-sources")
@@ -820,9 +852,15 @@ def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down
     shot("rb-2-clan")
     panel.get_by_role("button", name="Next: the exits").click()
     panel.locator(".council-setup__exit").first.wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-panel__back").click()                                    # ← Back, top right: the clan again
+    panel.locator(".council-setup__item", has_text="Risks analyzer").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Next: the exits").click()
+    panel.locator(".council-setup__exit").first.wait_for(state="visible", timeout=WAIT_MS)
     panel.locator(".council-setup__exit").first.fill("To development")
     shot("rb-3-exits")
     panel.get_by_role("button", name="Save the board").click()
+    panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)       # saved: the board's Info
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.locator(".council-clan").wait_for(state="visible", timeout=WAIT_MS)
 
     monkeypatch.setattr(CouncilWorker, "runner", staticmethod(

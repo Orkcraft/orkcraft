@@ -43,6 +43,13 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
   it, happens in its own panel (Work tab), over what the panel shows, with ← back; right after Build
   a building with nothing set up opens its panel there. A dialog is for a decision in one click —
   Build, a road, Demolish, a removal, a price to agree to (watchtower-quick-add.md §4.2).
+- **A setup in steps has one ← Back, in the panel's top right corner.** Every type's setup that runs in
+  steps (the Watchtower's Add a source, a Review board's purpose › clan › exits) marks each step past
+  the first with `useSetupBack(id, back)` (`js/setup.js`); the panel draws **← Back** in its bar, before
+  ⤢ and ×, on whichever step and type — a step's own foot keeps only its way forward. When the setup
+  is done (a source added, a board saved) `setupDone(id)` (`js/windows.js`) opens the building's
+  **Info**, not its last step; the Work tab is back on its usual view the next time. A cancel (the
+  picker's ← Signals, a board's Cancel) goes back to Work, where it came from.
 - **Old scrolls.** A Lake building in a Town Scroll leaves the map when the scroll loads; a road into it
   becomes "open in Lake" on its source.
 - **Retired types leave the catalog**, and a project file that has one still loads it: Custom (panes);

@@ -107,11 +107,18 @@ This holds for every building's first setup, not only the Watchtower's
  ┌──────────────────────────────────────────────────┐
  │ Paste a link to what you want to hear…           │   ← detects the service and the target
  └──────────────────────────────────────────────────┘
-  GitHub ✓ gh   GitLab   Gmail   Slack   Discord
-  Jira          Confluence       Figma
+  Messengers   Slack   Discord
+  Mail         Gmail
+  Code         GitHub ✓ gh   GitLab
+  Other        Jira   Confluence   Figma
   ─────────
   Other mail (IMAP) · Schedule · Webhook
 ```
+
+The services stand in groups, in this order (`realm/quickadd.py` `GROUPS`, a service's `group`; their
+words are `lexicon` `source_group.*`): **Messengers** (Slack, Discord), **Mail** (Gmail), **Code**
+(GitHub, GitLab), **Calendar**, **Other** (Jira, Confluence, Figma). A group with no service does not
+show: Calendar waits for its first service. A new service names its group.
 
 A tile shows what is already there: `✓ gh` when `gh auth status` says logged in, `✓ ann@acme` when
 a Login exists for that service — those skip the login step.
@@ -148,6 +155,10 @@ settings, with ← back):
 3. **Check** — the first look, live, then **Add**. Shows: as whom, what it will hear, how many
    items are there now (they are marked seen, not sent), and how often it looks. **Add** writes
    the spec line and the source's chip appears at once with `0`.
+
+Past the picker every step has **← Back** in the panel's top right corner (building-views.md §2,
+`js/setup.js`), and Esc does the same; a step's foot keeps only Continue, Check or Add. **Add** ends the
+setup on the tower's **Info**, not on step 3; its Work is the feed again.
 
 After Add: if the tower has no intent yet, one line under the chips offers it: *Say what to listen
 for, or everything passes* (→ Sources & intent).
