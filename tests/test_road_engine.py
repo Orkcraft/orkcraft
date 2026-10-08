@@ -7,7 +7,7 @@ import time
 import pytest
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, harnesses, roads
+from orkcraft.realm import chains, harnesses, road_agents, roads
 from orkcraft.realm.pipes import Payload
 
 PRESETS = {
@@ -354,7 +354,7 @@ def test_harness_commands_are_read_only_or_sandboxed(tmp_path):
 
 
 def test_run_agent_interrupts_the_process(tmp_path, monkeypatch):
-    monkeypatch.setattr(roads, "_harness_cmd", lambda h, p, w, m="", web=False: ["sleep", "30"])
+    monkeypatch.setattr(road_agents, "_harness_cmd", lambda h, p, w, m="", web=False: ["sleep", "30"])
     cancel = threading.Event()
     threading.Timer(0.3, cancel.set).start()
     t0 = time.monotonic()

@@ -263,7 +263,7 @@ def test_a_stopped_review_is_kept_turn_by_turn_and_goes_on_after_the_app_closed(
 
 
 def test_a_claude_reading_turn_names_its_session_and_reopens_it(monkeypatch, tmp_path):
-    from orkcraft.realm import roads
+    from orkcraft.realm import road_agents as roads   # where run_agent finds run_proc
     seen: list = []
     monkeypatch.setattr(roads, "run_proc", lambda cmd, *a, **k: seen.append(cmd) or (0, '{"result": "ok"}', ""))
     roads.run_agent("claude", "read it", tmp_path, {}, threading.Event(), session="abc", web=True)

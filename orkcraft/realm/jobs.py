@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import halt, harnesses, roads
+from orkcraft.realm import halt, harnesses, road_agents, roads
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
@@ -128,7 +128,7 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     run_env = {**os.environ, **tool_env, **(env or {})}
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
-    code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:
@@ -155,7 +155,7 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
         raise RuntimeError(f"harness {harness!r} cannot read")
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
-    code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:

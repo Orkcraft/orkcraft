@@ -13,7 +13,7 @@ from orkcraft.core.workers import scrolls
 from orkcraft.core.workers.scrolls import ScrollsWorker
 from orkcraft.gui import state
 from orkcraft.gui.host import Host
-from orkcraft.realm import checkpoint, halt, jobs, roads
+from orkcraft.realm import checkpoint, halt, jobs, road_agents, roads
 
 SLEEP = ["sleep", "30"]
 
@@ -28,7 +28,7 @@ def _until(test, seconds: float = 5.0) -> None:
 
 def test_stop_all_leaves_no_agent_of_any_building_alive(fake_repo: Path, monkeypatch):
     """Each kind of building's agent runs (a real process): the HUD counts every one, Stop all kills every one."""
-    monkeypatch.setattr(roads, "_harness_cmd", lambda *a, **k: SLEEP)
+    monkeypatch.setattr(road_agents, "_harness_cmd", lambda *a, **k: SLEEP)
     monkeypatch.setattr(jobs, "work_cmd", lambda *a, **k: SLEEP)
     cancel = threading.Event()
     ends: dict[str, BaseException | None] = {}

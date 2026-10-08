@@ -248,7 +248,7 @@ def test_a_tagged_runner_charges_its_purpose(tmp_path: Path, monkeypatch):
 
 def test_a_road_agent_charges_its_building_and_tells_its_transcript_the_purpose(tmp_path: Path, monkeypatch):
     import threading
-    from orkcraft.realm import roads
+    from orkcraft.realm import road_agents as roads   # where run_agent finds run_proc
     telemetry.keep_ledger(tmp_path)
     envs = []
     answer = json.dumps({"result": "ok", "total_cost_usd": 0.05})
