@@ -16,6 +16,7 @@ loop closed on a review ("your 👎 on Brief → the orks changed it → 4 👍 
     growth.next_step(root, "brief", 2)      -> "2 more kept changes, a month without a revert, …"
     growth.settle(scroll, root, machine)    -> [News]   levels, deeds, the stage, the loops; scroll and machine updated
     growth.news(root) / growth.seen(root, id)
+    growth.tell(root, News("round", "Night round: 2 cards have news", "tasks", "🌙", "work"))
 
 Pure: no face. It reads the orks' changes (`realm/evolution.py`) and the ratings (`realm/feedback.py`).
 """
@@ -41,10 +42,11 @@ NEWS_KEEP = 20
 
 @dataclass
 class News:
-    kind: str                    # level | stage | deed | loop
+    kind: str                    # level | stage | deed | loop | round (the Night round's morning line)
     text: str
     building: str = ""           # the building it is about (level, loop): the page opens its Info
     icon: str = ""
+    tab: str = ""                # the building's tab a click opens ("" is Info)
     at: str = field(default_factory=lambda: dt.datetime.now().isoformat(timespec="seconds"))
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:10])
 
@@ -300,6 +302,13 @@ def news(root: Path) -> list[News]:
 def seen(root: Path, news_id: str) -> None:
     data = _load(root)
     data["news"] = [n for n in data.get("news", []) if n.get("id") != news_id]
+    _save(root, data)
+
+
+def tell(root: Path, item: News) -> None:
+    """News from elsewhere (the Night round's morning line), kept until seen like the rest."""
+    data = _load(root)
+    data["news"] = (data.get("news", []) + [asdict(item)])[-NEWS_KEEP:]
     _save(root, data)
 
 

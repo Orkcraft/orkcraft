@@ -368,7 +368,7 @@ function Speaks({ hidden }) {
     const seen = () => command("growth.seen", { id: news.id }).catch(() => {});
     const go = () => {
       seen();
-      if (news.building) openBuilding(news.building, "info");
+      if (news.building) openBuilding(news.building, news.tab || "info");
       else settingsOpen.value = true;
     };
     return html`<span class="gui-warchief__speaks ok-font-status gui-warchief__news">

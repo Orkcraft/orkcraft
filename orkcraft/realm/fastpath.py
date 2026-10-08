@@ -18,7 +18,7 @@ A model that cannot be reached never blocks: the review falls back to the rules.
 
 Every review is appended to `.orkcraft/council/reviews.jsonl`; the settings live in
 `.orkcraft/council/settings.json` (`fast_llm`, `fast_model`, `weekly_model`, `weekly_at`, `optimize_at`,
-and the Elders' `elders_per_night` / `elders_context`).
+the Night round's `round_at`, and the Elders' `elders_per_night` / `elders_context`).
 """
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ from orkcraft.realm import audit
 COUNCIL_DIR = Path(".orkcraft") / "council"
 SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "weekly_at": "weekly sun 05:00",
             "optimize_at": "daily 06:20",       # the local proposal (stage 8): in the operator's morning window
+            "round_at": "daily 04:40",          # the Night round (realm/nightround.py): "" is off
             "elders_per_night": 40, "elders_context": 14}    # the Elders (realm/elders.py): questions, screen lines
 SUBJECT_LIMIT = 6000
 

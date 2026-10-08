@@ -6,7 +6,7 @@
 // it, the camp's rules, whether flames climb the roof of a building that waits for you, and whether
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
-// paired with this machine (js/phones.js).
+// paired with this machine (js/phones.js). The 🌙 Night round sits with the camp's rules: on or off, Look now.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -85,6 +85,19 @@ export function UsageAsk() {
         <button class="ok-btn primary" onClick=${() => answer(true)}>${say("Share")}</button>`} />`;
 }
 
+/** The 🌙 Night round (docs/design/night-round.md): on or off, what its last night found, and Look now. */
+function RoundField({ s, set, setS }) {
+  const r = s.round;
+  if (!r || r.demo) return null;
+  const now = () => command("round.now").then(setS, () => {});
+  return html`<${Steps} label=${say("Night round: the orks look over the boards")} value=${r.on}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ round: v })} />
+    <p class="ok-font-status ok-tone-muted">${say(`At ${r.at}, the to-dos and tasks that lie get a 🌙 when a commit or a wiki page is about them, and the day's code gives at most 3 cleanup ideas as notes in Ideas. It never sends work to the orks. Free when nothing changed.`)}</p>
+    <p class="ok-font-status">${say(`Last night: ${r.said}`)}</p>
+    <span><button class="ok-btn" onClick=${now}>${say("Look now")}</button></span>
+    ${s.round_said && html`<p class="ok-font-status ok-tone-ok">${say(s.round_said)}</p>`}`;
+}
+
 /** The AI tools: which are on, and the main one decisions and `main` steps run on. */
 function ToolsField({ s, set }) {
   if (!s.tools) return null;
@@ -127,6 +140,7 @@ export function SettingsDialog() {
       <${Steps} label=${say("Fire on the roofs")} value=${s.fire !== false}
         items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ fire: v })} />
       <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
+      <${RoundField} s=${s} set=${set} setS=${setS} />
       <${ToolsField} s=${s} set=${set} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
