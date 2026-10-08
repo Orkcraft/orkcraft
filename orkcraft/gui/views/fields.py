@@ -54,7 +54,8 @@ def _named(w, card_id: str) -> dict | None:
 
 
 def _lore(w, c) -> dict:
-    """What the board keeps beside the card: personal, its context's pages (stale when one changed), its plan;
+    """What the board keeps beside the card: personal, its context's pages (stale when one changed), its plan,
+    what the 🌙 Night round found for it (`news`) and whether it is one of the round's ideas (`idea`);
     and while a task settles (docs/design/settle-and-join.md) when it goes (`goes`, ms), Not urgent, the task
     it is joined to (`into`), how many are joined to it (`added`), the one it looks like (`hint`)."""
     pages = w.lore.context(c.id)
@@ -65,6 +66,7 @@ def _lore(w, c) -> dict:
             "goes": int(hold * 1000) if hold is not None else None, "later": w.lore.later(c.id),
             "into": _named(w, w.lore.into(c.id)), "added": len(w.lore.joined(c.id)),
             "hint": _named(w, w.lore.hint(c.id)), "sent": w.lore.sent(c.id),
+            "news": w.lore.news(c.id) or None, "idea": bool(w.lore.idea(c.id)),
             "want": w.want(c), "want_word": lexicon.want_word(w.want(c))}
 
 
@@ -303,8 +305,13 @@ def _plan_steps(w, args: dict) -> int:
     return w.plan_to_todos(_card(w, args).id)
 
 
+def _news_seen(w, args: dict) -> None:
+    """The person read what the Night round found for the card: its 🌙 goes."""
+    w.news_seen(_card(w, args).id)
+
+
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
         "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
         "private": _private, "context": _context, "plan_preview": _plan_preview, "plan": _plan,
-        "plan_steps": _plan_steps, "to_wiki": _to_wiki, "later": _later, "settle": _settle, "join": _join, "split": _split,
+        "plan_steps": _plan_steps, "news_seen": _news_seen, "to_wiki": _to_wiki, "later": _later, "settle": _settle, "join": _join, "split": _split,
         "apart": _apart, "want": _want}

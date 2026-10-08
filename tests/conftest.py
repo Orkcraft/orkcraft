@@ -36,6 +36,7 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     monkeypatch.setenv("ORKCRAFT_LIMITS", "0")
     monkeypatch.setenv("ORKCRAFT_COUNCIL_LLM", "0")      # the Council's Fast Path: rules only
     monkeypatch.setenv("ORKCRAFT_WIKI_AUTO", "0")        # no librarian starts by itself (test_wiki.py opts in)
+    monkeypatch.setenv("ORKCRAFT_NIGHT_ROUND", "0")      # no Night round by its clock (test_night_round.py asks it)
     monkeypatch.setenv("ORKCRAFT_CALENDARS_FILE", str(tmp_path / "calendars.json"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     monkeypatch.setenv("ORKCRAFT_NO_USAGE", "1")         # no usage stats leave a test (test_usage.py opts in)
@@ -48,6 +49,11 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     monkeypatch.setattr(scroll, "DEFAULT_VIEW", "tiles")
     # They also predate the camp that starts with the Town Hall alone (T1107): every preset stands.
     monkeypatch.setattr(scroll, "STARTING", None)
+    # The Watchtower's picker asks `claude mcp list`: never the machine's own servers (tests put theirs).
+    import subprocess
+    from orkcraft.core.workers.watchtower import WatchtowerWorker
+    monkeypatch.setattr(WatchtowerWorker, "mcp_runner",
+                        staticmethod(lambda argv: subprocess.CompletedProcess(argv, 0, "No MCP servers configured.\n", "")))
     return path
 
 

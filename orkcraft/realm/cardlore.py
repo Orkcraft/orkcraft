@@ -1,11 +1,12 @@
 """What a Task Fields board knows of its cards beyond the board file: which are personal, the wiki pages that
-are a card's context (📜) and a to-do's plan (🧭). It lives in the building's state folder
+are a card's context (📜), a to-do's plan (🧭) and what the night round found for it (🌙). It lives in the building's state folder
 (`.orkcraft/fields/<id>/cards.json`), never in `TASKS.md`: the file stays the person's to edit by hand.
 
     lore = cardlore.Lore(state_dir)
     lore.set_context("call-the-bank", [Page("llm-wiki/general/pages/bank.md", "Bank", 1700000000.0)])
     lore.keep_plan("call-the-bank", ["Find the card number", "Call before 12"], "haiku")
     lore.rename("call-the-bank", "call-the-bank-today")     # a card's id follows its title
+    lore.set_news("call-the-bank", {"commits": [["ab12", "Bank card form"]], "words": "…"})   # 🌙 the night round
 
 What went to a model is logged as a fact, never as its text (`sent.jsonl`): when, which card, how many
 characters, which model and pages, what was taken out first.
@@ -155,6 +156,28 @@ class Lore:
 
     def keep_plan(self, card_id: str, steps: list[str], model: str) -> None:
         self._put(card_id, plan=steps, plan_model=model, plan_at=time.time())
+
+    # -- the night round (realm/nightround.py): 🌙 what is new for a card, and the ideas it gave ---------
+
+    def news(self, card_id: str) -> dict:
+        """What the night round found for the card: `at`, `commits` [[sha, subject]], `pages` [[path, title]],
+        `words` (a model's, "" without); {} when there is nothing new or it was seen."""
+        got = self.of(card_id).get("news")
+        return got if isinstance(got, dict) else {}
+
+    def set_news(self, card_id: str, news: dict | None) -> None:
+        self._put(card_id, news=news or None)
+
+    def idea(self, card_id: str) -> str:
+        """The night round's key for a card it added as an idea ("" for any other card): it follows a rename."""
+        return str(self.of(card_id).get("idea") or "")
+
+    def set_idea(self, card_id: str, key: str) -> None:
+        self._put(card_id, idea=key or None)
+
+    def ideas(self) -> dict[str, str]:
+        """Every card the night round added as an idea: idea key → card id."""
+        return {str(v["idea"]): k for k, v in self.data.items() if isinstance(v, dict) and v.get("idea")}
 
     # -- settling: a task waits before it goes, related ones go together (realm/settle.py) -------------
 

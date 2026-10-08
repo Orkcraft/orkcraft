@@ -53,7 +53,7 @@ class Growth:
         grown_before = json.dumps(machine.growth, sort_keys=True)
         levels_before = [b.level for b in town.scroll.buildings]
         try:
-            fresh = growth.settle(town.scroll, town.repo_root, machine)
+            growth.settle(town.scroll, town.repo_root, machine)
         except Exception as e:                  # growth never stops the clock
             town.toast(f"{type(e).__name__}: {e}", title="Growth", severity="error")
             return
@@ -62,8 +62,9 @@ class Growth:
         if json.dumps(machine.growth, sort_keys=True) != grown_before:
             settings.save(machine)
             self._count(json.loads(grown_before), machine.growth)
-        if fresh:
-            self._news = [asdict(n) for n in growth.news(town.repo_root)][-NEWS_SHOWN:]
+        news = [asdict(n) for n in growth.news(town.repo_root)][-NEWS_SHOWN:]
+        if news != self._news:                  # what grew, or news told from elsewhere (the Night round)
+            self._news = news
             self.host.on_change()
 
     def _count(self, before: dict, after: dict) -> None:

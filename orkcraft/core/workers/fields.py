@@ -32,6 +32,8 @@ waits `later_minutes`; a related task that comes after it went goes as an additi
                  (`plan_preview`), cleaned of e-mails, phones, cards, IBANs and secrets (realm/privacy.py)
     personal 🔒  a card the person marked so (or every to-do, `private_todos`) never reaches a model: no
                  plan, and its title is its first words
+    night 🌙     the Night round marks a card that lies with what changed for it, and adds cleanup ideas as
+                 notes in Ideas (core/workers/fields_round.py, docs/design/night-round.md)
 """
 from __future__ import annotations
 
@@ -41,6 +43,7 @@ import threading
 from orkcraft.core import runners
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.fields_lore import CardLore, card_text
+from orkcraft.core.workers.fields_round import NightRound
 from orkcraft.core.workers.fields_settle import Settle
 from orkcraft.realm import pipes, tasklist
 from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
@@ -50,7 +53,7 @@ SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
 MODES = ("board", "tasks", "notes")
 
 
-class FieldsWorker(Settle, CardLore, Worker):
+class FieldsWorker(NightRound, Settle, CardLore, Worker):
     TYPE = "fields"
 
     def __init__(self, town, building_id: str) -> None:

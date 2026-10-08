@@ -1,6 +1,8 @@
 # Design — External listeners through MCP: a look carried by a tool, then a path of its own
 
-Status: written 2026-10-07; nothing built yet. It is the second half of
+Status: written 2026-10-07. **Stages 1–3 (§9) set aside on 2026-10-08** — see §11. Built instead:
+the agent source in the quick-add's picker and the ids a look keeps for the next
+(watchtower-quick-add.md §7.2, §7.3). It is the second half of
 [watchtower-quick-add.md](watchtower-quick-add.md) §7 (*Through Claude or agy*: a look made by an agent
 that has the person's MCP servers, not built yet either) and the reading twin of
 [catapult-mcp.md](catapult-mcp.md) (a shot carried by a tool, then a learned path; built). §7 there stays
@@ -128,3 +130,23 @@ The Catapult's MCP code becomes shared, the Catapult writing through it and the 
   asks the first time.
 - A Slack search lags behind new messages *(check, quick-add §7.5)*: is `search.messages` the right
   listing call, or `conversations.history` per channel?
+
+## 11. Set aside (2026-10-08)
+
+Weighed against what the Watchtower already has, the three stages buy little now:
+
+- **Direct is there already.** Jira (JQL), Confluence (CQL), Slack (`search.messages`,
+  `conversations.history`) and Gmail (IMAP) are read by the tower itself with a token of the person's
+  (quick-add §5): no model, every 2 min, 401/403 told as a login. A learned Direct path would be the
+  same call, reached the long way round. The picker now offers the token first and Claude's connection
+  second (quick-add §7.3), so a person who can make a token never needs a learned path.
+- **Local fits almost no one.** The services heard through Claude are hosted servers or claude.ai
+  connectors (quick-add §7.5); none was a local stdio server.
+- **What is left is the Carrier held to one call** — still a model run each look, fewer turns.
+  The cheap half of that is built: the ids a look looked up (a cloud id, a user id) go to the next
+  look, which skips those turns (quick-add §7.2 *The same path every time*).
+- The move of `catapult_mcp` to `mcp_paths` and `carry`'s read mode serve only stages 2–3; the agent
+  source runs its own `claude -p` (`realm/feeds_agent.py`), checked by events as `carry` is.
+
+Taken up again when carried looks prove costly in Spend (many sources, a short `every=`), starting with
+the Carrier held to one learned call (§3, §4) and nothing of Direct or Local.

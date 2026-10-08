@@ -57,7 +57,7 @@ def gui(tmp_path_factory):
     for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
-                       "ORKCRAFT_WIKI_AUTO": "0"}.items():
+                       "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0"}.items():
         mp.setenv(key, str(value))
     repo = tmp / "project"
     (repo / "src").mkdir(parents=True)
@@ -728,6 +728,47 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, monk
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, monkeypatch):
+    """A service Claude Code has a connection for reads ✓ in Claude; its step 1 offers Claude's connection, step 2
+    asks what to look for, how often and the most a day, Check makes one (recorded) look, and Add writes the
+    agent line (docs/design/watchtower-quick-add.md §7.3). `ORKCRAFT_SHOTS` keeps screenshots."""
+    from orkcraft.core.workers.watchtower import WatchtowerWorker
+    from tests.test_watchtower_agent import MCP_LIST, Run, events, mcp_list
+    monkeypatch.setattr(WatchtowerWorker, "mcp_runner", staticmethod(mcp_list(MCP_LIST)))
+    monkeypatch.setattr(WatchtowerWorker, "agent_runner", staticmethod(Run(events())))
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
+    add = _hut(pg, bid).locator(".gui-tower__add")
+    add.wait_for(state="visible", timeout=WAIT_MS)
+    add.click()
+    panel = pg.locator(".gui-panel")
+    jira = panel.locator(".gui-add__tile", has_text="Jira")
+    jira.locator(".ok-tone-ok", has_text="in Claude").wait_for(timeout=WAIT_MS)
+    panel.locator(".gui-add__tile", has_text="Slack").locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
+    shot("c1-picker")
+    jira.click()
+    use = panel.get_by_role("button", name="Use Claude's connection")
+    use.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator("#add-token-" + bid).count() == 1           # the token way stays, first
+    shot("c2-login")
+    use.click()
+    panel.locator("#add-ask-" + bid).wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator("#add-ask-" + bid).fill("mentions of me in project WEB")
+    panel.locator("#add-every-" + bid).select_option("15")
+    shot("c3-ask")
+    panel.get_by_role("button", name="Check", exact=True).click()
+    panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
+    assert "every 15 min, a model run each look" in panel.locator(".gui-add__verdict").inner_text()
+    shot("c4-check")
+    panel.get_by_role("button", name="Add Jira").click()
+    panel.get_by_role("button", name="Sources & intent").click()
+    panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 15 min").wait_for(state="visible", timeout=WAIT_MS)
+    shot("c5-sources")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
 def test_a_review_board_is_set_up_in_its_panel_burns_when_it_asks_and_sends_down_an_exit(page, monkeypatch):
     """A new Review board: its card says Set up the review; the purpose, the clan picked for it and the exits happen
     in the panel; a review that asks sets the hut on fire, and an exit's button sends the document on with the
@@ -1048,3 +1089,58 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
     card.wait_for(state="hidden", timeout=WAIT_MS)
     for bid in (a, b):
         call("town.demolish", {"id": bid})
+
+
+def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_settings(page, gui, monkeypatch):
+    """🌙 on a card the Night round found something for: a click shows its words and commits, Seen takes it off;
+    an idea of the round is marked too; its morning line is the Warchief's and opens the board; Settings turns
+    it off and on and has Look now (docs/design/night-round.md)."""
+    from orkcraft.core import runners
+    from orkcraft.realm import growth
+    monkeypatch.setattr(runners, "ROUND_RUNNER", lambda prompt: ('{"ideas": []}' if "cleanup" in prompt else "NOTHING", 0.0))
+    pg = page
+    server, _ = gui
+    host = server.host
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    w = host.town.worker(bid)
+    w.save_config({"path": "NIGHT.md"})
+    card = w.add("Fix the export form dates", "todo")
+    idea = w.add("Test the date check", "ideas")
+    w.lore.set_news(card.id, {"at": "2026-10-08T04:40:00", "commits": [["a1b2c3d", "Export form: validate the dates"]],
+                              "pages": [], "words": "The export form now checks dates; the card may be done."})
+    w.lore.set_idea(idea.id, "2026-10-08T04:40:00-1")
+    growth.tell(host.town.repo_root, growth.News("round", "Night round: 1 card has news, 1 cleanup idea", bid, "🌙", "work"))
+    host.growth.settle()
+    line = pg.locator(".gui-warchief__news").filter(has_text="Night round: 1 card has news")
+    line.wait_for(state="visible", timeout=WAIT_MS)
+    line.get_by_role("button", name="🌙 Night round: 1 card has news, 1 cleanup idea").click()
+    _panel(pg, "Work")
+    panel = pg.locator(".gui-panel")
+    moon = panel.locator(".ok-card", has_text="Fix the export form dates").get_by_role(
+        "button", name="What's new: the Night round found something for it")
+    moon.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".ok-card", has_text="Test the date check").locator(".fields-mark", has_text="🌙").count() == 1
+    moon.click()
+    modal = pg.locator(".gui-modal")
+    modal.filter(has_text="What's new · Fix the export form dates").wait_for(state="visible", timeout=WAIT_MS)
+    assert "the card may be done" in modal.inner_text() and "a1b2c3d" in modal.inner_text()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "night-news.png"))
+    modal.get_by_role("button", name="Seen").click()
+    moon.wait_for(state="detached", timeout=WAIT_MS)
+    assert w.lore.news(card.id) == {}
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    group = modal.get_by_role("group", name="Night round: the orks look over the boards")
+    group.get_by_role("button", name="Off").click()
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-modal .gui-steps__one.is-on')]"
+                         ".some((b) => b.closest('[role=group]').ariaLabel.startsWith('Night round') && b.textContent === 'Off')",
+                         timeout=WAIT_MS)
+    group.get_by_role("button", name="On").click()
+    modal.get_by_role("button", name="Look now").click()
+    modal.locator(".ok-tone-ok", has_text="Night round").wait_for(state="visible", timeout=WAIT_MS)
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        modal.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "night-settings.png"))
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
