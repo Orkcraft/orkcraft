@@ -16,7 +16,7 @@ from; this is what the GUI makes of it. Camp words here; the Office says them in
 
 | View | Where | What |
 |---|---|---|
-| **closed** | the hut on the town | The name and number hang **above** the card and take no room in it (with `?` when an ork waits and `pinned`). Inside: only the type's live status — a few words, a counter, a control (Horn) or a thumbnail (Tally Crag). No buttons but the road handle `+`. |
+| **closed** | the hut on the town | The name and number hang **above** the card and take no room in it (with `?` when an ork waits and `pinned`). Inside: only the type's live status — a few words, a counter, a control (Horn) or a thumbnail (Tally Crag). No buttons but the road handle (a small gate). |
 | **command** | the Command Card window (a square half the window high, bottom right) | A cut-down main screen of the type (its queue, its list, its chart) and its main buttons: the type's quick actions and one or two of its most used acts. Below a line the commands every building has (Recruit, Pin, Revert, Redesign). |
 | **full** | over the whole town (a click on the selected hut, or Open) | Everything the type does, laid out by its UI document. |
 

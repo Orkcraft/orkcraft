@@ -10,7 +10,7 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
   - Sheet 2 (`--cell 16.6 --scale 2`, the sheet's labels painted over first): mill (52×44), horn (50×46),
     signpost (46×48), pit (42×48), catapult (50×36), workshop (50×46), fields (50×52), council (46×46).
   - Sheet 3 (`--cell 16.6 --scale 2`): forest, crag, custom.
-- `icons/road-handle.png`, `icons/road-target.png` (22×22, 18×18): the `+` a road is pulled out of a hut by, and the
+- `icons/road-handle.png`, `icons/road-target.png` (22×22, 18×18): the small gate a road is pulled out of a hut by, and the
   four corner brackets round the hut it would land on, drawn by `tools/road_sprites.py` (`js/hut.js`; the
   brackets are a nine-slice, layout.css `.gui-hut.is-target`).
 - `orks/ork.png` (24×16): the ork, the ork mark's flat head (`../logo/`); `ork-idle.png`, `ork-busy.png`,

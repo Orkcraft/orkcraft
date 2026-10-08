@@ -103,8 +103,9 @@ row, its children on the plate, the posts as its pseudo-elements.
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
-- **Muted wood**, near the frame's bronze, never orange: five fences on a map must stay quieter than
-  one fire. Ice and void get their own wood tints, as their stone panels do.
+- **Muted bronze wood** (palette B on the design canvas): outline `#120d08`, shade `#2b2116`, wood `#3f3120`,
+  lit edge `#54422a`, highlight `#665233` — a step above the ground and a step below the card, never orange:
+  five fences on a map must stay quieter than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
@@ -121,7 +122,8 @@ row, its children on the plate, the posts as its pseudo-elements.
   one **right after the plate**, so the plate is a gate between them. The second post is a `span` the title
   bar gets after its last plate item (`js/hut.js`).
 - Pin and fold stay at the right end, on a small plate of their own, shown on hover as now. The road
-  handle stays on the right post.
+  handle — on every card now a small gate (`tools/road_sprites.py`): two posts, a door of upright planks,
+  a gold latch — stays where it is.
 - The type's header sprite stays where it stands on a hut: on the top edge. A yard is told by its fence,
   never by losing its building.
 
