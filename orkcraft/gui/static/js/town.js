@@ -279,16 +279,39 @@ function pathOf(points, r) {
   return d + ` L ${at(points[points.length - 1])}`;
 }
 
-/** Where a road's label goes: the middle of its longest straight run, above it or beside it. */
-function labelSpot(points) {
-  let best = 0, len = -1;
+/** Where a road's label goes: on a free stretch of its road, never over a card or another label (ui.md U02).
+ *  Its straight runs are tried longest first, each at its middle, then a quarter in from either end, above or
+ *  below a level run and right or left of an upright one; the first spot whose box clears every card and every
+ *  label already placed (`taken`, which it joins) wins. None clears: the middle of the longest run, as before. */
+function labelSpot(points, label = "", cards = [], taken = []) {
+  const runs = [];
   for (let i = 1; i < points.length; i++) {
-    const l = Math.abs(points[i][0] - points[i - 1][0]) + Math.abs(points[i][1] - points[i - 1][1]);
-    if (l > len) { len = l; best = i; }
+    const [a, b] = [points[i - 1], points[i]];
+    runs.push({ a, b, len: Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]) });
   }
-  const [a, b] = [points[best - 1] || points[0], points[best] || points[0]];
-  const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
-  return a[1] === b[1] ? { x, y: y - 6, anchor: "middle" } : { x: x + 6, y: y + 4, anchor: "start" };
+  runs.sort((p, q) => q.len - p.len);
+  if (!runs.length) return { x: (points[0] || [0])[0], y: (points[0] || [0, 0])[1], anchor: "middle" };
+  const w = label.length * 6.5 + 4, h = 14;
+  const box = (s) => {
+    const left = s.anchor === "middle" ? s.x - w / 2 : s.anchor === "end" ? s.x - w : s.x;
+    return { x: left, y: s.y - 11, w, h };
+  };
+  const hits = (p, q) => p.x < q.x + q.w + 2 && q.x < p.x + p.w + 2 && p.y < q.y + q.h + 2 && q.y < p.y + p.h + 2;
+  const spots = (run) => [0.5, 0.25, 0.75].flatMap((f) => {
+    const x = run.a[0] + (run.b[0] - run.a[0]) * f, y = run.a[1] + (run.b[1] - run.a[1]) * f;
+    return run.a[1] === run.b[1] ? [{ x, y: y - 6, anchor: "middle" }, { x, y: y + 14, anchor: "middle" }]
+      : [{ x: x + 6, y: y + 4, anchor: "start" }, { x: x - 6, y: y + 4, anchor: "end" }];
+  });
+  const fits = (run) => run.len >= (run.a[1] === run.b[1] ? w : h + 8);
+  for (const run of runs.filter(fits)) {
+    for (const s of spots(run)) {
+      const b = box(s);
+      if (b.x < 0 || b.y < 0 || cards.some((c) => hits(b, c)) || taken.some((t) => hits(b, t))) continue;
+      taken.push(b);
+      return s;
+    }
+  }
+  return spots(runs[0])[0];
 }
 
 // The arrowheads Office puts at a road's entry, one per colour a road can wear (layout.css picks one).
@@ -301,6 +324,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
   const active = opened.value.active;
   // A press on a road picks all of it: its card lists every road that runs as one (js/build.js RoadBar).
   const pick = (g) => { pickedRoad.value = g[0].id; };
+  const cards = Object.values(rects), taken = [];
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
     <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
       markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
@@ -309,8 +333,8 @@ function Roads({ roads, rects, ports, tints = {} }) {
       const g = groups.get(pair(road)) || [road];
       const out = active === road.from, into = active === road.to;
       const d = pathOf(p.points, BEND_PX);
-      const spot = labelSpot(p.points);
       const label = g.filter((x) => !x.sign).map((x) => x.label).join(" · ");
+      const spot = labelSpot(p.points, label, cards, taken);
       return html`<g key=${p.id} class=${cls("gui-road", { "is-selected": out || into || g.some((x) => x.id === pickedRoad.value),
                                                          "is-out": out, "is-in": into && !out, "is-live": g.some((x) => !!x.handler),
                                                          "is-return": g.some((x) => x.returns) })}>

@@ -306,3 +306,13 @@ def test_a_yard_has_no_ork_of_its_own_and_one_visits_on_a_wake(fake_repo, keeper
     assert _seen(host, tree)["visit"] == "wake"                     # its proposal waits: the ork is there
     host.command("job.drop", {"job": _keeper_jobs(host, tree)[0]["id"]})
     assert _seen(host, tree)["visit"] == ""                         # closed: it left
+
+
+def test_a_wake_says_the_buildings_own_error_line_never_its_status_word():
+    """Branches & PRs keeps its error on its snapshot: the wake said "it says ERROR" (ui.md U24)."""
+    from types import SimpleNamespace as NS
+    assert wakes._detail(NS(snap=NS(error="This folder is not a git repository"))) == "This folder is not a git repository"
+    assert wakes._detail(NS(last_error="the wiki cannot be read")) == "the wiki cannot be read"
+    assert wakes._detail(NS(errors={"intent": "no address set"})) == "no address set"
+    assert wakes._detail(NS(mini_status=lambda: ["3 open", "⚠ the token expired"])) == "the token expired"
+    assert wakes._detail(NS()) == ""

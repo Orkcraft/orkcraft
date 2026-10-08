@@ -9,13 +9,14 @@
 // paired with this machine (js/phones.js). Accounts: a personal Google account for Gmail, the calendar and
 // Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { PhonesField } from "./phones.js";
 import { AccountsField } from "./accounts.js";
 import { ToolMark } from "./icons.js";
+import { useScrollCue } from "./scrollcue.js";
 
 export const settingsOpen = signal(false);
 
@@ -133,6 +134,8 @@ function TierModelsField({ s, set }) {
 
 export function SettingsDialog() {
   const [s, setS] = useState(null);
+  const box = useRef(null);
+  useScrollCue(box);
   useEffect(() => { if (settingsOpen.value) command("town.settings").then(setS, () => setS(null)); }, [settingsOpen.value]);
   if (!settingsOpen.value || !s) return null;
   const close = () => { settingsOpen.value = false; };
@@ -141,7 +144,7 @@ export function SettingsDialog() {
   const t = town.value;
   return html`<${Dialog} title=${say("Town settings")} onCancel=${close}
       actions=${html`<button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
-    <div class="gui-form gui-settings">
+    <div ref=${box} class="gui-form gui-settings gui-scrolls">
       <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>
       <${Steps} label=${say("Autonomy: how freely the orks decide")} value=${s.autonomy}
         items=${s.levels.map((x) => [x.id, `${x.icon} ${say(x.title)}`, say(x.questions)])} onPick=${(v) => set({ autonomy: v })} />

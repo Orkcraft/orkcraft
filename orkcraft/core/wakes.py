@@ -47,7 +47,7 @@ def _failure(town: Town, building_id: str) -> str:
         except Exception:                     # a worker that cannot say is not woken on
             ill = False
         if ill:
-            return _detail(w) or "it says ERROR"
+            return _detail(w) or "its card shows a failure with no reason given — open it to see"
     last: dict[str, object] = {}
     for run in list(getattr(town.roads, "runs", []) or []):
         if run.target == building_id:
@@ -60,9 +60,12 @@ def _failure(town: Town, building_id: str) -> str:
 
 def _detail(w) -> str:
     """The worker's own words for what failed, by what it keeps (no worker has to know about wakes)."""
-    error = getattr(w, "error", "")
-    if isinstance(error, str) and error.strip():
-        return error.strip()
+    for error in (getattr(w, "error", ""), getattr(w, "last_error", ""), getattr(getattr(w, "snap", None), "error", "")):
+        if isinstance(error, str) and error.strip():
+            return error.strip()
+    errors = getattr(w, "errors", None)
+    if isinstance(errors, dict) and errors:
+        return "; ".join(str(e) for e in list(errors.values())[:5])
     day = getattr(w, "day", None)
     if getattr(day, "errors", None):
         return "; ".join(str(e) for e in day.errors[:5])
@@ -78,6 +81,13 @@ def _detail(w) -> str:
         problems = signpost.rules_of(rules)[1]
         if problems:
             return "its rules: " + "; ".join(problems[:5])
+    try:                                      # the warning line its card shows
+        lines = list(getattr(w, "mini_status", lambda: [])() or [])
+    except Exception:
+        lines = []
+    for line in lines:
+        if isinstance(line, str) and line.startswith("⚠"):
+            return line.lstrip("⚠ ").strip()
     return ""
 
 

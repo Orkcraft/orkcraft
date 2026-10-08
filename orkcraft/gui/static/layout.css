@@ -307,6 +307,10 @@ button { font: inherit; color: inherit; }
 .gui-history { max-height: 50vh; overflow: auto; }
 .gui-form { display: flex; flex-direction: column; gap: var(--space-2); max-height: 60vh; overflow: auto; }
 .gui-form > p { margin: 0; }
+/* A box that scrolls fades at the edge that has more (js/scrollcue.js): the cue overlay scrollbars do not give. */
+.gui-scrolls[data-more="below"] { mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent); }
+.gui-scrolls[data-more="above"] { mask-image: linear-gradient(to top, #000 calc(100% - 40px), transparent); }
+.gui-scrolls[data-more="above below"] { mask-image: linear-gradient(to bottom, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
 .gui-field { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-form__row { display: flex; gap: var(--space-2); }
 .gui-form__row > * { flex: 1; min-width: 0; }
@@ -567,9 +571,10 @@ button { font: inherit; color: inherit; }
   box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo); }
 .gui-map__title { margin: -1px 0 5px; text-align: center; font: 500 12px/14px "Pixelify Sans", var(--ok-font);
   color: var(--ink-gold); letter-spacing: .08em; text-transform: uppercase; text-shadow: 1px 1px 0 var(--bevel-lo); }
+.gui-map__frame { box-shadow: 0 0 0 2px var(--frame); }   /* outside the view: its fade (.gui-scrolls) would take a frame on it */
 .gui-map__view { width: 208px; height: 144px;   /* a landscape, as a minimap: more lands scroll inside it */
   overflow-y: auto; overflow-x: hidden; position: relative;
-  box-shadow: 0 0 0 2px var(--frame); scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
+  scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
 .gui-map__ground { position: relative; background: var(--fog); }
 .gui-map__land { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; background: var(--fill); cursor: pointer;
   color: var(--ink); font: 600 12px/14px var(--ok-font); text-align: left; outline: none; }

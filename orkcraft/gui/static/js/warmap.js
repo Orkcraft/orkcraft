@@ -10,6 +10,7 @@ import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
+import { useScrollCue } from "./scrollcue.js";
 
 const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
 const FOG_ROWS = 4, CLOSED_MIN = 7, OPEN_MIN = 12;   // a closed land at least 28 px: its name never touches a border
@@ -119,6 +120,7 @@ export function WarMap() {
   const t = town.value;
   const lands = t.orkspaces, open = t.active_orkspace;
   const view = useRef(null), land = useRef(null), frame = useRef(null);
+  useScrollCue(view);
   const [naming, setNaming] = useState(null);          // "new" | an orkspace id being renamed
   const asked = useRef(null);                           // orkspace id → its questions at the last render
   const called = useRef({});                            // orkspace id → when it last called
@@ -197,7 +199,7 @@ export function WarMap() {
   const fogMid = (tops[n] + (H - tops[n]) / 2) * T - 7;
   return html`<nav ref=${frame} class="gui-map" aria-label=${say("Orkspaces")} onKeyDown=${key}>
     <div class="gui-map__title">${say("War Map")}</div>
-    <div ref=${view} class="gui-map__view">
+    <div class="gui-map__frame"><div ref=${view} class="gui-map__view gui-scrolls">
       <div ref=${land} class="gui-map__ground" style=${`height:${H * T}px;--fog:${FOG}`}>
         ${lands.map((o, i) => {
           const from = (x) => (i === 0 ? 0 : border[i][x]), to = (x) => border[i + 1][x];
@@ -232,6 +234,6 @@ export function WarMap() {
             onName=${(name) => command("orkspace.rename", { id: naming, name }).catch(() => {})} />`;
         })()}
       </div>
-    </div>
+    </div></div>
   </nav>`;
 }
