@@ -237,6 +237,8 @@ function Quick({ b, i }) {
 function OrkCommands({ b, o, open }) {
   const agent = o.kind === "agent" || o.kind === "hybrid";
   return html`<div class="gui-info__acts">
+    ${o.kind === "agent" && !o.lead && html`<${Act} label=${say("Hand to the steward")}
+      title=${say("Its orders become a road rule of the steward: its own tools go, its roads stay")} onClick=${() => open("hand")} />`}
     ${o.status === "alert" && b.alert && html`<${Act} label=${say("Resolve alert")} onClick=${() => openOrders(b.alert.id)} />`}
     ${agent && html`<${Act} label=${o.session ? "Open session" : "Deploy"} onClick=${() => deploy(o.ref)} />`}
     <${Act} label=${say("Standing orders & trigger")} title=${say("What it is told to do, and when it starts")} onClick=${() => open("orders")} />
@@ -259,6 +261,72 @@ function OrkDialog({ b, ref, which, onClose }) {
     : html`<${OrdersDialog} b=${b} i=${i} onClose=${onClose} onDone=${done} />`;
 }
 
+/** *Hand to the steward*: what changes (tools, tier, the spend per run), then the change; Revert takes it back. */
+function HandDialog({ b, o, onClose }) {
+  const [v, setV] = useState(null);
+  useEffect(() => { command("ork.hand", { id: b.id, ork: o.ref, preview: true }).then(setV, onClose); }, [o.ref]);
+  if (!v) return null;
+  const hand = () => command("ork.hand", { id: b.id, ork: o.ref }).then((ref) => { onClose(); selectOrk(ref); }, () => {});
+  return html`<${Dialog} title=${say(`Hand to the steward — ${v.name}`)}
+      text=${say("Its orders become a road rule: the steward carries them out on its own tool and tier. Its roads stay; Revert takes it back.")}
+      onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${hand}>${say("Hand it over")}</button>`}>
+    <ul class="gui-rows gui-hand">
+      <li><span class="ok-font-label">${say("Tools")}</span> ${say(v.tools_now)} → <b>${say(v.tools_then)}</b></li>
+      <li><span class="ok-font-label">${say("Tier")}</span> ${say(v.tier_now)} → <b>${say(v.tier_then)}</b></li>
+      <li><span class="ok-font-label">${say("Spend per run")}</span> ${v.per_run_now
+        ? html`${v.per_run_now} → <b>${v.per_run_then || say("not known")}</b> <span class="ok-tone-muted">(${say("an estimate from")} ${v.runs} ${say("runs")})</span>`
+        : say("no runs yet to tell")}</li>
+      <li><span class="ok-font-label">${say("Roads")}</span> ${v.roads.map(say).join(", ") || say("none")}</li>
+      <li class="ok-font-status">${say("Rule")}: ${v.orders}</li>
+    </ul>
+  </${Dialog}>`;
+}
+
+/** A road rule's words, edited: what the steward does with the carts of its roads. */
+function RuleDialog({ b, i, onClose, onDone }) {
+  const [words, setWords] = useState(i.orders || "");
+  const save = () => command("ork.orders", { id: b.id, ork: i.ref, orders: words })
+    .then(() => { onClose(); onDone(); }, () => {});
+  return html`<${Dialog} title=${say(`Road rule — ${i.name}`)} text=${say("What the steward does with every cart of its roads, in your words.")}
+      onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" onClick=${save} disabled=${!words.trim()}>${say("Save")}</button>`}>
+    <textarea class="ok-input gui-textarea" rows="4" value=${words} onInput=${(e) => setWords(e.target.value)}></textarea>
+  </${Dialog}>`;
+}
+
+/** A road rule of the steward's, picked under it: its words, its roads, its runs and spend; ← back. */
+export function RuleView({ b, ruleRef }) {
+  const i = useInfo(b.id, ruleRef);
+  const [dialog, setDialog] = useState(null);
+  const redo = () => ask(b.id, ruleRef, true);
+  useEffect(redo, [ruleRef]);                     // what it said as an agent (just handed over) is not a rule's
+  const remove = () => command("ork.dismiss", { id: b.id, ork: ruleRef }).then(() => selectOrk(null), () => {});
+  return html`<div class="ok-win__body gui-win__body gui-info-tab">
+    <button class="gui-link gui-info__back" onClick=${() => selectOrk(null)}>← ${say(b.title)}</button>
+    ${!i || !i.rule ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
+      <section class="gui-info gui-rule">
+        <${Row} text=${html`📜 <b>${say(i.name)}</b><span class="ok-tone-muted"> · ${say("Road rule")} · ${say(b.title)}</span>`}>
+          <${Act} label=${say("Edit")} title=${say("Its words: what the steward does with its carts")} onClick=${() => setDialog("words")} />
+          <${Act} label=${say("Remove")} title=${say("The rule goes; its roads stay, plain")} onClick=${remove} />
+        </${Row}>
+        <p class="ok-font-body gui-info__about gui-rule__words">${i.orders}</p>
+        <ul class="gui-rows ok-font-status">
+          <li>${say("Roads")}: ${i.roads.map(say).join(", ") || say("none yet")}</li>
+          <li class="ok-tone-muted">${say("Carried out by the steward on its own tool")}${i.tier ? ` · ${say(i.tier)}` : ""}</li>
+          <li>${say(i.spend)}${i.last ? ` · ${say("last")}: ${i.last}` : ""}${i.last_error ? ` — ${i.last_error}` : ""}</li></ul>
+      </section>
+      <section class="gui-section"><h3 class="ok-font-heading">${say("Runs")}</h3>
+        ${i.recent.length ? html`<ul class="gui-rows">${i.recent.map((r, k) => html`<li key=${k} class="ok-font-status">
+            <span class="ok-tone-muted">${r.ts}${typeof r.cost === "number" ? ` · $${r.cost.toFixed(3)}` : ""}</span> ${r.output}</li>`)}</ul>`
+          : html`<p class="ok-font-status ok-tone-muted">${say("No runs yet: it runs when a cart comes")}</p>`}
+      </section>
+      ${dialog === "words" && html`<${RuleDialog} b=${b} i=${i} onClose=${() => setDialog(null)} onDone=${redo} />`}`}
+  </div>`;
+}
+
 /** The dialogs a part of Info opens, by `dialog.kind`. */
 function Dialogs({ b, o, i, dialog, close, redo }) {
   if (!dialog) return null;
@@ -268,6 +336,7 @@ function Dialogs({ b, o, i, dialog, close, redo }) {
     ${k === "ork-bad" && o && html`<${NoteDialog} title=${say(`Bad work — ${o.name}`)} onClose=${close}
       onSend=${(note) => command("ork.dislike", { id: b.id, ork: o.ref, note }).then(() => { close(); redo(); }, () => {})} />`}
     ${k === "history" && html`<${HistoryDialog} b=${b} ork=${o} tool=${dialog.tool} onClose=${close} />`}
+    ${k === "hand" && o && html`<${HandDialog} b=${b} o=${o} onClose=${close} />`}
     ${k === "listen" && html`<${ListenDialog} b=${b} onClose=${close} />`}
     ${k === "redesign" && html`<${RedesignDialog} b=${b} onClose=${close} />`}
     ${k === "steward-models" && i && i.steward && html`<${StewardModels} b=${b} i=${i} onClose=${close} onDone=${redo} />`}

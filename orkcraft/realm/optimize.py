@@ -272,7 +272,7 @@ def parts(scroll, spec: dict | None, building: str, repo_root: Path | None = Non
     b = scroll.building(building) if scroll is not None else None
     if b is not None:
         for orc in b.garrison.handlers:
-            if orc.kind in ("agent", "hybrid") and orc.orders.strip():
+            if orc.kind in ("agent", "hybrid", "steward") and orc.orders.strip():     # a road rule's words too
                 out.append(Part(f"orc:{orc.id}", "agent", orc.orders))
     cfg = (spec or {}).get("config") or {}
     from orkcraft.realm import catalog

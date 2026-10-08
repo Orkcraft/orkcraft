@@ -14,7 +14,7 @@ import { Demolish } from "./build.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
-import { InfoTab, OrkView } from "./console.js";
+import { InfoTab, OrkView, RuleView } from "./console.js";
 import { OrkHead } from "./icons.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
@@ -222,6 +222,7 @@ export function Panel() {
       ${front ? html`<${DocBody} />`
         : tab === "work" ? html`<${Work} b=${b} />`
         : o.ork && b.garrison.some((x) => x.ref === o.ork) ? html`<${OrkView} b=${b} orkRef=${o.ork} />`
+        : o.ork && (b.rules || []).some((x) => x.ref === o.ork) ? html`<${RuleView} b=${b} ruleRef=${o.ork} />`
         : html`<${InfoTab} b=${b} />`}
     </div>
   </section>`;
