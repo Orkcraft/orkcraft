@@ -23,7 +23,8 @@ its neighbours, while something on it wants the person.
 - **The title bar stays as it is** (js/hut.js): the number, the spinner while it works, the type's icon,
   the name, the keeper's head (it flashes when it asks), `?`, the pin, the road handle. The roof sprite
   and the flames stay too: fire is how a question is seen (gui-design-system.md: questions are fire).
-- **The fold toggle** stands right of the pin: `▾` on an open card folds it, `▸` on a folded one opens it.
+- **The fold toggle** stands right of the pin: a chevron `▾` on an open card folds it, `▸` on a folded one
+  opens it, in a 24 px box in both looks.
   Its title says what a press does (*Fold the card* / *Unfold the card*). A press never opens or drags
   the hut.
 - **A mark** may stand before the pin: a word or a number in a tone, what the hidden card would have

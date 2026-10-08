@@ -3,7 +3,9 @@
 // exit dot and an arrowhead, dashed when plain, moss green when a handler works on them, labelled,
 // rounded at the bends and broken where another road crosses over (design-system/components.md: Hut,
 // Road). Positions are the person's: dragging a hut saves its spot as fractions of the room (`hut`
-// in the Town Scroll, the same the TUI reads).
+// in the Town Scroll, the same the TUI reads). As in an RTS, a drag or a stretch moves only a ghost outline;
+// no other hut moves to make room: where the ghost would stand on one it turns red, and a drop there is no
+// move at all (Footprint).
 import { signal } from "@preact/signals";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -13,7 +15,7 @@ import { plan } from "./roads.js";
 import { pickedRoad, building as buildOpen } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
-import { Hut, sizes, dragging, pulling, pullRoad, CORNER } from "./hut.js";
+import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
 import { foldQuiet, unfoldAll, quiet } from "./fold.js";
@@ -106,6 +108,29 @@ function settle(rects, fixed = new Set()) {
     done.push(r);
   }
   return down;
+}
+
+/** Where `a` would stand on `o`, kept GAP_PX apart as settle keeps them: the part of `a` it takes, or null. */
+function overlap(a, o) {
+  const x = Math.max(a.x, o.x - GAP_PX), y = Math.max(a.y, o.y - GAP_PX);
+  const r = Math.min(a.x + a.w, o.x + o.w + GAP_PX), b = Math.min(a.y + a.h, o.y + o.h + GAP_PX);
+  return r > x && b > y ? { x, y, w: r - x, h: b - y } : null;
+}
+
+/** A ghost at `r` for hut `id`: the parts of it that would stand on another hut or the portrait's corner. */
+function footprint(id, r, rects) {
+  const others = [...Object.entries(rects).filter(([o]) => o !== id).map(([, o]) => o), CORNER_ROOM];
+  return { ...r, hits: others.map((o) => overlap(r, o)).filter(Boolean) };
+}
+
+/** The ghost outline of a hut being dragged or stretched; red where it would stand on another, each such part
+ *  marked. Let go there and nothing moves. */
+function Footprint({ g }) {
+  const blocked = g.hits.length > 0;
+  return html`<div class="gui-footprints" aria-hidden="true">
+    <div class=${cls("gui-footprint", { "is-blocked": blocked })} style=${`left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${g.h}px`}></div>
+    ${g.hits.map((h, i) => html`<div key=${i} class="gui-footprint__hit" style=${`left:${h.x}px;top:${h.y}px;width:${h.w}px;height:${h.h}px`}></div>`)}
+  </div>`;
 }
 
 // Planning every road is a few A* runs: keep the last plan while nothing it reads changed.
@@ -381,24 +406,43 @@ export function Town({ buildings, roads }) {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     return [b.id, { x: full[b.id].x, y: full[b.id].y - up[b.id], w: size.w, h: size.h }];
   }));
-  const held = new Set([CORNER, "\u0000portrait", ...(dragging.value ? [dragging.value.id] : [])]);
+  const held = new Set([CORNER, "\u0000portrait"]);
   const down = settle({ ...standing, "\u0000portrait": CORNER_ROOM }, held);
   for (const b of buildings) up[b.id] -= down[b.id];   // `moved` keeps the spot unpushed, as it keeps it unlifted
   const spots = {}, rects = {}, ports = {};
   buildings.forEach((b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
-    const d = dragging.value && dragging.value.id === b.id ? dragging.value : { dx: 0, dy: 0 };
-    rects[b.id] = { x: spots[b.id].x + d.dx, y: spots[b.id].y + d.dy, w: size.w, h: size.h };
+    rects[b.id] = { x: spots[b.id].x, y: spots[b.id].y, w: size.w, h: size.h };
     // A road meets the card's frame: in Camp under the sprite, in Office the card that holds the name
     ports[b.id] = size.ch ? { x: rects[b.id].x, y: rects[b.id].y + (size.top || 0), w: size.w, h: size.ch } : rects[b.id];
   });
 
-  function moved(b, x, y) {
-    y += up[b.id] || 0;                     // the spot kept is the one it stands at unlifted
+  /** Where a hut dropped at (x, y) would stand: its spot kept as fractions, and its ghost at the place it takes. */
+  function landing(b, x, y) {
     const size = fullSize(b);
     const f = free(size);
-    const fx = Math.min(Math.max((x - MARGIN) / f.w, 0), 1), fy = Math.min(Math.max((y - MARGIN) / f.h, 0), 1);
+    const fx = Math.min(Math.max((x - MARGIN) / f.w, 0), 1), fy = Math.min(Math.max((y + (up[b.id] || 0) - MARGIN) / f.h, 0), 1);
+    const at = { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h - (up[b.id] || 0) };   // the spot kept is the one it stands at unlifted
+    return { fx, fy, ghost: footprint(b.id, { ...at, w: rects[b.id].w, h: rects[b.id].h }, rects) };
+  }
+
+  /** The ghost of a card stretched to w × h: the hut keeps its spot; the card under its sprite grows. */
+  function stretched(b, w, h) {
+    const r = rects[b.id], top = (sizes.value[b.id] || {}).top || 0;
+    return footprint(b.id, { x: r.x, y: r.y, w, h: top + h }, rects);
+  }
+
+  function sized(b, w, h) {
+    if (stretched(b, w, h).hits.length) return;            // over another hut: it keeps its size
+    command("hut.size", { id: b.id, w, h }).catch(() => {});
+  }
+
+  function moved(b, x, y) {
+    const { fx, fy, ghost } = landing(b, x, y);
+    if (ghost.hits.length) return;                         // over another hut: it stays where it stood
+    const size = fullSize(b);
+    const f = free(size);
     dropped.value = { ...dropped.value, [b.id]: { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h } };
     const forget = () => {
       const { [b.id]: _, ...rest } = dropped.value;
@@ -422,6 +466,11 @@ export function Town({ buildings, roads }) {
   // Huts pushed under the fold make the room taller, so the town scrolls to them rather than hiding them under the foot.
   const tall = Math.max(room.value.h, ...Object.values(rects).map((r) => r.y + r.h + MARGIN + room.value.strip));
   const fresh = risen();                   // raised by the onboarding: each rises into place as it appears
+  const drag = dragging.value, stretch = resizing.value;
+  const dragged = drag && buildings.find((b) => b.id === drag.id && rects[b.id]);
+  const grown = stretch && buildings.find((b) => b.id === stretch.id && rects[b.id]);
+  const ghost = dragged ? landing(dragged, spots[dragged.id].x + drag.dx, spots[dragged.id].y + drag.dy).ghost
+    : grown ? stretched(grown, stretch.w, stretch.h) : null;
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
     <div class="gui-town__room" style=${`width:${room.value.w + panelW}px;height:${tall}px`}>
       <${Roads} roads=${here} rects=${rects} ports=${ports}
@@ -429,7 +478,8 @@ export function Town({ buildings, roads }) {
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
           spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
       ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)}
-          fresh=${fresh.has(b.id)} onMoved=${moved} />`)}
+          fresh=${fresh.has(b.id)} onMoved=${moved} onSized=${sized} />`)}
+      ${ghost && html`<${Footprint} g=${ghost} />`}
       <${Signs} paths=${paths} roads=${here} />
       <${LooseEnds} buildings=${buildings} rects=${rects} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />

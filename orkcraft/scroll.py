@@ -189,6 +189,13 @@ class RallyPoint:
     road_id: str = ""
 
 
+def _hut_size(v: Any) -> list[int] | None:
+    """A stretched card's [width, height]; anything else (an older scroll, a hand edit) is no size of its own."""
+    if isinstance(v, (list, tuple)) and len(v) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in v):
+        return [int(v[0]), int(v[1])]
+    return None
+
+
 @dataclass
 class BuildingSpec:
     id: str
@@ -206,6 +213,7 @@ class BuildingSpec:
     bounds: dict | None = None        # {"x","y","width","height"} in canvas cells
     frac: list[float] | None = None   # fractional slot, follows canvas resizes
     hut: list[float] | None = None    # town view: the hut's spot, fractions of the canvas room
+    hut_size: list[int] | None = None  # town view: its card's [width, height] in px, as the person stretched it
     min_size: dict | None = None
     roads: list[Road] = field(default_factory=list)     # incoming
     chronicles: dict = field(default_factory=lambda: {"enabled": True})
@@ -354,6 +362,7 @@ class TownScroll:
                 question_wait=autonomy.wait_of(b["question_wait"]) if b.get("question_wait") else None,
                 rebuild_wait=autonomy.rebuild_of(b["rebuild_wait"]) if b.get("rebuild_wait") else None,
                 bounds=b.get("bounds"), frac=b.get("frac"), hut=b.get("hut"), min_size=b.get("min_size"),
+                hut_size=_hut_size(b.get("hut_size")),
                 roads=[Road.from_dict(r) for r in b.get("roads", [])],
                 chronicles=b.get("chronicles") or {"enabled": True},
                 actions=list(b.get("actions") or []),

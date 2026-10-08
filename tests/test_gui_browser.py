@@ -8,6 +8,7 @@ them out."""
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -361,10 +362,62 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     clock.click()                                                  # the lit one again: as the town
     pg.wait_for_function("() => document.querySelector('.gui-steward-part .gui-steps__one.is-as-town').classList.contains('is-on')",
                          timeout=WAIT_MS)
-    demolish = info.locator(".gui-win__demolish").bounding_box()
-    assert demolish["y"] > steward.bounding_box()["y"]             # Demolish at the bottom
+    assert info.get_by_role("button", name="Demolish").count() == 0        # rare: in the building's menu only
+    pg.locator(".gui-panel__more").click()                           # ⋯ in the bar: the same menu as a right click
+    items = pg.locator(".gui-menu .gui-menu__item").all_inner_texts()
+    assert any(t.startswith("Demolish") for t in items)
+    pg.keyboard.press("Escape")
     pg.keyboard.press("Escape")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
+    """As in an RTS (docs/design/calm-town.md §3a): while a hut is dragged it stays, a ghost follows; over another
+    hut the ghost is red and a drop there leaves the hut where it was; on a free place it goes there. A stretch
+    by the corner is the same, and the size is kept."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    a = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    b = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    pg.keyboard.press("Escape")
+    for bid, x, y in ((a, 0.05, 0.05), (b, 0.6, 0.05)):
+        pg.evaluate(f"([id, x, y]) => {link}.then(m => m.command('hut.move', {{ id, x, y }}))", [bid, x, y])
+    pg.wait_for_timeout(600)
+    title, other = _hut(pg, a).locator(".gui-hut__name").bounding_box(), _hut(pg, b).bounding_box()
+    start = _hut(pg, a).bounding_box()
+    pg.mouse.move(title["x"] + 10, title["y"] + 5)
+    pg.mouse.down()
+    pg.mouse.move(other["x"] + 30, other["y"] + 30, steps=6)
+    pg.locator(".gui-footprint.is-blocked").wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-footprint__hit").count() >= 1
+    assert _hut(pg, a).bounding_box() == start                         # the hut itself never moves while held
+    pg.mouse.up()
+    pg.wait_for_timeout(500)
+    assert _hut(pg, a).bounding_box() == start and pg.locator(".gui-footprint").count() == 0
+    spot = f"() => {link}.then(m => m.town.value.buildings.find(x => x.id === '{a}').hut)"
+    hut_before = pg.evaluate(spot)
+    pg.mouse.move(title["x"] + 10, title["y"] + 5)
+    pg.mouse.down()
+    pg.mouse.move(title["x"] + 10, title["y"] + 305, steps=6)          # a free place under it
+    assert pg.locator(".gui-footprint.is-blocked").count() == 0
+    pg.mouse.up()
+    pg.wait_for_function(f"([id, y]) => document.querySelector(`.gui-hut[data-id='${{id}}']`).getBoundingClientRect().y > y + 200",
+                         arg=[a, start["y"]], timeout=WAIT_MS)
+    pg.wait_for_function(f"([s]) => {link}.then(m => JSON.stringify(m.town.value.buildings.find(x => x.id === '{a}').hut) !== s)",
+                         arg=[json.dumps(hut_before, separators=(",", ":"))], timeout=WAIT_MS)
+    pg.evaluate(f"id => {link}.then(m => m.command('building.fold', {{ id, value: false }}))", a)   # a folded card never stretches
+    _hut(pg, a).locator(".gui-hut__grip.is-se").wait_for(state="attached", timeout=WAIT_MS)
+    _hut(pg, a).hover()
+    grip = _hut(pg, a).locator(".gui-hut__grip.is-se").bounding_box()
+    pg.mouse.move(grip["x"] + 4, grip["y"] + 4)
+    pg.mouse.down()
+    pg.mouse.move(grip["x"] + 124, grip["y"] + 84, steps=6)
+    pg.locator(".gui-footprint").wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.up()
+    pg.wait_for_function(f"id => {link}.then(m => !!(m.town.value.buildings.find(b => b.id === id) || {{}}).size)", arg=a,
+                         timeout=WAIT_MS)
+    for bid in (a, b):
+        pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
 
 
 def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):

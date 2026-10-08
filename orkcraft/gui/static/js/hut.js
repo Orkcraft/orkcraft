@@ -7,6 +7,10 @@
 // (office.css: two thirds of the sprite's size), and the garrison's lead is its ork's head alone.
 // A hut may fold to its title bar (docs/design/folded-cards.md): a mark says what the card would have said
 // first, and the card peeks out over the huts under it while it wants the person or a drag is held over it.
+// A drag or a stretch by an edge or corner never moves the hut at once: a ghost outline follows the mouse, red
+// where it would stand on another hut, and the hut goes there on the drop only if it is free (js/town.js
+// Footprint). A card stretched larger shows more (docs/design/building-views.md §1a): its size is kept in the
+// Town Scroll (`hut.size`).
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -22,7 +26,15 @@ import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
 export const sizes = signal({});           // building id → {w, h} of its card, as drawn
-export const dragging = signal(null);      // {id, dx, dy}: the hut under the mouse, so its roads follow it
+export const dragging = signal(null);      // {id, dx, dy}: the hut being dragged; its ghost stands this far from it
+export const resizing = signal(null);      // {id, w, h}: the card being stretched; its ghost has this size
+export const HUT_MIN = { w: 240, h: 60 }, HUT_MAX = { w: 960, h: 900 };   // as the host keeps them (gui/host.py)
+
+/** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
+export function levelOf(b) {
+  const [w, h] = (b && b.size) || [0, 0];
+  return w >= 520 && h >= 400 ? "l" : w >= 360 && h >= 240 ? "m" : "s";
+}
 export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
 const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
 const warned = signal({});                 // building id → true while its pin says it holds the hut
@@ -61,7 +73,8 @@ function PinButton({ b }) {
 
 const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
 
-/** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. */
+/** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. A
+ *  chevron in a 24px box, so it is found and hit in either look. */
 function FoldButton({ b, peek }) {
   const label = !b.folded ? say("Fold the card") : peek ? say("Put it away") : say("Unfold the card");
   const press = (e) => {
@@ -70,7 +83,9 @@ function FoldButton({ b, peek }) {
     else fold(b);
   };
   return html`<button class=${cls("gui-hut__fold", { "is-on": !!b.folded })} title=${label} aria-label=${label} aria-expanded=${!b.folded || peek}
-      onPointerDown=${(e) => e.stopPropagation()} onClick=${press}>${b.folded ? "▸" : "▾"}</button>`;
+      onPointerDown=${(e) => e.stopPropagation()} onClick=${press}>
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d=${b.folded ? "M6 3.5 10.5 8 6 12.5" : "M3.5 6 8 10.5 12.5 6"} /></svg>
+  </button>`;
 }
 
 /** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
@@ -118,8 +133,9 @@ export function pullRoad(e, from, event = "") {
   move(e);
 }
 
-/** The right click on a hut: its building's menu (docs/design/calm-town.md §3). */
-function hutMenu(e, b) {
+/** The right click on a hut, or ⋯ in its panel's bar: its building's menu (docs/design/calm-town.md §3).
+ *  Demolish lives here only, rare and confirmed, never a button in view. */
+export function buildingMenu(e, b) {
   const t = town.value;
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   const here = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
@@ -189,12 +205,54 @@ export function QuickTray({ b }) {
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 export function Card({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
-  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b)}</div>`;
+  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b, levelOf(b))}</div>`;
   return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
-export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
+/** The edges and the corner a card is stretched by: a ghost of the new size follows the mouse; a double click
+ *  gives the card back its own size. */
+function Grips({ b, onSized }) {
+  const grab = (e, sides) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const card = e.currentTarget.closest(".ok-hut__card");
+    const from = { x: e.clientX, y: e.clientY, w: card.offsetWidth, h: card.offsetHeight };
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    let gone = false;
+    const clamp = (v, lo, hi) => Math.round(Math.min(Math.max(v, lo), hi));
+    const move = (ev) => {
+      resizing.value = { id: b.id,
+        w: sides.includes("e") ? clamp(from.w + ev.clientX - from.x, HUT_MIN.w, HUT_MAX.w) : from.w,
+        h: sides.includes("s") ? clamp(from.h + ev.clientY - from.y, HUT_MIN.h, HUT_MAX.h) : from.h };
+    };
+    const key = (ev) => { if (ev.key === "Escape") { ev.stopImmediatePropagation(); gone = true; end(); } };
+    const end = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      window.removeEventListener("keydown", key, true);
+      const r = resizing.value;
+      resizing.value = null;
+      return r;
+    };
+    const up = () => {
+      const r = end();
+      if (!gone && r && (r.w !== from.w || r.h !== from.h)) onSized(b, r.w, r.h);
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    window.addEventListener("keydown", key, true);
+  };
+  const back = (e) => { e.stopPropagation(); if (b.size) command("hut.size", { id: b.id, w: null }).catch(() => {}); };
+  const label = say("Drag to resize · double-click: its own size");
+  return html`${[["e", "is-e"], ["s", "is-s"], ["es", "is-se"]].map(([sides, c]) => html`<span key=${c}
+      class=${cls("gui-hut__grip", c)} title=${label} aria-hidden="true"
+      onPointerDown=${(e) => grab(e, sides)} onClick=${(e) => e.stopPropagation()} onDblClick=${back}></span>`)}`;
+}
+
+export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSized }) {
   const ref = useRef(null);
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
@@ -229,28 +287,36 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
   function down(e) {
     if (e.button !== 0) return;
     const start = { x: e.clientX, y: e.clientY };
-    let moved = false;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    let moved = false, gone = false;
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
     const move = (ev) => {
       const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
-      if (!moved && Math.hypot(dx, dy) < DRAG_PX) return;
+      if (gone || (!moved && Math.hypot(dx, dy) < DRAG_PX)) return;
       if (!moved && !free) warnPinned(b.id);
       moved = true;
       if (!free) return;                   // a pinned hut keeps its place: a drag on it does nothing
-      dragging.value = { id: b.id, dx, dy };
+      dragging.value = { id: b.id, dx, dy };   // the hut stays; its ghost moves (js/town.js Footprint)
     };
+    // Esc lets the ghost go: the hut was never moved
+    const key = (ev) => { if (ev.key === "Escape" && moved) { ev.stopImmediatePropagation(); gone = true; dragging.value = null; } };
     const up = (ev) => {
-      ev.currentTarget.removeEventListener("pointermove", move);
-      ev.currentTarget.removeEventListener("pointerup", up);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      window.removeEventListener("keydown", key, true);
       dragging.value = null;
+      if (gone) return;
       if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
       else openBuilding(b.id);
     };
-    e.currentTarget.addEventListener("pointermove", move);
-    e.currentTarget.addEventListener("pointerup", up);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    window.addEventListener("keydown", key, true);
   }
 
-  const x = spot.x + (drag ? drag.dx : 0), y = spot.y + (drag ? drag.dy : 0);
+  const x = spot.x, y = spot.y;
+  const level = levelOf(b);
+  const sized = b.size && !folded;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
@@ -263,23 +329,25 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
       ${folded && html`<${Mark} b=${b} />`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
-  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px`}
+  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${b.size[0]}px` : "")}
       class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
-                                        "is-fresh": fresh, "is-folded": folded, "is-peek": peek })}
-      onPointerDown=${down} onContextMenu=${(e) => hutMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
+                                        "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
+                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized,
+                                        "is-resizing": resizing.value?.id === b.id })}
+      onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>
-    <div class="ok-hut__card">
+    <div class="ok-hut__card" style=${sized ? `height:${b.size[1]}px` : ""}>
       ${title}
       <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
-      <span class="ok-hut__dot gui-hut__dot"></span>
       ${!folded ? html`<${Card} b=${b} /><${QuickTray} b=${b} />`
         : peek ? html`<div class="gui-hut__peek"><${Card} b=${b} /><${QuickTray} b=${b} /></div>`
         : html`<${QuickTray} b=${b} />`}
+      ${!folded && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
     </div>
   </div>`;
 }

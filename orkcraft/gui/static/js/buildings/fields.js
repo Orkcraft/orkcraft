@@ -410,11 +410,16 @@ function Board({ id, data }) {
 
 const mark = (m, t, i) => html`<span key=${i} class="gui-fhut__item"><span class="gui-fhut__mark">${m}</span>${t}</span>`;
 
+// How many titles a closed card lists by its size (js/hut.js levelOf; docs/design/building-views.md §1a):
+// small as it comes, stretched more, big the orks' lanes side by side as cards.
+const SHOW = { s: { next: 2, list: 3 }, m: { next: 4, list: 6 }, l: { next: 8, list: 8 } };
+
 /** Closed: a counter per status lane, then the note folders with theirs; `*` on one with unseen cards
  * (docs/design/building-views.md). In board mode the three parts: the orks' lanes with what is in work
  * and next, the person's open to-dos, the latest notes, a checkbox over them hiding any one. In notes
- * mode only the folders. */
-export function card(b) {
+ * mode only the folders. The larger the card (`level`), the more titles; big, the lanes as columns of cards. */
+export function card(b, level = "s") {
+  const n = SHOW[level] || SHOW.s;
   const c = b.card;
   if (!c) return null;
   if (c.error) return html`<span class="ok-tone-fire">${c.error}</span>`;
@@ -433,8 +438,10 @@ export function card(b) {
       ${c.waiting > 0 && html`<div class="gui-hut__text ok-tone-muted">⏳ ${c.waiting} waiting to go</div>`}
     </div>`;
   }
-  const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, 1));
-  const next = c.lanes.filter((l) => l.id === "todo").flatMap((l) => l.top).slice(0, 2 - doing.length);
+  const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, level === "s" ? 1 : n.next));
+  const next = c.lanes.filter((l) => l.id === "todo").flatMap((l) => l.top).slice(0, Math.max(n.next - doing.length, 0));
+  const big = level === "l";
+  const open = c.lanes.filter((l) => l.id !== "done");
   const t = c.todos, idea = c.ideas;
   const on = (part) => shown(b.id, part);
   const lower = ["chores", "scribbles"].filter(on).length;
@@ -444,17 +451,20 @@ export function card(b) {
     <${PartToggles} id=${b.id} parts=${PARTS} />
     ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
       <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
-      ${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}
+      ${big ? html`<div class="gui-fhut__lanes" style=${`--lanes:${open.length}`}>${open.map((l) => html`<div key=${l.id} class="gui-fhut__lane">
+          <span class="ok-tone-muted">${say(l.label)}</span>
+          ${l.top.slice(0, n.list).map((x, i) => html`<span key=${i} class="gui-fhut__card">${x}</span>`)}</div>`)}</div>`
+        : html`${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}`}
       ${c.waiting > 0 && html`<span class="ok-tone-muted ok-font-status">⏳ ${c.waiting} waiting to go</span>`}
     </section>`}
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My to-dos</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
-      ${t.top.map((x, i) => mark("☐", x, i))}
+      ${t.top.slice(0, n.list).map((x, i) => mark("☐", x, i))}
       ${!t.top.length && t.count > 0 && html`<span class="ok-tone-ok">all done ✓</span>`}
     </section>`}
     ${on("scribbles") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">Notes</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
-      ${idea.top.map((x, i) => mark("✎", x, i))}
+      ${idea.top.slice(0, n.list).map((x, i) => mark("✎", x, i))}
     </section>`}
   </div>`;
 }

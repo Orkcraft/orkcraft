@@ -11,13 +11,13 @@ import { town, command, details, online, say } from "./link.js";
 import { Layout } from "./layout.js";
 import { HALL } from "./tent.js";
 import { openOrders } from "./orders.js";
-import { Demolish } from "./build.js";
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
 import { OrkHead, Scheme } from "./icons.js";
 import { setupBack } from "./setup.js";
+import { buildingMenu } from "./hut.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
 // `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
@@ -139,11 +139,15 @@ function Question({ alert }) {
     <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
 }
 
-export function DemolishButton({ b }) {
-  const [asking, setAsking] = useState(false);
-  return html`<button class="ok-act gui-win__demolish" onClick=${() => setAsking(true)}>
-    <span class="ok-act__label">Demolish</span></button>
-    ${asking && html`<${Demolish} b=${b} onClose=${() => setAsking(false)} />`}`;
+/** ⋯ in the bar: the building's menu, the same as a right click on its hut — Demolish is there, rare and
+ *  confirmed, never a button in view. Opened under the button, from the mouse or the keys. */
+function More({ b }) {
+  const open = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    buildingMenu({ preventDefault() {}, stopPropagation() { e.stopPropagation(); }, clientX: r.left, clientY: r.bottom }, b);
+  };
+  return html`<button class="gui-tab__close gui-panel__more" title=${say("More: pin, fold, demolish…")}
+    aria-label=${say("More")} aria-haspopup="menu" onClick=${open}>⋯</button>`;
 }
 
 /** Work: the building's own view by its UI document; a type without one shows its status lines. */
@@ -214,6 +218,7 @@ export function Panel() {
         <span class="gui-head__spacer"></span>
         ${b && !front && setupBack.value[b.id] && html`<button class="ok-btn gui-panel__back" title=${say("One step back")}
           onClick=${setupBack.value[b.id]}>← ${say("Back")}</button>`}
+        ${b && html`<${More} b=${b} />`}
         <button class="gui-tab__close gui-panel__full" title=${o.full ? say("Half the town") : say("The whole town")}
           aria-label=${o.full ? say("Half") : say("Full")} onClick=${toggleFull}>${o.full ? "⤡" : "⤢"}</button>
         <button class="gui-tab__close gui-win__close" title=${say("Close (Esc)")} aria-label=${say("Close")}
