@@ -73,6 +73,9 @@ code → hands-on work), so ★ still finds the towns that fit.
 The nicks of the first role of each kin are the classes of orkcraft.dev. The page hands its pick to
 `orkcraft --role <class>` (or a role id): it is kept in `profile.role` before the first run, so this
 screen opens on it (`intents.CLASSES`, `settings.preset_role`); a role picked in a finished onboarding stays.
+The page also hands the look its install block picked, `orkcraft --look camp|office`: kept as `look` before
+the first run, so the town first opens drawn that way (`settings.preset_look`); after a finished onboarding the
+look from Settings stays.
 
 Stored: `profile.orchestration`, `role`, `role_other`, `industry`, `industry_other`, `day`, `day_other`.
 
