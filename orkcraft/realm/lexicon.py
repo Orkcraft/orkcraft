@@ -138,6 +138,12 @@ TERMS: tuple[Term, ...] = (
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
+    # the Mine's research (docs/design/mine.md)
+    _t("finding", "Finding", "Findings"),                           # one claim of a report, with its sources
+    _t("confirmed", "Confirmed"),                                   # two models, two sites (realm/research.py check)
+    _t("disputed", "Disputed"),                                     # the tools disagree; the person decides
+    _t("single", "One source"),                                     # one tool or one site said it
+    _t("dig_round", "Round", "Rounds"),                             # a pass of search over the open findings
     # -- building types (catalog ids): named by what they do -----------------------------------------
     _t("pit", "Drop file here", "", "The Pit"),
     _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),
@@ -150,6 +156,7 @@ TERMS: tuple[Term, ...] = (
     _t("war_drum", "Calendar", "", "War Drum"),
     _t("forest", "File tree", "", "File Forest"),
     _t("scrolls", "Wiki", "", "Scroll Dump"),
+    _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
     _t("loot_vault", "Review gate", "", "Loot Vault"),
@@ -168,6 +175,7 @@ TERMS: tuple[Term, ...] = (
     _t("orc.war_drum", "Scheduler", "", "Drummer"),
     _t("orc.forest", "File picker", "", "Woodcutter"),
     _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
+    _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
     _t("orc.lake", "Inspector", "", "Seer"),
     _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
     _t("orc.loot", "Gatekeeper", "", "Quartermaster"),

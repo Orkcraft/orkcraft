@@ -1,0 +1,17 @@
+{
+  "type": "mine",
+  "about": "⛏️ The Mine: deep research on the open web, checked by more than one mind; what stays disputed you decide.",
+  "panes": {
+    "ask":     {"about": "a question to research: what it must cover, what to leave out, the limit, and what it may cost before it starts", "components": ["form"], "required": true},
+    "current": {"about": "the research in work or waiting on you: the plan, a column per tool with its sources, the findings marked confirmed / disputed / one source, the disputes with both sides and their answers", "components": ["list", "markdown"], "dynamic": true},
+    "reports": {"about": "the reports, newest first, one line each with their counts and cost; a report opens here, over the rows; the repeats the Calendar shows", "components": ["list", "markdown"], "required": true}
+  },
+  "default": {
+    "version": 1, "type": "mine", "split": "column",
+    "panes": [
+      {"id": "ask", "component": "form", "size": "auto", "font": "body"},
+      {"id": "current", "component": "list", "size": "auto", "font": "body"},
+      {"id": "reports", "component": "list", "size": 1, "font": "body"}
+    ]
+  }
+}

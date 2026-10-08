@@ -41,7 +41,8 @@ def _spec(bid: str, type_: str, **kw) -> dict:
 
 
 def test_every_camp_building_has_the_designed_silhouette():
-    camp = {t for t in catalog.TYPES if t not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES and t != "custom"}
+    camp = {t for t in catalog.TYPES
+            if t not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.GUI_ONLY and t != "custom"}
     assert camp == set(DESIGN)
     for tid, (width, slots) in DESIGN.items():
         s = sil.of(_spec("x", tid))

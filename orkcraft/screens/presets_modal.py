@@ -79,6 +79,9 @@ class PresetsModal(ModalScreen[str | None]):
         lst.add_option(Option(Text("[ What do you need? — a camp building, no model call ]", style="bold dim"),
                               disabled=True))
         for intent, ids in catalog.INTENTS:
+            ids = tuple(t for t in ids if t not in catalog.GUI_ONLY)      # the window's alone (calm-town.md §9)
+            if not ids:
+                continue
             lst.add_option(Option(Text(f"  ▸ {intent}", style="bold"), disabled=True))
             for tid in ids:
                 t = catalog.TYPES.get(tid)

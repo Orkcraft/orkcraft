@@ -169,6 +169,15 @@ const COMMANDS = [
             "information", say("Quick note")));
       }).catch(() => {});
     } },
+  { word: "research", args: "[@Mine] question", about: "research the web, checked by more than one mind: it goes to the Mine",
+    run: (rest, bs) => {
+      const m = bs.find((b) => b.type === "mine") || here().find((b) => b.type === "mine")
+        || town.value.buildings.find((b) => b.type === "mine");
+      if (!m) return "No Mine in the town yet: /build mine";
+      if (!rest.trim()) return "Write the question: /research how do SaaS products price a yearly plan";
+      return act(m.id, "ask", { question: rest })
+        .then(() => toast(`${say("Researching")}: ${rest.slice(0, 80)}`, "information", say(m.title)), () => {});
+    } },
   { word: "orders", args: "", about: "the orks' questions", run: () => { openOrders(); return null; } },
   { word: "halt", args: "", about: "stop every ork at work", run: () => command("halt").catch(() => {}) },
   { word: "orkspace", args: "name", about: "go to an orkspace, or make a new one",

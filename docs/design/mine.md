@@ -1,7 +1,7 @@
 # Design — the Mine: deep research, checked by more than one mind
 
-Status: written 2026-10-08; nothing built yet. Stage 0 (§12) checks the tools before anything is
-built. Builds on the AI tools' registry and its `web` flag ([harnesses.md](harnesses.md)), the Wiki's
+Status: written 2026-10-08; stages 1–4 (§12) built the same day, and §15 says where the build went another
+way. Stage 0 (agy's web, the model each run reports) is still open. Builds on the AI tools' registry and its `web` flag ([harnesses.md](harnesses.md)), the Wiki's
 inbox ([wiki-librarian.md](wiki-librarian.md) §4), the Calendar's timeline (`realm/drumbeat.py`), the
 Agent pool's kinds of work ([barracks-flows.md](barracks-flows.md)), Answers and the Review board
 ([review-board.md](review-board.md)), and the flat sprite set ([building-sprites.md](building-sprites.md)).
@@ -34,7 +34,7 @@ New entries in `realm/lexicon.py` `TERMS`:
 
 | key | word | Camp word (`was`) | what |
 |---|---|---|---|
-| `mine` | **Research** | The Mine | the building type (`_ALSO`: *Mine*) |
+| `mine` | **Research** | The Mine | the building type (not *Mine* alone: a Task board lane says it) |
 | `orc.mine` | **Researcher** | Prospector | the ork that searches with one tool |
 | `finding` | **Finding**, *Findings* | | one claim of a report, with its sources |
 | `confirmed` | **Confirmed** | | a finding the check passed (§5) |
@@ -215,3 +215,21 @@ No TUI work: it is deprecated.
   is safe; dropping saves money.
 - Sites behind a login or a paywall: a source the tool could not read is not a source. Should the
   person be able to add a page by hand to a dispute?
+
+## 15. As built
+
+- **Repeats** are config lines, `<every> | <limit> | <question>` (`weekly mon 09:00 | 2.00 | Acme pricing
+  news`): a building's list settings hold strings only. Set in the Mine's window (*Repeats*), refused without a
+  Calendar; `drumbeat.jobs` shows each as a schedule beat (`what: research`).
+- **The rounds** alternate: round 1 searches more on new sites, round 2 debates when there is a conflict
+  (else it searches more), round 3 searches more. *Search more* in Answers runs one round on that dispute
+  only, and only while no other research runs.
+- **Grouping** is one call on the main tool (`check`); when it fails, findings of one sub-question whose words
+  mostly overlap are one group. Dead links are not checked yet (no request leaves the town but the tools').
+- **Models.** The steward's tasks `plan`, `search` and `check` (realm/steward.py) pick each call's tier; each
+  tool runs it on its own model for that tier (`harnesses.model_on`).
+- **The TUI** has no Mine: `catalog.GUI_ONLY` keeps it out of the terminal's catalog (calm-town.md §9).
+- **Code.** `realm/research.py` (pure: minds, sites, the check, prompts and parse, the report, what changed),
+  `core/workers/mine.py` (the cycle, limits, Answers, the Wiki, repeats), `gui/views/mine.py`,
+  `js/buildings/mine.js`; the Wiki's `keep_file` takes a whole report into its inbox. Tests:
+  `tests/test_research.py`, `tests/test_mine.py`.

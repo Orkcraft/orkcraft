@@ -37,7 +37,7 @@ class Job:
     ref: str            # its building's id ("stewards" for the stewards' watch together)
     title: str          # the building's title, or what runs
     expr: str           # as written: `every 15m`, `daily 05:00`, a 5-field cron
-    what: str           # watch | script | steward
+    what: str           # watch | script | steward | research
     count: int = 1      # stewards that share this schedule
 
 
@@ -92,6 +92,12 @@ def jobs(scroll, specs: dict[str, dict]) -> list[Job]:
         own = {"watchtower": ("cron", "watch"), "workshop": ("schedule", "script")}.get(kind)
         if own and str(cfg.get(own[0]) or "").strip() and watch.schedule_ok(str(cfg[own[0]])):
             out.append(Job(b.id, b.title, str(cfg[own[0]]).strip(), own[1]))
+        if kind == "mine":                       # a Research's repeats show here, and only here (docs/design/mine.md §8)
+            from orkcraft.realm import research
+            for rep in (research.parse_repeat(x) for x in cfg.get("repeats") or []):
+                if rep and watch.schedule_ok(rep["every"]):
+                    out.append(Job(b.id, f"{b.title}: {rep['question'][:60]}"
+                                   + (f" · ≤ ${rep['limit']:.2f}" if rep["limit"] else ""), rep["every"], "research"))
         st = b.garrison.steward
         if st is not None and st.trigger.get("type") == "cron" and st.trigger.get("expression"):
             stewards.setdefault(str(st.trigger["expression"]), []).append(b.title)

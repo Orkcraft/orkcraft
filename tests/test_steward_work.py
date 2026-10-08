@@ -24,6 +24,7 @@ NOT_WORK = {
     ("core/workers/council.py", "roads.run_agent"): "its members, and its moderator on steward_pick's model",
     ("core/workers/council_setup.py", "fastpath.light_runner"): "setting up its clan: upkeep, not its work",
     ("core/workers/mill.py", "default_agent("): "its agent steps on steward_pick's model",
+    ("core/workers/mine.py", "roads.run_agent"): "its researchers, one per tool, on the tier steward_pick names",
 }
 EXTRA = {"catapult": ["realm/catapult_web/*.py"]}
 

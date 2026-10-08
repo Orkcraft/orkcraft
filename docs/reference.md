@@ -204,6 +204,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 🌊 Lake of Insight (the town's window, not a building: none is built anew, a road into an old one opens in Lake) | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser. A text file on disk (Markdown, code, a patch) is edited in place: `e` or ✎ opens the editor — fix the text, leave your notes in it; it saves by itself every `autosave` seconds (default 5) while there are changes and whenever the editor loses focus (another window, another building); `ctrl+s` saves at once, `Esc` saves and goes back to the view. A file changed on disk meanwhile is never overwritten by an autosave: the head says ⚠ and `ctrl+s` writes your text over it. Line endings and the file's mode stay as they were | `lake.viewed`, `lake.saved` (the edited file, once you leave the editor) |
 | ⚒️ The Forge | Smith | the repository's state — what comes in and what goes out: branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions, and in the GUI the picture itself). In the GUI a text cart is edited in its window (Edit: Save, or Accept this version) or in Lake, and one file of a held cart's branch is rejected on its own — put back on the branch as the base has it by a commit there, its content kept under `rejected/carts/`, Bring it back undoes it — while the rest of the cart goes on (a rework tells the ork which files were rejected). TUI keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart; a **reply** (a cart whose kind of work is Reply) is always held, whatever the rules, and goes on with this gate's mark so a Catapult sends it without asking again | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
+| ⛏️ The Mine | Prospector | deep research on the open web (docs/design/mine.md): a question (New research, `/research`, or a cart: its title, the rest what it must cover) is planned, then searched by every AI tool that can search the web (Claude Code, Codex, Hermes; `tools`), each alone in an empty folder; the findings are grouped and checked — **confirmed** takes two models (by family: Hermes on a Claude model is Claude) and two sites, a quote copied on two sites counts once; what is open is searched again on new sites, then debated; what stays **disputed** asks you in Answers (Search more · Accept · Keep it disputed), up to `wait_answers`. Stops at `limit` a research and `month_limit` a month, and says so. The report (✓ ⚠ ①, sources numbered, who searched what for how much) goes to the Wiki's inbox and on by a return road; `repeats` run on schedule and show on the Calendar, with what changed | `mine.reported`, `mine.asked`, `mine.failed` |
 | 🪨 Tally Crag | Crag Carver | complex data made visual: spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or through an MCP server (carried by the tool that has it, then a direct path the ork learns), or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
@@ -1210,6 +1211,7 @@ onboarding (*Punk ork*).
 | Branches & PRs | The Forge |
 | Review gate | Loot Vault |
 | Metrics | Tally Crag |
+| Research | The Mine |
 | Publisher | The Catapult |
 | Script | Workshop |
 | Sorter | Scavenger |
@@ -1227,6 +1229,7 @@ onboarding (*Punk ork*).
 | Merger | Smith |
 | Gatekeeper | Quartermaster |
 | Metrics ork | Crag Carver |
+| Researcher | Prospector |
 | Publisher | Loader |
 | Script runner | Tinker |
 | Worker | Peon |

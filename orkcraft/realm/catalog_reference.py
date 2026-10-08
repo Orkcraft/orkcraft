@@ -16,6 +16,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Plan and track the work", ("fields", "war_drum")),
     ("Put agents to work", ("barracks", "council")),
     ("Know the project: files, notes, diffs", ("scrolls",)),
+    ("Research the web, checked by more than one mind", ("mine",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
     ("Hear what comes in", ("horn",)),
@@ -58,6 +59,8 @@ TAKES: dict[str, str] = {
     "crag": "the first number in the cart: a sample of the `road` source",
     "catapult": "anything: loads it under its source building; fires once every building of `wait_for` has loaded",
     "workshop": "anything (a file as its content): its script runs on the cart",
+    "mine": "a question (its title, else its first line; the rest of the text is what it must cover): a research "
+            "starts, or waits behind the one running → mine.reported (the report) / mine.asked / mine.failed",
 }
 
 # What payload kinds a plain road may bring each type of TAKES: a road whose event carries another kind
@@ -68,6 +71,7 @@ ACCEPTS: dict[str, frozenset[str]] = {
     "workshop": _ANY, "lake": _ANY,
     "mill": frozenset({TEXT, FILE}), "council": frozenset({TEXT, FILE}), "war_drum": frozenset({TEXT, FILE}),
     "scrolls": frozenset({TEXT}), "forge": frozenset({TEXT}), "crag": frozenset({TEXT}),
+    "mine": frozenset({TEXT, FILE}),
 }
 
 # What a building does outside the camp on its own: the network, merges, money.
@@ -87,6 +91,8 @@ EFFECTS: dict[str, str] = {
                 "and presses submit when `finish: press`",
     "mill": "a `script:` step runs a command; an `agent:` step runs a model (spends money)",
     "workshop": "runs its script; its steward prompt runs a model",
+    "mine": "runs every AI tool that can search the web (spends money, up to `limit` a research and `month_limit` a "
+            "month); they read the open web; writes its reports into the Wiki's inbox",
 }
 
 # How each setting is written, with an example: the Builder fills config from these alone.
@@ -272,6 +278,20 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "charts": "its dashboard, a chart per line: `Title = source [1h|24h|7d] [vertical|horizontal] [warn N] [crit N] "
                   "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
                   "without it one chart from the settings above",
+    },
+    "mine": {
+        "tools": "the AI tools that search, e.g. [\"claude\", \"codex\", \"hermes\"] (default every tool on that can "
+                 "search the web; with one, nothing can be confirmed)",
+        "limit": "the most one research may spend, in USD (default 3.00)",
+        "month_limit": "the most it spends in a month, repeats included, in USD (default 30.00)",
+        "rounds": "rounds after the first search over what is open: more sources, then a debate (default 3)",
+        "min_models": "different models a confirmed finding needs (default 2)",
+        "min_domains": "different sites its sources need (default 2)",
+        "wait_answers": "how long a report waits for your decisions on what is disputed: 12h, 3d (default 3d)",
+        "wiki": "the Wiki its reports go to, by id (default the only one; \"\" keeps them in the Mine)",
+        "repeats": "researches it repeats, shown on the Calendar, one per line: `<every> | <limit> | <question>`, e.g. "
+                   "[\"weekly mon 09:00 | 2.00 | Acme pricing news\"] (`every`: daily HH:MM, weekly <day> HH:MM, every 6h "
+                   "or a 5-field cron; the limit may be empty)",
     },
     "catapult": {
         "url": "where to send, http or https",
