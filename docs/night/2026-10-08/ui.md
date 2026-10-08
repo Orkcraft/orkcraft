@@ -13,18 +13,18 @@ Order: value / risk, best first. First version — refined below as the audit go
   off-screen, the page scrolls sideways — `ui/camp-phone-town.png`, `ui/office-phone-town.png` —
   `gui/static/layout.css` / `mobile` styles of the HUD — S — the phone is a place people answer from; the
   answers button is the one thing the phone must show. — done by D1: the HUD wraps to a second row, the portrait stands for the brand (`ui/after-U01-camp-phone.png`, `ui/after-U01-office-phone.png`)
-- [ ] U02 A road's label is drawn over a card's footer: Calendar's "3 meetings left today" reads
+- [~] U02 A road's label is drawn over a card's footer: Calendar's "3 meetings left today" reads
   "t3 meetings left today" under `on_task_moved` (Camp); in Office `on_digest` is cut by the Daily brief card,
   and in Office dark (main set) `on_patch` runs under card 1 and reads "tch"
   — `ui/camp-town.png`, `ui/camp-win-todo.png`, `ui/office-town.png`, `ui/office-dark-town-main.png` — `gui/static/js/roads*.js` / `town.css`
   — M — overlapping text is the first thing a new person sees as broken; a label must sit on a free stretch of
-  its road, or on a plate above the cards.
-- [ ] U03 A scrolling box gives no cue that it scrolls where scrollbars are overlay (macOS, phones, headless):
+  its road, or on a plate above the cards. — taken by Night D2: GUI fixes from the queue
+- [~] U03 A scrolling box gives no cue that it scrolls where scrollbars are overlay (macOS, phones, headless):
   Town settings stops at the "Accounts" heading and looks empty (its Google part and Phones are below the
   fold, `.gui-settings` is 848 px in 506), the War Map's fifth land is cut in half — `ui/camp-settings.png`,
   `ui/camp-town.png` — `layout.css` (`.gui-settings`, `.gui-map__view`), maybe one shared `.gui-scrolls` class
   — S/M — a fade at the edge that has more (the `background-attachment: local` shadows trick works on a flat
-  `panel`) says "more below" in both looks.
+  `panel`) says "more below" in both looks. — taken by Night D2: GUI fixes from the queue
 - [-] U04 War Map's list cut at the bottom — merged into U03 (it is a scrolling list, 204 px in 144).
 - [-] U05 HUD "Spend $— / $5.00" — left: the dash is deliberate (`core/treasury.py`: "—" until a session
   reports, so the HUD never claims a $0.00 it has not measured) and the TUI's tests hold it. A question for the
@@ -93,7 +93,7 @@ Order: value / risk, best first. First version — refined below as the audit go
 - [ ] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
   ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
   a card always says its state in one line.
-- [ ] U24 A building's ork waking on an error says nothing: the toast reads "Branches & PRs — its ork woke on an
+- [~] U24 A building's ork waking on an error says nothing: the toast reads "Branches & PRs — its ork woke on an
   error: it says ERROR" — `ui/after-U18-camp-forge.png` — `gui/keeper.py` (`wake.detail`) and where the detail
-  is made in `realm/` — S — say the building's own error line (as the card shows it), not its status word.
+  is made in `realm/` — S — say the building's own error line (as the card shows it), not its status word. — taken by Night D2: GUI fixes from the queue
 
