@@ -98,3 +98,21 @@
 /* The closed card: the headline holds the next meeting; the foot stays at the bottom. */
 .gui-drum > .gui-hut__big small { min-width: 0; }
 .drum-more { margin: 2px 0 0; padding-left: calc(1em + var(--space-2) + var(--space-1)); font-size: 12px; }
+
+/* Import calendar (its page over Info, js/infopage.js): a file or a link, then the file's drop zone or the link's form. */
+.drum-import__ways { display: grid; gap: var(--space-2); }
+.drum-import__way { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--frame); background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+.drum-import__way:hover, .drum-import__way:focus-visible { border-color: var(--frame-focus); background: var(--panel-raised); }
+.drum-import__glyph { flex: none; font-size: 1.4em; line-height: 1; }
+.drum-import__about { display: block; }
+.drum-import__drop { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-4) var(--space-3);
+  border: 1px dashed var(--frame); text-align: center; cursor: pointer; }
+.drum-import__drop.is-over, .drum-import__drop:focus-within { border-color: var(--frame-focus); background: var(--panel-raised); }
+.drum-import__drop.is-set { border-style: solid; }
+.drum-import__input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drum-import__where { margin: 0; padding-left: 1.2em; color: var(--ink-muted); }
+.drum-imports { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
+.drum-imports__row { display: flex; align-items: baseline; gap: var(--space-2); }
+.drum-imports__name { flex: 1; min-width: 0; }
+.drum-imports > .ok-act { align-self: flex-start; }

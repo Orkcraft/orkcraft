@@ -94,6 +94,9 @@ def validate(spec: dict) -> list[str]:
             errors += [f"config: fields: {e}" for e in catapult_web.parse_rules(config["fields"])[1]]
         if config.get("mode") == "browser" and not config.get("forms"):
             errors.append("config: mode: browser needs forms — `name = https://… | what to open`")
+    if tid == "war_drum" and isinstance(config.get("imports"), dict):
+        from orkcraft.realm import calendar_imports
+        errors += [f"config: imports: {e}" for e in calendar_imports.problems(config["imports"])]
     if tid == "watchtower" and isinstance(config.get("wants"), dict):
         from orkcraft.realm import pipes
         if any(not isinstance(k, str) or not pipes.want_of(v) for k, v in config["wants"].items()):

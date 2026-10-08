@@ -141,7 +141,9 @@ TERMS: tuple[Term, ...] = (
     _t("want.know", "Keep"),                                        # a page or a note in the Wiki
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
-    _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
+    _t("to_discuss", "To discuss"),
+    _t("calendar_import", "Imported calendar", "Imported calendars"),  # a .ics file or an iCal link a Calendar reads (realm/calendar_imports.py)
+    _t("ical_link", "iCal link", "iCal links"),                     # a calendar's secret address: kept in the keychain                                 # an item a meeting should cover
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)

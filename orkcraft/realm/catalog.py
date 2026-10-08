@@ -227,9 +227,10 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                    "document; titled by the meeting, tagged [meet:<id>], its ref the meeting's"),
                 _e("calendar.doc_opened", "doc opened", FILE, "Enter on a meeting with a document: the document")),
         actions=(_a("calendar.new", "New event", "+", "add an event"),
-                 _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now")),
+                 _a("calendar.prepare", "Prepare doc", "📄", "send `meeting soon` for the selected meeting now"),
+                 _a("calendar.import", "Import calendar", "⇩", "take in a .ics file, or subscribe to a calendar's ICS link")),
         config={"ics": (str, None, False), "day_starts": (str, None, False), "lead": (str, None, False),
-                "prepare_new": (bool, None, False), "beats": (list, None, False)},
+                "prepare_new": (bool, None, False), "beats": (list, None, False), "imports": (dict, None, False)},
         art="war_tent", orc="Drummer"),
     # -- 3. storage, code and inspection ---------------------------------------------------------------
     BuildingType(

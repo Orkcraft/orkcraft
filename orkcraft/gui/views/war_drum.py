@@ -1,15 +1,20 @@
 """🥁 War Drum in the GUI: the day by the hour and the week, the chosen meeting with its document,
 and the calendar's settings — with the town's scheduled runs and ≈ when its limits are reached laid
 over the meetings (realm/drumbeat.py). The work (loading, the clock, documents, adding) is the worker's
-(core/workers/war_drum.py); a meeting's document opens in Lake on the page (openInLake)."""
+(core/workers/war_drum.py); a meeting's document opens in Lake on the page (openInLake).
+
+Import calendar (realm/calendar_imports.py): a `.ics` file the page reads and sends as text, or an ICS
+link subscribed to. The link comes in once, from the page, and goes to the keychain; nothing the
+host sends back holds it — an import is shown by its name and its host."""
 from __future__ import annotations
 
 import datetime as dt
 
 from orkcraft.core.workers.war_drum import TICK_S
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import catalog, daybook, drumbeat
+from orkcraft.realm import calendar_imports, catalog, daybook, drumbeat
 
+FILE_LIMIT = 7 * 2**20         # a .ics file the page sends: under the socket's frame
 REFRESH_S = TICK_S             # the clock: what starts, what comes soon, the digest; a reload every 5 min
 CARD = 6                       # beats (meetings, scheduled runs, limits) on the closed card
 STRIP_H = 12                   # hours the closed card's strip spans from now
@@ -119,9 +124,18 @@ def detail(w) -> dict:
                   "next": _beat(b, now) if (b := next((x for x in beats if x.kind == "schedule" and x.title == j.title
                                                        and x.ref == j.ref), None)) else None}
                  for j in w.jobs()],
-        "settings": {"ics": w.configured, "day_starts": str(w.config.get("day_starts") or ""),
+        "imports": w.import_rows(),
+        "settings": {"ics": _shown_ics(w.configured), "day_starts": str(w.config.get("day_starts") or ""),
                      "lead": str(w.config.get("lead") or ""), "writes_to": w.writable.name},
     }
+
+
+def _shown_ics(configured: str) -> str:
+    """The `ics` setting as the page shows it: a link (of an older town, typed before Import calendar)
+    by its host alone — whoever reads the link reads the calendar."""
+    if calendar_imports.is_link(configured):
+        return f"{calendar_imports.host(configured) or 'a link'} (link hidden)"
+    return configured
 
 
 def _meeting(w, args: dict):
@@ -166,6 +180,13 @@ def _settings(w, args: dict) -> bool:
     """The calendar (.ics file or URL), when the morning digest goes out, how long before a meeting
     its document is asked for."""
     changes = {k: text(args, k, 2000).strip() for k in ("ics", "day_starts", "lead") if k in args}
+    if changes.get("ics", "").endswith("(link hidden)"):
+        changes.pop("ics")                               # the masked link sent back as it was shown: unchanged
+    subscribed = calendar_imports.is_link(changes.get("ics", ""))
+    if subscribed:
+        _subscribe(w, {"url": changes.pop("ics"), "name": ""})    # a link typed here is a subscription, kept secret
+        if calendar_imports.is_link(w.configured):
+            changes["ics"] = ""                          # the older plain link goes: the subscription reads it
     if "day_starts" in changes and changes["day_starts"]:
         try:
             dt.datetime.strptime(changes["day_starts"], "%H:%M")
@@ -175,11 +196,57 @@ def _settings(w, args: dict) -> bool:
     if lead and (not daybook._LEAD.findall(lead) or daybook._LEAD.sub("", lead).strip()):
         raise ActError("Before a meeting: e.g. 2h, 1d, 1h30m")
     if not changes:
-        return False
+        return subscribed
     if not w.save_config(changes):
         raise ActError("Not saved")
     w.refresh()
     return True
 
 
-ACTS = {"prepare": _prepare, "doc": _doc, "add": _add, "settings": _settings}
+def _import_file(w, args: dict) -> dict:
+    """Import calendar → A file: the `.ics` the page read, taken in. Its name and how many events."""
+    body = args.get("text", "")
+    if not isinstance(body, str) or not body.strip():
+        raise ActError("Pick a .ics file first")
+    if len(body) > FILE_LIMIT:
+        raise ActError("The file is larger than 7 MB")
+    try:
+        entry = w.import_file(text(args, "name", 200), body)
+    except (calendar_imports.NotImported, OSError) as e:
+        raise ActError(str(e)) from None
+    return _imported(w, entry)
+
+
+def _subscribe(w, args: dict) -> dict:
+    """Import calendar → A link: subscribed, the link kept as a secret. Its name and how many events."""
+    url = text(args, "url", 4000).strip()
+    if not url:
+        raise ActError("Paste the calendar's secret address in iCal format")
+    try:
+        entry = w.subscribe(text(args, "name", 200), url, args.get("every"))
+    except (calendar_imports.NotImported, OSError) as e:
+        raise ActError(str(e)) from None
+    return _imported(w, entry)
+
+
+def _imported(w, entry: dict) -> dict:
+    row = next((r for r in w.import_rows() if r["id"] == entry["id"]), {})
+    return {"id": entry["id"], "name": entry["name"], "kind": entry["kind"], "events": row.get("events", 0),
+            "every": row.get("every", 0), "host": row.get("host", "")}
+
+
+def _import_remove(w, args: dict) -> bool:
+    if not w.remove_import(text(args, "id", 32)):
+        raise ActError("That calendar is not imported any more")
+    return True
+
+
+def _import_refresh(w, args: dict) -> int:
+    """Update now: every subscription fetched again; how many failed (each says why in the list)."""
+    w.refresh_links(force=True)
+    w.refresh()
+    return sum(1 for r in w.import_rows() if r["error"])
+
+
+ACTS = {"prepare": _prepare, "doc": _doc, "add": _add, "settings": _settings, "import_file": _import_file,
+        "subscribe": _subscribe, "import_remove": _import_remove, "import_refresh": _import_refresh}

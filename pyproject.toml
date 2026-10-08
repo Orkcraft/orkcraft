@@ -27,8 +27,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0", "cryptography>=41", "segno>=1.5"]
+dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0", "cryptography>=41", "segno>=1.5",
+       "icalendar>=6.0", "recurring-ical-events>=3.3"]
 browser = ["playwright>=1.45"]              # the Catapult's browser mode
+# the Calendar reads every repeat, moved occurrence and time zone of a .ics as RFC 5545 says (sources/ics.py)
+calendar = ["icalendar>=6.0", "recurring-ical-events>=3.3"]
 # orkcraft gui: the window and its socket; a phone's TLS certificate and the QR code that pairs it (gui/phones.py)
 gui = ["pywebview>=5.0", "websockets>=13.0", "cryptography>=41", "segno>=1.5"]
 
