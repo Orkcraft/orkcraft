@@ -69,6 +69,7 @@ TERMS: tuple[Term, ...] = (
     _t("loot", "output", "", "loot"),
     _t("cart_type", "content type", "content types"),            # message, doc, ticket… (realm/content.py)
     _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
+    _t("rhythm", "rhythm", "rhythms"),                             # how often a ready town works: every day, week, month
     # resources (HUD)
     _t("gold", "spend", "", "gold"),
     _t("lumber", "context", "", "lumber"),

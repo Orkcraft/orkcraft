@@ -262,3 +262,15 @@ async def test_ask_again_sends_the_note(fake_repo: Path, monkeypatch):
         app.screen.query_one("#tp-again").press()
         await _until(pilot, lambda: len(run.calls) == 2 and isinstance(app.screen, TownPlanReview))
         assert "skip the notes" in run.calls[1]
+
+
+def test_a_road_back_is_a_return_road_or_it_closes_a_loop(tmp_path: Path):
+    plan = {"title": "T", "buildings": [{"key": "board", "type": "fields", "title": "Board", "icon": "📋", "why": "w"},
+                                        {"key": "crew", "type": "barracks", "title": "Crew", "icon": "🏕️", "why": "w"}],
+            "roads": [{"from": "board", "event": "tasks.created", "to": "crew", "why": "w"},
+                      {"from": "crew", "event": "pool.done", "to": "board", "why": "w"}]}
+    _, problems = town_builder.check(plan, tmp_path, set())
+    assert problems and "would close a loop" in problems[0] and '"returns": true' in problems[0]
+    plan["roads"][1]["returns"] = True
+    result, problems = town_builder.check(plan, tmp_path, set())
+    assert not problems and [r.returns for r in result.roads] == [False, True]

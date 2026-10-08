@@ -80,14 +80,17 @@ def contract(town: Town, target_id: str, source_id: str | None = None,
 
 
 def lay(town: Town, target_id: str, source_id: str, event: str, handler: str | None,
-        quiet: bool = False, match: str = "") -> scroll.Road | None:
+        quiet: bool = False, match: str = "", returns: bool = False) -> scroll.Road | None:
     """A road from `source_id` into `target_id` on `event` (`signpost.routed#<route>`: a road that
-    waits for that route; `match`: only what the regex finds in a cart leaves the source).
+    waits for that route; `match`: only what the regex finds in a cart leaves the source; `returns`: it
+    brings a result back to where its task came from, and closes no loop).
     `quiet`: one of many (a town plan) — no toast and no checkpoint of its own."""
     event, _, route = event.partition("#")
     flt = {"route": [route]} if route else {}
     if match:
         flt["match"] = match
+    if returns:
+        flt["returns"] = True
     flt = flt or None
     try:
         road = scroll.subscribe(town.scroll, target_id, source_id, event, flt, handler=handler, label=route)

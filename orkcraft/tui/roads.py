@@ -147,8 +147,9 @@ class RoadsMixin:
         self.desktop.replan_roads()
         self.refresh_rally_indicators()
 
-    def add_road(self, target_id: str, source_id: str, event: str, handler: str | None, quiet: bool = False):
-        return core_roads.lay(self.core, target_id, source_id, event, handler, quiet)
+    def add_road(self, target_id: str, source_id: str, event: str, handler: str | None, quiet: bool = False,
+                 returns: bool = False):
+        return core_roads.lay(self.core, target_id, source_id, event, handler, quiet, returns=returns)
 
     def remove_road(self, key: str) -> None:
         road = core_roads.remove(self.core, key)

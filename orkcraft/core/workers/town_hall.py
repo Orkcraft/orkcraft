@@ -288,7 +288,7 @@ class TownHallWorker(Worker):
             if built is not None:
                 made["buildings"].append(built.id)
         for r in plan.roads:
-            road = core_roads.lay(self.town, r.target, r.source, r.subscription, None, quiet=True)
+            road = core_roads.lay(self.town, r.target, r.source, r.subscription, None, quiet=True, returns=r.returns)
             if road is not None:
                 made["roads"].append(f"{r.target}:{road.id}")
         self.town.checkpoint("create", "camp", f"town: {plan.title or 'the Warchief’s plan'}")

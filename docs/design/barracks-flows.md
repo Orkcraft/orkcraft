@@ -161,7 +161,7 @@ kind through, as today.
 Every pool, road and source written before keeps working: a cart without `want` takes the way it takes
 today, a pool takes `change` by default from its code sources and the sort's answer for the rest. The
 intents' town plans (`realm/intents.py`) set `want` on the sources and roads they lay, so a new town
-made from *Front desk* or *PRD Forge* gets the paths at once.
+made from *Front desk* or *War Room* gets the paths at once.
 
 ## 11. Beside the steward's road rules
 
