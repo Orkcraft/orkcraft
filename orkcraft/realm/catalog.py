@@ -378,8 +378,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("catapult.sent", "sent", TEXT, "the request went out (or the form was filled): the answer"),
                 _e("catapult.failed", "failed", TEXT, "the check, the request or the form failed"),
                 _e("catapult.repaired", "repaired", TEXT, "the site changed: the overseer rewrote the fill script")),
-        actions=(_a("catapult.fire", "Fire", "🎯", "send what is loaded now"),
-                 _a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
+        actions=(_a("catapult.dry_run", "Dry run", "🧪", "show the request (or which field gets what) without sending it"),
+                 _a("catapult.fire", "Fire", "🎯", "send what is loaded now"),     # the safe one first, as in its window
                  _a("catapult.scout", "Scout", "🔭", "browser mode: the ork finds every form of the intent and writes their scripts")),
         config={"url": (str, None, False), "method": (str, ("POST", "PUT", "PATCH"), False),
                 "schema": (str, None, False), "wait_for": (list, None, False),

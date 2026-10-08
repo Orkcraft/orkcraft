@@ -324,6 +324,7 @@ function OrkTab({ id, o }) {
 /** The orks' pane: a tab per ork (its head says how it is), the chosen one's terminal under them; ▾ folds it
  *  to the tabs, and it folds by itself while a task is open. */
 function Orks({ id, data }) {
+  if (!data.orks.length && !data.tasks.length) return null;   // an empty pool says it once, under the task field (ui.md U19)
   if (!data.orks.length) return html`<p class="ok-tone-muted">${say("No orks yet — the steward hires them for the tasks.")}</p>`;
   const tab = tabs.value[id] || "";
   const ork = data.orks.find((o) => `ork:${o.name}` === tab)

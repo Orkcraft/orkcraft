@@ -101,3 +101,10 @@ async def test_the_crag_carves_and_warns_and_the_vault_keeps(fake_repo: Path, mo
         assert (stored[0].trail, stored[0].ref) == ((hop,), "R-1")         # the chain travels on
         assert vault_view.stored[0].cost == 0.30 and vault_view.stored[0].tokens == 3000
         assert "📦 1 stored" in vault_view.mini_status()
+
+
+def test_money_is_written_as_the_hud_writes_it():
+    """Metrics wrote "0 $" beside the HUD's "$0.00" (ui.md U21)."""
+    from orkcraft.core.workers.crag import with_unit
+    assert with_unit(0, "$") == "$0.00" and with_unit(12.5, "$") == "$12.50"
+    assert with_unit(3, "tasks") == "3 tasks" and with_unit(None, "$") == "$—" and with_unit(1500, "") == "1.5k"

@@ -129,6 +129,11 @@ function Held({ id, data }) {
   </div>`;
 }
 
+/** Whether Fire has somewhere to send: a request with no address can only dry-run, so Fire is not its primary (ui.md U20). */
+function aimed(data) {
+  return data.mode === "mcp" || data.mode === "browser" || !!data.url;
+}
+
 function target(data) {
   if (data.mode === "mcp") return data.target;
   if (data.mode === "browser") {
@@ -168,7 +173,7 @@ function Head({ id, data }) {
         <button class="ok-btn" onClick=${() => act(id, "dry_run").catch(() => {})}>${say("Dry run")}</button>
         ${resume && html`<button class="ok-btn primary" title=${say("The queue goes on; nothing loaded is fired")}
           onClick=${() => act(id, "resume").catch(() => {})}>${say("Resume")}</button>`}
-        <button class=${cls("ok-btn", { primary: !(data.login && data.mode === "browser") && !resume && !data.held })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
+        <button class=${cls("ok-btn", { primary: !(data.login && data.mode === "browser") && !resume && !data.held && aimed(data) })} onClick=${() => act(id, "fire").catch(() => {})}>Fire</button>
       </span>
     </div>
     <${Settings} id=${id} data=${data} />

@@ -12,7 +12,8 @@
 .gui-tower__head { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .gui-tower__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-tower__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
-.gui-tower__state { flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
+/* When it looked, a line of its own under the actions: in the row it pushed the last action onto a row alone (ui.md U16). */
+.gui-tower__state { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
 .gui-tower__failing { margin: 0; min-width: 0; display: flex; gap: var(--space-2); align-items: center; font-size: 12px; }
 .gui-tower__failing > span:first-child { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-tower__failing > .ok-btn { flex: none; }
