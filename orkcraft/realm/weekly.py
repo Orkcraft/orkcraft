@@ -157,7 +157,7 @@ def check_item(item: Item, repo_root: Path, scroll, specs: dict[str, dict]) -> I
     if item.change == "add_building":
         tid = str(item.data.get("type") or "")
         t = catalog.TYPES.get(tid)
-        if t is None or tid in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES or tid == catalog.DEFAULT_TYPE:
+        if t is None or tid in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES:
             item.problems = [f"type: one of the camp's ({', '.join(camp_types())})"]
             return item
         spec = new_spec(item)
@@ -200,7 +200,7 @@ def check_item(item: Item, repo_root: Path, scroll, specs: dict[str, dict]) -> I
 
 
 def camp_types() -> list[str]:
-    return [t for t in catalog.TYPES if t not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES and t != catalog.DEFAULT_TYPE]
+    return [t for t in catalog.TYPES if t not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES]
 
 
 def new_spec(item: Item) -> dict:
