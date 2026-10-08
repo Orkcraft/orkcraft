@@ -23,7 +23,18 @@ you, and whether it may disturb you.
   toggles, 🌙 Do not disturb (on / off; the menu keeps 1 h and Until) and the look (Camp / Office). The town
   keeps its huts out of that corner (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of
   buildings (`js/pocket.js`), it is the 28 × 26 one in the HUD. Its menu is a popover under it (a sheet at
-  the window's foot below 640 px).
+  the window's foot below 640 px, scrolling past 85 % of the height).
+- **Two menus, one rule.** The portrait's menu holds how the town looks and talks to you; Town settings
+  (`js/settings.js`) holds the models, the AI tools and how the town works. So **Fire on the roofs**
+  moved from Settings to the portrait's menu, under Do not disturb (`you.fire`, `gui/you.py`; the
+  snapshot's `portrait.fire`). It is stored where it was (`settings.json` → `fire`), and
+  `town.settings.set {fire}` still sets it. Three settings in the menu (Look, Do not disturb, Fire on the
+  roofs): no "Interface settings" panel yet; it comes when the menu passes five or six. The phone app's
+  sheet (§5) does not get it: the phone draws no map.
+- **What stays in Settings, and why:** Autonomy and its waits, the Night round, the AI tools and the
+  main tool, Accounts (the town's work); usage stats and updates (the app, not how it talks to you);
+  phones (pairing a device is access to the town, though pushes reach you through it). Quiet hours, sounds
+  and the Horn's mute are the onboarding's and the building's windows, not Settings (§4).
 - **Office** is `data-theme="office"` + `data-look="office"`: the design system's office theme (flat
   panels, hairlines, the system font) with `gui/static/office.css`'s greys over it. The warm `office`
   palette of `design-system/tokens.json` is left for the design system's previews.
@@ -69,6 +80,7 @@ A click (or Enter) opens a popover under the portrait; Esc or a click outside cl
 ├──────────────────────────────────────────┤
 │ Look            [ Camp | Office ]        │
 │ Do not disturb  [ Off | 1 h | Until 9:00 | On ] │
+│ Fire on the roofs  [ On | Off ]          │
 ├──────────────────────────────────────────┤
 │ Town settings…  ·  Change role           │
 └──────────────────────────────────────────┘
@@ -94,7 +106,7 @@ as `data-look` always did; the words, the panel, the line and every action are t
 | colour | the Camp palette (gold, moss, bronze) | monochrome greys with one accent, the Camp gold muted (`#b8a06a` dark, `#7a6630` light): the selected, the focus ring; light or dark as the system says |
 | type | Almendra titles, Titillium | the system UI stack |
 | emoji in labels | yes | no (`modes.plain`) |
-| a building that waits for you | flames climb its roof (when the town's `fire` is on) | its frame turns `danger`, no flames |
+| a building that waits for you | flames climb its roof (when Fire on the roofs is on, in the portrait's menu) | its frame turns `danger`, no flames |
 | the Warchief | jokes, addresses you by your stage ("My Lord Lich") | plain ("Forge asks for a decision") |
 | growth news, a new stage's glow | yes | no; the stage and the deeds keep counting and show again in Camp |
 

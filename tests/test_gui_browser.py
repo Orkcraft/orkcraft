@@ -1345,7 +1345,8 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
 
 def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
     """The person framed over the town's top-left corner (docs/design/portrait.md): its menu heads with You, Camp
-    turns to Office (no sprites, the monogram, the office theme) and back, and Do not disturb puts 🌙 on it."""
+    turns to Office (no sprites, the monogram, the office theme) and back, Do not disturb puts 🌙 on it, and
+    Fire on the roofs turns off and on there, no longer in Town settings."""
     pg = page
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
@@ -1359,9 +1360,10 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     assert pg.evaluate("document.documentElement.dataset.theme") == "office"
     assert portrait.locator(".gui-portrait__mono").count() == 1 and pg.locator(".gui-warchief__mono").count() == 1
     assert pg.locator(".gui-warchief__crowned").count() == 0
-    menu.get_by_role("button", name="On", exact=True).click()
+    dnd_row = menu.get_by_role("group", name="Do not disturb", exact=True)
+    dnd_row.get_by_role("button", name="On", exact=True).click()
     pg.locator(".gui-portrait__dnd").wait_for(state="visible", timeout=WAIT_MS)
-    menu.get_by_role("button", name="Off", exact=True).click()
+    dnd_row.get_by_role("button", name="Off", exact=True).click()
     pg.locator(".gui-warchief__news").wait_for(state="visible", timeout=WAIT_MS)   # what gathered, said once
     assert "While you were away" in pg.locator(".gui-warchief__news").inner_text()
     pg.locator(".gui-warchief__news").get_by_role("button", name="Seen").click()   # a click away closes the menu
@@ -1369,8 +1371,18 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     portrait.click()
     menu.get_by_role("button", name="Camp", exact=True).click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    # Fire on the roofs is the person's now, in this menu; Town settings no longer shows it
+    fire = menu.get_by_role("group", name="Fire on the roofs", exact=True)
+    fire.get_by_role("button", name="Off", exact=True).click()
+    fire.locator("[aria-pressed=true]", has_text="Off").wait_for(state="visible", timeout=WAIT_MS)
+    fire.get_by_role("button", name="On", exact=True).click()
+    fire.locator("[aria-pressed=true]", has_text="On").wait_for(state="visible", timeout=WAIT_MS)
+    menu.get_by_role("button", name="Town settings…").click()
+    pg.get_by_role("dialog", name="Town settings").wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.get_by_role("group", name="Fire on the roofs").count() == 0
     pg.keyboard.press("Escape")
-    menu.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.get_by_role("dialog", name="Town settings").wait_for(state="hidden", timeout=WAIT_MS)
+    menu.wait_for(state="hidden", timeout=WAIT_MS)                       # Town settings… closed the menu
     # its quick toggles beside it: Do not disturb on and off, the look to Office and back, without the menu
     dnd, look = pg.get_by_role("button", name="Do not disturb", exact=True), pg.get_by_role("button", name="Office look", exact=True)
     dnd.click()

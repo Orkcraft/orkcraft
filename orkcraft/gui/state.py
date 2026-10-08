@@ -213,7 +213,7 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "hour": (hour := schedule.status(town.machine)),
         "hour_plain": modes.plain(hour),
         "quiet": schedule.quiet_now(town.machine),
-        "fire": town.machine.fire,                 # flames over a building that waits (Settings; js/hut.js)
+        "fire": town.machine.fire,                 # flames over a building that waits (the portrait's menu; js/hut.js)
     }
 
 

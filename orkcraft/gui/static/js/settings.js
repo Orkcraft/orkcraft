@@ -1,9 +1,9 @@
 // The town's settings, opened from the project's name in the HUD (js/chrome.js): how freely the orks
 // decide — the level every building follows until it has its own (its steward's window, js/steward.js)
 // — and, on the clock, how long a question and a change wait for you. The host's town.settings
-// (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Only the town's rules: you (your mascot, the
-// look, Do not disturb) are the portrait's menu in the HUD (js/portrait.js, docs/design/portrait.md); here
-// the town's rules, whether flames climb the roof of a building that waits for you, and whether
+// (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Models, AI tools and how the town works: how
+// the town looks and talks to you (your mascot, the look, Do not disturb, the fire on the roofs) is the
+// portrait's menu in the HUD (js/portrait.js, docs/design/portrait.md); here the town's rules, and whether
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
 // paired with this machine (js/phones.js). Accounts: a personal Google account for Gmail, the calendar and
@@ -151,9 +151,6 @@ export function SettingsDialog() {
           items=${s.waits.map((v) => [v, `${v} min`])} onPick=${(v) => set({ wait: v })} />
         <${Steps} label=${say("A change waits the hours you are around")} value=${s.rebuild}
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
-      <${Steps} label=${say("Fire on the roofs")} value=${s.fire !== false}
-        items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ fire: v })} />
-      <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
       <${RoundField} s=${s} set=${set} setS=${setS} />
       <${ToolsField} s=${s} set=${set} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
