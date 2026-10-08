@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.3",
+      "date": "2026-10-08",
+      "critical": false,
+      "notes": "When an AI tool fails (not installed, not signed in, a usage limit or overload, no network), the window says which tool and what happened, with Switch to another installed tool (it becomes the main tool and the failed step runs again), Retry, and Details with the tool's own error to copy."
+    },
+    {
       "version": "0.2.2",
       "date": "2026-10-08",
       "critical": false,
