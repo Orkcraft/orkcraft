@@ -247,9 +247,15 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "forest": {"path": "the folder to show (default the project)"},
     "scrolls": {
         "paths": "folders of notes (the older `sources`), e.g. [\"docs\", \"notes\"]",
-        "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, `git:<rev>[:<folder>]`, "
+        "sources": "what the wiki is made from, read-only: a notes folder `docs`, `code:src`, any folder "
+                   "`dir:<folder>` (in the project or outside: notes, text, code, .docx, .pdf), `git:<rev>[:<folder>]`, "
                    "`confluence:<SPACE>[@<site>]`, Google Drive `gdrive:google-<e-mail>[/<folder id>]` (Docs as Markdown, "
-                   "text files), e.g. [\"docs\", \"code:src\"]",
+                   "text files), e.g. [\"docs\", \"code:src\", \"dir:~/Documents/specs\"]",
+        "max_files": "the files a `dir:` source reads at most (default 2000)",
+        "agent_rules": "the rules for AI tools (RULES.md and a block in CLAUDE.md, AGENTS.md, Cursor's rules): "
+                       "review (written after each approved review), ask (default: ready after a review, written "
+                       "when you say) or off",
+        "rules_in": "folders outside the project that get the rules' block too (asked when the folder is connected)",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
         "inbox": "where Quick notes are written, a source of the wiki (default notes/inbox)",
         "calendar": "the id of the War Drum meetings are matched in (default: every one in the town)",

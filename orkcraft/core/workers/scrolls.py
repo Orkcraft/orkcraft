@@ -5,7 +5,8 @@
 a backlog that has settled for `SETTLE_S` is taken in by itself (`auto_ingest`). `ingest()` and
 `lint()` run the librarian in a thread (`running` says which); `finish` puts back the pages
 people own, commits the wiki, logs the job, sends `wiki.updated` / `wiki.linted` and asks for a
-spot-check: by the Clan Fire named in `council`, else as `wiki.review`. `halt()` stops it all.
+spot-check: by the Clan Fire named in `council`, else as `wiki.review`; an approved one brings the
+rules for AI tools (scrolls_rules.py, as are the folders it connects). `halt()` stops it all.
 A cart of a verdict lands in reviews.md; any other cart is a task, sent on as `knowledge.chunks`
 with the wiki's map and the pages that matter most for it (`lend`) — also when a Barracks that
 reads it first (`notes`) hands it a task directly. What it lent last shows on its card for a while.
@@ -23,6 +24,7 @@ from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.scrolls_meetings import MeetingsMixin
 from orkcraft.core.workers.scrolls_quality import QualityMixin
+from orkcraft.core.workers.scrolls_rules import RulesMixin
 from orkcraft.env import getenv
 from orkcraft.core import runners
 from orkcraft.realm import agenda, catalog, daybook, jobs, quicknote, roads, shelves, wiki, wikifind
@@ -45,7 +47,7 @@ def _simulated_work(harness, prompt, workdir, cancel, model, env, resume):
     return "_(demo — simulated)_ the librarian would have updated the wiki.", None, None, ""
 
 
-class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
+class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     TYPE = "scrolls"
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     review_runner = None          # and the Council members' calls (realm/team.py Runner)
@@ -309,8 +311,12 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
         out, unreadable = [], []
         for status, path in wiki.take_batch(self.pending):
             note = by_path.get(path)
+            place = None if status == "gone" or note is None else self.library.in_place(path)
             if status == "gone" or note is None:
                 out.append(wiki.Item(path, "", "gone"))
+            elif place is not None:                          # a PDF anywhere, a project file of a `dir:` source
+                inside = place == repo.resolve() or repo.resolve() in place.parents
+                out.append(wiki.Item(path, os.path.relpath(place, root) if inside else str(place), status, note.title))
             elif self.library.is_project_file(path):
                 out.append(wiki.Item(path, os.path.relpath(repo / path, root), status, note.title))
             else:
@@ -528,15 +534,18 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
             self.last_note = f"the spot-check failed: {d.error or d.outcome}"
             self.changed()
             return
-        self.record_verdict(tm.report_markdown(d, team), title)
+        self.record_verdict(tm.report_markdown(d, team), title, d.outcome == "approved")
 
-    def record_verdict(self, verdict: str, title: str) -> None:
+    def record_verdict(self, verdict: str, title: str, approved: bool = False) -> None:
+        """The verdict into reviews.md; an approved one brings the rules for AI tools (scrolls_rules.py)."""
         try:
             wiki.record_review(self.wiki_root, verdict, title)
         except (OSError, ValueError):
             return
         if self.config.get("commit", True) is not False and not self.simulated:
             wiki.commit(self.repo_root, self.wiki_root, f"wiki({self.topic}): the Council's review")
+        if approved:
+            self.approved()
         self.refresh()
 
     # -- roads ----------------------------------------------------------------------------------
@@ -544,7 +553,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
     def receive(self, payload, title: str, markdown: str) -> None:
         """The Council's verdict lands in reviews.md; any other cart is a task, sent on with the map."""
         if payload.mode in VERDICT_EVENTS:
-            self.record_verdict(markdown or payload.value, payload.title or title)
+            self.record_verdict(markdown or payload.value, payload.title or title, payload.mode == "team.approved")
             return
         self.lend(payload)
 

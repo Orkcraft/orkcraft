@@ -36,15 +36,84 @@ function read(id, path, page) {
 
 const close = (id) => { open.value = { ...open.value, [id]: null }; };
 
+/** Connect a folder (docs/design/wiki-folders-rules.md §2): the system's dialog, the recent folders,
+ *  browsing, a drop or a path typed. A folder outside the project may also get the rules for AI tools. */
 function FolderDialog({ id, onClose }) {
   const [path, setPath] = useState("");
-  const add = () => act(id, "add_folder", { path }).then(onClose, () => {});
-  return html`<${Dialog} title="Connect a folder of notes" text="A folder in the project: the librarian reads it, never writes it."
+  const [about, setAbout] = useState(null);       // {exists, outside} of the folder chosen
+  const [rules, setRules] = useState(false);
+  const [recent, setRecent] = useState([]);
+  const [waiting, setWaiting] = useState(false);  // the system's dialog is open
+  const [list, setList] = useState(null);         // a folder being browsed
+  const [typing, setTyping] = useState(false);
+  const [hint, setHint] = useState("");
+  useEffect(() => { act(id, "folders").then((r) => setRecent(r.recent || []), () => {}); }, [id]);
+  useEffect(() => {
+    if (!path.trim()) { setAbout(null); return undefined; }
+    const t = setTimeout(() => act(id, "about", { path }).then(setAbout, () => setAbout(null)), 200);
+    return () => clearTimeout(t);
+  }, [id, path]);
+  const browse = (where) => act(id, "browse", { path: where || "" }).then(setList, () => {});
+  const choose = () => {
+    setWaiting(true); setHint("");
+    act(id, "pick", { start: path }).then((token) => {
+      const poll = () => act(id, "picked", { token }).then((r) => {
+        if (r.state === "open") { setTimeout(poll, 400); return; }
+        setWaiting(false);
+        if (r.state === "done") { setPath(r.path); setList(null); }
+        else if (r.state === "error") { setHint(say("No folder dialog here: pick it from the list.")); browse(path); }
+      }, () => setWaiting(false));
+      poll();
+    }, () => setWaiting(false));
+  };
+  const drop = (e) => {
+    e.preventDefault();
+    const uris = e.dataTransfer.getData("text/uri-list") || "";
+    const names = [...(e.dataTransfer.files || [])].map((f) => f.name);
+    let tries = 0;
+    const ask = () => act(id, "dropped", { uris, names }).then((found) => {
+      if (found.length) { setPath(found[0]); setList(null); setHint(""); return; }
+      if (++tries < 4) { setTimeout(ask, 300); return; }
+      setHint(say("This window does not say where a dropped folder is: choose it instead."));
+    }, () => {});
+    ask();
+  };
+  const add = () => act(id, "add_folder", { path, rules: Boolean(about && about.outside && rules) }).then(onClose, () => {});
+  return html`<${Dialog} title="Connect a folder" wide
+      text="Any folder, in the project or outside it: notes, text, code, Word and PDF files. The librarian reads it and never changes it."
       onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
-        <button class="ok-btn primary" disabled=${!path.trim()} onClick=${add}>Connect it</button>`}>
-    <input class="ok-input" placeholder="docs/handbook" value=${path} autofocus
-      onInput=${(e) => setPath(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && path.trim() && add()} />
+        <button class="ok-btn primary" disabled=${!path.trim() || (about && !about.exists)} onClick=${add}>Connect it</button>`}>
+    <div class="wiki-pick" onDragOver=${(e) => e.preventDefault()} onDrop=${drop}>
+      <div class="wiki-pick__row">
+        <button class="ok-btn" disabled=${waiting} onClick=${choose}>${waiting ? say("Waiting for the dialog…") : say("Choose folder…")}</button>
+        ${quiet(say("Browse"), () => browse(path))}
+        ${quiet(say("Type a path"), () => setTyping(!typing))}
+        <span class="ok-tone-muted ok-font-status">${say("or drop a folder here")}</span>
+      </div>
+      ${hint && html`<p class="ok-font-status ok-tone-wait">${hint}</p>`}
+      ${typing && html`<input class="ok-input" placeholder=${say("~/Documents/specs or docs/handbook")} value=${path} autofocus
+        onInput=${(e) => setPath(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && path.trim() && add()} />`}
+      ${list && html`<div class="wiki-pick__list">
+        <div class="wiki-pick__row"><b class="wiki-pick__path" title=${list.path}>${list.path}</b>
+          ${list.parent && quiet(`↑ ${say("Up")}`, () => browse(list.parent))}
+          <button class="ok-btn" onClick=${() => { setPath(list.path); setList(null); }}>${say("Use this folder")}</button></div>
+        <ul>${list.dirs.map((d) => html`<li key=${d.path} class="gui-tree__item" onClick=${() => browse(d.path)}>📁 ${d.name}</li>`)}</ul>
+        ${!list.dirs.length && html`<p class="ok-tone-muted">${say("No folders inside.")}</p>`}
+      </div>`}
+      ${!list && recent.length > 0 && html`<div class="wiki-pick__recent">
+        <h3 class="ok-font-label">${say("Recent")}</h3>
+        <ul>${recent.map((f) => html`<li key=${f} class=${cls("gui-tree__item", { "is-on": f === path })} title=${f}
+          onClick=${() => setPath(f)}>📂 ${f}</li>`)}</ul></div>`}
+      ${path.trim() && html`<div class="wiki-pick__chosen">
+        <span class="ok-font-label">${say("Folder")}</span> <b class="wiki-pick__path" title=${path}>${path}</b>
+        ${about && !about.exists && html` <span class="ok-tone-error">✗ ${say("no such folder")}</span>`}
+        ${about && about.exists && about.outside && html`<div>
+          <label class="ok-check" onClick=${() => setRules(!rules)}><i>${rules ? "✓" : ""}</i> ${say("Also tell AI tools working in this folder about the wiki")}</label>
+          <p class="ok-font-status ok-tone-muted">${say("It is outside the project. Without this, Orkcraft only reads it; with it, a short block is added to its CLAUDE.md and AGENTS.md once the wiki is reviewed.")}</p>
+        </div>`}
+      </div>`}
+    </div>
   </${Dialog}>`;
 }
 
@@ -71,7 +140,7 @@ function Head({ id, data }) {
         ${noting.value !== id && quiet(`+ ${say("Quick note")}`, () => { noting.value = id; }, say("Leave a note for the wiki"))}
         ${!data.running && !data.pending && quiet(say("Take in"), ingest, say("Read the sources again"))}
         ${!data.running && quiet(say("Check the wiki"), () => act(id, "lint").catch(() => {}), say("Look for broken links, gaps and contradictions"))}
-        ${quiet(say("Add a folder"), () => { adding.value = id; }, say("Connect a folder of notes"))}
+        ${quiet(say("Add a folder"), () => { adding.value = id; }, say("Connect any folder, in the project or outside it"))}
       </span>
     </div>
     ${data.running ? html`<div class="wiki-strip">
@@ -83,6 +152,9 @@ function Head({ id, data }) {
       : data.pending > 0 ? html`<div class="wiki-strip">
         <span class="wiki-strip__what"><span class="ok-tone-wait">●</span> ${say(data.pending === 1 ? "1 note waits to be taken in" : `${data.pending} notes wait to be taken in`)}</span>
         <button class="ok-btn primary" onClick=${ingest}>Take in</button></div>`
+      : data.rules && data.rules.ready && data.rules.mode === "ask" ? html`<div class="wiki-strip">
+        <span class="wiki-strip__what"><span class="ok-tone-accent">●</span> ${say("Rules for AI tools are ready: the review approved the wiki")}</span>
+        <button class="ok-btn primary" onClick=${() => act(id, "write_rules").catch(() => {})}>Write them</button></div>`
       : q && q.total > 0 && html`<div class="wiki-strip">
         <span class="wiki-strip__what"><span class="ok-tone-wait">⚠</span> ${say("Quality check found")} <b>${q.total}</b>
           ${say(q.total === 1 ? "problem" : "problems")}${q.last ? ` · ${say("checked")} ${q.last}` : ""}</span>
@@ -126,6 +198,33 @@ function Quality({ id, data }) {
       <span class=${p.kind === "link" || p.kind === "contradiction" ? "ok-tone-error" : "ok-tone-wait"}>${p.kind === "link" || p.kind === "contradiction" ? "✗" : "⚠"} ${say(KINDS[p.kind] || p.kind)}</span>
       ${p.page && html` <span class="gui-tree__item" title=${p.page} onClick=${() => read(id, `${data.root}/${p.page}`, true)}>${p.page}</span>`}
       <span class="ok-tone-muted"> — ${p.text}</span></li>`)}</ul>
+  </details>`;
+}
+
+const RULES_MODES = [["review", "After each approved review"], ["ask", "Ask me"], ["off", "Off"]];
+const TOOL_NAMES = { claude: "Claude Code", agy: "agy", codex: "Codex", hermes: "Hermes", pi: "pi", cursor: "Cursor" };
+
+/** Rules for AI tools (docs/design/wiki-folders-rules.md §3): when they are written, for which tools,
+ *  where they are now; Write now and Remove. */
+function Rules({ id, data }) {
+  const r = data.rules;
+  if (!r || !data.pages_count) return null;
+  const tools = r.tools.map((t) => TOOL_NAMES[t] || t).join(", ");
+  return html`<details class="wiki-recent wiki-quality wiki-rules" open=${r.ready}>
+    <summary><h3 class="ok-font-heading">${say("Rules for AI tools")}</h3>
+      <span class=${r.files.length ? "ok-tone-ok" : r.ready ? "ok-tone-wait" : "ok-tone-muted"}>${r.files.length
+        ? `✓ ${say("written")}${r.written ? ` ${r.written.replace("T", " ")}` : ""}` : r.ready ? `● ${say("ready")}` : say("not written")}</span></summary>
+    <div class="wiki-quality__when">
+      <span class="ok-font-label">${say("Write")}</span>
+      <div class="wiki-note__chips" role="radiogroup" aria-label=${say("When the rules for AI tools are written")}>
+        ${RULES_MODES.map(([v, label]) => html`<button key=${v} role="radio" aria-checked=${r.mode === v}
+          class=${cls("wiki-note__chip", { "is-on": r.mode === v })} onClick=${() => act(id, "rules_mode", { mode: v }).catch(() => {})}>${say(label)}</button>`)}
+      </div>
+      ${quiet(say("Write now"), () => act(id, "write_rules").catch(() => {}), say("Write RULES.md and the blocks now"))}
+      ${r.files.length > 0 && quiet(say("Remove"), () => act(id, "remove_rules").catch(() => {}), say("Take the blocks out of every file"))}
+    </div>
+    <p class="ok-font-status ok-tone-muted">${say("RULES.md in the wiki says where it is, its sections, and how to search, cite and add to it; a short block in CLAUDE.md, AGENTS.md and Cursor's rules points to it, for")} ${tools}.</p>
+    ${r.files.length > 0 && html`<ul>${r.files.map((f) => html`<li key=${f}><span class="ok-tone-muted">${f}</span></li>`)}</ul>`}
   </details>`;
 }
 
@@ -179,7 +278,7 @@ function Tree({ id, data }) {
       <ul>${b.items.map((n) => row(n.path, false, n.title,
           n.fresh ? html` <span class="ok-tone-wait" title=${say("to take in")}>●</span>` : ""))}</ul>
     </details>`)}
-    ${!data.sources.length && html`<p class="ok-tone-muted">${say("No sources yet — Add a folder of notes for the wiki to read.")}</p>`}
+    ${!data.sources.length && html`<p class="ok-tone-muted">${say("No sources yet — Add a folder for the wiki to read.")}</p>`}
   </div>`;
 }
 
@@ -319,7 +418,7 @@ function Pages({ id, data }) {
   if (page) return html`<${Page} key=${page.path} id=${id} data=${data} page=${page} />`;
   const search = html`<${Search} id=${id} query=${query} setQuery=${setQuery} />`;
   if (hits) return html`<div>${search}<${Hits} id=${id} hits=${hits} /></div>`;
-  return html`<div>${search}<${Quality} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
+  return html`<div>${search}<${Quality} id=${id} data=${data} /><${Rules} id=${id} data=${data} /><${Meetings} id=${id} data=${data} /><${Recent} id=${id} data=${data} /><${Tree} id=${id} data=${data} /></div>`;
 }
 
 /** The notes a task was given lately: what it is and the pages named for it. */

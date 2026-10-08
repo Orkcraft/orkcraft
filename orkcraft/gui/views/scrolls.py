@@ -1,13 +1,15 @@
 """🗑️ Scroll Dump in the GUI: the librarian's state, the tree of the wiki and its sources, and the
-page open. The work (ingest, lint, stop, a folder connected) is the worker's
-(core/workers/scrolls.py)."""
+page open. The work (ingest, lint, stop, a folder connected, the rules for AI tools) is the worker's
+(core/workers/scrolls.py); choosing a folder is the server's (gui/folders.py)."""
 from __future__ import annotations
 
 import time
 
-from orkcraft.gui import markdown
+from pathlib import Path
+
+from orkcraft.gui import folders, markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import quicknote, shelves, wiki
+from orkcraft.realm import quicknote, shelves, wiki, wikirules
 from orkcraft.sources import lore
 
 REFRESH_S = 30.0              # as the TUI
@@ -81,7 +83,7 @@ def detail(w) -> dict:
         "pending": w.pending.count, "note": w.last_note, "pages": pages, "sources": sources,
         "recent": _recent(w), "lent": _lent(w), "inbox": w.inbox,
         "sections": wiki.sections(w.wiki_root, w.topic), "agenda": w.agenda_view(),
-        "quality": w.quality_view(), "model_hint": w.model_hint,
+        "quality": w.quality_view(), "model_hint": w.model_hint, "rules": w.rules_view(),
     }
 
 
@@ -133,9 +135,71 @@ def _stop(w, args: dict) -> None:
 
 
 def _add_folder(w, args: dict) -> None:
-    problem = w.add_folder(text(args, "path", 2000).strip())
+    """Connect any folder (docs/design/wiki-folders-rules.md §1); `rules`: a folder outside the project gets
+    the rules for AI tools too. It joins the machine's recent folders."""
+    path = text(args, "path", 2000).strip()
+    problem = w.connect(path, args.get("rules") is True)
     if problem:
         raise ActError(problem)
+    machine = getattr(w.town, "machine", None)
+    if machine is not None:
+        p = Path(path).expanduser()
+        folders.remember(machine, str(p if p.is_absolute() else w.repo_root / p))
+
+
+def _about(w, args: dict) -> dict:
+    """What the dialog says of a folder as it is chosen: whether it is there, and outside the project."""
+    p = Path(text(args, "path", 2000).strip() or ".").expanduser()
+    folder = (p if p.is_absolute() else w.repo_root / p).resolve()
+    repo = w.repo_root.resolve()
+    return {"path": str(folder), "exists": folder.is_dir(), "outside": not (folder == repo or repo in folder.parents)}
+
+
+def _folders(w, args: dict) -> dict:
+    """The folder dialog's start: the recent folders of this machine."""
+    return {"recent": folders.recent(getattr(w.town, "machine", None)), "project": str(w.repo_root)}
+
+
+def _pick(w, args: dict) -> str:
+    """Open the system's folder dialog (on a thread): a token to ask `picked` with."""
+    return folders.start(text(args, "start", 2000).strip() or str(w.repo_root))
+
+
+def _picked(w, args: dict) -> dict:
+    return folders.result(text(args, "token", 40))
+
+
+def _browse(w, args: dict) -> dict:
+    try:
+        return folders.browse(text(args, "path", 2000))
+    except ValueError as e:
+        raise ActError(str(e)) from None
+
+
+def _dropped(w, args: dict) -> list[str]:
+    """The folders of a drop: from the file manager's file:// URLs when the page has them, else the full
+    paths the app's window gave (by name)."""
+    uris = text(args, "uris", 8000)
+    found = [str(p) for p in shelves.dropped_paths(uris) if p.is_dir()] if uris.strip() else []
+    return found or [p for p in folders.dropped(_strings(args, "names", 20, 400)) if Path(p).is_dir()]
+
+
+def _rules_mode(w, args: dict) -> str:
+    """When the rules for AI tools are written: review, ask or off."""
+    mode = text(args, "mode", 20).strip().lower()
+    if mode not in wikirules.MODES:
+        raise ActError("review, ask or off")
+    w.save_config({"agent_rules": mode})
+    w.changed()
+    return mode
+
+
+def _write_rules(w, args: dict) -> list[str]:
+    return w.write_rules()
+
+
+def _remove_rules(w, args: dict) -> list[str]:
+    return w.remove_rules()
 
 
 def _suggest(w, args: dict) -> dict:
@@ -174,4 +238,5 @@ def _note(w, args: dict) -> str:
 
 ACTS = {"read": _read, "ingest": _ingest, "lint": _lint, "stop": _stop, "add_folder": _add_folder,
         "suggest": _suggest, "note": _note, "fix": _fix, "check": _check,
-        "find": _find}
+        "find": _find, "about": _about, "folders": _folders, "pick": _pick, "picked": _picked, "browse": _browse,
+        "dropped": _dropped, "rules_mode": _rules_mode, "write_rules": _write_rules, "remove_rules": _remove_rules}

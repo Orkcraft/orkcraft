@@ -475,6 +475,49 @@ def test_note_in_the_warchiefs_line_shows_the_wikis_suggestions_before_enter_sav
         _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
+def test_a_folder_outside_the_project_is_connected_and_the_rules_shown(page, gui, tmp_path):
+    """Connect a folder: a path typed (the dialog of the system is the server's), the question about the rules
+    for a folder outside the project; then the Rules for AI tools in the window
+    (docs/design/wiki-folders-rules.md §2, §3)."""
+    pg = page
+    server, _ = gui
+    outside = tmp_path / "specs"
+    outside.mkdir()
+    (outside / "brief.md").write_text("# Brief\n")
+    link = "import('/static/js/link.js')"
+    wiki = pg.evaluate(f"t => {link}.then(m => m.command('town.build', {{ type: t }}))", "scrolls")
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/buildings/scrolls.js').then(m => m.quick(id, 'knowledge.add'))", wiki)
+    dialog = pg.locator(".ok-dialog", has_text="Connect a folder")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    assert dialog.get_by_role("button", name="Choose folder…").is_visible()
+    dialog.get_by_role("button", name="Type a path").click()
+    dialog.locator("input.ok-input").fill(str(outside))
+    ask = dialog.locator(".ok-check", has_text="Also tell AI tools working in this folder about the wiki")
+    ask.wait_for(state="visible", timeout=WAIT_MS)
+    ask.click()
+    dialog.screenshot(path=str(tmp_path / "wiki-connect-folder.png"))
+    dialog.get_by_role("button", name="Connect it").click()
+    dialog.wait_for(state="detached", timeout=WAIT_MS)
+    w = server.host.town.worker(wiki)
+    assert f"dir:{outside.resolve().as_posix()}" in w.config["sources"]
+    assert w.config["rules_in"] == [outside.resolve().as_posix()]
+    (w.wiki_root / "pages" / "concepts").mkdir(parents=True, exist_ok=True)
+    (w.wiki_root / "pages" / "concepts" / "brief.md").write_text("# Brief\n")
+    server.host.town.call(w.refresh)
+    server.host.town.call(w.approved)
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", wiki)
+    rules = pg.locator(".wiki-rules")
+    rules.locator("summary", has_text="ready").wait_for(state="visible", timeout=WAIT_MS)   # a take-in waits: its strip is first
+    rules.get_by_role("button", name="Write now").click()
+    pg.locator(".wiki-rules summary", has_text="written").wait_for(state="visible", timeout=WAIT_MS)
+    rules.screenshot(path=str(tmp_path / "wiki-rules.png"))
+    assert f"@{(w.wiki_root / 'RULES.md').as_posix()}" in (outside / "CLAUDE.md").read_text()   # no tool on: Claude Code's
+    server.host.town.call(w.remove_rules)
+    pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", wiki)
+    _hut(pg, wiki).wait_for(state="detached", timeout=WAIT_MS)
+
+
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"

@@ -415,7 +415,8 @@ These sources are new, changed or gone since the wiki last took them in:
 
 Take them in:
 1. Read each new or changed source. Paths are relative to this folder; sources outside the
-   project were snapshotted into `{RAW}/`. Skip what does not belong to this wiki's topic.
+   project were snapshotted into `{RAW}/`; a `.pdf` is read where it is (its path may be absolute):
+   open it with your own file tool. Skip what does not belong to this wiki's topic.
 2. Update the pages that they touch, or add pages, in the right section, as `{SCHEMA}` says.
    For a gone source, keep what is still true elsewhere and mark the rest stale.
 3. Update the index of every section you touched and `{INDEX}`.
