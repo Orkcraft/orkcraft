@@ -32,7 +32,7 @@ keys to configure.
 
 ```bash
 brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
-brew install orkcraft
+brew install orkcraft/orkcraft/orkcraft
 orkcraft --demo                    # a sandbox with simulated data: nothing real is touched, no model is called
 ```
 

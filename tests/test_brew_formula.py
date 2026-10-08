@@ -1,4 +1,4 @@
-"""The Homebrew formula (Formula/orkcraft.rb, tools/brew_formula.py): what `brew install orkcraft` builds."""
+"""The Homebrew formula (Formula/orkcraft.rb, tools/brew_formula.py): what `brew install orkcraft/orkcraft/orkcraft` builds."""
 from __future__ import annotations
 
 import importlib.util

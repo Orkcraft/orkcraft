@@ -5,7 +5,7 @@
 The repository is its own tap (docs/updates.md):
 
     brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
-    brew install orkcraft
+    brew install orkcraft/orkcraft/orkcraft
 
 The formula installs `orkcraft[gui]` in a virtualenv from the GitHub archive of `--commit` (by default
 `git rev-parse HEAD`, which must be on GitHub). The version is `__version__` and the Python packages
