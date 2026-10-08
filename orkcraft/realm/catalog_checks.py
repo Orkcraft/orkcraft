@@ -99,8 +99,10 @@ def validate(spec: dict) -> list[str]:
         errors += [f"config: imports: {e}" for e in calendar_imports.problems(config["imports"])]
     if tid == "watchtower" and isinstance(config.get("wants"), dict):
         from orkcraft.realm import pipes
-        if any(not isinstance(k, str) or not pipes.want_of(v) for k, v in config["wants"].items()):
-            errors.append(f"config: wants: a source → one of {', '.join(pipes.WANTS)}")
+        def bad(v) -> bool:
+            return not (all(pipes.want_of(x) for x in v) and v) if isinstance(v, list) else not pipes.want_of(v)
+        if any(not isinstance(k, str) or bad(v) for k, v in config["wants"].items()):
+            errors.append(f"config: wants: a source → one of {', '.join(pipes.WANTS)}, or a list of them")
     if tid == "barracks":
         from orkcraft.realm import paths, pipes
         kinds = ", ".join(paths.DEFAULT_WANTS)

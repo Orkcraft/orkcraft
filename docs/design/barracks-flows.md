@@ -1,6 +1,6 @@
 # Design — what is wanted decides the way: the Agent pool's paths
 
-Status: written 2026-10-07; stages 1–3 (§12) built, stage 4 not — see §14 *As built*. Builds on the Agent pool's planning
+Status: written 2026-10-07; stages 1–3 (§12) built, of stage 4 the Lookout's refinement (§6.1) — see §14 *As built*. Builds on the Agent pool's planning
 ([barracks-planning.md](barracks-planning.md)), roads and their filters ([roads-and-orcs.md](roads-and-orcs.md),
 `realm/roads.py` `passes`), the External listeners' intent and Lookout (`core/workers/watchtower.py`,
 `realm/lookout.py`), the Review board ([review-board.md](review-board.md)), the Review gate
@@ -247,11 +247,22 @@ Stages 1–3 are built; stage 4 is not (below, with why). What is left is on the
   Results (your yes) → Send replies*. Its Slack ask is a *Document* and goes to Results as before.
 
 **Not built — stage 4, deferred.**
-- The Lookout's refinement (§6.1). A source already names its kind, and the text may only lower it, so the word
-  would only choose among the kinds the source allows. The open question of §13 (one Slack source with two kinds,
-  or two sources) is better answered once people use the per-source setting.
 - The `doc` path with `debate` and `doc_to` (§6). It overlaps the design briefs the planning pool already leaves
   ([barracks-designs.md](barracks-designs.md)) and the Review board's routing. A document takes today's way
   meanwhile; its harness mode is still `work`.
 - A Router rule's `want` (§4) and a routing Review board's `WANT:` (§4). Both still pass on the kind their cart
   came with; neither sets one.
+
+**Stage 4, the Lookout's refinement (§6.1) — built 2026-10-08** (the night session P3).
+- A tower's `wants` may map a source to a list, its default first: `{"slack": ["reply", "change"]}`
+  (`paths.source_wants`; `source_want` is still its first). One kind, as every tower set up before, changes
+  nothing: the prompt is as it was.
+- When a batch holds a source with two or more kinds, `lookout.judge` (its `kinds=` per signal) lists them on
+  that message's line (`· kinds: reply, change`) and asks for a `kind` beside `why` in the same answer — no extra
+  call. `Verdict.kind` is kept only when it is one of that source's kinds; anything else is "" and the cart
+  takes the source's default. The signal keeps it (`Signal.want`) and `_keep` puts it on the cart.
+- The open question of §13 is answered both ways: one source with a list is opt-in, two sources still work.
+  No window sets a list yet: it is written in the tower's settings (the quick-add's *with these?* offers one
+  kind). Question for the owner: should the quick-add offer *reply, or a code change when it asks for one* for
+  Slack and Discord?
+- Tests: `tests/test_lookout_kind.py` (the choice within the kinds, the unchanged prompt, the setting, the cart).

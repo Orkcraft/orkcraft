@@ -80,8 +80,18 @@ def want_of_choice(value) -> str:
 def source_want(config: dict, source: str) -> str:
     """The kind of work a tower's carts from `source` ask for: its setting `wants` (source → kind), set in the
     quick-add or by an intent; "" when it names none (a tower set up before asks for none, as before)."""
+    kinds = source_wants(config, source)
+    return kinds[0] if kinds else ""
+
+
+def source_wants(config: dict, source: str) -> tuple[str, ...]:
+    """The kinds of work `source` allows, its default first: `wants` maps a source to one kind, or to a list
+    the Lookout may choose from by the text (§6.1: `["reply", "change"]` — a reply unless it reads as a code
+    change). Never more than the person listed."""
     got = config.get("wants")
-    return pipes.want_of(got.get(source)) if isinstance(got, dict) else ""
+    value = got.get(source) if isinstance(got, dict) else None
+    words = value if isinstance(value, list) else [value]
+    return tuple(dict.fromkeys(w for w in (pipes.want_of(x) for x in words) if w))
 
 
 # -- the reply path -------------------------------------------------------------------------------------

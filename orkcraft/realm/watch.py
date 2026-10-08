@@ -43,6 +43,7 @@ class Signal:
     read: bool = False     # opened (Enter), or let through without a look (the first one, a miss)
     kept: bool | None = None   # the Lookout's verdict on the intent; None: no intent asked
     why: str = ""          # … and its reason
+    want: str = ""         # … and the kind of work it named, among its source's (realm/lookout.py); "": the default
 
     @property
     def key(self) -> str:

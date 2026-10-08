@@ -66,18 +66,6 @@ mode.
 Done when a Calendar's *meeting soon* brief is written by a `doc` ork that cannot touch any other file, and waits
 in the Review gate.
 
-### The Lookout names the kind (§6.1, stage 4)
-
-The Lookout's one call per batch of signals gains one optional word per signal: the kind of work, among those
-the source allows (a Slack source may say `reply` or `change`). This adds no extra model call. The text still
-only lowers a path; the word only chooses within the source's kinds.
-
-Decide first, from how people use the per-source setting, whether one source with two kinds or two sources is
-the answer (§13).
-
-Done when a developer channel's message asking for a fix reaches the pool as a code change and a question in the
-same channel as a reply, both from one source.
-
 ### Kinds set by a Router rule and a routing Review board (§4)
 
 Today both pass on the kind their cart came with; neither sets one.

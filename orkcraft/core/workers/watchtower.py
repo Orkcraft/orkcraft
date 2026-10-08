@@ -277,7 +277,8 @@ class WatchtowerWorker(Worker):
             body = f"{title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body
             if sig.why:
                 body += f"\n\n🎯 {sig.why}"
-            self.emit(sig.event, body, title, want=paths.source_want(self.config, sig.source))   # §4: by its source
+            want = sig.want if sig.want in paths.source_wants(self.config, sig.source) else ""
+            self.emit(sig.event, body, title, want=want or paths.source_want(self.config, sig.source))   # §4, §6.1
         self.changed()
 
     def judge(self) -> None:
@@ -291,10 +292,12 @@ class WatchtowerWorker(Worker):
         # as it runs by itself on every signal
         on = fastpath.settings(self.repo_root).get("fast_llm")
         runner = None if self.simulated else (type(self).judge_runner or (self.steward_runner("judge") if on else None))
+        config = dict(self.config)
+        kinds = lambda sig: paths.source_wants(config, sig.source)       # noqa: E731 — §6.1: what each may ask for
 
         def work() -> None:
             try:
-                verdicts, problem = lookout.judge(intent, batch, runner)
+                verdicts, problem = lookout.judge(intent, batch, runner, kinds)
             except halt.Stopped:                         # 🛑 Halt All: the batch waits, unjudged
                 self.town.call(self._unjudged, batch)
                 return
@@ -313,6 +316,7 @@ class WatchtowerWorker(Worker):
         self.errors.pop("intent", None) if not problem else self.errors.update(intent=problem)
         for sig, v in zip(batch, verdicts):
             sig.kept, sig.why = v.kept, v.why
+            sig.want = v.kind if v.kind in paths.source_wants(self.config, sig.source) else ""
             sig.read = not v.kept                     # a miss is not news
             self._keep(sig, v.kept)
         self.judge()
