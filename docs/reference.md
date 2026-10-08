@@ -1103,9 +1103,19 @@ a hut, types into a terminal or changes a setting: anything else it sends is ref
 
 ## Installation
 
+macOS and Linux, with Homebrew (the repository is its own tap; docs/updates.md):
+
 ```bash
-pipx install ./orkcraft        # or: python3 -m venv .venv && .venv/bin/pip install -e ./orkcraft
+brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
+brew install orkcraft
 cd your-project && orkcraft hooks install && orkcraft
+```
+
+Without Homebrew:
+
+```bash
+pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"
+# from a checkout: pipx install ./orkcraft, or python3 -m venv .venv && .venv/bin/pip install -e ./orkcraft
 ```
 
 ## Words and the look

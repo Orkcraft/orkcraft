@@ -1,0 +1,50 @@
+name: brew
+
+# A release raises __version__ on main (docs/updates.md); this points Formula/orkcraft.rb at that
+# commit: its archive's url and sha256, and the packages uv.lock pins there. `brew upgrade orkcraft`
+# sees the release once this commit is in.
+
+on:
+  push:
+    branches: [main]
+    paths: [orkcraft/__init__.py]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brew
+  cancel-in-progress: false
+
+jobs:
+  formula:
+    name: formula
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Is the formula behind?
+        id: behind
+        run: |
+          now=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' orkcraft/__init__.py)
+          was=$(sed -n 's/^  version "\(.*\)"/\1/p' Formula/orkcraft.rb)
+          echo "version=$now" >> "$GITHUB_OUTPUT"
+          if [ "$now" != "$was" ]; then echo "yes=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Write the formula
+        if: steps.behind.outputs.yes
+        run: |
+          python -m pip install --quiet packaging
+          python tools/brew_formula.py --commit "$GITHUB_SHA"
+      - name: Commit it
+        if: steps.behind.outputs.yes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/orkcraft.rb
+          git commit -m "Formula: orkcraft ${{ steps.behind.outputs.version }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
