@@ -25,12 +25,13 @@ you, and whether it may disturb you.
 
 - **Where:** the HUD's first item, before the town's name (`js/chrome.js`). The map stays clear.
 - **Size:** 32 × 32. The head (12 × 11 grid) at 2×, on its kin's biome ground, in a bevelled frame.
-- **Marks:** the stage I–IV at the bottom right; 🌙 at the top right while Do not disturb holds. Not
-  Renown: Renown is a building's.
+- **Marks:** the stage I–IV at the bottom right; 🌙 at the top right while Do not disturb holds; an
+  `alert` dot at the bottom left while an ork asks (a click on the dot opens Answers, a click elsewhere
+  the menu). Not Renown: Renown is a building's.
 - **A new stage** glows softly until the menu is opened (it glowed in Settings before). The Warchief's
   line still says it once, and its link opens the menu.
 - **Office** (§3) draws a monogram instead of the head: the role's two letters in a circle (SE, QA,
-  EM, PM, PD, GD, AS, MK, DA, FO, and `··` for someone else), no stage mark. 🌙 stays.
+  EM, PM, PD, GD, AS, MK, DA, FO, and `··` for someone else), no stage mark. 🌙 and the dot stay.
 
 ## 2. Its menu
 
@@ -67,7 +68,7 @@ as `data-look` always did; the words, the panel, the line and every action are t
 | buildings | the huts' building sprites | a card: the name and its status lines, no sprite |
 | the Warchief's line | 🧌 | `›` |
 | the portrait | the mascot's head, the stage | the role's monogram |
-| colour | the Camp palette (gold, moss, bronze) | monochrome greys with one neutral accent; light or dark as the system says |
+| colour | the Camp palette (gold, moss, bronze) | monochrome greys with one accent, the Camp gold muted (`#b8a06a` dark, `#7a6630` light): the selected, the focus ring; light or dark as the system says |
 | type | Almendra titles, Titillium | the system UI stack |
 | emoji in labels | yes | no (`modes.plain`) |
 | a building that waits for you | flames climb its roof (when the town's `fire` is on) | its frame turns `danger`, no flames |
@@ -93,7 +94,7 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 | 📯 the Horn | sounds nothing; each call is logged as kept, why "do not disturb" |
 | the Warchief | does not speak first (calm-town.md §8); it answers when asked |
 | toasts | only `error` |
-| pushes to phones | **all held**, whatever their kind (to be revisited: §8) |
+| pushes to phones | all held but one: the budget is spent and the orks stopped |
 | Answers | the questions gather; its count in the HUD stays |
 | the map | as it is: a building that waits still shows it |
 
@@ -138,6 +139,4 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 
 ## 8. Open questions
 
-1. Do not disturb holds every push today. Should "the budget is spent and the orks stopped" get through?
-2. The Office accent: one neutral blue, or the Camp gold, greyed?
-3. Does the portrait show anything of the town (a dot when an ork asks), or only the person?
+1. Does the summary when Do not disturb ends say the spend, or only what waited for an answer?
