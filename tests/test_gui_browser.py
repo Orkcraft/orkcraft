@@ -1288,6 +1288,7 @@ def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_setting
     w.lore.set_news(card.id, {"at": "2026-10-08T04:40:00", "commits": [["a1b2c3d", "Export form: validate the dates"]],
                               "pages": [], "words": "The export form now checks dates; the card may be done."})
     w.lore.set_idea(idea.id, "2026-10-08T04:40:00-1")
+    host.growth.settle()             # a deed the earlier tests earned (First town) is said first, not over the round's line
     growth.tell(host.town.repo_root, growth.News("round", "Night round: 1 card has news, 1 cleanup idea", bid, "🌙", "work"))
     host.growth.settle()
     line = pg.locator(".gui-warchief__news").filter(has_text="Night round: 1 card has news")
