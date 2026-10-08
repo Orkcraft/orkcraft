@@ -14,8 +14,9 @@ Order: value / risk, best first. First version — refined below as the audit go
   `gui/static/layout.css` / `mobile` styles of the HUD — S — the phone is a place people answer from; the
   answers button is the one thing the phone must show. — done by D1: the HUD wraps to a second row, the portrait stands for the brand (`ui/after-U01-camp-phone.png`, `ui/after-U01-office-phone.png`)
 - [ ] U02 A road's label is drawn over a card's footer: Calendar's "3 meetings left today" reads
-  "t3 meetings left today" under `on_task_moved` (Camp); in Office `on_digest` is cut by the Daily brief card
-  — `ui/camp-town.png`, `ui/camp-win-todo.png`, `ui/office-town.png` — `gui/static/js/roads*.js` / `town.css`
+  "t3 meetings left today" under `on_task_moved` (Camp); in Office `on_digest` is cut by the Daily brief card,
+  and in Office dark (main set) `on_patch` runs under card 1 and reads "tch"
+  — `ui/camp-town.png`, `ui/camp-win-todo.png`, `ui/office-town.png`, `ui/office-dark-town-main.png` — `gui/static/js/roads*.js` / `town.css`
   — M — overlapping text is the first thing a new person sees as broken; a label must sit on a free stretch of
   its road, or on a plate above the cards.
 - [ ] U03 A scrolling box gives no cue that it scrolls where scrollbars are overlay (macOS, phones, headless):
@@ -52,4 +53,20 @@ Order: value / risk, best first. First version — refined below as the audit go
   the panel's top row has the same two) — `ui/office-win-days.png`, `ui/camp-win-todo.png` ("New task",
   "New note") — `gui/static/js/hut.js` — S — with the panel open, one place for the actions is enough; hide the
   card's quick row while its panel is open.
+- [x] U12 Answers: the list cut each question at 40 characters with no ellipsis ("price id missing i") —
+  `ui/camp-answers.png` → `ui/after-U12-camp-answers.png` — `js/orders.js`, `layout.css` — S — done by D1:
+  the whole question, cut by CSS with "…" when it does not fit, the full text in its tooltip.
+- [x] U13 Camp: a building's text actions (Info tab: History, Open in OS, Deploy, Watch, Report, Redesign) were
+  sentence case at 14 px beside uppercase tabs and buttons — `ui/camp-win-tree-info.png` →
+  `ui/after-U13-camp-info.png` — `layout.css` — S — done by D1: `--ok-case` and `--ok-track`, as `ok-btn`.
+- [ ] U14 Answers: the answer options and "Later" are the same look, stacked in one column ("1 Acknowledge",
+  then "Later" under it), so "Later" reads as one more answer — `ui/after-U12-camp-answers.png` — `js/orders.js`,
+  `.gui-orders__options` — S — options in a row (they wrap), "Later" right-aligned in the actions row as every
+  dialog's dismiss.
+- [ ] U15 Answers is called three things: "Answers (4)" in the HUD, "Awaiting an answer (4)" as the dialog's
+  title, "Asks you" on the phone — `ui/camp-answers.png` — `js/orders.js`, `js/pocket.js`, `realm/lexicon.py` —
+  S — one word per concept (CLAUDE.md, Wording): the dialog's title should be the HUD's word.
+- [ ] U16 External listeners (Camp): two green primary buttons ("+ Add source", "Open new") and "Open new"
+  wraps alone onto a second toolbar row — `ui/camp-win-post.png` — `gui/static/js/buildings/` (post) — S — one
+  primary per view (design-system/components.md); "Open new" is a plain button in the row.
 

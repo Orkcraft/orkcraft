@@ -457,6 +457,8 @@ button { font: inherit; color: inherit; }
 /* Orders */
 .gui-orders__list { max-height: 160px; overflow: auto; margin: 0 0 var(--space-2); padding: 0; }
 .gui-orders__list .ok-item { cursor: pointer; }
+.gui-orders__list .ok-item { white-space: nowrap; }
+.gui-orders__list .ok-item .meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* the question, cut with … */
 .gui-orders__context { max-height: 220px; overflow: auto; background: var(--panel-inset); padding: var(--space-2); }
 .gui-orders__options { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 .gui-link { border: 0; background: none; cursor: pointer; font: inherit; color: inherit; padding: 0; }
@@ -528,7 +530,8 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .gui-cart { animation-timing-function: steps(8); } }
 
 /* Camp draws a command as its icon; a command that has none yet says its word instead of an empty tile. */
-[data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: auto; min-height: 28px; padding: var(--space-1) var(--space-2); font-size: 14px; line-height: 1.2; }
+[data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: auto; min-height: 28px; padding: var(--space-1) var(--space-2); font-size: 13px; line-height: 1.2;
+  text-transform: var(--ok-case); letter-spacing: var(--ok-track); }   /* the same type as an ok-btn beside it */
 [data-theme="camp"] .ok-act:not(:has(img)) .ok-act__label { display: inline; }
 
 /* Camp: a typed building's card keeps its text off the frame (Office's cards have their own padding). */
