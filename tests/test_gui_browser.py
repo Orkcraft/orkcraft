@@ -1421,3 +1421,29 @@ def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gu
         pg.evaluate("([id, imp]) => import('/static/js/link.js').then(m => m.act(id, 'import_remove', { id: imp }))", [drum, row["id"]])
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", drum)
     _hut(pg, drum).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, monkeypatch, tmp_path):
+    """An AI tool that failed (gui/failures.py): its toast says who and what, Details keeps its own words."""
+    from orkcraft.realm import tool_errors
+    server, _ = gui
+    host = server.host
+    monkeypatch.setattr(tool_errors.shutil, "which", lambda name: f"/usr/bin/{name}" if name in ("claude", "codex") else None)
+    ran: list[int] = []
+    error = tool_errors.ToolError("claude", "API Error: 529 {\"type\":\"overloaded_error\"}", 1)
+    host.town.call(lambda: host.failures.report(error, "Recruiter", retry=lambda: ran.append(1)))
+    toast = page.locator(".gui-toolerr")
+    toast.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Claude Code hit an error" in toast.inner_text()
+    assert "Ork setup: Claude Code hit a usage limit or its service is overloaded." in toast.inner_text()   # today's word
+    assert toast.get_by_role("button", name="Switch to Codex").is_visible()
+    toast.get_by_role("button", name="Details").click()
+    assert "overloaded_error" in toast.locator("pre").inner_text()
+    toast.screenshot(path=str(tmp_path / "tool-error.png"))
+    toast.get_by_role("button", name="Retry").click()
+    toast.wait_for(state="detached", timeout=WAIT_MS)
+    for _ in range(50):
+        if ran:
+            break
+        page.wait_for_timeout(100)
+    assert ran == [1]

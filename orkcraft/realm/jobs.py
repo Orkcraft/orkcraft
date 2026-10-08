@@ -128,9 +128,9 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s))
+                                    lambda proc: _wait(proc, cancel, timeout_s), harness)
     if code != 0:
-        raise RuntimeError(roads.failure(harness, code, out, err))
+        raise roads.failure(harness, code, out, err)
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
     if harness == "codex" and resume and resumed is None:
         cost = None                       # its running total holds earlier runs we cannot tell apart
@@ -151,9 +151,9 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s))
+                                    lambda proc: _wait(proc, cancel, timeout_s), harness)
     if code != 0:
-        raise RuntimeError(roads.failure(harness, code, out, err))
+        raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} reader")

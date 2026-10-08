@@ -12,7 +12,7 @@ from typing import Any, Callable
 from orkcraft import scroll, settings
 from orkcraft.config import Config, find_project_root
 from orkcraft.core import bus as b, delivery
-from orkcraft.realm import catalog, checkpoint, chronicles, masonry, pipes
+from orkcraft.realm import builders, catalog, checkpoint, chronicles, masonry, pipes, tool_errors
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.sources import telemetry
 
@@ -91,6 +91,15 @@ class Town:
 
     def toast(self, message: str, title: str = "", severity: str = "information", timeout: float | None = None) -> None:
         self.bus.publish(b.TOAST, message=message, title=title, severity=severity, timeout=timeout)
+
+    def tool_failed(self, error: tool_errors.ToolError, where: str = "", retry: str = "",
+                    broken: tuple[str, ...] = ()) -> dict[str, Any]:
+        """An AI tool failed: what it means and what can be done, on the bus (`TOOL_ERROR`). `retry`: the
+        id a face runs again on Retry ("" when it cannot); `broken`: tools known not to start or sign in."""
+        enabled = [t for t, c in self.machine.tools.items() if c.enabled]
+        data = tool_errors.report(error, enabled, builders.main_tool(self.machine), where, broken=broken)
+        self.bus.publish(b.TOOL_ERROR, **data, retry=retry)
+        return data
 
     def publish(self, topic: str, **data: Any) -> None:
         self.bus.publish(topic, **data)

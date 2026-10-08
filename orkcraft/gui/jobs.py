@@ -9,7 +9,7 @@ from __future__ import annotations
 import threading
 from typing import Any, Callable
 
-from orkcraft.realm import fastpath, modes
+from orkcraft.realm import fastpath, modes, tool_errors
 
 
 def plain(text: str) -> str:
@@ -39,16 +39,20 @@ class JobsMixin:
         job.update(state="running", text=text, _accept=None)
 
         def run() -> None:
+            tool_errors.taken()                      # this thread's AI tool failures from here on
             try:
                 result, failed = work(), None
             except Exception as e:                   # a model call never takes the town down
                 result, failed = None, f"{type(e).__name__}: {e}"
-            self.town.call(self._finished, jid, result, failed, done)
+            # The AI tool that failed, even when the call turned it into its result's error.
+            again = lambda: self._run(job, text, work, done)    # noqa: E731
+            self.town.call(self._finished, jid, result, failed, done, tool_errors.taken(), again)
 
         threading.Thread(target=run, daemon=True, name=f"gui-{jid}").start()
         self.host.on_change()
 
-    def _finished(self, jid: str, result: Any, failed: str | None, done: Callable[[dict, Any], None]) -> None:
+    def _finished(self, jid: str, result: Any, failed: str | None, done: Callable[[dict, Any], None],
+                  tool: tool_errors.ToolError | None = None, again: Callable[[], None] | None = None) -> None:
         job = self.jobs.get(jid)
         if job is None:                              # let go while it ran
             return
@@ -60,6 +64,18 @@ class JobsMixin:
             except Exception as e:
                 job.update(state="failed", error=f"{type(e).__name__}: {e}"[:500])
         self.host.refresh_roster()
+        if job["state"] == "failed" and tool is not None:   # an AI tool failed it: Switch, Retry, Details
+            self._tool_failed(job, tool, again)
+
+    def _tool_failed(self, job: dict, error: tool_errors.ToolError, again: Callable[[], None] | None) -> None:
+        failures = getattr(self.host, "failures", None)
+        if failures is None:
+            return
+
+        def retry() -> None:
+            if self.jobs.get(job["id"]) is job:      # the same call, on the main tool as it is now
+                again()
+        failures.report(error, job["title"] or job["kind"], retry=retry if again else None)
 
     def drop(self, args: dict) -> bool:
         """The person lets a job go: a running one finishes unseen, a ready one is not taken."""

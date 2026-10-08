@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import accounts, builder, console, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
+from orkcraft.gui import accounts, builder, console, failures, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -96,6 +96,8 @@ class Host:
             "roads.lay": lambda a: self._building(builder.lay_road, a),
             "roads.remove": lambda a: self._building(builder.remove_road, a),
         }
+        self.failures = failures.Failures(self)    # an AI tool that failed: Switch, Retry, Details (gui/failures.py)
+        self.commands.update(self.failures.commands())
         # The console of a selected building or ork (gui/console.py): Info, the garrison, the jobs.
         self.console = console.Console(self)
         self.commands.update(self.console.commands())
@@ -148,6 +150,9 @@ class Host:
             data["title_plain"] = modes.plain(str(data["title"] or ""))
             if not self.you.hold_toast(data):          # Do not disturb: only an error shows
                 self.on_toast(data)
+            return
+        if event.topic == bus.TOOL_ERROR:              # an AI tool failed: its toast says what to do
+            self.failures.show(event.data)
             return
         if event.topic == bus.ORDER:                   # the Warchief gave a specialist work: the console runs it
             self._order(event.data)

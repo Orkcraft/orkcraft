@@ -744,6 +744,12 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   providers, Council members and the Mill's agent start on `main`; an ork or a steward that names its
   own tool keeps it. A tier (Elder, Warrior, Laborer) names each tool's own model; a tool without a
   tier table (Hermes, pi, Cursor) runs its default.
+- **Tool error** — when an AI tool fails (not installed, not signed in, a usage limit or overload, no
+  network, anything else), the GUI shows "<Tool> hit an error" with one line of what happened and
+  what to do (`orkcraft/realm/tool_errors.py`). **Switch to …** makes another installed tool the main
+  one and runs the failed call again; **Retry** runs it again as it is; **Details** shows the tool's
+  own words to copy. Switch is offered only when the main tool failed: a step or building that names
+  its own tool is changed in its settings. With no other tool installed, the toast says how to get one.
 - **Guards** — the 🛡 Warder judges every tool with the same rules: Cursor in `.cursor/hooks.json`,
   pi through orkcraft's extension (`-e`, and `.pi/extensions/orkcraft.ts`), Hermes in a marked block
   of `~/.hermes/config.yaml`, written only after asking (`--hermes-global` / `--no-hermes-global`).

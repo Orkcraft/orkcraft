@@ -5,7 +5,7 @@ import { signal } from "@preact/signals";
 
 export const town = signal(null);          // the last snapshot (gui/state.py), null until the first
 export const online = signal(false);
-export const toasts = signal([]);          // [{id, message, title, severity}]
+export const toasts = signal([]);          // [{id, message, title, severity, tool?}] (tool: an AI tool that failed)
 export const details = signal({});         // building id → its window's state (gui/views/), for the open ones
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
@@ -31,9 +31,9 @@ export function say(text) {
   return String(text).replace(saying.re, (w) => saying.to.get(w) ?? w);
 }
 
-export function toast(message, severity = "information", title = "", timeout = null) {
+export function toast(message, severity = "information", title = "", timeout = null, tool = null) {
   const id = nextId++;
-  toasts.value = [...toasts.value, { id, message, title, severity }].slice(-5);
+  toasts.value = [...toasts.value, { id, message, title, severity, tool }].slice(-5);
   const seconds = timeout || TOAST_S[severity] || 5;
   setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id); }, seconds * 1000);
 }
@@ -85,7 +85,8 @@ function receive(msg) {
     details.value = { ...details.value, [msg.detail.id]: msg.detail };
   } else if (msg.t === "toast") {
     // The page drops pictographs and says today's words: the host sends each text as it is and `_plain`.
-    toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout);
+    toast(msg.message_plain ?? msg.message, msg.severity || "information", msg.title_plain ?? msg.title ?? "", msg.timeout,
+          msg.tool || null);
   } else if (msg.t === "reply") {
     const p = pending.get(msg.id);
     if (!p) return;

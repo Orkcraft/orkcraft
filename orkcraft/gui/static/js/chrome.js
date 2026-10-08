@@ -1,6 +1,7 @@
 // The chrome around the town (docs/design/calm-town.md §1): the HUD (the portrait, js/portrait.js; the project's name opens the town's
 // settings, js/settings.js; Halt All; the orks' questions, Orders; the treasury) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
+import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
@@ -47,10 +48,48 @@ export function Hud() {
 
 export function Toasts() {
   return html`<div class="gui-toasts" role="status" aria-live="polite">
-    ${toasts.value.map((x) => html`<div key=${x.id} class=${cls("ok-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
+    ${toasts.value.map((x) => x.tool ? html`<${ToolToast} key=${x.id} x=${x} />`
+      : html`<div key=${x.id} class=${cls("ok-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
         onClick=${() => dismiss(x.id)}>
       <span class="ok-toast__mark">${MARK[x.severity] || "✓"}</span>
       <span>${x.title ? html`<b>${x.title}</b> — ` : ""}${x.message}</span>
     </div>`)}
+  </div>`;
+}
+
+// An AI tool that failed (gui/failures.py): what happened in one line, then Switch to another tool that is
+// installed (a menu when there are several), Retry, and Details — the tool's own words, to read or copy.
+function ToolToast({ x }) {
+  const t = x.tool;
+  const [open, setOpen] = useState("");          // "" | "details" | "switch"
+  const close = () => dismiss(x.id);
+  const toggle = (what) => setOpen(open === what ? "" : what);
+  const switchTo = (to) => { close(); command("tool_error.switch", { to, retry: t.retry || "" }).catch(() => {}); };
+  const retry = () => { close(); command("tool_error.retry", { retry: t.retry }).catch(() => {}); };
+  const copy = () => navigator.clipboard?.writeText(t.detail || "").catch(() => {});
+  const others = t.switch || [];
+  return html`<div class="ok-toast is-error gui-toolerr" role="alert">
+    <span class="ok-toast__mark">✗</span>
+    <div class="gui-toolerr__body">
+      <b>${x.title}</b>
+      <span>${say(x.message)}</span>
+      ${t.action && html`<span class="gui-toolerr__note">${say(t.action)}</span>`}
+      ${!others.length && t.hint && html`<span class="gui-toolerr__note">${say(t.hint)}</span>`}
+      <div class="gui-toolerr__acts">
+        ${others.length === 1 && html`<button class="ok-btn primary" onClick=${() => switchTo(others[0].id)}>Switch to ${others[0].title}</button>`}
+        ${others.length > 1 && html`<button class="ok-btn primary" aria-expanded=${open === "switch"}
+          onClick=${() => toggle("switch")}>Switch to… ▾</button>`}
+        ${t.retry && html`<button class="ok-btn" onClick=${retry}>Retry</button>`}
+        <button class="ok-btn" aria-expanded=${open === "details"} onClick=${() => toggle("details")}>Details</button>
+        <button class="ok-btn" title="Close" onClick=${close}>×</button>
+      </div>
+      ${open === "switch" && html`<div class="gui-toolerr__menu" role="menu">
+        ${others.map((o) => html`<button key=${o.id} class="ok-btn" role="menuitem" onClick=${() => switchTo(o.id)}>${o.title}</button>`)}
+      </div>`}
+      ${open === "details" && html`<div class="gui-toolerr__details">
+        <pre>${t.detail}</pre>
+        <button class="ok-btn" onClick=${copy}>Copy</button>
+      </div>`}
+    </div>
   </div>`;
 }

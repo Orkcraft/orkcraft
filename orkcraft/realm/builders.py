@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import halt, harnesses, huts, masonry, naming
+from orkcraft.realm import halt, harnesses, huts, masonry, naming, tool_errors
 from orkcraft.sources import telemetry
 
 MAX_ATTEMPTS = 3
@@ -115,8 +115,8 @@ def _call(h: harnesses.Harness, prompt: str, model: str | None) -> subprocess.Co
         try:
             return halt.run(cmd, input=h.stdin(prompt), cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All
         except FileNotFoundError as e:
-            raise RuntimeError(f"{h.title} CLI not found ({cmd[0]}) — install it or set "
-                               f"ORKCRAFT_{h.id.upper()}_BIN") from e
+            raise tool_errors.ToolError(h.id, f"{h.title} CLI not found ({cmd[0]}) — install it or set "
+                                        f"ORKCRAFT_{h.id.upper()}_BIN", kind=tool_errors.MISSING) from e
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"no answer within {CALL_TIMEOUT_S} s") from e
         except halt.Halted as e:
@@ -130,10 +130,10 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     proc = _call(h, prompt, model)
     if proc.returncode != 0:
         why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
-        raise RuntimeError(f"{h.id} exited with {proc.returncode}: {why[:300]}")
+        raise tool_errors.ToolError(h.id, why, proc.returncode)
     text, cost, _, _ = h.outcome(proc.stdout, 0, model or "")
     if not text.strip() and (why := h.error(proc.stdout)):
-        raise RuntimeError(f"{h.id} gave no answer: {why[:300]}")
+        raise tool_errors.ToolError(h.id, f"{h.id} gave no answer: {why}")
     telemetry.charge(cost, f"{h.id} -p {model or 'default'}")    # no transcript of this run: 🪙 here
     return text, cost
 

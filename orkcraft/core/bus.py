@@ -29,6 +29,8 @@ RUN = "run"          # run, name: a handler or a building's own agent finished
 LOOT = "loot"        # path, source: a report was kept in Loot
 WORKER = "worker"    # building: a building's worker changed its state (its view draws it again)
 SESSION = "session"  # key, state ("opened" | "exited" | "forgotten"), code: an ork's CLI session (core/sessions.py)
+TOOL_ERROR = "tool_error"  # harness, tool, kind, title, line, action, detail, switch, hint, main, where, retry: an
+                          # AI tool failed (realm/tool_errors.py report); a face shows Switch, Retry and Details
 ORDER = "order"      # kind, building, source, order, card: the Warchief gave an order a face runs as its job
                      # (a road for the road planner, an ork for the Recruiter, a change for a keeper)
 

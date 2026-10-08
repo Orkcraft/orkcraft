@@ -94,6 +94,8 @@ def ran(town, run: roads.HandlerRun) -> None:
     name = orc.name if orc else run.orc_id
     town.record(run.target, "handler_ran", by=name, orc=name, outcome=run.outcome, roads=len(run.roads))
     town.publish(bus.RUN, run=run, name=name)
+    if run.outcome == "error" and run.failure is not None:   # an AI tool failed it: Switch, Details
+        town.tool_failed(run.failure, where=f"{name} in {b.title if b else run.target}")
 
 
 def meta(town, payload: pipes.Payload) -> dict:

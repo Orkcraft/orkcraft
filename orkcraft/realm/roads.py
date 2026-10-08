@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import chains, halt, harnesses, pipes, tiers
+from orkcraft.realm import chains, halt, harnesses, pipes, tiers, tool_errors
 from orkcraft.realm.pipes import FILE, NODE, Payload
 from orkcraft.sources import telemetry
 
@@ -131,6 +131,7 @@ class HandlerRun:
     trail: tuple = field(default=(), repr=False)   # the hops of the carts it ran on (pipes.Hop)
     ref: str = ""
     model: str = ""               # the model(s) its steps ran on ("a+b"), else their tools
+    failure: tool_errors.ToolError | None = field(default=None, repr=False)   # the AI tool that failed it
 
 
 @dataclass
@@ -327,7 +328,7 @@ codex_error = harnesses.codex_error
 
 
 def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
-             wait: Callable[[subprocess.Popen], None]) -> tuple[int, str, str]:
+             wait: Callable[[subprocess.Popen], None], harness: str = "") -> tuple[int, str, str]:
     """(exit code, stdout, stderr) of one harness call. Its output goes to temporary files, so a
     long answer or a stream of events never fills a pipe while `wait` polls the process."""
     with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
@@ -335,7 +336,7 @@ def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
             proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.PIPE if stdin is not None else None,
                                     stdout=out, stderr=err, text=True, start_new_session=True)
         except FileNotFoundError as e:
-            raise RuntimeError(f"{cmd[0]} not found") from e
+            raise tool_errors.missing(harness, cmd[0]) if harness else RuntimeError(f"{cmd[0]} not found") from e
         if stdin is not None:
             try:
                 proc.stdin.write(stdin)
@@ -348,10 +349,11 @@ def run_proc(cmd: list[str], cwd: Path, env: dict, stdin: str | None,
         return proc.returncode, out.read(), err.read()
 
 
-def failure(harness: str, code: int, stdout: str, stderr: str) -> str:
+def failure(harness: str, code: int, stdout: str, stderr: str) -> tool_errors.ToolError:
+    """The error of a harness call that exited with `code` (its str(): "<harness> exited with <code>: …")."""
     h = harnesses.get(harness)
     why = (h.error(stdout) if h else "") or (stderr or stdout).strip()
-    return f"{harness} exited with {code}: {why[:300]}"
+    return tool_errors.ToolError(harness, why, code)
 
 
 def names_session(harness: str) -> bool:
@@ -389,9 +391,10 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         if session and (h := harnesses.get(harness)) and h.read_session:
             cmd = cmd + h.read_session(session, reopen)
         tool_env = h.env("read", scratch) if (h := harnesses.get(harness)) else {}
-        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
+        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt),
+                                        wait, harness)
     if code != 0:
-        raise RuntimeError(failure(harness, code, stdout, stderr))
+        raise failure(harness, code, stdout, stderr)
     result = result_of(harness, stdout, model=model)[:3]
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
@@ -646,6 +649,8 @@ class Engine:
             outcome, error = "interrupted", "restarted by a new event"
         except Exception as e:  # a failing orc must not take the app down
             outcome, error = "error", str(e)[:300]
+            if isinstance(e, tool_errors.ToolError):
+                run.failure = e
         run.cost_usd, run.tokens = total, tokens
         with self._lock:
             st.running, st.cancel = False, None

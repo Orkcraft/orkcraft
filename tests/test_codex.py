@@ -90,8 +90,8 @@ def test_a_failed_turn_says_why():
     out = json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}})
     assert roads.codex_error(out) == "usage limit reached"
     assert roads.codex_error(json.dumps({"type": "error", "message": "stream lost"})) == "stream lost"
-    assert roads.failure("codex", 1, out, "mcp noise") == "codex exited with 1: usage limit reached"
-    assert roads.failure("claude", 1, "", "boom") == "claude exited with 1: boom"
+    assert str(roads.failure("codex", 1, out, "mcp noise")) == "codex exited with 1: usage limit reached"
+    assert str(roads.failure("claude", 1, "", "boom")) == "claude exited with 1: boom"
 
 
 def test_codex_reads_the_repository_in_a_read_only_sandbox(tmp_path):

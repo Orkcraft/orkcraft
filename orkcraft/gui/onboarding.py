@@ -22,7 +22,8 @@ from urllib.parse import urlencode
 from orkcraft import schedule, settings, tools
 from orkcraft.core import buildings, roads, runners
 from orkcraft.env import getenv
-from orkcraft.realm import biomes, builders, checkpoint, harnesses, intents, interview, mcp, town_builder, town_presets
+from orkcraft.realm import (biomes, builders, checkpoint, harnesses, intents, interview, mcp, tool_errors, town_builder,
+                           town_presets)
 
 TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
 WARDED = harnesses.ids()    # the tools the Security reviewer's hooks guard (hooks/install.py): every one
@@ -471,12 +472,24 @@ class Onboarding:
         town = self.host.town
         role = self.profile.get("role", "")
         runner = self._planner_runner() or builders.main_runner_of(self.host.town.machine)
+        tool_errors.taken()                         # this thread's AI tool failures from here on
         try:
             result = town_builder.plan(prompt, town.repo_root, town.taken_ids(), runner,
                                        templates=intents.templates_text(role) if role else "")
         except Exception as e:                      # the planner failing leaves the order in the Town Hall
             result = town_builder.TownPlan(error=str(e))
         town.call(self._drawn, result)
+        if not result.ok and (failed := tool_errors.taken()) is not None:   # Switch, Retry, Details (gui/failures.py)
+            town.call(self.host.failures.report, failed, "Drawing your town", lambda: self._redraw(prompt))
+
+    def _redraw(self, prompt: str) -> None:
+        """Retry: the Town planner draws again, on the main tool as it is now."""
+        if self.raising is None or self.raising["phase"] != "failed":
+            return
+        self.raising.update(phase="planning", error="")
+        self._planner = threading.Thread(target=self._draw, args=(prompt,), daemon=True)
+        self._planner.start()
+        self.host.on_change()
 
     def _drawn(self, result: town_builder.TownPlan) -> None:
         if not result.ok:

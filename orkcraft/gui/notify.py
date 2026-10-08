@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import bus
-from orkcraft.gui import mobile
+from orkcraft.gui import failures, mobile
 from orkcraft.realm import lexicon, modes
 
 _LEVEL = {"warn": "is near its limit", "over": "is over its limit"}
@@ -58,6 +58,8 @@ class Notifier:
         if event.topic == bus.TOAST and event.data.get("severity") == "error":
             title = modes.plain(str(event.data.get("title") or "")) or "Orkcraft"
             item = {"kind": "error", "line": f"Something failed: {title}"}
+        elif event.topic == bus.TOOL_ERROR:           # an AI tool failed: its title and kind, never its output
+            item = {"kind": "error", "line": failures.notice(event.data)}
         elif event.topic == bus.SESSION and event.data.get("state") == "exited":
             key = str(event.data.get("key") or "")
             who = next((o.name for o in self.host.muster.roster.orcs if key and key in (o.session, o.ref)), "")

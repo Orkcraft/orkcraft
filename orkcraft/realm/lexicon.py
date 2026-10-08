@@ -84,6 +84,8 @@ TERMS: tuple[Term, ...] = (
     _t("food", "ork slots", "", "food"),
     _t("treasury", "Budget", "", "Treasury"),
     _t("logins", "Login", "Logins"),
+    _t("ai_tool", "AI tool", "AI tools"),                          # a CLI an ork thinks with: Claude Code, Codex… (realm/harnesses.py)
+    _t("tool_error", "Tool error", "Tool errors"),                 # an AI tool failed: Switch, Retry, Details (realm/tool_errors.py)
     _t("main_tool", "Main tool", "Main tools"),                    # the AI tool decisions run on (realm/harnesses.py)                               # tokens kept on this machine (realm/logins.py)
     # screens and actions
     _t("war_horn", "Stop all", "", "War Horn"),
