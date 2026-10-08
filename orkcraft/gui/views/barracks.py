@@ -51,13 +51,28 @@ def _task(t: bk.PoolTask, full: bool = False) -> dict:
            "cost": _money(t.cost_usd) if t.cost_usd else "", "pr": t.pr, "pr_state": t.pr_state, "scope": t.scope,
            "asks": t.status == "asked", "draft": bool(t.draft), "arrived": t.arrived,
            "tier": t.tier, "persona": t.persona, "parent": t.parent, "part": t.sub, "after": list(t.after),
-           "parts": len(t.plan)}
+           "parts": len(t.plan), "overlaps": [_overlap(o) for o in t.overlaps], "held": t.held_since > 0,
+           "design": t.design, "against": list(t.against), "designs": list(t.designs), "claimed": list(t.claimed)}
     if full:
         row.update({"brief": t.text[:KEEP], "report": t.result[:KEEP], "error": t.error, "notes": t.feedback,
                     "question": t.question, "target": bk.publish_kind(t.target)[1] or t.target,
                     "draft_text": t.draft[:KEEP], "decided": t.decided,
                     "files": list(t.files), "qa": [dict(zip(("q", "a", "who"), (list(x) + ["", "", ""])[:3])) for x in t.qa]})
     return row
+
+
+def _overlap(o: dict) -> dict:
+    return {k: o.get(k) or ("" if k not in ("paths", "conflicts") else []) for k in
+            ("key", "title", "building", "paths", "branch", "pr", "status", "brief", "conflicts")}
+
+
+def _areas(w) -> list[dict]:
+    """The repository's areas in work (docs/design/barracks-designs.md §3), every pool's."""
+    if w.claims_mode == "off":
+        return []
+    return [{"title": c.title, "building": c.building, "mine": c.building == w.building_id, "task": c.task,
+             "paths": list(c.paths), "status": c.status, "pr": c.pr, "brief": c.brief, "guessed": c.guessed,
+             "since": c.since[:16].replace("T", " ")} for c in w.area().load()]
 
 
 def detail(w) -> dict:
@@ -84,6 +99,7 @@ def detail(w) -> dict:
         "tasks": tasks,
         "asked": [_task(t, full=True) for t in st.asked],
         "decisions": [{"at": d.at[11:16], "action": d.action, "ork": d.orc, "why": d.why} for d in st.decisions(30)],
+        "areas": _areas(w),
     }
 
 

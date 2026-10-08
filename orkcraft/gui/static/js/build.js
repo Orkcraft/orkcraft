@@ -94,23 +94,35 @@ export function RoadDialog() {
   </${Dialog}>`;
 }
 
-/** The road the person clicked: what it is, its handler and taking it up (the TUI's road console: H, U). */
+/** The road the person clicked: every road from one building into the same other one is one road
+ *  (js/town.js together), so its card lists each of them — what it carries, its handler, taking it up —
+ *  and lays another between them (the TUI's road console: H, U; docs/design/road-sound.md §2). */
 export function RoadBar() {
   const key = pickedRoad.value;
   const t = town.value;
-  const [handling, setHandling] = useState(false);
+  const [handling, setHandling] = useState(null);
   const road = key && t.roads.find((r) => r.id === key);
   if (!road) return null;
   const titles = Object.fromEntries(t.buildings.map((b) => [b.id, say(b.title)]));
+  const name = (id) => titles[id] || id;
+  const group = t.roads.filter((r) => r.from === road.from && r.to === road.to);
+  const remove = (r) => command("roads.remove", { key: r.id })
+    .then(() => { if (group.length === 1 || r.id === key) pickedRoad.value = group.find((x) => x.id !== r.id)?.id || null; }, () => {});
   return html`<div class="gui-roadbar ok-toast">
-    <span><b>${titles[road.from] || road.from}</b> → <b>${titles[road.to] || road.to}</b> · ${road.label}${road.handler ? ` · ${road.handler}` : ""}</span>
-    <button class="ok-act" onClick=${() => setHandling(true)}><span class="ok-act__label">${say("Handler")}</span></button>
-    <button class="ok-act" onClick=${() => command("roads.remove", { key }).then(() => { pickedRoad.value = null; }, () => {})}>
-      <span class="ok-act__label">Remove</span></button>
-    <button class="ok-act" onClick=${() => { pickedRoad.value = null; }}><span class="ok-act__label">Close</span></button>
+    <div class="gui-roadbar__head">
+      <span><b>${name(road.from)}</b> → <b>${name(road.to)}</b>${group.length > 1 ? html` <span class="ok-tone-muted">· ${group.length} ${say("events")}</span>` : ""}</span>
+      <button class="ok-act" title=${say("Lay another road between these two buildings")}
+        onClick=${() => { laying.value = { from: road.from, to: road.to }; }}><span class="ok-act__label">${say("Add an event")}</span></button>
+      <button class="ok-act" onClick=${() => { pickedRoad.value = null; }}><span class="ok-act__label">Close</span></button>
+    </div>
+    <ul class="gui-roadbar__list">${group.map((r) => html`<li key=${r.id} class="gui-roadbar__row">
+      <span class="gui-roadbar__what">${r.label}${r.handler ? html`<span class="ok-tone-muted"> · ${r.handler}</span>` : ""}</span>
+      <button class="ok-act" onClick=${() => setHandling(r)}><span class="ok-act__label">${say("Handler")}</span></button>
+      <button class="ok-act" onClick=${() => remove(r)}><span class="ok-act__label">Remove</span></button>
+    </li>`)}</ul>
   </div>
-  ${handling && html`<${HandlerDialog} road=${{ key, title: titles[road.from] || road.from, label: road.label }}
-    onClose=${() => setHandling(false)} onDone=${() => {}} />`}`;
+  ${handling && html`<${HandlerDialog} road=${{ key: handling.id, title: name(handling.from), label: handling.label }}
+    onClose=${() => setHandling(null)} onDone=${() => {}} />`}`;
 }
 
 /** Demolish asked from the hut's menu or the Warchief's line. */

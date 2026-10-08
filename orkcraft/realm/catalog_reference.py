@@ -15,7 +15,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Sort and transform it — no model", ("signpost", "mill")),
     ("Plan and track the work", ("fields", "war_drum")),
     ("Put agents to work", ("barracks", "council")),
-    ("Know the project: files, notes, diffs", ("forest", "scrolls", "lake")),
+    ("Know the project: files, notes, diffs", ("scrolls",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
     ("Hear what comes in", ("horn",)),
@@ -154,6 +154,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                        "(a Clan Fire that triages names the route)",
         "send_new": "true: every new task goes down the roads as it is (tasks.sent), as if s were pressed — "
                     "a Barracks takes it and its results come back to the card on a return road",
+        "settle": "seconds a new task waits on a send_new board before it goes (default 0: at once; the open board sets it — New tasks go …): "
+                  "a related task that comes meanwhile joins it and both go as one",
+        "later_minutes": "how long a task marked Not urgent waits before it goes (default 60)",
         "wikis": "the Scroll Dumps a card's context comes from, e.g. [\"kb\"] (default every one in the town; [] none)",
         "private_todos": "true: every to-do of your own is personal — never sent to a model (no plan, its title its first words)",
         "plan_model": "the model a to-do's plan is asked of: a tier (laborer, warrior) or a model (default its "
@@ -176,6 +179,12 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "base": "the branch each task is cut from and its pull request targets (default the current one)",
         "notes": "Scroll Dumps a task reads first, e.g. [\"notes\"]: the task goes to them and comes back with the "
                  "pages that matter (knowledge.chunks on a road from them) before an ork takes it",
+        "claims": "areas in work: `wait` (default) — a new task on the files an older one is building waits for it; "
+                  "`flag` — it only says so; `off`",
+        "claim_wait": "minutes a task waits for an older one on its area before it goes on, flagged (default 60)",
+        "claim_days": "days an area in work is kept when its pull request is never merged nor closed (default 14)",
+        "briefs": "false: a planned task leaves no design brief in its pull request (default true)",
+        "briefs_dir": "where design briefs are written and read (default docs/design)",
     },
     "council": {
         "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "

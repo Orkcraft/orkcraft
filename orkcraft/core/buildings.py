@@ -58,7 +58,7 @@ FREEDOM_WORDS = {"chains": "its questions and its changes wait for you",
 def type_spec(town: Town, type_id: str) -> dict | None:
     """A camp building's spec from the catalog: the type's defaults and a free id."""
     t = catalog.TYPES.get(type_id)
-    if t is None or type_id in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES or type_id == catalog.DEFAULT_TYPE:
+    if t is None or type_id in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES:
         return None
     taken = town.taken_ids() | masonry.ID_RESERVED
     bid, n = type_id, 1
@@ -80,6 +80,8 @@ def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Buildi
     placed = town.scroll.building(spec["id"])
     if hut is not None and placed is not None:
         placed.hut = hut
+    if placed is not None:
+        placed.folded = catalog.type_of(spec).folded     # the type's word counts once, when it is raised
     building = custom_building(spec)
     town.buildings.append(building)
     town.custom_specs[spec["id"]] = spec

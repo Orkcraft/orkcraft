@@ -35,6 +35,13 @@ USES_MAX = 6                # the chips "The planner will use" starts with: the 
 USES_MCP = 4                # …of which MCP servers at most, so the class's usual always shows too
 
 
+
+def _open_in_lake(town, building_id: str, event: str) -> None:
+    """What a planned building sends as `event` opens in the town's Lake window (a plan's road "to": "lake")."""
+    b = town.scroll.building(building_id)
+    if b is not None and event not in (b.open_in_lake or ()):
+        b.open_in_lake = [*(b.open_in_lake or ()), event]
+
 class OnboardingError(Exception):
     """A step the page sent that cannot be taken; its text is shown to the person."""
 
@@ -451,6 +458,8 @@ class Onboarding:
         for r in plan.roads:
             self._step(f"A road {r.source} → {r.target}",
                        lambda r=r: roads.lay(town, r.target, r.source, r.subscription, None, quiet=True))
+        for bid, event in plan.opens:
+            self._step(f"{bid} opens in Lake", lambda bid=bid, event=event: _open_in_lake(town, bid, event))
         self._plan_title = plan.title
 
     def _draw(self, prompt: str) -> None:

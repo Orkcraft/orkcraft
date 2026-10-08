@@ -48,10 +48,11 @@ from pathlib import Path
 
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, steward
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -117,6 +118,8 @@ class RunOutcome:
     pr_note: str = ""
     scope: str = ""                                      # local: no pull request · external: reviewed and sent
     files: list[str] = field(default_factory=list)       # what the branch changed
+    clashes: dict = field(default_factory=dict)          # claim key → the files it would conflict in, merged with it
+    designs: list[dict] = field(default_factory=list)    # the merged briefs the change met: {path, state}
 
 
 def take_back(town, source_id: str, payload: pipes.Payload) -> str:
@@ -131,7 +134,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PlanMixin, ReviewMixin, Worker):
+class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
@@ -208,6 +211,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
         """Now and then: what waited for the operator its time (the orks decide); what waits in the queue with
         nobody on it (an orc that could not be hired is tried again); what became of the pull requests."""
         self.tick_asks()
+        self.tick_claims()
         st = self.state
         if st.queue and not st.paused and not any(o.status == "working" for o in st.orcs):
             self._pump()
@@ -261,6 +265,9 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
         of that task — the same orc, the same branch."""
         key = key or bk.task_key("text", text, title)
+        queued = next((t for t in self.state.queue if ref and t.ref == ref), None)
+        if queued is not None and self._amend(queued, text):
+            return queued
         prior = next((t for t in reversed(self.state.tasks) if ref and t.ref == ref), None)
         if prior is not None and not key:
             key = prior.key or prior.id               # the orc that did it knows it by that
@@ -275,6 +282,22 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
         st.save()
         self.changed()
         return task
+
+    def _amend(self, task: bk.PoolTask, text: str) -> bool:
+        """An addition to a task nobody took yet (a board's, docs/design/settle-and-join.md §5: its text starts
+        with `settle.ADDED`'s line): the task's text grows, no second task. False for any other cart, and when
+        the task was planned, is a part of a plan or an ork took it — then it is a follow-up of that task."""
+        more = text.strip()
+        if not settle.is_addition(more):        # another cart about the same thing is a task of its own
+            return False
+        if task.status != "queued" or task.orc or task.plan or task.parent or task.kind == "plan":
+            return False
+        if more and more not in task.text:
+            task.text = f"{task.text.rstrip()}\n\n{more}"
+        self.state.log(bk.Decision(bk.now_iso(), task.id, "amend", why="more about it came before an ork took it"))
+        self.state.save()
+        self.changed()
+        return True
 
     def new_task(self, title: str, brief: str = "") -> bk.PoolTask | None:
         """✍ New task: the operator writes to the barracks directly — the title and the brief (the title
@@ -292,6 +315,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
             st.log(d)
             return
         if not st.paused and not self._triaged(task):    # the steward plans it first
+            return
+        if not st.paused and self.held_by(task) is not None:   # an older task is building its area: it waits
             return
         d = self.foreman.decide(task, st.orcs, [t for t in st.queue if t is not task], st.spent, st.paused)
         task.decided = f"{d.action}: {d.why}"
@@ -319,7 +344,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
                 continue
             if f.over_budget(st.spent):
                 return
-            nxt = f.next_for(o, st.queue, room=len(st.orcs) < f.max_orcs)
+            nxt = f.next_for(o, [q for q in st.queue if self.held_by(q) is None], room=len(st.orcs) < f.max_orcs)
             if nxt is not None:
                 st.log(bk.Decision(bk.now_iso(), nxt.id, "follow-up" if nxt.wait_for else "reuse", o.name,
                                    f"{o.name} is free" + (" — its follow-up" if nxt.wait_for else "")))
@@ -374,6 +399,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
                 orc.model = model
         if task.persona and orc.persona != task.persona:  # a new role: a fresh session
             orc.persona, orc.session, orc.session_tasks = task.persona, "", 0
+        self.refresh_overlaps(task)
         related = follow or foreman.related(task, orc)
         task.warm = related and foreman.can_resume(orc)
         orc.status, orc.task = "working", task.id
@@ -494,9 +520,10 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
         decisions = "## Decisions so far\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in qa) if qa else ""
         if task.warm:                    # the session already holds the briefing, the rules and the earlier work
             return "\n\n".join(p for p in [
-                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text, decisions,
+                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}",
+                bk.without_own_work(bk.body_of(task), self._earlier_result(task)), decisions,
                 sent_back,
-                f"Your branch is now `{task.branch}`." if task.branch else "",
+                f"Your branch is now `{task.branch}`." if task.branch else "", self.overlap_md(task),
                 "Same rules as before: commit on your branch, then a short Markdown report."] if p)
         persona = personas.load(self.state_dir, orc.persona) if orc.persona else None
         parts = [f"You are {orc.name}, one of several agents working in parallel, each in its own git worktree.",
@@ -505,7 +532,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
                  "Do the task below in this directory. Commit your work on the branch with a clear message; do not "
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
-                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
+                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
+                 self.designs_md(task), self.overlap_md(task),
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
                  "no pull request." if self._meeting(task) else "",
@@ -514,11 +542,18 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
 
+    def _earlier_result(self, task: bk.PoolTask) -> str:
+        """The report of the task this one reworks (the same `ref`), "" when there is none."""
+        prior = next((t for t in reversed(self.state.tasks) if t.id != task.id and t.ref == task.ref and t.result), None)
+        return prior.result if prior is not None else ""
+
     def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
                                                        task.cost_usd, orc.worktree, task.branch, outcome,
-                                                       base=task.base),)
+                                                       base=task.base, since=task.arrived,
+                                                       model=orc.model or orc.harness, decision=task.decided,
+                                                       round=task.attempts, run=task.id),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state
@@ -554,6 +589,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
             st.queue.insert(0, task)
         elif out.error:
             task.status = "failed"
+            self._unclaim(task)
             if task.parent:                               # the whole fails when nothing else runs (_advance)
                 st.log(bk.Decision(bk.now_iso(), task.id, "failed", orc.name, f"part `{task.sub}`: {out.error}"))
             else:
@@ -571,6 +607,9 @@ class BarracksWorker(PlanMixin, ReviewMixin, Worker):
             task.status, task.pr, task.feedback, task.scope = "done", out.pr, "", out.scope
             task.files = out.files or task.files
             task.draft, task.publish = "", ""
+            self._claim_done(task)
+            self._apply_clashes(task, out.clashes)
+            self._designs_of(task, out.designs, True)
             gist = next((ln.strip(" #*") for ln in out.text.splitlines() if ln.strip(" #*")), "")[:160]
             orc.recent = (orc.recent + [f"{task.title} — {gist}" if gist else task.title])[-bk.KEEP_RECENT:]
             local = out.scope == bk.LOCAL

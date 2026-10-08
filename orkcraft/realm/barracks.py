@@ -163,6 +163,14 @@ class PoolTask:
     waits_since: float = 0.0        # asked the operator since then (epoch seconds): the autonomy says how long
     ask_kind: str = ""              # what it asks: question | rejected | persona | draft (never decided by the orks)
     retried: bool = False           # a crashed run was tried once more already
+    # Areas in work and design briefs (realm/claims.py, realm/briefs.py; docs/design/barracks-designs.md).
+    claimed: list[str] = field(default_factory=list)  # the paths it claims (a guess until its work shows them)
+    overlaps: list[dict] = field(default_factory=list)  # other tasks on its area: key, title, paths, branch, pr, …
+    held_since: float = 0.0         # waits for an older task on its area since then (epoch seconds)
+    design: str = ""                # its design brief's path, committed on its branch
+    against: list[dict] = field(default_factory=list)   # the briefs its plan goes against: {with, why}
+    pending: dict = field(default_factory=dict)         # a plan that waits for the operator on such a conflict
+    designs: list[dict] = field(default_factory=list)   # the briefs its change met: {path, state}
 
 
 @dataclass
@@ -180,6 +188,33 @@ def task_key(kind: str, value: str, title: str = "") -> str:
         return value.strip()
     m = TICKET.search(f"{title} {value}")
     return m.group(1) if m else ""
+
+
+QUOTE = "\n\n---\n\n"           # a rework (gate / team `rework_markdown`) quotes the work it sends back after it
+
+
+def body_of(task: PoolTask) -> str:
+    """The task's text as a prompt gives it under `## Task: <title>`: without a first line that only
+    says the title again (a card, a note and a meeting line often start with it)."""
+    text = task.text.strip()
+    first, _, rest = text.partition("\n")
+    if rest.strip() and " ".join(first.strip(" #*-").split()).lower() == " ".join(task.title.split()).lower():
+        return rest.strip()
+    return text
+
+
+def without_own_work(text: str, earlier: str) -> str:
+    """A rework into the session that wrote `earlier`: the notes, not the quote of that work after them
+    (the session holds it). The text as it is when it does not quote it."""
+    earlier = earlier.strip()
+    if not earlier or QUOTE not in text:
+        return text
+    i = text.find(QUOTE)
+    while i >= 0:
+        if earlier in text[i + len(QUOTE):]:
+            return text[:i].rstrip() + "\n\n_(Your earlier report, quoted here, is in this session already.)_"
+        i = text.find(QUOTE, i + 1)
+    return text
 
 
 def slug(text: str) -> str:
@@ -294,7 +329,7 @@ def _rules(orders: str) -> str:
 def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: str) -> str:
     return "\n\n".join([
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge.",
-        _rules(orders), f"## The task: {task.title}", task.text,
+        _rules(orders), f"## The task: {task.title}", body_of(task),
         f"## The orc working on it asks\n\n{question}",
         "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
         "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
@@ -302,18 +337,20 @@ def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: 
 
 
 def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
-                  scope: str = EXTERNAL) -> str:
-    """`scope`: what the rules decided already; "" asks the steward for a `SCOPE:` line."""
+                  scope: str = EXTERNAL, extra: str = "") -> str:
+    """`scope`: what the rules decided already; "" asks the steward for a `SCOPE:` line. `extra`: the work on the
+    same files and the design briefs the change meets (core/workers/barracks_claims.py)."""
     cut = diff if len(diff) <= DIFF_LIMIT else diff[:DIFF_LIMIT] + "\n… (cut)"
     return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge their work.",
-        _rules(orders), f"## The task: {task.title}", task.text,
+        _rules(orders), f"## The task: {task.title}", body_of(task),
         "## Earlier notes\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in task.qa) if task.qa else "",
         f"## The orc's report\n\n{report.strip() or '(none)'}",
         f"## Tests\n\n{tests}" if tests else "",
         f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```" if diff.strip()
         else "## The diff\n\n(nothing committed: the report is the work. That is enough when the task asks a "
              "question or for information; when it asks for changes, they had to be committed.)",
+        extra,
         "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
         "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "

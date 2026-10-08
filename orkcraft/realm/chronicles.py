@@ -20,6 +20,8 @@ EVENTS: dict[str, tuple[str, str]] = {
     "building_moved": ("🧭", "moved to orkspace {orkspace}"),
     "pinned": ("📌", "pinned"),
     "unpinned": ("📍", "unpinned"),
+    "folded": ("▸", "card folded"),
+    "unfolded": ("▾", "card unfolded"),
     "orc_recruited": ("🧌", "{orc} joined the garrison"),
     "orc_dismissed": ("🗑", "{orc} left the garrison"),
     "orders_changed": ("📜", "{orc}: orders / trigger changed ({trigger})"),

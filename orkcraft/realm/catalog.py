@@ -64,6 +64,7 @@ class BuildingType:
     art: str = "workshop"           # hut art piece (realm/huts.py)
     orc: str = "Peon"               # default resident orc
     agentic: bool = False           # its work is done by agents (the Agents group of the wizard)
+    folded: bool = False            # built with its hut folded to the title bar (docs/design/folded-cards.md)
 
     def event(self, event_id: str) -> EventDef | None:
         return next((e for e in self.events if e.id == event_id), None)
@@ -90,7 +91,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("pit.link", "link pasted", TEXT, "a link was pasted"),
                 _e("pit.text", "text pasted", TEXT, "text was pasted")),
         actions=(_a("pit.paste", "Paste", "📋", "take what is in the clipboard"),),
-        art="burrow", orc="Scavenger"),
+        art="burrow", orc="Scavenger", folded=True),
     BuildingType(
         "watchtower", "Watchtower", "🗼", "M",
         "listens to the outside: a mailbox (IMAP, Gmail), GitHub events, comments and mentions in Slack, Jira, "
@@ -118,7 +119,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("signpost.routed", "routed", TEXT, "what arrived, sent down the route its rule picked"),
                 _e("signpost.unmatched", "no rule", TEXT, "no rule matched what arrived")),
         config={"rules": (list, None, False)},
-        art="spire", orc="Grot Pointa"),
+        art="spire", orc="Grot Pointa", folded=True),
     BuildingType(
         "mill", "The Mill", "⚙️", "XS",
         "changes what arrives, step by step (a map; a flat map when the result is records): regexes, "
@@ -129,7 +130,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("mill.failed", "mill failed", TEXT, "a step failed: the error")),
         actions=(_a("mill.run", "Run", "▶", "run the steps on the last input"),),
         config={"steps": (list, None, False), "env": (list, None, False), "model": (str, None, False)},
-        art="mill", orc="Miller"),
+        art="mill", orc="Miller", folded=True),
     BuildingType(
         "horn", "The Horn", "📯", "XS",
         "sound for what comes in: every cart down its roads plays a sound — you pick which sound for which event "
@@ -160,6 +161,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("todos.new", "New chore", "☐", "add a to-do of your own")),
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
                 "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False),
+                "settle": (int, (0, 3600), False), "later_minutes": (int, (1, 1440), False),
                 "wikis": (list, None, False), "private_todos": (bool, None, False), "plan_model": (str, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
@@ -185,7 +187,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
                 "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
                 "plan": (bool, None, False), "escalate": (bool, None, False),
-                "notes": (list, None, False)},
+                "notes": (list, None, False), "claims": (str, ("wait", "flag", "off"), False),
+                "claim_wait": (int, (1, 1440), False), "claim_days": (int, (1, 90), False),
+                "briefs": (bool, None, False), "briefs_dir": (str, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Clan Fire", "🪔", "M",
@@ -271,8 +275,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="spire", orc="Seer"),
     BuildingType(
         "forge", "The Forge", "⚒️", "M",
-        "closes the loop: branches with their PRs and changes; runs the tests, settles conflicts and "
-        "squash-merges a ready branch into the base",
+        "the repository's state: what comes in (branches, commits, pull requests) and what goes out "
+        "(merges); runs a branch's tests and squash-merges it into the base when you say, conflicts named",
         "branches with PR state and +/− lines", "every branch: commits, PR, diff stat; merge",
         events=(_e("git.commit", "new commit", TEXT, "a branch got a new commit"),
                 _e("git.pr_opened", "PR opened", TEXT, "a pull request was opened"),
@@ -307,7 +311,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="vault", orc="Quartermaster", agentic=True),
     BuildingType(
         "crag", "Tally Crag", "🪨", "M",
-        "telemetry carved in stone: horizontal bars of budgets, vertical bars of load",
+        "charts: complex data at a glance — the numbers a road brings, spend, tokens, runs, quotas, load; "
+        "horizontal bars break it down, vertical bars show it over time",
         "a small bar chart and the current value", "the chart and its values",
         events=(_e("charts.threshold", "threshold", TEXT, "a value crossed its warning or critical line"),),
         actions=(_a("crag.flip", "Flip", "⇅", "vertical or horizontal bars"),
@@ -422,7 +427,9 @@ def migrate(spec: dict) -> dict:
                          **({"orders": cfg["skill"]} if cfg.get("skill") else {})}
     return out
 SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never offered in the wizard
-RETIRED_TYPES = frozenset({DEFAULT_TYPE})      # Custom (panes): an old scroll's still loads, none is built anew
+RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's still loads, none is built anew:
+# Custom (panes); File tree (its folder watch and its picker go to other buildings); Inspector — the town's
+# Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
 MAX_QUICK_ACTIONS = 2
 

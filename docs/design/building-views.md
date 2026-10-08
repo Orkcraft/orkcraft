@@ -5,6 +5,7 @@
 > the panel on the right — its **Work** (what *full* was, by its UI document) and its **Info** (what every
 > building shares, its quick actions among them). The command view, the Command Card and the types'
 > `preview` went; a type's hooks are `card`, `panes`, `quick`. The rules of §2 and the types of §3 stand.
+> A closed hut may also fold to its title bar ([folded-cards.md](folded-cards.md)); a type then adds `mark`.
 
 What every building shows in the GUI, agreed type by type, and how the work is split so that several
 sessions can build it at once. The TUI's typed views (`screens/typed/*`) are where the behaviour comes
@@ -27,7 +28,8 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
   full by a click; documents in tabs. It shows PDF, images, web pages, code and Markdown; code and
   Markdown are edited in place and save by themselves (as the TUI's Lake). Any building that has a
   document or a file opens it there with a click on the document's mark — whether a Lake ever stood
-  on the map or not. Saving writes the file.
+  on the map or not. Saving writes the file. Nothing builds a Lake (`catalog.RETIRED_TYPES`): a Town
+  planner's plan leads a road `"to": "lake"`, and what that road carries opens in the window.
 - **Ask the keeper on a selection.** In Lake a part of the content is selected (lines, a paragraph, an
   area of an image) and a task written for the keeper: the selection is marked in its colour, the
   keeper's mark stands beside it, its answer comes in a dialog. The keeper is the one of the building
@@ -43,7 +45,9 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
   Build, a road, Demolish, a removal, a price to agree to (watchtower-quick-add.md §4.2).
 - **Old scrolls.** A Lake building in a Town Scroll leaves the map when the scroll loads; a road into it
   becomes "open in Lake" on its source.
-- **Custom (panes)** leaves the catalog.
+- **Retired types leave the catalog**, and a project file that has one still loads it: Custom (panes);
+  File tree (a folder to watch belongs with External listeners, a file to hand on with Drop file here);
+  Inspector (the Lake window above).
 - The HUD keeps Halt All and Answers; Build is the Warchief's (`/build`, or his card), Sessions the Town
   Hall's (calm-town.md §1).
 
@@ -60,11 +64,11 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
 | **Barracks** (Agent pool) | two lines: `active 2/4 · queue 3` and `✓5 ✗1 · $1.20` (✗ in the danger colour when any failed); `<keeper> asks` first when it asks; paused, `⚠ paused · 2 waiting` with **Resume** on the card, a warning stripe down its left and Resume among the Warchief's hints; `⚒ <ork> · <task>` for each ork at work | the orks (tier, task, state) — a click opens the ork's terminal; the queue's top; New task, Pause / resume, Answer | lanes by task state (queue → work → review → done / failed) with branch, ork, reworks, cost, PR; the chosen task (brief, diff, review notes, questions); **a tab per ork with its terminal**; rules and settings |
 | **Clan Fire** (Review board) | only the review's state: `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` (a triage: `reading · 2 of 3 have spoken`), else the last outcome, `N queued` | members (role, tier, veto, verdict now), the document under review and the last turns; Review, Add member, Answer | members, the review turn by turn and by cycle, the document with its comments, the report, past reviews. Briefs and rules through the keeper |
 | **War Drum** (Calendar) | the next beats — meetings, scheduled runs, ≈ limits — up to the end of tomorrow over a strip of the next hours, a `📄 doc` pill on a meeting with its document; a checkbox per kind over the card hides it (none when `beats` keeps it to meetings), the card gets shorter and the huts under it move up | the day and tomorrow (time, title, the document pill), now highlighted; New event, Prepare doc | today by the hour and the week; the chosen meeting; settings. A meeting's document opens in Lake |
-| **File Forest** (File tree) | `./<folder>`, `changed: N files`, `🎯 <name>` when picked | the top of the tree (folders open), changed files marked, a click picks the target; Open in OS, **Send** (the picked file down its road) | only the tree: folders open in place, small previews of images and video. Files open in Lake |
+| **File Forest** (File tree) — *retired, §2* | `./<folder>`, `changed: N files`, `🎯 <name>` when picked | the top of the tree (folders open), changed files marked, a click picks the target; Open in OS, **Send** (the picked file down its road) | only the tree: folders open in place, small previews of images and video. Files open in Lake |
 | **Scroll Dump** (Wiki) | pages and pending; for a while after a task got its notes, "Read for: <task>" and the pages named | the librarian's state, the last changed pages; Ingest, Lint, Add base | the window as it is (tree, page, state, acts). Pages open in Lake |
-| **The Forge** (Branches & PRs) | `branches 4 · PRs 2` and the last merge (`✓` / `✗ conflict`), `merging …` meanwhile | branches with PR, tests and changes; Merge (always confirmed), Open PR, Run tests | branches; the chosen one's commits, diff (in Lake), test output, conflicts and how they were settled, the PR **with its comments**; settings |
+| **The Forge** (Branches & PRs) — *for: the repository's state at a glance, what comes in (branches, commits, PRs) and what goes out (merges), and a merge done by the person* | `branches 4 · PRs 2` and the last merge (`✓` / `✗ conflict`), `merging …` meanwhile | branches with PR, tests and changes; Merge (always confirmed), Open PR, Run tests | branches; the chosen one's commits, diff (in Lake), test output, conflicts and how they were settled, the PR **with its comments**; settings |
 | **Loot Vault** (Review gate) | what came of the newest cart that passed (`✓ Brief ready: …`), `N to review` (or `all reviewed ✓`), `passed: N` and **what the waiting carts cost**; the first waiting cart's **type** (message, doc, ticket, code, image…) and the waiting **pictures** small | the queue (what, from where, cost), Accept / Rework per item, Accept all, Accept files; a cart opens in Lake | the list on the left (carts · changed files), the chosen cart beside it: what it is, then why it waits and the chain with each step's cost; a decision opens the next cart; a cart is **edited in Lake** before it is accepted; the rules read out in plain words, changed through the keeper |
-| **Tally Crag** (Metrics) | thumbnails of the charts set to *all states* | the charts set to *all states* or *command only*, Flip, Next | a dashboard: every chart. **Each chart says where it shows: all states / command only / full only.** Charts are made from sources by the keeper; thresholds too |
+| **Tally Crag** (Metrics) — *for: complex data made visual, any numbers a road brings, not only spend and limits* | thumbnails of the charts set to *all states* | the charts set to *all states* or *command only*, Flip, Next | a dashboard: every chart. **Each chart says where it shows: all states / command only / full only.** Charts are made from sources by the keeper; thresholds too |
 | **The Catapult** (Publisher) | one line: `wait 2/3`, `3 loaded`, `firing…` / `fill 2/5`, `log in`, else `✓ 201` / `✗ 422` | what is loaded and what it waits for, the schema check, the last 3 shots, the browser's current step; Fire, Dry run, Scout. **Confirm before Fire is a setting changed here and in full** | the load (JSON with schema errors marked), the shots (request, answer, code), for the browser the forms and fields with a small screenshot per step (large in Lake). Schema and URL through the keeper |
 | **Town Hall** (Control panel) | the town's way in: **Build** (presets and new from scratch in one) and **Ask me anything** | **a chat with the Warchief**; the live sessions, the audit, spend and quotas (Limits) | Hall (its orks, the audit, proposals), Sessions (the War Tent), Limits |
 | **Workshop** (Script) | the last run (`✓` / `✗` / `→ keeper`) and its schedule | the last runs (time, code, what went out) and the last result cut down (log / table / card); Run, Test | the runs; the chosen one's input, output and result. The script is edited **in Lake**. Test's log shows in a dialog and in the full window |

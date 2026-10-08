@@ -429,6 +429,10 @@
         "pinned": {
           "type": "boolean"
         },
+        "folded": {
+          "type": "boolean",
+          "description": "Its hut shows its title bar only (docs/design/folded-cards.md)."
+        },
         "demolished": {
           "type": "boolean",
           "description": "Window closed; its state and slot are kept."

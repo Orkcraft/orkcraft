@@ -3,6 +3,8 @@
 // (docs/design/building-views.md §4, docs/design/calm-town.md §2), all optional:
 //
 //   card(b)          the inside of its hut card on the town (closed), from `b.card`
+//   mark(b)          {text, tone} in its title bar while the hut is folded: what its card says first
+//                    (docs/design/folded-cards.md), or null
 //   panes(id, d)     the panes of its Work tab in the panel, by its UI document
 //   quick(id, a)     does its quick action `a` on the page — from its Info or from its closed card, so it never
 //                    needs the panel open: what asks for words opens its own small window (`overlay`); true

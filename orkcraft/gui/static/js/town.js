@@ -16,6 +16,7 @@ import { settingsOpen } from "./settings.js";
 import { Hut, sizes, dragging, pulling, pullRoad, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
+import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
 
@@ -86,7 +87,8 @@ let planned = { key: "", paths: [] };
 
 const pair = (x) => `${x.from}\u0000${x.to}`;
 
-/** The roads from one building into the same other one, the first of them first: they run as one road. */
+/** The roads from one building into the same other one, the first of them first: they run as one road
+ *  (docs/design/road-sound.md §2). A road the other way is a road of its own: the two make a loop. */
 function together(roads) {
   const out = new Map();
   for (const x of roads) {
@@ -246,11 +248,8 @@ function Roads({ roads, rects, ports, tints = {} }) {
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const groups = together(roads);
   const active = opened.value.active;
-  // A press on a road picks it; a press again on roads that run as one picks the next of them.
-  const pick = (g) => {
-    const i = g.findIndex((x) => x.id === pickedRoad.value);
-    pickedRoad.value = g[(i + 1) % g.length].id;
-  };
+  // A press on a road picks all of it: its card lists every road that runs as one (js/build.js RoadBar).
+  const pick = (g) => { pickedRoad.value = g[0].id; };
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
     <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
       markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
@@ -292,7 +291,7 @@ function tidy(buildings, roads) {
   for (const [id, [x, y]] of Object.entries(spots)) command("hut.move", { id, x, y }).catch(() => {});
 }
 
-/** The right click on the bare town: Build here, Tidy up, the town's settings. */
+/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the town's settings. */
 function bareMenu(e, buildings, roads) {
   if (e.target.closest(".gui-hut, .gui-road")) return;
   const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
@@ -300,6 +299,8 @@ function bareMenu(e, buildings, roads) {
   openMenu(e, [
     { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
     buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
+    buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
+    buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
     { label: "Set up again…", hint: "AI tools · class · MCP", run: () => command("onboarding.start").catch(() => {}) },
   ]);
@@ -339,10 +340,10 @@ export function Town({ buildings, roads }) {
   }, []);
 
   // A hut stands where its full height (every part shown) would put it; the huts under one with parts
-  // hidden are lifted by what it lost.
+  // hidden, or folded, are lifted by what it lost.
   const fullSize = (b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
-    return { ...size, h: size.h + lost(b.id, size.h) };
+    return { ...size, h: size.h + lost(b.id, size.h, !!b.folded && b.id !== CORNER) };
   };
   const full = {};
   buildings.forEach((b, i) => {

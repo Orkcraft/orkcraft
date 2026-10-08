@@ -23,6 +23,8 @@
 .fields-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
 .fields-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .fields-head__spacer { flex: 1; }
+.fields-wait { display: inline-flex; align-items: center; gap: var(--space-2); }
+.fields-wait select { width: auto; }
 
 /* The selected card: a strip with its title and its acts — Open first, the rest quiet. */
 .fields-sel { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-3);
@@ -70,6 +72,11 @@
 .fields-mark.is-still:hover { background: none; color: var(--ink-muted); }
 .fields-mark.is-stale { opacity: .5; }
 .gui-todo .fields-marks { padding-top: 1px; }
+
+/* A task that settles before it goes: when it goes, what joined it, what it looks like (settle-and-join.md). */
+.fields-settle { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); margin-top: var(--space-1);
+  color: var(--ink-muted); }
+.fields-settle__act { font: inherit; }
 
 /* Its windows: the pages of a context, what goes to the model, a plan's steps. */
 .fields-personal { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); color: var(--ink-muted); }

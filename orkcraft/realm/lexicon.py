@@ -116,11 +116,19 @@ TERMS: tuple[Term, ...] = (
     _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)
     _t("todo_plan", "plan", "plans"),                              # a to-do's steps from a light model, 🧭
     _t("personal_card", "personal"),                               # a card that never reaches a model, 🔒
+    _t("settling_task", "waiting to go"),                          # a task held before it goes, ⏳ (realm/settle.py)
+    _t("not_urgent", "Not urgent"),                                # a task that waits longer and gathers more, 🐢
+    _t("joined_task", "joined"),                                   # a card that goes with another one as one task, ↳
+    # the Agent pool's areas in work and design briefs (docs/design/barracks-designs.md)
+    _t("claim", "Area in work", "Areas in work"),                   # the files an open task changes, until merged
+    _t("overlap", "Overlap", "Overlaps"),                           # a task on another open task's area
+    _t("design_brief", "Design brief", "Design briefs"),            # the design a planned task leaves in its PR
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
+    _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
     # -- building types (catalog ids): named by what they do -----------------------------------------
     _t("pit", "Drop file here", "", "The Pit"),
     _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),

@@ -144,6 +144,15 @@ export function card(b) {
   </div>`;
 }
 
+/** Folded (docs/design/folded-cards.md): failed tasks first, else the orks at work, else the queue. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.failed) return { text: `✗${c.failed}`, tone: "error" };
+  if (c.active) return { text: `${c.active}/${c.max} at work` };
+  return c.queue ? { text: `${c.queue} queued` } : null;
+}
+
 // -- open --------------------------------------------------------------------------------------------
 
 const ORDER = { asked: 0, reviewing: 1, working: 2, planned: 2, planning: 3, queued: 3, blocked: 3 };
@@ -167,6 +176,10 @@ function TaskCard({ id, t, n }) {
       ${t.status === "done" ? "✓ " : t.status === "failed" ? "✗ " : ""}${say(WORD[t.status] || t.status)}${n ? ` #${n}` : ""}
       ${!t.ork && t.wait_for ? ` · ${say("waits for")} ${t.wait_for}` : ""}</span>
     <span class="pool-card__title">${t.title}</span>
+    ${(t.overlaps.length > 0 || t.against.length > 0) && html`<span class="pool-card__warn ok-tone-wait">
+      ${t.held ? `⏸ ${say("waits for")} “${t.overlaps[0] ? t.overlaps[0].title : ""}”`
+        : t.overlaps.length ? `⚠ ${say("overlaps")} “${t.overlaps[0].title}”${t.overlaps.length > 1 ? ` +${t.overlaps.length - 1}` : ""}`
+        : `⚠ ${say("goes against a design brief")}`}</span>`}
     ${!!(t.branch || t.cost || t.pr || t.reworks > 0 || t.parts || t.part) && html`<span class="pool-card__foot">
       ${t.branch && html`<span class="pool-card__branch">${t.branch}</span>`}
       ${t.parts ? html`<span>${say(`${t.parts} parts`)}</span>` : t.part ? html`<span>${say(`part ${t.part}`)}</span>` : ""}
@@ -241,7 +254,9 @@ function TaskDetail({ id, data, t }) {
       <button class="ok-btn" onClick=${() => openInLake({ text: t.brief, title: `Brief — ${t.title}`, from: id })}>Brief in Lake</button>
       ${t.report && html`<button class="ok-btn" onClick=${() => openInLake({ text: t.report, title: `Report — ${t.title}`, from: id })}>Report in Lake</button>`}
       ${t.pr && html`<a class="ok-btn" href=${t.pr} target="_blank" rel="noreferrer">${say("Open PR")} ↗</a>`}
+      ${t.design && html`<button class="ok-btn" onClick=${() => openInLake({ path: t.design, from: id })}>Design brief in Lake</button>`}
     </div>
+    <${Overlaps} id=${id} t=${t} />
     <${Text} label="Brief" text=${t.brief} />
     <${Text} label="Review notes" text=${t.notes} />
     <${Text} label="Error" text=${t.error} />
@@ -252,6 +267,32 @@ function TaskDetail({ id, data, t }) {
     <${Text} label="Report" text=${t.report} />
     ${t.decided && html`<p class="ok-detail__meta">The foreman: ${t.decided}</p>`}
   </div>`;
+}
+
+/** Other tasks on its area, the design briefs it goes against or met (docs/design/barracks-designs.md). */
+function Overlaps({ id, t }) {
+  const brief = (path) => html`<span class="gui-link" onClick=${() => openInLake({ path, from: id })}>${path}</span>`;
+  return html`
+    ${t.overlaps.length > 0 && html`<p class="ok-detail__section">Overlaps · ${t.overlaps.length}</p>
+      <ul class="gui-rows">${t.overlaps.map((o) => html`<li key=${o.key}><b>${o.title}</b>
+        <span class="ok-tone-muted"> · ${o.paths.join(", ")} · ${say(o.status === "work" ? "being built" : "waits to be merged")}</span>
+        ${o.pr && html` · <a class="gui-link" href=${o.pr} target="_blank" rel="noreferrer">PR ↗</a>`}
+        ${o.brief && html` · ${brief(o.brief)}`}
+        ${o.conflicts.length > 0 && html`<br /><span class="ok-tone-error">${say("Merged together they conflict in")} ${o.conflicts.join(", ")}</span>`}</li>`)}</ul>`}
+    ${t.against.length > 0 && html`<p class="ok-detail__section">Goes against a design brief</p>
+      <ul class="gui-rows">${t.against.map((c) => html`<li key=${c.with}>${brief(c.with)}<span class="ok-tone-muted"> · ${c.why}</span></li>`)}</ul>`}
+    ${t.designs.length > 0 && html`<p class="ok-detail__section">Design briefs it met</p>
+      <ul class="gui-rows">${t.designs.map((d) => html`<li key=${d.path}>${brief(d.path)}
+        <span class=${d.state === "not confirmed" ? "ok-tone-wait" : "ok-tone-muted"}> · ${say(d.state)}</span></li>`)}</ul>`}`;
+}
+
+/** The repository's areas in work: every open task's files, this pool's and the others'. */
+function Areas({ id, areas }) {
+  if (!areas.length) return html`<p class="ok-tone-muted">${say("No areas in work: no open task claims files.")}</p>`;
+  return html`<ul class="gui-rows">${areas.map((a) => html`<li key=${a.building + a.task}><b>${a.title}</b>
+    <span class="ok-tone-muted"> · ${a.paths.join(", ")}${a.guessed ? ` (${say("a guess")})` : ""} · ${say(a.status === "work" ? "being built" : "waits to be merged")}
+      ${a.mine ? "" : ` · ${a.building}`}</span>
+    ${a.brief && html` · <span class="gui-link" onClick=${() => openInLake({ path: a.brief, from: id })}>${a.brief}</span>`}</li>`)}</ul>`;
 }
 
 function Tasks({ id, data }) {
@@ -312,7 +353,7 @@ function Rules({ id, data }) {
     ["Providers", data.providers.join(", ")], ["Orks at most", data.max], ["Budget", data.budget || "none of its own"],
     ["Reworks at most", data.max_reworks], ["Worktrees", say(data.worktrees ? "one per ork" : "off: they work in the project")]];
   return html`<details class="pool-rules">
-    <summary><span>${say("Rules")} ${data.rules.length} · ${say("Settings")} · ${say("Decisions")} ${data.decisions.length}</span>
+    <summary><span>${say("Rules")} ${data.rules.length} · ${say("Settings")} · ${say("Areas in work")} ${data.areas.length} · ${say("Decisions")} ${data.decisions.length}</span>
       <span class="pool-rules__sum ok-font-status">${say("Tests")}: ${data.test_cmd || say("none")} · ${say("reworks")} ≤ ${data.max_reworks}${data.budget ? ` · ${data.budget}` : ""}</span></summary>
     <section class="gui-section"><h3 class="ok-font-heading">Rules</h3>
       <p class="ok-tone-muted">${data.keeper}, the steward, answers the orks' questions from them and reviews every task.</p>
@@ -321,6 +362,9 @@ function Rules({ id, data }) {
     <${KeeperAsk} id=${id} keeper=${data.keeper} />
     <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
       <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
+    <section class="gui-section"><h3 class="ok-font-heading">Areas in work</h3>
+      <p class="ok-tone-muted">${say("The files open tasks change, until their pull requests are merged. A new task on an area being built waits for it.")}</p>
+      <${Areas} id=${id} areas=${data.areas} /></section>
     <section class="gui-section"><h3 class="ok-font-heading">Decisions</h3>
       ${data.decisions.length ? html`<ul class="gui-rows">${data.decisions.map((d, i) => html`<li key=${i}>
         <span class="ok-tone-muted">${d.at}</span> <span class="ok-tone-wait">${d.action}</span>${d.ork ? ` ${d.ork}` : ""}

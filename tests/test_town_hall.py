@@ -141,6 +141,7 @@ def test_custom_leaves_the_catalog_and_an_old_one_still_loads():
     from orkcraft.realm import catalog
 
     assert "custom" in catalog.RETIRED_TYPES and "custom" not in {t.id for t in buildable()}
+    assert "forest" in catalog.RETIRED_TYPES and "forest" not in {t.id for t in buildable()}
     assert catalog.type_of({"type": "custom"}).id == "custom" and catalog.validate({"id": "x", "title": "X", "type": "custom"}) == []
     assert [a.id for a in catalog.TYPES[TOWN_HALL].actions] == ["hall.build", "hall.audit"]
 

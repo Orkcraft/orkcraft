@@ -267,6 +267,38 @@ class TaskGit:
         _ok(_git(repo_root, "update-ref", f"refs/heads/{into}", commit, old))
         return True, "merged"
 
+    def would_conflict(self, repo_root: Path, a: str, b: str) -> list[str] | None:
+        """The files two branches would conflict in, merged together (`git merge-tree`: writes nothing):
+        [] when they merge cleanly, None when git cannot tell (a branch gone, an old git)."""
+        tree = _git(repo_root, "merge-tree", "--write-tree", "--name-only", a, b)
+        if tree.returncode == 0:
+            return []
+        lines = tree.stdout.strip().splitlines()
+        if tree.returncode != 1 or not lines:
+            return None
+        files = [ln for ln in lines[1:] if ln and not ln.startswith(("Auto-merging", "CONFLICT"))]
+        return list(dict.fromkeys(files)) or ["(conflicts)"]
+
+    def commit_file(self, repo_root: Path, branch: str, path: str, text: str, message: str) -> str:
+        """Commit one file on `branch` without checking it out (a temporary index): the new commit's id.
+        `branch` moves only when nobody moved it meanwhile."""
+        import os
+        import tempfile
+        old = _ok(_git(repo_root, "rev-parse", f"refs/heads/{branch}"))
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index")}
+
+            def git(*args: str, data: str | None = None) -> str:
+                return _ok(subprocess.run(["git", *args], cwd=repo_root, capture_output=True, text=True, input=data,
+                                          env=env, timeout=GIT_TIMEOUT_S))
+            git("read-tree", old)
+            blob = git("hash-object", "-w", "--stdin", data=text)
+            git("update-index", "--add", "--cacheinfo", f"100644,{blob},{path}")
+            tree = git("write-tree")
+            commit = git("commit-tree", tree, "-p", old, "-m", message)
+        _ok(_git(repo_root, "update-ref", f"refs/heads/{branch}", commit, old))
+        return commit
+
     def check(self, repo_root: Path, branch: str, command: str, cancel: threading.Event,
               where: Path) -> tuple[bool, str]:
         """The tests on `branch` as it is (the merged parts), in a worktree of the steward's own at `where`."""

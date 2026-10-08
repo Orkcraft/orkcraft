@@ -32,7 +32,7 @@ from dataclasses import asdict
 
 from orkcraft import autonomy, schedule
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import personas, pipes, plans, steward, worktrees
+from orkcraft.realm import briefs, claims, personas, pipes, plans, steward, worktrees
 
 NO = frozenset({"no", "n", "nope", "нет", "не"})
 
@@ -104,7 +104,7 @@ class PlanMixin:
         stages or parallel parts is planned. A sort that does not hold is planned too, as before the triage.
         `short`: the rules are sure it needs no plan — it is only told trivial (no review) from the rest."""
         cancel = self._take(task, f"{self.keeper} sorts it")
-        prompt = plans.triage_prompt(self.keeper, self.orders, task.title, task.text)
+        prompt = plans.triage_prompt(self.keeper, self.orders, task.title, bk.body_of(task))
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
@@ -127,10 +127,13 @@ class PlanMixin:
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
+        if sort is not None and sort.touches:
+            task.claimed = claims.narrow(sort.touches)   # its likely area: the briefs it concerns, the claim
         if out.error == "stopped":
             self._whole(task, "", "the sort was stopped")
         elif short and (sort is None or sort.kind != plans.TRIVIAL):     # no plan for it: one light ork, reviewed
             task.kind = plans.SINGLE
+            self._claim(task, sort.touches if sort else [], True)
             self._whole(task, self.goal.simple, "short and clear" + (f" — {sort.why}" if sort and sort.why else ""))
         elif sort is None or sort.kind == plans.PLAN:
             task.kind = plans.PLAN
@@ -138,6 +141,7 @@ class PlanMixin:
             self._plan(task, f"{self.keeper} plans it ({self.plan_tier}){why}")
         else:
             task.kind = sort.kind
+            self._claim(task, sort.touches, True)
             tier = self.goal.simple if sort.kind == plans.TRIVIAL else plans.shift(sort.tier, self.goal.shift)
             self._whole(task, tier, f"{self.keeper}: {sort.kind}" + (f" — {sort.why}" if sort.why else ""))
         st.save()
@@ -145,13 +149,15 @@ class PlanMixin:
 
     def _plan(self, task: bk.PoolTask, why: str = "") -> None:
         cancel = self._take(task, why or f"{self.keeper} plans it")
-        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, task.text, self.aim,
-                                   self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir))
+        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, bk.body_of(task), self.aim,
+                                   self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir),
+                                   designs=self.plan_designs(task), brief=self.briefs_on,
+                                   short=self.goal == plans.GOALS["thrift"])
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
             out = RunOutcome()
-            subs, errors = None, []
+            subs, errors, extra = None, [], ({}, [])
             try:
                 text = self._steward(prompt, self.repo_root, cancel, out, "plan")
                 subs, errors = plans.parse(text)
@@ -159,15 +165,17 @@ class PlanMixin:
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
                         f"- {e}" for e in errors), self.repo_root, cancel, out, "plan")
                     subs, errors = plans.parse(text)
+                extra = plans.extras(text)
             except InterruptedError:
                 out.error = "stopped"
             except Exception as e:  # the steward that cannot plan never stops the task
                 errors = [str(e)[:200]]
-            self._call(self._planned, task.id, subs, errors, out)
+            self._call(self._planned, task.id, subs, errors, out, extra)
 
         threading.Thread(target=work, daemon=True, name=f"plan-{self.building_id}-{task.id}").start()
 
-    def _planned(self, task_id: str, subs: list[plans.Sub] | None, errors: list[str], out) -> None:
+    def _planned(self, task_id: str, subs: list[plans.Sub] | None, errors: list[str], out,
+                 extra: tuple[dict, list[dict]] = ({}, [])) -> None:
         st = self.state
         self._cancels.pop(f"plan:{task_id}", None)
         task = st.task(task_id)
@@ -175,6 +183,11 @@ class PlanMixin:
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
+        design, against = extra
+        if against and not out.error and not errors:      # it goes against a design brief: said, maybe asked
+            task.against = against
+            st.log(bk.Decision(bk.now_iso(), task.id, "design", why="goes against " + "; ".join(
+                f"{c['with']}: {c.get('why') or '?'}" for c in against)[:300]))
         if out.error == "stopped":
             self._whole(task, "", "the plan was stopped")
         elif errors:
@@ -183,10 +196,13 @@ class PlanMixin:
             self._whole(task, self.goal.simple, f"{self.keeper}: simple")
         elif len(subs) == 1:
             one = subs[0]
+            task.claimed = claims.narrow(one.touches) or task.claimed
             task.persona = self._persona_of(one)
             self._whole(task, plans.shift(one.tier, self.goal.shift), f"{self.keeper}: one part")
+        elif against and autonomy.waits(self.rules.level, schedule.quiet_now(self.town.machine), self.rules.wait) != 0:
+            self.hold_plan(task, subs, design)               # ⛓️ / 🕰: the operator first
         else:
-            self._split(task, subs)
+            self._split(task, subs, design)
         self._pump()
         st.save()
         self.changed()
@@ -194,6 +210,8 @@ class PlanMixin:
     def _whole(self, task: bk.PoolTask, tier: str, why: str) -> None:
         """The task runs whole, on one ork (of `tier`)."""
         st = self.state
+        if task.claimed:                                  # its area: the sort's guess, or its one part's
+            self._claim(task, task.claimed, True)
         task.tier = tier or self.goal.simple
         task.status = "queued"
         if task in st.tasks:
@@ -214,7 +232,7 @@ class PlanMixin:
         self.state.log(bk.Decision(bk.now_iso(), "", "persona", why=f"{self.keeper} wrote `{sub.persona}` ({sub.tier})"))
         return sub.persona
 
-    def _split(self, task: bk.PoolTask, subs: list[plans.Sub]) -> None:
+    def _split(self, task: bk.PoolTask, subs: list[plans.Sub], design: dict | None = None) -> None:
         st, f, goal, camp = self.state, self.foreman, self.goal, self.quota()
         for s in subs:
             s.tier = plans.shift(s.tier, goal.shift)
@@ -239,10 +257,11 @@ class PlanMixin:
             except Exception as e:  # no branch to merge into: the task runs whole
                 self._whole(task, "warrior", f"no branch {task.branch}: {e}")
                 return
+            self.write_brief(task, subs, design or {})     # before any part is cut from the branch
         task.status, task.plan = "planned", [asdict(s) for s in subs]
         for s in subs:
             cid = uuid.uuid4().hex[:8]
-            child = bk.PoolTask(cid, f"{task.title[:50]} · {s.title}"[:80], plans.child_text(task.title, task.text, s, subs),
+            child = bk.PoolTask(cid, f"{task.title[:50]} · {s.title}"[:80], plans.child_text(task.title, bk.body_of(task), s, subs),
                                 arrived=bk.now_iso(), status="blocked", tier=s.tier, persona=self._persona_of(s),
                                 parent=task.id, sub=s.id, after=list(s.after), touches=list(s.touches),
                                 cheaper_ok=s.cheaper_ok, ref=f"{self.building_id}:{cid}",
@@ -253,6 +272,7 @@ class PlanMixin:
         st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"{len(subs)} parts, {estimate}{tight}: {parts}"))
         self.emit("pool.assigned", f"{self.keeper} planned **{task.title}** in {len(subs)} parts: {parts}",
                   task.title, ref=task.ref)
+        self._claim(task, [t for s in subs for t in s.touches] + ([task.design] if task.design else []), False)
         self._advance(task)
 
     # -- the parts --------------------------------------------------------------------------------------
@@ -270,6 +290,7 @@ class PlanMixin:
         failed = [k for k in kids if k.status == "failed"]
         if failed and not running:
             parent.status = "failed"
+            self._unclaim(parent)
             parent.error = "; ".join(f"{k.sub}: {k.error or 'failed'}" for k in failed)[:300]
             st.log(bk.Decision(bk.now_iso(), parent.id, "failed", why=parent.error))
             self.emit("pool.failed", f"**{parent.title}** — a part failed: {parent.error}", parent.title,
@@ -278,6 +299,8 @@ class PlanMixin:
         if failed:
             return                                    # what runs finishes; nothing new starts
         for k in plans.ready(kids, self.goal.parallel or self.foreman.max_orcs):
+            if self.held_by(k) is not None:               # another task builds its files now
+                continue
             p = personas.load(self.state_dir, k.persona) if k.persona else None
             if p is not None and not p.approved:
                 self._persona_waits(k, p)
@@ -330,14 +353,17 @@ class PlanMixin:
             return False
         now = time.time() if now is None else now
         due = [t for t in self.state.tasks if t.status == "asked" and now - t.waits_since >= minutes * 60
-               and (t.ask_kind or ("persona" if t.persona_waits else "")) in ("question", "rejected", "persona")]
+               and (t.ask_kind or ("persona" if t.persona_waits else "")) in ("question", "rejected", "persona",
+                                                                              "conflict")]
         why = f"nobody answered in {minutes:.0f} min" if minutes else "the orks decide at once (autonomy)"
         for name in sorted({t.persona_waits for t in due if t.persona_waits}):
             self._approve_persona(name, why)
         for t in due:
             if t.persona_waits:
                 continue
-            if t.ask_kind == "rejected":
+            if t.ask_kind == "conflict":
+                self.go_on(t, why)
+            elif t.ask_kind == "rejected":
                 self._give_up(t, why)
             else:
                 self._steward_decides(t, why)
@@ -354,6 +380,7 @@ class PlanMixin:
         last = task.question.split("Last notes: ", 1)[-1].split("\n\n")[0][:300]
         task.status, task.question, task.ask_kind = "failed", "", ""
         task.error = f"sent back too often and {why}: closed by {self.keeper}. Last notes: {last}"
+        self._unclaim(task)
         st.log(bk.Decision(bk.now_iso(), task.id, "close", task.orc, task.error[:300]))
         if task.parent:
             self._advance(st.task(task.parent))
@@ -470,14 +497,18 @@ class PlanMixin:
                             out.notes = f"new: the tests of the merged parts fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
                             raise _Done
                         tests = f"`{cmd}` passes on the merged branch"
+                extra, out.clashes, met = self._review_context(parent, out.files, git, parent.branch)
                 verdict = self._steward(plans.final_prompt(self.keeper, self.orders, parent.title, parent.text,
-                                                           parent.plan, reports, diff, tests, bk.DIFF_LIMIT),
+                                                           parent.plan, reports, diff, tests, bk.DIFF_LIMIT, extra),
                                         self.repo_root, cancel, out, "final")
                 out.accepted, out.notes = bk.verdict_of(verdict)
+                out.notes = briefs.strip(out.notes)
+                out.designs = briefs.states(met, out.files, verdict)
                 if out.accepted and git is not None and commits:
                     body = f"{parent.text}\n\n---\n\n" + "\n\n".join(
                         f"### {sub}\n\n{rep.strip()[:1500]}" for sub, rep in reports) + \
-                        f"\n\n_Planned and reviewed by {self.keeper}: {out.notes or 'accepted'}_"
+                        f"\n\n_Planned and reviewed by {self.keeper}: {out.notes or 'accepted'}_" + \
+                        (f"\n\n_Design brief:_ `{parent.design}`" if parent.design else "") + self.pr_notes(parent, out)
                     out.pr, out.pr_note = git.publish(self.repo_root, parent.branch, parent.base, parent.title, body)
             except _Done:
                 pass
@@ -501,10 +532,14 @@ class PlanMixin:
         parent.files = out.files or parent.files
         if out.error:
             parent.status, parent.error = "failed", out.error
+            self._unclaim(parent)
             self.emit("pool.failed", f"**{parent.title}** — {self.keeper}: {out.error}", parent.title,
                       trail=self._plan_trail(parent, "error"), ref=parent.ref)
         elif out.accepted:
             parent.status, parent.pr, parent.scope, parent.feedback = "done", out.pr, bk.EXTERNAL, ""
+            self._claim_done(parent)
+            self._apply_clashes(parent, out.clashes)
+            self._designs_of(parent, out.designs, True)
             parent.result = "\n\n".join(f"### {k.title}\n\n{k.result.strip()}" for k in kids)
             st.log(bk.Decision(bk.now_iso(), parent.id, "accept", why=out.notes or "the whole is accepted"))
             orks = ", ".join(dict.fromkeys(k.orc for k in kids if k.orc))
@@ -549,7 +584,7 @@ class PlanMixin:
         sub = plans.Sub(f"fix{n}", f"Fix {n}", brief, tier)
         parent.plan = parent.plan + [asdict(sub)]
         cid = uuid.uuid4().hex[:8]
-        kid = bk.PoolTask(cid, f"{parent.title[:50]} · {sub.title}", plans.child_text(parent.title, parent.text, sub, []),
+        kid = bk.PoolTask(cid, f"{parent.title[:50]} · {sub.title}", plans.child_text(parent.title, bk.body_of(parent), sub, []),
                           arrived=bk.now_iso(), status="blocked", tier=tier, parent=parent.id, sub=sub.id,
                           ref=f"{self.building_id}:{cid}", branch=f"{parent.branch}--{sub.id}" if parent.branch else "",
                           base=parent.branch)
@@ -570,9 +605,12 @@ class PlanMixin:
         return f"- {question.strip()[:200]} → {text.strip()[:300]}"
 
     def _plan_trail(self, parent: bk.PoolTask, outcome: str) -> tuple:
+        parts = f"planned in {len(parent.plan)} parts" if parent.plan else ""
         return pipes.trail_of(parent.trail) + (pipes.hop(self.building_id, self.keeper, "agent", parent.tokens,
                                                          parent.cost_usd, "", parent.branch, outcome,
-                                                         base=parent.base),)
+                                                         base=parent.base, since=parent.arrived,
+                                                         decision=parent.decided or parts,
+                                                         round=parent.attempts, run=parent.id),)
 
 
 class _Done(Exception):

@@ -4,6 +4,8 @@ Status: written 2026-10-06 and implemented: `autonomy.py` (§2), `realm/plans.py
 `core/workers/barracks_plan.py` (§3–5), tests in `tests/test_pool_plans.py`. Builds on the Barracks
 (`realm/barracks.py`, `core/workers/barracks.py`), the tiers (`realm/tiers.py`), the building goals
 (docs/design/retros-and-goals.md §3) and the autonomy slider (`autonomy.py`, docs/design/onboarding.md §6).
+A plan's `touches` also claim the task's area across tasks and pools, and a plan of parts leaves a design
+brief: [barracks-designs.md](barracks-designs.md).
 
 ## 1. Why
 

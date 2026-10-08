@@ -84,6 +84,7 @@ class Triage:
     kind: str                    # trivial | single | plan
     tier: str                    # the tier of the one ork (trivial, single); "" for a plan
     why: str = ""
+    touches: list[str] = field(default_factory=list)   # the files or folders it will likely change: a guess
 
 
 def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
@@ -93,7 +94,8 @@ def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
         f"You are {keeper}, the steward of a barracks of coding agents. SORT the task below before anyone works "
         "on it — quickly, without planning it.", rules, f"## The task: {title}", text[:BRIEF_LIMIT],
         "Answer one JSON object and nothing else: "
-        '{"kind": "trivial" | "single" | "plan", "tier": "laborer" | "warrior" | "elder", "why": "<a few words>"}',
+        '{"kind": "trivial" | "single" | "plan", "tier": "laborer" | "warrior" | "elder", "why": "<a few words>", '
+        '"touches": ["<the files or folders it will likely change>"]}',
         "- `trivial`: a small, clear job one light agent does at once (a question, a lookup, a rename, a typo, "
         "a short note);\n"
         "- `single`: one agent's job in one go, but it needs thought — `tier` says how strong: `warrior` for "
@@ -119,7 +121,9 @@ def parse_triage(text: str) -> Triage | None:
         tier = ""
     elif tier not in tiers.TIERS:
         tier = "warrior" if kind == SINGLE else ""
-    return Triage(kind, tier, str(data.get("why") or "")[:200])
+    touches = data.get("touches")
+    touches = [str(x).strip() for x in touches if str(x).strip()][:20] if isinstance(touches, list) else []
+    return Triage(kind, tier, str(data.get("why") or "")[:200], touches)
 
 
 # -- the plan ---------------------------------------------------------------------------------------
@@ -138,14 +142,17 @@ class Sub:
 
 
 def plan_prompt(keeper: str, orders: str, title: str, text: str, aim: str, max_parallel: int,
-                personas: list[tuple[str, str, str]]) -> str:
-    """`personas`: (name, tier, its first line) of those the barracks keeps."""
+                personas: list[tuple[str, str, str]], designs: str = "", brief: bool = False,
+                short: bool = False) -> str:
+    """`personas`: (name, tier, its first line) of those the barracks keeps. `designs`: the design briefs the
+    task concerns (realm/briefs.py `section`); `brief`: a plan of parts leaves a design brief (`design`),
+    in two lines when `short` (🪙 thrift) — docs/design/barracks-designs.md §5–6."""
     known = "\n".join(f"- `{n}` ({t}): {line}" for n, t, line in personas) or "(none yet)"
     rules = f"## Your rules\n\n{orders.strip()}" if orders.strip() else ""
     return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents. PLAN the task below before anyone works "
         "on it: you will review every part and the whole, so keep the operator's intent in mind.",
-        rules, f"## The task: {title}", text,
+        rules, f"## The task: {title}", text, designs,
         f"## The barracks\n\nIts goal: {aim}. At most {max_parallel} agents work at once. Tiers: `elder` (the "
         "heaviest model: design, tricky code), `warrior` (ordinary code), `laborer` (light, fast and cheap: "
         "mechanical edits, docs, renames).",
@@ -160,7 +167,12 @@ def plan_prompt(keeper: str, orders: str, title: str, text: str, aim: str, max_p
         "- `after`: the ids it needs done first (no cycles); it starts from their merged work;\n"
         "- `persona`: one of those above, or a new name with `persona_prompt` — a few lines on who this agent "
         "is and how it works;\n"
-        "- `cheaper_ok`: true when a lighter tier would still do, should the budget be short."] if p)
+        "- `cheaper_ok`: true when a lighter tier would still do, should the budget be short.",
+        ("With two subtasks or more, add next to `subtasks` a `design` object — the design brief kept with the "
+         'code: {"why": "…", "decisions": ["…"], "invariants": ["…"], "out_of_scope": ["…"]}'
+         + (" — two lines in all, it is a thrifty barracks." if short else " — short and concrete.")) if brief else "",
+        ("When the task goes against a decision of a design above, add `\"conflicts\": [{\"with\": \"<its path>\", "
+         '"why": "…"}]` next to `subtasks` (or after `SIMPLE`, on its own line as JSON).') if designs else ""] if p)
 
 
 def parse(text: str) -> tuple[list[Sub] | None, list[str]]:
@@ -190,6 +202,33 @@ def parse(text: str) -> tuple[list[Sub] | None, list[str]]:
             after=[str(x).strip() for x in item.get("after") or [] if str(x).strip()],
             cheaper_ok=item.get("cheaper_ok") is True))
     return subs, check(subs)
+
+
+def extras(text: str) -> tuple[dict, list[dict]]:
+    """(design, conflicts) the steward wrote next to its plan: untrusted text, kept only as strings."""
+    text = (text or "").strip()
+    start, end = text.find("{"), text.rfind("}")
+    try:
+        data = json.loads(text[start:end + 1]) if 0 <= start < end else {}
+    except ValueError:
+        data = {}
+    if not isinstance(data, dict):
+        return {}, []
+    raw = data.get("design") if isinstance(data.get("design"), dict) else {}
+    design: dict = {}
+    for k in ("why", "decisions", "invariants", "out_of_scope"):
+        v = raw.get(k)
+        if isinstance(v, str) and v.strip():
+            design[k] = v.strip()[:2000] if k == "why" else [v.strip()[:500]]
+        elif isinstance(v, list):
+            items = [str(x).strip()[:500] for x in v if str(x).strip()][:12]
+            if items:
+                design[k] = " ".join(items)[:2000] if k == "why" else items
+    conflicts = []
+    for c in data.get("conflicts") if isinstance(data.get("conflicts"), list) else []:
+        if isinstance(c, dict) and str(c.get("with") or "").strip():
+            conflicts.append({"with": str(c["with"]).strip()[:200], "why": str(c.get("why") or "").strip()[:500]})
+    return design, conflicts[:5]
 
 
 def _name(value: object) -> str:
@@ -325,8 +364,9 @@ def child_text(parent_title: str, parent_text: str, sub: Sub, others: list[Sub])
 
 
 def final_prompt(keeper: str, orders: str, title: str, text: str, plan: list[dict], reports: list[tuple[str, str]],
-                 diff: str, tests: str, limit: int) -> str:
-    """The steward's last look: the merged work against the operator's request, word for word."""
+                 diff: str, tests: str, limit: int, extra: str = "") -> str:
+    """The steward's last look: the merged work against the operator's request, word for word. `extra`: the work
+    on the same files and the design briefs the change meets."""
     cut = diff if len(diff) <= limit else diff[:limit] + "\n… (cut)"
     steps = "\n".join(f"- `{p.get('id')}` {p.get('title')} ({p.get('tier')})" for p in plan)
     parts = "\n\n".join(f"### `{sub}`\n\n{rep.strip()[:2000] or '(no report)'}" for sub, rep in reports)
@@ -336,7 +376,7 @@ def final_prompt(keeper: str, orders: str, title: str, text: str, plan: list[dic
         f"## Your rules\n\n{orders.strip()}" if orders.strip() else "",
         f"## The operator's request: {title}", text, f"## Your plan\n\n{steps}", f"## The parts' reports\n\n{parts}",
         f"## Tests\n\n{tests}" if tests else "",
-        f"## The merged diff\n\n```diff\n{cut}\n```" if diff.strip() else "## The merged diff\n\n(empty)",
+        f"## The merged diff\n\n```diff\n{cut}\n```" if diff.strip() else "## The merged diff\n\n(empty)", extra,
         "Answer `ACCEPT` on the first line when the request is met. Otherwise `REWORK: <id>: what to fix` — the "
         "part that has to change — or `REWORK: new: what is missing` for something no part covered."] if p)
 

@@ -63,6 +63,14 @@ export function card(b) {
   </div>`;
 }
 
+/** Folded (docs/design/folded-cards.md): its failing sources first, else how many came in new. */
+export function mark(b) {
+  const c = b.card;
+  if (!c || !c.sources || !c.sources.length) return null;
+  if (c.failing) return { text: `${c.failing} failing`, tone: "error" };
+  return c.new ? { text: `${c.new} new` } : null;
+}
+
 /** Its Info's quick actions, done here: Open new, Read all, Check now. */
 export function quick(id, action) {
   const name = { "mail.open_new": "open_new", "watch.read_all": "read_all", "mail.refresh": "check_now" }[action];

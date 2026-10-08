@@ -3,7 +3,8 @@
 // lanes of their own. The mouse does it all: drag a card to another lane or part, click it to select
 // it, double-click it to open it; the selected card's acts sit over the board; a to-do is ticked off
 // by its box. A card's marks: 📜 its context (wiki pages, no model), 🧭 a to-do's plan, 🔒 personal
-// (never sent to a model) — docs/design/fields-board.md §5b. The closed card shows
+// (never sent to a model) — docs/design/fields-board.md §5b. A task that waits to go says when (⏳, 🐢 when
+// Not urgent), what joined it and what it looks like (docs/design/settle-and-join.md). The closed card shows
 // all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
 // board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
@@ -98,6 +99,24 @@ function Marks({ card, onMark }) {
   </span>`;
 }
 
+const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** A task that settles before it goes (docs/design/settle-and-join.md): when it goes and Send now; the task
+ *  it is joined to and Split off; the one it looks like, Join or Keep apart. */
+function Settling({ id, card }) {
+  if (!card.goes && !card.into && !card.hint) return null;
+  const go = (what, args) => (e) => { e.stopPropagation(); act(id, what, { card: card.id, ...args }).catch(() => {}); };
+  const btn = (label, onClick) => html`<button class="gui-link fields-settle__act" onClick=${onClick}
+    onDblClick=${(e) => e.stopPropagation()}>${label}</button>`;
+  return html`<div class="fields-settle ok-font-status">
+    ${card.goes && html`<span>${card.later ? "🐢" : "⏳"} goes at ${clock(card.goes)}${card.added ? html` · +${card.added} added` : ""}</span>
+      ${btn("Send now", go("send"))}`}
+    ${card.into && html`<span>↳ with “${card.into.title}”</span>${btn("Split off", go("split"))}`}
+    ${card.hint && html`<span>Looks like “${card.hint.title}”</span>
+      ${btn("Join", go("join", { into: card.hint.id }))}${btn("Keep apart", go("apart"))}`}
+  </div>`;
+}
+
 function Card({ id, card, isSelected, onOpen, onMark }) {
   return html`<div class=${cls("ok-card", { "is-selected": isSelected, "is-done": card.column === "done" })}
       data-color=${card.color || undefined} draggable="true" onDragStart=${dragCard(card.id)}
@@ -106,6 +125,7 @@ function Card({ id, card, isSelected, onOpen, onMark }) {
       ${card.column === "done" && html`<span class="ok-card__check">✓</span>`}<span>${card.title}</span>
       ${card.new && html`<span class="ok-word gui-new"> new</span>`}<${Marks} card=${card} onMark=${onMark} /></div>
     ${card.body && html`<p class="ok-card__text">${card.body}</p>`}
+    <${Settling} id=${id} card=${card} />
   </div>`;
 }
 
@@ -180,7 +200,10 @@ function Acts({ id, sel, setDialog, onPlan, wiki }) {
       ${sel.kind === "mine" && a(sel.plan && sel.plan.length ? "🧭 Plan" : "🧭 Make a plan",
         () => (sel.plan && sel.plan.length ? setDialog({ plan: sel.id }) : onPlan(sel)))}
       ${a(`📜 Context${sel.pages && sel.pages.length ? ` ${sel.pages.length}` : ""}`, () => setDialog({ context: sel.id }))}
-      ${a("Send", () => act(id, "send", { card: sel.id }))}
+      ${a(sel.goes || sel.into ? "Send now" : "Send", () => act(id, "send", { card: sel.id }))}
+      ${sel.goes && a(sel.later ? "Urgent again" : "🐢 Not urgent", () => act(id, "later", { card: sel.id }).catch(() => {}))}
+      ${sel.into && a("Split off", () => act(id, "split", { card: sel.id }))}
+      ${sel.kind === "task" && sel.column !== "done" && !sel.into && a("Join with…", () => setDialog({ join: sel.id }))}
       ${a(sel.private ? "🔒 Not personal" : "🔒 Personal", () => act(id, "private", { card: sel.id }))}
       ${wiki && sel.kind === "note" && !sel.private && a("→ Wiki", () => act(id, "to_wiki", { card: sel.id }).catch(() => {}))}
       ${a("Colour", () => act(id, "color", { card: sel.id }))}
@@ -189,6 +212,20 @@ function Acts({ id, sel, setDialog, onPlan, wiki }) {
         <span class="ok-act__label">×</span></button>
     </span>
   </div>`;
+}
+
+/** Join with…: the task goes with another one that waits or went and is not done (both as one task). */
+function JoinDialog({ id, card, cards, onClose }) {
+  const others = cards.filter((c) => c.kind === "task" && c.id !== card.id && c.column !== "done" && !c.into);
+  const join = (into) => act(id, "join", { card: card.id, into }).then(onClose, () => {});
+  return html`<${Dialog} title=${say(`Join with… · ${card.title}`)} onCancel=${onClose}
+      meta=${say("Both go to the orks as one task; what came later wins where they disagree")}
+      actions=${html`<button class="ok-btn primary" onClick=${onClose}>Cancel</button>`}>
+    ${others.length ? html`<ul class="fields-pages">${others.map((c) => html`<li key=${c.id}>
+        <button class="gui-link fields-page" onClick=${() => join(c.id)}>${c.title}</button>
+        <small class="ok-tone-muted">${c.goes ? `${c.later ? "🐢" : "⏳"} goes at ${clock(c.goes)}` : c.sent ? say("sent") : ""}</small></li>`)}</ul>`
+      : html`<p class="ok-tone-muted">${say("No other task to join yet.")}</p>`}
+  </${Dialog}>`;
 }
 
 /** A card's context: the wiki pages that share its words (found here, no model). A page opens in Lake;
@@ -262,13 +299,30 @@ function Head({ id, data, setDialog }) {
     ${data.todos && html`<span><b>${open}</b>/${data.todos.cards.length} ${say("to-dos open")}</span>
       <span><b>${notes}</b> ${say("notes")}</span>`}
     <span class="fields-head__spacer"></span>
+    <${SettleSelect} id=${id} data=${data} />
     <button class="ok-act" title=${say("A lane of its own for notes")} onClick=${() => setDialog({ folder: true })}>
       <span class="ok-act__label">${say("New note folder")}</span></button>
   </div>`;
 }
 
+const waitLabel = (s) => (s === 0 ? "at once" : s < 60 ? `after ${s} s` : `after ${s / 60} min`);
+
+/** On a board that sends its tasks by itself: how long a new task waits before it goes, so a related one
+ *  that comes meanwhile goes with it (docs/design/settle-and-join.md). At once by default. */
+function SettleSelect({ id, data }) {
+  if (data.settle === null || data.settle === undefined) return null;
+  const choices = (data.settle_choices || []).includes(data.settle) ? data.settle_choices
+    : [...(data.settle_choices || []), data.settle].sort((a, b) => a - b);
+  return html`<label class="fields-wait" title=${say("A related task that comes meanwhile goes with it as one task")}>
+    ${say("New tasks go")}
+    <select class="ok-input" value=${String(data.settle)} aria-label=${say("When new tasks go to the orks")}
+      onChange=${(e) => act(id, "settle", { seconds: Number(e.target.value) }).catch(() => {})}>
+      ${choices.map((s) => html`<option key=${s} value=${String(s)}>${say(waitLabel(s))}</option>`)}
+    </select></label>`;
+}
+
 function Board({ id, data }) {
-  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan: id} | {preview, of}
+  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan|join: id} | {preview, of}
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const parts = !!data.todos;                       // board mode: the three parts
   const cards = data.lanes.flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
@@ -307,6 +361,7 @@ function Board({ id, data }) {
       text="It goes from the file too (git keeps it)." yes="Delete"
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
     ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
+    ${dialog && dialog.join && byId(dialog.join) && html`<${JoinDialog} id=${id} card=${byId(dialog.join)} cards=${cards} onClose=${close} />`}
     ${dialog && dialog.context && byId(dialog.context) && html`<${ContextDialog} id=${id} card=${byId(dialog.context)} onClose=${close} />`}
     ${dialog && dialog.plan && byId(dialog.plan) && html`<${PlanDialog} id=${id} card=${byId(dialog.plan)} onPlan=${plan} onClose=${close} />`}
     ${dialog && dialog.preview && byId(dialog.of) && html`<${PreviewDialog} id=${id} card=${byId(dialog.of)} preview=${dialog.preview}
@@ -337,6 +392,7 @@ export function card(b) {
       <div class="gui-hut__text gui-counters">${c.lanes.map(counter)}</div>
       ${notes.length > 0 && html`<div class="gui-hut__text gui-counters">${notes.map(counter)}</div>`}
       ${doing && html`<div class="gui-hut__foot"><span>${wall ? "✎" : "⚒"} ${doing}</span></div>`}
+      ${c.waiting > 0 && html`<div class="gui-hut__text ok-tone-muted">⏳ ${c.waiting} waiting to go</div>`}
     </div>`;
   }
   const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, 1));
@@ -351,6 +407,7 @@ export function card(b) {
     ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
       <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
       ${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}
+      ${c.waiting > 0 && html`<span class="ok-tone-muted ok-font-status">⏳ ${c.waiting} waiting to go</span>`}
     </section>`}
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My to-dos</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>

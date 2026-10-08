@@ -258,6 +258,15 @@ export function card(b) {
   </div>`;
 }
 
+/** Folded (docs/design/folded-cards.md): a repository it cannot read, a merge under way, else the PRs open. */
+export function mark(b) {
+  const c = b.card;
+  if (!c || c.looking) return null;
+  if (c.error) return { text: "cannot read", tone: "error" };
+  if (c.merging) return { text: "merging", tone: "wait" };
+  return c.prs ? { text: `${c.prs} ${c.prs === 1 ? "PR" : "PRs"}` } : null;
+}
+
 /** The window by its UI document (design/buildings/forge.json). `detail` shows nothing of its own: a branch
  *  opens over the list (an older document that still has the pane loses nothing). */
 export function panes(id, data) {

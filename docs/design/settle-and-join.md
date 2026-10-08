@@ -12,11 +12,11 @@ This note moves the join **before** the work: a new task waits a short while on 
 marks **Not urgent** waits longer and gathers more. A related card that comes after the task went is
 added to the work in the Barracks instead of starting it again.
 
-Status: **in progress** — §2 and §3 (step 1), §4 (step 2), §5 (step 3). This note is the plan; the code
-follows it step by step, and each step updates the status here.
+Status: **implemented** — §2 and §3 (step 1), §4 (step 2), §5 (step 3), §6 (the board). Tests:
+`tests/test_fields_settle.py`, and the board in a browser in `tests/test_gui_browser.py`.
 
-Where it lives: `realm/settle.py` (what is related, what goes together: pure), `core/workers/fields.py`
-(holding, joining and sending), `realm/cardlore.py` (what is kept beside the board),
+Where it lives: `realm/settle.py` (what is related, what goes together: pure), `core/workers/fields_settle.py`
+(holding, joining and sending; a part of the board's worker, `core/workers/fields.py`), `realm/cardlore.py` (what is kept beside the board),
 `core/workers/barracks.py` (step 3: an addition to a queued task), `gui/views/fields.py` and
 `gui/static/js/buildings/fields.js` (the board). The TUI gets nothing new (CLAUDE.md: it is deprecated).
 
@@ -26,14 +26,16 @@ It applies to a board that sends its tasks by itself (`send_new: true`): that is
 become ork work without anyone pressing a key, so that is where a hasty send costs a rework. A board
 where the person presses **Send** keeps that press as it is: an explicit send goes at once.
 
-On such a board it is **the default**: `settle` is 120 seconds unless the building says otherwise
-(`settle: 0` sends at once, as before). Two minutes is the length of "wait, one more thing": short enough
-that nobody waits for the orks, long enough to catch the second thought. Every waiting card says when it
-goes and has **Send now**, so the wait is never a surprise and never a trap.
+A new task goes **at once by default** (`settle: 0`): a wait nobody asked for looked like a board that
+does nothing. The open board says it in its head — **New tasks go: at once · after 30 s · 1 · 2 · 5 ·
+10 min** — and the person picks a wait there (it is the building's `settle`). Two minutes is the length of
+"wait, one more thing": short enough that nobody waits for the orks, long enough to catch the second
+thought. Changing it moves what waits now: by the new wait from when it came, and at once goes now. Every
+waiting card says when it goes and has **Send now**, so the wait is never a surprise and never a trap.
 
 | setting | default | what it does |
 |---|---|---|
-| `settle` | `120` | seconds a new task waits on the board before it goes; `0` sends at once |
+| `settle` | `0` | seconds a new task waits on the board before it goes; `0` sends at once (the board's **New tasks go**) |
 | `later_minutes` | `60` | how long a task marked **Not urgent** waits |
 
 ## 2. A task settles (step 1)
@@ -76,8 +78,8 @@ the button on the right, …
 The work comes back to every card of it: `pool.assigned`, `pool.done` and `pool.failed` carry the first
 card's `ref`, and the joined cards move with it (In Progress, Done, back to To Do).
 
-**Split off** takes a joined card out: it is held on its own again (or goes at once when its first card
-has gone). **Join with…** joins a card to a held or sent task by hand, for what the words did not catch.
+**Split off** takes a joined card out: it is held on its own again (one that already went with its task
+stays as it is — the orks have it). **Join with…** joins a card to a held or sent task by hand, for what the words did not catch.
 
 Why the cards stay apart in the file: the join is a guess. A guess the person cannot see or undo would
 send mixed work to an ork; two cards with a mark between them are both visible and undone by one click.
@@ -93,7 +95,9 @@ card; marking it Not urgent marks the whole task.
 
 A related card can come after its task went. Then it does not wait: it joins the task it belongs to
 (**↳ with “X”**) and goes at once as an **addition** — `tasks.sent` with the first card's `ref` and only
-the new text, under the same "Added later" line. The Barracks knows the task by that `ref`:
+the new text, under the same "Added later" line. The Barracks knows the task by that `ref`, and the
+addition by that line (another cart with the same `ref` — a meeting's second prep, say — stays a task of
+its own):
 
 | the task in the Barracks | the addition |
 |---|---|
