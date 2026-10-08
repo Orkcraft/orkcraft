@@ -1008,6 +1008,32 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_settings_accounts_open_the_connect_google_wizard(page):
+    """Settings → Accounts: Connect Google opens the wizard, five steps with a link to each page of Google Cloud;
+    once the client is pasted, step 5 signs in. `ORKCRAFT_SHOTS` keeps screenshots."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    modal.get_by_role("button", name="Connect Google", exact=True).click()
+    wizard = pg.locator(".gui-modal", has=pg.locator(".gui-acc__steps"))
+    wizard.wait_for(state="visible", timeout=WAIT_MS)
+    links = wizard.locator("a").evaluate_all("els => els.map((e) => e.href)")
+    assert any("projectcreate" in x for x in links) and any("enableapi" in x for x in links)
+    assert any("/auth/clients/create" in x for x in links)
+    if shots:
+        wizard.locator(".ok-dialog").screenshot(path=f"{shots}/google-wizard.png")
+    wizard.get_by_placeholder("1234-abc.apps.googleusercontent.com").fill(
+        "123456789-abcdefgh123.apps.googleusercontent.com")
+    wizard.get_by_placeholder("GOCSPX-…").fill("GOCSPX-abcdefghijklmn")
+    wizard.get_by_role("button", name="Save the client").click()
+    wizard.get_by_role("button", name="Sign in with Google").wait_for(timeout=WAIT_MS)
+    if shots:
+        wizard.locator(".ok-dialog").screenshot(path=f"{shots}/google-wizard-signin.png")
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('google.forget_client'))")
+
+
 def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(page, gui):
     """A held cart in the whole town's width: a file its task committed on its branch is rejected (it leaves the
     branch's list, kept aside) and brought back; its picture shows in the window; Edit writes the person's version

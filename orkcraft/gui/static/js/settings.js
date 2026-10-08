@@ -6,13 +6,15 @@
 // the town's rules, whether flames climb the roof of a building that waits for you, and whether
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
-// paired with this machine (js/phones.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
+// paired with this machine (js/phones.js). Accounts: a personal Google account for Gmail, the calendar and
+// Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { PhonesField } from "./phones.js";
+import { AccountsField } from "./accounts.js";
 
 export const settingsOpen = signal(false);
 
@@ -122,6 +124,7 @@ export function SettingsDialog() {
       <${ToolsField} s=${s} set=${set} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
+      <${AccountsField} />
       <${PhonesField} />
     </div>
   </${Dialog}>`;

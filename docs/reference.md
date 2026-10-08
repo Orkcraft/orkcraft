@@ -856,7 +856,16 @@ The link is a secret: it is kept in the OS keychain (else a 0600 file out of the
 building's settings keep only its reference and host. `pip install 'orkcraft[calendar]'` adds
 `icalendar` and `recurring-ical-events`, so every repeat, moved or cancelled occurrence and time zone is
 read as RFC 5545 says; without them a simpler built-in parser reads the calendar. Design:
-[design/calendar-import.md](design/calendar-import.md). Limits are read by the bundled `orkcraft.quota` (`claude -p /usage`, `agy -p /usage`:
+[design/calendar-import.md](design/calendar-import.md).
+
+**A Google account of your own** (Settings → Accounts → Connect Google, or the onboarding's last card): one
+sign-in with a Google Cloud client you make yourself, kept on this machine, never in the project. Gmail goes to
+External listeners (`gmail: login=keychain:google-<e-mail>`, read-only), Google Calendar to the Calendar (its
+`google` setting: the week from Google, New event adds there) and Drive to the Wiki (`gdrive:google-<e-mail>`, the
+whole Drive or one folder: Docs as Markdown, text files). Disconnect revokes it at Google. Design:
+[design/google-account.md](design/google-account.md).
+
+Limits are read by the bundled `orkcraft.quota` (`claude -p /usage`, `agy -p /usage`:
 answered locally, no quota spent), refreshed every 10 minutes; `ORKCRAFT_LIMITS=0` turns them off.
 Codex's 5-hour and weekly windows come from `codex app-server` (`account/rateLimits/read`, Codex
 0.53.0 and later; no model turn), with the plan and its credits; when that fails they are taken from

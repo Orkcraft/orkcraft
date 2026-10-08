@@ -154,6 +154,9 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
   open (`onboarding.OPEN`): Task Fields, Output, External listeners and the Drop. Eight buildings keep to the top of the map, clear of
   the log and the Autonomy card. The ready town's preview on step 4 draws each sprite at its own size beside a
   narrow plate, so eight fit in a row; its words keep their size.
+- **Your Google account** on the same card: **Connect Google** opens the wizard of Settings → Accounts
+  (docs/design/google-account.md): Gmail for External listeners, the calendar for the Calendar, Drive for the Wiki.
+  Nothing waits on it; Later is closing the wizard.
 - **Quiet hours** on the Autonomy card: 23:00–08:00 on or off (`onboarding.quiet`; the hours themselves in
   Settings).
 - **The class's ground at once:** the first orkspace takes the class's biome when the town is chosen

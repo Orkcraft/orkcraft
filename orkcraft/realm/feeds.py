@@ -26,6 +26,9 @@ the token itself (the Town Hall's Warder flags a spec that does) — or a login 
     discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789
         new messages in the channels a bot you invited can see; one that mentions you (`me=`, your
         user id) or the bot, or answers you, is a mention (realm/feeds_discord.py)
+    gmail: login=keychain:google-ann@gmail.com query=in:inbox newer_than:2d
+        new mail through a Google sign-in (Settings → Accounts), read-only; `query=` is Gmail's search and
+        takes the rest of the line; a message addressed to you in To is a mention (realm/feeds_google.py)
     agent: tool=claude server=atlassian tools=searchJiraIssuesUsingJql every=30m ask=new comments in Jira
         the person's own connector, asked by a headless Claude allowed only those read-only tools;
         `ask=` takes the rest of the line (realm/feeds_agent.py)
@@ -68,10 +71,12 @@ KINDS = {                       # kind: (required options, optional options, the
     "gitlab": ((), ("host", "token", "projects", "todos"), ""),
     "discord": (("token",), ("channels", "guilds", "me"), ""),
     "agent": (("server", "tools"), ("tool", "every", "ceiling"), "ask"),
+    "gmail": (("login",), (), "query"),
 }
 ICON = {"slack": "💬", "jira": "🎫", "confluence": "📘", "figma": "🎨", "github": "🐙", "gitlab": "🦊", "discord": "🎮",
-        "agent": "🤖"}
-HOST = {"slack": "slack.com", "figma": "api.figma.com", "github": "api.github.com", "discord": "discord.com"}
+        "agent": "🤖", "gmail": "✉"}
+HOST = {"slack": "slack.com", "figma": "api.figma.com", "github": "api.github.com", "discord": "discord.com",
+        "gmail": "gmail.googleapis.com"}
 FAILS = ("login", "target", "network")          # what a failed look says to do: log in again, edit, wait
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
 SITE = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$")
@@ -112,7 +117,8 @@ class Feed:
         if self.kind == "agent":                 # no login of its own: the server and the ask say who
             return "|".join(["agent", self.opts.get("server", ""), self.opts.get("ask", "")])
         site = self.opts.get("site", "") or (self.host if self.kind == "gitlab" else "")
-        return "|".join([self.kind, site] + [self.opts.get(k, "") for k in ("user", "token")])
+        return "|".join([self.kind, site] + [self.opts.get(k, "") for k in ("user", "token")]
+                        + ([self.opts["login"]] if self.opts.get("login") else []))
 
     @property
     def host(self) -> str:
@@ -218,6 +224,8 @@ def parse(line: str) -> tuple[Feed | None, str]:
             return None, "agent: every= is minutes, like 30m"
         if opts.get("ceiling") and not re.fullmatch(r"\d{1,4}(\.\d{1,2})?", opts["ceiling"]):
             return None, "agent: ceiling= is dollars a day, like 0.50"
+    if kind == "gmail" and not logins.is_ref(opts.get("login", "")):
+        return None, "gmail: login= names a Google sign-in, like keychain:google-ann@gmail.com (Settings → Accounts)"
     if kind == "discord" and opts.get("me") and not opts["me"].isdigit():
         return None, "discord: me= is your user id (digits)"
     return Feed(kind, opts, line.strip(), poll=not missing), ""
@@ -446,8 +454,9 @@ def reader(kind: str):
     """The function that looks at a feed of `kind`; GitHub, GitLab and Discord live in their own modules."""
     if kind in READERS:
         return READERS[kind]
-    from orkcraft.realm import feeds_agent, feeds_discord, feeds_git     # they import this module
+    from orkcraft.realm import feeds_agent, feeds_discord, feeds_git, feeds_google     # they import this module
     return {"github": feeds_git.github, "gitlab": feeds_git.gitlab, "discord": feeds_discord.discord,
+            "gmail": feeds_google.gmail,
             "agent": lambda feed, opener: feeds_agent.look(feed)}[kind]
 
 
