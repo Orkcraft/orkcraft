@@ -16,7 +16,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
-import { OrkHead } from "./icons.js";
+import { OrkHead, Scheme } from "./icons.js";
 import { setupBack } from "./setup.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
@@ -129,7 +129,7 @@ function Badge({ garrison, alert }) {
   return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
     ${say(lead.name)}${more > 0 ? `+${more}` : ""}
-    ${lead.scheme && html` <span class="gui-scheme">${lead.scheme}</span>`}
+    ${lead.scheme && html` <${Scheme} scheme=${lead.scheme} />`}
     ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
   </span>`;
 }

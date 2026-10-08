@@ -124,6 +124,24 @@ export function activeBiome() {
   return o && BIOMES[o.biome] ? o.biome : "dirt";
 }
 
+// Camp: a harness scheme (`✦→✻`, `P→✻·4`: realm/looks.py) as pixel marks, one 16 × 16 sprite a harness
+// (design-system/sprites/icons/harness-*.png), the steps joined by a pixel arrow. Office keeps the text marks:
+// each sprite carries its glyph beside it, and a look shows one of the two (layout.css, office.css).
+const HARNESS_SPRITE = { "✻": "claude", "✦": "agy", "⌬": "codex", "☤": "hermes", "π": "pi", "◆": "cursor", "P": "pipeline", "→": "arrow" };
+
+/** The harness scheme: pixel marks in Camp, the text marks in Office; a mark with no sprite stays text. */
+export function Scheme({ scheme }) {
+  if (!scheme) return null;
+  const parts = [...scheme.matchAll(/·\d+|./gu)].map((m) => m[0]);
+  return html`<span class="gui-scheme" title=${scheme}>${parts.map((c, i) => {
+    const name = HARNESS_SPRITE[c];
+    if (!name) return html`<span key=${i} class="gui-scheme__text">${c}</span>`;
+    return html`<span key=${i} class="gui-scheme__mark"><img class="ok-sprite" data-kind="harness"
+      src=${`/ds/sprites/icons/harness-${name}.png`} srcset=${`/ds/sprites/icons/harness-${name}@2x.png 2x`}
+      width=${name === "arrow" ? 10 : 16} height="16" alt="" /><span class="gui-scheme__glyph">${c}</span></span>`;
+  })}</span>`;
+}
+
 export function OrkHead({ o, alert }) {
   if (o.kind === "chain" || o.kind === "script") {
     return html`<img class="ok-sprite" data-kind="chain" src="/ds/sprites/icons/chain.png" width="16" height="16" alt="" />`;

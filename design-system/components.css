@@ -554,4 +554,5 @@ img.ok-sprite.portrait { object-fit: none; object-position: center; background: 
 
 /* The chain marker replaces 🪧 in badges: a 16×16 signpost beside the ork. */
 .ok-badge img[data-kind="chain"] { width: 16px; height: 16px; margin: 0; }
+.ok-badge img[data-kind="harness"] { width: auto; height: 16px; margin: 0; }
 .ok-badge img[data-kind="tier"] { width: 16px; height: 16px; margin: 0; }

@@ -9,6 +9,9 @@
 /* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
 [data-look] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
 [data-look] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }
+/* Beside the head, bare like it: the lead's harness scheme (js/icons.js Scheme). */
+[data-look] .gui-hut__keeper { gap: 4px; }
+[data-look] .gui-hut__keeper .gui-scheme img[data-kind="harness"] { zoom: calc(2 / 3); }
 
 /* The town as a block diagram (design-system/components.md: Road). A plain road is dashed in --road, a
    road a handler works on is solid in --road-live; the exit keeps its dot, the entry gets an arrowhead;
