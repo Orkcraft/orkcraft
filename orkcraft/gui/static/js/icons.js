@@ -65,7 +65,7 @@ export function headerSprite(type, biome = "") {
 // pixels (2 screen px each): the pole's foot at (x, y), the sprite `height` tall. Set by hand: the roof's
 // highest point would put it on the Town Hall's horn.
 const FLAG_AT = {
-  barracks: [19, 0, 26], catapult: [13, 1, 18], council: [11, 0, 23], crag: [13, 8, 33], custom: [17, 1, 26],
+  barracks: [19, 4, 21], catapult: [13, 1, 18], council: [11, 0, 23], crag: [13, 8, 33], custom: [17, 1, 26],
   fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], gramophone: [6, 14, 30], horn: [12, 11, 23],
   lake: [17, 0, 33], loot: [16, 0, 30], mill: [13, 0, 22], mine: [16, 3, 21], pit: [12, 9, 24], scrolls: [16, 0, 30],
   signpost: [11, 0, 24], town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
