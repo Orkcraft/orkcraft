@@ -144,14 +144,6 @@ def claude_runner(prompt: str, model: str | None = None) -> tuple[str, float | N
     return ask("claude", prompt, model)
 
 
-def agy_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    return ask("agy", prompt, model)
-
-
-def codex_runner(prompt: str, model: str | None = None) -> tuple[str, float | None]:
-    return ask("codex", prompt, model)
-
-
 def runner_on(harness_id: str, model: str | None = None) -> Runner:
     """The model call of one tool (a step's or a building's own choice)."""
     return lambda prompt, m=None: ask(harness_id, prompt, m or model)

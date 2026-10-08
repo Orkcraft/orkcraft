@@ -53,7 +53,7 @@ effect(() => {
   command("lake.doc", { tab: active.id }).then((d) => { docs.value = { ...docs.value, [active.id]: d }; }, () => {});
 });
 
-export function closeTab(id) {
+function closeTab(id) {
   const text = takeText(`tab:${id}`);
   return command("lake.close", text === null ? { tab: id } : { tab: id, text }).then((closed) => {
     if (closed) docs.value = Object.fromEntries(Object.entries(docs.value).filter(([k]) => k !== id));

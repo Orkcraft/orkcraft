@@ -95,7 +95,6 @@ AGENT_TIMEOUT_S = 600
 SNAPSHOT_CHARS = 4000          # per road, in an agent prompt
 EXAMPLES_DIR = Path(".orkcraft") / "history" / "handlers"
 EXAMPLE_OUTPUT_CHARS = 8000
-AGY_MODEL = harnesses.need("agy").default_model
 CLAUDE_READ_ONLY, CLAUDE_READ_WEB = harnesses.CLAUDE_READ_ONLY, harnesses.CLAUDE_READ_WEB   # 🪔 Clan Fire: web
 CODEX_WEB = harnesses.CODEX_WEB
 # harnesses that read the repository; the others (agy) work in an empty folder
@@ -242,11 +241,6 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
     return "\n\n".join(parts)
 
 
-def codex_cmd(sandbox: str, model: str = "", web: bool = False, resume: str = "") -> list[str]:
-    """`codex exec` with its prompt on stdin (`-`) and JSONL events on stdout (harnesses.codex_exec)."""
-    return harnesses.codex_exec(harnesses.need("codex"), sandbox, model, web, resume)
-
-
 def resolve(harness: str) -> str:
     """A step's tool as it runs: `main` (or nothing) is the machine's main tool."""
     if harness and harness != harnesses.MAIN:
@@ -274,23 +268,12 @@ def _tokens_of(env: dict) -> int | None:
     return harnesses._tokens_of(env.get("usage"))
 
 
-def _result_of(stdout: str) -> tuple[str, float | None, int | None]:
-    return harnesses.json_result(stdout)[:3]
-
-
 def result_of(harness: str, stdout: str, before: int | dict = 0,
               model: str = "") -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of one run of a tool; `model` is what it was asked to run on
     (a tool that prints tokens and no price is priced from it)."""
     h = harnesses.get(harness)
     return h.outcome(stdout, before, model) if h else harnesses.json_result(stdout, before)
-
-
-def _codex_events(stdout: str) -> list[dict]:
-    return harnesses.json_lines(stdout)
-
-
-codex_result_of = harnesses.codex_result
 
 
 def codex_thread_usage(thread: str, env: dict | None = None) -> dict | None:

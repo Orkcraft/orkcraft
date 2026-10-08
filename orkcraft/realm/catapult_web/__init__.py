@@ -23,7 +23,7 @@ repairs.py (the overseer's repair), forms.py (the intent's forms, the scout agen
 from __future__ import annotations
 
 from orkcraft.realm.catapult_web.scouting import (  # noqa: F401
-    INSTALL_HINT, WATCH_LIMIT_S, WATCH_TICK_S, PRESS_TIMEOUT_S, LEAVE_TIMEOUT_S, FINISHES, FILLABLE,
+    INSTALL_HINT, WATCH_LIMIT_S, WATCH_TICK_S, PRESS_TIMEOUT_S, LEAVE_TIMEOUT_S,
     HELPERS_JS, SCOUT_JS, CLICK_JS, BANNER_JS, available, url_ok, load_map, save_map, _signature,
     path_to_form, scout, path_text, ensure_profile,
 )

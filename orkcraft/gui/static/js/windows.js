@@ -8,7 +8,7 @@ import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online, say } from "./link.js";
 import { Layout } from "./layout.js";
-import { HALL, deploy } from "./tent.js";
+import { HALL } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { Demolish } from "./build.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
@@ -49,7 +49,7 @@ export function closeBuilding(id) {
 }
 
 /** ✕: the panel closes, its documents wait at the handle. */
-export function closePanel() {
+function closePanel() {
   closeBuilding();
   lake.value = { ...lake.value, shown: false, front: false };
 }
@@ -77,7 +77,7 @@ export function panelShown() {
 }
 
 /** Esc: the whole town goes back to half, a picked ork back to its building, else the panel closes. */
-export function stepBack() {
+function stepBack() {
   const o = opened.value;
   if (o.full) opened.value = { ...o, full: false };
   else if (o.ork) opened.value = { ...o, ork: null };
@@ -114,7 +114,7 @@ effect(() => {
 });
 
 /** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */
-export function Badge({ garrison, alert }) {
+function Badge({ garrison, alert }) {
   if (!garrison.length) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const more = garrison.length - 1;
@@ -127,7 +127,7 @@ export function Badge({ garrison, alert }) {
   </span>`;
 }
 
-export function Question({ alert }) {
+function Question({ alert }) {
   return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
     <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
 }

@@ -18,8 +18,6 @@ from pathlib import Path
 
 from orkcraft.realm.catapult_mcp import carrier, local, routes, templates  # noqa: F401
 
-TRACKS = ("direct", "local", "carrier")
-
 
 def route_file(repo_root: Path, building_id: str) -> Path:
     return repo_root / ".orkcraft" / "scripts" / building_id / "route.json"

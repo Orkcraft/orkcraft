@@ -16,7 +16,7 @@ const STARTS = [
 ];
 
 /** An exit's id, as realm/team.py makes it (a road out waits for it). */
-export const exitId = (name) => String(name).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
+const exitId = (name) => String(name).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
 
 function Steps({ step }) {
   const at = STEPS.findIndex(([s]) => s === step);

@@ -2,7 +2,7 @@
 // between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
-import { html, cls } from "./html.js";
+import { html } from "./html.js";
 import { town, command, act, say } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { HandlerDialog } from "./acts.js";

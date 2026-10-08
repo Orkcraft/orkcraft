@@ -353,8 +353,6 @@ def general_wiki(root: Path, now: dt.datetime) -> None:
 
 # -- 3. agents ------------------------------------------------------------------------------------------
 
-PRICING_BASE = "PRICE = 9\n"
-
 
 def forge(root: Path, now: dt.datetime) -> None:
     """Two more branches (one conflicts with main), the PRs `gh` would list and the last merges."""

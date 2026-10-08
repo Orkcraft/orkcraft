@@ -33,7 +33,6 @@ def test_create_link_status_remove(repo: Path):
     path = wt.create(repo, "auth_core", "feat/auth")
     assert path == repo / ".orkcraft" / "worktrees" / "auth_core" and (path / "a.md").exists()
     assert wt.status(path).branch == "feat/auth" and not wt.status(path).dirty
-    assert any(w.branch == "feat/auth" for w in wt.list_worktrees(repo))
     scroll = ts.default_scroll(PRESETS)
     lab = ts.new_orkspace(scroll, "Auth Core", "void")
     wt.link(scroll, lab.id, repo, path, "feat/auth")

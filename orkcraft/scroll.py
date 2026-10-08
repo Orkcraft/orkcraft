@@ -53,7 +53,6 @@ def _typed_events() -> frozenset[str]:
     """The typed events of the building catalog a road may also wait for."""
     from orkcraft.realm import catalog
     return catalog.all_event_ids()
-PIPE_MODES = ROAD_EVENTS          # v2 name, kept for callers
 TRIGGER_TYPES = ("on_demand", "cron", "webhook", "event", "pipe")
 HISTORY_DIR = Path(".orkcraft") / "history" / "buildings"
 MAX_ROADS = 32
@@ -62,12 +61,10 @@ MAX_GARRISON = 9   # the roster selects orcs with the keys 1–9 (steward includ
 # Orc kinds, tried in this order when an orc is created from a prompt (`agent` only for a pipeline of tools
 # the steward does not have; `steward`: a road rule its building's steward carries out, docs/design/steward-listens.md).
 KINDS = ("chain", "script", "steward", "hybrid", "agent")
-HARNESS_ROLES = ("run", "plan", "write", "review")
 # The tools a step names (realm/harnesses.py), "main" first: the machine's main tool, read when it runs;
 # plus "pipeline:<repo-relative spec>.json"
 HARNESSES = (harnesses.MAIN, *harnesses.ids())
 DEFAULT_HARNESS = [{"role": "run", "harness": harnesses.MAIN}]
-CHAIN_OPS = ("filter", "pick", "extract", "sort", "limit", "count", "group", "template", "join")
 # Re-run policy per kind: cheap kinds rerun at once, agents coalesce a burst and restart.
 RUN_DEFAULTS = {
     "chain": {"quiet_s": 0, "restart_on_new": True},

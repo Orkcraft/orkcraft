@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from orkcraft.realm import builders, naming, workshop
 
@@ -295,7 +294,3 @@ def interview_from(turn: Turn, view: int, inputs: list[str], events: list[str], 
                f"\n\nTHE CONVERSATION:\n{talk_text}")[:builders.PROMPT_LIMIT]
     return {"purpose": purpose, "layout": v["layout"], "inputs": inputs, "events": events or ["workshop.done"],
             "history": history, "schedule": turn.schedule if schedule is None else schedule.strip()}
-
-
-def blueprint_dir(repo_root: Path, building_id: str) -> Path:
-    return repo_root / workshop.BLUEPRINTS / building_id
