@@ -8,7 +8,7 @@ import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
-import { MascotHead, BIOMES, headerSprite, TypeIcon } from "./icons.js";
+import { MascotHead, BIOMES, headerSprite, TypeIcon, ToolMark } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { USAGE_WHAT } from "./settings.js";
 import { googleOpen } from "./accounts.js";
@@ -18,14 +18,12 @@ const asking = signal(false);          // the Request a tool dialog
 const send = (name, args = {}) => command(name, args).catch(() => {});
 
 const GLYPHS = new Set(["github", "gitlab", "gmail", "discord", "jira", "confluence", "figma"]);
-const TOOL_GLYPHS = new Set(["claude", "cursor", "pi"]);   // icons/tools
 
-/** A service's glyph (icons/services); a service without one shows its first letter, Slack its `#`.
- *  An AI tool's (`tool`, icons/tools) stands bare beside its checkbox; a tool without one shows its harness mark. */
-function Glyph({ id, big = false, tool = false, mark = "" }) {
-  const has = (tool ? TOOL_GLYPHS : GLYPHS).has(id);
-  const text = has ? "" : mark || (id === "slack" ? "#" : (id[0] || "?").toUpperCase());
-  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${tool ? "tool-" : ""}${id}`, { "is-big": big, "is-bare": tool, "has-glyph": has })}
+/** A service's glyph (icons/services); a service without one shows its first letter, Slack its `#`. */
+function Glyph({ id, big = false }) {
+  const has = GLYPHS.has(id);
+  const text = has ? "" : id === "slack" ? "#" : (id[0] || "?").toUpperCase();
+  return html`<span class=${cls(`gui-onb__svc gui-onb__svc--${id}`, { "is-big": big, "has-glyph": has })}
     aria-hidden="true">${text}</span>`;
 }
 
@@ -110,7 +108,7 @@ function NoTools({ t }) {
       Orks run on one of yours, with your own sign-in and your own plan. Orkcraft has no AI of its own, so it needs one of them.</p>
     <div class="gui-onb__table">
       ${t.recommended.map((h) => html`<div key=${h.id} class="gui-onb__row is-get">
-        <span class="gui-onb__tool"><${Glyph} id=${h.id} tool=${true} mark=${h.mark} />${h.title}</span>
+        <span class="gui-onb__tool"><${ToolMark} id=${h.id} mark=${h.mark} />${h.title}</span>
         <span class="gui-onb__cmds ok-font-status">
           <span><span class="ok-tone-muted">Install</span> <code>${h.install}</code></span>
           <span><span class="ok-tone-muted">Then sign in</span> <code>${h.login}</code></span></span>
@@ -145,7 +143,7 @@ function ToolsStep({ o }) {
           <label class="ok-check" title=${say(`Orks run on ${r.title}`)}>
             <input type="checkbox" class="gui-onb__hide" checked=${r.enabled} onChange=${() => set(r.id, { enabled: !r.enabled })} />
             <i>${r.enabled ? "✓" : ""}</i></label>
-          <span class="gui-onb__tool"><${Glyph} id=${r.id} tool=${true} mark=${r.mark} />${r.title}
+          <span class="gui-onb__tool"><${ToolMark} id=${r.id} mark=${r.mark} />${r.title}
             ${r.version && html`<span class="ok-font-status ok-tone-muted">${r.version}</span>`}</span>
           <span class=${cls("ok-font-status", r.logged_in === false ? "ok-tone-wait" : "ok-tone-ok")}>
             ${r.logged_in === false ? say(`⚠ not logged in: ${r.login}`) : "✓ logged in"}</span>

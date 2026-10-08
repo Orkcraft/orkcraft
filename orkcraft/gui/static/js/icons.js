@@ -124,16 +124,52 @@ export function activeBiome() {
   return o && BIOMES[o.biome] ? o.biome : "dirt";
 }
 
-// Camp: a harness scheme (`✦→✻`, `P→✻·4`: realm/looks.py) as pixel marks, one 16 × 16 sprite a harness
-// (design-system/sprites/icons/harness-*.png), the steps joined by a pixel arrow. Office keeps the text marks:
-// each sprite carries its glyph beside it, and a look shows one of the two (layout.css, office.css).
-const HARNESS_SPRITE = { "✻": "claude", "✦": "agy", "⌬": "codex", "☤": "hermes", "π": "pi", "◆": "cursor", "P": "pipeline", "→": "arrow" };
+// An AI tool's mark (realm/harnesses.py): a simple sign of its own in the tool's colours, no one's logo —
+// Claude an orange starburst, Antigravity an arch in Google's four colours, Codex a green tile with `>_`,
+// Hermes a purple winged staff, pi a rose tile with π, Cursor a grey cube. Camp draws the pixel sprite
+// (design-system/sprites/icons/harness-<id>.png, tools/icon_sprites.py), Office the same sign as a small
+// SVG; a look shows one of the two (layout.css, office.css). A tool without one shows its text mark.
+const TOOL_SVG = {
+  claude: [["path", { d: "M8 1.2v13.6M1.2 8h13.6M3.2 3.2l9.6 9.6M12.8 3.2l-9.6 9.6", stroke: "#d97757", "stroke-width": 2.1, "stroke-linecap": "round" }],
+           ["circle", { cx: 8, cy: 8, r: 2.4, fill: "#d97757" }]],
+  agy: [["path", { d: "M3.2 15V8", stroke: "#4285f4" }], ["path", { d: "M3.2 8.1A4.8 4.8 0 0 1 8 3.2", stroke: "#ea4335" }],
+        ["path", { d: "M8 3.2a4.8 4.8 0 0 1 4.8 4.9", stroke: "#fbbc05" }], ["path", { d: "M12.8 8v7", stroke: "#34a853" }]]
+    .map(([t, a]) => [t, { ...a, "stroke-width": 2.6, fill: "none" }]),
+  codex: [["rect", { x: 1, y: 1, width: 14, height: 14, rx: 3, fill: "#10a37f" }],
+          ["path", { d: "M4.3 4.8 7.5 8l-3.2 3.2M8.6 11.4h3.4", stroke: "#fff", "stroke-width": 1.7, "stroke-linecap": "round", "stroke-linejoin": "round", fill: "none" }]],
+  hermes: [["path", { d: "M8 1.5v13", stroke: "#a855f7", "stroke-width": 1.8 }],
+           ["path", { d: "M7 4.6C5.4 2.6 3.3 2.2 1 2.9c1 1.8 3.3 2.7 6 2.6zM9 4.6c1.6-2 3.7-2.4 6-1.7-1 1.8-3.3 2.7-6 2.6z", fill: "#c39bfb" }],
+           ["path", { d: "M10.6 6.6c0 1.6-5.2 1.4-5.2 3s5.2 1.4 5.2 3M5.4 6.6c0 1.6 5.2 1.4 5.2 3s-5.2 1.4-5.2 3", stroke: "#a855f7", "stroke-width": 1.3, fill: "none" }]],
+  pi: [["rect", { x: 1, y: 1, width: 14, height: 14, rx: 3, fill: "#e5395b" }],
+       ["path", { d: "M3.8 5.2h8.4M6.2 5.2v4.4c0 1-.3 1.8-1 2.3M9.8 5.2v5.2c0 .8.4 1.2 1.3 1.2", stroke: "#fff", "stroke-width": 1.8, "stroke-linecap": "round", fill: "none" }]],
+  cursor: [["path", { d: "M8 1.2 14.4 4.9 8 8.6 1.6 4.9z", fill: "#e3e8ef" }], ["path", { d: "M1.6 4.9 8 8.6v6.2l-6.4-3.7z", fill: "#9aa5b4" }],
+           ["path", { d: "M14.4 4.9 8 8.6v6.2l6.4-3.7z", fill: "#4a525e" }],
+           ["path", { d: "M8 1.2l6.4 3.7v6.2L8 14.8l-6.4-3.7V4.9z", stroke: "#4a525e", "stroke-width": .8, "stroke-linejoin": "round", fill: "none" }]],
+};
+const TOOL_OF_MARK = { "✻": "claude", "✦": "agy", "⌬": "codex", "☤": "hermes", "π": "pi", "◆": "cursor" };
 
-/** The harness scheme: pixel marks in Camp, the text marks in Office; a mark with no sprite stays text. */
+/** An AI tool's mark by its id (`claude`) or its text mark (`✻`): the sprite in Camp, the SVG in Office. */
+export function ToolMark({ id = "", mark = "" }) {
+  const tool = TOOL_SVG[id] ? id : TOOL_OF_MARK[mark];
+  if (!tool) return mark ? html`<span class="gui-toolmark__text" aria-hidden="true">${mark}</span>` : null;
+  return html`<span class="gui-toolmark" aria-hidden="true"><img class="ok-sprite" data-kind="harness"
+      src=${`/ds/sprites/icons/harness-${tool}.png`} srcset=${`/ds/sprites/icons/harness-${tool}@2x.png 2x`}
+      width="16" height="16" alt="" />
+    <svg class="gui-toolmark__svg" viewBox="0 0 16 16" width="14" height="14">
+      ${TOOL_SVG[tool].map(([tag, attrs]) => html`<${tag} ...${attrs} />`)}</svg></span>`;
+}
+
+// Camp: a harness scheme (`✦→✻`, `P→✻·4`: realm/looks.py) as marks, one a harness (`ToolMark`), the steps
+// joined by a pixel arrow; a pipeline's P has its sprite too. Office shows the tools' SVGs and the P and the
+// arrow as text: each sprite carries its glyph beside it (layout.css, office.css).
+const HARNESS_SPRITE = { "P": "pipeline", "→": "arrow" };
+
+/** The harness scheme: the tools' marks, the P and the arrow pixel in Camp and text in Office. */
 export function Scheme({ scheme }) {
   if (!scheme) return null;
   const parts = [...scheme.matchAll(/·\d+|./gu)].map((m) => m[0]);
   return html`<span class="gui-scheme" title=${scheme}>${parts.map((c, i) => {
+    if (TOOL_OF_MARK[c]) return html`<span key=${i} class="gui-scheme__mark"><${ToolMark} mark=${c} /></span>`;
     const name = HARNESS_SPRITE[c];
     if (!name) return html`<span key=${i} class="gui-scheme__text">${c}</span>`;
     return html`<span key=${i} class="gui-scheme__mark"><img class="ok-sprite" data-kind="harness"

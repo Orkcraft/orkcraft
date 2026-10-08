@@ -32,10 +32,15 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
   hourglass, a stack of coins, two crossed logs and meat on the bone (`js/chrome.js`; the gold also rides
   on carts, `js/town.js`).
 - `icons/harness-claude.png`, `harness-agy.png`, `harness-codex.png`, `harness-hermes.png`, `harness-pi.png`,
-  `harness-cursor.png`, `harness-pipeline.png` (16×16) and `harness-arrow.png` (10×16): a harness scheme's marks in
-  Camp, each in its harness colour (`realm/harnesses.py`) with the house's dark outline: an eight-ray burst (✻), a
-  four-point star (✦), a hexagon with a ring (⌬), a caduceus (☤), a π, a diamond (◆), a P for a pipeline, and the
-  grey arrow between steps (`js/icons.js` `Scheme`; Office keeps the text marks).
+  `harness-cursor.png` (16×16): each AI tool's mark, a simple sign of its own in the tool's colours (no one's
+  logo) with the house's dark outline: an orange starburst (Claude), an arch in Google's four colours
+  (Antigravity), a green tile with `>_` (Codex), a purple winged staff (Hermes), a rose tile with π (pi), a
+  grey cube (Cursor). Drawn by `tools/icon_sprites.py` (`js/icons.js` `ToolMark`: schemes, toasts, Town
+  settings, the onboarding, the Mine; Office draws the same signs as small SVGs).
+  `harness-pipeline.png` (16×16) and `harness-arrow.png` (10×16): a scheme's P and the grey arrow between
+  steps (`js/icons.js` `Scheme`; Office keeps them as text).
+- `icons/notify-on.png`, `notify-off.png` (16×16): Do not disturb's toggle beside the portrait, a bone speaking
+  horn with a gold rim, struck through while it holds (`tools/icon_sprites.py`, `js/portrait.js` `Horn`).
 - `icons/chain.png` (16×16): a wooden signpost with a gold stud, the chain-or-script marker in place of an
   ork (`js/icons.js`).
 

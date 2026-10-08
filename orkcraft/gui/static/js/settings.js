@@ -15,6 +15,7 @@ import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { PhonesField } from "./phones.js";
 import { AccountsField } from "./accounts.js";
+import { ToolMark } from "./icons.js";
 
 export const settingsOpen = signal(false);
 
@@ -88,10 +89,10 @@ function ToolsField({ s, set }) {
   return html`<div class="gui-field"><span class="ok-font-label">${say("AI tools")}</span>
       <span class="gui-steps" role="group" aria-label=${say("AI tools")}>
         ${s.tools.map((x) => html`<button key=${x.id} class=${cls("gui-steps__one", { "is-on": x.on })} aria-pressed=${x.on}
-            onClick=${() => set({ tools: { [x.id]: !x.on } })}>${x.mark} ${x.title}</button>`)}
+            onClick=${() => set({ tools: { [x.id]: !x.on } })}><${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}</button>`)}
       </span></div>
     <${Steps} label=${say("Main tool")} value=${s.main_tool}
-      items=${[["", say("First one on")], ...on.map((x) => [x.id, `${x.mark} ${x.title}`])]}
+      items=${[["", say("First one on")], ...on.map((x) => [x.id, html`<${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}`])]}
       onPick=${(v) => set({ main_tool: v })} />
     <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Warchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>
     <${TierModelsField} s=${s} set=${set} />`;
@@ -106,7 +107,7 @@ function TierModel({ tool, row, set }) {
   const [typed, setTyped] = useState(row.chosen);
   const save = (model) => { setTyping(false); set({ tier_model: { tool: tool.id, tier: row.tier, model } }); };
   const pick = (v) => (v === OTHER ? setTyping(true) : save(v));
-  return html`<div class="gui-field"><span class="ok-font-label">${tool.mark} ${tool.title} · ${say(row.label)}</span>
+  return html`<div class="gui-field"><span class="ok-font-label"><${ToolMark} id=${tool.id} mark=${tool.mark} /> ${tool.title} · ${say(row.label)}</span>
       <span>
         <select class="ok-input" value=${typing ? OTHER : row.chosen} aria-label=${say(`${tool.title}: the ${row.label} model`)}
             onChange=${(e) => pick(e.target.value)}>

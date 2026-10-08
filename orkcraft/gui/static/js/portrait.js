@@ -1,6 +1,7 @@
 // The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in Warcraft III.
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
-// marks: the stage, 🌙 while Do not disturb holds, a dot while an ork asks (the dot opens Answers). A click
+// marks: the stage and a dot while an ork asks (the dot opens Answers); Do not disturb shows on its toggle
+// beside it, never on the head. A click
 // opens its menu: You (the head, the stage, Next, the deeds), then how the town looks and talks to you — the
 // look, Do not disturb, Fire on the roofs — and Town settings… (models, AI tools, how the town works). These
 // are the person's, per machine (gui/you.py).
@@ -81,6 +82,16 @@ function Menu({ y, p }) {
   </section>`;
 }
 
+/** Do not disturb's mark: a speaking horn while the town may call, the horn struck through while it holds —
+ *  Camp's pixel sprite (design-system/sprites/icons/notify-*.png, tools/icon_sprites.py), Office's line icon. */
+function Horn({ on }) {
+  const name = on ? "notify-off" : "notify-on";
+  return html`<img class="ok-sprite gui-portrait__horn" src=${`/ds/sprites/icons/${name}.png`}
+      srcset=${`/ds/sprites/icons/${name}@2x.png 2x`} width="16" height="16" alt="" />
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path d="M2.5 6h2.2l6.8-3.5v11L4.7 10H2.5zM5 10l1 3.8h1.8L7.2 10.6" />${on && html`<path d="M1.5 1.5l13 13" />`}</svg>`;
+}
+
 /** The corner's quick toggles beside the big portrait: Do not disturb on or off (its menu keeps 1 h and Until),
  *  and the look, Camp or Office. */
 function Toggles({ p }) {
@@ -90,7 +101,7 @@ function Toggles({ p }) {
     <button class=${cls("gui-portrait__toggle", { "is-on": d.on })} aria-pressed=${!!d.on}
         title=${say(d.on ? `Do not disturb: ${d.label} — a click turns it off` : "Do not disturb: off — a click turns it on")}
         aria-label=${say("Do not disturb")} onClick=${() => command("you.dnd", { dnd: d.on ? "off" : "on" }).catch(() => {})}>
-      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M10.5 2.5a5.5 5.5 0 1 0 3 9.6A6 6 0 0 1 10.5 2.5z" /></svg>
+      <${Horn} on=${!!d.on} />
     </button>
     <button class=${cls("gui-portrait__toggle", { "is-on": office })} aria-pressed=${office}
         title=${say(office ? "Office look — a click switches to Camp" : "Camp look — a click switches to Office")}
@@ -116,7 +127,6 @@ export function Portrait({ corner = false }) {
         title=${say(`You: ${who}`)} onClick=${() => { portraitOpen.value = !portraitOpen.value; }}>
       <${Face} y=${y} p=${p} size=${corner ? 3 : 2} />
       ${p.look !== "office" && html`<span class="gui-portrait__stage" aria-hidden="true">${ROMAN[y.stage] || ""}</span>`}
-      ${d.on && html`<span class="gui-portrait__dnd" aria-hidden="true">🌙</span>`}
     </button>
     ${asks && html`<button class="gui-portrait__asks" title=${say("An ork asks: Answers")} aria-label=${say("Answers")}
         onClick=${() => openOrders()}></button>`}

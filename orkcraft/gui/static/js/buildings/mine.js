@@ -11,6 +11,7 @@ import { act, details, say } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { usePeek } from "../windows.js";
+import { ToolMark } from "../icons.js";
 
 const sheet = new URL("./mine.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -33,7 +34,7 @@ const STATUS = { queued: "Waiting its turn", planning: "Planning", searching: "S
 
 function Tools({ tools }) {
   return html`<span class="gui-mine__tools">${tools.map((t) => html`<span key=${t.id} class=${`ok-h-${t.id}`} title=${t.title}>
-    ${t.mark} ${t.sources ?? ""}</span>`)}</span>`;
+    <${ToolMark} id=${t.id} mark=${t.mark} /> ${t.sources ?? ""}</span>`)}</span>`;
 }
 
 function Counts({ c }) {
@@ -140,7 +141,7 @@ function Research({ id, r }) {
     ${r.plan.length > 0 && html`<ol class="gui-mine__plan">${r.plan.map((s, n) => html`<li key=${n}>${s.q}
       <span class="ok-tone-muted gui-mine__marks">${groups.filter((g) => g.sub === n + 1).map((g) => MARK[g.state] || "").join(" ")}</span></li>`)}</ol>`}
     <div class="gui-mine__cols">${r.tools.map((t) => html`<div key=${t.id} class="gui-mine__col">
-      <b class=${`ok-h-${t.id}`}>${t.mark} ${t.title}</b>
+      <b class=${`ok-h-${t.id}`}><${ToolMark} id=${t.id} mark=${t.mark} /> ${t.title}</b>
       <span>${t.sources} ${say("sources")} · ${t.findings} ${say("findings")}</span>
       <span class="ok-tone-muted">${t.mind}${t.cost ? ` · ${money(t.cost)}` : ""}</span>
       ${t.error && html`<span class="ok-tone-error" title=${t.error}>✗ ${t.error.slice(0, 60)}</span>`}

@@ -276,6 +276,8 @@ button { font: inherit; color: inherit; }
 .gui-steps__one.is-icon { padding: 1px var(--space-1); }
 .gui-steps__one > svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .gui-steps__one + .gui-steps__one { border-left: 1px solid var(--frame); }
+.gui-steps__one:has(> .gui-toolmark) { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }   /* an AI tool: its mark before its name */
+.gui-steps:has(> .gui-steps__one > .gui-toolmark) { flex-wrap: wrap; max-width: 100%; }
 .gui-steps__one:hover { background: var(--selection); color: var(--ink); }
 .gui-steps__one.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
 .gui-steward__commands { display: flex; flex-wrap: wrap; gap: var(--space-2); }
@@ -325,10 +327,15 @@ button { font: inherit; color: inherit; }
 .gui-rows { list-style: none; margin: 0; padding: 0; }
 .gui-rows > li { padding: var(--space-1) 0; }
 .gui-scheme { color: var(--ink-muted); display: inline-flex; align-items: center; gap: 2px; }
-/* Camp draws a harness as its pixel mark (js/icons.js Scheme); Office shows the text mark instead (office.css). */
+/* Camp draws a harness as its pixel mark (js/icons.js Scheme); Office shows the tool's SVG and the P and the
+   arrow as text instead (office.css). */
 .gui-scheme__mark { display: inline-flex; align-items: center; }
 .gui-scheme__mark > img[data-kind="harness"] { image-rendering: pixelated; }
 .gui-scheme__glyph { display: none; }
+/* An AI tool's mark (js/icons.js ToolMark): the pixel sprite in Camp, its SVG in Office (office.css). */
+.gui-toolmark { display: inline-flex; align-items: center; vertical-align: -3px; }
+.gui-toolmark > img { image-rendering: pixelated; }
+.gui-toolmark__svg { display: none; }
 
 .gui-toasts { position: fixed; right: var(--space-4); bottom: calc(56px + var(--space-4)); z-index: 10;
   display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
@@ -609,7 +616,7 @@ button { font: inherit; color: inherit; }
 .gui-info__renown { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 /* The portrait (js/portrait.js, docs/design/portrait.md): the person in the HUD's left corner, its marks
-   (the stage, 🌙 Do not disturb, a dot while an ork asks) and its menu, headed by You: the mascot, its stage
+   (the stage, a dot while an ork asks; Do not disturb only on its toggle beside it) and its menu, headed by You: the mascot, its stage
    and deeds (docs/design/growth.md §7). Office draws the role's two letters instead of the head. */
 .gui-portrait-slot { position: relative; flex: none; display: inline-flex; align-items: center; }
 .gui-portrait { position: relative; display: grid; place-items: center; width: 30px; height: 28px; padding: 0; border: 0;
@@ -628,7 +635,6 @@ button { font: inherit; color: inherit; }
 .gui-portrait__stage { position: absolute; right: 0; bottom: 0; min-width: 14px; padding: 0 2px; box-sizing: border-box;
   background: var(--panel-inset); box-shadow: 0 0 0 1px var(--frame); color: var(--ink-gold); font: 700 9px/13px var(--ok-font);
   text-align: center; }
-.gui-portrait__dnd { position: absolute; right: -2px; top: 0; font-size: 10px; line-height: 1; }
 .gui-portrait__asks { position: absolute; left: -2px; bottom: 0; width: 11px; height: 11px; padding: 0; border: 2px solid var(--panel-raised);
   border-radius: var(--radius-full); background: var(--alert); cursor: pointer; }
 .gui-portrait__menu { position: fixed; left: var(--space-2); top: calc(var(--bar-hud) + 8px); z-index: 60; width: 340px; display: flex;
@@ -747,12 +753,15 @@ button { font: inherit; color: inherit; }
 .gui-portrait.is-big:is(:hover, .is-open) .gui-portrait__ground { box-shadow: inset 0 -3px 0 var(--land), inset 0 0 0 2px var(--frame-focus); }
 .gui-portrait.is-big .gui-portrait__mono { width: 36px; height: 36px; font-size: 12px; }
 .gui-portrait.is-big .gui-portrait__stage { right: 2px; bottom: 2px; min-width: 14px; font-size: 9px; line-height: 12px; }
-.gui-portrait.is-big .gui-portrait__dnd { right: 2px; top: 2px; font-size: 10px; }
 .gui-portrait-slot.is-corner .gui-portrait__asks { left: 0; bottom: 0; width: 11px; height: 11px; }
 .gui-portrait__toggles { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-portrait__toggle { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; cursor: pointer;
   background: var(--panel-raised); color: var(--ink-muted); box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo); }
 .gui-portrait__toggle > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+/* Do not disturb's horn: the pixel sprite in Camp, the line icon in Office (js/portrait.js Horn). */
+.gui-portrait__horn { image-rendering: pixelated; }
+.gui-portrait__horn + svg, [data-look="office"] .gui-portrait__horn { display: none; }
+[data-look="office"] .gui-portrait__horn + svg { display: block; }
 .gui-portrait__toggle:hover { color: var(--ink); }
 .gui-portrait__toggle:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
 .gui-portrait__toggle.is-on { color: var(--frame-focus); box-shadow: var(--bevel-sunken), 0 0 0 1px var(--frame-focus); }

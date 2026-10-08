@@ -74,7 +74,7 @@ Every colour is a token with one value per theme. Use the token, never the hex.
   - `alert` means a question is waiting. `alert-hot` means it has waited 30 s or more; use it only for fills, frames and icons.
   - The fire set (`fire-glow`, `fire-ember`, `fire-ground`, `fire-ground-hot`) is the burning building in Camp.
 - **Domain colours.**
-  - Harness marks: `harness-claude` ✻, `harness-agy` ✦, `harness-codex` ⌬, `harness-pipeline` P.
+  - Harness marks: `harness-claude` ✻, `harness-agy` ✦, `harness-codex` ⌬, `harness-pipeline` P (text tones). The tools' drawn marks keep their own colours (`js/icons.js` `ToolMark`, `tools/icon_sprites.py`).
   - Tiers: `tier-elder`, `tier-warrior`, `tier-laborer`.
   - Day bar: `day`, `day-quiet`, `day-office`, with `quiet-ink` for its text.
   - Roads: `road`, `road-bright`, `road-selected`.
@@ -173,7 +173,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
   - Words in `<span class="ok-word">` replace pictographs: Quota, Spend, Context, Agents, `busy`, `?`.
   - Icon buttons become text actions.
   - Status is a coloured dot next to a word.
-  - The text glyphs ✓ ✗ ⚠ · → stay, as do the harness marks ✻ ✦ ⌬.
+  - The text glyphs ✓ ✗ ⚠ · → stay. An AI tool's mark is a small SVG in the tool's colours (`js/icons.js` `ToolMark`): small, the colour tells the tools apart.
 - **Sprites group.** Finished sprites live here, starting with The Forge: a 137×114 header, trimmed to the building with no ground strip, and its @2x copy.
 - **Brand** (Brand group).
   - The gold wordmark is for the splash screen and onboarding.
