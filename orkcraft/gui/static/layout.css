@@ -18,7 +18,6 @@ button { font: inherit; color: inherit; }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
 .gui-hud { grid-area: hud; }
-.gui-hud__mark { display: block; image-rendering: pixelated; }
 .gui-hud__project { color: var(--ink-muted); }
 /* The project's name opens the town's settings (js/settings.js); Halt All stands where Ready was. */
 .gui-hud__menu, .gui-hud__stop { padding: 1px var(--space-2); border: 1px solid transparent; border-radius: var(--radius-sm, 0);

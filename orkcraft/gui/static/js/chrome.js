@@ -26,7 +26,6 @@ export function Hud() {
   const words = t.resources;
   return html`<header class="ok-hud gui-hud">
     ${narrow.value && html`<${Portrait} />`}
-    <img class="ok-sprite gui-hud__mark" src="/ds/logo/ork-mark-camp.svg" width="24" height="16" alt="" />
     <span class="ok-hud__brand">Orkcraft</span>
     <button class="gui-hud__project gui-hud__menu" title=${say("Town settings: how freely the orks decide, how long they wait")}
       onClick=${() => { settingsOpen.value = true; }}>${t.project}${t.demo ? " · demo" : ""} ▾</button>
