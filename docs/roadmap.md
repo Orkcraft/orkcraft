@@ -102,3 +102,13 @@ Done when, at *Propose only*, the question names the message and offers *Make it
 the *through Claude* path (`watchtower_add.what_claude`).
 
 Done when a source added through Claude's connection keeps its kind in `wants`.
+
+## ⛏️ The Mine: what its check rests on
+
+The Mine is built and tested with fake tools ([design/mine.md](design/mine.md)). Before its "confirmed"
+can be trusted: a smoke test on live Claude Code, Codex and Hermes (the JSON they answer, the cost against
+the estimate), a finding's mind taken from the model that answered rather than the tool, and agy searching
+the web or saying why it cannot. Then: sources that do not open, a page that retells another, a debate that
+can change a claim, *Search more* queued, *+ Repeat* on the Calendar, a source added by hand; the usage
+proxy deployed again and a release. All of it, with what "done" means, in
+[design/mine-next.md](design/mine-next.md).
