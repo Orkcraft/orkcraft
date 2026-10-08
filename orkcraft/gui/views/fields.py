@@ -9,7 +9,7 @@ from orkcraft.realm import catalog, lexicon, pipes, settle, tasklist
 
 REFRESH_S = 10.0              # as the TUI: a hand edit of the board file shows within this
 COLORS = {"🟨": "yellow", "🟩": "green", "🟦": "blue", "🟥": "red", "🟪": "purple"}
-TOP = 2                       # titles a part shows on the closed card
+MORE = 8                      # titles a part sends: a small card shows two, one stretched larger more (building-views.md §1a)
 
 
 def refresh(w) -> None:
@@ -32,7 +32,7 @@ def card(w) -> dict:
     for ln in w.visible_lanes():
         rows = [c for c in w.cards if c.column == ln.id]
         count = {"id": ln.id, "label": ln.label, "count": len(rows), "new": any(c.id not in seen for c in rows),
-                 "top": [_short(c.title) for c in rows[:TOP]] if ln.id != "done" else []}
+                 "top": [_short(c.title) for c in rows[:MORE]] if ln.id != "done" else []}
         (notes if ln.kind == tasklist.NOTE else lanes).append(count)
     if w.mode == "notes":
         lanes, notes = notes, []
@@ -40,10 +40,10 @@ def card(w) -> dict:
     if w.shows_todos:
         mine = w.todos
         open_ = [c for c in mine if not c.checked]
-        todos = {"open": len(open_), "count": len(mine), "top": [_short(c.title) for c in open_[:TOP + 1]]}
+        todos = {"open": len(open_), "count": len(mine), "top": [_short(c.title) for c in open_[:MORE]]}
         latest = w.notes[::-1]
         ideas = {"count": len(latest), "new": any(c.id not in seen for c in latest),
-                 "top": [_short(c.title) for c in latest[:TOP + 1]]}
+                 "top": [_short(c.title) for c in latest[:MORE]]}
     return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas,
             "waiting": len(w.waiting())}
 

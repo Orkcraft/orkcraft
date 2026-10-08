@@ -496,6 +496,23 @@
             }
           ]
         },
+        "hut_size": {
+          "description": "Town view: its card's width and height in px, as the person stretched it (the bigger, the more it shows); null = its own size.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "min_size": {
           "type": "object",
           "additionalProperties": false,

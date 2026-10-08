@@ -113,6 +113,10 @@ as `data-look` always did; the words, the panel, the line and every action are t
 | the Warchief | jokes, addresses you by your stage ("My Lord Lich") | plain ("Forge asks for a decision") |
 | growth news, a new stage's glow | yes | no; the stage and the deeds keep counting and show again in Camp |
 
+- **A hut's controls are the same size in both looks:** the pin and the fold chevron sit in 24 px boxes, so
+  the plainer Office never makes them harder to hit. Office draws no status dot in a card's corner (the design
+  system's office `ok-hut__dot`): the frame, `?` and the busy strip already say it, and a grey dot that meant
+  nothing read as a button.
 - **What stays coloured in Office:** `danger`, `warning`, `success`, each with its mark (✗ ⚠ ✓). They
   say what costs money or risks work; monochrome never hides them.
 - **The onboarding** keeps its voice and its sprites in both looks: it is where the mascot is chosen.

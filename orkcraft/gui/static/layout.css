@@ -71,9 +71,9 @@ button { font: inherit; color: inherit; }
 .gui-warchief__note-rows dd { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The right click (js/menu.js). */
-.gui-menu { position: fixed; z-index: 30; margin: 0; padding: var(--space-1) 0; min-width: 200px; list-style: none;
+.gui-menu { position: fixed; z-index: 30; margin: 0; padding: var(--space-1) 0; min-width: 200px; width: max-content; list-style: none;
   background: var(--panel); border: 1px solid var(--frame-strong); border-radius: var(--radius-md, 0); box-shadow: var(--shadow-window); }
-.gui-menu__item { display: flex; gap: var(--space-3); cursor: pointer; padding: var(--space-1) var(--space-3); }
+.gui-menu__item { display: flex; gap: var(--space-3); cursor: pointer; padding: var(--space-1) var(--space-3); white-space: nowrap; }
 .gui-menu__item .meta { margin-left: auto; color: var(--ink-muted); font-size: .85em; }
 .gui-menu__item.is-danger { color: var(--danger); }
 .gui-menu__sep { border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
@@ -83,7 +83,29 @@ button { font: inherit; color: inherit; }
   background: var(--terrain-image, none) repeat; background-attachment: local; }   /* the biome's glyphs (js/terrain.js) */
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
-.gui-town__room > .gui-hut.is-dragging { z-index: 3; cursor: grabbing; opacity: .9; }
+.gui-town__room > .gui-hut.is-dragging { cursor: grabbing; }
+/* A drag or a stretch moves a ghost, never the hut (js/town.js Footprint): a dashed outline of where it would
+   stand; red, with the parts that would stand on another hut filled, where a drop does nothing. */
+.gui-footprints { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.gui-footprint { position: absolute; box-sizing: border-box; border: 2px dashed var(--frame-focus);
+  background: color-mix(in srgb, var(--frame-focus) 12%, transparent); border-radius: var(--radius-md, 0); }
+.gui-footprint.is-blocked { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 6%, transparent); }
+.gui-footprint__hit { position: absolute; background: color-mix(in srgb, var(--danger) 35%, transparent); }
+/* A card's edges and corner stretch it (js/hut.js Grips): a 8px strip on the right and the bottom, the corner
+   a 14px square marked with two lines while the mouse is on the hut. */
+.gui-hut__grip { position: absolute; z-index: 2; touch-action: none; }
+.gui-hut__grip.is-e { top: 0; right: -4px; bottom: 10px; width: 8px; cursor: ew-resize; }
+.gui-hut__grip.is-s { left: 0; right: 10px; bottom: -4px; height: 8px; cursor: ns-resize; }
+.gui-hut__grip.is-se { right: -2px; bottom: -2px; width: 14px; height: 14px; cursor: nwse-resize; opacity: 0;
+  background: linear-gradient(135deg, transparent 55%, var(--ink-muted) 55% 62%, transparent 62% 75%, var(--ink-muted) 75% 82%, transparent 82%); }
+.gui-hut:hover .gui-hut__grip.is-se, .gui-hut.is-resizing .gui-hut__grip.is-se { opacity: 1; }
+.gui-hut.is-folded .gui-hut__grip { display: none; }
+/* A stretched card keeps the size the person gave it: what does not fit is cut, never spilled over its neighbours. */
+.gui-town__room > .gui-hut.ok-hut[class].is-sized { min-width: 0; max-width: none; }
+.gui-hut.is-sized > .ok-hut__card { box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; }
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body, .gui-hut.is-sized > .ok-hut__card > .ok-hut__lines { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+/* Larger, a card's lines wrap instead of being cut at the edge. */
+.gui-hut.is-size-m .gui-hut__text, .gui-hut.is-size-l .gui-hut__text { white-space: normal; }
 /* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). Every
    card is at least as wide as the narrowest size and as tall as a headline and two lines, so the town
    reads as a grid of like cards, not a scatter of strips; a wider card (Task board, Calendar) sets its own. */
@@ -121,7 +143,7 @@ button { font: inherit; color: inherit; }
 .gui-hut.is-selected .gui-hut__quick { border-color: var(--frame-focus); }
 .gui-hut__quick .gui-hut__quick-one { height: 24px; min-height: 0; padding: 0 var(--space-2); font-size: 11px; line-height: 24px; }     /* a type's card as one element whose parts are the body's own */
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
-.gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
+.gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0 -4px auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
 .gui-hut__pin > svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .gui-hut__pin:hover { color: var(--ink); background: var(--selection); }
 .gui-hut__pin.is-on { color: var(--frame-focus); }
@@ -137,8 +159,9 @@ button { font: inherit; color: inherit; }
 /* A folded hut (js/hut.js, docs/design/folded-cards.md): its title bar alone, ▸ by the pin; a mark says what the card
    would have said first. A peek draws the card's inside under the title bar over the huts below, out of the flow,
    so the hut keeps its folded size and nothing under it moves. */
-.gui-hut__fold { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 0;
-  border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); font-size: 10px; line-height: 1; cursor: pointer; }
+.gui-hut__fold { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px -4px -4px 0; padding: 0; border: 0;
+  border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
+.gui-hut__fold > svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .gui-hut__fold:hover { color: var(--ink); background: var(--selection); }
 .gui-hut__fold:not(.is-on) { opacity: 0; }
 .gui-hut:hover .gui-hut__fold, .gui-hut:focus-within .gui-hut__fold, .gui-hut.is-selected .gui-hut__fold { opacity: 1; }
@@ -175,7 +198,6 @@ button { font: inherit; color: inherit; }
 .gui-hut__roof { transition: filter .3s; }
 .gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof { filter: brightness(.78) saturate(.8); }
 .gui-hut .ok-hut__card { min-height: 28px; }
-.gui-hut__dot { position: absolute; top: var(--space-2); right: var(--space-2); }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
 /* A building that stopped taking work (Barracks after Halt All or ⏸): a warning frame and Resume on its card,
    so a stopped queue never reads as a quiet one (a question's fire wins over it). */
@@ -341,8 +363,6 @@ button { font: inherit; color: inherit; }
 .gui-pane.is-auto { overflow: visible; }
 .gui-pane > * { flex: 1 1 auto; }
 .gui-pane > .gui-pane__title { flex: none; margin: 0 0 var(--space-1); color: var(--ink-muted); }
-.gui-win__foot { flex: none; display: flex; align-items: flex-start; gap: var(--space-2);
-  border-top: var(--ok-stroke, 1px) solid var(--frame); padding-top: var(--space-2); }
 .gui-alert { margin: 0; flex: none; }
 
 .gui-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); flex: none; }
@@ -457,7 +477,6 @@ button { font: inherit; color: inherit; }
 .gui-catalog__item { cursor: pointer; padding: var(--space-2) var(--space-3); border: 1px solid var(--frame);
   border-radius: var(--ok-radius-md, 0); }
 .gui-catalog__item:hover { border-color: var(--frame-focus); background: var(--selection); }
-.gui-win__demolish { margin-left: auto; }
 
 /* Carts on the roads and the signs of roads that wait for a route (js/town.js). A cart moves along its
    road's path (CSS motion path) once, in the time the road takes; a filtered one turns back. */

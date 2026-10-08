@@ -6,7 +6,7 @@
 /* The board's card stands larger than other huts — about a fifth of the window high while it has work or
    to-dos — so its three parts read at a glance; a quiet board is as tall as what it says. */
 .gui-town__room > .gui-hut.ok-hut[class]:has(.gui-fhut) { width: clamp(340px, 26vw, 460px); max-width: none; }
-.gui-hut .ok-hut__card:has(.gui-fhut:not(.is-folded):not(.is-quiet)) { min-height: 20vh; box-sizing: border-box; }
+.gui-hut:not(.is-sized) .ok-hut__card:has(.gui-fhut:not(.is-folded):not(.is-quiet)) { min-height: 20vh; box-sizing: border-box; }
 .gui-hut__body:has(> .gui-fhut) { flex: 1 1 auto; display: flex; min-height: 0; }
 .gui-fhut { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
   gap: var(--space-2) var(--space-3); min-width: 0; }
@@ -17,9 +17,30 @@
 .gui-fhut__head b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .gui-fhut__item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-fhut__mark { color: var(--ink-muted); margin-right: 4px; }
+/* Stretched big (building-views.md §1a): the orks' lanes side by side, each title a small card. */
+.gui-fhut__lanes { display: grid; grid-template-columns: repeat(var(--lanes, 2), minmax(0, 1fr)); gap: var(--space-2); }
+.gui-fhut__lane { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-fhut__card { padding: 2px var(--space-1); border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); background: var(--panel-inset);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.gui-hut.is-size-m .gui-fhut__item, .gui-hut.is-size-l .gui-fhut__item { white-space: normal; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 /* -- open: the head ------------------------------------------------------------------------------------- */
-.gui-fields { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+/* The board fills its pane, and its parts scroll on their own — the orks' lanes, the to-dos, the notes — so a
+   long list never pushes the notes out of sight; only a pane lower than the board's least height scrolls whole. */
+.gui-fields { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 420px; }
+.gui-pane:has(> .gui-fields) { overflow: auto; }
+.gui-pane > .gui-fields { flex: 1 1 0; }
+.gui-fields > .fields-head, .gui-fields > .fields-sel { flex: none; }
+.gui-fields > .gui-fields__part { flex: 0 1 auto; min-height: 120px; max-height: 50%; }
+.gui-fields > .ok-board { flex: 1 1 0; min-height: 0; overflow: auto; }
+.gui-fields__part > .ok-board { min-height: 0; overflow: auto; }
+.gui-fields__lower { flex: 1 1 0; min-height: 160px; }
+.gui-fields__lower > .gui-fields__part { min-height: 0; max-height: 100%; }
+.gui-fields__lower > .gui-fields__part > .ok-board { flex: 1 1 auto; }
+.gui-fields__lower .gui-todos { flex: 0 1 auto; min-height: 40px; overflow: auto; }
+.gui-fields__lower .gui-todo__add { flex: none; }
+.gui-fields__part > .gui-fields__part { flex: 1 1 auto; min-height: 0; }
 .fields-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-4); white-space: nowrap; color: var(--ink-muted); }
 .fields-head b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .fields-head__spacer { flex: 1; }
@@ -37,7 +58,8 @@
 .gui-fields__part { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .gui-fields__part > h3 { margin: 0; display: flex; align-items: baseline; gap: var(--space-2); }
 .gui-fields__part > h3 > small { font: 600 12px/16px var(--ok-font); color: var(--ink-muted); text-transform: none; letter-spacing: 0; }
-.gui-fields__lower { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); gap: var(--space-3); align-items: start; }
+.gui-fields__lower { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); grid-template-rows: minmax(0, 1fr);
+  gap: var(--space-3); align-items: stretch; }
 /* An empty lane is as low as its head and its + New: the cards, not the frames, take the room. */
 .gui-fields .ok-lane { min-height: 0; }
 .gui-fields .ok-card__title > span:not(.ok-word) { min-width: 0; overflow-wrap: anywhere; }
@@ -58,7 +80,7 @@
 
 /* Narrow (a half panel under ~640px): the to-dos over the notes. */
 @container fields (max-width: 620px) {
-  .gui-fields__lower { grid-template-columns: minmax(0, 1fr); }
+  .gui-fields__lower { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
 }
 .gui-fields { container: fields / inline-size; }
 

@@ -11,7 +11,7 @@ import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { runQuick, typeModule } from "./types.js";
 import { infoPage } from "./infopage.js";
-import { selectOrk, DemolishButton } from "./windows.js";
+import { selectOrk } from "./windows.js";
 import { HALL, deploy, showSession } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { laying } from "./build.js";
@@ -383,7 +383,7 @@ function UsualInfo({ b }) {
         <${StewardWindow} b=${b} i=${i} redo=${redo} open=${open} />
       </section>
       <${Roads} b=${b} t=${t} />
-      ${b.id !== HALL && html`<div class="gui-win__foot"><span class="gui-head__spacer"></span><${DemolishButton} b=${b} /></div>`}`}
+`}
     <${Dialogs} b=${b} o=${null} i=${i} dialog=${dialog} close=${close} redo=${redo} />
   </div>`;
 }

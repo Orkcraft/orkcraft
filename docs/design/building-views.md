@@ -22,6 +22,27 @@ from; this is what the GUI makes of it. Camp words here; the Office says them in
 
 Info (what every building and ork shares) and the garrison stay as they are (`js/console.js`).
 
+### 1a. A closed card by its size
+
+A hut's card is stretched by its right edge, bottom edge or corner (calm-town.md §3a); its size is the
+person's, kept in the Town Scroll (`hut_size`, px). **The bigger the card, the more it shows**: `js/hut.js`
+`levelOf(b)` gives the level and `card(b, level)` gets it.
+
+| Level | Size | What it shows |
+|---|---|---|
+| **small** `s` | as the card comes (no size of its own), or under medium | the anatomy of every card: the headline, up to two lines, the foot; lines cut with … |
+| **medium** `m` | at least 360 × 240 px | the same, its lines wrapping instead of cut; a type lists more of what it lists |
+| **large** `l` | at least 520 × 400 px | a type shows its items themselves, not only their count |
+
+A card keeps the size given: what does not fit is cut at its frame, never spilled over its neighbours.
+Folded, a card is its title bar whatever its size. A type that ignores `level` still gains room: its lines
+wrap from medium up.
+
+**Task board** (`buildings/fields.js`): small — the lanes' counters, the task in work and the next, three
+to-dos, three notes; medium — up to four tasks in work and next, six to-dos, six notes, titles on two
+lines; large — the orks' lanes side by side, each task a small card (up to eight per lane), eight to-dos,
+eight notes. The host sends up to eight titles per part (`gui/views/fields.py` `MORE`).
+
 ## 2. Rules for every type
 
 - **Lake is a window, not a building.** One Lake for the whole town, half the window by default, made
@@ -67,7 +88,7 @@ Info (what every building and ork shares) and the garrison stay as they are (`js
 | **Signpost** (Router) | a counter per outgoing road, each in its road's colour; the start of each road at the post wears the same colour | the rules one per line, the last carts (unmatched marked), Test (paste a text, see its route); rules asked of the keeper | no editor: the keeper writes the rules from plain words; testing the rules on an example and the history filtered by route |
 | **The Mill** (Transformer) | the last run's status and time | the steps as a chain (the failing one marked), the last 3–5 runs, Run, Edit steps | the steps; for a chosen run input → output **for every step**; the history with costs (when a step is an agent); the queue |
 | **The Horn** (Sound alerts) | a mute toggle and a volume slider | road or event → sound (a click moves to the next sound and plays it), the last calls (heard or kept quiet and why), Test, Mute | the table, an audio file per row, quiet hours, cooldown, the whole log. The page plays the sounds |
-| **Task Fields** (Task board) | a larger card (about a fifth of the screen high) in three parts: **Ork work** — counters per lane, `*` on a lane with unseen cards, the task in work and the next one; **My chores** — the person's open to-dos; **Scribbles** — the latest notes. A checkbox per part hides it: the checkboxes are a tray on the card's top edge, out while the mouse is on the hut or it is selected; the card gets shorter and the huts under it move up. An empty part shows its head and count only; a quiet board (nothing in work, no open chores) is as tall as what it says In tasks / notes mode only the counters / the note folders | a small board: the status lanes with their top cards, **drag between lanes works here**; the open to-dos, ticked off here; note lanes folded to counters; New task, New note, New chore | the three parts on one screen: the orks' kanban, the person's checklist (add, tick off, a card dropped on it becomes a to-do), the lanes of notes; an idea becomes a task for the orks or a chore. The person adds note folders |
+| **Task Fields** (Task board) | a larger card (about a fifth of the screen high) in three parts: **Ork work** — counters per lane, `*` on a lane with unseen cards, the task in work and the next one; **My chores** — the person's open to-dos; **Scribbles** — the latest notes. A checkbox per part hides it: the checkboxes are a tray on the card's top edge, out while the mouse is on the hut or it is selected; the card gets shorter and the huts under it move up. An empty part shows its head and count only; a quiet board (nothing in work, no open chores) is as tall as what it says. Stretched, it shows more (§1a). In tasks / notes mode only the counters / the note folders | a small board: the status lanes with their top cards, **drag between lanes works here**; the open to-dos, ticked off here; note lanes folded to counters; New task, New note, New chore | the three parts on one screen: the orks' kanban, the person's checklist (add, tick off, a card dropped on it becomes a to-do), the lanes of notes; an idea becomes a task for the orks or a chore. The person adds note folders. Each part scrolls on its own (the lanes, the to-dos, the notes), so a long list never hides the notes; the whole Work scrolls only when the panel is lower than the board's least height |
 | **Barracks** (Agent pool) | two lines: `active 2/4 · queue 3` and `✓5 ✗1 · $1.20` (✗ in the danger colour when any failed); `<keeper> asks` first when it asks; paused, `⚠ paused · 2 waiting` with **Resume** on the card, a warning stripe down its left and Resume among the Warchief's hints; `⚒ <ork> · <task>` for each ork at work | the orks (tier, task, state) — a click opens the ork's terminal; the queue's top; New task, Pause / resume, Answer | lanes by task state (queue → work → review → done / failed) with branch, ork, reworks, cost, PR; the chosen task (brief, diff, review notes, questions); **a tab per ork with its terminal**; rules and settings |
 | **Clan Fire** (Review board) | only the review's state: `cycle 2/3 · 3 ✓ 1 ✗ · $0.40` (a triage: `reading · 2 of 3 have spoken`), else the last outcome, `N queued` | members (role, tier, veto, verdict now), the document under review and the last turns; Review, Add member, Answer | members, the review turn by turn and by cycle, the document with its comments, the report, past reviews. Briefs and rules through the keeper |
 | **War Drum** (Calendar) | the next beats — meetings, scheduled runs, ≈ limits — up to the end of tomorrow over a strip of the next hours, a `📄 doc` pill on a meeting with its document; a checkbox per kind over the card hides it (none when `beats` keeps it to meetings), the card gets shorter and the huts under it move up | the day and tomorrow (time, title, the document pill), now highlighted; New event, Prepare doc | today by the hour and the week; the chosen meeting; settings. A meeting's document opens in Lake |

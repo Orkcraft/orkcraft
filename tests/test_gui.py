@@ -57,6 +57,27 @@ def test_a_hut_moved_keeps_its_spot_in_the_scroll(fake_repo, isolated_layout_fil
         host.command("rm -rf", {})
 
 
+def test_a_hut_stretched_keeps_its_size_in_the_scroll(fake_repo, isolated_layout_file):
+    """A card stretched by its edge (docs/design/calm-town.md §3a): its size in px, kept within bounds, saved in the
+    Town Scroll and read back; none gives it back its own size."""
+    from orkcraft import scroll as ts
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    host.command("hut.size", {"id": pit, "w": 520.6, "h": 9000})
+    assert host.town.scroll.building(pit).hut_size == [520, 900]              # kept within the most a card may be
+    assert next(b for b in host.snapshot()["buildings"] if b["id"] == pit)["size"] == [520, 900]
+    data = json.loads(isolated_layout_file.read_text())
+    assert ts.TownScroll.from_dict(data).building(pit).hut_size == [520, 900]
+    host.command("hut.size", {"id": pit, "w": 10, "h": 10})
+    assert host.town.scroll.building(pit).hut_size == [240, 60]               # never smaller than a card's least
+    with pytest.raises(CommandError):
+        host.command("hut.size", {"id": pit, "w": "wide", "h": 1})
+    host.command("hut.size", {"id": pit, "w": None})
+    assert host.town.scroll.building(pit).hut_size is None
+    assert ts.TownScroll.from_dict({**data, "buildings": [{**b, "hut_size": "big"} for b in data["buildings"]]}
+                                   ).building(pit).hut_size is None             # a hand-edited size is no size
+
+
 def test_a_new_orkspace_is_named_and_the_town_goes_to_it(fake_repo, isolated_layout_file):
     host = _host(fake_repo)
     before = len(host.town.scroll.orkspaces)

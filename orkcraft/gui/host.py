@@ -36,6 +36,7 @@ from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
 from orkcraft.sources import sessions as past
 
 TELEMETRY_REFRESH_S = 5.0       # as the TUI (tui/base.py)
+HUT_MIN, HUT_MAX = (240, 60), (960, 900)   # px a hut's card may be stretched to (js/hut.js keeps the same)
 CART_TRAVEL_ENV = "ORKCRAFT_CART_TRAVEL_S"   # seconds a cart takes along a plain road (default 0: at once)
 
 
@@ -74,6 +75,7 @@ class Host:
             "orkspace.select": self._select_orkspace,
             "orkspace.new": self._new_orkspace,
             "hut.move": self._move_hut,
+            "hut.size": self._size_hut,
             "building.open": self._open_building,
             "halt": self._halt,
             "act": self._act,
@@ -410,6 +412,21 @@ class Host:
         except (KeyError, TypeError, ValueError):
             raise CommandError("A hut's spot is two numbers") from None
         bs.hut = [round(min(max(x, 0.0), 1.0), 4), round(min(max(y, 0.0), 1.0), 4)]
+        self.town.save()
+        self.on_change()
+
+    def _size_hut(self, args: dict) -> None:
+        """A hut's card stretched by its edge or corner: its width and height in px, the person's own; none
+        (`w` null) gives it back its own size. The bigger the card, the more it shows (building-views.md §1a)."""
+        bs = self._spec(args)
+        if args.get("w") is None:
+            bs.hut_size = None
+        else:
+            try:
+                w, h = float(args["w"]), float(args["h"])
+            except (KeyError, TypeError, ValueError):
+                raise CommandError("A hut's size is two numbers") from None
+            bs.hut_size = [int(min(max(w, HUT_MIN[0]), HUT_MAX[0])), int(min(max(h, HUT_MIN[1]), HUT_MAX[1]))]
         self.town.save()
         self.on_change()
 

@@ -52,12 +52,14 @@ building's window no longer compete for that half: they are **one panel**.
 - **Info**, in the order it is needed: the name with 👍 / 👎, why it is here and its runs with History;
   its type's **quick actions**; the **garrison** (each ork, its status, Deploy or Its session); the
   **steward** (goal and Freedom, Watch, Report, Redesign, the roads it listens to with their handlers,
-  + Listen); the **roads out**; Demolish at the bottom.
+  + Listen); the **roads out**. No Demolish button: a building is rarely torn down, so Demolish… is in
+  its menu only (§3), and asks before it goes.
 - **No view of its own:** its status lines in Work, or the panel opens on Info.
 - **A question** of one of its orks stands above the tabs, whatever tab is open.
 - **An ork** picked in the garrison or the steward's part opens in the same panel (its Info, its
   commands, its models and tools) with ← back, never in a new window.
 - **Another building** clicked replaces the building's tabs; the documents stay.
+- **⋯** in the bar opens the building's menu, the same as a right click on its hut (§3).
 - **⤢** takes the whole town, **✕** or Esc closes (Esc steps back first: whole → half, an ork → its
   building); a closed panel with documents waits as a handle at the right edge.
 - **The map scrolls** when a building opens: the room grows by the panel's width, and the building and
@@ -66,11 +68,23 @@ building's window no longer compete for that half: they are **one panel**.
 
 ## 3. The right click
 
-On a hut (`js/menu.js`): Open, Info, Listen to…, Ask the Warchief about it, Pin / Unpin, Demolish… — what
-the Command Card had, without opening the panel. On the bare map: Build here… (the catalog, the
+On a hut, and from ⋯ in its panel's bar (`js/menu.js`, `js/hut.js` `buildingMenu`): Open, Info, Listen to…,
+Ask the Warchief about it, Pin / Unpin, Fold, Demolish… (confirmed) — what the Command Card had, without
+opening the panel; the only way to Demolish from the town. On the bare map: Build here… (the catalog, the
 building raised where the click was), Tidy up (every hut that is not pinned laid out along its roads,
 left to right, from the top left: `js/tidy.js`), Settings. An entry names the `/` command that does the same,
 so the menu teaches the line.
+
+## 3a. Moving and stretching a hut
+
+As in an RTS: a drag on a hut, or on its right edge, bottom edge or corner (a stretch), moves only a
+**ghost** — a dashed outline of where it would stand, or of its new size (`js/town.js` Footprint). Nothing
+else on the map moves while it is held. Where the ghost would stand on another hut (or within the 12 px
+the huts keep between them, or under the portrait) it turns red and those parts of it fill red; let go
+there and nothing happens: the hut stays where it was, at its size. Esc lets the ghost go. Let go on a free
+place and the hut goes there (`hut.move`) or takes the size (`hut.size`, kept in the Town Scroll as
+`hut_size`); a double click on an edge gives it back its own size. Huts are pushed apart only when the town
+loads with them on one another (an older scroll, a card that grew), never by a drag or a hover.
 
 ## 4. The Warchief's line
 

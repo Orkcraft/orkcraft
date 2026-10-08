@@ -76,6 +76,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "id": bs.id, "title": bs.title, "icon": bs.icon,
             "type": (type_id := catalog.type_of(spec).id if spec else bs.preset_ref or bs.id),
             "hut": list(bs.hut) if bs.hut else None,
+            "size": list(bs.hut_size) if bs.hut_size else None,   # its card stretched by the person (js/hut.js)
             "pinned": bool(bs.pinned),
             "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
