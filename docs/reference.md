@@ -971,6 +971,30 @@ plan chose. `tests/test_catalog_docs.py` keeps these tables in step with the vie
 The order lives in `.orkcraft/town/order.json`; every plan request is logged in
 `.orkcraft/build-requests.jsonl`.
 
+## Phones
+
+A phone paired with the town (design: [design/mobile.md](design/mobile.md)) sees it small: each
+building's title, type and state, the questions the orks wait on (their last three lines and the
+Elders' advice), spend and quotas. It may answer a question with one of its own answers, follow the
+Elders' advice, **Stop all** (the desktop says which phone sent it), drop a text, a link or a file into
+a **Drop file here** building (never read as a path on this machine), ask the **Warchief** and read
+his answers. It never builds, demolishes, lays roads, moves
+a hut, types into a terminal or changes a setting: anything else it sends is refused.
+
+- **Settings → Phones → Pair a phone** shows a QR code: the listener's address, its certificate's
+  SHA-256 fingerprint (the phone pins it) and a one-time code, good for two minutes. Five wrong tries
+  in a minute void the code until a new one is shown. **Forget** stops a phone's token at once and
+  closes its connection.
+- The listener opens a port on the LAN (TLS, `https://<lan ip>:<port>`) only while a phone is paired or
+  a code is shown, and keeps that port for the next run. `ORKCRAFT_PHONE_HOST` sets the address it
+  listens on. The certificate is `phone.crt` / `phone.key` beside the machine settings (0600); the
+  paired phones are kept there as `phones` (names and the SHA-256 of their tokens, never a token).
+- While a phone's app is open it gets one line for each question that came, spend or a quota near or
+  over its limit, an error (its title only) and a session that ended. Pushes to a phone in a pocket
+  come with the relay (not built yet).
+- There is no phone app yet: `python tools/phone.py` speaks the same protocol from a terminal
+  (pair from the QR code's text, glance, answer, stop all, ask, chat, drop, watch).
+
 ## CLI
 
 - `orkcraft` — open the town in the current git project (the root is found by `.orkcraft.json`

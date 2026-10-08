@@ -5,7 +5,8 @@
 // the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
 // it, the camp's rules, whether flames climb the roof of a building that waits for you, and whether
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
-// which updates install by themselves (gui/updates.py; js/update.js offers the rest).
+// which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
+// paired with this machine (js/phones.js).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -13,6 +14,7 @@ import { command, say, town } from "./link.js";
 import { MascotHead, BIOMES } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { Dialog } from "./dialog.js";
+import { PhonesField } from "./phones.js";
 
 export const settingsOpen = signal(false);
 
@@ -128,6 +130,7 @@ export function SettingsDialog() {
       <${ToolsField} s=${s} set=${set} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
+      <${PhonesField} />
     </div>
   </${Dialog}>`;
 }
