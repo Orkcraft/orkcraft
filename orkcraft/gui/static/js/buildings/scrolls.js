@@ -223,7 +223,7 @@ function Rules({ id, data }) {
       ${quiet(say("Write now"), () => act(id, "write_rules").catch(() => {}), say("Write RULES.md and the blocks now"))}
       ${r.files.length > 0 && quiet(say("Remove"), () => act(id, "remove_rules").catch(() => {}), say("Take the blocks out of every file"))}
     </div>
-    <p class="ok-font-status ok-tone-muted">${say("RULES.md in the wiki says where it is, its sections, and how to search, cite and add to it; a short block in CLAUDE.md, AGENTS.md and Cursor's rules points to it, for")} ${tools}.</p>
+    <p class="ok-font-status ok-tone-muted">${say("RULES.md in the wiki says where it is, its sections, and how to search, cite and add to it; a short block in CLAUDE.md, AGENTS.md and Cursor's rules points to it, for")} ${tools}. ${say("Claude Code, Codex and Cursor also get the wiki's MCP server: search and read as tools.")}</p>
     ${r.files.length > 0 && html`<ul>${r.files.map((f) => html`<li key=${f}><span class="ok-tone-muted">${f}</span></li>`)}</ul>`}
   </details>`;
 }

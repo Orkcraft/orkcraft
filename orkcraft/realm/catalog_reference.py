@@ -256,6 +256,8 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                        "review (written after each approved review), ask (default: ready after a review, written "
                        "when you say) or off",
         "rules_in": "folders outside the project that get the rules' block too (asked when the folder is connected)",
+        "wiki_mcp": "with the rules, the wiki's MCP server (search and read as tools) in .mcp.json, .cursor/mcp.json "
+                    "and .codex/config.toml (default true)",
         "wiki": "the wiki's folder (default llm-wiki/<topic>/)",
         "inbox": "where Quick notes are written, a source of the wiki (default notes/inbox)",
         "calendar": "the id of the War Drum meetings are matched in (default: every one in the town)",

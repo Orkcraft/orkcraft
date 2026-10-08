@@ -268,7 +268,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "auto_ingest": (bool, None, False), "commit": (bool, None, False),
                 "review_sample": (int, (0, 10), False), "council": (str, None, False),
                 "max_files": (int, (1, 100000), False), "agent_rules": (str, ("review", "ask", "off"), False),
-                "rules_in": (list, None, False)},
+                "rules_in": (list, None, False), "wiki_mcp": (bool, None, False)},
         art="library", orc="Scroll Scrapper"),
     BuildingType(
         "mine", "The Mine", "⛏️", "M",

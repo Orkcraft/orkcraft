@@ -95,6 +95,8 @@ approved review: edit the wiki's `WIKI.md`, not this file.
 
 ## How to use it
 
+- When your AI tool has the wiki's MCP server (`orkcraft-wiki-…`), use its tools: `wiki_map`,
+  `wiki_search`, `wiki_read`. Else read the files as above.
 - Before answering a question about the project, search the wiki (its maps first, then the pages:
   titles, `aliases`, text).
 - Cite what you use by the page's path (`{wiki_rel}/pages/<section>/<page>.md`).

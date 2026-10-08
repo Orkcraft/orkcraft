@@ -138,10 +138,11 @@ New in `TERMS`: `agent_rules` → **Rules for AI tools**. Labels: *Choose folder
   (`pick`, `picked`); a machine with none falls back to *Browse* by itself.
 - Tests: `test_wiki_folders.py`, `test_wiki_rules.py`, `test_gui_folders.py`, and the dialog and the
   block in `test_gui_browser.py`.
+- PDFs outside the project: Claude Code and agy get `--add-dir` for each folder outside it (Claude Code
+  with no edit there); the other tools read anywhere already.
+- The wiki's MCP server is written with the rules: [wiki-mcp.md](wiki-mcp.md).
 
 ## 8. Not now
 
-- An MCP server for the wiki (search and read as tools, for every AI tool): the next step.
 - OCR of scanned PDFs; `.pptx`, `.xlsx`.
-- Google Drive as a source: a remote source like Confluence, with the Google account's design.
 - The TUI (deprecated).

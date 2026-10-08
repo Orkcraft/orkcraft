@@ -6,15 +6,18 @@ get the rules' block when the person said so (`rules_in`). After the Review boar
 `approved` writes the rules (`agent_rules: review`), or keeps them ready for the person (`ask`, the
 default), or does nothing (`off`). `write_rules` writes `RULES.md` in the wiki's folder and the blocks
 in the project and the folders of `rules_in`, for the AI tools on in the machine's settings;
-`remove_rules` takes the blocks out. The state is `rules.json`: `ready`, `written`, `files`.
+`remove_rules` takes the blocks out. The Wiki's MCP server (`wiki_mcp.py`) is written and removed with
+them, in each tool's own file of MCP servers (realm/wikimcp.py), never committed: it names this machine's
+Python. The state is `rules.json`: `ready`, `written`, `files`.
 """
 from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
-from orkcraft.realm import shelves, wiki, wikirules
+from orkcraft.realm import shelves, wiki, wikimcp, wikirules
 
 
 class RulesMixin:
@@ -106,10 +109,12 @@ class RulesMixin:
             clean = _clean(repo, [wikirules.CLAUDE, wikirules.AGENTS,
                                   wikirules.cursor_file(self.building_id).as_posix()])
             changed: list[Path] = []
+            served: list[Path] = []                     # the MCP entries: this machine's paths, never committed
             tools = self.tools_on()
             for folder in self.rules_folders():
                 ref = f"{wiki_rel}/{wikirules.RULES}" if folder == repo else (root / wikirules.RULES).as_posix()
                 changed += wikirules.write(folder, self.building_id, tools, ref)
+                served += self._serve(folder, tools)
         except OSError as e:
             self.last_note = f"the rules for AI tools: {e}"
             self.changed()
@@ -117,6 +122,7 @@ class RulesMixin:
         written = [wiki_rel + "/" + wikirules.RULES] + [shelves.rel_to(repo, p) for p in changed]
         self._commit_rules([p for p in written if p in clean or p.startswith(wiki_rel + "/")],
                            "wiki: the rules for AI tools")
+        written += [shelves.rel_to(repo, p) for p in served]
         self._save_rules_state(ready=False, written=self.clock().isoformat(timespec="minutes"), files=self.rules_files())
         self.changed()
         return written
@@ -126,13 +132,16 @@ class RulesMixin:
         repo = self.repo_root
         clean = _clean(repo, [wikirules.CLAUDE, wikirules.AGENTS, wikirules.cursor_file(self.building_id).as_posix()])
         changed: list[Path] = []
+        served: list[Path] = []
         for folder in self.rules_folders():
             try:
                 changed += wikirules.remove(folder, self.building_id)
+                served += wikimcp.remove(folder, self.building_id)
             except OSError as e:
                 self.last_note = f"the rules for AI tools: {e}"
         rels = [shelves.rel_to(repo, p) for p in changed]
         self._commit_rules([p for p in rels if p in clean], "wiki: the rules for AI tools removed")
+        rels += [shelves.rel_to(repo, p) for p in served]
         self._save_rules_state(ready=False, written="", files=[])
         self.changed()
         return rels
@@ -141,9 +150,20 @@ class RulesMixin:
         """The files that carry this Wiki's block now (the project's relative, the others absolute)."""
         out = []
         for folder in self.rules_folders():
-            for name in wikirules.written(folder, self.building_id):
+            for name in [*wikirules.written(folder, self.building_id), *wikimcp.written(folder, self.building_id)]:
                 out.append(name if folder == self.repo_root else (folder / name).as_posix())
         return out
+
+    def mcp_command(self) -> list[str]:
+        """How an AI tool starts this Wiki's MCP server (docs/design/wiki-mcp.md): this machine's Python."""
+        return [sys.executable, "-m", "orkcraft.wiki_mcp", "--project", str(self.repo_root.resolve()),
+                "--wiki", str(self.wiki_root.resolve())]
+
+    def _serve(self, folder: Path, tools: list[str]) -> list[Path]:
+        """The Wiki's MCP server where the tools read theirs (`wiki_mcp`, on by default), else out of there."""
+        if self.config.get("wiki_mcp", True) is False:
+            return wikimcp.remove(folder, self.building_id)
+        return wikimcp.write(folder, self.building_id, tools, self.mcp_command())
 
     def _commit_rules(self, paths: list[str], message: str) -> None:
         if paths and self.config.get("commit", True) is not False and not self.simulated:
