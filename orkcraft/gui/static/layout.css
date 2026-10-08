@@ -592,3 +592,14 @@ button { font: inherit; color: inherit; }
 .gui-phones__qr { width: 240px; max-width: 100%; height: auto; image-rendering: pixelated; }
 .gui-phones__how { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 12em; }
 .gui-phones__fp, .gui-phones__link { font: 11px/16px var(--font-mono); overflow-wrap: anywhere; color: var(--ink-muted); }
+
+/* A narrow window (a phone, a half-screen window): the town's foot gives the Warchief's line the width — the
+   War Map shrinks to a strip of its lands and the line drops the news it cannot show whole (the face keeps
+   its ❓); a form's field and its button stack instead of squeezing the field to a few letters. */
+@media (max-width: 640px) {
+  .gui-map__view { width: 112px; height: 56px; }
+  .gui-map__name { max-width: 96px; }
+  .gui-warchief__speaks { display: none; }
+  .gui-form__row { flex-wrap: wrap; }
+  .gui-form__row > .ok-input { flex: 1 1 100%; min-width: 0; }
+}
