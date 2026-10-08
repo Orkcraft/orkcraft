@@ -8,7 +8,7 @@ import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
-import { MascotHead, BIOMES, headerSprite } from "./icons.js";
+import { MascotHead, BIOMES, headerSprite, TypeIcon } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { USAGE_WHAT } from "./settings.js";
 import { googleOpen } from "./accounts.js";
@@ -81,16 +81,66 @@ function RequestTool() {
   </${Dialog}>`;
 }
 
+/** Check: a short request to the tool; ✓ and how long it took, or what went wrong and what to do. */
+function CheckCell({ r }) {
+  const c = r.check;
+  const run = () => send("onboarding.check", { tool: r.id });
+  if (c && c.state === "running") return html`<span class="ok-font-status ok-tone-muted" aria-live="polite">Checking…</span>`;
+  if (c && c.state === "ok") {
+    return html`<button class="ok-btn gui-onb__check is-ok" onClick=${run} title=${say("Check again")} aria-live="polite">
+      ${say(`✓ ${(c.ms / 1000).toFixed(1)} s`)}</button>`;
+  }
+  return html`<button class="ok-btn gui-onb__check" onClick=${run}
+    title=${say(`Send ${r.title} a short request to see that it answers`)}>${c ? "Check again" : "Check"}</button>`;
+}
+
+function CheckFailed({ c }) {
+  return html`<div class="gui-onb__checked ok-font-status" role="alert">
+    <span class="ok-tone-error">✗ ${say(c.line)}</span>
+    ${c.action && html` <span>${say(c.action)}</span>`}
+    <details><summary class="ok-tone-muted">Details</summary><pre>${c.detail}</pre></details>
+  </div>`;
+}
+
+/** No AI tool here: what one is, three to install with the commands to type, Check again, and what the
+ *  town does without one. */
+function NoTools({ t }) {
+  return html`<div class="gui-onb__none">
+    <p class="ok-font-body">AI tools are the coding agents you run in a terminal: Claude Code, Codex, Cursor's agent.
+      Orks run on one of yours, with your own sign-in and your own plan. Orkcraft has no AI of its own, so it needs one of them.</p>
+    <div class="gui-onb__table">
+      ${t.recommended.map((h) => html`<div key=${h.id} class="gui-onb__row is-get">
+        <span class="gui-onb__tool"><${Glyph} id=${h.id} tool=${true} mark=${h.mark} />${h.title}</span>
+        <span class="gui-onb__cmds ok-font-status">
+          <span><span class="ok-tone-muted">Install</span> <code>${h.install}</code></span>
+          <span><span class="ok-tone-muted">Then sign in</span> <code>${h.login}</code></span></span>
+      </div>`)}
+    </div>
+    <div class="gui-onb__line">
+      <span class="ok-font-status ok-tone-muted">Installed one? Check again finds it, no restart needed.</span>
+      <button class="ok-btn primary" onClick=${() => send("onboarding.detect")}>Check again</button>
+    </div>
+    <div class="gui-onb__without">
+      <div><span class="ok-font-label">Works without AI</span>
+        <p class="ok-font-status">External listeners, Calendar, Task board, Output, the Drop: things come in, are sorted and wait for you.</p></div>
+      <div><span class="ok-font-label">Needs an AI tool</span>
+        <p class="ok-font-status">Agent pool, Research, the Town planner: nothing an ork would do on its own runs until one is here.</p></div>
+    </div>
+  </div>`;
+}
+
 function ToolsStep({ o }) {
   const t = o.tools;
   const set = (id, change) => send("onboarding.tools", { tools: { [id]: { ...t.rows.find((r) => r.id === id), ...change } } });
+  const none = t.ready && t.rows.length === 0;
   return html`<section class="gui-onb__card">
-    <${Head} o=${o} title="Your AI tools"
-      lead="Orks run on the ones you check. Found on this machine: nothing was run and no key was read." />
-    ${!t.ready ? html`<p class="ok-font-body ok-tone-muted">Looking for your AI tools…</p>` : html`
+    <${Head} o=${o} title=${none ? "No AI tool here yet" : "Your AI tools"}
+      lead=${none ? "Nothing was found on this computer that orks can run on. Install one, or open the town without AI."
+        : "Orks run on the ones you check. Found on this machine: nothing was run and no key was read. Check sends a short request."} />
+    ${!t.ready ? html`<p class="ok-font-body ok-tone-muted">Looking for your AI tools…</p>` : none ? html`<${NoTools} t=${t} />` : html`
       <div class="gui-onb__table" role="table">
         <div class="gui-onb__row is-head" role="row"><span></span><span class="ok-font-label">Tool</span>
-          <span class="ok-font-label">Status</span><span class="ok-font-label">Paid by</span></div>
+          <span class="ok-font-label">Status</span><span class="ok-font-label">Paid by</span><span></span></div>
         ${t.rows.map((r) => html`<div key=${r.id} class=${cls("gui-onb__row", { "is-off": !r.enabled })} role="row">
           <label class="ok-check" title=${say(`Orks run on ${r.title}`)}>
             <input type="checkbox" class="gui-onb__hide" checked=${r.enabled} onChange=${() => set(r.id, { enabled: !r.enabled })} />
@@ -102,25 +152,26 @@ function ToolsStep({ o }) {
           <select class="ok-input" value=${r.billing} aria-label=${say(`How ${r.title} is paid`)}
               onChange=${(e) => set(r.id, { billing: e.target.value })}>
             <option value="subscription">Subscription</option><option value="api">API</option></select>
+          <${CheckCell} r=${r} />
+          ${r.check && r.check.state === "failed" && html`<${CheckFailed} c=${r.check} />`}
         </div>`)}
-        ${t.rows.length === 0 && html`<p class="ok-font-body">No agent the orks can run on is installed. Install Claude Code
-          (<code>npm i -g @anthropic-ai/claude-code</code>) and open Orkcraft again, or start with an empty town.</p>`}
       </div>
       <div class="gui-onb__line">
         <span class="ok-font-status ok-tone-muted">${[
           t.others.length ? say(`Also here: ${t.others.map((x) => x.title).join(", ")}. Orks can't run on these yet.`) : "",
           ...t.cli.map((x) => say(`${x.title}: install the CLI (${x.bin}) to run orks on it.`)),
-          t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
+          none ? "" : t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
         <button class="ok-btn" onClick=${() => { asking.value = true; }}>Request a tool</button>
       </div>
-      ${!o.again && html`<label class="ok-check gui-onb__warder">
+      ${!o.again && !none && html`<label class="ok-check gui-onb__warder">
         <input type="checkbox" class="gui-onb__hide" checked=${t.warder} onChange=${() => send("onboarding.tools", { warder: !t.warder })} />
         <i>${t.warder ? "✓" : ""}</i>
         <span><b>Guard this project with the Security reviewer</b> (recommended)<br />
           <span class="ok-font-status ok-tone-muted">Adds hooks to .claude/settings.json that stop risky commands and secrets before an ork runs them.</span>
           ${t.warder_agy && html`<br /><span class="ok-font-status ok-tone-wait gui-onb__warder-agy">${say(t.warder_agy)}</span>`}</span>
       </label>`}`}
-    <${Foot} back=${false} next=${t.ready ? () => send("onboarding.tools", { next: true }) : null} />
+    <${Foot} back=${false} next=${t.ready ? () => send("onboarding.tools", { next: true }) : null}
+      nextLabel=${none ? "Go on without AI" : "Next"} />
     ${asking.value && html`<${RequestTool} />`}
   </section>`;
 }
@@ -148,28 +199,95 @@ function WhoStep({ o }) {
 
 // -- 3 · The tools the orks can use (MCP) ---------------------------------------------------------------
 
+// One list: a service with one server is a checkbox; a service two servers reach (GitHub through `github` and
+// `github-enterprise`) is a checkbox and, under it, the servers to choose from, one at a time. ↑/↓ move
+// through every row, Home/End to the ends, Enter or Space turns a service on or off or picks a server; the
+// mouse does the same.
+
+function mcpRows(o) {
+  const rows = [];
+  for (const svc of o.mcp.services) {
+    rows.push({ key: `svc:${svc.ids.join(",")}`, svc });
+    if (svc.ids.length > 1) for (const id of svc.ids) rows.push({ key: `srv:${id}`, svc, id });
+  }
+  return rows;
+}
+
 function McpStep({ o }) {
   const on = new Set(o.mcp.on);
-  const flip = (id) => {
-    const next = on.has(id) ? o.mcp.on.filter((x) => x !== id) : [...o.mcp.on, id];
-    send("onboarding.mcp", { on: next });
+  const byId = Object.fromEntries(o.mcp.servers.map((s) => [s.id, s]));
+  const rows = mcpRows(o);
+  const [at, setAt] = useState(0);
+  const cur = Math.min(at, rows.length - 1);
+  const chosen = (svc) => svc.ids.find((id) => on.has(id));
+  const put = (ids) => send("onboarding.mcp", { on: o.mcp.servers.map((s) => s.id).filter((id) => ids.has(id)) });
+  const act = (row) => {
+    const next = new Set(on);
+    if (row.id) {                                             // a server: the one this service goes through
+      row.svc.ids.forEach((id) => next.delete(id));
+      next.add(row.id);
+    } else if (chosen(row.svc)) {
+      row.svc.ids.forEach((id) => next.delete(id));
+    } else {
+      next.add(row.svc.ids[0]);
+    }
+    put(next);
   };
+  const focus = (i, list) => {
+    setAt(i);
+    const el = list && list.querySelectorAll("[data-row]")[i];
+    if (el) el.focus();
+  };
+  const keys = (e) => {
+    const list = e.currentTarget;
+    const move = { ArrowDown: cur + 1, ArrowUp: cur - 1, Home: 0, End: rows.length - 1 }[e.key];
+    if (move !== undefined) {
+      e.preventDefault();
+      focus(Math.max(0, Math.min(rows.length - 1, move)), list);
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      act(rows[cur]);
+    }
+  };
+  const tools = (ids) => [...new Set(ids.flatMap((id) => byId[id].tools))].map((x) => o.tool_titles[x] || x).join(" · ");
+  const services = o.mcp.services.filter((svc) => chosen(svc)).length;
   return html`<section class="gui-onb__card">
     <${Head} o=${o} title="Tools the orks can use"
       lead="MCP servers already connected to your AI tools. The town planner gives the ones you turn on to the orks that need them, and shows them on their buildings." />
-    <div class="gui-onb__table">
-      ${o.mcp.servers.map((s) => html`<label key=${s.id} class=${cls("gui-onb__row is-mcp", { "is-off": !on.has(s.id) })}>
-        <span class="ok-check"><input type="checkbox" class="gui-onb__hide" checked=${on.has(s.id)} onChange=${() => flip(s.id)} />
-          <i>${on.has(s.id) ? "✓" : ""}</i></span>
-        <${Glyph} id=${s.glyph || s.id} />
-        <span class="gui-onb__tool">${s.title}<code class="ok-font-status ok-tone-muted">${s.id}</code></span>
-        <span class="ok-font-status">${s.tools.map((x) => o.tool_titles[x] || x).join(" · ")}</span>
-      </label>`)}
+    <div class="gui-onb__table gui-onb__mcp" role="listbox" aria-multiselectable="true"
+        aria-label=${say("MCP servers the orks may use")} onKeyDown=${keys}>
+      ${rows.map((row, i) => {
+        const tab = i === cur ? 0 : -1;
+        const pick = () => { setAt(i); act(row); };
+        if (row.id) {
+          const s = byId[row.id];
+          const sel = on.has(row.id);
+          return html`<div key=${row.key} data-row role="option" aria-selected=${sel} tabindex=${tab}
+              class=${cls("gui-onb__row is-mcp is-server", { "is-off": !sel })} onClick=${pick} onFocus=${() => setAt(i)}>
+            <span></span>
+            <span class=${cls("gui-onb__radio", { "is-on": sel })} aria-hidden="true"></span>
+            <span class="gui-onb__tool"><code>${s.id}</code></span>
+            <span class="ok-font-status">${tools([s.id])}</span>
+          </div>`;
+        }
+        const svc = row.svc;
+        const sel = !!chosen(svc);
+        const many = svc.ids.length > 1;
+        return html`<div key=${row.key} data-row role="option" aria-selected=${sel} tabindex=${tab}
+            class=${cls("gui-onb__row is-mcp", { "is-off": !sel })} onClick=${pick} onFocus=${() => setAt(i)}>
+          <span class="ok-check"><i>${sel ? "✓" : ""}</i></span>
+          <${Glyph} id=${svc.glyph || svc.ids[0]} />
+          <span class="gui-onb__tool">${svc.title}${many
+            ? html`<span class="ok-font-status ok-tone-muted">${say(`${svc.ids.length} servers: the orks use the one picked below`)}</span>`
+            : html`<code class="ok-font-status ok-tone-muted">${svc.ids[0]}</code>`}</span>
+          <span class="ok-font-status">${tools(many ? [chosen(svc) || svc.ids[0]] : svc.ids)}</span>
+        </div>`;
+      })}
     </div>
-    <p class="ok-font-status ok-tone-muted">Read from ~/.claude.json, .mcp.json, ~/.codex/config.toml and ~/.gemini/settings.json:
-      names only. Tokens stay where they are.</p>
+    <p class="ok-font-status ok-tone-muted">↑ ↓ to move, Enter to turn on or off or to pick a server.
+      Read from ~/.claude.json, .mcp.json, ~/.codex/config.toml and ~/.gemini/settings.json: names only. Tokens stay where they are.</p>
     <${Foot} next=${() => send("onboarding.mcp", { on: o.mcp.on, next: true })}>
-      <span class="ok-font-status">${say(`${on.size} of ${o.mcp.servers.length} on`)}</span></${Foot}>
+      <span class="ok-font-status">${say(`${services} of ${o.mcp.services.length} on`)}</span></${Foot}>
   </section>`;
 }
 
@@ -180,6 +298,7 @@ function TownPreview({ it, biome }) {
     ${it.buildings.map((b, i) => html`<div key=${b.key} class="gui-onb__lot">
       <div class="gui-onb__house">
         <img class="ok-sprite" src=${headerSprite(b.type, biome)} alt="" draggable="false" />
+        <span class="gui-onb__icon"><${TypeIcon} type=${b.type} /></span>
         ${b.badges.length > 0 && html`<span class="gui-onb__badges">${b.badges.map((g) => html`<${Glyph} key=${g} id=${g} />`)}</span>`}
       </div>
       <div class="gui-onb__plate">
@@ -354,6 +473,7 @@ export function Ghost({ g, spot, biome }) {
       aria-label=${say(now ? `${g.title}: being built` : `${g.title}: planned`)}>
     <div class="gui-onb__ghost-roof">
       <img class="ok-sprite gui-onb__ghost-plan" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
+      <span class="gui-onb__icon"><${TypeIcon} type=${g.type} /></span>
       ${now && html`<img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
         <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>`}
     </div>

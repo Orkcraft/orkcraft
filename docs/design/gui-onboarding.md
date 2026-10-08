@@ -47,6 +47,19 @@ is paid for. `tools.detect` runs on a thread from the first frame; the step says
 Below: the other AI tools found (`tools.detect_others`: Cursor, Copilot…), which orks can't run on yet, and
 the Security reviewer checkbox (on; it installs the Warder hooks when the town is set up, as the TUI did).
 
+**Check** beside each tool found sends it one short request (`onboarding.check`: `builders.ask`, which runs
+`harnesses` `ask`, on the tool's cheapest tier) on a thread. The row shows ✓ and how long the answer took, or the
+failure as `realm/tool_errors.py` classifies it: its line ("Codex is not signed in, or its sign-in has expired."),
+what to do ("Sign in again in a terminal: codex login") and Details, the tool's own words. Nothing is saved.
+
+**No AI tool here.** The step says so in its title ("No AI tool here yet") and shows instead of the table:
+what an AI tool is (a coding agent you run in a terminal, with your own sign-in; Orkcraft has no AI of its own),
+three to install (`onboarding.RECOMMENDED`: Claude Code, Codex, Cursor) with the commands to install and sign in
+from `harnesses.REGISTRY` (`install`, `login`), **Check again** (`onboarding.detect`: the tools are looked for
+once more, no restart), and what the town does without one: External listeners, Calendar, Task board, Output and
+the Drop work; Agent pool, Research and the Town planner wait for a tool. **Go on without AI** keeps to the
+steps; Skip opens an empty town.
+
 **Request a tool** opens a small dialog: the tool's name, a link, what orks would do with it. It opens a GitHub
 issue in the browser, filled in (`onboarding.request` returns the URL). Nothing is sent from Orkcraft: the
 person submits it there. No backend, no usage event.
@@ -75,6 +88,12 @@ project's), `.mcp.json`, `~/.codex/config.toml` (`[mcp_servers]`), `~/.gemini/se
 never a command, an argument, an environment variable, a header or a URL, since those may hold a token. A
 server in several tools is one row with each tool named. The step appears only when one is found; all start on.
 
+**One server a service.** Two servers can reach the same service (`github` and `github-enterprise`, both
+GitHub by `mcp.title_of`): the step shows the service once, and under it the servers to pick one from
+(`Onboarding._services`). The orks use the one picked; it starts on the server in the most AI tools. The list
+is one listbox: ↑/↓ move through every row, Home/End to the ends, Enter or Space turns a service on or off or
+picks its server; a click does the same.
+
 The ones on go to the Town planner (the order says "MCP servers the orks may use: …") and are kept as
 `profile.mcp`. Their glyph (`gui/static/icons/services`, a letter for a service with none) is drawn on the
 buildings whose orks call them: the **Agent pool** and the **Publisher**. An MCP server is a tool an agent
@@ -101,7 +120,10 @@ The day's town comes first and starred: it pays off on the first day, while the 
 their schedule. The week's and the month's are built the same way: the Schedule → (a wiki) → an Agent pool whose
 instructions (`orders`) say what to prepare → a Review board → an Output to accept. Each is drawn on the class's ground:
 the buildings' header sprites in a row joined by roads, a plate with each one's name and what it does, and the
-MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three buttons.
+MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three buttons. In Office
+([portrait.md](portrait.md) §3) the town is a scheme, never sprites: each building its type's line icon
+(`icons.js` `TypeIcon`, as Office's huts wear) in a tile on a hairline road, on a plain ground; the plans on
+the map while the town goes up are the same icons, dashed (office.css).
 
 - **Use this town** → step 5 with that plan (`town_builder.check`; no model call).
 - **Doesn't fit: tell the planner** → 4b. Closed, with a line, when no AI tool that can plan is on.
@@ -175,7 +197,7 @@ on, else the first on). The Security reviewer is installed when any AI tool is o
 | Their look, from the design system's tokens only | `orkcraft/gui/static/onboarding.css` |
 
 The host turns it on for a first run (`Town.first_run`: no layout for the project yet), unless
-`ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.request` · `.role` · `.mcp` ·
+`ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.check` · `.detect` · `.request` · `.role` · `.mcp` ·
 `.town` · `.survey` · `.back` · `.skip` · `.close` · `.quiet` · `.start` · `.cancel`.
 
 **Set up again** (the bare map's right-click menu, `onboarding.start`): your AI tools, who you are (every class)
