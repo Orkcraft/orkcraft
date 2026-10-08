@@ -1,5 +1,9 @@
 # Building prompts
 
+> **Out of date:** these are the Warcraft II–style prompts the first headers were drawn from. Every
+> building has since been redrawn in the ork mark's flat style; its prompt and palette are in
+> [building-sprites.md](building-sprites.md). Use that one.
+
 Each prompt is complete: copy it as it is. Generate at the size given, then cut out the #ff00ff background and reduce the image with nearest-neighbour scaling to the sprite size.
 
 For the window version (128×64), use the same prompt and generate at 1024×512.
