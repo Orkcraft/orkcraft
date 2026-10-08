@@ -13,6 +13,7 @@ reads it first (`notes`) hands it a task directly. What it lent last shows on it
 """
 from __future__ import annotations
 
+import functools
 import os
 import random
 import threading
@@ -390,6 +391,8 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         self.running, self.last_error, self.last_note = what, "", ""
         self._cancel = cancel = threading.Event()
         runner = type(self).work_runner or (_simulated_work if self.simulated else jobs.run_work)
+        if runner is jobs.run_work and (outside := tuple(self.library.outside())):
+            runner = functools.partial(jobs.run_work, dirs=outside)   # its folders outside the project, read-only
         started = time.time()
         env = {"ORKCRAFT_ORC": f"{self.building_id}/librarian"}
         self.changed()

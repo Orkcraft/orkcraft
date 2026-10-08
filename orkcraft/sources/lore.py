@@ -619,6 +619,10 @@ class Library:
         """A file of the project itself (the wiki's orc reads it in place) — not a snapshot to take."""
         return any(isinstance(s, FolderSource) and s.owns(path) for s in self.sources)
 
+    def outside(self) -> list[str]:
+        """The folders outside the project the librarian reads (`dir:` sources): its AI tool is let in, read-only."""
+        return [str(s.root) for s in self.sources if isinstance(s, DirSource) and not s.inside and s.root.is_dir()]
+
     def in_place(self, path: str) -> Path | None:
         """The file the librarian reads where it is, for a `dir:` source's document (else None)."""
         for s in self.sources:

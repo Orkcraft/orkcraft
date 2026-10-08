@@ -180,6 +180,9 @@ class Harness:
     # (session id, reopen) → what a reading agent's argv gets to name its session up front, or to reopen
     # it after it was stopped (a Review board's Go on). None: a stopped turn starts again.
     read_session: Callable[[str, bool], list[str]] | None = None
+    # (folders outside the workdir) → what a working agent's argv gets to read them, never write them (the
+    # Wiki's folders outside the project: docs/design/wiki-folders-rules.md §1). None: it reads anywhere.
+    read_dirs: Callable[[list[str]], list[str]] | None = None
     extra: dict = field(default_factory=dict)
 
     @property
@@ -192,8 +195,12 @@ class Harness:
     def read(self, prompt: str, workdir: str | Path, model: str = "", web: bool = False) -> list[str]:
         return self.read_cmd(self, prompt, str(workdir), model_on(self.id, model), web)
 
-    def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "") -> list[str]:
-        return self.work_cmd(self, prompt, str(workdir), model_on(self.id, model), resume)
+    def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "",
+             dirs: Iterable[str] = ()) -> list[str]:
+        """`dirs`: folders outside `workdir` it may read too."""
+        cmd = self.work_cmd(self, prompt, str(workdir), model_on(self.id, model), resume)
+        dirs = [str(d) for d in dirs if str(d)]
+        return cmd + self.read_dirs(dirs) if dirs and self.read_dirs else cmd
 
     @property
     def carries(self) -> bool:
@@ -259,6 +266,14 @@ CLAUDE_NO_TOOLS = "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Rea
 def _claude_call(h, prompt, workdir, model, allow):
     return [h.bin, "-p", prompt, "--output-format", "stream-json", "--verbose",
             "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model)]
+
+
+def _claude_read_dirs(dirs: list[str]) -> list[str]:
+    """`--add-dir` for each folder, and no edit there (`//` makes a rule's path absolute)."""
+    out = [a for d in dirs for a in ("--add-dir", d)]
+    rules = [f"{tool}(/{Path(d).as_posix()}/**)" for d in dirs if Path(d).is_absolute()
+             for tool in ("Edit", "Write", "MultiEdit", "NotebookEdit")]
+    return out + (["--disallowedTools", ",".join(rules)] if rules else [])
 
 
 def _claude_work(h, prompt, workdir, model, resume):
@@ -434,7 +449,7 @@ register(Harness(
     {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     _claude_ask, _claude_read, _claude_work,
     resumable=True, deploys=True, web=True, priced=True, mark="✻", color="bold #f59e0b",
-    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call,
+    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call, read_dirs=_claude_read_dirs,
     read_session=lambda sid, reopen: ["--resume", sid] if reopen else ["--session-id", sid]))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
@@ -444,6 +459,7 @@ register(Harness(
     lambda h, p, w, m, r: _agy(h, p, w, m),
     in_repo=False, default_model="gemini-3.8-flash-high", mark="✦", color="bold #3b82f6", fits=("docs",),
     task_models={"code": "gemini-3.8-flash-high", "docs": "gemini-3.1-pro-high"},
+    read_dirs=lambda dirs: [a for d in dirs for a in ("--add-dir", d)],    # its sandbox sees only these
     resume_cmd=lambda h, sid: [h.bin, "--conversation", sid]))
 register(Harness(
     "codex", "Codex", "codex", "npm i -g @openai/codex", "codex login",

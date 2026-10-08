@@ -140,3 +140,32 @@ def test_a_folder_outside_may_get_the_rules_when_asked(fake_repo: Path, tmp_path
     w = host.town.worker(bid)
     assert w.config["rules_in"] == [outside.resolve().as_posix()]
     assert w.config["sources"][-1] == f"dir:{outside.resolve().as_posix()}"
+
+
+def test_the_ai_tool_may_read_the_folders_outside_never_write_them(fake_repo: Path, tmp_path: Path, monkeypatch):
+    from orkcraft.realm import harnesses, jobs
+    argv = harnesses.need("claude").work("take in", fake_repo, dirs=["/data/specs"])
+    assert argv[argv.index("--add-dir") + 1] == "/data/specs"
+    assert "Edit(//data/specs/**)" in argv[argv.index("--disallowedTools") + 1]
+    assert harnesses.need("codex").work("x", fake_repo, dirs=["/data/specs"]) == harnesses.need("codex").work("x", fake_repo)
+    outside = _mixed(tmp_path / "Documents")
+    got = {}
+
+    def run_work(harness, prompt, workdir, cancel, model, env, resume, dirs=()):
+        got["dirs"] = dirs
+        return "done", 0.0, None, ""
+
+    monkeypatch.setattr(jobs, "run_work", run_work)
+    monkeypatch.setattr(ScrollsWorker, "work_runner", None)
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    spec = buildings.type_spec(host.town, "scrolls")
+    spec["config"] = {**(spec.get("config") or {}), "auto_ingest": False, "commit": False,
+                      "sources": ["docs", f"dir:{outside}"]}
+    w = host.town.worker(buildings.raise_spec(host.town, spec).id)
+    w.refresh()
+    assert w.ingest()
+    end = time.monotonic() + 5
+    while w.running and time.monotonic() < end:
+        time.sleep(0.02)
+    assert got["dirs"] == (str(outside.resolve()),)
