@@ -8,7 +8,7 @@ call a model), [folded-cards.md](folded-cards.md) (a card folded to its title ba
 | stage | what | state |
 |---|---|---|
 | 1 | a script-first building shows no ork on its card; the ork comes to it while it is woken or asked (§2) | |
-| 2 | the yard's card: a fence for its frame, a gate for its title bar, the gate shut when folded (§3) | |
+| 2 | the yard's card: a picket fence round its inside, a gate round its title bar, the gate alone when folded (§3) | |
 | 3 | the gate opens and shuts with a short move; the ork walks in through it (§3d) | |
 
 ## 1. Why
@@ -83,45 +83,49 @@ frame is a fence, its title bar is the gate.** Camp only: a look changes how thi
 word ([portrait.md](portrait.md) §3). Office draws a yard as any card: nothing of this stage is drawn there.
 
 A first prototype (a stylesheet over the dashboard demo's real cards) is on the design canvas *Yards
-and Huts*: the fence as a `border-image` of pickets on the card, the gate as the title bar's planks
-with two posts in pseudo-elements, the fold as the planks upright with a brace.
+and Huts*: the pickets and side beams as background tiles of the card, the gate's posts as the title bar's
+pseudo-elements, its beam as a tile under the plate.
 
 ```
-      ╻            ╻            ╻
- ┏━━━━┻━━━━━━━━━━━━┻━━━━━━━━━━━━┻━━━━┓
- ┃▐█ 3 ⑂ Router            📌  ▾  █▌┃   ← the gate: two posts, a crossbar, the title on it
- ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
- ║ 12 sent · 0 dropped               ║   ← the inside: the card's plain `panel`, never wood
- ║ last: release-notes → mill        ║
- ╚═══════════════════════════════════╝   ← the fence: pickets on the frame only
+ ▲                                   ▲
+ █┌─────────────────────────────────┐█   ← two posts, their tops above the bar
+ █│ 3 ⑂ Router              📌  ▾   │█   ← the title bar: its dark plate, as on a hut
+ █╞═════════════════════════════════╡█   ← the beam under it
+ ▌│ 12 sent · 0 dropped             │▐   ← the inside: the card's plain `panel`, never wood
+ ▌│ last: release-notes → mill      │▐   ← a beam down each side
+ ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
 ```
 
 ### 3a. The fence
 
-- **Only the frame is wood.** Pickets of 6 px stand along the left, right and bottom edges; the inside is
-  the plain `panel` it is today. Text never sits on a texture (contrast stays 4.5:1).
-- **A 9-slice** (`border-image`): four corner posts, an edge that repeats. A card that is stretched
-  (`hut_size`, building-views.md §1a) tiles its pickets, at any level.
-- **Its colours are the frame's** (`frame`, `bevel-hi`, `bevel-lo`), so in ice and void the fence takes
-  the biome, as the stone and oak panels do now. Pixel art, `image-rendering: pixelated`, 1× or 2×.
+- **Only the edges are wood.** A row of pickets along the bottom (pointed, two rails between them, a
+  10×12 sprite tile), a beam down each side (4 px wide); the inside is the plain `panel` it is today.
+  Text never sits on wood (contrast stays 4.5:1).
+- **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
+  has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
+- **Muted wood**, near the frame's bronze, never orange: five fences on a map must stay quieter than
+  one fire. Ice and void get their own wood tints, as their stone panels do.
+- **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
+  level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
   `alert` frame and the halo, as a card does, and the flames stand on the gate.
 
 ### 3b. The gate
 
-- The title bar is the gate: **two posts** on its ends, **a crossbar** over it, the title bar's content
-  (number, icon, name, the visiting ork, `?`, mark, pin, fold) on the crossbar's planks.
-- The road handle stays where it is, on the fence's right post.
-- The type's header sprite stays where it stands on a hut: on the top edge, over the gate. A yard is
-  told by its fence and gate, never by losing its building.
+- **The title bar keeps its dark plate** (`panel-raised`, as on a hut), and all its content on it:
+  number, icon, name, the visiting ork, `?`, mark, pin, fold. The gate is drawn round it, never under it.
+- **Two posts** stand at its ends, taller than the bar, their pointed tops above it: that is what makes
+  it a gate. **A beam** runs under the bar (5 sprite px) and the side beams start from it.
+- The road handle stays where it is, on the right post.
+- The type's header sprite stays where it stands on a hut: on the top edge, between the posts. A yard
+  is told by its fence and gate, never by losing its building.
 
-### 3c. Fold is a shut gate
+### 3c. Fold is the gate alone
 
-A folded card ([folded-cards.md](folded-cards.md)) **is the gate shut**: the gate's planks closed over
-the bar, the fence gone. A peek (a question, an error, a drag) **opens the gate**, the yard's inside
-lies over the neighbours as a peek does now. The pickets show which cards fold by themselves: Drop file
-here and Router are yards and are built folded; a Transformer is built folded and is a yard while
-its steps are code.
+A folded card ([folded-cards.md](folded-cards.md)) is **the gate alone**: posts, plate and beam, the
+fence gone. A peek (a question, an error, a drag) brings the fence back with the inside, over the
+neighbours as a peek does now. Drop file here and Router are yards and are built folded; a Transformer
+is built folded and is a yard while its steps are code.
 
 ### 3d. Stage 3 — motion
 
