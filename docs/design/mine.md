@@ -173,11 +173,13 @@ The spend goes to the side ledger with the purpose `research` ([simplify.md](sim
 
 ## 11. The sprite
 
-A sheet of the flat set (`building-sprites.md`): a low mine entrance — a timber frame in a hillside,
-a dark opening, a cart rail coming out; ivory tusks as the frame's finials; one gold accent: a lamp
-over the opening (or a nugget in the cart). Drawn by an image model with the set's prompt and the
-existing headers as reference, then cut with `tools/sheet.py` into
-`design-system/sprites/buildings/mine/header.png`. The catalog entry: size **M**, `⛏️`.
+In the flat set (`building-sprites.md`): a low hillside with a timber frame set into it, a dark
+opening with a rail inside, ivory horns over the lintel, one gold accent: a lamp hanging in the
+opening. Drawn by an image model against the existing headers, then snapped by hand to a symmetric
+33 × 21 grid (the model hung the rail under the ground line). `design-system/sprites/buildings/mine/`:
+`header.png` (2 px a pixel), `@2x`, and the biomes from `tools/growth_sprites.py`. Still to do with the
+building's code: its place for the renown flag (`js/icons.js` `FLAG_AT`) and the catalog entry
+(size **M**, `⛏️`).
 
 ## 12. Stages
 
