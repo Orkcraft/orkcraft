@@ -32,12 +32,11 @@
 
 /* -- a yard: the fence (§3) ---------------------------------------------------------------------------------- */
 
-.gui-hut__gate, .gui-hut__post, .gui-hut__yard-name { display: none; }
+.gui-hut__yard-name { display: none; }
 
 [data-look="camp"] .gui-hut.is-yard { --fence-o: #120d08; --fence-m: #3f3120; --fence-h: #665233; --yard-ground: var(--panel);
   --fence-row: image-set(url("/ds/sprites/fence/row.png") 1x, url("/ds/sprites/fence/row@2x.png") 2x);
   --fence-side: image-set(url("/ds/sprites/fence/side.png") 1x, url("/ds/sprites/fence/side@2x.png") 2x);
-  --fence-post: image-set(url("/ds/sprites/fence/post.png") 1x, url("/ds/sprites/fence/post@2x.png") 2x);
   --fence-rail: linear-gradient(90deg, var(--fence-o) 0 1px, var(--fence-h) 1px 3px, var(--fence-m) 3px 6px, var(--fence-o) 6px 7px); }
 /* Its own width in whole pickets (14 × 21 px), as a card stretched by the person is (js/hut.js YARD_STEP). */
 [data-look="camp"] .gui-hut.is-yard.m:not(.is-sized) { width: 294px; }
@@ -60,28 +59,19 @@
 [data-look="camp"] .gui-hut.is-yard.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
 [data-look="camp"] .gui-hut.is-yard.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
-/* The title bar is the top fence: a post, the gate, a post, pickets to the edge. Its words went over the building. */
+/* The title bar is the top fence: pickets from edge to edge, its words over the building; the building stands on it
+   (§3b). Pin and fold keep 26 px clear of the road handle at its right. */
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 26px 0 15px;
   gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x; }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__title::before { content: ""; position: absolute; left: 0; bottom: 0; width: 15px; height: 36px;
-  pointer-events: none; background: var(--fence-post) 0 0 / 100% 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.no, .gui-type-icon, .gui-hut__spin, .gui-hut__name) { display: none; }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__gate { display: inline-flex; flex: none; align-self: flex-end; align-items: flex-end;
-  justify-content: center; width: 36px; height: 21px; }
-/* Shut: upright planks between two rails, a gold latch — the road handle's door (tools/road_sprites.py). */
-[data-look="camp"] .gui-hut.is-yard .gui-hut__gate.is-shut { background:
-  linear-gradient(var(--fence-o), var(--fence-o)) 0 3px / 100% 3px no-repeat,
-  linear-gradient(var(--fence-o), var(--fence-o)) 0 calc(100% - 3px) / 100% 3px no-repeat,
-  linear-gradient(#c99a3e, #c99a3e) calc(100% - 6px) 50% / 3px 3px no-repeat,
-  repeating-linear-gradient(90deg, var(--fence-o) 0 3px, #8a6a40 3px 6px, #6e5434 6px 12px); }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__gate .gui-hut__caller { margin: 0; padding: 4px 2px 0; }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor { line-height: 0; }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor img[data-kind="ork"] { zoom: calc(2 / 3); }
-[data-look="camp"] .gui-hut.is-yard .gui-hut__post { display: block; flex: none; align-self: flex-start; width: 15px; height: 36px;
-  margin-top: calc(var(--titlebar) - 36px); background: var(--fence-post) 0 0 / 100% 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > .gui-hut__mark { align-self: center; margin-left: 6px; padding: 2px 4px;
   background: var(--panel-raised); }
 [data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.gui-hut__pin, .gui-hut__fold) { background: var(--panel-raised); }
+/* Its building a fifth bigger than a hut's, standing on the top fence's pickets. */
+[data-look="camp"] .gui-hut.is-yard .gui-hut__sprite { zoom: .8; }
+[data-look="camp"] .gui-hut.is-yard > .ok-head { position: relative; z-index: 1; margin-bottom: -10px; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor { line-height: 0; align-self: flex-end; margin-left: 2px; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor img[data-kind="ork"] { zoom: calc(2 / 3); }
 
 /* Its name over the building, on the ground: muted caps with a pixel outline, cut short at its card's width. */
 [data-look="camp"] .gui-hut.is-yard > .ok-head { padding-top: 16px; }
@@ -94,7 +84,7 @@
 [data-look="camp"] .gui-hut.is-yard.is-selected .gui-hut__yard-name { color: var(--ink-gold); }
 [data-look="camp"] .gui-hut.is-yard.is-alert .gui-hut__yard-name { color: var(--alert); }
 
-/* Folded: the top fence alone, with its gate. */
+/* Folded: its name, its building and the top fence alone. */
 [data-look="camp"] .gui-hut.is-yard.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }
 [data-look="camp"] .gui-hut.is-yard.is-folded .gui-hut__title { margin: 0; }
 

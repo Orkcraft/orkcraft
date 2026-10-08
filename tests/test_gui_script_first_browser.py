@@ -125,23 +125,23 @@ def test_a_yard_shows_no_ork_of_its_own_and_a_hut_does(demo_page):
 
 
 def test_a_yard_is_fenced_and_the_ork_that_asks_stands_in_its_gate(demo_page):
-    """docs/design/yards.md §3–§4 in Camp: a yard's name stands over its building and its title bar is a fence with a
-    gate, shut while no ork is there; a hut says what its orks do over its roof; the ork that asks comes out, and a
-    press on it opens its question."""
+    """docs/design/yards.md §3–§4 in Camp: a yard's name stands over its building, which stands on its title bar —
+    a picket fence; a hut says what its orks do over its roof; the ork that asks comes out by the door, and a press
+    on it opens its question."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     calendar = pg.locator('.gui-hut[data-id="days"]')
     calendar.wait_for(state="visible", timeout=WAIT_MS)
     assert calendar.locator(".gui-hut__yard-title").inner_text().strip().lower() == "calendar"
-    assert calendar.locator(".gui-hut__gate.is-shut").is_visible()
+    assert calendar.locator(".gui-hut__caller").count() == 0                # nobody asks: nobody out by the door
     assert not calendar.locator(".gui-hut__name").is_visible()            # the name left the title bar
     assert pg.locator('.gui-hut[data-id="todo"] .gui-hut__doing').is_visible()   # a hut: Zz or a wheel on its roof
     assert calendar.locator(".gui-hut__doing").count() == 0               # a yard: nobody lives in it
 
     _call(pg, "orkspace.select", {"id": "agent_yard"})
-    gate = pg.locator('.gui-hut[data-id="outputs"] .gui-hut__gate.is-open')   # the Review gate's ork asks
-    gate.wait_for(state="visible", timeout=WAIT_MS)
-    gate.locator(".gui-hut__caller").click()
+    caller = pg.locator('.gui-hut[data-id="outputs"] .ok-head .gui-hut__caller')   # the Review gate's ork asks
+    caller.wait_for(state="visible", timeout=WAIT_MS)
+    caller.click()
     dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
     dialog.wait_for(state="visible", timeout=WAIT_MS)
     assert "carts wait" in dialog.inner_text()

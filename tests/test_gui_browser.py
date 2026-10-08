@@ -389,7 +389,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     for bid, x, y in ((a, 0.05, 0.05), (b, 0.6, 0.05)):
         pg.evaluate(f"([id, x, y]) => {link}.then(m => m.command('hut.move', {{ id, x, y }}))", [bid, x, y])
     pg.wait_for_timeout(600)
-    title, other = _hut(pg, a).locator(".gui-hut__title").bounding_box(), _hut(pg, b).bounding_box()
+    title, other = _hut(pg, a).locator(".gui-hut__title").bounding_box(), _hut(pg, b).locator(".ok-hut__card").bounding_box()
     start = _hut(pg, a).bounding_box()
     pg.mouse.move(title["x"] + 10, title["y"] + 5)
     pg.mouse.down()
