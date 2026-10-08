@@ -47,7 +47,7 @@ def thinking(spec: dict | None, b=None) -> list[str]:
         out.append("its steward takes what the script hands over")
     for orc in (b.garrison.handlers if b is not None else []):
         if orc.uses_model:
-            out.append(f"{orc.kind} {orc.name}")
+            out.append(f"{'road rule' if orc.kind == 'steward' else orc.kind} {orc.name}")
     return out
 
 

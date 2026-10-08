@@ -290,8 +290,8 @@ def _agent_rules(data: dict, script: str) -> list[Note]:
     kind = orc.get("kind", "agent")
     run = {**ts.RUN_DEFAULTS.get(kind, ts.RUN_DEFAULTS["agent"]), **(orc.get("run") or {})}
     roads = data.get("roads") or []
-    # Chief
-    if kind in ("agent", "hybrid"):
+    # Chief — a road rule is reviewed like an agent's orders: its text and its roads
+    if kind in ("agent", "hybrid", "steward"):
         if not str(orc.get("why") or "").strip():
             notes.append(Note("chief", "warn", "a model on every run, and no word on why a chain or a script won't do"))
         if int(run.get("quiet_s") or 0) < 10:
@@ -330,7 +330,7 @@ def _road_rules(data: dict) -> list[Note]:
     if data.get("source") == data.get("target"):
         notes.append(Note("mason", "block", "a building cannot listen to itself"))
     kind = data.get("handler_kind") or ""
-    if kind in ("agent", "hybrid") and data.get("event") == "on_selection_change":
+    if kind in ("agent", "hybrid", "steward") and data.get("event") == "on_selection_change":
         notes.append(Note("chief", "warn", "every selection in the source wakes a model"))
     flt = data.get("filter") or {}
     if flt.get("match"):

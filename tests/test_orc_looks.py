@@ -130,7 +130,7 @@ DEMOTE = {"proposals": [{"type": "demote", "orc": "seer", "why": "always id and 
 async def test_w_watches_and_applies_a_ready_demotion(fake_repo: Path, monkeypatch):
     monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: (json.dumps(DEMOTE), 0.05))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line")
+    ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line", harness=[{"role": "run", "harness": "agy"}])
     ts.subscribe(app.scroll, "town_hall", "loot", "on_selection_change", handler="seer")
     _examples(fake_repo)
     async with app.run_test(size=SIZE) as pilot:
@@ -163,7 +163,7 @@ async def test_scheduled_steward_runs_in_the_background(fake_repo: Path, monkeyp
     calls = []
     monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: calls.append(1) or (json.dumps(DEMOTE), 0.05))
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line")
+    ts.add_handler(app.scroll, "town_hall", "Seer", orders="one line", harness=[{"role": "run", "harness": "agy"}])
     ts.subscribe(app.scroll, "town_hall", "loot", "on_selection_change", handler="seer")
     ts.update_orc(app.scroll, "town_hall", "warchief", trigger={"type": "cron", "expression": "* * * * *"})
     _examples(fake_repo)

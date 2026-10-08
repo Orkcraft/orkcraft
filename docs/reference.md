@@ -617,15 +617,25 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   the mocks.
 - **Roads in words.** *➕ Listen* in the GUI (or an arrow drawn from a building's + to another) asks
   what it should listen to and what should happen to it — *"unread messages become to-dos"*. The
-  receiver's steward offers up to three roads (an event, a filter, or a rule an ork handles); picking
+  receiver's steward offers up to three roads (an event, a filter, or a **road rule** — *Set up the rule*
+  sends it to the Recruiter); picking
   the event or the building by hand is folded below. In the TUI: `Y`, the source, *💬 Say it in words…*
   (docs/design/roads-and-orcs.md §5b).
 - **Roads with a prompt.** `Y`, then click the source building (or press its number); "✨ Listen
   with a prompt…" takes one or several of its events and says how to handle them. The Recruiter
-  makes the handler — a chain or a script whenever the rule needs no judgement — then the Council
-  reviews it; a rejection comes back to the dialog with the prompt emptied. Script handlers run once
-  approved (`python3 -I`, records on stdin) and are held again if the file changes; a hybrid's
-  exit 3 hands over to its agent.
+  makes the handler — a chain or a script whenever the rule needs no judgement, else a **road rule**
+  the building's steward carries out — then the Council reviews it; a rejection comes back to the
+  dialog with the prompt emptied. Script handlers run once approved (`python3 -I`, records on stdin)
+  and are held again if the file changes; a hybrid's exit 3 hands over to the steward (or, for a
+  hybrid of old with tools of its own, to its agent).
+- **Road rules** (docs/design/steward-listens.md). A rule needing judgement is no new ork: it is a
+  handler of kind `steward`, its words in `orders`, with no tools of its own. On every cart the
+  steward carries it out on its own tool (its first harness step, else the main tool) with the
+  building's purpose (the steward's role and orders) in the prompt, at its tier for **listen** —
+  the one picked in the steward's models, else the one the goal names (🪙 laborer · ⚖️ warrior ·
+  💎 elder; 🪙 while the quota is tight). Runs, spend and 👍 / 👎 stay the rule's own (its chronicle,
+  `.orkcraft/history/handlers/`); the 🪙 budget and Stop all apply as to any agent. An `agent`
+  handler of old keeps running on its own tools.
 - **👍 / 👎** sit beside the steward in the console (or `K` / `F`). 👍 keeps a building's last
   result as a reference — up to three are shown to its agents and steward prompt. `F` asks what went wrong:
   broken inputs penalise its suppliers along the roads that delivered this session (1, ½, ¼ by
@@ -721,7 +731,7 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
 
 ## Orks: steward, handlers, Recruiter
 
-- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid; the marks are the
+- **Looks**: the icon is the kind — 🪧 chain / script, 🧌 agent, 🪧🧌 hybrid, 📜 road rule; the marks are the
   harness scheme — `✻` Claude (orange), `✦` agy / Gemini (blue), `⌬` Codex (green), `P` a pipeline (magenta), e.g. `✦→✻` (agy
   writes, Claude reviews); long schemes read `✻→✻·4`. The frame badge shows the steward.
 - **Tiers** (`realm/tiers.py`): how heavy a model a handler thinks with — 🔮 **elder** (opus,
@@ -752,11 +762,13 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
 - **Roster** (Building state): the ★ steward first, then each handler with its incoming roads
   (`◂ ⚒️ Forge · selection`); `1`–`9` pick orks, not rows. The unit card shows the kind, the
   scheme, the roads, the rerun policy and why this kind was chosen.
-- **`R` Recruit**: describe what the ork should do and press *Ask the Recruiter* — Claude picks the
-  cheapest kind (chain → script → agent → hybrid), explains why, proposes its roads; the preview
-  shows it all with attempts and cost, Enter recruits (handler + roads). Scripts are saved as drafts
-  under `.orkcraft/scripts/` and do not run yet. The name / role / orders fields below still recruit
-  an agent by hand.
+- **`R` Recruit**: describe what the ork should do and press *Ask the Recruiter* — the steward's tool
+  picks the cheapest kind (chain → script → road rule → hybrid), explains why, proposes its roads; the
+  preview shows it all with attempts and cost (a road rule: the steward's listen tier it will run at),
+  Enter recruits (handler + roads). An `agent` with tools of its own only for a pipeline of tools the
+  steward does not have (`write: agy → review: claude`). Scripts are saved as drafts under
+  `.orkcraft/scripts/` and run once reviewed. The name / role / orders fields below still recruit an
+  agent by hand.
 - **Script-first** (docs/design/script-first.md): a building whose work is code calls no model on its carts or
   schedules: Drop file here, Sound alerts, Router, File tree, Metrics, Calendar, Review gate, Branches & PRs, a
   Transformer without an `agent:` step and a Script without a steward prompt, so long as no handler of
@@ -764,11 +776,24 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   👎. The ork is its keeper, and it proposes a fix in the console for you to apply. The steward's window
   says *Script-first · no model · its ork wakes on an error or a 👎*, or what in it thinks. The Building
   retro skips these buildings.
+- **Road rules in the GUI**: a rule is never drawn as an ork. The steward's part of Info lists them
+  under **Road rules** (`📜 Boss's mail · 🗼 Inbox · new mail → here · 🪙 $0.05 · 4 runs`); a click opens
+  the rule — its words (*Edit*), its roads, the steward's tier it runs at, its spend and latest runs,
+  *Remove* (its roads stay, plain). The steward's models list **Listen: carry out the road rules** with
+  what the rules spent. An agent handler's Info has **Hand to the steward**: it shows what changes (tools,
+  tier, the spend per run now and an estimate on the steward's tier) and turns its orders into a rule;
+  its roads stay; *Revert* takes it back.
 - **`W` Steward** (Unit state on a ★ steward): watch now — free metrics (errors, jams, noisy filters,
-  🪙, an agent repeating itself); a model is asked only when something was found. Proposals
-  (demote an agent to a chain — replayed on its recorded runs first —, rerun policy, filter, new
-  road) open in a list; Enter applies a ready one. A steward whose trigger is `cron` watches on its
-  schedule in the background (`* * * * *` or `daily 05:00`).
+  🪙, a rule or an agent repeating itself, the costliest first); a model is asked only when something
+  was found. Proposals: demote a rule or an agent to a **chain** (replayed on its recorded runs first;
+  shown with the spend it saves, *≈ $1.80/week → $0*) or to a **script** / a **hybrid** (never run
+  before review: *Apply* is your review, then the Council's Fast Path reads it, then it is replayed and
+  replaces the rule only if it agrees); **hand** an agent on the steward's own tool to the steward;
+  **back to the rule** when code that came from a rule keeps failing (its words stay next to its code);
+  rerun policy, filter, new road. The report lists what each rule and agent spent. A ready chain may be
+  applied by the orks themselves under the building's Autonomy (🕰 / ⛓️‍💥, in quiet hours, with the
+  Council and probation); a script never is. A steward whose trigger is `cron` watches on its schedule
+  in the background (`* * * * *` or `daily 05:00`).
 
 ## Custom buildings (Mason & Artisan, retired)
 
@@ -1095,6 +1120,7 @@ onboarding (*Punk ork*).
 | Warchief | — |
 | Town Hall | — |
 | Road planner | — |
+| Road rule | — |
 | Building retro | — |
 | Ork work | — |
 | Renown | — |

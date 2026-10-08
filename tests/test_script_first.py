@@ -259,3 +259,14 @@ def test_a_building_that_thinks_never_wakes(fake_repo, keeper_calls):
     host.tick(time.monotonic() + 100)
     time.sleep(0.2)
     assert keeper_calls == [] and wakes.due(host.town) == []
+
+
+def test_a_road_rule_the_steward_carries_out_thinks_too(fake_repo):
+    host = _host(fake_repo)
+    pit = _raised(host, "pit")
+    horn = _raised(host, "horn")
+    ts.add_handler(host.town.scroll, horn, "Loud ones", kind="steward", orders="only what sounds urgent", harness=[])
+    ts.subscribe(host.town.scroll, horn, pit, "pit.text", handler="loud_ones")
+    b = host.town.scroll.building(horn)
+    assert script_first.thinking(host.town.spec_of(horn), b) == ["road rule Loud ones"]
+    assert not script_first.is_script_first(host.town.spec_of(horn), b)

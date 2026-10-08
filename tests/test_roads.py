@@ -114,7 +114,9 @@ def test_kind_rules():
     cases = [
         ({"kind": "chain"}, "a chain needs at least one op"),
         ({"kind": "script"}, "a script needs a script"),
-        ({"kind": "hybrid", "script": {"path": ".orkcraft/scripts/smith.py"}, "harness": []}, "needs a harness"),
+        ({"kind": "steward"}, "needs its words"),
+        ({"kind": "steward", "orders": "only the boss", "harness": [{"role": "run", "harness": "claude"}]},
+         "no harness of its own"),
         ({"kind": "agent", "harness": []}, "needs a harness"),
         ({"kind": "agent", "chain": CHAIN}, "only a chain has chain ops"),
         ({"kind": "chain", "chain": [{"op": "eval", "code": "1"}]}, "chain"),

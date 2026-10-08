@@ -13,7 +13,9 @@ A building has two kinds of orks:
   gone unused, a road's agent keeps doing the same thing). Its main output is proposals: a new
   road, a new ork, a spec change, or demoting an agent to a chain / script.
 - **Handlers** (bottom, the Clan Roster in Building state) — each works on one or more **incoming
-  roads** of this building.
+  roads** of this building. A handler that needs judgement is no ork of its own: it is a **road rule**
+  the steward carries out on its own tool (kind `steward`, docs/design/steward-listens.md), so a
+  building has one head. Code (chains, scripts) stays code.
 
 Orks sit on **incoming** roads, not outgoing ones: the receiver knows what to do with the data, a
 source never needs to know its consumers (subscription, fan-out for free), and processing cost is
@@ -54,16 +56,19 @@ only when the layout changes), drawn with the biome's glyphs.
 |---|---|---|
 | `chain` | declarative pipeline of whitelisted ops: filter, pick fields, regex extract, count, group, Markdown template, join a batch | data, not code — validated like a building spec; can run at once |
 | `script` | a small Python script written by Claude | code: enabled only after the operator reviews it; runs with JSON in/out on stdin/stdout, empty temp dir, stripped env, time / memory limits, no writes to the repo; kept in the repository |
-| `agent` | Claude / agy session(s) | judgment; always within the 🪙 limit |
-| `hybrid` | a script with escalation to an agent | the steward's usual shape |
+| `steward` | a road rule: its words, carried out by the building's steward on its tool and *listen* tier | judgment; always within the 🪙 limit |
+| `hybrid` | a script with escalation to the steward (or, of old, to its own agent) | the steward's usual shape |
+| `agent` | Claude / agy session(s) on its own tools — only for a pipeline of tools the steward lacks | judgment; always within the 🪙 limit |
 
 Claude decides the kind when the ork is created and explains in the preview why a cheaper kind
 was not enough (as Mason does). **Scripts are in the spec from day one; their runtime comes later**
 (until then the UI says so instead of pretending).
 
-**Demotion**: the steward sees an agent doing the same thing over and over (its Unit Chronicles)
-and proposes a chain or script, shown with input → expected-output examples from past runs; the
-new version is replayed on those examples before it replaces the agent.
+**Demotion**: the steward sees a rule or an agent doing the same thing over and over (its recorded
+runs, costliest first) and proposes a chain, a script or a hybrid, shown with the spend it saves; a
+chain is replayed on the recorded runs at once, a script only once the Council and the operator
+reviewed it, and either replaces the rule only when the replay agrees. The rule's words stay with the
+code, and the steward goes back to them when the code keeps failing (steward-listens.md §2a).
 
 ### Several roads, rerun on new data
 
@@ -72,7 +77,7 @@ A handler can listen to several roads. It keeps the **latest payload of every ro
 a spreadsheet cell recomputing. No join windows, no required / optional roads.
 
 - `chain` / `script`: rerun immediately — they are cheap.
-- `agent` / `hybrid`: a **quiet period** (e.g. 30 s) coalesces a burst into one run, and a new
+- `steward` / `agent` / `hybrid`: a **quiet period** (e.g. 30 s) coalesces a burst into one run, and a new
   event arriving during a run **restarts** it (the stale run is interrupted); the 🪙 of interrupted
   runs is still counted.
 

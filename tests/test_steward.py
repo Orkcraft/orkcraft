@@ -43,7 +43,8 @@ def test_similarity_masks_the_inputs():
 
 def _rig(tmp_path: Path, answers: list[str] | None = None, similar: bool = True):
     scroll = ts.default_scroll(PRESETS)
-    ts.add_handler(scroll, "scrying", "Seer", orders="one line per task")
+    ts.add_handler(scroll, "scrying", "Seer", orders="one line per task",      # a tool the steward lacks
+                   harness=[{"role": "run", "harness": "agy"}])
     ts.subscribe(scroll, "scrying", "forge", "on_selection_change", handler="seer")
     path = roads.examples_file(tmp_path, "scrying", "seer")
     path.parent.mkdir(parents=True)
