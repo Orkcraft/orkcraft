@@ -165,8 +165,15 @@ def test_gmail_checks_the_app_password_over_imap():
 def _gh(cmd, **kw):
     if cmd[:3] == ["gh", "api", "user"]:
         return SimpleNamespace(returncode=0, stdout="ann\n", stderr="")
-    if cmd[:3] == ["gh", "repo", "list"]:
-        return SimpleNamespace(returncode=0, stdout=json.dumps([{"nameWithOwner": "acme/web", "pushedAt": "2026-10-01"}]),
+    if cmd[:2] == ["gh", "api"] and cmd[2].startswith("user/repos"):
+        return SimpleNamespace(returncode=0, stdout=json.dumps([{"full_name": "acme/web", "pushed_at": "2026-10-01"}]),
+                               stderr="")
+    if cmd[:2] == ["gh", "api"] and cmd[2].startswith("notifications"):
+        return SimpleNamespace(returncode=0, stdout=json.dumps([{"id": "1", "reason": "review_requested",
+            "updated_at": "2026-10-02T05:00:00Z", "subject": {"title": "Fix login", "type": "PullRequest",
+            "url": "https://api.github.com/repos/acme/web/pulls/3"}, "repository": {"full_name": "acme/web"}}]), stderr="")
+    if cmd[:2] == ["gh", "api"] and cmd[2].startswith("repos/"):
+        return SimpleNamespace(returncode=0, stdout=json.dumps([{"id": "9", "type": "WatchEvent", "actor": {"login": "bo"}}]),
                                stderr="")
     if cmd[:2] == ["git", "-C"]:
         return SimpleNamespace(returncode=0, stdout="git@github.com:acme/orkcraft.git\n", stderr="")
@@ -219,12 +226,13 @@ def test_github_needs_no_paste_when_gh_is_logged_in(host):
     act("add_start", service="github")
     assert _until(lambda: w.adding.step == "what" and not w.adding.busy)
     assert [(o.id, o.picked) for o in w.adding.options] == [("acme/orkcraft", True), ("acme/web", False)]
-    with pytest.raises(CommandError, match="one repo"):
-        act("add_what", picks=["acme/orkcraft", "acme/web"], about_me=True)
-    act("add_what", picks=["acme/orkcraft"], about_me=True)
+    with pytest.raises(CommandError, match="Pick a repo, or keep your notifications"):
+        act("add_what", picks=[], about_me=False)
+    act("add_what", picks=["acme/orkcraft", "acme/web"], about_me=True)
     assert _until(lambda: w.adding.step == "check" and not w.adding.busy)
+    assert (w.adding.found, w.adding.error) == (3, "") and "your notifications" in w.adding.plan.says
     act("add_save")
-    assert w.config["github"] == "acme/orkcraft"
+    assert w.config["feeds"] == ["github: repos=acme/orkcraft,acme/web notifications=on"]
     act("add_open")
     act("add_back")
     assert w.adding.step == "pick"

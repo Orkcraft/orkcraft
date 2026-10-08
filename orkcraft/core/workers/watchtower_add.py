@@ -1,7 +1,9 @@
 """🗼 Add a source, as the Watchtower's worker runs it: the three steps' state, their work in threads.
 
 The page shows the state (`view()`), the acts move it on: `open` → `start` (a service, or a pasted
-link) → `log_in` (or a login this machine has) → `what` (the picks) → `save`. Every call to a
+link) → `log_in` (or a login this machine has) → `what` (the picks) → `save`. A source already
+listed comes back by `edit`: at step 2 with its picks (Edit), or at step 1 with the rest kept (Log
+in again); its Add then puts the new line where the old one was. Every call to a
 service runs in a thread and comes back through `town.call`; the state lives here, so the panel can
 close and open again — or the person go make a token — and find the step where they left it. A
 typed secret is never kept: it goes to realm/logins.py on a good login, and is dropped on a bad one.
@@ -16,7 +18,7 @@ import threading
 import urllib.request
 from dataclasses import asdict
 
-from orkcraft.realm import feeds, quickadd, sources_link
+from orkcraft.realm import feeds, logins, quickadd, sources_link
 from orkcraft.realm.quickadd import Refused, Verified
 
 
@@ -40,6 +42,13 @@ class Adding:
         self.folder = "INBOX"
         self.plan: quickadd.Plan | None = None
         self.found = 0
+        self.editing = ""                 # the source being made again (`feed:<line>`, `mail`, `github`), or ""
+        self.me = ""                      # Discord: the person's user id, to tell mentions
+        self.invite = ""                  # Discord: the link that adds the bot to a server
+        self.prefill: dict[str, str] = {}     # what the login form starts with (never a secret)
+        self.everything = False           # the whole service at once (§6)
+        self.intent = ""                  # what to listen for, asked with Everything when the tower has none
+        self.guilds: tuple[str, ...] = ()     # Discord: the servers the bot is in
 
     # -- the runners: the worker's, so tests fake one place ----------------------------------------------
 
@@ -90,7 +99,7 @@ class Adding:
         self.w.changed()
 
     def recognise(self, text: str) -> sources_link.Link | None:
-        link = sources_link.recognise(text)
+        link = sources_link.recognise(text, [e["account"] for e in logins.listed("gitlab")])
         if link is None or link.service not in quickadd.SERVICES:
             return None
         return link
@@ -106,15 +115,35 @@ class Adding:
         if link and link.target:
             self.picks = [link.target]
         if service == "github":                       # gh's login: asked again each time (Check again)
-            runner = self._runner()
-
-            def logged_in(who: str) -> None:
-                self.gh = who
-                self.use(Verified("github", who, who))
-
-            self._thread("Asking gh…", lambda: quickadd.verify("github", {}, runner=runner).who, logged_in)
+            self.check_gh()
             return
+        if service == "gitlab" and (not link or link.site == "gitlab.com"):
+            self._glab("gitlab.com")
+            return
+        if link and link.site and service == "gitlab":
+            self.prefill = {"host": link.site}
         self.w.changed()
+
+    def check_gh(self) -> None:
+        runner = self._runner()
+
+        def logged_in(who: str) -> None:
+            self.gh = who
+            self.use(Verified("github", who, who))
+
+        self._thread("Asking gh…", lambda: quickadd.verify("github", {}, runner=runner).who, logged_in)
+
+    def _glab(self, host: str) -> None:
+        """GitLab: glab's login, when there is one, is step 1 done; else the form, without a word *(check)*."""
+        runner = self._runner()
+
+        def work():
+            try:
+                return quickadd.verify("gitlab", {"host": host}, runner=runner)
+            except Refused:
+                return None
+
+        self._thread("Asking glab…", work, lambda login: login and self.use(login))
 
     def logins_here(self) -> list[Verified]:
         return quickadd.kept(self.service) if self.service else []
@@ -123,6 +152,9 @@ class Adding:
         """Check the login with the service; a good one is kept and step 2 lists what there is."""
         if self.link and self.link.site and self.service in quickadd.ATLASSIAN and not values.get("site"):
             values = {**values, "site": self.link.site}
+        if self.service == "gitlab" and not values.get("host"):
+            values = {**values, "host": (self.link.site if self.link and self.link.site else "") or
+                      self.prefill.get("host", "")}
         opener, runner, imap = self._opener(), self._runner(), type(self.w).imap_factory
         self._thread("Checking the login…", lambda: quickadd.verify(self.service, values, opener, runner, imap), self.use)
 
@@ -134,7 +166,24 @@ class Adding:
             return
         opener, runner, root = self._opener(), self._runner(), self.w.repo_root
         files = list(self.picks) if self.service == "figma" else None
+        if self.service == "discord":                 # the invite needs the bot's id
+            def work():
+                bot = quickadd.discord_bot(login, opener)
+                return bot, quickadd.options(bot, opener), quickadd.discord_guilds(bot, opener)
+
+            def listed(result) -> None:
+                self.login, self.invite, self.guilds = result[0], quickadd.discord_invite(result[0]), result[2]
+                self._listed(result[1])
+
+            self._thread("Looking what the bot can see…", work, listed)
+            return
         self._thread("Looking what there is…", lambda: quickadd.options(login, opener, runner, root, files), self._listed)
+
+    def list_again(self) -> None:
+        """Step 2 asks the service again (Discord: after the bot was invited)."""
+        if self.login is None or self.step != "what":
+            raise Refused("Log in first")
+        self.use(self.login)
 
     def use_kept(self, account: str) -> None:
         login = next((x for x in self.logins_here() if x.account == account), None)
@@ -143,10 +192,11 @@ class Adding:
         self.use(login)
 
     def _listed(self, found: list[quickadd.Option]) -> None:
-        self.options = found
         ids = {o.id for o in found}
-        self.picks = [p for p in self.picks if p in ids or self.service == "figma"] + \
-                     [o.id for o in found if o.picked and o.id not in self.picks]
+        kept = [quickadd.Option(p, p, "picked before" if self.editing else "from the link", True)
+                for p in self.picks if p not in ids]          # a pick the list does not show stays, ticked
+        self.options = kept + found
+        self.picks = list(self.picks) + [o.id for o in found if o.picked and o.id not in self.picks]
 
     def add_files(self, text: str) -> None:
         """Figma: pasted file (or team) links join the list."""
@@ -169,29 +219,51 @@ class Adding:
         else:
             self.w.changed()
 
-    def what(self, picks: list[str], about_me: bool, folder: str = "INBOX") -> None:
-        """The picks → the setting it makes, and the first look, before anything is saved."""
+    def what(self, picks: list[str], about_me: bool, folder: str = "INBOX", me: str = "",
+             everything: bool = False, intent: str = "") -> None:
+        """The picks → the setting it makes, and the first look, before anything is saved. Everything with
+        an intent keeps the intent too (the Lookout keeps a whole service calm)."""
         if self.login is None:
             raise Refused("Log in first")
-        self.picks, self.about_me, self.folder = picks, about_me, folder
-        p = quickadd.plan(self.login, picks, about_me, folder)
+        s = quickadd.SERVICES[self.service]
+        self.picks, self.about_me, self.folder, self.me = picks, about_me, folder, me.strip()
+        self.everything, self.intent = everything and bool(s.everything), " ".join(intent.split())[:500]
         login, opener, runner, imap = self.login, self._opener(), self._runner(), type(self.w).imap_factory
+        whole, guilds, ask = self.everything, self.guilds, self.intent
+        quickadd.plan(login, picks, about_me, folder, "", whole, guilds)     # what is wrong with the picks, at once
 
-        def done(result: tuple[int, str]) -> None:
-            found, problem = result
+        def work():
+            p = quickadd.plan(login, picks, about_me, folder, quickadd.discord_me(login, self.me, opener)
+                              if login.service == "discord" else "", whole, guilds)
+            if whole and ask and not self.w.intent:
+                p.changes["intent"] = ask
+            return p, quickadd.first_look(login, p, opener, runner, imap)
+
+        def done(result) -> None:
+            p, (found, problem) = result
             self.plan, self.found = p, found
             self.step = "check"
             self.error = problem
 
-        self._thread("Making the first look…", lambda: quickadd.first_look(login, p, opener, runner, imap), done)
+        self._thread("Making the first look…", work, done)
 
     def save(self) -> str:
         """Add: the setting is saved and the tower listens with it. The source's id."""
         if self.plan is None or self.step != "check" or self.error:
             raise Refused("Check it first")
         changes = dict(self.plan.changes)
-        if self.plan.feed:
-            changes["feeds"] = quickadd.with_feed(self.w.config.get("feeds") or [], self.plan.feed)
+        lines = [str(x) for x in self.w.config.get("feeds") or []]
+        if self.editing.startswith("feed:"):              # the new line where the old one was
+            old = self.editing[5:]
+            at = lines.index(old) if old in lines else len(lines)
+            lines = [x for x in lines if x != old]
+            if self.plan.feed and self.plan.feed not in lines:
+                lines.insert(at, self.plan.feed)
+            changes["feeds"] = quickadd.with_feed(lines, self.plan.feed) if self.plan.feed else (lines or None)
+        elif self.plan.feed:
+            changes["feeds"] = quickadd.with_feed(lines, self.plan.feed)
+        if self.service == "github" and (self.editing == "github" or str(self.w.config.get("github") or "") in self.picks):
+            changes["github"] = None                      # the old one-repo setting moves into the line
         if not self.w.save_config(changes):
             raise Refused("Not saved")
         service = self.service
@@ -199,11 +271,37 @@ class Adding:
         self.w.restart()
         return service
 
+    def edit(self, source: str, relogin: bool = False) -> None:
+        """A listed source made again: Edit at step 2 with its picks, Log in again at step 1, the rest kept."""
+        if self.w.simulated:
+            raise Refused("The demo asks no service: change sources in a real town")
+        made = quickadd.from_source(self.w.config, source)
+        keep_gh = self.gh
+        self.reset()
+        login = made.login
+        self.gh, self.service, self.editing = keep_gh, login.service, source
+        self.picks, self.about_me, self.folder, self.me = list(made.picks), made.about_me, made.folder, made.me
+        self.everything = made.everything
+        if login.service == "gmail":
+            self.prefill = {"email": login.account}
+        elif login.site and login.service in (*quickadd.ATLASSIAN, "gitlab"):
+            self.link = sources_link.Link(login.service, login.site, "", "")
+            self.prefill = {"site" if login.service in quickadd.ATLASSIAN else "host": login.site}
+        if relogin or (login.service != "github" and not all(logins.resolve(r) for r in login.refs.values())):
+            self.step = "login"                           # a login that is gone cannot list step 2
+            self.w.changed()
+            return
+        if login.service == "github" and not login.refs:
+            self.step = "login"
+            self.check_gh()
+            return
+        self.use(login)
+
     def back(self) -> None:
         before = {"login": "pick", "what": "login", "check": "what"}.get(self.step, "pick")
         self.step = "pick" if before == "login" and self.service == "github" else before   # gh's login is no step
-        if self.step == "pick":
-            self.service, self.login, self.link = "", None, None
+        if self.step == "pick":                           # back to the picker: no longer the source being edited
+            self.service, self.login, self.link, self.editing, self.prefill = "", None, None, "", {}
         self.error = ""
         self.w.changed()
 
@@ -216,10 +314,11 @@ class Adding:
     def services(self) -> list[dict]:
         out = []
         for s in quickadd.SERVICES.values():
-            kept = quickadd.kept(s.id) if s.id != "github" else []
+            kept = quickadd.kept(s.id)
             mark = (f"✓ gh · {self.gh}" if s.id == "github" and self.gh else
                     f"✓ {kept[0].account}" if kept else
-                    {"github": "gh", "gmail": "an app password"}.get(s.id, "a token"))
+                    {"github": "gh or a token", "gitlab": "glab or a token", "gmail": "an app password",
+                     "discord": "a bot"}.get(s.id, "a token"))
             out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓")})
         return out
 
@@ -232,15 +331,22 @@ class Adding:
         if self.step == "pick":
             out["services"] = self.services()
             return out
+        host = self.prefill.get("host") or (self.link.site if self.link and self.service == "gitlab" else "") or "gitlab.com"
         out.update(label=s.label, note=s.note, picks_of=s.picks, about_me_says=s.about_me,
-                   fields=[asdict(f) for f in s.fields], how=[{"text": t, "url": u} for t, u in s.how],
-                   kept=[{"account": x.account, "who": x.who} for x in self.logins_here()],
+                   fields=[asdict(f) for f in s.fields],
+                   how=[{"text": t, "url": u.replace("{host}", host)} for t, u in s.how],
+                   editing=self.editing, prefill=dict(self.prefill), me=self.me, invite=self.invite,
+                   everything_says=s.everything, everything=self.everything, intent=self.intent,
+                   asks_intent=not self.w.intent,
+                   whole_team="Whole team — needs push, not built yet" if self.service == "figma" else "",
+                   kept=[] if self.editing and self.step == "login" else       # Log in again: not the refused one
+                   [{"account": x.account, "who": x.who} for x in self.logins_here()],
                    who=self.login.who if self.login else "",
                    options=[asdict(o) for o in self.options], picks=list(self.picks), about_me=self.about_me,
                    folder=self.folder)
         if self.step == "check" and self.plan is not None:
             out.update(says=self.plan.says, found=self.found, line=self.plan.feed or "",
-                       every="every 2 min")
+                       every="every 2 min", listens_for=str(self.plan.changes.get("intent") or self.w.intent or ""))
         return out
 
 
@@ -268,6 +374,15 @@ def _hears(feed: feeds.Feed) -> list[str]:
     """What a feed line hears, in words: `acme.atlassian.net · about you · projects WEB`."""
     o = feed.opts
     out = [o["site"]] if o.get("site") else []
+    if feed.kind == "agent":
+        from orkcraft.realm import feeds_agent
+        return [f"via Claude · {o.get('server', '')}", f"every {feeds_agent.every(feed)} min", o.get("ask", "")]
+    if (feed.on("everything") or o.get("notifications") == "all" or o.get("guilds")
+            or o.get("jql") == feeds.EVERYTHING_JQL or o.get("cql") == feeds.EVERYTHING_CQL):
+        out.append("everything" + (f" · servers {o['guilds']}" if o.get("guilds") else ""))
+        if o.get("repos"):
+            out.append(f"repos {o['repos']}")
+        return out + (["mentions of you told"] if o.get("me") else [])
     jql = o.get("jql", "")
     if feed.kind in ("slack", "confluence") or (feed.kind == "jira" and (not jql or feeds.JIRA_JQL in jql)):
         out.append("about you")
@@ -276,10 +391,34 @@ def _hears(feed: feeds.Feed) -> list[str]:
         out.append(f"projects {keys.group(1)}")
     elif jql and feeds.JIRA_JQL not in jql:
         out.append(f"JQL {jql}")
-    for k, word in (("channels", "channels"), ("spaces", "spaces"), ("files", "files"), ("cql", "CQL")):
+    if feed.kind == "gitlab":
+        out.append(feed.host)
+    if feed.on("notifications") or feed.on("todos"):
+        out.append("your notifications" if feed.kind == "github" else "your to-dos")
+    for k, word in (("channels", "channels"), ("spaces", "spaces"), ("files", "files"), ("cql", "CQL"),
+                    ("repos", "repos"), ("projects", "projects")):
         if o.get(k):
             out.append(f"{word} {o[k]}")
+    if o.get("me"):
+        out.append("mentions of you told")
     return out
+
+
+FIX = {"login": "Log in again", "target": "Edit", "network": ""}      # what a failing source's line offers
+
+
+def _editable(worker, source: str) -> bool:
+    try:
+        quickadd.from_source(worker.config, source)
+    except Refused:
+        return False
+    return True
+
+
+def _entry(worker, source: str, kind: str, label: str, line: str, why: str) -> dict:
+    fails = worker.fails(source) if why else ""
+    return {"id": source, "kind": kind, "label": label, "line": line, "why": why, "fails": fails,
+            "fix": FIX.get(fails, ""), "editable": _editable(worker, source)}
 
 
 def listed(worker) -> list[dict]:
@@ -288,20 +427,26 @@ def listed(worker) -> list[dict]:
     out = []
     if c.get("host"):
         who = c.get("user") or c.get("user_env") or ""
-        out.append({"id": "mail", "kind": "mail", "label": worker.label("mail"),
-                    "line": f"{who} · {c.get('folder') or 'INBOX'}".strip(" ·"), "why": worker.why("mail")})
+        out.append(_entry(worker, "mail", "mail", worker.label("mail"),
+                          f"{who} · {c.get('folder') or 'INBOX'}".strip(" ·"), worker.why("mail")))
     if c.get("github"):
-        out.append({"id": "github", "kind": "github", "label": "GitHub", "line": str(c["github"]), "why": worker.why("github")})
+        out.append(_entry(worker, "github", "github", "GitHub", f"repos {c['github']} · gh", worker.errors.get("github", "")))
     for line in [str(x) for x in c.get("feeds") or []]:
         feed, _ = feeds.parse(line)
         kind = feed.kind if feed else "?"
         what = " · ".join(_hears(feed)) if feed else line
-        how = "a login" if feed and any(v.startswith("keychain:") for v in feed.opts.values()) else "the environment"
-        out.append({"id": f"feed:{line}", "kind": kind, "label": quickadd.SERVICES[kind].label if kind in quickadd.SERVICES else kind,
-                    "line": f"{what} · {how}".strip(" ·"), "why": worker.errors.get(f"feed:{line}", "")})
+        how = ("a login" if feed and any(v.startswith("keychain:") for v in feed.opts.values()) else
+               "gh" if kind == "github" and not feed.opts.get("token") else
+               "glab" if kind == "gitlab" and not feed.opts.get("token") else "the environment")
+        if kind == "agent":                               # no login here: what it costs instead
+            how = f"≈ ${worker.spent_today(feed):.2f} today"
+            if line in worker.waiting:
+                how += f" · {worker.waiting[line]}"
+        out.append(_entry(worker, f"feed:{line}", kind, quickadd.SERVICES[kind].label if kind in quickadd.SERVICES else
+                          "Through Claude" if kind == "agent" else kind,
+                          f"{what} · {how}".strip(" ·"), worker.errors.get(f"feed:{line}", "")))
     if c.get("cron"):
-        out.append({"id": "cron", "kind": "cron", "label": "Schedule", "line": str(c["cron"]), "why": ""})
+        out.append(_entry(worker, "cron", "cron", "Schedule", str(c["cron"]), ""))
     if c.get("webhook_port"):
-        out.append({"id": "webhook", "kind": "webhook", "label": "Webhook", "line": f"127.0.0.1:{c['webhook_port']}",
-                    "why": worker.why("webhook")})
+        out.append(_entry(worker, "webhook", "webhook", "Webhook", f"127.0.0.1:{c['webhook_port']}", worker.why("webhook")))
     return out

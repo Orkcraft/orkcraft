@@ -1,8 +1,9 @@
 """🗼 What the Watchtower listens to, besides the mailbox (realm/mailbox.py).
 
-    github   `gh api repos/<owner/repo>/events` — events newer than the last one seen
+    github   `gh api repos/<owner/repo>/events` — events newer than the last one seen (the old
+             setting, one repo; a `github:` feed line hears many, and your notifications)
     cron     a schedule: `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00`, a 5-field cron
-    feeds    Slack, Jira, Confluence, Figma: comments and mentions (realm/feeds.py)
+    feeds    Slack, Jira, Confluence, Figma, GitHub, GitLab, Discord: comments and mentions (realm/feeds.py)
     webhook  an HTTP server on 127.0.0.1:<port> (never another interface); a POST is a signal.
              With `webhook_secret_env` set, a request must carry the secret: `X-Orkcraft-Token`,
              or GitHub's `X-Hub-Signature-256` HMAC of the body. /slack, /jira, /confluence and
@@ -23,17 +24,18 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable
 
 from orkcraft.realm import inbound, steward
+from orkcraft.realm.feeds_git import describe   # noqa: F401 (watch.describe, as before)
 
 GH_TIMEOUT_S = 15
 MAX_BODY = 1024 * 1024
-FEEDS = ("slack", "jira", "confluence", "figma")      # realm/feeds.py
+FEEDS = ("slack", "jira", "confluence", "figma", "gitlab", "discord", "agent")      # realm/feeds.py: comments and mentions
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 @dataclass
 class Signal:
     at: str
-    source: str            # mail | github | cron | webhook | slack | jira | confluence | figma
+    source: str            # mail | github | cron | webhook | slack | jira | confluence | figma | gitlab | discord
     title: str
     body: str = ""
     ref: str = ""          # mail uid, GitHub event id, webhook path, a feed item's link
@@ -48,7 +50,7 @@ class Signal:
 
     @property
     def event(self) -> str:
-        if self.source in FEEDS:
+        if self.source in FEEDS or self.mention:        # a GitHub notification is about you too
             return "watch.mention" if self.mention else "watch.comment"
         return {"mail": "mail.received", "github": "watch.github", "cron": "watch.cron"}.get(self.source,
                                                                                               "watch.webhook")
@@ -69,31 +71,10 @@ def local_iso(at: str) -> str:
 
 # -- GitHub -------------------------------------------------------------------------------------------------
 
-def describe(ev: dict) -> tuple[str, str]:
-    """(title, body) of one GitHub event."""
-    kind, p, who = ev.get("type", "Event"), ev.get("payload") or {}, (ev.get("actor") or {}).get("login", "?")
-    if kind == "PullRequestEvent":
-        pr = p.get("pull_request") or {}
-        title = f"PR #{pr.get('number', '?')} {p.get('action', '')}: {pr.get('title', '')}"
-        return title.strip(), f"{who} · {pr.get('html_url', '')}"
-    if kind == "IssuesEvent":
-        it = p.get("issue") or {}
-        return f"issue #{it.get('number', '?')} {p.get('action', '')}: {it.get('title', '')}", f"{who} · {it.get('html_url', '')}"
-    if kind == "IssueCommentEvent":
-        it, c = p.get("issue") or {}, p.get("comment") or {}
-        return f"comment on #{it.get('number', '?')}", f"{who}: {(c.get('body') or '')[:500]}"
-    if kind == "PushEvent":
-        commits = p.get("commits") or []
-        ref = str(p.get("ref", "")).removeprefix("refs/heads/")
-        return f"push to {ref}: {len(commits)} commit{'s' if len(commits) != 1 else ''}", \
-            "\n".join(f"- {c.get('message', '').splitlines()[0]}" for c in commits[:10] if c.get("message"))
-    if kind == "ReleaseEvent":
-        rel = p.get("release") or {}
-        return f"release {rel.get('tag_name', '')} {p.get('action', '')}", rel.get("html_url", "")
-    if kind == "WorkflowRunEvent":
-        run = p.get("workflow_run") or {}
-        return f"workflow {run.get('name', '')}: {run.get('conclusion') or run.get('status', '')}", run.get("html_url", "")
-    return f"{kind.removesuffix('Event')} by {who}", ""
+def error_kind(text: str) -> str:
+    """Which failure a `github:` setting's error is: login, target or network (realm/feeds.py FAILS)."""
+    from orkcraft.realm.feeds_git import cli_kind
+    return "target" if "is not owner/repo" in (text or "") else cli_kind(text)
 
 
 def github_events(repo: str, last_id: str, runner=subprocess.run) -> tuple[list[Signal], str, str]:

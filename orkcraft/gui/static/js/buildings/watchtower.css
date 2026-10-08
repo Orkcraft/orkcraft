@@ -13,7 +13,10 @@
 .gui-tower__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-tower__bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
 .gui-tower__state { flex: 1 1 140px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
-.gui-tower__failing { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.gui-tower__failing { margin: 0; min-width: 0; display: flex; gap: var(--space-2); align-items: center; font-size: 12px; }
+.gui-tower__failing > span:first-child { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-tower__failing > .ok-btn { flex: none; }
+.gui-tower__retry { flex: none; font-size: 12px; }
 
 /* The feed: one line per signal — new, source, from · what, when. */
 .gui-tower__rows { list-style: none; margin: 0; padding: 0; min-width: 0; }
@@ -45,7 +48,7 @@
 .gui-svc.is-big { width: 34px; height: 34px; font-size: 18px; }
 .gui-svc::before { content: ""; width: 62%; height: 62%; background: var(--ink-gold);
   -webkit-mask: var(--svc) center / contain no-repeat; mask: var(--svc) center / contain no-repeat; }
-.gui-svc--slack::before, .gui-svc--cron::before, .gui-svc--webhook::before, .gui-svc--mail::before, .gui-svc--\?::before { display: none; }
+.gui-svc--slack::before, .gui-svc--agent::before, .gui-svc--cron::before, .gui-svc--webhook::before, .gui-svc--mail::before, .gui-svc--\?::before { display: none; }
 .gui-svc--github { --svc: url("../../icons/services/github.svg"); }
 .gui-svc--gitlab { --svc: url("../../icons/services/gitlab.svg"); }
 .gui-svc--gmail { --svc: url("../../icons/services/gmail.svg"); }
@@ -77,6 +80,7 @@
 .gui-add__field { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-add__field > .ok-input { width: 100%; box-sizing: border-box; }
 .gui-add__hint { margin: 0; font-size: 12px; }
+.gui-add__switch.is-off { opacity: .5; cursor: not-allowed; }
 .gui-add__kept { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .gui-add__kept > .gui-add__label { width: 100%; }
 .gui-add .ok-check input, .gui-add__switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -103,5 +107,6 @@
 .gui-tower__source.is-bad { box-shadow: var(--bevel-sunken), inset 3px 0 0 var(--danger); }
 .gui-tower__source-name { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; font-weight: 700; }
 .gui-tower__source-name > span { font-size: 12px; font-weight: 600; }
+.gui-tower__source-acts { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; }
 .gui-tower__source-line { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-theme="office"] .gui-svc { box-shadow: inset 0 0 0 1px var(--frame); }
