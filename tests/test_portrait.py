@@ -130,3 +130,16 @@ def test_the_phone_reads_and_sets_the_portrait(fake_repo):
     host.command("you.look", {"look": "office"})
     small = mobile.compact(host.snapshot())
     assert small["look"] == "office" and small["portrait"]["mono"] and small["portrait"]["dnd"]["choice"] == "off"
+
+
+def test_office_names_the_role_its_mark_is_drawn_from(fake_repo):
+    """Office draws the role's line icon (js/roles.js) from `role`; its two letters stay as its name; someone
+    else has no role and the plain figure."""
+    from orkcraft.gui import you
+    host = _host(fake_repo)
+    p = host.snapshot()["portrait"]
+    assert p["role"] in set(you.MONOGRAMS) | {""}
+    assert (p["mono"] == "··") == (p["role"] == "")
+    assert mobile.compact(host.snapshot())["portrait"]["role"] == p["role"]
+    icons = (Path(you.__file__).parent / "static" / "js" / "roles.js").read_text()
+    assert all(f"  {r}:" in icons for r in you.MONOGRAMS)          # every role has its mark

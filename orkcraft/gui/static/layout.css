@@ -727,3 +727,5 @@ button { font: inherit; color: inherit; }
 [data-look="office"] .gui-portrait.is-big, [data-look="office"] .gui-portrait__toggle { box-shadow: 0 0 0 1px var(--frame); border-radius: var(--radius-md, 4px); }
 [data-look="office"] .gui-portrait__toggle.is-on { box-shadow: 0 0 0 1px var(--frame-focus); }
 .gui-portrait-slot.is-corner .gui-portrait__menu { left: var(--space-2); top: calc(var(--bar-hud) + 84px); }
+/* A role's mark in Office (js/roles.js): a line icon in the ink, the hairline's weight. */
+.gui-role-icon { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
