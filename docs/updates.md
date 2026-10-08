@@ -97,8 +97,12 @@ formula (not the rest of the tap). By the short name brew stops with "refusing t
 untrusted tap"; `brew trust --formula orkcraft/orkcraft/orkcraft` fixes a copy installed that way.
 
 The formula installs `orkcraft[gui]` in a virtualenv on Homebrew's Python, from the GitHub archive of
-one commit, with every Python package pinned as an sdist with its sha256 (brew builds them from
-source; the pyobjc ones, for the window's WebKit, only on macOS). It is written, never edited, by
+one commit, with every Python package pinned with its sha256 as the wheel `uv.lock` has for each of
+macOS and Linux on arm and on Intel (the pyobjc ones, for the window's WebKit, only on macOS). Wheels
+install in seconds, where brew building every sdist took minutes; a package with no wheel for a
+platform comes as its sdist and is built there (cryptography on an Intel Mac, with Rust). Next:
+bottles, so nothing is built at all ([design/brew-bottles.md](design/brew-bottles.md)). It is
+written, never edited, by
 [`tools/brew_formula.py`](../tools/brew_formula.py): it reads `__version__` and `uv.lock` at that
 commit and hashes the archive.
 
