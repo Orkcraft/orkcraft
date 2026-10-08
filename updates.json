@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.2",
+      "date": "2026-10-08",
+      "critical": false,
+      "notes": "orkcraft started outside a project (for example in your home folder right after installing) no longer stops with \"project root not found\": the town opens in ~/Orkcraft and says how to open a project's town. orkcraft hooks and feedback outside a project now say what to do."
+    },
+    {
       "version": "0.2.1",
       "date": "2026-10-07",
       "critical": false,

@@ -37,6 +37,14 @@ def find_project_root(start_path: Path | None = None) -> Path:
     )
 
 
+def default_town_root() -> Path:
+    """Where the town settles when `orkcraft` opens outside any project: `~/Orkcraft`."""
+    return Path.home() / "Orkcraft"
+
+
+NOT_A_PROJECT_HINT = "Run it inside your project (cd <project> && orkcraft ...) or pass --repo <project>."
+
+
 @dataclass
 class Config:
     """orkcraft configuration settings."""
