@@ -2,7 +2,9 @@
 
 Status: research note, written 2026-10-06, for the roadmap item *Research: guarding agy as Claude
 Code is guarded*. §7 is built (`warder.py agy`, `hooks install`, the version gate) but stays
-unclaimed in onboarding until the smoke test of §8 passes on a live agy. agy could not be installed here (its installer and docs at
+unclaimed in onboarding until the smoke test of §8 passes on a live agy. Since 2026-10-07 the
+window's onboarding says so too (`hooks/install.py` `agy_warder_line`, shared with the terminal's).
+The smoke test is still open. agy could not be installed here (its installer and docs at
 antigravity.google are blocked by this machine's network), so nothing below was tried on a live agy.
 Each claim is marked **[v]** verified, with its source, or **[u]** unverified.
 

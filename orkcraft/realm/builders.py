@@ -131,7 +131,7 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     if proc.returncode != 0:
         why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
         raise RuntimeError(f"{h.id} exited with {proc.returncode}: {why[:300]}")
-    text, cost, _, _ = h.result(proc.stdout, 0)
+    text, cost, _, _ = h.outcome(proc.stdout, 0, model or "")
     if not text.strip() and (why := h.error(proc.stdout)):
         raise RuntimeError(f"{h.id} gave no answer: {why[:300]}")
     telemetry.charge(cost, f"{h.id} -p {model or 'default'}")    # no transcript of this run: 🪙 here

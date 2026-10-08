@@ -116,7 +116,8 @@ function ToolsStep({ o }) {
         <input type="checkbox" class="gui-onb__hide" checked=${t.warder} onChange=${() => send("onboarding.tools", { warder: !t.warder })} />
         <i>${t.warder ? "✓" : ""}</i>
         <span><b>Guard this project with the Security reviewer</b> (recommended)<br />
-          <span class="ok-font-status ok-tone-muted">Adds hooks to .claude/settings.json that stop risky commands and secrets before an ork runs them.</span></span>
+          <span class="ok-font-status ok-tone-muted">Adds hooks to .claude/settings.json that stop risky commands and secrets before an ork runs them.</span>
+          ${t.warder_agy && html`<br /><span class="ok-font-status ok-tone-wait gui-onb__warder-agy">${say(t.warder_agy)}</span>`}</span>
       </label>`}`}
     <${Foot} back=${false} next=${t.ready ? () => send("onboarding.tools", { next: true }) : null} />
     ${asking.value && html`<${RequestTool} />`}

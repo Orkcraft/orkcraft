@@ -242,21 +242,23 @@ def _tokens_of(env: dict) -> int | None:
     return harnesses._tokens_of(env.get("usage"))
 
 
-def result_of(harness: str, stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
-    """(text, cost, tokens, session) of one run of a tool."""
+def result_of(harness: str, stdout: str, before: int | dict = 0,
+              model: str = "") -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, session) of one run of a tool; `model` is what it was asked to run on
+    (a tool that prints tokens and no price is priced from it)."""
     h = harnesses.get(harness)
-    return h.result(stdout, before) if h else harnesses.json_result(stdout, before)
+    return h.outcome(stdout, before, model) if h else harnesses.json_result(stdout, before)
 
 
-def codex_thread_total(thread: str, env: dict | None = None) -> int:
-    """The tokens a Codex thread has used so far: the last `token_count` total in its rollout
+def codex_thread_usage(thread: str, env: dict | None = None) -> dict | None:
+    """What a Codex thread has used so far: the last `token_count` total in its rollout
     (`$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<thread>.jsonl`), which `exec resume` starts its
-    running total from. 0 when there is none (a compressed rollout is not read)."""
+    running total from. None when there is none (a compressed rollout is not read)."""
     env = os.environ if env is None else env
     if not thread:
-        return 0
+        return None
     home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else Path.home() / ".codex"
-    total = 0
+    usage = None
     for rollout in sorted((home / "sessions").glob(f"*/*/*/rollout-*-{glob.escape(thread)}.jsonl")):
         try:
             lines = rollout.read_text(encoding="utf-8").splitlines()
@@ -270,9 +272,15 @@ def codex_thread_total(thread: str, env: dict | None = None) -> int:
             except (ValueError, AttributeError):
                 continue
             info = payload.get("info") if isinstance(payload, dict) and payload.get("type") == "token_count" else None
-            if isinstance(info, dict) and (tokens := harnesses._plain_tokens(info.get("total_token_usage"))) is not None:
-                total = tokens
-    return total
+            total = info.get("total_token_usage") if isinstance(info, dict) else None
+            if harnesses._plain_tokens(total) is not None:
+                usage = total
+    return usage
+
+
+def codex_thread_total(thread: str, env: dict | None = None) -> int:
+    """The tokens a Codex thread has used so far (`codex_thread_usage`); 0 when there is none."""
+    return harnesses._plain_tokens(codex_thread_usage(thread, env)) or 0
 
 
 codex_error = harnesses.codex_error
@@ -344,7 +352,7 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt), wait)
     if code != 0:
         raise RuntimeError(failure(harness, code, stdout, stderr))
-    result = result_of(harness, stdout)[:3]
+    result = result_of(harness, stdout, model=model)[:3]
     if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent")
     return result
