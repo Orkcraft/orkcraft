@@ -8,6 +8,8 @@ What is news is `mobile.news` between two compact snapshots (a question that cam
 quota that crossed into warn or over), taken each time the listener sends the phones a snapshot, and two
 things a snapshot does not keep, from the bus: a toast of severity `error` (only its title) and a
 session that exited. A line carries no code, no file contents and no secrets: only a title and who.
+While the person asked not to be disturbed (gui/you.py) every line waits but the spend over its limit,
+and when it ends one line says everything that gathered.
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ class Notifier:
         self.host, self.listener = host, listener
         self.before: dict | None = None          # the snapshot the phones had at the last look
         listener.on_push = self.after
+        host.you.on_news = lambda item: self.listener.phones and self.listener.broadcast({"t": "news", "news": [item]})
         self.off = host.town.bus.subscribe(bus.ANY, self._event)
 
     def line(self, item: dict, snap: dict) -> dict[str, Any]:
@@ -40,7 +43,7 @@ class Notifier:
         if snap is None:
             self.before = None
             return
-        news = [self.line(n, snap) for n in mobile.news(self.before, snap)]
+        news = [self.line(n, snap) for n in mobile.news(self.before, snap) if not self.host.you.hold_push(n)]
         self.before = snap
         if news:
             self.listener.broadcast({"t": "news", "news": news})
@@ -58,5 +61,5 @@ class Notifier:
             code = event.data.get("code")
             done = "finished" if code in (0, None) else "stopped with an error"
             item = {"kind": "exited", "key": key, "line": f"{modes.plain(who) or 'A session'} {done}"}
-        if item is not None:
+        if item is not None and not self.host.you.hold_push(item):
             self.listener.broadcast({"t": "news", "news": [item]})

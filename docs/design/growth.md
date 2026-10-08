@@ -8,9 +8,9 @@ changes and their probation (`realm/evolution.py`), the profile of the onboardin
 (docs/design/onboarding.md §3) and the flat sprite set (docs/design/building-sprites.md). Wording: ork,
 orkestration (CLAUDE.md).
 
-**One look, one vocabulary.** The GUI has one look, Office's layout in Camp's theme
-(gui-design-system.md: the sprites, the orks' heads and the gold stay), and Camp and Office words are
-merged (CLAUDE.md, Wording). Growth keeps the Camp's words: it says *who* the camp has become, and its
+**One vocabulary, two looks.** Camp and Office words are merged (CLAUDE.md, Wording); Camp and Office
+are now only looks (portrait.md §3). Growth shows in Camp; in Office the stage and deeds keep counting
+and show again in Camp. Growth keeps the Camp's words: it says *who* the camp has become, and its
 voice may joke (mascot names, the Warchief's address). Where these notes still say "Office words", read
 the plain wording a former Office mode had; it is gone.
 
@@ -264,9 +264,14 @@ nick from the onboarding, the others are the kin's.
 - **The names** keep the onboarding's humour (Jira Lich, Release Night King).
 - **Art cost:** 8 base heads and 44 overlays (11 roles × 4 stages), all from code grids.
 
-### 7.3 Where it lives: the head of Settings
+### 7.3 Where it lives: the portrait
 
-The mascot has **no place in the HUD**. It heads the Settings dialog (opened from `project ▾`), above
+**Now:** the mascot is the **portrait** in the HUD's left corner, and its menu heads with what is
+below (the head, the name, the stage, Next, the deeds): [portrait.md](portrait.md). Settings is the
+town's rules only. What follows is how it lived first, at the head of Settings; the parts about the
+portrait, the stage's glow and the milestones still hold.
+
+The mascot had **no place in the HUD**. It headed the Settings dialog (opened from `project ▾`), above
 the camp's rules:
 
 ```

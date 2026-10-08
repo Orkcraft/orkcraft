@@ -39,6 +39,8 @@ COMMANDS: dict[str, Any] = {
     "orders.follow": None,
     "halt": None,
     "place.report": None,
+    "you.dnd": None,             # Do not disturb is the person's, wherever they set it (docs/design/portrait.md §5)
+    "you.look": None,
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",)},
 }
 
@@ -103,6 +105,11 @@ def _hud(h: dict) -> dict[str, Any]:
     return {k: h.get(k) for k in keys}
 
 
+def _portrait(p: dict) -> dict[str, Any]:
+    """The portrait's sheet on the phone: the look, the monogram and Do not disturb (docs/design/portrait.md §5)."""
+    return {"look": p.get("look", "camp"), "mono": p.get("mono", ""), "dnd": dict(p.get("dnd") or {})}
+
+
 def compact(full: dict[str, Any]) -> dict[str, Any]:
     """The page's snapshot, small enough for a phone on a slow link: the HUD's spend and quota, the
     questions that wait (the longest first), each building as its title, type, state and question,
@@ -111,7 +118,8 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "v": API,
         "project": full.get("project", ""),
         "demo": bool(full.get("demo")),
-        "look": full.get("look", "office"),
+        "look": full.get("look", "camp"),
+        "portrait": _portrait(full.get("portrait") or {}),
         "resources": dict(full.get("resources") or {}),
         "hud": _hud(full.get("hud") or {}),
         "alerts": [_alert(a) for a in full.get("alerts") or []],

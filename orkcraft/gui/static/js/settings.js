@@ -1,41 +1,20 @@
 // The town's settings, opened from the project's name in the HUD (js/chrome.js): how freely the orks
 // decide — the level every building follows until it has its own (its steward's window, js/steward.js)
 // — and, on the clock, how long a question and a change wait for you. The host's town.settings
-// (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Its head is you: your mascot at its stage, what
-// the next stage asks and your deeds, the ones ahead grey with a hint (docs/design/growth.md §7); below
-// it, the camp's rules, whether flames climb the roof of a building that waits for you, and whether
+// (gui/town_settings.py), as the TUI's F10 → Ork autonomy. Only the town's rules: you (your mascot, the
+// look, Do not disturb) are the portrait's menu in the HUD (js/portrait.js, docs/design/portrait.md); here
+// the town's rules, whether flames climb the roof of a building that waits for you, and whether
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
-// paired with this machine (js/phones.js). The 🌙 Night round sits with the camp's rules: on or off, Look now.
+// paired with this machine (js/phones.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
-import { MascotHead, BIOMES } from "./icons.js";
-import { terrainUrl } from "./terrain.js";
 import { Dialog } from "./dialog.js";
 import { PhonesField } from "./phones.js";
 
 export const settingsOpen = signal(false);
-
-/** You: the mascot (per machine, every camp's), its name and stage, the next stage, the deeds. */
-function You({ y }) {
-  return html`<section class="gui-you">
-    <span class="gui-you__home" title=${say(`Home: ${y.home}`)}
-        style=${`--ground:${(BIOMES[y.home] || BIOMES.dirt).ground};--land:${(BIOMES[y.home] || BIOMES.dirt).land};--glyphs:${terrainUrl(y.home) ? `url("${terrainUrl(y.home)}")` : "none"}`}>
-      <${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${4} />
-    </span>
-    <div class="gui-you__who">
-      <span class="gui-you__name">${y.name}</span>
-      <span class="ok-font-status ok-tone-muted">${say(`${y.role} · stage ${y.stage} of 4`)}</span>
-      ${y.next && html`<span class="ok-font-status">${say(`Next: ${y.next}`)}</span>`}
-      <span class="gui-you__deeds" aria-label=${say("Deeds")}>
-        ${y.deeds.map((d) => html`<span key=${d.id} class=${cls("gui-you__deed", { "is-ahead": !d.done })}
-            title=${say(d.done ? `${d.title} · ${d.done}` : `${d.title}: ${d.hint}`)} aria-label=${say(d.title)}>${d.icon}</span>`)}
-      </span>
-    </div>
-  </section>`;
-}
 
 function Steps({ label, items, value, onPick }) {
   return html`<div class="gui-field"><span class="ok-font-label">${label}</span>
@@ -123,10 +102,8 @@ export function SettingsDialog() {
   const set = (args) => command("town.settings.set", args).then(setS, () => {});
   const level = s.levels.find((x) => x.id === s.autonomy) || s.levels[0];
   const t = town.value;
-  const you = t && t.growth && t.growth.you;
-  return html`<${Dialog} title=${say("Settings")} onCancel=${close}
+  return html`<${Dialog} title=${say("Town settings")} onCancel=${close}
       actions=${html`<button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
-    ${you && html`<${You} y=${you} />`}
     <div class="gui-form gui-settings">
       <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>
       <${Steps} label=${say("Autonomy: how freely the orks decide")} value=${s.autonomy}

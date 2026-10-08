@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import builder, console, growth, mobile, nightly, onboarding, state, town_settings, updates, views
+from orkcraft.gui import builder, console, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -103,6 +103,8 @@ class Host:
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())
+        self.you = you.You(self)                    # the portrait's menu: the look, Do not disturb (gui/you.py)
+        self.commands.update(self.you.commands())
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
         self.usage = usage.Usage(self.town.machine, face="gui", demo=demo)
         self._opened()
@@ -126,6 +128,7 @@ class Host:
         snap["jobs"] = self.console.public_jobs()       # the console's model calls (gui/console.py)
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
+        snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
@@ -142,7 +145,8 @@ class Host:
             data = {k: event.data.get(k) for k in ("message", "title", "severity", "timeout")}
             data["message_plain"] = modes.plain(str(data["message"] or ""))
             data["title_plain"] = modes.plain(str(data["title"] or ""))
-            self.on_toast(data)
+            if not self.you.hold_toast(data):          # Do not disturb: only an error shows
+                self.on_toast(data)
             return
         if event.topic == bus.ORDER:                   # the Warchief gave a specialist work: the console runs it
             self._order(event.data)
@@ -225,6 +229,7 @@ class Host:
         self._night()
         self._wakes(now)
         self.growth.tick(now)
+        self.you.tick()
         self.usage.tick(now)
         self.updates.tick(now)
         self.onboarding.tick(now)
@@ -333,7 +338,8 @@ class Host:
         args = dict(args or {})
         try:
             result = fn(args)
-        except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError) as e:
+        except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
+                you.YouError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result

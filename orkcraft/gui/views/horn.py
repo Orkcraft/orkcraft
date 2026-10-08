@@ -13,7 +13,8 @@ CALLS = 200                     # the whole log the worker keeps
 AUDIO_MAX = 8_000_000           # bytes: a longer file is not a notification sound
 MIME = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".aiff": "audio/aiff", ".aif": "audio/aiff",
         ".m4a": "audio/mp4", ".flac": "audio/flac"}
-WHY = {"muted": "muted", "quiet": "quiet hours", "cooldown": "cooldown", "none": "its sound is none"}
+WHY = {"muted": "muted", "quiet": "quiet hours", "cooldown": "cooldown", "dnd": "do not disturb",
+       "none": "its sound is none"}
 
 
 def card(w) -> dict:

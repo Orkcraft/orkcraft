@@ -82,6 +82,7 @@ class Town:
         # road engine and the workers call back through it. Alone, the town calls straight away.
         self.call: Callable[..., Any] = lambda fn, *a: fn(*a)
         self.budget_ok: Callable[[], bool] = lambda: not self.demo      # may a model call start (🪙)
+        self.hushed: Callable[[], bool] = lambda: False                 # the person is not to be disturbed (disturb.py)
         self.workers: dict[str, Any] = {}          # building id → its worker (core/workers), made when first asked
         self.lake = None                            # the town's one Lake window (core/workers/lake.py TownLake), the GUI's
         self.roads = delivery.engine(self)          # roads: events into deliveries and handler runs
