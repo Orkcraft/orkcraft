@@ -172,3 +172,36 @@ def test_the_receivers_steward_finds_the_road_on_its_own_tool_and_tier(fake_repo
     _wait(host, rid)
     assert calls[0] == ("claude", "laborer") and ("claude", "laborer") in calls[1:]    # the planner, then the Recruiter
     assert "roads" in steward.uses("fields")
+
+
+def test_a_rule_from_the_planner_ends_as_the_stewards_rule(fake_repo, monkeypatch):
+    """docs/design/steward-listens.md stage 2: the planner's rule → the Recruiter offers `steward` → the Council
+    reviews it → it is hired as a road rule with no tools of its own."""
+    host = _host(fake_repo)
+    tower = buildings.raise_spec(host.town, buildings.type_spec(host.town, "watchtower")).id
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    monkeypatch.setattr(runners, "ROAD_RUNNER", _answer(
+        {"from": tower, "event": "mail.received", "rule": "only my boss's mail; decide what to do", "say": "When the boss writes…"}))
+    monkeypatch.setattr(runners, "RECRUIT_RUNNER", lambda p: (json.dumps({
+        "name": "Boss's mail", "role": "to-dos from the boss", "kind": "steward",
+        "why": "Deciding what a letter asks for needs judgement.", "orders": "Only my boss's mail; one to-do per letter.",
+        "roads": [{"from": tower, "event": "mail.received"}]}), 0.02))
+    reviewed: list[str] = []
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", lambda p: (reviewed.append(p) or "{}", 0.0))
+    jid = host.command("roads.plan", {"to": fields, "from": tower, "prompt": "boss mail"})
+    _wait(host, jid)
+    rid = host.command("job.accept", {"job": jid, "index": 0})
+    job = _wait(host, rid)
+    assert job["view"]["kind"] == "steward" and job["view"]["kind_label"] == "road rule"
+    assert "the steward's listen tier" in job["view"]["tier"]
+    host.command("job.accept", {"job": rid})
+    for _ in range(100):
+        if rid not in host.console.jobs:
+            break
+        import time
+        time.sleep(0.05)
+    b = host.town.scroll.building(fields)
+    rule = next(h for h in b.garrison.handlers if h.kind == "steward")
+    assert rule.orders.startswith("Only my boss's mail") and rule.harness == []
+    assert [(r.source, r.event) for r in b.roads_of(rule.id)] == [(tower, "mail.received")]
+    assert reviewed and "Only my boss's mail" in reviewed[0]

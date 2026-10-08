@@ -154,7 +154,7 @@ def add_handler(scroll: TownScroll, building_id: str, name: str, *, kind: str = 
     if trigger is not None and trigger.get("type") not in TRIGGER_TYPES:
         raise ValueError(f"unknown trigger type {trigger.get('type')!r}")
     if harness is None:
-        harness = [] if kind in ("chain", "script") else [dict(s) for s in DEFAULT_HARNESS]
+        harness = [] if kind in ("chain", "script", "steward") else [dict(s) for s in DEFAULT_HARNESS]
     orc = OrcSpec(
         _unique_orc_id(b, name), name, role=role.strip(), orders=orders.strip(), kind=kind,
         avatar=avatar or kind_icon(kind),

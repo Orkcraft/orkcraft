@@ -14,7 +14,10 @@ Rules (docs/design/roads-and-orcs.md):
   new events, and with `restart_on_new` a new event interrupts a running agent, which then
   starts again with the fresh snapshot (its spent 🪙 is still counted: the session carries
   `ORKCRAFT_RUN`).
-- Scripts (and so hybrids) are in the spec but do not run yet: their carts are `held`.
+- Scripts (and so hybrids) run only once reviewed (`script_problem`); until then their carts are `held`.
+- A road rule (`steward`) is carried out by the building's steward: on its tool and at its tier for
+  `listen` (realm/steward.py `pick`, the goal in force from `aim`), with the building's purpose in the
+  prompt. A hybrid with no tools of its own escalates (exit 3) to the steward the same way.
 - Agents run only while the 🪙 budget allows (`budget_ok`), in the repository with read-only
   tools (Claude) or a read-only sandbox (Codex), or in an empty temp dir (agy). A pipeline harness
   is not wired yet.
@@ -190,6 +193,14 @@ ROLE_ASK = {
 }
 
 
+def _purpose(building: ts.BuildingSpec) -> str:
+    """What its steward is for: its role and its orders (the building's purpose), "" when it has none."""
+    stew = building.garrison.steward
+    if stew is None:
+        return ""
+    return "\n".join(x for x in (stew.role.strip(), stew.orders.strip()) if x)
+
+
 def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict], role: str,
                  previous: str = "", liked: list[str] | None = None) -> str:
     roads = []
@@ -197,11 +208,26 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
         rec = {k: (v[:SNAPSHOT_CHARS] + "…" if isinstance(v, str) and len(v) > SNAPSHOT_CHARS else v)
                for k, v in rec.items()}
         roads.append(rec)
+    if orc.on_steward:                                 # a road rule: the steward thinks, toward its building's goal
+        stew = building.garrison.steward
+        purpose = _purpose(building)
+        head = [
+            f"You are {stew.name if stew else 'the steward'}, the steward of the {building.title} building in "
+            f"Orkcraft, a harness for a Markdown knowledge graph (the current directory). You carry out its "
+            f"road rule \"{orc.name}\": you are re-run on every new event with the latest payload of each road "
+            f"the rule listens to.",
+            *([f"What the building is for (every rule works toward it):\n{purpose}"] if purpose else []),
+            f"The rule:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        ]
+    else:
+        head = [
+            f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
+            f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
+            f"event with the latest payload of each of your incoming roads.",
+            f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        ]
     parts = [
-        f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
-        f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
-        f"event with the latest payload of each of your incoming roads.",
-        f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",
+        *head,
         "Incoming roads (latest payload each; node ids resolve to <ID>.md files):\n"
         + json.dumps(roads, ensure_ascii=False, indent=1),
     ]
@@ -379,6 +405,20 @@ def read_examples(repo_root: Path, building_id: str, orc_id: str, limit: int = 5
     return out
 
 
+def steward_steps(b: ts.BuildingSpec, goal: str | None = None) -> list[dict]:
+    """The one step a road rule runs as: its steward's tool (its first harness step, else the machine's
+    main tool) at the tier `steward.pick` names for `listen` under `goal` (the goal in force)."""
+    from orkcraft.realm import steward          # it imports this module
+    tool = steward.harness_for(b) or harnesses.MAIN
+    p = steward.pick(b, "listen", tool, goal=goal)
+    step = {"role": "run", "harness": tool}
+    if p.tier:
+        step["tier"] = p.tier
+    elif p.model:
+        step["model"] = p.model
+    return [step]
+
+
 # -- the engine -------------------------------------------------------------------------------------------
 
 class Engine:
@@ -393,7 +433,8 @@ class Engine:
                  call: Callable[..., Any] | None = None,
                  clock: Callable[[], float] = time.monotonic,
                  run_env: dict | None = None,
-                 travel: Callable[[], float] | None = None) -> None:
+                 travel: Callable[[], float] | None = None,
+                 aim: Callable[[str], str | None] | None = None) -> None:
         self._scroll, self.repo_root = scroll, repo_root
         self._travel = travel or (lambda: 0.0)   # seconds a cart is on a plain road before it arrives (0: at once)
         self._deliver, self._on_output, self._meta = deliver, on_output, meta or (lambda p: {})
@@ -401,6 +442,7 @@ class Engine:
         self._agent_runner, self._clock = agent_runner, clock
         self._call = call or (lambda fn, *a: fn(*a))
         self._run_env = dict(run_env or {})
+        self._aim = aim or (lambda building_id: None)   # building id → the goal in force (None: its own)
         self._lock = threading.RLock()
         self.states: dict[tuple[str, str], HandlerState] = {}
         self.carts: list[Cart] = []          # recent carts, newest last (the UI reads / animates)
@@ -571,7 +613,8 @@ class Engine:
         from orkcraft.realm import feedback
         liked = [str(r.get("value", "")) for r in feedback.examples(self.repo_root, b.id, 3)]
         try:
-            for step in orc.harness or ts.DEFAULT_HARNESS:
+            steps = self.steps_of(b, orc)
+            for step in steps:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)
                 model = tiers.step_model(step)       # a runner is called with a model only when there is one
                 answer = self._agent_runner(step["harness"], prompt, self.repo_root, env, cancel,
@@ -594,6 +637,16 @@ class Engine:
         self._finish(b, orc, run, outcome, text, error)
         if outcome == "interrupted":
             self.tick()                     # the fresh snapshot is waiting (dirty)
+
+    def steps_of(self, b: ts.BuildingSpec, orc: ts.OrcSpec) -> list[dict]:
+        """The harness steps a handler thinks with: a road rule's are its steward's, the others' their own."""
+        if orc.on_steward:
+            try:
+                goal = self._aim(b.id)
+            except Exception:  # the goal cannot be read: the building's own
+                goal = None
+            return steward_steps(b, goal)
+        return orc.harness or ts.DEFAULT_HARNESS
 
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:

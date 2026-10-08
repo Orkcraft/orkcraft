@@ -58,8 +58,9 @@ HISTORY_DIR = Path(".orkcraft") / "history" / "buildings"
 MAX_ROADS = 32
 MAX_GARRISON = 9   # the roster selects orcs with the keys 1–9 (steward included)
 
-# Orc kinds, tried in this order when an orc is created from a prompt.
-KINDS = ("chain", "script", "agent", "hybrid")
+# Orc kinds, tried in this order when an orc is created from a prompt (`agent` only for a pipeline of tools
+# the steward does not have; `steward`: a road rule its building's steward carries out, docs/design/steward-listens.md).
+KINDS = ("chain", "script", "steward", "hybrid", "agent")
 # The tools a step names (realm/harnesses.py), "main" first: the machine's main tool, read when it runs;
 # plus "pipeline:<repo-relative spec>.json"
 HARNESSES = (harnesses.MAIN, *harnesses.ids())
@@ -69,6 +70,7 @@ RUN_DEFAULTS = {
     "chain": {"quiet_s": 0, "restart_on_new": True},
     "script": {"quiet_s": 0, "restart_on_new": True},
     "agent": {"quiet_s": 30, "restart_on_new": True},
+    "steward": {"quiet_s": 30, "restart_on_new": True},
     "hybrid": {"quiet_s": 30, "restart_on_new": True},
 }
 CART_MODES = ("off", "selected", "all")
@@ -89,7 +91,7 @@ class OrcSpec:
     status: str = "idle"          # idle | busy | alert | frozen | draft
     trigger: dict = field(default_factory=lambda: {"type": "on_demand"})
     orders: str = ""              # the prompt / standing orders
-    kind: str = "agent"           # chain | script | agent | hybrid
+    kind: str = "agent"           # chain | script | steward | agent | hybrid
     harness: list[dict] = field(default_factory=lambda: [dict(s) for s in DEFAULT_HARNESS])
     run: dict | None = None       # None → RUN_DEFAULTS[kind]
     chain: list[dict] = field(default_factory=list)
@@ -106,7 +108,12 @@ class OrcSpec:
 
     @property
     def uses_model(self) -> bool:
-        return self.kind in ("agent", "hybrid")
+        return self.kind in ("agent", "hybrid", "steward")
+
+    @property
+    def on_steward(self) -> bool:
+        """Whether its thinking is its building's steward's: a road rule, or a hybrid with no tools of its own."""
+        return self.kind == "steward" or (self.kind == "hybrid" and not self.harness)
 
     def to_dict(self) -> dict:
         d = asdict(self)

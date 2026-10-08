@@ -18,6 +18,7 @@ from orkcraft.realm.orcs import COUNCIL, RESIDENT, WORKER, Orc
 MAX_SENTENCES = 3
 SENTENCE_CHARS = 170
 KIND_TEXT = {"chain": "a free chain (no model)", "script": "a script (no model)", "agent": "an agent",
+             "steward": "a road rule its steward carries out",
              "hybrid": "a chain with an agent step"}
 FREE_KINDS = ("chain", "script")
 
