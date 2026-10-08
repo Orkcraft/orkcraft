@@ -21,8 +21,9 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
 
 ## As built
 
-- **A 160 px square** (40 × 40 cells of 4 px), not 240: at 240 it took too much of the town and its
-  edges looked rough. The lands are even stripes: straight borders, and each land 2 cells shorter
+- **A 208 × 144 landscape** (52 × 36 cells of 4 px), as a minimap, set the foot's 12 px off the window's
+  edges like every other piece (the 160 px square before it read squeezed across); not 240 tall: at 240 it
+  took too much of the town and its edges looked rough. The lands are even stripes: straight borders, and each land 2 cells shorter
   than the one above it (14 at most), so the right edge is a neat terrace (the wandering borders read
   as dirt at this size). A closed land is at least 28 px tall (the open one 48 px). The map is always
   square: up to four lands fit it; from five they scroll inside the frame (it used to grow to 212 px for
