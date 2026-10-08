@@ -152,6 +152,7 @@ TERMS: tuple[Term, ...] = (
     _t("ical_link", "iCal link", "iCal links"),                     # a calendar's secret address: kept in the keychain                                 # an item a meeting should cover
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
+    _t("agent_rules", "Rules for AI tools"),                        # what every AI tool is told about a wiki (docs/design/wiki-folders-rules.md)
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
     # the Mine's research (docs/design/mine.md)
     _t("finding", "Finding", "Findings"),                           # one claim of a report, with its sources

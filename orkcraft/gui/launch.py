@@ -11,6 +11,7 @@ import webbrowser
 from pathlib import Path
 
 from orkcraft.core import updates
+from orkcraft.gui import folders
 from orkcraft.gui.host import Host
 from orkcraft.gui.server import Server
 
@@ -45,6 +46,7 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     window = webview.create_window(TITLE, server.url, width=SIZE[0], height=SIZE[1], min_size=(960, 600),
                           background_color="#141210")
     host.updates.quit = window.destroy
+    folders.attach(window)                       # the Wiki's folder dialog and dropped folders' paths
     try:
         webview.start()
     finally:

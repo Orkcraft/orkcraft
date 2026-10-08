@@ -4,6 +4,8 @@ A building's `sources` (and the older `paths`) are strings, one per source:
 
     docs                         a folder of Markdown notes in the project (also `fs:docs`)
     code:src                     a folder of code in the project
+    dir:~/Documents/specs        any folder, in the project or outside: notes, text, code, .docx, .pdf
+                                 (docs/design/wiki-folders-rules.md §1)
     git:main                     the notes and code of a revision (`git:<rev>[:<folder>]`), via git
     confluence:ENG               a Confluence space; the site is `$ORKCRAFT_CONFLUENCE_URL`, or
     confluence:ENG@https://acme.atlassian.net/wiki
@@ -33,7 +35,7 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 
 from orkcraft.env import getenv
-from orkcraft.realm import shelves
+from orkcraft.realm import extract, shelves
 from orkcraft.realm.shelves import Base, Note
 
 DOC_EXT = (".md", ".markdown", ".mdx", ".rst", ".txt")
@@ -43,7 +45,8 @@ MAX_DOCS = shelves.MAX_NOTES
 REMOTE_TTL_S = 15 * 60
 FETCH_TIMEOUT_S = 20
 FETCHING = "fetching…"
-ICONS = {"fs": "📁", "code": "🧩", "git": "🌿", "confluence": "📘"}
+MAX_FILES = 2000                 # a `dir:` source reads at most this many files (`max_files`)
+ICONS = {"fs": "📁", "code": "🧩", "dir": "📂", "git": "🌿", "confluence": "📘"}
 KINDS = tuple(ICONS)
 
 
@@ -133,6 +136,127 @@ class FolderSource(Source):
             return False
         folder = PurePosixPath(self.path.replace("\\", "/")).as_posix().strip("/")
         return folder in ("", ".") or path == folder or path.startswith(folder + "/")
+
+
+# -- any folder ---------------------------------------------------------------------------------------
+
+class DirSource(Source):
+    """`dir:<folder>` — everything the wiki can read in a folder, in the project or outside it (read-only):
+    notes and text, code, .docx (its text) and .pdf (the AI tool reads it). What the folder's .gitignore
+    ignores, hidden folders, secrets and files over `extract.MAX_BYTES` are skipped.
+
+    A file in the project keeps its repo-relative path; one outside is `dir:<folder>/<path>`, its
+    version its size and mtime (a big folder is not hashed on every look)."""
+    kind = "dir"
+
+    def __init__(self, spec: str, repo_root: Path, path: str, max_files: int = MAX_FILES) -> None:
+        super().__init__(spec, repo_root)
+        self.path, self.max_files = path.strip() or ".", max_files
+
+    @property
+    def root(self) -> Path:
+        p = Path(self.path).expanduser()
+        return (p if p.is_absolute() else self.repo_root / p).resolve()
+
+    @property
+    def inside(self) -> bool:
+        root, repo = self.root, self.repo_root.resolve()
+        return root == repo or repo in root.parents
+
+    @property
+    def prefix(self) -> str:
+        return f"dir:{self.root.as_posix().rstrip('/')}/"
+
+    def scan(self) -> Base:
+        root = self.root
+        if not root.is_dir():
+            return Base(self.path, error=f"{self.path}: no such folder", kind=self.kind)
+        notes, cut = [], False
+        for rel in self.files(root):
+            p = root / rel
+            try:
+                st = p.stat()
+            except OSError:
+                continue
+            if st.st_size > extract.MAX_BYTES:
+                continue
+            if len(notes) >= self.max_files:
+                cut = True
+                break
+            kind = extract.kind_of(rel)
+            title = PurePosixPath(rel).name
+            if kind == "doc" and rel.lower().endswith((".md", ".markdown")) and st.st_size < 1_000_000:
+                title = shelves.read_note(p, self.repo_root).title
+            if self.inside:
+                notes.append(Note(shelves.rel_to(self.repo_root, p), title, [], st.st_mtime,
+                                  kind="code" if kind == "code" else "doc"))
+            else:
+                notes.append(Note(self.prefix + rel, title, [], st.st_mtime, kind="code" if kind == "code" else "doc",
+                                  rev=f"{st.st_size}-{int(st.st_mtime)}"))
+        return Base(self.path, notes, error=f"cut at {self.max_files} files" if cut else "", kind=self.kind)
+
+    def files(self, root: Path) -> list[str]:
+        """The folder's files the wiki may read, relative to it: git's list when the folder is in a work
+        tree (what .gitignore ignores is left out), else a walk."""
+        listed = _git_files(root)
+        if listed is None:
+            listed = []
+            for dirpath, dirnames, filenames in os.walk(root):
+                dirnames[:] = sorted(d for d in dirnames if d not in shelves.SKIP_DIRS and not d.startswith("."))
+                base = Path(dirpath).relative_to(root).as_posix()
+                listed += [n if base == "." else f"{base}/{n}" for n in sorted(filenames)]
+        return [r for r in listed if extract.kind_of(r) and not extract.secret(r) and not _skipped(r)
+                and not PurePosixPath(r).name.startswith(".")]
+
+    def file_of(self, path: str) -> Path:
+        """The file behind one of this source's paths."""
+        if path.startswith(self.prefix):
+            p = (self.root / path[len(self.prefix):]).resolve()
+        else:
+            p = shelves.inside(self.repo_root, path)
+        if p != self.root and self.root not in p.parents:
+            raise ValueError(f"{path} is outside {self.path}")
+        return p
+
+    def read(self, path: str) -> str:
+        p = self.file_of(path)
+        kind = extract.kind_of(p.name)
+        if kind == "pdf":
+            return f"_A PDF ({p.name}): the librarian reads it with its own tools._"
+        if kind == "docx":
+            return extract.docx_text(p.read_bytes())
+        return p.read_text(encoding="utf-8", errors="replace")
+
+    def owns(self, path: str) -> bool:
+        if path.startswith(self.prefix):
+            return True
+        if ":" in path or not self.inside:
+            return False
+        folder = shelves.rel_to(self.repo_root, self.root).strip("/")
+        return folder in ("", ".") or path == folder or path.startswith(folder + "/")
+
+    def in_place(self, path: str) -> Path | None:
+        """The file the librarian reads where it is: a PDF anywhere, text and code in the project; None
+        when it reads a snapshot instead (a .docx's text, a text file outside the project)."""
+        kind = extract.kind_of(path)
+        if kind == "pdf" or (self.inside and kind in ("doc", "code")):
+            return self.file_of(path)
+        return None
+
+
+def _git_files(root: Path) -> list[str] | None:
+    try:
+        inside = subprocess.run(["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+                                capture_output=True, text=True, timeout=10)
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return None
+        out = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "-z"],
+                             capture_output=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if out.returncode != 0:
+        return None
+    return sorted(p for p in out.stdout.decode("utf-8", errors="replace").split("\0") if p)
 
 
 # -- a git revision -----------------------------------------------------------------------------------
@@ -398,7 +522,7 @@ def storage_to_markdown(html: str) -> str:
 
 # -- the config -----------------------------------------------------------------------------------------
 
-def parse(spec: str, repo_root: Path) -> Source:
+def parse(spec: str, repo_root: Path, max_files: int = MAX_FILES) -> Source:
     """One config string → its source (a bare path is a folder of notes)."""
     spec = spec.strip()
     kind, sep, arg = spec.partition(":")
@@ -406,6 +530,8 @@ def parse(spec: str, repo_root: Path) -> Source:
         return FolderSource(spec, repo_root, spec)
     if kind in ("fs", "code"):
         return FolderSource(spec, repo_root, arg.strip(), kind)
+    if kind == "dir":
+        return DirSource(spec, repo_root, arg.strip(), max_files)
     if kind == "git":
         rev, _, path = arg.partition(":")
         return GitSource(spec, repo_root, rev.strip(), path.strip())
@@ -416,7 +542,11 @@ def from_config(config: dict, repo_root: Path) -> list[Source]:
     """The building's sources: `sources` and the older `paths`, else the project's usual notes folders."""
     specs = [str(s).strip() for key in ("sources", "paths") for s in (config.get(key) or []) if str(s).strip()]
     specs = list(dict.fromkeys(specs)) or shelves.default_bases(repo_root)
-    return [parse(s, repo_root) for s in specs]
+    try:
+        most = max(1, int(config.get("max_files") or MAX_FILES))
+    except (TypeError, ValueError):
+        most = MAX_FILES
+    return [parse(s, repo_root, most) for s in specs]
 
 
 # -- reading across the sources ---------------------------------------------------------------------
@@ -452,3 +582,13 @@ class Library:
     def is_project_file(self, path: str) -> bool:
         """A file of the project itself (the wiki's orc reads it in place) — not a snapshot to take."""
         return any(isinstance(s, FolderSource) and s.owns(path) for s in self.sources)
+
+    def in_place(self, path: str) -> Path | None:
+        """The file the librarian reads where it is, for a `dir:` source's document (else None)."""
+        for s in self.sources:
+            if isinstance(s, DirSource) and s.owns(path):
+                try:
+                    return s.in_place(path)
+                except ValueError:
+                    return None
+        return None
