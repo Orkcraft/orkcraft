@@ -306,4 +306,4 @@ def rework_markdown(item: Item, reason: str, building_title: str) -> str:
             + (f"Earlier notes:\n{earlier}\n" if earlier else "")
             + (f"Files the person rejected, put back on the branch as the base has them — leave them so:\n{files}\n"
                if files else "")
-            + f"Keep the reference `{item.ref}` and send the fixed version.\n\n---\n\n{body}\n")
+            + f"Send the fixed version.\n\n---\n\n{body}\n")

@@ -15,9 +15,7 @@ from typing import Any
 # Every piece: 4 lines, at most ART_W cells, plain ASCII (no wide glyphs, so the width is exact).
 ART_W = 18
 ART_H = 4
-STATUS_W = 22         # status lines may run wider than the art
 STATUS_LINES = 3      # a compact hut (the default) shows three lines
-ART_STATUS_LINES = 2  # with the art switched on (preferences.huts = "art") the art takes the room
 
 # name → (lines, what it suits — the Mason prompt lists these)
 ART: dict[str, tuple[tuple[str, ...], str]] = {
@@ -105,20 +103,12 @@ BUILTIN_ART: dict[str, str] = {
 
 ROW_FIELDS = ("title", "id", "status", "priority", "assignee", "type", "deadline", "when", "meta")
 TEXT_FIELDS = ("last", "first", "heading", "count")
-TEMPLATE_MAX = 80
 _PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
 EMPTY = "—"
 
 
 def art(name: str | None) -> tuple[str, ...]:
     return ART.get(name or "", ART[DEFAULT_ART])[0]
-
-
-def art_for(building_id: str, spec: dict | None = None) -> tuple[str, ...]:
-    """The art of a building: the custom spec's `mini.art`, the built-in's, else the workshop."""
-    if spec is not None:
-        return art((spec.get("mini") or {}).get("art"))
-    return art(BUILTIN_ART.get(building_id))
 
 
 def art_catalog() -> str:

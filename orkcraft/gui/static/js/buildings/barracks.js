@@ -13,7 +13,7 @@ import { Dialog } from "../dialog.js";
 import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
-import { showBuilding, usePeek } from "../windows.js";
+import { usePeek } from "../windows.js";
 import { OrkHead } from "../icons.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
@@ -36,14 +36,6 @@ const closeDialog = (id) => setIn(dialogs, id, null);
 
 function sessionOf(key) {
   return (town.value.sessions || []).find((s) => s.key === key) || null;
-}
-
-/** An ork's tab in the orks' pane, over the whole town; its terminal opens when it is free (its session resumed). */
-export function openOrk(id, ork) {
-  setIn(tabs, id, `ork:${ork.name}`);
-  showBuilding(id);
-  const s = sessionOf(ork.terminal);
-  if (ork.status !== "working" && !(s && s.running)) act(id, "terminal", { ork: ork.name }).catch(() => {});
 }
 
 // -- dialogs ------------------------------------------------------------------------------------------

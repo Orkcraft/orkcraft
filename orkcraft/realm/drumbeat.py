@@ -24,7 +24,6 @@ from orkcraft.realm import daybook, steward, watch
 KINDS = ("meeting", "schedule", "limit")
 TONE = {"meeting": "text", "schedule": "accent", "limit": "wait"}     # colour roles (docs/design-system.md)
 MARK = {"meeting": "▪", "schedule": "↻", "limit": "≈"}                # the same, without colour
-LIMITS = ("gold", "lumber")              # 🪙 this run's spend, 🪵 a session's context (realm/lexicon.py)
 WINDOW = dt.timedelta(hours=1)           # the burn rate is read over this much of the past
 MIN_SPAN = dt.timedelta(minutes=5)       # … when it holds at least this much
 KEEP = dt.timedelta(hours=12)            # samples older than this go

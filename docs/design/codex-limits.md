@@ -171,8 +171,8 @@ Billing modes:
    = 40 cached + 60 written), so the formula is `(input − cached − written) × in + …`; reasoning
    tokens are part of `output_tokens` ✓ (same test: 10 output with 5 reasoning, total 110). Unknown model → `None`, never $0. Fill the table
    only from the OpenAI page read by a person (§4).
-2. **`orkcraft/realm/roads.py` `codex_result_of`** returns a cost: it needs the model, which
-   `exec --json` does not print — use the `--model` orkcraft passed (`codex_cmd`), else
+2. **`orkcraft/realm/harnesses.py` `codex_result`** returns a cost: it needs the model, which
+   `exec --json` does not print — use the `--model` orkcraft passed (`harnesses.codex_exec`), else
    `model` in `$CODEX_HOME/config.toml`, else leave it unpriced. Note: `turn.completed.usage` is the
    **thread's running total** (`usage_from_last_total` ✓ `C/codex-rs/exec/src/event_processor_with_jsonl_output.rs`
    ~118), so summing it over turns double-counts, and after `exec resume` it includes the earlier

@@ -115,7 +115,7 @@ function amongFor(to) {
 }
 
 /** The command words and what each does; `args` the rest of the line, `bs` the buildings it names. */
-export const COMMANDS = [
+const COMMANDS = [
   { word: "build", args: "[what]", about: "raise a building: the catalog, or the one named",
     run: (rest) => {
       const types = buildTypes.value;

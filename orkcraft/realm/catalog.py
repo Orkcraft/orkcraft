@@ -161,6 +161,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                  _a("todos.new", "New chore", "☐", "add a to-do of your own")),
         config={"path": (str, None, False), "mode": (str, ("board", "tasks", "notes"), False),
                 "lanes": (list, None, False), "mine_routes": (list, None, False), "send_new": (bool, None, False),
+                "settle": (int, (0, 3600), False), "later_minutes": (int, (1, 1440), False),
                 "wikis": (list, None, False), "private_todos": (bool, None, False), "plan_model": (str, None, False)},
         art="burrow", orc="Taskmaster"),
     BuildingType(
@@ -431,12 +432,6 @@ MAX_QUICK_ACTIONS = 2
 def type_of(spec: dict | None) -> BuildingType:
     tid = (spec or {}).get("type") or DEFAULT_TYPE
     return TYPES.get(ALIASES.get(tid, tid), TYPES[DEFAULT_TYPE])
-
-
-def size_of(spec: dict | None) -> tuple[int, int]:
-    """The hut size (w, h) a spec asks for, else its type's."""
-    t = type_of(spec)
-    return SIZES.get((spec or {}).get("size") or t.size, SIZES[t.size])
 
 
 def events_of(spec: dict | None) -> list[str]:

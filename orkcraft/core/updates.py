@@ -48,7 +48,6 @@ FETCH_TIMEOUT_S = 3.0             # a launch never waits longer than this for th
 INSTALL_TIMEOUT_S = 600.0
 MAX_BYTES = 256 * 1024
 POLICIES = ("auto", "critical", "ask")
-DEFAULT_POLICY = "critical"
 BRANCHES = ("main", "master")    # a git checkout pulls by itself only on these
 RESTART = 75                      # the exit code the window returns when it closed to restart
 UPDATED_ENV = "ORKCRAFT_UPDATED"  # set on the process a launch restarted into: it never installs again

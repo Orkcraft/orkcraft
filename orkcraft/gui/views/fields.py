@@ -25,7 +25,8 @@ def card(w) -> dict:
     note folders with theirs (`notes`), each `new` when it holds unseen cards; in notes mode only the
     folders (`mode` says which). In board mode also the person's open to-dos (`todos`) and the latest notes (`ideas`)."""
     if w.error:
-        return {"error": w.error[:60], "mode": w.mode, "lanes": [], "notes": [], "todos": None, "ideas": None}
+        return {"error": w.error[:60], "mode": w.mode, "lanes": [], "notes": [], "todos": None, "ideas": None,
+                "waiting": 0}
     seen = w.seen()
     lanes, notes = [], []
     for ln in w.visible_lanes():
@@ -43,15 +44,27 @@ def card(w) -> dict:
         latest = w.notes[::-1]
         ideas = {"count": len(latest), "new": any(c.id not in seen for c in latest),
                  "top": [_short(c.title) for c in latest[:TOP + 1]]}
-    return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas}
+    return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas,
+            "waiting": len(w.waiting())}
+
+
+def _named(w, card_id: str) -> dict | None:
+    other = w.card(card_id) if card_id else None
+    return {"id": other.id, "title": _short(other.title)} if other is not None else None
 
 
 def _lore(w, c) -> dict:
-    """What the board keeps beside the card: personal, its context's pages (stale when one changed), its plan."""
+    """What the board keeps beside the card: personal, its context's pages (stale when one changed), its plan;
+    and while a task settles (docs/design/settle-and-join.md) when it goes (`goes`, ms), Not urgent, the task
+    it is joined to (`into`), how many are joined to it (`added`), the one it looks like (`hint`)."""
     pages = w.lore.context(c.id)
+    hold = w.lore.hold(c.id)
     return {"private": w.private(c.id), "pages": [{"path": p.path, "title": p.title} for p in pages],
             "stale": bool(pages) and w.lore.stale(c.id, w.repo_root), "plan": w.lore.plan(c.id),
-            "planning": c.id in w.planning}
+            "planning": c.id in w.planning,
+            "goes": int(hold * 1000) if hold is not None else None, "later": w.lore.later(c.id),
+            "into": _named(w, w.lore.into(c.id)), "added": len(w.lore.joined(c.id)),
+            "hint": _named(w, w.lore.hint(c.id)), "sent": w.lore.sent(c.id)}
 
 
 def detail(w) -> dict:
@@ -147,11 +160,37 @@ def _flip(w, args: dict) -> str:
 
 
 def _send(w, args: dict) -> bool:
+    """Send: a task that waits goes now, with every card joined to it."""
     card = _card(w, args)
     sent = w.send(card.id)
     w.toast(f"{tasklist.plain(card.title)[:60]}: " + ("sent down the roads" if sent else "no road takes tasks.sent from here"),
             severity="information" if sent else "warning")
     return sent
+
+
+def _later(w, args: dict) -> bool:
+    """Not urgent (`on`), or Urgent again; without `on` it flips. What it is now."""
+    card = _card(w, args)
+    if not w.held(w.first_of(card.id)):
+        raise ActError("It is not waiting to go")
+    on = args.get("on")
+    return w.set_later(card.id, None if on is None else bool(on))
+
+
+def _join(w, args: dict) -> bool:
+    """Join the card to the task `into`: both go as one."""
+    card = _card(w, args)
+    if not w.join(card.id, text(args, "into", 200)):
+        raise ActError("Only a task that has not been done joins another one")
+    return True
+
+
+def _split(w, args: dict) -> bool:
+    return w.split(_card(w, args).id)
+
+
+def _apart(w, args: dict) -> bool:
+    return w.keep_apart(_card(w, args).id)
 
 
 def _wiki_of(w):
@@ -237,4 +276,5 @@ def _plan_steps(w, args: dict) -> int:
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
         "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
         "private": _private, "context": _context, "plan_preview": _plan_preview, "plan": _plan,
-        "plan_steps": _plan_steps, "to_wiki": _to_wiki}
+        "plan_steps": _plan_steps, "to_wiki": _to_wiki, "later": _later, "join": _join, "split": _split,
+        "apart": _apart}

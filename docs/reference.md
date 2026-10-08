@@ -222,6 +222,13 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     `c` the next colour · `t` a note ⇄ a task · `s` send it down the building's roads (`tasks.sent`,
     its title and text — a Barracks takes it as a task, a Clan Fire reviews it) · `d` delete it ·
     `N` a new lane of notes. The quick actions are + New task and 🗒 New note.
+  - **A task settles before it goes** ([design](design/settle-and-join.md)). On a board that sends its
+    tasks by itself (`send_new`) a new task waits `settle` seconds (120; `0` sends at once): ⏳ goes at …
+    and Send now on the card. A related task that comes meanwhile — by the words they share, on this
+    machine, no model — joins it (↳ with …, Split off) and both go to the orks as one task, what came later
+    winning where they disagree; a near one asks Join or Keep apart. 🐢 Not urgent waits `later_minutes`
+    (60) and gathers more. A related task that comes after its task went is an addition: a Barracks adds
+    it to that task while nobody took it, else it is a follow-up of it.
   - **The file** stays plain Markdown in git, one `##` section per lane:
 
     ```markdown
@@ -769,6 +776,13 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   steward does not have (`write: agy → review: claude`). Scripts are saved as drafts under
   `.orkcraft/scripts/` and run once reviewed. The name / role / orders fields below still recruit an
   agent by hand.
+- **Script-first** (docs/design/script-first.md): a building whose work is code calls no model on its carts or
+  schedules: Drop file here, Sound alerts, Router, File tree, Metrics, Calendar, Review gate, Branches & PRs, a
+  Transformer without an `agent:` step and a Script without a steward prompt, so long as no handler of
+  theirs thinks. Its ork wakes once when the building fails (its ERROR, a failed handler run), and once per
+  👎. The ork is its keeper, and it proposes a fix in the console for you to apply. The steward's window
+  says *Script-first · no model · its ork wakes on an error or a 👎*, or what in it thinks. The Building
+  retro skips these buildings.
 - **Road rules in the GUI**: a rule is never drawn as an ork. The steward's part of Info lists them
   under **Road rules** (`📜 Boss's mail · 🗼 Inbox · new mail → here · 🪙 $0.05 · 4 runs`); a click opens
   the rule — its words (*Edit*), its roads, the steward's tier it runs at, its spend and latest runs,

@@ -13,7 +13,6 @@ CatapultWorker (core/workers/catapult.py) and uses its queue, its asking and its
 """
 from __future__ import annotations
 
-import datetime as dt
 import json
 import threading
 import time
@@ -21,13 +20,10 @@ from pathlib import Path
 
 from orkcraft.realm import catapult as cp, catapult_mcp as cm, harnesses, mcp
 from orkcraft.realm.catapult_mcp import carrier as carry_, local, routes, templates as tp
+from orkcraft.realm.jobs import now_iso
 
 
 FOUND_TTL_S = 10
-
-
-def _now() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
 
 
 class McpShots:
@@ -182,7 +178,7 @@ class McpShots:
         def work() -> None:
             c = local.call(launch, routes.short_tool(tool), args, cwd=self.repo_root) if launch else \
                 local.Called(False, error=f"{server} is not a local server any more", kind="other")
-            shot = cp.Shot(_now(), c.ok, 0, f"{server} · {routes.short_tool(tool)} (local)",
+            shot = cp.Shot(now_iso(), c.ok, 0, f"{server} · {routes.short_tool(tool)} (local)",
                            json.dumps(args, ensure_ascii=False)[:cp.ANSWER_KEEP], c.answer[:cp.ANSWER_KEEP], c.error,
                            track="local")
             self._later(self._mcp_done, shot, c.kind, body, "local")
@@ -217,7 +213,7 @@ class McpShots:
                  relearn: bool) -> None:
         h = harnesses.get(who)
         tool = c.tool or self.mcp_tool()
-        shot = cp.Shot(_now(), c.ok, 0, f"{self.server} · {routes.short_tool(tool) or '?'} via {h.title if h else who}",
+        shot = cp.Shot(now_iso(), c.ok, 0, f"{self.server} · {routes.short_tool(tool) or '?'} via {h.title if h else who}",
                        json.dumps(c.args if c.args is not None else body, ensure_ascii=False)[:cp.ANSWER_KEEP],
                        c.answer[:cp.ANSWER_KEEP], c.error, track="carrier")
         self._record("carry", started, c.ok, (c.cost or 0.0) + cost, c.error)
@@ -233,7 +229,7 @@ class McpShots:
 
     def _learn(self, c: carry_.Carried, body, who: str, tmpl, options: list, relearn: bool) -> None:
         old = self.route
-        route = {"server": self.server, "tool": c.tool, "args": tmpl, "carrier": who, "learned": _now(),
+        route = {"server": self.server, "tool": c.tool, "args": tmpl, "carrier": who, "learned": now_iso(),
                  "options": options, "pick": 0, "on": False, "proven": False, "kept": bool(old.get("kept")),
                  "local_proven": bool(old.get("local_proven")) and old.get("tool") == c.tool}
         before = cm.direct(old)

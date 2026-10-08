@@ -20,7 +20,8 @@ from orkcraft.core import buildings as core_buildings
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, steward, tiers, unit_info
+from orkcraft.realm import (catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, script_first,
+                            steward, tiers, unit_info)
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
 
@@ -224,6 +225,19 @@ def _waits(town: Town, bs) -> dict:
             "questions": list(autonomy.QUESTION_WAITS), "rebuilds": list(autonomy.REBUILD_WAITS)}
 
 
+def _script_first(town: Town, building_id: str) -> dict[str, Any] | None:
+    """Whether its work is code (docs/design/script-first.md): {on, thinking, woke}; None for a type that thinks."""
+    bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
+    if script_first.type_id(spec) not in script_first.TYPES | script_first.WHEN_CODE:
+        return None
+    last = script_first.wakes(town.repo_root, building_id, 1)
+    woke = ""
+    if last:
+        when = str(last[0].get("ts", ""))[11:16]
+        woke = f"woke {when} on {'an error' if last[0].get('why') == 'error' else 'a 👎'}"
+    return {"on": script_first.is_script_first(spec, bs), "thinking": script_first.thinking(spec, bs), "woke": woke}
+
+
 def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
     bs = town.scroll.building(building_id)
     if bs is None or bs.demolished:
@@ -235,10 +249,14 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     j = feedback.journal(town.repo_root, building_id)
     aim = bs.aim
     spec = town.spec_of(building_id)
+    code = _script_first(town, building_id)
+    spend = total.text() if orcs else "🪙 nothing spent — no orks"
+    if code is not None and code["on"] and total.usd in (None, 0) and not total.runs:
+        spend = "🪙 no model"
     return {
         "id": building_id,
         **_both("about", _about(town, building_id)),
-        **_both("spend", total.text() if orcs else "🪙 nothing spent — no orks"),
+        **_both("spend", spend),
         "week": {"runs": j["runs"], "ok": j["ok"], "failed": j["failed"], "results": j["results"]},
         "likes": j["likes"], "dislikes": j["dislikes"],
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
@@ -255,6 +273,7 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "others": _others(town, muster, building_id),
         "rules": _rules(town, building_id),
         "steward": _steward(town, muster, building_id),
+        "script_first": code,
         "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
                  [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
     }

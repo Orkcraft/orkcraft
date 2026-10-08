@@ -52,10 +52,10 @@ def test_a_typed_receiver_takes_by_its_kinds():
     try:
         pipes.clear_typed()
         pipes.set_typed("in", ["pit.text", "drop.file"])
-        assert pipes.modes_for("in", "post") == [] and not pipes.can_receive("post")
+        assert pipes.modes_for("in", "post") == [] and not pipes.accepts("post")
         pipes.set_typed("post", ["signpost.routed"], catalog.accepts({"type": "signpost"}))
         pipes.set_typed("crag", [], catalog.accepts({"type": "crag"}))
-        assert pipes.can_receive("post") and pipes.can_receive("crag")
+        assert pipes.accepts("post") and pipes.accepts("crag")
         assert {"pit.text", "drop.file"} <= set(pipes.road_events("in", "post", has_garrison=False))
         assert pipes.road_events("in", "crag", has_garrison=False) == ["pit.text"]     # a number in a text only
         pipes.set_typed("post", ["signpost.routed"])                                    # a redesign takes it away
