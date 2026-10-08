@@ -168,7 +168,7 @@ function Head({ ork, asks, working }) {
 
 /** Its kind of work and where it was decided: `Reply · from External listeners` (docs/design/barracks-flows.md §9). */
 function Want({ t }) {
-  return html`${say(t.want)}${t.want_by ? html` · ${say("from")} ${say(t.want_by)}` : ""}`;
+  return html`${say(t.want)}${t.want_note ? ` · ${say(t.want_note)}` : ""}`;
 }
 
 /** A task as a card: who and how it is on top, its title, its branch and cost under it. */
@@ -263,6 +263,7 @@ function TaskDetail({ id, data, t }) {
       ${t.pr && html`<a class="ok-btn" href=${t.pr} target="_blank" rel="noreferrer">${say("Open PR")} ↗</a>`}
       ${t.design && html`<button class="ok-btn" onClick=${() => openInLake({ path: t.design, from: id })}>Design brief in Lake</button>`}
     </div>
+    ${t.code_card && html`<p class="ok-tone-wait">${say("It reads like a code task: a card waits for you on the Task board —")} “${t.code_card}”</p>`}
     <${Overlaps} id=${id} t=${t} />
     <${Text} label="Brief" text=${t.brief} />
     <${Text} label="Review notes" text=${t.notes} />
@@ -354,6 +355,25 @@ function KeeperAsk({ id, keeper }) {
   </div>`;
 }
 
+/** The kinds of work it takes and its table source → kind of work (docs/design/barracks-flows.md §5, §9): a cart
+ *  whose building named no kind takes its source's; a kind it does not take goes back as not mine. */
+function Kinds({ id, kinds }) {
+  const takes = (k, on) => act(id, "wants", { wants: kinds.all.map((x) => x.id).filter((x) => (x === k ? on : kinds.wants.includes(x))) }).catch(() => {});
+  return html`<section class="gui-section pool-kinds"><h3 class="ok-font-heading">${say("Kinds of work")}</h3>
+    <p class="ok-tone-muted">${say("What it takes. A reply is drafted by one light ork that only reads, and goes to the Review gate; another kind goes back as not mine.")}</p>
+    <div class="ok-row">${kinds.all.map((k) => html`<label key=${k.id} class="pool-kinds__take">
+      <input type="checkbox" checked=${kinds.wants.includes(k.id)} onChange=${(e) => takes(k.id, e.target.checked)} />${say(k.label)}</label>`)}</div>
+    ${kinds.table.length > 0 && html`<p class="ok-tone-muted">${say("When the building it came from names no kind:")}</p>
+      <ul class="gui-rows">${kinds.table.map((r) => html`<li key=${r.source} class="pool-kinds__row">
+        <span>${say(r.title)}</span> →
+        <select class="ok-input" value=${r.own ? r.want : ""} aria-label=${`${say("Kind of work")}: ${say(r.title)}`}
+          onChange=${(e) => act(id, "want_by_source", { source: r.source, want: e.target.value }).catch(() => {})}>
+          <option value="">${r.want && !r.own ? `${say(kinds.all.find((k) => k.id === r.want)?.label || r.want)} (${say("default")})` : say("The sort decides")}</option>
+          ${kinds.all.map((k) => html`<option key=${k.id} value=${k.id}>${say(k.label)}</option>`)}
+        </select></li>`)}</ul>`}
+  </section>`;
+}
+
 /** Rules, settings and the foreman's decisions: one line until opened — they are read rarely. */
 function Rules({ id, data }) {
   const settings = [["Tests", data.test_cmd || "none — the review reads the diff only"], ["Steward", `${data.steward} · spent ${data.steward_cost}`],
@@ -369,6 +389,7 @@ function Rules({ id, data }) {
     <${KeeperAsk} id=${id} keeper=${data.keeper} />
     <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
       <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
+    <${Kinds} id=${id} kinds=${data.kinds} />
     <section class="gui-section"><h3 class="ok-font-heading">Areas in work</h3>
       <p class="ok-tone-muted">${say("The files open tasks change, until their pull requests are merged. A new task on an area being built waits for it.")}</p>
       <${Areas} id=${id} areas=${data.areas} /></section>

@@ -138,6 +138,27 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     return text, cost, tokens, session
 
 
+def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
+             env: dict | None = None, resume: str = "",
+             timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
+    """(text, cost, tokens, "") of an agent that only reads, in `workdir` (harness mode `read`: no terminal, no
+    file edits) — an Agent pool's reply (docs/design/barracks-flows.md §7). It starts fresh: no session."""
+    harness = roads.resolve(harness)
+    h = harnesses.get(harness)
+    if h is None:
+        raise RuntimeError(f"harness {harness!r} cannot read")
+    cmd = h.read(prompt, workdir, model, False)
+    run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
+    code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+                                    lambda proc: _wait(proc, cancel, timeout_s))
+    if code != 0:
+        raise RuntimeError(roads.failure(harness, code, out, err))
+    text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
+    if not telemetry.charged(run_env):
+        telemetry.charge(cost, f"{harness} reader")
+    return text, cost, tokens, ""
+
+
 class Log:
     """`runs.jsonl` of one building: newest last on disk, newest first when read."""
 

@@ -65,6 +65,15 @@ def _matches(path: str, globs: list[str]) -> bool:
 
 
 APPROVAL = "approval"                         # a hop's outcome: a draft waits for the person before it goes out
+PASSED, GATE = "passed", "gate"               # the hop a Review gate adds to a held kind of work it let through
+# The kinds of work a gate always holds, whatever its rules (docs/design/barracks-flows.md §7): what a reply path
+# wrote leaves the camp only after the person's yes.
+HELD_WANTS = frozenset({pipes.REPLY})
+
+
+def passed(trail) -> bool:
+    """A Review gate let it through: the person said yes (or its rules did, for a kind it need not hold)."""
+    return any(h.kind == GATE and h.outcome == PASSED for h in trail or ())
 CLEAN = ("", "done", "approved", "rework", APPROVAL)   # a Clan Fire's verdict is how its review ended, not a failure
 
 
@@ -76,6 +85,8 @@ def reasons(payload: pipes.Payload, config: dict, ctx: Context | None = None,
     last = payload.trail[-1] if payload.trail else None
     if last is not None and last.outcome == APPROVAL:       # its maker waits for the person: never waved through
         return [f"{name(last.building)} waits for your approval before it goes out"]
+    if payload.want in HELD_WANTS and not passed(payload.trail):  # a reply never leaves without the person's yes
+        return ["a reply waits for your yes before it goes out"]
     mode = str(config.get("review") or "rules")
     if mode == "never":
         return []

@@ -29,7 +29,7 @@ from typing import Callable
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.catapult_mcp import McpShots
 from orkcraft.core.workers.catapult_overseer import OverseerMixin
-from orkcraft.realm import catapult as cp, catapult_web as cw
+from orkcraft.realm import catapult as cp, catapult_web as cw, gate
 from orkcraft.realm.jobs import now_iso
 
 GLOBE = "🌐"
@@ -207,7 +207,37 @@ class CatapultWorker(OverseerMixin, McpShots, Worker):
 
     # -- loading and the queue ----------------------------------------------------------------------
 
+    # -- what must not leave without the person's yes (docs/design/barracks-flows.md §7) -----------------
+
+    ASK_NEXT = "ask_next"          # the state file: how many shots ask first, whatever `confirm` says
+
+    @property
+    def ask_next(self) -> int:
+        try:
+            return max(0, int((self.state_dir / self.ASK_NEXT).read_text(encoding="utf-8").strip() or 0))
+        except (OSError, ValueError):
+            return 0
+
+    def _set_ask_next(self, n: int) -> None:
+        try:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
+            (self.state_dir / self.ASK_NEXT).write_text(str(max(0, n)), encoding="utf-8")
+        except OSError:
+            pass
+
+    def must_confirm(self) -> bool:
+        """`confirm` is on, or a reply that no Review gate let through is on its way: this shot asks (each such
+        cart makes one shot ask; a shot that takes two asks once, and the next one asks too — never fewer)."""
+        if self.config.get("confirm"):
+            return True
+        n = self.ask_next
+        if n:
+            self._set_ask_next(n - 1)
+        return bool(n)
+
     def receive(self, payload, title: str, markdown: str) -> None:
+        if getattr(payload, "want", "") in gate.HELD_WANTS and not gate.passed(payload.trail):
+            self._set_ask_next(self.ask_next + 1)            # a reply never goes out without the person's yes
         load = self.load
         load.put(payload.source, payload.value, str(self.config.get("key") or ""))
         dropped = load.expire(int(self.config.get("ttl") or 0))
@@ -280,7 +310,7 @@ class CatapultWorker(OverseerMixin, McpShots, Worker):
         if self.simulated or not url:
             self._done(cp.dry_run(url or "(no url set)", str(self.config.get("method") or "POST"), body))
             return True
-        if self.config.get("confirm"):
+        if self.must_confirm():
             self._ask(f"🎯 Send to {url}?", json.dumps(body, ensure_ascii=False)[:600], lambda: self._send(url, body), body)
             return True
         self._send(url, body)
@@ -401,7 +431,7 @@ class CatapultWorker(OverseerMixin, McpShots, Worker):
                 script = script.parent / "fill.py"        # edited by hand: the operator's version runs
             url = str((cw.load_map(self.fdir(form)) or {}).get("url") or form.url)
             runs.append((i, form, script, url, filled, cw.describe(p, body)))
-        if self.config.get("confirm"):
+        if self.must_confirm():
             self._ask(f"🎯 Fill {label}?", "\n\n".join(f"[{f.name}] {d}" for _, f, _, _, _, d in runs)[:900],
                       lambda: self._run_forms(runs, body, press, retried_at), body, start)
             return True

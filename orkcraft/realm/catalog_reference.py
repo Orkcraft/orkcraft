@@ -184,6 +184,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                   "`flag` — it only says so; `off`",
         "claim_wait": "minutes a task waits for an older one on its area before it goes on, flagged (default 60)",
         "claim_days": "days an area in work is kept when its pull request is never merged nor closed (default 14)",
+        "wants": "the kinds of work it takes, of change · reply · doc (default all three); a cart of another kind goes "
+                 "back as not mine (docs/design/barracks-flows.md)",
+        "want_by_source": "its table source → kind of work, for a cart that names none: a building id or type → change · "
+                          "reply · doc, e.g. {\"inbox\": \"reply\"} (default: the Calendar → doc)",
         "briefs": "false: a planned task leaves no design brief in its pull request (default true)",
         "briefs_dir": "where design briefs are written and read (default docs/design)",
     },
@@ -318,7 +322,8 @@ def _param_text(param: Param) -> str:
     elif isinstance(allowed, tuple) and allowed[1] < 1e9:
         kind = f"number {allowed[0]:g}-{allowed[1]:g}"
     else:
-        kind = {str: "text", int: "number", float: "number", bool: "true/false", list: "list of text"}.get(typ, "text")
+        kind = {str: "text", int: "number", float: "number", bool: "true/false", list: "list of text",
+                dict: "a table"}.get(typ, "text")
     return kind + (", required" if required else "")
 
 
