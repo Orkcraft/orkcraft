@@ -1,6 +1,7 @@
 # Design — script-first buildings: code does the work, the ork wakes on an error or a 👎
 
-Status: written 2026-10-07; nothing built yet (stages: §7). Part of the simplification
+Status: written 2026-10-07; stage 1 (the rule, the wakes, the retro's guard) is built, stage 2 (the GUI) is
+not yet (§7). Part of the simplification
 ([simplify.md](simplify.md) §7). Builds on the steward ([steward-at-work.md](steward-at-work.md)), its
 keeper (`core/keeper.py`), the 👍 / 👎 (`realm/feedback.py`) and the Building retro (`realm/optimize.py`).
 
@@ -165,6 +166,20 @@ cost should be.
   run wakes its keeper.
 - **The demo** shows the line on every script-first building. A wake there uses the keeper's fake
   runner (`runners.KEEPER_RUNNER`). When there is none, the wake is logged and toasted but asks no model.
+
+**Built (stage 1):**
+- `realm/script_first.py` holds the rule (`TYPES`, `WHEN_CODE`, `thinking`, `is_script_first`), the wake
+  log (`wakes.jsonl`) and its memory (`state.json`).
+- `core/wakes.py` has no face and calls no model. `due` reads the workers' `status()` (a type whose ERROR
+  is a reading says so: `Worker.ERROR_IS_FAILURE`, False for Metrics), the last run of each handler and
+  the explicit incidents. `taken` remembers and logs a wake. `start`, when the town opens, makes the
+  👎s from before not news.
+- The Host asks every `WAKE_CHECK_S` (5 s) and runs each due wake as the keeper's job
+  (`gui/keeper.py` `keeper_wake`). A wake that cannot run now is due again at the next look: the budget
+  is spent, or a wake of the building is still open in its console.
+- `core/retros.py` `daily_job` leaves script-first buildings out of the Building retro's goals.
+- Incidents are stamped to the second, so the memory keeps the keys of the ones at its cursor's second:
+  two 👎s in one second are two wakes.
 
 ## 7. Stages
 

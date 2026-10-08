@@ -46,6 +46,9 @@ def type_id(spec: dict | None) -> str:
 
 class Worker:
     TYPE = ""
+    # Its ERROR says its own work failed (core/wakes.py wakes a script-first building's ork on it); False for a
+    # building whose ERROR is a reading it shows (a Metrics over its red line): that is its work, not a failure.
+    ERROR_IS_FAILURE = True
 
     def __init__(self, town, building_id: str) -> None:
         self.town = town

@@ -23,8 +23,8 @@ from typing import Any, Callable, Iterator
 from orkcraft.core import buildings as core_buildings
 from orkcraft.core import bus, runners, treasury
 from orkcraft.core.town import Town
-from orkcraft.realm import (audit, builders, checkpoint, evolution, fastpath, feedback, optimize, steward,
-                            weekly, workshop)
+from orkcraft.realm import (audit, builders, checkpoint, evolution, fastpath, feedback, optimize, script_first,
+                            steward, weekly, workshop)
 
 
 @contextlib.contextmanager
@@ -54,7 +54,9 @@ def daily_job(town: Town, now: dt.datetime) -> Callable[[], optimize.Result] | N
     if town.demo or not expr or not steward.due(expr, optimize.last_run(repo), now):
         return None
     optimize.mark_run(repo, now)
-    goals = {b.id: b.aim for b in town.scroll.buildings if not b.demolished}
+    # a script-first building has no prompt to improve: its ork wakes on its own errors and 👎s (core/wakes.py)
+    goals = {b.id: b.aim for b in town.scroll.buildings
+             if not b.demolished and not script_first.is_script_first(town.spec_of(b.id), b)}
     cand = optimize.leader(repo, None, *_limits(town), goals=goals)
     if cand is None:
         return None
