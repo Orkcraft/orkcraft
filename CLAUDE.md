@@ -43,3 +43,12 @@
   top of `updates.json` in the same commit to `main`. Installed copies read that file to update.
 - `"critical": true` only for a security fix or a bug that loses work: it installs on every machine
   without asking. Its `notes` say plainly what it fixes.
+
+## Alpha: merge fast, with the critical tests
+
+- While Orkcraft is in alpha, a change is merged into `main` as soon as the **critical tests** pass;
+  the full suite and the browser tests are not waited for. A red full CI after the merge is fixed by
+  the next commit to `main`.
+- The critical tests: `tests/test_architecture.py`, `tests/test_cli.py`, `tests/test_updates.py`, and
+  the test files of the modules the change touches.
+- This section is removed when the project leaves alpha.
