@@ -37,10 +37,16 @@ With the tool that installed this copy, so its records stay right:
 
 | Installed with | Updates with |
 |---|---|
+| `brew install orkcraft` (the tap below) | `brew update && brew upgrade orkcraft` |
 | `pipx install "orkcraft[gui] @ git+…"` | `pipx upgrade orkcraft` |
 | `uv tool install …` | `uv tool upgrade orkcraft` |
 | `pip install "orkcraft @ git+…"` | `python -m pip install --upgrade "orkcraft @ git+…"` (the same URL) |
 | a git checkout (`bin/orkcraft`, `pip install -e`) | `git pull --ff-only` (then `uv pip install -e .` when `uv` is there) |
+
+A brew copy is told by its path: it runs from `<HOMEBREW_PREFIX>/Cellar/orkcraft/<version>/libexec`.
+`brew update` comes first because `brew upgrade` alone reads the tap only once a day; after the
+upgrade brew removes the old version, so Orkcraft restarts on `<HOMEBREW_PREFIX>/opt/orkcraft`, which
+points at the new one.
 
 A git checkout updates itself only on `main` and only with no changes of its own: a working copy
 with edits or on another branch is yours, so Orkcraft says what is out and leaves it alone.
@@ -67,11 +73,38 @@ The list is [`updates.json`](../updates.json) at the root of the repository, rea
     "notes": "The Warder let a shell command through when …"}
    ```
 
+3. after it lands, the `brew` workflow ([`.github/workflows/brew.yml`](../.github/workflows/brew.yml))
+   sees the new `__version__` and commits the Homebrew formula for it (below).
+
 Mark a release `critical` only for a security fix or a bug that loses work: it installs on every
 machine with the default policy, with no question asked. `notes` is what the person reads before
 it installs: one plain sentence on what it fixes. An installed copy sees the release as soon as the
 commit is on `main` (raw.githubusercontent.com caches for a few minutes). `tests/test_updates.py`
 checks that the newest release in `updates.json` is `__version__`.
+
+## The Homebrew formula
+
+The repository is its own tap: [`Formula/orkcraft.rb`](../Formula/orkcraft.rb) at its root.
+
+```bash
+brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
+brew install orkcraft
+```
+
+The formula installs `orkcraft[gui]` in a virtualenv on Homebrew's Python, from the GitHub archive of
+one commit, with every Python package pinned as an sdist with its sha256 (brew builds them from
+source; the pyobjc ones, for the window's WebKit, only on macOS). It is written, never edited, by
+[`tools/brew_formula.py`](../tools/brew_formula.py): it reads `__version__` and `uv.lock` at that
+commit and hashes the archive.
+
+On a release the `brew` workflow runs it for the commit that raised `__version__` and pushes
+`Formula: orkcraft <version>` to `main`; `brew upgrade orkcraft` sees the release from then on (until
+then the window may offer an update that brew does not have yet: the install says the version did
+not change, and it is tried again a day later). To write it by hand, from a commit already on GitHub:
+
+```bash
+python tools/brew_formula.py --commit <sha>   # needs `packaging`; downloads the archive to hash it
+```
 
 A copy installed before 0.2.0 cannot update itself: install it once more by hand
 (`pipx install --force "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"`).

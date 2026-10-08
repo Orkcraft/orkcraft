@@ -16,6 +16,7 @@ const PATHS = {
   war_drum: "M2 3.5h12v10H2zM2 6.5h12M5 1.8v3M11 1.8v3M5 9h1.5M9.5 9H11M5 11h1.5",                    // calendar
   forest: "M2 2v10.5h4M2 6h4M6 4.5h3l1 1h4v3H6zM6 11h3l1 1h4v2H6z",                                   // folder tree
   mine: "M2.5 7C5 3.5 11 3.5 13.5 7M8 4.6 3.5 14.5",                                                 // pickaxe
+  gramophone: "M2.5 14.5h7M6 14.5v-4l2.5-2.5M8.5 8 13.5 2.5M8.5 8l6 .5M13.5 2.5c1.5 2 1.5 4.5 1 6",               // gramophone
   scrolls: "M1.5 3h4.5a2 2 0 0 1 2 2v9a1.5 1.5 0 0 0-1.5-1.5h-5zM14.5 3H10a2 2 0 0 0-2 2v9a1.5 1.5 0 0 1 1.5-1.5h5z", // open book
   lake: "M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z", // eye
   forge: "M4 5.5v8M4 5.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6zM12 10.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 10.5V6a2 2 0 0 0-2-2H7.5M9 2.5 7.5 4 9 5.5", // pull request
@@ -65,9 +66,9 @@ export function headerSprite(type, biome = "") {
 // highest point would put it on the Town Hall's horn.
 const FLAG_AT = {
   barracks: [19, 0, 26], catapult: [13, 1, 18], council: [11, 0, 23], crag: [13, 8, 33], custom: [17, 1, 26],
-  fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], horn: [12, 11, 23], lake: [17, 0, 33],
-  loot: [16, 0, 30], mill: [13, 0, 22], mine: [16, 3, 21], pit: [12, 9, 24], scrolls: [16, 0, 30], signpost: [11, 0, 24],
-  town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
+  fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], gramophone: [6, 14, 30], horn: [12, 11, 23],
+  lake: [17, 0, 33], loot: [16, 0, 30], mill: [13, 0, 22], mine: [16, 3, 21], pit: [12, 9, 24], scrolls: [16, 0, 30],
+  signpost: [11, 0, 24], town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
 };
 
 const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level

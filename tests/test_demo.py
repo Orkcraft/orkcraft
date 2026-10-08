@@ -139,7 +139,7 @@ async def test_dashboard_set_typed_buildings_and_no_agent_runs(tmp_path: Path, m
     assert problems == [] and [o.name for o in scroll.orkspaces] == ["My Day", "Agent Yard", "Gates", "Library",
                                                                  "Front Desk", "Meetings"]
     specs, spec_problems = masonry.load_specs(root)
-    assert spec_problems == [] and len(specs) == 38 and all(s.get("type") for s in specs)
+    assert spec_problems == [] and len(specs) == 39 and all(s.get("type") for s in specs)
     from orkcraft.realm import catalog
     # every type the catalog builds; Lake is the town's window, not a building
     assert {s["type"] for s in specs} == set(catalog.TYPES) - {"town_hall", "custom", "lake"}

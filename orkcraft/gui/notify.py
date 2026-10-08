@@ -17,7 +17,7 @@ from typing import Any
 
 from orkcraft.core import bus
 from orkcraft.gui import mobile
-from orkcraft.realm import modes
+from orkcraft.realm import lexicon, modes
 
 _LEVEL = {"warn": "is near its limit", "over": "is over its limit"}
 
@@ -35,6 +35,9 @@ class Notifier:
         if item["kind"] == "alert":
             who = modes.plain(item.get("who") or "") or "An ork"
             return {**item, "line": f"{who} asks: {modes.strip_emoji(item['title'])}"}   # the question keeps its words
+        if item["kind"] == "episode":                  # an Audio briefing's episode to download (audio-briefing.md §8)
+            minutes = max(1, round((item.get("seconds") or 0) / 60))
+            return {**item, "line": f"{lexicon.term('gramophone')}: {item['title']} ({minutes} min) is ready"}
         word = words.get("gold" if item["kind"] == "gold" else "quota") or item["kind"].title()
         return {**item, "line": f"{word} {_LEVEL.get(item['level'], item['level'])}: {item.get('text', '')}".rstrip(": ")}
 
