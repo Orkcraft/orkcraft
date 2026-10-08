@@ -157,6 +157,7 @@ pages, what was taken out).
 
 ## 6. Next
 
+- **A task settles before it goes; related ones go together** (in progress): docs/design/settle-and-join.md.
 - **A local model for personal cards.** `pi` and `hermes` can point at one on this machine (an
   OpenAI-compatible address); a personal to-do could then get its plan without leaving it.
 - **One wiki trip for a ticket.** A ticket sent to a Barracks that reads the same wiki first (`notes`)
