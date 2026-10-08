@@ -603,3 +603,23 @@ button { font: inherit; color: inherit; }
   .gui-form__row { flex-wrap: wrap; }
   .gui-form__row > .ok-input { flex: 1 1 100%; min-width: 0; }
 }
+
+/* The town in a narrow window (js/pocket.js): the buildings as a list of cards, closed to one line. */
+.gui-pocket { padding: var(--space-3) var(--space-3) 96px; display: flex; flex-direction: column; gap: var(--space-3); }
+.gui-pocket__group > .ok-list__head { margin: 0 0 var(--space-2); }
+.gui-pocket__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-pocket__row.ok-hut { position: static; width: auto; background: var(--panel); border: var(--ok-frame, 2px) solid var(--frame); }
+.gui-pocket__row.is-alert { border-color: var(--alert); }
+.gui-pocket__row.is-open { border-color: var(--frame-focus); }
+.gui-pocket__head { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: 48px; padding: 0 var(--space-3);
+  border: 0; background: none; color: var(--ink); font: 600 var(--ok-body, 14px)/1.2 var(--ok-font); text-align: left; cursor: pointer; }
+.gui-pocket__no { color: var(--ink-muted); font-weight: 400; min-width: 1.4em; }
+.gui-pocket__name { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-pocket__gist { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400;
+  font-size: 12px; text-align: right; }
+.gui-pocket__gist .gui-hut__mark { margin: 0; }
+.gui-pocket__chev { flex: none; color: var(--ink-muted); width: 1em; text-align: center; }
+.gui-pocket__body { padding: 0 var(--space-3) var(--space-3); border-top: 1px solid var(--frame); }
+.gui-pocket__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.gui-pocket__acts > .ok-btn.primary { margin-left: auto; }
+.gui-pocket__acts .gui-hut__quick { position: static; display: flex; gap: var(--space-2); opacity: 1; transform: none; }
