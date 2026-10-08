@@ -142,8 +142,9 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
   `Ghost`). The one going up now is scaffolding, its sprite rising out of the ground; when it stands, its hut
   rises into the same place once (`is-fresh`). No motion under `prefers-reduced-motion`.
 - **Compact, so a whole town fits.** The plans are half a hut (a small roof and one line), the rows step a fifth
-  of the town down (`onboarding.ROW`), and every building stands folded (docs/design/folded-cards.md): its title
-  bar alone, until trouble peeks it or the person unfolds it. Eight buildings keep to the top of the map, clear of
+  of the town down (`onboarding.ROW`), and the quiet buildings stand folded (docs/design/folded-cards.md): the
+  title bar alone, until trouble peeks one or the person unfolds it. What the person works in every day stands
+  open (`onboarding.OPEN`): Task Fields, Output, External listeners and the Drop. Eight buildings keep to the top of the map, clear of
   the log and the Autonomy card. The ready town's preview on step 4 draws each sprite at its own size beside a
   narrow plate, so eight fit in a row; its words keep their size.
 - **Quiet hours** on the Autonomy card: 23:00–08:00 on or off (`onboarding.quiet`; the hours themselves in

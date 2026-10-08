@@ -27,7 +27,8 @@ from orkcraft.realm import biomes, builders, checkpoint, harnesses, intents, int
 TOOLS, WHO, MCP, TOWN, SURVEY, RAISING = "tools", "who", "mcp", "town", "survey", "raising"
 WARDED = harnesses.ids()    # the tools the Security reviewer's hooks guard (hooks/install.py): every one
 GRID = (4, 3)               # where the planned buildings stand: four across, as js/town.js lays out a hut without a spot
-ROW = 0.2                   # a row's step down the town: the huts stand folded, so three rows keep to its top
+ROW = 0.25                  # a row's step down the town: the quiet huts stand folded, so three rows keep to its top
+OPEN = frozenset({"fields", "loot", "watchtower", "pit"})   # stand open: the person works in them every day
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
 KIN_WORDS = {"orc": "orks", "lich": "undead", "elf": "elves", "gnome": "gnomes", "goblin": "goblins",
@@ -454,8 +455,9 @@ class Onboarding:
             hut = [round((i % cols) / (cols - 1), 3), round(min(i // cols, rows - 1) * ROW, 3)]
             self.raising["buildings"].append({"id": spec["id"], "title": spec.get("title", spec["id"]),
                                               "type": spec.get("type", ""), "state": "planned", "hut": hut})
+            fold = spec.get("type") not in OPEN
             self._step(f"Raising {spec.get('title', spec['id'])}",
-                       lambda spec=spec, hut=hut: buildings.raise_spec(town, spec, hut, folded=True), spec["id"])
+                       lambda spec=spec, hut=hut, fold=fold: buildings.raise_spec(town, spec, hut, folded=fold), spec["id"])
         for r in plan.roads:
             self._step(f"A road {r.source} → {r.target}",
                        lambda r=r: roads.lay(town, r.target, r.source, r.subscription, None, quiet=True))
