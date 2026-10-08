@@ -21,6 +21,7 @@ import { Menu } from "./js/menu.js";
 import { WarchiefLine } from "./js/warchief.js";
 import { Overlays } from "./js/types.js";
 import { Pocket, narrow } from "./js/pocket.js";
+import { Portrait } from "./js/portrait.js";
 
 function App() {
   const t = town.value;
@@ -41,6 +42,7 @@ function App() {
     ${narrow.value ? html`<${Pocket} buildings=${buildings} />` : html`<${Town} buildings=${buildings} roads=${t.roads} />`}
     <div class="gui-foot" style=${`margin-right:${panelShown() && !opened.value.full ? panelWidth.value : 0}px`}>
       ${!narrow.value && html`<${WarMap} />`}<${WarchiefLine} /></div>
+    ${!narrow.value && html`<${Portrait} corner=${true} />`}
     <${Panel} />
     <${Toasts} />
     <${SettingsDialog} />

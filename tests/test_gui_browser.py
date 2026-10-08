@@ -1273,11 +1273,11 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
 
 
 def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
-    """The person in the HUD's left corner (docs/design/portrait.md): its menu heads with You, Camp turns to
-    Office (no sprites, the monogram, the office theme) and back, and Do not disturb puts 🌙 on it."""
+    """The person framed over the town's top-left corner (docs/design/portrait.md): its menu heads with You, Camp
+    turns to Office (no sprites, the monogram, the office theme) and back, and Do not disturb puts 🌙 on it."""
     pg = page
-    hud = pg.locator(".gui-hud")
-    portrait = hud.locator(".gui-portrait")
+    assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
+    portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
     assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
     portrait.click()
     menu = pg.locator(".gui-portrait__menu")
@@ -1300,6 +1300,17 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     menu.wait_for(state="hidden", timeout=WAIT_MS)
+    # its quick toggles beside it: Do not disturb on and off, the look to Office and back, without the menu
+    dnd, look = pg.get_by_role("button", name="Do not disturb", exact=True), pg.get_by_role("button", name="Office look", exact=True)
+    dnd.click()
+    pg.locator(".gui-portrait__dnd").wait_for(state="visible", timeout=WAIT_MS)
+    assert dnd.get_attribute("aria-pressed") == "true"
+    dnd.click()
+    pg.locator(".gui-portrait__dnd").wait_for(state="hidden", timeout=WAIT_MS)
+    look.click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+    look.click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
 
 
 def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gui, tmp_path, monkeypatch):
