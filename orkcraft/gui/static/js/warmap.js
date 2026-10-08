@@ -1,4 +1,4 @@
-// The War Map (docs/design/war-map.md): the orkspaces as lands stacked in a framed square at the town's
+// The War Map (docs/design/war-map.md): the orkspaces as lands stacked in a framed landscape at the town's
 // bottom left, each in its biome's colour, the open one tall with its status and its buildings as dots, the
 // fog of war at the foot (Add orkspace +) and in a wedge at the right, each land a step shorter than the
 // one above. Its title and the lands' names are in the pixel face. Every land is a real button cut to
@@ -11,7 +11,7 @@ import { town, command, say } from "./link.js";
 import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
 
-const N = 40, T = 4;                       // 40 × 40 cells of 4 px: a 160 px square
+const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
 const FOG_ROWS = 4, CLOSED_MIN = 7, OPEN_MIN = 12;   // a closed land at least 28 px: its name never touches a border
 const FOG = "#221e16";
 const CALL_EVERY_MS = 30_000;              // a land calls at most this often
@@ -28,7 +28,7 @@ function layout(lands, open) {
   const H = Math.max(N, rows);
   const tops = [0];
   for (const o of lands) tops.push(tops[tops.length - 1] + (o.id === open ? openH : closed));
-  const border = tops.map((y, k) => (k === 0 ? null : Array(N).fill(y)));
+  const border = tops.map((y, k) => (k === 0 ? null : Array(W).fill(y)));
   return { H, tops, border };
 }
 
@@ -37,11 +37,11 @@ function cellsPath(inside, H, isTop) {
   let d = "";
   for (let y = 0; y < H; y++) {
     let x = 0;
-    while (x < N) {
+    while (x < W) {
       if (!inside(x, y)) { x++; continue; }
       const top = isTop(x, y);
       let x1 = x;
-      while (x1 < N && inside(x1, y) && isTop(x1, y) === top) x1++;
+      while (x1 < W && inside(x1, y) && isTop(x1, y) === top) x1++;
       const y0 = y * T + (top ? 1 : 0), h = T - (top ? 1 : 0);
       d += `M${x * T} ${y0}h${(x1 - x) * T}v${h}h${-(x1 - x) * T}z`;
       x = x1;
@@ -123,7 +123,7 @@ export function WarMap() {
   const asked = useRef(null);                           // orkspace id → its questions at the last render
   const called = useRef({});                            // orkspace id → when it last called
   const { H, tops, border } = layout(lands, open);
-  const coastAt = (y, i) => N - Math.min(TAPER * i, TAPER_MAX);   // each land a step shorter: terraces
+  const coastAt = (y, i) => W - Math.min(TAPER * i, TAPER_MAX);   // each land a step shorter: terraces
   const n = lands.length;
 
   const select = (o) => { if (o.id !== open) command("orkspace.select", { id: o.id }).catch(() => {}); };
