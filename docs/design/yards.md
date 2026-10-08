@@ -146,6 +146,13 @@ the gate and the pickets, the rest gone. A peek (a question, an error, a drag) b
 neighbours as a peek does now. Drop file here and Router are yards and are built folded; a Transformer
 is built folded and is a yard while its steps are code.
 
+### 3e. A look to try: the cards on the ground
+
+The portrait's menu has **Card background**: *Panel* (the card's own, as always) or *Ground* — the cards drawn
+with no background, the town's biome showing through; yards keep their fence, huts their frame, every title bar
+its plate, a card that asks the fire's ground. It is this browser's alone (`localStorage`, `js/portrait.js`):
+a look to try before it is decided, not a setting of the town.
+
 ### 3d. Stage 3 — motion
 
 - The gate opens and shuts in 120 ms (two frames of the sprite) on unfold and on a peek.

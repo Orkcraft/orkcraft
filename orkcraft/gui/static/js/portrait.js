@@ -17,6 +17,18 @@ import { RoleIcon } from "./roles.js";
 
 export const portraitOpen = signal(false);
 
+// The cards' background in Camp, this browser's alone (a look to try, docs/design/yards.md §3e): "panel", the
+// card's own, or "ground", the town's biome showing through. A card that asks keeps the fire's ground.
+const CARDS_KEY = "orkcraft.cards";
+const readCards = () => { try { return localStorage.getItem(CARDS_KEY) === "ground" ? "ground" : "panel"; } catch { return "panel"; } };
+const cardGround = signal(readCards());
+document.documentElement.dataset.cards = cardGround.value;
+function setCards(v) {
+  cardGround.value = v;
+  document.documentElement.dataset.cards = v;
+  try { localStorage.setItem(CARDS_KEY, v); } catch { /* private window: this session only */ }
+}
+
 const ROMAN = ["", "I", "II", "III", "IV"];
 
 function ground(home) {
@@ -76,6 +88,9 @@ function Menu({ y, p }) {
     <${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
       items=${[[true, "On"], [false, "Off"]]} />
     <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
+    ${p.look !== "office" && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
+      items=${[["panel", "Panel"], ["ground", "Ground"]]} />
+    <p class="ok-font-status ok-tone-muted">${say("Ground: the cards are drawn on the town's ground, the biome showing through. This browser only.")}</p>`}
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>

@@ -97,3 +97,15 @@
 /* Folded: the top fence alone, with its gate. */
 [data-look="camp"] .gui-hut.is-yard.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }
 [data-look="camp"] .gui-hut.is-yard.is-folded .gui-hut__title { margin: 0; }
+
+/* -- the cards' background off (§3e): the town's ground shows through ------------------------------------------ */
+/* A look to try, chosen in the portrait's menu and kept in this browser (js/portrait.js). The title bar keeps its
+   plate; a card that asks keeps the fire's ground. */
+[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert):not(.is-folded) > .ok-hut__card { background:
+    var(--fence-row) left bottom / 21px 21px repeat-x,
+    var(--fence-side) left top / 15px 27px no-repeat space,
+    var(--fence-side) right top / 15px 27px no-repeat space,
+    var(--fence-rail) 4px 0 / 7px 100% no-repeat,
+    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
