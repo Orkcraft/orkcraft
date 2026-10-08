@@ -21,6 +21,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
 import { town, say, command } from "./link.js";
+import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
@@ -29,6 +30,11 @@ export const sizes = signal({});           // building id → {w, h} of its card
 export const dragging = signal(null);      // {id, dx, dy}: the hut being dragged; its ghost stands this far from it
 export const resizing = signal(null);      // {id, w, h}: the card being stretched; its ghost has this size
 export const HUT_MIN = { w: 240, h: 60 }, HUT_MAX = { w: 960, h: 900 };   // as the host keeps them (gui/host.py)
+// A yard is stretched in whole pickets in Camp (docs/design/yards.md §3b′): one bottom picket and its gap across,
+// one side picket and its gap down, so no picket is cut at a corner. Office draws no fence: no step.
+export const YARD_STEP = { w: 21, h: 27 };
+const stepOf = (b) => (b.yard && document.documentElement.dataset.look !== "office" ? YARD_STEP : null);
+const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
 export function levelOf(b) {
@@ -160,16 +166,55 @@ export function buildingMenu(e, b) {
   ]);
 }
 
-/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme. */
-function Keeper({ garrison, alert }) {
-  if (!garrison.length) return null;
+/** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme.
+ *  A yard has no ork of its own (docs/design/yards.md §2): its head stands there only while one visits, with the word. */
+function Keeper({ garrison, alert, yard, visit }) {
+  if (!garrison.length || (yard && !visit)) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const busy = garrison.some((o) => o.status === "busy");
   const more = garrison.length - 1;
   const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
-  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""} · ${doing}`}>
+  return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}${visit ? ` · ${say("visiting")}` : ""} · ${doing}`}>
     <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
-    <${Scheme} scheme=${lead.scheme} /></span>`;
+    <${Scheme} scheme=${lead.scheme} />${visit && html`<span class="gui-hut__visit">visiting</span>`}</span>`;
+}
+
+// -- its orks, seen from outside (docs/design/yards.md §4) -----------------------------------------------------
+// In Camp the head left the title bar: a building says what its orks do over its roof — Zz while they sleep, a
+// wheel while they work — and the one that asks comes out by the door, where a press answers it. A yard shows
+// nothing: no ork lives in it; one that comes stands by its door too. Office keeps its words (office.css).
+
+function Doing({ b, busy }) {
+  if (b.yard || b.alert || !b.garrison.length) return null;
+  return html`<i class=${cls("gui-hut__doing", busy ? "is-busy" : "is-idle")} aria-hidden="true"
+    title=${say(busy ? "at work" : "idle")}></i>`;
+}
+
+const asker = (b) => b.garrison.find((o) => o.status === "alert") || b.garrison.find((o) => o.lead) || b.garrison[0];
+
+/** The ork that asks, out by the door: a press opens its question (js/orders.js), the building stays shut. */
+function Caller({ b }) {
+  if (!b.alert) return null;
+  const o = asker(b);
+  const who = o ? o.name : say(b.title);
+  const stop = (e) => e.stopPropagation();
+  return html`<button class="gui-hut__caller" title=${`${who}: ${b.alert.title}`} aria-label=${`${say("Answer")} ${who}`}
+      onPointerDown=${stop} onClick=${(e) => { stop(e); openOrders(b.alert.id); }}>
+    <img class="ok-sprite" src="/ds/sprites/orks/ork-waiting.png" srcset="/ds/sprites/orks/ork-waiting@2x.png 2x"
+      width="40" height="16" alt="" draggable="false" /></button>`;
+}
+
+/** An ork come to a yard for a wake or a job of its own: it stands by the door while it is there. */
+function Visitor({ b }) {
+  const o = asker(b);
+  if (!o) return null;
+  return html`<span class="gui-hut__visitor" title=${`${o.name} · ${say("visiting")}`}><${OrkHead} o=${{ ...o, status: "busy" }} /></span>`;
+}
+
+/** A yard's name stands over its building, on the ground, with no plate (Camp). */
+function YardName({ b, number }) {
+  return html`<span class="gui-hut__yard-name" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>
+    <span class="no">${number}</span><${TypeIcon} type=${b.type} /><span class="gui-hut__yard-title">${say(b.title)}</span></span>`;
 }
 
 // -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
@@ -213,8 +258,8 @@ export function Card({ b }) {
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
-/** The edges and the corner a card is stretched by: a ghost of the new size follows the mouse; a double click
- *  gives the card back its own size. */
+/** The corner a card is stretched by (its edges pull roads, js/hut.js edgeAt): a ghost of the new size follows the
+ *  mouse, red over another hut; a double click gives the card back its own size. */
 function Grips({ b, onSized }) {
   const grab = (e, sides) => {
     if (e.button !== 0) return;
@@ -226,10 +271,11 @@ function Grips({ b, onSized }) {
     el.setPointerCapture(e.pointerId);
     let gone = false;
     const clamp = (v, lo, hi) => Math.round(Math.min(Math.max(v, lo), hi));
+    const step = stepOf(b);
     const move = (ev) => {
       resizing.value = { id: b.id,
-        w: sides.includes("e") ? clamp(from.w + ev.clientX - from.x, HUT_MIN.w, HUT_MAX.w) : from.w,
-        h: sides.includes("s") ? clamp(from.h + ev.clientY - from.y, HUT_MIN.h, HUT_MAX.h) : from.h };
+        w: sides.includes("e") ? snap(clamp(from.w + ev.clientX - from.x, HUT_MIN.w, HUT_MAX.w), step && step.w) : from.w,
+        h: sides.includes("s") ? snap(clamp(from.h + ev.clientY - from.y, HUT_MIN.h, HUT_MAX.h), step && step.h) : from.h };
     };
     const key = (ev) => { if (ev.key === "Escape") { ev.stopImmediatePropagation(); gone = true; end(); } };
     const end = () => {
@@ -250,13 +296,39 @@ function Grips({ b, onSized }) {
   };
   const back = (e) => { e.stopPropagation(); if (b.size) command("hut.size", { id: b.id, w: null }).catch(() => {}); };
   const label = say("Drag to resize · double-click: its own size");
-  return html`${[["e", "is-e"], ["s", "is-s"], ["es", "is-se"]].map(([sides, c]) => html`<span key=${c}
+  return html`${[["es", "is-se"]].map(([sides, c]) => html`<span key=${c}
       class=${cls("gui-hut__grip", c)} title=${label} aria-hidden="true"
       onPointerDown=${(e) => grab(e, sides)} onClick=${(e) => e.stopPropagation()} onDblClick=${back}></span>`)}`;
 }
 
+// The road handle comes where the mouse nears the card's edge — the yard's fence, the hut's frame — and a road is
+// pulled out of it there; it leaves no gate behind, the road keeps its arrow. The corner it stays clear of resizes.
+const EDGE_PX = 12, CORNER_PX = 20;
+
+/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner). */
+function edgeAt(card, e) {
+  const r = card.getBoundingClientRect(), k = r.width / card.offsetWidth || 1;
+  const w = card.offsetWidth, h = card.offsetHeight, x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k;
+  const d = { left: x, right: w - x, top: y, bottom: h - y };
+  const side = Object.keys(d).reduce((a, k2) => (d[k2] < d[a] ? k2 : a), "left");
+  if (d[side] > EDGE_PX || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
+  const clamp = (v, hi) => Math.min(Math.max(v, 11), hi - 11);
+  return side === "left" ? { x: 0, y: clamp(y, h) } : side === "right" ? { x: w, y: clamp(y, h) }
+    : side === "top" ? { x: clamp(x, w), y: 0 } : { x: clamp(x, w), y: h };
+}
+
 export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSized }) {
   const ref = useRef(null);
+  const road = useRef(null);
+  // the handle follows the mouse along the edge without drawing the hut again
+  const nearEdge = (e) => {
+    const btn = road.current;
+    if (!btn || e.pointerType !== "mouse" || btn.contains(e.target)) return;
+    const at = e.target.closest("button, a, input, select, textarea") ? null : edgeAt(e.currentTarget, e);   // never over a control
+    btn.classList.toggle("is-at", !!at);
+    if (at) { btn.style.left = `${at.x}px`; btn.style.top = `${at.y}px`; }
+  };
+  const awayEdge = () => { if (road.current) road.current.classList.remove("is-at"); };
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
   // late, a part of its card hidden): the town places the huts and the roads by it.
@@ -264,11 +336,22 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
     const el = ref.current;
     if (!el) return;
     const w = el.offsetWidth, h = el.offsetHeight;
-    const card = el.querySelector(".ok-hut__card");          // where roads meet the hut in Camp: its card's frame
-    const top = card ? card.offsetTop : 0, ch = card ? card.offsetHeight : h;
+    // Where roads meet the hut (docs/design/yards.md §3f): a yard's fence, a hut's plinth in Camp, the card's frame in
+    // Office (no plinth drawn). A yard's top fence leaves a gap the width of its house.
+    const card = el.querySelector(".ok-hut__card");
+    let top = card ? card.offsetTop : 0, ch = card ? card.offsetHeight : h, px = 0, pw = w;
+    const plinth = el.querySelector(".gui-hut__plinth");
+    if (plinth && plinth.offsetWidth) {
+      const hr = el.getBoundingClientRect(), pr = plinth.getBoundingClientRect(), k = hr.width / w || 1;
+      const left = Math.round((pr.left - hr.left) / k), width = Math.round(pr.width / k);
+      el.style.setProperty("--house-w", `${left + width}px`);
+      if (!b.yard) {
+        top = Math.round((pr.top - hr.top) / k); ch = Math.round(pr.height / k); px = left; pw = width;
+      }
+    }
     const old = sizes.value[b.id];
-    if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch) {
-      sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch } };
+    if (!old || old.w !== w || old.h !== h || old.top !== top || old.ch !== ch || old.px !== px || old.pw !== pw) {
+      sizes.value = { ...sizes.value, [b.id]: { w, h, top, ch, px, pw } };
     }
   };
   useLayoutEffect(measure);
@@ -320,6 +403,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
   const x = spot.x, y = spot.y;
   const level = levelOf(b);
   const sized = b.size && !folded;
+  const step = stepOf(b);                  // a yard's size, as saved before, is drawn in whole pickets
+  const w = sized ? snap(b.size[0], step && step.w) : 0, h = sized ? snap(b.size[1], step && step.h) : 0;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
@@ -327,13 +412,13 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />
       <span class="gui-hut__name">${say(b.title)}</span>
-      <${Keeper} garrison=${b.garrison} alert=${b.alert} />
-      ${b.alert && html`<span class="ok-word">?</span>`}
+      <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
+      ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
       ${folded && html`<${Mark} b=${b} />`}
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
-  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${b.size[0]}px` : "")}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy,
+  return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
+      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard,
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
@@ -341,10 +426,13 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
-      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} /></span></div>
-    <div class="ok-hut__card" style=${sized ? `height:${b.size[1]}px` : ""}>
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
+      <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}
+      <span class="gui-hut__plinth" aria-hidden="true"></span></span>
+      ${b.alert ? html`<${Caller} b=${b} />` : b.yard && b.visit ? html`<${Visitor} b=${b} />` : null}</div>
+    <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
-      <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
+      <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
       ${!folded ? html`<${Card} b=${b} /><${QuickTray} b=${b} />`

@@ -60,6 +60,8 @@ TERMS: tuple[Term, ...] = (
     _t("building_retro", "Building retro"),
     _t("night_round", "Night round"),                              # the boards' stewards look over the work at night (realm/nightround.py)
     _t("script_first", "Script-first"),                            # its work is code; its ork wakes on an error or a 👎
+    _t("yard", "yard", "yards"),                                   # a script-first building: no ork lives in it (docs/design/yards.md)
+    _t("visiting", "visiting"),                                    # a yard's ork while it is there: woken, asked or asking
     _t("ork_work", "Ork work"),                                    # the Task Fields' orks' kanban
     # -- growth (docs/design/growth.md) ---------------------------------------------------------------
     _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)

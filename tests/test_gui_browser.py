@@ -129,10 +129,16 @@ def _hut(pg, bid: str):
     return pg.locator(f'.gui-hut[data-id="{bid}"]')
 
 
+def _name(hut):
+    """A hut's name as the person sees it: in its title bar, or over its building when it is a yard in Camp
+    (docs/design/yards.md §3b)."""
+    return hut.locator(".gui-hut__name:visible, .gui-hut__yard-title:visible").first
+
+
 def _closed(pg, bid: str) -> None:
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
-    assert hut.locator(".gui-hut__title").inner_text().strip()
+    assert _name(hut).inner_text().strip()
     card = hut.locator(".ok-hut__card")
     assert card.is_visible() and card.bounding_box()["height"] > 0
 
@@ -215,7 +221,7 @@ def test_huts_move_until_the_person_pins_them(page):
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    hut.locator(".gui-hut__name").wait_for(state="visible", timeout=WAIT_MS)   # the Pit is built folded: its title bar
+    _name(hut).wait_for(state="visible", timeout=WAIT_MS)   # the Pit is built folded: its title bar
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
     sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
@@ -223,7 +229,7 @@ def test_huts_move_until_the_person_pins_them(page):
                          arg=bid, timeout=WAIT_MS)
     s, c = sprite.bounding_box(), card.bounding_box()           # Office: its building, smaller, at the card's left
     assert s["width"] < 68 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
-    pin, name = title.locator(".gui-hut__pin").bounding_box(), title.locator(".gui-hut__name").bounding_box()
+    pin, name = title.locator(".gui-hut__pin").bounding_box(), _name(hut).bounding_box()
     assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
     assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
     hut.locator(".gui-hut__pin").click()
@@ -383,7 +389,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     for bid, x, y in ((a, 0.05, 0.05), (b, 0.6, 0.05)):
         pg.evaluate(f"([id, x, y]) => {link}.then(m => m.command('hut.move', {{ id, x, y }}))", [bid, x, y])
     pg.wait_for_timeout(600)
-    title, other = _hut(pg, a).locator(".gui-hut__name").bounding_box(), _hut(pg, b).bounding_box()
+    title, other = _hut(pg, a).locator(".gui-hut__title").bounding_box(), _hut(pg, b).locator(".ok-hut__card").bounding_box()
     start = _hut(pg, a).bounding_box()
     pg.mouse.move(title["x"] + 10, title["y"] + 5)
     pg.mouse.down()
@@ -1200,7 +1206,7 @@ def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     hut, under = _hut(pg, pit), _hut(pg, pool)
     pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
     assert "is-folded" not in under.get_attribute("class")              # a Barracks is built open
-    assert hut.locator(".gui-pit__icon").count() == 0 and hut.locator(".gui-hut__name").inner_text().strip()
+    assert hut.locator(".gui-pit__icon").count() == 0 and _name(hut).inner_text().strip()
     pg.wait_for_timeout(300)
     shot("fold-1-folded")
     below = under.bounding_box()

@@ -1,0 +1,111 @@
+/* Huts and yards in Camp (docs/design/yards.md): what a building's orks do over its roof, the ork that asks out by
+   the door, and a script-first building drawn as a yard — a picket fence round its inside, its title bar the top
+   fence with a gate, its name over the building on the ground. Office draws none of it (office.css): a look
+   changes how things are drawn, never a word (docs/design/portrait.md §3). The fence's pieces are pixel art
+   (tools/fence_sprites.py), drawn at 3 CSS px a pixel. */
+
+/* -- its orks, seen from outside (§4) ------------------------------------------------------------------------ */
+
+/* The head left the title bar in Camp: the roof says what the orks do, the asking one comes out. */
+[data-look="camp"] .gui-hut__keeper,
+[data-look="camp"] .gui-hut__ask { display: none; }
+
+/* Over the roof's right edge: Zz while its orks sleep, a wheel while they work (the right half of the ork's
+   state sprites, js/icons.js OrkHead). */
+.gui-hut__doing { position: absolute; right: -12px; top: -6px; width: 16px; height: 16px; pointer-events: none;
+  image-rendering: pixelated; background: image-set(url("/ds/sprites/orks/ork-idle.png") 1x, url("/ds/sprites/orks/ork-idle@2x.png") 2x)
+  -24px 0 / 40px 16px no-repeat; animation: gui-doze 2.4s ease-in-out infinite; }
+.gui-hut__doing.is-busy { background-image: image-set(url("/ds/sprites/orks/ork-busy.png") 1x, url("/ds/sprites/orks/ork-busy@2x.png") 2x);
+  animation: gui-work .5s steps(2) infinite; }
+@keyframes gui-doze { 50% { transform: translateY(-3px); opacity: .55; } }
+@keyframes gui-work { 50% { transform: translateY(-1px); } }
+
+/* The ork that asks, by the door: its head and its !, pacing a step to and fro; it stops under the mouse. A press
+   answers it (js/orders.js); the hit area is wider than the sprite. */
+.gui-hut__caller { flex: none; align-self: flex-end; margin: 0 0 -2px 2px; padding: 6px 4px 2px; border: 0; background: none;
+  cursor: pointer; line-height: 0; animation: gui-pace 1.2s steps(2) infinite; }
+.gui-hut__caller > img { image-rendering: pixelated; }
+.gui-hut__caller:hover, .gui-hut__caller:focus-visible { animation-play-state: paused; }
+.gui-hut__caller:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 0; }
+@keyframes gui-pace { 50% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-hut__caller { animation: none; } }
+
+/* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
+/* A paved slab in the road's tan under its sprite, a little wider: its roads meet it (js/hut.js measure, js/town.js
+   ports). Office draws no sprite and no plinth: its roads meet the card. */
+.gui-hut__plinth { display: none; }
+[data-look="camp"] .gui-hut__roof { flex-direction: column; align-items: flex-start; }
+[data-look="camp"] .gui-hut__plinth { display: block; align-self: stretch; height: 8px; margin: 0 -4px; image-rendering: pixelated;
+  background: image-set(url("/ds/sprites/fence/plinth.png") 1x, url("/ds/sprites/fence/plinth@2x.png") 2x) 0 0 / 16px 8px repeat-x; }
+
+/* -- a yard: the fence (§3) ---------------------------------------------------------------------------------- */
+
+.gui-hut__yard-name { display: none; }
+
+[data-look="camp"] .gui-hut.is-yard { --fence-o: #120d08; --fence-m: #3f3120; --fence-h: #665233; --yard-ground: var(--panel);
+  --fence-row: image-set(url("/ds/sprites/fence/row.png") 1x, url("/ds/sprites/fence/row@2x.png") 2x);
+  --fence-side: image-set(url("/ds/sprites/fence/side.png") 1x, url("/ds/sprites/fence/side@2x.png") 2x);
+  --fence-rail: linear-gradient(90deg, var(--fence-o) 0 1px, var(--fence-h) 1px 3px, var(--fence-m) 3px 6px, var(--fence-o) 6px 7px); }
+/* Its own width in whole pickets (14 × 21 px), as a card stretched by the person is (js/hut.js YARD_STEP). */
+[data-look="camp"] .gui-hut.is-yard.m:not(.is-sized) { width: 294px; }
+
+/* Pickets along the bottom, the plain panel inside: text never sits on wood. The lower half of the bottom row stands
+   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. */
+[data-look="camp"] .gui-hut.is-yard:not(.is-folded) .ok-hut__card {
+  border: 0; box-shadow: none; image-rendering: pixelated; padding: 0 15px 21px;
+  background:
+    var(--fence-row) left bottom / 21px 21px repeat-x,
+    linear-gradient(var(--yard-ground), var(--yard-ground)) 15px var(--titlebar) / calc(100% - 30px) calc(100% - 12px - var(--titlebar)) no-repeat; }
+[data-look="camp"] .gui-hut.is-yard:not(.is-folded) .ok-hut__card::before { content: ""; position: absolute; left: 0; right: 0;
+  top: var(--titlebar); bottom: 14px; pointer-events: none; image-rendering: pixelated; animation: none; background:
+    var(--fence-side) left top / 15px 27px no-repeat space,
+    var(--fence-side) right top / 15px 27px no-repeat space,
+    var(--fence-rail) 4px 0 / 7px 100% no-repeat,
+    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
+[data-look="camp"] .gui-hut.is-yard.is-folded .ok-hut__card::before { display: none; }
+/* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
+   the fence its glow, as a hut's card does. */
+[data-look="camp"] .gui-hut.is-yard.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
+[data-look="camp"] .gui-hut.is-yard.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
+[data-look="camp"] .gui-hut.is-yard.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
+
+/* The title bar is the top fence: its pickets start where the house ends (--house-w, js/hut.js measure) and run to the
+   edge; its words went over the building (§3b). Fold keeps 26 px clear of the road handle at its right. */
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 0 0 var(--house-w, 15px);
+  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x;
+  background-origin: content-box; background-clip: content-box; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.no, .gui-type-icon, .gui-hut__spin, .gui-hut__name) { display: none; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title > .gui-hut__mark { align-self: center; margin-left: 6px; padding: 2px 4px;
+  background: var(--panel-raised); }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title > :is(.gui-hut__pin, .gui-hut__fold) { background: var(--panel-raised); }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__title > .gui-hut__fold { margin-right: 26px; }
+/* Its building a fifth bigger than a hut's, at the card's left edge, its plinth set into the fence line. */
+[data-look="camp"] .gui-hut.is-yard .gui-hut__sprite { zoom: .8; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__plinth { margin-left: 0; }
+[data-look="camp"] .gui-hut.is-yard > .ok-head { position: relative; z-index: 1; padding-left: 0; margin-bottom: calc(-1 * var(--titlebar)); }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor { line-height: 0; align-self: flex-end; margin-left: 2px; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__visitor img[data-kind="ork"] { zoom: calc(2 / 3); }
+
+/* Its name over the building, on the ground: muted caps with a pixel outline, cut short at its card's width. */
+[data-look="camp"] .gui-hut.is-yard > .ok-head { padding-top: 16px; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__yard-name { position: absolute; left: 0; bottom: calc(100% + 3px); display: flex; align-items: center;
+  gap: 5px; max-width: 260px; white-space: nowrap; pointer-events: none; font: 600 12px/1 var(--font-camp); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-muted); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__yard-name .no { color: var(--ink-comment); font-variant-numeric: tabular-nums; }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__yard-name .gui-type-icon { width: 12px; height: 12px; filter: drop-shadow(1px 1px 0 #000); }
+[data-look="camp"] .gui-hut.is-yard .gui-hut__yard-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+[data-look="camp"] .gui-hut.is-yard.is-selected .gui-hut__yard-name { color: var(--ink-gold); }
+[data-look="camp"] .gui-hut.is-yard.is-alert .gui-hut__yard-name { color: var(--alert); }
+
+/* Folded: its name, its building and the top fence alone. */
+[data-look="camp"] .gui-hut.is-yard.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }
+[data-look="camp"] .gui-hut.is-yard.is-folded .gui-hut__title { margin: 0; }
+
+/* -- the cards' background off (§3e): the town's ground shows through ------------------------------------------ */
+/* A look to try, chosen in the portrait's menu and kept in this browser (js/portrait.js): Shade lays a light dark veil
+   under the words, Ground nothing. The title bar keeps its plate; a card that asks keeps the fire's ground. */
+[data-look="camp"] { --card-shade: rgb(0 0 0 / .25); }
+[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-yard) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="shade"] .gui-hut:not(.is-alert):not(.is-yard) > .ok-hut__card { background: var(--card-shade); }
+[data-look="camp"][data-cards="ground"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: transparent; }
+[data-look="camp"][data-cards="shade"] .gui-hut.is-yard:not(.is-alert) { --yard-ground: var(--card-shade); }

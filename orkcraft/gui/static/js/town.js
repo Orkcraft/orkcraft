@@ -414,8 +414,9 @@ export function Town({ buildings, roads }) {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
     spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
     rects[b.id] = { x: spots[b.id].x, y: spots[b.id].y, w: size.w, h: size.h };
-    // A road meets the card's frame: in Camp under the sprite, in Office the card that holds the name
-    ports[b.id] = size.ch ? { x: rects[b.id].x, y: rects[b.id].y + (size.top || 0), w: size.w, h: size.ch } : rects[b.id];
+    // A road meets the plinth the building stands on in Camp (js/hut.js measure), the card that holds the name in Office
+    ports[b.id] = size.ch ? { x: rects[b.id].x + (size.px || 0), y: rects[b.id].y + (size.top || 0), w: size.pw || size.w, h: size.ch }
+      : rects[b.id];
   });
 
   /** Where a hut dropped at (x, y) would stand: its spot kept as fractions, and its ghost at the place it takes. */
