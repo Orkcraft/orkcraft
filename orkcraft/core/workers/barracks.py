@@ -54,6 +54,7 @@ from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward
+from orkcraft.sources import telemetry
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -513,7 +514,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         else:
             env = {"ORKCRAFT_ORC": f"{self.building_id}/steward"}
             runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:2]      # noqa: E731
-        text, cost = runner(harness, prompt, workdir, cancel, model)
+        with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
+            text, cost = runner(harness, prompt, workdir, cancel, model)
         out.steward_cost += cost or 0.0
         return text or ""
 

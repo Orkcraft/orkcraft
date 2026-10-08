@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass
 
 from orkcraft.realm import builders, halt
+from orkcraft.sources import telemetry
 
 BATCH = 20
 EXCERPT = 600
@@ -57,7 +58,8 @@ def judge(intent: str, signals: list, runner) -> tuple[list[Verdict], str]:
         batch = signals[at:at + BATCH]
         messages = "\n\n".join(f"[{i + 1}] {s.source} · {_fence(s.title)}\n{_fence(s.body)}" for i, s in enumerate(batch))
         try:
-            text, _cost = runner(PROMPT.format(intent=intent.strip()[:300], messages=messages))
+            with telemetry.tagged("look"):
+                text, _cost = runner(PROMPT.format(intent=intent.strip()[:300], messages=messages))
             answer = builders.extract_json(text)
             if answer is None:
                 raise RuntimeError("no JSON in the answer")

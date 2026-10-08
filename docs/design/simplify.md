@@ -1,6 +1,7 @@
 # Design — fewer minds, one word each: simplifying the town
 
-Status: written 2026-10-07; nothing built yet. Stage 0 measures before anything is cut; stage 4 (the
+Status: written 2026-10-07; stage 0a (the purpose and the ledger on disk) built 2026-10-08, see §11;
+*By purpose* in the Spend window (stage 0b) not yet. Stage 0 measures before anything is cut; stage 4 (the
 watchers) may start at once. Builds on the Town Hall's Council (`realm/fastpath.py`, `realm/council.py`,
 `realm/audit.py`), the Elders (`realm/elders.py`, `core/night.py`), the steward
 ([steward-at-work.md](steward-at-work.md)), the retros ([retros-and-goals.md](retros-and-goals.md),
@@ -151,3 +152,30 @@ Stages 1, 2 and 4 do not depend on each other; 3 waits for a week of stage 0.
 - Should the Pacer ever stop a run on 🕰, or only on ⛓️‍💥? This text says only ⛓️‍💥.
 - A War Tent session's question at night: the Warchief answers, or nobody (it waits for the person)?
   This text says the Warchief, under the Warder's rules.
+
+## 11. As built
+
+**Stage 0a — 2026-10-08** (the night session P3):
+
+- `sources/telemetry.py`: `PURPOSES` is the closed list of §2. `charge(usd, source, purpose=, tokens=,
+  building=, model=)`; a call with no purpose of its own takes the one its caller set with
+  `telemetry.tagged(purpose, building)` (a context variable, so per thread), else `work`; a word not on the
+  list is never written. The in-memory ledger keeps `Charge` tuples; the snapshot adds `side_by_purpose`
+  and `by_purpose` (all of this run's 🪙, transcripts included).
+- `.orkcraft/spend/calls.jsonl`: one line per call — `at`, `building`, `purpose`, `model`, `tokens`,
+  `usd` (null: unpriced), `source`. The town turns it on (`keep_ledger`) when it starts; a call that only
+  runs in memory (a test, a CLI with no town) writes nothing. `telemetry.calls(repo_root, since)` reads
+  it back for stage 0b. The housekeeping's `LOG_LIMIT` already covers every `*.jsonl` under `.orkcraft/`.
+- Transcript runs: a call that carries `ORKCRAFT_RUN` (a road's agent, a Barracks ork) is still not added
+  to 🪙 (its transcript counts it) but gets its ledger line with `"transcript": true` (`telemetry.noted`),
+  so *By purpose* sees it. `roads.run_agent` puts `ORKCRAFT_PURPOSE` in such a run's env, and the
+  session hook records it in `sessions.jsonl`; `Telemetry.refresh` sums transcript spend by that purpose.
+- Who says what: the steward's tasks map to a purpose in `steward.PURPOSE` (`purpose_of`; the Town
+  Hall's `answer` is `chat`), applied by `steward.runner_for` and `Worker.steward_runner` through
+  `builders.tagged`, and by the Barracks steward. The Fast Path is `build`, the Elders `answer`, the
+  Building and Town retros `retro`, the Lookout and the Watchtower's agent feed and Catapult's carrier
+  `look`, a Review board's discussion `review`, the Wiki's ingest `ingest` and its lint and spot-check
+  `check`. The building comes from `ORKCRAFT_ORC` when a call carries it. Everything else is `work`.
+- Not done here: the Spend window's *By purpose* (stage 0b, queue item B04). A call through a path not
+  listed above counts as `work`: the first week's numbers will show if a big one hides there.
+- Tests: `tests/test_telemetry.py` (the ledger, tags, transcripts, hook, housekeeping, a road agent).

@@ -386,13 +386,18 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         if session and (h := harnesses.get(harness)) and h.read_session:
             cmd = cmd + h.read_session(session, reopen)
         tool_env = h.env("read", scratch) if (h := harnesses.get(harness)) else {}
-        code, stdout, stderr = run_proc(cmd, workdir, {**os.environ, **tool_env, **env}, harness_stdin(harness, prompt),
-                                        wait, harness)
+        run_env = {**os.environ, **tool_env, **env}
+        if telemetry.charged(run_env):                    # the session hook records what it was for
+            run_env = {**telemetry.purpose_env(), **run_env}
+        code, stdout, stderr = run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
     if code != 0:
         raise failure(harness, code, stdout, stderr)
     result = result_of(harness, stdout, model=model)[:3]
-    if not telemetry.charged({**os.environ, **env}):     # no ORKCRAFT_RUN: its transcript is not this run's
-        telemetry.charge(result[1], f"{harness} agent")
+    what = dict(tokens=result[2], building=telemetry.building_of(env), model=model)
+    if not telemetry.charged(run_env):                    # no ORKCRAFT_RUN: its transcript is not this run's
+        telemetry.charge(result[1], f"{harness} agent", **what)
+    else:
+        telemetry.noted(result[1], f"{harness} agent", **what)
     return result
 
 

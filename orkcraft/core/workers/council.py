@@ -31,6 +31,7 @@ from orkcraft.core.workers.barracks import take_back
 from orkcraft.core.workers.council_setup import Setup
 from orkcraft.realm import pipes, roads, shelves
 from orkcraft.realm import team as tm
+from orkcraft.sources import telemetry
 
 WIKI_CHARS = 1500                 # of each page lent to the members, its start (they may read the rest)
 
@@ -391,9 +392,10 @@ class CouncilWorker(Worker):
 
         def work() -> None:
             try:
-                tm.run(d, team, steward, veto, cycles, budget, runner, kept, cancel,
-                       lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits,
-                       sessions=type(self).sessions if real else None, on_call=kept)
+                with telemetry.tagged("review", self.building_id):
+                    tm.run(d, team, steward, veto, cycles, budget, runner, kept, cancel,
+                           lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits,
+                           sessions=type(self).sessions if real else None, on_call=kept)
             except Exception as e:  # the town goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:

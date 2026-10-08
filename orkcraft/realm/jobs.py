@@ -136,8 +136,11 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
     if harness == "codex" and resume and resumed is None:
         cost = None                       # its running total holds earlier runs we cannot tell apart
+    what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
-        telemetry.charge(cost, f"{harness} worker")
+        telemetry.charge(cost, f"{harness} worker", **what)
+    else:
+        telemetry.noted(cost, f"{harness} worker", **what)
     return text, cost, tokens, session
 
 
@@ -158,8 +161,11 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     if code != 0:
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
+    what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
-        telemetry.charge(cost, f"{harness} reader")
+        telemetry.charge(cost, f"{harness} reader", **what)
+    else:
+        telemetry.noted(cost, f"{harness} reader", **what)
     return text, cost, tokens, ""
 
 

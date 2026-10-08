@@ -67,7 +67,7 @@ def test_a_look_reads_the_schema_and_composes_the_ids_itself():
     assert "Bash" in argv[argv.index("--disallowedTools") + 1] and "--json-schema" in argv
     assert "since 2026-10-07T10:00:00+00:00" in argv[2] and "WEB-1:old" in argv[2]
     assert any(src == "claude watch atlassian" and usd == 0.03
-               for _, usd, src in telemetry.charges(dt.datetime.now().astimezone() - dt.timedelta(minutes=1)))
+               for _, usd, src, *_ in telemetry.charges(dt.datetime.now().astimezone() - dt.timedelta(minutes=1)))
 
 
 @pytest.mark.parametrize("answer, kind, says", [

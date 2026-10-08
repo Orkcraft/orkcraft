@@ -62,6 +62,18 @@ TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", 
              "mine": {"plan": "Plan the research", "search": "Search the web", "check": "Group the findings"},
              "town_hall": {"answer": "Answer as the Warchief", "build": "Plan the town (Town planner)"}}
 
+# What each task's model calls are for, in the Spend window's *By purpose* (docs/design/simplify.md §2;
+# `telemetry.PURPOSES`); a task not named here is `work`.
+PURPOSE = {"watch": "retro", "redesign": "build", "keeper": "build", "roads": "build", "listen": "work",
+           "triage": "sort", "plan": "plan", "answer": "answer", "review": "review", "final": "review",
+           "title": "sort", "news": "look", "ideas": "retro", "judge": "sort", "decide": "review",
+           "search": "work", "check": "work", "build": "build"}
+
+
+def purpose_of(use: str, type_id: str = "") -> str:
+    """The purpose of one of the steward's tasks; the Town Hall's `answer` is the Warchief's `chat`."""
+    return "chat" if (type_id, use) == ("town_hall", "answer") else PURPOSE.get(use, "work")
+
 
 def _g(thrift: str, balance: str, quality: str) -> dict[str, str]:
     return {"thrift": thrift, "balance": balance, "quality": quality}
@@ -162,7 +174,8 @@ def runner_for(b: ts.BuildingSpec | None, use: str, fake: builders.Runner | None
     if fake is not None:
         return fake
     p = pick(b, use, harness_for(b), type_id=type_id, goal=goal, setting=setting)
-    return builders.runner_for(harness_for(b), p.tier or p.model or None)
+    return builders.tagged(builders.runner_for(harness_for(b), p.tier or p.model or None),
+                           purpose_of(use, type_id), b.id if b is not None else "")
 
 
 def set_models(b: ts.BuildingSpec, models: dict[str, str]) -> dict[str, str]:

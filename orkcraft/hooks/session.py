@@ -108,6 +108,9 @@ def record(harness: str, payload: dict, env: dict | None = None) -> dict | None:
         entry["run"] = run
         if _TERMINAL.match(terminal):
             entry["terminal"] = terminal
+        purpose = (env.get("ORKCRAFT_PURPOSE") or "").strip()
+        if purpose.isalpha() and len(purpose) <= 12:      # what the run was for (sources/telemetry.py PURPOSES)
+            entry["purpose"] = purpose
     project = project_of(cwd) if cwd else None
     log = project / ".orkcraft" / "sessions.jsonl" if project else LOG
     log.parent.mkdir(parents=True, exist_ok=True)

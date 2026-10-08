@@ -39,6 +39,7 @@ from pathlib import Path
 
 from orkcraft.realm import builders, fastpath
 from orkcraft.realm.orcs import Alert
+from orkcraft.sources import telemetry
 
 LOG = Path(".orkcraft") / "council" / "elders.jsonl"
 MAX_PER_NIGHT = 40               # defaults of the Council's settings `elders_per_night` / `elders_context`
@@ -178,7 +179,8 @@ def judge(alert: Alert, runner: fastpath.Runner | None, context_lines: int = CON
                            warn=WARN.format(notes=warn) if warn else "",
                            choices="\n".join(f"- {k}: {v}" for k, v in allowed.items()))
     try:
-        text, cost = runner(prompt)
+        with telemetry.tagged("answer"):
+            text, cost = runner(prompt)
     except RuntimeError as e:
         return Decision(None, f"the model failed: {e}"[:200], "none", warn=warn)
     answer = builders.extract_json(text) or {}

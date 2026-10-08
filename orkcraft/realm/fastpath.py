@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Callable
 
 from orkcraft.realm import audit
+from orkcraft.sources import telemetry
 
 COUNCIL_DIR = Path(".orkcraft") / "council"
 SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "weekly_at": "weekly sun 05:00",
@@ -386,7 +387,8 @@ def review(subject: Subject, repo_root: Path, existing: set[str] | frozenset[str
     if runner is None or verdict.blocked:
         return verdict
     try:
-        text, cost = runner(_prompt(subject, notes))
+        with telemetry.tagged("build"):
+            text, cost = runner(_prompt(subject, notes))
     except Exception as e:  # the CLI missing, a timeout, a bad answer: the rules stand
         verdict.error = str(e)[:200]
         return verdict

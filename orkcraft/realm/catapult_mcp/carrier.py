@@ -166,5 +166,5 @@ def carry(harness_id: str, server: str, tool: str, args, goal: str, cart, workdi
     if not out.ok and not out.tool and proc.returncode != 0 and out.error == "the carrier called no tool":
         out.error = ((proc.stderr or "").strip() or f"{h.id} exited with {proc.returncode}")[:300]
     from orkcraft.sources import telemetry
-    telemetry.charge(out.cost, f"{h.id} carry {server}")
+    telemetry.charge(out.cost, f"{h.id} carry {server}", purpose="look", model=MODEL or "")
     return out

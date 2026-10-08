@@ -183,7 +183,8 @@ def look(feed: Feed, since: str = "", seen: list[str] | None = None, run: Callab
             return Look(error="agent: stopped by Stop all — the next look starts from the same time", kind="network",
                         cost=spent if priced else None)
         cost = _cost(proc.stdout or "")
-        telemetry.charge(cost, f"claude watch {feed.opts.get('server', '')}")      # every run, answered or not
+        telemetry.charge(cost, f"claude watch {feed.opts.get('server', '')}", purpose="look",
+                         model=MODEL)      # every run, answered or not
         if cost is not None:
             spent, priced = spent + cost, True
         try:

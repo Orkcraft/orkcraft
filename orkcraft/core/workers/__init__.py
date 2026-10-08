@@ -145,10 +145,11 @@ class Worker:
     def steward_runner(self, use: str, setting: str = ""):
         """Its steward's model call for `use` on the model `steward_pick` names, on its steward's tool. Every
         model call that makes the building's results goes through here (tests/test_steward_work.py)."""
-        from orkcraft.realm import builders
+        from orkcraft.realm import builders, steward
         _b, tool = self._steward_of()
         p = self.steward_pick(use, setting)
-        return builders.runner_for(tool, p.tier or p.model or None)
+        return builders.tagged(builders.runner_for(tool, p.tier or p.model or None),
+                               steward.purpose_of(use, self.TYPE or self.btype.id), self.building_id)
 
     # -- its life -------------------------------------------------------------------------------
 

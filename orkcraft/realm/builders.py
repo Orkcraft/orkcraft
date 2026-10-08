@@ -132,11 +132,19 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     if proc.returncode != 0:
         why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
         raise tool_errors.ToolError(h.id, why, proc.returncode)
-    text, cost, _, _ = h.outcome(proc.stdout, 0, model or "")
+    text, cost, tokens, _ = h.outcome(proc.stdout, 0, model or "")
     if not text.strip() and (why := h.error(proc.stdout)):
         raise tool_errors.ToolError(h.id, f"{h.id} gave no answer: {why}")
-    telemetry.charge(cost, f"{h.id} -p {model or 'default'}")    # no transcript of this run: 🪙 here
+    telemetry.charge(cost, f"{h.id} -p {model or 'default'}", tokens=tokens, model=model or "")   # no transcript: 🪙 here
     return text, cost
+
+
+def tagged(runner: Runner, purpose: str, building: str = "") -> Runner:
+    """`runner` with its calls charged to `purpose` (telemetry.PURPOSES) of `building`."""
+    def run(prompt, m=None):
+        with telemetry.tagged(purpose, building):
+            return runner(prompt, m)
+    return run
 
 
 def runner_on(harness_id: str, model: str | None = None) -> Runner:

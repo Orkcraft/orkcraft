@@ -35,6 +35,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft.realm import builders, feedback, metrics, pressure
+from orkcraft.sources import telemetry
 
 DIR = Path(".orkcraft") / "optimize"
 SHRINK = 0.7
@@ -363,7 +364,8 @@ def propose(repo_root: Path, cand: Candidate, ps: list[Part], runner: builders.R
     for _ in range(attempts):
         prompt = base + ("\n\nYOUR LAST ANSWER WAS REJECTED:\n" + "\n".join(f"- {p}" for p in problems) if problems else "")
         try:
-            text, cost = runner(prompt)
+            with telemetry.tagged("retro", cand.building):
+                text, cost = runner(prompt)
         except Exception as e:  # the CLI missing, a timeout
             result.error = str(e)[:300]
             return result

@@ -26,6 +26,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft.realm import builders, catalog, feedback, metrics, nightround, optimize
+from orkcraft.sources import telemetry
 
 DIR = Path(".orkcraft") / "weekly"
 CHANGES = ("shrink", "chain", "script", "enrich", "set_config", "remove_road", "remove_building", "add_building", "note")
@@ -238,7 +239,8 @@ def run(repo_root: Path, scroll, specs: dict[str, dict], runner: builders.Runner
     prompt = PROMPT.format(camp=camp_text(repo_root, scroll, specs, audit_report), types=", ".join(camp_types()),
                            work=nightround.work_text(repo_root, specs) or "(no Task Fields board)")
     try:
-        text, cost = runner(prompt)
+        with telemetry.tagged("retro"):
+            text, cost = runner(prompt)
     except Exception as e:  # the CLI missing, a timeout
         return Result(error=str(e)[:300])
     data = builders.extract_json(text)

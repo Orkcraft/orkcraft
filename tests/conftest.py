@@ -92,8 +92,10 @@ def fresh_spend_ledger():
     """The side 🪙 ledger is process-wide: every test starts from an empty one."""
     from orkcraft.sources import telemetry
     telemetry.reset_charges()
+    telemetry.keep_ledger(None)
     yield
     telemetry.reset_charges()
+    telemetry.keep_ledger(None)
 
 
 @pytest.fixture(autouse=True)

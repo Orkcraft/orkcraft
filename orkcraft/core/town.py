@@ -77,6 +77,7 @@ class Town:
         # 🪙 / 🪵: sessions this run starts are tagged with its id (sources/telemetry.py).
         self.run_id = telemetry.new_run_id()
         self.telemetry = telemetry.Telemetry(self.repo_root, self.run_id)
+        telemetry.keep_ledger(self.repo_root)        # every model call, by purpose: .orkcraft/spend/calls.jsonl
         self.snapshot = telemetry.Snapshot()
         # How a callback from another thread reaches the face (the TUI hops to its UI thread); the
         # road engine and the workers call back through it. Alone, the town calls straight away.

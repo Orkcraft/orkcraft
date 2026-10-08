@@ -18,16 +18,22 @@ Barracks orcs and the Clan Fire's members — are charged here as they answer (`
 snapshot adds them to the same 🪙, so every limit and gate sees the whole spend. A call that carries
 `ORKCRAFT_RUN` (a road's agent) is not charged: its transcript already counts.
 
-    telemetry.charge(0.004, "claude -p haiku")    # from any thread
+    telemetry.charge(0.004, "claude -p haiku", purpose="build")    # from any thread
+
+Each call is also a line of `.orkcraft/spend/calls.jsonl` (`keep_ledger`): when, building, purpose, model,
+tokens, $ — the numbers the Spend window's *By purpose* reads (docs/design/simplify.md §2).
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import datetime as dt
 import json
 import threading
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import NamedTuple
 
 from orkcraft.sources import pricing
 from orkcraft.sources.sessions import log_file
@@ -40,19 +46,106 @@ def new_run_id() -> str:
 
 
 # -- the side ledger: model calls with no transcript of this run -----------------------------------
+#
+# Every model call says what it was for (docs/design/simplify.md §2): one `purpose` of a closed list, next
+# to its building. A call with no purpose of its own takes the one its caller set (`tagged`), else `work`.
 
-_LEDGER: list[tuple[dt.datetime, float | None, str]] = []      # (when, usd or None: unpriced, source)
+PURPOSES = ("work", "sort", "plan", "review", "check", "ingest", "answer", "look", "retro", "build", "chat")
+CALLS = Path(".orkcraft") / "spend" / "calls.jsonl"       # one line per call, under the repository
+
+
+class Charge(NamedTuple):
+    when: dt.datetime
+    usd: float | None          # None: unpriced
+    source: str
+    purpose: str = "work"
+    building: str = ""
+    model: str = ""
+    tokens: int | None = None
+
+
+_LEDGER: list[Charge] = []
 _LEDGER_LOCK = threading.Lock()
 LEDGER_KEEP = 10_000
+_TAG: contextvars.ContextVar[tuple[str, str]] = contextvars.ContextVar("orkcraft_charge_tag", default=("", ""))
+_KEPT: dict[str, Path | None] = {"root": None}
 
 
-def charge(usd: float | None, source: str) -> None:
-    """One model call's cost; None when it could not be priced (agy, or no cost in the answer)."""
+def keep_ledger(repo_root: Path | None) -> None:
+    """Write every call to `repo_root/.orkcraft/spend/calls.jsonl` from now on (None: memory only)."""
+    _KEPT["root"] = repo_root
+
+
+@contextlib.contextmanager
+def tagged(purpose: str = "", building: str = ""):
+    """The model calls in this block (on this thread) are for `purpose`, of `building`; what is not given
+    is kept from an outer block."""
+    outer = _TAG.get()
+    token = _TAG.set((purpose if purpose in PURPOSES else outer[0], building or outer[1]))
+    try:
+        yield
+    finally:
+        _TAG.reset(token)
+
+
+def purpose_now() -> str:
+    """The purpose set by the caller (`tagged`), else `work`."""
+    return _TAG.get()[0] or "work"
+
+
+def building_of(env: dict | None) -> str:
+    """The building of a call started with `ORKCRAFT_ORC` (`<building>/<ork>`), else ""."""
+    orc = str((env or {}).get("ORKCRAFT_ORC") or "")
+    return orc.split("/", 1)[0] if "/" in orc else ""
+
+
+def _entry(usd: float | None, source: str, purpose: str, building: str, model: str,
+           tokens: int | None) -> Charge:
+    tag_purpose, tag_building = _TAG.get()
+    purpose = purpose if purpose in PURPOSES else tag_purpose or "work"
+    tokens = int(tokens) if isinstance(tokens, (int, float)) and not isinstance(tokens, bool) and tokens >= 0 else None
+    return Charge(dt.datetime.now().astimezone(), None if usd is None else float(usd), source, purpose,
+                  building or tag_building, model, tokens)
+
+
+def _write(c: Charge, counted: bool = False) -> None:
+    root = _KEPT["root"]
+    if root is None:
+        return
+    line = {"at": c.when.isoformat(timespec="seconds"), "building": c.building, "purpose": c.purpose,
+            "model": c.model, "tokens": c.tokens, "usd": c.usd, "source": c.source}
+    if counted:
+        line["transcript"] = True                 # its transcript counts it in 🪙; the line is for the purposes
+    path = root / CALLS
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    except OSError:
+        pass                                      # the ledger must never stop a call
+
+
+def charge(usd: float | None, source: str, purpose: str = "", tokens: int | None = None,
+           building: str = "", model: str = "") -> None:
+    """One model call's cost; None when it could not be priced (agy, or no cost in the answer).
+    `purpose`: one of PURPOSES ("" or unknown: the caller's `tagged`, else `work`)."""
+    if usd is not None and (not isinstance(usd, (int, float)) or usd < 0):
+        return
+    c = _entry(usd, source, purpose, building, model, tokens)
+    with _LEDGER_LOCK:
+        _LEDGER.append(c)
+        del _LEDGER[:-LEDGER_KEEP]
+        _write(c)
+
+
+def noted(usd: float | None, source: str, purpose: str = "", tokens: int | None = None,
+          building: str = "", model: str = "") -> None:
+    """A call its transcript already counts (`charged`): only its line in the ledger, so the spend by
+    purpose sees it too; never added to 🪙 twice."""
     if usd is not None and (not isinstance(usd, (int, float)) or usd < 0):
         return
     with _LEDGER_LOCK:
-        _LEDGER.append((dt.datetime.now().astimezone(), None if usd is None else float(usd), source))
-        del _LEDGER[:-LEDGER_KEEP]
+        _write(_entry(usd, source, purpose, building, model, tokens), counted=True)
 
 
 def charged(env: dict | None) -> bool:
@@ -60,14 +153,38 @@ def charged(env: dict | None) -> bool:
     return bool((env or {}).get("ORKCRAFT_RUN"))
 
 
-def charges(since: dt.datetime) -> list[tuple[dt.datetime, float | None, str]]:
+def purpose_env(purpose: str = "") -> dict[str, str]:
+    """The env a transcript run carries so the session hook records what it was for."""
+    return {"ORKCRAFT_PURPOSE": purpose if purpose in PURPOSES else purpose_now()}
+
+
+def charges(since: dt.datetime) -> list[Charge]:
     with _LEDGER_LOCK:
-        return [c for c in _LEDGER if c[0] >= since]
+        return [c for c in _LEDGER if c.when >= since]
 
 
 def reset_charges() -> None:
     with _LEDGER_LOCK:
         _LEDGER.clear()
+
+
+def calls(repo_root: Path, since: dt.datetime | None = None) -> list[dict]:
+    """The ledger's lines on disk (oldest first), from `since` on; malformed lines are skipped."""
+    try:
+        lines = (repo_root / CALLS).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for raw in lines:
+        try:
+            e = json.loads(raw)
+        except ValueError:
+            continue
+        if not isinstance(e, dict) or (when := _ts(e.get("at"))) is None:
+            continue
+        if since is None or when >= since:
+            out.append(e)
+    return out
 
 
 def _ts(value: object) -> dt.datetime | None:
@@ -306,6 +423,8 @@ class Snapshot:
     cost_by_terminal: dict[str, float] = field(default_factory=dict)   # this run's spend per session
     side_usd: float = 0.0                              # model calls with no transcript (already in spent_usd)
     side_by_source: dict[str, float] = field(default_factory=dict)
+    side_by_purpose: dict[str, float] = field(default_factory=dict)
+    by_purpose: dict[str, float] = field(default_factory=dict)         # all of spent_usd, by what it was for
 
 
 class Telemetry:
@@ -314,6 +433,7 @@ class Telemetry:
         self.run_id = run_id
         self.started = started or dt.datetime.now().astimezone()
         self._meters: dict[str, _Meter | _PiMeter | _HermesMeter | _CodexMeter] = {}
+        self._purpose: dict[str, str] = {}               # terminal key → what its session was for (the hook's)
 
     def _this_run(self) -> tuple[dict[str, tuple[str, str]], set[str]]:
         """terminal key → (harness, transcript path or Hermes session id) for this run's sessions that
@@ -336,6 +456,8 @@ class Telemetry:
                 continue
             terminal = str(e.get("terminal") or e.get("session") or "")
             harness = str(e.get("harness") or "unknown")
+            if e.get("purpose") in PURPOSES:
+                self._purpose[terminal] = e["purpose"]
             if harness == "hermes" and e.get("session"):
                 transcripts[terminal] = (harness, str(e["session"]))
             elif harness in METERED and e.get("transcript"):
@@ -362,14 +484,19 @@ class Telemetry:
             snap.context_by_terminal[terminal] = meter.context
             snap.model_by_terminal[terminal] = meter.model
             snap.cost_by_terminal[terminal] = meter.cost
+            purpose = self._purpose.get(terminal, "work")
+            snap.by_purpose[purpose] = snap.by_purpose.get(purpose, 0.0) + meter.cost
         snap.sessions = len(transcripts)
-        for _, usd, source in charges(self.started):
-            if usd is None:
-                snap.unpriced.add(source)
+        for c in charges(self.started):
+            if c.usd is None:
+                snap.unpriced.add(c.source)
                 continue
-            snap.side_usd += usd
-            snap.side_by_source[source] = snap.side_by_source.get(source, 0.0) + usd
+            snap.side_usd += c.usd
+            snap.side_by_source[c.source] = snap.side_by_source.get(c.source, 0.0) + c.usd
+            snap.side_by_purpose[c.purpose] = snap.side_by_purpose.get(c.purpose, 0.0) + c.usd
         snap.spent_usd += snap.side_usd
+        for purpose, usd in snap.side_by_purpose.items():
+            snap.by_purpose[purpose] = snap.by_purpose.get(purpose, 0.0) + usd
         return snap
 
 

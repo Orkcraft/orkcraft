@@ -34,7 +34,7 @@ from orkcraft.env import getenv
 from orkcraft.core import runners
 from orkcraft.realm import agenda, catalog, daybook, jobs, quicknote, roads, shelves, wiki, wikifind
 from orkcraft.realm import team as tm
-from orkcraft.sources import lore
+from orkcraft.sources import lore, telemetry
 
 SETTLE_S = 25.0                 # the sources must stay as they are this long before an ingest starts by itself
 REVIEW_SAMPLE = 2
@@ -454,7 +454,8 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         def work() -> None:
             cost = None
             try:
-                text, cost, _tokens, _session = runner(harness, prompt, root, cancel, model, env, "")
+                with telemetry.tagged("ingest" if what == "ingest" else "check", self.building_id):
+                    text, cost, _tokens, _session = runner(harness, prompt, root, cancel, model, env, "")
                 job.result, job.outcome, job.cost_usd = text, "done", cost
             except InterruptedError:
                 job.error, job.outcome = "stopped", "interrupted"
@@ -570,7 +571,8 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
 
         def work() -> None:
             try:
-                tm.run(d, team, steward, veto, REVIEW_CYCLES, budget, runner, None, cancel, brief_of)
+                with telemetry.tagged("check", self.building_id):
+                    tm.run(d, team, steward, veto, REVIEW_CYCLES, budget, runner, None, cancel, brief_of)
             except Exception as e:                            # a failed review must not take the camp down
                 d.outcome, d.error = "error", str(e)[:300]
             if d.outcome == "asked":                          # a spot-check never waits for the operator
