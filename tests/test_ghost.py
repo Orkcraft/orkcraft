@@ -87,4 +87,4 @@ async def test_without_a_town_the_building_rises_at_once(fake_repo: Path, monkey
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=SIZE) as pilot:
         await _settle(pilot)
-        assert app.place_and_raise(app._type_spec("lake")) and app.desktop.ghost is None
+        assert app.place_and_raise(app._type_spec("pit")) and app.desktop.ghost is None

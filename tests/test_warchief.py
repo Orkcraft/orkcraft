@@ -15,7 +15,7 @@ from orkcraft.core.town import Town
 from orkcraft.core.workers.town_hall import TOWN_HALL
 from tests.test_town_builder import GOOD, _runner
 
-TYPES = {"pit", "fields", "lake", "scrolls"}
+TYPES = {"pit", "fields", "scrolls"}
 HERE = {"forge", "pit_1"}
 
 
@@ -64,7 +64,7 @@ def test_a_plan_is_the_town_builders_reviewed_by_the_council_and_raised_on_build
     assert "DO:" in asked[0] and "The person points at" in asked[0]                # how to delegate, and what is pointed at
     c = w.chat[-1]["card"]
     assert c["kind"] == "plan" and [s["state"] for s in c["steps"]] == ["done", "done"]   # the Town Builder, the Council
-    assert [b["title"] for b in c["plan"]["buildings"]] == ["Episode Drops", "Episode Preview", "Show Notes"]
+    assert [b["title"] for b in c["plan"]["buildings"]] == ["Episode Drops", "Episode Board", "Show Notes"]
     assert "DO:" not in w.chat[-1]["text"] and not town.scroll.building("inbox")           # nothing stands before Build
     assert w.card_act(c["id"], "build")
     assert w.chat[-1]["card"]["state"] == "done"

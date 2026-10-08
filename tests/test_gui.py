@@ -348,7 +348,8 @@ def test_an_old_scroll_s_lake_leaves_the_map_and_its_road_opens_in_lake(fake_rep
     checkpoint.ensure(fake_repo)
     old = Town(fake_repo, auto_commit=False)
     src = buildings.raise_spec(old, buildings.type_spec(old, "fields")).id
-    lake = buildings.raise_spec(old, buildings.type_spec(old, "lake")).id
+    lake = buildings.raise_spec(old, {"id": "lake", "type": "lake", "title": "Lake of Insight", "icon": "🌊",   # as kept then
+                                      "summary": "the inspector", "orc": {"name": "Seer", "role": "what it shows"}}).id
     after = buildings.raise_spec(old, buildings.type_spec(old, "fields")).id
     scroll.subscribe(old.scroll, lake, src, "tasks.created")
     scroll.subscribe(old.scroll, after, lake, "lake.viewed")
@@ -708,8 +709,8 @@ def test_a_redesign_runs_as_a_job_and_its_layout_is_taken(fake_repo, isolated_la
     from orkcraft.core import runners
     from orkcraft.design import ui
     host = _host(fake_repo)
-    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "lake"))
-    good = ui.default("lake")
+    built = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit"))
+    good = ui.default("pit")
     good["panes"][1]["size"] = 5
     monkeypatch.setattr(runners, "STEWARD_RUNNER",
                         lambda p: (json.dumps({"proposals": [{"type": "ui", "ui": good, "why": "a bigger page"}]}), 0.01))
