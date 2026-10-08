@@ -19,7 +19,7 @@ def intent_blurb(it: intents.Intent) -> Text:
 
 
 def intent_label(it: intents.Intent, star: bool) -> Text:
-    """"⭐ Review War Tent ★  store reviews sorted, replies drafted" — the ork name, then plain words."""
+    """"⭐ Review Lodge ★  store reviews sorted, replies drafted" — the ork name, then plain words."""
     t = Text(it.label, style="bold")
     if star:
         t.append(" ★", style="bold")

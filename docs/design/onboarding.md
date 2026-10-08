@@ -110,10 +110,10 @@ Stored: `tools` (enabled, billing) and `profile.ai_tools` = {tool: {title, like,
 
 ## 5. What should your first town do?
 
-The role's three intents — ready towns, raised with no model — each named the ork way and said
-plainly beside it (“⭐ Review War Tent — store reviews sorted, replies drafted”), those that fit
-the day first with ★; the buildings of the highlighted one below. A dropdown browses other roles'
-intents. **❓ None fits** — closed with a note when Claude Code is off — opens the interview.
+The role's three intents — ready towns, raised with no model, one for each rhythm (its daily work,
+every week, every month: `intents.RHYTHMS`) — each named the ork way and said plainly beside it
+(“⭐ Review Lodge — store reviews sorted, replies drafted”), those that fit the day first with ★;
+the buildings of the highlighted one below. A dropdown browses other roles' intents. **❓ None fits** — closed with a note when Claude Code is off — opens the interview.
 **🏰 Empty town** sits at the bottom, beside the buttons.
 
 ## 5b. The interview — when none fits

@@ -68,9 +68,10 @@ def type_spec(town: Town, type_id: str) -> dict | None:
             "orc": {"name": t.orc, "role": t.preview[:80]}}
 
 
-def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Building | None:
+def raise_spec(town: Town, spec: dict, hut: list[float] | None = None, folded: bool | None = None) -> Building | None:
     """Save a checked spec and stand its building in the active orkspace's scroll (at `hut`, the
-    fractions of the town where its ghost settled). None, and said so, when the spec is refused."""
+    fractions of the town where its ghost settled; `folded` overrides the type's word, as the
+    onboarding does to raise a whole town compact). None, and said so, when the spec is refused."""
     spec = catalog.migrate(spec)
     problems = masonry.save_spec(town.repo_root, spec, existing_ids=town.taken_ids())
     if problems:
@@ -81,7 +82,7 @@ def raise_spec(town: Town, spec: dict, hut: list[float] | None = None) -> Buildi
     if hut is not None and placed is not None:
         placed.hut = hut
     if placed is not None:
-        placed.folded = catalog.type_of(spec).folded     # the type's word counts once, when it is raised
+        placed.folded = catalog.type_of(spec).folded if folded is None else folded   # counts once, when raised
     building = custom_building(spec)
     town.buildings.append(building)
     town.custom_specs[spec["id"]] = spec

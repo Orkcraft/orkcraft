@@ -31,7 +31,7 @@ What changed from the TUI, and why:
   ork's path is **Empty town, I'll build it myself** on step 4; Skip is allowed everywhere (the run is 3–5
   screens); what the planner reads of a person's experience comes from the tools and MCP servers they have.
 - **Industry and the typical day are gone.** They only ordered the intents (★); the town step now shows the
-  class's towns as tabs, the first one starred.
+  class's towns as tabs, every day · every week · every month, the day's one starred.
 - **👍 / 👎 per tool is gone.** Only the planner read it; how a tool is rated belongs to an Agent pool's window,
   where it picks the model.
 - **The camp rules are no longer a step.** They are a card over the map while the town goes up (§6): nothing
@@ -89,7 +89,17 @@ The servers are read from all six tools already (`realm/mcp.py`: Hermes' `mcp_se
 
 ## 5. Your first town
 
-The class's towns (`intents.for_role`), one tab each, the first starred. Each is drawn on the class's ground:
+The class's three towns (`intents.for_role`), one tab each, named by how often they work (`intents.RHYTHMS`):
+
+| Tab | What it does | How it starts |
+|---|---|---|
+| ★ **Every day** | the class's daily loop: a developer's Jira tickets to merged branches, a manager's mail sorted and every meeting with its brief | from what comes in (mail, mentions, tickets, a paste, the calendar) |
+| **Every week** | what the class does once a week: a retro board with its facts, the week's report, the full regression run | a Schedule (a Watchtower's `cron`, e.g. `weekly fri 14:00`) |
+| **Every month** | what it does every month or quarter: the goals' status, the investor update, the design system's audit | a Schedule on the first of the month (`0 9 1 * *`) |
+
+The day's town comes first and starred: it pays off on the first day, while the week's and the month's wait for
+their schedule. The week's and the month's are built the same way: the Schedule → (a wiki) → an Agent pool whose
+instructions (`orders`) say what to prepare → a Review board → an Output to accept. Each is drawn on the class's ground:
 the buildings' header sprites in a row joined by roads, a plate with each one's name and what it does, and the
 MCP glyphs on the agents. Below: **How it works** (the plan's summary) and three buttons.
 
@@ -122,15 +132,28 @@ that fails, the step says so and the order waits in the Town Hall, as before.
 No full-screen progress bar: the onboarding leaves and the town is drawn, and the buildings go up on the map one
 step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of the person.
 
-- **Bottom left, the log:** every step with ✓ done, ⚒ now (it bobs; still under `prefers-reduced-motion`),
-  · next, ✗ failed. While the planner draws: "The town planner is drawing your town…". At the end:
-  **Open the town**, which closes the onboarding.
-- **Bottom right, the Autonomy card:** "While they build: how free are your orks?" with the three levels
-  (`town.settings`, `town.settings.set`, as Settings uses them). Later and Done put it away; the default stands.
+- **One card, bottom left** — the only dialog while the town goes up, so the map stays in view beside it:
+  - **How it goes:** a bar of the steps done and the one going on now (⚒); *All steps* opens the list with ✓
+    done, ⚒ now, · next, ✗ failed. While the planner draws: "The town planner is drawing your town…".
+  - **How free are your orks?** The three levels (`town.settings`, `town.settings.set`, as Settings uses
+    them); the chosen one says what it means. Quiet hours 23:00–08:00 on or off (`onboarding.quiet`).
+  - **Share anonymous usage stats**, when it was never answered: off unless ticked, sent with **Open the
+    town** (`usage.share`). The usage dialog (js/settings.js `UsageAsk`) waits while the onboarding is on.
+  - **Open the town** closes the onboarding once the town stands. Every choice applies at once and changes
+    any time in Settings.
+- **A road back is a return road.** Roads never close a loop (`scroll_roads.subscribe`); a plan's road that
+  brings a result back (a Barracks' `pool.done` to its Task Fields or War Drum) says `"returns": true`, and
+  `town_builder.check` refuses a loop before anything is raised.
 - **On the map, the plan first.** Each building's spot is chosen before it stands (four across, as a hut
   without a spot), so the whole town is drawn at once as dashed plans where it will be (`js/town.js` with
   `Ghost`). The one going up now is scaffolding, its sprite rising out of the ground; when it stands, its hut
   rises into the same place once (`is-fresh`). No motion under `prefers-reduced-motion`.
+- **Compact, so a whole town fits.** The plans are half a hut (a small roof and one line), the rows step a fifth
+  of the town down (`onboarding.ROW`), and the quiet buildings stand folded (docs/design/folded-cards.md): the
+  title bar alone, until trouble peeks one or the person unfolds it. What the person works in every day stands
+  open (`onboarding.OPEN`): Task Fields, Output, External listeners and the Drop. Eight buildings keep to the top of the map, clear of
+  the log and the Autonomy card. The ready town's preview on step 4 draws each sprite at its own size beside a
+  narrow plate, so eight fit in a row; its words keep their size.
 - **Quiet hours** on the Autonomy card: 23:00–08:00 on or off (`onboarding.quiet`; the hours themselves in
   Settings).
 - **The class's ground at once:** the first orkspace takes the class's biome when the town is chosen

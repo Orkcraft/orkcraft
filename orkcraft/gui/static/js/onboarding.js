@@ -10,9 +10,9 @@ import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { MascotHead, BIOMES, headerSprite } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
+import { USAGE_WHAT } from "./settings.js";
 
 const asking = signal(false);          // the Request a tool dialog
-const autonomyLater = signal(false);   // the Autonomy card was put away
 
 const send = (name, args = {}) => command(name, args).catch(() => {});
 
@@ -178,8 +178,7 @@ function TownPreview({ it, biome }) {
   return html`<${Ground} biome=${biome} className="gui-onb__town">
     ${it.buildings.map((b, i) => html`<div key=${b.key} class="gui-onb__lot">
       <div class="gui-onb__house">
-        <img class="ok-sprite" src=${headerSprite(b.type, biome)} alt="" draggable="false"
-          srcset=${`${headerSprite(b.type, biome).replace(/\.png$/, "@2x.png")} 1x`} />
+        <img class="ok-sprite" src=${headerSprite(b.type, biome)} alt="" draggable="false" />
         ${b.badges.length > 0 && html`<span class="gui-onb__badges">${b.badges.map((g) => html`<${Glyph} key=${g} id=${g} />`)}</span>`}
       </div>
       <div class="gui-onb__plate">
@@ -199,7 +198,7 @@ function TownStep({ o }) {
     ${it ? html`
       <div class="ok-tabs" role="tablist">
         ${o.towns.map((x, i) => html`<button key=${x.id} role="tab" aria-selected=${i === pick}
-            class=${cls("ok-tab", { "is-active": i === pick })} onClick=${() => setPick(i)}>${i === 0 ? "★ " : ""}${say(x.title)}</button>`)}
+            class=${cls("ok-tab", { "is-active": i === pick })} onClick=${() => setPick(i)}>${i === 0 ? "★ " : ""}${x.rhythm ? `${say(x.rhythm)} · ` : ""}${say(x.title)}</button>`)}
       </div>
       <${TownPreview} it=${it} biome=${o.biome} />
       <div class="gui-onb__how">
@@ -265,46 +264,67 @@ function SurveyStep({ o }) {
   </section>`;
 }
 
-// -- 5 · Setting up the town: over the map --------------------------------------------------------------
+// -- 5 · Setting up the town: one card over the map ------------------------------------------------------
+// How the building goes, how free the orks are, quiet hours and the usage question: one card, so the town
+// stays in view beside it. Each choice applies at once; Open the town closes it when the town stands.
 
 const MARK = { done: "✓", now: "⚒", next: "·", failed: "✗" };
 
 function Raising({ o }) {
   const r = o.raising;
+  const t = town.value;
+  const [steps, setSteps] = useState(false);
+  const [share, setShare] = useState(false);
   const done = r.phase === "done" || r.phase === "failed";
+  const total = r.steps.length;
+  const ok = r.steps.filter((s) => s.state === "done").length;
+  const now = r.steps.find((s) => s.state === "now");
+  const ask = !!(t && t.usage_ask);
+  const status = r.phase === "failed" ? `✗ ${say("Stopped")}` : done ? `✓ ${say(`${ok} of ${total} done`)}`
+    : now ? `⚒ ${say(now.label)}` : "…";
+  const open = () => {
+    if (ask) command("usage.share", { share }).catch(() => {});
+    send("onboarding.close");
+  };
   return html`<div class="gui-onb__over">
-    <section class="gui-onb__log ok-win" aria-live="polite">
+    <section class="gui-onb__setup ok-win" aria-live="polite">
       <span class="ok-font-label">${r.phase === "planning" ? say("The town planner is drawing your town…") : say(`${r.title} · setting up`)}</span>
-      <ul class="gui-onb__steplist">
-        ${r.steps.map((s, i) => html`<li key=${i} class=${`is-${s.state}`}><span aria-hidden="true">${MARK[s.state]}</span> ${s.label}</li>`)}
-      </ul>
+      <div class="gui-onb__bar" role="progressbar" aria-valuemin="0" aria-valuemax=${total} aria-valuenow=${ok}>
+        <i style=${`width:${total ? (100 * ok) / total : 0}%`}></i></div>
+      <button class=${cls("gui-onb__now ok-font-status", { "is-done": done })} aria-expanded=${steps}
+        onClick=${() => setSteps(!steps)}>${status}<span class="ok-tone-muted">${steps ? "Hide steps" : "All steps"}</span></button>
+      ${steps && html`<ul class="gui-onb__steplist">
+        ${r.steps.map((s, i) => html`<li key=${i} class=${`is-${s.state}`}><span aria-hidden="true">${MARK[s.state]}</span> ${say(s.label)}</li>`)}
+      </ul>`}
       ${r.error && html`<p class="ok-font-status ok-tone-error">${r.error}</p>`}
-      ${done && html`<button class="ok-btn primary" onClick=${() => send("onboarding.close")}>Open the town</button>`}
+      <${Freedom} o=${o} />
+      ${ask && html`<label class="ok-check">
+        <input type="checkbox" class="gui-onb__hide" checked=${share} onChange=${() => setShare(!share)} />
+        <i>${share ? "✓" : ""}</i><span>${say("Share anonymous usage stats")}</span></label>
+        <p class="ok-font-status ok-tone-muted">${say(USAGE_WHAT)}</p>`}
+      <div class="gui-onb__foot"><span class="ok-font-status ok-tone-muted">All of this changes any time in Settings.</span>
+        <span class="gui-onb__spacer"><button class="ok-btn primary" disabled=${!done} onClick=${open}>Open the town</button></span></div>
     </section>
-    ${!autonomyLater.value && html`<${AutonomyCard} o=${o} />`}
   </div>`;
 }
 
-function AutonomyCard({ o }) {
+function Freedom({ o }) {
   const [s, setS] = useState(null);
   if (s === null) { command("town.settings").then(setS, () => {}); return null; }
   const pick = (id) => command("town.settings.set", { autonomy: id }).then(setS, () => {});
-  return html`<section class="gui-onb__corner ok-win" role="dialog" aria-label=${say("How free are your orks?")}>
-    <h2 class="gui-onb__corner-title">While they build: how free are your orks?</h2>
+  return html`<div class="gui-onb__freedom">
+    <h2 class="gui-onb__corner-title">How free are your orks?</h2>
     <p class="ok-font-status ok-tone-muted">When an ork asks a question or wants to change its building.</p>
-    <div class="gui-onb__levels" role="radiogroup">
+    <div class="gui-onb__levels" role="radiogroup" aria-label=${say("How free are your orks?")}>
       ${s.levels.map((lv) => html`<button key=${lv.id} role="radio" aria-checked=${s.autonomy === lv.id}
           class=${cls("gui-onb__level", { "is-on": s.autonomy === lv.id })} onClick=${() => pick(lv.id)}>
-        <span class="ok-font-body"><b>${say(lv.title)}</b></span><span class="ok-font-status ok-tone-muted">${say(lv.questions)}</span></button>`)}
+        <span class="ok-font-body"><b>${say(lv.title)}</b></span>${s.autonomy === lv.id
+          && html`<span class="ok-font-status ok-tone-muted">${say(lv.questions)}</span>`}</button>`)}
     </div>
     <label class="ok-check">
       <input type="checkbox" class="gui-onb__hide" checked=${o.quiet} onChange=${() => send("onboarding.quiet", { on: !o.quiet })} />
       <i>${o.quiet ? "✓" : ""}</i><span>🌙 Quiet hours 23:00–08:00: no alerts, questions wait</span></label>
-    <p class="ok-font-status ok-tone-muted">Both change any time in Settings.</p>
-    <div class="gui-onb__foot"><span class="gui-onb__spacer"></span>
-      <button class="ok-btn" onClick=${() => { autonomyLater.value = true; }}>Later</button>
-      <button class="ok-btn primary" onClick=${() => { autonomyLater.value = true; }}>Done</button></div>
-  </section>`;
+  </div>`;
 }
 
 // -- the town's plan on the map (js/town.js draws these where each building will stand) --------------------
@@ -331,7 +351,7 @@ export function Ghost({ g, spot, biome }) {
       ${now && html`<img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
         <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>`}
     </div>
-    <div class="gui-onb__ghost-card"><span class="gui-onb__plate-name">${say(g.title)}</span>
+    <div class="gui-onb__ghost-card"><span class="gui-onb__ghost-name">${say(g.title)}</span>
       <span class="ok-font-status ok-tone-muted">${now ? "building…" : "planned"}</span></div>
   </div>`;
 }
