@@ -19,7 +19,7 @@ What comes by road:
 
 `send_new`: every new task goes down the roads as it is (`tasks.sent`, its text and ref), as if `s` were
 pressed — a Barracks takes it, and its results come back to the card. It **settles** first: held `settle`
-seconds (120; 0 sends at once), a related task that comes meanwhile joins it and both go as one; Not urgent
+seconds (0 by default: at once; the open board picks it), a related task that comes meanwhile joins it and both go as one; Not urgent
 waits `later_minutes`; a related task that comes after it went goes as an addition to it
 (core/workers/fields_settle.py, docs/design/settle-and-join.md).
 

@@ -26,14 +26,16 @@ It applies to a board that sends its tasks by itself (`send_new: true`): that is
 become ork work without anyone pressing a key, so that is where a hasty send costs a rework. A board
 where the person presses **Send** keeps that press as it is: an explicit send goes at once.
 
-On such a board it is **the default**: `settle` is 120 seconds unless the building says otherwise
-(`settle: 0` sends at once, as before). Two minutes is the length of "wait, one more thing": short enough
-that nobody waits for the orks, long enough to catch the second thought. Every waiting card says when it
-goes and has **Send now**, so the wait is never a surprise and never a trap.
+A new task goes **at once by default** (`settle: 0`): a wait nobody asked for looked like a board that
+does nothing. The open board says it in its head — **New tasks go: at once · after 30 s · 1 · 2 · 5 ·
+10 min** — and the person picks a wait there (it is the building's `settle`). Two minutes is the length of
+"wait, one more thing": short enough that nobody waits for the orks, long enough to catch the second
+thought. Changing it moves what waits now: by the new wait from when it came, and at once goes now. Every
+waiting card says when it goes and has **Send now**, so the wait is never a surprise and never a trap.
 
 | setting | default | what it does |
 |---|---|---|
-| `settle` | `120` | seconds a new task waits on the board before it goes; `0` sends at once |
+| `settle` | `0` | seconds a new task waits on the board before it goes; `0` sends at once (the board's **New tasks go**) |
 | `later_minutes` | `60` | how long a task marked **Not urgent** waits |
 
 ## 2. A task settles (step 1)

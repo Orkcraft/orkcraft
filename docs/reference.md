@@ -223,7 +223,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     its title and text — a Barracks takes it as a task, a Clan Fire reviews it) · `d` delete it ·
     `N` a new lane of notes. The quick actions are + New task and 🗒 New note.
   - **A task settles before it goes** ([design](design/settle-and-join.md)). On a board that sends its
-    tasks by itself (`send_new`) a new task waits `settle` seconds (120; `0` sends at once): ⏳ goes at …
+    tasks by itself (`send_new`) a new task waits `settle` seconds (`0` by default: it goes at once; **New tasks go** in the board's head picks a wait): ⏳ goes at …
     and Send now on the card. A related task that comes meanwhile — by the words they share, on this
     machine, no model — joins it (↳ with …, Split off) and both go to the orks as one task, what came later
     winning where they disagree; a near one asks Join or Keep apart. 🐢 Not urgent waits `later_minutes`

@@ -299,9 +299,26 @@ function Head({ id, data, setDialog }) {
     ${data.todos && html`<span><b>${open}</b>/${data.todos.cards.length} ${say("to-dos open")}</span>
       <span><b>${notes}</b> ${say("notes")}</span>`}
     <span class="fields-head__spacer"></span>
+    <${SettleSelect} id=${id} data=${data} />
     <button class="ok-act" title=${say("A lane of its own for notes")} onClick=${() => setDialog({ folder: true })}>
       <span class="ok-act__label">${say("New note folder")}</span></button>
   </div>`;
+}
+
+const waitLabel = (s) => (s === 0 ? "at once" : s < 60 ? `after ${s} s` : `after ${s / 60} min`);
+
+/** On a board that sends its tasks by itself: how long a new task waits before it goes, so a related one
+ *  that comes meanwhile goes with it (docs/design/settle-and-join.md). At once by default. */
+function SettleSelect({ id, data }) {
+  if (data.settle === null || data.settle === undefined) return null;
+  const choices = (data.settle_choices || []).includes(data.settle) ? data.settle_choices
+    : [...(data.settle_choices || []), data.settle].sort((a, b) => a - b);
+  return html`<label class="fields-wait" title=${say("A related task that comes meanwhile goes with it as one task")}>
+    ${say("New tasks go")}
+    <select class="ok-input" value=${String(data.settle)} aria-label=${say("When new tasks go to the orks")}
+      onChange=${(e) => act(id, "settle", { seconds: Number(e.target.value) }).catch(() => {})}>
+      ${choices.map((s) => html`<option key=${s} value=${String(s)}>${say(waitLabel(s))}</option>`)}
+    </select></label>`;
 }
 
 function Board({ id, data }) {
