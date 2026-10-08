@@ -58,7 +58,7 @@ function Act({ label, title, onClick }) {
 
 // -- dialogs: 👎 for a building, a note for an ork's 👎, the chronicles --------------------------------
 
-function DislikeDialog({ b, onClose, onDone }) {
+export function DislikeDialog({ b, onClose, onDone }) {
   const [ctx, setCtx] = useState(null);
   const [note, setNote] = useState("");
   useEffect(() => { command("building.dislike_context", { id: b.id }).then(setCtx, () => setCtx({ last: "", cascade: [] })); }, [b.id]);
@@ -77,7 +77,7 @@ function DislikeDialog({ b, onClose, onDone }) {
   </${Dialog}>`;
 }
 
-function NoteDialog({ title, onClose, onSend }) {
+export function NoteDialog({ title, onClose, onSend }) {
   const [note, setNote] = useState("");
   return html`<${Dialog} title=${title} text=${say("What went wrong?")} onCancel=${onClose} warn
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>

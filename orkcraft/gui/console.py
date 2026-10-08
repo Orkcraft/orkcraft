@@ -177,7 +177,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
                                                      "expression": member.trigger.get("expression", "")},
                 "triggers": [[k, name] for k, (_, name) in TRIGGERS.items()],
                 "uses_model": bool(member.uses_model), "steps": steps,
-                "harnesses": list(scroll.HARNESSES), "tiers": tier_choices()}
+                "harnesses": list(scroll.HARNESSES), "ready": list(self.harnesses()), "tiers": tier_choices()}
 
     def dislike_context(self, args: dict) -> dict:
         last, cascade = core_buildings.dislike_context(self.town, self._spec(args).id)

@@ -12,7 +12,7 @@
 // Footprint). A card stretched larger shows more (docs/design/building-views.md §1a): its size is kept in the
 // Town Scroll (`hut.size`).
 import { signal } from "@preact/signals";
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
@@ -21,7 +21,7 @@ import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
 import { town, say, command } from "./link.js";
-import { openOrders } from "./orders.js";
+import { Outside } from "./visit.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
@@ -181,34 +181,13 @@ function Keeper({ garrison, alert, yard, visit }) {
 
 // -- its orks, seen from outside (docs/design/yards.md §4) -----------------------------------------------------
 // In Camp the head left the title bar: a building says what its orks do over its roof — Zz while they sleep, a
-// wheel while they work — and the one that asks comes out by the door, where a press answers it. A yard shows
-// nothing: no ork lives in it; one that comes stands by its door too. Office keeps its words (office.css).
+// wheel while they work. A yard shows nothing: no ork lives in it. Its ork comes out onto the plinth under the
+// mouse, or by itself to ask (js/visit.js). Office keeps its words (office.css).
 
 function Doing({ b, busy }) {
   if (b.yard || b.alert || !b.garrison.length) return null;
   return html`<i class=${cls("gui-hut__doing", busy ? "is-busy" : "is-idle")} aria-hidden="true"
     title=${say(busy ? "at work" : "idle")}></i>`;
-}
-
-const asker = (b) => b.garrison.find((o) => o.status === "alert") || b.garrison.find((o) => o.lead) || b.garrison[0];
-
-/** The ork that asks, out by the door: a press opens its question (js/orders.js), the building stays shut. */
-function Caller({ b }) {
-  if (!b.alert) return null;
-  const o = asker(b);
-  const who = o ? o.name : say(b.title);
-  const stop = (e) => e.stopPropagation();
-  return html`<button class="gui-hut__caller" title=${`${who}: ${b.alert.title}`} aria-label=${`${say("Answer")} ${who}`}
-      onPointerDown=${stop} onClick=${(e) => { stop(e); openOrders(b.alert.id); }}>
-    <img class="ok-sprite" src="/ds/sprites/orks/ork-waiting.png" srcset="/ds/sprites/orks/ork-waiting@2x.png 2x"
-      width="40" height="16" alt="" draggable="false" /></button>`;
-}
-
-/** An ork come to a yard for a wake or a job of its own: it stands by the door while it is there. */
-function Visitor({ b }) {
-  const o = asker(b);
-  if (!o) return null;
-  return html`<span class="gui-hut__visitor" title=${`${o.name} · ${say("visiting")}`}><${OrkHead} o=${{ ...o, status: "busy" }} /></span>`;
 }
 
 /** A yard's name stands over its building, on the ground, with no plate (Camp). */
@@ -320,6 +299,7 @@ function edgeAt(card, e) {
 export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSized }) {
   const ref = useRef(null);
   const road = useRef(null);
+  const [near, setNear] = useState(false);   // the mouse over it: its ork comes out (js/visit.js)
   // the handle follows the mouse along the edge without drawing the hut again
   const nearEdge = (e) => {
     const btn = road.current;
@@ -424,12 +404,12 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
                                         "is-sized": !!sized, [`is-size-${level}`]: !!sized,
                                         "is-resizing": resizing.value?.id === b.id })}
-      onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}>
+      onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
+      onPointerEnter=${(e) => e.pointerType === "mouse" && setNear(true)} onPointerLeave=${() => setNear(false)}>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
       <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}
-      <span class="gui-hut__plinth" aria-hidden="true"></span></span>
-      ${b.alert ? html`<${Caller} b=${b} />` : b.yard && b.visit ? html`<${Visitor} b=${b} />` : null}</div>
+      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} near=${near} /></span></div>
     <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
       <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

@@ -10,7 +10,7 @@ call a model), [folded-cards.md](folded-cards.md) (a card folded to its title ba
 |---|---|---|
 | 1 | a script-first building shows no ork on its card; the ork comes to it while it is woken or asked (§2) | built |
 | 2 | the yard's card: a picket fence round its inside, the title bar a fence the building stands on, the name over it (§3) | built |
-| 2′ | every building's orks seen from outside: Zz or a wheel over its roof, the asking ork out by the door (§4) | built |
+| 2′ | every building's orks seen from outside: Zz or a wheel over its roof, the ork out on its plinth under the mouse or to ask, its bubble's 👍, 👎 and AI tool (§4) | built |
 | 3 | the ork that comes walks to the door and back (§3d) | |
 
 ## 1. Why
@@ -51,7 +51,7 @@ head stands in the title bar, while one of these holds:
 | the person asked it: keeper in plain words, Redesign, Watch, Ork setup | its job ends |
 | it asks the person (`alert`) | the question is answered |
 
-- In Camp it stands **by the building's door** (§3b, §4): its head while it works, the asking ork with its `!` while it
+- In Camp it stands **on the building's plinth** (§3b, §4) while it works, the asking ork with its `!` while it
   asks. In Office its head's place in the title bar says **visiting** after the name (`Keeper` gets `visiting`).
 - The rest of the time, where the head stood, nothing: the name gets the room.
 - Info (the right panel) still shows the steward and its line (`js/steward.js`): who comes and what
@@ -115,8 +115,8 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
 - **The title bar is the top fence**, its height (`--titlebar`, 28 px) and nothing more: pickets from edge to
   edge. No gate and no posts: **the building is the gate.** Its sprite is a fifth bigger than a hut's (zoom 0.8
   against 2/3) and stands on the pickets.
-- **The ork that came stands by the door**, as on a hut (§4): its head while it works for a wake or a job, the
-  asking ork with its `!` while it asks — a press on that one opens its question.
+- **The ork that came stands on the plinth**, left of the house, as on a hut (§4): while it works for a wake or a
+  job, and with its `!` while it asks — a press on that one opens its question.
 - **The name goes over the building**: number, type icon, name, on the ground with no plate — muted caps
   with a pixel outline, gold while selected, the fire's colour while it asks, cut short at 260 px. A press on
   the building or the fence opens it as the title bar did. Office keeps the name in the title bar.
@@ -124,7 +124,7 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   clear at its right for the road handle, so neither is ever under it.
 - The road handle on every card is a small gate (`tools/road_sprites.py`): two posts, a door of upright
   planks, a gold latch.
-- Code: `js/hut.js` `YardName`, `Caller`, `Visitor`; `yards.css`; the sprites by `tools/fence_sprites.py` into
+- Code: `js/hut.js` `YardName`, `js/visit.js` `Outside`; `yards.css`; the sprites by `tools/fence_sprites.py` into
   `design-system/sprites/fence/` (`post.png` is drawn but unused since the posts went).
 
 ### 3b′. A yard is sized by its pickets
@@ -200,16 +200,27 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 - **Over its roof**, a hut that has orks says what they do: **Zz** while they sleep, a **wheel** while they work
   (the right half of the ork's state sprites, `orks/ork-idle.png`, `ork-busy.png`). A yard shows nothing: no ork
   lives in it.
-- **The ork that asks comes out**: by the door, at the sprite's right, its head and its `!` (`ork-waiting.png`),
-  pacing a step to and fro; a yard's stands there too. **A press on it opens its question**
-  (`js/orders.js` `openOrders(id)`); the building stays shut. The hit area is wider than the sprite and it stops
-  under the mouse. Answers in the HUD stays the way to every question; this is the short way to one.
+- **Its ork comes out onto the plinth.** The plinth runs on 28 px left of the house (the house stands that much
+  further right); that end is the ork's place, so it never stands on a fence or a card. Under the mouse the ork
+  walks out of the door (two steps facing left, `orks/ork-walk-a.png`, `ork-walk-b.png`), turns to you
+  (`ork-stand.png`) and speaks in a pixel comic bubble (`icons/bubble.png`, a nine-slice, and its tail):
+  - **👍 and 👎**, green pixel thumbs (`icons/thumb-up.png`, `thumb-down.png`). A hut's rate its lead ork's work
+    (`ork.like`, `ork.dislike` with a note); a yard's rate the building (`building.like`, `building.dislike`: its
+    steward wakes on a 👎);
+  - **its AI tool** (a hut's, its harness scheme): pressed, the bubble lists the AI tools this machine runs and a
+    press changes it from its next run (`ork.model`); a pipeline, or one tool and no other, opens the model dialog.
+  The mouse gone, it waits 0.4 s and walks back in facing right. Touch is not drawn here: it gets its own interface.
+- **The ork that asks comes out by itself** and waits on the same spot, pacing a step, a `!` in its bubble;
+  **a press on it opens its question** (`js/orders.js` `openOrders(id)`); the building stays shut. An ork come to
+  a yard for a wake stands there too while it is.
+- Coins, not orks, go between buildings: the roads carry the work (§3f), an ork stays at its own door.
 - Fire stays on the roof as before; the card burns as before.
 - Under `prefers-reduced-motion`, nothing paces or floats. Office draws none of it: it keeps its words
   (`busy`, `?`, `visiting`) in the title bar.
 - What the head told — its name, its AI tool — is in Info and in the caller's tooltip.
-- Code: `js/hut.js` `Doing`, `Caller`, `Visitor`; `yards.css`; `office.css` hides them.
-- Later: a running cycle for the caller, a building's own "at work" (smoke, sparks) instead of the wheel.
+- Code: `js/hut.js` `Doing`, `js/visit.js` `Outside` and `VisitDialogs`; `yards.css`; `office.css` hides them;
+  the sprites `tools/visit_sprites.py`.
+- Later: a building's own "at work" (smoke, sparks) instead of the wheel.
 
 ## 5. What we measure
 

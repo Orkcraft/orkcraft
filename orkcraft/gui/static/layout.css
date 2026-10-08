@@ -195,8 +195,8 @@ button { font: inherit; color: inherit; }
    is muted, so the eye finds the ones at work — one that asks, or is open, keeps its full colour. */
 .gui-hut .gui-sprite { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo))
   drop-shadow(0 1px 0 var(--bevel-lo)) drop-shadow(0 -1px 0 var(--bevel-lo)); }
-.gui-hut__roof { transition: filter .3s; }
-.gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof { filter: brightness(.78) saturate(.8); }
+.gui-hut__roof > :not(.gui-out) { transition: filter .3s; }
+.gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof > :not(.gui-out) { filter: brightness(.78) saturate(.8); }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
 /* A building that stopped taking work (Barracks after Halt All or ⏸): a warning frame and Resume on its card,

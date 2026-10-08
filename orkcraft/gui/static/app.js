@@ -11,6 +11,7 @@ import { Town } from "./js/town.js";
 import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
+import { VisitDialogs } from "./js/visit.js";
 import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
@@ -50,6 +51,7 @@ function App() {
     <${UsageAsk} />
     <${UpdateAsk} />
     <${Orders} />
+    <${VisitDialogs} />
     <${Jobs} />
     <${Overlays} />
     <${BuildDialog} />
