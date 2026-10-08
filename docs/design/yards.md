@@ -89,17 +89,17 @@ row, its children on the plate, the posts as its pseudo-elements.
 ```
  ▲┌───────────────────┐               ▲   ← two posts, their tops above the bar
  █│ 3 ⑂ Router        │▲═▲═▲═▲═▲═▲═▲═█   ← a plate as wide as its words; pickets fill the rest
- ●│ 12 sent · 0 dropped             │●   ← the inside: the card's plain `panel`, never wood
- ●│ last: release-notes → mill      │●   ← each side: a column of round posts seen from above
+ ▴│ 12 sent · 0 dropped             │▴   ← the inside: the card's plain `panel`, never wood
+ ▴│ last: release-notes → mill      │▴   ← each side: full pickets, tips up, the inner rail in the gaps
  ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
 ```
 
 ### 3a. The fence
 
 - **Only the edges are wood.** A row of pickets along the bottom: dense and low (pointed, two thin rails
-  between them, a 7×7 sprite tile, no ground line), each side a column of round posts seen from above, as
-  top-down games draw a fence that runs away from you: a lit rounded top, a shaded body, the rails
-  hidden (a 5×8 tile); the inside is the plain `panel` it is today.
+  between them, a 7×7 sprite tile, no ground line), each side a column of pickets as tall as the bottom
+  ones, tips up, with a 2 px gap under each where the inner rail shows (a 5×9 tile, mirrored for the
+  right); the inside is the plain `panel` it is today.
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
