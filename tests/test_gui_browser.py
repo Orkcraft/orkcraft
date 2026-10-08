@@ -732,6 +732,8 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     from tests.test_watchtower_quickadd import ATL, Opener, _gh
     monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
     monkeypatch.setattr(WatchtowerWorker, "gh_runner", staticmethod(_gh))
+    from tests.test_watchtower_agent import mcp_list
+    monkeypatch.setattr(WatchtowerWorker, "mcp_runner", staticmethod(mcp_list("No MCP servers configured.")))
     shots = os.environ.get("ORKCRAFT_SHOTS", "")
     shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
     pg = page
@@ -744,7 +746,8 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
     assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
     groups = panel.locator(".gui-add__group-title").all_inner_texts()            # in groups; Calendar has none yet
-    assert groups == ["Messengers", "Mail", "Code", "Other"]
+    assert groups == ["Messengers", "Mail", "Code", "Other", "Through Claude (MCP)"]
+    panel.locator(".gui-add__group", has_text="Through Claude").get_by_text("None found").wait_for(timeout=WAIT_MS)
     assert "Slack" in panel.locator(".gui-add__group", has_text="Messengers").inner_text()
     assert panel.locator(".gui-panel__back").count() == 0                        # the first step: no ← Back
     panel.locator(".gui-add__tile", has_text="GitHub").locator(".ok-tone-ok").wait_for(timeout=WAIT_MS)   # ✓ gh · ann
@@ -781,21 +784,31 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     assert panel.locator(".gui-panel__back").count() == 0
     panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-tower__waiting", has_text="No messages yet").wait_for(state="visible", timeout=WAIT_MS)
     shot("5-feed")
-    # the feed lists the unread; Read too adds the read ones (docs/design/watchtower-automation.md §2 H)
+    # the feed lists every message, the unread marked; Only unread hides the read (docs/design/watchtower-automation.md §2 H)
     from orkcraft.realm import watch
     w = gui[0].host.town.worker(bid)
     for i, title in enumerate(["Ann in WEB-5: the old one", "Ben in WEB-7: Login loops after the update"]):
         w.add_signal(watch.Signal(f"2026-10-02T05:{10 + i}:00", "jira", title, "", f"WEB-{5 + i}"))
     w.mark_read([w.signals[1]])
     w.changed()
-    panel.locator(".gui-tower__count-head", has_text="Unread · 1").wait_for(state="visible", timeout=WAIT_MS)
-    assert panel.locator(".gui-tower__row").count() == 1 and "Login loops" in panel.locator(".gui-tower__row").inner_text()
+    panel.locator(".gui-tower__count-head", has_text="Messages · 2 · 1 new").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-tower__row").count() == 2
+    assert panel.locator(".gui-tower__row", has_text="Login loops").locator("[aria-label=new]").count() == 1
+    assert panel.locator(".gui-tower__row", has_text="the old one").locator("[aria-label=read]").count() == 1
     card = _hut(pg, bid).locator(".gui-tower__msg")
     assert "Ben" in card.inner_text() and "05:11" in card.inner_text()            # the closed card: the newest unread
-    panel.get_by_role("button", name="Read too · ").click()
-    panel.locator(".gui-tower__row", has_text="the old one").wait_for(state="visible", timeout=WAIT_MS)
+    shot("5b-messages")
     panel.get_by_role("button", name="Only unread").click()
+    panel.locator(".gui-tower__count-head", has_text="Unread · 1").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Login loops" in panel.locator(".gui-tower__row").inner_text()
+    panel.get_by_role("button", name="Show all").click()
+    panel.get_by_role("button", name="+ Add source").click()                    # Add source in Work, ← Back to the list
+    tiles.first.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-tower__chips").count() == 0
+    panel.locator(".gui-panel__back").click()
+    panel.locator(".gui-tower__row", has_text="the old one").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Sources & intent").click()
     panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
@@ -842,9 +855,12 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     add.wait_for(state="visible", timeout=WAIT_MS)
     add.click()
     panel = pg.locator(".gui-panel")
-    jira = panel.locator(".gui-add__tile", has_text="Jira")
+    jira = panel.locator(".gui-add__tile", has_text="Jira").first
     jira.locator(".ok-tone-ok", has_text="in Claude").wait_for(timeout=WAIT_MS)
-    panel.locator(".gui-add__tile", has_text="Slack").locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
+    panel.locator(".gui-add__tile", has_text="Slack").first.locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
+    claude = panel.locator(".gui-add__group", has_text="Through Claude")        # the connectors, a way of their own
+    claude.locator(".gui-add__tile", has_text="Confluence").wait_for(timeout=WAIT_MS)
+    assert claude.locator(".gui-add__tile").count() == 4
     shot("c1-picker")
     jira.click()
     use = panel.get_by_role("button", name="Use Claude's connection")
@@ -1394,6 +1410,33 @@ def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page)
     pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
     look.click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+
+
+def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page):
+    """A Calendar with no calendar: its Work says so with Import calendar (a .ics file, a link, the Google
+    account), and its hut's right-click menu has Import calendar too; each opens the page in steps over its Info.
+    `ORKCRAFT_SHOTS` keeps screenshots."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
+    _hut(pg, drum).locator(".gui-hut__title").click()
+    panel = pg.locator(".gui-panel")
+    bring = panel.locator(".drum-bring")
+    bring.wait_for(state="visible", timeout=WAIT_MS)
+    assert "No calendar yet" in bring.inner_text() and "Google account" in bring.inner_text()
+    if shots:
+        panel.screenshot(path=f"{shots}/d1-empty-work.png")
+    bring.get_by_role("button", name="Import calendar").click()
+    panel.locator(".gui-infopage__title", has_text="Import calendar").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
+    _hut(pg, drum).locator(".gui-hut__title").click(button="right")
+    menu = pg.locator(".gui-menu")
+    menu.locator(".gui-menu__item", has_text="Import calendar").wait_for(state="visible", timeout=WAIT_MS)
+    if shots:
+        pg.screenshot(path=f"{shots}/d2-menu.png")
+    menu.locator(".gui-menu__item", has_text="Import calendar").click()
+    panel.locator(".gui-infopage__title", has_text="Import calendar").wait_for(state="visible", timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", drum)
 
 
 def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gui, tmp_path, monkeypatch):

@@ -125,6 +125,7 @@ def detail(w) -> dict:
                                                        and x.ref == j.ref), None)) else None}
                  for j in w.jobs()],
         "imports": w.import_rows(),
+        "has_calendar": bool(w.configured or w.google or w.imports),
         "settings": {"ics": _shown_ics(w.configured), "day_starts": str(w.config.get("day_starts") or ""),
                      "lead": str(w.config.get("lead") or ""), "writes_to": w.writes_to},
     }
