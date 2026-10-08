@@ -520,13 +520,12 @@ button { font: inherit; color: inherit; }
 /* The War Map (js/warmap.js, docs/design/war-map.md): the orkspaces as lands in a framed square. Every name
    is in the ink (white): on six grounds a dark or gold name would not read; the open land is told by its
    gold bar and its height. */
-/* set in the screen's bottom-left corner, as an RTS minimap: the foot's padding taken back on those two sides */
+/* set in the screen's bottom-left corner, as an RTS minimap, the foot's padding from the edges as every other piece */
 .gui-map { position: relative; flex: none; padding: 5px; background: var(--panel-raised);
-  margin: 0 0 calc(-1 * var(--space-3)) calc(-1 * var(--space-3));
   box-shadow: var(--bevel-raised), 0 0 0 1px var(--bevel-lo); }
 .gui-map__title { margin: -1px 0 5px; text-align: center; font: 500 12px/14px "Pixelify Sans", var(--ok-font);
   color: var(--ink-gold); letter-spacing: .08em; text-transform: uppercase; text-shadow: 1px 1px 0 var(--bevel-lo); }
-.gui-map__view { width: 160px; height: 160px;   /* a square: more lands scroll inside it */
+.gui-map__view { width: 208px; height: 144px;   /* a landscape, as a minimap: more lands scroll inside it */
   overflow-y: auto; overflow-x: hidden; position: relative;
   box-shadow: 0 0 0 2px var(--frame); scrollbar-width: thin; scrollbar-color: var(--frame) var(--panel-inset); }
 .gui-map__ground { position: relative; background: var(--fog); }
@@ -536,7 +535,7 @@ button { font: inherit; color: inherit; }
 .gui-map__land:focus-visible { filter: brightness(1.2); }
 .gui-map__land:focus-visible .gui-map__name { text-decoration: underline dotted var(--frame-focus); text-underline-offset: 3px; }
 .gui-map__land > * { position: absolute; pointer-events: none; }
-.gui-map__name { left: 9px; max-width: 136px; font-family: "Pixelify Sans", var(--ok-font); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
+.gui-map__name { left: 9px; max-width: 184px; font-family: "Pixelify Sans", var(--ok-font); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink);
   text-shadow: 1px 1px 0 var(--bevel-lo); }
 .gui-map__fog .gui-map__name { color: var(--ink-muted); }
 .gui-map__fog:hover .gui-map__name { color: var(--ink); }

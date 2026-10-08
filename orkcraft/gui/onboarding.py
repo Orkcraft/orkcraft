@@ -7,7 +7,7 @@ written until the town is chosen; then the machine's part is saved and the town 
 so the map fills in front of the person while the Autonomy card waits in a corner (js/onboarding.js).
 
     ob = Onboarding(host)                 # active on a first run, unless ORKCRAFT_ONBOARDING=0
-    host.commands.update(ob.commands())   # onboarding.tools · .role · .mcp · .town · .survey · …
+    host.commands.update(ob.commands())   # onboarding.tools · .check · .detect · .role · .mcp · .town · …
     ob.snapshot()                         # the snapshot's `onboarding`, None when there is none
     ob.tick(now)                          # from the host's clock: the next raising step
 """
@@ -36,6 +36,8 @@ KIN_WORDS = {"orc": "orks", "lich": "undead", "elf": "elves", "gnome": "gnomes",
              "knight": "knights", "skeleton": "skeletons"}     # "Two kinds of gnomes" on step 2
 USES_MAX = 6                # the chips "The planner will use" starts with: the MCP servers on, then the class's usual
 USES_MCP = 4                # …of which MCP servers at most, so the class's usual always shows too
+RECOMMENDED = ("claude", "codex", "cursor")    # what the step offers to install when no AI tool is here
+CHECK_PROMPT = "Reply with the one word: ok"   # Check: a short real request, on the tool's cheapest tier
 
 
 
@@ -56,7 +58,8 @@ def wanted(town) -> bool:
 class Onboarding:
     def __init__(self, host, detect: Callable[[], list[tools.ToolStatus]] | None = None,
                  detect_others: Callable[[], list[tools.Other]] | None = None,
-                 servers: Callable[[], list[mcp.Server]] | None = None) -> None:
+                 servers: Callable[[], list[mcp.Server]] | None = None,
+                 ask: Callable[..., Any] | None = None) -> None:
         self.host = host
         self.active = wanted(host.town)
         self.again = False              # opened from the map's menu on a town that stands: no town step
@@ -71,6 +74,8 @@ class Onboarding:
         self.kin = intents.role(self.profile["role"]).mascot if self.profile.get("role") else self.only_kin
         self.role_given = bool(self.profile.get("role"))         # the landing page's role (settings.preset_role)
         self.statuses: list[tools.ToolStatus] | None = None
+        self.checks: dict[str, dict] = {}       # Check: a tool's answer to a short request, or why it gave none
+        self._ask = ask or (lambda tool, prompt, model=None: builders.ask(tool, prompt, model))
         self.others: list[tools.Other] = []
         self.picked: dict[str, settings.ToolChoice] = {}
         self.warder = True
@@ -88,9 +93,16 @@ class Onboarding:
     def _look(self) -> None:
         """The MCP servers at once (files only), the AI tools on a thread (`--version` runs for each)."""
         self.servers = self._find()
-        known = set(self.profile.get("mcp") or []) if self.again else None
-        self.mcp_on = [s.id for s in self.servers if known is None or s.id in known]
+        if self.again:
+            known = set(self.profile.get("mcp") or [])
+            self.mcp_on = [s.id for s in self.servers if s.id in known]
+        else:                                   # every service on, through one server each (`_services`)
+            self.mcp_on = [svc["ids"][0] for svc in self._services()]
+        self._scan()
+
+    def _scan(self) -> None:
         self.statuses = None
+        self.checks = {}
         self._finder = threading.Thread(target=self._detect, args=self._detectors, daemon=True)
         self._finder.start()
 
@@ -118,6 +130,44 @@ class Onboarding:
         except Exception:                           # a broken tool never stops the onboarding
             found, others = [], []
         self.host.town.call(self._detected, found, others)
+
+    def detect(self, args: dict) -> dict | None:
+        """Check again: look for the AI tools once more (one was just installed)."""
+        self._live()
+        self._scan()
+        self.host.on_change()
+        return self.snapshot()
+
+    def check(self, args: dict) -> dict | None:
+        """Check: a short request to one tool found (`harnesses` `ask`, on its cheapest tier), on a thread.
+        The row shows ✓ and how long the answer took, or what kind of failure it was (realm/tool_errors.py)."""
+        self._live()
+        tid = str(args.get("tool") or "")
+        if not any(st.id == tid and st.found for st in self.statuses or []):
+            raise OnboardingError("That AI tool is not found here")
+        if (self.checks.get(tid) or {}).get("state") == "running":
+            return self.snapshot()
+        self.checks[tid] = {"state": "running"}
+        threading.Thread(target=self._check_run, args=(tid,), daemon=True).start()
+        self.host.on_change()
+        return self.snapshot()
+
+    def _check_run(self, tid: str) -> None:
+        start = time.monotonic()
+        try:
+            self._ask(tid, CHECK_PROMPT, "laborer")
+            out = {"state": "ok", "ms": round((time.monotonic() - start) * 1000)}
+        except Exception as e:                      # a timeout or 🛑 Halt All is a failure like any other
+            err = e if isinstance(e, tool_errors.ToolError) else tool_errors.ToolError(tid, str(e))
+            title = harnesses.title(tid)
+            out = {"state": "failed", "kind": err.kind, "line": tool_errors.LINES[err.kind].format(tool=title),
+                   "action": tool_errors.what_to_do(err), "detail": err.detail or str(err)}
+        self.host.town.call(self._checked, tid, out)
+
+    def _checked(self, tid: str, out: dict) -> None:
+        if tid in self.checks:                      # not when Check again began a new look meanwhile
+            self.checks[tid] = out
+            self.host.on_change()
 
     def _detected(self, found: list[tools.ToolStatus], others: list[tools.Other]) -> None:
         self.statuses, self.others = found, others
@@ -153,8 +203,31 @@ class Onboarding:
             choice = self.picked.get(st.id, settings.ToolChoice())
             h = harnesses.get(st.id)
             rows.append({"id": st.id, "title": st.tool.title, "mark": h.mark if h else "", "version": st.version,
-                         "logged_in": st.logged_in, "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing})
+                         "logged_in": st.logged_in, "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing,
+                         "check": self.checks.get(st.id)})
         return rows
+
+    @staticmethod
+    def _recommended() -> list[dict]:
+        """What the step offers when no AI tool is here: how to install each and sign in (harnesses.REGISTRY)."""
+        out = []
+        for tid in RECOMMENDED:
+            h = harnesses.get(tid)
+            if h is not None:
+                out.append({"id": h.id, "title": h.title, "mark": h.mark, "install": h.install, "login": h.login})
+        return out
+
+    def _services(self) -> list[dict]:
+        """The MCP servers by the service they reach: two servers for GitHub (`github`, `github-enterprise`)
+        are one service, and the orks use one of them. The one in the most AI tools comes first."""
+        by: dict[str, list[mcp.Server]] = {}
+        for s in self.servers:
+            by.setdefault(s.title.lower(), []).append(s)
+        out = []
+        for group in by.values():
+            group = sorted(group, key=lambda s: -len(s.tools))
+            out.append({"title": group[0].title, "glyph": group[0].glyph, "ids": [s.id for s in group]})
+        return out
 
     def _not_run_on(self) -> dict:
         """The tools the orks don't run on here: `missing` (not found), `others` (found, but no harness) and `cli`
@@ -219,13 +292,14 @@ class Onboarding:
             "step": self.step, "steps": steps,
             "n": steps.index(self.step) if self.step in steps else len(steps) - 1,
             "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(), **self._not_run_on(),
-                      "warder": self.warder, "warder_agy": self._warder_agy()},
+                      "warder": self.warder, "warder_agy": self._warder_agy(), "recommended": self._recommended()},
             "classes": self._classes(), "only_kin": self.only_kin,
             "kin_word": KIN_WORDS.get(self.only_kin, self.only_kin),
             "kin": self.kin, "role": self.profile.get("role", ""),
             "nick": intents.nick(self.profile["role"]) if self.profile.get("role") else "",
             "biome": biomes.home_of(self.profile),
-            "mcp": {"servers": [s.to_dict() for s in self.servers], "on": list(self.mcp_on)},
+            "mcp": {"servers": [s.to_dict() for s in self.servers], "services": self._services(),
+                    "on": list(self.mcp_on)},
             "towns": self._towns(), "survey": self._survey() if self.step == SURVEY else None,
             "planner": self._planner_runner() is not None,
             "tool_titles": {t.id: t.title for t in tools.TOOLS},
@@ -237,6 +311,7 @@ class Onboarding:
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {"onboarding.tools": self.set_tools, "onboarding.request": self.request,
+                "onboarding.check": self.check, "onboarding.detect": self.detect,
                 "onboarding.role": self.set_role, "onboarding.mcp": self.set_mcp,
                 "onboarding.town": self.set_town, "onboarding.survey": self.set_survey,
                 "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close,
