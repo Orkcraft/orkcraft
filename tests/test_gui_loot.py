@@ -181,3 +181,83 @@ def test_why_a_cart_waits_names_buildings_by_their_titles():
     why = gate.reasons(payload, {"sources": ["camp"]}, None, {"camp": "Agent pool"})
     assert why == ["from Agent pool", "Agent pool ended error"]
     assert gate.reasons(payload, {"sources": ["camp"]}) == ["from camp", "camp ended error"]   # no names: ids
+
+
+def test_a_text_cart_is_edited_in_the_window_then_accepted(loot):
+    host, bid, w = loot
+    w.receive(cart("## Plan\n\n- a", "A"), "Doc A", "## Plan\n\n- a")
+    [item] = w.queue.open()
+    assert host.detail(bid)["data"]["queue"][0]["draft"] is None
+    assert act(host, bid, "save_edit", item=item.id, value="## Plan\n\n- a\n- b") == {"edited": True}
+    it = host.detail(bid)["data"]["queue"][0]
+    assert it["edited"] and it["draft"] == "## Plan\n\n- a\n- b"
+    assert act(host, bid, "save_edit", item=item.id, value="## Plan\n\n- a") == {"edited": False}   # back as it was
+    assert not w.draft_path(item, make=False).exists()
+    with pytest.raises(CommandError):
+        act(host, bid, "save_edit", item=item.id)                                   # no text
+    act(host, bid, "save_edit", item=item.id, value="## Plan\n\n- a\n- b")
+    plan = act(host, bid, "accept_all_plan")["items"]
+    assert plan[0]["edited"]                                                        # Accept all takes it too
+    act(host, bid, "accept", item=item.id)
+    assert "- b" in (host.town.repo_root / w.stored[0].path).read_text()
+    w.receive(pipes.Payload(pipes.FILE, "src/app.py", "camp", "pool.done", "app", (), "F"), "app", "")
+    f = next(i for i in w.queue.open() if i.ref == "F")
+    with pytest.raises(CommandError):
+        act(host, bid, "save_edit", item=f.id, value="x")                           # a file is opened, not edited here
+
+
+def test_a_file_of_a_held_cart_s_branch_is_rejected_and_brought_back(loot):
+    import struct
+    import subprocess
+    host, bid, w = loot
+    root = host.town.repo_root
+    run = lambda cwd, *a: subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+    base = run(root, "rev-parse", "--abbrev-ref", "HEAD")
+    wt = root / ".orkcraft" / "worktrees" / "pool-camp-grub"
+    run(root, "worktree", "add", "-q", "-b", "pool/camp/t1", str(wt), "HEAD")
+    png = b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">II", 8, 4) + b"\0" * 20
+    (wt / "logo.png").write_bytes(png)
+    (wt / "notes.md").write_text("# Notes\n")
+    run(wt, "add", "-A")
+    run(wt, "commit", "-q", "-m", "work")
+    trail = (pipes.hop("camp", "grub", "agent", 900, 0.04, str(wt.relative_to(root)), "pool/camp/t1", "done", base=base),)
+    w.receive(pipes.Payload(pipes.TEXT, "## Done\n\nlogo and notes", "camp", "pool.done", "Logo", trail, "T-1"), "Logo", "")
+    [item] = w.queue.open()
+    it = host.detail(bid)["data"]["queue"][0]
+    assert [f["path"] for f in it["branch"]["files"]] == ["logo.png", "notes.md"] and it["rejected"] == []
+    shown = act(host, bid, "preview", item=item.id, path="logo.png")
+    assert shown["image"] and shown["text"] == f"(PNG image · 8×4 · {len(png)} bytes)"      # no key to press here
+    assert act(host, bid, "thumb", item=item.id, path="logo.png").startswith("data:image/png;base64,")
+
+    act(host, bid, "branch_reject", item=item.id, path="notes.md")
+    it = host.detail(bid)["data"]["queue"][0]
+    assert [f["path"] for f in it["branch"]["files"]] == ["logo.png"]              # the rest goes on
+    assert [(r["path"], r["change"]) for r in it["rejected"]] == [("notes.md", "A")]
+    assert not (wt / "notes.md").exists()
+    assert feedback.incidents(root)[0].source == "loot.file_rejected"
+    with pytest.raises(CommandError):
+        act(host, bid, "branch_reject", item=item.id, path="notes.md")             # no longer on the branch
+    act(host, bid, "branch_restore", item=item.id, index=0)
+    it = host.detail(bid)["data"]["queue"][0]
+    assert [f["path"] for f in it["branch"]["files"]] == ["logo.png", "notes.md"] and it["rejected"] == []
+    assert (wt / "notes.md").read_text() == "# Notes\n"
+
+    act(host, bid, "branch_reject", item=item.id, path="logo.png")
+    back = []
+    w.rework_back = lambda source, payload: back.append(payload.value) or "camp"
+    act(host, bid, "rework", item=item.id, reason="the logo is not ours")
+    assert "- `logo.png`" in back[0]                                               # the ork hears which file went
+    with pytest.raises(CommandError):
+        act(host, bid, "branch_restore", item=item.id, index=0)                    # in rework: the ork has it now
+
+
+def test_a_changed_picture_shows_in_the_window(loot):
+    host, bid, w = loot
+    root = host.town.repo_root
+    (root / "shot.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0" * 32)
+    w.refresh()
+    shown = act(host, bid, "preview", path="shot.png")
+    assert shown["image"] and "o opens it" not in shown["text"]
+    assert act(host, bid, "thumb", path="shot.png").startswith("data:image/png;base64,")
+    with pytest.raises(CommandError):
+        act(host, bid, "thumb", path="README.md.png")                               # not a changed file
