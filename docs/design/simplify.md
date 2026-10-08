@@ -123,6 +123,7 @@ names. The Keeper as a watcher is gone: *keeper* is only ever a building's stewa
   becomes part of the Librarian's quality check (rules first, a model call only for the pages that
   changed, once per check, not per ingest); a Barracks on *balance* reviews a task only when the
   Alchemist or the steward flagged its building, not every task.
+- A building whose work is code calls no model: its ork wakes on an error or a 👎 ([script-first.md](script-first.md)).
 
 ## 8. Migration
 
