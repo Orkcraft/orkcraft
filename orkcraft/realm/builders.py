@@ -301,8 +301,8 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
     if type_id in catalog.RETIRED_TYPES:
         return BuildResult(None, [], error=RETIRED)
     types = [catalog.TYPES[type_id]] if type_id in catalog.TYPES else \
-        [t for t in catalog.TYPES.values() if t.id != catalog.DEFAULT_TYPE
-         and t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES]
+        [t for t in catalog.TYPES.values()
+         if t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES]
     text_catalog = catalog.catalog_text(types)
     pick = f"Its type is fixed: {type_id}." if type_id else "Pick the type that fits the request best."
     attempts: list[Attempt] = []
@@ -326,7 +326,7 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
             spec["title"] = naming.clip(spec.get("title", "")) or naming.from_prompt(request, "New building")
             if type_id:
                 spec["type"] = type_id                 # the operator's pick wins over the model's
-            if not spec.get("type") or spec["type"] in catalog.RETIRED_TYPES:   # custom (panes) left the catalog
+            if not spec.get("type") or spec["type"] in catalog.RETIRED_TYPES:   # a retired type left the catalog
                 attempt.errors = [f"type: {spec.get('type') or 'missing'!r} is not offered, pick one of the "
                                   "BUILDING TYPES above"]
             else:

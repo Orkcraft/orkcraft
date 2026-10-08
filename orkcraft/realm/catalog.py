@@ -422,7 +422,8 @@ def migrate(spec: dict) -> dict:
                          **({"orders": cfg["skill"]} if cfg.get("skill") else {})}
     return out
 SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never offered in the wizard
-RETIRED_TYPES = frozenset({DEFAULT_TYPE})      # Custom (panes): an old scroll's still loads, none is built anew
+RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest"})   # an old scroll's still loads, none is built anew: Custom (panes);
+                                                      # File tree (its folder watch and its picker go to other buildings)
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
 MAX_QUICK_ACTIONS = 2
 

@@ -113,9 +113,9 @@ class TownPlan:
 
 
 def offered_types() -> list[catalog.BuildingType]:
-    """The types a plan may use: the camp's, without the system ones and the Builder's scratch type."""
-    return [t for t in catalog.TYPES.values() if t.id != catalog.DEFAULT_TYPE
-            and t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES]
+    """The types a plan may use: the camp's, without the system ones, the Builder's scratch type and the retired ones."""
+    return [t for t in catalog.TYPES.values()
+            if t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES]
 
 
 def _free_id(base: str, taken: set[str]) -> str:
