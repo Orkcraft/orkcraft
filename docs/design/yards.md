@@ -153,6 +153,16 @@ The portrait's menu has **Card background**: *Panel* (the card's own, as always)
 its plate, a card that asks the fire's ground. It is this browser's alone (`localStorage`, `js/portrait.js`):
 a look to try before it is decided, not a setting of the town.
 
+Two rules make the cards' words safe on the ground itself:
+
+- **Every biome is dark.** Its ground is darker than a card, and a card's words read on it: `ink` at 7:1 and
+  `ink-muted` at 4.5:1 at least (`tests/test_biome_grounds.py`, against `js/icons.js` `BIOMES`). Tried on a light
+  test ground (sand, `#cdbf97`): Panel reads, Shade loses the muted lines and the gold, Ground loses the words. A
+  light biome may not be added.
+- **No road runs under a card.** Today a road only avoids one: a step under a hut costs more (`js/roads.js`
+  `WINDOW_COST`), so in a crowded town a road may still pass under a card. Before Ground is a choice for everyone,
+  the router keeps out from under cards (a road with no way round waits for the person to move a building).
+
 ### 3d. Stage 3 — motion
 
 - The ork that comes walks in from the yard's edge to the door (its 16×15 sprite, 300 ms), and out when it
