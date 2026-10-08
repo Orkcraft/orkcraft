@@ -191,19 +191,19 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | Building | Resident | Takes | Sends |
 |---|---|---|---|
 | 🕳️ The Pit | Scavenger | drag-and-drop files, pasted links / text, 📋 the clipboard; sorted by kind, kept in `.orkcraft/pit/` | `drop.file`, `pit.link`, `pit.text` |
-| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence and Figma, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
+| 🗼 Watchtower | Lookout | IMAP mail (read-only; `host: gmail`), GitHub events (`gh`), `feeds`: comments and mentions in Slack, Jira, Confluence, Figma, GitHub (many repos, notifications), GitLab and Discord, a schedule (`every 15m`, `daily 05:00`), webhooks on 127.0.0.1 (optionally signed); `intent`: only what you are after; new ones marked, ✓ reads all | `mail.received`, `watch.github`, `watch.comment`, `watch.mention`, `watch.cron`, `watch.webhook` |
 | 🚏 Signpost | Grot Pointa | anything; rules (`route: contains …`, `matches`, `kind`, `source`, `field == value`, `else`) pick a route, each road waits for its own (a route no road takes is a dashed stub off the post on the map: pull a road from it to a building); a `totem` of old (and its `totem.routed` roads and Horn lines) loads as a Signpost | `signpost.routed`, `signpost.unmatched` |
 | ⚙️ The Mill | Miller | anything; a map over each cart, strictly in order — `grep`, `replace`, `csv`, `json`, `extract`, `sort` (numbers as numbers), `filter` (`gt`/`lt`… on numbers and ISO dates), `template`, `script: …` (clean environment plus the names in `env`), `agent: …` for what a script cannot do and `script: … \|\| agent: …` when it fails; what arrives while it mills waits in a queue | `mill.done` (one per cart), `mill.item` (a flat map: one cart per record), `mill.failed` |
 | 📯 The Horn | Hornblower | anything; plays a sound per event (`mail.received: chime`, `gate_pit/pit.link: alarm`, `gate_pit: ding`, `*: none`): horn, chime, alarm, drum, ding, the terminal bell or an audio file of yours; Enter walks a row to the next sound, 🔇 mutes, quiet hours (`22:00-08:00`), a cooldown | `horn.sounded` |
 | 🌾 Task Fields | Taskmaster | a board of cards in `TASKS.md` or a folder: tasks in To Do / In Progress / Done, sticky notes in lanes of their own (Ideas, Questions…); `mode`: `board` · `tasks` · `notes`; `n` `<` `>` `e` `c` `t` `s` `d` `N` (below); a cart becomes a card | `tasks.created`, `tasks.status_changed`, `notes.created`, `tasks.sent` |
 | 🏕️ Barracks | Grunts | tasks (a cart, or one you write with ✍ New task: a title and a brief), each on its own branch. The steward judges a task first (docs/design/barracks-planning.md): a simple one goes whole to one ork of the light tier the building's goal names (🪙/⚖️ a laborer, 💎 a warrior); a hard one is planned (an elder plans) into parts — each with its tier, its persona, the files it touches and the parts it waits for — that run in parallel, are merged into the task's branch and reviewed as a whole against your request, with one pull request; the plan is estimated in $ and tokens and trimmed to the budget and to what is left of the quota (a tight quota makes the barracks thrifty). Nobody hires by hand: a follow-up goes to the ork who did the earlier part, a new task to an idle ork of its tier and persona or a newly hired one; a try sent back goes up one tier (laborer → warrior → elder); a new persona the steward writes waits as your autonomy says; related work resumes the ork's session. The steward keeps the rules (`orders`), answers `QUESTION:`s or asks you (🔥), reviews (`test_cmd`, then the diff; ≤`max_reworks` reworks) and pushes the branch with a pull request — for code (always) and documents that go out; an ork never posts to a service itself (Jira, Confluence, Slack…): it drafts the post under a `PUBLISH: <where>` line, and `pool.question` carries the draft, the report and the files — 🔥 Enter publishes it (or type what to change), and through a 📦 Loot the cart is always held: accept lets the ork post it (your edits included), rework sends it back; `pool.done` then brings the report, the files and the link; a local document (a War Drum meeting's prep, or what the steward marks `SCOPE: local`) gets no PR and needs no commit when it is a meeting's | `pool.assigned`, `pool.done`, `pool.failed`, `pool.question`, `pool.idle` |
-| 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review, or while the 🪙 budget is out, queue (Review now, Drop). **Set up in its panel** (design/review-board.md): a `purpose`, the clan the keeper proposes for it (roles, what each checks, tier, veto; the briefs written from it), and named `exits` (`Name: when`), each a route a road out waits for. A board with `exits` puts the verdict (`## Review notes — <exit>`: the steward's or your words, each member's remarks) on top of the document on every exit, never takes an exit no road takes (on the map such an exit is a dashed stub off the board, named: pull a road from it to a building; a connected exit's road is signed with its name), and when it asks, burns and offers its exits as buttons (in the panel and in Answers), with a note as the verdict's words; Back to the author is always there, a veto leaves only it. Budget spent → Raise the budget and go on; failed → Try again; stopped → Go on | `team.approved`, `team.rework`, `team.artifact_ready`, `team.routed` |
+| 🪔 Clan Fire | Chieftains | a document (a cart — usually a Barracks result — or ▶ with a path or text): each member reviews it from its role (`APPROVE` / `CHANGES:` / `VETO:`), reading the repo and the web; the steward decides by its brief — let it go, send it back, or 🔥 ask you (your answer outranks the brief). The document is data, never orders. A veto from a `veto` role blocks approval; after `max_cycles` reworks of one title the operator decides. Briefs are files: `steward.md` and `roles/<role>.md` in `.orkcraft/council/<id>/`; documents that come mid-review, or while the 🪙 budget is out, queue (Review now, Drop). **Set up in its panel** (design/review-board.md): a `purpose`, the clan the keeper proposes for it (roles, what each checks, tier, veto; the briefs written from it), and named `exits` (`Name: when`), each a route a road out waits for. A board with `exits` puts the verdict (`## Review notes — <exit>`: the steward's or your words, each member's remarks) on top of the document on every exit, never takes an exit no road takes (on the map such an exit is a dashed stub off the board, named: pull a road from it to a building; a connected exit's road is signed with its name), and when it asks, burns and offers its exits as buttons (in the panel and in Answers), with a note as the verdict's words; Back to the author is always there, a veto leaves only it. Budget spent → Raise the budget and go on; failed → Try again; stopped → Go on — each from the turn it stopped at (shown beside the button): the members already heard are not asked again, and a Claude member or steward cut off mid-turn goes on in its own session instead of reading again. A review is kept turn by turn, so one the app was closed in reads as stopped and goes on too | `team.approved`, `team.rework`, `team.artifact_ready`, `team.routed` |
 | 🥁 War Drum | Drummer | an `.ics` file or URL: now, next, the day and the week; + adds an event. `lead` (2h) before a meeting it sends `event_upcoming` once, tagged `[meet:<id>]` (📄 sends it at once); a cart back with the tag (Barracks' `pool.done`) is the meeting's document: 📄 at the meeting, Enter shows it in a Lake of Insight | `calendar.event_due`, `.day_schedule`, `.event_added/removed`, `.event_upcoming`, `.doc_opened` |
 | 🌲 File Forest | Woodcutter | a folder as a tree with previews; Enter picks a target; ↗ opens it in the OS | `files.changed`, `files.selected` |
 | 🗑️ Scroll Dump | Scroll Scrapper | one LLM wiki per topic (`codebase`, `team`, `design`, `general`) from read-only `sources` (folders of notes, `code:` folders, `git:<rev>[:<folder>]`, `confluence:<SPACE>`); ingests by itself, a module at a time, commits, keeps people's pages theirs, has a Clan Fire spot-check; `i` ingests now, `l` lints, `x` stops; a cart is a task and goes on with the wiki's map | `knowledge.changed`, `knowledge.chunks`, `wiki.updated`, `wiki.linted`, `wiki.review` |
 | 🌊 Lake of Insight | Seer | a diff (side by side), Markdown, a file, a URL (as text), a branch (its diff); ↗ browser. A text file on disk (Markdown, code, a patch) is edited in place: `e` or ✎ opens the editor — fix the text, leave your notes in it; it saves by itself every `autosave` seconds (default 5) while there are changes and whenever the editor loses focus (another window, another building); `ctrl+s` saves at once, `Esc` saves and goes back to the view. A file changed on disk meanwhile is never overwritten by an autosave: the head says ⚠ and `ctrl+s` writes your text over it. Line endings and the file's mode stay as they were | `lake.viewed`, `lake.saved` (the edited file, once you leave the editor) |
 | ⚒️ The Forge | Smith | branches with PRs and +/−; ⚒ (or a cart naming a branch) tests it in a throw-away worktree and squash-merges it into the base | `git.commit`, `git.pr_*`, `forge.merged`, `forge.conflict` |
-| 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions); keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
+| 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions, and in the GUI the picture itself). In the GUI a text cart is edited in its window (Edit: Save, or Accept this version) or in Lake, and one file of a held cart's branch is rejected on its own — put back on the branch as the base has it by a commit there, its content kept under `rejected/carts/`, Bring it back undoes it — while the rest of the cart goes on (a rework tells the ork which files were rejected). TUI keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | 🪨 Tally Crag | Crag Carver | spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or through an MCP server (carried by the tool that has it, then a direct path the ork learns), or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
@@ -334,15 +334,35 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     presses submit with no schema and no confirmation.
 - **Add a source** (the GUI; design/watchtower-quick-add.md). A tower with no source opens its panel on
   it, and its card says **+ Add a source**; later the **+** chip and Sources & intent open it. It stays
-  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a Slack channel, a Jira
-  issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, Gmail, Slack, Jira,
-  Confluence or Figma, then three steps: **Log in** (gh's own login for GitHub, nothing to paste; else
-  one paste — an app password, a token — with the link to the page that makes it; Slack's app comes
-  from a ready manifest), **What** (repos, channels, projects, spaces or files, this project's repo
-  ticked; *about me* on), **Check** (the first look, made now: as whom, what it hears, how many are
-  there — marked seen, not sent) and **Add**. A source's row in Sources & intent says what it hears and
-  whether it fails, with Remove (confirmed). Not yet: GitLab, Discord, many GitHub repos and GitHub
-  notifications, listening through Claude's connectors.
+  in the panel, over the feed — never a dialog. Paste a link (a GitHub repo, a GitLab project — on
+  gitlab.com or a host this machine has a GitLab login for —, a Slack channel, a Discord channel, a
+  Jira issue, a Confluence space, a Figma file, a Gmail address) or pick GitHub, GitLab, Gmail, Slack,
+  Jira, Confluence, Figma or Discord, then three steps: **Log in** (gh's own login for GitHub and
+  glab's for GitLab, nothing to paste — else a token; else one paste — an app password, a token — with
+  the link to the page that makes it; Slack's app comes from a ready manifest; Discord's bot is made
+  in its developer portal and invited by the link the next step gives), **What** (repos, projects,
+  channels, spaces or files, this project's repo ticked; *about me* on — GitHub's notifications,
+  GitLab's to-dos, mentions; Discord asks who **Me** is, by user id or a link to a message you wrote),
+  **Check** (the first look, made now: as whom, what it hears, how many are there — marked seen, not
+  sent) and **Add**. A source's row in Sources & intent says what it hears and whether it fails, with
+  **Edit** (step 2, its picks ticked), **Log in again** when its login fails (step 1, what it hears
+  kept; the new line takes the old one's place) and Remove (confirmed). A failing source says which
+  way, and offers that one fix in the panel's head too: *the token was refused* → Log in again; *a
+  channel, repo, project or file is gone or out of reach* → Edit; *could not reach* the service → no
+  button, it tries again by itself. **Everything** (step 2, off by default) hears a whole service at
+  once — GitHub's every notification (`notifications=all`), every Slack message the login can see
+  (`everything=on`), every channel of the servers a Discord bot is in (`guilds=`), every issue of a
+  Jira site (`jql=updated >= -1d`), every Confluence page and comment, the whole Gmail mailbox (All
+  Mail); a tower with no intent asks for one there (empty keeps everything). Figma's whole team waits
+  for push.
+- **Through Claude** (design/watchtower-quick-add.md §7): a `feeds` line `agent: tool=claude
+  server=atlassian tools=searchJiraIssuesUsingJql,getJiraIssue every=30m ceiling=0.50 ask=new comments
+  and mentions in Jira` hears a service through the person's own connector in Claude Code, no token
+  on this machine: a headless `claude -p` on the light model, allowed only the tools listed (name
+  read-only ones), the answer by schema. Every 30 min by default (10 at the fastest); each look's cost
+  goes to Spend and to the source's line (`≈ $0.12 today`); past its `ceiling=` dollars a day it
+  waits until tomorrow. A server that needs a login says *run /mcp in Claude Code*. The picker does
+  not offer it yet: write the line, or ask the steward.
 - **Logins** keep the tokens on this machine, out of the project (`realm/logins.py`): the OS keychain
   when `keyring` is installed, else `~/.config/orkcraft/logins.json` (mode 0600; `$ORKCRAFT_LOGINS_FILE`
   moves it). A spec names a login wherever it named a variable — `token=keychain:slack-acme`,
@@ -361,11 +381,17 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
     - "jira: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN"            # jql=… takes the rest
     - "confluence: site=acme.atlassian.net user=ATL_EMAIL token=ATL_TOKEN spaces=DOC"   # cql=… too
     - "figma: token=FIGMA_TOKEN files=AbC123,XyZ789"
+    - "github: repos=acme/app,acme/api notifications=on"   # gh's login; or token=GH_TOKEN (classic, for notifications)
+    - "gitlab: host=gitlab.com token=GITLAB_TOKEN projects=group/app todos=on"   # read_api; no token: glab's login
+    - "discord: token=DISCORD_BOT_TOKEN channels=123,456 me=789"   # a bot with Message Content Intent
   ```
 
-  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment →
-  `watch.mention`; any other new comment or message → `watch.comment` (its title starts with the
-  service). Your own messages are skipped; each feed's first look only marks what is there as seen.
+  A mention, a direct message, a Jira or Confluence @-mention, a reply to your Figma comment, a
+  GitHub notification (a review asked, a mention, an assignment, a thread you are in), a GitLab
+  to-do, a Discord message that mentions you (`me=`) or the bot or answers you → `watch.mention`; any
+  other new comment or message → `watch.comment` (its title starts with the service); a GitHub repo's
+  events → `watch.github`, as the `github:` setting's. Your own messages are skipped; each feed's
+  first look only marks what is there as seen.
 - The same services can **push** instead (no two-minute wait): the Watchtower's webhook listens on
   127.0.0.1 only, so give it a public address with a tunnel (`cloudflared tunnel --url
   http://127.0.0.1:8787`, ngrok, tailscale funnel; `smee.io` for GitHub) and point each service at
@@ -447,12 +473,19 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   first note) with that front matter, and the librarian keeps it at take-in (*Take in now*, on by
   default, starts one at once). Saving sends `wiki.noted`. When rules find nothing, the light model
   (the Council's `fast_model`) is asked once per note for a section and tags (`suggest_model`).
+  `/note <text>` in the Warchief's line shows those suggestions over the line as the text is typed —
+  the meeting it is for, the section, the tags, the pages to link — and saves only on Enter; Tab
+  picks another coming meeting (the next 14 days) or *Not for a meeting*, Shift+Tab goes back, and
+  `@Wiki` names the wiki when the town has several.
 - **Meetings.** A note that names a meeting of a Calendar (War Drum) — by its day, a person, its
   words — or that names only a person, lands under **To discuss** on the meeting's page
   (`pages/meetings/`, written at once and committed alone); a person ticks items off there. When the
   Calendar asks for the meeting's brief (`meeting soon`, `[meet:<id>]`), the Wiki hands over that
   page first; after the meeting what was not ticked moves on to the next meeting with the same
   person. The window lists what the coming meetings should cover; the card counts the next one's.
+  The Calendar says it too, beside each meeting the Wiki keeps items for: *from the Wiki: 2 to
+  discuss* in its window (and *· 3 pages*, the pages the notes link, once the brief is back), *✎ 2*
+  on its card.
 - **Quality check** (`check`: `weekly` by default, `daily`, `ingest`, `off`): the librarian's lint on a
   schedule, one line per problem with its kind; rules look at every refresh, no model, for links to
   nowhere, pages missing from their section's index and pages without front matter. The window shows
@@ -604,7 +637,7 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   (0.34; ✓ Accept all 0.1), ✎ edited and accepted — only added to 👍 0.34, fixed 👎 0.34, the format
   changed 👎 0.5, rewritten 👎 0.75, your version kept as an example — ↩ sent back (👎 0.5, with
   the reason's chip; "what came in was wrong" blames the hops before the maker along the cart's
-  trail), past the rework limit or dropped (👎 0.5); in a 🌊 Lake an ork's file you fixed (0.2),
+  trail), past the rework limit or dropped (👎 0.5), one file of its branch rejected (👎 0.34); in a 🌊 Lake an ork's file you fixed (0.2),
   reformatted or rewritten (0.5) — filling it in (a daily note you write into) says nothing, and a
   personal note's text is never kept; a Barracks pull request merged 👍 1 or closed 👎 0.5 (a duplicate: nothing); `Z` on a
   retro's change 👎 1. The ork that wrote a cart is the one judged (a Clan Fire or a chain after it
@@ -623,7 +656,10 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
 - **Retros** never apply themselves (design: `docs/design/retros-and-goals.md`). The daily
   🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
   24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
-  will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
+  will eat before it resets (`realm/pressure.py`). What is left comes from the quota's tokens per
+  1 %, measured from a 🪨 Tally Crag's samples once the quota climbed 10 points under sampling in a
+  week (the ledger's tokens over the points climbed, stretches cut at a reset or a gap), else
+  estimated from the camp's own spend. It takes the first that got no 👍 since its last
   change, or a 👎 today, reads its recent runs and proposes one checked change towards the building's
   **goal** — 🪙 thrift · ⚖️ balance · 💎 quality, a click on the goal button beside 👍 / 👎 in the Info
   panel cycles it (`buildings[].goal` in the Town Scroll; missing = balance). 💎 buildings the operator
@@ -677,8 +713,10 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   pi through orkcraft's extension (`-e`, and `.pi/extensions/orkcraft.ts`), Hermes in a marked block
   of `~/.hermes/config.yaml`, written only after asking (`--hermes-global` / `--no-hermes-global`).
   pi has no approvals or sandbox of its own: reading orks get only its reading tools.
-- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); agy, Codex and
-  Cursor do not (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
+- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); Codex is priced
+  from its model and token counts once OpenAI's table in `sources/pricing.py` has that model (it is
+  empty until a person reads OpenAI's page, so Codex runs are unpriced for now); agy and Cursor print
+  no price (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
   month (its stored login); pi keeps no windows.
 
 ## Orks: steward, handlers, Recruiter
@@ -799,7 +837,7 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder (`claude -p`, or Codex or agy, which print no price), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
+  Town Builder (`claude -p`, or Codex or agy, which print no price — Codex is priced from its tokens), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
   Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
@@ -808,8 +846,13 @@ the CLI paths.
 - Prices are the published first-party Claude API rates (`orkcraft/sources/pricing.py`, with the
   source URL and date), including cache-write TTLs, fast mode and `inference_geo: "us"`. They are
   **API-equivalent estimates**, not a bill: Claude Pro / Max plans don't charge per token, and
-  Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
-  price (agy, Codex and Cursor sessions, unknown models) — it is never counted as $0.
+  Bedrock / Vertex price separately. Codex (`codex exec` runs and War Tent sessions, read from the
+  session's rollout file) is priced from its model and tokens with a second table, OpenAI's rates,
+  with its own source and date. The model is the one orkcraft passed with `--model`, or `model` in
+  `$CODEX_HOME/config.toml`. For a ChatGPT login this is an API-equivalent estimate too. That
+  table is still empty, so Codex runs show `+` for now. A `+` after the amount means some usage had
+  no published price (agy and Cursor sessions, Codex until its table is filled, unknown models). It
+  is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
   shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
@@ -840,9 +883,10 @@ the CLI paths.
   file tools, read once agy trusts the folder; it answers only deny or ask, never allow (agy ignores
   a hook's allow in headless runs). agy's headless steps run in a temp folder and read only
   `~/.gemini/config/hooks.json`, which `orkcraft hooks install` writes only after asking
-  (`--agy-global` / `--no-agy-global` answer for it). Onboarding says the Warder guards agy only once
-  its hook was checked on a live agy (`agy_warder_checked` in the machine settings,
-  [agy-guard](design/agy-guard.md) §8).
+  (`--agy-global` / `--no-agy-global` answer for it). Onboarding (in the window and in the terminal)
+  says the Warder guards agy only once its hook was checked on a live agy (`agy_warder_checked` in
+  the machine settings, [agy-guard](design/agy-guard.md) §8). Until then, when agy is chosen, the
+  guard step says agy is unguarded, and a raised town gets no agy hook.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 
@@ -963,6 +1007,30 @@ plan chose. `tests/test_catalog_docs.py` keeps these tables in step with the vie
 
 The order lives in `.orkcraft/town/order.json`; every plan request is logged in
 `.orkcraft/build-requests.jsonl`.
+
+## Phones
+
+A phone paired with the town (design: [design/mobile.md](design/mobile.md)) sees it small: each
+building's title, type and state, the questions the orks wait on (their last three lines and the
+Elders' advice), spend and quotas. It may answer a question with one of its own answers, follow the
+Elders' advice, **Stop all** (the desktop says which phone sent it), drop a text, a link or a file into
+a **Drop file here** building (never read as a path on this machine), ask the **Warchief** and read
+his answers. It never builds, demolishes, lays roads, moves
+a hut, types into a terminal or changes a setting: anything else it sends is refused.
+
+- **Settings → Phones → Pair a phone** shows a QR code: the listener's address, its certificate's
+  SHA-256 fingerprint (the phone pins it) and a one-time code, good for two minutes. Five wrong tries
+  in a minute void the code until a new one is shown. **Forget** stops a phone's token at once and
+  closes its connection.
+- The listener opens a port on the LAN (TLS, `https://<lan ip>:<port>`) only while a phone is paired or
+  a code is shown, and keeps that port for the next run. `ORKCRAFT_PHONE_HOST` sets the address it
+  listens on. The certificate is `phone.crt` / `phone.key` beside the machine settings (0600); the
+  paired phones are kept there as `phones` (names and the SHA-256 of their tokens, never a token).
+- While a phone's app is open it gets one line for each question that came, spend or a quota near or
+  over its limit, an error (its title only) and a session that ended. Pushes to a phone in a pocket
+  come with the relay (not built yet).
+- There is no phone app yet: `python tools/phone.py` speaks the same protocol from a terminal
+  (pair from the QR code's text, glance, answer, stop all, ask, chat, drop, watch).
 
 ## CLI
 

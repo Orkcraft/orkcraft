@@ -4,6 +4,7 @@ proposes the clan from the purpose."""
 from __future__ import annotations
 
 import json
+import threading
 import time
 from pathlib import Path
 
@@ -167,6 +168,110 @@ def test_out_of_its_budget_it_goes_on_with_the_budget_doubled(host, monkeypatch)
     assert _until(lambda: not w.busy and w.current.outcome == "budget" and w.history)
     assert _act(host, "go_on") and _until(lambda: [p for p in host.sent if p.mode == "team.routed"])
     assert w.budget > 0.05
+
+
+class Stops:
+    """A clan whose tool names its sessions: `stop_at` is cut off (InterruptedError) the first time it speaks;
+    every call recorded as (role, prompt, session, reopen)."""
+
+    def __init__(self, stop_at: str, reopens: bool = True) -> None:
+        self.stop_at, self.reopens, self.calls = stop_at, reopens, []
+
+    def __call__(self, harness, prompt, model, session="", reopen=False):
+        role = "Steward" if prompt.startswith("You are the steward") else (
+            tm._ROLE.match(prompt).group(1) if tm._ROLE.match(prompt) else self.calls[-1][0])
+        self.calls.append((role, prompt, session, reopen))
+        if role == self.stop_at and len([c for c in self.calls if c[0] == role]) == 1:
+            raise InterruptedError("stopped")
+        if reopen and not self.reopens:
+            raise RuntimeError("No conversation found with session ID")
+        if role == "Steward":
+            return "DECISION: approve\nEXIT: to-development\nShip it.", 0.05
+        return "APPROVE — fine.", 0.05
+
+
+def test_go_on_reopens_the_very_turn_it_stopped_at():
+    exits = tm.exits_of({"exits": EXITS})
+    team, clan = tm.members_of({"members": ["Product critic:claude", "Risks analyzer:claude"]}), Stops("Risks analyzer")
+    kept: list[dict] = []
+    d = tm.new("PRD", PRD)
+    tm.run(d, team, tm.Steward(), set(), 3, 2.0, clan, exits=exits, sessions=lambda h: True,
+           on_call=lambda x: kept.append(dict(x.under_way)))
+    assert d.outcome == "stopped" and [t.role for t in d.turns] == ["Product critic"]
+    assert d.under_way["turn"] == "Risks analyzer" and len(d.under_way["session"]) == 36   # named before it started
+    assert kept[-1] == d.under_way
+    sid = d.under_way["session"]
+    tm.run(d, team, tm.Steward(), set(), 3, 2.0, clan, exits=exits, sessions=lambda h: True)
+    assert d.outcome == "approved" and d.under_way == {}
+    went_on = [c for c in clan.calls if c[3]]
+    assert [(c[0], c[1], c[2]) for c in went_on] == [("Risks analyzer", tm.GO_ON, sid)]   # its own session, no prompt again
+    assert [c[0] for c in clan.calls].count("Product critic") == 1                       # the heard are not asked again
+    assert d.turns[1].role == "Risks analyzer" and d.turns[1].note == tm.WENT_ON
+
+
+def test_a_session_that_cannot_be_reopened_starts_its_turn_again():
+    team, clan = tm.members_of({"members": ["Product critic:claude"]}), Stops("Steward", reopens=False)
+    d = tm.new("PRD", PRD)
+    tm.run(d, team, tm.Steward(), set(), 3, 2.0, clan, sessions=lambda h: True)
+    assert d.outcome == "stopped" and d.under_way["turn"] == tm.STEWARD_TURN
+    first = d.under_way["session"]
+    tm.run(d, team, tm.Steward(), set(), 3, 2.0, clan, sessions=lambda h: True)
+    steward = [c for c in clan.calls if c[0] == "Steward"]
+    assert [(c[2] == first, c[3]) for c in steward] == [(True, False), (True, True), (False, False)]
+    assert steward[-1][1].startswith("You are the steward") and d.turns[-1].note == ""
+
+
+def test_a_stopped_review_is_kept_turn_by_turn_and_goes_on_after_the_app_closed(fake_repo, monkeypatch):
+    _board(fake_repo)
+    checkpoint.ensure(fake_repo)
+    calls: list = []
+
+    def agent(harness, prompt, repo, env, cancel, model="", web=False, session="", reopen=False):
+        calls.append((prompt[:40], session, reopen))
+        if "Risks analyzer" in prompt[:60] and len(calls) == 2:
+            raise InterruptedError("halted")
+        if prompt.startswith("You are the steward"):
+            return "DECISION: approve\nEXIT: to-development\nShip it.", 0.1, None
+        return "APPROVE — fine.", 0.1, None
+
+    from orkcraft.realm import roads
+    monkeypatch.setattr(roads, "run_agent", agent)
+    monkeypatch.setattr(CouncilWorker, "sessions", staticmethod(lambda h: True))
+    host = Host(fake_repo, auto_commit=False)
+    w = host.town.worker("board")
+    w.review(PRD, "PRD")
+    assert _until(lambda: not w.busy and w.current.outcome == "stopped")
+    saved = tm.load_all(w.state_dir)[0]                                      # kept as it went
+    assert [t.role for t in saved.turns] == ["Product critic"] and saved.under_way["turn"] == "Risks analyzer"
+    sid = saved.under_way["session"]
+
+    # the app was closed mid-turn: the file still says running; opened again, it reads as stopped
+    saved.outcome = "running"
+    tm.save(w.state_dir, saved)
+    again = Host(fake_repo, auto_commit=False)
+    ts.subscribe(again.town.scroll, "dev", "board", "team.routed", filter={"route": ["to-development"]})
+    sent: list = []
+    monkeypatch.setattr(again.town.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
+    review = again.detail("board")["data"]["current"]
+    assert review["outcome"] == "stopped" and review["goes_on_at"] == "Risks analyzer" and review["reopens"]
+    assert again.command("act", {"id": "board", "act": "go_on", "args": {}})
+    w2 = again.town.worker("board")
+    assert _until(lambda: not w2.busy and w2.current.outcome == "approved")
+    assert calls[2] == (tm.GO_ON[:40], sid, True)                            # its own session, reopened
+    assert len(calls) == 4 and calls[3][0].startswith("You are the steward")  # the critic was not asked again
+    assert w2.current.turns[1].note == tm.WENT_ON and [p.mode for p in sent if p.mode == "team.routed"]
+
+
+def test_a_claude_reading_turn_names_its_session_and_reopens_it(monkeypatch, tmp_path):
+    from orkcraft.realm import roads
+    seen: list = []
+    monkeypatch.setattr(roads, "run_proc", lambda cmd, *a, **k: seen.append(cmd) or (0, '{"result": "ok"}', ""))
+    roads.run_agent("claude", "read it", tmp_path, {}, threading.Event(), session="abc", web=True)
+    roads.run_agent("claude", tm.GO_ON, tmp_path, {}, threading.Event(), session="abc", reopen=True)
+    roads.run_agent("claude", "read it", tmp_path, {}, threading.Event())
+    assert seen[0][-2:] == ["--session-id", "abc"] and seen[1][-2:] == ["--resume", "abc"]
+    assert "--session-id" not in seen[2] and "--resume" not in seen[2]
+    assert roads.names_session("claude") and not roads.names_session("agy")
 
 
 def test_a_document_that_comes_without_budget_waits_in_line(host, monkeypatch):

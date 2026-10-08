@@ -6,13 +6,16 @@ when it changes again); rejecting one rolls it back — a new file moves to the 
 copied there. Nothing is ever thrown away.
 
 A task's branch is read the same way (`Branch`): the files it committed since its base, their diff
-or content, and a copy of one to open in the system viewer.
+or content, and a copy of one to open in the system viewer. One of its files is rejected by a commit on
+the branch that puts it back as the base has it (its content kept aside first), and brought back by
+another; the branch is never checked out for it, and a worktree that has it checked out follows.
 """
 from __future__ import annotations
 
 import datetime as dt
 import hashlib
 import json
+import os
 import shutil
 import struct
 import subprocess
@@ -34,8 +37,8 @@ class Generated:
     reviewed: str = ""    # "" | accepted
 
 
-def _git(repo: Path, *args: str, check: bool = True) -> str:
-    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, timeout=GIT_TIMEOUT_S)
+def _git(repo: Path, *args: str, check: bool = True, env: dict | None = None) -> str:
+    out = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, timeout=GIT_TIMEOUT_S, env=env)
     if check and out.returncode != 0:
         raise RuntimeError(out.stderr.strip() or f"git {args[0]} failed")
     return out.stdout
@@ -286,3 +289,78 @@ class Branch:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(self.blob(rel))
         return dest
+
+    # -- one file decided --------------------------------------------------------------------------
+
+    def _tree_entry(self, rev: str, rel: str) -> tuple[str, str] | None:
+        """(mode, blob id) of `rel` in `rev`, None when it is not there."""
+        out = _git(self.worktree, "ls-tree", "-z", rev, "--", rel)
+        head, _, name = out.split("\0")[0].partition("\t")
+        parts = head.split()
+        return (parts[0], parts[2]) if name == rel and len(parts) == 3 and parts[1] == "blob" else None
+
+    def _checked_out(self) -> Path | None:
+        """The worktree that has the branch checked out, None when none has."""
+        here = None
+        for ln in _git(self.worktree, "worktree", "list", "--porcelain").splitlines():
+            if ln.startswith("worktree "):
+                here = Path(ln[len("worktree "):])
+            elif ln == f"branch refs/heads/{self.branch}" and here is not None:
+                return here
+        return None
+
+    def _commit(self, rel: str, entry: tuple[str, str] | None, message: str) -> None:
+        """One commit on the branch that sets `rel` to `entry` (mode, blob) or removes it (None). The branch
+        is not checked out for it; a worktree that has it checked out gets the file as the commit has it,
+        and refuses while the file has changes there nobody committed."""
+        there = self._checked_out()
+        if there is not None and _git(there, "status", "--porcelain", "--", rel).strip():
+            raise RuntimeError(f"{rel} has uncommitted changes in {there.name}: commit or drop them first")
+        old = _git(self.worktree, "rev-parse", "--verify", f"refs/heads/{self.branch}").strip()
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index")}
+            _git(self.worktree, "read-tree", old, env=env)
+            if entry is None:
+                _git(self.worktree, "update-index", "--force-remove", "--", rel, env=env)
+            else:
+                _git(self.worktree, "update-index", "--add", "--cacheinfo", f"{entry[0]},{entry[1]},{rel}", env=env)
+            tree = _git(self.worktree, "write-tree", env=env).strip()
+        commit = _git(self.worktree, "commit-tree", tree, "-p", old, "-m", message).strip()
+        _git(self.worktree, "update-ref", f"refs/heads/{self.branch}", commit, old)
+        if there is not None:
+            if entry is None:
+                _git(there, "rm", "-q", "-f", "--ignore-unmatch", "--", rel)
+            else:
+                _git(there, "checkout", "HEAD", "--", rel)
+
+    def reject(self, rel: str, keep: Path, now: dt.datetime | None = None) -> dict:
+        """Put `rel` back on the branch as its base has it (gone, if the task added it), its content on the
+        branch kept under `keep/<stamp>/` first. Returns what `restore` needs: {path, at, change, kept, mode}."""
+        change = next((g.change for g in self.files() if g.path == rel), None)
+        if change is None:
+            raise ValueError(f"{rel} is not changed on {self.branch}")
+        stamp = (now or dt.datetime.now()).strftime("%Y%m%d-%H%M%S")
+        mine = self._tree_entry(self.branch, rel)
+        kept, mode = "", ""
+        if mine is not None:
+            dest = keep / stamp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(self.blob(rel))
+            kept, mode = str(dest), mine[0]
+        since = _git(self.worktree, "merge-base", self._since(), self.branch).strip()
+        self._commit(rel, self._tree_entry(since, rel), f"Loot: {rel} rejected")
+        return {"path": rel, "at": stamp, "change": change, "kept": kept, "mode": mode}
+
+    def restore(self, entry: dict) -> None:
+        """Bring a rejected file back on the branch as the task had it (a deletion: deleted again)."""
+        rel = str(entry.get("path") or "")
+        if not rel:
+            raise ValueError("nothing to bring back")
+        if entry.get("kept"):
+            kept = Path(entry["kept"])
+            if not kept.is_file():
+                raise ValueError(f"the kept copy of {rel} is gone")
+            blob = _git(self.worktree, "hash-object", "-w", "--", str(kept)).strip()
+            self._commit(rel, (entry.get("mode") or "100644", blob), f"Loot: {rel} brought back")
+        else:
+            self._commit(rel, None, f"Loot: {rel} deleted again")

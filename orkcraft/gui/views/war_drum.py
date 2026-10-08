@@ -8,7 +8,7 @@ import datetime as dt
 
 from orkcraft.core.workers.war_drum import TICK_S
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import daybook, drumbeat
+from orkcraft.realm import catalog, daybook, drumbeat
 
 REFRESH_S = TICK_S             # the clock: what starts, what comes soon, the digest; a reload every 5 min
 CARD = 6                       # beats (meetings, scheduled runs, limits) on the closed card
@@ -27,7 +27,28 @@ def _minutes(t) -> int:
     return t.hour * 60 + t.minute if isinstance(t, dt.datetime) else 0
 
 
-def _event(w, e, docs: dict, now: dt.datetime, cur) -> dict:
+def _from_wiki(w) -> dict[str, dict]:
+    """What the town's Wikis keep for this calendar's meetings (docs/design/wiki-librarian.md §6), by meet id:
+    the items still to discuss and the pages their notes link, summed over the Wikis that read it."""
+    out: dict[str, dict] = {}
+    for bid, spec in w.town.custom_specs.items():
+        if catalog.migrate(spec).get("type") != "scrolls":
+            continue
+        kept = getattr(w.town.worker(bid), "kept_for", None)
+        for mid, k in (kept(w.building_id) if kept else {}).items():
+            got = out.setdefault(mid, {"discuss": 0, "pages": 0})
+            got["discuss"] += k["discuss"]
+            got["pages"] += k["pages"]
+    return out
+
+
+def _wiki_line(kept: dict, mid: str, doc: bool) -> dict | None:
+    """A meeting's line from the Wiki: how many items to discuss; the pages once its brief is back."""
+    k = kept.get(mid)
+    return {"discuss": k["discuss"], "pages": k["pages"] if doc else 0} if k else None
+
+
+def _event(w, e, docs: dict, now: dt.datetime, cur, kept: dict | None = None) -> dict:
     end = daybook._end(e)
     doc = docs.get(daybook.meet_id(e))
     return {
@@ -36,15 +57,17 @@ def _event(w, e, docs: dict, now: dt.datetime, cur) -> dict:
         "from_min": _minutes(e.start), "to_min": _minutes(end) if end and end.date() == e.day else 24 * 60,
         "when": daybook.when(e), "now": e is cur, "past": bool(end and end <= now),
         "doc": doc["path"] if doc else "", "link": doc.get("link", "") if doc else "",
+        "wiki": _wiki_line(kept or {}, daybook.meet_id(e), bool(doc)),
     }
 
 
-def _beat(b: drumbeat.Beat, now: dt.datetime, docs: dict | None = None) -> dict:
+def _beat(b: drumbeat.Beat, now: dt.datetime, docs: dict | None = None, kept: dict | None = None) -> dict:
     """A beat for the page: the words are the page's (by `kind`), the title as written."""
+    doc = bool(docs) and b.kind == "meeting" and b.ref in docs
     return {"kind": b.kind, "tone": b.tone, "at": _hm(b.at), "day": "" if b.at.date() == now.date() else f"{b.at:%a}",
             "date": b.at.date().isoformat(), "min": _minutes(b.at), "title": b.title[:60], "ref": b.ref,
             "detail": b.detail, "approx": b.approx, "now": b.now, "reached": b.reached, "more": b.more,
-            "doc": bool(docs) and b.kind == "meeting" and b.ref in docs}
+            "doc": doc, "wiki": _wiki_line(kept or {}, b.ref, doc) if b.kind == "meeting" else None}
 
 
 def _limit(lim: drumbeat.Limit, now: dt.datetime) -> dict:
@@ -68,7 +91,8 @@ def card(w) -> dict:
         mark = {"kind": b.kind, "tone": b.tone, "pos": round((max(b.at, now) - now) / span, 3), "approx": b.approx}
         if b.at < now + span and not any(m["kind"] == b.kind and abs(m["pos"] - mark["pos"]) < 0.02 for m in strip):
             strip.append(mark)                  # one mark where two of a kind fall together
-    return {"beats": [_beat(b, now, docs) for b in drumbeat.ahead(beats, CARD)], "strip": strip, "hours": STRIP_H,
+    kept = _from_wiki(w)
+    return {"beats": [_beat(b, now, docs, kept) for b in drumbeat.ahead(beats, CARD)], "strip": strip, "hours": STRIP_H,
             "now": _hm(now), "left": left, "error": bool(w.day.errors), "kinds": list(w.kinds)}
 
 
@@ -76,6 +100,7 @@ def detail(w) -> dict:
     now = w.clock()
     cur, nxt, left = daybook.now_and_next(w.day.events, now)
     docs = w.docs()
+    kept = _from_wiki(w)
     limits = w.limits()
     week = w.week_beats(limits)
     beats = [b for day in week.values() for b in day]
@@ -83,7 +108,7 @@ def detail(w) -> dict:
     for d in range(daybook.WEEK_DAYS):
         day = now.date() + dt.timedelta(days=d)
         days.append({"date": day.isoformat(), "label": "Today" if d == 0 else f"{day:%a %d %b}",
-                     "events": [_event(w, e, docs, now, cur) for e in w.day.events if e.day == day],
+                     "events": [_event(w, e, docs, now, cur, kept) for e in w.day.events if e.day == day],
                      "beats": [_beat(b, now) for b in week[day]]})
     return {
         "date": f"{now:%A %d %B}", "now_min": now.hour * 60 + now.minute,

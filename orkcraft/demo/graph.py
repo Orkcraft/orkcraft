@@ -1,6 +1,7 @@
 """Simple markdown entity reader for demo showcase sandbox only."""
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,8 +29,17 @@ class Graph:
         self.entities: dict[str, DemoEntity] = {}
         self._load()
 
+    def _markdown(self):
+        """The .md files under the root; never inside `.git`, where a background `git gc` removes folders
+        while they are walked."""
+        for folder, dirs, files in os.walk(self.root, onerror=lambda e: None):
+            dirs[:] = [d for d in dirs if d != ".git"]
+            for name in files:
+                if name.endswith(".md"):
+                    yield Path(folder) / name
+
     def _load(self) -> None:
-        for md in self.root.glob("**/*.md"):
+        for md in self._markdown():
             try:
                 text = md.read_text(encoding="utf-8")
                 if not text.startswith("---"):

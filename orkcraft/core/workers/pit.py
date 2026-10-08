@@ -11,7 +11,9 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import time
 from pathlib import Path
+from typing import Callable
 
 from orkcraft.core import bus
 from orkcraft.core.workers import Worker
@@ -19,6 +21,7 @@ from orkcraft.realm import pipes, pit
 
 STOPS = 30                  # what a chain keeps of where its carts went
 VALUE = 2000                # what a stop keeps of what arrived there
+CLIENT_ID_S = 3600.0        # how long a drop's client id is remembered (a phone's retry: docs/design/mobile.md §6)
 
 
 def item_id(it: pit.Item) -> str:
@@ -40,6 +43,7 @@ class PitWorker(Worker):
         self.items: list[pit.Item] = []
         self.chains: dict[str, dict] = {}                 # item id → {"cost", "hops", "stops"}
         self._off: list = []
+        self._client_ids: dict[str, tuple[float, int]] = {}   # a drop's client id → (when, what it made)
 
     @property
     def chains_file(self) -> Path:
@@ -63,10 +67,24 @@ class PitWorker(Worker):
 
     # -- taking things in -----------------------------------------------------------------------
 
-    def drop(self, text: str) -> int:
-        """Take what a paste or a drop brought. Returns how many items it made."""
+    def once(self, client_id: str, drop: Callable[[], int], now: float | None = None) -> int:
+        """A drop that names a client id is made once an hour: the same id again (a phone that sends again
+        after a lost reply) gets what the first made, and nothing is dropped twice."""
+        if not client_id:
+            return drop()
+        now = time.monotonic() if now is None else now
+        self._client_ids = {k: v for k, v in self._client_ids.items() if now - v[0] < CLIENT_ID_S}
+        if client_id in self._client_ids:
+            return self._client_ids[client_id][1]
+        made = drop()
+        self._client_ids[client_id] = (now, made)
+        return made
+
+    def drop(self, text: str, paths: bool = True) -> int:
+        """Take what a paste or a drop brought. Returns how many items it made. `paths` False: the text is
+        never read as files on this machine (a phone's drop: it names no path)."""
         try:
-            items = pit.sort(self.repo_root, text)
+            items = pit.sort(self.repo_root, text, paths=paths)
         except OSError as e:
             self.toast(str(e), severity="error")
             return 0

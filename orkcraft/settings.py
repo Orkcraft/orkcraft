@@ -10,6 +10,7 @@
     s.growth                         # the operator's mascot stage and deeds (realm/growth.py)
     s.usage, s.install_id            # anonymous usage stats: None not asked yet (core/usage.py)
     s.updates                        # auto | critical | ask: which updates install by themselves (core/updates.py)
+    s.phones, s.phone_port           # the paired phones (only their tokens' hashes) and their listener's port (gui/pairing.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
@@ -62,6 +63,10 @@ class MachineSettings:
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
     main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on
+    # The phones paired with this machine's towns (docs/design/mobile.md §2): id, name, the SHA-256 of the
+    # device token (never the token), when paired and when last seen. The Town Scroll never holds them.
+    phones: list = field(default_factory=list)
+    phone_port: int = 0           # the phone listener's port, kept so a paired phone finds it again; 0 not chosen
 
     def to_dict(self) -> dict:
         return {
@@ -78,6 +83,8 @@ class MachineSettings:
             "fire": self.fire,
             "updates": self.updates,
             "main_tool": self.main_tool,
+            "phones": [dict(p) for p in self.phones],
+            "phone_port": self.phone_port,
         }
 
     @classmethod
@@ -103,11 +110,32 @@ class MachineSettings:
         s.fire = data.get("fire") is not False
         s.updates = data["updates"] if data.get("updates") in UPDATES else "critical"
         s.main_tool = data["main_tool"] if data.get("main_tool") in TOOLS else ""
+        s.phones = clean_phones(data.get("phones"))
+        port = data.get("phone_port")
+        s.phone_port = port if isinstance(port, int) and not isinstance(port, bool) and 1024 <= port <= 65535 else 0
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
             s.install_id = install_id if ok else uuid.uuid4().hex
         return s
+
+
+def clean_phones(raw: object) -> list[dict]:
+    """The paired phones that are whole: an id, a name, a token's hash; anything else is dropped (a phone
+    whose entry broke pairs again)."""
+    out: list[dict] = []
+    for p in raw if isinstance(raw, list) else []:
+        if not isinstance(p, dict):
+            continue
+        pid, name, digest = p.get("id"), p.get("name"), p.get("hash")
+        if not (isinstance(pid, str) and re.fullmatch(r"[0-9a-f]{16}", pid) and isinstance(digest, str)
+                and re.fullmatch(r"[0-9a-f]{64}", digest) and isinstance(name, str) and name.strip()):
+            continue
+        if any(o["id"] == pid for o in out):
+            continue
+        out.append({"id": pid, "name": name.strip()[:60], "hash": digest,
+                    "paired": str(p.get("paired") or "")[:32], "seen": str(p.get("seen") or "")[:32]})
+    return out
 
 
 def clean_growth(raw: object) -> dict:
@@ -175,9 +203,34 @@ def preset_role(role_id: str, file: Path | None = None, kin: str = "") -> bool:
     return True
 
 
-def save(s: MachineSettings, file: Path | None = None) -> None:
-    file = file or path()
+def _raw(file: Path) -> dict:
+    try:
+        data = json.loads(file.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write(file: Path, data: dict) -> None:
     file.parent.mkdir(parents=True, exist_ok=True)
     tmp = file.with_suffix(file.suffix + ".tmp")
-    tmp.write_text(json.dumps(s.to_dict(), indent=2) + "\n", encoding="utf-8")
+    tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     tmp.replace(file)
+
+
+def save(s: MachineSettings, file: Path | None = None) -> None:
+    """The settings as `s` has them, but the paired phones as the file has them: only `save_phones`
+    writes those, so a town that loaded the settings before a phone was forgotten never brings it back."""
+    file = file or path()
+    data = s.to_dict()
+    raw = _raw(file)
+    data["phones"], data["phone_port"] = raw.get("phones", []), raw.get("phone_port", 0)
+    _write(file, data)
+
+
+def save_phones(phones: list[dict], port: int, file: Path | None = None) -> None:
+    """The paired phones and their listener's port, everything else in the file as it is (gui/pairing.py)."""
+    file = file or path()
+    raw = _raw(file)
+    raw["phones"], raw["phone_port"] = clean_phones(phones), port
+    _write(file, raw)

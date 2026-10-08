@@ -46,7 +46,7 @@ from websockets.http11 import Request, Response
 
 from orkcraft import __version__
 from orkcraft.design import tokens
-from orkcraft.gui import mobile
+from orkcraft.gui import mobile, notify, phones
 from orkcraft.gui.host import CommandError, Host
 
 STATIC = Path(__file__).with_name("static")
@@ -94,6 +94,10 @@ class Server:
         host.on_detail = self._detail_changed
         host.sessions.on_output = self._output
         host.on_toast = lambda data: self._send_all({"t": "toast", **data})
+        # The listener for phones (gui/phones.py): on the LAN, TLS, a device token; only while one is paired.
+        self.phones = phones.Listener(host)
+        host.commands.update(self.phones.commands())
+        self.notifier = notify.Notifier(host, self.phones)   # what came, to the phones that are open
 
     @property
     def origin(self) -> str:
@@ -281,6 +285,7 @@ class Server:
             await asyncio.sleep(TICK_S)
             try:
                 self.host.tick()
+                self.phones.tick()
             except Exception as e:
                 self.host.town.toast(f"{type(e).__name__}: {e}", title="Town clock", severity="error")
 
@@ -292,10 +297,20 @@ class Server:
                          max_size=8 * 2**20) as server:
             self.port = server.sockets[0].getsockname()[1]
             ticker = asyncio.create_task(self._ticker())
+            self._phones_start()
             self.ready.set()
             await self._stop.wait()
             ticker.cancel()
+            self.phones.stop()
         self.host.close()
+
+    def _phones_start(self) -> None:
+        """A machine with a paired phone listens for it from the start."""
+        try:
+            if self.phones.wanted():
+                self.phones.start()
+        except phones.PhoneError as e:
+            self.host.town.toast(str(e), title="Phones", severity="warning")
 
     def stop(self) -> None:
         if self.loop is not None and self._stop is not None:

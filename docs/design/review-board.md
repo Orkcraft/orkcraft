@@ -1,6 +1,7 @@
 # Design — the Review board: a purpose, a clan, named exits
 
-Status: written and built 2026-10-07 — all four stages of §8, and the exits on the map (§2.1). Not built: Go on resuming from the very turn it stopped at (it resumes with the members not yet heard). The Review board is the catalog's
+Status: written and built 2026-10-07 — all four stages of §8, and the exits on the map (§2.1), and Go
+on from the very turn it stopped at (§6.1). The Review board is the catalog's
 `council` (the Clan Fire of old: `core/workers/council.py`, `realm/team.py`, `gui/views/council.py`,
 `js/buildings/council.js`). Screenshots of every state it has today:
 https://claude.ai/artifact/HXs4DvsBndSTyyKrF5t3Uv
@@ -138,6 +139,23 @@ The states stay those of today (the screenshots), with a way on from each:
 | failed | `✗ failed` + why | **Try again** |
 | stopped by hand | `■ stopped` | **Go on** (from the turn it stopped at) |
 | waiting in line | `N waiting` on the card and **in the panel's head** | the line, each with *Review now* / *Drop* |
+
+### 6.1 Go on, from the very turn it stopped at (as built)
+
+- **The members already heard are not asked again** (as before): Go on, Try again and Raise the
+  budget and go on start at the turn that was under way, else the first member not heard yet, else
+  the steward. The panel says where, beside the button (*at Risks analyzer*).
+- **The turn that was cut off goes on in its own session.** A turn's session gets its id before it
+  starts (`Discussion.under_way`: the turn and its session); a stopped or failed turn is reopened with
+  *"You were stopped in the middle of this. Go on from where you were…"*, so what it had read is not
+  read again, and its turn says *went on from where it stopped*. A session that cannot be reopened
+  starts the turn again, with its prompt. Only tools that let a reading agent name its session do
+  this (`Harness.read_session`: Claude Code's `--session-id` / `--resume`); with the others the turn
+  starts again, as before.
+- **Kept turn by turn.** The review is saved before each turn and after it, so one the app was
+  closed in (or that crashed) is found again on the next start; nothing runs it any more, so it reads
+  as *stopped* and Go on takes it up. The cart it came on (its ref and trail) is not kept across a
+  restart: what it sends then goes out under the board's own ref.
 
 ## 7. What changes in the code
 
