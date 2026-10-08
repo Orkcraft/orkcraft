@@ -34,21 +34,21 @@ Order: value / risk, best first. First version — refined below as the audit go
   — `ui/after-U01-camp-phone.png` — `gui/static/js/pocket.js` (`asks`) — S/M — two numbers for "what waits for
   me" that disagree; the chip should count what Answers counts (or open Answers when the town waits on a
   non-building). — done by D1: the chip counts what Answers counts and opens Answers when no building asks (`ui/after-U06-camp-phone.png`).
-- [ ] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
+- [~] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
   Warchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
   `ui/camp-win-todo.png` — `gui/static/js/warchief*.js` / `layout.css` — S/M — when space is short, drop the
-  waiting question to an icon + count rather than cut both.
+  waiting question to an icon + count rather than cut both. — taken by Night D3: GUI fixes from the queue
 - [x] U08 Office: the orange ✻ (busy Claude mark) floats in the middle of a card's title row, far from the
   title — `ui/office-town.png` — `office.css` hut title — S — the mark belongs to the card's title, at its
   right edge or right after the name. — done by D2 (33d906b): Office's name takes only its width (`office.css`), the ✻ follows it, the pin keeps the right edge — `ui/after-U08-office-town.png`
 - [x] U09 Office, phone: the building rows were 240 px wide on a 390 px screen (the Office theme's fixed
   `.ok-hut[class]` width won over the pocket's `width: auto`) — `ui/office-phone-town.png` → `ui/after-U01-office-phone.png` —
   `layout.css` — S — done by D1.
-- [ ] U10 Office: a building's card, opened, grows in place and covers its neighbours and the portrait's two
+- [~] U10 Office: a building's card, opened, grows in place and covers its neighbours and the portrait's two
   quick buttons (Calendar over Wiki's left half and over 🔕/look at the top-left); the War Map covers the
   External listeners card — `ui/office-win-days.png` — `layout.css` / `office.css` (z-order, the open card's
   room) — M — the town under an open panel should stay readable; the open card at least must not cover the
-  HUD corner's controls.
+  HUD corner's controls. — taken by Night D3: GUI fixes from the queue
 - [x] U11 An open card repeats its window's actions ("New event", "Prepare doc" under the Calendar card, while
   the panel's top row has the same two) — `ui/office-win-days.png`, `ui/camp-win-todo.png` ("New task",
   "New note") — `gui/static/js/hut.js` — S — with the panel open, one place for the actions is enough; hide the
@@ -86,10 +86,10 @@ Order: value / risk, best first. First version — refined below as the audit go
   an address is set: with none it can only dry-run). — done by D2 (3b034e8): Dry run first in the catalog (`realm/catalog.py`), so the card and the window agree; Fire is the primary only with an address (or MCP / browser mode) — `ui/after-U20-camp-catapult.png`
 - [x] U21 Metrics writes money "0 $", the HUD "$0.00" — `ui/camp-crag.png` — `buildings/crag.js` — S — one
   format for money, the HUD's. — done by D2 (3b034e8): `core/workers/crag.py` `with_unit` writes money $0.00 ($— for none) in the window, the card and the threshold toast; the TUI's own Crag view keeps its format (TUI: fixes only) — `ui/after-U21-camp-crag.png`
-- [ ] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
+- [~] U22 The ork's 👍/👎 bubble over a yard (script-first building) covers the yard's number and the first letters
   of its name ("OUTER", "OUND ALERTS") while the mouse is over it — `ui/camp-signpost.png`, `ui/camp-horn.png`
   — `js/hut.js` / `yards.css` (the bubble from 9b87d76) — S — the bubble stands left of or above the title
-  plate, never on it.
+  plate, never on it. — taken by Night D3: GUI fixes from the queue
 - [ ] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
   ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
   a card always says its state in one line.
