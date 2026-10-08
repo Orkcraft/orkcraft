@@ -175,9 +175,11 @@ def _b(key: str, type_: str, title: str, icon: str, why: str, **config) -> dict:
     return {**b, "config": config} if config else b
 
 
-def _r(src: str, event: str, dst: str, why: str, route: str = "") -> dict:
+def _r(src: str, event: str, dst: str, why: str, route: str = "", returns: bool = False) -> dict:
     r = {"from": src, "event": event, "to": dst, "why": why}
-    return {**r, "route": route} if route else r
+    if route:
+        r["route"] = route
+    return {**r, "returns": True} if returns else r
 
 
 def _plan(title: str, summary: str, buildings: list[dict], roads: list[dict]) -> dict:
@@ -213,7 +215,7 @@ INTENTS: tuple[Intent, ...] = (
                  [_r("inbox", "watch.mention", "board", "a ticket that names you becomes a card"),
                   _r("board", "tasks.created", "crew", "a new card goes to a free agent"),
                   _r("crew", "pool.done", "merge", "a finished branch goes to tests and merge"),
-                  _r("crew", "pool.done", "board", "the card moves to Done"),
+                  _r("crew", "pool.done", "board", "the card moves to Done", returns=True),
                   _r("inbox", "watch.github", "review", "a teammate's PR is reviewed at once"),
                   _r("review", "team.artifact_ready", "notes", "the verdict lands where you read it")]),
            day=("build", "review"), rhythm="day"),
@@ -269,7 +271,7 @@ INTENTS: tuple[Intent, ...] = (
                   _r("sort", "signpost.routed", "board", "urgent bugs land on the board", "urgent"),
                   _r("sort", "signpost.routed", "board", "and every other bug too", "bug"),
                   _r("board", "tasks.created", "repro", "every bug is reproduced"),
-                  _r("repro", "pool.done", "board", "the card gets the steps")]),
+                  _r("repro", "pool.done", "board", "the card gets the steps", returns=True)]),
            day=("firefight", "users"), rhythm="day"),
     Intent("regression_run", "qa", "🔁", "Regression Raid", "every week the full suites run; failures become bugs",
            _plan("Regression Raid", "Every Thursday agents run the full and slow suites on main; failures become "
@@ -317,7 +319,7 @@ INTENTS: tuple[Intent, ...] = (
                   _b("mentions", "watchtower", "Mentions", "🗼", "where you are mentioned in Slack and Jira"),
                   _b("actions", "fields", "Action items", "📋", "what you promised, as to-dos")],
                  [_r("calendar", "calendar.event_upcoming", "prep", "an hour before, the meeting is prepared"),
-                  _r("prep", "pool.done", "calendar", "the brief opens from the meeting"),
+                  _r("prep", "pool.done", "calendar", "the brief opens from the meeting", returns=True),
                   _r("notes", "knowledge.changed", "actions", "new notes surface their action items"),
                   _r("mentions", "watch.mention", "actions", "a mention that needs you becomes a to-do")]),
            day=("meetings", "planning"), rhythm="day"),
@@ -374,7 +376,7 @@ INTENTS: tuple[Intent, ...] = (
                   _r("inbox", "watch.mention", "sort", "mentions too"),
                   _r("sort", "signpost.routed", "board", "a request becomes a task", "you"),
                   _r("calendar", "calendar.event_upcoming", "prep", "before a meeting its brief is written"),
-                  _r("prep", "pool.done", "calendar", "the brief opens from the meeting"),
+                  _r("prep", "pool.done", "calendar", "the brief opens from the meeting", returns=True),
                   _r("calendar", "calendar.day_schedule", "digest", "the day starts with a digest"),
                   _r("digest", "mill.done", "reports", "the digest is kept")]),
            day=("mail", "meetings", "planning"), rhythm="day"),

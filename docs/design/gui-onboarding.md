@@ -132,11 +132,18 @@ that fails, the step says so and the order waits in the Town Hall, as before.
 No full-screen progress bar: the onboarding leaves and the town is drawn, and the buildings go up on the map one
 step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of the person.
 
-- **Bottom left, the log:** every step with ✓ done, ⚒ now (it bobs; still under `prefers-reduced-motion`),
-  · next, ✗ failed. While the planner draws: "The town planner is drawing your town…". At the end:
-  **Open the town**, which closes the onboarding.
-- **Bottom right, the Autonomy card:** "While they build: how free are your orks?" with the three levels
-  (`town.settings`, `town.settings.set`, as Settings uses them). Later and Done put it away; the default stands.
+- **One card, bottom left** — the only dialog while the town goes up, so the map stays in view beside it:
+  - **How it goes:** a bar of the steps done and the one going on now (⚒); *All steps* opens the list with ✓
+    done, ⚒ now, · next, ✗ failed. While the planner draws: "The town planner is drawing your town…".
+  - **How free are your orks?** The three levels (`town.settings`, `town.settings.set`, as Settings uses
+    them); the chosen one says what it means. Quiet hours 23:00–08:00 on or off (`onboarding.quiet`).
+  - **Share anonymous usage stats**, when it was never answered: off unless ticked, sent with **Open the
+    town** (`usage.share`). The usage dialog (js/settings.js `UsageAsk`) waits while the onboarding is on.
+  - **Open the town** closes the onboarding once the town stands. Every choice applies at once and changes
+    any time in Settings.
+- **A road back is a return road.** Roads never close a loop (`scroll_roads.subscribe`); a plan's road that
+  brings a result back (a Barracks' `pool.done` to its Task Fields or War Drum) says `"returns": true`, and
+  `town_builder.check` refuses a loop before anything is raised.
 - **On the map, the plan first.** Each building's spot is chosen before it stands (four across, as a hut
   without a spot), so the whole town is drawn at once as dashed plans where it will be (`js/town.js` with
   `Ghost`). The one going up now is scaffolding, its sprite rising out of the ground; when it stands, its hut

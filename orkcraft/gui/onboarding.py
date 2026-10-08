@@ -460,7 +460,8 @@ class Onboarding:
                        lambda spec=spec, hut=hut, fold=fold: buildings.raise_spec(town, spec, hut, folded=fold), spec["id"])
         for r in plan.roads:
             self._step(f"A road {r.source} → {r.target}",
-                       lambda r=r: roads.lay(town, r.target, r.source, r.subscription, None, quiet=True))
+                       lambda r=r: roads.lay(town, r.target, r.source, r.subscription, None, quiet=True,
+                                                 returns=r.returns))
         for bid, event in plan.opens:
             self._step(f"{bid} opens in Lake", lambda bid=bid, event=event: _open_in_lake(town, bid, event))
         self._plan_title = plan.title

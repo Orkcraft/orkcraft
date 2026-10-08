@@ -45,7 +45,7 @@ function Steps({ label, items, value, onPick }) {
     </span></div>`;
 }
 
-const USAGE_WHAT = "Which features are used, as counts — never your code, prompts, paths or project names. "
+export const USAGE_WHAT = "Which features are used, as counts — never your code, prompts, paths or project names. "
   + "The list of every event is in docs/usage-stats.md.";
 
 const UPDATE_WHAT = {
@@ -73,11 +73,12 @@ function UsageField({ s, onPick }) {
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
 }
 
-/** Asked once, when the operator has not said yes or no: the town opens, then this. */
+/** Asked once, when the operator has not said yes or no: the town opens, then this. While the onboarding
+ *  sets up the town, its one card asks it instead (js/onboarding.js). */
 export function UsageAsk() {
   const [done, setDone] = useState(false);
   const t = town.value;
-  if (done || !t || !t.usage_ask || settingsOpen.value) return null;
+  if (done || !t || !t.usage_ask || t.onboarding || settingsOpen.value) return null;
   const answer = (v) => { setDone(true); command("usage.share", { share: v }).catch(() => {}); };
   return html`<${Dialog} title=${say("Help improve Orkcraft?")} onCancel=${() => setDone(true)}
       text=${say(USAGE_WHAT + " You can change this in Settings.")}

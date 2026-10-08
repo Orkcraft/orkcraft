@@ -51,13 +51,15 @@ should receive it ("from" and "to" are keys of the plan, "event" one of the sour
 on_selection_change), with a one-sentence "why". A road leads only into a type that takes something
 from a road. A road from a signpost on signpost.routed names the "route" (one of the signpost's rules) it
 waits for. To show the person what a building sends (a diff, a report, an answer), lead its road "to": "lake":
-it opens in the town's Lake window, which is not a building. A setting that names a building (wait_for, a horn's sounds, a signpost's `source` rule) uses plan keys.
+it opens in the town's Lake window, which is not a building. Roads never close a loop; a road that brings a
+result back to where its task came from (a Barracks' pool.done back to its Task Fields or War Drum) says
+"returns": true. A setting that names a building (wait_for, a horn's sounds, a signpost's `source` rule) uses plan keys.
 {template}{feedback}
 Answer with ONE JSON object and nothing else:
 {{"title": "<the town's name, plain>", "summary": "<one sentence>",
   "buildings": [{{"key": "...", "type": "...", "title": "...", "icon": "...", "why": "...",
                  "size": "S", "events": ["..."], "quick_actions": ["..."], "config": {{}}}}],
-  "roads": [{{"from": "<key>", "event": "...", "to": "<key>", "why": "...", "route": "<a signpost's route, else leave out>"}}]}}"""
+  "roads": [{{"from": "<key>", "event": "...", "to": "<key>", "why": "...", "route": "<a signpost's route, else leave out>", "returns": <true for a road back, else leave out>}}]}}"""
 
 
 ADAPT = """
@@ -91,6 +93,7 @@ class PlannedRoad:
     target: str        # building id
     why: str = ""
     route: str = ""    # from a Signpost: the route the road waits for
+    returns: bool = False   # brings a result back to where its task came from: closes no loop
 
     @property
     def subscription(self) -> str:
@@ -243,7 +246,12 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
         if (src, event, dst, route) in seen:
             continue
         seen.add((src, event, dst, route))
-        plan.roads.append(PlannedRoad(src, event, dst, str(r.get("why") or "")[:200], route))
+        returns = r.get("returns") is True
+        if not returns and _loops(plan.roads, src, dst):
+            problems.append(f"roads/{i}: {r.get('from')} → {r.get('to')} would close a loop of roads; a road that "
+                            f"brings a result back says \"returns\": true")
+            continue
+        plan.roads.append(PlannedRoad(src, event, dst, str(r.get("why") or "")[:200], route, returns))
     for spec in plan.specs:                                   # a Catapult waits only for what can come
         if spec["type"] == "catapult":
             feeding = {r.source for r in plan.roads if r.target == spec["id"]}
@@ -254,6 +262,23 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
     if len(plan.specs) < 2 and not problems:
         problems.append("plan at least two buildings")
     return plan, problems
+
+
+def _loops(roads: list[PlannedRoad], src: str, dst: str) -> bool:
+    """Would a road src → dst close a loop with the planned roads (return roads aside)?"""
+    edges: dict[str, set[str]] = {}
+    for r in roads:
+        if not r.returns:
+            edges.setdefault(r.source, set()).add(r.target)
+    seen, todo = set(), [dst]
+    while todo:
+        node = todo.pop()
+        if node == src:
+            return True
+        if node not in seen:
+            seen.add(node)
+            todo.extend(edges.get(node, ()))
+    return False
 
 
 def _types_of(answer: dict | None) -> set[str]:
