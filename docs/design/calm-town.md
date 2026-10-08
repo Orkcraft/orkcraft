@@ -82,7 +82,7 @@ One input at the town's foot (`js/warchief.js`). `/` or Ctrl+K focuses it from a
 |---|---|
 | an ork asks | "Answer N questions" — always first |
 | a building open | "Add an ork to Forge" (`/recruit @Forge `), "Connect Forge to…" (+ Listen), "What did Forge do today?" |
-| an empty orkspace | three starters ("I want my pull requests reviewed", …) and "Pick a building from the catalog" |
+| an empty orkspace | three starters ("I want my pull requests reviewed", …) and "I'll pick" (the catalog) |
 | otherwise | "Where does the gold go?" when spend is near its limit, "What happened today?", "Build something new", "Connect two buildings" |
 
 **While typing:**
