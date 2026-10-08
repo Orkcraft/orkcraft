@@ -51,3 +51,10 @@
 - Left: `intents.py` (540 of its 801 lines are town templates: data, left like `demo/scenarios.py`), the other modules of T06, T04, T07, T13. T13 needs a call first: Stop all sends Ctrl-C to a terminal session today (it keeps the person's session), while `halt` kills; registering sessions in `halt` would change that.
 - May be broken: nothing known; the critical tests and the ~140 test files that touch roads/jobs/steward/halt/cron are green (`-n 8`; 3 load flakes in the first run passed alone and in the re-run).
 - Question for the morning: T13 — should Stop all *kill* a terminal session an ork runs in the War Tent (one registry), or keep interrupting it (Ctrl-C, the session stays)?
+
+### D3 — GUI fixes from the queue (designer + engineer)
+- Done (342c758): **U07** the Warchief's line squeezed by an open panel says the waiting question as ❓ + how many wait, so the field keeps its whole hint; **U22** on a yard the ork's 👍/👎 bubble stands left of the ork, never on the yard's name; **U10** opening a building no longer slides its card under the portrait's corner buttons (the camera keeps it right of the corner and the War Map). Then (78ba046): **U23** a folded Transformer / Router says its state in its title.
+- Left: the UI queue is empty. U10's rest: a card that is *not* the open one's neighbour can still slide under the War Map while the panel is open, as at any scroll.
+- May be broken: nothing known; critical tests, `test_gui.py`, `test_gui_pit_signpost_mill.py`, `test_gui_browser.py`, `test_gui_script_first_browser.py` green. Signpost's colour helper renamed `mark` → `tint` (it clashed with the new `mark` export and would have broken the whole Router page).
+- Question for the morning: none.
+

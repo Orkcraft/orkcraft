@@ -90,9 +90,9 @@ Order: value / risk, best first. First version — refined below as the audit go
   of its name ("OUTER", "OUND ALERTS") while the mouse is over it — `ui/camp-signpost.png`, `ui/camp-horn.png`
   — `js/hut.js` / `yards.css` (the bubble from 9b87d76) — S — the bubble stands left of or above the title
   plate, never on it. — done by D3 (342c758): on a yard the bubble stands left of its ork, the tail turned to it (`yards.css`) — `ui/after-U22-camp-yard-bubble.png`
-- [~] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
+- [x] U23 A folded yard (Transformer, Router) shows an empty plate with a lone "Run" or nothing — no state line
   ("No steps yet") as the other cards have — `ui/camp-mill.png`, `ui/camp-signpost.png` — `js/hut.js` — S/M —
-  a card always says its state in one line. — taken by Night D3: GUI fixes from the queue
+  a card always says its state in one line. — done by D3 (78ba046): Mill and Signpost have a folded `mark` (no steps yet / no runs yet / milling / failed / N runs; no rules yet / no road out / N no rule / N routed) — `ui/after-U23-camp-folded-yards.png`. The lone "Run" was the quick row, shown under a folded card on hover or focus as on every card; an unfolded fresh Transformer says "Ready · no runs yet" (its card was not empty when I raised one)
 - [x] U24 A building's ork waking on an error says nothing: the toast reads "Branches & PRs — its ork woke on an
   error: it says ERROR" — `ui/after-U18-camp-forge.png` — `gui/keeper.py` (`wake.detail`) and where the detail
   is made in `realm/` — S — say the building's own error line (as the card shows it), not its status word. — done by D2 (7338c3d): `core/wakes.py` `_detail` reads the error the worker keeps (a snapshot's, `last_error`, `errors`) or its card's ⚠ line; with none, "its card shows a failure with no reason given — open it to see". A unit test; no wake fired in the demo sandboxes (their folders are git repositories), so no screenshot
