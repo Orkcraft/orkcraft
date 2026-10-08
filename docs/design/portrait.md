@@ -100,8 +100,10 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 
 - **How long:** 1 hour · until morning (the end of the machine's quiet hours, else 9:00) · until
   turned off. The menu shows the end ("Until 9:00").
-- **When it ends:** one line in the Warchief's line, and one push, of what waited: "While you were
-  away: 3 questions, 2 sounds kept, spend at 92%". A click opens Answers.
+- **When it ends:** one line in the Warchief's line, and one push, of everything that gathered:
+  the questions, the sounds kept, the toasts held, the pushes held, and the spend if it crossed into
+  `warn` or `over` ("While you were away: 3 questions, 2 sounds kept, 1 error, spend at 92%"). A
+  click opens Answers when a question waits, else the Horn's log of calls.
 - **Stored** per machine: `settings.json` → `dnd_until` (an ISO time, `"on"`, or none). The host puts
   it in the snapshot (`dnd`) for the page, the Horn and the notifier (`gui/notify.py`).
 - **Apart from the Horn's own mute and quiet hours:** those are the building's settings and stay
@@ -139,4 +141,4 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 
 ## 8. Open questions
 
-1. Does the summary when Do not disturb ends say the spend, or only what waited for an answer?
+None for now.
