@@ -5,22 +5,22 @@ reference ([reference.md](reference.md)) describes only what works today.
 
 ## 🏰 Town Hall: the Council and the Elders
 
-### Guarding agy as Claude Code is guarded
+### Guarding agy as Claude Code is guarded: the live check
 
-The 🛡 Warder is a `PreToolUse` hook for Claude Code and Codex (`orkcraft/hooks/warder.py`). agy has
-one too: it reads `PreToolUse` from `.agents/hooks.json` and `~/.gemini/config/hooks.json`, and a
-`deny` stops the call ([agy-guard](design/agy-guard.md) has the format, the tool names and what is
-still unverified). orkcraft does not install it yet, so agy sessions run with only agy's own
-`--sandbox` and permission prompts, and the onboarding's Warder step says so.
+The 🛡 Warder guards agy through agy's own `PreToolUse` hook. Two pieces are built and covered by
+tests written from the documented format: `python3 -m orkcraft.hooks.warder agy`, and
+`orkcraft hooks install`, which writes `.agents/hooks.json` and, after asking,
+`~/.gemini/config/hooks.json` (agy 1.1.12 or later). [agy-guard](design/agy-guard.md) has the
+format and what is still unverified. Nobody has run it on a live agy yet, so the onboarding (the
+window's and the terminal's) still says agy is unguarded, and a town is raised without agy's hook.
 
-What remains:
+What remains is the smoke test of [agy-guard §8](design/agy-guard.md#8-smoke-test-on-a-live-agy)
+on a machine with agy:
 
-- a Warder mode for agy (`python3 -m orkcraft.hooks.warder agy`): read `toolCall.name` /
-  `toolCall.args` and `workspacePaths`, answer `{"decision": "deny" | "ask", "reason": …}`;
-- `orkcraft hooks install` writing the hooks files: the Warder and the session hook into
-  `.agents/hooks.json`, and the global `~/.gemini/config/hooks.json` where agy needs it;
-- a smoke test on a live agy: a denied `rm -rf` and a denied `.env` read, in a print run and in a
-  War Tent session, before the onboarding stops saying agy is unguarded.
+- a denied `rm -rf .git` and a denied `.env` read, in a print run and in a War Tent session, with
+  the file tools' argument keys read from a probe hook;
+- then `"agy_warder_checked": true` in the machine settings, and the agy version tested noted in
+  the design note.
 
 ### The Council's watchers
 
@@ -29,16 +29,17 @@ runs. Taskmaster's budget duty is covered by the 🪙 / 🪵 limits.
 Their jobs, new names (Pacer, Treasurer, Alchemist, Peon) and stages are in
 [design/simplify.md](design/simplify.md) §6.
 
-## 🪙 Codex: its spend
+## 🪙 Codex: its prices
 
-Codex runs as a harness (`codex exec`) and in the War Tent, and its plan's windows show under
-⏳ Limits, but the HUD does not know what it costs: `codex exec --json` reports tokens and no price,
-so its runs count as unpriced (`+`). The research and the plan are in
-[design/codex-limits.md](design/codex-limits.md) §4 and §5.2.
+`codex exec` runs and War Tent sessions are priced from their model and token counts
+(`pricing.codex_usage_cost`, [design/codex-limits.md](design/codex-limits.md) §5.2), but OpenAI's
+table in `sources/pricing.py` (`OPENAI_PRICES`) is empty: openai.com could not be read from the
+machine it was built on, and a price is never guessed. Until it is filled, Codex runs stay
+unpriced (`+`).
 
-- Read OpenAI's per-token prices for the Codex models (`gpt-6-*`) first-hand and write them, with
-  their date, into a second table in `sources/pricing.py`; the numbers in the note are unverified.
-- Price `codex exec` runs and War Tent sessions from the model and the token counts (an
-  API-equivalent estimate for a ChatGPT login, as for Claude Pro / Max).
+- Read OpenAI's per-token prices for the Codex models (`gpt-6-*`) first-hand from
+  <https://developers.openai.com/api/docs/pricing>. Write them into `OPENAI_PRICES` with
+  `OPENAI_PRICES_AS_OF`. Include the long-context threshold and whether a cache write costs more
+  than input. The numbers in the design note's §4 are unverified.
 
 Done when a Codex run on a known model shows 🪙 instead of `+`.

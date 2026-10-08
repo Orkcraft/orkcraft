@@ -630,7 +630,10 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
 - **Retros** never apply themselves (design: `docs/design/retros-and-goals.md`). The daily
   🔧 **Building retro** (`optimize_at`, 06:20) ranks buildings by their share of the camp's tokens in
   24 h — or, with a subscription quota read, by the share of what is left of the binding quota they
-  will eat before it resets (`realm/pressure.py`) — takes the first that got no 👍 since its last
+  will eat before it resets (`realm/pressure.py`). What is left comes from the quota's tokens per
+  1 %, measured from a 🪨 Tally Crag's samples once the quota climbed 10 points under sampling in a
+  week (the ledger's tokens over the points climbed, stretches cut at a reset or a gap), else
+  estimated from the camp's own spend. It takes the first that got no 👍 since its last
   change, or a 👎 today, reads its recent runs and proposes one checked change towards the building's
   **goal** — 🪙 thrift · ⚖️ balance · 💎 quality, a click on the goal button beside 👍 / 👎 in the Info
   panel cycles it (`buildings[].goal` in the Town Scroll; missing = balance). 💎 buildings the operator
@@ -684,8 +687,10 @@ once, reads, works in a worktree, resumes and opens a terminal, what it prints a
   pi through orkcraft's extension (`-e`, and `.pi/extensions/orkcraft.ts`), Hermes in a marked block
   of `~/.hermes/config.yaml`, written only after asking (`--hermes-global` / `--no-hermes-global`).
   pi has no approvals or sandbox of its own: reading orks get only its reading tools.
-- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); agy, Codex and
-  Cursor do not (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
+- **🪙 and ⏳** — pi and Hermes say what they cost (their session files, `state.db`); Codex is priced
+  from its model and token counts once OpenAI's table in `sources/pricing.py` has that model (it is
+  empty until a person reads OpenAI's page, so Codex runs are unpriced for now); agy and Cursor print
+  no price (unpriced, never $0). ⏳ Limits read Hermes' `hermes usage --json` and Cursor's plan
   month (its stored login); pi keeps no windows.
 
 ## Orks: steward, handlers, Recruiter
@@ -806,7 +811,7 @@ the CLI paths.
   incrementally every 5 s). A resumed session counts only the turns after orkcraft started.
   Model calls that leave no transcript of this run count too, as they answer
   (`telemetry.charge`): the Council's Fast Path, the 🏛 Elders, the Builder, the Recruiter, the
-  Town Builder (`claude -p`, or Codex or agy, which print no price), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
+  Town Builder (`claude -p`, or Codex or agy, which print no price — Codex is priced from its tokens), the Building retro and the Town retro (`claude -p`), the Barracks orks and the
   Clan Fire's members. A road's agent carries `ORKCRAFT_RUN`, so its transcript already counts.
 - **🪵 Lumber** — the context of the active War Tent session's last turn (input + cache reads +
   cache writes), against `budget.lumber_context_limit_tokens` (default 128k; k = 1024 tokens).
@@ -815,8 +820,13 @@ the CLI paths.
 - Prices are the published first-party Claude API rates (`orkcraft/sources/pricing.py`, with the
   source URL and date), including cache-write TTLs, fast mode and `inference_geo: "us"`. They are
   **API-equivalent estimates**, not a bill: Claude Pro / Max plans don't charge per token, and
-  Bedrock / Vertex price separately. A `+` after the amount means some usage had no published
-  price (agy, Codex and Cursor sessions, unknown models) — it is never counted as $0.
+  Bedrock / Vertex price separately. Codex (`codex exec` runs and War Tent sessions, read from the
+  session's rollout file) is priced from its model and tokens with a second table, OpenAI's rates,
+  with its own source and date. The model is the one orkcraft passed with `--model`, or `model` in
+  `$CODEX_HOME/config.toml`. For a ChatGPT login this is an API-equivalent estimate too. That
+  table is still empty, so Codex runs show `+` for now. A `+` after the amount means some usage had
+  no published price (agy and Cursor sessions, Codex until its table is filled, unknown models). It
+  is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
   shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
@@ -847,9 +857,10 @@ the CLI paths.
   file tools, read once agy trusts the folder; it answers only deny or ask, never allow (agy ignores
   a hook's allow in headless runs). agy's headless steps run in a temp folder and read only
   `~/.gemini/config/hooks.json`, which `orkcraft hooks install` writes only after asking
-  (`--agy-global` / `--no-agy-global` answer for it). Onboarding says the Warder guards agy only once
-  its hook was checked on a live agy (`agy_warder_checked` in the machine settings,
-  [agy-guard](design/agy-guard.md) §8).
+  (`--agy-global` / `--no-agy-global` answer for it). Onboarding (in the window and in the terminal)
+  says the Warder guards agy only once its hook was checked on a live agy (`agy_warder_checked` in
+  the machine settings, [agy-guard](design/agy-guard.md) §8). Until then, when agy is chosen, the
+  guard step says agy is unguarded, and a raised town gets no agy hook.
 - The other Council orks (Drummer, Taskmaster, Alchemist, Keeper) are still draft agents in
   `watchers/`; the 🪙 / 🪵 limits cover Taskmaster's budget duty.
 

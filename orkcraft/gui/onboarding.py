@@ -208,7 +208,7 @@ class Onboarding:
             "step": self.step, "steps": steps,
             "n": steps.index(self.step) if self.step in steps else len(steps) - 1,
             "tools": {"ready": self.statuses is not None, "rows": self._tools_rows(), **self._not_run_on(),
-                      "warder": self.warder},
+                      "warder": self.warder, "warder_agy": self._warder_agy()},
             "classes": self._classes(), "only_kin": self.only_kin,
             "kin_word": KIN_WORDS.get(self.only_kin, self.only_kin),
             "kin": self.kin, "role": self.profile.get("role", ""),
@@ -230,6 +230,13 @@ class Onboarding:
                 "onboarding.town": self.set_town, "onboarding.survey": self.set_survey,
                 "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close,
                 "onboarding.start": self.start, "onboarding.cancel": self.cancel, "onboarding.quiet": self.set_quiet}
+
+    def _warder_agy(self) -> str:
+        """What the guard step says about agy when agy is chosen: unguarded until its hook was checked live."""
+        if "agy" not in self._enabled():
+            return ""
+        from orkcraft.hooks import install as hooks_install
+        return hooks_install.agy_warder_line(self.host.town.machine.agy_warder_checked, self.statuses)
 
     def _enabled(self) -> list[str]:
         machine = self.host.town.machine
