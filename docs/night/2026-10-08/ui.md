@@ -38,9 +38,9 @@ Order: value / risk, best first. First version — refined below as the audit go
   Warchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
   `ui/camp-win-todo.png` — `gui/static/js/warchief*.js` / `layout.css` — S/M — when space is short, drop the
   waiting question to an icon + count rather than cut both.
-- [ ] U08 Office: the orange ✻ (busy Claude mark) floats in the middle of a card's title row, far from the
+- [~] U08 Office: the orange ✻ (busy Claude mark) floats in the middle of a card's title row, far from the
   title — `ui/office-town.png` — `office.css` hut title — S — the mark belongs to the card's title, at its
-  right edge or right after the name.
+  right edge or right after the name. — taken by Night D2: GUI fixes from the queue
 - [x] U09 Office, phone: the building rows were 240 px wide on a 390 px screen (the Office theme's fixed
   `.ok-hut[class]` width won over the pocket's `width: auto`) — `ui/office-phone-town.png` → `ui/after-U01-office-phone.png` —
   `layout.css` — S — done by D1.
@@ -49,20 +49,20 @@ Order: value / risk, best first. First version — refined below as the audit go
   External listeners card — `ui/office-win-days.png` — `layout.css` / `office.css` (z-order, the open card's
   room) — M — the town under an open panel should stay readable; the open card at least must not cover the
   HUD corner's controls.
-- [ ] U11 An open card repeats its window's actions ("New event", "Prepare doc" under the Calendar card, while
+- [~] U11 An open card repeats its window's actions ("New event", "Prepare doc" under the Calendar card, while
   the panel's top row has the same two) — `ui/office-win-days.png`, `ui/camp-win-todo.png` ("New task",
   "New note") — `gui/static/js/hut.js` — S — with the panel open, one place for the actions is enough; hide the
-  card's quick row while its panel is open.
+  card's quick row while its panel is open. — taken by Night D2: GUI fixes from the queue
 - [x] U12 Answers: the list cut each question at 40 characters with no ellipsis ("price id missing i") —
   `ui/camp-answers.png` → `ui/after-U12-camp-answers.png` — `js/orders.js`, `layout.css` — S — done by D1:
   the whole question, cut by CSS with "…" when it does not fit, the full text in its tooltip.
 - [x] U13 Camp: a building's text actions (Info tab: History, Open in OS, Deploy, Watch, Report, Redesign) were
   sentence case at 14 px beside uppercase tabs and buttons — `ui/camp-win-tree-info.png` →
   `ui/after-U13-camp-info.png` — `layout.css` — S — done by D1: `--ok-case` and `--ok-track`, as `ok-btn`.
-- [ ] U14 Answers: the answer options and "Later" are the same look, stacked in one column ("1 Acknowledge",
+- [~] U14 Answers: the answer options and "Later" are the same look, stacked in one column ("1 Acknowledge",
   then "Later" under it), so "Later" reads as one more answer — `ui/after-U12-camp-answers.png` — `js/orders.js`,
   `.gui-orders__options` — S — options in a row (they wrap), "Later" right-aligned in the actions row as every
-  dialog's dismiss.
+  dialog's dismiss. — taken by Night D2: GUI fixes from the queue
 - [-] U15 Answers is called three things: "Answers (4)" in the HUD, "Awaiting an answer (4)" as the dialog's
   title, "Asks you" on the phone — `ui/camp-answers.png` — left: "Awaiting an answer" is its own lexicon term
   (`realm/lexicon.py` `awaiting_orders`), so this is a wording decision for the owner (question in `report.md`).
