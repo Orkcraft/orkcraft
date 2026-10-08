@@ -121,7 +121,7 @@ class LootWorker(Worker):
         """A cart came by road: it passes by the rules, or waits in the queue."""
         if payload.kind == pipes.TEXT and markdown and markdown != payload.value:
             payload = pipes.Payload(payload.kind, markdown, payload.source, payload.mode, payload.title or title,
-                                    payload.trail, payload.ref)
+                                    payload.trail, payload.ref, want=payload.want)
         back = self.queue.by_ref(payload.ref)
         why = gate.reasons(payload, self.config, self._rule_context(payload), self.names())
         if back is not None:
@@ -174,8 +174,10 @@ class LootWorker(Worker):
         road took it on."""
         item = vault.store(self.repo_root, self.building_id, self.state_dir, payload.kind, payload.value,
                            payload.title, payload.source, trail=payload.trail, ref=payload.ref)
-        went = self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref)
-        return self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref) or went
+        went = self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref,
+                         want=payload.want)
+        return self.emit("loot.stored", item.path, item.title, trail=payload.trail, ref=payload.ref,
+                         want=payload.want) or went
 
     def maker(self, item: gate.Item) -> str:
         """The building whose ork wrote the cart: what the person's decision is about. "" for a cart
@@ -256,9 +258,9 @@ class LootWorker(Worker):
             self.queue.rework(item, reason)
             md = gate.rework_markdown(item, reason, self.spec.get("title") or self.btype.title)
             back = pipes.Payload(pipes.TEXT, md, self.building_id, "loot.rework",
-                                 f"rework: {item.title or item.ref}", item.hops, item.ref)
+                                 f"rework: {item.title or item.ref}", item.hops, item.ref, want=item.want)
             if to := self._give_back("rework", item.source, back):
-                self.emit("loot.rework", md, back.title, trail=item.hops, ref=item.ref)
+                self.emit("loot.rework", md, back.title, trail=item.hops, ref=item.ref, want=item.want)
                 self.toast(f"sent back to {self.names().get(to, to)} (round {item.attempts}): {reason}", title="📦 Loot")
                 self.refresh()
                 return item.status

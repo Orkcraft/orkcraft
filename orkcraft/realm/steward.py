@@ -594,7 +594,7 @@ WHAT THE RULES AND AGENTS COST ({days} days): {spend}
 Chain ops (records have fields road, source, event, kind, value, title, id, path, text, type, status, outcome):
 filter {{field, cmp: eq|ne|in|contains|matches, value}} · pick {{fields}} · extract {{field, regex, as}} ·
 sort {{by, desc}} · limit {{n}} · count {{as}} · group {{by}} · template {{md with {{field}}}} · join {{sep}}
-Road filter keys: node_type, node_status, exclude_personal, path_prefix, outcome, match, route.
+Road filter keys: node_type, node_status, exclude_personal, path_prefix, outcome, match, route, want.
 {feedback}
 Answer with ONE JSON object and nothing else: {{"proposals": [ ... 1-4 items ... ]}}, each one of
 {{"type": "demote", "orc": "<rule or agent handler id>", "chain": [ops], "why": "..."}}

@@ -138,9 +138,9 @@ class Town:
         delivery.deliver(self, target_id, payload, title, markdown)
 
     def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
-                   trail: tuple = (), ref: str = "", route: str = "") -> bool:
+                   trail: tuple = (), ref: str = "", route: str = "", want: str = "") -> bool:
         """A typed building sends one of its events down the roads that carry it."""
-        return delivery.emit(self, building_id, event_id, value, title, trail, ref, route)
+        return delivery.emit(self, building_id, event_id, value, title, trail, ref, route, want)
 
     def halt(self) -> int:
         """Stop what the town runs: the road handlers and every worker's own work (queues wait).

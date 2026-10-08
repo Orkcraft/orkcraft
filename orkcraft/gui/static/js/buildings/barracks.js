@@ -138,7 +138,7 @@ export function card(b) {
           <button class="ok-act gui-hut__act" onPointerDown=${keep}
             onClick=${(e) => { keep(e); act(b.id, "pause").catch(() => {}); }}><span class="ok-act__label">Resume</span></button></div>`
       : working.length > 0
-        ? html`<div class="gui-hut__foot"><span>⚒ <b>${working[0].ork}</b> · ${working[0].task}</span>
+        ? html`<div class="gui-hut__foot"><span>⚒ <b>${working[0].ork}</b> · ${working[0].want ? `${say(working[0].want)}: ` : ""}${working[0].task}</span>
             ${working.length > 1 && html`<span class="gui-hut__when">+${working.length - 1}</span>`}</div>`
         : c.last && html`<div class="gui-hut__foot"><span><span class=${c.last.ok ? "ok-tone-ok" : "ok-tone-error"}>${c.last.ok ? "✓" : "✗"}</span> ${c.last.title}</span></div>`}
   </div>`;
@@ -166,6 +166,11 @@ function Head({ ork, asks, working }) {
   return html`<${OrkHead} o=${{ name: ork, status: working ? "busy" : "idle" }} alert=${!!asks} />`;
 }
 
+/** Its kind of work and where it was decided: `Reply · from External listeners` (docs/design/barracks-flows.md §9). */
+function Want({ t }) {
+  return html`${say(t.want)}${t.want_by ? html` · ${say("from")} ${say(t.want_by)}` : ""}`;
+}
+
 /** A task as a card: who and how it is on top, its title, its branch and cost under it. */
 function TaskCard({ id, t, n }) {
   const working = t.status === "working" || t.status === "planned";
@@ -176,6 +181,7 @@ function TaskCard({ id, t, n }) {
       ${t.status === "done" ? "✓ " : t.status === "failed" ? "✗ " : ""}${say(WORD[t.status] || t.status)}${n ? ` #${n}` : ""}
       ${!t.ork && t.wait_for ? ` · ${say("waits for")} ${t.wait_for}` : ""}</span>
     <span class="pool-card__title">${t.title}</span>
+    ${t.want && html`<span class="pool-card__want ok-tone-muted"><${Want} t=${t} /></span>`}
     ${(t.overlaps.length > 0 || t.against.length > 0) && html`<span class="pool-card__warn ok-tone-wait">
       ${t.held ? `⏸ ${say("waits for")} “${t.overlaps[0] ? t.overlaps[0].title : ""}”`
         : t.overlaps.length ? `⚠ ${say("overlaps")} “${t.overlaps[0].title}”${t.overlaps.length > 1 ? ` +${t.overlaps.length - 1}` : ""}`
@@ -244,6 +250,7 @@ function TaskDetail({ id, data, t }) {
     <div class="pool-task__head"><h3 class="ok-detail__head pool-task__title">${t.title}</h3>
       ${t.cost && html`<span class="ok-tone-muted">${t.cost}</span>`}</div>
     <p class="ok-detail__meta"><span class=${STATE_TONE[t.status] || ""}>● ${say(WORD[t.status] || t.status)}</span>
+      ${t.want && html` · <${Want} t=${t} />`}
       ${[t.ork, t.branch, t.parts ? say(`planned in ${t.parts} parts`) : "", t.part ? say(`part ${t.part}`) : "",
          t.reworks ? `${t.reworks} rework${t.reworks > 1 ? "s" : ""}` : "", t.warm ? say("resumed its session") : "",
          t.scope === "local" ? say("local, no pull request") : "", t.wait_for ? `${say("waits for")} ${t.wait_for}` : ""]

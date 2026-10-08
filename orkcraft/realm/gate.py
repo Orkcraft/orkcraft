@@ -158,6 +158,7 @@ class Item:
     at: str = ""
     updated: str = ""
     rejected: list[dict] = field(default_factory=list)   # files of its branch the person rejected (Branch.reject)
+    want: str = ""                       # the kind of work its cart asked for (pipes.WANTS): it goes on with it
 
     @property
     def hops(self) -> tuple[pipes.Hop, ...]:
@@ -172,7 +173,8 @@ class Item:
         return pipes.trail_totals(self.hops)[1]
 
     def payload(self, mode: str | None = None) -> pipes.Payload:
-        return pipes.Payload(self.kind, self.value, self.source, mode or self.mode, self.title, self.hops, self.ref)
+        return pipes.Payload(self.kind, self.value, self.source, mode or self.mode, self.title, self.hops, self.ref,
+                             want=self.want)
 
 
 def _now(now: dt.datetime | None = None) -> str:
@@ -237,7 +239,7 @@ class Queue:
         item = self.by_ref(payload.ref)
         fields = dict(kind=payload.kind, value=payload.value, source=payload.source, mode=payload.mode,
                       title=payload.title, trail=[h.as_dict() for h in payload.trail], why=why,
-                      worktree=worktree_of(payload), updated=t)
+                      worktree=worktree_of(payload), updated=t, want=getattr(payload, "want", "") or "")
         if item is not None:
             for k, v in fields.items():
                 setattr(item, k, v)

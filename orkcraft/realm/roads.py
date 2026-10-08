@@ -168,6 +168,8 @@ def passes(flt: dict, payload: Payload, meta: dict, target: str = "") -> tuple[b
         route = payload.route or payload.title          # a Signpost's cart is titled by its route
         if route not in flt["route"]:
             return False, f"route {route or '?'}"
+    if flt.get("want") and payload.want not in flt["want"]:      # a road for some kinds of work only (§8)
+        return False, f"kind of work {payload.want or '?'}"
     if flt.get("match"):
         hay = f"{payload.title}\n{payload.value}"[: chains.FIELD_CHARS]
         if re.search(flt["match"], hay) is None:

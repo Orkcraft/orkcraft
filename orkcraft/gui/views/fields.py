@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from orkcraft.core.workers.fields import card_text
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import catalog, settle, tasklist
+from orkcraft.realm import catalog, lexicon, pipes, settle, tasklist
 
 REFRESH_S = 10.0              # as the TUI: a hand edit of the board file shows within this
 COLORS = {"🟨": "yellow", "🟩": "green", "🟦": "blue", "🟥": "red", "🟪": "purple"}
@@ -66,7 +66,8 @@ def _lore(w, c) -> dict:
             "goes": int(hold * 1000) if hold is not None else None, "later": w.lore.later(c.id),
             "into": _named(w, w.lore.into(c.id)), "added": len(w.lore.joined(c.id)),
             "hint": _named(w, w.lore.hint(c.id)), "sent": w.lore.sent(c.id),
-            "news": w.lore.news(c.id) or None, "idea": bool(w.lore.idea(c.id))}
+            "news": w.lore.news(c.id) or None, "idea": bool(w.lore.idea(c.id)),
+            "want": w.want(c), "want_word": lexicon.want_word(w.want(c))}
 
 
 def detail(w) -> dict:
@@ -169,6 +170,21 @@ def _send(w, args: dict) -> bool:
     w.toast(f"{tasklist.plain(card.title)[:60]}: " + ("sent down the roads" if sent else "no road takes tasks.sent from here"),
             severity="information" if sent else "warning")
     return sent
+
+
+# The kinds of work a person may give a task card (docs/design/barracks-flows.md §4); "" is the board's own rule.
+CARD_WANTS = ("", pipes.CHANGE, pipes.REPLY, pipes.DOC)
+
+
+def _want(w, args: dict) -> str:
+    """The card's kind of work (`want`: change | reply | doc, "" the board's own rule). What it is now."""
+    want = str(args.get("want") or "")
+    if want not in CARD_WANTS:
+        raise ActError(f"No such kind of work: {want}")
+    card = _card(w, args)
+    if card.kind != tasklist.TASK:
+        raise ActError("Only a task has a kind of work")
+    return w.set_want(card.id, want)
 
 
 def _later(w, args: dict) -> bool:
@@ -298,4 +314,4 @@ ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _fli
         "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
         "private": _private, "context": _context, "plan_preview": _plan_preview, "plan": _plan,
         "plan_steps": _plan_steps, "news_seen": _news_seen, "to_wiki": _to_wiki, "later": _later, "settle": _settle, "join": _join, "split": _split,
-        "apart": _apart}
+        "apart": _apart, "want": _want}

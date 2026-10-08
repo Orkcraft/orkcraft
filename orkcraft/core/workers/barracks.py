@@ -239,8 +239,10 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             meet = ""                           # its ref finds the meeting: the title stays as it is
         if meet and daybook.meet_tag(title[:80]) != meet:          # the task keeps 80 characters
             title = f"{title.replace(f'[meet:{meet}]', '').strip()[:80 - len(meet) - 8]} [meet:{meet}]"
+        want = pipes.want_of(getattr(payload, "want", ""))
         self.add_task(title, text, bk.task_key(payload.kind, payload.value, payload.title),
-                      ref=payload.ref, trail=payload.trail)
+                      ref=payload.ref, trail=payload.trail, want=want,
+                      want_by=pipes.want_by(payload.trail, want, payload.source))
 
     @property
     def notes(self) -> list[str]:
@@ -261,9 +263,11 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                 break
         return sent
 
-    def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = ()) -> bk.PoolTask:
+    def add_task(self, title: str, text: str, key: str = "", ref: str = "", trail: tuple = (), want: str = "",
+                 want_by: str = "") -> bk.PoolTask:
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
-        of that task — the same orc, the same branch."""
+        of that task — the same orc, the same branch. `want`: the kind of work its cart asked for, and
+        `want_by` the building that named it (shown on the task's line; no path reads it yet)."""
         key = key or bk.task_key("text", text, title)
         queued = next((t for t in self.state.queue if ref and t.ref == ref), None)
         if queued is not None and self._amend(queued, text):
@@ -273,7 +277,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             key = prior.key or prior.id               # the orc that did it knows it by that
         task_id = uuid.uuid4().hex[:8]
         task = bk.PoolTask(task_id, title[:80], text, key, bk.now_iso(), ref=ref or f"{self.building_id}:{task_id}",
-                           trail=[h.as_dict() for h in trail])
+                           trail=[h.as_dict() for h in trail], want=want, want_by=want_by if want else "")
         if prior is not None:
             task.branch, task.base = prior.branch, prior.base
         st = self.state
@@ -412,7 +416,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         orc.branch = task.branch
         rework = f" [rework {task.attempts - 1}]" if task.feedback else ""
         self.emit("pool.assigned", f"{orc.name} ({orc.label}) ← {task.title}" + (" [follow-up]" if follow else "")
-                  + rework + (" ♻" if task.warm else ""), task.title, ref=task.ref)
+                  + rework + (" ♻" if task.warm else ""), task.title, ref=task.ref, want=task.want)
         cancel = threading.Event()
         self._cancels[orc.name] = cancel
         workdir = Path(orc.worktree) if orc.worktree else repo
@@ -594,7 +598,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                 st.log(bk.Decision(bk.now_iso(), task.id, "failed", orc.name, f"part `{task.sub}`: {out.error}"))
             else:
                 self.emit("pool.failed", f"**{task.title}** — {orc.name}: {out.error}", task.title,
-                          trail=self._trail(task, orc, "error"), ref=task.ref)
+                          trail=self._trail(task, orc, "error"), ref=task.ref, want=task.want)
         elif out.asked:
             self._ask(task, out.asked, f"{orc.name} asks", kind="question")
         elif ok and task.parent:
@@ -623,7 +627,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             if note and not where:               # a line of its own, not the end of the report's last line
                 note = f"\n\n_{note.strip()[1:-1]}_"
             self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}"
-                      + self._files_md(task), task.title, trail=self._trail(task, orc, "done"), ref=task.ref)
+                      + self._files_md(task), task.title, trail=self._trail(task, orc, "done"), ref=task.ref, want=task.want)
         else:
             self._rework(task, orc, out.notes)
         if out.error != "stopped" and not out.asked:
@@ -659,7 +663,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             st.queue.insert(0, task)
             return
         self.emit("pool.failed", f"**{task.title}** — rejected after {reworks} reworks: {notes}", task.title,
-                  trail=self._trail(task, orc, "error"), ref=task.ref)
+                  trail=self._trail(task, orc, "error"), ref=task.ref, want=task.want)
         self._ask(task, f"Rejected after {reworks} reworks. Last notes: {notes[:500]}\n\nWhat should {orc.name} do?",
                   "rejected", kind="rejected")
 

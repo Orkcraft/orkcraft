@@ -110,6 +110,23 @@ class Lore:
         self.data[card_id] = entry
         self._save()
 
+    # -- the kind of work (docs/design/barracks-flows.md §4) -------------------------------------
+
+    def want(self, card_id: str) -> str:
+        """The kind of work the person or the cart that brought the card named; "" when none did."""
+        return str(self.of(card_id).get("want") or "")
+
+    def by_road(self, card_id: str) -> bool:
+        """The card came by a road (a cart), not from the person's hand."""
+        return bool(self.of(card_id).get("by_road"))
+
+    def set_want(self, card_id: str, want: str, by_road: bool | None = None) -> None:
+        """Keep the card's kind of work ("" takes it out); `by_road`: it came with a cart."""
+        fields: dict = {"want": want or None}
+        if by_road is not None:
+            fields["by_road"] = True if by_road else None
+        self._put(card_id, **fields)
+
     # -- context --------------------------------------------------------------------------------
 
     def context(self, card_id: str) -> list[Page]:

@@ -103,6 +103,7 @@ class Hop:
     #                               plan; or why it did not finish
     round: int | None = None      # 1 + how many times the same work came back here (None: the first time)
     run: str = ""                 # its own record of the work: a handler run, a task, a discussion
+    want: str = ""                # the kind of work this building set on the cart (WANTS), when it set one
 
     def as_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items() if v not in (None, "")}
@@ -128,15 +129,36 @@ class Payload:
     trail: tuple[Hop, ...] = field(default=(), compare=False)
     ref: str = ""        # the thing worked on, stable across hops and rework rounds
     route: str = field(default="", compare=False)   # who takes it on, as a Clan Fire that routes decided
+    want: str = field(default="", compare=False)    # the kind of work wanted (WANTS), set by a building, never by text
 
 
 DECISION_CHARS = 80
+
+# The kind of work a cart asks for (docs/design/barracks-flows.md §3), set by the building that first understood
+# what came in — a setting, a card, a verdict, a rule — and never by what the text says. "" is none (as before).
+CHANGE, REPLY, DOC, ROUTINE, KNOW = "change", "reply", "doc", "routine", "know"
+WANTS = (CHANGE, REPLY, DOC, ROUTINE, KNOW)
+# The rights each kind's path gives an ork (§7): a join of two kinds takes the one with fewer.
+_RIGHTS = {KNOW: 0, ROUTINE: 0, REPLY: 1, DOC: 2, CHANGE: 3}
+
+
+def want_of(value) -> str:
+    """One of WANTS, else "" (a word not known is no kind of work)."""
+    word = str(value or "").strip().lower()
+    return word if word in WANTS else ""
+
+
+def least_want(*wants: str) -> str:
+    """Several carts' kinds of work as one: the one whose path may do least. One without a kind makes it none
+    (the receiver decides, by its source or its sort), so a join never lends one cart another's rights."""
+    named = [want_of(x) for x in wants]
+    return "" if not named or "" in named else min(named, key=lambda w: _RIGHTS[w])
 
 
 def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,
         worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None,
         base: str = "", since: str | float | None = None, model: str = "", decision: str = "",
-        round: int | None = None, run: str = "") -> Hop:
+        round: int | None = None, run: str = "", want: str = "") -> Hop:
     """One hop, ending now. `since`: when the cart came in (an ISO time, or seconds before now), for `ms`."""
     now = now or dt.datetime.now()
     first_line = " ".join(str(decision or "").strip().splitlines()[:1]).strip()
@@ -144,7 +166,7 @@ def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None,
                float(cost) if cost is not None else None, worktree, branch, outcome,
                now.isoformat(timespec="seconds"), base, _ms(since, now), str(model or ""),
                first_line[:DECISION_CHARS - 1] + "…" if len(first_line) > DECISION_CHARS else first_line,
-               int(round) if round and int(round) > 1 else None, str(run or ""))
+               int(round) if round and int(round) > 1 else None, str(run or ""), want_of(want))
 
 
 def _ms(since: str | float | None, now: dt.datetime) -> int | None:
@@ -173,6 +195,13 @@ def took(ms: int | None) -> str:
     if s < 3600:
         return f"{s // 60}m {s % 60:02d}s"
     return f"{s // 3600}h {s % 3600 // 60:02d}m"
+
+
+def want_by(trail: tuple[Hop, ...], want: str, source: str = "") -> str:
+    """The building that set `want`: the latest hop that set it, else the cart's `source` (it set it as it sent)."""
+    if not want:
+        return ""
+    return next((h.building for h in reversed(trail or ()) if h.want == want), source)
 
 
 def merge_trails(*trails: tuple[Hop, ...]) -> tuple[Hop, ...]:

@@ -56,8 +56,9 @@ class CouncilWorker(Worker):
         super().__init__(town, building_id)
         self.current: tm.Discussion | None = None
         self.history: list[tm.Discussion] = []
-        self.waiting: list[tuple] = []     # (title, text, path, ref, trail, source) that came mid-review
+        self.waiting: list[tuple] = []     # (title, text, path, ref, trail, source, want) that came mid-review
         self._cart: tuple[str, tuple, str] = ("", (), "")   # the ref, trail and source of the document under review
+        self._want = ""                                   # …and the kind of work its cart asked for: it goes on with it
         self._cancel: threading.Event | None = None
         self._busy = False
         self.setup = Setup(self)           # the purpose → clan → exits steps (council_setup.py)
@@ -276,9 +277,9 @@ class CouncilWorker(Worker):
         """Review now: the first document in line starts (after a stop, or when the budget is back)."""
         if self._busy or not self.waiting or (self.current is not None and self.current.outcome == "asked"):
             return False
-        title, text, path, ref, trail, source = self.waiting.pop(0)
+        title, text, path, ref, trail, source, want = self.waiting.pop(0)
         self.changed()
-        return self.review(text, title, path, ref, trail, source)
+        return self.review(text, title, path, ref, trail, source, want)
 
     def drop(self, index: int) -> bool:
         if not 0 <= index < len(self.waiting):
@@ -290,8 +291,8 @@ class CouncilWorker(Worker):
     # -- the review ----------------------------------------------------------------------------------
 
     def review(self, text: str, title: str = "", path: str = "", ref: str = "", trail: tuple = (),
-               source: str = "") -> bool:
-        """Review a document: its text, and its repo-relative path when it is a file. `ref` and `trail`
+               source: str = "", want: str = "") -> bool:
+        """Review a document: its text, and its repo-relative path when it is a file. `ref`, `trail` and `want`
         are the cart's: they travel on with what the review sends; a rework goes back to `source`."""
         text = text.strip()
         if not text and path:
@@ -304,11 +305,11 @@ class CouncilWorker(Worker):
             return False
         title = (title or title_of(text)).strip()
         if self._busy or (self.current is not None and self.current.outcome == "asked"):
-            self.waiting.append((title, text, path, ref, tuple(trail), source))
+            self.waiting.append((title, text, path, ref, tuple(trail), source, want))
             self.changed()
             return False
         if not self.town.budget_ok() and not self.simulated:          # it waits in line, never dropped
-            self.waiting.append((title, text, path, ref, tuple(trail), source))
+            self.waiting.append((title, text, path, ref, tuple(trail), source, want))
             self.toast("🪙 budget exhausted — the document waits in line (Review now when there is budget)",
                        title=f"{ICON} Clan Fire", severity="warning")
             self.changed()
@@ -325,6 +326,7 @@ class CouncilWorker(Worker):
                 pass
         self.current = d
         self._cart = (ref, tuple(trail), source)     # what came in: travels on with what the review sends
+        self._want = want
         self._run()
         return True
 
@@ -393,28 +395,29 @@ class CouncilWorker(Worker):
             root = self.repo_root
             path = pipes.write_loot(root, self.building_id, d.title[:80], tm.report_markdown(d, self.team))
             ref, trail, source = self._cart
+            want = self._want
             ref = ref or f"{self.building_id}:{d.id}"   # the rework comes back under it
             said = " ".join(x for x in (self.tally(d), f"→ {d.route}" if d.route else "", d.decision) if x)
             trail = trail + (pipes.hop(self.building_id, "clan", "team", None, d.spent or None, outcome=d.outcome,
                                        since=d.started, decision=said, round=d.cycle, run=d.id),)
-            self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref)
+            self.emit("team.artifact_ready", shelves.rel_to(root, path), d.title[:80], trail=trail, ref=ref, want=want)
             if d.outcome == "approved":
                 taken = next((e for e in self.exits if e.id == d.route), None)
                 if self.named:                             # the verdict travels on every exit
                     d.exit = taken.name if taken else "Next"
                     d.out = tm.verdict_markdown(d, d.exit)[:tm.OUT_KEEP]
                 doc = d.out if self.named else d.doc
-                self.emit("team.approved", doc, d.title, trail=trail, ref=ref)
+                self.emit("team.approved", doc, d.title, trail=trail, ref=ref, want=want)
                 if d.route:                                # who takes it on: each road waits for its route
                     self.emit("team.routed", doc if self.named else tm.routed_text(d), d.task or d.title, trail=trail,
-                              ref=ref, route=d.route)
+                              ref=ref, route=d.route, want=want)
             else:
                 back = tm.verdict_markdown(d, "Back to the author", back=True) if self.named \
                     else tm.rework_markdown(d, self.max_cycles)
                 d.exit, d.out = ("Back to the author", back[:tm.OUT_KEEP]) if self.named else ("", "")
-                self.emit("team.rework", back, d.title, trail=trail, ref=ref)
+                self.emit("team.rework", back, d.title, trail=trail, ref=ref, want=want)
                 self._send_back(source, pipes.Payload(pipes.TEXT, back, self.building_id, "team.rework", d.title,
-                                                      trail, ref))
+                                                      trail, ref, want=want))
             self.toast(f"{(d.task or d.title)[:60]}: " + (f"{'↩' if d.outcome == 'rework' else '→'} {d.exit}" if d.exit else
                        OUTCOME[d.outcome] + (f" → {d.route}" if d.route else "")),
                        title=f"{ICON} Clan Fire")
@@ -432,8 +435,8 @@ class CouncilWorker(Worker):
         self.history = tm.load_all(self.state_dir, KEEP_HISTORY)
         self.changed()
         if self.waiting and d.outcome not in ("asked", "stopped"):    # after a halt the queue waits for ▶ or a cart
-            title, text, path, ref, trail, source = self.waiting.pop(0)
-            self.review(text, title, path, ref, trail, source)
+            title, text, path, ref, trail, source, want = self.waiting.pop(0)
+            self.review(text, title, path, ref, trail, source, want)
 
     def _send_back(self, source: str, payload: pipes.Payload) -> None:
         """A rework goes straight back to the building that wrote the document (a road back would close
@@ -472,10 +475,10 @@ class CouncilWorker(Worker):
     def receive(self, payload, title: str, markdown: str) -> None:
         if payload.kind == pipes.FILE and (self.repo_root / payload.value).is_file():
             self.review("", payload.title or title, payload.value, payload.ref, payload.trail,
-                        payload.source)                                  # members read the file itself
+                        payload.source, payload.want)                    # members read the file itself
         else:
             self.review(markdown or payload.value, payload.title or title, "", payload.ref, payload.trail,
-                        payload.source)
+                        payload.source, payload.want)
 
     def halt(self) -> int:
         """🛑 Halt All: the review stops where it is."""

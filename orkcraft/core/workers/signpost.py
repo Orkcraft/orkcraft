@@ -84,9 +84,11 @@ class SignpostWorker(Worker):
         with self.log_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         if route:                                     # the cart goes on: its trail and ref with it
-            self.emit("signpost.routed", payload.value, route, trail=payload.trail, ref=payload.ref)
+            self.emit("signpost.routed", payload.value, route, trail=payload.trail, ref=payload.ref,
+                      want=getattr(payload, "want", ""))
         else:
-            self.emit("signpost.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref)
+            self.emit("signpost.unmatched", payload.value, payload.title or title, trail=payload.trail, ref=payload.ref,
+                      want=getattr(payload, "want", ""))
         self.refresh()
 
     def set_rules(self, lines: list[str]) -> bool:

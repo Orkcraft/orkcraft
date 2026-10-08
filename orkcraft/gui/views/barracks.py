@@ -7,7 +7,7 @@ import os
 
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import harnesses, tiers
+from orkcraft.realm import harnesses, lexicon, tiers
 from orkcraft.sources import sessions as past
 
 OWN_QUICK = True              # its quick actions are in its preview (js/buildings/), not the generic buttons
@@ -36,7 +36,8 @@ def card(w) -> dict:
             "done": sum(1 for t in st.tasks if t.status == "done"),
             "failed": sum(1 for t in st.tasks if t.status == "failed"),
             "spent": _money(st.spent), "paused": st.paused,
-            "working": [{"ork": o.name, "task": t.title} for o in st.orcs if o.status == "working"
+            "working": [{"ork": o.name, "task": t.title, "want": lexicon.want_word(t.want)} for o in st.orcs
+                        if o.status == "working"
                         and (t := st.task(o.task)) is not None][:2],
             "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None}
 
@@ -45,14 +46,25 @@ def _tier(o: bk.PoolOrc) -> str:
     return tiers.TIER_LABELS.get(tiers.step_tier({"harness": o.harness, "model": o.model}) or "", "")
 
 
-def _task(t: bk.PoolTask, full: bool = False) -> dict:
+def _names(w) -> dict[str, str]:
+    scroll = w.town.scroll
+    return {b.id: b.title for b in getattr(scroll, "buildings", ())} if scroll is not None else {}
+
+
+def _want(t: bk.PoolTask, names: dict[str, str]) -> dict:
+    """Its kind of work and who named it (docs/design/barracks-flows.md §9): `Reply` · `External listeners`."""
+    return {"want": lexicon.want_word(t.want), "want_by": names.get(t.want_by, t.want_by) if t.want else ""}
+
+
+def _task(t: bk.PoolTask, full: bool = False, names: dict[str, str] | None = None) -> dict:
     row = {"id": t.id, "title": t.title, "status": t.status, "lane": LANE_OF.get(t.status, "queue"), "ork": t.orc,
            "wait_for": t.wait_for, "branch": t.branch, "reworks": max(t.attempts - 1, 0), "warm": t.warm,
            "cost": _money(t.cost_usd) if t.cost_usd else "", "pr": t.pr, "pr_state": t.pr_state, "scope": t.scope,
            "asks": t.status == "asked", "draft": bool(t.draft), "arrived": t.arrived,
            "tier": t.tier, "persona": t.persona, "parent": t.parent, "part": t.sub, "after": list(t.after),
            "parts": len(t.plan), "overlaps": [_overlap(o) for o in t.overlaps], "held": t.held_since > 0,
-           "design": t.design, "against": list(t.against), "designs": list(t.designs), "claimed": list(t.claimed)}
+           "design": t.design, "against": list(t.against), "designs": list(t.designs), "claimed": list(t.claimed),
+           **_want(t, names or {})}
     if full:
         row.update({"brief": t.text[:KEEP], "report": t.result[:KEEP], "error": t.error, "notes": t.feedback,
                     "question": t.question, "target": bk.publish_kind(t.target)[1] or t.target,
@@ -86,7 +98,8 @@ def detail(w) -> dict:
                      "done": o.done, "failed": o.failed, "cost": _money(o.cost_usd), "tokens": o.tokens,
                      "worktree": o.worktree, "branch": o.branch, "session": o.session, "asks": o.name in asking,
                      "recent": list(o.recent), "terminal": _key(w, o.name)})
-    tasks = [_task(t, full=True) for t in st.queue] + [_task(t, full=True) for t in reversed(st.tasks)]
+    names = _names(w)
+    tasks = [_task(t, True, names) for t in st.queue] + [_task(t, True, names) for t in reversed(st.tasks)]
     return {
         "keeper": w.keeper, "paused": st.paused, "max": f.max_orcs, "spent": _money(st.spent),
         "budget": _money(f.budget) if f.budget else "", "max_reworks": f.max_reworks,
@@ -97,7 +110,7 @@ def detail(w) -> dict:
         "orks": orks,
         "lanes": [{"id": lid, "label": label} for lid, label in LANES],
         "tasks": tasks,
-        "asked": [_task(t, full=True) for t in st.asked],
+        "asked": [_task(t, True, names) for t in st.asked],
         "decisions": [{"at": d.at[11:16], "action": d.action, "ork": d.orc, "why": d.why} for d in st.decisions(30)],
         "areas": _areas(w),
     }

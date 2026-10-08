@@ -202,7 +202,7 @@ class ReviewMixin:
         task.ask_kind, task.waits_since = kind, time.time()
         st.log(bk.Decision(bk.now_iso(), task.id, "ask", task.orc, f"{why}: {question[:200]}"))
         self.emit("pool.question", markdown or f"**{task.title}** — {why}:\n\n{question}", task.title,
-                  trail=trail, ref=task.ref)
+                  trail=trail, ref=task.ref, want=task.want)
         self.toast(f"{task.title}: {question[:160]}", title=f"🔥 {self.keeper} asks")
 
     # -- the operator's answers ------------------------------------------------------------------------

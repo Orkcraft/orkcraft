@@ -80,6 +80,10 @@ function Confirm({ title, text, yes, onYes, onClose }) {
       <button class="ok-btn danger" onClick=${() => { onYes(); onClose(); }}>${yes}</button>`} />`;
 }
 
+// The kinds of work a task card may ask for (docs/design/barracks-flows.md §4): what the orks will do with it.
+const WANTS = [["change", "Code change"], ["reply", "Reply"], ["doc", "Document"]];
+const WANT_MARK = { reply: "✉", doc: "📄" };
+
 const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardId }; };
 
 /** A card's small marks: 🌙 what the Night round found, 🔒 personal, 📜 its context (pale when a page changed
@@ -87,7 +91,8 @@ const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardI
 function Marks({ card, onMark }) {
   const n = (card.pages || []).length;
   const plan = (card.plan || []).length > 0;
-  if (!card.private && !n && !plan && !card.planning && !card.news && !card.idea) return null;
+  const kind = card.kind === "task" && WANT_MARK[card.want];       // a task that is not a code change says so
+  if (!card.private && !n && !plan && !card.planning && !card.news && !card.idea && !kind) return null;
   const mark = (what, label, title, extra) => html`<button class=${cls("fields-mark", extra)} title=${say(title)}
       aria-label=${say(title)} onClick=${(e) => { e.stopPropagation(); onMark && onMark(what, card); }}
       onDblClick=${(e) => e.stopPropagation()}>${label}</button>`;
@@ -95,6 +100,7 @@ function Marks({ card, onMark }) {
     ${card.news && mark("news", "🌙", "What's new: the Night round found something for it")}
     ${!card.news && card.idea && html`<span class="fields-mark is-still" title=${say("An idea from the Night round: move it to take it, delete it to say no")}>🌙</span>`}
     ${card.private && html`<span class="fields-mark is-still" title=${say("Personal: never sent to a model")}>🔒</span>`}
+    ${kind && html`<span class="fields-mark is-still" title=${`${say("Kind of work")}: ${say(card.want_word)}`}>${kind}</span>`}
     ${n > 0 && mark("context", `📜 ${n}`, card.stale ? "Context: the wiki changed since — look again" : "Context: pages from the wiki",
       { "is-stale": card.stale })}
     ${card.planning ? html`<span class="fields-mark is-still" title=${say("Writing the plan…")}>🧭 …</span>`
@@ -207,6 +213,12 @@ function Acts({ id, sel, setDialog, onPlan, wiki }) {
       ${sel.goes && a(sel.later ? "Urgent again" : "🐢 Not urgent", () => act(id, "later", { card: sel.id }).catch(() => {}))}
       ${sel.into && a("Split off", () => act(id, "split", { card: sel.id }))}
       ${sel.kind === "task" && sel.column !== "done" && !sel.into && a("Join with…", () => setDialog({ join: sel.id }))}
+      ${sel.kind === "task" && html`<label class="fields-want">${say("Kind of work")}
+        <select class="ok-input" value=${sel.want || "change"} aria-label=${say("Kind of work")}
+          onChange=${(e) => act(id, "want", { card: sel.id, want: e.target.value }).catch(() => {})}>
+          ${WANTS.map(([v, label]) => html`<option key=${v} value=${v}>${say(label)}</option>`)}
+          ${!["change", "reply", "doc"].includes(sel.want || "change") && html`<option value=${sel.want || ""}>${sel.want ? say(sel.want_word) : say("None — the agent pool decides")}</option>`}
+        </select></label>`}
       ${a(sel.private ? "🔒 Not personal" : "🔒 Personal", () => act(id, "private", { card: sel.id }))}
       ${wiki && sel.kind === "note" && !sel.private && a("→ Wiki", () => act(id, "to_wiki", { card: sel.id }).catch(() => {}))}
       ${a("Colour", () => act(id, "color", { card: sel.id }))}

@@ -50,7 +50,8 @@ BUILDINGS (id — title — events it emits):
 Road events: on_selection_change (payload: a node id or a repo file path), on_task_completed (payload:
 the final screen of a deployed orc's session as text). A road filter runs at the source; keys:
 node_type [task|context|process], node_status [..], exclude_personal bool, path_prefix [..],
-outcome [done|waiting|halted|unknown], match (a Python regex). Personal nodes never reach a model anyway.
+outcome [done|waiting|halted|unknown], match (a Python regex), want [change|reply|doc|routine|know]
+(the kind of work a building set on the cart). Personal nodes never reach a model anyway.
 
 KINDS — pick the FIRST that can do the job and explain in "why" what a cheaper kind could not do:
 1. "chain": data, not code — a list of ops over records (one record per road that fired, fields:

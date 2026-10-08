@@ -192,11 +192,13 @@ class Worker:
         self.town.call(lambda: self.town.publish(bus.WORKER, building=self.building_id))
 
     def emit(self, event_id: str, value: str, title: str = "", trail: tuple = (), ref: str = "",
-             route: str = "") -> bool:
+             route: str = "", want: str = "") -> bool:
         """Send `event_id` (one its building declares) down the roads. True when a road took it; `route`
-        names who takes it on (a road that waits for routes takes only its own)."""
+        names who takes it on (a road that waits for routes takes only its own); `want`, the kind of work
+        the cart asks for (realm/pipes.py WANTS), kept as it came unless this building is the one that sets it."""
         args = (route,) if route else ()
-        return bool(self.town.emit_typed(self.building_id, event_id, value, title, tuple(trail), ref, *args))
+        kw = {"want": want} if want else {}
+        return bool(self.town.emit_typed(self.building_id, event_id, value, title, tuple(trail), ref, *args, **kw))
 
     def toast(self, message: str, title: str = "", severity: str = "information",
               timeout: float | None = None) -> None:

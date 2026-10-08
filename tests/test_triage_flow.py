@@ -159,7 +159,7 @@ def test_the_work_on_a_card_comes_back_to_it(board):
 def test_a_board_that_sends_new_tasks_sends_them_with_their_ref(board, monkeypatch):
     _host, bid, w = board
     sent = []
-    monkeypatch.setattr(w, "emit", lambda ev, value, title="", trail=(), ref="", route="": sent.append((ev, ref)))
+    monkeypatch.setattr(w, "emit", lambda ev, value, title="", trail=(), ref="", route="", want="": sent.append((ev, ref)))
     w.save_config({"send_new": True})
     card = w.add("Feedback summary", "todo")
     assert not w.held(card.id)                                # it goes at once unless the board says to wait

@@ -19,7 +19,7 @@ playwright = pytest.importorskip("playwright.sync_api")
 from orkcraft.gui import builder  # noqa: E402
 from orkcraft.gui.host import Host  # noqa: E402
 from orkcraft.gui.server import Server  # noqa: E402
-from orkcraft.realm import checkpoint  # noqa: E402
+from orkcraft.realm import checkpoint, pipes  # noqa: E402
 from orkcraft.realm.buildings import TOWN_HALL  # noqa: E402
 
 pytestmark = pytest.mark.browser
@@ -97,6 +97,31 @@ def page(gui):
 def server_building(pg, bid: str) -> dict:
     """What the host's `info` says of a building now."""
     return pg.evaluate("id => import('/static/js/link.js').then(m => m.command('info', { id }))", bid)
+
+
+def _drop_at(pg, bid: str, spot: tuple[float, float] = (0.55, 0.62)) -> tuple[float, float]:
+    """A point on the hut's title the person can see. A new hut may stand under another one's card: it is moved to a
+    free `spot` first, and the point is taken once it stands still, where the hut itself is on top."""
+    pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))",
+                [bid, spot[0], spot[1]])
+    box, still = None, 0
+    for _ in range(50):
+        now = _hut(pg, bid).locator(".gui-hut__title").bounding_box()
+        still = still + 1 if now == box else 0
+        if still >= 3:
+            break
+        box = now
+        pg.wait_for_timeout(100)
+    hit = pg.evaluate("""id => {
+      const el = document.querySelector(`.gui-hut[data-id="${id}"] .gui-hut__title`);
+      const r = el.getBoundingClientRect();
+      for (let x = r.right - 4; x > r.left; x -= 6) {
+        const y = r.top + r.height / 2, top = document.elementFromPoint(x, y);
+        if (top && top.closest('.gui-hut') && top.closest('.gui-hut').dataset.id === id) return [x, y];
+      }
+      return [r.left + r.width / 2, r.top + r.height / 2];
+    }""", bid)
+    return hit[0], hit[1]
 
 
 def _hut(pg, bid: str):
@@ -837,10 +862,10 @@ def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
     assert "no road" in stub.get_attribute("title") and pg.locator(".gui-loose").count() == 2
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/rb-7-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
+    s, (tx, ty) = stub.locator(".gui-loose__stub").bounding_box(), _drop_at(pg, to)   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
+    pg.mouse.move(tx, ty, steps=6)
     pg.mouse.up()
     pg.locator(".gui-sign", has_text="To development").and_(pg.locator(":not(.gui-loose__sign)")) \
         .wait_for(state="visible", timeout=WAIT_MS)                          # the road, signed with the exit
@@ -867,10 +892,10 @@ def test_a_signposts_route_with_no_road_is_a_stub_pulled_to_a_building(page, gui
     stub.wait_for(state="visible", timeout=WAIT_MS)
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/sp-1-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
+    s, (tx, ty) = stub.locator(".gui-loose__stub").bounding_box(), _drop_at(pg, to)   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
+    pg.mouse.move(tx, ty, steps=6)
     pg.mouse.up()
     pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
     assert pg.locator(".gui-signs .gui-sign", has_text="bugs").count() == 1 and pg.locator(".gui-modal").count() == 0
@@ -1069,17 +1094,20 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
     link = "import('/static/js/link.js')"
     call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
     a, b = call("town.build", {"type": "forge"}), call("town.build", {"type": "forge"})
-    events = list(dict.fromkeys(c["event"] for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler")))
+    choices = [c for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler")]
+    events = list(dict.fromkeys(c["event"] for c in choices))
     assert len(events) >= 2
     for event in events[:2]:
         call("roads.lay", {"from": a, "to": b, "event": event, "handler": None})
     pg.keyboard.press("Escape")
-    pg.wait_for_function("() => document.querySelectorAll('.gui-road').length === 1", timeout=WAIT_MS)   # one road for two
-    pg.locator(".gui-road .gui-road__hit").dispatch_event("click")
+    labels = [pipes.label(e) for e in events[:2]]
+    road = pg.locator(".gui-road").filter(has=pg.locator(".gui-road__label", has_text=" · ".join(labels)))
+    road.wait_for(state="attached", timeout=WAIT_MS)                   # one road for two: its label names both
+    road.locator(".gui-road__hit").dispatch_event("click")
     card = pg.locator(".gui-roadbar")
     card.wait_for(state="visible", timeout=WAIT_MS)
-    assert "2 events" in card.locator(".gui-roadbar__head").inner_text()
-    assert card.locator(".gui-roadbar__row").count() == 2
+    pg.wait_for_function("() => document.querySelectorAll('.gui-roadbar__row').length === 2", timeout=WAIT_MS)
+    assert "2 events" in card.locator(".gui-roadbar__head").inner_text()   # the card lists both once the page has both
     if shots:
         pg.screenshot(path=f"{shots}/road-card.png")
     card.locator(".gui-roadbar__row").first.get_by_role("button", name="Remove").click()
