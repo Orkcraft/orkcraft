@@ -122,6 +122,13 @@ TERMS: tuple[Term, ...] = (
     _t("claim", "Area in work", "Areas in work"),                   # the files an open task changes, until merged
     _t("overlap", "Overlap", "Overlaps"),                           # a task on another open task's area
     _t("design_brief", "Design brief", "Design briefs"),            # the design a planned task leaves in its PR
+    # what is wanted, on the cart: it decides the Agent pool's path (docs/design/barracks-flows.md)
+    _t("want", "Kind of work", "Kinds of work"),                    # `want`, set by a building, never by the text
+    _t("want.change", "Code change"),                               # a branch and a pull request
+    _t("want.reply", "Reply"),                                      # a draft reply, through the Review gate
+    _t("want.doc", "Document"),                                     # a design, a decision, a brief
+    _t("want.routine", "Routine"),                                  # what is already scripted
+    _t("want.know", "Keep"),                                        # a page or a note in the Wiki
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
@@ -262,3 +269,9 @@ def table() -> list[tuple[str, str]]:
 def glossary() -> list[tuple[str, str, str]]:
     """(key, word, the Camp word it replaced or "") for every concept, in the glossary's order."""
     return [(t.key, t.word, t.was or t.was_many) for t in TERMS]
+
+
+def want_word(want: str) -> str:
+    """The kind of work in words (`reply` → Reply); "" for none or a word not known."""
+    key = f"want.{want}"
+    return term(key) if want and key in _BY_KEY else ""

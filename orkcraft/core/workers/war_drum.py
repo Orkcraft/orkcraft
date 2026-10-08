@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.realm import daybook, drumbeat, shelves
+from orkcraft.realm import daybook, drumbeat, pipes, shelves
 
 TICK_S = 30.0
 RELOAD_S = 300.0
@@ -217,10 +217,11 @@ class WarDrumWorker(Worker):
             self._save("digest.json", {"day": now.date().isoformat()})
 
     def send_upcoming(self, e) -> bool:
-        """`meeting soon` for `e`: titled by it, its tag in the text, its ref `<building>:<meeting id>`."""
+        """`meeting soon` for `e`: titled by it, its tag in the text, its ref `<building>:<meeting id>`; it asks
+        for a brief, so its kind of work is a document (docs/design/barracks-flows.md §4)."""
         mid = daybook.meet_id(e)
         return self.emit("calendar.event_upcoming", f"{daybook.line(e)} ({e.day:%a %d}) [meet:{mid}]", e.summary,
-                         ref=f"{self.building_id}:{mid}")
+                         ref=f"{self.building_id}:{mid}", want=pipes.DOC)
 
     def prepare(self, e=None) -> str:
         """📄 Prepare doc: `meeting soon` for `e` (else the meeting on now or next) at once. What went

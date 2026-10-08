@@ -113,9 +113,10 @@ def meta(town, payload: pipes.Payload) -> dict:
 
 
 def emit(town, building_id: str, event_id: str, value: str, title: str = "",
-         trail: tuple = (), ref: str = "", route: str = "") -> bool:
+         trail: tuple = (), ref: str = "", route: str = "", want: str = "") -> bool:
     """A typed building sends one of its events: only when a road carries it (with the trail of
-    what it passes on, when it gives one, and the route it was given, when it was routed)."""
+    what it passes on, when it gives one, the route it was given, when it was routed, and the kind of
+    work wanted, when it was set: docs/design/barracks-flows.md §3)."""
     spec = town.custom_specs.get(building_id)
     ev = catalog.type_of(spec).event(event_id) if spec else None
     if ev is not None:
@@ -124,5 +125,6 @@ def emit(town, building_id: str, event_id: str, value: str, title: str = "",
             town.lake.follow(building_id, event_id, ev.kind, value, title)
     if ev is None or town.scroll is None or not scroll.has_outgoing(town.scroll, building_id, event_id):
         return False
-    town.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref, route))
+    town.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref, route,
+                                  pipes.want_of(want)))
     return True

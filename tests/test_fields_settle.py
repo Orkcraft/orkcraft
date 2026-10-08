@@ -56,7 +56,7 @@ def board(fake_repo, isolated_layout_file, monkeypatch):
     bid = buildings.raise_spec(host.town, spec).id
     w = host.town.worker(bid)
     sent = []
-    monkeypatch.setattr(w, "emit", lambda ev, value, title="", trail=(), ref="", route="":
+    monkeypatch.setattr(w, "emit", lambda ev, value, title="", trail=(), ref="", route="", want="":
                         sent.append((ev, value, ref)) or True)
     yield w, sent
     host.close()

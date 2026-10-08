@@ -264,14 +264,15 @@ class PlanMixin:
             child = bk.PoolTask(cid, f"{task.title[:50]} · {s.title}"[:80], plans.child_text(task.title, bk.body_of(task), s, subs),
                                 arrived=bk.now_iso(), status="blocked", tier=s.tier, persona=self._persona_of(s),
                                 parent=task.id, sub=s.id, after=list(s.after), touches=list(s.touches),
-                                cheaper_ok=s.cheaper_ok, ref=f"{self.building_id}:{cid}",
+                                cheaper_ok=s.cheaper_ok, ref=f"{self.building_id}:{cid}", want=task.want,
+                                want_by=task.want_by,
                                 branch=f"{task.branch}--{s.id}" if task.branch else "", base=task.branch)
             st.tasks.append(child)
         parts = ", ".join(f"{s.id} ({s.tier}{', ' + s.persona if s.persona else ''})" for s in subs)
         tight = "; the quota is tight: 🪙 thrift" if camp is not None and camp.tight else ""
         st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"{len(subs)} parts, {estimate}{tight}: {parts}"))
         self.emit("pool.assigned", f"{self.keeper} planned **{task.title}** in {len(subs)} parts: {parts}",
-                  task.title, ref=task.ref)
+                  task.title, ref=task.ref, want=task.want)
         self._claim(task, [t for s in subs for t in s.touches] + ([task.design] if task.design else []), False)
         self._advance(task)
 
@@ -294,7 +295,7 @@ class PlanMixin:
             parent.error = "; ".join(f"{k.sub}: {k.error or 'failed'}" for k in failed)[:300]
             st.log(bk.Decision(bk.now_iso(), parent.id, "failed", why=parent.error))
             self.emit("pool.failed", f"**{parent.title}** — a part failed: {parent.error}", parent.title,
-                      trail=self._plan_trail(parent, "error"), ref=parent.ref)
+                      trail=self._plan_trail(parent, "error"), ref=parent.ref, want=parent.want)
             return
         if failed:
             return                                    # what runs finishes; nothing new starts
@@ -387,7 +388,7 @@ class PlanMixin:
             return
         orc = st.orc(task.orc)
         trail = self._plan_trail(task, "error") if task.plan or orc is None else self._trail(task, orc, "error")
-        self.emit("pool.failed", f"**{task.title}** — {task.error}", task.title, trail=trail, ref=task.ref)
+        self.emit("pool.failed", f"**{task.title}** — {task.error}", task.title, trail=trail, ref=task.ref, want=task.want)
 
     def _steward_decides(self, task: bk.PoolTask, why: str) -> None:
         """A question nobody answered: the steward decides it by its rules; when it cannot, the task is closed."""
@@ -534,7 +535,7 @@ class PlanMixin:
             parent.status, parent.error = "failed", out.error
             self._unclaim(parent)
             self.emit("pool.failed", f"**{parent.title}** — {self.keeper}: {out.error}", parent.title,
-                      trail=self._plan_trail(parent, "error"), ref=parent.ref)
+                      trail=self._plan_trail(parent, "error"), ref=parent.ref, want=parent.want)
         elif out.accepted:
             parent.status, parent.pr, parent.scope, parent.feedback = "done", out.pr, bk.EXTERNAL, ""
             self._claim_done(parent)
@@ -547,7 +548,7 @@ class PlanMixin:
             note = f" ({out.pr_note})" if out.pr_note and not out.pr else ""
             self.emit("pool.done", f"**{parent.title}** — {len(kids)} parts by {orks}, planned and reviewed by "
                       f"{self.keeper}\n\n{parent.result}{where}{note}" + self._files_md(parent), parent.title,
-                      trail=self._plan_trail(parent, "done"), ref=parent.ref)
+                      trail=self._plan_trail(parent, "done"), ref=parent.ref, want=parent.want)
         else:
             self._rework_whole(parent, kids, out.notes)
         self._pump()
@@ -587,7 +588,7 @@ class PlanMixin:
         kid = bk.PoolTask(cid, f"{parent.title[:50]} · {sub.title}", plans.child_text(parent.title, bk.body_of(parent), sub, []),
                           arrived=bk.now_iso(), status="blocked", tier=tier, parent=parent.id, sub=sub.id,
                           ref=f"{self.building_id}:{cid}", branch=f"{parent.branch}--{sub.id}" if parent.branch else "",
-                          base=parent.branch)
+                          base=parent.branch, want=parent.want, want_by=parent.want_by)
         st.tasks.append(kid)
         return kid
 

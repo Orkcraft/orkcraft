@@ -79,6 +79,8 @@
 .fields-settle__act { font: inherit; }
 
 /* Its windows: the pages of a context, what goes to the model, a plan's steps. */
+.fields-want { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--ink-muted); font-size: 12px; }
+.fields-want select { width: auto; }
 .fields-personal { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); color: var(--ink-muted); }
 .fields-pages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .fields-pages li { display: flex; flex-direction: column; }

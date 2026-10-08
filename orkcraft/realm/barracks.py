@@ -152,6 +152,8 @@ class PoolTask:
     tier: str = ""                  # the tier it wants (realm/tiers.py); "" — whatever the ork has
     kind: str = ""                  # the triage (realm/plans.py): trivial | single | plan; "" not sorted
     persona: str = ""               # the persona it wants (realm/personas.py)
+    want: str = ""                  # the kind of work its cart asked for (pipes.WANTS); "" none named
+    want_by: str = ""               # the building that named it (docs/design/barracks-flows.md §9)
     # A planned task (realm/plans.py): the parent keeps the plan, its subtasks point back at it.
     plan: list[dict] = field(default_factory=list)   # the parent's subtasks as planned (plans.Sub dicts)
     parent: str = ""                # a subtask: its parent task's id

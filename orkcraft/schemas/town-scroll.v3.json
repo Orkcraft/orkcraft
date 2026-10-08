@@ -698,6 +698,20 @@
           },
           "description": "From a Signpost or a Clan Fire that routes: only these routes (T1107; the Totem's of old)."
         },
+        "want": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "change",
+              "reply",
+              "doc",
+              "routine",
+              "know"
+            ]
+          },
+          "description": "Only carts that ask for these kinds of work (docs/design/barracks-flows.md §8); a cart without one does not pass."
+        },
         "returns": {
           "type": "boolean",
           "description": "A return road: it carries a cart only back to the building its ref names (the result of work that building sent out). It never makes new work there, so it is not counted as a loop."

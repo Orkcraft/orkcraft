@@ -42,7 +42,7 @@ from orkcraft.core import runners
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.fields_lore import CardLore, card_text
 from orkcraft.core.workers.fields_settle import Settle
-from orkcraft.realm import tasklist
+from orkcraft.realm import pipes, tasklist
 from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 
 TITLE = "🌾 Task Fields"
@@ -167,23 +167,45 @@ class FieldsWorker(Settle, CardLore, Worker):
 
     def announce(self, event_id: str, card: tasklist.Task, detail: str) -> None:
         if event_id == "notes.created":
-            self.emit(event_id, card_text(card), tasklist.plain(card.title), ref=self.ref(card))
+            self.emit(event_id, card_text(card), tasklist.plain(card.title), ref=self.ref(card), want=self.want(card))
         else:
-            self.emit(event_id, card.id, f"{tasklist.plain(card.title)} · {detail}")
+            self.emit(event_id, card.id, f"{tasklist.plain(card.title)} · {detail}", want=self.want(card))
         if event_id == "tasks.created" and card.column == "todo" and self.config.get("send_new"):
             self.arrived(card)
 
     def ref(self, card: tasklist.Task) -> str:
         return f"{self.building_id}:{card.id}"
 
+    def want(self, card: tasklist.Task) -> str:
+        """The card's kind of work (docs/design/barracks-flows.md §4): the one the person or its cart named;
+        a card that came by road without one has none (the receiver decides, never more than it is given);
+        else a task the person wrote is a code change and a note is kept."""
+        named = self.lore.want(card.id)
+        if named or self.lore.by_road(card.id):
+            return named
+        return pipes.CHANGE if card.kind == TASK else pipes.KNOW if card.kind == NOTE else ""
+
+    def set_want(self, card_id: str, want: str) -> str:
+        """The person names the card's kind of work ("" gives it back to the board's own rule). What it is now."""
+        card = self.card(card_id)
+        if card is None:
+            return ""
+        self.lore.set_want(card_id, pipes.want_of(want))
+        self.changed()
+        return self.want(card)
+
     # -- acts -----------------------------------------------------------------------------------
 
-    def add(self, title: str, lane: str = "todo", body: str = "", seen: bool = True) -> tasklist.Task | None:
+    def add(self, title: str, lane: str = "todo", body: str = "", seen: bool = True,
+            want: str | None = None) -> tasklist.Task | None:
+        """A new card. `want`: it came by a road, with the kind of work its cart named ("" for none)."""
         try:
             card = self.store.add(title, lane, body)
         except (OSError, ValueError) as e:
             self.toast(str(e), title=TITLE, severity="error")
             return None
+        if want is not None:              # before it is announced: what it sends carries it
+            self.lore.set_want(card.id, pipes.want_of(want), by_road=True)
         self._sync(seen)                  # first: what the roads bring back about it finds it on the board
         self.find_context(card.id)
         if card.kind == TASK:
@@ -253,7 +275,7 @@ class FieldsWorker(Settle, CardLore, Worker):
         lane = self.visible_lanes()[0].id if self.mode == "notes" else "todo"
         if payload.route and payload.route in [str(r).strip().lower() for r in self.config.get("mine_routes") or []]:
             lane = MINE
-        self.add(name, lane, "\n".join(rest).strip()[:2000], seen=False)
+        self.add(name, lane, "\n".join(rest).strip()[:2000], seen=False, want=getattr(payload, "want", "") or "")
 
     def update_own(self, payload, markdown: str = "") -> bool:
         """A cart about one of this board's cards (its `ref` is `<this building>:<card id>`): the work on it

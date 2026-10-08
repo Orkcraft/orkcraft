@@ -17,7 +17,7 @@ from __future__ import annotations
 import time
 
 from orkcraft.core.workers.fields_lore import card_text
-from orkcraft.realm import settle, tasklist
+from orkcraft.realm import pipes, settle, tasklist
 from orkcraft.realm.tasklist import TASK
 
 TITLE = "🌾 Task Fields"
@@ -102,7 +102,7 @@ class Settle:
         elif lore.sent(first):
             card, head = self.card(card_id), self.card(first)
             if card is not None and head is not None:
-                self._emit_sent(head, settle.added(card_text(card)))
+                self._emit_sent(head, settle.added(card_text(card)), pipes.least_want(self.want(head), self.want(card)))
                 lore.set_sent(card_id)
         self.changed()
 
@@ -119,14 +119,18 @@ class Settle:
     def _go(self, first: tasklist.Task) -> bool:
         """The held task goes: its first card's text and every joined card's under it, as one task."""
         parts = self.joined_cards(first.id)
-        sent = self._emit_sent(first, settle.combined(card_text(first), [card_text(c) for c in parts]))
+        sent = self._emit_sent(first, settle.combined(card_text(first), [card_text(c) for c in parts]),
+                               pipes.least_want(*(self.want(c) for c in [first] + parts)))
         for c in [first] + parts:
             self.lore.set_sent(c.id)
         self.changed()
         return sent
 
-    def _emit_sent(self, card: tasklist.Task, text: str) -> bool:
-        return self.emit("tasks.sent", text, tasklist.plain(card.title), ref=self.ref(card))
+    def _emit_sent(self, card: tasklist.Task, text: str, want: str | None = None) -> bool:
+        """`want`: the joined task's kind of work — of its cards' kinds, the one whose path may do least (a join
+        never gives a cart more rights than one of its cards had); else the card's own."""
+        return self.emit("tasks.sent", text, tasklist.plain(card.title), ref=self.ref(card),
+                         want=self.want(card) if want is None else want)
 
     def send_now(self, card_id: str) -> bool:
         """Send: a held task (or the task a card is joined to) goes now with all its cards; any other card

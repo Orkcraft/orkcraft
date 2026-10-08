@@ -1,6 +1,7 @@
 # Design — what is wanted decides the way: the Agent pool's paths
 
-Status: written 2026-10-07; nothing built yet. Builds on the Agent pool's planning
+Status: written 2026-10-07; stage 1 (§12) built — the field, the road filter, the word, the Task board and
+the Calendar set it, the pool shows it; no path changes yet. Builds on the Agent pool's planning
 ([barracks-planning.md](barracks-planning.md)), roads and their filters ([roads-and-orcs.md](roads-and-orcs.md),
 `realm/roads.py` `passes`), the External listeners' intent and Lookout (`core/workers/watchtower.py`,
 `realm/lookout.py`), the Review board ([review-board.md](review-board.md)), the Review gate

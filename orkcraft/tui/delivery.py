@@ -105,9 +105,9 @@ class DeliveryMixin:
             drop(event.text)
 
     def emit_typed(self, building_id: str, event_id: str, value: str, title: str = "",
-                   trail: tuple = (), ref: str = "", route: str = "") -> bool:
+                   trail: tuple = (), ref: str = "", route: str = "", want: str = "") -> bool:
         """A typed building sends one of its events (core/delivery.py)."""
-        return self.core.emit_typed(building_id, event_id, value, title, trail, ref, route)
+        return self.core.emit_typed(building_id, event_id, value, title, trail, ref, route, want)
 
     def deliver_payload(self, target_id: str, payload: pipes.Payload, title: str = "", markdown: str = "") -> None:
         self.core.deliver(target_id, payload, title, markdown)

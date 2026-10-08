@@ -50,8 +50,8 @@ class MillWorker(Worker):
         self.running = False
         self.current: jobs.Job | None = None
         self.last_input = ""
-        self.queue: deque[tuple] = deque()     # (text, trigger, title, cut, trail, ref) — no limit
-        self._carts: dict[str, tuple[tuple, str]] = {}     # a running job's trail and ref, to send on
+        self.queue: deque[tuple] = deque()     # (text, trigger, title, cut, trail, ref, want) — no limit
+        self._carts: dict[str, tuple[tuple, str, str]] = {}   # a running job's trail, ref and want, to send on
         self.cancel = threading.Event()
         self._halts = halt.count()
 
@@ -96,12 +96,13 @@ class MillWorker(Worker):
         text = payload.value
         if payload.kind == pipes.FILE:
             text = self._read_file(payload.value, markdown or payload.value)
-        self.run_steps(text, "road", title, payload.trail, payload.ref)
+        self.run_steps(text, "road", title, payload.trail, payload.ref, payload.want)
 
-    def run_steps(self, text: str, trigger: str = "manual", title: str = "", trail: tuple = (), ref: str = "") -> bool:
+    def run_steps(self, text: str, trigger: str = "manual", title: str = "", trail: tuple = (), ref: str = "",
+                  want: str = "") -> bool:
         """Mill `text` now, or after what is already waiting. True: it is milling or queued. A cart's
-        `trail` and `ref` go on with what it becomes."""
-        self.queue.append((text[:INPUT_LIMIT], trigger, title, len(text) > INPUT_LIMIT, tuple(trail), ref))
+        `trail`, `ref` and `want` go on with what it becomes."""
+        self.queue.append((text[:INPUT_LIMIT], trigger, title, len(text) > INPUT_LIMIT, tuple(trail), ref, want))
         if not self.running:
             self._next()
         else:
@@ -150,12 +151,12 @@ class MillWorker(Worker):
     def _next(self) -> None:
         if not self.queue:
             return
-        text, trigger, title, cut, trail, ref = self.queue.popleft()
+        text, trigger, title, cut, trail, ref, want = self.queue.popleft()
         self.running, self.last_input = True, text
         job = jobs.Job(uuid.uuid4().hex[:8], title or self.title, "mill", text,
                        started=jobs.now_iso(), outcome="running", trigger=trigger, meta={"cut": True} if cut else {})
         self.current = job
-        self._carts[job.id] = (trail, ref)
+        self._carts[job.id] = (trail, ref, want)
         self._halts = halt.count()
         steps, repo, agent = self.steps, self.repo_root, self._agent(job)
         env, cancel = [str(n) for n in self.config.get("env") or []], self.cancel
@@ -184,12 +185,12 @@ class MillWorker(Worker):
         scroll = self.town.scroll
         if not values or scroll is None or not ts.has_outgoing(scroll, self.building_id, "mill.item"):
             return 0
-        trail, ref = cart
-        return sum(self.emit("mill.item", v, title, trail=trail, ref=ref) for v in values)
+        trail, ref, want = (tuple(cart) + ("",))[:3]
+        return sum(self.emit("mill.item", v, title, trail=trail, ref=ref, want=want) for v in values)
 
     def finish(self, job: jobs.Job, records: list | None = None) -> None:
         self.running, self.current = False, None
-        trail, ref = self._carts.pop(job.id, ((), ""))
+        trail, ref, want = self._carts.pop(job.id, ((), "", ""))
         kind = "agent" if job.meta.get("agent") else "script"
         items = len(mill.items(records)) if job.ok and records else 0
         trail = tuple(trail) + (pipes.hop(self.building_id, "miller", kind, cost=job.cost_usd,
@@ -199,10 +200,10 @@ class MillWorker(Worker):
         if job.ok:
             if records:
                 job.meta["items"] = len(mill.items(records))
-            self.emit("mill.done", job.result, job.title, trail=trail, ref=ref)
-            self._flat_map(records, job.title, (trail, ref))
+            self.emit("mill.done", job.result, job.title, trail=trail, ref=ref, want=want)
+            self._flat_map(records, job.title, (trail, ref, want))
         else:
-            self.emit("mill.failed", job.error, job.title, trail=trail, ref=ref)
+            self.emit("mill.failed", job.error, job.title, trail=trail, ref=ref, want=want)
         if not job.ok or job.cost_usd:          # a failure is marked on the map; what an agent spent is counted
             delivery.ran(self.town, roads.HandlerRun(self.building_id, "miller", kind, job.id, 0.0, 0.0,
                                                      outcome="done" if job.ok else "error", error=job.error,
