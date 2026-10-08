@@ -229,3 +229,6 @@ def test_a_scrolls_worker_runs_its_librarian_and_halts(fake_repo, monkeypatch):
     assert dump.status() == "FRESH" and wiki.page_count(dump.pages) == 1 and sent[-1].mode == "wiki.updated"
     town.deliver("dump", pipes.Payload(pipes.TEXT, "how do we release?", "loot", "pit.text", "q"))
     assert sent[-1].mode == "knowledge.chunks" and "how do we release?" in sent[-1].value
+    long = "how do we release? " + "step " * 200 + "THE END"                # the task goes on whole, once
+    town.deliver("dump", pipes.Payload(pipes.TEXT, long, "loot", "pit.text", "q"))
+    assert sent[-1].value.count("THE END") == 1 and "**Task:**" not in sent[-1].value

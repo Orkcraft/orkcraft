@@ -1,0 +1,110 @@
+"""Script-first buildings in a real browser, on the dashboard demo (docs/design/script-first.md §5): the
+steward's window says a building's work is code — no model, its ork wakes on an error or a 👎 — or what in it
+thinks on its carts; Info's spend says *no model*; a 👎 wakes its ork, and the window says when.
+
+Skipped where Playwright or Chromium is missing; `-m browser` runs these alone."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+import pytest
+
+playwright = pytest.importorskip("playwright.sync_api")
+
+from orkcraft import demo  # noqa: E402
+from orkcraft.gui.host import Host  # noqa: E402
+from orkcraft.gui.server import Server  # noqa: E402
+
+pytestmark = pytest.mark.browser
+
+CHROMIUM = [p for p in (os.environ.get("ORKCRAFT_CHROMIUM", ""), "/opt/pw-browsers/chromium") if p and Path(p).exists()]
+WAIT_MS = 10_000
+
+
+def _launch(p):
+    return p.chromium.launch(executable_path=CHROMIUM[0]) if CHROMIUM else p.chromium.launch()
+
+
+def _can_launch() -> bool:
+    try:
+        with playwright.sync_playwright() as p:
+            _launch(p).close()
+        return True
+    except Exception:
+        return False
+
+
+if not _can_launch():
+    pytest.skip("no Chromium for Playwright here", allow_module_level=True)
+
+
+@pytest.fixture(scope="module")
+def browser():
+    """One Chromium for the module, launched before a test's fixtures move XDG_CACHE_HOME (conftest.py):
+    Playwright finds its browsers under it."""
+    pw = playwright.sync_playwright().start()
+    chromium = _launch(pw)
+    yield chromium
+    chromium.close()
+    pw.stop()
+
+
+@pytest.fixture
+def demo_page(tmp_path, browser):
+    """The dashboard demo served and open in Chromium; every page error it logged fails the test."""
+    root = demo.build(tmp_path / "demo", set_name="dashboard")
+    server = Server(Host(root, False, root / ".orkcraft.json", demo=True))
+    thread = server.start_thread()
+    pg = browser.new_page(viewport={"width": 1440, "height": 900})
+    errors: list[str] = []
+    pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    pg.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
+    pg.goto(server.url)
+    pg.wait_for_selector(".gui-warchief__face", timeout=WAIT_MS)
+    try:
+        yield pg
+    finally:
+        pg.close()
+        server.stop()
+        thread.join(10)
+    assert not errors, "\n".join(errors)
+
+
+def _call(pg, name: str, args: dict):
+    return pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+
+
+def _open_info(pg, bid: str) -> None:
+    hut = pg.locator(f'.gui-hut[data-id="{bid}"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    hut.locator(".gui-hut__title").click()
+    pg.locator(".gui-panel").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-panel__tabs .ok-tab", has_text="Info").click()
+    pg.locator(".gui-panel .gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
+
+
+def test_a_script_first_building_says_so_and_a_thumbs_down_wakes_its_ork(demo_page):
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "gates"})
+    _open_info(pg, "gate_pit")
+    line = pg.locator(".gui-steward__script-first")
+    line.wait_for(state="visible", timeout=WAIT_MS)
+    text = line.inner_text()
+    assert "Script-first" in text and "no model" in text and "wakes on an error or a 👎" in text
+    assert "is-on" in (line.get_attribute("class") or "")
+    assert "no model" in pg.locator(".gui-panel .gui-info").first.inner_text()       # Info's spend line
+    if os.environ.get("ORKCRAFT_SHOTS"):           # a look for a person: ORKCRAFT_SHOTS=<folder>
+        pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "script-first-pit.png"))
+
+    _call(pg, "building.dislike", {"id": "gate_pit", "kind": "logic", "note": "it took my JSON for text"})
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-steward__script-first')]"
+                         ".some(e => /woke \\d\\d:\\d\\d on a 👎/.test(e.textContent))", timeout=WAIT_MS * 2)
+    pg.keyboard.press("Escape")
+    pg.keyboard.press("Escape")
+
+    _open_info(pg, "notes_mill")                 # the Release notes Transformer has an `agent:` step: it thinks
+    line = pg.locator(".gui-steward__script-first")
+    line.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Thinks on its carts" in line.inner_text() and "agent: step 3" in line.inner_text()
+    assert "is-on" not in (line.get_attribute("class") or "")

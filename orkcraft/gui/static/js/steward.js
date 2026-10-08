@@ -6,12 +6,15 @@
 //   settings   two rows, each named: the goal its retros aim at (three steps), how freely it applies their changes
 //              (Freedom: as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
 //   commands   one row: Watch, Report, Redesign, Revert while there is a checkpoint
+//   script     a script-first building's line: no model, its ork wakes on an error or a 👎 (or what thinks)
 //   listens    the roads into the building, one line each with its handler (an agent, a script, a chain)
 //              and what it does now; a click edits the handler's prompt, opens its script in Lake, or
 //              picks a plain road; › opens the ork itself; + Listen lays a new road
 //
 // As tall as Info: every line is one line, its whole text in its tooltip.
 //   on its own the handlers no road feeds: on a schedule or when asked
+//   rules      its road rules (docs/design/steward-listens.md): what the steward itself does with a road's carts,
+//              one line each with its roads, its last run and its spend; a click opens the rule
 //
 // The data is the building's `info` (gui/info.py: steward, listens, others, goal, autonomy).
 import { useState } from "preact/hooks";
@@ -61,7 +64,8 @@ export function StewardModels({ b, i, onClose, onDone }) {
       onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
         <button class="ok-btn primary" onClick=${save}>${say("Save")}</button>`}>
-    <div class="gui-form">${s.uses.map((u) => html`<label key=${u.id} class="gui-field"><span class="ok-font-label">${say(u.label)}</span>
+    <div class="gui-form">${s.uses.map((u) => html`<label key=${u.id} class="gui-field"><span class="ok-font-label">${say(u.label)}${
+        u.spend ? html`<span class="ok-tone-muted"> · ${u.spend}</span>` : ""}</span>
       <select class="ok-input" value=${picked[u.id]} onChange=${(e) => setPicked({ ...picked, [u.id]: e.target.value })}>
         ${choices(u).map(([v, label]) => html`<option key=${v} value=${v} selected=${v === picked[u.id]}>${label}</option>`)}
       </select></label>`)}</div>
@@ -123,12 +127,13 @@ function Commands({ b, i, redo, open }) {
 function edit(b, h, open) {
   if (h.kind === "script" && h.script) return openInLake({ path: h.script, title: `${h.name} — ${b.title}`, from: b.id });
   if (h.kind === "agent" || h.kind === "hybrid") return open("ork-orders", h.ref);
-  return selectOrk(h.ref);
+  return selectOrk(h.ref);                         // a chain's ork, or a road rule's panel
 }
 
 function editTitle(h) {
   if (h.kind === "script" && h.script) return say("Its script, in Lake");
   if (h.kind === "agent" || h.kind === "hybrid") return say("Its prompt: standing orders and trigger");
+  if (h.kind === "steward") return say("The rule: its words, its roads, its runs");
   return say("The ork: its chain");
 }
 
@@ -183,13 +188,46 @@ function OnItsOwn({ b, i, open }) {
   </details>`;
 }
 
+/** Whether its work is code (docs/design/script-first.md): no model, its ork wakes on an error or a 👎; or what
+ * in it thinks on its carts. Nothing for a type that thinks by its nature. */
+function ScriptFirst({ i }) {
+  const c = i.script_first;
+  if (!c) return null;
+  if (!c.on) {
+    const parts = c.thinking.join(", ");
+    return html`<p class="gui-steward__script-first ok-font-status ok-tone-muted"
+        title=${say("It calls a model on its carts. Without these parts it would be script-first: no model, its ork woken only on an error or a 👎")}>
+      ${say("Thinks on its carts")}: ${parts}</p>`;
+  }
+  return html`<p class="gui-steward__script-first is-on ok-font-status ok-tone-ok"
+      title=${say("Its work is code. Its ork calls no model on carts or schedules: it wakes once when the building fails or gets a 👎, and its keeper proposes a fix")}>
+    ${say("Script-first")} · ${say("no model")} · ${say("its ork wakes on an error or a 👎")}${c.woke && html`<span class="ok-tone-muted"> · ${say(c.woke)}</span>`}</p>`;
+}
+
+/** Its road rules: what the steward does with a road's carts itself, on its own tool and listen tier. */
+function Rules({ i }) {
+  if (!i.rules || !i.rules.length) return null;
+  return html`<details class="gui-steward__group" open>
+    <summary class="ok-font-label">${say("Road rules")} <span class="ok-tone-muted">${i.rules.length}</span></summary>
+    <ul class="gui-rows">${i.rules.map((r) => {
+      const line = `📜 ${say(r.name)} · ${r.roads.map(say).join(", ") || say("no road yet")} → ${say("here")}`;
+      const more = [r.last, say(r.spend)].filter(Boolean).join(" · ");
+      return html`<li key=${r.ref} class="gui-console__row gui-steward__rule" title=${`${line} · ${more}. ${say("The rule: its words, its roads, its runs")}`}
+          onClick=${() => selectOrk(r.ref)}>
+        <span class="gui-steward__line">${line} <span class="ok-tone-muted">· ${more}</span></span></li>`;
+    })}</ul>
+  </details>`;
+}
+
 /** The body of the steward's window. */
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
     <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
+    <${ScriptFirst} i=${i} />
     <${Listens} b=${b} i=${i} open=${open} />
+    <${Rules} i=${i} />
     <${OnItsOwn} b=${b} i=${i} open=${open} />
   </div>`;
 }

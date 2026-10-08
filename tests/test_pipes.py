@@ -58,7 +58,7 @@ def test_modes_follow_what_targets_accept():
     assert pipes.modes_for("forge", "farm") == []                    # the farm receives nothing
     assert pipes.modes_for("scrying", "loot") == [pipes.ON_TASK]
     assert pipes.modes_for("scrying", "scrying") == []
-    assert pipes.can_receive("scrying") and not pipes.can_receive("forge")
+    assert pipes.accepts("scrying") and not pipes.accepts("forge")
 
 
 def test_file_payload_stays_inside_the_repository(tmp_path: Path):
@@ -104,7 +104,7 @@ def test_the_trail_adds_up_and_reads():
     assert pipes.merge_trails((b, a), (a, c)) == (a, b, c)          # each hop once, in order of time
     line = pipes.trail_line((a, b), {"barracks": "Barracks", "council": "Council"})
     assert line == "Barracks 12k tok $0.08 → Council 40k tok $0.31 = 52k tok $0.39"
-    p = pipes.with_hop(pipes.Payload(pipes.TEXT, "doc", "barracks", pipes.ON_TASK, ref="D-1"), a)
+    p = pipes.Payload(pipes.TEXT, "doc", "barracks", pipes.ON_TASK, ref="D-1", trail=(a,))
     assert p.trail == (a,) and p.ref == "D-1"
     assert p == pipes.Payload(pipes.TEXT, "doc", "barracks", pipes.ON_TASK, ref="D-1")   # the trail is not identity
     assert pipes.trail_of([a.as_dict(), {"nope": 1}, "x"]) == (a,)

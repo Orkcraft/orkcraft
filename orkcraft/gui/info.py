@@ -20,7 +20,8 @@ from orkcraft.core import buildings as core_buildings
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, steward, tiers, unit_info
+from orkcraft.realm import (catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, script_first,
+                            steward, tiers, unit_info)
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
 
@@ -70,7 +71,7 @@ def _about(town: Town, building_id: str) -> str:
     return about or getattr(bs, "role", "") or "No description yet."
 
 
-KINDS = {"agent": "agent", "hybrid": "agent + script", "script": "script", "chain": "chain"}
+KINDS = {"agent": "agent", "hybrid": "agent + script", "script": "script", "chain": "chain", "steward": "road rule"}
 
 
 def _handler(town: Town, muster: Muster, building_id: str, orc) -> dict[str, Any]:
@@ -80,7 +81,7 @@ def _handler(town: Town, muster: Muster, building_id: str, orc) -> dict[str, Any
     live = find_ork(muster, ref)
     return {"ref": ref, "name": orc.name, "kind": orc.kind, "kind_label": KINDS.get(orc.kind, orc.kind),
             "status": live.status if live is not None else orc.status,
-            "tier": tiers.orc_tier(orc.harness, orc.kind) or "",
+            "tier": listen_tier(town, building_id) if orc.on_steward else tiers.orc_tier(orc.harness, orc.kind) or "",
             "script": str((orc.script or {}).get("path") or ""),
             "trigger": str((orc.trigger or {}).get("type") or "on_demand")}
 
@@ -97,7 +98,8 @@ def _listens(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any
                     "title": src.title if src else road.source,
                     "label": road.label or pipes.label(road.event),
                     "handler": orc.name if orc is not None else "",
-                    "tier": tiers.orc_tier(orc.harness, orc.kind) or "" if orc is not None else "",
+                    "tier": (listen_tier(town, building_id) if orc.on_steward else tiers.orc_tier(orc.harness, orc.kind) or "")
+                    if orc is not None else "",
                     "by": _handler(town, muster, building_id, orc) if orc is not None else None})
     return out
 
@@ -108,7 +110,74 @@ def _others(town: Town, muster: Muster, building_id: str) -> list[dict[str, Any]
     if b is None:
         return []
     on_roads = {r.handler for r in b.roads if r.handler}
-    return [_handler(town, muster, building_id, h) for h in b.garrison.handlers if h.id not in on_roads]
+    return [_handler(town, muster, building_id, h) for h in b.garrison.handlers
+            if h.id not in on_roads and h.kind != "steward"]
+
+
+def listen_tier(town: Town, building_id: str) -> str:
+    """The tier its steward carries out its road rules at now (picked, else the goal in force), "" for the default."""
+    from orkcraft.core import delivery
+    b = town.scroll.building(building_id)
+    return roads.steward_steps(b, delivery.aim_now(town, building_id))[0].get("tier", "") if b is not None else ""
+
+
+def _road_line(town: Town, road) -> str:
+    """`⚒️ Inbox → here`: where a rule's road comes from and what it carries."""
+    src = town.scroll.building(road.source)
+    who = f"{src.icon} {src.title}".strip() if src is not None else road.source
+    return f"{who} · {road.label or pipes.label(road.event)}"
+
+
+def rule(town: Town, building_id: str, orc) -> dict[str, Any]:
+    """One road rule of the steward's (a `steward` handler, docs/design/steward-listens.md): its words, its
+    roads, its runs and what they spent on the steward's listen tier."""
+    b = town.scroll.building(building_id)
+    spend = unit_info.handler_spend(roads.examples_file(town.repo_root, building_id, orc.id))
+    runs = [r for r in getattr(town.roads, "runs", []) if r.target == building_id and r.orc_id == orc.id]
+    kept = roads.read_examples(town.repo_root, building_id, orc.id, limit=5)
+    return {"ref": f"{building_id}/{orc.id}", "id": orc.id, "name": orc.name, "kind": orc.kind,
+            "orders": orc.orders, "status": orc.status,
+            "roads": [_road_line(town, r) for r in b.roads_of(orc.id)] if b is not None else [],
+            "spend": spend.text(), "usd": spend.usd, "runs": spend.runs,
+            "last": runs[-1].outcome if runs else "", "last_error": runs[-1].error if runs else "",
+            "recent": [{"ts": str(e.get("ts", ""))[:16].replace("T", " "), "output": modes.plain(str(e.get("output", "")))[:300],
+                        "cost": e.get("cost_usd")} for e in reversed(kept)],
+            "tier": modes.plain(tiers.label(listen_tier(town, building_id))) or "its tool's default model",
+            "script": str((orc.script or {}).get("path") or "")}
+
+
+def _rules(town: Town, building_id: str) -> list[dict[str, Any]]:
+    b = town.scroll.building(building_id)
+    return [rule(town, building_id, h) for h in b.garrison.handlers if h.kind == "steward"] if b is not None else []
+
+
+def hand_over(town: Town, building_id: str, orc) -> dict[str, Any]:
+    """What *Hand to the steward* changes for an agent handler: its tools and tier now, the steward's then, and
+    what a run cost on its own and would cost at the steward's tier (an estimate from its recorded runs)."""
+    from orkcraft.core import delivery
+    from orkcraft.realm import recruiter
+    b = town.scroll.building(building_id)
+    [step] = roads.steward_steps(b, delivery.aim_now(town, building_id))
+    spend = unit_info.handler_spend(roads.examples_file(town.repo_root, building_id, orc.id))
+    per_run = spend.usd / spend.runs if spend.usd is not None and spend.runs else None
+    now_tier, then_tier = tiers.orc_tier(orc.harness, orc.kind), step.get("tier")
+    estimate = None
+    if per_run is not None and now_tier in tiers.TIERS and then_tier in tiers.TIERS:
+        estimate = per_run * TIER_COST[then_tier] / TIER_COST[now_tier] / max(1, len(orc.harness or []))
+    tools = lambda steps: " → ".join(recruiter.HARNESS_NAMES.get(str(s.get("harness") or "main"), str(s.get("harness")))  # noqa: E731
+                                     for s in steps) or recruiter.HARNESS_NAMES["main"]
+    return {"name": orc.name, "orders": orc.orders, "roads": [_road_line(town, r) for r in b.roads_of(orc.id)],
+            "tools_now": tools(orc.harness or ts.DEFAULT_HARNESS), "tools_then": tools([step]),
+            "tier_now": modes.plain(tiers.label(now_tier)) or "its tool's default model",
+            "tier_then": modes.plain(tiers.label(then_tier)) or "its tool's default model",
+            "per_run_now": f"${per_run:.3f}" if per_run is not None else "",
+            "per_run_then": f"≈ ${estimate:.3f}" if estimate is not None else "",
+            "runs": spend.runs}
+
+
+# What a run costs at each tier, relative to the warrior's — a rough guide for an estimate, never a bill
+# (the light, middle and heavy models' list prices: about 1 : 3 : 5 for the same work).
+TIER_COST = {"laborer": 1 / 3, "warrior": 1.0, "elder": 5 / 3}
 
 
 def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
@@ -124,6 +193,13 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use), "work": steward.is_work(type_id, use),
              "by_goal": modes.plain(tiers.label(steward.goal_tier(type_id, use, aim)))}
             for use, label in steward.uses(type_id).items()]
+    rules = _rules(town, building_id)
+    for u in uses:                                     # the road rules' spend shows under its listen tier
+        if u["id"] == "listen" and rules:
+            total = unit_info.Spend()
+            for r in rules:
+                total = total.add(unit_info.Spend(usd=r["usd"], runs=r["runs"]))
+            u["spend"] = modes.plain(total.text())
     picked = [u["tier"] for u in uses if u["tier"]]
     default = models[0][1] if models else ""
     first = modes.plain(tiers.label(picked[0])) if picked else default
@@ -149,6 +225,19 @@ def _waits(town: Town, bs) -> dict:
             "questions": list(autonomy.QUESTION_WAITS), "rebuilds": list(autonomy.REBUILD_WAITS)}
 
 
+def _script_first(town: Town, building_id: str) -> dict[str, Any] | None:
+    """Whether its work is code (docs/design/script-first.md): {on, thinking, woke}; None for a type that thinks."""
+    bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
+    if script_first.type_id(spec) not in script_first.TYPES | script_first.WHEN_CODE:
+        return None
+    last = script_first.wakes(town.repo_root, building_id, 1)
+    woke = ""
+    if last:
+        when = str(last[0].get("ts", ""))[11:16]
+        woke = f"woke {when} on {'an error' if last[0].get('why') == 'error' else 'a 👎'}"
+    return {"on": script_first.is_script_first(spec, bs), "thinking": script_first.thinking(spec, bs), "woke": woke}
+
+
 def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | None:
     bs = town.scroll.building(building_id)
     if bs is None or bs.demolished:
@@ -160,10 +249,14 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     j = feedback.journal(town.repo_root, building_id)
     aim = bs.aim
     spec = town.spec_of(building_id)
+    code = _script_first(town, building_id)
+    spend = total.text() if orcs else "🪙 nothing spent — no orks"
+    if code is not None and code["on"] and total.usd in (None, 0) and not total.runs:
+        spend = "🪙 no model"
     return {
         "id": building_id,
         **_both("about", _about(town, building_id)),
-        **_both("spend", total.text() if orcs else "🪙 nothing spent — no orks"),
+        **_both("spend", spend),
         "week": {"runs": j["runs"], "ok": j["ok"], "failed": j["failed"], "results": j["results"]},
         "likes": j["likes"], "dislikes": j["dislikes"],
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
@@ -178,7 +271,9 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "waits": _waits(town, bs),
         "listens": _listens(town, muster, building_id),
         "others": _others(town, muster, building_id),
+        "rules": _rules(town, building_id),
         "steward": _steward(town, muster, building_id),
+        "script_first": code,
         "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
                  [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
     }

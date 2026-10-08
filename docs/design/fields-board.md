@@ -155,6 +155,12 @@ diagnoses written in words are not caught: personal is the first line, this the 
 logged as a fact, never its text (`sent.jsonl`: when, the card, how many characters, the model, the
 pages, what was taken out).
 
+## 5c. A task settles, related ones go together
+
+On a `send_new` board a new task waits `settle` seconds before it goes, a related one joins it and both go
+as one task; Not urgent waits longer; a related task after its task went is an addition to it in the
+Barracks. docs/design/settle-and-join.md.
+
 ## 6. Next
 
 - **A local model for personal cards.** `pi` and `hermes` can point at one on this machine (an

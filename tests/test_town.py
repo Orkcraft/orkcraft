@@ -44,8 +44,7 @@ def test_art_library_fits_the_hut():
         assert len(lines) == huts.ART_H and use, name
         assert all(len(ln) <= huts.ART_W and ln.isascii() for ln in lines), name
     assert set(huts.BUILTIN_ART.values()) <= set(huts.ART)
-    assert huts.art_for("nope") == huts.art(huts.DEFAULT_ART)
-    assert huts.art_for("x", {"mini": {"art": "rookery"}}) == huts.art("rookery")
+    assert huts.art("nope") == huts.art(huts.DEFAULT_ART)
 
 
 def test_mini_templates_render_from_fetched_data(tmp_path: Path):

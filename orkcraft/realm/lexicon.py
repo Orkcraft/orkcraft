@@ -55,7 +55,9 @@ TERMS: tuple[Term, ...] = (
     _t("orc.town_hall", "Warchief"),                               # the hall's steward: the chat behind Ask me anything
     _t("town_hall", "Town Hall"),
     _t("road_planner", "Road planner"),                            # lays a road from words (realm/road_planner.py)
+    _t("road_rule", "Road rule", "Road rules"),                    # what a building's steward does with a road's carts (a `steward` handler)
     _t("building_retro", "Building retro"),
+    _t("script_first", "Script-first"),                            # its work is code; its ork wakes on an error or a 👎
     _t("ork_work", "Ork work"),                                    # the Task Fields' orks' kanban
     # -- growth (docs/design/growth.md) ---------------------------------------------------------------
     _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)
@@ -113,6 +115,9 @@ TERMS: tuple[Term, ...] = (
     _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)
     _t("todo_plan", "plan", "plans"),                              # a to-do's steps from a light model, 🧭
     _t("personal_card", "personal"),                               # a card that never reaches a model, 🔒
+    _t("settling_task", "waiting to go"),                          # a task held before it goes, ⏳ (realm/settle.py)
+    _t("not_urgent", "Not urgent"),                                # a task that waits longer and gathers more, 🐢
+    _t("joined_task", "joined"),                                   # a card that goes with another one as one task, ↳
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover

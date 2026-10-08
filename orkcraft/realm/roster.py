@@ -8,7 +8,7 @@ from typing import Iterable
 
 from orkcraft.realm.buildings import Building
 from orkcraft.realm.orcs import (
-    BUILDER, COUNCIL, RESIDENT, WORKER, Alert, Orc, Trigger, clarification_text, detect_prompt,
+    BUILDER, COUNCIL, RESIDENT, WORKER, Alert, Orc, Trigger, detect_prompt,
 )
 from orkcraft.scroll import OrcSpec
 from orkcraft.realm.council import warder_events

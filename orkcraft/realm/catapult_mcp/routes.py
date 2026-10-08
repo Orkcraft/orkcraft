@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import datetime as dt
 import json
 import os
 import re
@@ -29,6 +28,7 @@ from typing import Callable
 
 from orkcraft.realm import catapult as cp
 from orkcraft.realm.catapult_mcp import templates as tp
+from orkcraft.realm.jobs import now_iso
 
 RECIPES = Path(__file__).parent / "recipes"
 SEND_TIMEOUT_S = 20
@@ -242,10 +242,6 @@ def preview(route: dict, cart, environ=None) -> str:
             + json.dumps(_body(route, cart, environ), ensure_ascii=False, indent=2))
 
 
-def _now() -> str:
-    return dt.datetime.now().isoformat(timespec="seconds")
-
-
 def _answer_ok(route: dict, answer: str) -> tuple[bool, str]:
     path = route.get("ok")
     if not path:
@@ -268,17 +264,17 @@ def send(route: dict, cart, environ=None, opener=urllib.request.urlopen, smtp: C
     try:
         if route.get("transport") == "smtp":
             if gone:
-                return cp.Shot(_now(), False, 0, "SMTP", "", error="not set: " + ", ".join(gone)), "auth"
+                return cp.Shot(now_iso(), False, 0, "SMTP", "", error="not set: " + ", ".join(gone)), "auth"
             return _send_smtp(route, cart, environ, smtp or _smtp)
         url, shown = _url(route, cart, environ, False), _url(route, cart, environ, True)
         body = _body(route, cart, environ)
     except tp.Missing as e:
-        return cp.Shot(_now(), False, 0, str(route.get("url") or route.get("url_env") or ""), "", error=str(e)), "path"
+        return cp.Shot(now_iso(), False, 0, str(route.get("url") or route.get("url_env") or ""), "", error=str(e)), "path"
     sent = json.dumps(body, ensure_ascii=False)[:cp.ANSWER_KEEP]
     if gone:
-        return cp.Shot(_now(), False, 0, shown, sent, error="not set: " + ", ".join(gone)), "auth"
+        return cp.Shot(now_iso(), False, 0, shown, sent, error="not set: " + ", ".join(gone)), "auth"
     if not url.startswith(("http://", "https://")):
-        return cp.Shot(_now(), False, 0, shown, sent, error="the address is not http or https"), "other"
+        return cp.Shot(now_iso(), False, 0, shown, sent, error="the address is not http or https"), "other"
     req = urllib.request.Request(url, data=json.dumps(body, ensure_ascii=False).encode(), method=route.get("method") or "POST",
                                  headers=_headers(route, environ, False))
     try:
@@ -288,13 +284,13 @@ def send(route: dict, cart, environ=None, opener=urllib.request.urlopen, smtp: C
     except urllib.error.HTTPError as e:
         answer = e.read(cp.ANSWER_KEEP).decode("utf-8", errors="replace")
         kind = "auth" if e.code in (401, 403) else "path" if e.code in (400, 404, 409, 422) else "other"
-        return cp.Shot(_now(), False, e.code, shown, sent, answer, f"HTTP {e.code}"), kind
+        return cp.Shot(now_iso(), False, e.code, shown, sent, answer, f"HTTP {e.code}"), kind
     except Exception as e:  # the network and bad addresses, of every kind
-        return cp.Shot(_now(), False, 0, shown, sent, error=str(e)[:300]), "other"
+        return cp.Shot(now_iso(), False, 0, shown, sent, error=str(e)[:300]), "other"
     ok, why = _answer_ok(route, answer)
     if not ok:
-        return cp.Shot(_now(), False, status, shown, sent, answer, why), "auth" if why in AUTH_ERRORS else "path"
-    return cp.Shot(_now(), 200 <= status < 300, status, shown, sent, answer), "" if 200 <= status < 300 else "other"
+        return cp.Shot(now_iso(), False, status, shown, sent, answer, why), "auth" if why in AUTH_ERRORS else "path"
+    return cp.Shot(now_iso(), 200 <= status < 300, status, shown, sent, answer), "" if 200 <= status < 300 else "other"
 
 
 def _smtp(host: str, port: int):
@@ -322,11 +318,11 @@ def _send_smtp(route: dict, cart, environ, factory) -> tuple[cp.Shot, str]:
             s.login(environ[env["user"]], environ[env["password"]])
             refused = s.send_message(msg)
     except smtplib.SMTPAuthenticationError as e:
-        return cp.Shot(_now(), False, e.smtp_code, shown, sent, error="the mail server refused the login"), "auth"
+        return cp.Shot(now_iso(), False, e.smtp_code, shown, sent, error="the mail server refused the login"), "auth"
     except smtplib.SMTPRecipientsRefused as e:
-        return cp.Shot(_now(), False, 550, shown, sent, error=f"refused: {', '.join(e.recipients)}"), "path"
+        return cp.Shot(now_iso(), False, 550, shown, sent, error=f"refused: {', '.join(e.recipients)}"), "path"
     except Exception as e:
-        return cp.Shot(_now(), False, 0, shown, sent, error=str(e)[:300]), "other"
+        return cp.Shot(now_iso(), False, 0, shown, sent, error=str(e)[:300]), "other"
     if refused:
-        return cp.Shot(_now(), False, 550, shown, sent, error=f"refused: {', '.join(refused)}"), "path"
-    return cp.Shot(_now(), True, 250, shown, sent, f"sent to {', '.join(to)}"), ""
+        return cp.Shot(now_iso(), False, 550, shown, sent, error=f"refused: {', '.join(refused)}"), "path"
+    return cp.Shot(now_iso(), True, 250, shown, sent, f"sent to {', '.join(to)}"), ""

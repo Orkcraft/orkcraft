@@ -154,6 +154,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                        "(a Clan Fire that triages names the route)",
         "send_new": "true: every new task goes down the roads as it is (tasks.sent), as if s were pressed — "
                     "a Barracks takes it and its results come back to the card on a return road",
+        "settle": "seconds a new task waits on a send_new board before it goes (default 120; 0 sends at once): "
+                  "a related task that comes meanwhile joins it and both go as one",
+        "later_minutes": "how long a task marked Not urgent waits before it goes (default 60)",
         "wikis": "the Scroll Dumps a card's context comes from, e.g. [\"kb\"] (default every one in the town; [] none)",
         "private_todos": "true: every to-do of your own is personal — never sent to a model (no plan, its title its first words)",
         "plan_model": "the model a to-do's plan is asked of: a tier (laborer, warrior) or a model (default its "

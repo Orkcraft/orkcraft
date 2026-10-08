@@ -532,9 +532,8 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, Worker):
         task = f"{payload.title} {payload.value}".strip()[:500]
         first, links = self.meeting_context(daybook.meet_tag(task))
         found = self.look_up(task, by, payload.title, first=links)
-        context = wiki.context(self.wiki_root, self.repo_root, task)
-        if first:
-            context = f"{first}\n\n{context}"
+        body = str(payload.value or "").strip()          # the task goes on whole, once (`task` is the search)
+        context = "\n\n".join(x for x in (first, body, wiki.context(self.wiki_root, self.repo_root)) if x)
         if found:
             context += "\n\n**Notes for this task — read these first:**\n" + \
                 "\n".join(f"- `{n.path}` — {n.title}" for n in found)

@@ -131,7 +131,7 @@ to `_WIDENS` (a one-word change) before trusting the Elders' answers on agy.
   The status line's payload has had a `cost` field ("unrounded estimated cost of the current
   session") since 1.1.21 [v CL]. The engine holds per-model prices and `estimated_cost_usd`
   [v ENG strings]; whether print mode outputs it is [u].
-- `roads._result_of` reads `total_cost_usd`, and its token reader uses Claude's key names, so agy runs
+- `harnesses.json_result` reads `total_cost_usd`, and its token reader uses Claude's key names, so agy runs
   come out unpriced and probably without tokens [u: the exact JSON keys of agy's result].
 - A subscription (Google sign-in) is paid in quota, not dollars. Its windows are already read from
   `agy -p /usage`, so "unpriced" is the honest 🪙 answer there. Only a `GEMINI_API_KEY` run has a

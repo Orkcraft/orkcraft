@@ -15,9 +15,6 @@ WATCH_LIMIT_S = 15 * 60          # how long a scouting window may stay open
 WATCH_TICK_S = 1.5
 PRESS_TIMEOUT_S = 180            # fill and press
 LEAVE_TIMEOUT_S = 60 * 60        # fill and wait for you to press and close the window
-FINISHES = ("leave", "press")
-FILLABLE = ("text", "textarea", "number", "email", "url", "tel", "date", "datetime-local", "time",
-            "editable", "password", "search")
 
 # Shared by the scout and the click recorder: labels, and selectors that survive a reload.
 HELPERS_JS = r"""

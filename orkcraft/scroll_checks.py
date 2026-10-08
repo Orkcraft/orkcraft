@@ -45,14 +45,18 @@ def orc_problems(orc: dict, where: str = "") -> list[str]:
     if errors:
         return errors
     kind = orc.get("kind", "agent")
-    harness = orc.get("harness", DEFAULT_HARNESS)
+    harness = orc.get("harness", [] if kind == "steward" else DEFAULT_HARNESS)
     name = orc.get("id", "?")
     if kind == "chain" and not orc.get("chain"):
         errors.append(f"{prefix}ork {name}: a chain needs at least one op")
     if kind in ("script", "hybrid") and not orc.get("script"):
         errors.append(f"{prefix}ork {name}: a {kind} needs a script")
-    if kind in ("agent", "hybrid") and not harness:
+    if kind == "agent" and not harness:
         errors.append(f"{prefix}ork {name}: an {kind} needs a harness")
+    if kind == "steward" and harness:
+        errors.append(f"{prefix}ork {name}: a road rule thinks on the steward's tools — no harness of its own")
+    if kind == "steward" and not str(orc.get("orders") or "").strip():
+        errors.append(f"{prefix}ork {name}: a road rule needs its words (orders)")
     if kind != "chain" and orc.get("chain"):
         errors.append(f"{prefix}ork {name}: only a chain has chain ops")
     for op in orc.get("chain", []):

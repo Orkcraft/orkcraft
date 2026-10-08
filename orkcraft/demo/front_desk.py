@@ -72,7 +72,7 @@ FRONT_DESK = {
                         "Deadline finder:claude"],
                routes=["human", "agent"], max_cycles=1, budget_usd=1.0),
         _typed(BOARD, "fields", "Tasks", "🌾", "Taskmaster", "my to-dos and the agents' tasks", "tiles",
-               path=BOARD_FILE, mine_routes=["human"], send_new=True),
+               path=BOARD_FILE, mine_routes=["human"], send_new=True, settle=0),
         _typed(CAMP, "barracks", "Agents at work", "🏕️", "Grunts", "agents do the routine tasks", "tent",
                max_orcs=2, providers=["claude"], worktrees=False, budget_usd=2.0,
                orders="Do the task, share the result where it was asked for, and say where it is."),
