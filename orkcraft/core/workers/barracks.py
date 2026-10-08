@@ -47,7 +47,7 @@ from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, steward
+from orkcraft.realm import daybook, feedback, gate, gitinfo, jobs, personas, pipes, plans, roads, settle, steward
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -317,6 +317,9 @@ class BarracksWorker(PlanMixin, Worker):
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
         of that task — the same orc, the same branch."""
         key = key or bk.task_key("text", text, title)
+        queued = next((t for t in self.state.queue if ref and t.ref == ref), None)
+        if queued is not None and self._amend(queued, text):
+            return queued
         prior = next((t for t in reversed(self.state.tasks) if ref and t.ref == ref), None)
         if prior is not None and not key:
             key = prior.key or prior.id               # the orc that did it knows it by that
@@ -331,6 +334,22 @@ class BarracksWorker(PlanMixin, Worker):
         st.save()
         self.changed()
         return task
+
+    def _amend(self, task: bk.PoolTask, text: str) -> bool:
+        """An addition to a task nobody took yet (a board's, docs/design/settle-and-join.md §5: its text starts
+        with `settle.ADDED`'s line): the task's text grows, no second task. False when it was planned, is a part of a plan or an ork took it — then it is a
+        follow-up of that task, as a rework is."""
+        more = text.strip()
+        if not settle.is_addition(more):        # another cart about the same thing is a task of its own
+            return False
+        if task.status != "queued" or task.orc or task.plan or task.parent or task.kind == "plan":
+            return False
+        if more and more not in task.text:
+            task.text = f"{task.text.rstrip()}\n\n{more}"
+        self.state.log(bk.Decision(bk.now_iso(), task.id, "amend", why="more about it came before an ork took it"))
+        self.state.save()
+        self.changed()
+        return True
 
     def new_task(self, title: str, brief: str = "") -> bk.PoolTask | None:
         """✍ New task: the operator writes to the barracks directly — the title and the brief (the title

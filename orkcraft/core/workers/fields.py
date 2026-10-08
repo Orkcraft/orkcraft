@@ -18,7 +18,10 @@ What comes by road:
                            with the result, `*.failed` → back to To Do with why
 
 `send_new`: every new task goes down the roads as it is (`tasks.sent`, its text and ref), as if `s` were
-pressed — a Barracks takes it, and its results come back to the card.
+pressed — a Barracks takes it, and its results come back to the card. It **settles** first: held `settle`
+seconds (120; 0 sends at once), a related task that comes meanwhile joins it and both go as one; Not urgent
+waits `later_minutes`; a related task that comes after it went goes as an addition to it
+(core/workers/fields_settle.py, docs/design/settle-and-join.md).
 
 **Context, plan, personal** (realm/cardlore.py keeps them beside the board, never in its file):
 
@@ -38,6 +41,7 @@ import threading
 from orkcraft.core import runners
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.fields_lore import CardLore, card_text
+from orkcraft.core.workers.fields_settle import Settle
 from orkcraft.realm import tasklist
 from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 
@@ -46,7 +50,7 @@ SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
 MODES = ("board", "tasks", "notes")
 
 
-class FieldsWorker(CardLore, Worker):
+class FieldsWorker(Settle, CardLore, Worker):
     TYPE = "fields"
 
     def __init__(self, town, building_id: str) -> None:
@@ -144,6 +148,8 @@ class FieldsWorker(CardLore, Worker):
             self.announce(event_id, card, detail)
         if not self.error:
             self.lore.keep_only({c.id for c in self.cards})
+            self.tidy()
+            self.release_due()
         if self._last is None and not (self.state_dir / "seen.json").exists():
             self.mark_seen()                     # the first look: nothing is new yet
         self._last = list(self.cards)
@@ -165,7 +171,7 @@ class FieldsWorker(CardLore, Worker):
         else:
             self.emit(event_id, card.id, f"{tasklist.plain(card.title)} · {detail}")
         if event_id == "tasks.created" and card.column == "todo" and self.config.get("send_new"):
-            self.emit("tasks.sent", card_text(card), tasklist.plain(card.title), ref=self.ref(card))
+            self.arrived(card)
 
     def ref(self, card: tasklist.Task) -> str:
         return f"{self.building_id}:{card.id}"
@@ -273,6 +279,7 @@ class FieldsWorker(CardLore, Worker):
         self.edit(card.id, card.title, body[:2000])
         if card.column != lane:
             self.move(card.id, lane)
+        self.follow_first(card, lane)
         return True
 
     def move(self, card_id: str, column: str) -> bool:
@@ -282,6 +289,8 @@ class FieldsWorker(CardLore, Worker):
         except (OSError, ValueError, KeyError) as e:
             self.toast(str(e), title=TITLE, severity="error")
             return False
+        if after != "todo":
+            self.left_todo(card_id)
         if before != after and card is not None:
             moved = tasklist.Task(card.id, card.title, after, card.body)
             if moved.kind == TASK and card.kind == TASK:
@@ -336,15 +345,15 @@ class FieldsWorker(CardLore, Worker):
         return lane if self.move(card.id, lane) else ""
 
     def send(self, card_id: str) -> bool:
-        """The card goes down the roads as it is (`tasks.sent`). True when a road took it."""
-        card = self.card(card_id)
-        return card is not None and self.emit("tasks.sent", card_text(card), tasklist.plain(card.title),
-                                              ref=self.ref(card))
+        """The card goes down the roads (`tasks.sent`): a held task now, with every card joined to it; any
+        other card as it is. True when a road took it."""
+        return self.send_now(card_id)
 
     def remove(self, card_id: str) -> None:
         self.store.remove(card_id)
         self.lore.drop(card_id)
         self._sync()
+        self.tidy()
 
     # -- the hut --------------------------------------------------------------------------------
 

@@ -113,6 +113,9 @@ TERMS: tuple[Term, ...] = (
     _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)
     _t("todo_plan", "plan", "plans"),                              # a to-do's steps from a light model, 🧭
     _t("personal_card", "personal"),                               # a card that never reaches a model, 🔒
+    _t("settling_task", "waiting to go"),                          # a task held before it goes, ⏳ (realm/settle.py)
+    _t("not_urgent", "Not urgent"),                                # a task that waits longer and gathers more, 🐢
+    _t("joined_task", "joined"),                                   # a card that goes with another one as one task, ↳
     # the Wiki's librarian (docs/design/wiki-librarian.md)
     _t("quick_note", "Quick note", "Quick notes"),                  # a note left for the wiki with one click
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
