@@ -20,14 +20,14 @@
 @keyframes gui-doze { 50% { transform: translateY(-3px); opacity: .55; } }
 @keyframes gui-work { 50% { transform: translateY(-1px); } }
 
-/* The ork out of its building (js/visit.js): on the plinth's left end, beside the house. It walks out of the door
+/* The ork out of its building (js/visit.js), its head alone, a third of the house's height: on the plinth's left end. It walks out of the door
    facing left, two steps, and back in facing right; out, it faces you, its bubble over its head. */
-.gui-out { position: absolute; left: -26px; bottom: 4px; z-index: 2; display: block; width: 24px; height: 32px; padding: 0; border: 0;
+.gui-out { position: absolute; left: -26px; bottom: 4px; z-index: 2; display: block; width: 24px; height: 18px; padding: 0; border: 0;
   background: none; line-height: 0; }
 button.gui-out { cursor: pointer; }
 button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
-.gui-out__ork { display: block; width: 24px; height: 32px; image-rendering: pixelated;
-  background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 32px no-repeat; }
+.gui-out__ork { display: block; width: 24px; height: 18px; image-rendering: pixelated;
+  background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 18px no-repeat; }
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
 .gui-out.is-in-walk .gui-out__ork { transform: scaleX(-1); }
 .gui-out.is-out-walk { animation: gui-out .24s steps(3) both; }

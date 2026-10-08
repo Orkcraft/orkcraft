@@ -201,7 +201,8 @@ leaves the title bar on every card, hut and yard; the building says what its ork
   (the right half of the ork's state sprites, `orks/ork-idle.png`, `ork-busy.png`). A yard shows nothing: no ork
   lives in it.
 - **Its ork comes out onto the plinth.** The plinth runs on 28 px left of the house (the house stands that much
-  further right); that end is the ork's place, so it never stands on a fence or a card. Under the mouse the ork
+  further right); that end is the ork's place, so it never stands on a fence or a card. The ork is its head alone, a third
+  of its building's height. Under the mouse the ork
   walks out of the door (two steps facing left, `orks/ork-walk-a.png`, `ork-walk-b.png`), turns to you
   (`ork-stand.png`) and speaks in a pixel comic bubble (`icons/bubble.png`, a nine-slice, and its tail):
   - **👍 and 👎**, green pixel thumbs (`icons/thumb-up.png`, `thumb-down.png`). A hut's rate its lead ork's work

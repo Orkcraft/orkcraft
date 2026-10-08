@@ -3,11 +3,11 @@
     python tools/visit_sprites.py [--preview FILE]
 
 Drawn from the grids below on the ork mark's way (tools/logo.py): one letter a pixel, its head the head of the
-ork sprites (`logo.GRID`, the same green and tusks), a leather jerkin under it. At 2× and 4× (`@2x`):
+ork's head alone (`logo.GRID`, the same green and tusks), a third of its building's height. At 2× and 4× (`@2x`):
 
-- `orks/ork-stand.png` (12×16): the ork out of its door, facing you;
-- `orks/ork-walk-a.png`, `ork-walk-b.png` (12×16): two steps of its walk, facing left as it walks out; the page
-  mirrors them as it walks back in (yards.css);
+- `orks/ork-stand.png` (12×9): the ork out of its door, facing you;
+- `orks/ork-walk-a.png`, `ork-walk-b.png` (12×9): two steps of its walk, its head bobbing, facing left as it walks
+  out; the page mirrors them as it walks back in (yards.css);
 - `icons/thumb-up.png`, `thumb-down.png` (8×8 and its outline, 20 CSS px): a green pixel 👍 and 👎 in its bubble;
 - `icons/bubble.png` (6×6, drawn at 2×): the bubble's frame as a nine-slice (`border-image`), its corners cut a
   pixel as a comic's are pixel; `icons/bubble-tail.png` (5×4): its tail, down to the ork's head.
@@ -24,19 +24,7 @@ from logo import GRID, SPRITE_COLOURS, grid_image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# the head's colours (logo.SPRITE_COLOURS), the jerkin's leather, its belt, its legs and boots
-COLOURS = {**SPRITE_COLOURS, "J": "#8a6438", "j": "#6b4a26", "B": "#3a2a18", "P": "#4f4430", "K": "#1a1410"}
-
-BODY = [
-    "..jJJJJJJj..",
-    ".FjJJJJJJjF.",
-    ".FjJJJJJJjF.",
-    ".FBBBBBBBBF.",
-    "..jJJJJJJj..",
-    "..PPP..PPP..",
-    "..PPP..PPP..",
-    ".KKKK..KKKK.",
-]
+COLOURS = SPRITE_COLOURS
 
 # its head turned to the left: one eye, one tusk, the far ear behind
 SIDE_HEAD = [
@@ -49,28 +37,10 @@ SIDE_HEAD = [
     ".TFFFFFFF...",
     "..FFFFFF....",
 ]
-SIDE_A = [  # mid-stride: legs apart, the arm swung forward
-    "...jJJJJj...",
-    "..FjJJJJj...",
-    "..FjJJJJj...",
-    "...BBBBBB...",
-    "...jJJJJj...",
-    "..PP...PP...",
-    ".PP.....PP..",
-    "KKK.....KKK.",
-]
-SIDE_B = [  # passing: legs together, the arm at its side
-    "...jJJJJj...",
-    "...jJFJJj...",
-    "...jJFJJj...",
-    "...BBBBBB...",
-    "...jJJJJj...",
-    "....PPPP....",
-    "....PPPP....",
-    "...KKKKKK...",
-]
+BLANK = ["." * 12]
 
-ORKS = {"ork-stand": GRID + BODY, "ork-walk-a": SIDE_HEAD + SIDE_A, "ork-walk-b": SIDE_HEAD + SIDE_B}
+# only its head, a third of its building's height: facing you, and two steps of its walk (a bob)
+ORKS = {"ork-stand": BLANK + GRID, "ork-walk-a": BLANK + SIDE_HEAD, "ork-walk-b": SIDE_HEAD + BLANK}
 
 # the thumb in the bubble: green as the ork, a lit edge; 👎 is 👍 upside down
 ICON_COLOURS = {"G": "#6ca420", "g": "#3f6b14", "L": "#a8d65a", "K": "#1a1813"}
@@ -114,7 +84,7 @@ def main() -> None:
     args = ap.parse_args()
     sprites = ROOT / "design-system" / "sprites"
     for name, grid in ORKS.items():
-        assert all(len(r) == 12 for r in grid) and len(grid) == 16, name
+        assert all(len(r) == 12 for r in grid) and len(grid) == 9, name
         grid_image(grid, COLOURS, 2).save(sprites / "orks" / f"{name}.png")
         grid_image(grid, COLOURS, 4).save(sprites / "orks" / f"{name}@2x.png")
     for name, grid in thumbs().items():
