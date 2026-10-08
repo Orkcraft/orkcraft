@@ -191,8 +191,11 @@ class MillWorker(Worker):
         self.running, self.current = False, None
         trail, ref = self._carts.pop(job.id, ((), ""))
         kind = "agent" if job.meta.get("agent") else "script"
+        items = len(mill.items(records)) if job.ok and records else 0
         trail = tuple(trail) + (pipes.hop(self.building_id, "miller", kind, cost=job.cost_usd,
-                                          outcome="done" if job.ok else "error"),)
+                                          outcome="done" if job.ok else "error", since=job.started,
+                                          model=job.model, decision=f"{items} items" if items else "",
+                                          run=job.id),)
         if job.ok:
             if records:
                 job.meta["items"] = len(mill.items(records))

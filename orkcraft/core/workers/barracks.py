@@ -639,7 +639,9 @@ class BarracksWorker(PlanMixin, Worker):
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
                                                        task.cost_usd, orc.worktree, task.branch, outcome,
-                                                       base=task.base),)
+                                                       base=task.base, since=task.arrived,
+                                                       model=orc.model or orc.harness, decision=task.decided,
+                                                       round=task.attempts, run=task.id),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state

@@ -570,9 +570,12 @@ class PlanMixin:
         return f"- {question.strip()[:200]} → {text.strip()[:300]}"
 
     def _plan_trail(self, parent: bk.PoolTask, outcome: str) -> tuple:
+        parts = f"planned in {len(parent.plan)} parts" if parent.plan else ""
         return pipes.trail_of(parent.trail) + (pipes.hop(self.building_id, self.keeper, "agent", parent.tokens,
                                                          parent.cost_usd, "", parent.branch, outcome,
-                                                         base=parent.base),)
+                                                         base=parent.base, since=parent.arrived,
+                                                         decision=parent.decided or parts,
+                                                         round=parent.attempts, run=parent.id),)
 
 
 class _Done(Exception):

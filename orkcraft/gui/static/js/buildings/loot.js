@@ -327,9 +327,11 @@ function Files({ id, data }) {
 function Chain({ chain, total }) {
   if (!chain.length) return html`<p class="ok-detail__meta">No ork worked on it.</p>`;
   return html`<table class="loot-chain">
-    <thead><tr><th></th><th>${say("Building")}</th><th>${say("Who")}</th><th>${say("Ended")}</th><th>${say("Spent")}</th></tr></thead>
-    <tbody>${chain.map((h, i) => html`<tr key=${i}><td>${i + 1}</td><td>${h.building}</td><td>${h.who}</td>
-      <td>${h.outcome}</td><td>${h.spent || "—"}</td></tr>`)}</tbody>
+    <thead><tr><th></th><th>${say("Building")}</th><th>${say("Who")}</th><th>${say("Ended")}</th><th>${say("Took")}</th><th>${say("Spent")}</th></tr></thead>
+    <tbody>${chain.map((h, i) => html`<tr key=${i}><td>${i + 1}</td><td>${h.building}</td>
+      <td>${h.who}${h.model && html`<div class="ok-detail__meta">${h.model}</div>`}</td>
+      <td>${h.outcome}${h.round > 1 && ` · round ${h.round}`}${h.decision && html`<div class="ok-detail__meta" title=${h.decision}>${h.decision}</div>`}</td>
+      <td title=${h.at}>${h.took || "—"}</td><td>${h.spent || "—"}</td></tr>`)}</tbody>
   </table>${total && chain.length > 1 && html`<p class="ok-detail__meta">The chain: ${total}</p>`}`;
 }
 

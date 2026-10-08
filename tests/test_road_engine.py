@@ -216,6 +216,8 @@ def test_agent_waits_for_quiet_and_coalesces_a_burst():
     assert harness == "main" and "summarise" in prompt and '"id":"T1001"' in prompt and '"value"' not in prompt
     assert env["ORKCRAFT_ORC"] == "scrying/seer"
     assert rig.runs[0].cost_usd == pytest.approx(0.02)
+    last = rig.runs[0].trail[-1]                                    # what the chain says of this hop afterwards
+    assert last.building == "scrying" and last.model == "main" and last.run == rig.runs[0].run_id and last.ms == 0
     [example] = roads.read_examples(rig.repo, "scrying", "seer")
     assert example["output"] == "## summary" and example["inputs"][0]["value"] == "T1001"
 

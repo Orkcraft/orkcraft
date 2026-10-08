@@ -128,6 +128,7 @@ class HandlerRun:
     inputs: list[dict] = field(default_factory=list, repr=False)   # the snapshot records it ran on
     trail: tuple = field(default=(), repr=False)   # the hops of the carts it ran on (pipes.Hop)
     ref: str = ""
+    model: str = ""               # the model(s) its steps ran on ("a+b"), else their tools
 
 
 @dataclass
@@ -591,9 +592,13 @@ class Engine:
         from orkcraft.realm import feedback
         liked = [str(r.get("value", "")) for r in feedback.examples(self.repo_root, b.id, 3)]
         try:
+            used: list[str] = []
             for step in orc.harness or ts.DEFAULT_HARNESS:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)
                 model = tiers.step_model(step)       # a runner is called with a model only when there is one
+                if (said := model or str(step.get("harness") or "")) and said not in used:
+                    used.append(said)
+                    run.model = "+".join(used)
                 answer = self._agent_runner(step["harness"], prompt, self.repo_root, env, cancel,
                                             *((model,) if model else ()))
                 text, cost = answer[0], answer[1]          # a runner may also say its tokens
@@ -618,7 +623,9 @@ class Engine:
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:
         run.ended, run.outcome, run.markdown, run.error = self._clock(), outcome, markdown, error
-        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome),)
+        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome,
+                                           since=max(0.0, run.ended - run.started), model=run.model,
+                                           decision=error if outcome != "done" else "", run=run.run_id),)
         with self._lock:
             self.state(b.id, orc.id).runs += 1
             self.runs = (self.runs + [run])[-200:]
