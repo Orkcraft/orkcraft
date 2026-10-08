@@ -139,6 +139,9 @@ class Harness:
     # nothing else, its events as JSON lines (a Catapult's carrier, docs/design/catapult-mcp.md §3).
     # None until the tool's headless mode is checked to hold to them.
     call_cmd: Cmd | None = None
+    # (session id, reopen) → what a reading agent's argv gets to name its session up front, or to reopen
+    # it after it was stopped (a Review board's Go on). None: a stopped turn starts again.
+    read_session: Callable[[str, bool], list[str]] | None = None
     extra: dict = field(default_factory=dict)
 
     @property
@@ -387,7 +390,8 @@ register(Harness(
     {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     _claude_ask, _claude_read, _claude_work,
     resumable=True, deploys=True, web=True, priced=True, mark="✻", color="bold #f59e0b",
-    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call))
+    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call,
+    read_session=lambda sid, reopen: ["--resume", sid] if reopen else ["--session-id", sid]))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
     {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},

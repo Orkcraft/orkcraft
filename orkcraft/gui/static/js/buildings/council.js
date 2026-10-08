@@ -216,6 +216,8 @@ function Head({ id, data }) {
         : html`<span class="council-head__title">${say("No review yet")}</span>`}
       <span class="gui-head__spacer"></span>
       ${data.busy && html`<button class="ok-btn" onClick=${() => act(id, "stop").catch(() => {})}>Stop</button>`}
+      ${!shown && r && WAYS_ON[r.outcome] && !data.busy && r.goes_on_at && html`<span class="ok-tone-muted council-head__at"
+          title=${r.reopens ? say("in the session it stopped in: what was read is not read again") : ""}>${say("at")} ${r.goes_on_at}</span>`}
       ${!shown && r && WAYS_ON[r.outcome] && !data.busy && html`<button class="ok-btn primary" onClick=${() => act(id, "go_on").catch(() => {})}>${WAYS_ON[r.outcome]}</button>`}
       <button class=${cls("ok-btn", { primary: !r })} onClick=${() => setIn(dialogs, id, "review")}>${say("Review…")}</button>
     </div>
