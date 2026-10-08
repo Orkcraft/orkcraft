@@ -228,6 +228,20 @@ def preset_role(role_id: str, file: Path | None = None, kin: str = "") -> bool:
     return True
 
 
+def preset_look(look: str, file: Path | None = None) -> bool:
+    """`orkcraft --look`: the look the landing page was told (camp | office), so the town first opens in it.
+    Like `preset_role`, it never overrides a look the operator has lived with since a finished onboarding
+    (they switch it in Settings). True when kept."""
+    if look not in LOOKS:
+        raise ValueError(look)
+    s = load(file)
+    if s.onboarded:
+        return False
+    s.look = look
+    save(s, file)
+    return True
+
+
 def _raw(file: Path) -> dict:
     try:
         data = json.loads(file.read_text(encoding="utf-8"))
