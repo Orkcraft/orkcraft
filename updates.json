@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.5",
+      "date": "2026-10-08",
+      "critical": false,
+      "notes": "Settings → AI tools: choose the model each tier (Elder, Warrior, Laborer) runs on, per tool that is on. By default a tier runs on the latest model of its family, shown with its version; you can pick another family, a model the tool lists, or type one. Your choice is kept on this machine and wins over the latest; Reset to latest goes back. The price per million tokens shows when it is known."
+    },
+    {
       "version": "0.2.4",
       "date": "2026-10-08",
       "critical": false,

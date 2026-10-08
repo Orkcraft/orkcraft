@@ -93,7 +93,41 @@ function ToolsField({ s, set }) {
     <${Steps} label=${say("Main tool")} value=${s.main_tool}
       items=${[["", say("First one on")], ...on.map((x) => [x.id, `${x.mark} ${x.title}`])]}
       onPick=${(v) => set({ main_tool: v })} />
-    <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Warchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>`;
+    <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Warchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>
+    <${TierModelsField} s=${s} set=${set} />`;
+}
+
+const OTHER = "\u0000other";
+
+/** One tier of one tool: Latest of its family by default, the tool's other families and listed models, or
+ *  one typed; Reset to latest. Its price when the price tables know it. */
+function TierModel({ tool, row, set }) {
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState(row.chosen);
+  const save = (model) => { setTyping(false); set({ tier_model: { tool: tool.id, tier: row.tier, model } }); };
+  const pick = (v) => (v === OTHER ? setTyping(true) : save(v));
+  return html`<div class="gui-field"><span class="ok-font-label">${tool.mark} ${tool.title} · ${say(row.label)}</span>
+      <span>
+        <select class="ok-input" value=${typing ? OTHER : row.chosen} aria-label=${say(`${tool.title}: the ${row.label} model`)}
+            onChange=${(e) => pick(e.target.value)}>
+          ${row.options.map(([v, text]) => html`<option key=${v} value=${v}>${say(text)}</option>`)}
+          <option value=${OTHER}>${say("Another model…")}</option>
+        </select>
+        ${typing && html` <input class="ok-input" autofocus value=${typed} placeholder=${say("the model's name, as the tool spells it")}
+            aria-label=${say(`${tool.title}: the ${row.label} model's name`)}
+            onInput=${(e) => setTyped(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && typed.trim() && save(typed.trim())} />
+          <button class="ok-btn" disabled=${!typed.trim()} onClick=${() => save(typed.trim())}>${say("Use it")}</button>`}
+        ${row.chosen && html` <button class="ok-btn" onClick=${() => save("")}>${say("Reset to latest")}</button>`}
+      </span></div>
+    <p class="ok-font-status ok-tone-muted">${say(`Runs on ${row.now}`)}${row.price ? ` · ${row.price}` : ""}</p>`;
+}
+
+/** The model each tier runs on, per tool that is on. */
+function TierModelsField({ s, set }) {
+  if (!s.tier_models || !s.tier_models.length) return null;
+  return html`<p class="ok-font-status ok-tone-muted">${say("Each tool runs a tier on the latest model of its family, read from the tool once a day. A model chosen here wins over it; a model named in a building or a task wins over this.")}</p>
+    ${s.tier_models.map((tool) => tool.tiers.map((row) => html`<${TierModel} key=${`${tool.id}-${row.tier}-${row.chosen}`}
+        tool=${tool} row=${row} set=${set} />`))}`;
 }
 
 export function SettingsDialog() {

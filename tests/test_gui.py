@@ -945,6 +945,32 @@ def test_the_fire_on_the_roofs_is_on_until_settings_turn_it_off(fake_repo, isola
     assert settings.load().fire is False and settings.MachineSettings.from_dict({}).fire is True
 
 
+def test_settings_choose_the_model_of_each_tier_and_it_wins(fake_repo, isolated_layout_file):
+    """Settings → AI tools: per tool that is on, per tier, Latest of its family by default; a model chosen is
+    kept on the machine and runs; Reset to latest drops it."""
+    from orkcraft import settings
+    from orkcraft.realm import harnesses
+    host = _host(fake_repo)
+    host.command("town.settings.set", {"tools": {"claude": True, "agy": True}})
+    rows = {t["id"]: t for t in host.command("town.settings", {})["tier_models"]}
+    elder = rows["agy"]["tiers"][0]
+    assert (elder["tier"], elder["chosen"], elder["now"]) == ("elder", "", "Latest Gemini Pro High")
+    assert elder["options"][0] == ["", "Latest Gemini Pro High"] and ["gemini-flash-low", "Latest Gemini Flash Low"] in elder["options"]
+    assert rows["claude"]["tiers"][0]["now"] == "Latest Opus" and "per million tokens" in rows["claude"]["tiers"][0]["price"]
+    s = host.command("town.settings.set", {"tier_model": {"tool": "agy", "tier": "elder", "model": "gemini-3.0-pro-high"}})
+    elder = next(t for t in s["tier_models"] if t["id"] == "agy")["tiers"][0]
+    assert elder["chosen"] == "gemini-3.0-pro-high" and elder["now"] == "gemini-3.0-pro-high"
+    assert ["gemini-3.0-pro-high", "gemini-3.0-pro-high"] in elder["options"]
+    assert settings.load().tier_models == {"agy": {"elder": "gemini-3.0-pro-high"}}
+    argv = harnesses.need("agy").ask("hi", fake_repo, "elder")
+    assert argv[argv.index("--model") + 1] == "gemini-3.0-pro-high"                  # it wins over the latest
+    host.command("town.settings.set", {"tier_model": {"tool": "agy", "tier": "elder", "model": "--rm -rf"}})
+    assert settings.load().tier_models == {}                                         # not a model's name: dropped
+    host.command("town.settings.set", {"tier_model": {"tool": "agy", "tier": "elder", "model": "gemini-3.0-pro-high"}})
+    host.command("town.settings.set", {"tier_model": {"tool": "agy", "tier": "elder", "model": ""}})   # Reset to latest
+    assert settings.load().tier_models == {} and "--model" not in harnesses.need("agy").ask("hi", fake_repo, "elder")
+
+
 def test_settings_turn_the_ai_tools_on_and_choose_the_main_one(fake_repo, isolated_layout_file):
     """The AI tools of this machine and the main tool every decision runs on, from Settings; kept."""
     from orkcraft import settings

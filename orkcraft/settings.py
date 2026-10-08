@@ -75,6 +75,9 @@ class MachineSettings:
     look: str = "camp"            # how the GUI draws the town for this person: camp | office (docs/design/portrait.md)
     dnd_until: str = ""           # Do not disturb: "" off, "on" until turned off, else when it ends (disturb.py)
     recent_folders: list = field(default_factory=list)   # the folders last connected to a Wiki, newest first (gui/folders.py)
+    # The model a tier runs on, per tool, chosen in Settings → AI tools: {"agy": {"elder": "gemini-3.1-pro-high"}}.
+    # A family (`gemini-flash-high`) is its newest model; absent, the tier's own family (realm/harnesses.py `pick`).
+    tier_models: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -96,6 +99,7 @@ class MachineSettings:
             "look": self.look,
             "dnd_until": self.dnd_until,
             "recent_folders": list(self.recent_folders),
+            "tier_models": {t: dict(m) for t, m in self.tier_models.items()},
         }
 
     @classmethod
@@ -129,11 +133,25 @@ class MachineSettings:
         recent = data.get("recent_folders")
         s.recent_folders = [str(x)[:1000] for x in recent if isinstance(x, str) and x.strip()][:RECENT_FOLDERS] \
             if isinstance(recent, list) else []
+        s.tier_models = clean_tier_models(data.get("tier_models"))
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
             s.install_id = install_id if ok else uuid.uuid4().hex
         return s
+
+
+def clean_tier_models(raw: object) -> dict[str, dict[str, str]]:
+    """{tool: {tier: model}} as stored: known tools and tiers, a model of a few words; the rest dropped."""
+    out: dict[str, dict[str, str]] = {}
+    for tool, tiers in (raw.items() if isinstance(raw, dict) else ()):
+        if tool not in TOOLS or not isinstance(tiers, dict):
+            continue
+        kept = {tier: model.strip()[:100] for tier, model in tiers.items()
+                if tier in harnesses.TIERS and isinstance(model, str) and re.fullmatch(r"[\w.:/@\[\]()][\w.:/@\[\]() -]{0,99}", model.strip())}
+        if kept:
+            out[tool] = kept
+    return out
 
 
 def clean_dnd(raw: object) -> str:

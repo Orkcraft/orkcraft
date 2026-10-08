@@ -128,3 +128,16 @@ def test_a_codex_price_by_family(monkeypatch):
     assert pricing.openai_price_for("gpt-luna") == pricing.OPENAI_PRICES["gpt-6-luna"]
     assert pricing.openai_price_for("gpt-6-astra") is None              # no astra priced: unknown, never $0
     assert pricing.codex_usage_cost("gpt-luna", {"input_tokens": 1_000_000}) == pytest.approx(2)
+
+
+def test_a_model_chosen_for_a_tier_wins_over_the_latest(tmp_path, monkeypatch):
+    calls = fake_agy(tmp_path, monkeypatch)
+    agy = harnesses.need("agy")
+    chosen = {"agy": {"elder": "gemini-3.0-pro-high", "warrior": "gemini-pro-high"}, "pi": {"elder": "my-pi-model"}}
+    assert agy.pick("elder", chosen) == "gemini-3.0-pro-high"            # the version chosen, as written
+    assert agy.pick("opus", chosen) == "gemini-3.0-pro-high"             # another tool's elder: this one's
+    assert agy.pick("", chosen) == "gemini-3.1-pro-high"                # its default tier: a family chosen, its newest
+    assert agy.pick("laborer", chosen) == "gemini-3.10-flash-low-preview"   # not chosen: the latest
+    assert agy.pick("gemini-3.7-flash-high", chosen) == "gemini-3.7-flash-high"   # a building's own model wins
+    assert harnesses.need("pi").pick("elder", chosen) == "my-pi-model"   # a tool with no tiers of its own
+    assert calls.read_text().count("models") == 1

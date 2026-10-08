@@ -193,6 +193,13 @@ def resolve(tool: str, cmds: Iterable[list[str]] | None, parse: Callable[[str], 
     return newest(model, listed(tool, cmds, parse))
 
 
+def cached(tool: str) -> list[str] | None:
+    """The models `tool` listed when it was last asked, never asking it; None when it has not been."""
+    with _lock:
+        entry = _memory.get(tool) or _read_cache().get(tool)
+    return list(entry.get("models") or []) if isinstance(entry, dict) and "models" in entry else None
+
+
 def known(family: str) -> str:
     """The newest model of `family` in any list kept in the cache, never asking a tool ("" if none)."""
     with _lock:
@@ -211,11 +218,21 @@ def for_api(family: str, models: Iterable[str] = ()) -> str:
 _UPPER = {"gpt": "GPT", "tts": "TTS"}
 
 
+def words(family: str) -> str:
+    """`gemini-flash-high` → `Gemini Flash High`; `opus` → `Opus`."""
+    return " ".join(_UPPER.get(w, w.capitalize()) for w in (family or "").lower().split("-"))
+
+
+def version(family: str) -> str:
+    """`3.8`: the version of `family` it runs on, from the lists in the cache ("" when none says)."""
+    v = version_of(family, known(family)) if is_family(family) else None
+    return ".".join(map(str, v)) if v else ""
+
+
 def label(model: str) -> str:
     """What a person reads: `gemini-flash-high` → `Gemini Flash High (3.8)`, the version it runs on when
     a list in the cache says (no version when none does); a model with its version stays as written."""
     if not is_family(model):
         return model or ""
-    words = " ".join(_UPPER.get(w, w.capitalize()) for w in model.lower().split("-"))
-    v = version_of(model, known(model))
-    return f"{words} ({'.'.join(map(str, v))})" if v else words
+    v = version(model)
+    return f"{words(model)} ({v})" if v else words(model)

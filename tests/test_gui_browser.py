@@ -1008,6 +1008,34 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_settings_choose_a_tiers_model_and_reset_it(page):
+    """Settings → AI tools: each tier of a tool that is on runs on Latest of its family; another model typed is
+    kept and said; Reset to latest drops it."""
+    from orkcraft import settings
+    pg = page
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { tools: { agy: true } }))")
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    pick = modal.get_by_label("Antigravity: the 🔮 Elder model", exact=True)
+    pick.wait_for(timeout=WAIT_MS)
+    assert "Latest Gemini Pro High" in pick.locator("option:checked").inner_text()
+    pick.select_option(label="Another model…")
+    modal.get_by_label("Antigravity: the 🔮 Elder model's name").fill("gemini-3.0-pro-high")
+    modal.get_by_role("button", name="Use it").click()
+    pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('Runs on gemini-3.0-pro-high')",
+                         timeout=WAIT_MS)
+    shot = os.environ.get("ORKCRAFT_SHOT")
+    if shot:
+        modal.screenshot(path=shot)
+    assert settings.load().tier_models == {"agy": {"elder": "gemini-3.0-pro-high"}}
+    modal.get_by_role("button", name="Reset to latest").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-modal').textContent.includes('Reset to latest')",
+                         timeout=WAIT_MS)
+    assert settings.load().tier_models == {}
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { tools: { agy: false } }))")
+
+
 def test_settings_accounts_open_the_connect_google_wizard(page):
     """Settings → Accounts: Connect Google opens the wizard, five steps with a link to each page of Google Cloud;
     once the client is pasted, step 5 signs in. `ORKCRAFT_SHOTS` keeps screenshots."""

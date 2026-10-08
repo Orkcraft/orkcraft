@@ -199,10 +199,26 @@ class Harness:
     def bin(self) -> str:
         return getenv(f"{self.id.upper()}_BIN") or self.default_bin
 
-    def pick(self, model: str = "") -> str:
-        """The model a run names for `model` (any tool's model or tier, or "" for its default): a family
-        becomes its newest listed model, or "" (the tool's own default) when the tool lists none."""
+    def tier_for(self, model: str = "") -> str | None:
+        """The tier `model` (any tool's model or tier, or "" for its default) asks of this tool; None when
+        it names a model of its own, not a tier's."""
+        if model in TIERS:
+            return model
         family = model_on(self.id, model) or self.default_model
+        mine = next((t for t, f in self.models.items() if f == family), None)
+        if mine or family:
+            return mine
+        return tier_of_model(model) if model else None
+
+    def pick(self, model: str = "", chosen: dict | None = None) -> str:
+        """The model a run names for `model` (any tool's model or tier, or "" for its default): the model
+        chosen for its tier on this machine (`chosen`, else settings.MachineSettings.tier_models), else the
+        tier's family; a family becomes its newest listed model, or "" (the tool's own default) when the
+        tool lists none. A model someone named runs as written."""
+        family = model_on(self.id, model) or self.default_model
+        tier = self.tier_for(model)
+        if tier:
+            family = (tier_choices() if chosen is None else chosen).get(self.id, {}).get(tier) or family
         if family not in self.families:
             return family                    # a model someone named: as written
         cmds = self.models_cmd(self) if self.models_cmd else None
@@ -529,6 +545,12 @@ register(Harness(
 
 
 # -- lookups --------------------------------------------------------------------------------------
+
+def tier_choices() -> dict:
+    """{tool: {tier: model}} chosen on this machine (Settings → AI tools), read when the file changed."""
+    from orkcraft.realm import builders
+    return getattr(builders._machine(), "tier_models", None) or {}
+
 
 def ids() -> tuple[str, ...]:
     """Every tool, in the order the main one is picked when none is chosen."""

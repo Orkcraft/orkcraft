@@ -4,7 +4,9 @@ question waits and hours you are around a change waits. As the TUI's F10 → Ork
 climb the roof of a building whose ork waits for you (`fire`, per machine). And whether
 anonymous usage stats are shared (core/usage.py), asked once by its own small dialog. Which updates
 install by themselves (`updates`; its commands are gui/updates.py's). And the AI tools: which are on
-(`tools`) and the main tool every decision runs on, and every step that names `main` (realm/harnesses.py).
+(`tools`) and the main tool every decision runs on, and every step that names `main` (realm/harnesses.py);
+the model each tier runs on, per tool (`tier_model`; settings.MachineSettings.tier_models, which wins over
+the newest of the tier's family, realm/model_families.py).
 Whether the 🌙 Night round looks over the boards at night (`round`: `round_at` in the council's settings),
 what its last night found, and Look now (`round.now`; docs/design/night-round.md).
 
@@ -12,18 +14,70 @@ what its last night found, and Look now (`round.now`; docs/design/night-round.md
 """
 from __future__ import annotations
 
+import threading
 from typing import Any, Callable
 
 from orkcraft import __version__, autonomy, settings
 from orkcraft.core import updates, usage
-from orkcraft.realm import builders, fastpath, harnesses, nightround
+from orkcraft.realm import builders, fastpath, harnesses, model_families, nightround, tiers
+from orkcraft.sources import pricing
 
 
 def _tools(m) -> dict[str, Any]:
     on = {t for t, c in m.tools.items() if c.enabled}
     return {"tools": [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on}
                       for h in harnesses.REGISTRY.values()],
-            "main_tool": m.main_tool, "main_now": builders.main_tool(m)}
+            "main_tool": m.main_tool, "main_now": builders.main_tool(m), "tier_models": _tier_models(m)}
+
+
+def _latest(name: str, listed: list[str]) -> tuple[str, str]:
+    """(text, model) of the newest of a family or a tool's alias: `Latest Gemini Flash High · 3.8`."""
+    model = model_families.newest(name, listed) if model_families.is_family(name) else ""
+    v = model_families.version_of(name, model) if model else None
+    return f"Latest {model_families.words(name)}" + (f" · {'.'.join(map(str, v))}" if v else ""), model
+
+
+def _price(model: str) -> str:
+    """`$4 / $20 per million tokens in / out` when the price tables know the model's family, else ""."""
+    p = pricing.price_for(model) or pricing.openai_price_for(model) if model else None
+    return f"${p.input:g} / ${p.output:g} per million tokens in / out" if p else ""
+
+
+def _listing(tools: list) -> None:
+    """Ask the tools that can say which models they have, and have not been asked, out of the way."""
+    for h in tools:
+        threading.Thread(target=lambda h=h: h.pick(h.default_model or next(iter(h.families))),
+                         name=f"models-{h.id}", daemon=True).start()
+
+
+def _tier_models(m) -> list[dict[str, Any]]:
+    """Per tool that is on, per tier: what it runs on, what can be chosen (the newest of each family, the
+    models the tool listed, the one typed), and its price when known. Never asks a tool: its list comes
+    from the cache, and a tool not asked yet is asked in the background."""
+    on = [h for h in harnesses.REGISTRY.values() if m.tools.get(h.id) and m.tools[h.id].enabled]
+    _listing([h for h in on if h.models_cmd and h.families and model_families.cached(h.id) is None])
+    out = []
+    for h in on:
+        listed = model_families.cached(h.id) or []
+        names = list(dict.fromkeys(h.models.values()))
+        rows = []
+        for tier in tiers.TIERS:
+            chosen = str(m.tier_models.get(h.id, {}).get(tier) or "")
+            own = h.models.get(tier, "")
+            options = [["", _latest(own, listed)[0] if own else "Its own default"]]
+            options += [[n, _latest(n, listed)[0]] for n in names if n != own]
+            options += [[x, x] for x in listed if [x, x] not in options]
+            if chosen and not any(o[0] == chosen for o in options):
+                options.append([chosen, chosen])
+            pick = chosen or own
+            if model_families.is_family(pick):
+                text, model = _latest(pick, listed)
+            else:
+                text, model = (pick, pick) if pick == chosen else (_latest(pick, listed)[0] if pick else "Its own default", pick)
+            rows.append({"tier": tier, "label": tiers.label(tier), "chosen": chosen, "now": text,
+                         "price": _price(model or pick), "options": options})
+        out.append({"id": h.id, "title": h.title, "mark": h.mark, "lists": h.models_cmd is not None, "tiers": rows})
+    return out
 
 
 def _round(host) -> dict[str, Any]:
@@ -65,6 +119,21 @@ def change(host, args: dict) -> dict[str, Any]:
         now = builders.main_tool(m)
         host.town.toast(f"Decisions and steps on main run on {harnesses.title(now)}", title="Main tool")
         host.on_change()
+        return read(host)
+    if isinstance(args.get("tier_model"), dict):       # the model of a tier on a tool; "" back to the latest
+        a = args["tier_model"]
+        tool, tier, model = a.get("tool"), a.get("tier"), str(a.get("model") or "").strip()
+        if tool in harnesses.REGISTRY and tier in tiers.TIERS:
+            mine = dict(m.tier_models.get(tool, {}))
+            mine.pop(tier, None)
+            if model:
+                mine[tier] = model
+            m.tier_models = settings.clean_tier_models({**m.tier_models, tool: mine})
+            settings.save(m)
+            kept = m.tier_models.get(tool, {}).get(tier, "")
+            host.town.toast(f"{harnesses.title(tool)} runs {tiers.label(tier)} on "
+                            f"{kept or 'the latest model of its family'}", title="AI tools")
+            host.on_change()
         return read(host)
     if isinstance(args.get("round"), bool):            # the Night round: on at its time, or off
         fastpath.save_settings(host.town.repo_root, {"round_at": fastpath.SETTINGS["round_at"] if args["round"] else ""})
