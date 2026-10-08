@@ -61,6 +61,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
                                                                  _int(a.get("question")), _int(a.get("rebuild"))),
             "building.pin": self.pin,
             "building.fold": self.fold,
+            "town.fold": self.fold_many,
             "building.revert": self.revert,
             "building.quick": self.quick,
             "building.recruit": self.recruit,
@@ -195,16 +196,39 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         return bs.pinned
 
     def fold(self, args: dict) -> bool:
-        """▸ A folded hut shows its title bar only (docs/design/folded-cards.md). The Town Hall never folds."""
+        """▸ A folded hut shows its title bar only (docs/design/folded-cards.md); `value` sets it, else it
+        toggles. The Town Hall never folds."""
         from orkcraft.realm.buildings import TOWN_HALL
         bs = self._spec(args)
         if bs.id == TOWN_HALL:
             raise ConsoleError("The Town Hall never folds")
-        bs.folded = not bs.folded
-        self.town.save()
-        self._record(bs.id, "folded" if bs.folded else "unfolded")
-        self.host.on_change()
+        want = bool(args["value"]) if isinstance(args.get("value"), bool) else not bs.folded
+        if want != bs.folded:
+            bs.folded = want
+            self.town.save()
+            self._record(bs.id, "folded" if want else "unfolded")
+            self.host.on_change()
         return bs.folded
+
+    def fold_many(self, args: dict) -> int:
+        """Fold the quiet ones / Unfold all (the bare town's right click, `/fold`, `/unfold`): `ids` folded or
+        unfolded as `value` says, in one save. How many changed."""
+        from orkcraft.realm.buildings import TOWN_HALL
+        want = bool(args.get("value"))
+        ids = args.get("ids") if isinstance(args.get("ids"), list) else []
+        changed = []
+        for bid in ids:
+            bs = self.town.scroll.building(str(bid))
+            if bs is None or bs.demolished or bs.id == TOWN_HALL or bs.folded == want:
+                continue
+            bs.folded = want
+            changed.append(bs.id)
+        if changed:
+            self.town.save()
+            for bid in changed:
+                self._record(bid, "folded" if want else "unfolded")
+            self.host.on_change()
+        return len(changed)
 
     def steward_models(self, args: dict) -> dict:
         """Which tier its steward runs each of its tasks on (realm/steward.py USES); "" is the default."""

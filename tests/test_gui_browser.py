@@ -916,3 +916,31 @@ def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
     for bid in (pit, pool):
         call("town.demolish", {"id": bid})
+
+
+def test_the_bare_map_and_the_warchiefs_line_fold_the_quiet_ones_and_unfold_all(page):
+    """docs/design/folded-cards.md §4: Fold the quiet ones and Unfold all on the bare map; `/fold @name`, `/unfold`."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    pool, forge = call("town.build", {"type": "barracks"}), call("town.build", {"type": "forge"})
+    call("hut.move", {"id": pool, "x": 0.05, "y": 0.05})
+    call("hut.move", {"id": forge, "x": 0.4, "y": 0.05})
+    pg.keyboard.press("Escape")
+    folded = lambda bid: pg.locator(f'.gui-hut.is-folded[data-id="{bid}"]')
+    _hut(pg, forge).wait_for(state="visible", timeout=WAIT_MS)
+    room = pg.locator(".gui-town__room").bounding_box()
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    pg.locator(".gui-menu__item", has_text="Fold the quiet ones").click()
+    folded(pool).wait_for(state="visible", timeout=WAIT_MS)
+    folded(forge).wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    assert pg.locator(".gui-menu__item", has_text="Fold the quiet ones").count() == 0     # nothing left to fold
+    pg.locator(".gui-menu__item", has_text="Unfold all").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-hut.is-folded')", timeout=WAIT_MS)
+    _line(pg, "/fold @Agent pool")
+    folded(pool).wait_for(state="visible", timeout=WAIT_MS)
+    assert folded(forge).count() == 0
+    _line(pg, "/unfold")
+    pg.wait_for_function("() => !document.querySelector('.gui-hut.is-folded')", timeout=WAIT_MS)
+    for bid in (pool, forge):
+        call("town.demolish", {"id": bid})

@@ -12,7 +12,7 @@ import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
-import { keepTall } from "./parts.js";
+import { reasons, busy as busyOf, fold } from "./fold.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
@@ -59,17 +59,7 @@ function PinButton({ b }) {
     </svg></button>`;
 }
 
-/** Why a folded hut peeks (docs/design/folded-cards.md §2): an ork of it asks, its worker failed, it is paused. */
-function reasons(b) {
-  return [b.alert && `alert:${b.alert.id}`, b.state === "ERROR" && "error", b.paused && "paused"].filter(Boolean);
-}
-
 const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
-
-function fold(b) {
-  if (!b.folded) keepTall(b.id);            // its full height, so the huts under it rise by what it gives up
-  command("building.fold", { id: b.id }).catch(() => {});
-}
 
 /** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. */
 function FoldButton({ b, peek }) {
@@ -144,7 +134,8 @@ function hutMenu(e, b) {
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
     b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
-    b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", run: () => fold(b) },
+    b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", hint: `/${b.folded ? "unfold" : "fold"} @${name}`,
+      run: () => fold(b) },
     b.id !== CORNER && "-",
     b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
   ]);
@@ -226,7 +217,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved }) {
     return () => ro.disconnect();
   }, [b.id]);
   const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
-  const busy = b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
+  const busy = busyOf(b);
   const hot = b.alert && b.alert.waited >= 30;
   const folded = !!b.folded && b.id !== CORNER;
   const peek = folded && (peekReasons(b).length > 0 || dragOver.value === b.id);

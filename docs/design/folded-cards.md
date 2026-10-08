@@ -9,7 +9,7 @@ its neighbours, while something on it wants the person.
 | stage | what | state |
 |---|---|---|
 | 1 | Fold / Unfold on a hut, kept in the Town Scroll; folded types in the catalog; a peek on trouble and on a drag; a mark in the title | done |
-| 2 | marks of more types (Watchtower, Barracks, Forge); Fold the quiet ones / Unfold all on the bare map; `/fold @name` | |
+| 2 | marks of more types (Watchtower, Barracks, Forge); Fold the quiet ones / Unfold all on the bare map; `/fold`, `/unfold` | done |
 
 ## 1. What a folded hut shows
 
@@ -29,7 +29,9 @@ its neighbours, while something on it wants the person.
 - **A mark** may stand before the pin: a word or a number in a tone, what the hidden card would have
   said first. Every hut gets one for free — `error` (danger) while its worker's state is `ERROR`,
   `paused` (warning) while it is paused. A type adds its own with `mark(b)` in its page module
-  (js/types.js): `{text, tone}` or null. Stage 1: the Pit — how many were dropped.
+  (js/types.js): `{text, tone}` or null. The Pit: how many were dropped. Watchtower: `N failing` (danger),
+  else `N new`. Barracks: `✗N` failed (danger), else `2/4 at work`, else `N queued`. Forge: `cannot read`
+  (danger), `merging` (warning), else `N PRs`.
 - **The quick actions** stay: the tray on the card's bottom edge comes out under the title bar while the
   mouse is on the hut, as on an open card.
 - **The parts' checkboxes** (js/parts.js: Task Fields, War Drum) are not shown while the card is folded:
@@ -75,9 +77,16 @@ A folded card opens by itself — **a peek** — while one of these holds:
 ## 4. Where it is reached
 
 - **The toggle** on the hut (§1).
-- **The right click** on a hut (js/hut.js `hutMenu`): *Fold the card* / *Unfold the card*, after Pin.
-- **Stage 2**: on the bare map *Fold the quiet ones* (every hut without a peek reason and not
-  selected) and *Unfold all*; the Warchief's `/fold @name`. The menu entries then name the command.
+- **The right click** on a hut (js/hut.js `hutMenu`): *Fold the card* / *Unfold the card*, after Pin, naming
+  `/fold @name` / `/unfold @name`.
+- **The right click on the bare map** (js/town.js `bareMenu`): *Fold the quiet ones* (`/fold`) — every hut
+  that is open, not the Town Hall, not at work, not open in the panel and has no peek reason — and *Unfold
+  all* (`/unfold`). Each stands only when it would change something.
+- **The Warchief's line** (js/warchief.js): `/fold @name` and `/unfold @name`; with no name, the same as the
+  map's two entries.
+- **The host**: `town.fold` {ids, value} folds or unfolds many in one save; `building.fold` takes `value`
+  to set one instead of toggling it.
+- What decides *quiet* and *peek* lives in one module (js/fold.js), for the hut, the map and the line.
 
 ## 5. Layout
 

@@ -56,3 +56,16 @@ def test_fold_toggles_saves_and_is_recorded_but_the_town_hall_never_folds(fake_r
 
 def test_fold_has_its_word():
     assert lexicon.term("fold") == "Fold"
+
+
+def test_fold_sets_a_value_and_many_fold_in_one_save(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    pool = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
+    forge = buildings.raise_spec(host.town, buildings.type_spec(host.town, "forge")).id
+    assert host.command("building.fold", {"id": pool, "value": False}) is False      # set, not toggled
+    assert host.command("history", {"id": pool})["events"] == []                    # nothing changed, nothing said
+    assert host.command("town.fold", {"ids": [pool, forge, TOWN_HALL, "nowhere"], "value": True}) == 2
+    assert _hut(host, pool)["folded"] and _hut(host, forge)["folded"]
+    assert host.command("town.fold", {"ids": [pool, forge], "value": True}) == 0
+    assert host.command("town.fold", {"ids": [pool], "value": False}) == 1
+    assert not _hut(host, pool)["folded"] and _hut(host, forge)["folded"]

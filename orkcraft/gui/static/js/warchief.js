@@ -22,6 +22,7 @@ import { settingsOpen } from "./settings.js";
 import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
 import { WarchiefHead } from "./icons.js";
+import { fold, foldQuiet, unfoldAll } from "./fold.js";
 
 const THREAD = 3;                          // the last messages shown over the line
 const HISTORY = 30;                        // lines ↑ walks back through
@@ -140,6 +141,16 @@ export const COMMANDS = [
     run: (rest, bs) => (bs.length ? (openBuilding(bs[0].id), null) : "Name the building: /open @Forge") },
   { word: "demolish", args: "@building", about: "take a building down (it asks first)",
     run: (rest, bs) => (bs.length ? ((demolishing.value = bs[0].id), null) : "Name the building: /demolish @Forge") },
+  { word: "fold", args: "[@building]", about: "fold a hut to its title bar; with no name, every quiet one",
+    run: (rest, bs) => {
+      if (bs.length) { bs.forEach((b) => fold(b, true)); return null; }
+      return foldQuiet(here()) ? null : "Nothing quiet to fold: every open hut is at work or wants you";
+    } },
+  { word: "unfold", args: "[@building]", about: "open a folded hut again; with no name, every one",
+    run: (rest, bs) => {
+      if (bs.length) { bs.forEach((b) => fold(b, false)); return null; }
+      return unfoldAll(here()) ? null : "No hut is folded";
+    } },
   { word: "note", args: "[@Wiki] text", about: "keep a note in the wiki: its meeting, section and tags show before Enter saves",
     run: (rest, bs) => {
       const w = wikiFor(bs);
