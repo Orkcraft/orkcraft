@@ -91,16 +91,16 @@ pseudo-elements, its beam as a tile under the plate.
  █┌─────────────────────────────────┐█   ← two posts, their tops above the bar
  █│ 3 ⑂ Router              📌  ▾   │█   ← the title bar: its dark plate, as on a hut
  █╞═════════════════════════════════╡█   ← the beam under it
- ▪│ 12 sent · 0 dropped             │▪   ← the inside: the card's plain `panel`, never wood
- ╎│ last: release-notes → mill      │╎   ← each side: a thin rail, a post now and then
+ ◂│ 12 sent · 0 dropped             │▸   ← the inside: the card's plain `panel`, never wood
+ ◂│ last: release-notes → mill      │▸   ← each side: the pickets turned out, the same pitch
  ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
 ```
 
 ### 3a. The fence
 
 - **Only the edges are wood.** A row of pickets along the bottom: dense and low (pointed, two thin rails
-  between them, a 7×7 sprite tile, no ground line), each side seen from above: a thin rail with a post
-  and its lit cap every 16 sprite px (a 5×16 tile); the inside is the plain `panel` it is today.
+  between them, a 7×7 sprite tile, no ground line), each side the same pickets turned on their side, the
+  tip pointing out, at the bottom row's pitch (a 5×7 tile, mirrored for the right); the inside is the plain `panel` it is today.
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
