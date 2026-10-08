@@ -68,6 +68,8 @@
 .ok-btn.primary { background: var(--action); color: var(--on-action); }
 .ok-btn.danger { color: var(--danger); }
 .ok-btn:disabled, .ok-btn.is-disabled { color: var(--ink-comment); filter: none; cursor: default; }
+/* A primary button that cannot act yet stops being green: green with grey words read as a broken button. */
+.ok-btn.primary:disabled, .ok-btn.primary.is-disabled { background: var(--panel-raised); color: var(--ink-comment); box-shadow: var(--bevel-raised); }
 .ok-btn .ok-kbd { color: inherit; opacity: .75; font-weight: 400; }
 [data-theme="office"] .ok-btn { font-weight: 400; color: var(--ink); background: var(--panel-raised); box-shadow: none; padding: 0 var(--space-3); }
 [data-theme="office"] .ok-btn:hover { filter: none; background: var(--bevel-hi); }
@@ -75,7 +77,8 @@
 [data-theme="office"] .ok-btn.primary:hover { filter: brightness(1.08); }
 [data-theme="office"] .ok-btn.danger { color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); background: transparent; }
 [data-theme="office"] .ok-btn:active, [data-theme="office"] .ok-btn.is-pressed { padding-top: 0; background: var(--panel-inset); box-shadow: inset 0 0 0 1px var(--frame-strong); }
-[data-theme="office"] .ok-btn:disabled, [data-theme="office"] .ok-btn.is-disabled { color: var(--ink-comment); background: var(--panel-raised); }
+[data-theme="office"] .ok-btn:disabled, [data-theme="office"] .ok-btn.is-disabled,
+[data-theme="office"] .ok-btn.primary:disabled, [data-theme="office"] .ok-btn.primary.is-disabled { color: var(--ink-comment); background: var(--panel-raised); font-weight: 400; }
 [data-theme="office"] .ok-btn .ok-kbd { background: none; box-shadow: none; padding: 0; }
 
 /* Building action. Camp: a square Warcraft 2 command button holding a 32px icon sprite (or a pictograph
