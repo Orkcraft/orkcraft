@@ -913,3 +913,33 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     assert len(stored) == 1 and "the notes, checked" in (root / stored[0].path).read_text()
     pg.keyboard.press("Escape")
     call("town.demolish", {"id": bid})
+
+
+def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
+    """A send_new board holds a new task (⏳ goes at …, Send now); a related one joins it (↳ with …, +1 added) and
+    Split off takes it out again; a near one asks Join or Keep apart (docs/design/settle-and-join.md)."""
+    pg = page
+    server, _ = gui
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    w = server.host.town.worker(bid)
+    w.save_config({"send_new": True, "path": "SETTLE.md"})
+    first = w.add("Make the CSV export", "todo")
+    w.add("New design for the CSV export: the button on the right", "todo")
+    w.add("Fix the login bug", "todo")
+    w.add("Login page design", "todo")
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    _panel(pg, "Work")
+    panel = pg.locator(".gui-panel")
+    settling = panel.locator(".fields-settle")
+    settling.filter(has_text="goes at").filter(has_text="+1 added").wait_for(state="visible", timeout=WAIT_MS)
+    joined = settling.filter(has_text="↳ with “Make the CSV export”")
+    joined.wait_for(state="visible", timeout=WAIT_MS)
+    settling.filter(has_text="Looks like").wait_for(state="visible", timeout=WAIT_MS)
+    assert "waiting to go" in _hut(pg, bid).inner_text()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "settle.png"), full_page=True)
+    joined.get_by_role("button", name="Split off").click()
+    joined.wait_for(state="detached", timeout=WAIT_MS)
+    assert w.held(first.id) and not w.joined_cards(first.id)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)

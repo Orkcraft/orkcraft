@@ -106,8 +106,18 @@ see `native-feedback.md`.
 ## 4. The trail — metadata that travels with a cart
 
 Every cart carries `Payload.trail`: the hops it went through, each
-`Hop(building, orc, kind, tokens, cost, worktree, branch, outcome, at, base)`, and `Payload.ref`, a
-stable id of the thing being worked on.
+`Hop(building, orc, kind, tokens, cost, worktree, branch, outcome, at, base, ms, model, decision, round,
+run)`, and `Payload.ref`, a stable id of the thing being worked on.
+
+- `at` is when the hop ended, `ms` how long the cart was in that building (`Hop.started` = `at` − `ms`:
+  the first hop's is when the request came in); `model` what did the work (`a+b` when steps differ);
+  `decision` the building's own call in one line of at most 80 characters (a Clan Fire's tally and route,
+  a steward's accept / rework, a plan's parts, or why a run did not finish); `round` the rework round
+  (unset the first time); `run` the building's own record of the work — the handler run, the task, the
+  discussion — where the full input, output and reasoning are.
+- The trail never goes into a prompt, so a hop costs no tokens; it stays small all the same (a few
+  short fields, nothing said is not stored), and anything longer than a line stays in the record `run`
+  names. Loot's chain table shows how long each hop took, on what, and what it decided.
 
 - A handler run merges the trails of the carts it ran on and appends its own hop (its tokens and
   cost); its output, and whatever its building sends next, carries that trail.

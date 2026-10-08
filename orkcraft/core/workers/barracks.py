@@ -52,7 +52,7 @@ from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, steward
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward
 
 ICON = {"idle": "💤", "working": "⚒"}
 TASK_ICON = {"queued": "·", "working": "⚒", "reviewing": "🔎", "asked": "🔥", "done": "✓", "failed": "✗",
@@ -265,6 +265,9 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         """A rework sent back (by a Loot or a Clan Fire) keeps the `ref` of the work: it becomes a follow-up
         of that task — the same orc, the same branch."""
         key = key or bk.task_key("text", text, title)
+        queued = next((t for t in self.state.queue if ref and t.ref == ref), None)
+        if queued is not None and self._amend(queued, text):
+            return queued
         prior = next((t for t in reversed(self.state.tasks) if ref and t.ref == ref), None)
         if prior is not None and not key:
             key = prior.key or prior.id               # the orc that did it knows it by that
@@ -279,6 +282,22 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         st.save()
         self.changed()
         return task
+
+    def _amend(self, task: bk.PoolTask, text: str) -> bool:
+        """An addition to a task nobody took yet (a board's, docs/design/settle-and-join.md §5: its text starts
+        with `settle.ADDED`'s line): the task's text grows, no second task. False for any other cart, and when
+        the task was planned, is a part of a plan or an ork took it — then it is a follow-up of that task."""
+        more = text.strip()
+        if not settle.is_addition(more):        # another cart about the same thing is a task of its own
+            return False
+        if task.status != "queued" or task.orc or task.plan or task.parent or task.kind == "plan":
+            return False
+        if more and more not in task.text:
+            task.text = f"{task.text.rstrip()}\n\n{more}"
+        self.state.log(bk.Decision(bk.now_iso(), task.id, "amend", why="more about it came before an ork took it"))
+        self.state.save()
+        self.changed()
+        return True
 
     def new_task(self, title: str, brief: str = "") -> bk.PoolTask | None:
         """✍ New task: the operator writes to the barracks directly — the title and the brief (the title
@@ -501,7 +520,8 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         decisions = "## Decisions so far\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in qa) if qa else ""
         if task.warm:                    # the session already holds the briefing, the rules and the earlier work
             return "\n\n".join(p for p in [
-                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text, decisions,
+                f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}",
+                bk.without_own_work(bk.body_of(task), self._earlier_result(task)), decisions,
                 sent_back,
                 f"Your branch is now `{task.branch}`." if task.branch else "", self.overlap_md(task),
                 "Same rules as before: commit on your branch, then a short Markdown report."] if p)
@@ -512,7 +532,7 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                  "Do the task below in this directory. Commit your work on the branch with a clear message; do not "
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
-                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", task.text,
+                 f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
                  self.designs_md(task), self.overlap_md(task),
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
@@ -522,11 +542,18 @@ class BarracksWorker(PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
         return "\n\n".join(p for p in parts if p)
 
+    def _earlier_result(self, task: bk.PoolTask) -> str:
+        """The report of the task this one reworks (the same `ref`), "" when there is none."""
+        prior = next((t for t in reversed(self.state.tasks) if t.id != task.id and t.ref == task.ref and t.result), None)
+        return prior.result if prior is not None else ""
+
     def _trail(self, task: bk.PoolTask, orc: bk.PoolOrc, outcome: str) -> tuple:
         """The task's trail with this building's hop: the whole task (every run and review) as one."""
         return pipes.trail_of(task.trail) + (pipes.hop(self.building_id, orc.name, "agent", task.tokens,
                                                        task.cost_usd, orc.worktree, task.branch, outcome,
-                                                       base=task.base),)
+                                                       base=task.base, since=task.arrived,
+                                                       model=orc.model or orc.harness, decision=task.decided,
+                                                       round=task.attempts, run=task.id),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state

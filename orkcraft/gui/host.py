@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import runners, usage
+from orkcraft.core import runners, usage, wakes
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
@@ -64,6 +64,8 @@ class Host:
         self.on_toast: Callable[[dict], None] = lambda data: None
         self.on_detail: Callable[[str], None] = lambda building_id: None
         self._telemetry_at = 0.0
+        self._wakes_at = -wakes.WAKE_CHECK_S       # when the script-first buildings were last looked at (core/wakes.py)
+        wakes.start(self.town)
         self._refreshed: dict[str, float] = {}     # building id → when its worker last looked again
         self._attached: dict[str, Any] = {}        # building id → the worker its view's `attach` was given
         self.raised_for: dict[tuple[str, str], str] = {}   # (type, request) → the building raised for it (gui/builder.py)
@@ -221,10 +223,23 @@ class Host:
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.refresh_roster()
         self._night()
+        self._wakes(now)
         self.growth.tick(now)
         self.usage.tick(now)
         self.updates.tick(now)
         self.onboarding.tick(now)
+
+    def _wakes(self, now: float) -> None:
+        """A script-first building's ork wakes on an error or a 👎 (core/wakes.py), as its keeper's job."""
+        if now - self._wakes_at < wakes.WAKE_CHECK_S:
+            return
+        self._wakes_at = now
+        try:
+            for wake in wakes.due(self.town):
+                if self.console.keeper_wake(wake):
+                    wakes.taken(self.town, wake)
+        except Exception as e:                     # a wake never stops the clock
+            self.town.toast(f"{type(e).__name__}: {e}", title="Wakes", severity="error")
 
     # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
 

@@ -95,9 +95,27 @@ class Hop:
     outcome: str = ""
     at: str = ""
     base: str = ""                # what the branch was cut from: Loot lists the files of base...branch
+    # What a person (or the steward) needs to read a chain afterwards, kept short: the trail never goes
+    # into a prompt, the full record is the building's own (`run`).
+    ms: int | None = None         # how long the cart was in this building: arrived (or started) → `at`
+    model: str = ""               # the model (else the tool) that did the work; "a+b" when steps differ
+    decision: str = ""            # the building's own call in a line (DECISION_CHARS): a verdict, a route, a
+    #                               plan; or why it did not finish
+    round: int | None = None      # 1 + how many times the same work came back here (None: the first time)
+    run: str = ""                 # its own record of the work: a handler run, a task, a discussion
 
     def as_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items() if v not in (None, "")}
+
+    @property
+    def started(self) -> str:
+        """When the cart came in (`at` less `ms`); "" when the hop does not say how long."""
+        if self.ms is None or not self.at:
+            return ""
+        try:
+            return (dt.datetime.fromisoformat(self.at) - dt.timedelta(milliseconds=self.ms)).isoformat(timespec="seconds")
+        except ValueError:
+            return ""
 
 
 @dataclass(frozen=True)
@@ -112,12 +130,49 @@ class Payload:
     route: str = field(default="", compare=False)   # who takes it on, as a Clan Fire that routes decided
 
 
+DECISION_CHARS = 80
+
+
 def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,
         worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None,
-        base: str = "") -> Hop:
+        base: str = "", since: str | float | None = None, model: str = "", decision: str = "",
+        round: int | None = None, run: str = "") -> Hop:
+    """One hop, ending now. `since`: when the cart came in (an ISO time, or seconds before now), for `ms`."""
+    now = now or dt.datetime.now()
+    first_line = " ".join(str(decision or "").strip().splitlines()[:1]).strip()
     return Hop(building, orc, kind, int(tokens) if tokens is not None else None,
                float(cost) if cost is not None else None, worktree, branch, outcome,
-               (now or dt.datetime.now()).isoformat(timespec="seconds"), base)
+               now.isoformat(timespec="seconds"), base, _ms(since, now), str(model or ""),
+               first_line[:DECISION_CHARS - 1] + "…" if len(first_line) > DECISION_CHARS else first_line,
+               int(round) if round and int(round) > 1 else None, str(run or ""))
+
+
+def _ms(since: str | float | None, now: dt.datetime) -> int | None:
+    if since in (None, ""):
+        return None
+    if isinstance(since, (int, float)):
+        return max(0, int(since * 1000))
+    try:
+        then = dt.datetime.fromisoformat(str(since))
+    except ValueError:
+        return None
+    if then.tzinfo is not None:
+        then = then.astimezone().replace(tzinfo=None)
+    return max(0, int((now - then).total_seconds() * 1000))
+
+
+def took(ms: int | None) -> str:
+    """`850ms`, `42s`, `3m 05s`, `2h 10m`; "" when unknown."""
+    if ms is None:
+        return ""
+    s = ms // 1000
+    if s < 1:
+        return f"{ms}ms"
+    if s < 60:
+        return f"{s}s"
+    if s < 3600:
+        return f"{s // 60}m {s % 60:02d}s"
+    return f"{s // 3600}h {s % 3600 // 60:02d}m"
 
 
 def merge_trails(*trails: tuple[Hop, ...]) -> tuple[Hop, ...]:

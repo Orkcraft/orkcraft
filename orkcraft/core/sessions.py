@@ -327,6 +327,7 @@ class Sessions:
         title, md = pipes.task_report(name, b_spec.title, s.text_lines())
         cwd, root = Path(s.cwd), town.repo_root
         worktree = str(cwd.relative_to(root)) if cwd != root and root in cwd.parents else ""
-        hop = pipes.hop(b_id, ork_id, "task", worktree=worktree, outcome="done")
+        hop = pipes.hop(b_id, ork_id, "task", worktree=worktree, outcome="done",
+                        since=max(0.0, time.monotonic() - s.started), run=s.key)
         town.roads.emit(pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title,
                                       trail=(hop,)))

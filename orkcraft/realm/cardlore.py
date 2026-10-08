@@ -71,8 +71,18 @@ class Lore:
         self._save()
 
     def rename(self, old: str, new: str) -> None:
-        if old != new and old in self.data:
+        """A card's id follows its title: what is kept of it, and the cards that name it (joined to it), follow."""
+        if old == new:
+            return
+        moved = old in self.data
+        if moved:
             self.data[new] = self.data.pop(old)
+        for entry in self.data.values():
+            for key in ("into", "hint"):
+                if isinstance(entry, dict) and entry.get(key) == old:
+                    entry[key] = new
+                    moved = True
+        if moved:
             self._save()
 
     def drop(self, card_id: str) -> None:
@@ -128,6 +138,58 @@ class Lore:
 
     def keep_plan(self, card_id: str, steps: list[str], model: str) -> None:
         self._put(card_id, plan=steps, plan_model=model, plan_at=time.time())
+
+    # -- settling: a task waits before it goes, related ones go together (realm/settle.py) -------------
+
+    def _num(self, card_id: str, key: str) -> float | None:
+        v = self.of(card_id).get(key)
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+    def hold(self, card_id: str) -> float | None:
+        """When the held task goes (epoch seconds); None when it is not held."""
+        return self._num(card_id, "hold")
+
+    def came(self, card_id: str) -> float | None:
+        """When the held task was first held."""
+        return self._num(card_id, "came")
+
+    def set_hold(self, card_id: str, at: float | None, came: float | None = None) -> None:
+        """Hold the task till `at` (None: not held any more; its Not urgent goes with it)."""
+        if at is None:
+            self._put(card_id, hold=None, came=None, later=None)
+        else:
+            self._put(card_id, hold=at, came=came if came is not None else (self.came(card_id) or at))
+
+    def later(self, card_id: str) -> bool:
+        return self.of(card_id).get("later") is True
+
+    def set_later(self, card_id: str, later: bool) -> None:
+        self._put(card_id, later=True if later else None)
+
+    def into(self, card_id: str) -> str:
+        """The task this card is joined to ("" when it is its own)."""
+        return str(self.of(card_id).get("into") or "")
+
+    def set_into(self, card_id: str, first: str) -> None:
+        self._put(card_id, into=first or None)
+
+    def joined(self, first: str) -> list[str]:
+        """The cards joined to `first`."""
+        return [k for k, v in self.data.items() if isinstance(v, dict) and v.get("into") == first]
+
+    def hint(self, card_id: str) -> str:
+        """A held task it looks like (near, not close): the card asks whether to join it."""
+        return str(self.of(card_id).get("hint") or "")
+
+    def set_hint(self, card_id: str, other: str) -> None:
+        self._put(card_id, hint=other or None)
+
+    def sent(self, card_id: str) -> bool:
+        """The task went down the roads (by itself, Send now, or as a part of the task it is joined to)."""
+        return self.of(card_id).get("sent") is not None
+
+    def set_sent(self, card_id: str) -> None:
+        self._put(card_id, sent=time.time(), hold=None, came=None, later=None, hint=None)
 
     # -- what left the machine ------------------------------------------------------------------
 

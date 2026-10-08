@@ -130,6 +130,7 @@ class HandlerRun:
     inputs: list[dict] = field(default_factory=list, repr=False)   # the snapshot records it ran on
     trail: tuple = field(default=(), repr=False)   # the hops of the carts it ran on (pipes.Hop)
     ref: str = ""
+    model: str = ""               # the model(s) its steps ran on ("a+b"), else their tools
 
 
 @dataclass
@@ -193,6 +194,21 @@ ROLE_ASK = {
 }
 
 
+PROMPT_DROPS = ("road", "kind", "value")   # a road id, and what `id` / `path` / `text` already say
+
+
+def prompt_record(rec: dict) -> dict:
+    """A road's record as a model reads it: its body once (`text`, `id` or `path`, never `value` too),
+    no road id or kind, no empty field, a long text cut at SNAPSHOT_CHARS."""
+    has_body = any(k in rec for k in ("text", "id", "path"))
+    out = {}
+    for k, v in rec.items():
+        if (k in PROMPT_DROPS and (k != "value" or has_body)) or v in (None, "", [], {}):
+            continue
+        out[k] = v[:SNAPSHOT_CHARS] + "…" if isinstance(v, str) and len(v) > SNAPSHOT_CHARS else v
+    return out
+
+
 def _purpose(building: ts.BuildingSpec) -> str:
     """What its steward is for: its role and its orders (the building's purpose), "" when it has none."""
     stew = building.garrison.steward
@@ -203,11 +219,7 @@ def _purpose(building: ts.BuildingSpec) -> str:
 
 def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict], role: str,
                  previous: str = "", liked: list[str] | None = None) -> str:
-    roads = []
-    for rec in snapshot:
-        rec = {k: (v[:SNAPSHOT_CHARS] + "…" if isinstance(v, str) and len(v) > SNAPSHOT_CHARS else v)
-               for k, v in rec.items()}
-        roads.append(rec)
+    roads = [prompt_record(rec) for rec in snapshot]
     if orc.on_steward:                                 # a road rule: the steward thinks, toward its building's goal
         stew = building.garrison.steward
         purpose = _purpose(building)
@@ -228,12 +240,12 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
         ]
     parts = [
         *head,
-        "Incoming roads (latest payload each; node ids resolve to <ID>.md files):\n"
-        + json.dumps(roads, ensure_ascii=False, indent=1),
+        "Incoming roads (latest payload each, one per line; node ids resolve to <ID>.md files):\n"
+        + "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in roads),
     ]
     if previous:
         parts.append(f"The previous step's result:\n{previous}")
-    if liked:                                          # 👍 references
+    if liked and role != "plan":                       # 👍 references: the shape of a result, not of a plan
         parts.append("Results the operator liked from this building (match their shape):\n"
                      + "\n".join(f"- {x[:600]}" for x in liked[:3]))
     parts.append(f"{ROLE_ASK.get(role, ROLE_ASK['run'])} Answer with the Markdown the operator should "
@@ -613,10 +625,14 @@ class Engine:
         from orkcraft.realm import feedback
         liked = [str(r.get("value", "")) for r in feedback.examples(self.repo_root, b.id, 3)]
         try:
+            used: list[str] = []
             steps = self.steps_of(b, orc)
             for step in steps:
                 prompt = agent_prompt(orc, b, records, step["role"], previous=text, liked=liked)
                 model = tiers.step_model(step)       # a runner is called with a model only when there is one
+                if (said := model or str(step.get("harness") or "")) and said not in used:
+                    used.append(said)
+                    run.model = "+".join(used)
                 answer = self._agent_runner(step["harness"], prompt, self.repo_root, env, cancel,
                                             *((model,) if model else ()))
                 text, cost = answer[0], answer[1]          # a runner may also say its tokens
@@ -651,7 +667,9 @@ class Engine:
     def _finish(self, b: ts.BuildingSpec, orc: ts.OrcSpec, run: HandlerRun, outcome: str,
                 markdown: str, error: str) -> None:
         run.ended, run.outcome, run.markdown, run.error = self._clock(), outcome, markdown, error
-        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome),)
+        run.trail = run.trail + (pipes.hop(b.id, orc.id, orc.kind, run.tokens, run.cost_usd, outcome=outcome,
+                                           since=max(0.0, run.ended - run.started), model=run.model,
+                                           decision=error if outcome != "done" else "", run=run.run_id),)
         with self._lock:
             self.state(b.id, orc.id).runs += 1
             self.runs = (self.runs + [run])[-200:]

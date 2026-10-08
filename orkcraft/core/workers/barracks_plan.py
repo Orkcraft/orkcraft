@@ -104,7 +104,7 @@ class PlanMixin:
         stages or parallel parts is planned. A sort that does not hold is planned too, as before the triage.
         `short`: the rules are sure it needs no plan — it is only told trivial (no review) from the rest."""
         cancel = self._take(task, f"{self.keeper} sorts it")
-        prompt = plans.triage_prompt(self.keeper, self.orders, task.title, task.text)
+        prompt = plans.triage_prompt(self.keeper, self.orders, task.title, bk.body_of(task))
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
@@ -149,7 +149,7 @@ class PlanMixin:
 
     def _plan(self, task: bk.PoolTask, why: str = "") -> None:
         cancel = self._take(task, why or f"{self.keeper} plans it")
-        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, task.text, self.aim,
+        prompt = plans.plan_prompt(self.keeper, self.orders, task.title, bk.body_of(task), self.aim,
                                    self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir),
                                    designs=self.plan_designs(task), brief=self.briefs_on,
                                    short=self.goal == plans.GOALS["thrift"])
@@ -261,7 +261,7 @@ class PlanMixin:
         task.status, task.plan = "planned", [asdict(s) for s in subs]
         for s in subs:
             cid = uuid.uuid4().hex[:8]
-            child = bk.PoolTask(cid, f"{task.title[:50]} · {s.title}"[:80], plans.child_text(task.title, task.text, s, subs),
+            child = bk.PoolTask(cid, f"{task.title[:50]} · {s.title}"[:80], plans.child_text(task.title, bk.body_of(task), s, subs),
                                 arrived=bk.now_iso(), status="blocked", tier=s.tier, persona=self._persona_of(s),
                                 parent=task.id, sub=s.id, after=list(s.after), touches=list(s.touches),
                                 cheaper_ok=s.cheaper_ok, ref=f"{self.building_id}:{cid}",
@@ -584,7 +584,7 @@ class PlanMixin:
         sub = plans.Sub(f"fix{n}", f"Fix {n}", brief, tier)
         parent.plan = parent.plan + [asdict(sub)]
         cid = uuid.uuid4().hex[:8]
-        kid = bk.PoolTask(cid, f"{parent.title[:50]} · {sub.title}", plans.child_text(parent.title, parent.text, sub, []),
+        kid = bk.PoolTask(cid, f"{parent.title[:50]} · {sub.title}", plans.child_text(parent.title, bk.body_of(parent), sub, []),
                           arrived=bk.now_iso(), status="blocked", tier=tier, parent=parent.id, sub=sub.id,
                           ref=f"{self.building_id}:{cid}", branch=f"{parent.branch}--{sub.id}" if parent.branch else "",
                           base=parent.branch)
@@ -605,9 +605,12 @@ class PlanMixin:
         return f"- {question.strip()[:200]} → {text.strip()[:300]}"
 
     def _plan_trail(self, parent: bk.PoolTask, outcome: str) -> tuple:
+        parts = f"planned in {len(parent.plan)} parts" if parent.plan else ""
         return pipes.trail_of(parent.trail) + (pipes.hop(self.building_id, self.keeper, "agent", parent.tokens,
                                                          parent.cost_usd, "", parent.branch, outcome,
-                                                         base=parent.base),)
+                                                         base=parent.base, since=parent.arrived,
+                                                         decision=parent.decided or parts,
+                                                         round=parent.attempts, run=parent.id),)
 
 
 class _Done(Exception):

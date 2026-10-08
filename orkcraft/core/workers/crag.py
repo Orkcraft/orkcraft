@@ -39,6 +39,7 @@ def fmt(v: float | None) -> str:
 
 class CragWorker(Worker):
     TYPE = "crag"
+    ERROR_IS_FAILURE = False            # its ERROR is a reading over its red line: what it is for
 
     def __init__(self, town, building_id: str) -> None:
         super().__init__(town, building_id)
