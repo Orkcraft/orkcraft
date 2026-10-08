@@ -1,7 +1,7 @@
 # Design — fewer minds, one word each: simplifying the town
 
-Status: written 2026-10-07; stage 0a (the purpose and the ledger on disk) built 2026-10-08, see §11;
-*By purpose* in the Spend window (stage 0b) not yet. Stage 0 measures before anything is cut; stage 4 (the
+Status: written 2026-10-07; stage 0 (the purpose, the ledger on disk, *By purpose* in the Spend window)
+built 2026-10-08, see §11; the week of numbers that decides stage 3 starts now. Stage 0 measures before anything is cut; stage 4 (the
 watchers) may start at once. Builds on the Town Hall's Council (`realm/fastpath.py`, `realm/council.py`,
 `realm/audit.py`), the Elders (`realm/elders.py`, `core/night.py`), the steward
 ([steward-at-work.md](steward-at-work.md)), the retros ([retros-and-goals.md](retros-and-goals.md),
@@ -176,6 +176,15 @@ Stages 1, 2 and 4 do not depend on each other; 3 waits for a week of stage 0.
   Building and Town retros `retro`, the Lookout and the Watchtower's agent feed and Catapult's carrier
   `look`, a Review board's discussion `review`, the Wiki's ingest `ingest` and its lint and spot-check
   `check`. The building comes from `ORKCRAFT_ORC` when a call carries it. Everything else is `work`.
-- Not done here: the Spend window's *By purpose* (stage 0b, queue item B04). A call through a path not
-  listed above counts as `work`: the first week's numbers will show if a big one hides there.
+- A call through a path not listed above counts as `work`: the first week's numbers will show if a big
+  one hides there.
 - Tests: `tests/test_telemetry.py` (the ledger, tags, transcripts, hook, housekeeping, a road agent).
+
+**Stage 0b — 2026-10-08** (P3): the Town Hall's *Limits* tab, under *Spend*, has *By purpose, last 7 days*:
+one folded line per purpose (its plain word, `$ · tokens · calls`, and how many were unpriced), most $
+first, and inside it each building by its title (*No building* for a call no building made).
+`telemetry.by_purpose(repo_root, days=7)` reads the ledger (again only when the file changed);
+`TownHallWorker.week()` serves it, and the sandbox shows a sample on its own buildings; the words are
+`gui/views/town_hall.py` `PURPOSE_WORDS`. Tests: `tests/test_telemetry.py`, `tests/test_gui.py`
+(`test_the_spend_window_shows_the_week_by_purpose`). Screenshot:
+`docs/night/2026-10-08/ui/after-B04-camp-spend.png`.

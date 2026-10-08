@@ -291,12 +291,28 @@ function Meter({ label, part, value, level }) {
     <span class="ok-meter__val">${value}</span></div>`;
 }
 
+/** The last 7 days' model calls by what they were for, each with its buildings inside
+ *  (docs/design/simplify.md §2). */
+function ByPurpose({ week }) {
+  const money = (r) => `$${r.usd.toFixed(2)} · ${r.tokens} tokens · ${r.calls} ${r.calls === 1 ? "call" : "calls"}`;
+  return html`<${Section} title=${say("By purpose, last 7 days")}>
+    ${week.length ? week.map((g) => html`<${Fold} key=${g.purpose} title=${say(g.word)}
+        sum=${money(g) + (g.unpriced ? ` · ${g.unpriced} unpriced` : "")}>
+        <${Rows} items=${g.buildings} empty=""
+          row=${(b, i) => html`<li key=${i} class="ok-font-body">${say(b.title)}
+            <span class="ok-font-status ok-tone-muted"> — ${money(b)}</span></li>`} />
+      </${Fold}>`)
+      : html`<p class="ok-font-status ok-tone-muted">${say("No model calls recorded in the last 7 days.")}</p>`}
+  </${Section}>`;
+}
+
 function Limits({ id, data }) {
   const s = data.spend;
   return html`<div>
     <${Section} title=${say("Spend")}>
       <${Meter} label=${say("This run")} part=${s.limit ? s.spent / s.limit : 0} value=${`$${s.spent.toFixed(2)} / $${s.limit}`} level=${s.level} />
     </${Section}>
+    <${ByPurpose} week=${s.week || []} />
     <${Section} title=${say("Quotas")} extra=${html`<span class="ok-font-status ok-tone-muted">
         ${data.reading_limits ? say("reading…") : data.limits_at ? `${say("updated")} ${data.limits_at}` : ""}</span>
       <button class="ok-act" onClick=${() => act(id, "limits").catch(() => {})}><span class="ok-act__label">Read again</span></button>`}>

@@ -272,3 +272,20 @@ def test_the_housekeeping_keeps_the_ledger_within_the_log_limit(tmp_path: Path, 
         telemetry.charge(0.01, "claude -p haiku", purpose="build")
     chores = housekeeping.scan(tmp_path, set())
     assert any(c.kind == "log" and c.path.endswith("spend/calls.jsonl") for c in chores)
+
+
+def test_by_purpose_sums_the_last_week_and_its_buildings(tmp_path: Path):
+    telemetry.keep_ledger(tmp_path)
+    old = {"at": (dt.datetime.now().astimezone() - dt.timedelta(days=8)).isoformat(), "purpose": "work",
+           "building": "x", "usd": 9.0, "tokens": 9}
+    (tmp_path / telemetry.CALLS).parent.mkdir(parents=True)
+    (tmp_path / telemetry.CALLS).write_text(json.dumps(old) + "\nnot json\n", encoding="utf-8")
+    telemetry.charge(0.2, "a", purpose="work", tokens=10, building="mill")
+    telemetry.charge(0.5, "b", purpose="work", tokens=5, building="forge")
+    telemetry.charge(0.1, "c", purpose="sort", building="mill")
+    telemetry.charge(None, "d", purpose="sort", building="mill")
+    week = telemetry.by_purpose(tmp_path)
+    assert [(g["purpose"], round(g["usd"], 2), g["tokens"], g["calls"], g["unpriced"]) for g in week] == [
+        ("work", 0.7, 15, 2, 0), ("sort", 0.1, 0, 2, 1)]
+    assert [b["building"] for b in week[0]["buildings"]] == ["forge", "mill"]
+    assert telemetry.by_purpose(tmp_path / "none") == []

@@ -30,6 +30,7 @@ from orkcraft.core import bus, runners, warchief
 from orkcraft.core import roads as core_roads
 from orkcraft.core.workers import Worker
 from orkcraft.realm import audit, catalog, elders, fastpath, feedback, optimize, pipes, town_presets, weekly
+from orkcraft.sources import telemetry
 from orkcraft.sources.limits import PROVIDERS, Limit, fetch_limits
 
 TOWN_HALL = "town_hall"
@@ -41,6 +42,9 @@ LIMITS_REFRESH_S = 10 * 60      # as the TUI's Limits
 
 # The hall's own agents that are not the audit's: they build (realm/masonry.py).
 BUILDERS = (("🏗", "Mason", "plans a building's data"), ("🎨", "Artisan", "lays out its panes and hut"))
+
+DEMO_WEEK = (("work", 4.12, 2_310_000, 46), ("review", 1.35, 610_000, 18), ("answer", 0.42, 160_000, 31),
+             ("build", 0.18, 72_000, 9), ("check", 0.06, 30_000, 12))     # purpose, $, tokens, calls
 
 DEMO_LIMITS = (Limit("claude", "", "5h session", 0.62, None), Limit("claude", "", "weekly", 0.81, None),
                Limit("agy", "", "daily", 0.4, None), Limit("codex", "plus", "5h", 0.9, None),
@@ -471,6 +475,21 @@ class TownHallWorker(Worker):
         spent, limit = self.town.snapshot.spent_usd, self.town.scroll.budget.gold_session_limit_usd
         return {"spent": round(spent, 2), "limit": limit,
                 "level": "over" if limit and spent >= limit else "warn" if limit and spent >= 0.8 * limit else "ok"}
+
+    def week(self) -> list[dict]:
+        """The last 7 days' model calls by purpose, each by building (docs/design/simplify.md §2); the sandbox
+        shows a sample on its own buildings."""
+        if not self.simulated:
+            return telemetry.by_purpose(self.repo_root)
+        ids = [b.id for b in self.town.scroll.buildings if not b.demolished and b.id != self.building_id][:3] or ["camp"]
+        out = []
+        for purpose, usd, tokens, calls in DEMO_WEEK:
+            parts = [ids[i % len(ids)] for i in range(min(len(ids), 2 if usd > 1 else 1))]
+            out.append({"purpose": purpose, "usd": usd, "tokens": tokens, "calls": calls, "unpriced": 0,
+                        "buildings": [{"building": b, "usd": round(usd / len(parts), 2), "tokens": tokens // len(parts),
+                                       "calls": calls // len(parts)} for b in parts]})
+            ids = ids[1:] + ids[:1]
+        return out
 
     def read_limits(self) -> None:
         """The quotas again, in a thread (the CLIs answer slowly); the sandbox shows a sample."""

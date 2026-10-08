@@ -187,6 +187,44 @@ def calls(repo_root: Path, since: dt.datetime | None = None) -> list[dict]:
     return out
 
 
+_WEEK: dict[str, object] = {}
+
+
+def by_purpose(repo_root: Path, days: int = 7, now: dt.datetime | None = None) -> list[dict]:
+    """The ledger of the last `days`, by purpose and, inside each, by building — most $ first:
+    [{"purpose", "usd", "tokens", "calls", "unpriced", "buildings": [{"building", "usd", "tokens", "calls"}]}].
+    `usd` counts the priced calls; `unpriced` how many had no price. Read again only when the file changed."""
+    now = now or dt.datetime.now().astimezone()
+    path = repo_root / CALLS
+    try:
+        st = path.stat()
+        key = (str(path), st.st_mtime_ns, st.st_size, days, now.strftime("%Y-%m-%d %H"))
+    except OSError:
+        return []
+    if _WEEK.get("key") == key:
+        return _WEEK["value"]                     # type: ignore[return-value]
+    groups: dict[str, dict] = {}
+    for c in calls(repo_root, now - dt.timedelta(days=days)):
+        purpose = c.get("purpose") if c.get("purpose") in PURPOSES else "work"
+        g = groups.setdefault(purpose, {"purpose": purpose, "usd": 0.0, "tokens": 0, "calls": 0, "unpriced": 0,
+                                        "buildings": {}})
+        b = g["buildings"].setdefault(str(c.get("building") or ""), {"building": str(c.get("building") or ""),
+                                                                     "usd": 0.0, "tokens": 0, "calls": 0})
+        usd, tokens = c.get("usd"), c.get("tokens")
+        for row in (g, b):
+            row["calls"] += 1
+            if isinstance(usd, (int, float)) and usd >= 0:
+                row["usd"] += float(usd)
+            if isinstance(tokens, int) and tokens >= 0:
+                row["tokens"] += tokens
+        if not isinstance(usd, (int, float)):
+            g["unpriced"] += 1
+    rank = lambda r: (-r["usd"], -r["calls"])          # noqa: E731
+    value = sorted(({**g, "buildings": sorted(g["buildings"].values(), key=rank)} for g in groups.values()), key=rank)
+    _WEEK.update(key=key, value=value)
+    return value
+
+
 def _ts(value: object) -> dt.datetime | None:
     if not isinstance(value, str):
         return None

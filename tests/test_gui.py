@@ -1009,3 +1009,21 @@ def test_settings_turn_the_ai_tools_on_and_choose_the_main_one(fake_repo, isolat
     assert s["main_tool"] == ""                                              # only a tool of the registry
     s = host.command("town.settings.set", {"tools": {"pi": False}, "main_tool": "pi"})
     assert s["main_tool"] == "pi" and s["main_now"] != "pi"                  # chosen, but off: the first one on
+
+
+def test_the_spend_window_shows_the_week_by_purpose(fake_repo, isolated_layout_file):
+    """docs/design/simplify.md §2: the last 7 days, $ and tokens per purpose, per building inside."""
+    from orkcraft.sources import telemetry
+    host = _host(fake_repo)
+    assert host.detail("town_hall")["data"]["spend"]["week"] == []        # nothing recorded yet
+    telemetry.keep_ledger(fake_repo)
+    telemetry.charge(0.30, "claude agent", purpose="review", tokens=2048, building="town_hall")
+    telemetry.charge(0.10, "claude agent", purpose="review", tokens=1024, building="")
+    telemetry.charge(0.05, "claude -p haiku", purpose="build", tokens=100)
+    telemetry.charge(None, "agy agent", purpose="build")
+    week = host.detail("town_hall")["data"]["spend"]["week"]
+    assert [(g["purpose"], g["word"], g["usd"], g["calls"]) for g in week] == [
+        ("review", "Review boards", 0.4, 2), ("build", "New buildings, orks and roads", 0.05, 2)]
+    assert week[0]["tokens"] == "3k" and week[1]["unpriced"] == 1
+    hall_title = next(b["title"] for b in host.snapshot()["buildings"] if b["id"] == "town_hall")
+    assert [(b["title"], b["usd"]) for b in week[0]["buildings"]] == [(hall_title, 0.3), ("No building", 0.1)]

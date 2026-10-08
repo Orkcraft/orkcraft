@@ -17,6 +17,7 @@ from orkcraft.core.workers.town_hall import LIMITS_REFRESH_S, buildable
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import modes
+from orkcraft.sources import telemetry
 
 REFRESH_S = 30.0              # the hall looks again (a town order, the audit's findings); the quotas every 10 min
 SHOWN = 30                    # chat messages a page gets
@@ -65,6 +66,23 @@ def _plain(value):
     return value
 
 
+# What a model call was for (telemetry.PURPOSES), as the Spend window's *By purpose* names it.
+PURPOSE_WORDS = {"work": "Orks' tasks", "sort": "Sorting", "plan": "Planning", "review": "Review boards",
+                 "check": "Checks", "ingest": "Wiki ingest", "answer": "Answering orks' questions",
+                 "look": "Watching sources", "retro": "Retros", "build": "New buildings, orks and roads",
+                 "chat": "The Warchief's chat"}
+
+
+def _week(groups: list[dict], buildings: dict[str, str]) -> list[dict]:
+    """By purpose for the window: its word, $ and tokens in short, and each building by its title."""
+    def one(row: dict) -> dict:
+        return {"usd": round(row["usd"], 2), "tokens": telemetry.fmt_tokens(row["tokens"]), "calls": row["calls"]}
+    return [{"purpose": g["purpose"], "word": PURPOSE_WORDS.get(g["purpose"], g["purpose"]), **one(g),
+             "unpriced": g.get("unpriced", 0),
+             "buildings": [{"title": buildings.get(b["building"], b["building"]) or "No building", **one(b)}
+                           for b in g["buildings"]]} for g in groups]
+
+
 def detail(w) -> dict:
     titles = {t.id: t.title for t in buildable()}
     buildings = {b.id: b.title for b in w.town.scroll.buildings}
@@ -73,7 +91,7 @@ def detail(w) -> dict:
         "chat": [_message(m, titles, buildings) for m in w.chat[-SHOWN:]],
         "thinking": w.thinking,
         "hall": _plain(w.hall()),
-        "spend": w.spend(),
+        "spend": {**w.spend(), "week": _week(w.week(), buildings)},
         "limits": [{"provider": x.provider, "what": " ".join(p for p in (x.window, x.group) if p and p != "—"),
                     "remaining": x.remaining, "error": x.error or "", "note": x.note,
                     "reset": x.reset.strftime("%a %H:%M") if x.reset else ""} for x in w.limits or ()],
