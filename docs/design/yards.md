@@ -92,7 +92,7 @@ pseudo-elements, its beam as a tile under the plate.
  █│ 3 ⑂ Router              📌  ▾   │█   ← the title bar: its dark plate, as on a hut
  █╞═════════════════════════════════╡█   ← the beam under it
  ▴│ 12 sent · 0 dropped             │▴   ← the inside: the card's plain `panel`, never wood
- ▴│ last: release-notes → mill      │▴   ← each side: short pickets, tips up, rail stubs inward
+ ▴│ last: release-notes → mill      │▴   ← each side: short pickets, tips up, rails down behind
  ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
 ```
 
@@ -100,8 +100,8 @@ pseudo-elements, its beam as a tile under the plate.
 
 - **Only the edges are wood.** A row of pickets along the bottom: dense and low (pointed, two thin rails
   between them, a 7×7 sprite tile, no ground line), each side a column of short pickets, their tips up as
-  on the bottom row and at its pitch, the two rails' stubs running in under the card (the bottom tile
-  stacked, mirrored for the right); the inside is the plain `panel` it is today.
+  on the bottom row and at its pitch, with a gap under each where the two
+  rails show, running down behind the pickets (a 5×7 tile); the inside is the plain `panel` it is today.
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
