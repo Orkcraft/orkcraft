@@ -5,6 +5,7 @@
 > the panel on the right — its **Work** (what *full* was, by its UI document) and its **Info** (what every
 > building shares, its quick actions among them). The command view, the Command Card and the types'
 > `preview` went; a type's hooks are `card`, `panes`, `quick`. The rules of §2 and the types of §3 stand.
+> A closed hut may also fold to its title bar ([folded-cards.md](folded-cards.md)); a type then adds `mark`.
 
 What every building shows in the GUI, agreed type by type, and how the work is split so that several
 sessions can build it at once. The TUI's typed views (`screens/typed/*`) are where the behaviour comes
