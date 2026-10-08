@@ -1,6 +1,7 @@
 """Test fixtures: a plain git project, isolated layout and caches."""
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 import pytest
@@ -24,8 +25,31 @@ def fake_repo(tmp_path: Path) -> Path:
     return repo
 
 
+_quiet_path: list[str] = []
+
+
+def _path_without_real_tools(factory: pytest.TempPathFactory) -> str:
+    """$PATH with every folder that holds a real agent CLI or gh replaced by a copy of links to the rest."""
+    if not _quiet_path:
+        from orkcraft.realm import harnesses
+        tools = {h.default_bin for h in harnesses.REGISTRY.values()} | {"gh"}
+        dirs = []
+        for d in os.environ.get("PATH", "").split(os.pathsep):
+            folder = Path(d)
+            if d and any((folder / t).exists() for t in tools):
+                copy = factory.mktemp("path")
+                for entry in folder.iterdir():
+                    if entry.name not in tools:
+                        (copy / entry.name).symlink_to(entry)
+                d = str(copy)
+            dirs.append(d)
+        _quiet_path.append(os.pathsep.join(dirs))
+    return _quiet_path[0]
+
+
 @pytest.fixture(autouse=True)
-def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def isolated_layout_file(tmp_path: Path, tmp_path_factory: pytest.TempPathFactory,
+                         monkeypatch: pytest.MonkeyPatch) -> Path:
     """Keep window layouts written by the TUI out of the real ~/.config."""
     path = tmp_path / "orkcraft-layout.json"
     monkeypatch.setenv("ORKCRAFT_LAYOUT_FILE", str(path))
@@ -42,6 +66,9 @@ def isolated_layout_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pat
     monkeypatch.setenv("ORKCRAFT_NO_USAGE", "1")         # no usage stats leave a test (test_usage.py opts in)
     monkeypatch.setenv("ORKCRAFT_NO_UPDATE", "1")        # no test reads the list of updates (test_updates.py opts in)
     monkeypatch.setenv("ORKCRAFT_MODEL_LIST", "0")       # no tool is asked its models (test_model_families.py fakes one)
+    # No real agent CLI and no real gh, even on a machine that has them: a run a test does not fake finds
+    # no tool, as on CI. Before, a Mine test's research ran a real `claude -p` on the web.
+    monkeypatch.setenv("PATH", _path_without_real_tools(tmp_path_factory))
     from orkcraft.realm import model_families
     model_families.forget()
     # agy's global hooks file stays the test's own: `hooks install` / `uninstall` never touch ~/.gemini.

@@ -23,3 +23,10 @@
 - Left for D2/D3, best first: U02 road labels drawn over card text (M), U24 a wake toast that says "it says ERROR" (S), U03 scroll cue for Settings and the War Map (S/M), U07 the Warchief's line squeezed by an open panel, U10/U11 an open card covering its neighbours and repeating its window's actions, U14, U16, U19–U23 (all S). Onboarding was not audited: another session works on it tonight.
 - May be broken: nothing known; the critical tests, `test_gui.py` and `test_gui_browser.py` are green on these changes. CSS, `pocket.js` (the chip), `orders.js` (the list), `windows.js` (the number), `forge.js`, and `gitinfo.py` + the Review gate's and File tree's workers (the plain git error, with a test).
 - Questions for the morning: (1) the HUD shows "Spend $— / $5.00" until an agent reports — keep the dash (it never claims a $0.00 not measured) or say "$0.00"? (U05) (2) one word for the questions: the HUD says *Answers*, the dialog *Awaiting an answer*, the phone *Asks you* — make all three *Answers*? (U15)
+
+### A2 — tech debt from the queue (architect)
+- Done: **T08** — the last 11 old spellings in GUI templates written in today's word (Lake → Inspector, keeper → steward, Halt All → Stop all); the page's runtime rewrite of every template (`todayStrings`) removed; `tests/test_gui_wording.py` reads all ~1.9k `html` templates and fails on an old spelling; CLAUDE.md → Wording updated (0b5daa7). **T02** — removed 7 functions only tests called (e7aa9db). **T11** — tests ran the machine's **real** `claude -p` and `gh` (Claude Code is installed in these containers): the Mine test's research went on the web. `tests/conftest.py` hides every agent CLI and `gh` from `$PATH`; a guard test checks it.
+- Left: T06 (split `steward.py`), T04 stage 1, T13, T07; T10b now means fixing the load flakes, not adding xdist.
+- May be broken: nothing known. Full suite `-n 8` on the T11 commit: 1925 passed, 1 load flake that passes alone (a different test each run, also before my change).
+- Question for the morning: the night sessions' containers have a logged-in Claude Code — did earlier test runs (before T11) spend on your account? Worth a look at the usage page.
+
