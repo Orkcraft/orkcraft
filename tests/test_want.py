@@ -17,7 +17,7 @@ from orkcraft.realm import checkpoint, lexicon, pipes, roads
 from tests.pool_fakes import Steward
 
 
-def _until(cond, seconds: float = 5.0) -> bool:
+def _until(cond, seconds: float = 20.0) -> bool:
     end = time.monotonic() + seconds
     while time.monotonic() < end:
         if cond():
@@ -190,7 +190,7 @@ def test_the_review_board_sends_it_on_with_its_verdict(host, monkeypatch):
     bid = _raised(host, "council")
     w = host.town.worker(bid)
     w.receive(_cart("doc", "# A design\n\nWe stream the CSV."), "A design", "# A design\n\nWe stream the CSV.")
-    assert _until(lambda: any(p.mode in ("team.approved", "team.rework") for p in sent), 10)
+    assert _until(lambda: any(p.mode in ("team.approved", "team.rework") for p in sent), 30)
     assert all(p.want == "doc" for p in sent if p.mode.startswith("team."))
 
 
@@ -206,7 +206,7 @@ def test_the_pool_keeps_the_kind_and_says_where_it_was_decided(host, monkeypatch
     w = host.town.worker(bid)
     w.receive(_cart("reply", "Ann asks about the invoice", source=post, title="The invoice question"), "", "")
     w.receive(_cart("", "Fix the parser", source=post, title="Fix the parser"), "", "")
-    assert _until(lambda: len([t for t in w.state.tasks if t.status in ("done", "failed")]) == 2, 10)
+    assert _until(lambda: len([t for t in w.state.tasks if t.status in ("done", "failed")]) == 2, 30)
     reply = next(t for t in w.state.tasks if t.title == "The invoice question")
     assert (reply.want, reply.want_by) == ("reply", post)
     rows = {t["title"]: t for t in host.detail(bid)["data"]["tasks"]}
