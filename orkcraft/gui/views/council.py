@@ -226,6 +226,11 @@ def _setup_save(w, args: dict) -> bool:
 
 
 @_setup
+def _setup_preset(w, args: dict) -> bool:
+    return w.setup.preset(text(args, "preset", 40))
+
+
+@_setup
 def _setup_close(w, args: dict) -> None:
     w.setup.close()
     w.changed()
@@ -234,4 +239,4 @@ def _setup_close(w, args: dict) -> None:
 ACTS = {"review": _review_act, "answer": _answer, "add_member": _add_member, "stop": _stop, "show": _show,
         "decide": _decide, "go_on": _go_on, "review_next": _review_next, "drop": _drop,
         "setup_open": _setup_open, "setup_go": _setup_go, "propose": _propose, "setup_save": _setup_save,
-        "setup_close": _setup_close}
+        "setup_close": _setup_close, "setup_preset": _setup_preset}

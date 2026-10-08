@@ -85,6 +85,7 @@ class Triage:
     tier: str                    # the tier of the one ork (trivial, single); "" for a plan
     why: str = ""
     touches: list[str] = field(default_factory=list)   # the files or folders it will likely change: a guess
+    want: str = ""               # `reply` when all it asks is an answer to someone (a lower path); "" else
 
 
 def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
@@ -95,13 +96,15 @@ def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
         "on it — quickly, without planning it.", rules, f"## The task: {title}", text[:BRIEF_LIMIT],
         "Answer one JSON object and nothing else: "
         '{"kind": "trivial" | "single" | "plan", "tier": "laborer" | "warrior" | "elder", "why": "<a few words>", '
-        '"touches": ["<the files or folders it will likely change>"]}',
+        '"touches": ["<the files or folders it will likely change>"], "want": "change" | "reply"}',
         "- `trivial`: a small, clear job one light agent does at once (a question, a lookup, a rename, a typo, "
         "a short note);\n"
         "- `single`: one agent's job in one go, but it needs thought — `tier` says how strong: `warrior` for "
         "ordinary code, `elder` for design or tricky code;\n"
         "- `plan`: several stages, or parts that can run in parallel — it is planned before anyone starts.\n"
-        "In doubt between `single` and `plan`: `plan`."] if p)
+        "In doubt between `single` and `plan`: `plan`.\n"
+        "`want`: `reply` only when all it asks is an answer to someone (a mail, a message, a ticket comment) and "
+        "no change to the project; else `change`."] if p)
 
 
 def parse_triage(text: str) -> Triage | None:
@@ -123,7 +126,8 @@ def parse_triage(text: str) -> Triage | None:
         tier = "warrior" if kind == SINGLE else ""
     touches = data.get("touches")
     touches = [str(x).strip() for x in touches if str(x).strip()][:20] if isinstance(touches, list) else []
-    return Triage(kind, tier, str(data.get("why") or "")[:200], touches)
+    want = "reply" if str(data.get("want") or "").strip().lower() == "reply" else ""
+    return Triage(kind, tier, str(data.get("why") or "")[:200], touches, want)
 
 
 # -- the plan ---------------------------------------------------------------------------------------

@@ -294,7 +294,7 @@ export function hints() {
     out.push({ label: say(`What did ${name} do today?`), ask: `What did it do today?`, about: [b.id] });
   } else if (!here().length) {
     for (const s of STARTERS) out.push({ label: s, ask: s });
-    out.push({ label: say("Pick a building from the catalog"), run: () => { buildOpen.value = true; } });
+    out.push({ label: say("I'll pick"), title: say("Pick a building from the catalog"), run: () => { buildOpen.value = true; } });
   } else {
     if (t.hud.gold_level === "warn" || t.hud.gold_level === "over") out.push({ label: say("Where does the gold go?"), ask: "Where does the gold go?" });
     out.push({ label: say("What happened today?"), ask: "What happened in the town today?" });
@@ -336,7 +336,7 @@ function Over({ text, about, onPick }) {
         @${say(b.title)}</li>`)}</ul>` : null;
   }
   if (text) return null;
-  return html`<div class="gui-warchief__hints">${hints().map((h, i) => html`<button key=${i} class="ok-btn gui-warchief__hint"
+  return html`<div class="gui-warchief__hints">${hints().map((h, i) => html`<button key=${i} class="ok-btn gui-warchief__hint" title=${h.title}
       onPointerDown=${(e) => { e.preventDefault(); onPick(h); }}>${h.label}</button>`)}</div>`;
 }
 

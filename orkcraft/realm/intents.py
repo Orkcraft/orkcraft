@@ -203,7 +203,8 @@ INTENTS: tuple[Intent, ...] = (
     Intent("solo_forge", "engineer", "🛠", "Ticket Grind", "your Jira tickets → agents in worktrees → tests → merge",
            _plan("Ticket Grind", "Your tickets become cards; agents take them in worktrees, finished branches are "
                                  "tested and merged. Teammates' PRs get a clan's review first.",
-                 [_b("inbox", "watchtower", "Jira and GitHub", "🗼", "tickets assigned to you, mentions, PRs"),
+                 [_b("inbox", "watchtower", "Jira and GitHub", "🗼", "tickets assigned to you, mentions, PRs",
+                     wants={"jira": "change", "github": "change"}),
                   _b("board", "fields", "Today's tickets", "📋", "one card per ticket, To Do → Done"),
                   _b("crew", "barracks", "Agent crew", "🏕️", "agents take a ticket in their own worktree",
                      orders="Read the ticket and its comments, implement it on its own branch with tests, and name "
@@ -257,7 +258,8 @@ INTENTS: tuple[Intent, ...] = (
     Intent("bug_patrol", "qa", "🐛", "Bug Patrol", "bugs from everywhere sorted, reproduced and filed with steps",
            _plan("Bug Patrol", "Bug reports from Jira, Slack and mail are sorted by rules; agents reproduce each one "
                                "and add the steps and a failing test.",
-                 [_b("inbox", "watchtower", "Bug reports", "🗼", "mentions in Jira and Slack, bug mail"),
+                 [_b("inbox", "watchtower", "Bug reports", "🗼", "mentions in Jira and Slack, bug mail",
+                     wants={"jira": "change", "slack": "change", "mail": "change"}),
                   _b("paste", "pit", "Pasted reports", "🕳️", "logs and screenshots"),
                   _b("sort", "signpost", "Triage rules", "🚏", "severity first, no model",
                      rules=["urgent: matches (?i)crash|data loss|outage|p0|critical", "bug: else"]),
@@ -360,7 +362,8 @@ INTENTS: tuple[Intent, ...] = (
     Intent("war_room", "product_manager", "🗺", "War Room", "mail sorted into tasks, every meeting with its brief",
            _plan("War Room", "Requests from mail become tasks; every meeting gets a brief before it starts; every "
                              "morning a digest of the day.",
-                 [_b("inbox", "watchtower", "Inbox", "🗼", "mail and mentions from the team and stakeholders"),
+                 [_b("inbox", "watchtower", "Inbox", "🗼", "mail and mentions from the team and stakeholders",
+                     wants={"mail": "reply"}),
                   _b("sort", "signpost", "Sorter", "🚏", "what needs you, by rules",
                      rules=["you: matches (?i)\\?|please|can you|deadline|asap|review|approve|decide"]),
                   _b("board", "fields", "Board", "📋", "every request as a task"),
@@ -522,7 +525,8 @@ INTENTS: tuple[Intent, ...] = (
     # -- 📈 ASO manager ----------------------------------------------------------------------------
     Intent("review_desk", "aso_manager", "⭐", "Review Lodge", "store reviews sorted, replies drafted for approval",
            _plan("Review Lodge", "New store reviews are sorted; agents draft replies, bugs become tasks.",
-                 [_b("reviews", "watchtower", "Store reviews", "🗼", "review alerts by webhook or mail"),
+                 [_b("reviews", "watchtower", "Store reviews", "🗼", "review alerts by webhook or mail",
+                     wants={"webhook": "reply", "mail": "reply"}),
                   _b("sort", "signpost", "Review sorter", "🚏", "complaints apart from the rest, no model",
                      rules=["bug: matches (?i)crash|bug|broken|error|freez|doesn.t work", "reply: else"]),
                   _b("writers", "barracks", "Reply writers", "🏕️", "agents draft a reply in the reviewer's language"),
@@ -654,7 +658,7 @@ INTENTS: tuple[Intent, ...] = (
     Intent("inbox_keep", "founder", "📨", "Inbox Keep", "mail and GitHub sorted into tasks, agents take them",
            _plan("Inbox Keep", "Mail and GitHub are sorted by rules into tasks; agents code and write, you accept "
                                "copy and code is tested and merged.",
-                 [_b("inbox", "watchtower", "Inbox", "🗼", "mail and GitHub"),
+                 [_b("inbox", "watchtower", "Inbox", "🗼", "mail and GitHub", wants={"mail": "reply", "github": "change"}),
                   _b("sort", "signpost", "Sorter", "🚏", "what needs you, by rules",
                      rules=["you: matches (?i)urgent|asap|review requested|mention|invoice|deadline|\\?"]),
                   _b("tasks", "fields", "Everything board", "📋", "code, copy and errands"),
@@ -700,7 +704,7 @@ INTENTS: tuple[Intent, ...] = (
     # -- 🧩 someone else ---------------------------------------------------------------------------
     Intent("task_desk", OTHER, "📋", "Task Camp", "requests from mail become tasks, agents help with them",
            _plan("Task Camp", "Requests from mail become tasks; agents draft what they can.",
-                 [_b("inbox", "watchtower", "Inbox", "🗼", "your mail"),
+                 [_b("inbox", "watchtower", "Inbox", "🗼", "your mail", wants={"mail": "reply"}),
                   _b("board", "fields", "Tasks", "📋", "every request as a task"),
                   _b("helpers", "barracks", "Helpers", "🏕️", "agents draft answers and documents"),
                   _b("drafts", "loot", "Drafts", "📦", "what the helpers made")],

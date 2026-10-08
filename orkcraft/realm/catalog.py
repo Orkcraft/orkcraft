@@ -110,7 +110,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
                 "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),
-                "feeds": (list, None, False), "intent": (str, None, False)},
+                "feeds": (list, None, False), "intent": (str, None, False), "wants": (dict, None, False)},
         art="watchtower", orc="Lookout"),
     BuildingType(
         "signpost", "Signpost", "🚏", "S",
@@ -190,7 +190,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "plan": (bool, None, False), "escalate": (bool, None, False),
                 "notes": (list, None, False), "claims": (str, ("wait", "flag", "off"), False),
                 "claim_wait": (int, (1, 1440), False), "claim_days": (int, (1, 90), False),
-                "briefs": (bool, None, False), "briefs_dir": (str, None, False)},
+                "briefs": (bool, None, False), "briefs_dir": (str, None, False),
+                "wants": (list, None, False), "want_by_source": (dict, None, False)},
         art="barracks", orc="Grunts", agentic=True),
     BuildingType(
         "council", "Clan Fire", "🪔", "M",
@@ -208,7 +209,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "max_cycles": (int, (1, 10), False), "budget_usd": (float, (0, 100), False),
                 "moderator": (str, None, False), "routes": (list, None, False),
                 "goal": (str, None, False), "max_rounds": (int, (1, 20), False),      # the old debate's; kept loading
-                "purpose": (str, None, False), "exits": (list, None, False)},
+                "purpose": (str, None, False), "exits": (list, None, False), "notes": (list, None, False)},
         art="great_hall", orc="Chieftains", agentic=True),
     BuildingType(
         "war_drum", "War Drum", "🥁", "L",

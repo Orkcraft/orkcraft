@@ -202,13 +202,35 @@ class Setup:
         w.refresh()
         return True
 
+    def preset(self, preset_id: str) -> bool:
+        """A board set up in one click from a preset (realm/team.py PRESETS): its purpose, members and briefs,
+        its rounds, and every Scroll Dump of the town to check against when it wants the Wiki. No exits: what
+        it approves goes on as it is (a reply, to the Review gate)."""
+        p = tm.PRESETS.get(preset_id)
+        if p is None:
+            raise ValueError("No such preset")
+        w = self.w
+        wikis = [bid for bid, spec in getattr(w.town, "custom_specs", {}).items()
+                 if (spec.get("type") == "scrolls") and bid != w.building_id] if p.wiki else []
+        changes = {"purpose": p.purpose, "steward_prompt": p.purpose,
+                   "members": [f"{role}:{harnesses.MAIN}" + (f":{tier}" if tier else "") for role, _, tier in p.members],
+                   "veto": None, "exits": None, "routes": None, "max_cycles": p.max_cycles, "notes": wikis or None}
+        if not w.save_config(changes):
+            raise ValueError("Not saved")
+        for role, checks, _tier in p.members:
+            write_brief(w.role_file(role), role, checks, p.purpose)
+        self.close()
+        w.refresh()
+        return True
+
     # -- what the page draws ----------------------------------------------------------------------------
 
     def view(self) -> dict | None:
         if not self.step:
             return None
         return {"step": self.step, "purpose": self.purpose, "members": self.members, "exits": self.exits,
-                "busy": self.busy, "error": self.error, "templates": {k: exits_of_template(k) for k in tm.TEMPLATES}}
+                "busy": self.busy, "error": self.error, "templates": {k: exits_of_template(k) for k in tm.TEMPLATES},
+                "presets": [{"id": p.id, "title": p.title, "purpose": p.purpose} for p in tm.PRESETS.values()]}
 
 
 def first_line(text: str) -> str:

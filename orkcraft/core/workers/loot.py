@@ -171,7 +171,12 @@ class LootWorker(Worker):
 
     def _pass(self, payload: pipes.Payload) -> bool:
         """Carry the cart on, and keep it in the vault (the history of what passed). True when a
-        road took it on."""
+        road took it on. A kind of work a gate holds (a reply) goes on with this gate's hop: a Publisher
+        sends it without asking again."""
+        if payload.want in gate.HELD_WANTS:
+            payload = pipes.Payload(payload.kind, payload.value, payload.source, payload.mode, payload.title,
+                                    payload.trail + (pipes.hop(self.building_id, "", gate.GATE, outcome=gate.PASSED),),
+                                    payload.ref, payload.route, payload.want)
         item = vault.store(self.repo_root, self.building_id, self.state_dir, payload.kind, payload.value,
                            payload.title, payload.source, trail=payload.trail, ref=payload.ref)
         went = self.emit("loot.passed", payload.value, payload.title, trail=payload.trail, ref=payload.ref,

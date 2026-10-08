@@ -154,10 +154,11 @@ function What({ id, a }) {
   const [intent, setIntent] = useState(a.intent || "");
   const [find, setFind] = useState("");
   const [links, setLinks] = useState("");
+  const [want, setWant] = useState(a.want || "");
   useEffect(() => setPicks(a.picks || []), [JSON.stringify(a.picks)]);
   const toggle = (k) => setPicks(picks.includes(k) ? picks.filter((x) => x !== k) : [...picks, k]);
   const shown = (a.options || []).filter((o) => !find || o.label.toLowerCase().includes(find.toLowerCase()));
-  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder, me, everything: whole, intent }).catch(() => {});
+  const check = () => act(id, "add_what", { picks, about_me: aboutMe, folder, me, everything: whole, intent, want }).catch(() => {});
   const picking = !whole || a.service === "github";            // Everything needs no list (GitHub's repos still add their events)
   return html`<div class="gui-add">
     <${Head} a=${a} />
@@ -192,6 +193,13 @@ function What({ id, a }) {
         ${o.meta && html`<span class="ok-tone-muted gui-add__meta">${o.meta}</span>`}</li>`)}
     </ul>`}
     ${picking && a.picks_of && !a.busy && !(a.options || []).length && a.service !== "figma" && html`<p class="ok-tone-muted gui-add__sub">Nothing to pick here.</p>`}
+    ${(a.wants || []).length > 0 && html`<div class="gui-add__field">
+      <label class="gui-add__label" for=${`add-want-${id}`}>What do you want done with these?</label>
+      <select id=${`add-want-${id}`} class="ok-input" value=${want} onChange=${(e) => setWant(e.target.value)}>
+        ${a.wants.map((w) => html`<option key=${w.id} value=${w.id}>${say(w.label)}</option>`)}
+        <option value="">${say("Nothing set — the agent pool decides")}</option>
+      </select>
+      <p class="ok-tone-muted gui-add__sub">${say("It goes with each one: a reply is drafted and waits for your yes, a code change becomes a pull request, a keep goes to the wiki.")}</p></div>`}
     <${State} a=${a} />
     <div class="gui-add__foot">
       <span class="ok-tone-muted gui-add__sub">${picking && picks.length ? `${picks.length} picked` : ""}</span>

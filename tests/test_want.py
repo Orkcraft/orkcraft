@@ -199,6 +199,8 @@ def test_the_review_board_sends_it_on_with_its_verdict(host, monkeypatch):
 def test_the_pool_keeps_the_kind_and_says_where_it_was_decided(host, monkeypatch):
     monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(
         lambda harness, prompt, workdir, cancel, model, env, resume: ("done: answered", 0.1, 10, "s1")))
+    monkeypatch.setattr(BarracksWorker, "read_runner", staticmethod(
+        lambda harness, prompt, workdir, cancel, model, env, resume: ("Dear Ann, it went out today.", 0.01, 5, "")))
     monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
     sent = _sent(monkeypatch, host)
     post = _raised(host, "watchtower")
@@ -211,7 +213,7 @@ def test_the_pool_keeps_the_kind_and_says_where_it_was_decided(host, monkeypatch
     assert (reply.want, reply.want_by) == ("reply", post)
     rows = {t["title"]: t for t in host.detail(bid)["data"]["tasks"]}
     title = host.town.scroll.building(post).title
-    assert (rows["The invoice question"]["want"], rows["The invoice question"]["want_by"]) == ("Reply", title)
-    assert (rows["Fix the parser"]["want"], rows["Fix the parser"]["want_by"]) == ("", "")
+    assert (rows["The invoice question"]["want"], rows["The invoice question"]["want_note"]) == ("Reply", f"from {title}")
+    assert (rows["Fix the parser"]["want"], rows["Fix the parser"]["want_note"]) == ("", "")
     assert any(p.mode == "pool.done" and p.title == "The invoice question" and p.want == "reply" for p in sent)
     assert all(p.want == "" for p in sent if p.title == "Fix the parser" and p.mode.startswith("pool."))

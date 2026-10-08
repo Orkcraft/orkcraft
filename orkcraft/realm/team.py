@@ -174,6 +174,7 @@ class Discussion:
     turns: list[Turn] = field(default_factory=list)
     exit: str = ""                  # the exit it went down, by name (a board with `exits`)
     out: str = ""                   # what went out down it: the verdict, then the document (cut)
+    notes: str = ""                 # the Wiki's pages lent with it, for the members to check claims against
     under_way: dict = field(default_factory=dict)   # the turn being taken: {"turn": role, "session": id};
     # left when it stops, so Go on reopens that very session ("" when its tool cannot name one)
 
@@ -230,6 +231,7 @@ def review_prompt(d: Discussion, me: Member, team: list[Member], brief_path: str
     others = ", ".join(m.role for m in team if m is not me) or "no one else"
     parts = [f"You are {me.role} in a clan that reviews one document before it goes on (the others: {others}).",
              f"Title: {d.title}", _brief(brief_path, brief, inline, "Your role brief"), _document(d, inline),
+             f"## Notes from the Wiki — check its claims against these\n\n{d.notes}" if d.notes else "",
              DATA_RULE,
              "You may read the repository and search the web to check what the document claims.",
              "Review it from your role only. Answer on the first line with one word:\n"
@@ -255,6 +257,30 @@ TEMPLATES = {                                 # the setup's one-click starts
     "who": ("To an agent: an agent can do it", "To a person: it needs a person's judgment or a reply"),
 }
 OUT_KEEP = 20_000                             # what went out, as the discussion keeps it
+
+
+@dataclass(frozen=True)
+class Preset:
+    """A board set up in one click: its purpose, its members (role, what it checks, tier) and its rounds."""
+    id: str
+    title: str
+    purpose: str
+    members: tuple[tuple[str, str, str], ...]
+    max_cycles: int
+    wiki: bool = False                         # its members check against the town's Wiki (config `notes`)
+
+
+# A preset is a Review board set up as one, not a building type of its own (docs/design/barracks-flows.md §6.2).
+PRESETS: dict[str, Preset] = {p.id: p for p in (
+    Preset("reply_check", "Reply check",
+           "A reply an ork drafted, before it goes out: its tone and its facts. Approve lets it go on to the Review "
+           "gate; rework sends it back to the ork that wrote it, with what to change.",
+           (("Tone", "Polite and plain, in the language of the message. No promise of a date, a price, money or a "
+                     "commitment the person did not make; nothing private about other people.", "laborer"),
+            ("Facts", "Every claim in the draft is found in the Wiki's notes lent with it or in the message and its "
+                      "thread; a claim found nowhere is marked, and the draft says it will be checked.", "laborer")),
+           max_cycles=2, wiki=True),
+)}
 
 
 def exit_id(name: str) -> str:
