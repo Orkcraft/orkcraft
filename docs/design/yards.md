@@ -180,7 +180,7 @@ Two rules make the cards' words safe on the ground itself:
 
 - **The road handle comes to the mouse.** Near a card's edge (12 px) — a yard's fence, a hut's frame — the small gate
   stands under the pointer, and a road is pulled out of it there (`js/hut.js` `edgeAt`); it never comes over a control
-  (pin, fold, a button of the card). Where the road then runs is still the router's: the gate is only where it is
+  (pin, fold, a button of the card), nor on the title bar, which moves the card (a yard's is its top fence). Where the road then runs is still the router's: the gate is only where it is
   grabbed. A built road leaves no gate: it keeps its arrow.
 - **Only the corner resizes** (the bottom-right grip, its arrows): the edges are the roads'. The ghost of the new size
   turns red over another hut, as a drag's does, and a yard's size steps in whole pickets.

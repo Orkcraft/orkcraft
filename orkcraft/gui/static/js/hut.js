@@ -304,7 +304,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
   const nearEdge = (e) => {
     const btn = road.current;
     if (!btn || e.pointerType !== "mouse" || btn.contains(e.target)) return;
-    const at = e.target.closest("button, a, input, select, textarea") ? null : edgeAt(e.currentTarget, e);   // never over a control
+    // never over a control, nor on the title bar: that moves the card (a yard's is its top fence)
+    const at = e.target.closest("button, a, input, select, textarea, .gui-hut__title") ? null : edgeAt(e.currentTarget, e);
     btn.classList.toggle("is-at", !!at);
     if (at) { btn.style.left = `${at.x}px`; btn.style.top = `${at.y}px`; }
   };
