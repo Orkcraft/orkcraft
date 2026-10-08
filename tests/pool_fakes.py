@@ -10,6 +10,8 @@ class FakeGit:
         self.commits, self.tests, self.pr, self.files = commits, tests, pr, files
         self.prepared, self.published, self.cuts, self.merges, self.checks = [], [], [], [], []
         self.conflicts: set[str] = set()      # branches whose merge conflicts (once each)
+        self.clashes: dict[frozenset, list[str]] = {}   # two branches that would conflict merged together
+        self.committed: list[tuple[str, str, str]] = []  # (branch, path, text) committed without a checkout
 
     def base_of(self, repo_root, configured=""):
         return configured or "main"
@@ -32,6 +34,13 @@ class FakeGit:
             return False, "conflicts in app.py"
         self.merges.append((into, branch))
         return True, "merged"
+
+    def would_conflict(self, repo_root, a, b):
+        return list(self.clashes.get(frozenset((a, b)), []))
+
+    def commit_file(self, repo_root, branch, path, text, message):
+        self.committed.append((branch, path, text))
+        return "c0ffee"
 
     def check(self, repo_root, branch, command, cancel, where):
         self.checks.append(branch)

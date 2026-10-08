@@ -163,6 +163,14 @@ class PoolTask:
     waits_since: float = 0.0        # asked the operator since then (epoch seconds): the autonomy says how long
     ask_kind: str = ""              # what it asks: question | rejected | persona | draft (never decided by the orks)
     retried: bool = False           # a crashed run was tried once more already
+    # Areas in work and design briefs (realm/claims.py, realm/briefs.py; docs/design/barracks-designs.md).
+    claimed: list[str] = field(default_factory=list)  # the paths it claims (a guess until its work shows them)
+    overlaps: list[dict] = field(default_factory=list)  # other tasks on its area: key, title, paths, branch, pr, …
+    held_since: float = 0.0         # waits for an older task on its area since then (epoch seconds)
+    design: str = ""                # its design brief's path, committed on its branch
+    against: list[dict] = field(default_factory=list)   # the briefs its plan goes against: {with, why}
+    pending: dict = field(default_factory=dict)         # a plan that waits for the operator on such a conflict
+    designs: list[dict] = field(default_factory=list)   # the briefs its change met: {path, state}
 
 
 @dataclass
@@ -329,8 +337,9 @@ def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: 
 
 
 def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
-                  scope: str = EXTERNAL) -> str:
-    """`scope`: what the rules decided already; "" asks the steward for a `SCOPE:` line."""
+                  scope: str = EXTERNAL, extra: str = "") -> str:
+    """`scope`: what the rules decided already; "" asks the steward for a `SCOPE:` line. `extra`: the work on the
+    same files and the design briefs the change meets (core/workers/barracks_claims.py)."""
     cut = diff if len(diff) <= DIFF_LIMIT else diff[:DIFF_LIMIT] + "\n… (cut)"
     return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge their work.",
@@ -341,6 +350,7 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         f"## The diff of its branch against {task.base or 'the base'}\n\n```diff\n{cut}\n```" if diff.strip()
         else "## The diff\n\n(nothing committed: the report is the work. That is enough when the task asks a "
              "question or for information; when it asks for changes, they had to be committed.)",
+        extra,
         "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
         "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "

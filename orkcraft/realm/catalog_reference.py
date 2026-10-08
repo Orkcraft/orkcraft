@@ -179,6 +179,12 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "base": "the branch each task is cut from and its pull request targets (default the current one)",
         "notes": "Scroll Dumps a task reads first, e.g. [\"notes\"]: the task goes to them and comes back with the "
                  "pages that matter (knowledge.chunks on a road from them) before an ork takes it",
+        "claims": "areas in work: `wait` (default) — a new task on the files an older one is building waits for it; "
+                  "`flag` — it only says so; `off`",
+        "claim_wait": "minutes a task waits for an older one on its area before it goes on, flagged (default 60)",
+        "claim_days": "days an area in work is kept when its pull request is never merged nor closed (default 14)",
+        "briefs": "false: a planned task leaves no design brief in its pull request (default true)",
+        "briefs_dir": "where design briefs are written and read (default docs/design)",
     },
     "council": {
         "steward_prompt": "the steward's brief: when to let a document go, when to send it back, when to ask you "
