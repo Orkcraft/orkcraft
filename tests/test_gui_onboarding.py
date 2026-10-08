@@ -98,8 +98,9 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     o = _raise_all(host)
     assert o["raising"]["phase"] == "done"
     assert all(b["state"] == "standing" for b in o["raising"]["buildings"])
-    assert host.town.scroll.building("analysts").hut == [0.333, 0.0]          # each stands where it was planned
     raised = {b.id for b in host.town.scroll.buildings}
+    assert host.town.scroll.building("analysts").hut == [0.333, 0.0]          # each stands where it was planned
+    assert all(host.town.scroll.building(b["id"]).folded for b in o["raising"]["buildings"])   # compact: names only
     assert {"schedule", "analysts", "report", "reports"} <= raised
     assert (fake_repo / ".claude" / "settings.json").exists()               # the Security reviewer
     host.command("onboarding.close")

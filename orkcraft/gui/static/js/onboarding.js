@@ -178,8 +178,7 @@ function TownPreview({ it, biome }) {
   return html`<${Ground} biome=${biome} className="gui-onb__town">
     ${it.buildings.map((b, i) => html`<div key=${b.key} class="gui-onb__lot">
       <div class="gui-onb__house">
-        <img class="ok-sprite" src=${headerSprite(b.type, biome)} alt="" draggable="false"
-          srcset=${`${headerSprite(b.type, biome).replace(/\.png$/, "@2x.png")} 1x`} />
+        <img class="ok-sprite" src=${headerSprite(b.type, biome)} alt="" draggable="false" />
         ${b.badges.length > 0 && html`<span class="gui-onb__badges">${b.badges.map((g) => html`<${Glyph} key=${g} id=${g} />`)}</span>`}
       </div>
       <div class="gui-onb__plate">
@@ -331,7 +330,7 @@ export function Ghost({ g, spot, biome }) {
       ${now && html`<img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
         <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>`}
     </div>
-    <div class="gui-onb__ghost-card"><span class="gui-onb__plate-name">${say(g.title)}</span>
+    <div class="gui-onb__ghost-card"><span class="gui-onb__ghost-name">${say(g.title)}</span>
       <span class="ok-font-status ok-tone-muted">${now ? "building…" : "planned"}</span></div>
   </div>`;
 }
