@@ -135,3 +135,12 @@
 .gui-panel.is-full .loot-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: var(--space-2) var(--space-4); align-items: start; }
 .gui-panel.is-full .loot-detail__top { grid-column: 1 / -1; }
 .gui-panel.is-full .loot-open .loot-what__body.gui-prose, .gui-panel.is-full .loot-open .gui-pre { max-height: none; }
+
+/* A text cart edited in the window: the person's version, then its acts. */
+.loot-edit { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.loot-edit__text { width: 100%; min-height: 240px; resize: vertical; font: 400 13px/20px var(--font-mono); }
+
+/* A file of a cart's branch, chosen: its path and Reject over its diff; the rejected ones, each with Bring it back. */
+.loot-branch-file { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.loot-branch-file__path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12px/18px var(--font-mono); }
+.loot-rejected { display: flex; align-items: center; gap: var(--space-2); min-width: 0; padding: 2px var(--space-1); font: 400 12px/18px var(--font-mono); }

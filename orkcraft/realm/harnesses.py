@@ -6,6 +6,7 @@
     h.work(prompt, workdir, model, resume)   # argv of an agent that may change files in `workdir`
     h.call(prompt, workdir, allow, model)    # argv of an agent allowed only the MCP tools in `allow` (None: it cannot)
     h.result(stdout, before)                 # (text, cost USD | None, tokens | None, session id)
+    h.outcome(stdout, before, model)         # … priced from `model` when the tool prints tokens, no price
     harnesses.main(enabled, chosen)          # the tool decisions run on: the chosen one, else the first on
     harnesses.model_on("agy", "haiku")       # a model or tier of any tool, on this one
 
@@ -16,11 +17,14 @@ through a shell. A tool that prints no price reports a cost of None, never $0.
 from __future__ import annotations
 
 import json
+import os
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable
 
 from orkcraft.env import getenv
+from orkcraft.sources import pricing
 
 MAIN = "main"                  # a step on the machine's main tool
 TIERS = ("elder", "warrior", "laborer")
@@ -73,22 +77,55 @@ def _plain_tokens(usage) -> int | None:
     return sum(vals) if vals else None
 
 
-def codex_result(stdout: str, before: int = 0) -> tuple[str, float | None, int | None, str]:
+CODEX_USAGE_KEYS = ("input_tokens", "cached_input_tokens", "cache_write_input_tokens", "output_tokens",
+                    "reasoning_output_tokens")
+
+
+def codex_usage_since(total: dict, before: dict | None) -> dict:
+    """A thread's running usage less what it had used before (key by key, never below 0)."""
+    before = before if isinstance(before, dict) else {}
+    return {k: max(int(total.get(k) or 0) - int(before.get(k) or 0), 0) for k in CODEX_USAGE_KEYS}
+
+
+def codex_config_model(env: dict | None = None) -> str:
+    """The `model` at the top of `$CODEX_HOME/config.toml` (~/.codex): what `codex exec` runs on when
+    orkcraft passes no `--model`; "" when it names none or cannot be read."""
+    env = os.environ if env is None else env
+    home = Path(env["CODEX_HOME"]) if env.get("CODEX_HOME") else Path.home() / ".codex"
+    try:
+        model = tomllib.loads((home / "config.toml").read_text(encoding="utf-8")).get("model")
+    except (OSError, ValueError):
+        return ""
+    return model.strip() if isinstance(model, str) else ""
+
+
+def codex_result(stdout: str, before: int | dict = 0, model: str = "") -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of `codex exec --json`: the last agent message, the tokens of this
-    run (cached input is part of the input) and the thread id. Codex prints no price: the cost is None,
-    never $0. Each `turn.completed.usage` is the thread's running total (openai/codex
-    `usage_from_last_total`), so the last one counts, less `before`: what the thread had already used
-    when this run resumed it (`roads.codex_thread_total`)."""
-    text, total, session = "", None, ""
+    run (cached input is part of the input) and the thread id. Each `turn.completed.usage` is the
+    thread's running total (openai/codex `usage_from_last_total`), so the last one counts, less
+    `before`: what the thread had already used when this run resumed it — its token count, or its
+    usage block (`roads.codex_thread_usage`), which also lets the run be priced.
+
+    Codex prints no price: the cost comes from `model` (the `--model` orkcraft passed, else the one in
+    Codex's config.toml) and `pricing.OPENAI_PRICES` — an API-equivalent estimate for a ChatGPT
+    login. An unknown model, or a resumed run whose earlier usage is not known, is None, never $0."""
+    text, usage, session = "", None, ""
     for event in json_lines(stdout):
         kind, item = event.get("type"), event.get("item")
         if kind == "thread.started":
             session = str(event.get("thread_id") or "")
         elif kind == "item.completed" and isinstance(item, dict) and item.get("type") == "agent_message":
             text = str(item.get("text") or "")
-        elif kind == "turn.completed" and (tokens := _plain_tokens(event.get("usage"))) is not None:
-            total = tokens
-    return text.strip(), None, None if total is None else max(total - before, 0), session
+        elif kind == "turn.completed" and _plain_tokens(event.get("usage")) is not None:
+            usage = event["usage"]
+    if usage is None:
+        return text.strip(), None, None, session
+    before_tokens = (_plain_tokens(before) or 0) if isinstance(before, dict) else int(before or 0)
+    tokens = max(_plain_tokens(usage) - before_tokens, 0)
+    cost = None
+    if isinstance(before, dict) or not before:
+        cost = pricing.codex_usage_cost(model or codex_config_model(), codex_usage_since(usage, before or None))
+    return text.strip(), cost, tokens, session
 
 
 def codex_error(stdout: str) -> str:
@@ -118,7 +155,7 @@ class Harness:
     ask_cmd: Cmd                     # (h, prompt, folder, model) → argv: a one-shot answer
     read_cmd: Cmd                    # (h, prompt, workdir, model, web) → argv: an agent that reads
     work_cmd: Cmd                    # (h, prompt, workdir, model, resume) → argv: an agent that edits workdir
-    result: Callable[[str, int], tuple[str, float | None, int | None, str]] = json_result
+    result: Callable[..., tuple[str, float | None, int | None, str]] = json_result   # (stdout, before[, model])
     error: Callable[[str], str] = lambda stdout: ""
     in_repo: bool = True             # a reading agent runs in the repository (else in an empty folder)
     resumable: bool = False          # `work(resume=…)` continues a session
@@ -135,10 +172,14 @@ class Harness:
     deploy_args: tuple[str, ...] = ()   # what goes before a first prompt in an interactive session
     env_cmd: Callable[["Harness", str, str], dict] | None = None   # (h, ask|read|work, workdir) → variables
     priced: bool = False             # its answers say what they cost
+    model_priced: bool = False       # its result is priced from the model it ran on: result(stdout, before, model)
     # (h, prompt, workdir, model, allow) → argv: an agent allowed exactly the MCP tools in `allow` and
     # nothing else, its events as JSON lines (a Catapult's carrier, docs/design/catapult-mcp.md §3).
     # None until the tool's headless mode is checked to hold to them.
     call_cmd: Cmd | None = None
+    # (session id, reopen) → what a reading agent's argv gets to name its session up front, or to reopen
+    # it after it was stopped (a Review board's Go on). None: a stopped turn starts again.
+    read_session: Callable[[str, bool], list[str]] | None = None
     extra: dict = field(default_factory=dict)
 
     @property
@@ -163,6 +204,12 @@ class Harness:
         if self.call_cmd is None:
             return None
         return self.call_cmd(self, prompt, str(workdir), model_on(self.id, model), list(allow))
+
+    def outcome(self, stdout: str, before=0, model: str = "") -> tuple[str, float | None, int | None, str]:
+        """`result`, given the model the run was asked for when the tool is priced from it."""
+        if self.model_priced:
+            return self.result(stdout, before, model_on(self.id, model))
+        return self.result(stdout, before)
 
     def stdin(self, prompt: str) -> str | None:
         return prompt if self.stdin_prompt else None
@@ -387,7 +434,8 @@ register(Harness(
     {"elder": "opus", "warrior": "sonnet", "laborer": "haiku"},
     _claude_ask, _claude_read, _claude_work,
     resumable=True, deploys=True, web=True, priced=True, mark="✻", color="bold #f59e0b",
-    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call))
+    resume_cmd=lambda h, sid: [h.bin, "--resume", sid], call_cmd=_claude_call,
+    read_session=lambda sid, reopen: ["--resume", sid] if reopen else ["--session-id", sid]))
 register(Harness(
     "agy", "Antigravity", "agy", "see antigravity.google", "agy login",
     {"elder": "gemini-3.1-pro-high", "warrior": "gemini-3.8-flash-high", "laborer": "gemini-3.8-flash-low"},
@@ -404,7 +452,7 @@ register(Harness(
     lambda h, p, w, m, web: codex_exec(h, "read-only", m, web),
     lambda h, p, w, m, r: codex_exec(h, "workspace-write", m, resume=r),
     result=codex_result, error=codex_error, resumable=True, stdin_prompt=True, deploys=True, web=True,
-    mark="⌬", color="bold #10a37f",
+    model_priced=True, mark="⌬", color="bold #10a37f",
     resume_cmd=lambda h, sid: [h.bin, "resume", sid]))
 register(Harness(
     "hermes", "Hermes Agent", "hermes", "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",

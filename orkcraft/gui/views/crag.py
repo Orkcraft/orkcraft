@@ -6,7 +6,7 @@ import time
 
 from orkcraft.core.workers.crag import fmt
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import metrics
+from orkcraft.realm import metrics, pressure
 
 REFRESH_S = 60.0              # as the TUI: it samples and carves once a minute
 THUMBS = 4                    # charts on the hut card
@@ -29,7 +29,7 @@ def probe(host) -> dict:
     for other in list(host.town.workers.values()):
         if getattr(other, "TYPE", "") == "barracks":
             busy += sum(1 for o in other.state.orcs if o.status == "working")
-    limits = [(f"{x.provider} {x.group or x.window}", (1 - x.remaining) * 100)
+    limits = [(pressure.quota_label(x), (1 - x.remaining) * 100)
               for x in host.limits() if x.remaining is not None]
     return {"orcs": busy, "limits": limits}
 

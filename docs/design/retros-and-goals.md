@@ -1,6 +1,7 @@
 # Design — retros and building goals
 
-Status: design notes, written 2026-10-03; stages 1–4 of §6 are implemented, stage 5 (calibration) is not.
+Status: design notes, written 2026-10-03; stages 1–5 of §6 are implemented (stage 5, the calibration,
+on 2026-10-07: `pressure.calibrate`).
 Builds on the self-improvement of `realm/optimize.py` (daily), `realm/weekly.py` (weekly),
 `realm/evolution.py` (the orks' own changes), the ledger of `realm/metrics.py`, the quota readers
 (`sources/limits.py`) and the 👍 / 👎 of `realm/feedback.py`.
@@ -43,11 +44,20 @@ pressure  = forecast / what the camp can still spend before that reset
 
 - **The window** is the last 24 h (the daily retro looks at today; a day is long enough for a building
   on a timer to show its rhythm).
-- **What the camp can still spend** needs tokens, but subscription quotas come as `% used`. Until the
-  calibration of stage 5 exists, it is estimated from the camp's own spend: the tokens of the window
-  divided by the quota share used in it is the camp's tokens per 100 %; times the remaining fraction is
-  what is left. When nothing is known (no quota read, an API key, a fresh camp) there is no pressure,
-  only share.
+- **What the camp can still spend** needs tokens, but subscription quotas come as `% used`. The
+  calibration (stage 5, `pressure.calibrate`) measures each quota's tokens per 1 % from what a
+  🪨 Tally Crag samples once a minute (`.orkcraft/crag/<id>/samples.jsonl`, source `limits`, by the
+  quota's name). The samples of the last 7 days split into stretches at a reset (the share falls by
+  more than a point) or a gap (more than 15 minutes between two samples, the sampling stopped). For
+  each stretch the ledger's tokens recorded inside it count against the points it climbed; tokens
+  per 1 % = Σ tokens / Σ points. It is used once a quota climbed `CALIBRATE_MIN_PCT` (10) points under
+  sampling: what is left = tokens per 1 % × points left. Until then it is estimated from the camp's
+  own spend: the tokens of the window divided by the quota share used in it is the camp's tokens per
+  100 %; times the remaining fraction is what is left. Both read every run of the ledger against one
+  provider's quota and count others' use of it as the camp's, so both are cautious. Two windows
+  that a Crag samples under one name (agy's group buckets: `agy <group>` for its 5 h and its weekly
+  window) are mixed in the samples and get no calibration. When nothing is known (no quota read, an
+  API key, a fresh camp) there is no pressure, only share.
 - **The tightest quota** is the enabled subscription limit with the least remaining (the same one the
   HUD corner shows).
 
@@ -154,5 +164,7 @@ building), it first shows up to **4** past results to rate — in all, not per b
 3. `realm/retro.py` + the survey modal before the Town retro report.
 4. The goal: `BuildingSpec.goal`, the schema, the Info-panel button, the leader by goal, `enrich`,
    the 💎→⚖️ override, `evolution.LEVEL_FOR["enrich"] = 3`.
-5. Later: calibration of tokens per 1 % of each quota from the sampled limits, for a real
-   forecast instead of the estimate of §2.
+5. Calibration of tokens per 1 % of each quota from the sampled limits, for a real forecast
+   instead of the estimate of §2 (`pressure.calibrate`, `Camp.calibrated`; the Council's line says
+   when what is left was measured). It needs a Tally Crag in the town: without one nothing is
+   sampled and the estimate stays.
