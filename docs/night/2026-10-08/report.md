@@ -59,3 +59,9 @@
 - May be broken: nothing known; critical tests, `test_gui.py`, `test_gui_pit_signpost_mill.py`, `test_gui_browser.py`, `test_gui_script_first_browser.py` green. Signpost's colour helper renamed `mark` → `tint` (it clashed with the new `mark` export and would have broken the whole Router page).
 - Question for the morning: B12 — I made a Router rule's kind *set* a kind only on a cart that has none and only *lower* one a cart came with (the rule matches on text; §5 says the text may lower a path, never raise it). The design's table says simply "its rule's". Should a rule be allowed to raise a kind (e.g. a *reply* → *code change*)?
 
+
+### P4 — build from the design-docs queue (PM + engineer)
+- Done (0c29813): **B07** landscape stage 2. When land breaks, the steward downstream looks: a landscape object's error or 👎 wake goes to the first building with an ork its roads lead to (through other land), else the Warchief (`core/wakes.py` `looker`). That steward's model and name change the object's settings (same proposal, Apply, Revert). The object's own keeper never runs (the test fails if it is called). `landscape.md` status and §11 *As built* are updated.
+- Left: B08 onward and B12's second half (a code-like reply asks the person at *Propose only*). That half changes the Agent pool's ask/answer flow, which I could not test and merge before F started.
+- May be broken: nothing known. The critical tests, `test_script_first.py`, `test_keeper.py`, `test_catalog.py` and `test_gui_wording.py` are green. A landscape wake still draws the yard's visiting ork at the object itself (stage 3 decides how land looks). The wake toasts now say who looked (*the steward of Task board woke on a 👎…*, *the Warchief…*).
+- Question for the morning: a Transformer with an `agent:` step is landscape but still thinks, so it keeps its own ork until stage 4. Should its wakes go downstream already now?
