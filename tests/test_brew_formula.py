@@ -20,21 +20,27 @@ def test_the_formula_installs_a_published_release_from_a_commit_archive():
     assert version in released
     assert re.search(r'^  url "https://github\.com/Orkcraft/orkcraft/archive/[0-9a-f]{40}\.tar\.gz"$', FORMULA, re.M)
     assert re.search(r'^  sha256 "[0-9a-f]{64}"$', FORMULA, re.M)
-    assert re.search(r'^  depends_on "python@\d+\.\d+"$', FORMULA, re.M) and "virtualenv_install_with_resources" in FORMULA
+    assert re.search(r'^  depends_on "python@\d+\.\d+"$', FORMULA, re.M) and "virtualenv_create(libexec" in FORMULA
 
 
-def test_every_resource_is_an_sdist_with_its_hash():
+def test_every_resource_is_a_pinned_download_from_pypi():
     resources = re.findall(r'resource "([^"]+)" do\n\s+url "([^"]+)"\n\s+sha256 "([0-9a-f]{64})"\n', FORMULA)
     assert len(resources) == FORMULA.count('resource "')
-    assert all(url.startswith("https://files.pythonhosted.org/") and url.endswith(".tar.gz") for _, url, _ in resources)
+    assert all(url.startswith("https://files.pythonhosted.org/") for _, url, _ in resources)
 
 
-def test_the_gui_extra_is_in_and_pyobjc_only_on_macos():
+def test_each_platform_gets_a_wheel_it_can_take_and_pyobjc_only_on_macos():
     lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
-    common, mac = brew_formula.resources(lock)
-    names = {r["name"] for r in common}
-    assert {"textual", "pywebview", "websockets", "cryptography", "segno"} <= names
-    assert {"pytest", "playwright"}.isdisjoint(names)
-    assert mac and all(r["name"].startswith("pyobjc") for r in mac)
+    wheels = brew_formula.resources(lock)
+    shared = {r["name"] for r in wheels["all"]}
+    for where in ("macos arm", "macos intel", "linux arm", "linux intel"):
+        names = shared | {r["name"] for r in wheels[where]}
+        assert {"textual", "pywebview", "websockets", "cryptography", "segno", "rpds-py"} <= names, where
+        assert {"pytest", "playwright"}.isdisjoint(names)
+        assert any(n.startswith("pyobjc") for n in names) == where.startswith("macos")
+    arm = {r["name"]: r["url"] for r in wheels["macos arm"]}
+    assert arm["cryptography"].endswith("macosx_11_0_arm64.whl") and "cp313-cp313t" not in arm["rpds-py"]
+    assert "manylinux" in {r["name"]: r["url"] for r in wheels["linux intel"]}["rpds-py"]
     text = brew_formula.render("0" * 40, "1" * 64, lock)
-    assert text.index("on_macos do") < text.index('resource "pyobjc-core"') < text.index('resource "attrs"')
+    assert text.index('resource "attrs"') < text.index("on_macos do") < text.index("on_linux do") < text.index("def install")
+    assert 'depends_on "rust" => :build' not in text.split("on_macos do")[0]   # only where an sdist is built
