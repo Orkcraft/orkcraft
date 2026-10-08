@@ -15,7 +15,8 @@ from __future__ import annotations
 
 import re
 
-SETTLE_S = 120                    # how long a new task waits on the board by default (`settle`)
+SETTLE_S = 0                      # how long a new task waits on the board by default (`settle`): it goes at once
+SETTLE_CHOICES = (0, 30, 60, 120, 300, 600)   # what the open board offers (gui: New tasks go …)
 LATER_MIN = 60                    # how long a task marked Not urgent waits (`later_minutes`)
 STRETCH = 3                       # a held task waits at most this many `settle`s after it came, joins and all
 STEM = 5                          # two words are one when they start alike: this many letters at most

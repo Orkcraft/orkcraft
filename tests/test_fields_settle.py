@@ -52,7 +52,7 @@ def board(fake_repo, isolated_layout_file, monkeypatch):
     checkpoint.ensure(fake_repo)
     host = Host(fake_repo, auto_commit=False)
     spec = buildings.type_spec(host.town, "fields")
-    spec["config"] = {**(spec.get("config") or {}), "path": "BOARD.md", "send_new": True}
+    spec["config"] = {**(spec.get("config") or {}), "path": "BOARD.md", "send_new": True, "settle": 120}
     bid = buildings.raise_spec(host.town, spec).id
     w = host.town.worker(bid)
     sent = []
@@ -83,6 +83,25 @@ def test_settle_zero_sends_at_once_as_before(board):
     w.save_config({"settle": 0})
     card = w.add(CSV, "todo")
     assert _sent(sent) == [(CSV, w.ref(card))] and not w.held(card.id)
+
+
+def test_by_default_a_new_task_goes_at_once(board):
+    w, sent = board
+    w.save_config({"settle": None})
+    card = w.add(CSV, "todo")
+    assert _sent(sent) == [(CSV, w.ref(card))] and not w.held(card.id)
+
+
+def test_the_open_board_sets_the_wait_and_what_waits_follows_it(board):
+    w, sent = board
+    card = w.add(CSV, "todo")
+    assert view.detail(w)["settle"] == 120
+    view.ACTS["settle"](w, {"seconds": 300})
+    assert w.config["settle"] == 300 and w.held(card.id) and not _sent(sent)
+    assert view.ACTS["settle"](w, {"seconds": 0})
+    assert _sent(sent) == [(CSV, w.ref(card))] and not w.held(card.id)
+    with pytest.raises(view.ActError):
+        view.ACTS["settle"](w, {"seconds": 99999})
 
 
 def test_a_related_task_joins_and_both_go_as_one(board):

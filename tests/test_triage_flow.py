@@ -162,8 +162,7 @@ def test_a_board_that_sends_new_tasks_sends_them_with_their_ref(board, monkeypat
     monkeypatch.setattr(w, "emit", lambda ev, value, title="", trail=(), ref="", route="": sent.append((ev, ref)))
     w.save_config({"send_new": True})
     card = w.add("Feedback summary", "todo")
-    assert not [e for e in sent if e[0] == "tasks.sent"] and w.held(card.id)   # it settles first (docs/design/settle-and-join.md)
-    w.release_due(time.time() + 121)
+    assert not w.held(card.id)                                # it goes at once unless the board says to wait
     assert ("tasks.sent", f"{bid}:{card.id}") in sent
 
 

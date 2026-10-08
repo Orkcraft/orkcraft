@@ -3,7 +3,7 @@ A part of `FieldsWorker` (core/workers/fields.py), its methods run with the work
 lives beside the board (realm/cardlore.py), what is related is realm/settle.py's.
 
 On a board that sends its tasks by itself (`send_new`), a new task in To Do is held for `settle` seconds
-(120 by default; 0 sends at once, as before). A related task that comes meanwhile joins it — the cards stay
+(0 by default: it goes at once; the open board's New tasks go picks a wait). A related task that comes meanwhile joins it — the cards stay
 apart on the board, ↳ marks the join — and both go as one task when the first one's time comes. A task
 marked Not urgent waits `later_minutes`. A related task that comes after its task went joins it and goes at
 once as an addition (`tasks.sent` with the first card's `ref`: a Barracks adds it to that task).
@@ -156,6 +156,21 @@ class Settle:
         lore.set_later(first, on)
         self.changed()
         return on
+
+    def set_settle(self, seconds: int) -> bool:
+        """New tasks go after `seconds` (0: at once). The tasks that wait now (not Not urgent) go by the new
+        time from when they came; at 0 they go now. True when it was kept."""
+        if not self.save_config({"settle": max(0, int(seconds))}):
+            return False
+        now = time.time()
+        for card in self.waiting():
+            if self.lore.later(card.id):
+                continue
+            came = self.lore.came(card.id) or now
+            self.lore.set_hold(card.id, came + self.settle_s)
+        self.release_due(now)
+        self.changed()
+        return True
 
     def join(self, card_id: str, first: str) -> bool:
         """Join a task to another one by hand (Join, Join with…). True when it joined."""

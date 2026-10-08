@@ -922,7 +922,7 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     server, _ = gui
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
     w = server.host.town.worker(bid)
-    w.save_config({"send_new": True, "path": "SETTLE.md"})
+    w.save_config({"send_new": True, "path": "SETTLE.md", "settle": 120})
     first = w.add("Make the CSV export", "todo")
     w.add("New design for the CSV export: the button on the right", "todo")
     w.add("Fix the login bug", "todo")
@@ -941,5 +941,10 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     joined.get_by_role("button", name="Split off").click()
     joined.wait_for(state="detached", timeout=WAIT_MS)
     assert w.held(first.id) and not w.joined_cards(first.id)
+    wait = panel.get_by_label("When new tasks go to the orks")
+    assert wait.input_value() == "120"
+    wait.select_option("0")                                   # at once: what waited goes now
+    settling.filter(has_text="goes at").first.wait_for(state="detached", timeout=WAIT_MS)
+    assert w.config["settle"] == 0 and not w.waiting()
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)

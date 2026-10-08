@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from orkcraft.core.workers.fields import card_text
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import catalog, tasklist
+from orkcraft.realm import catalog, settle, tasklist
 
 REFRESH_S = 10.0              # as the TUI: a hand edit of the board file shows within this
 COLORS = {"🟨": "yellow", "🟩": "green", "🟦": "blue", "🟥": "red", "🟪": "purple"}
@@ -83,7 +83,8 @@ def detail(w) -> dict:
                             "body": c.body, "kind": c.kind, "done": c.checked, "new": c.id not in seen, **_lore(w, c)}
                            for c in w.todos]}
     return {"mode": w.mode, "error": w.error, "lanes": lanes, "todos": todos, "plan_ok": w.lore.plan_ok,
-            "wiki": _wiki_of(w) is not None}
+            "wiki": _wiki_of(w) is not None,
+            "settle": int(w.settle_s) if w.config.get("send_new") else None, "settle_choices": list(settle.SETTLE_CHOICES)}
 
 
 def _card(w, args: dict) -> tasklist.Task:
@@ -175,6 +176,19 @@ def _later(w, args: dict) -> bool:
         raise ActError("It is not waiting to go")
     on = args.get("on")
     return w.set_later(card.id, None if on is None else bool(on))
+
+
+def _settle(w, args: dict) -> bool:
+    """New tasks go after `seconds` (0: at once) — on a board that sends its tasks by itself."""
+    if not w.config.get("send_new"):
+        raise ActError("This board does not send its tasks by itself")
+    try:
+        seconds = int(args.get("seconds"))
+    except (TypeError, ValueError):
+        raise ActError("seconds must be a number") from None
+    if not 0 <= seconds <= 3600:
+        raise ActError("seconds must be between 0 and 3600")
+    return w.set_settle(seconds)
 
 
 def _join(w, args: dict) -> bool:
@@ -276,5 +290,5 @@ def _plan_steps(w, args: dict) -> int:
 ACTS = {"add": _add, "move": _move, "edit": _edit, "color": _color, "flip": _flip, "send": _send,
         "remove": _remove, "seen": _seen, "add_lane": _add_lane, "check": _check, "mine": _mine,
         "private": _private, "context": _context, "plan_preview": _plan_preview, "plan": _plan,
-        "plan_steps": _plan_steps, "to_wiki": _to_wiki, "later": _later, "join": _join, "split": _split,
+        "plan_steps": _plan_steps, "to_wiki": _to_wiki, "later": _later, "settle": _settle, "join": _join, "split": _split,
         "apart": _apart}
