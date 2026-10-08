@@ -943,3 +943,33 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     assert w.held(first.id) and not w.joined_cards(first.id)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_them(page):
+    """docs/design/road-sound.md §2: the roads from one building into the same other one are drawn as one; a click
+    picks all of it and its card lists each, with its handler and Remove."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    link = "import('/static/js/link.js')"
+    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
+    a, b = call("town.build", {"type": "forge"}), call("town.build", {"type": "forge"})
+    events = list(dict.fromkeys(c["event"] for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler")))
+    assert len(events) >= 2
+    for event in events[:2]:
+        call("roads.lay", {"from": a, "to": b, "event": event, "handler": None})
+    pg.keyboard.press("Escape")
+    pg.wait_for_function("() => document.querySelectorAll('.gui-road').length === 1", timeout=WAIT_MS)   # one road for two
+    pg.locator(".gui-road .gui-road__hit").dispatch_event("click")
+    card = pg.locator(".gui-roadbar")
+    card.wait_for(state="visible", timeout=WAIT_MS)
+    assert "2 events" in card.locator(".gui-roadbar__head").inner_text()
+    assert card.locator(".gui-roadbar__row").count() == 2
+    if shots:
+        pg.screenshot(path=f"{shots}/road-card.png")
+    card.locator(".gui-roadbar__row").first.get_by_role("button", name="Remove").click()
+    pg.wait_for_function("() => document.querySelectorAll('.gui-roadbar__row').length === 1", timeout=WAIT_MS)
+    assert "events" not in card.locator(".gui-roadbar__head").inner_text()     # the card stays on what is left
+    card.get_by_role("button", name="Close").click()
+    card.wait_for(state="hidden", timeout=WAIT_MS)
+    for bid in (a, b):
+        call("town.demolish", {"id": bid})
