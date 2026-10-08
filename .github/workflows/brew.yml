@@ -1,7 +1,7 @@
 name: brew
 
 # A release raises __version__ on main (docs/updates.md); this points Formula/orkcraft.rb at that
-# commit: its archive's url and sha256, and the packages uv.lock pins there. `brew upgrade orkcraft`
+# commit: its archive's url and sha256, and the packages uv.lock pins there. `brew upgrade`
 # sees the release once this commit is in.
 
 on:

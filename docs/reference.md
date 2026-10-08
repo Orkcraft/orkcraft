@@ -1108,7 +1108,7 @@ macOS and Linux, with Homebrew (the repository is its own tap; docs/updates.md):
 
 ```bash
 brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
-brew install orkcraft
+brew install orkcraft/orkcraft/orkcraft
 cd your-project && orkcraft hooks install && orkcraft
 ```
 

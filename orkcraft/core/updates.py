@@ -301,8 +301,9 @@ def method(package: Path | None = None, prefix: str | None = None,
         # removed after the upgrade, so the copy restarts on the interpreter under opt/, which follows it.
         brew = which("brew") or (str(home / "bin" / "brew") if (home / "bin" / "brew").is_file() else None)
         python = str(home / "opt" / "orkcraft" / "libexec" / "bin" / "python")
-        return (Method("brew", ((brew, "update", "--quiet"), (brew, "upgrade", "orkcraft")), python=python)
-                if brew else Method("none", why="brew is not on PATH; run: brew update && brew upgrade orkcraft"))
+        name = "orkcraft/orkcraft/orkcraft"      # the full name: the tap is trusted for this formula only
+        return (Method("brew", ((brew, "update", "--quiet"), (brew, "upgrade", name)), python=python)
+                if brew else Method("none", why=f"brew is not on PATH; run: brew update && brew upgrade {name}"))
     parts = Path(prefix).parts
     if "pipx" in parts and "venvs" in parts:
         return (Method("pipx", (("pipx", "upgrade", "orkcraft"),)) if which("pipx")

@@ -170,13 +170,13 @@ def test_homebrew_upgrades_with_brew_and_restarts_under_opt(tmp_path, monkeypatc
     has = lambda name: "/opt/homebrew/bin/" + name   # noqa: E731
     brew = updates.method(pkg, prefix="/opt/homebrew/Cellar/orkcraft/0.2.1/libexec", which=has)
     assert brew.kind == "brew" and brew.steps == (("/opt/homebrew/bin/brew", "update", "--quiet"),
-                                                  ("/opt/homebrew/bin/brew", "upgrade", "orkcraft"))
+                                                  ("/opt/homebrew/bin/brew", "upgrade", "orkcraft/orkcraft/orkcraft"))
     assert brew.python == "/opt/homebrew/opt/orkcraft/libexec/bin/python"
     monkeypatch.setenv("HOMEBREW_PREFIX", "/home/linuxbrew/.linuxbrew")
     opt = updates.method(pkg, prefix="/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec", which=has)
     assert opt.kind == "brew" and opt.python == "/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec/bin/python"
     missing = updates.method(pkg, prefix="/opt/homebrew/Cellar/orkcraft/0.2.1/libexec", which=lambda n: None)
-    assert not missing.can and "brew upgrade orkcraft" in missing.why
+    assert not missing.can and "brew upgrade orkcraft/orkcraft/orkcraft" in missing.why
     runs = Runs(version="9.0.0")
     assert updates.install(brew, runs).ok and runs.calls[-1][0] == brew.python   # the new version, read under opt/
     seen = []

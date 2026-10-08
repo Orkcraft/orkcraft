@@ -37,7 +37,7 @@ With the tool that installed this copy, so its records stay right:
 
 | Installed with | Updates with |
 |---|---|
-| `brew install orkcraft` (the tap below) | `brew update && brew upgrade orkcraft` |
+| `brew install orkcraft/orkcraft/orkcraft` (the tap below) | `brew update && brew upgrade orkcraft/orkcraft/orkcraft` |
 | `pipx install "orkcraft[gui] @ git+…"` | `pipx upgrade orkcraft` |
 | `uv tool install …` | `uv tool upgrade orkcraft` |
 | `pip install "orkcraft @ git+…"` | `python -m pip install --upgrade "orkcraft @ git+…"` (the same URL) |
@@ -88,8 +88,13 @@ The repository is its own tap: [`Formula/orkcraft.rb`](../Formula/orkcraft.rb) a
 
 ```bash
 brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
-brew install orkcraft
+brew install orkcraft/orkcraft/orkcraft
 ```
+
+The full name `orkcraft/orkcraft/orkcraft` matters: since Homebrew 6 a formula from a tap that is not
+Homebrew's own loads only once it is trusted, and installing it by its full name trusts that one
+formula (not the rest of the tap). By the short name brew stops with "refusing to load formula from
+untrusted tap"; `brew trust --formula orkcraft/orkcraft/orkcraft` fixes a copy installed that way.
 
 The formula installs `orkcraft[gui]` in a virtualenv on Homebrew's Python, from the GitHub archive of
 one commit, with every Python package pinned as an sdist with its sha256 (brew builds them from
@@ -98,7 +103,7 @@ source; the pyobjc ones, for the window's WebKit, only on macOS). It is written,
 commit and hashes the archive.
 
 On a release the `brew` workflow runs it for the commit that raised `__version__` and pushes
-`Formula: orkcraft <version>` to `main`; `brew upgrade orkcraft` sees the release from then on (until
+`Formula: orkcraft <version>` to `main`; `brew upgrade` sees the release from then on (until
 then the window may offer an update that brew does not have yet: the install says the version did
 not change, and it is tried again a day later). To write it by hand, from a commit already on GitHub:
 
