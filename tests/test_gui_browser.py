@@ -189,7 +189,7 @@ def test_huts_move_until_the_person_pins_them(page):
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    hut.locator(".gui-pit__icon").wait_for(state="visible", timeout=WAIT_MS)   # the Pit's card: only its tray
+    hut.locator(".gui-hut__name").wait_for(state="visible", timeout=WAIT_MS)   # the Pit is built folded: its title bar
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
     sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
@@ -796,10 +796,10 @@ def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
     assert "no road" in stub.get_attribute("title") and pg.locator(".gui-loose").count() == 2
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/rb-7-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
     pg.mouse.up()
     pg.locator(".gui-sign", has_text="To development").and_(pg.locator(":not(.gui-loose__sign)")) \
         .wait_for(state="visible", timeout=WAIT_MS)                          # the road, signed with the exit
@@ -826,10 +826,10 @@ def test_a_signposts_route_with_no_road_is_a_stub_pulled_to_a_building(page, gui
     stub.wait_for(state="visible", timeout=WAIT_MS)
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/sp-1-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).bounding_box()
+    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + 20, steps=6)
+    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
     pg.mouse.up()
     pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
     assert pg.locator(".gui-signs .gui-sign", has_text="bugs").count() == 1 and pg.locator(".gui-modal").count() == 0
@@ -913,6 +913,76 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     assert len(stored) == 1 and "the notes, checked" in (root / stored[0].path).read_text()
     pg.keyboard.press("Escape")
     call("town.demolish", {"id": bid})
+
+
+def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
+    """docs/design/folded-cards.md: a Pit is built folded — its title bar alone; a drag held over it peeks its card
+    over the hut under it, which does not move, and the drop goes in; ▸ unfolds it, the right click folds it back.
+    `ORKCRAFT_SHOTS` keeps screenshots."""
+    pg = page
+    shots = os.environ.get("ORKCRAFT_SHOTS", "")
+    shot = (lambda name: pg.locator(".gui-town").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    pit, pool = call("town.build", {"type": "pit"}), call("town.build", {"type": "barracks"})
+    call("hut.move", {"id": pit, "x": 0.05, "y": 0.05})
+    call("hut.move", {"id": pool, "x": 0.05, "y": 0.2})
+    pg.keyboard.press("Escape")
+    hut, under = _hut(pg, pit), _hut(pg, pool)
+    pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
+    assert "is-folded" not in under.get_attribute("class")              # a Barracks is built open
+    assert hut.locator(".gui-pit__icon").count() == 0 and hut.locator(".gui-hut__name").inner_text().strip()
+    pg.wait_for_timeout(300)
+    shot("fold-1-folded")
+    below = under.bounding_box()
+    dt = pg.evaluate_handle("() => { const d = new DataTransfer(); d.setData('text/plain', 'a folded drop'); return d; }")
+    hut.locator(".gui-hut__title").dispatch_event("dragenter", {"dataTransfer": dt})
+    peek = hut.locator(".gui-hut__peek .gui-pit__icon")
+    peek.wait_for(state="visible", timeout=WAIT_MS)                     # the card peeks out…
+    assert under.bounding_box() == below                                 # …over the hut under it, which stays
+    shot("fold-2-peek")
+    hut.locator(".gui-pit__card").dispatch_event("dragover", {"dataTransfer": dt})
+    hut.locator(".gui-pit__card").dispatch_event("drop", {"dataTransfer": dt})
+    hut.locator(".gui-hut__mark", has_text="1 dropped").wait_for(state="visible", timeout=WAIT_MS)   # it went in
+    peek.wait_for(state="detached", timeout=WAIT_MS)                    # and the peek folds again
+    assert pg.locator(".gui-panel").count() == 0
+    hut.hover()
+    hut.locator(".gui-hut__fold").click()                               # ▸ unfolds it for good
+    hut.locator(".gui-pit__icon").wait_for(state="visible", timeout=WAIT_MS)
+    shot("fold-3-unfolded")
+    assert server_building(pg, pit)["pinned"] is False and pg.locator(".gui-panel").count() == 0
+    hut.locator(".gui-hut__title").click(button="right")
+    pg.locator(".gui-menu__item, [role=menuitem]", has_text="Fold the card").first.click()
+    pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
+    for bid in (pit, pool):
+        call("town.demolish", {"id": bid})
+
+
+def test_the_bare_map_and_the_warchiefs_line_fold_the_quiet_ones_and_unfold_all(page):
+    """docs/design/folded-cards.md §4: Fold the quiet ones and Unfold all on the bare map; `/fold @name`, `/unfold`."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    pool, forge = call("town.build", {"type": "barracks"}), call("town.build", {"type": "forge"})
+    call("hut.move", {"id": pool, "x": 0.05, "y": 0.05})
+    call("hut.move", {"id": forge, "x": 0.4, "y": 0.05})
+    pg.keyboard.press("Escape")
+    folded = lambda bid: pg.locator(f'.gui-hut.is-folded[data-id="{bid}"]')
+    _hut(pg, forge).wait_for(state="visible", timeout=WAIT_MS)
+    room = pg.locator(".gui-town__room").bounding_box()
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    pg.locator(".gui-menu__item", has_text="Fold the quiet ones").click()
+    folded(pool).wait_for(state="visible", timeout=WAIT_MS)
+    folded(forge).wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    assert pg.locator(".gui-menu__item", has_text="Fold the quiet ones").count() == 0     # nothing left to fold
+    pg.locator(".gui-menu__item", has_text="Unfold all").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-hut.is-folded')", timeout=WAIT_MS)
+    _line(pg, "/fold @Agent pool")
+    folded(pool).wait_for(state="visible", timeout=WAIT_MS)
+    assert folded(forge).count() == 0
+    _line(pg, "/unfold")
+    pg.wait_for_function("() => !document.querySelector('.gui-hut.is-folded')", timeout=WAIT_MS)
+    for bid in (pool, forge):
+        call("town.demolish", {"id": bid})
 
 
 def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):

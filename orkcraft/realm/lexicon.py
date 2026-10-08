@@ -127,6 +127,7 @@ TERMS: tuple[Term, ...] = (
     _t("to_discuss", "To discuss"),                                 # an item a meeting should cover
     _t("open_item", "Open item", "Open items"),                     # an item waiting for a meeting with someone
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
+    _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
     # -- building types (catalog ids): named by what they do -----------------------------------------
     _t("pit", "Drop file here", "", "The Pit"),
     _t("watchtower", "External listeners", "External listeners", "Watchtower", "Watchtowers"),

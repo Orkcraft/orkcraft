@@ -1,11 +1,12 @@
 // A modal (design-system/components.md: Dialog): the only place a primary action lives. Escape and
 // a click outside cancel it. Its head and its actions stay put; what is between them scrolls, so a long
 // report never pushes its buttons off the screen. `meta` is a quiet line under the title.
-import { useEffect } from "preact/hooks";
+import { useLayoutEffect } from "preact/hooks";
 import { html, cls } from "./html.js";
 
 export function Dialog({ title, meta, text, children, actions, onCancel, warn = false, wide = false }) {
-  useEffect(() => {
+  // Listening from the moment it is drawn: an effect after the paint missed an Escape pressed at once.
+  useLayoutEffect(() => {
     const key = (e) => { if (e.key === "Escape") onCancel(); };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);

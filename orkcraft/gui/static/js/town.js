@@ -16,6 +16,7 @@ import { settingsOpen } from "./settings.js";
 import { Hut, sizes, dragging, pulling, pullRoad, CORNER } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
+import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
 
@@ -290,7 +291,7 @@ function tidy(buildings, roads) {
   for (const [id, [x, y]] of Object.entries(spots)) command("hut.move", { id, x, y }).catch(() => {});
 }
 
-/** The right click on the bare town: Build here, Tidy up, the town's settings. */
+/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the town's settings. */
 function bareMenu(e, buildings, roads) {
   if (e.target.closest(".gui-hut, .gui-road")) return;
   const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
@@ -298,6 +299,8 @@ function bareMenu(e, buildings, roads) {
   openMenu(e, [
     { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
     buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
+    buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
+    buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
     { label: "Set up again…", hint: "AI tools · class · MCP", run: () => command("onboarding.start").catch(() => {}) },
   ]);
@@ -337,10 +340,10 @@ export function Town({ buildings, roads }) {
   }, []);
 
   // A hut stands where its full height (every part shown) would put it; the huts under one with parts
-  // hidden are lifted by what it lost.
+  // hidden, or folded, are lifted by what it lost.
   const fullSize = (b) => {
     const size = sizes.value[b.id] || { w: 240, h: 64 };
-    return { ...size, h: size.h + lost(b.id, size.h) };
+    return { ...size, h: size.h + lost(b.id, size.h, !!b.folded && b.id !== CORNER) };
   };
   const full = {};
   buildings.forEach((b, i) => {

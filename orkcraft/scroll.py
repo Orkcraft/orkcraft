@@ -196,6 +196,7 @@ class BuildingSpec:
     title: str
     icon: str = ""
     pinned: bool = False
+    folded: bool = False             # its hut shows its title bar only (docs/design/folded-cards.md)
     demolished: bool = False
     goal: str | None = None           # thrift | balance | quality — what the retros aim at; None = balance
     level: int | None = None          # 1–3, the maturity it reached (realm/growth.py); None = none yet
@@ -344,7 +345,8 @@ class TownScroll:
             g = b.get("garrison") or {}
             buildings.append(BuildingSpec(
                 id=b["id"], preset_ref=b["preset_ref"], title=b["title"], icon=b.get("icon", ""),
-                pinned=bool(b.get("pinned", False)), demolished=bool(b.get("demolished", False)),
+                pinned=bool(b.get("pinned", False)), folded=bool(b.get("folded", False)),
+                demolished=bool(b.get("demolished", False)),
                 goal=b.get("goal") if b.get("goal") in GOALS else None,
                 level=b.get("level") if b.get("level") in LEVELS else None,
                 autonomy=b.get("autonomy") if b.get("autonomy") in FREEDOMS else

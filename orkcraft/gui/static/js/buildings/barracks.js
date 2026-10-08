@@ -144,6 +144,15 @@ export function card(b) {
   </div>`;
 }
 
+/** Folded (docs/design/folded-cards.md): failed tasks first, else the orks at work, else the queue. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.failed) return { text: `✗${c.failed}`, tone: "error" };
+  if (c.active) return { text: `${c.active}/${c.max} at work` };
+  return c.queue ? { text: `${c.queue} queued` } : null;
+}
+
 // -- open --------------------------------------------------------------------------------------------
 
 const ORDER = { asked: 0, reviewing: 1, working: 2, planned: 2, planning: 3, queued: 3, blocked: 3 };

@@ -134,6 +134,25 @@ button { font: inherit; color: inherit; }
 .gui-hut__pin.is-warn { color: var(--danger); animation: gui-pin-warn .4s ease-out 2; }
 @keyframes gui-pin-warn { 50% { transform: scale(1.35); } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__pin.is-warn { animation: none; } }
+/* A folded hut (js/hut.js, docs/design/folded-cards.md): its title bar alone, ▸ by the pin; a mark says what the card
+   would have said first. A peek draws the card's inside under the title bar over the huts below, out of the flow,
+   so the hut keeps its folded size and nothing under it moves. */
+.gui-hut__fold { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 0;
+  border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); font-size: 10px; line-height: 1; cursor: pointer; }
+.gui-hut__fold:hover { color: var(--ink); background: var(--selection); }
+.gui-hut__fold:not(.is-on) { opacity: 0; }
+.gui-hut:hover .gui-hut__fold, .gui-hut:focus-within .gui-hut__fold, .gui-hut.is-selected .gui-hut__fold { opacity: 1; }
+.gui-hut__mark { flex: none; font-size: 11px; line-height: 16px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.gui-hut__mark.ok-tone-error { color: var(--danger); }
+.gui-hut__mark.ok-tone-wait { color: var(--warning); }
+.gui-town__room > .gui-hut.is-peek { z-index: 2; }
+.gui-hut__peek { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
+  background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window);
+  animation: gui-peek .15s ease-out both; }
+.gui-hut.is-selected .gui-hut__peek { border-color: var(--frame-focus); }
+.gui-hut.is-alert .gui-hut__peek { border-color: var(--alert); }
+@keyframes gui-peek { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__peek { animation: none; } }
 .gui-hut__title { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
 .gui-hut__title .ok-badge { flex: none; }
 .gui-hut__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
