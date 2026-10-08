@@ -1206,3 +1206,33 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     pg.close()
     assert not errors, "\n".join(errors)
+
+
+def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
+    """The person in the HUD's left corner (docs/design/portrait.md): its menu heads with You, Camp turns to
+    Office (no sprites, the monogram, the office theme) and back, and Do not disturb puts 🌙 on it."""
+    pg = page
+    hud = pg.locator(".gui-hud")
+    portrait = hud.locator(".gui-portrait")
+    assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
+    portrait.click()
+    menu = pg.locator(".gui-portrait__menu")
+    menu.wait_for(state="visible", timeout=WAIT_MS)
+    assert menu.locator(".gui-you__deeds").count() == 1
+    menu.get_by_role("button", name="Office", exact=True).click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+    assert pg.evaluate("document.documentElement.dataset.theme") == "office"
+    assert portrait.locator(".gui-portrait__mono").count() == 1 and pg.locator(".gui-warchief__mono").count() == 1
+    assert pg.locator(".gui-warchief__crowned").count() == 0
+    menu.get_by_role("button", name="On", exact=True).click()
+    pg.locator(".gui-portrait__dnd").wait_for(state="visible", timeout=WAIT_MS)
+    menu.get_by_role("button", name="Off", exact=True).click()
+    pg.locator(".gui-warchief__news").wait_for(state="visible", timeout=WAIT_MS)   # what gathered, said once
+    assert "While you were away" in pg.locator(".gui-warchief__news").inner_text()
+    pg.locator(".gui-warchief__news").get_by_role("button", name="Seen").click()   # a click away closes the menu
+    menu.wait_for(state="hidden", timeout=WAIT_MS)
+    portrait.click()
+    menu.get_by_role("button", name="Camp", exact=True).click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    menu.wait_for(state="hidden", timeout=WAIT_MS)

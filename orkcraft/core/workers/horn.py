@@ -1,7 +1,8 @@
 """📯 The Horn's work: which sound answers which road, and every call, heard or kept quiet.
 
 A cart down one of its roads picks its sound from the table (realm/horn.py) and plays it unless the
-horn is muted, in its quiet hours or within its cooldown; every call goes to `calls.jsonl`, and a
+horn is muted, in its quiet hours, within its cooldown or the person asked not to be disturbed
+(`town.hushed`, docs/design/portrait.md §4); every call goes to `calls.jsonl`, and a
 call that sounded goes out as `horn.sounded`. `cycle` walks a row to the next sound and plays it,
 `set_sound` gives a row a sound or an audio file, `mute` flips it.
 
@@ -150,6 +151,8 @@ class HornWorker(Worker):
             how = "muted"
         elif horn.in_quiet(self.quiet):
             how = "quiet"
+        elif getattr(self.town, "hushed", lambda: False)():
+            how = "dnd"
         elif now - self._last.get(heard_key, -1e9) < self.cooldown:
             how = "cooldown"
         else:

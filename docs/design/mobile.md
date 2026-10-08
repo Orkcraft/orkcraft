@@ -159,9 +159,10 @@ Lake's tabs, jobs or the glossary.
 
 ## 4. Office and Camp on the phone
 
-The phone follows the snapshot's `look` (the GUI sends `office` only now), as the page does, and the same rules hold
-([CLAUDE.md](../../CLAUDE.md)): every text a person reads says **ork** / **orks** and
-**orkestration**, in Camp; in Office it says the Office word of `lexicon.TERMS`. The host already
+The phone follows the snapshot's `look` (`camp` or `office`, the person's: portrait.md §3), as the page
+does, and its `portrait` (the monogram and Do not disturb, which a phone may set with `you.dnd`); the
+same rules hold ([CLAUDE.md](../../CLAUDE.md)): every text a person reads says **ork** / **orks** and
+**orkestration**, and each concept its one word of `lexicon.TERMS`, in either look. The host already
 sends what may carry emoji twice, as it is and `_plain` (`title_plain`, `hour_plain`; the toasts'
 `message_plain`), and `resources` names the HUD's four in the look's words. The app's own labels
 (Answers, Drop file here, Stop all, Lead agent) come from the glossary: `mobile.hello` will carry

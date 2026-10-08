@@ -8,7 +8,9 @@
 - Code keeps its names: identifiers, module and file names (`realm/orcs.py`, `Orc`, `orc_id`),
   CSS ids, dict keys, event ids and config values stay as they are, so settings and town scrolls
   written before keep loading.
-- **One vocabulary** (Camp and Office are merged; there are no modes). A concept keeps its Camp word
+- **One vocabulary, two looks.** Camp and Office are no longer vocabularies, only **looks** of the GUI
+  ([docs/design/portrait.md](docs/design/portrait.md) §3): Camp (the default) and Office (calm,
+  monochrome, no sprites). A look changes only how things are drawn, never a word. A concept keeps its Camp word
   when it says *who* (ork, Warchief, town, building, road, Town Hall, Renown) and has a plain word
   when it says *what a thing does, costs or risks* (External listeners, Spend, Stop all, Autonomy,
   Project file). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type

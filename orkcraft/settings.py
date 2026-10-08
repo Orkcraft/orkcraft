@@ -11,11 +11,14 @@
     s.usage, s.install_id            # anonymous usage stats: None not asked yet (core/usage.py)
     s.updates                        # auto | critical | ask: which updates install by themselves (core/updates.py)
     s.phones, s.phone_port           # the paired phones (only their tokens' hashes) and their listener's port (gui/pairing.py)
+    s.look                           # camp | office: how the GUI draws the town for this person (docs/design/portrait.md)
+    s.dnd_until                      # Do not disturb: "" off, "on" until turned off, else an ISO time (disturb.py)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
 docs/design/onboarding.md). There is one look now: `mode`, `office` and `office_days` of older
-settings files still load and are ignored, and are no longer written.
+settings files still load and are ignored, and are no longer written. `look` is not a mode: it changes
+only how the GUI draws (docs/design/portrait.md §3).
 Orkcraft never stores an API key here: `billing` only says how the CLI is paid for.
 """
 from __future__ import annotations
@@ -37,6 +40,7 @@ BILLINGS = ("subscription", "api")
 PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other", "kin")
 PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
 UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
+LOOKS = ("camp", "office")               # the GUI's two looks; camp the default
 
 
 @dataclass
@@ -67,6 +71,8 @@ class MachineSettings:
     # device token (never the token), when paired and when last seen. The Town Scroll never holds them.
     phones: list = field(default_factory=list)
     phone_port: int = 0           # the phone listener's port, kept so a paired phone finds it again; 0 not chosen
+    look: str = "camp"            # how the GUI draws the town for this person: camp | office (docs/design/portrait.md)
+    dnd_until: str = ""           # Do not disturb: "" off, "on" until turned off, else when it ends (disturb.py)
 
     def to_dict(self) -> dict:
         return {
@@ -85,6 +91,8 @@ class MachineSettings:
             "main_tool": self.main_tool,
             "phones": [dict(p) for p in self.phones],
             "phone_port": self.phone_port,
+            "look": self.look,
+            "dnd_until": self.dnd_until,
         }
 
     @classmethod
@@ -113,11 +121,22 @@ class MachineSettings:
         s.phones = clean_phones(data.get("phones"))
         port = data.get("phone_port")
         s.phone_port = port if isinstance(port, int) and not isinstance(port, bool) and 1024 <= port <= 65535 else 0
+        s.look = data["look"] if data.get("look") in LOOKS else "camp"
+        s.dnd_until = clean_dnd(data.get("dnd_until"))
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
             s.install_id = install_id if ok else uuid.uuid4().hex
         return s
+
+
+def clean_dnd(raw: object) -> str:
+    """Do not disturb as stored: "on", an ISO time it ends at, else "" (off)."""
+    if raw == "on":
+        return "on"
+    if isinstance(raw, str) and re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d)?", raw):
+        return raw
+    return ""
 
 
 def clean_phones(raw: object) -> list[dict]:

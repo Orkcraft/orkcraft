@@ -9,6 +9,7 @@ import pytest
 from websockets.asyncio.client import connect
 from websockets.exceptions import InvalidStatus
 
+from orkcraft import settings
 from orkcraft.core import buildings
 from orkcraft.gui import server as srv
 from orkcraft.gui.host import CommandError, Host
@@ -597,11 +598,18 @@ def test_a_type_registers_itself_by_its_files():
     assert views.of("no_such_type") is None and views.of("../server") is None
 
 
-def test_the_gui_has_one_look_office(fake_repo):
-    assert _host(fake_repo).snapshot()["look"] == "office"          # the phone still reads it (docs/design/mobile.md)
+def test_the_look_is_the_persons_camp_until_they_pick_office(fake_repo):
+    """Two looks, one vocabulary (docs/design/portrait.md §3): Camp unless the portrait's menu says Office,
+    kept per machine; the snapshot carries it for the page and the phone."""
+    host = _host(fake_repo)
+    assert host.snapshot()["look"] == "camp" and host.snapshot()["portrait"]["look"] == "camp"
+    host.command("you.look", {"look": "office"})
+    assert host.snapshot()["look"] == "office" and settings.load().look == "office"
+    with pytest.raises(CommandError):
+        host.command("you.look", {"look": "neon"})
     from orkcraft import cli
     with pytest.raises(SystemExit):
-        cli.main(["gui", "--look", "camp"])                         # no Camp to ask for
+        cli.main(["gui", "--look", "camp"])                         # set in the window, not on the command line
 
 
 def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_file):

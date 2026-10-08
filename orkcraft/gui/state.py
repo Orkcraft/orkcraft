@@ -1,9 +1,9 @@
 """What the GUI shows of the town, as plain data: one snapshot the page draws from.
 
 Pure functions over a `core.Town` and its roster. The host sends a fresh snapshot whenever the town
-changes; the page keeps it in signals, so only what changed is drawn again. The page has one look
-(`look` stays in the snapshot for the phone, docs/design/mobile.md): it drops pictographs and words the
-resources (`modes.RESOURCES`), and a text that may carry emoji comes twice, as it is and `_plain` (in
+changes; the page keeps it in signals, so only what changed is drawn again. The page has two looks,
+Camp and Office (`look`, the person's: docs/design/portrait.md §3; the phone reads it too); it drops
+pictographs and words the resources (`modes.RESOURCES`), and a text that may carry emoji comes twice, as it is and `_plain` (in
 today's words, without emoji: `modes.plain`). `words` are the old Camp spellings with today's words
 (`realm/lexicon.py`), for the page's labels and the town's older titles.
 
@@ -251,7 +251,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
-        "look": "office",
+        "look": town.machine.look,                 # camp | office, the person's (docs/design/portrait.md §3)
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
         "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,

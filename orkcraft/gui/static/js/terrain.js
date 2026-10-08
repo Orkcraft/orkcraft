@@ -59,9 +59,14 @@ export function terrainUrl(biome, scale = 1) {
   return url;
 }
 
-/** Lay the open orkspace's ground on the page: its colour and its glyphs. */
-export function wearGround(biome) {
+/** Lay the open orkspace's ground on the page: its colour and its glyphs; none in Office (office.css). */
+export function wearGround(biome, look = "camp") {
   const root = document.documentElement.style;
+  if (look === "office") {
+    root.removeProperty("--canvas");
+    root.removeProperty("--terrain-image");
+    return;
+  }
   root.setProperty("--canvas", (BIOMES[biome] || BIOMES.dirt).ground);
   const url = terrainUrl(biome);
   root.setProperty("--terrain-image", url ? `url("${url}")` : "none");

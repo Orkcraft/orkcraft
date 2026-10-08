@@ -4,7 +4,8 @@
     term("ork", many=True)         == "orks"
     words("Spawn Ork in the Barracks") == "Add ork in the Agent pool"
 
-Camp and Office were two vocabularies once; now there is one. A concept keeps its Camp word when it
+Camp and Office were two vocabularies once; now there is one, and they are two looks (`look.camp`,
+`look.office`) that change only how the town is drawn. A concept keeps its Camp word when it
 says *who* (the orks, the Warchief, the town, its buildings and roads, renown) and takes a plain word
 when it says *what a thing does, what it costs or what it risks* (a building's function, the spend,
 autonomy, a file). `TERMS` is the glossary (docs/reference.md shows it as a table). A concept that
@@ -64,6 +65,12 @@ TERMS: tuple[Term, ...] = (
     _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)
     _t("mascot", "mascot", "mascots"),                             # the operator's, from the onboarding
     _t("deed", "deed", "deeds"),                                   # what the camp learned to do
+    # -- you: the portrait's menu (docs/design/portrait.md) -------------------------------------------
+    _t("portrait", "portrait"),                                    # the person in the HUD's left corner
+    _t("look", "Look", "Looks"),                                   # how the town is drawn: never its words
+    _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
+    _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
+    _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview", "", "ghost"),
     _t("loot", "output", "", "loot"),

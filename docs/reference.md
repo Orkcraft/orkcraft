@@ -1110,11 +1110,17 @@ cd your-project && orkcraft hooks install && orkcraft
 
 ## Words and the look
 
-Orkcraft has one look and one vocabulary. Camp (a game) and Office (a work tool) were two, switched per
-machine, per project and by office hours; they are merged. The GUI wears Office's layout on Camp's design
-system (sprites, the orks' heads, gold); the deprecated TUI keeps the camp's ASCII. An older
-`settings.json` with `mode`, `office` and `office_days`, or an older `.orkcraft.json` with
-`preferences.mode`, still loads; those keys are ignored.
+Orkcraft has one vocabulary and, in the GUI, two looks the person picks in the portrait's menu
+(docs/design/portrait.md): **Camp**, the default (sprites, the orks' heads, the mascot, gold, flames), and
+**Office**, calm (monochrome, light or dark as the system says, no sprites, the system font). A look
+changes only how the town is drawn, never a word; it is kept per machine (`settings.json` → `look`). Camp
+and Office were once two vocabularies switched per machine, per project and by office hours; that is
+gone. The deprecated TUI keeps the camp's ASCII. An older `settings.json` with `mode`, `office` and
+`office_days`, or an older `.orkcraft.json` with `preferences.mode`, still loads; those keys are ignored.
+
+**Do not disturb** (the portrait's menu: 1 h, until morning, on): the Horn keeps its sounds, the Warchief
+does not speak first, only error toasts show and every push to a phone waits but the spend over its
+limit; the orks keep working. When it ends one line says everything that gathered.
 
 **Words** (`orkcraft/realm/lexicon.py`). A concept keeps its Camp word when it says *who*: the orks, the
 Warchief, the town and its buildings and roads, renown. It takes a plain word when it says *what a thing
