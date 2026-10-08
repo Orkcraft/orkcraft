@@ -81,6 +81,9 @@ Stored: `profile.orchestration`, `role`, `role_other`, `industry`, `industry_oth
 
 ## 4. Your AI tools
 
+The GUI's step adds **Check** per tool and a screen for a machine with no AI tool at all
+([gui-onboarding.md](gui-onboarding.md) §2); the TUI keeps this one until it is removed.
+
 Only what is installed, one row each — found in the background since the first step
 (`tools.detect` for the CLIs orkcraft leads, `tools.detect_others` for the rest: Cursor, GitHub
 Copilot, the ChatGPT app, Gemini CLI, Aider, Windsurf — a binary on PATH or their folder on
