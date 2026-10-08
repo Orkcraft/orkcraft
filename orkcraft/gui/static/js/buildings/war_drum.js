@@ -271,6 +271,7 @@ function Hours({ id, d }) {
 function Week({ id, d }) {
   const e = meeting(id, d);
   if (e) return html`<${Meeting} id=${id} d=${d} e=${e} />`;
+  const none = !d.days.some((day) => day.events.length);
   // Days in a row with nothing in them stand as one line: five "Nothing this day." pushed the next meeting off the window.
   const groups = [];
   d.days.forEach((day, i) => {
@@ -279,7 +280,7 @@ function Week({ id, d }) {
     if (empty && last && last.empty) last.days.push(day);
     else groups.push({ empty, i, days: [day] });
   });
-  return html`<div class="drum-week">${groups.map((g) => g.empty && g.days.length > 1
+  return html`<div class="drum-week">${none && html`<${Bring} id=${id} d=${d} />`}${groups.map((g) => g.empty && g.days.length > 1
     ? html`<section key=${g.days[0].date}>
         <p class="ok-list__head">${say(g.days[0].label)} – ${say(g.days[g.days.length - 1].label)}</p>
         <p class="ok-tone-muted">${say("Nothing these days.")}</p>
@@ -288,6 +289,18 @@ function Week({ id, d }) {
         <p class="ok-list__head">${say(g.days[0].label)}</p>
         <${DayRows} id=${id} day=${g.days[0]} once=${true} runs=${g.i < 2} />
       </section>`)}</div>`;
+}
+
+/** No meeting this week: how to bring a calendar in — Import calendar (a .ics file, a link, your Google
+ *  account), from its Info's page in steps (js/infopage.js). */
+function Bring({ id, d }) {
+  const has = d.has_calendar;
+  return html`<div class="drum-bring">
+    <p class="drum-bring__head">${say(has ? "No meetings this week" : "No calendar yet")}</p>
+    <p class="ok-tone-muted">${say(has ? "Bring in another calendar: a .ics file, a calendar's iCal link, or your Google account."
+      : "Import calendar brings your meetings in: a .ics file, a calendar's iCal link, or your Google account. Then the week fills, and the orks prepare a document before each meeting.")}</p>
+    <button class="ok-btn primary" onClick=${() => openInfoPage(id, { kind: "import" })}>${say("Import calendar")}</button>
+  </div>`;
 }
 
 /** A meeting open over the agenda: ← back, when and where, its document (open it or ask for it). */
@@ -448,7 +461,7 @@ function ImportLink({ b }) {
 }
 
 /** Its Info offers Import calendar beside its quick actions (the hut keeps two: New event, Prepare doc). */
-export function infoActs(b) {
+export function infoActs(b) {   // also its hut's right-click menu (js/hut.js)
   return [{ id: "calendar.import", label: "Import calendar", title: "Take in a .ics file, or subscribe to a calendar's iCal link",
             run: () => openInfoPage(b.id, { kind: "import" }) }];
 }

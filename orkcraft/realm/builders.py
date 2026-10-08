@@ -113,7 +113,8 @@ def _call(h: harnesses.Harness, prompt: str, model: str | None) -> subprocess.Co
         env = {**{k: v for k, v in os.environ.items() if not k.startswith("ORKCRAFT_")}, **h.env("ask", empty)}
         cmd = h.ask(prompt, empty, model or "")
         try:
-            return halt.run(cmd, input=h.stdin(prompt), cwd=empty, env=env, timeout=CALL_TIMEOUT_S)   # 🛑 Halt All
+            return halt.run(cmd, input=h.stdin(prompt), cwd=empty, env=env, timeout=CALL_TIMEOUT_S,   # 🛑 Halt All
+                            who=h.id, agent=True)
         except FileNotFoundError as e:
             raise tool_errors.ToolError(h.id, f"{h.title} CLI not found ({cmd[0]}) — install it or set "
                                         f"ORKCRAFT_{h.id.upper()}_BIN", kind=tool_errors.MISSING) from e

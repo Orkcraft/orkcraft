@@ -266,3 +266,23 @@ def test_jira_through_claudes_connection_in_three_steps_and_its_first_look_count
     act("add_save")
     assert w.config["feeds"] == [line.replace("every=15m ceiling=0.30 ask=mentions of me in project WEB",
                                               "every=30m ceiling=0.50 ask=mentions of me")]
+
+
+def test_the_picker_lists_claudes_connectors_as_a_way_of_its_own(bare):
+    """Add source's Through Claude (MCP): every service Claude Code has a connector for, a tile straight to
+    Claude's connection — no token, step 2 next; one that needs a login says so and stays on step 1."""
+    from orkcraft.gui.host import CommandError
+    act = lambda name, **args: bare.command("act", {"id": "tower", "act": name, "args": args})
+    w = bare.town.worker("tower")
+    adding = lambda: bare.detail("tower")["data"]["adding"]
+    act("add_open")
+    assert _until(lambda: adding()["claude_asked"])
+    assert [(c["service"], c["server"], c["status"]) for c in adding()["claude"]] == [
+        ("jira", "atlassian", "connected"), ("confluence", "atlassian", "connected"),
+        ("slack", "plugin:slack:slack", "needs a login"), ("gmail", "claude.ai Gmail", "connected")]
+    with pytest.raises(CommandError, match="run /mcp in Claude Code"):
+        act("add_via_claude", service="slack")
+    act("add_back")
+    act("add_via_claude", service="confluence")
+    a = adding()
+    assert (a["step"], a["via"], a["service"]) == ("what", "atlassian", "confluence") and w.adding.login is None

@@ -42,7 +42,11 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   road agents, Barracks orks and their steward, a Clan Fire review, the wiki's librarian, Mill and
   Workshop scripts, tests, a Catapult's browser and scouts, every model call (`realm/halt.py` kills
   each process with its children). Queues hold: the Barracks and the Catapult pause, a Mill and a
-  Clan Fire wait for the next cart or ▶. The TUI stays open.
+  Clan Fire wait for the next cart or ▶, the Wiki takes nothing in by itself until its sources change
+  again. The TUI stays open. Every process orkcraft starts for work goes through one list
+  (`realm/halt.py`: who runs it, whether it is an agent): Stop all kills from it, and the HUD's
+  agent count (*Agents* in the GUI, 🥩 in the TUI) counts every agent in it — a librarian, a review,
+  a road's handler, a Mill step — with the War Tent's sessions.
   Textual's command palette moved to `ctrl+k`.
 - **The Console** (lower RTS console 33/33/33):
   - **War Map** (left): camp / orkspaces (F1–F8, biomes, alerts marker `❓`), creation hint `[N]`.
@@ -470,11 +474,18 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `updated`, `owner`) and an answering first paragraph: what grep hits. `CLAUDE.md` and
   `AGENTS.md` at the wiki's root point agents in. Ingest takes a module at a time (sources
   grouped by folder, ≤60 per run) and goes on by itself until all are in.
-- **Ingest runs by itself** once the sources have stayed unchanged for a while (`auto_ingest`,
-  default on; `ORKCRAFT_WIKI_AUTO=0` turns it off everywhere). What is new is judged by content
+- **Ingest runs by itself only when a source really changed** since the librarian last saw it, and
+  once the sources have stayed unchanged for a while (`auto_ingest`, default on; `ORKCRAFT_WIKI_AUTO=0`
+  turns it off everywhere). What waited when the wiki was first seen, what a run already tried (it was
+  stopped or failed) and what waited when **Stop all** came start nothing by themselves: *Take in*
+  starts them, or a new change in the sources. What is new is judged by content
   (a hash, a git blob, a page version), not by mtime; a source that fails to answer (Confluence
   down, a revision gone) never makes its pages "gone"; a source unreadable right now waits for the
   next run, and you are told. `x` stops the librarian; the manifest moves on only on success.
+- **Looking only reads.** The Wiki looks at its sources and pages every 30 s and when its window
+  opens; a look writes nothing — no source, no page, no rules file. Pages are written by a run of the
+  librarian, a Quick note (its meeting's page) and the buttons; the sources stay read-only (the
+  librarian may write only in the wiki's folder; a folder outside the project is read with edits denied).
 - **Pages are shared.** A page with `owner: human` in its front matter (or `<!-- manual -->`) is
   the people's: the librarian reads it and writes suggestions in `proposals.md`; if it touches the
   page anyway the harness puts it back and says so. A page with edits not yet committed is
@@ -494,15 +505,15 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   `@Wiki` names the wiki when the town has several.
 - **Meetings.** A note that names a meeting of a Calendar (War Drum) — by its day, a person, its
   words — or that names only a person, lands under **To discuss** on the meeting's page
-  (`pages/meetings/`, written at once and committed alone); a person ticks items off there. When the
+  (`pages/meetings/`, written when the note is kept and committed alone); a person ticks items off there. When the
   Calendar asks for the meeting's brief (`meeting soon`, `[meet:<id>]`), the Wiki hands over that
   page first; after the meeting what was not ticked moves on to the next meeting with the same
-  person. The window lists what the coming meetings should cover; the card counts the next one's.
+  person (at the next note or take-in: a look writes no page). The window lists what the coming meetings should cover; the card counts the next one's.
   The Calendar says it too, beside each meeting the Wiki keeps items for: *from the Wiki: 2 to
   discuss* in its window (and *· 3 pages*, the pages the notes link, once the brief is back), *✎ 2*
   on its card.
-- **Quality check** (`check`: `weekly` by default, `daily`, `ingest`, `off`): the librarian's lint on a
-  schedule, one line per problem with its kind; rules look at every refresh, no model, for links to
+- **Quality check** (`check`: `off` by default, `weekly`, `daily`, `ingest`): the librarian's lint on a
+  schedule you turn on, skipped while no page changed since the last check, one line per problem with its kind; rules look at every refresh, no model, for links to
   nowhere, pages missing from their section's index and pages without front matter. The window shows
   what was found, *Fix links and indexes*, the next check and the last cost; the card the count.
 - **Search** over the window's lists: the pages and the sources' notes, by name first, then by the

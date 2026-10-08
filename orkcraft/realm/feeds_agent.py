@@ -173,7 +173,7 @@ def look(feed: Feed, since: str = "", seen: list[str] | None = None, run: Callab
     for attempt in (1, 2):
         cmd = argv(feed, prompt(feed, since, list(seen or []), keep))
         try:
-            proc = run(cmd) if run is not None else halt.run(cmd, input="", timeout=TIMEOUT_S)
+            proc = run(cmd) if run is not None else halt.run(cmd, input="", timeout=TIMEOUT_S, who="feeds", agent=True)
         except FileNotFoundError:
             return Look(error="agent: Claude Code is not installed here", kind="target")
         except subprocess.TimeoutExpired:

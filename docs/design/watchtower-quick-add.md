@@ -7,7 +7,7 @@ and Figma (§5), the failure kinds with **Log in again** and **Edit** (§8), **E
 GitHub, Slack, Discord, Jira, Confluence and Gmail, Remove in Sources & intent, and the agent source's
 listening (§7: the `agent:` line, its look, cost, ceiling and failures, the ids it keeps for the next
 look) and the agent source in the picker (§7.3: the tiles, *Use Claude's connection*, its step 2 and
-Edit). Not yet: what the login reaches and step 2 listed through the agent (§7.3), agy as a carrier, Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
+Edit; and since 2026-10-08 a group of its own, *Through Claude (MCP)*, a tile per connector Claude Code has, straight to step 2). Not yet: what the login reaches and step 2 listed through the agent (§7.3), agy as a carrier, Figma's whole team (needs push), `gh auth login --web` in the GUI's terminal
 panel (GitHub without gh asks for a token instead), pushes (GitLab's webhook, Discord's Gateway). Items
 marked *(check)* have not been verified against the live services yet. It is the near, hand-held half of
 [watchtower-automation.md](watchtower-automation.md): that plan removes the person from the loop

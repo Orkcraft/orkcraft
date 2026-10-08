@@ -1,8 +1,11 @@
 """🗑️ Scroll Dump's work: the librarian ork that keeps one LLM wiki from read-only sources
 (realm/wiki.py), and the spot-checks of what it wrote.
 
-`refresh()` looks at the sources and the wiki: what changed goes out as `knowledge.changed`, and
-a backlog that has settled for `SETTLE_S` is taken in by itself (`auto_ingest`). `ingest()` and
+`refresh()` looks at the sources and the wiki and only reads (docs/design/wiki-librarian.md §12): what
+changed goes out as `knowledge.changed`, and a source that really changed since the librarian last saw
+it (`_untried`: its fingerprint against `auto.json`) is taken in by itself once the sources settled for
+`SETTLE_S` (`auto_ingest`). What was pending when the wiki was first seen, what a run already tried
+(stopped or failed) and what waited when 🛑 Stop all came waits for the button. `ingest()` and
 `lint()` run the librarian in a thread (`running` says which); `finish` puts back the pages
 people own, commits the wiki, logs the job, sends `wiki.updated` / `wiki.linted` and asks for a
 spot-check: by the Clan Fire named in `council`, else as `wiki.review`; an approved one brings the
@@ -14,6 +17,7 @@ reads it first (`notes`) hands it a task directly. What it lent last shows on it
 from __future__ import annotations
 
 import functools
+import json
 import os
 import random
 import threading
@@ -64,6 +68,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         self.manual: set[str] = set()            # root-relative pages people own
         self.reviewing = False
         self._fingerprints: dict[str, str] = {}
+        self._tried: dict[str, str] | None = None   # a source → the fingerprint a run (or the first look) saw
         self._mtimes: dict[str, str] | None = None
         self._settled: tuple = ((), 0.0)          # (what was pending, since when)
         self._library: lore.Library | None = None
@@ -122,7 +127,9 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         self.refresh()
 
     def halt(self) -> int:
-        """🛑 Halt All (and leaving): the librarian and a spot-check stop."""
+        """🛑 Halt All (and leaving): the librarian and a spot-check stop, and what waits is not taken in by
+        itself: only a new change in the sources, or the button, starts the librarian again."""
+        self._try(self._pending_prints())
         n = 0
         for c in (self._cancel, self._review_cancel):
             if c is not None and not c.is_set():
@@ -157,21 +164,65 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
                 if self._mtimes.get(path) != stamp:
                     self.emit("knowledge.changed", path, path)
         self._mtimes = now
-        try:
-            self.keep_agenda()
-        except (OSError, ValueError) as e:                   # the meetings must not stop the wiki
-            self.last_note = f"the meetings' pages: {e}"
+        self._keep_agenda(write=False)                       # a look only reads: the pages wait for a person
         self.changed()
         key = (tuple(self.pending.new), tuple(self.pending.changed), tuple(self.pending.gone))
         if key != self._settled[0]:
             self._settled = (key, time.monotonic())
         settled = time.monotonic() - self._settled[1] >= SETTLE_S
-        if self.pending and settled and self.auto and not self.running and not self.last_error:
+        if self._tried is None:
+            self._load_tried()
+        if self.pending and settled and self.auto and not self.running and not self.last_error and self._untried():
             self.ingest("auto")
         try:
             self.keep_quality()                              # the scheduled quality check, when it is due
         except OSError:
             pass
+
+    def _keep_agenda(self, write: bool = True) -> None:
+        try:
+            self.keep_agenda(write=write)
+        except (OSError, ValueError) as e:                   # the meetings must not stop the wiki
+            self.last_note = f"the meetings' pages: {e}"
+
+    # -- what starts the librarian by itself ------------------------------------------------------
+
+    def _auto_file(self) -> Path:
+        return self.state_dir / "auto.json"
+
+    def _pending_prints(self) -> dict[str, str]:
+        """Each source that waits, with its fingerprint now ("gone" for one that went)."""
+        p = self.pending
+        return {**{x: self._fingerprints.get(x, "") for x in (*p.new, *p.changed)}, **{x: "gone" for x in p.gone}}
+
+    def _load_tried(self) -> None:
+        """What the librarian saw last; a wiki seen for the first time takes what waits now as seen (a backlog
+        is the button's, never a surprise spend)."""
+        try:
+            data = json.loads(self._auto_file().read_text(encoding="utf-8"))
+            self._tried = {str(k): str(v) for k, v in (data.get("tried") or {}).items()}
+        except (OSError, ValueError, AttributeError):
+            self._tried = {}
+            self._try(self._pending_prints())
+
+    def _try(self, prints: dict[str, str]) -> None:
+        """These sources, as they are now, were tried (or held): they start nothing by themselves again."""
+        if self._tried is None:
+            self._load_tried()
+        new = {k: v for k, v in prints.items() if self._tried.get(k) != v}
+        if not new and self._auto_file().exists():
+            return
+        self._tried.update(new)
+        try:
+            self._auto_file().parent.mkdir(parents=True, exist_ok=True)
+            self._auto_file().write_text(json.dumps({"tried": self._tried}, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+    def _untried(self) -> bool:
+        """A source changed since the librarian (or the first look, or Stop all) last saw it."""
+        tried = self._tried or {}
+        return any(tried.get(k) != v for k, v in self._pending_prints().items())
 
     def read(self, rel: str, page: bool = False) -> str:
         """A page of the wiki or a document of the sources, as Markdown (code fenced)."""
@@ -274,6 +325,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
                 raise ValueError(problem)
         else:
             self.refresh()
+        self._keep_agenda()                                 # the person's note: its meeting's page now
         self.emit("wiki.noted", path, " ".join(text.split())[:80])
         if take_in and self.pending and not self.running:
             self.ingest("note")
@@ -297,6 +349,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
                 raise ValueError(problem)
         else:
             self.refresh()
+        self._keep_agenda()
         self.emit("wiki.noted", rel, f"{source}: {name[:70]}")
         if self.pending and not self.running:
             self.ingest("note")
@@ -345,6 +398,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         if not items:
             return False
         prints = dict(self._fingerprints)
+        self._try({i.source: "gone" if i.status == "gone" else prints.get(i.source, "") for i in items})
         start = wiki.load_manifest(self.wiki_root)
 
         def taken() -> None:
@@ -461,6 +515,9 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
             self.last_error = job.error
             self.toast(job.error, title=f"📜 The {what} failed", severity="error")
         self.refresh()
+        self.checked()
+        if ok:
+            self._keep_agenda()                             # the run wrote the wiki: the meetings' pages with it
 
     def ask_review(self, sha: str) -> bool:
         """A sample of the pages an ingest wrote, spot-checked: by the Council named in `council`

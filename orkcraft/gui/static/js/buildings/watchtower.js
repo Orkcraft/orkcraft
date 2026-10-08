@@ -1,10 +1,11 @@
 // 🗼 Watchtower: what comes in from outside (core/workers/watchtower.py). Closed: how many are new, a
 // counter per source (a failing one marked), the newest message in the foot. Open, made for the half
-// panel: a chip per source with what is new in it (it filters the feed), when it last looked, Open new,
-// Read all and Check now; a failing source says why; the feed one line per unread signal (Read too adds the
-// read ones), a signal opening over
+// panel: a chip per source with what is new in it (it filters the feed), when it last looked, Add source,
+// Open new, Read all and Check now; a failing source says why; the feed one line per message — its source's
+// glyph, who, the start of its text, when, read or not (Only unread hides the read) — a signal opening over
 // it to be read in full (← back); the sources and the intent open the same way, from Sources & intent, and so
-// does Add a source (+), which a tower with no source opens on (watchtower_add.js) — never a dialog.
+// does Add source, which a tower with no source opens on (watchtower_add.js, the panel's ← Back back to the
+// list) — never a dialog. Sources but nothing in yet: a hint, Check now and Add source.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -18,7 +19,7 @@ import { Places } from "./watchtower_places.js";
 const source = signal({});         // building id → the source whose feed shows ("" all)
 const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
 const opened = signal({});         // building id → the key of the signal read over the feed
-const readToo = signal({});        // building id → the feed shows the read ones too (else only the unread)
+const unreadOnly = signal({});     // building id → the feed hides the read ones (else every message)
 
 const read = (id, key) => {
   opened.value = { ...opened.value, [id]: key };
@@ -45,7 +46,7 @@ export function card(b) {
     return html`<div class="gui-hut__body-in">
       <div class="gui-hut__big">${say("No sources")}<small>${say("yet")}</small></div>
       <button class="ok-btn primary gui-tower__add" onPointerDown=${(e) => e.stopPropagation()}
-        onClick=${(e) => { e.stopPropagation(); tab.value = { ...tab.value, [b.id]: "add" }; openBuilding(b.id, "work"); }}>+ Add a source</button>
+        onClick=${(e) => { e.stopPropagation(); tab.value = { ...tab.value, [b.id]: "add" }; openBuilding(b.id, "work"); }}>+ ${say("Add source")}</button>
       <div class="gui-hut__text ok-tone-muted">${say("Mail, GitHub, Slack, Jira, Figma…")}</div>
     </div>`;
   }
@@ -98,12 +99,15 @@ function Failing({ id, listed }) {
     <span>✗ <b>${x.label}</b> ${say("is failing")}: ${x.why}</span> <${Fix} id=${id} x=${x} /></p>`);
 }
 
+const addSource = (id) => { tab.value = { ...tab.value, [id]: "add" }; opened.value = { ...opened.value, [id]: null }; };
+
 const shownTab = (id, d) => tab.value[id] || (d.sources.length ? "signals" : "add");
 
 function Sources({ id, d }) {
   if (!d.sources.length) return null;          // nothing to filter or check yet: the feed pane is Add a source
   const pick = source.value[id] || "";
   const on = shownTab(id, d);
+  if (on === "add") return null;                // Add source fills the Work tab; the panel's ← Back is the way out
   const choose = (key) => {
     source.value = { ...source.value, [id]: key };
     tab.value = { ...tab.value, [id]: "signals" };
@@ -119,16 +123,15 @@ function Sources({ id, d }) {
     <div class="gui-tower__chips" role="group" aria-label=${say("Show the signals of")}>
       ${chip("", say("all"), d.new, "")}
       ${d.sources.map((s) => chip(s.id, s.label, s.new, s.why))}
-      <button class=${cls("ok-chip gui-tower__plus", { "is-on": on === "add" })} title=${say("Add a source")} aria-label=${say("Add a source")}
-        onClick=${() => { tab.value = { ...tab.value, [id]: "add" }; }}>+</button>
     </div>
     <div class="gui-tower__bar">
+      <button class="ok-btn primary gui-tower__addsrc" onClick=${() => addSource(id)}>+ ${say("Add source")}</button>
       <span class="gui-tower__state" title=${state}>${state}</span>
       <button class=${cls("ok-btn", { "is-pressed": on === "settings" })} aria-pressed=${on === "settings"}
         onClick=${() => { tab.value = { ...tab.value, [id]: on === "settings" ? "signals" : "settings" }; }}>${say("Sources & intent")}</button>
       <button class="ok-btn" onClick=${() => act(id, "check_now").catch(() => {})}>${say("Check now")}</button>
       <button class="ok-btn" onClick=${() => act(id, "read_all", { source: pick }).catch(() => {})}>${say("Read all")}</button>
-      <button class="ok-btn primary" disabled=${!d.new} onClick=${() => act(id, "open_new").then((key) => { if (key) opened.value = { ...opened.value, [id]: key }; }, () => {})}>${say("Open new")}</button>
+      <button class="ok-btn" disabled=${!d.new} onClick=${() => act(id, "open_new").then((key) => { if (key) opened.value = { ...opened.value, [id]: key }; }, () => {})}>${say("Open new")}</button>
     </div>
     <${Failing} id=${id} listed=${d.listed} />
     ${d.error && html`<p class="gui-tower__failing ok-tone-error">✗ ${d.error}</p>`}
@@ -140,29 +143,41 @@ function Sources({ id, d }) {
 function Row({ id, s }) {
   return html`<li><button class=${cls("gui-tower__row", { "is-read": s.read, "is-out": s.kept === false })}
       title=${s.why || s.title} onClick=${() => read(id, s.key)}>
-    <span class="gui-tower__dot">${s.read ? "" : html`<span class="ok-tone-fire" aria-label=${say("new")}>●</span>`}</span>
-    <span class="gui-tower__src">${s.label}</span>
+    <span class="gui-tower__dot">${s.read ? html`<span class="ok-tone-muted" title=${say("read")} aria-label=${say("read")}>✓</span>`
+      : html`<span class="ok-tone-fire" title=${say("new")} aria-label=${say("new")}>●</span>`}</span>
+    <span class="gui-tower__src" title=${s.label}><${Glyph} service=${s.source} /><span class="gui-tower__src-name">${s.label}</span></span>
     <span class="gui-tower__what">${s.from && html`<b>${s.from}</b> · `}${s.title}</span>
     <span class="gui-tower__at">${s.at.slice(5)}</span></button></li>`;
 }
 
-/** The feed: every unread signal, newest first; Read too adds the read ones (docs/design/watchtower-automation.md §2 H,
- *  What is read: opened here, or marked by Read all / Open new — a road taking it on does not read it). */
+/** Sources, but nothing came in from any yet: what happens next, Check now, Add source. */
+function Waiting({ id }) {
+  return html`<div class="gui-tower__empty gui-tower__waiting">
+    <p class="gui-tower__waiting-head">${say("No messages yet")}</p>
+    <p class="ok-tone-muted">${say("The tower looks every 2 minutes; each new message lands here — who sent it, how it starts, when. Check now looks at once; Add source listens to one more place.")}</p>
+    <div class="gui-tower__waiting-acts">
+      <button class="ok-btn primary" onClick=${() => addSource(id)}>+ ${say("Add source")}</button>
+      <button class="ok-btn" onClick=${() => act(id, "check_now").catch(() => {})}>${say("Check now")}</button></div></div>`;
+}
+
+/** The feed: every message, newest first, the unread marked; Only unread hides the read ones
+ *  (docs/design/watchtower-automation.md §2 H, What is read: opened here, or marked by Read all / Open new — a
+ *  road taking it on does not read it). */
 function Feed({ id, d }) {
+  if (!d.signals.length) return html`<${Waiting} id=${id} />`;
   const pick = source.value[id] || "";
-  const all = readToo.value[id];
+  const only = unreadOnly.value[id];
   const here = d.signals.filter((s) => !pick || s.source === pick);
-  const rows = all ? here : here.filter((s) => !s.read);
-  const read = here.length - here.filter((s) => !s.read).length;
-  const toggle = read > 0 && html`<button class=${cls("ok-btn gui-tower__readtoo", { "is-pressed": all })} aria-pressed=${!!all}
-      onClick=${() => { readToo.value = { ...readToo.value, [id]: !all }; }}>${all ? say("Only unread") : `${say("Read too")} · ${read}`}</button>`;
+  const unread = here.filter((s) => !s.read).length;
+  const rows = only ? here.filter((s) => !s.read) : here;
+  const toggle = here.length > unread && html`<button class=${cls("ok-btn gui-tower__readtoo", { "is-pressed": only })} aria-pressed=${!!only}
+      onClick=${() => { unreadOnly.value = { ...unreadOnly.value, [id]: !only }; }}>${only ? say("Show all") : say("Only unread")}</button>`;
   if (!rows.length) {
     return html`<div class="gui-tower__empty">
-      <p class="ok-tone-muted">${say(!d.sources.length ? "No source yet — Sources & intent says what to listen to."
-        : here.length ? "✓ All read — nothing new." : "Nothing here yet — Check now looks again.")}</p>${toggle}</div>`;
+      <p class="ok-tone-muted">${say(here.length ? "✓ All read — nothing new." : "Nothing from this source yet — Check now looks again.")}</p>${toggle}</div>`;
   }
   return html`<div class="gui-tower__list">
-    <p class="ok-list__head gui-tower__count-head">${all ? `${say("All")} · ${rows.length}` : `${say("Unread")} · ${rows.length}`}${toggle}</p>
+    <p class="ok-list__head gui-tower__count-head">${only ? `${say("Unread")} · ${rows.length}` : `${say("Messages")} · ${rows.length}${unread ? ` · ${unread} ${say("new")}` : ""}`}${toggle}</p>
     <ul class="gui-tower__rows">${rows.map((s) => html`<${Row} key=${s.key} id=${id} s=${s} />`)}</ul></div>`;
 }
 
@@ -203,7 +218,7 @@ function Settings({ id, d }) {
     </div>
     ${d.intent_error && html`<p class="ok-tone-error">${d.intent_error}</p>`}
     <div class="gui-head"><p class="ok-list__head" style="flex: 1">Sources · ${d.listed.length}</p>
-      <button class="ok-btn primary" onClick=${() => { tab.value = { ...tab.value, [id]: "add" }; }}>+ Add a source</button></div>
+      <button class="ok-btn primary" onClick=${() => addSource(id)}>+ Add source</button></div>
     <ul class="gui-tower__sources">
       ${d.listed.map((x) => html`<li key=${x.id} class=${cls("gui-tower__source", { "is-bad": !!x.why })}>
         <${Glyph} service=${x.kind} big=${true} />

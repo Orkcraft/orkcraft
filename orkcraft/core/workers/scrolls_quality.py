@@ -2,15 +2,17 @@
 its methods run with the worker as `self`.
 
 At every refresh the rules look over the pages (realm/wikicheck.py, cached until a page changes), and
-`keep_quality` starts the librarian's lint when `check` says it is due: `weekly` (default) or `daily`
-since the last check — the clock starts when the wiki is first seen, so a new setting never spends at
-once —, `ingest` after each take-in, `off` never. A check counts from when it starts, so a failing one
-is not retried before its time. `check_now` and `fix` (links and indexes, what the rules found) are the
-person's. The state is `quality.json`: `seen` and `last`.
+`keep_quality` starts the librarian's lint when `check` says it is due: `off` (default) never, `weekly`
+or `daily` since the last check — the clock starts when the wiki is first seen, so a new setting never
+spends at once —, `ingest` after each take-in; and a due check is skipped while no page changed since
+the last one ended (`pages`, a fingerprint of the pages' paths and times). A check counts from when it
+starts, so a failing one is not retried before its time. `check_now` and `fix` (links and indexes,
+what the rules found) are the person's. The state is `quality.json`: `seen`, `last` and `pages`.
 """
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 
 from orkcraft.realm import wikicheck
@@ -28,6 +30,7 @@ def _at(text: str) -> dt.datetime | None:
 class QualityMixin:
     _rules_key: tuple = ()
     _rules: list = []
+    _checking = False                              # a check runs now (its pages are noted when it ends)
     _ingested = False                              # a take-in finished since the last check (`check: ingest`)
     quality_total = 0                              # the problems as of the last refresh (the card's)
 
@@ -78,7 +81,7 @@ class QualityMixin:
         check = self.check
         due = (check == "ingest" and self._ingested) or \
             wikicheck.due(check, _at(state.get("last")) or _at(state.get("seen")), now)
-        if not due or self.out_of_gold():
+        if not due or state.get("pages") == self._pages_key() or self.out_of_gold():
             return False
         return self._start_check("schedule" if check != "ingest" else "ingest", now)
 
@@ -92,7 +95,21 @@ class QualityMixin:
             state = self.load_quality()
             state["last"] = now.isoformat(timespec="seconds")
             self._save_quality(state)
+            self._checking = True
         return started
+
+    def checked(self) -> None:
+        """A check ended: the pages as it left them are the ones checked (`finish` calls it)."""
+        if self._checking:
+            self._checking = False
+            state = self.load_quality()
+            state["pages"] = self._pages_key()
+            self._save_quality(state)
+
+    def _pages_key(self) -> str:
+        """The pages as they are now (paths and times): a check of the same pages is not run again."""
+        rows = "\n".join(f"{n.path}\t{n.mtime}" for n in sorted(self.pages, key=lambda n: n.path))
+        return hashlib.sha1(rows.encode("utf-8")).hexdigest()[:16]
 
     def fix(self) -> bool:
         """The librarian fixes the links and indexes the rules found; True when it started."""

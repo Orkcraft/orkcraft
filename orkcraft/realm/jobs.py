@@ -56,9 +56,10 @@ def now_iso() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
-def _wait(proc: subprocess.Popen, cancel: threading.Event, timeout_s: int) -> None:
+def _wait(proc: subprocess.Popen, cancel: threading.Event, timeout_s: int, who: str = "",
+          agent: bool = False) -> None:
     """Until it ends, `cancel` is set (InterruptedError) or the time is up; 🛑 Halt All kills it (Halted)."""
-    halt.started(proc)
+    halt.started(proc, who, agent)
     try:
         _wait_for(proc, cancel, timeout_s)
     finally:
@@ -128,7 +129,8 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s), harness)
+                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
+                                    harness)
     if code != 0:
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
@@ -151,7 +153,8 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
     code, out, err = roads.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s), harness)
+                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
+                                    harness)
     if code != 0:
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)

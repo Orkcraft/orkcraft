@@ -142,9 +142,12 @@ export function buildingMenu(e, b) {
   here.add(CORNER);
   const among = t.buildings.filter((x) => x.id !== b.id && here.has(x.id)).map((x) => x.id);
   const name = say(b.title);
+  const mod = b.page ? typeModule(b.type) : null;
+  const own = mod && mod.infoActs ? mod.infoActs(b) : [];        // what only its type offers (Import calendar)
   openMenu(e, [
     { label: "Open", hint: "click", run: () => openBuilding(b.id, "work") },
     { label: "Info", run: () => openBuilding(b.id, "info") },
+    ...own.map((a) => ({ label: a.label, run: a.run })),
     "-",
     { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },

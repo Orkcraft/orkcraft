@@ -22,7 +22,7 @@ from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, lexicon, modes, pipes
+from orkcraft.realm import catalog, halt, lexicon, modes, pipes
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -201,6 +201,12 @@ def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
     return out
 
 
+def agents_working(muster: Muster) -> int:
+    """The agents at work now: the roster's (War Tent sessions, orks marked busy) and every agent process the
+    buildings run (realm/halt.py: a librarian, a review, a road's handler, a Mill step…)."""
+    return muster.roster.working + halt.agents()
+
+
 def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None) -> dict[str, Any]:
     gold, gold_level, lumber, lumber_level = treasury.resources()
     quota, quota_level, show_gold = tr.quota(town.machine, limits or [])
@@ -209,7 +215,7 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "lumber": lumber, "lumber_level": lumber_level,
         "quota": quota, "quota_level": quota_level,
         "supply": muster.roster.active, "supply_max": town.scroll.budget.supply_max_workers,
-        "agents_working": muster.roster.working, "agents": len(muster.roster.agents),
+        "agents_working": (working := agents_working(muster)), "agents": max(len(muster.roster.agents), working),
         "alerts": len(muster.roster.alerts),
         "hour": (hour := schedule.status(town.machine)),
         "hour_plain": modes.plain(hour),
