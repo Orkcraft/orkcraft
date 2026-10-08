@@ -99,6 +99,20 @@ def server_building(pg, bid: str) -> dict:
     return pg.evaluate("id => import('/static/js/link.js').then(m => m.command('info', { id }))", bid)
 
 
+def _drop_at(pg, bid: str) -> tuple[float, float]:
+    """A point on the hut's title the person can see: a hut placed under another one's card shows only part of it."""
+    hit = pg.evaluate("""id => {
+      const el = document.querySelector(`.gui-hut[data-id="${id}"] .gui-hut__title`);
+      const r = el.getBoundingClientRect();
+      for (let x = r.right - 4; x > r.left; x -= 6) {
+        const y = r.top + r.height / 2, top = document.elementFromPoint(x, y);
+        if (top && top.closest('.gui-hut') && top.closest('.gui-hut').dataset.id === id) return [x, y];
+      }
+      return [r.left + r.width / 2, r.top + r.height / 2];
+    }""", bid)
+    return hit[0], hit[1]
+
+
 def _hut(pg, bid: str):
     return pg.locator(f'.gui-hut[data-id="{bid}"]')
 
@@ -837,10 +851,10 @@ def test_a_review_boards_exit_with_no_road_is_a_stub_pulled_to_a_building(page):
     assert "no road" in stub.get_attribute("title") and pg.locator(".gui-loose").count() == 2
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/rb-7-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
+    s, (tx, ty) = stub.locator(".gui-loose__stub").bounding_box(), _drop_at(pg, to)   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
+    pg.mouse.move(tx, ty, steps=6)
     pg.mouse.up()
     pg.locator(".gui-sign", has_text="To development").and_(pg.locator(":not(.gui-loose__sign)")) \
         .wait_for(state="visible", timeout=WAIT_MS)                          # the road, signed with the exit
@@ -867,10 +881,10 @@ def test_a_signposts_route_with_no_road_is_a_stub_pulled_to_a_building(page, gui
     stub.wait_for(state="visible", timeout=WAIT_MS)
     if shots:
         pg.locator(".gui-town").screenshot(path=f"{shots}/sp-1-stubs.png")
-    s, t = stub.locator(".gui-loose__stub").bounding_box(), _hut(pg, to).locator(".gui-hut__name").bounding_box()   # its title: a folded Pit is no taller
+    s, (tx, ty) = stub.locator(".gui-loose__stub").bounding_box(), _drop_at(pg, to)   # its title: a folded Pit is no taller
     pg.mouse.move(s["x"] + 4, s["y"] + 1)
     pg.mouse.down()
-    pg.mouse.move(t["x"] + t["width"] / 2, t["y"] + t["height"] / 2, steps=6)
+    pg.mouse.move(tx, ty, steps=6)
     pg.mouse.up()
     pg.wait_for_function("() => document.querySelectorAll('.gui-loose').length === 1", timeout=WAIT_MS)
     assert pg.locator(".gui-signs .gui-sign", has_text="bugs").count() == 1 and pg.locator(".gui-modal").count() == 0
@@ -1074,14 +1088,12 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
     for event in events[:2]:
         call("roads.lay", {"from": a, "to": b, "event": event, "handler": None})
     pg.keyboard.press("Escape")
-    pg.wait_for_function(f"([a, b]) => {link}.then(m => m.town.value.roads.filter((r) => r.from === a && r.to === b)"
-                         ".length === 2)", arg=[a, b], timeout=WAIT_MS)     # the page has both before it is clicked
     pg.wait_for_function("() => document.querySelectorAll('.gui-road').length === 1", timeout=WAIT_MS)   # one road for two
     pg.locator(".gui-road .gui-road__hit").dispatch_event("click")
     card = pg.locator(".gui-roadbar")
     card.wait_for(state="visible", timeout=WAIT_MS)
-    assert "2 events" in card.locator(".gui-roadbar__head").inner_text()
-    assert card.locator(".gui-roadbar__row").count() == 2
+    pg.wait_for_function("() => document.querySelectorAll('.gui-roadbar__row').length === 2", timeout=WAIT_MS)
+    assert "2 events" in card.locator(".gui-roadbar__head").inner_text()   # the card lists both once the page has both
     if shots:
         pg.screenshot(path=f"{shots}/road-card.png")
     card.locator(".gui-roadbar__row").first.get_by_role("button", name="Remove").click()
