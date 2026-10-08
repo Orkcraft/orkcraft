@@ -85,8 +85,8 @@ async def test_the_audit_removes_and_adds_buildings_then_offers_a_restart(fake_r
     from orkcraft.screens.dialogs import Confirm
     from orkcraft.screens.weekly_modal import WeeklyReportModal
 
-    answer = {"summary": "The lake is unused; a crag would show the spend.", "restart": True, "items": [
-        {"title": "Drop the lake", "why": "no runs in a week", "change": "remove_building", "building": "lake"},
+    answer = {"summary": "The pit is unused; a crag would show the spend.", "restart": True, "items": [
+        {"title": "Drop the pit", "why": "no runs in a week", "change": "remove_building", "building": "pit"},
         {"title": "A spend crag", "why": "see the week's spend", "change": "add_building", "building": "spend",
          "type": "crag", "title": "Spend", "config": {"source": "spend"}},
         {"title": "No hall", "why": "x", "change": "remove_building", "building": "town_hall"},
@@ -96,7 +96,7 @@ async def test_the_audit_removes_and_adds_buildings_then_offers_a_restart(fake_r
     app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
     async with app.run_test(size=(180, 50)) as pilot:
         await pilot.pause()
-        assert app.build_from_type("lake")
+        assert app.build_from_type("pit")
         app.open_weekly()
         for _ in range(60):
             await pilot.pause(0.05)
@@ -110,8 +110,8 @@ async def test_the_audit_removes_and_adds_buildings_then_offers_a_restart(fake_r
             await pilot.pause(0.05)
             if isinstance(app.screen, Confirm):
                 break
-        assert app.desktop.get_window("lake").hidden and app.custom_specs["spend"]["config"] == {"source": "spend"}
-        assert checkpoint.history(fake_repo, "lake")[0].message.startswith("weekly(lake): remove")
+        assert app.desktop.get_window("pit").hidden and app.custom_specs["spend"]["config"] == {"source": "spend"}
+        assert checkpoint.history(fake_repo, "pit")[0].message.startswith("weekly(pit): remove")
         assert isinstance(app.screen, Confirm)
         exits = []
         monkeypatch.setattr(app, "exit", lambda result=None, **k: exits.append(result))
