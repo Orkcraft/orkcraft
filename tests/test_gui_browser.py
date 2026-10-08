@@ -1437,9 +1437,16 @@ def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, mon
     assert "Claude Code hit an error" in toast.inner_text()
     assert "Ork setup: Claude Code hit a usage limit or its service is overloaded." in toast.inner_text()   # today's word
     assert toast.get_by_role("button", name="Switch to Codex").is_visible()
+    marks = toast.locator('img[data-kind="harness"]')               # each tool wears its harness mark
+    assert [marks.nth(i).get_attribute("src") for i in range(marks.count())] == [
+        "/ds/sprites/icons/harness-claude.png", "/ds/sprites/icons/harness-codex.png"]
     toast.get_by_role("button", name="Details").click()
     assert "overloaded_error" in toast.locator("pre").inner_text()
     toast.screenshot(path=str(tmp_path / "tool-error.png"))
+    page.evaluate("document.documentElement.dataset.look = 'office'")    # Office: the glyphs, no sprites
+    assert toast.locator(".gui-toolerr__title").inner_text().startswith("✻")
+    toast.screenshot(path=str(tmp_path / "tool-error-office.png"))
+    page.evaluate("document.documentElement.dataset.look = 'camp'")
     toast.get_by_role("button", name="Retry").click()
     toast.wait_for(state="detached", timeout=WAIT_MS)
     for _ in range(50):

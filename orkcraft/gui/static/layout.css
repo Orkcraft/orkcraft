@@ -315,6 +315,12 @@ button { font: inherit; color: inherit; }
 .gui-toasts .gui-toolerr { cursor: default; }
 .gui-toolerr__body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1 1 auto; }
 .gui-toolerr__note { color: var(--ink-muted); }
+.gui-toolerr__title, .gui-toolerr .ok-btn { display: inline-flex; align-items: center; gap: var(--space-1); }
+.gui-toolerr .gui-scheme { color: inherit; }
+.gui-toolerr__head { display: flex; align-items: flex-start; gap: var(--space-2); }
+.gui-toolerr__head .gui-toolerr__title { flex: 1 1 auto; }
+.gui-toolerr__close { border: 0; background: none; padding: 0 2px; color: var(--ink-muted); font: inherit; cursor: pointer; }
+.gui-toolerr__close:hover { color: var(--ink); }
 .gui-toolerr__acts, .gui-toolerr__menu { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }
 .gui-toolerr__details { display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
 .gui-toolerr__details pre { margin: 0; max-height: 160px; max-width: 100%; overflow: auto; white-space: pre-wrap;

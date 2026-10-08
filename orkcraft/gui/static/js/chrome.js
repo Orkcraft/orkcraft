@@ -7,6 +7,7 @@ import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait } from "./portrait.js";
+import { Scheme } from "./icons.js";
 import { narrow } from "./pocket.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
@@ -58,7 +59,8 @@ export function Toasts() {
 }
 
 // An AI tool that failed (gui/failures.py): what happened in one line, then Switch to another tool that is
-// installed (a menu when there are several), Retry, and Details — the tool's own words, to read or copy.
+// installed (a menu when there are several), Retry, and Details — the tool's own words, to read or copy. Each
+// tool wears its harness mark (js/icons.js Scheme: the pixel sprite in Camp, the glyph in Office).
 function ToolToast({ x }) {
   const t = x.tool;
   const [open, setOpen] = useState("");          // "" | "details" | "switch"
@@ -71,20 +73,22 @@ function ToolToast({ x }) {
   return html`<div class="ok-toast is-error gui-toolerr" role="alert">
     <span class="ok-toast__mark">✗</span>
     <div class="gui-toolerr__body">
-      <b>${x.title}</b>
+      <div class="gui-toolerr__head">
+        <b class="gui-toolerr__title"><${Scheme} scheme=${t.mark} />${x.title}</b>
+        <button class="gui-toolerr__close" title="Close" aria-label="Close" onClick=${close}>×</button>
+      </div>
       <span>${say(x.message)}</span>
       ${t.action && html`<span class="gui-toolerr__note">${say(t.action)}</span>`}
       ${!others.length && t.hint && html`<span class="gui-toolerr__note">${say(t.hint)}</span>`}
       <div class="gui-toolerr__acts">
-        ${others.length === 1 && html`<button class="ok-btn primary" onClick=${() => switchTo(others[0].id)}>Switch to ${others[0].title}</button>`}
+        ${others.length === 1 && html`<button class="ok-btn primary" onClick=${() => switchTo(others[0].id)}><${Scheme} scheme=${others[0].mark} />Switch to ${others[0].title}</button>`}
         ${others.length > 1 && html`<button class="ok-btn primary" aria-expanded=${open === "switch"}
           onClick=${() => toggle("switch")}>Switch to… ▾</button>`}
         ${t.retry && html`<button class="ok-btn" onClick=${retry}>Retry</button>`}
         <button class="ok-btn" aria-expanded=${open === "details"} onClick=${() => toggle("details")}>Details</button>
-        <button class="ok-btn" title="Close" onClick=${close}>×</button>
       </div>
       ${open === "switch" && html`<div class="gui-toolerr__menu" role="menu">
-        ${others.map((o) => html`<button key=${o.id} class="ok-btn" role="menuitem" onClick=${() => switchTo(o.id)}>${o.title}</button>`)}
+        ${others.map((o) => html`<button key=${o.id} class="ok-btn" role="menuitem" onClick=${() => switchTo(o.id)}><${Scheme} scheme=${o.mark} />${o.title}</button>`)}
       </div>`}
       ${open === "details" && html`<div class="gui-toolerr__details">
         <pre>${t.detail}</pre>

@@ -57,7 +57,7 @@ class Failures:
         if not data.get("retry") and now - self._shown.get(key, -AGAIN_S) < AGAIN_S:
             return False
         self._shown[key] = now
-        tool = {k: data.get(k) for k in ("harness", "tool", "kind", "where", "line", "action", "detail",
+        tool = {k: data.get(k) for k in ("harness", "tool", "mark", "kind", "where", "line", "action", "detail",
                                          "switch", "hint", "retry")}
         message = data.get("line") or ""
         if data.get("where"):

@@ -53,6 +53,7 @@ def test_switch_is_offered_only_for_another_installed_tool():
     assert r["line"] == "Claude Code hit a usage limit or its service is overloaded."
     assert r["detail"] == "API Error: 529 Overloaded" and r["where"] == "Recruiter"
     assert [o["id"] for o in r["switch"]] == ["codex", "pi"]    # the ones on first; never the one that failed
+    assert r["mark"] == "✻" and [o["mark"] for o in r["switch"]] == ["⌬", "π"]   # the harness icons the toast draws
     assert r["hint"] == ""
 
 

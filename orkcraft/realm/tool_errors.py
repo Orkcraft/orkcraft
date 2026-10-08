@@ -101,7 +101,7 @@ def others(failed: str, enabled: Iterable[str], which: Callable[[str], str | Non
     on, broken, which = set(enabled), set(broken) | {failed}, which or shutil.which
     found = [h for h in harnesses.REGISTRY.values() if h.id not in broken and which(h.bin)]
     found.sort(key=lambda h: h.id not in on)
-    return [{"id": h.id, "title": h.title, "on": h.id in on} for h in found]
+    return [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on} for h in found]
 
 
 def install_hint(failed: str, which: Callable[[str], str | None] | None = None) -> str:
@@ -140,7 +140,8 @@ def report(err: ToolError, enabled: Iterable[str], main: str, where: str = "",
         hint = install_hint(err.harness, which)
     else:
         hint = ""
-    return {"harness": err.harness, "tool": title, "kind": err.kind, "where": where,
+    h = harnesses.get(err.harness)
+    return {"harness": err.harness, "tool": title, "mark": h.mark if h else "", "kind": err.kind, "where": where,
             "title": f"{title} hit an error", "line": LINES[err.kind].format(tool=title),
             "action": what_to_do(err), "detail": err.detail or str(err), "code": err.code,
             "switch": switch, "hint": hint, "main": is_main}
