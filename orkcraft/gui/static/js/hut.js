@@ -74,7 +74,7 @@ function FoldButton({ b, peek }) {
 }
 
 /** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
-function Mark({ b }) {
+export function Mark({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
   const own = mod && mod.mark ? mod.mark(b) : null;
   const m = b.state === "ERROR" ? { text: "error", tone: "error" } : b.paused ? { text: "paused", tone: "wait" } : own;
@@ -176,7 +176,7 @@ function Flames({ alert }) {
 /** Its quick actions on the card's bottom edge, out while the mouse is on the hut, it has the focus or it is
  *  selected: a press does that one thing — a small window of its own when it asks for words, else it is
  *  done — and never opens the building. */
-function QuickTray({ b }) {
+export function QuickTray({ b }) {
   if (!b.quick || !b.quick.length) return null;
   const keep = (e) => e.stopPropagation();
   return html`<div class="gui-hut__quick" onPointerDown=${keep} role="group" aria-label=${say(`${b.title}: quick actions`)}>
@@ -186,7 +186,7 @@ function QuickTray({ b }) {
 }
 
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
-function Card({ b }) {
+export function Card({ b }) {
   const mod = b.page ? typeModule(b.type) : null;
   if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b)}</div>`;
   return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">

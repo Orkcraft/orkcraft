@@ -19,6 +19,7 @@ import { Onboarding } from "./js/onboarding.js";
 import { Menu } from "./js/menu.js";
 import { WarchiefLine } from "./js/warchief.js";
 import { Overlays } from "./js/types.js";
+import { Pocket, narrow } from "./js/pocket.js";
 
 function App() {
   const t = town.value;
@@ -32,9 +33,9 @@ function App() {
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />
-    <${Town} buildings=${buildings} roads=${t.roads} />
+    ${narrow.value ? html`<${Pocket} buildings=${buildings} />` : html`<${Town} buildings=${buildings} roads=${t.roads} />`}
     <div class="gui-foot" style=${`margin-right:${panelShown() && !opened.value.full ? panelWidth.value : 0}px`}>
-      <${WarMap} /><${WarchiefLine} /></div>
+      ${!narrow.value && html`<${WarMap} />`}<${WarchiefLine} /></div>
     <${Panel} />
     <${Toasts} />
     <${SettingsDialog} />
