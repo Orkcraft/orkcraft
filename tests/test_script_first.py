@@ -316,3 +316,50 @@ def test_a_wake_says_the_buildings_own_error_line_never_its_status_word():
     assert wakes._detail(NS(errors={"intent": "no address set"})) == "no address set"
     assert wakes._detail(NS(mini_status=lambda: ["3 open", "⚠ the token expired"])) == "the token expired"
     assert wakes._detail(NS()) == ""
+
+
+# -- landscape: no ork of its own; the steward downstream looks, else the Warchief (landscape.md §4) ---------
+
+def test_who_looks_when_land_breaks(fake_repo):
+    from orkcraft.realm.buildings import TOWN_HALL
+    host = _host(fake_repo)
+    pit = _raised(host, "pit")
+    router = _raised(host, "signpost", rules=["notes: contains release notes"])
+    board = _raised(host, "fields")
+    alone = _raised(host, "horn")
+    script = _raised(host, "workshop", runtime="python", layout="card")
+    scroll = host.town.scroll
+    ts.subscribe(scroll, router, pit, "pit.text")
+    ts.subscribe(scroll, board, router, "signpost.routed")
+    assert wakes.looker(host.town, pit) == board           # through the Router: land too, so further down
+    assert wakes.looker(host.town, router) == board
+    assert wakes.looker(host.town, alone) == TOWN_HALL     # no road to an ork: the Warchief
+    assert wakes.looker(host.town, script) == script       # a building has its own ork
+
+
+def test_a_landscape_objects_own_ork_is_never_called(fake_repo, keeper_calls, monkeypatch):
+    from orkcraft.realm import steward
+    host = _host(fake_repo)
+    pit = _raised(host, "pit")
+    board = _raised(host, "fields")
+    ts.subscribe(host.town.scroll, board, pit, "pit.text")
+    asked: list[str] = []
+    real = steward.runner_for
+
+    def runner_for(b, use, fake=None, **k):
+        if b is not None and b.id == pit:
+            raise AssertionError("the landscape object's own ork was called")
+        asked.append(b.id if b is not None else "")
+        return real(b, use, fake, **k)
+    monkeypatch.setattr(steward, "runner_for", runner_for)
+    buildings.dislike(host.town, pit, "logic", "it lost my paste")
+    host.tick(time.monotonic() + wakes.WAKE_CHECK_S + 1)
+    _wait(lambda: _keeper_jobs(host, pit) and _keeper_jobs(host, pit)[0]["state"] == "ready")
+    assert asked == [board]
+    prompt = keeper_calls[0]
+    board_ork = host.town.scroll.building(board).garrison.steward.name
+    pit_ork = host.town.scroll.building(pit).garrison.steward.name
+    assert prompt.startswith(f"You are {board_ork}") and f"You are {pit_ork}" not in prompt
+    assert "no ork of its own" in prompt and "it lost my paste" in prompt
+    job = _keeper_jobs(host, pit)[0]
+    assert job["view"]["woke"] and job["view"]["request"].startswith("The steward of ")

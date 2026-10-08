@@ -1,6 +1,6 @@
 # Design — landscape: what needs no ork is part of the land
 
-Status: written 2026-10-08, agreed with the owner; stage 1 (§9) built the same night — see §11 *As built*. Part of the simplification
+Status: written 2026-10-08, agreed with the owner; stages 1 and 2 (§9) built the same night — see §11 *As built*. Part of the simplification
 ([simplify.md](simplify.md)). Builds on script-first buildings ([script-first.md](script-first.md)),
 folded cards ([folded-cards.md](folded-cards.md)), growth ([growth.md](growth.md)) and the steward's
 road rules (`realm/lexicon.py` `road_rule`).
@@ -151,3 +151,19 @@ The data does not change: ids, specs, roads and event ids stay. The change is a 
 - `TERMS` has `landscape`. The onboarding's one line (§6) is not said yet: it waits for the stage that
   draws the land (stage 3), so the line names something the person can see.
 - Test: `tests/test_catalog.py` `test_the_landscape_is_the_seven_types_that_need_no_ork`.
+
+**Stage 2** (night audit 2026-10-08, P4):
+- `core/wakes.py` `looker(town, id)`: a building is its own looker; a landscape object's is the first building
+  with an ork its roads lead to (nearest first, through other landscape), else the Town Hall (the Warchief).
+  Every `Wake` carries `looker`; a landscape wake's request starts with a line telling the looker why the
+  object is theirs.
+- `gui/keeper.py` `keeper_wake`: the job still changes the landscape object's settings (same proposal, Apply,
+  Revert, Autonomy), but the model call is the looker's steward's (`steward.runner_for(looker)`) and
+  `core/keeper.py` `ask(looker=)` speaks as that steward. The toast and the job say who looked
+  (*The steward of Task board looked at a 👎: …*, *the Warchief …*).
+- When it wakes is unchanged (`wakes.due`: once per error spell, once per 👎), and only for land that is
+  script-first: a Transformer with an `agent:` step still thinks and keeps its ork until stage 4.
+- Not done: the yard's visiting ork (`gui/state.py` `visit`) is still drawn at the landscape object on a wake;
+  stage 3 decides how land looks.
+- Tests: `tests/test_script_first.py` `test_who_looks_when_land_breaks`,
+  `test_a_landscape_objects_own_ork_is_never_called` (a `runner_for` that fails when it is given the object).

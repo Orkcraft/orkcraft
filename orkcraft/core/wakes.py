@@ -16,13 +16,19 @@ Its ork — the building's keeper (core/keeper.py) — wakes on two things only,
 
 `due` changes nothing but the memory of a building that got well again; a wake the face could not run
 (the budget is spent, a wake of the building still open) is due again at the next look.
+
+Landscape (docs/design/landscape.md §4) has no ork of its own: its wake names a `looker`, the first building
+with an ork its roads lead to, else the Town Hall (the Warchief). The looker's steward is asked to change the
+landscape object's settings; the object's own keeper never runs.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from orkcraft import scroll as ts
 from orkcraft.core.town import Town
-from orkcraft.realm import feedback, script_first
+from orkcraft.realm import catalog, feedback, script_first
+from orkcraft.realm.buildings import TOWN_HALL
 
 WAKE_CHECK_S = 5.0          # how often a face asks (the Host's clock)
 ERROR = "error"
@@ -36,6 +42,40 @@ class Wake:
     detail: str             # what failed, or the 👎's note
     request: str            # what its keeper is asked, in words
     marks: tuple[str, ...] = ()   # dislike: the incidents it covers
+    looker: str = ""        # the building whose steward looks: itself, or for landscape the one §4 names
+
+
+def is_landscape(town: Town, building_id: str) -> bool:
+    return catalog.type_of(town.spec_of(building_id)).landscape
+
+
+def looker(town: Town, building_id: str) -> str:
+    """Who looks when it breaks: the building itself; for landscape (landscape.md §4) the first building with an
+    ork its roads lead to (nearest first), else the Town Hall, whose steward is the Warchief."""
+    if not is_landscape(town, building_id):
+        return building_id
+    seen, front = {building_id}, [building_id]
+    while front:
+        nxt = []
+        for bid in front:
+            for target, _road in ts.outgoing(town.scroll, bid):
+                if target.id in seen or target.demolished:
+                    continue
+                seen.add(target.id)
+                if not is_landscape(town, target.id):
+                    return target.id
+                nxt.append(target.id)
+        front = nxt
+    return TOWN_HALL
+
+
+def _land(town: Town, title: str, by: str) -> str:
+    """The line that tells the looker why a landscape object is theirs to look at."""
+    if by == TOWN_HALL:
+        return (f"{title} is part of the land: it has no ork of its own and no road from it leads to a building "
+                f"with one, so the Warchief looks after it.\n")
+    return (f"{title} is part of the land: it has no ork of its own. Its road leads to {town.title_of(by)}, so "
+            f"that building's steward looks after it.\n")
 
 
 def _failure(town: Town, building_id: str) -> str:
@@ -133,13 +173,14 @@ def due(town: Town) -> list[Wake]:
         if not failed and mine.get("ill"):
             memory[b.id] = {**mine, "ill": False}            # well again: the next error wakes it
             changed = True
-        title = town.title_of(b.id)
+        title, by = town.title_of(b.id), looker(town, b.id)
+        land = _land(town, title, by) if by != b.id else ""
         if failed and not mine.get("ill"):
-            out.append(Wake(b.id, ERROR, failed, error_request(title, failed)))
+            out.append(Wake(b.id, ERROR, failed, land + error_request(title, failed), looker=by))
         rows = _incidents(town, b.id, mine)
         if rows:
-            out.append(Wake(b.id, DISLIKE, rows[-1].note or "👎", dislike_request(title, rows),
-                            tuple(_key(i) for i in rows)))
+            out.append(Wake(b.id, DISLIKE, rows[-1].note or "👎", land + dislike_request(title, rows),
+                            tuple(_key(i) for i in rows), looker=by))
     if changed:
         script_first.save_state(repo, memory)
     return out

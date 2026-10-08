@@ -286,9 +286,11 @@ def check(answer: Any, spec: dict, subject: Subject, repo_root: Path,
 
 def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, selection: Any = None,
         runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
-        existing_ids: frozenset[str] | set[str] = frozenset(), max_attempts: int = MAX_ATTEMPTS) -> Proposal:
+        existing_ids: frozenset[str] | set[str] = frozenset(), max_attempts: int = MAX_ATTEMPTS,
+        looker: str = "") -> Proposal:
     """The person's words → the keeper's proposal (checked against the type's contract; a rejected answer
-    goes back with its problems). Never raises."""
+    goes back with its problems). Never raises. `looker`: the building whose steward speaks, when it is not the
+    building's own (landscape has no ork: core/wakes.py)."""
     subject = subject_of(spec)
     p = Proposal(building_id, subject.kind, before=subject.now(repo_root, building_id, spec))
     if not budget_ok:
@@ -296,7 +298,8 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
         return p
     b = scroll.building(building_id) if scroll is not None else None
     t = catalog.type_of(spec)
-    keeper = b.garrison.steward.name if b is not None and b.garrison.steward else "the keeper"
+    who = scroll.building(looker) if scroll is not None and looker else b
+    keeper = who.garrison.steward.name if who is not None and who.garrison.steward else "the keeper"
     sel = selection_of(selection)
     feedback = ""
     for _ in range(max_attempts):

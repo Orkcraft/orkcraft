@@ -14,6 +14,7 @@ from orkcraft.gui.jobs import ConsoleError, plain
 from orkcraft.gui.views import ActError
 from orkcraft.gui.views import lake as lake_view
 from orkcraft.realm import steward
+from orkcraft.realm.buildings import TOWN_HALL
 
 
 class KeeperMixin:
@@ -48,31 +49,40 @@ class KeeperMixin:
     def keeper_wake(self, wake) -> bool:
         """A script-first building's ork woke (core/wakes.py): its keeper asked in the town's words, the same job
         as a keeper asked by hand, with a toast. False when it cannot run now — the budget is spent, or a wake of
-        the building is still open in its console — and it is due again at the next look."""
+        the building is still open in its console — and it is due again at the next look. Landscape has no ork:
+        the steward its wake names (`looker`: downstream, else the Warchief) is asked instead."""
         if any(j.get("_wake") and j["building"] == wake.building for j in self.jobs.values()):
             return False
         title = self.town.title_of(wake.building)
         what = "an error" if wake.why == "error" else "a 👎"
+        by = wake.looker or wake.building
+        if by == wake.building:
+            who, woke = "its ork", f"Woke on {what}: {wake.detail}"
+        else:
+            who = "the Warchief" if by == TOWN_HALL else f"the steward of {self.town.title_of(by)}"
+            woke = f"{who[0].upper()}{who[1:]} looked at {what}: {wake.detail}"
         spec = self.town.custom_specs.get(wake.building)
         if spec is None or (self.town.demo and runners.KEEPER_RUNNER is None):
-            self.town.toast(f"its ork woke on {what}: {wake.detail}"[:300], title=title, severity="warning")
+            self.town.toast(f"{who} woke on {what}: {wake.detail}"[:300], title=title, severity="warning")
             return True                        # no settings to change, or the demo: logged and told, no model
         if self.host.treasury.exhausted(quiet=True):
             return False
-        jid = self._keeper_job(wake.building, copy.deepcopy(spec), wake.request, None,
-                               woke=f"Woke on {what}: {wake.detail}"[:300])
+        jid = self._keeper_job(wake.building, copy.deepcopy(spec), wake.request, None, woke=woke[:300], looker=by)
         self.jobs[jid]["_wake"] = True
-        self.town.toast(f"its ork woke on {what} — a fix waits in its console", title=title, severity="warning")
+        self.town.toast(f"{who} woke on {what} — a fix waits in its console", title=title, severity="warning")
         return True
 
-    def _keeper_job(self, building_id: str, spec: dict, request: str, selection: dict | None, woke: str = "") -> str:
+    def _keeper_job(self, building_id: str, spec: dict, request: str, selection: dict | None, woke: str = "",
+                    looker: str = "") -> str:
         """Its keeper asked (a thread); its proposal comes back as a ready job: the diff, its answer, Apply."""
         repo, spec, snapshot = self.town.repo_root, copy.deepcopy(spec), copy.deepcopy(self.town.scroll)
         others = set(self.town.custom_specs) - {building_id}
 
         def work() -> keeper.Proposal:
+            by = looker or building_id                 # landscape: the steward its wake names (core/wakes.py)
             return keeper.ask(repo, spec, snapshot, building_id, request, selection=selection, existing_ids=others,
-                              runner=steward.runner_for(snapshot.building(building_id), "keeper", runners.KEEPER_RUNNER))
+                              runner=steward.runner_for(snapshot.building(by), "keeper", runners.KEEPER_RUNNER),
+                              looker=looker if looker != building_id else "")
 
         def done(job: dict, p: keeper.Proposal) -> None:
             if p.error:
