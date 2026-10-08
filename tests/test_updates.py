@@ -164,6 +164,27 @@ def test_pipx_and_uv_upgrade_with_their_own_tool(tmp_path):
     assert not missing.can and "pipx install --force" in missing.why
 
 
+def test_homebrew_upgrades_with_brew_and_restarts_under_opt(tmp_path, monkeypatch):
+    pkg = tmp_path / "site" / "orkcraft"
+    monkeypatch.delenv("HOMEBREW_PREFIX", raising=False)
+    has = lambda name: "/opt/homebrew/bin/" + name   # noqa: E731
+    brew = updates.method(pkg, prefix="/opt/homebrew/Cellar/orkcraft/0.2.1/libexec", which=has)
+    assert brew.kind == "brew" and brew.steps == (("/opt/homebrew/bin/brew", "update", "--quiet"),
+                                                  ("/opt/homebrew/bin/brew", "upgrade", "orkcraft"))
+    assert brew.python == "/opt/homebrew/opt/orkcraft/libexec/bin/python"
+    monkeypatch.setenv("HOMEBREW_PREFIX", "/home/linuxbrew/.linuxbrew")
+    opt = updates.method(pkg, prefix="/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec", which=has)
+    assert opt.kind == "brew" and opt.python == "/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec/bin/python"
+    missing = updates.method(pkg, prefix="/opt/homebrew/Cellar/orkcraft/0.2.1/libexec", which=lambda n: None)
+    assert not missing.can and "brew upgrade orkcraft" in missing.why
+    runs = Runs(version="9.0.0")
+    assert updates.install(brew, runs).ok and runs.calls[-1][0] == brew.python   # the new version, read under opt/
+    seen = []
+    monkeypatch.delenv(updates.UPDATED_ENV, raising=False)
+    updates.restart(["gui"], "9.0.0", execv=lambda exe, args: seen.append(exe), python=brew.python)
+    assert seen == [brew.python]
+
+
 def test_a_copy_from_elsewhere_says_what_to_run(tmp_path, monkeypatch):
     monkeypatch.setattr(updates, "_direct_url", lambda: "")
     way = updates.method(tmp_path / "site" / "orkcraft", prefix="/usr", which=lambda n: None)

@@ -8,7 +8,7 @@ offered and installs with one click (or `orkcraft update`).
     s = updates.load_state()                  # what was read last, from the cache: no network
     offer = updates.offer(s.manifest, __version__)
     offer.version, offer.critical, offer.notes
-    way = updates.method()                    # how this copy was installed: git, pipx, uv, pip
+    way = updates.method()                    # how this copy was installed: git, brew, pipx, uv, pip
     result = updates.install(way)             # its own tool upgrades it; result.ok, result.output
     updates.check(force=True)                 # read the list again now (a few seconds at most)
 
@@ -229,10 +229,11 @@ def check(force: bool = False, now: float | None = None, file: Path | None = Non
 
 @dataclass(frozen=True)
 class Method:
-    kind: str                          # git · pipx · uv · pip · none
+    kind: str                          # git · brew · pipx · uv · pip · none
     steps: tuple[tuple[str, ...], ...] = ()
     cwd: str = ""
     why: str = ""                      # for `none`: why it cannot update itself, and what to run instead
+    python: str = ""                   # the interpreter of the copy once installed ("": this one, sys.executable)
 
     @property
     def can(self) -> bool:
@@ -254,6 +255,19 @@ def _checkout(package: Path) -> Path | None:
                 return root
         except OSError:
             return None
+    return None
+
+
+def _homebrew(prefix: str) -> Path | None:
+    """The Homebrew prefix this copy lives under (`<prefix>/Cellar/orkcraft/<version>/libexec`, or
+    `<prefix>/opt/orkcraft/libexec` with `HOMEBREW_PREFIX` set), or None."""
+    parts = Path(prefix).parts
+    for i in range(len(parts) - 1):
+        if parts[i] == "Cellar" and parts[i + 1] == "orkcraft":
+            return Path(*parts[:i])
+    home = os.environ.get("HOMEBREW_PREFIX", "")
+    if home and Path(prefix).is_relative_to(Path(home) / "opt" / "orkcraft"):
+        return Path(home)
     return None
 
 
@@ -281,6 +295,14 @@ def method(package: Path | None = None, prefix: str | None = None,
         if which("uv"):
             steps.append(("uv", "pip", "install", "--quiet", "--python", sys.executable, "-e", str(root)))
         return Method("git", tuple(steps), cwd=str(root))
+    home = _homebrew(prefix)
+    if home is not None:
+        # `brew update` first: `brew upgrade` alone reads the tap only once a day. The old keg is
+        # removed after the upgrade, so the copy restarts on the interpreter under opt/, which follows it.
+        brew = which("brew") or (str(home / "bin" / "brew") if (home / "bin" / "brew").is_file() else None)
+        python = str(home / "opt" / "orkcraft" / "libexec" / "bin" / "python")
+        return (Method("brew", ((brew, "update", "--quiet"), (brew, "upgrade", "orkcraft")), python=python)
+                if brew else Method("none", why="brew is not on PATH; run: brew update && brew upgrade orkcraft"))
     parts = Path(prefix).parts
     if "pipx" in parts and "venvs" in parts:
         return (Method("pipx", (("pipx", "upgrade", "orkcraft"),)) if which("pipx")
@@ -319,10 +341,10 @@ def _dirty(root: str, run: Callable) -> str:
     return ""
 
 
-def installed_version(run: Callable = subprocess.run) -> str:
+def installed_version(run: Callable = subprocess.run, python: str = "") -> str:
     """The version a fresh interpreter imports now (this process keeps the one it started with)."""
     try:
-        done = run([sys.executable, "-c", "import orkcraft; print(orkcraft.__version__)"],
+        done = run([python or sys.executable, "-c", "import orkcraft; print(orkcraft.__version__)"],
                    capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.SubprocessError):
         return ""
@@ -348,7 +370,7 @@ def install(way: Method | None = None, run: Callable = subprocess.run) -> Result
     except (OSError, subprocess.SubprocessError) as e:
         out.append(f"{type(e).__name__}: {e}")
         return Result(False, "\n".join(out)[-4000:])
-    now_version = installed_version(run)
+    now_version = installed_version(run, way.python)
     if now_version and not newer(now_version, __version__):
         out.append(f"the install finished, and the version is still {now_version}")
         return Result(False, "\n".join(out)[-4000:], now_version)
@@ -367,12 +389,13 @@ def remember(result: Result, version: str, file: Path | None = None, now: float 
 
 # -- when the town opens ------------------------------------------------------------------------
 
-def restart(argv: list[str], version: str = "", execv: Callable = os.execv) -> None:
+def restart(argv: list[str], version: str = "", execv: Callable = os.execv, python: str = "") -> None:
     """This process becomes a fresh one with the same arguments, on the code installed now."""
     os.environ[UPDATED_ENV] = version or "1"
     sys.stdout.flush()
     sys.stderr.flush()
-    execv(sys.executable, [sys.executable, "-m", "orkcraft.cli", *argv])
+    python = python or method().python or sys.executable
+    execv(python, [python, "-m", "orkcraft.cli", *argv])
 
 
 def at_launch(argv: list[str], policy: str, say: Callable[[str], None] | None = None,
@@ -404,7 +427,7 @@ def at_launch(argv: list[str], policy: str, say: Callable[[str], None] | None = 
         say(f"the {kind} {found.version} did not install; the town opens on {__version__}:\n{result.output}")
         return found
     say(f"installed {result.version or found.version}; restarting")
-    restart(argv, result.version or found.version, execv)
+    restart(argv, result.version or found.version, execv, way.python)
     return None
 
 
