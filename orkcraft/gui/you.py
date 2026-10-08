@@ -1,5 +1,5 @@
 """You in the GUI (docs/design/portrait.md): what the portrait's menu sets for the person, per machine —
-the look (camp | office) and Do not disturb — and what gathered while Do not disturb held, said once
+the look (camp | office), Do not disturb and the fire on the roofs (`fire`) — and what gathered while Do not disturb held, said once
 when it ends: in the Warchief's line (`summary`) and to the phones that are open (`on_news`).
 
     you = You(host)                  # sets `town.hushed`: the Horn keeps quiet while it holds
@@ -7,7 +7,7 @@ when it ends: in the Warchief's line (`summary`) and to the phones that are open
     you.tick()                       # from the host's clock: a timed Do not disturb that ran out
     you.hold_toast(data)             # True: a toast the page does not show now (counted)
     you.hold_push(item)              # True: a line the phones do not get now (counted)
-    you.snapshot()                   # {"look", "mono", "dnd": {...}, "summary": {...} | None}
+    you.snapshot()                   # {"look", "mono", "fire", "dnd": {...}, "summary": {...} | None}
 """
 from __future__ import annotations
 
@@ -121,6 +121,7 @@ class You:
         morning = disturb.morning(m, now)
         role = intents.role(str((m.profile or {}).get("role") or "")).id
         return {"look": m.look, "mono": MONOGRAMS.get(role, "··"), "role": role if role in MONOGRAMS else "",
+                "fire": m.fire,
                 "dnd": {"on": disturb.holds(m, now), "choice": disturb.choice(m, now), "label": disturb.label(m, now),
                         "morning": schedule.fmt(morning.hour * 60 + morning.minute)},
                 "summary": self.summary}
@@ -132,6 +133,15 @@ class You:
         if look not in settings.LOOKS:
             raise YouError(f"No look {look!r}: camp or office")
         self.machine.look = look
+        settings.save(self.machine)
+        self.host.on_change()
+        return self.snapshot()
+
+    def _fire(self, args: dict) -> dict[str, Any]:
+        """Whether flames climb the roof of a building that waits for you: how the town looks, so it is yours."""
+        if not isinstance(args.get("fire"), bool):
+            raise YouError("Fire on the roofs is on or off")
+        self.machine.fire = args["fire"]
         settings.save(self.machine)
         self.host.on_change()
         return self.snapshot()
@@ -156,4 +166,4 @@ class You:
         self.host.on_change()
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
-        return {"you.look": self._look, "you.dnd": self._dnd, "you.seen": self._seen}
+        return {"you.look": self._look, "you.dnd": self._dnd, "you.fire": self._fire, "you.seen": self._seen}
