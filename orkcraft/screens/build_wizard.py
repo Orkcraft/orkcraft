@@ -54,7 +54,7 @@ SelectionList { height: auto; max-height: 7; }
 GROUPS = (                                     # the camp map of T1107
     ("Intake and routing", ("pit", "watchtower", "signpost", "mill", "horn")),
     ("Queues and work", ("fields", "barracks", "council", "war_drum")),
-    ("Storage, code, inspection", ("scrolls", "lake", "forge")),
+    ("Storage, code, inspection", ("scrolls", "forge")),
     ("Results, telemetry, egress", ("loot", "crag", "catapult")),
 )
 

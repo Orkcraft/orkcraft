@@ -271,8 +271,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="spire", orc="Seer"),
     BuildingType(
         "forge", "The Forge", "⚒️", "M",
-        "closes the loop: branches with their PRs and changes; runs the tests, settles conflicts and "
-        "squash-merges a ready branch into the base",
+        "the repository's state: what comes in (branches, commits, pull requests) and what goes out "
+        "(merges); runs a branch's tests and squash-merges it into the base when you say, conflicts named",
         "branches with PR state and +/− lines", "every branch: commits, PR, diff stat; merge",
         events=(_e("git.commit", "new commit", TEXT, "a branch got a new commit"),
                 _e("git.pr_opened", "PR opened", TEXT, "a pull request was opened"),
@@ -307,7 +307,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         art="vault", orc="Quartermaster", agentic=True),
     BuildingType(
         "crag", "Tally Crag", "🪨", "M",
-        "telemetry carved in stone: horizontal bars of budgets, vertical bars of load",
+        "charts: complex data at a glance — the numbers a road brings, spend, tokens, runs, quotas, load; "
+        "horizontal bars break it down, vertical bars show it over time",
         "a small bar chart and the current value", "the chart and its values",
         events=(_e("charts.threshold", "threshold", TEXT, "a value crossed its warning or critical line"),),
         actions=(_a("crag.flip", "Flip", "⇅", "vertical or horizontal bars"),
@@ -422,8 +423,9 @@ def migrate(spec: dict) -> dict:
                          **({"orders": cfg["skill"]} if cfg.get("skill") else {})}
     return out
 SYSTEM_TYPES = frozenset({"town_hall"})        # built by orkcraft itself, never offered in the wizard
-RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest"})   # an old scroll's still loads, none is built anew: Custom (panes);
-                                                      # File tree (its folder watch and its picker go to other buildings)
+RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's still loads, none is built anew:
+# Custom (panes); File tree (its folder watch and its picker go to other buildings); Inspector — the town's
+# Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
 MAX_QUICK_ACTIONS = 2
 
