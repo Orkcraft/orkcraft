@@ -381,6 +381,19 @@ function bareMenu(e, buildings, roads) {
   ]);
 }
 
+/** Where the part of the town seen begins for these buildings: past the town's left chrome (the portrait's
+ *  corner, the War Map) that stands at their height, else the room's margin. */
+function leftOf(el, boxes) {
+  const er = el.getBoundingClientRect();
+  let inset = MARGIN;
+  for (const c of document.querySelectorAll(".gui-portrait-slot.is-corner, .gui-map")) {
+    const r = c.getBoundingClientRect();
+    const top = r.top - er.top + el.scrollTop, bottom = r.bottom - er.top + el.scrollTop;
+    if (boxes.some((b) => b.y < bottom && b.y + b.h > top)) inset = Math.max(inset, r.right - er.left + MARGIN / 2);
+  }
+  return inset;
+}
+
 /** The panel covers the town's right part: the room grows by as much, so the open building and the
  *  buildings its roads reach can be scrolled into the part left, and they are. */
 function useCamera(el, rects, here, panelW) {
@@ -389,13 +402,17 @@ function useCamera(el, rects, here, panelW) {
     if (!el || !active || !rects[active] || !panelW) return;
     const near = here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])).filter((id) => rects[id]);
     const boxes = [active, ...near].map((id) => rects[id]);
-    const left = Math.min(...boxes.map((x) => x.x)), right = Math.max(...boxes.map((x) => x.x + x.w));
+    const span = (xs) => [Math.min(...xs.map((x) => x.x)), Math.max(...xs.map((x) => x.x + x.w))];
+    const [left, right] = span(boxes);
     const seen = el.clientWidth - panelW;
     const a = rects[active];
-    // all of them when they fit, else the building itself, in the middle of the part left
-    const [from, to] = right - left <= seen - 2 * MARGIN ? [left, right] : [a.x, a.x + a.w];
-    if (from >= el.scrollLeft + MARGIN && to <= el.scrollLeft + seen - MARGIN) return;
-    el.scrollTo({ left: Math.max((from + to) / 2 - seen / 2, 0), behavior: "smooth" });
+    // all of them when they fit, else the building itself, in the middle of the part left — right of the
+    // portrait's corner and the War Map where a building stands as high or as low as they do
+    const all = right - left <= seen - MARGIN - leftOf(el, boxes);
+    const [from, to] = all ? [left, right] : span([a]);
+    const inset = leftOf(el, all ? boxes : [a]);
+    if (from >= el.scrollLeft + inset && to <= el.scrollLeft + seen - MARGIN) return;
+    el.scrollTo({ left: Math.max((from + to) / 2 - (inset + seen - MARGIN) / 2, 0), behavior: "smooth" });
   }, [active, panelW]);
 }
 

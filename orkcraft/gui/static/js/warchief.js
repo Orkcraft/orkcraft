@@ -385,8 +385,10 @@ function Speaks({ hidden }) {
   if (p.dnd && p.dnd.on) return null;          // Do not disturb: the Warchief does not speak first
   if (a) {
     return html`<button class="gui-warchief__speaks ok-font-status ok-tone-fire" title=${a.title}
+        aria-label=${`${a.who ? `${a.who}: ` : ""}${a.title}`}
         onPointerDown=${(e) => e.preventDefault()} onClick=${() => openOrders(a.id)}>
-      ❓ ${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></button>`;
+      ❓ <span class="gui-warchief__long">${a.who ? `${a.who}: ` : ""}${a.title} · <u>${say("answer")}</u></span><span
+        class="gui-warchief__short">${t.hud.alerts || t.alerts.length}</span></button>`;
   }
   const news = p.look !== "office" && t.growth && t.growth.news.length ? t.growth.news[t.growth.news.length - 1] : null;
   if (news) {                                  // what grew (docs/design/growth.md §3): said once, then seen

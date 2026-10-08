@@ -48,6 +48,10 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
   border-image: image-set(url("/ds/sprites/icons/bubble.png") 1x, url("/ds/sprites/icons/bubble@2x.png") 2x) 4 fill / 4px; }
 .gui-out__bubble::after { content: ""; position: absolute; left: 10px; top: 100%; margin-top: 2px; width: 10px; height: 8px;
   background: image-set(url("/ds/sprites/icons/bubble-tail.png") 1x, url("/ds/sprites/icons/bubble-tail@2x.png") 2x) 0 0 / 10px 8px; }
+/* A yard's name stands over its building, where the bubble would go: there the ork speaks to its left, the tail
+   turned to it, so the bubble never covers the name or the yard's number. */
+[data-look="camp"] .gui-hut.is-yard .gui-out__bubble { left: auto; right: calc(100% + 10px); bottom: -5px; }
+[data-look="camp"] .gui-hut.is-yard .gui-out__bubble::after { left: 100%; top: 50%; margin: -4px 0 0 1px; transform: rotate(-90deg); }
 .gui-out__bubble.is-ask { padding: 2px 5px; font: 700 14px/16px var(--font-camp); color: var(--alert); }
 .gui-out__act { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 2px;
   border: 0; background: none; cursor: pointer; line-height: 0; }
