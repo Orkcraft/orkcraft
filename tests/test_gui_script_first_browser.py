@@ -147,3 +147,25 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_stands_in_its_gate(demo_page):
     assert "carts wait" in dialog.inner_text()
     if os.environ.get("ORKCRAFT_SHOTS"):
         pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "yards-caller.png"))
+
+
+def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):
+    """docs/design/yards.md §3g: near a card's edge the road handle — a small gate — stands under the mouse, a road is
+    pulled out of it there; inside the card and at the corner, which resizes, it is gone."""
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    hut = pg.locator('.gui-hut[data-id="drop"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    card = hut.locator(".ok-hut__card").bounding_box()
+    gate = hut.locator(".gui-hut__road")
+    y = card["y"] + card["height"] / 2
+    pg.mouse.move(card["x"] + 3, y)
+    pg.wait_for_function("() => document.querySelector('.gui-hut[data-id=\"drop\"] .gui-hut__road').classList.contains('is-at')",
+                         timeout=WAIT_MS)
+    g = gate.bounding_box()
+    assert abs(g["x"] + g["width"] / 2 - card["x"]) < 4 and abs(g["y"] + g["height"] / 2 - y) < 4   # on the left edge, here
+    pg.mouse.move(card["x"] + card["width"] / 2, y)                                              # inside: no gate
+    assert "is-at" not in (gate.get_attribute("class") or "")
+    pg.mouse.move(card["x"] + card["width"] - 4, card["y"] + card["height"] - 4)                  # the corner resizes
+    assert "is-at" not in (gate.get_attribute("class") or "")
+    assert hut.locator(".gui-hut__grip").count() == 1                                             # the corner alone

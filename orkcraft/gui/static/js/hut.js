@@ -258,8 +258,8 @@ export function Card({ b }) {
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
 
-/** The edges and the corner a card is stretched by: a ghost of the new size follows the mouse; a double click
- *  gives the card back its own size. */
+/** The corner a card is stretched by (its edges pull roads, js/hut.js edgeAt): a ghost of the new size follows the
+ *  mouse, red over another hut; a double click gives the card back its own size. */
 function Grips({ b, onSized }) {
   const grab = (e, sides) => {
     if (e.button !== 0) return;
@@ -296,13 +296,39 @@ function Grips({ b, onSized }) {
   };
   const back = (e) => { e.stopPropagation(); if (b.size) command("hut.size", { id: b.id, w: null }).catch(() => {}); };
   const label = say("Drag to resize · double-click: its own size");
-  return html`${[["e", "is-e"], ["s", "is-s"], ["es", "is-se"]].map(([sides, c]) => html`<span key=${c}
+  return html`${[["es", "is-se"]].map(([sides, c]) => html`<span key=${c}
       class=${cls("gui-hut__grip", c)} title=${label} aria-hidden="true"
       onPointerDown=${(e) => grab(e, sides)} onClick=${(e) => e.stopPropagation()} onDblClick=${back}></span>`)}`;
 }
 
+// The road handle comes where the mouse nears the card's edge — the yard's fence, the hut's frame — and a road is
+// pulled out of it there; it leaves no gate behind, the road keeps its arrow. The corner it stays clear of resizes.
+const EDGE_PX = 12, CORNER_PX = 20;
+
+/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner). */
+function edgeAt(card, e) {
+  const r = card.getBoundingClientRect(), k = r.width / card.offsetWidth || 1;
+  const w = card.offsetWidth, h = card.offsetHeight, x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k;
+  const d = { left: x, right: w - x, top: y, bottom: h - y };
+  const side = Object.keys(d).reduce((a, k2) => (d[k2] < d[a] ? k2 : a), "left");
+  if (d[side] > EDGE_PX || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
+  const clamp = (v, hi) => Math.min(Math.max(v, 11), hi - 11);
+  return side === "left" ? { x: 0, y: clamp(y, h) } : side === "right" ? { x: w, y: clamp(y, h) }
+    : side === "top" ? { x: clamp(x, w), y: 0 } : { x: clamp(x, w), y: h };
+}
+
 export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSized }) {
   const ref = useRef(null);
+  const road = useRef(null);
+  // the handle follows the mouse along the edge without drawing the hut again
+  const nearEdge = (e) => {
+    const btn = road.current;
+    if (!btn || e.pointerType !== "mouse" || btn.contains(e.target)) return;
+    const at = e.target.closest("button, a, input, select, textarea") ? null : edgeAt(e.currentTarget, e);   // never over a control
+    btn.classList.toggle("is-at", !!at);
+    if (at) { btn.style.left = `${at.x}px`; btn.style.top = `${at.y}px`; }
+  };
+  const awayEdge = () => { if (road.current) road.current.classList.remove("is-at"); };
   const drag = dragging.value && dragging.value.id === b.id ? dragging.value : null;
   // Its size as drawn, on every draw and whenever it changes between them (a type's stylesheet coming
   // late, a part of its card hidden): the town places the huts and the roads by it.
@@ -404,9 +430,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}
       <span class="gui-hut__plinth" aria-hidden="true"></span></span>
       ${b.alert ? html`<${Caller} b=${b} />` : b.yard && b.visit ? html`<${Visitor} b=${b} />` : null}</div>
-    <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""}>
+    <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
-      <button class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
+      <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
       ${!folded ? html`<${Card} b=${b} /><${QuickTray} b=${b} />`
