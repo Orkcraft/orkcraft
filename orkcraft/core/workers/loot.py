@@ -12,8 +12,11 @@ A cart goes back (and an approved draft is told so) directly, not by a road: the
 (`rework_back`, `approved_back`, which the TUI points at its views); without one, the building
 whose worker takes rework is the one in the cart's trail. The changed files of the working tree
 (or of its `path`) are reviewed one by one: accepted, rejected (rolled back, kept aside) and
-restored. A held text cart is edited in a draft file (`draft_path`) the person opens in Lake;
-`accept_draft` accepts what the file says.
+restored. A held text cart is edited in a draft file (`draft_path`) the person opens in Lake or
+writes from the window (`save_draft`); `accept_draft` accepts what the file says. Inside a held cart,
+one file its task committed on its branch can be rejected — put back on the branch as the base has
+it, its content kept aside — and brought back (`reject_branch_file`, `restore_branch_file`); the cart
+is still accepted or sent back as a whole, with the rest of its files.
 """
 from __future__ import annotations
 
@@ -315,9 +318,51 @@ class LootWorker(Worker):
             return None
         return value if value is not None and value != item.value else None
 
+    def save_draft(self, item: gate.Item, value: str) -> bool:
+        """The person's version of a text cart, written from the window into its draft file (none when it is
+        the cart's own text again). True when it differs from the cart."""
+        path = self.draft_path(item, make=False)
+        if value == item.value:
+            path.unlink(missing_ok=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(value, encoding="utf-8")
+        self.changed()
+        return value != item.value
+
     def accept_draft(self, item: gate.Item) -> None:
         """Accept the person's version: what the draft file says now."""
         self.accept_item(item, self.draft_value(item))
+
+    # -- decisions on a cart's branch files ------------------------------------------------------
+
+    def _branch_of(self, item: gate.Item) -> generated.Branch:
+        if item.status not in (gate.HELD, gate.NEEDS_YOU):
+            raise ValueError("only a cart that waits for you has its files decided")
+        found = self.branches.get(item.id) or self.branch(item.hops)
+        if found is None:
+            raise ValueError("its branch is gone")
+        return found[0]
+
+    def reject_branch_file(self, item: gate.Item, rel: str) -> dict:
+        """Reject one file of a held cart's branch: put back there as the base has it, its content kept under
+        `rejected/carts/<item>/`; the rest of the cart goes on. Its maker hears it (a light 👎)."""
+        entry = self._branch_of(item).reject(rel, self.state_dir / "rejected" / "carts" / item.id)
+        self.queue.file_rejected(item, entry)
+        feedback.signal(self.repo_root, self.maker(item), False, "loot.file_rejected", value=rel,
+                        note=f"{rel} rejected in {item.title or item.ref}")
+        self.emit("generator.rejected", rel, rel, trail=item.hops, ref=item.ref)
+        self.refresh()
+        return entry
+
+    def restore_branch_file(self, item: gate.Item, entry: dict) -> None:
+        """Bring a rejected file of the cart back on its branch — not over a newer change of it there."""
+        br = self._branch_of(item)
+        if any(g.path == entry.get("path") for g in br.files()):
+            raise ValueError(f"{entry.get('path')} changed on {br.branch} since: it stays as it is")
+        br.restore(entry)
+        self.queue.file_restored(item, entry)
+        self.refresh()
 
     # -- decisions on files -----------------------------------------------------------------------
 
