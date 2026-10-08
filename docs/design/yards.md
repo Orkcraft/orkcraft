@@ -87,8 +87,8 @@ and Huts*: the pickets and side rails as background tiles of the card, the title
 row, its children on the plate, the posts as its pseudo-elements.
 
 ```
- ▲┌───────────────────┐               ▲   ← two posts, their tops above the bar
- █│ 3 ⑂ Router        │▲═▲═▲═▲═▲═▲═▲═█   ← a plate as wide as its words; pickets fill the rest
+ ▲┌───────────────────┐▲                  ← two posts: the left end, and right after the plate
+ █│ 3 ⑂ Router        │█═▲═▲═▲═▲═▲═▲═▲   ← a plate as wide as its words; pickets fill the rest
  ▴│ 12 sent · 0 dropped             │▴   ← the inside: the card's plain `panel`, never wood
  ▴│ last: release-notes → mill      │▴   ← each side: full pickets, tips up, a narrow rail down the middle
  ▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲═▲   ← pickets along the bottom
@@ -117,7 +117,9 @@ row, its children on the plate, the posts as its pseudo-elements.
 - **A dark plate as wide as its words**: number, icon, name, the visiting ork, `?`, mark — on
   `panel-raised`, as on a hut, bevelled. The rest of the bar to the right is the same pickets as the
   bottom row, standing on its lower edge; the plate rises above them like a sign on the fence.
-- **Two posts** at its ends (5×12 sprite px), a little taller than the bar, their tops above it.
+- **Two posts** (5×12 sprite px, pointed like the pickets), a little taller than the bar: one at its left end,
+  one **right after the plate**, so the plate is a gate between them. The second post is a `span` the title
+  bar gets after its last plate item (`js/hut.js`).
 - Pin and fold stay at the right end, on a small plate of their own, shown on hover as now. The road
   handle stays on the right post.
 - The type's header sprite stays where it stands on a hut: on the top edge. A yard is told by its fence,
