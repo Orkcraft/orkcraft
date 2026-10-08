@@ -5,6 +5,11 @@
         └── task for agent ──▶ Task Fields: a task in To Do ──▶ Barracks (an ork works it)
                                    ▲ started / result (return roads)  │ outcome
                                    └──────────────────────────────────┴──▶ Loot Vault
+    a reply (docs/design/barracks-flows.md): Barracks ──draft──▶ Reply check ──▶ Loot Vault (your yes) ──▶ Catapult
+
+The tower names what each source wants (`wants`): a mail is a Reply, a Slack ask a Document. A reply the
+agents take on is drafted by an ork that only reads the mail, read by the Reply check (tone, facts), held
+in the Loot Vault until you approve it, then sent by the Catapult; other work goes to the Vault as before.
 
 The Watchtower listens to a mailbox and a Slack channel. Everything it hears goes to Triage, whose
 clan — a risk analyst, a tone reader, a priority checker, a deadline finder — gives each message a
@@ -27,6 +32,7 @@ from orkcraft.demo.seeds import state_dir
 
 ID = "front_desk"
 POST, TRIAGE, BOARD, CAMP, LOOT = "desk_post", "desk_triage", "desk_board", "desk_camp", "desk_loot"
+CHECK, SEND = "desk_check", "desk_send"          # the reply's path: a Reply check, then the person's yes, then out
 BOARD_FILE = "DESK_TASKS.md"
 SLACK = "slack: token=DEMO_SLACK_TOKEN channels=C0TEAM"
 
@@ -37,6 +43,13 @@ MAIL = {"source": "mail", "title": "Dana Reyes: Can we move Thursday's review to
 CHAT = {"source": "slack", "title": "Sam in #team: Feedback summary by Friday?",
         "body": "Could someone pull together a short summary of last month's customer feedback and share it with "
                 "the team by Friday? Thanks!"}
+# A mail an agent answers (docs/design/barracks-flows.md): the tower names it a Reply, triage gives it to an agent, the
+# pool's ork drafts the answer reading only the mail, the Reply check reads its tone and facts, Results hold it for
+# the person's yes, and the Publisher sends it.
+INVOICE = {"source": "mail", "title": "Lee Park: When does the September invoice go out?",
+           "body": "Hi! Could you tell me when the September invoice goes out? Our accounts close on the 30th. — Lee"}
+REPLY = ("Hi Lee,\n\nthe September invoice goes out on the 28th, before your accounts close. I'll send you a copy "
+         "the same day.\n\nBest regards")
 TICKET = "https://example.com/tickets/142"
 SUMMARY_DOC = "https://example.com/docs/feedback-summary-september"
 
@@ -64,7 +77,8 @@ FRONT_DESK = {
     "files": {BOARD_FILE: BOARD_TEXT},
     "buildings": [
         _typed(POST, "watchtower", "Inbox", "🗼", "Lookout", "my mailbox and the team's Slack", "chimney",
-               host="gmail", user_env="DEMO_MAIL_USER", password_env="DEMO_MAIL_PASSWORD", feeds=[SLACK]),
+               host="gmail", user_env="DEMO_MAIL_USER", password_env="DEMO_MAIL_PASSWORD", feeds=[SLACK],
+               wants={"mail": "reply", "slack": "doc"}),
         _typed(TRIAGE, "council", "Triage", "🪔", "Chieftains", "reads every message, says who takes it on", "pagoda",
                steward_prompt="Decide who takes each message on: the person when it needs their judgement, their "
                               "calendar or a personal reply; an agent when it is routine and low risk.",
@@ -78,12 +92,18 @@ FRONT_DESK = {
                orders="Do the task, share the result where it was asked for, and say where it is."),
         _typed(LOOT, "loot", "Results", "📦", "Quartermaster", "what the agents delivered", "snow",
                path="results"),
+        _typed(CHECK, "council", "Reply check", "🪔", "Chieftains", "reads a drafted reply: its tone and its facts",
+               "pagoda", purpose="A reply an ork drafted, before it goes out: its tone and its facts.",
+               steward_prompt="A reply an ork drafted, before it goes out: its tone and its facts.",
+               members=["Tone:claude", "Facts:claude"], max_cycles=2, budget_usd=1.0),
+        _typed(SEND, "catapult", "Send replies", "🎯", "Courier", "sends the replies you approved", "chimney"),
     ],
     # The flow reads left to right: the inbox, triage, the board; the agents and their results below, clear of the
     # Command Card (bottom right) so a frame can show both.
-    "huts": {POST: (0.0, 0.2), TRIAGE: (0.44, 0.2), BOARD: (0.92, 0.0), CAMP: (0.5, 0.74), LOOT: (0.0, 0.74)},
+    "huts": {POST: (0.0, 0.2), TRIAGE: (0.44, 0.2), BOARD: (0.92, 0.0), CAMP: (0.5, 0.74), LOOT: (0.0, 0.74),
+             CHECK: (0.27, 0.98), SEND: (0.0, 0.5)},
     "layout": [(0.0, 0.0, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46), (0.7, 0.0, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
-               (0.7, 0.54, 0.3, 0.46)],
+               (0.7, 0.54, 0.3, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.0, 0.3, 0.46)],
     "roads": [
         (TRIAGE, POST, "mail.received", "mail", None, None),
         (TRIAGE, POST, "watch.comment", "slack", None, None),
@@ -92,15 +112,20 @@ FRONT_DESK = {
         (CAMP, BOARD, "tasks.sent", "task", None, None),
         (BOARD, CAMP, "pool.assigned", "started", None, {"returns": True}),
         (BOARD, CAMP, "pool.done", "result", None, {"returns": True}),
-        (LOOT, CAMP, "pool.done", "result", None, None),
+        (LOOT, CAMP, "pool.done", "result", None, {"want": ["change", "doc"]}),
+        (CHECK, CAMP, "pool.done", "reply", None, {"want": ["reply"]}),
+        (LOOT, CHECK, "team.approved", "checked", None, None),
+        (SEND, LOOT, "loot.passed", "send", None, {"want": ["reply"]}),
     ],
     "payloads": {
         (POST, "mail.received"): ("text", MAIL["body"], MAIL["title"]),
         (POST, "watch.comment"): ("text", CHAT["body"], f"slack · {CHAT['title']}"),
         (TRIAGE, "team.routed"): ("text", MAIL["body"], MAIL["title"]),
-        (BOARD, "tasks.sent"): ("text", CHAT["body"], CHAT["title"]),
-        (CAMP, "pool.assigned"): ("text", f"Grub (claude) ← {CHAT['title']}", CHAT["title"]),
-        (CAMP, "pool.done"): ("text", "Feedback summary shared with the team", CHAT["title"]),
+        (BOARD, "tasks.sent"): ("text", CHAT["body"], CHAT["title"], "doc"),
+        (CAMP, "pool.assigned"): ("text", f"Grub (claude) ← {CHAT['title']}", CHAT["title"], "doc"),
+        (CAMP, "pool.done"): ("text", "Feedback summary shared with the team", CHAT["title"], "doc"),
+        (CHECK, "team.approved"): ("text", REPLY, INVOICE["title"], "reply"),
+        (LOOT, "loot.passed"): ("text", REPLY, INVOICE["title"], "reply"),
     },
 }
 
@@ -115,27 +140,43 @@ TRIAGE_SCRIPT = {
     "members": {
         "Risk analyst": [
             _rule("Thursday's review", "APPROVE: Low risk, but others plan around this meeting.", 3.0),
+            _rule("invoice", "APPROVE: Low risk: a date the team already set.", 2.0),
             _rule("feedback", "APPROVE: Low risk: an internal summary.", 3.0)],
         "Tone reader": [
             _rule("Thursday's review", "APPROVE: Stressed and apologetic: reply kindly."),
+            _rule("invoice", "APPROVE: Polite, a plain question."),
             _rule("feedback", "APPROVE: Friendly, a routine request.")],
         "Priority checker": [
             _rule("Thursday's review", "APPROVE: Medium: answer today."),
+            _rule("invoice", "APPROVE: Medium: before the 30th."),
             _rule("feedback", "APPROVE: Low: nobody is blocked.")],
         "Deadline finder": [
             _rule("Thursday's review", "APPROVE: Before Thursday; Tue or Wed next week."),
+            _rule("invoice", "APPROVE: Their accounts close on the 30th."),
             _rule("feedback", "APPROVE: Due Friday.")],
     },
     "steward": [
         _rule("Thursday's review", "DECISION: approve\nROUTE: human\nTASK: Reply to Dana: move Thursday's review?\n"
                                    "Your calendar, your reply.", 2.6),
+        _rule("invoice", "DECISION: approve\nROUTE: agent\nTASK: Answer Lee: when the September invoice goes out\n"
+                        "A plain question the agents can answer; you approve the reply.", 2.4),
         _rule("feedback", "DECISION: approve\nROUTE: agent\n"
                          "TASK: Summarize last month's feedback for the team (by Fri)\n"
                          "Routine and low risk.", 2.6),
     ],
 }
 
+# The Reply check reads the draft: its tone, and its facts against the thread (realm/team.py PRESETS "reply_check").
+CHECK_SCRIPT = {
+    "members": {
+        "Tone": [_rule("invoice", "APPROVE: Polite and plain; it promises only what the team already set.", 2.0)],
+        "Facts": [_rule("invoice", "APPROVE: The 28th is the date in the billing notes; nothing else is claimed.", 2.4)],
+    },
+    "steward": [_rule("invoice", "DECISION: approve\nThe tone is right and every claim is found.", 1.6)],
+}
+
 CAMP_SCRIPT = {"work": [
+    _rule("invoice", REPLY, 6.0),
     _rule("feedback", "Feedback summary shared with the team\n\n"
                       f"Ticket #142: {TICKET}\n"
                       f"Summary: {SUMMARY_DOC}\n\n"
@@ -161,7 +202,8 @@ def prepare(root: Path, now: dt.datetime) -> None:
     sd.mkdir(parents=True, exist_ok=True)
     (sd / "signals.jsonl").write_text("".join(json.dumps(asdict(s)) + "\n" for s in signals), encoding="utf-8")
     (sd / "state.json").write_text(json.dumps({"read": [s.key for s in signals], "last_uid": 202}), encoding="utf-8")
-    for kind, bid, script in (("council", TRIAGE, TRIAGE_SCRIPT), ("barracks", CAMP, CAMP_SCRIPT)):
+    for kind, bid, script in (("council", TRIAGE, TRIAGE_SCRIPT), ("barracks", CAMP, CAMP_SCRIPT),
+                              ("council", CHECK, CHECK_SCRIPT)):
         folder = state_dir(root, kind, bid)
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "simulated.json").write_text(json.dumps(script, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

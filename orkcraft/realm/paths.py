@@ -56,6 +56,33 @@ def by_source(table: dict[str, str], source: str, source_type: str = "") -> str:
     return table.get(source) or (table.get(source_type) if source_type else "") or ""
 
 
+# -- the External listeners name a kind per source (§4) -------------------------------------------------
+
+# What the quick-add offers for a source's carts (§9) and what it picks first, by service: a code tracker's work
+# is a code change, a message wants a reply; a design or a wiki page has no kind (the pool's sort decides).
+SOURCE_CHOICES = (pipes.CHANGE, pipes.REPLY, pipes.KNOW)
+SOURCE_DEFAULTS = {"github": pipes.CHANGE, "gitlab": pipes.CHANGE, "jira": pipes.CHANGE,
+                   "mail": pipes.REPLY, "slack": pipes.REPLY, "discord": pipes.REPLY}
+
+
+def source_of(service: str) -> str:
+    """The signal source a quick-add service listens as: `gmail` is the tower's mail."""
+    return "mail" if service == "gmail" else service
+
+
+def want_of_choice(value) -> str:
+    """One of SOURCE_CHOICES, else "" (none: the pool's sort decides)."""
+    want = pipes.want_of(value)
+    return want if want in SOURCE_CHOICES else ""
+
+
+def source_want(config: dict, source: str) -> str:
+    """The kind of work a tower's carts from `source` ask for: its setting `wants` (source → kind), set in the
+    quick-add or by an intent; "" when it names none (a tower set up before asks for none, as before)."""
+    got = config.get("wants")
+    return pipes.want_of(got.get(source)) if isinstance(got, dict) else ""
+
+
 # -- the reply path -------------------------------------------------------------------------------------
 
 # A message that is really a code task: a stack trace, a link into a repository, an ask to fix or merge.

@@ -195,7 +195,8 @@ def _add_files(w, args: dict) -> None:
 @_adding
 def _add_what(w, args: dict) -> None:
     w.adding.what(_strings(args, "picks"), bool(args.get("about_me", True)), text(args, "folder", 100) or "INBOX",
-                  text(args, "me", 300), bool(args.get("everything")), text(args, "intent", 500))
+                  text(args, "me", 300), bool(args.get("everything")), text(args, "intent", 500),
+                  text(args, "want", 20) if "want" in args else None)
 
 
 @_adding

@@ -23,7 +23,7 @@ import threading
 import urllib.request
 from dataclasses import asdict
 
-from orkcraft.realm import feeds, feeds_agent, logins, quickadd, sources_link
+from orkcraft.realm import feeds, feeds_agent, lexicon, logins, paths, quickadd, sources_link
 from orkcraft.realm.quickadd import Refused, Verified
 
 
@@ -46,6 +46,7 @@ class Adding:
         self.picks: list[str] = []
         self.about_me = True
         self.folder = "INBOX"
+        self.want: str | None = None      # what the person wants done with this source's carts (None: not asked yet)
         self.plan: quickadd.Plan | None = None
         self.found = 0
         self.editing = ""                 # the source being made again (`feed:<line>`, `mail`, `github`), or ""
@@ -290,11 +291,15 @@ class Adding:
             self.w.changed()
 
     def what(self, picks: list[str], about_me: bool, folder: str = "INBOX", me: str = "",
-             everything: bool = False, intent: str = "") -> None:
+             everything: bool = False, intent: str = "", want: str | None = None) -> None:
         """The picks → the setting it makes, and the first look, before anything is saved. Everything with
-        an intent keeps the intent too (the Lookout keeps a whole service calm)."""
+        an intent keeps the intent too (the Lookout keeps a whole service calm). `want`: what the person wants
+        done with what this source brings (docs/design/barracks-flows.md §9), kept per source in `wants`."""
         if self.login is None:
             raise Refused("Log in first")
+        if want is not None:
+            want = paths.want_of_choice(want)
+            self.want = want
         s = quickadd.SERVICES[self.service]
         self.picks, self.about_me, self.folder, self.me = picks, about_me, folder, me.strip()
         self.everything, self.intent = everything and bool(s.everything), " ".join(intent.split())[:500]
@@ -307,6 +312,10 @@ class Adding:
                               if login.service == "discord" else "", whole, guilds)
             if whole and ask and not self.w.intent:
                 p.changes["intent"] = ask
+            if want is not None:                       # its source's kind of work, beside the others'
+                source = paths.source_of(login.service)
+                wants = {k: v for k, v in dict(self.w.config.get("wants") or {}).items() if k != source}
+                p.changes["wants"] = {**wants, source: want} if want else (wants or None)
             return p, quickadd.first_look(login, p, opener, runner, imap)
 
         def done(result) -> None:
@@ -409,6 +418,16 @@ class Adding:
             out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓")})
         return out
 
+    def _want_now(self) -> str:
+        """What the What step shows picked: the person's pick, else the source's setting, else its service's default."""
+        if self.want is not None:
+            return self.want
+        source = paths.source_of(self.service)
+        got = self.w.config.get("wants")
+        if isinstance(got, dict) and source in got:
+            return paths.want_of_choice(got[source])
+        return paths.SOURCE_DEFAULTS.get(source, "")
+
     def view(self) -> dict | None:
         if not self.step:
             return None
@@ -435,7 +454,8 @@ class Adding:
                    [{"account": x.account, "who": x.who} for x in self.logins_here()],
                    who=self.login.who if self.login else f"Claude's {self.via.name} connection" if self.via else "",
                    options=[asdict(o) for o in self.options], picks=list(self.picks), about_me=self.about_me,
-                   folder=self.folder)
+                   folder=self.folder, want=self._want_now(),
+                   wants=[{"id": w, "label": lexicon.want_word(w)} for w in paths.SOURCE_CHOICES])
         if self.step == "check" and self.plan is not None:
             every = "every 2 min"
             if self.via:                                  # through Claude: what each look costs

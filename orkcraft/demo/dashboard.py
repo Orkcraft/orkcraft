@@ -484,6 +484,6 @@ def _seed_council(root: Path) -> None:
 
 def payload_of(sc: dict, source: str, event: str):
     from orkcraft.realm.pipes import Payload
-    kind, value, title = sc["payloads"][(source, event)]
-    return Payload(kind, value, source, event, title)
+    kind, value, title, *want = sc["payloads"][(source, event)]   # a fourth: the kind of work it carries
+    return Payload(kind, value, source, event, title, want=want[0] if want else "")
 

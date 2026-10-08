@@ -1,8 +1,6 @@
 # Design — what is wanted decides the way: the Agent pool's paths
 
-Status: written 2026-10-07; stages 1–2 (§12) built — the field, the road filter, the word, the Task board and
-the Calendar set it, the pool shows it; the pool's order (§5) and the `reply` path in `read` mode, its draft to
-the Review gate, *not mine*, a reply that reads like code leaves a card. Builds on the Agent pool's planning
+Status: written 2026-10-07; stages 1–3 (§12) built, stage 4 not — see §14 *As built*. Builds on the Agent pool's planning
 ([barracks-planning.md](barracks-planning.md)), roads and their filters ([roads-and-orcs.md](roads-and-orcs.md),
 `realm/roads.py` `passes`), the External listeners' intent and Lookout (`core/workers/watchtower.py`,
 `realm/lookout.py`), the Review board ([review-board.md](review-board.md)), the Review gate
@@ -188,3 +186,71 @@ The code of §5 starts after that work is merged, so the two meet in one place
   confirmation)? This design says no; autonomy may revisit it.
 - A Slack message from a developer channel: one source with two kinds (`reply` and `change`), decided by
   the Lookout, or two sources on two channels? §6.1 allows the first; the quick-add may suggest the second.
+
+## 14. As built
+
+Stages 1–3 are built; stage 4 is not (below, with why). What was decided while building:
+
+**Stage 1 — the field.**
+- `Payload.want` (`realm/pipes.py`: `WANTS`, `want_of`). A worker's `emit(want=)` carries it. The Router, the Review
+  gate (kept on its held items), the Review board, the Transformer and the Agent pool send on the kind their cart
+  came with. A hop records the kind its building set (`Hop.want`), and `pipes.want_by` names who set it.
+- The road filter `want` (`roads.passes`, the v3 schema). A cart without a kind does not pass a road that names
+  kinds; a road that names none lets every kind through.
+- `TERMS`: *Kind of work*: *Code change*, *Reply*, *Document*, *Routine*, *Keep* (`lexicon.want_word`).
+- The Task board (`core/workers/fields.py` `want`): a card keeps its cart's kind, and a card that came by road
+  without a kind has none. A card the person wrote is a *Code change* if it is a task and *Keep* if it is a note.
+  The card's menu picks *Reply* or *Document* (✉ / 📄 on the card).
+  - **Added:** a joined task takes the kind whose path may do least, and none when one of its cards has none
+    (`pipes.least_want`), so settling and joining never lend one card another's rights.
+- The Calendar's `meeting soon` asks for a *Document*.
+- The pool's card and window show the kind and who named it: *Reply · from External listeners*, *by the sort*,
+  *by its table*.
+
+**Stage 2 — the order and the reply path** (`core/workers/barracks_paths.py`, `realm/paths.py`).
+- §5 as written. The sort may only name `reply` (a lower path), and only for a task no building named a kind for.
+- `want_by_source` is keyed by building id or type. Its one default is the Calendar → *Document*.
+- *Not mine* is a failed task in the window and `pool.failed` (with the cart's `ref`) to the road's source. A
+  return road shows it on the card that sent it.
+- The reply's ork runs once in harness mode `read` (`jobs.run_read`), in an empty folder under the pool's state.
+  It reads the message, not the repository. It has no branch, no claim, no plan, no tests and no steward review
+  of a diff.
+- The pool never posts a reply. Its draft leaves as `pool.done` with a hop waiting for the person's approval
+  (`gate.APPROVAL`). An approval in a Review gate does not hand it back to the ork to post.
+  - **Added**, so that nothing a reply writes leaves the camp without the person's yes:
+    - a Review gate holds a reply whatever its rules (`gate.HELD_WANTS`), and lets it through with a hop of its
+      own (`gate.passed`);
+    - a Publisher asks before a shot that carries a reply no gate let through (`catapult.must_confirm`, counted in
+      its state folder).
+- A reply that reads like code (`paths.looks_like_code`: a stack trace, a repository link, an ask to fix or merge)
+  still runs as a reply. The steward leaves a to-do for the person on the Task board (*Looks like a code task —
+  from …*), never a task card that would go out by itself.
+  - **Not built:** the choice between that card and asking (🔥) by the autonomy level. It always makes the card.
+- `change` and `doc` take today's way.
+
+**Stage 3.**
+- The Reply check is a Review board preset (`team.PRESETS`, *Or set it up in one click* in its setup):
+  - *Tone* and *Facts*, on the laborer tier;
+  - `max_cycles` 2, i.e. one rework round;
+  - no exits, so what it approves goes on as it is;
+  - `notes`: every Scroll Dump of the town. The pages that share the draft's words go into each member's prompt
+    (`Discussion.notes`).
+- The External listeners' `wants` (source → kind) is set in the quick-add's *What* step (*What do you want done
+  with these?*, the service's default first) and goes on each cart (`paths.source_want`).
+  - **Changed:** the defaults by service are only what the quick-add offers first. A tower set up before has no
+    `wants`, so its carts name no kind and take today's way (§10's migration).
+  - **Not built:** the question on the *through Claude* path.
+- The intents set `wants` on the towers they lay: Ticket Grind and Bug Patrol (code changes), War Room, Review Lodge
+  and Task Camp (replies), Inbox Keep (mail a reply, GitHub a code change).
+- The demo's Front Desk adds a mail an agent answers: *Mail → Triage → Tasks → Agent pool (a reply) → Reply check →
+  Results (your yes) → Send replies*. Its Slack ask is a *Document* and goes to Results as before.
+
+**Not built — stage 4, deferred.**
+- The Lookout's refinement (§6.1). A source already names its kind, and the text may only lower it, so the word
+  would only choose among the kinds the source allows. The open question of §13 (one Slack source with two kinds,
+  or two sources) is better answered once people use the per-source setting.
+- The `doc` path with `debate` and `doc_to` (§6). It overlaps the design briefs the planning pool already leaves
+  ([barracks-designs.md](barracks-designs.md)) and the Review board's routing. A document takes today's way
+  meanwhile; its harness mode is still `work`.
+- A Router rule's `want` (§4) and a routing Review board's `WANT:` (§4). Both still pass on the kind their cart
+  came with; neither sets one.
