@@ -41,6 +41,7 @@ from dataclasses import asdict
 
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.watchtower_add import Adding
+from orkcraft.core.workers.watchtower_places import Desk
 from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mailbox, paths, watch
 
 REFRESH_S = 120.0
@@ -85,6 +86,7 @@ class WatchtowerWorker(Worker):
         self._judging = False
         self._clocks = {"look": 0.0, "tick": 0.0}             # monotonic: when `pulse` last did each
         self.adding = Adding(self)                            # Add a source: its three steps (watchtower_add.py)
+        self.desk = Desk(self)                                # 📍 what a paired phone says of places (watchtower_places.py)
 
     # -- settings and state ---------------------------------------------------------------------
 
@@ -158,6 +160,7 @@ class WatchtowerWorker(Worker):
         """Once a second (the GUI's clock): what the webhook heard, the schedule, a look when due."""
         self.drain()
         now = time.monotonic()
+        self.desk.tick(now)
         if now - self._clocks["tick"] >= CRON_S:
             self._clocks["tick"] = now
             self.tick()
@@ -179,6 +182,24 @@ class WatchtowerWorker(Worker):
 
     def status(self) -> str:
         return "ERROR" if self.errors else ""
+
+    # -- places (docs/design/phone-places.md) -----------------------------------------------------
+
+    def report_place(self, report) -> str:
+        """A paired phone came to one of its places or left it (realm/places.py `Report`)."""
+        return self.desk.report(report)
+
+    def orders_alert(self):
+        return self.desk.alert()
+
+    def answer_alert(self, key: str) -> str | None:
+        return self.desk.answer(key)
+
+    def loose_ends(self) -> list[dict]:
+        return self.desk.loose_ends()
+
+    def halt(self) -> int:
+        return self.desk.halt()
 
     def drain(self) -> None:
         while not self.inbox.empty():

@@ -111,3 +111,17 @@
 .gui-tower__source-acts { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; }
 .gui-tower__source-line { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-theme="office"] .gui-svc { box-shadow: inset 0 0 0 1px var(--frame); }
+
+/* Places (watchtower_places.js): a row per place — its name, autonomy, shelf life, ✕; what its cart says under it. */
+.gui-tower__places { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-tower__note { margin: 0; font-size: 12px; }
+.gui-tower__place { display: grid; grid-template-columns: minmax(80px, 1fr) auto auto auto; gap: var(--space-2); align-items: center;
+  padding: var(--space-2); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-tower__place-say, .gui-tower__place-roads { grid-column: 1 / -1; }
+.gui-tower__place-roads { display: flex; flex-direction: column; font-size: 12px; }
+.gui-tower__shelf { display: inline-flex; gap: var(--space-1); align-items: center; font-size: 12px; white-space: nowrap; }
+.gui-tower__shelf input { width: 64px; }
+@media (max-width: 520px) { .gui-tower__place { grid-template-columns: minmax(0, 1fr) auto; } }
+.gui-tower__heard { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.gui-tower__heard li { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: baseline; }
+.gui-tower__place > .ok-btn { justify-self: end; }

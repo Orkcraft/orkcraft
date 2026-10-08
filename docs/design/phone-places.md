@@ -1,6 +1,10 @@
 # Design — places: the phone tells the town where you are
 
-Status: a plan, written 2026-10-08; nothing of it is built but the word (`lexicon.TERMS` `place`).
+Status: written 2026-10-08. Stage 1 (§8) is built: the rules and the history (`realm/places.py`), the
+Watchtower's places (`core/workers/watchtower_places.py`, its Sources & intent: `buildings/watchtower_places.js`),
+`POST /api/place` and `place.report` (`gui/phones.py`, `gui/places.py`), Tailscale (`gui/tailnet.py`) and the
+Shortcuts / Tasker recipe (Settings → Phones); `tests/test_places.py`. Not built: the spend ceiling of §6
+(the town's budget and the Agent pool's own `budget_usd` hold meanwhile) and stages 2–3.
 Builds on the phone ([mobile.md](mobile.md): the listener, pairing, the device token), the
 External listeners (the Watchtower: [watchtower-automation.md](watchtower-automation.md),
 [watchtower-quick-add.md](watchtower-quick-add.md)), the roads ([roads-and-orcs.md](roads-and-orcs.md))
@@ -104,6 +108,8 @@ road is laid.
 
 - **Names live in the Watchtower** (its Places source), so roads can name them. A place can be made
   in the building (a name) or on the phone (a name and its circle); each side shows the other's.
+  The tower keeps a line per place, as it keeps its feeds: `home autonomy=clock shelf=2 say=You may start
+  the evening's work.` (`config.places`, at most ten; `places_keep_days` beside it).
 - **Circles live on the phone only:** the centre and the radius (150 m at least) are drawn on a map in
   the app and never sent. A place named on the desktop shows on the phone as *not on the map yet*.
 - The app gets the names through `mobile.hello` (and a change through the snapshot's `rev`).
@@ -121,11 +127,16 @@ The Watchtower's Places source, per place:
 | setting | default | |
 |---|---|---|
 | **Autonomy** | Propose only | Propose only: the event asks in Answers before a road's work starts. Apply if unanswered: it starts after a while unless refused. Apply at once: it starts |
-| **Spend ceiling** | $1 per event | what the work an event starts may spend; the town's budget holds above it |
+| **Spend ceiling** | $1 per event | what the work an event starts may spend; the town's budget holds above it. *Not built yet:* a cart carries no budget to the building that takes it; meanwhile the Agent pool's own `budget_usd` and the town's budget hold |
 | **Shelf life** | 2 h | older events are kept but send no cart |
 | **History** | 7 days | how long the events are kept on this machine; *Clear* empties it |
 
-Forgetting a phone (Settings → Phones → Forget) deletes its events too.
+Forgetting a phone (Settings → Phones → Forget) deletes its events too. The history is a file per project
+beside the machine's settings (`<settings folder>/places/<project>.jsonl`, 0600), never under the project.
+
+**Roads.** A place's cart takes the route `<place>-<change>`, so a road laid on `watch.place#home-arrived`
+takes only that; each arrived and left no road takes yet is a stub on the map to pull a road from (the
+Watchtower's `loose_ends`). A report no road takes is kept as *no road* and sends nothing.
 
 ### The Agent pool's steward decides
 
@@ -144,7 +155,10 @@ Until the app exists, Settings → Phones shows a ready recipe:
   automation runs without a tap on today's iOS.)*
 - **Android Tasker** (or MacroDroid): a Location profile, an HTTP Request action, the same call.
 
-The token for a recipe is a device token like the app's (one per paired recipe), revoked by Forget.
+The token for a recipe is a device token like the app's (one per paired recipe), revoked by Forget:
+**Places through Shortcuts or Tasker** in Settings → Phones makes one (`phones.recipe`) and shows it once, with
+the URL, the headers and the body. Shortcuts trusts only a real certificate, so the recipe needs Tailscale with
+HTTPS certificates on; on the LAN's self-signed one the panel says so.
 
 ### Stage 2: the app (Capacitor)
 
@@ -163,7 +177,7 @@ plugin of our own, small and with no third-party SDK:
 
 | stage | scope | done when |
 |---|---|---|
-| 1 | Tailscale found and used (the tailnet address in the QR, `tailscale cert`); `POST /api/place`; the Places source with its settings (§6) and `watch.place`; the history outside git; the Shortcuts / Tasker recipe | *back home* on a phone starts the Agent pool's steward, asked first in Answers |
+| 1 ✓ | Tailscale found and used (the tailnet address in the QR, `tailscale cert`); `POST /api/place`; the Places source with its settings (§6) and `watch.place`; the history outside git; the Shortcuts / Tasker recipe | *back home* on a phone starts the Agent pool's steward, asked first in Answers |
 | 2 | the app's own geofence plugin (iOS, Android); places drawn on the phone; the queue and shelf life on the phone | the same without Shortcuts or Tasker, on both phones |
 | 3 | more signs of the phone: the home Wi-Fi joined or left, a car's Bluetooth / CarPlay (*in the car*) | the Gramophone can make an episode for the road |
 

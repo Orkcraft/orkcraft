@@ -592,6 +592,11 @@ button { font: inherit; color: inherit; }
 .gui-phones__qr { width: 240px; max-width: 100%; height: auto; image-rendering: pixelated; }
 .gui-phones__how { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 12em; }
 .gui-phones__fp, .gui-phones__link { font: 11px/16px var(--font-mono); overflow-wrap: anywhere; color: var(--ink-muted); }
+.gui-phones__recipe { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2);
+  background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-phones__kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--space-3); margin: 0; font-size: 12px; }
+.gui-phones__kv dt { color: var(--ink-muted); }
+.gui-phones__kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
 /* A narrow window (a phone, a half-screen window): the town's foot gives the Warchief's line the width — the
    War Map shrinks to a strip of its lands and the line drops the news it cannot show whole (the face keeps

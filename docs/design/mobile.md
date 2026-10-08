@@ -124,6 +124,7 @@ are not on it.
 | `halt` | — | how many it stopped | yes |
 | `act` | `id`, `act`, `args` | as the act; only `pit`: `drop`, `drop_file` and `town_hall`: `ask` | yes |
 | `mobile.chat` | `limit` (at most 20) | the hall's last messages: `who`, `text` (plain), `ts`, `error`, `offer` | new (stage 2) |
+| `place.report` | `id`, `place`, `change`, `at` | `{"outcome"}`: the phone came to a place or left it ([phone-places.md](phone-places.md)); also `POST /api/place` | new (places, stage 1) |
 
 The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)

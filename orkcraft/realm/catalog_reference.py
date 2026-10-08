@@ -124,6 +124,11 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                   "down the roads",
         "wants": "what is wanted done with each source's carts, a source → change · reply · know (e.g. {\"mail\": "
                  "\"reply\", \"jira\": \"change\"}): it goes with each cart as its kind of work; the quick-add asks it",
+        "places": "the places a paired phone reports (`watch.place`), a line each, e.g. `home autonomy=clock shelf=2 "
+                  "say=You may start the evening's work.`: autonomy chains (the default) asks in Answers, clock goes "
+                  "after 10 min unless skipped, free goes at once; shelf, the hours a late report stays news; say, "
+                  "what its cart says; the phone keeps where a place is",
+        "places_keep_days": "how many days this machine keeps what the phones said of places (default 7)",
     },
     "signpost": {
         "rules": "one rule per line, the first match wins: `<route>: contains <text>`, `<route>: matches <regex>`, "

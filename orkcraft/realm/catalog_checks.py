@@ -69,6 +69,10 @@ def validate(spec: dict) -> list[str]:
             errors.append("config: cron: say `every 15m`, `hourly`, `daily 05:00`, `weekly mon 09:00` or a 5-field cron")
         if isinstance(config.get("github"), str) and not watch.REPO.match(config["github"]):
             errors.append("config: github must be owner/repo")
+        if isinstance(config.get("places"), list):
+            from orkcraft.realm import places
+            errors += [f"config: places: {x!r} is not a place: start it with {places.NAME_HINT}"
+                       for x in config["places"] if places.place_of(x) is None]
         if isinstance(config.get("feeds"), list):
             from orkcraft.realm import feeds
             errors += [f"config: feeds: {e}" for e in feeds.check(config["feeds"])]

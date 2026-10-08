@@ -10,7 +10,7 @@ import re
 from orkcraft.core.workers import watchtower_add
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import quickadd, watch
+from orkcraft.realm import places, quickadd, watch
 
 REFRESH_S = 1.0
 CARD_ROWS = 4                   # counters on the closed card; more sources fold into `+N more`
@@ -85,7 +85,7 @@ def detail(w) -> dict:
         "listening": w.hook.port if w.hook is not None else 0,
         "mailbox": w.look.unread if w.look is not None and not w.look.error else None,
         "intent": w.intent, "intent_error": w.errors.get("intent", ""), "error": w.errors.get("look", ""),
-        "adding": w.adding.view(), "listed": watchtower_add.listed(w),
+        "adding": w.adding.view(), "listed": watchtower_add.listed(w), "places": w.desk.view(),
         "settings": {"host": str(cfg.get("host") or ""), "folder": str(cfg.get("folder") or ""),
                      "github": str(cfg.get("github") or ""), "cron": str(cfg.get("cron") or ""),
                      "webhook_port": cfg.get("webhook_port") or "", "feeds": [str(x) for x in cfg.get("feeds") or []]},
@@ -251,8 +251,28 @@ def _remove(w, args: dict) -> bool:
     return watchtower_add.remove(w, text(args, "source", 2000))
 
 
+def _places_save(w, args: dict) -> bool:
+    """The places as the page lists them (a name, its autonomy, its shelf life, what its cart says) and how
+    many days the history is kept."""
+    rows = args.get("places")
+    if not isinstance(rows, list) or len(rows) > places.LIMIT:
+        raise ActError(f"places is a list of at most {places.LIMIT}")
+    for row in rows:
+        if not isinstance(row, dict) or not places.clean_name(row.get("name")):
+            raise ActError(f"A place's name is {places.NAME_HINT}")
+    names = [places.clean_name(r.get("name")) for r in rows]
+    if len(set(names)) != len(names):
+        raise ActError("Two places have the same name")
+    return w.desk.save(rows, args.get("keep_days"))
+
+
+def _places_clear(w, args: dict) -> None:
+    w.desk.clear()
+
+
 ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
         "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "add_claude": _add_claude,
         "add_ask": _add_ask, "edit": _edit, "remove": _remove,
+        "places_save": _places_save, "places_clear": _places_clear,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}
