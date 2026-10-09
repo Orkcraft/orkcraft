@@ -47,10 +47,10 @@ orkcraft                           # open the town in a window (macOS: the syste
 ```
 
 > [!NOTE]
-> **The terminal UI is deprecated.** `orkcraft tui` still opens it, and `orkcraft` falls back to it
-> when the window's packages are missing, but it gets no new features: the town lives in the window
-> now ([docs/design/calm-town.md](docs/design/calm-town.md)). On a machine without a display, use
-> `orkcraft gui --browser` over a forwarded port.
+> **The town lives in its window.** The terminal UI was removed
+> ([docs/design/calm-town.md](docs/design/calm-town.md) §9). Without the window's toolkit (`pywebview`)
+> the town opens in the browser; on a machine without a display, use `orkcraft gui --browser` over a
+> forwarded port.
 
 Orkcraft updates itself: a critical fix installs by itself when the town opens, any other update is
 offered (`orkcraft update` installs it now; [docs/updates.md](docs/updates.md)).
@@ -137,8 +137,7 @@ Buildings and their operator grow, from what the orks learned — never from cli
 - **The Warchief says what grew** — a level, a deed, and the loop closed on your review ("your 👎 on
   Brief → the orks changed it → 4 👍 since"). He wears the crown; the clan stays green.
 - **The War Map.** The orkspaces are lands in a framed map at the bottom left, each in its biome
-  (dirt, forest, ice, dust, void, lava, meadow — the ground and the huts follow it, with the TUI's glyphs on
-  the ground), the open one tall with its status; the fog of war makes a new one. When an ork asks
+  (dirt, forest, ice, dust, void, lava, meadow — the ground and the huts follow it), the open one tall with its status; the fog of war makes a new one. When an ork asks
   in another orkspace, the map calls you with rings, as a strategy game does when your units are
   attacked ([docs/design/war-map.md](docs/design/war-map.md)).
 
@@ -185,7 +184,7 @@ What is planned next is in [docs/roadmap.md](docs/roadmap.md).
 ```bash
 git clone https://github.com/Orkcraft/orkcraft && cd orkcraft
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -q -n auto        # ~1,300 tests in parallel; the GUI's are driven in Chromium, the TUI's headlessly
+.venv/bin/pytest -q -n auto        # the tests in parallel; the GUI's are driven in Chromium
 .venv/bin/orkcraft --demo
 ```
 
@@ -193,14 +192,11 @@ Every pull request and every push to `main` runs the tests on GitHub Actions (`.
 
 ```
 orkcraft/
-  app.py, cli.py     the app (it composes tui/) and the command line
-  core/              the town without a face: state, services, the bus (no Textual)
-  tui/               the app's parts, one domain each: roads, sessions, council, retros…
+  cli.py             the command line
+  core/              the town without a face: state, services, the bus
   gui/               the GUI face: host and server over the core, the page (Preact, no build step)
   design/            tokens, the building UI contracts; design/system → design-system/ (the GUI's CSS, fonts, sprites)
   tools/             the sprites drawn from code (logo.py, growth_sprites.py), the gallery and landing captures
-  wm/                the window manager: town, huts, roads, ghost
-  screens/           modals and the typed views of every building (screens/typed/)
   realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
                      feedback, optimize, weekly, checkpoint, housekeeping…
   quota/             each AI tool's quota readers (no quota spent)

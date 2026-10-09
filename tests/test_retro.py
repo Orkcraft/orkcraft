@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from types import SimpleNamespace as NS
 
-import pytest
 
 from orkcraft.realm import evolution, feedback, metrics, retro, workshop
 
@@ -70,37 +69,3 @@ def test_a_survey_answer_rates_the_very_result_it_showed(tmp_path: Path):
     inc = feedback.dislike(tmp_path, None, "a", "logic", "survey", s.as_output())
     assert inc.output == "the old brief" and feedback.scores(tmp_path)["a"] == {
         "likes": 1, "dislikes": 1, "penalty": 1.0, "liked": 1.0, "disliked": 1.0, "by": {"explicit": 0.0}}
-
-
-@pytest.mark.asyncio
-async def test_the_town_retro_asks_first_then_shows_its_report(fake_repo: Path, monkeypatch):
-    from orkcraft.core import runners
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.retro_survey import RetroSurveyModal
-    from orkcraft.screens.weekly_modal import WeeklyReportModal
-
-    monkeypatch.setattr(runners, "WEEKLY_RUNNER", lambda p: (json.dumps({"summary": "fine", "items": []}), 0.1))
-    _run(fake_repo, "town_hall", "a hall cart")
-    metrics.record_run(fake_repo, "town_hall", "done", 0.1, 500)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        app.open_weekly()
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if isinstance(app.screen, RetroSurveyModal):
-                break
-        assert isinstance(app.screen, RetroSurveyModal)
-        assert "a hall cart" in str(app.screen.card())
-        await pilot.press("1")
-        await pilot.pause()
-        assert isinstance(app.screen, WeeklyReportModal)
-        refs = feedback.references(fake_repo, "town_hall")
-        assert refs and refs[0]["value"] == "out of a hall cart"
-        report = app.screen.report
-        assert report.surveyed
-        await pilot.press("escape")
-        await pilot.pause()
-        app.show_weekly(report)                                       # asked once per report
-        await pilot.pause()
-        assert isinstance(app.screen, WeeklyReportModal)

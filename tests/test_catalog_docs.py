@@ -4,18 +4,6 @@ from __future__ import annotations
 import pytest
 
 from orkcraft.realm import catalog
-from orkcraft.screens.typed import _views
-from orkcraft.screens.typed.base import TypedView
-
-VIEWS = _views()
-
-
-@pytest.mark.parametrize("type_id", sorted(VIEWS))
-def test_takes_says_whether_the_view_acts_on_a_cart(type_id: str):
-    acts = VIEWS[type_id].receive is not TypedView.receive
-    assert bool(catalog.takes(type_id)) == acts, (
-        f"{type_id}: its view {'acts on' if acts else 'ignores'} a cart, "
-        f"but catalog.TAKES {'says nothing' if acts else 'says it takes one'}")
 
 
 @pytest.mark.parametrize("type_id", sorted(t.id for t in catalog.TYPES.values() if t.config))

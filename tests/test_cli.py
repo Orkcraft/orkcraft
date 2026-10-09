@@ -173,58 +173,6 @@ def test_agy_hooks_file_that_is_not_json_is_left_alone(tmp_path: Path):
     assert broken.read_text() == "{nope"
 
 
-def test_the_demo_flag_never_swallows_the_gui_subcommand(monkeypatch, tmp_path: Path):
-    """`orkcraft --demo gui` and `orkcraft gui --demo` both open the sandbox in the GUI, not the TUI."""
-    import orkcraft.cli as cli
-    import orkcraft.demo as demo
-    opened = []
-
-    class Launch:
-        @staticmethod
-        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
-            opened.append((root, demo, browser))
-            return 0
-
-    monkeypatch.setattr(cli, "_gui", lambda: Launch)
-    monkeypatch.setattr(demo, "build", lambda path, reset=False, set_name="main": tmp_path)
-    monkeypatch.setattr(cli, "OrkcraftApp", lambda *a, **kw: pytest.fail("the TUI opened"))
-    assert main(["--demo", "gui"]) == 0
-    assert main(["gui", "--demo", "--browser"]) == 0
-    assert main(["--demo", "gui", "--browser"]) == 0
-    assert opened == [(tmp_path, True, False), (tmp_path, True, True), (tmp_path, True, True)]
-
-
-def test_the_window_is_the_default_and_the_tui_is_deprecated(monkeypatch, tmp_path: Path, capsys):
-    """No subcommand opens the window; `orkcraft tui` still opens the TUI and says it is deprecated;
-    without the window's packages the TUI opens as before."""
-    import orkcraft.cli as cli
-    opened = []
-
-    class Launch:
-        @staticmethod
-        def run(root, auto_commit, layout, demo=False, browser=False, port=0, look="office"):
-            opened.append("gui")
-            return 0
-
-    class Tui:
-        def __init__(self, **kw):
-            pass
-
-        def run(self):
-            opened.append("tui")
-
-    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
-    monkeypatch.setattr(cli, "OrkcraftApp", Tui)
-    (tmp_path / ".git").mkdir()
-    assert main(["--repo", str(tmp_path)]) == 0
-    assert opened == ["gui"] and "deprecated" not in capsys.readouterr().err
-    assert main(["--repo", str(tmp_path), "tui"]) == 0
-    assert opened == ["gui", "tui"] and "deprecated" in capsys.readouterr().err
-    monkeypatch.setattr(cli, "_gui", lambda quiet=False: None)
-    assert main(["--repo", str(tmp_path)]) == 0
-    assert opened == ["gui", "tui", "tui"]
-
-
 def test_role_from_the_landing_page_opens_the_onboarding_on_it(monkeypatch, tmp_path: Path, capsys):
     """`orkcraft --role <class>` (the pick on orkcraft.dev) or a role id is kept as the profile's role before
     the window opens; an unknown one is refused; a role from a finished onboarding stays."""
@@ -326,3 +274,40 @@ def test_hooks_outside_a_project_says_what_to_do(tmp_path: Path, monkeypatch, ca
     assert main(["hooks", "install"]) == 1
     err = capsys.readouterr().err
     assert "project root" in err and "cd <project>" in err and "--repo" in err
+
+
+def test_no_subcommand_opens_the_window_and_tui_says_it_is_gone(fake_repo: Path, monkeypatch, capsys):
+    import orkcraft.cli as cli
+
+    opened = []
+
+    class Launch:
+        @staticmethod
+        def run(root, *a, **kw):
+            opened.append((root, kw))
+            return 0
+
+    monkeypatch.setattr(cli, "_gui", lambda quiet=False: Launch)
+    monkeypatch.setattr(cli, "_launching", lambda args: False)    # no update check in a test
+    assert cli.main(["--repo", str(fake_repo)]) == 0
+    assert opened == [(fake_repo, {"browser": False, "port": 0})]
+    assert cli.main(["tui"]) == 2
+    assert "terminal UI was removed" in capsys.readouterr().err and len(opened) == 1
+
+
+def test_without_its_packages_the_window_says_what_to_install(fake_repo: Path, monkeypatch, capsys):
+    import builtins
+
+    import orkcraft.cli as cli
+
+    real = builtins.__import__
+
+    def no_gui(name, *a, **kw):
+        if name == "orkcraft.gui" or name.startswith("orkcraft.gui."):
+            raise ImportError("no websockets", name="websockets")
+        return real(name, *a, **kw)
+
+    monkeypatch.setattr(builtins, "__import__", no_gui)
+    monkeypatch.setattr(cli, "_launching", lambda args: False)
+    assert cli.main(["--repo", str(fake_repo)]) == 1
+    assert "pip install 'orkcraft[gui]'" in capsys.readouterr().err

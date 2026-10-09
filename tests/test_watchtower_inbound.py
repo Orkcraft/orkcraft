@@ -4,18 +4,12 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import socket
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
-import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, feeds, inbound, masonry
-from orkcraft.screens.typed.watchtower_view import WatchtowerView
+from orkcraft.realm import catalog, feeds, inbound
 
 
 def slack_headers(secret: str, body: bytes, ts: int | None = None) -> dict:
@@ -97,57 +91,3 @@ def test_a_line_only_to_listen():
 def post(port: int, path: str, body: bytes, headers: dict | None = None):
     req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=body, method="POST", headers=headers or {})
     return urllib.request.urlopen(req, timeout=5)
-
-
-@pytest.mark.asyncio
-async def test_the_watchtower_hears_services_push(fake_repo: Path, monkeypatch):
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-    spec = {"id": "tower", "title": "Watchtower", "icon": "🗼", "orc": {"name": "Lookout"}, "type": "watchtower",
-            "config": {"webhook_port": port, "webhook_secret_env": "T_HOOK",
-                       "feeds": ["slack: secret=T_SLACK_SIGN", "figma: secret=T_FIG_PASS"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    for k, v in (("T_HOOK", "tok"), ("T_SLACK_SIGN", "sign"), ("T_FIG_PASS", "fig-pass")):
-        monkeypatch.setenv(k, v)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for ev in ("watch.comment", "watch.mention", "watch.webhook"):
-        ts.subscribe(app.scroll, "town_hall", "tower", ev)
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("tower").query_one(WatchtowerView)
-        await pilot.pause(0.1)
-        assert view.sources == ["webhook", "slack", "figma"] and view.polled == []
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-
-        check = b'{"type": "url_verification", "challenge": "c-42"}'
-        assert post(port, "/slack", check, slack_headers("sign", check)).read() == b"c-42"
-        msg = json.dumps(slack_event("<@UME> review please?")).encode()
-        assert post(port, "/slack", msg, slack_headers("sign", msg)).status == 202
-        assert post(port, "/slack", msg, slack_headers("sign", msg)).status == 202      # Slack retries: once
-        with pytest.raises(urllib.error.HTTPError):
-            post(port, "/slack", msg, {"X-Orkcraft-Token": "wrong"})
-        with pytest.raises(urllib.error.HTTPError):
-            post(port, "/figma", json.dumps({**FIGMA_COMMENT, "passcode": "nope"}).encode())
-        assert post(port, "/figma", json.dumps({"event_type": "PING", "passcode": "fig-pass"}).encode()).status == 202
-        assert post(port, "/figma", json.dumps(FIGMA_COMMENT).encode()).status == 202
-        note = json.dumps({"id": "55", "title": "Roadmap", "text": "ask Me", "mention": True}).encode()
-        assert post(port, "/confluence", note, {"X-Orkcraft-Token": "tok"}).status == 202
-        assert post(port, "/deploy", b'{"env": "prod"}', {"X-Orkcraft-Token": "tok"}).status == 202
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if len(sent) >= 4:
-                break
-        await pilot.pause(0.6)
-        assert [(p.mode, p.title) for p in sent] == [
-            ("watch.mention", "slack · @ UANN in C1: @you review please?"),
-            ("watch.comment", "figma · bob in Checkout: please look @vadim"),     # who you are in Figma: not yet known
-            ("watch.mention", "confluence · @ Roadmap"),
-            ("watch.webhook", "POST /deploy")]
-
-        # a feed that asks finds the same Slack message: it is not sent again
-        feed = feeds.Feed("slack", {"token": "T_SLACK"}, "slack: token=T_SLACK")
-        view._save_state(feeds_seen={feed.line: []})
-        item = feeds.Item("C1:1790000100.000200", "@ ann: review please?", mention=True)
-        view.apply_feeds([(feed, feeds.Look([item], me={"id": "UME"}))])
-        assert len(sent) == 4 and view._state()["feeds_me"]["slack"] == {"id": "UME"}

@@ -5,8 +5,8 @@ building's name, its status lines and its code each wear their own font needs a 
 town itself must change, not just a full-screen view. Rewriting ~20k lines of Textual at once
 would stop all other work, so the move goes in stages. The TUI keeps working the whole way.
 
-**The TUI is deprecated** ([calm-town.md](calm-town.md) §9): `orkcraft` opens the window, new features
-go to the GUI only, and the TUI gets fixes until it is removed.
+**The TUI is removed** ([calm-town.md](calm-town.md) §9, 2026-10-09): the GUI is the one face. What
+follows is the migration as it went.
 
 | stage | what | state |
 |---|---|---|

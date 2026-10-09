@@ -17,6 +17,7 @@ is the map, one panel on the right, and one line to the Warchief, who does the r
 | 4 | the Warchief's line: `/` commands, `@` names, hints by rules — no model (§4) | done |
 | 5 | the Warchief delegates: its answer's order goes to a specialist, its cards (§5–§7) | done |
 | 6 | the Warchief speaks first, in its line (§8) | done |
+| 7 | the TUI removed: `tui/`, `screens/`, `widgets/`, `wm/`, `app.py`, `theme.py` and Textual go (§9) | done |
 | later | a plan's buildings as ghosts on the map; `@building` straight to its steward; the Foreman fills one building's settings | |
 
 ## 1. The screen
@@ -185,6 +186,13 @@ the TUI opens as before.
 - In a release or two: `tui/`, `screens/`, `widgets/`, `wm/`, `app.py` and the Textual and Rich
   dependencies go. A remote machine without a display uses `orkcraft gui --browser` over a
   forwarded port.
+
+**As built (2026-10-09):** the TUI is removed — `tui/`, `screens/`, `widgets/`, `wm/`, `app.py`,
+`theme.py`, `demo/screens.py` (the TUI's screenshots) and their tests, and Textual from the dependencies.
+`orkcraft` always opens the window; without `pywebview` the town opens in the browser. `orkcraft tui`
+only says the TUI was removed. `websockets` became a dependency of every install (the GUI's server);
+`pywebview`, `cryptography` and `segno` stay in `orkcraft[gui]`. `tests/test_architecture.py`
+`test_the_terminal_ui_stays_gone` keeps Textual and Rich out.
 
 ## 10. Words
 

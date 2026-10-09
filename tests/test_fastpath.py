@@ -101,45 +101,6 @@ def test_settings_and_the_runner(tmp_path: Path, monkeypatch):
     assert fp.light_runner(tmp_path) is None and "junk" not in fp.settings(tmp_path)
 
 
-@pytest.mark.asyncio
-async def test_the_app_raises_clean_buildings_and_stops_blocked_ones(fake_repo: Path, monkeypatch):
-    from orkcraft.core import runners
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.council_review import CouncilVerdict
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 45)) as pilot:
-        await pilot.pause()
-        assert app.review_and_raise(dict(CRAG)) and "tally" in app.custom_specs
-        assert not app.review_and_raise(dict(MILL))
-        await pilot.pause()
-        assert isinstance(app.screen, CouncilVerdict) and not app.screen.query("#council-approve")
-        await pilot.press("enter")                                             # a block cannot be approved
-        assert isinstance(app.screen, CouncilVerdict)
-        await pilot.press("escape")
-        await pilot.pause()
-        assert "mymill" not in app.custom_specs
-        assert [r["decision"] for r in fp.recent(fake_repo)][:2] == ["rejected", "approved"]
-
-        monkeypatch.setattr(runners, "FASTPATH_RUNNER",
-                            lambda prompt: ('{"artisan": {"ok": false, "note": "too plain"}}', 0.0))
-        assert not app.review_and_raise(dict(CRAG, id="tally2"))
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if isinstance(app.screen, CouncilVerdict):
-                break
-        assert isinstance(app.screen, CouncilVerdict) and "too plain" in str(app.screen.query_one("#council-notes").render())
-        await pilot.press("enter")                                             # approve anyway
-        await pilot.pause()
-        assert "tally2" in app.custom_specs and fp.recent(fake_repo)[0]["decision"] == "overridden"
-        from orkcraft.screens.town_hall import TownHallView
-        hall = next(iter(app.query(TownHallView)), None)
-        if hall is not None:
-            hall.refresh_hall()
-            body = str(hall.query_one("#hall-body").render())
-            assert "Fast Path" in body and "building mymill" in body
-
-
 def test_the_chief_warns_of_a_mill_with_more_than_one_agent_step(tmp_path: Path):
     one = dict(MILL, config={"steps": ["grep: x", "script: make || agent: do it"]})
     two = dict(MILL, config={"steps": ["agent: tidy it", "script: make || agent: do it"]})

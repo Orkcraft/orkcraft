@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from orkcraft.core import buildings, runners
 from orkcraft.core import roads as core_roads
@@ -115,41 +114,6 @@ def test_a_road_with_a_rule_goes_on_to_the_recruiter(fake_repo, monkeypatch):
     rid = host.command("job.accept", {"job": jid, "index": 0})
     assert rid.startswith("recruit-") and _wait(host, rid) is not None
     assert "only my boss's mail" in asked[0] and "mail.received" in asked[0]
-
-
-@pytest.mark.asyncio
-async def test_the_tui_finds_the_road_in_words_and_lays_it(fake_repo, monkeypatch):
-    from textual.widgets import Input, OptionList
-
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.road_modal import WORDS, RoadPlanModal
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(200, 50)) as pilot:
-        await pilot.pause()
-        tower = buildings.raise_spec(app.core, buildings.type_spec(app.core, "watchtower")).id
-        fields = buildings.raise_spec(app.core, buildings.type_spec(app.core, "fields")).id
-        await pilot.pause()
-        monkeypatch.setattr(runners, "ROAD_RUNNER", _answer(
-            {"from": tower, "event": "mail.received", "match": "(?i)unread", "say": "When unread mail comes, a to-do"}))
-        assert WORDS == "+words"
-        app.road_in_words(fields, tower)
-        await pilot.pause()
-        app.screen.query_one(Input).value = "непрочитанные → to-do"
-        await pilot.press("enter")
-        for _ in range(50):
-            await pilot.pause(0.05)
-            if isinstance(app.screen, RoadPlanModal):
-                break
-        assert isinstance(app.screen, RoadPlanModal)
-        assert "When unread mail comes" in str(app.screen.query_one(OptionList).get_option_at_index(0).prompt)
-        await pilot.press("enter")
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if app.scroll.building(fields).roads:
-                break
-        road = app.scroll.building(fields).roads[0]
-        assert (road.source, road.event, road.filter) == (tower, "mail.received", {"match": "(?i)unread"})
 
 
 def test_the_receivers_steward_finds_the_road_on_its_own_tool_and_tier(fake_repo, monkeypatch):

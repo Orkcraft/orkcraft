@@ -8,13 +8,10 @@ from pathlib import Path
 import pytest
 
 from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.core import buildings, bus, runners
+from orkcraft.core import buildings, bus
 from orkcraft.core.town import Town
 from orkcraft.design import tokens, ui
 from orkcraft.realm import catalog, checkpoint, masonry, steward
-from orkcraft.screens.typed.knowledge_view import KnowledgeView
-from orkcraft.screens.typed.lake_view import LakeView
 
 
 def test_the_tokens_hold_together():
@@ -170,56 +167,3 @@ def test_a_steward_redesigns_from_a_wish_and_is_sent_back_when_wrong(fake_repo):
     assert steward.apply_proposal(trial, "insight", report.proposals[0].to_dict()) == "a new layout"
     assert trial.building("insight").ui == good
     assert steward.redesign(fake_repo, town.scroll, "insight", "lake", "x", budget_ok=False).error
-
-
-@pytest.mark.asyncio
-async def test_the_tui_lays_a_view_out_as_its_document_says(fake_repo, monkeypatch):
-    _lake(fake_repo)
-    assert masonry.save_spec(fake_repo, {"id": "dump", "title": "Dump", "icon": "🗑️", "orc": {"name": "Lib"},
-                                         "type": "scrolls"}) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        lake = app.desktop.get_window("insight").query_one(LakeView)
-        assert str(lake.query_one("#lake-scroll").styles.height) == "1fr"
-        doc = ui.default("lake")
-        doc["panes"][0].update(title="Now", font="title", tone="fire")
-        doc["panes"][1]["size"] = 4
-        assert buildings.set_ui(app.core, "insight", doc) == []
-        await pilot.pause()
-        head = lake.query_one("#lake-head")
-        assert head.border_title == "Now" and "bold" in str(head.styles.text_style)
-        assert str(lake.query_one("#lake-scroll").styles.height) == "4fr"
-
-        dump = app.desktop.get_window("dump").query_one(KnowledgeView)
-        flipped = ui.default("scrolls")
-        row = flipped["panes"][1]
-        row["panes"] = list(reversed(row["panes"]))
-        assert buildings.set_ui(app.core, "dump", flipped) == []
-        await pilot.pause()
-        order = [c.id for c in dump.query_one("#kb-tree").parent.children]
-        assert order.index("kb-page") < order.index("kb-tree")
-
-
-@pytest.mark.asyncio
-async def test_d_asks_the_steward_and_enter_keeps_the_new_layout(fake_repo, monkeypatch):
-    _lake(fake_repo)
-    good = ui.default("lake")
-    good["panes"][1]["size"] = 5
-    monkeypatch.setattr(runners, "STEWARD_RUNNER",
-                        lambda p: (json.dumps({"proposals": [{"type": "ui", "ui": good, "why": "a bigger page"}]}), 0.01))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        app.redesign_building("insight")
-        await pilot.pause()
-        await pilot.press(*"bigger page")
-        await pilot.press("enter")
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if type(app.screen).__name__ == "StewardView":
-                break
-        assert type(app.screen).__name__ == "StewardView"
-        await pilot.press("enter")
-        await pilot.pause()
-        assert app.scroll.building("insight").ui == good

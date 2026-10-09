@@ -106,31 +106,6 @@ def test_levels_and_units():
     assert telemetry.fmt_tokens(131072) == "128k" and telemetry.fmt_tokens(512) == "512"
 
 
-@pytest.mark.asyncio
-async def test_hud_gold_lumber_and_the_budget_gate(fake_repo: Path):
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.widgets.hud import Hud
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(200, 50)) as pilot:
-        await pilot.pause()
-        hud = app.screen.query_one("#hud", Hud)
-        assert "$— / $20.00" in str(hud.render()) and "— / 128k" in str(hud.render())
-        app.telemetry.refresh = lambda: telemetry.Snapshot(  # type: ignore[method-assign]
-            spent_usd=21.5, sessions=1, context_by_terminal={"new:claude:1": 140_000})
-        app.refresh_telemetry()
-        app.refresh_roster()
-        await pilot.pause()
-        text = str(hud.render())
-        assert "$21.50 / $20.00" in text and "136k / 128k" in text
-        assert hud.resources.gold_level == "over" and hud.resources.lumber_level == "over"
-        started = []
-        app.chat.action_new_session = lambda harness: started.append(harness)  # type: ignore[method-assign]
-        app.action_spawn_orc()
-        assert started == []                                   # held: the treasury is empty
-        assert app.gold_exhausted() is True
-
-
 def test_hook_records_run_and_terminal(tmp_path, monkeypatch):
     import importlib.util
     spec = importlib.util.spec_from_file_location(

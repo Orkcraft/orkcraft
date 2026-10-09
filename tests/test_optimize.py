@@ -5,7 +5,6 @@ import datetime as dt
 import json
 from pathlib import Path
 
-import pytest
 
 from orkcraft.realm import checkpoint, feedback, metrics, optimize
 
@@ -107,41 +106,6 @@ def test_propose_retries_once_with_its_problems(tmp_path: Path):
     assert "5000 tokens" in prompts[0] and "disliked it 1×" in prompts[0] and "REJECTED" in prompts[1]
     optimize.save(tmp_path, result.proposal)
     assert [p.id for p in optimize.pending(tmp_path)] == [result.proposal.id]
-
-
-@pytest.mark.asyncio
-async def test_apply_with_one_click_and_z_takes_it_back(fake_repo: Path, monkeypatch):
-    from orkcraft.core import runners
-    from orkcraft import scroll as ts
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.proposal_modal import ProposalModal
-
-    short = "Summarise the PR, flag risk, give a verdict."
-    monkeypatch.setattr(runners, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
-        {"action": "shrink", "target": "orc:seer", "prompt": short, "why": "same job, fewer words"}), 0.003))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        ts.add_handler(app.scroll, "town_hall", "Seer", kind="agent", orders=ORDERS)
-        app.desktop.save()
-        app.checkpoint("update", "town_hall", "hire Seer")
-        _spend(fake_repo, "town_hall", 4000, dt.datetime.now())
-        assert app.optimize_now()
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if isinstance(app.screen, ProposalModal):
-                break
-        assert isinstance(app.screen, ProposalModal)
-        await pilot.press("enter")
-        await pilot.pause()
-        seer = app.scroll.building("town_hall").garrison.handler("seer")
-        assert seer.orders == short
-        p = optimize.proposals(fake_repo)[0]
-        assert p.status == "applied" and p.commit
-        assert checkpoint.history(fake_repo, "town_hall")[0].message.startswith("auto-improve(town_hall): shrink orc:seer")
-        assert app.revert_building("town_hall")
-        assert app.scroll.building("town_hall").garrison.handler("seer").orders == ORDERS
-        assert not app.apply_proposal(p)                                   # applied once: never twice
 
 
 def test_a_clan_fires_brief_is_never_a_workshop_steward():

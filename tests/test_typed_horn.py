@@ -7,11 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import horn, catalog, masonry
-from orkcraft.realm.pipes import Payload
-from orkcraft.screens.dialogs import TextBlock
-from orkcraft.screens.typed.horn_view import HornView
+from orkcraft.realm import horn, catalog
 
 
 def test_the_table_picks_the_most_precise_line():
@@ -54,58 +50,6 @@ def test_the_spec_is_checked():
     assert any("quiet" in e for e in errors) and any("cooldown" in e for e in errors)
     spec["config"] = {"sounds": ["mail.received: chime", "*: none"], "default": "ding", "quiet": "22:00-08:00"}
     assert catalog.validate(spec) == []
-
-
-@pytest.mark.asyncio
-async def test_the_horn_sounds_what_comes_down_its_roads(fake_repo: Path, monkeypatch):
-    for s in ({"id": "gate_pit", "title": "The Pit", "icon": "🕳️", "orc": {"name": "Scavenger"}, "type": "pit"},
-              {"id": "horn", "title": "The Horn", "icon": "📯", "orc": {"name": "Hornblower"}, "type": "horn",
-               "config": {"sounds": ["pit.link: alarm"], "cooldown": 0}}):
-        assert masonry.save_spec(fake_repo, s) == []
-    played: list[tuple[str, str]] = []
-    monkeypatch.setattr(HornView, "player", staticmethod(lambda path, sound: played.append((sound, path.name)) or "player"))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        app.add_road("horn", "gate_pit", "pit.link", None)
-        app.add_road("horn", "gate_pit", "pit.text", None)
-        view = app.desktop.get_window("horn").query_one(HornView)
-        view.refresh_data()
-        assert view.rows == [("gate_pit", "pit.link"), ("gate_pit", "pit.text"), ("", "*")]
-        view.receive(Payload("text", "https://x", "gate_pit", "pit.link", "a link"), "a link", "")
-        view.receive(Payload("text", "hello", "gate_pit", "pit.text", "a paste"), "a paste", "")
-        assert played == [("alarm", "alarm.wav"), ("horn", "horn.wav")]
-        assert view.hut_lines([8]) == ["♪ horn"] and [c.sound for c in view.calls] == ["horn", "alarm"]
-
-        assert view.cycle("gate_pit", "pit.text") == "chime"              # Enter: the next sound, heard at once
-        assert app.custom_specs["horn"]["config"]["sounds"] == ["pit.link: alarm", "pit.text: chime"]
-        assert played[-1][0] == "chime"
-        view.save_config({"sounds": ["gate_pit/pit.link: drum", "pit.link: alarm", "pit.text: chime"]})
-        assert view.sound_of("gate_pit", "pit.link") == "drum"            # the road's own line decides…
-        assert view.cycle("gate_pit", "pit.link") == "ding"               # …and Enter changes that line
-        assert app.custom_specs["horn"]["config"]["sounds"][:2] == ["gate_pit/pit.link: ding", "pit.link: alarm"]
-        view.save_config({"sounds": ["pit.link: alarm", "pit.text: chime"]})
-
-        view.save_config({"cooldown": 60})
-        view.receive(Payload("text", "1", "gate_pit", "pit.text", "one"), "one", "")
-        view.receive(Payload("text", "2", "gate_pit", "pit.text", "two"), "two", "")
-        assert [c.played for c in view.calls[:2]] == ["cooldown", "player"]
-
-        assert view.quick_action("horn.mute") and view.muted
-        n = len(played)
-        view.receive(Payload("text", "x", "gate_pit", "pit.link", "muted"), "muted", "")
-        assert len(played) == n and view.calls[0].played == "muted" and view.hut_lines([8]) == ["🔇 muted"]
-        assert view.quick_action("horn.mute") and not view.muted
-
-        app.desktop.focus_window(app.desktop.get_window("horn"))
-        await pilot.pause()
-        await pilot.press("e")
-        await pilot.pause()
-        assert isinstance(app.screen, TextBlock)
-        app.screen.query_one("#block-text").text = "gate_pit: ding\n*: none"
-        await pilot.press("ctrl+s")
-        await pilot.pause()
-        assert app.custom_specs["horn"]["config"]["sounds"] == ["gate_pit: ding", "*: none"]
 
 
 def test_without_a_player_the_terminal_bell_rings(monkeypatch, tmp_path: Path):

@@ -3,16 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.core.workers.barracks import BarracksWorker
-from orkcraft.core.workers.council import CouncilWorker
-from orkcraft.realm import masonry, pipes, roads
+from orkcraft.realm import roads
 from orkcraft.realm import team as tm
-from orkcraft.screens.dialogs import TextPrompt
-from orkcraft.screens.typed.team_view import TeamView
 
 SIZE = (200, 46)
 TEAM = [tm.Member("PM"), tm.Member("Architect", "agy", "gemini-3.1-pro-high"), tm.Member("Security")]
@@ -113,101 +106,3 @@ def test_briefs_are_files_claude_reads_and_agy_gets_inline():
     assert "short rule" in agy and "long knowledge" in agy
     assert "WebSearch,WebFetch" in roads._harness_cmd("claude", "hi", Path("."), web=True)[6]
     assert "WebFetch" not in roads._harness_cmd("claude", "hi", Path("."))[6]
-
-
-@pytest.mark.asyncio
-async def test_the_clan_fire_reviews_a_barracks_result_and_sends_it_back(fake_repo: Path, monkeypatch):
-    spec = {"id": "fire", "title": "Clan Fire", "icon": "🪔", "orc": {"name": "Chieftain"}, "type": "council",
-            "config": {"steward_prompt": "Ask me before anything ships.", "members": ["Planner:claude", "Security:claude"],
-                       "veto": ["Security"], "max_cycles": 2, "budget_usd": 1}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    s = Script({"Planner": ["APPROVE", "APPROVE"], "Security": ["VETO: unsigned", "APPROVE"],
-                "Steward": ["DECISION: approve\nfine", "DECISION: ask\nShip on Friday?", "DECISION: approve\nyes"]})
-    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for event in ("team.artifact_ready", "team.approved", "team.rework"):
-        ts.subscribe(app.scroll, "town_hall", "fire", event)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("fire").query_one(TeamView)
-        assert view.mini_status() == ["Planner claude", "Security ⛔ claude"]
-        brief = view.role_file("Security")
-        assert brief.is_file() and view.steward_file.is_file() and view.brief_of(tm.Member("Security")) == ("", "")
-        brief.write_text("# Security\n\nEvery release is signed.\n", encoding="utf-8")
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-
-        async def settle(pred) -> None:
-            for _ in range(80):
-                await pilot.pause(0.02)
-                if pred():
-                    return
-
-        app.deliver_payload("fire", pipes.Payload(pipes.TEXT, "# Release plan\n1. tag", "camp", "pool.done",
-                                                  "Release plan"), "Release plan", "# Release plan\n1. tag")
-        await settle(lambda: view.current and view.current.finished and not view._busy)
-        d = view.current
-        assert d.outcome == "rework" and d.title == "Release plan" and d.cycle == 1
-        assert any("Every release is signed." not in p and "roles/security.md" in p for w, p in s.prompts if w == "Security")
-        assert any("Ask me before anything ships." in p for w, p in s.prompts if w == "Steward")
-        modes = [p.mode for p in sent]
-        assert modes == ["team.artifact_ready", "team.rework"]
-        assert "cycle 1 of 2" in sent[1].value and sent[1].title == "Release plan"
-        assert (fake_repo / d.doc_path).read_text() == "# Release plan\n1. tag"     # read from disk by Claude
-
-        sent.clear()                                         # the Barracks sends the revised plan back
-        app.deliver_payload("fire", pipes.Payload(pipes.TEXT, "# Release plan\n1. sign\n2. tag", "camp",
-                                                  "pool.done", "Release plan"), "Release plan",
-                            "# Release plan\n1. sign\n2. tag")
-        await settle(lambda: view.current is not d and view.current.outcome == "asked" and not view._busy)
-        assert view.current.cycle == 2 and view.mini_status()[0] == "🔥 the steward asks"
-        app.deliver_payload("fire", pipes.Payload(pipes.TEXT, "another doc", "camp", "pool.done", "Other"),
-                            "Other", "another doc")
-        assert [w[0] for w in view.waiting] == ["Other"] and view.mini_status()[-1] == "1 queued"
-        s.replies["Planner"].append("APPROVE")
-        s.replies["Security"].append("APPROVE")
-        s.replies["Steward"].append("DECISION: approve\nok")
-        assert view.quick_action("team.start")
-        await pilot.pause()
-        assert isinstance(app.screen, TextPrompt)
-        await pilot.press(*"yes", "enter")
-        await settle(lambda: len(view.history) == 3 and not view._busy)
-        assert sorted(h.outcome for h in view.history) == ["approved", "approved", "rework"]
-        approved = [p for p in sent if p.mode == "team.approved"]
-        assert [p.value for p in approved] == ["# Release plan\n1. sign\n2. tag", "another doc"]
-        report = (fake_repo / [p for p in sent if p.mode == "team.artifact_ready"][0].value).read_text()
-        assert "> **Operator:** yes" in report and "Security — approve" in report
-
-
-@pytest.mark.asyncio
-async def test_a_rework_goes_straight_back_to_the_barracks_onto_the_same_branch(fake_repo: Path, monkeypatch):
-    from orkcraft.realm import barracks as bk
-    from orkcraft.screens.typed.pool_view import PoolView
-    for spec in ({"id": "camp", "title": "Barracks", "icon": "🏕", "orc": {"name": "Grunts"}, "type": "barracks"},
-                 {"id": "fire", "title": "Clan Fire", "icon": "🪔", "orc": {"name": "Chieftain"}, "type": "council",
-                  "config": {"members": ["Planner:claude"], "max_cycles": 3, "budget_usd": 1}}):
-        assert masonry.save_spec(fake_repo, spec) == []
-    s = Script({"Planner": ["CHANGES: no rollback"], "Steward": ["DECISION: rework\nadd a rollback"]})
-    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
-    monkeypatch.setattr(BarracksWorker, "_dispatch", lambda self, task: None)          # no orc runs: only the queue
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        camp = app.desktop.get_window("camp").query_one(PoolView)
-        view = app.desktop.get_window("fire").query_one(TeamView)
-        first = camp.add_task("Release plan", "write the release plan")
-        first.branch, first.status = f"pool/camp/{first.id}", "done"
-        camp.state.queue.remove(first)
-        camp.state.tasks.append(first)
-        assert first.ref == f"camp:{first.id}"
-        app.deliver_payload("fire", pipes.Payload(pipes.TEXT, "# Release plan\n1. tag", "camp", "pool.done",
-                                                  "Release plan", (), first.ref), "Release plan", "# Release plan\n1. tag")
-        for _ in range(80):
-            await pilot.pause(0.02)
-            if view.current and view.current.finished and not view._busy:
-                break
-        assert view.current.outcome == "rework"
-        back = [t for t in camp.state.queue if t is not first]
-        assert len(back) == 1 and back[0].ref == first.ref and "add a rollback" in back[0].text
-        assert back[0].key == first.id and back[0].branch == first.branch          # the same work, the same branch
-        assert bk.task_branch("camp", back[0]) == first.branch

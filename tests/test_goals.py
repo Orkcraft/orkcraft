@@ -5,7 +5,6 @@ import datetime as dt
 import json
 from pathlib import Path
 
-import pytest
 
 from orkcraft import scroll as ts
 from orkcraft.realm import evolution, feedback, metrics, optimize
@@ -104,41 +103,3 @@ def test_the_council_hears_the_goal(tmp_path: Path):
                                                                           "prompt": better}), None))
     assert "💎 QUALITY" in prompts[0] and '"enrich"' in prompts[0] and '"chain": only' not in prompts[0]
     assert result.proposal.action == "enrich" and result.proposal.after == better
-
-
-@pytest.mark.asyncio
-async def test_the_goal_button_cycles_and_the_retro_enriches(fake_repo: Path, monkeypatch):
-    from orkcraft.core import runners
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.proposal_modal import ProposalModal
-
-    better = ORDERS + " Show the verdict first, then the risky files."
-    monkeypatch.setattr(runners, "OPTIMIZE_RUNNER", lambda p: (json.dumps(
-        {"action": "enrich", "target": "orc:seer", "prompt": better, "why": "clearer"}), 0.003))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        ts.add_handler(app.scroll, "town_hall", "Seer", kind="agent", orders=ORDERS)
-        app.desktop.save()
-        app.set_focus_state("building", building_id="town_hall")
-        for _ in range(3):
-            await pilot.pause()
-        assert "Balance" in str(app.screen.query_one("#ib-goal").render())
-        await pilot.click("#ib-goal")
-        await pilot.pause()
-        assert app.scroll.building("town_hall").goal == "quality"
-        assert "Quality" in str(app.screen.query_one("#ib-goal").render())
-        saved = json.loads(app.desktop.scroll_path.read_text())
-        assert next(b for b in saved["buildings"] if b["id"] == "town_hall")["goal"] == "quality"
-        feedback.dislike(fake_repo, app.scroll, "town_hall", "logic")
-        assert app.optimize_now()
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if isinstance(app.screen, ProposalModal):
-                break
-        assert isinstance(app.screen, ProposalModal)
-        await pilot.press("enter")
-        await pilot.pause()
-        assert app.scroll.building("town_hall").garrison.handler("seer").orders == better
-        assert app.cycle_goal("town_hall") == "thrift" and app.cycle_goal("town_hall") == "balance"
-        assert app.scroll.building("town_hall").goal is None

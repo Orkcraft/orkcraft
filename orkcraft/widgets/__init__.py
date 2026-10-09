@@ -1,1 +1,0 @@
-"""Widgets package for orkcraft."""

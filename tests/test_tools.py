@@ -6,7 +6,6 @@ import subprocess
 from pathlib import Path
 
 from orkcraft import tools
-from orkcraft.widgets.hud import Hud, Resources
 
 
 def _run(cmd, **_):
@@ -108,32 +107,6 @@ def test_a_cli_that_cannot_say_its_version(tmp_path: Path):
         raise subprocess.TimeoutExpired(cmd, 5)
     claude = tools.detect(_which({"claude"}), boom, env={}, home=tmp_path)[0]
     assert claude.found and claude.version == ""
-
-
-def test_the_hud_corner_follows_billing():
-    from textual.app import App
-
-    class _A(App):
-        def compose(self):
-            yield Hud(id="hud")
-
-    import asyncio
-
-    async def go():
-        app = _A()
-        async with app.run_test(size=(160, 5)):
-            hud = app.query_one(Hud)
-            hud.set_resources(Resources(quota="claude 38%", show_gold=False))
-            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
-            assert "⏳ claude 38%" in plain and "🪙" not in plain
-            hud.set_resources(Resources(quota="claude 90%", quota_level="warn", show_gold=True))
-            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
-            assert "⏳ claude 90%" in plain and "🪙" in plain
-            hud.set_resources(Resources())
-            plain = str(hud.content if hasattr(hud, "content") else hud.renderable)
-            assert "⏳" not in plain and "🪙" in plain
-
-    asyncio.run(go())
 
 
 def test_the_warder_guards_agy_from_1_1_12():

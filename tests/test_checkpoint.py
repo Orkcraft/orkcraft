@@ -5,7 +5,6 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
 
 from orkcraft.realm import checkpoint as cpt
 
@@ -55,7 +54,6 @@ def test_history_and_building_before_see_one_building(tmp_path: Path):
     assert cpt.building_before(tmp_path / "nowhere", "a") is None
 
 
-
 def test_can_revert_only_with_an_earlier_checkpoint_that_had_the_building(tmp_path: Path):
     assert not cpt.can_revert(tmp_path / "nowhere", "a")
     _spec(tmp_path, "a", n=1)
@@ -67,28 +65,3 @@ def test_can_revert_only_with_an_earlier_checkpoint_that_had_the_building(tmp_pa
     _spec(tmp_path, "a", n=2)
     cpt.commit(tmp_path, "update", "a", "n=2")
     assert cpt.can_revert(tmp_path, "a")
-
-
-@pytest.mark.asyncio
-async def test_revert_puts_one_building_back_and_leaves_the_others(fake_repo: Path):
-    from orkcraft.app import OrkcraftApp
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 45)) as pilot:
-        await pilot.pause()
-        assert app.build_from_type("catapult") and app.build_from_type("crag")
-        await pilot.pause()
-        app._custom_view("catapult").save_config({"url": "https://example.test/one"})
-        app._custom_view("crag").save_config({"orientation": "horizontal"})
-        app._custom_view("catapult").save_config({"url": "https://example.test/two"})
-        await pilot.pause()
-        msgs = [c.message for c in cpt.history(fake_repo, "catapult")]
-        assert msgs[0] == "update(catapult): settings: url" and msgs[-1].startswith("create(catapult)")
-        assert app.revert_building("catapult")
-        await pilot.pause()
-        assert app.custom_specs["catapult"]["config"]["url"] == "https://example.test/one"
-        saved = json.loads((fake_repo / ".orkcraft/buildings/catapult.json").read_text())
-        assert saved["config"]["url"] == "https://example.test/one"
-        assert app.custom_specs["crag"]["config"]["orientation"] == "horizontal"                      # the later change elsewhere stays
-        assert cpt.history(fake_repo, "catapult")[0].message.startswith("revert(catapult)")
-        assert not app.revert_building("nowhere")

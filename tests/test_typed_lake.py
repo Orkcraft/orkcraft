@@ -7,10 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import lake, masonry, pipes
-from orkcraft.screens.typed.lake_view import LakeView
+from orkcraft.realm import lake
 
 DIFF = """diff --git a/src/app.py b/src/app.py
 index 1..2 100644
@@ -63,35 +60,6 @@ def test_side_by_side_and_kinds(fake_repo: Path):
     assert b.kind == "diff" and b.title == "⎇ feat" and any(r[2] == "~" for r in b.rows)
 
 
-@pytest.mark.asyncio
-async def test_the_lake_shows_what_arrives_and_opens_it(fake_repo: Path, monkeypatch):
-    spec = {"id": "insight", "title": "Lake", "icon": "🌊", "orc": {"name": "Seer"}, "type": "lake"}
-    assert masonry.save_spec(fake_repo, spec) == []
-    opened = []
-    monkeypatch.setattr(LakeView, "opener", staticmethod(opened.append))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "insight", "lake.viewed")
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("insight").query_one(LakeView)
-        assert view.mini_status() == ["nothing shown"]
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        app.deliver_payload("insight", pipes.Payload(pipes.TEXT, DIFF, "loot", "pit.text", "patch"), "patch", DIFF)
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if view.view is not None:
-                break
-        assert view.mini_status() == ["diff: patch", "+2 −1"] and sent[-1].mode == "lake.viewed"
-        app.deliver_payload("insight", pipes.Payload(pipes.FILE, "README.md", "loot", "files.selected", "README.md"))
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if view.view.kind == "markdown":
-                break
-        assert view.query_one("#lake-md").display and "Demo project" in view.query_one("#lake-md").source
-        assert view.quick_action("lake.open") and opened[-1] == (fake_repo / "README.md").resolve().as_uri()
-
-
 def test_a_file_is_saved_with_its_line_endings_never_over_a_change_on_disk(tmp_path: Path):
     f = tmp_path / "notes.md"
     f.write_bytes(b"# Notes\r\nfirst\r\n")
@@ -110,68 +78,3 @@ def test_a_file_is_saved_with_its_line_endings_never_over_a_change_on_disk(tmp_p
     with pytest.raises(ValueError, match="binary"):
         lake.read_for_edit(str(tmp_path / "blob.bin"))
     assert lake.look(tmp_path, "text", "plain words").path == ""        # only a file is edited
-
-
-@pytest.mark.asyncio
-async def test_the_lake_edits_a_file_and_saves_it_on_a_timer_and_on_leaving(fake_repo: Path, monkeypatch):
-    spec = {"id": "insight", "title": "Lake", "icon": "🌊", "orc": {"name": "Seer"}, "type": "lake",
-            "config": {"autosave": 1}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    readme = fake_repo / "README.md"
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "insight", "lake.saved")
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("insight").query_one(LakeView)
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        view.action_edit()
-        assert not view.editing                                          # nothing shown: nothing to edit
-        app.deliver_payload("insight", pipes.Payload(pipes.FILE, "README.md", "loot", "files.selected", "README.md"))
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if view.view is not None:
-                break
-        assert view.quick_action("lake.edit") and view.editing
-        await pilot.pause()
-        editor = view.query_one("#lake-edit")
-        assert editor.display and not view.query_one("#lake-scroll").display and app.focused is editor
-        assert editor.text == readme.read_text()
-        view._autosave.pause()                   # held while "unsaved" is checked: under load a 1 s tick saved first
-        editor.insert("> a note in the margin\n", (0, 0))
-        await pilot.pause()
-        assert view.dirty and "unsaved" in view.edit_note
-        view._autosave.resume()
-        for _ in range(40):                                              # the timer saves it
-            await pilot.pause(0.1)
-            if not view.dirty:
-                break
-        assert readme.read_text().startswith("> a note in the margin\n") and view.edit_note.startswith("saved")
-        editor.insert("one more line\n", (1, 0))
-        editor.blur()                                                    # it loses focus: saved at once
-        await pilot.pause()
-        assert "one more line" in readme.read_text()
-        readme.write_text("rewritten by someone else\n")                 # a change on disk is never overwritten
-        editor.insert("mine\n", (0, 0))
-        assert not view.action_save() and view.conflict and readme.read_text() == "rewritten by someone else\n"
-        view.action_leave_edit()
-        assert view.editing                                              # nothing is lost
-        assert view.action_save(force=True) and readme.read_text().startswith("mine\n")
-        view.action_leave_edit()
-        assert not view.editing and view.query_one("#lake-scroll").display
-        saved = [p for p in sent if p.mode == "lake.saved"]
-        assert saved and saved[-1].value == "README.md"
-        app.desktop.focus_window(app.desktop.get_window("insight"))      # the keys: e edits, Esc saves and closes
-        await pilot.pause()
-        await pilot.press("e")
-        await pilot.pause()
-        assert view.editing and app.focused is editor
-        await pilot.press("home", "Y", "o", "e", "space")
-        await pilot.press("escape")
-        await pilot.pause()
-        assert not view.editing and readme.read_text().startswith("Yoe mine\n")
-        escaped = []
-        monkeypatch.setattr(app, "action_escape", lambda: escaped.append(1))
-        await pilot.press("escape")                                      # out of the editor Esc is the town's
-        await pilot.pause()
-        assert escaped

@@ -3,16 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-from textual import events
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import masonry, shelves
-from orkcraft.screens.dialogs import TextPrompt
-from orkcraft.screens.typed.pit_view import PitView
-from orkcraft.screens.typed.files_view import FilesView
-from orkcraft.screens.typed.knowledge_view import KnowledgeView
+from orkcraft.realm import shelves
 
 SIZE = (200, 46)
 
@@ -52,55 +44,3 @@ def test_file_tree_changes_and_drops(fake_repo: Path, tmp_path: Path):
     assert shelves.dropped_paths(str(spaced)) == [spaced.resolve()]                  # bare, with a space
     assert shelves.dropped_paths(f"file://{str(spaced).replace(' ', '%20')}") == [spaced.resolve()]
     assert shelves.dropped_paths("/no/such/file") == []
-
-
-@pytest.mark.asyncio
-async def test_the_three_buildings(fake_repo: Path, tmp_path: Path, monkeypatch):
-    for s in (spec("kb", "knowledge"), spec("tree", "file_tree", path="src"), spec("inbox2", "dropzone")):
-        assert masonry.save_spec(fake_repo, s) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for src, ev in (("kb", "knowledge.changed"), ("tree", "files.changed"), ("inbox2", "drop.file")):
-        ts.subscribe(app.scroll, "town_hall", src, ev)
-    opened = []
-    monkeypatch.setattr(FilesView, "opener", staticmethod(opened.append))
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-
-        kb = app.desktop.get_window("kb").query_one(KnowledgeView)
-        assert kb.mini_status() == ["0 pages", "● 1 to take in", "no wiki"]
-        (fake_repo / "docs" / "more.md").write_text("# More\n## Part\n")
-        kb.refresh_data()
-        assert [(p.kind, p.mode, p.value) for p in sent] == [("file", "knowledge.changed", "docs/more.md")]
-        (fake_repo / "wiki").mkdir()
-        (fake_repo / "wiki" / "a.md").write_text("# A")
-        assert kb.quick_action("knowledge.add")
-        await pilot.pause()
-        assert isinstance(app.screen, TextPrompt)
-        await pilot.press(*"wiki", "enter")
-        await pilot.pause()
-        assert kb.paths == ["docs", "wiki"] and app.custom_specs["kb"]["config"]["paths"] == ["docs", "wiki"]
-        kb.read("docs/more.md")
-
-        tree = app.desktop.get_window("tree").query_one(FilesView)
-        assert tree.mini_status() == ["nothing changed", "app.py"]
-        sent.clear()
-        (fake_repo / "src" / "app.py").write_text("print('changed')\n")
-        tree.refresh_data()
-        assert [(p.mode, p.value) for p in sent] == [("files.changed", "src/app.py")]
-        assert tree.mini_status()[0] == "1 changed"
-        assert tree.quick_action("files.open") and opened[0][-1] == str(fake_repo / "src")
-
-        drop = app.desktop.get_window("inbox2").query_one(PitView)
-        dropped = tmp_path / "report.pdf"
-        dropped.write_bytes(b"%PDF")
-        sent.clear()
-        app.focus_state.mode, app.focus_state.building_id = "building", "inbox2"   # the Drop Zone selected
-        app.post_message(events.Paste(f"'{dropped}'"))                             # a file dragged onto it
-        await pilot.pause()
-        [p] = sent                                             # from outside: copied into the pit
-        assert (p.kind, p.mode) == ("file", "drop.file") and p.value.startswith(".orkcraft/pit/")
-        assert (fake_repo / p.value).read_bytes() == b"%PDF" and drop.mini_status()[0].endswith("report.pdf")
-        inside = fake_repo / "docs" / "notes.md"
-        assert drop.drop(str(inside)) == 1 and sent[-1].value == "docs/notes.md"

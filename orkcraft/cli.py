@@ -1,17 +1,16 @@
-"""Command-line interface for orkcraft: the window (the default), the headless subcommands and the
-deprecated TUI (`orkcraft tui`; docs/design/calm-town.md §9)."""
+"""Command-line interface for orkcraft: the town in its window (the default) and the headless subcommands.
+The terminal UI is gone (docs/design/calm-town.md §9); `orkcraft tui` only says so."""
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
 
-from orkcraft.app import OrkcraftApp
 from orkcraft.config import NOT_A_PROJECT_HINT, default_town_root, find_project_root
 
 
-TUI_DEPRECATED = ("orkcraft: the terminal UI is deprecated and gets no new features; "
-                  "the town lives in the window now: orkcraft gui (pip install 'orkcraft[gui]')\n")
+TUI_GONE = ("orkcraft: the terminal UI was removed; the town lives in its window now: run orkcraft "
+            "(orkcraft gui --browser opens it in the browser)\n")
 
 
 def _gui(quiet: bool = False):
@@ -20,7 +19,7 @@ def _gui(quiet: bool = False):
         from orkcraft.gui import launch
     except ImportError as e:
         if not quiet:
-            sys.stderr.write(f"orkcraft error: the GUI needs pip install 'orkcraft[gui]' ({e.name} is missing)\n")
+            sys.stderr.write(f"orkcraft error: the town's window needs {e.name}: pip install 'orkcraft[gui]'\n")
         return None
     return launch
 
@@ -115,8 +114,8 @@ def _update(action: str | None) -> int:
 
 
 def _launching(args) -> bool:
-    """The town opens (the window, the TUI, the showcase), as against a command that only says or sets."""
-    return args.subcommand in (None, "gui", "tui") and args.demo_screens is None
+    """The town opens (the window, the showcase), as against a command that only says or sets."""
+    return args.subcommand in (None, "gui")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -128,7 +127,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-commit", action="store_true", help="Disable §10 per-action git commits")
     parser.add_argument("--layout", type=Path, default=None,
                         help="Window layout file (default: $ORKCRAFT_LAYOUT_FILE or ~/.config/orkcraft/layout.json)")
-    parser.add_argument("--reset-layout", action="store_true", help="Start with the default window layout")
     parser.add_argument("--role", default=None, metavar="ROLE",
                         help="Who you are, as orkcraft.dev asked: a role (engineer, founder…) or a class "
                              "(peon, knight, elf, lich, gnome, goblin); the onboarding opens on it"),
@@ -139,16 +137,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="Open the showcase sandbox: simulated data (default ~/.orkcraft-demo)")
     parser.add_argument("--demo-reset", action="store_true", help="Rebuild the showcase sandbox")
     parser.add_argument("--demo-set", choices=("main", "managers", "dashboard"), default=None,
-                        help="Which showcase: main (8 roles, F1–F8; the TUI's default), managers (1on1 prep) or "
-                             "dashboard (every building type with its state; the GUI's default)")
-    parser.add_argument("--demo-screens", type=Path, default=None, metavar="OUT",
-                        help="With --demo: walk F1–F8 headless and save screenshots to OUT")
+                        help="Which showcase: dashboard (every building type with its state; the default), "
+                             "main (8 roles) or managers (1on1 prep)")
 
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 
-    # orkcraft tui
-    subparsers.add_parser("tui", help="The terminal UI (deprecated: no new features)")
-    gui_p = subparsers.add_parser("gui", help="Open the town in a window (the default; pip install 'orkcraft[gui]')")
+    subparsers.add_parser("tui", help="The terminal UI was removed: says so")
+    gui_p = subparsers.add_parser("gui", help="Open the town in a window (the default)")
     gui_p.add_argument("--browser", action="store_true", help="Open it in the browser instead of a window")
     gui_p.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: any free one)")
     gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
@@ -180,6 +175,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.subcommand == "update":
         return _update(args.action)
+
+    if args.subcommand == "tui":
+        sys.stderr.write(TUI_GONE)
+        return 2
 
     if _launching(args) and args.demo is None:     # a critical fix lands before the town loads
         from orkcraft import settings as machine_settings
@@ -242,35 +241,26 @@ def main(argv: list[str] | None = None) -> int:
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
 
-    # No subcommand: the window when its packages are there, else the TUI (deprecated) as before.
-    if args.subcommand is None and args.demo_screens is None and _gui(quiet=True) is not None:
+    # No subcommand: the window.
+    if args.subcommand is None:
         args.subcommand = "gui"
         for name, default in (("browser", False), ("port", 0)):
             setattr(args, name, getattr(args, name, default))
 
     if args.demo is not None:
         from orkcraft import demo
-        if args.demo_set is None:          # the GUI draws the typed buildings; the TUI's showcase is the 8 roles
-            args.demo_set = "dashboard" if args.subcommand == "gui" else "main"
+        if args.demo_set is None:          # the window draws the typed buildings
+            args.demo_set = "dashboard"
         try:
             root = demo.build(Path(args.demo) if args.demo else demo.default_dir(args.demo_set),
                               reset=args.demo_reset, set_name=args.demo_set)
         except ValueError as e:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
-        if args.demo_screens is not None:
-            from orkcraft.demo.screens import take
-            for path in take(root, args.demo_screens, args.demo_set):
-                print(path)
-            return 0
-        if args.subcommand == "gui":
-            launch = _gui()
-            if launch is None:
-                return 1
-            return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port)
-        OrkcraftApp(repo_root=root, auto_commit=False, layout_file=root / ".orkcraft.json", demo=True).run()
-        sys.stderr.write(TUI_DEPRECATED)
-        return 0
+        launch = _gui()
+        if launch is None:
+            return 1
+        return launch.run(root, False, root / ".orkcraft.json", demo=True, browser=args.browser, port=args.port)
 
     try:
         repo_root = find_project_root(args.repo)
@@ -283,30 +273,14 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"orkcraft: no project here, so the town is in {repo_root}. "
                          "To open a project's town: cd <project> && orkcraft, or orkcraft --repo <project>.\n")
 
-    auto_commit = not args.no_commit
-    if args.subcommand == "gui":
-        launch = _gui()
-        if launch is None:
-            return 1
-        from orkcraft.core import updates
-        code = launch.run(repo_root, auto_commit, args.layout, browser=args.browser, port=args.port)
-        if code == updates.RESTART:                # the window installed an update: it opens again on it
-            updates.restart(words)
-        return code
-
-    # The TUI: asked for, or the window's packages are missing
-    reset = args.reset_layout
-    while True:                       # the weekly self-audit may ask for a fresh start
-        app = OrkcraftApp(
-            repo_root=repo_root,
-            auto_commit=auto_commit,
-            layout_file=args.layout,
-            reset_layout=reset,
-        )
-        if app.run() != "restart":
-            sys.stderr.write(TUI_DEPRECATED)
-            return 0
-        reset = False
+    launch = _gui()
+    if launch is None:
+        return 1
+    from orkcraft.core import updates
+    code = launch.run(repo_root, not args.no_commit, args.layout, browser=args.browser, port=args.port)
+    if code == updates.RESTART:                # the window installed an update: it opens again on it
+        updates.restart(words)
+    return code
 
 
 if __name__ == "__main__":

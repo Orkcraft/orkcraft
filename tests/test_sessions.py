@@ -10,9 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft.app import OrkcraftApp
 from orkcraft.sources import sessions as ss
-from orkcraft.widgets.terminal import Terminal
 
 REAL_REPO = Path(__file__).resolve().parent.parent.parent
 
@@ -96,41 +94,6 @@ async def _wait_for(pilot, predicate, tries: int = 40):
             return True
         await pilot.pause(0.05)
     return predicate()
-
-
-@pytest.mark.asyncio
-async def test_chat_new_session_runs_cli_with_ticket_and_owns_keys(fake_repo: Path, fake_cli: Path):
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 50)) as pilot:
-        await pilot.pause()
-        app.open_chat("T1001")
-        await pilot.pause()
-        term = app.screen.query_one(Terminal)
-        assert await _wait_for(pilot, lambda: any("args:" in l for l in term.text_lines()))
-        assert "ticket:T1001" in term.text_lines()[0]
-        assert app.focused is term
-        # q and digits reach the CLI instead of quitting orkcraft or switching windows.
-        await pilot.press("q", "1", "enter")
-        assert await _wait_for(pilot, lambda: any("you said:q1" in l for l in term.text_lines()))
-        assert app.is_running
-        await pilot.press("f12")
-        await pilot.pause()
-        assert app.focused.id == "chat-sessions"
-        term.stop()
-
-
-@pytest.mark.asyncio
-async def test_chat_resumes_recorded_session(fake_repo: Path, fake_cli: Path):
-    _hook_module(fake_repo).record("claude", {"session_id": "sess-42"}, env={"ORKCRAFT_TICKET": "T1001"})
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 50)) as pilot:
-        await pilot.pause()
-        app.open_chat("T1001")
-        await pilot.pause()
-        term = app.screen.query_one(Terminal)
-        assert await _wait_for(pilot, lambda: any("args:" in l for l in term.text_lines()))
-        assert "args:--resume sess-42" in term.text_lines()[0]
-        term.stop()
 
 
 def test_hook_logs_into_the_project_the_session_works_in(tmp_path: Path):

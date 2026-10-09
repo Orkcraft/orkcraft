@@ -35,7 +35,8 @@ def test_each_platform_gets_a_wheel_it_can_take_and_pyobjc_only_on_macos():
     shared = {r["name"] for r in wheels["all"]}
     for where in ("macos arm", "macos intel", "linux arm", "linux intel"):
         names = shared | {r["name"] for r in wheels[where]}
-        assert {"textual", "pywebview", "websockets", "cryptography", "segno", "rpds-py"} <= names, where
+        assert {"pywebview", "websockets", "cryptography", "segno", "rpds-py"} <= names, where
+        assert "textual" not in names                                  # the terminal UI is gone
         assert {"pytest", "playwright"}.isdisjoint(names)
         assert any(n.startswith("pyobjc") for n in names) == where.startswith("macos")
     arm = {r["name"]: r["url"] for r in wheels["macos arm"]}

@@ -11,19 +11,19 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Vadim Sidoryk" }]
-keywords = ["terminal", "tui", "agents", "claude-code", "orchestration", "textual"]
+keywords = ["agents", "claude-code", "orchestration", "gui"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Environment :: Console :: Curses",
+    "Environment :: Web Environment",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development",
 ]
 dependencies = [
-    "textual>=8.2",
-    "pyte>=0.8",
+    "pyte>=0.8",                 # the Terminals' screens (core/sessions.py)
     "jsonschema>=4.18",
-    "markdown-it-py>=3.0",       # the GUI renders Markdown (Textual brings it too)
+    "markdown-it-py>=3.0",       # the GUI renders Markdown
+    "websockets>=13.0",          # the GUI's server: the town is always drawn by it
 ]
 
 [project.optional-dependencies]
@@ -32,7 +32,8 @@ dev = ["pytest>=8", "pytest-asyncio>=1.0", "pytest-xdist>=3", "websockets>=13.0"
 browser = ["playwright>=1.45"]              # the Catapult's browser mode
 # the Calendar reads every repeat, moved occurrence and time zone of a .ics as RFC 5545 says (sources/ics.py)
 calendar = ["icalendar>=6.0", "recurring-ical-events>=3.3"]
-# orkcraft gui: the window and its socket; a phone's TLS certificate and the QR code that pairs it (gui/phones.py)
+# the window of its own (without it the town opens in the browser); a phone's TLS certificate and the QR code
+# that pairs it (gui/phones.py)
 gui = ["pywebview>=5.0", "websockets>=13.0", "cryptography>=41", "segno>=1.5"]
 
 [project.urls]

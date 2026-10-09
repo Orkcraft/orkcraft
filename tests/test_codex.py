@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import harnesses, jobs, looks, orcs, roads, roster, team, tiers
 from orkcraft.sources import sessions as ss
@@ -186,23 +185,6 @@ def test_a_codex_menu_is_an_order_to_wait_for():
     assert goblin.name == "Goblin #1"
 
 
-@pytest.mark.asyncio
-async def test_a_codex_menu_is_answered_with_enter(fake_repo: Path):
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 50)) as pilot:
-        await pilot.pause()
-        sent = []
-        monkey = pytest.MonkeyPatch()
-        monkey.setattr(app.chat, "send", lambda ref, data: sent.append((ref, data)))
-        monkey.setattr(app.chat, "show_terminal", lambda ref: None)
-        app.chat.meta["new:codex:1"] = ("codex", "", None)
-        app.chat.meta["new:claude:1"] = ("claude", "", None)
-        for ref in ("new:codex:1", "new:claude:1"):
-            app.answer_alert(orcs.Alert(id=ref, title="?", options=[("1", "Yes")], source="terminal", ref=ref), "1")
-        monkey.undo()
-        assert sent == [("new:codex:1", b"1\r"), ("new:claude:1", b"1")]   # a digit alone only moves Codex's cursor
-
-
 # -- onboarding: the autonomy guide ---------------------------------------------------------------------
 
 def test_the_autonomy_guide_says_how_to_start_codex():
@@ -211,21 +193,3 @@ def test_the_autonomy_guide_says_how_to_start_codex():
     assert autonomy.codex_command(autonomy.FREE) == "codex --sandbox workspace-write --ask-for-approval on-request"
     assert "Codex: start it with" in autonomy.guide(autonomy.CLOCK, ("claude", "codex"))
     assert "Antigravity" not in autonomy.guide(autonomy.CLOCK, ("codex",))
-
-
-@pytest.mark.asyncio
-async def test_the_autonomy_step_has_a_codex_line_to_copy():
-    from textual.app import App
-    from textual.widgets import Static
-
-    from orkcraft.screens.autonomy import AutonomyStep
-
-    step = AutonomyStep(level=1, tools=("claude", "codex"))
-    async with App().run_test(size=(120, 50)) as pilot:
-        pilot.app.push_screen(step)
-        await pilot.pause()
-        line = str(step.query_one("#au-codex", Static).render())
-        assert line.startswith("Codex: start it with") and not step.query("#au-agy")
-        await pilot.press("o")
-        await pilot.pause()
-        assert step.copied == "codex --sandbox workspace-write --ask-for-approval on-request"

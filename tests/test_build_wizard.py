@@ -4,14 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-from textual.widgets import Input, OptionList, Select, SelectionList
 
-from orkcraft.core import runners
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import builders, catalog, masonry, pipes
-from orkcraft.screens.build_flow import BuildFailed
-from orkcraft.screens.build_wizard import BuildReview, BuildWizard
+from orkcraft.realm import builders
 
 SIZE = (160, 50)
 
@@ -93,98 +87,3 @@ async def _until(pilot, cond, tries: int = 80) -> bool:
         if cond():
             return True
     return False
-
-
-async def _open_wizard(app, pilot) -> None:
-    await pilot.press("B")
-    await _settle(pilot)
-    await pilot.press("down", "down", "enter")                                  # the Foreman (from scratch is second)
-    await _settle(pilot)
-    assert isinstance(app.screen, BuildWizard)
-
-
-@pytest.mark.asyncio
-async def test_wizard_review_and_raise(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of(TASKS))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        await _open_wizard(app, pilot)
-        types = app.screen.query_one("#wizard-types", OptionList)
-        ids = [types.get_option_at_index(i).id for i in range(types.option_count)]
-        assert ids[0] == "auto" and {"watchtower", "fields", "barracks"} <= set(ids) and "custom" not in ids
-        types.highlighted = ids.index("fields")
-        await pilot.press("enter")                                      # to the description
-        await _settle(pilot)
-        app.screen.query_one("#wizard-prompt", Input).value = "a release checklist"
-        await pilot.press("enter")
-        assert await _until(pilot, lambda: isinstance(app.screen, BuildReview))
-        review = app.screen
-        assert review.query_one("#review-title", Input).value == "Release tasks"
-        assert review.query_one("#cfg-path", Input).value == "docs/release.md"
-        # change: only the status event, a new title; a camp building has its own silhouette, so no
-        # size or roof to pick (T1108 visuals) — the preview is that silhouette with the new name above
-        assert not review.query("#review-size") and not review.query("#review-roof")
-        review.query_one("#review-events", SelectionList).deselect("tasks.created")
-        review.query_one("#review-title", Input).value = "Release"
-        await _settle(pilot)
-        hut = review.query_one("#review-preview").children[0]
-        assert hut.sil.id == "fields" and hut.label.head.endswith("Release") and "📋" in hut.label.head
-        btn = review.query_one("#review-build")
-        assert btn.region.height and btn.region.bottom <= SIZE[1]           # the button is on screen
-        await pilot.click("#review-build")
-        await _settle(pilot)
-        assert not isinstance(app.screen, BuildReview)
-        w = app.desktop.get_window("release_todo")
-        assert w is not None and app.focus_state.building_id == "release_todo"
-    saved = json.loads(masonry.spec_file(fake_repo, "release_todo").read_text())
-    assert saved["title"] == "Release" and saved["events"] == ["tasks.status_changed"]
-    assert "roof" not in saved                                          # the camp building's own silhouette has none
-    assert pipes.TYPED["release_todo"] == ("tasks.status_changed",)
-
-
-@pytest.mark.asyncio
-async def test_review_keeps_problems_on_screen(fake_repo: Path, monkeypatch):
-    mail = {"type": "mail", "id": "inbox", "title": "Inbox", "icon": "📨", "orc": {"name": "Raven"},
-            "config": {"host": "imap.example.com", "user_env": "U", "password_env": "P"}}
-    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of(mail))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        await _open_wizard(app, pilot)
-        app.screen.query_one("#wizard-prompt", Input).value = "watch my inbox"
-        app.screen.query_one("#wizard-prompt", Input).focus()
-        await pilot.press("enter")                                      # auto type
-        assert await _until(pilot, lambda: isinstance(app.screen, BuildReview))
-        review = app.screen
-        review.query_one("#cfg-port", Input).value = "many"              # not an int
-        btn = review.query_one("#review-build")
-        assert btn.region.height and btn.region.bottom <= SIZE[1]           # visible even with many settings
-        await pilot.click("#review-build")
-        await _settle(pilot)
-        assert isinstance(app.screen, BuildReview)
-        errors = str(review.query_one("#review-errors").render())
-        assert "port: not a int" in errors
-        review.query_one("#cfg-port", Input).value = ""
-        review.query_one("#cfg-webhook_port", Input).value = "80"        # below the allowed range
-        await pilot.press("ctrl+s")
-        await _settle(pilot)
-        assert "webhook_port must be between 1024 and 65535" in str(review.query_one("#review-errors").render())
-        # quick actions: never more than two
-        qa = review.query_one("#review-actions", SelectionList)
-        qa.select_all()
-        await _settle(pilot)
-        assert len(qa.selected) <= catalog.MAX_QUICK_ACTIONS
-
-
-@pytest.mark.asyncio
-async def test_wizard_failure_and_custom_paths(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(runners, "BUILD_RUNNER", runner_of("no json here"))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await _settle(pilot)
-        await _open_wizard(app, pilot)
-        app.screen.query_one("#wizard-prompt", Input).value = "something"
-        app.screen.query_one("#wizard-prompt", Input).focus()
-        await pilot.press("enter")
-        assert await _until(pilot, lambda: isinstance(app.screen, BuildFailed))

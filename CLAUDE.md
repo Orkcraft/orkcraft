@@ -15,25 +15,23 @@
   when it says *what a thing does, costs or risks* (External listeners, Spend, Stop all, Autonomy,
   Project file). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
   gets its one word there, and new code writes that word. A renamed concept keeps its old Camp
-  spelling in `was`, and the interface says an old spelling in today's word: the TUI every widget's
-  text (`tui/wording.py`), the GUI through `say()` for attributes and data. A GUI `html` template's
-  own text is written in today's word at the source (`tests/test_gui_wording.py` checks). A widget that shows what people or agents wrote gets the
-  `-as-written` class (TUI) so it keeps its words; Markdown, inputs, logs and terminals keep theirs.
+  spelling in `was`, and the interface says an old spelling in today's word: the GUI through `say()`
+  for attributes and data. A GUI `html` template's own text is written in today's word at the source
+  (`tests/test_gui_wording.py` checks). What people or agents wrote keeps its words; Markdown, inputs,
+  logs and terminals keep theirs.
 - The voice stays the camp's: the Warchief's lines, growth news and the onboarding may joke; labels,
   settings and anything about money or safety say plainly what happens.
 - Tests that check a visible string use the same wording.
 
 ## Where code goes (docs/design/gui-migration.md)
 
-- **The TUI is deprecated** ([docs/design/calm-town.md](docs/design/calm-town.md) §9): a new feature
-  goes to the GUI (`orkcraft/gui/`) only. The TUI (`tui/`, `screens/`, `widgets/`, `wm/`, `app.py`)
-  gets fixes and nothing else; its tests stay green until it is removed.
-
-- `orkcraft/core/`, `orkcraft/realm/`, `orkcraft/design/` have no face: they never import Textual,
-  Rich or a face module (`tests/test_architecture.py` checks it). A service changes the town and
-  publishes on the bus (`core/bus.py`). It never shows a toast or a dialog itself.
-- `orkcraft/tui/<domain>.py` holds one part of `OrkcraftApp` each. A new feature goes into its domain's
-  module or a new one, never into `app.py`. Split a module before it grows past ~600 lines.
+- **The GUI is the one face** (`orkcraft/gui/`). The terminal UI was removed
+  ([docs/design/calm-town.md](docs/design/calm-town.md) §9); nothing imports Textual or Rich, and
+  `tests/test_architecture.py` keeps it so.
+- `orkcraft/core/`, `orkcraft/realm/`, `orkcraft/design/` have no face: they never import the GUI
+  (`tests/test_architecture.py` checks it). A service changes the town and publishes on the bus
+  (`core/bus.py`). It never shows a toast or a dialog itself.
+- Split a module before it grows past ~600 lines.
 - A building's window is a UI document of roles, never raw colours or font names
   ([docs/design-system.md](docs/design-system.md)). The rules a model gets are `design/ui.py` `RULES`.
 

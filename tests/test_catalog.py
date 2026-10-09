@@ -80,60 +80,12 @@ def test_typed_events_on_roads(fake_repo: Path):
     pipes.TYPED.clear()
 
 
-@pytest.mark.asyncio
-async def test_a_typed_building_loads_and_sends_along_its_road(fake_repo: Path):
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.realm.pipes import Payload
-
-    assert masonry.save_spec(fake_repo, _mail()) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    assert "mail.received" in pipes.emits("inbox", False)
-    ts.add_handler(app.scroll, "loot", "Clerk", kind="chain", chain=[{"op": "count"}])
-    ts.subscribe(app.scroll, "loot", "inbox", "mail.received", handler="clerk")
-    async with app.run_test(size=(160, 45)) as pilot:
-        await pilot.pause()
-        w = app.desktop.get_window("inbox")
-        from orkcraft.screens.typed.watchtower_view import WatchtowerView
-        assert w is not None and w.query(WatchtowerView)                       # its type's own view
-        carts = app.roads.emit(Payload("text", "From: boss · Subject: hi", "inbox", "mail.received"))
-        assert carts and carts[0].target == "loot"
-        choices = app._road_choices("inbox", "loot")
-        assert any(ev == "mail.received" and h == "clerk" for ev, h, _ in choices)
-    data = json.loads(masonry.spec_file(fake_repo, "inbox").read_text())
-    assert data["type"] == "watchtower"                                  # saved as its camp building
-
-
 def test_pool_config_is_checked(fake_repo: Path):
     spec = {"id": "barracks", "title": "Barracks", "icon": "🏕", "orc": {"name": "Foreman"}, "type": "pool",
             "config": {"max_orcs": 3, "budget_usd": 5, "providers": ["claude", "agy"], "worktrees": True}}
     assert masonry.validate_spec(spec, fake_repo) == []
     bad = masonry.validate_spec({**spec, "config": {"max_orcs": 50, "worktrees": "yes"}}, fake_repo)
     assert any("max_orcs must be between 1 and 10" in e for e in bad) and any("worktrees must be bool" in e for e in bad)
-
-
-def test_every_buildable_type_has_its_own_view():
-    from orkcraft.screens.typed import _views, view_for
-    from orkcraft.screens.custom_view import CustomBuildingView
-
-    views = _views()
-    for tid in catalog.TYPES:
-        if tid in catalog.SYSTEM_TYPES or tid == catalog.DEFAULT_TYPE or tid in catalog.GUI_ONLY:
-            continue
-        assert tid in views, f"{tid} has no view"
-        assert type(view_for({"id": "x", "type": tid})) is views[tid]
-    assert type(view_for({"id": "x", "type": "custom"})) is CustomBuildingView
-
-
-def test_a_typed_road_is_saved(fake_repo: Path, tmp_path: Path):
-    from orkcraft.app import OrkcraftApp
-
-    assert masonry.save_spec(fake_repo, _mail()) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    road = ts.subscribe(app.scroll, "loot", "inbox", "mail.received")
-    assert road.id == "inbox-mail_received"
-    assert ts.save(tmp_path / "scroll.json", app.scroll) == []          # a dotted id would be refused
-    again, problems = ts.load(tmp_path / "scroll.json", {})
-    assert problems == [] and again.building("loot").road("inbox-mail_received").event == "mail.received"
 
 
 def test_old_types_load_as_camp_buildings(fake_repo: Path):
@@ -151,85 +103,6 @@ def test_old_types_load_as_camp_buildings(fake_repo: Path):
                                                   "orc": {"name": "Smith"}, "type": "tasks"}))
     specs, problems = masonry.load_specs(fake_repo)
     assert problems == [] and specs[0]["type"] == "fields"
-
-
-@pytest.mark.asyncio
-async def test_a_new_camp_has_only_the_town_hall_and_builds_from_the_catalog(fake_repo: Path, monkeypatch):
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.presets_modal import PresetsModal
-
-    monkeypatch.setattr(ts, "STARTING", ("town_hall",))              # the real default (conftest keeps the old)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 45)) as pilot:
-        await pilot.pause()
-        standing = [b.id for b in app.scroll.buildings if not b.demolished]
-        assert standing == ["town_hall"]
-        app.action_presets_catalog()
-        await pilot.pause()
-        lst = app.screen.query_one("#presets-list")
-        ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        assert sum(1 for i in ids if i and i.startswith("type:")) == 14
-        assert isinstance(app.screen, PresetsModal)
-        lst.highlighted = ids.index("type:forge")
-        await pilot.press("enter")
-        await pilot.pause()
-        from orkcraft.screens.build_wizard import BuildReview
-        assert isinstance(app.screen, BuildReview)                       # step 2: this building's settings
-        await pilot.press("ctrl+s")
-        await pilot.pause()
-        assert app.custom_specs["forge_1"]["type"] == "forge"           # "forge" is a reserved id
-        assert app.desktop.get_window("forge_1") is not None
-        assert app.build_from_type("crag") and app.custom_specs["crag"]["title"] == "Tally Crag"
-
-
-
-@pytest.mark.asyncio
-async def test_a_preset_is_picked_by_intent_then_named_and_set(fake_repo: Path):
-    from textual.widgets import Input
-
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.build_wizard import BuildReview
-
-    ids = [t for _, types in catalog.INTENTS for t in types]
-    assert len(ids) == len(set(ids)) == 16                              # every camp type under one intent
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(160, 45)) as pilot:
-        await pilot.pause()
-        app.action_presets_catalog()
-        await pilot.pause()
-        lst = app.screen.query_one("#presets-list")
-        labels = [str(lst.get_option_at_index(i).prompt) for i in range(lst.option_count)]
-        assert any("Watch load, limits and spend" in x for x in labels)
-        oids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        lst.highlighted = oids.index("type:crag")
-        await pilot.press("enter")
-        await pilot.pause()
-        form = app.screen
-        assert isinstance(form, BuildReview) and "FROM A PRESET · 2/3" in str(form.query_one(".wizard-title").render())
-        form.query_one("#review-title", Input).value = "Token Load"
-        form.query_one("#review-icon", Input).value = "🔥"
-        form.query_one("#review-summary", Input).value = "tokens per hour"
-        form.query_one("#cfg-orientation", Input).value = "diagonal"
-        form.query_one("#cfg-source", Input).value = "tokens"
-        await pilot.press("ctrl+s")
-        await pilot.pause()
-        assert app.screen is form and "orientation" in str(form.query_one("#review-errors").render())
-        form.query_one("#cfg-orientation", Input).value = "horizontal"
-        await pilot.press("ctrl+s")
-        await pilot.pause()
-        spec = app.custom_specs["crag"]
-        assert (spec["title"], spec["icon"], spec["summary"]) == ("Token Load", "🔥", "tokens per hour")
-        assert spec["config"] == {"orientation": "horizontal", "source": "tokens"}
-        assert not (fake_repo / ".orkcraft/council/reviews.jsonl").exists()   # presets skip the Council
-
-
-def test_list_settings_take_json_and_semicolons():
-    from orkcraft.screens.build_wizard import _parse, _show
-
-    assert _parse(list, "a, b") == ["a", "b"]
-    assert _parse(list, "join: , ; upper") == ["join: ,", "upper"]
-    assert _parse(list, '[{"if": "x", "route": "y"}]') == [{"if": "x", "route": "y"}]
-    assert _show([{"a": 1}]) == '[{"a": 1}]' and _show(["a", "b"]) == "a, b"
 
 
 def test_the_landscape_is_the_seven_types_that_need_no_ork():

@@ -4,15 +4,10 @@ from __future__ import annotations
 import io
 import json
 import urllib.error
-from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import audit, catalog, feeds, mailbox, masonry
-from orkcraft.core.workers.watchtower import WatchtowerWorker
-from orkcraft.screens.typed.watchtower_view import WatchtowerView
+from orkcraft.realm import audit, catalog, feeds, mailbox
 
 SLACK = "slack: token=T_SLACK channels=C1,D2"
 JIRA = "jira: site=acme.atlassian.net user=T_ATL_USER token=T_ATL_TOKEN jql=project = WEB AND type = Bug"
@@ -147,49 +142,3 @@ def test_gmail_by_name_and_the_warder(tmp_path):
     assert mailbox.PROVIDERS["gmail"] == "imap.gmail.com"
     leaked = {"tower": {"title": "Tower", "type": "watchtower", "config": {"feeds": ["slack: token=xoxp-1234567890abc"]}}}
     assert any("looks like a secret" in f.text for f in audit._security(tmp_path, leaked))
-
-
-@pytest.mark.asyncio
-async def test_the_watchtower_sends_comments_and_mentions(fake_repo: Path, env, monkeypatch):
-    spec = {"id": "tower", "title": "Watchtower", "icon": "🗼", "orc": {"name": "Lookout"}, "type": "watchtower",
-            "config": {"host": "gmail", "user_env": "T_ATL_USER", "password_env": "T_ATL_TOKEN",
-                       "feeds": [SLACK, FIGMA]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    monkeypatch.setattr(mailbox, "look", lambda cfg, factory: mailbox.Look())   # no IMAP here
-    api = {k: ({"ok": True, "messages": []} if "conversations" in k else v) for k, v in API.items()}
-    api["api.figma.com/v1/files/AbC123/comments"] = {"comments": API["api.figma.com/v1/files/AbC123/comments"]["comments"][:2]}
-    opener = Opener(api)
-    monkeypatch.setattr(WatchtowerWorker, "feed_opener", staticmethod(opener))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for ev in ("watch.comment", "watch.mention"):
-        ts.subscribe(app.scroll, "town_hall", "tower", ev)
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("tower").query_one(WatchtowerView)
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if view.checked:
-                break
-        assert view.sources == ["mail", "slack", "figma"] and view.signals == []    # the first look: a baseline
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        api.update({k: v for k, v in API.items()})                                    # new things since then
-        opener.api = api
-        view.refresh_data()
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if len(sent) >= 4:
-                break
-        assert [(p.mode, p.title.split(":")[0]) for p in sent] == [
-            ("watch.comment", "slack · Bob in C1"), ("watch.mention", "slack · @ UCAT in D2"),
-            ("watch.comment", "figma · bob in AbC123"), ("watch.mention", "figma · @ bob in AbC123")]
-        assert "https://www.figma.com/design/AbC123?comment=c3" in sent[2].value
-        view.refresh_data()
-        for _ in range(20):
-            await pilot.pause(0.05)
-        assert len(sent) == 4                                                          # once each
-        assert view.mini_status()[:2] == ["0 unread", "✉ 💬 🎨 · 4 new · @2"]
-        assert view.hut_lines([10] * 4) == ["gmail    0", "slack    2", "figma    2", ""]
-        view.read(view.signals[0])
-        assert view.hut_lines([10] * 4)[2] == "figma    1" and len(view.unread()) == 3
-        assert view.quick_action("watch.read_all") and view.unread() == []
-        assert view.hut_lines([10] * 4)[1] == "slack    0"

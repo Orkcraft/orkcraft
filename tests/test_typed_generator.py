@@ -6,10 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import generated, masonry
-from orkcraft.screens.typed.generator_view import GeneratorView
+from orkcraft.realm import generated
 
 SIZE = (200, 46)
 SPEC = {"id": "outputs", "title": "Generated", "icon": "🛠", "orc": {"name": "Artisan"}, "type": "generator"}
@@ -52,28 +49,3 @@ def test_scope_limits_the_review(fake_repo: Path):
     (fake_repo / "docs" / "b.md").write_text("b\n")
     rv = generated.Review(fake_repo, fake_repo / ".orkcraft" / "generator" / "g", "docs")
     assert [g.path for g in rv.files()] == ["docs/b.md"]
-
-
-@pytest.mark.asyncio
-async def test_the_generator_building_accepts_rejects_and_sends(fake_repo: Path, monkeypatch):
-    assert masonry.save_spec(fake_repo, SPEC) == []
-    (fake_repo / "src" / "gen1.py").write_text("one\n")
-    (fake_repo / "src" / "gen2.py").write_text("two\n")
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "loot", "outputs", "generator.accepted")
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        view = app.desktop.get_window("outputs").query_one(GeneratorView)
-        assert view.mini_status()[0] == "2 to review" and "* gen1.py" in view.mini_status()
-        app.desktop.focus_window(app.desktop.get_window("outputs"))
-        await pilot.pause()
-        assert view.selected_path() == "src/gen1.py"
-        await pilot.press("r")                                         # reject gen1: gone, kept aside
-        await pilot.pause()
-        assert not (fake_repo / "src" / "gen1.py").exists()
-        assert view.selected_path() == "src/gen2.py"
-        assert view.quick_action("generator.accept_all")
-        assert view.mini_status()[0] == "all reviewed ✓"
-        assert [(p.kind, p.mode, p.value) for p in sent] == [("file", "generator.accepted", "src/gen2.py")]

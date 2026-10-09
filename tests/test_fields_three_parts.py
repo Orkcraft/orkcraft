@@ -6,12 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
 from orkcraft.gui.host import Host
 from orkcraft.realm import checkpoint, lexicon, masonry, tasklist
-from orkcraft.screens.typed.tasks_view import TasksView
-from orkcraft.tui import silhouettes
 
 BOARD = ("# Mine\n\n## To Do\n- [ ] Plan the release\n## In Progress\n- [ ] Write docs\n## Done\n\n"
          "## My to-dos\n- [ ] Call the bank\n  about the card\n- [x] Pay rent\n\n## Ideas\n- 🟨 Dark mode\n")
@@ -96,35 +92,3 @@ def test_the_three_parts_say_todays_words():
     assert (say("Ork work"), say("My chores"), say("Scribbles")) == ("Ork work", "My to-dos", "Notes")
     assert say("New chore") == "New to-do" and say("Make it my chore") == "Make it my to-do"
     assert lexicon.term("chore", many=True) == "to-dos"
-
-
-def test_the_hut_is_larger_than_a_hall():
-    sil = silhouettes.FIELDS
-    assert len(sil.live_widths) >= 8 and sil.width > silhouettes.BARRACKS.width
-
-
-@pytest.mark.asyncio
-async def test_the_tui_board_holds_the_checklist_and_ticks_it_off(fake_repo: Path, monkeypatch):
-    (fake_repo / "TASKS.md").write_text(BOARD, encoding="utf-8")
-    assert masonry.save_spec(fake_repo, SPEC) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "todo", "tasks.created")
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("todo").query_one(TasksView)
-        assert [ln.id for ln in view.all_lanes()] == ["todo", "in_progress", "done", "mine", "ideas"]
-        assert view.query_one("#tasks-mine").parent.parent.id == "tasks-lower"
-        lines = view.hut_lines([])
-        assert lines[0] == "TODO 1 PROG 1 DONE 0" and lines[1] == "⚒ Write docs" and "My chores 1/2" in lines
-        assert "☐ Call the bank" in lines and "Scribbles 1" in lines and "✎ Dark mode" in lines
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        lst = view.query_one("#tasks-mine")
-        lst.focus()
-        lst.highlighted = 0
-        await pilot.press("x")                                  # ticked off
-        await pilot.pause()
-        assert view.card("call-the-bank").checked and not sent
-        assert "- [x] Call the bank" in (fake_repo / "TASKS.md").read_text(encoding="utf-8")
-        assert view.query_one("#tasks-label-mine").visual.plain == "☐ My to-dos · 0/2"  # today's words
-        assert view.query_one("#tasks-label-ideas").visual.plain == "Ideas · 1"         # the file's own, as written

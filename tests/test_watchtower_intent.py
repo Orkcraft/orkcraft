@@ -4,16 +4,9 @@ from __future__ import annotations
 import datetime as dt
 import io
 import json
-from pathlib import Path
-from types import SimpleNamespace
 
-import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import fastpath, feeds, lookout, masonry, watch
-from orkcraft.core.workers.watchtower import WatchtowerWorker
-from orkcraft.screens.typed.watchtower_view import WatchtowerView
+from orkcraft.realm import feeds, lookout, watch
 
 
 def sig(title: str, body: str = "", source: str = "webhook", ref: str = "/x") -> watch.Signal:
@@ -62,61 +55,11 @@ def test_times_and_a_line_edited():
     assert a.identity == b.identity != feeds.parse("slack: token=T_OTHER")[0].identity
 
 
-@pytest.fixture
-def tower(fake_repo: Path, monkeypatch):
-    def make(config: dict):
-        spec = {"id": "tower", "title": "Watchtower", "icon": "🗼", "orc": {"name": "Lookout"}, "type": "watchtower",
-                "config": config}
-        assert masonry.save_spec(fake_repo, spec) == []
-        monkeypatch.setattr(WatchtowerWorker, "gh_runner", staticmethod(
-            lambda cmd, **kw: SimpleNamespace(returncode=0, stdout="[]", stderr="")))
-        app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-        for ev in ("watch.webhook", "watch.comment", "watch.mention", "watch.github"):
-            ts.subscribe(app.scroll, "town_hall", "tower", ev)
-        return app
-    return make
-
-
 async def settle(pilot, until, n: int = 60):
     for _ in range(n):
         await pilot.pause(0.05)
         if until():
             return
-
-
-@pytest.mark.asyncio
-async def test_one_tower_lets_through_what_the_intent_asks(tower, monkeypatch):
-    asked: list[str] = []
-    monkeypatch.setattr(WatchtowerWorker, "judge_runner", staticmethod(keeper("crashes", asked)))
-    app = tower({"github": "me/app", "intent": "user feedback about the app"})
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("tower").query_one(WatchtowerView)
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        view.add_signal(sig("app crashes on login", "since the update"))
-        view.add_signal(sig("lunch at noon?"))
-        await settle(pilot, lambda: len(view.signals) == 2)
-        assert [p.title for p in sent] == ["app crashes on login"] and "🎯 a user complains" in sent[0].value
-        kept, missed = sorted(view.signals, key=lambda s: s.title)
-        assert (kept.kept, kept.read, missed.kept, missed.read) == (True, False, False, True)
-        assert [s.title for s in view.unread()] == ["app crashes on login"]
-        assert "🎯 user feedback about the app" in str(view.query_one("#watch-head").render())
-        view.tick()
-        view.read(kept)
-        assert "matches the intent: a user complains" in view.query_one("#watch-read").source
-        assert view.unread() == [] and view._state()["read"] == [kept.key]
-
-
-@pytest.mark.asyncio
-async def test_without_a_model_everything_passes(tower, monkeypatch):
-    monkeypatch.setattr(WatchtowerWorker, "judge_runner", None)
-    monkeypatch.setattr(fastpath, "light_runner", lambda root: None)
-    app = tower({"github": "me/app", "intent": "anything urgent"})
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("tower").query_one(WatchtowerView)
-        view.add_signal(sig("hello"))
-        await settle(pilot, lambda: view.signals)
-        assert view.signals[0].kept and "no light model" in view.errors["intent"]
 
 
 class Opener:
@@ -128,33 +71,3 @@ class Opener:
             if part in req.full_url:
                 return io.BytesIO(json.dumps(answer).encode())
         raise OSError(f"no route to {req.full_url}")
-
-
-@pytest.mark.asyncio
-async def test_each_thing_once_errors_per_line_and_names_in_webhooks(tower, monkeypatch):
-    monkeypatch.setenv("T_S1", "xoxp-1")
-    monkeypatch.setenv("T_S2", "xoxp-2")
-    feeds.SLACK_NAMES.clear()
-    monkeypatch.setattr(WatchtowerWorker, "feed_opener", staticmethod(Opener(
-        {"users.info": {"ok": True, "user": {"name": "ann", "profile": {"display_name": "Ann"}}}})))
-    app = tower({"github": "me/app", "feeds": ["slack: token=T_S1 channels=C1", "slack: token=T_S2 channels=C1"]})
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("tower").query_one(WatchtowerView)
-        await settle(pilot, lambda: view.checked)
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        one, two = view.feeds
-        view.apply_feeds([(one, feeds.Look()), (two, feeds.Look())])                       # baselines
-        item = feeds.Item("C1:1", "Ann in C1: hi", at="2026-10-02T05:10:00+00:00")
-        view.apply_feeds([(one, feeds.Look([item])), (two, feeds.Look([item]))])
-        assert len(sent) == 1                                                     # two feeds, one message
-        assert view.signals[0].at == watch.local_iso("2026-10-02T05:10:00+00:00")
-        view.apply_feeds([(one, feeds.Look(error="slack: one broke")), (two, feeds.Look(error="slack: two broke"))])
-        assert {e for e in view.errors.values()} == {"slack: one broke", "slack: two broke"}
-        assert view.hut_lines([10] * 4)[0] == "slack  ERR"
-
-        event = {"type": "event_callback", "team_id": "T1", "authorizations": [{"user_id": "UME", "is_bot": False}],
-                 "event": {"type": "message", "user": "UANN", "text": "<@UME> look", "channel": "C9", "ts": "5.1"}}
-        view.heard(watch.Signal(watch.now_iso(), "webhook", "POST /slack", json.dumps(event), "/slack"))
-        await settle(pilot, lambda: len(sent) == 2)
-        assert sent[1].title == "slack · @ Ann in C9: @you look"

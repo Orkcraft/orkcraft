@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
-from orkcraft.realm import audit, fastpath as fp, housekeeping
+from orkcraft.realm import fastpath as fp, housekeeping
 
 
 def _bad(notes):
@@ -55,17 +54,3 @@ def test_the_peon_finds_and_cleans(fake_repo: Path, monkeypatch):
     assert len((root / "ledger.jsonl").read_text().splitlines()) == housekeeping.KEEP_LINES
     assert (root / "buildings" / "gone.json").exists()                  # the camp's git is never touched
     assert housekeeping.clean(fake_repo, [housekeeping.Chore("orphan", ".orkcraft/buildings", "")]) == []
-
-
-@pytest.mark.asyncio
-async def test_audit_and_f10_cleanup(fake_repo: Path, monkeypatch):
-    from orkcraft.app import OrkcraftApp
-
-    (fake_repo / ".orkcraft" / "lake" / "gone").mkdir(parents=True)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        report = audit.run(fake_repo, app.scroll, dict(app.custom_specs))
-        assert any(f.agent == "peon" and "lake/gone" in f.text for f in report.findings)
-        done = app.cleanup(confirm=False)
-        assert done == ["removed .orkcraft/lake/gone"] and not (fake_repo / ".orkcraft/lake/gone").exists()

@@ -6,11 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft.core import runners
-from orkcraft.app import OrkcraftApp
 from orkcraft.realm import town_builder, town_presets
-from orkcraft.screens import onboarding
-from orkcraft.screens.town_plan import TownPlanReview
 
 SIZE = (160, 50)
 
@@ -154,21 +150,6 @@ def test_the_retry_spells_out_the_chosen_types(tmp_path: Path):
     assert "takes from a road" in run.calls[0] and "[file]" in run.calls[0]
 
 
-@pytest.mark.asyncio
-async def test_a_raised_signpost_road_waits_for_its_route(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
-    plan, problems = town_builder.check(ROUTED, fake_repo, set())
-    assert problems == []
-    town_presets.save_order(fake_repo, "triage my mail")
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        app.raise_town_plan(plan)
-        await _until(pilot, lambda: town_presets.pending_order(fake_repo) is None, n=200)   # the town stands
-        road = app.scroll.building("log").roads[0]
-        assert road.source == "gate" and road.filter.get("route") == ["rest"]
-
-
 def test_a_refused_plan_goes_back_with_its_problems(tmp_path: Path):
     bad = json.loads(json.dumps(GOOD))
     bad["roads"][0]["event"] = "git.commit"
@@ -210,58 +191,6 @@ async def _until(pilot, cond, n: int = 80) -> None:
             return
         await pilot.pause(0.05)
     assert cond()
-
-
-@pytest.mark.asyncio
-async def test_plan_review_and_raise(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(onboarding, "STEP_PAUSE_S", 0)
-    monkeypatch.setattr(runners, "BUILD_RUNNER", _runner(GOOD))
-    town_presets.save_order(fake_repo, "a town for my podcast")
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        app.build_town_from_order()
-        await _until(pilot, lambda: isinstance(app.screen, TownPlanReview))
-        body = str(app.screen.query_one("#tp-body Static").render())
-        assert "Episode Drops" in body and "a pasted script shows up to read" in body
-        app.screen.query_one("#tp-raise").press()
-        await _until(pilot, lambda: app.scroll.building("notes") is not None
-                     and any(r.source == "inbox" for r in app.scroll.building("board").roads)
-                     and town_presets.pending_order(fake_repo) is None)
-        assert all(not app.scroll.building(b).demolished for b in ("inbox", "board", "notes"))
-        assert not app.order_burning
-
-
-@pytest.mark.asyncio
-async def test_later_keeps_the_order_burning(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(runners, "BUILD_RUNNER", _runner(GOOD))
-    town_presets.save_order(fake_repo, "a town for my podcast")
-    town_presets.mark_order_seen(fake_repo)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        assert not app.order_burning
-        app.build_town_from_order()
-        await _until(pilot, lambda: isinstance(app.screen, TownPlanReview))
-        app.screen.query_one("#tp-later").press()
-        await _until(pilot, lambda: app.order_burning)
-        assert app.scroll.building("inbox") is None and town_presets.pending_order(fake_repo) is not None
-
-
-@pytest.mark.asyncio
-async def test_ask_again_sends_the_note(fake_repo: Path, monkeypatch):
-    run = _runner(GOOD)
-    monkeypatch.setattr(runners, "BUILD_RUNNER", run)
-    town_presets.save_order(fake_repo, "a town for my podcast")
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        app.build_town_from_order()
-        await _until(pilot, lambda: isinstance(app.screen, TownPlanReview))
-        app.screen.query_one("#tp-note").value = "skip the notes"
-        app.screen.query_one("#tp-again").press()
-        await _until(pilot, lambda: len(run.calls) == 2 and isinstance(app.screen, TownPlanReview))
-        assert "skip the notes" in run.calls[1]
 
 
 def test_a_road_back_is_a_return_road_or_it_closes_a_loop(tmp_path: Path):

@@ -6,19 +6,16 @@ from __future__ import annotations
 import json
 import subprocess
 import threading
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from orkcraft import autonomy
 from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import briefs, claims, jobs, plans
 from tests.pool_fakes import FakeGit, Steward
-from tests.test_pool_failures import Crew, _app, _open, _until
-from tests.test_pool_plans import HARD, _hard, _level, plan, sub
+from tests.test_pool_plans import plan, sub
 
 SIZE = (200, 46)
 SINGLE = '{"kind": "single", "tier": "warrior", "why": "one go", "touches": %s}'
@@ -139,181 +136,6 @@ def test_git_tells_a_conflict_and_commits_a_file_without_a_checkout(fake_repo: P
 
 
 # -- the barracks ---------------------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_a_newer_task_on_an_area_being_built_waits_then_goes_told(fake_repo: Path, monkeypatch, steward, git):
-    git.files = ("src/export/api.py",)
-    git.pr = "https://github.com/o/r/pull/9"
-    steward(sorts=[SINGLE % '["src/export/api.py"]', SINGLE % '["src/export/"]'])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        w = view.worker
-        w.new_task("Build the export API", "Stream a CSV from the API, with paging and a header row for the client")
-        assert await _until(pilot, lambda: len(crew.calls) == 1)
-        w.new_task("Add a CSV header option", "Let the export choose its header row, with tests for the new flag")
-        assert await _until(pilot, lambda: any(t.held_since > 0 for t in w.state.queue))
-        await pilot.pause(0.1)
-        assert len(crew.calls) == 1                                     # it waits: the first builds its area
-        st = w.state
-        second = st.queue[0]
-        assert second.overlaps[0]["title"] == "Build the export API" and second.decided.startswith("overlap: waits")
-        assert any(d.action == "overlap" and "waits for “Build the export API”" in d.why for d in st.decisions())
-        crew.finish(0)
-        assert await _until(pilot, lambda: len(crew.calls) == 2)        # the first is in review: it goes, told
-        first = next(t for t in st.tasks if t.title == "Build the export API")
-        assert first.status == "done" and claims.Claims(fake_repo).get(f"camp:{first.id}").status == claims.REVIEW
-        assert "## Work on the same files" in crew.calls[1]["prompt"] and "pull/9" in crew.calls[1]["prompt"]
-        areas = {c.title: c for c in claims.Claims(fake_repo).load()}
-        assert areas["Build the export API"].paths == ["src/export/api.py"] and not areas["Build the export API"].guessed
-        assert areas["Add a CSV header option"].guessed
-        assert w.settle_prs({first.branch: type("PR", (), {"state": "MERGED", "url": git.pr, "labels": ()})()}) == 1
-        assert claims.Claims(fake_repo).get(f"camp:{first.id}") is None                # merged: its area is free
-
-
-@pytest.mark.asyncio
-async def test_flag_never_waits_and_a_wait_ends_after_its_minutes(fake_repo: Path, monkeypatch, steward, git):
-    steward(sorts=[SINGLE % '["src/export/"]', SINGLE % '["src/export/csv.py"]'])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew, claim_wait=1)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        w = view.worker
-        w.new_task("Build the export", "Stream a CSV from the API, with paging and a header row for the client")
-        assert await _until(pilot, lambda: len(crew.calls) == 1)
-        w.new_task("Fix the CSV quoting", "Quote the fields with commas in them, and test it with a real file")
-        assert await _until(pilot, lambda: any(t.held_since > 0 for t in w.state.queue))
-        w.state.queue[0].held_since -= 61                              # its minute is up
-        assert w.tick_claims()
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        assert any("goes on, flagged" in d.why for d in w.state.decisions())
-
-
-@pytest.mark.asyncio
-async def test_a_plan_leaves_its_design_brief_on_the_branch_and_claims_its_parts(fake_repo: Path, monkeypatch,
-                                                                              steward, git):
-    text = json.dumps({"subtasks": [sub("api", touches=["src/export/api.py"]), sub("docs", touches=["docs/export.md"])],
-                       "design": {"why": "people ask for it", "invariants": ["it streams"]}})
-    s = steward(plans=[text])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        _hard(view)
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        st = view.state
-        parent = next(t for t in st.tasks if t.plan)
-        assert parent.design == "docs/design/build-the-export.md"
-        [(branch, path, brief)] = git.committed
-        assert (branch, path) == (parent.branch, parent.design)
-        assert "## Invariants\n\n- it streams" in brief and HARD.splitlines()[0] in brief
-        assert "`design` object" in next(p for p in s.prompts if "PLAN the task" in p)
-        assert "## The design brief" in crew.calls[0]["prompt"] and parent.design in crew.calls[0]["prompt"]
-        c = claims.Claims(fake_repo).get(f"camp:{parent.id}")
-        assert c.paths == ["src/export/api.py", "docs/export.md", parent.design] and c.brief == parent.design
-        crew.finish(0)
-        crew.finish(1)
-        assert await _until(pilot, lambda: parent.status == "done")
-        done = claims.Claims(fake_repo).get(f"camp:{parent.id}")          # its branch waits to be merged
-        assert done.status == claims.REVIEW and done.paths == ["app.py"] and done.brief == parent.design
-
-
-@pytest.mark.asyncio
-async def test_a_plan_against_a_design_waits_in_chains(fake_repo: Path, monkeypatch, steward, git):
-    _level(autonomy.CHAINS, False, monkeypatch)
-    (fake_repo / "docs" / "design").mkdir(parents=True)
-    (fake_repo / "docs" / "design" / "build-the-export.md").write_text(BRIEF, encoding="utf-8")
-    text = json.dumps({"subtasks": [sub("api", touches=["src/export/api.py"]), sub("ui", touches=["src/ui/x.js"])],
-                       "conflicts": [{"with": "docs/design/build-the-export.md", "why": "it builds JSON in memory"}]})
-    s = steward(sorts=['{"kind": "plan", "touches": ["src/export/"]}'], plans=[text])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, sent = await _open(pilot, app)
-        _hard(view, "Export as JSON")
-        assert await _until(pilot, lambda: view.state.asked)
-        task = view.state.asked[0]
-        assert task.ask_kind == "conflict" and "it builds JSON in memory" in task.question
-        assert "## Designs this touches" in next(p for p in s.prompts if "PLAN the task" in p)
-        assert "never builds it in memory" in next(p for p in s.prompts if "PLAN the task" in p)
-        assert any(p.mode == "pool.question" for p in sent) and crew.calls == []
-        assert not view.worker.tick_asks(now=time.time() + 3600)                   # ⛓️: no timer
-        view.worker.answer(task.id, "")
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        assert task.status == "planned" and task.against[0]["with"] == "docs/design/build-the-export.md"
-
-
-@pytest.mark.asyncio
-async def test_unchained_a_plan_against_a_design_goes_on_flagged(fake_repo: Path, monkeypatch, steward, git):
-    _level(autonomy.FREE, False, monkeypatch)
-    text = json.dumps({"subtasks": [sub("api", touches=["src/a/x.py"]), sub("ui", touches=["src/b/y.js"])],
-                       "conflicts": [{"with": "docs/design/x.md", "why": "no"}]})
-    steward(plans=[text])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        _hard(view)
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        assert not view.state.asked and any(d.action == "design" and "goes against" in d.why
-                                            for d in view.state.decisions())
-
-
-@pytest.mark.asyncio
-async def test_the_review_keeps_a_brief_true(fake_repo: Path, monkeypatch, steward, git):
-    (fake_repo / "docs" / "design").mkdir(parents=True)
-    (fake_repo / "docs" / "design" / "build-the-export.md").write_text(BRIEF, encoding="utf-8")
-    git.files = ("src/export/csv.py",)
-    s = steward(sorts=[SINGLE % '["src/export/csv.py"]', SINGLE % '["src/export/csv.py"]'],
-                verdicts=["ACCEPT\nDESIGN: unchanged", "ACCEPT"])
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        w = view.worker
-        w.new_task("Fix the CSV quoting", "Quote the fields with commas in them, and test it with a real file")
-        assert await _until(pilot, lambda: len(crew.calls) == 1)
-        assert "## Designs this touches" in crew.calls[0]["prompt"]           # the ork reads the brief it meets
-        crew.finish(0)
-        first = w.state.tasks[0]
-        assert await _until(pilot, lambda: first.status == "done")
-        review = next(p for p in s.prompts if "## The orc's report" in p)
-        assert "`DESIGN: unchanged`" in review and "never builds it in memory" in review
-        assert first.designs == [{"path": "docs/design/build-the-export.md", "state": "unchanged"}]
-        w.new_task("Speed up the CSV", "Write the rows in batches of a thousand, measure before and after it")
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        crew.finish(1)
-        second = next(t for t in w.state.tasks if t.title == "Speed up the CSV")
-        assert await _until(pilot, lambda: second.status == "done")
-        assert second.designs[0]["state"] == "not confirmed"
-        assert any(d.action == "design" and "design not confirmed" in d.why for d in w.state.decisions())
-
-
-@pytest.mark.asyncio
-async def test_the_review_says_when_two_branches_would_conflict(fake_repo: Path, monkeypatch, steward, git):
-    git.files = ("src/export/csv.py",)
-    s = steward(sorts=[SINGLE % '["src/export/csv.py"]'])
-    other = claims.Claim("pool2:old", "pool2", "old", "Rewrite the CSV writer", ["src/export/csv.py"],
-                         branch="pool/pool2/old", status=claims.REVIEW, pr="https://github.com/o/r/pull/3",
-                         since="2026-10-01T10:00:00")
-    claims.Claims(fake_repo).put(other)
-    crew = Crew()
-    app = _app(fake_repo, monkeypatch, crew)
-    async with app.run_test(size=SIZE) as pilot:
-        view, _sent = await _open(pilot, app)
-        w = view.worker
-        w.new_task("Fix the CSV quoting", "Quote the fields with commas in them, and test it with a real file")
-        assert await _until(pilot, lambda: len(crew.calls) == 1)               # a PR in review: no wait
-        task = w.state.tasks[0]
-        git.clashes = {frozenset((task.branch, "pool/pool2/old")): ["src/export/csv.py"]}
-        assert "Rewrite the CSV writer" in crew.calls[0]["prompt"]
-        crew.finish(0)
-        assert await _until(pilot, lambda: task.status == "done")
-        review = next(p for p in s.prompts if "## The orc's report" in p)
-        assert "they conflict in src/export/csv.py" in review
-        assert task.overlaps[0]["conflicts"] == ["src/export/csv.py"]
-        assert any("it conflicts in src/export/csv.py" in d.why for d in w.state.decisions())
 
 
 def test_claims_off_in_the_sandbox_and_by_the_setting(fake_repo: Path, monkeypatch):

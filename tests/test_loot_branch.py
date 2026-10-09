@@ -7,9 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import gate, generated, masonry, pipes
-from orkcraft.screens.typed.generator_view import GeneratorView
+from orkcraft.realm import gate, generated
 
 SIZE = (200, 46)
 PNG = b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">II", 64, 32) + b"\x08\x02\x00\x00\x00" \
@@ -77,48 +75,6 @@ def test_open_file_uses_the_system_viewer(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(generated.shutil, "which", lambda name: None)
     with pytest.raises(RuntimeError):
         generated.open_file(tmp_path / "a.png")
-
-
-@pytest.mark.asyncio
-async def test_a_held_cart_shows_its_branch_files_and_opens_the_picture(fake_repo: Path, monkeypatch):
-    wt, branch, base = task_branch(fake_repo)
-    spec = {"id": "gate", "title": "Art Gate", "icon": "📦", "orc": {"name": "Quartermaster"}, "type": "loot",
-            "config": {"sources": ["camp"], "paths": ["art/*.png"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    opened = []
-    monkeypatch.setattr(generated, "open_file", lambda p: opened.append((p.name, p.read_bytes())))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: [])
-        view = app.desktop.get_window("gate").query_one(GeneratorView)
-        hop = pipes.hop("camp", "Grub", "agent", 900, 0.04, str(wt), branch, "done", base=base)
-        cart = pipes.Payload(pipes.TEXT, "## A logo\n\ndone", "camp", "pool.done", "Logo", (hop,), "T-1")
-        view.receive(cart, "Logo", cart.value)
-        [item] = view.queue.open()
-        assert "touches art/logo.png" in item.why                    # the rules read the branch's files too
-        lst = view.query_one("#gen-files")
-        ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        rows = [i for i in ids if i and i.startswith("bf:")]
-        assert len(rows) == 3 and ids.index(rows[0]) == ids.index(f"q:{item.id}") + 1   # right under the cart
-        assert "3 files on pool/camp/t1" in str(view.query_one("#gen-preview").render())
-
-        lst.highlighted = ids.index(rows[1])                         # art/logo.png
-        await pilot.pause()
-        assert "PNG image · 64×32" in str(view.query_one("#gen-preview").render())
-        view.action_open()
-        assert opened == [("logo.png", PNG)]                         # copied out of the branch, then opened
-
-        (fake_repo / "src" / "app.py").write_text("print('changed')\n")   # a file of the working tree opens in place
-        view.refresh_data()
-        ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        lst.highlighted = ids.index("src/app.py")
-        view.action_open()
-        assert opened[-1] == ("app.py", b"print('changed')\n")
-
-        view.accept_item(item)                                       # passed: its branch rows go
-        ids = [lst.get_option_at_index(i).id for i in range(lst.option_count)]
-        assert not any(i and i.startswith("bf:") for i in ids) and view.branches == {}
 
 
 def test_one_file_of_the_branch_is_rejected_and_brought_back(fake_repo: Path, tmp_path: Path):

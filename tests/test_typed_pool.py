@@ -7,12 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
 from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import jobs, masonry, pipes
-from orkcraft.screens.typed.pool_view import PoolView
+from orkcraft.realm import jobs
 from tests.pool_fakes import FakeGit, Steward
 
 SIZE = (200, 46)
@@ -107,93 +104,6 @@ async def _until(pilot, cond, n=100):
             return True
         await pilot.pause(0.02)
     return cond()
-
-
-@pytest.mark.asyncio
-async def test_tasks_run_in_parallel_and_follow_ups_wait_for_their_orc(fake_repo: Path, monkeypatch):
-    crew = Crew()
-    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(crew))
-    made = []
-    monkeypatch.setattr(BarracksWorker, "worktree_maker",
-                        staticmethod(lambda repo, bid, orc: made.append(orc) or (fake_repo, f"pool/{bid}/{orc.lower()}")))
-    assert masonry.save_spec(fake_repo, SPEC) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "camp", "pool.done")
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("camp").query_one(PoolView)
-        assert view.mini_status() == ["no orks yet", "waiting for tasks"]
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-
-        def arrive(value, kind=pipes.NODE):
-            app.deliver_payload("camp", pipes.Payload(kind, value, "loot", "on_selection_change", value), value, value)
-
-        arrive("T1001")
-        arrive("T1002")
-        arrive("T1003")                                                  # 2 orcs max → queued
-        assert await _until(pilot, lambda: len(crew.calls) == 2)
-        st = view.state
-        assert [o.name for o in st.orcs] == ["Grub", "Mogka"] and made == ["Grub", "Mogka"]
-        assert [t.key for t in st.queue] == ["T1003"]
-        arrive("T1001")                                                  # Grub's ticket: waits for Grub
-        assert st.queue[-1].wait_for == "Grub"
-        assert "queue 2" in view.mini_status()[-1]
-
-        crew.calls[0]["gate"].set()                                      # Grub finishes T1001 …
-        assert await _until(pilot, lambda: len(crew.calls) == 3)
-        assert crew.calls[2]["resume"] == "s1"                          # … and resumes its session
-        assert "follow-up" in crew.calls[2]["prompt"]
-        assert [p.mode for p in sent].count("pool.done") == 1
-        assert "pool/camp/t1001" in next(p.value for p in sent if p.mode == "pool.done")   # the task's branch
-        assert "## Files on `pool/camp/t1001`" in next(p.value for p in sent if p.mode == "pool.done")
-
-        crew.calls[1]["gate"].set()                                      # Mogka frees → takes T1003
-        assert await _until(pilot, lambda: len(crew.calls) == 4)
-        assert st.orc("Mogka").task and st.task(st.orc("Mogka").task).key == "T1003"
-        for c in crew.calls[2:]:
-            c["gate"].set()
-        assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs) and not st.queue)
-        assert sum(o.done for o in st.orcs) == 4 and st.stats["claude:haiku"]["runs"] + st.stats.get(
-            "agy:gemini-3.8-flash-low", {"runs": 0})["runs"] == 4
-        decisions = [d.action for d in st.decisions()]
-        assert {"hire", "queue", "wait", "follow-up", "reuse"} <= set(decisions)
-
-        assert view.quick_action("pool.pause") and st.paused
-        arrive("T1009")
-        assert st.queue[-1].key == "T1009" and len(crew.calls) == 4      # paused: nothing starts
-        assert view.quick_action("pool.pause") and not st.paused
-        assert await _until(pilot, lambda: len(crew.calls) == 5)
-        crew.calls[4]["gate"].set()
-        assert await _until(pilot, lambda: all(o.status == "idle" for o in st.orcs))
-
-
-@pytest.mark.asyncio
-async def test_new_task_is_written_to_the_barracks_directly(fake_repo: Path, monkeypatch):
-    from orkcraft.screens.dialogs import TextPrompt
-    crew = Crew()
-    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(crew))
-    monkeypatch.setattr(BarracksWorker, "worktree_maker",
-                        staticmethod(lambda repo, bid, orc: (fake_repo, f"pool/{bid}/{orc.lower()}")))
-    assert masonry.save_spec(fake_repo, SPEC) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=SIZE) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("camp").query_one(PoolView)
-        assert view.quick_action("pool.task")
-        await pilot.pause()
-        assert isinstance(app.screen, TextPrompt) and "New task" in app.screen.prompt_heading
-        await pilot.press(*"Add a login page", "enter", *"email and password", "enter")
-        assert await _until(pilot, lambda: len(crew.calls) == 1)
-        t = view.state.task(view.state.orcs[0].task)
-        assert (t.title, t.text) == ("Add a login page", "email and password")
-        assert "Add a login page" in crew.calls[0]["prompt"]
-        crew.calls[0]["gate"].set()
-        assert await _until(pilot, lambda: all(o.status == "idle" for o in view.state.orcs))
-
-        assert view.new_task(None) is None and view.new_task(" \t ") is None     # Esc or nothing typed
-        only = view.new_task("Rename the README title\t")                         # no brief: the title is it
-        assert (only.title, only.text) == ("Rename the README title", "Rename the README title")
 
 
 def test_a_task_without_a_title_is_named_by_its_first_words():

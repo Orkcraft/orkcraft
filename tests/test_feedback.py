@@ -4,7 +4,6 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace as NS
 
-import pytest
 
 from orkcraft.realm import feedback
 
@@ -39,62 +38,6 @@ def test_like_keeps_a_reference_and_dislike_writes_an_incident(tmp_path: Path):
                            "by": {"explicit": 0.0}}                      # its broken inputs were not its fault …
     assert s["mill"]["penalty"] == 1.0 and s["mill"]["disliked"] == 1.0  # … but the mill's
     assert [i.kind for i in feedback.incidents(tmp_path)] == ["logic", "inputs"]
-
-
-@pytest.mark.asyncio
-async def test_k_and_f_on_a_building(fake_repo: Path):
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.feedback_modal import DislikeModal
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        assert app.build_from_type("pit") and app.build_from_type("mill")
-        app.add_road("mill", "pit", "pit.text", None)
-        await pilot.pause()
-        app.emit_typed("mill", "mill.done", "clean text")
-        app.set_focus_state("building", building_id="mill")
-        await pilot.pause()
-        await pilot.press("K")
-        await pilot.pause()
-        assert feedback.scores(fake_repo)["mill"]["likes"] == 1
-        await pilot.press("F")
-        await pilot.pause()
-        assert isinstance(app.screen, DislikeModal) and "Drop file here −1" in " ".join(str(w.render()) for w in app.screen.query("Static"))
-        await pilot.press("1")
-        await pilot.pause()
-        inc = feedback.incidents(fake_repo)[0]
-        assert inc.building == "mill" and inc.kind == "inputs" and inc.blamed == {"pit": 1.0}
-        assert inc.output == "clean text"
-
-
-@pytest.mark.asyncio
-async def test_the_rating_buttons_sit_in_the_building_info(fake_repo: Path):
-    from orkcraft.app import OrkcraftApp
-    from orkcraft.screens.feedback_modal import DislikeModal
-
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    async with app.run_test(size=(180, 50)) as pilot:
-        await pilot.pause()
-        assert app.build_from_type("mill")
-        app.emit_typed("mill", "mill.done", "clean text")
-        app.set_focus_state("building", building_id="mill")
-        for _ in range(3):
-            await pilot.pause()
-        bar = app.screen.query_one("#info-building")
-        assert bar.display
-        await pilot.click("#ib-like")
-        await pilot.pause()
-        assert feedback.scores(fake_repo)["mill"]["likes"] == 1
-        await pilot.click("#ib-dislike")
-        await pilot.pause()
-        assert isinstance(app.screen, DislikeModal)
-        await pilot.press("escape")
-        j = feedback.journal(fake_repo, "mill")
-        assert j["results"] == 1 and j["likes"] == 1 and j["events"] == ["mill.done"]
-        app.set_focus_state("neutral")
-        await pilot.pause()
-        assert not app.screen.query_one("#info-building").display
 
 
 def test_liked_results_reach_the_prompts():

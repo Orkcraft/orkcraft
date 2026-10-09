@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import asyncio
 import functools
 import io
 import re
@@ -14,11 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import catalog, catapult as cp, catapult_web as cw, masonry, pipes
+from orkcraft.realm import catalog, catapult as cp, catapult_web as cw
 from orkcraft.core.workers.catapult import CatapultWorker
-from orkcraft.screens.typed.catapult_view import CatapultView
 
 FORM_BODY = """<form onsubmit="event.preventDefault(); document.title = 'saved ' +
   JSON.stringify(Object.fromEntries(new FormData(this)))">
@@ -227,110 +223,6 @@ def _operator_agent(answers_log: list):
     return runner
 
 
-@needs_browser
-@pytest.mark.asyncio
-async def test_the_orc_scouts_an_intent_of_two_forms_and_the_queue_fills_them(site: str, fake_repo: Path, monkeypatch):
-    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
-    events, details = site.replace("new.html", "events.html"), site
-    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
-            "config": {"mode": "browser", "finish": "press", "fields": ["Event name = title", "details/Description = text"],
-                       "forms": [f"event = {events} | the new-event form", f"details = {details} | the details form"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    prompts = []
-    monkeypatch.setattr(CatapultWorker, "scout_runner", staticmethod(_operator_agent(prompts)))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "play", "catapult.sent")
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("play").query_one(CatapultView)
-        assert view.hut_lines([20])[0].startswith("🌐")
-        view.quick_action("catapult.scout")
-        for _ in range(600):
-            await pilot.pause(0.05)
-            if not view.busy:
-                break
-        event_map = cw.load_map(view.fdir("event"))
-        assert event_map["path"] == [{"role": "button", "name": "Create event", "selector": "#create"}]
-        assert event_map["submit"] == "Save draft" and event_map["by"] == "Loader"
-        assert view.fdir("event") == fake_repo / ".orkcraft" / "scripts" / "play" / "forms" / "event"   # the camp's git
-        assert (view.fdir("details") / "fill.py").exists()
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        for title in ("Halloween", "Christmas"):               # the second waits in the queue
-            app.deliver_payload("play", pipes.Payload(pipes.TEXT, json.dumps({"title": title, "text": "Spooky"}),
-                                                      "pit", "pit.text", "x"))
-        assert view.firing and len(view.queue) == 1
-        for _ in range(1800):
-            await pilot.pause(0.1)
-            if len(sent) == 2:
-                break
-        assert [p.mode for p in sent] == ["catapult.sent", "catapult.sent"], [s.error for s in view.shots]
-        assert "[event]" in sent[0].value and "[details]" in sent[0].value and "Halloween" in sent[0].value
-        assert "Christmas" in sent[1].value and not len(view.queue)
-        last = view.worker.screens(view.shots[0].at)                    # a picture of each form, kept with its shot
-        assert [r["form"] for r in last] == ["event", "details"] and (fake_repo / last[0]["path"]).read_bytes()[:4] == b"\x89PNG"
-        assert view.profile == fake_repo / ".orkcraft" / "catapult" / "play" / "profile"   # outside the camp's git
-        exclude = (fake_repo / ".git" / "info" / "exclude").read_text(encoding="utf-8")
-        assert ".orkcraft/" in exclude.splitlines()                # and outside the project's git
-
-
-@needs_browser
-@pytest.mark.asyncio
-async def test_a_login_page_sets_the_hut_on_fire_and_holds_the_queue(site: str, tmp_path: Path, fake_repo: Path, monkeypatch):
-    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
-    www = tmp_path / "www"
-    (www / "secure.html").write_text(FORM, encoding="utf-8")
-    secure = site.replace("new.html", "secure.html")
-    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
-            "config": {"mode": "browser", "finish": "press", "forms": [f"event = {secure} | | Save draft"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for event in ("catapult.sent", "catapult.failed"):
-        ts.subscribe(app.scroll, "town_hall", "play", event)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("play").query_one(CatapultView)
-        page_map = await asyncio.to_thread(cw.scout, secure, view.profile, watch=False, headless=True)
-        cw.save_map(view.fdir("event"), page_map)
-        (www / "secure.html").write_text("<!doctype html><title>Sign in</title><input type=password>", encoding="utf-8")
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
-        for _ in range(600):
-            await pilot.pause(0.1)
-            if view.login_needed:
-                break
-        assert view.login_needed and len(view.queue) == 1 and [p.mode for p in sent] == ["catapult.failed"]
-        assert view.hut_lines([20]) == ["🌐 🔥 log in"]
-        app.refresh_roster()
-        alert = next(a for a in app.roster.alerts if a.source == "view")
-        assert "log in" in alert.title and app.roster.by_building("play").status == "alert"
-        (www / "secure.html").write_text(FORM, encoding="utf-8")        # logged in
-        view._logged_in(view.forms[0], {"url": secure, "fields": []}, "")
-        for _ in range(600):
-            await pilot.pause(0.1)
-            if len(sent) == 2:
-                break
-        assert [p.mode for p in sent] == ["catapult.failed", "catapult.sent"] and not view.login_needed
-        app.refresh_roster()
-        assert not [a for a in app.roster.alerts if a.source == "view"]
-
-
-@pytest.mark.asyncio
-async def test_the_demo_only_dry_runs_a_form(fake_repo: Path, tmp_path: Path):
-    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Loader"}, "type": "catapult",
-            "config": {"mode": "browser", "forms": ["event = https://play.example.com/events/new"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False, demo=True)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("play").query_one(CatapultView)
-        cw.save_map(view.fdir("event"), MAP)
-        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"name": "Halloween"}', "pit", "pit.text", "x"))
-        await pilot.pause()
-        assert view.shots[0].dry and "Event name" in view.shots[0].answer and "'Halloween'" in view.shots[0].answer
-
-
 def test_a_repair_stays_on_the_site_and_keeps_old_names():
     answer = {"note": "renamed", "start": "https://evil.example/", "path": [], "fields": {"0": {"label": "Title"}}}
     assert cw.apply_repair(MAP, answer, "Save draft")[0] is None                  # another site: refused
@@ -385,41 +277,6 @@ def test_the_overseer_repairs_a_broken_script(site: str, tmp_path: Path):
     bad = cw.repair(state, cw.load_map(state), plan_of, "Save draft", "press", ["x"], {}, tmp_path / "profile",
                     runner=lambda prompt: (json.dumps({"path": [{"name": "Nothing like it"}]}), None))
     assert not bad.ok and bad.attempts == 2 and (state / "fill.py").read_text(encoding="utf-8") == before
-
-
-@needs_browser
-@pytest.mark.asyncio
-async def test_the_catapult_calls_its_overseer_and_fires_again(site: str, tmp_path: Path, fake_repo: Path, monkeypatch):
-    monkeypatch.setenv("ORKCRAFT_HEADLESS", "1")
-    events = site.replace("new.html", "events.html")
-    spec = {"id": "play", "title": "Play events", "icon": "🎯", "orc": {"name": "Gruk"}, "type": "catapult",
-            "config": {"mode": "browser", "forms": [f"event = {events} | | Save draft"], "finish": "press",
-                       "fields": ["Event name = title"]}}
-    assert masonry.save_spec(fake_repo, spec) == []
-    monkeypatch.setattr(CatapultWorker, "repair_runner", staticmethod(lambda prompt: (json.dumps(REPAIRED), 0.03)))
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    for event in ("catapult.repaired", "catapult.sent", "catapult.failed"):
-        ts.subscribe(app.scroll, "town_hall", "play", event)
-    async with app.run_test(size=(200, 46)) as pilot:
-        await pilot.pause()
-        view = app.desktop.get_window("play").query_one(CatapultView)
-        page_map = await asyncio.to_thread(
-            cw.scout, events, view.profile, watch=True, headless=True, limit_s=30,
-            driver=lambda page, tick: page.get_by_role("button", name="Create event").click()
-            if tick == 0 else page.close() if tick == 2 else None)
-        cw.save_map(view.fdir("event"), page_map)
-        view.write_script(view.forms[0])
-        _renamed(tmp_path / "www")
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        app.deliver_payload("play", pipes.Payload(pipes.TEXT, '{"title": "Halloween"}', "pit", "pit.text", "x"))
-        for _ in range(1800):
-            await pilot.pause(0.1)
-            if "catapult.sent" in [p.mode for p in sent] or "catapult.failed" in [p.mode for p in sent]:
-                break
-        assert [p.mode for p in sent] == ["catapult.repaired", "catapult.sent"], [p.value for p in sent]
-        assert "Gruk (event): the button is now New event" in sent[0].value
-        assert view.shots[0].ok and "pressed" in view.shots[0].answer and view.shots[2].error.startswith("broken")
 
 
 def test_groups_by_key_drop_old_carts_and_queue(tmp_path: Path):

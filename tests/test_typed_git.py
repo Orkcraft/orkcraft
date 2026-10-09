@@ -6,12 +6,8 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import gitinfo, masonry
-from orkcraft.screens.typed.git_view import GitView
+from orkcraft.realm import gitinfo
 
 SIZE = (200, 46)
 SPEC = {"id": "branches", "title": "Branches", "icon": "⎇", "orc": {"name": "Engineer"}, "type": "git"}
@@ -70,35 +66,3 @@ def test_changes_between_looks(fake_repo: Path):
     merged = gitinfo.snapshot(fake_repo, pr_runner=gh([
         {"number": 9, "state": "MERGED", "headRefName": "feature", "url": "u", "title": "Feature"}]))
     assert gitinfo.changes(opened, merged) == [("git.pr_merged", "feature: #9 Feature")]
-
-
-@pytest.mark.asyncio
-async def test_the_git_building_lists_branches_and_sends_commits(fake_repo: Path, monkeypatch):
-    monkeypatch.setattr(gitinfo, "pull_requests", lambda repo, runner=None: None)
-    feature(fake_repo, "feature", 4)
-    assert masonry.save_spec(fake_repo, SPEC) == []
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "loot", "branches", "git.commit")
-    async with app.run_test(size=SIZE) as pilot:
-        view = app.desktop.get_window("branches").query_one(GitView)
-        for _ in range(30):
-            await pilot.pause(0.05)
-            if view.snap is not None:
-                break
-        assert view.snap is not None
-        assert any("feature" in line and "+4−0" in line for line in view.mini_status())
-        assert view.query_one("#git-branches").option_count == 2
-        assert "PRs: install" in str(view.query_one("#git-head").render())
-
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        git(fake_repo, "checkout", "-q", "feature")
-        (fake_repo / "b.txt").write_text("b\n")
-        git(fake_repo, "add", ".")
-        git(fake_repo, "commit", "-q", "-m", "second step")
-        view.apply_snapshot(gitinfo.snapshot(fake_repo, with_prs=False))
-        assert [(p.mode, p.value) for p in sent] == [("git.commit", "feature: second step")]
-
-        notes = []
-        monkeypatch.setattr(app, "notify", lambda msg, **kw: notes.append(msg))
-        assert view.quick_action("git.open_pr") and "no pull request" in notes[-1]

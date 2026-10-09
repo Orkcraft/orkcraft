@@ -1,7 +1,7 @@
-"""The core and the domain have no face: neither Textual nor Rich (docs/design/gui-migration.md §2).
+"""The core and the domain have no face (docs/design/gui-migration.md §2): they never import the GUI, and
+nothing imports a terminal toolkit — the terminal UI is gone (docs/design/calm-town.md §9).
 
-Every import counts, a lazy one inside a function too: a GUI must be able to load these packages
-without a terminal toolkit."""
+Every import counts, a lazy one inside a function too."""
 from __future__ import annotations
 
 import ast
@@ -30,8 +30,7 @@ def test_no_face_in(package):
     for path in sorted((ROOT / package).rglob("*.py")):
         for line, module in _imports(path):
             top = module.split(".")[0]
-            if top in FORBIDDEN or module.startswith(("orkcraft.tui", "orkcraft.screens", "orkcraft.widgets",
-                                                      "orkcraft.wm", "orkcraft.app", "orkcraft.gui")):
+            if top in FORBIDDEN or module.startswith("orkcraft.gui"):
                 bad.append(f"{path.relative_to(ROOT.parent)}:{line} imports {module}")
     assert not bad, "\n".join(bad)
 
@@ -50,15 +49,13 @@ def test_loading_the_core_loads_no_face():
     assert out.stdout.strip() == "[]", out.stdout + out.stderr
 
 
-def test_the_gui_face_has_no_terminal_toolkit():
-    """gui/ is a face of its own: it loads without Textual or Rich, and never reaches into the TUI."""
-    bad = []
-    for path in sorted((ROOT / "gui").rglob("*.py")):
-        for line, module in _imports(path):
-            if module.split(".")[0] in FORBIDDEN or module.startswith(("orkcraft.tui", "orkcraft.screens",
-                                                                       "orkcraft.widgets", "orkcraft.wm",
-                                                                       "orkcraft.app")):
-                bad.append(f"{path.relative_to(ROOT.parent)}:{line} imports {module}")
+def test_the_terminal_ui_stays_gone():
+    """No module imports Textual or Rich, and the TUI's packages do not come back."""
+    bad = [f"{path.relative_to(ROOT.parent)}:{line} imports {module}"
+           for path in sorted(ROOT.rglob("*.py")) for line, module in _imports(path)
+           if module.split(".")[0] in FORBIDDEN]
+    bad += [f"orkcraft/{name} is back" for name in ("tui", "screens", "widgets", "wm", "app.py", "theme.py")
+            if (ROOT / name).is_file() or any((ROOT / name).rglob("*.py"))]
     assert not bad, "\n".join(bad)
 
 
@@ -70,7 +67,7 @@ STARTS_WITHOUT_HALT = {
     "realm/masonry.py": "git log",
     "sources/sessions.py": "git log",
     "tools.py": "a tool's version and login state",
-    "core/sessions.py": "the War Tent's terminal sessions; Stop all interrupts them through Sessions.interrupt_all",
+    "core/sessions.py": "the Terminals' sessions; Stop all interrupts them through Sessions.interrupt_all",
 }
 _STARTS = {("subprocess", "Popen"), ("subprocess", "run"), ("subprocess", "call"), ("subprocess", "check_output"),
            ("pty", "fork"), ("os", "execvpe"), ("os", "execvp")}
@@ -91,7 +88,7 @@ def test_whoever_starts_an_agent_registers_it_in_halt():
     bad = []
     for path in sorted(ROOT.rglob("*.py")):
         rel = path.relative_to(ROOT).as_posix()
-        if rel.split("/")[0] in ("tui", "screens", "widgets", "wm") or rel in ("app.py", "realm/halt.py"):
+        if rel == "realm/halt.py":
             continue
         starts, names = _starts_and_names(path)
         if starts and "harnesses" in names and "halt" not in names and rel not in STARTS_WITHOUT_HALT:

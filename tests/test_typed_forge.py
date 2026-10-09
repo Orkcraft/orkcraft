@@ -5,13 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
-from orkcraft import scroll as ts
-from orkcraft.app import OrkcraftApp
-from orkcraft.realm import forge, masonry, pipes
-from orkcraft.screens.dialogs import Confirm
-from orkcraft.screens.typed.git_view import GitView
+from orkcraft.realm import forge
 
 
 def git(repo: Path, *a: str) -> str:
@@ -61,49 +56,3 @@ def test_conflicts_dirty_tree_tests_and_a_base_not_checked_out(fake_repo: Path):
     assert res.ok and git(fake_repo, "log", "-1", "--format=%s", base) == "squash: red (1 commit)"
     assert not (fake_repo / "src" / "c.py").exists()                       # this checkout untouched
     assert len(git(fake_repo, "worktree", "list").splitlines()) == 1       # the test worktree is gone
-
-
-@pytest.mark.asyncio
-async def test_the_forge_merges_at_once_or_after_a_yes(fake_repo: Path, monkeypatch):
-    base = base_of(fake_repo)
-    branch(fake_repo, "feat", {"src/a.py": "A = 1\n"})
-    branch(fake_repo, "more", {"src/m.py": "M = 1\n"})
-    spec = {"id": "smithy", "title": "Forge", "icon": "⚒️", "orc": {"name": "Smith"}, "type": "forge"}
-    assert masonry.save_spec(fake_repo, spec) == []
-    monkeypatch.setattr("orkcraft.realm.gitinfo.pull_requests", lambda repo, runner=None: None)
-    app = OrkcraftApp(repo_root=fake_repo, auto_commit=False)
-    ts.subscribe(app.scroll, "town_hall", "smithy", "forge.merged")
-    async with app.run_test(size=(200, 46)) as pilot:
-        view = app.desktop.get_window("smithy").query_one(GitView)
-        for _ in range(40):
-            await pilot.pause(0.05)
-            if view.snap is not None:
-                break
-        sent = []
-        monkeypatch.setattr(app.roads, "emit", lambda payload, meta=None: sent.append(payload) or [])
-        app.deliver_payload("smithy", pipes.Payload(pipes.TEXT, "done\n\n_branch:_ `feat`", "camp", "pool.done", "Login"))
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if view.last_merge is not None:
-                break
-        assert view.last_merge.ok and [p.mode for p in sent] == ["forge.merged"]   # no question asked
-        assert "✓ feat merged" in view.mini_status()
-        app.desktop.focus_window(app.desktop.get_window("smithy"))
-        await pilot.pause()
-        await pilot.press("c")                                          # confirmation on
-        await pilot.pause()
-        assert app.custom_specs["smithy"]["config"]["confirm"] is True
-        assert view.merge("more")
-        await pilot.pause()
-        assert isinstance(app.screen, Confirm)
-        await pilot.press("n")
-        await pilot.pause()
-        assert git(fake_repo, "log", "-1", "--format=%s", base).startswith("squash: feat")    # nothing merged
-        view.merge("more")
-        await pilot.pause()
-        await pilot.press("y")
-        for _ in range(60):
-            await pilot.pause(0.05)
-            if view.last_merge.branch == "more":
-                break
-        assert git(fake_repo, "log", "-1", "--format=%s", base) == "squash: more (1 commit)"
