@@ -32,19 +32,23 @@ buttons, then the field.
 
 ## 2. Build from the line, not a dialog (built)
 
-The catalog of 21 buildings with a paragraph each is too much. Build opens a **tray of small icons upward from the
-line** (`js/build.js`):
+The catalog of 21 buildings with a paragraph each is too much. Build **grows the Warchief's line** by one row of small
+icons over its bar, in the line's own frame (`js/build.js` `BuildRow`), not a window of its own: the line's field is
+already where words go, so it finds in the row, and Enter that finds no icon asks the Warchief, whose line it is. The
+row is one line of 34-pixel icons with a thin rule between the groups, about 70 px tall in all (the first tray, a
+window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09); a narrow line scrolls it sideways.
 
 - each icon says **what you want done**, not which house does it: mail, Slack, Jira, Confluence, tasks, a calendar,
   agents, a review, a wiki, research, listening, code, a check, sending, a route, a transform, a chart, a sound, files
   dropped (`design-system/sprites/intents/`, drawn by `tools/intent_sprites.py`; which building each raises is
-  `INTENTS`). Its word under it; its building and summary in its tooltip. A source's icon raises External listeners
+  `INTENTS`). The line over the row says the icon under the mouse: its word, its building, its summary. A source's icon raises External listeners
   already listening to it when Claude has a connector for it (its setup in the Warchief's line, `want`), else that
   setup says so;
-- **For you** first: three of the onboarding's role's own buildings not standing yet (`builder.for_role`: counted over
-  its ready towns), External listeners on a source the role reads; then the rest in the catalog's groups, side by side;
-- typing filters it by the icon's own word first ("mail" leaves Mail), else by its building's name and summary;
-  Enter takes the first left, or with none asks the Warchief what to build;
+- **For you** first, framed in gold: three of the onboarding's role's own buildings not standing yet (`builder.for_role`:
+  counted over its ready towns), External listeners on a source the role reads; then the rest in the catalog's groups;
+- typing in the line filters it by the icon's own word first ("mail" leaves Mail), else by its building's name and
+  summary; Enter takes the first left, or with none asks the Warchief what to build; Escape, Build again or a press
+  elsewhere puts the row away;
 - a press picks it and its ghost follows the mouse (select-a-building.md §8); **a double press builds it at a free
   spot**, no ghost, for a person who does not mind where; from the map's *Build here* a press builds it there.
 - *Later:* `^` in the line names a building to build, as `@` names one that stands.

@@ -12,7 +12,7 @@ import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { VisitDialogs } from "./js/visit.js";
-import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
+import { RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { GoogleWizard } from "./js/accounts.js";
@@ -54,7 +54,6 @@ function App() {
     <${VisitDialogs} />
     <${Jobs} />
     <${Overlays} />
-    <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />
     <${DemolishAsked} />

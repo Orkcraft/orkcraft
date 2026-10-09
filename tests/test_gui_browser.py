@@ -517,20 +517,22 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
-def test_build_is_a_tray_of_icons_found_by_typing_and_a_double_press_builds_at_once(page):
-    """Build (docs/design/warchief-line-and-cards.md §2): small icons of what each is for, filtered by their own word
-    first; a double press raises it at a free spot, no ghost; Escape puts the tray away."""
+def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_once(page):
+    """Build (docs/design/warchief-line-and-cards.md §2): the Warchief's line grows a row of small icons of what each is
+    for; its field finds in them by their own word first; a double press raises it at a free spot, no ghost; Escape
+    puts the row away."""
     pg = page
     pg.locator(".gui-warchief__build").click()
-    tray = pg.locator(".gui-build")
-    tray.locator(".gui-build__tile").first.wait_for(state="visible", timeout=WAIT_MS)
-    assert tray.locator(".gui-build__tile[data-intent='mail'] img").get_attribute("src").endswith("/intents/mail.png")
-    tray.locator(".gui-build__find").fill("mail")
-    assert tray.locator(".gui-build__tile").evaluate_all("els => els.map(e => e.dataset.intent)") == ["mail"]
-    tray.locator(".gui-build__find").fill("")
+    row = pg.locator(".gui-warchief .gui-build")
+    row.locator(".gui-build__tile").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert row.locator(".gui-build__tile[data-intent='mail'] img").get_attribute("src").endswith("/intents/mail.png")
+    field = pg.locator(".gui-warchief__input")
+    field.fill("mail")
+    assert row.locator(".gui-build__tile").evaluate_all("els => els.map(e => e.dataset.intent)") == ["mail"]
+    field.fill("")
     before = pg.locator(".gui-hut").count()
-    tray.locator(".gui-build__tile[data-intent='tasks']").dblclick()
-    tray.wait_for(state="detached", timeout=WAIT_MS)
+    row.locator(".gui-build__tile[data-intent='tasks']").dblclick()
+    row.wait_for(state="detached", timeout=WAIT_MS)
     assert pg.locator(".gui-town__placing").count() == 0                     # no ghost: it went up at once
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=before, timeout=WAIT_MS)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.town.value.buildings.filter(b => b.type === 'fields')"
@@ -538,9 +540,9 @@ def test_build_is_a_tray_of_icons_found_by_typing_and_a_double_press_builds_at_o
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
     pg.locator(".gui-warchief__build").click()
-    tray.locator(".gui-build__find").wait_for(state="visible", timeout=WAIT_MS)
+    row.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    tray.wait_for(state="detached", timeout=WAIT_MS)
+    row.wait_for(state="detached", timeout=WAIT_MS)
 
 
 def test_a_selected_building_turns_the_line_into_its_command_card(page):
