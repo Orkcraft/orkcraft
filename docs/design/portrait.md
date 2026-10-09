@@ -101,7 +101,7 @@ A click (or Enter) opens a popover under the portrait; Esc or a click outside cl
 One vocabulary (CLAUDE.md, Wording) and one layout. A **look** changes only how the town is drawn,
 as `data-look` always did; the words, the panel, the line and every action are the same in both.
 
-| | Camp (the default) | Office |
+| | Camp | Office |
 |---|---|---|
 | buildings | the huts' building sprites | a card: the name and its status lines, no sprite |
 | the Warchief's line | 🧌 | `›` |
@@ -109,7 +109,7 @@ as `data-look` always did; the words, the panel, the line and every action are t
 | colour | the Camp palette (gold, moss, bronze) | monochrome greys with one accent, the Camp gold muted (`#b8a06a` dark, `#7a6630` light): the selected, the focus ring; light or dark as the system says |
 | type | Almendra titles, Titillium | the system UI stack |
 | emoji in labels | yes | no (`modes.plain`) |
-| a building that waits for you | flames climb its roof (when Fire on the roofs is on, in the portrait's menu) | its frame turns `danger`, no flames |
+| a building that waits for you | flames climb its roof (when Fire on the roofs is on, in the portrait's menu: Camp's own, so Office does not show it) | its frame turns `danger`, no flames |
 | the Warchief | jokes, addresses you by your stage ("My Lord Lich") | plain ("Forge asks for a decision") |
 | growth news, a new stage's glow | yes | no; the stage and the deeds keep counting and show again in Camp |
 
@@ -120,8 +120,14 @@ as `data-look` always did; the words, the panel, the line and every action are t
 - **What stays coloured in Office:** `danger`, `warning`, `success`, each with its mark (✗ ⚠ ✓). They
   say what costs money or risks work; monochrome never hides them.
 - **The onboarding** keeps its voice and its sprites in both looks: it is where the mascot is chosen.
+- **By the shift** (the default since 2026-10-09, the owner's call): Office while the work day lasts, 09:00–17:00
+  (`settings.SHIFT`), Camp the rest of the day — calm while working, the camp after. Camp or Office picked hold all
+  day. Picked in **the sun's menu** in the middle of the HUD (js/chrome.js `Hour`), with Do not disturb and quiet
+  hours: one place answers "will the town bother me now, and how does it look". The portrait's menu keeps You and
+  what is Camp's own; beside the portrait, the horn (Do not disturb) and the phone (its pairing QR code).
 - **Stored** per machine, the person's and not the town's: `~/.config/orkcraft/settings.json` →
-  `look` (`camp` | `office`), default `camp`.
+  `look` (`shift` | `camp` | `office`), default `shift`; the snapshot's `look` is the one drawn now
+  (`settings.look_now`). Tests pin Camp (`ORKCRAFT_LOOK=camp`): a test runs at any hour.
 - **Tokens:** Office is the design system's office theme (`data-theme="office"`) with its colour tokens
   redrawn in greys (`office.css`, light and dark under `prefers-color-scheme`), never hand-made colours
   in a component: a building's window, being a UI document of roles (design-system.md), follows it with

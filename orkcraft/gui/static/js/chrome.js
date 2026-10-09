@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { settingsOpen } from "./settings.js";
-import { Portrait } from "./portrait.js";
+import { Portrait, Steps } from "./portrait.js";
 import { Scheme } from "./icons.js";
 import { opened, panelShown, panelWidth } from "./windows.js";
 import { narrow } from "./pocket.js";
@@ -23,8 +23,10 @@ function Resource({ icon, word, value, level }) {
 }
 
 /** The hour in the middle of the HUD, as an old strategy game's day and night dial: a sun while the orks work, a
- *  moon in quiet hours (no fires, no sound, no push). A press opens a small menu: quiet hours on or off. */
-function Hour({ hud }) {
+ *  moon in quiet hours (no fires, no sound, no push). A press opens its menu — will the town bother me now, and how
+ *  does it look (as the TUI's was): quiet hours on or off, Do not disturb, the look (Camp, Office, or by the shift:
+ *  Office in work hours). */
+function Hour({ hud, p }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -39,6 +41,7 @@ function Hour({ hud }) {
   const said = night ? say(`Night: ${hud.hour_plain.replace(/^🌙\s*/, "")}`) : hud.quiet_hours ? say(`Day: orks work. Quiet hours ${hud.quiet_hours}`)
     : say("Day: orks work. No quiet hours");
   const set = (on) => { command("you.quiet", { on }).catch(() => {}); setOpen(false); };
+  const d = (p && p.dnd) || {};
   // over the middle of the town: a building's window open on the right takes its part away
   const panel = panelShown() && !opened.value.full ? panelWidth.value : 0;
   return html`<span ref=${ref} class="gui-hour" style=${`--town-w:calc(100vw - ${panel}px)`}>
@@ -52,6 +55,14 @@ function Hour({ hud }) {
       <p class="ok-font-status ok-tone-muted">${say("In quiet hours no building burns, nothing sounds and no phone is called.")}</p>
       ${hud.quiet_hours ? html`<button class="ok-btn" role="menuitem" onClick=${() => set(false)}>${say("Turn quiet hours off")}</button>`
         : html`<button class="ok-btn primary" role="menuitem" onClick=${() => set(true)}>${say("Turn quiet hours on, from 23:00")}</button>`}
+      ${p && html`<${Steps} label="Do not disturb" value=${d.choice || "off"} onPick=${(v) => command("you.dnd", { dnd: v }).catch(() => {})}
+          items=${[["off", "Off"], ["1h", "1 h"], ["morning", `Until ${d.morning || "09:00"}`], ["on", "On"]]} />
+        <p class="ok-font-status ok-tone-muted">${say(d.on
+          ? `${d.label}: sounds, pushes and the Warchief's news wait; only errors show. The orks keep working.`
+          : "Do not disturb holds sounds, pushes and the Warchief's news; the orks keep working.")}</p>
+        <${Steps} label="Look" value=${p.look_choice || p.look} onPick=${(v) => command("you.look", { look: v }).catch(() => {})}
+          items=${[["shift", "By shift"], ["camp", "Camp"], ["office", "Office"]]} />
+        <p class="ok-font-status ok-tone-muted">${say(`By shift: Office ${p.shift || "09:00–17:00"}, Camp the rest of the day.`)}</p>`}
     </div>`}
   </span>`;
 }
@@ -69,7 +80,7 @@ export function Hud() {
       ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Stop all</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     <span class="ok-hud__spacer"></span>
-    <${Hour} hud=${hud} />
+    <${Hour} hud=${hud} p=${t.portrait} />
     ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />

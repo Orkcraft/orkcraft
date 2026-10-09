@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html } from "./html.js";
 import { command, say } from "./link.js";
+import { Dialog } from "./dialog.js";
 
 const WHAT = "A paired phone sees the town small: each building, the questions the orks wait on, spend and "
   + "quotas. It may answer a question, stop all, drop a text or a file into Drop file here and ask the Warchief. It never builds, "
@@ -59,7 +60,15 @@ function Recipe({ r, onDone }) {
   </div>`;
 }
 
-export function PhonesField() {
+/** The phone beside the portrait (docs/design/mobile.md §2): its QR code at once, in a dialog of its own. */
+export function PhonePair({ onClose }) {
+  return html`<${Dialog} title=${say("Pair a phone")} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Close")}</button>`}>
+    <${PhonesField} pairNow=${true} />
+  </${Dialog}>`;
+}
+
+export function PhonesField({ pairNow = false }) {
   const [p, setP] = useState(null);
   const [recipe, setRecipe] = useState(null);
   const [offer, setOffer] = useState(null);
@@ -67,7 +76,8 @@ export function PhonesField() {
   const live = useRef(null);
   live.current = offer;
   useEffect(() => {
-    command("phones.list").then(setP, () => {});
+    if (pairNow) command("phones.pair").then((r) => { setP(r); setLeft(Math.round(r.pairing)); setOffer(r); }, () => {});
+    else command("phones.list").then(setP, () => {});
     return () => { if (live.current) command("phones.pair_stop").catch(() => {}); };
   }, []);
   // While a code shows: the list again each second (a phone that paired appears), and the time left.
