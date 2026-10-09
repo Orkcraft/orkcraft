@@ -210,8 +210,8 @@ leaves the title bar on every card, hut and yard; the building says what its ork
     note); a yard's the building (`building.dislike`: its steward wakes on it). **No 👍 in the bubble since
     2026-10-09**: the owner's call, a 👎 is what teaches an ork; 👍 stays in the building's Info (`js/console.js`);
   - **a gear, its settings** (a hut's; until 2026-10-09 its AI tool's mark, which said little to a person — the tool
-    is in the gear's tooltip now, `icons/settings.png`): pressed, the bubble lists the AI tools this machine runs and a
-    press changes it from its next run (`ork.model`); a pipeline, or one tool and no other, opens the model dialog.
+    is in the gear's tooltip now, `icons/settings.png`): pressed, it opens the building's Info at its steward's part —
+    its tier and its AI tool (warchief-line-and-cards.md §5, §7; until then the bubble listed the AI tools in place).
   The mouse gone, it waits 0.4 s and walks back in facing right. Touch is not drawn here: it gets its own interface.
 - **The ork that asks comes out by itself** and waits on the same spot, pacing a step, a `!` in its bubble;
   **a press on it opens its question** (`js/orders.js` `openOrders(id)`); the building stays shut. An ork come to

@@ -38,8 +38,8 @@ from orkcraft.realm.steward_metrics import (  # noqa: F401  (the free half, as b
     READY_SCORE, Finding, Metrics, Replay, collect, findings, output_similarity, replay, replay_script,
     stewards_own, weekly_spend)
 from orkcraft.realm.steward_models import (  # noqa: F401  (its models, as before the split)
-    NOT_YET, PURPOSE, TYPE_USES, USES, WORK, WORK_ALL, Pick, _g, goal_tier, harness_for, is_work, model_for,
-    pick, purpose_of, runner_for, set_models, tier_for, uses)
+    GOAL_LEVEL, LEVEL_COLUMN, NOT_YET, PURPOSE, TYPE_USES, USES, WORK, WORK_ALL, Pick, _g, column_of, goal_tier,
+    harness_for, is_work, level_of, model_for, pick, purpose_of, runner_for, set_models, tier_for, uses)
 
 
 MAX_ATTEMPTS = 3

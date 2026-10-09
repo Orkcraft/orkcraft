@@ -379,19 +379,20 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     title = steward.locator("h3").inner_text()
     assert "★" in title and "idle" in title.lower()                               # the steward's name, its status
     steward.get_by_text("Listens to nobody yet").wait_for(state="visible", timeout=WAIT_MS)
-    steward.get_by_role("button", name="Quality", exact=True).click()
-    pg.wait_for_function("() => [...document.querySelectorAll('.gui-steward-part .gui-steps__one')].find((e) => e.textContent === 'Quality')"
+    own = info.locator(".gui-building-part")                          # the building's own: goal, Freedom
+    own.get_by_role("button", name="Quality", exact=True).click()
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-building-part .gui-steps__one')].find((e) => e.textContent === 'Quality')"
                          ".classList.contains('is-on')", timeout=WAIT_MS)
     assert server_building(pg, bid)["goal"] == "quality"
-    town_step = steward.locator(".gui-steps__one.is-as-town")
+    town_step = own.locator(".gui-steps__one.is-as-town")
     assert "is-on" in town_step.get_attribute("class")              # as the town, until one is picked
-    clock = steward.locator(".gui-steps__one.is-icon").nth(1)
+    clock = own.locator(".gui-steps__one.is-icon").nth(1)
     clock.click()
-    pg.wait_for_function("() => document.querySelectorAll('.gui-steward-part .gui-steps__one.is-icon')[1].classList.contains('is-on')",
+    pg.wait_for_function("() => document.querySelectorAll('.gui-building-part .gui-steps__one.is-icon')[1].classList.contains('is-on')",
                          timeout=WAIT_MS)
     assert server_building(pg, bid)["autonomy"] == "clock"
     clock.click()                                                  # the lit one again: as the town
-    pg.wait_for_function("() => document.querySelector('.gui-steward-part .gui-steps__one.is-as-town').classList.contains('is-on')",
+    pg.wait_for_function("() => document.querySelector('.gui-building-part .gui-steps__one.is-as-town').classList.contains('is-on')",
                          timeout=WAIT_MS)
     assert info.get_by_role("button", name="Demolish").count() == 0        # rare: in the building's menu only
     pg.locator(".gui-panel__more").click()                           # ⋯ in the bar: the same menu as a right click

@@ -1,6 +1,6 @@
 // A building's Info in the town's panel (js/windows.js, docs/design/calm-town.md §2), in the order it is
 // needed: its name with 👍 / 👎, why it is here and its runs with History; its own quick actions; its
-// garrison (Deploy, Its session); its steward (goal and Freedom, Watch, Report, Redesign, the roads it
+// goal and Freedom; its garrison (Deploy, Its session); its steward (its tier and AI tool, Watch, Report, Redesign, the roads it
 // listens to with their handlers, js/steward.js); its roads out; Demolish at the bottom. An ork picked in the
 // garrison shows here with ← back: its Info, its models and tools, its commands (Deploy, Standing orders,
 // Halt). The data is the host's (gui/info.py, gui/console.py), asked while open; the dialogs that change
@@ -17,7 +17,7 @@ import { openOrders } from "./orders.js";
 import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
-import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
+import { StewardTitle, StewardWindow, StewardModels, BuildingSettings } from "./steward.js";
 import { OrkHead, HutSprite, activeBiome, Scheme, TierMark } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
@@ -382,6 +382,7 @@ function UsualInfo({ b }) {
   return html`<div class="ok-win__body gui-win__body gui-info-tab">
     ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
       <${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />
+      <${BuildingSettings} b=${b} i=${i} redo=${redo} />
       <${Quick} b=${b} i=${i} />
       <${Garrison} garrison=${b.garrison} b=${b} />
       <section class="gui-section gui-steward-part">

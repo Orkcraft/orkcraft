@@ -191,9 +191,10 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     models = inventory.models_of(lead, town.snapshot.model_by_terminal.get(term, "") if term else "")
     bs, spec = town.scroll.building(building_id), town.spec_of(building_id)
     type_id = catalog.type_of(spec).id if spec else ""
-    aim = bs.aim if bs is not None else "balance"
+    rank = steward.level_of(bs)                        # its own tier, Novice … Veteran (not its building's goal)
+    column = steward.LEVEL_COLUMN[rank]
     uses = [{"id": use, "label": label, "tier": steward.tier_for(bs, use), "work": steward.is_work(type_id, use),
-             "by_goal": modes.plain(tiers.label(steward.goal_tier(type_id, use, aim)))}
+             "by_level": modes.plain(tiers.label(steward.goal_tier(type_id, use, column)))}
             for use, label in steward.uses(type_id).items()]
     rules = _rules(town, building_id)
     for u in uses:                                     # the road rules' spend shows under its listen tier
@@ -207,7 +208,9 @@ def _steward(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
     first = modes.plain(tiers.label(picked[0])) if picked else default
     return {"ref": lead.ref, "name": lead.name, "status": lead.status, "tier": lead.tier or "",
             "model": first or "default", "more": len({u["tier"] or "" for u in uses}) - 1 if picked else 0,
-            "default": default, "uses": uses, "own": bs is not None and bs.garrison.steward is not None}
+            "default": default, "uses": uses, "own": bs is not None and bs.garrison.steward is not None,
+            "rank": rank, "rank_title": tiers.TIER_LABELS[rank], "ranks": list(reversed(tiers.TIERS)),
+            "rank_set": bs is not None and bs.garrison.steward is not None and bs.garrison.steward.tier in tiers.TIERS}
 
 
 def _town_autonomy(town: Town) -> str:
@@ -262,7 +265,7 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "week": {"runs": j["runs"], "ok": j["ok"], "failed": j["failed"], "results": j["results"]},
         "likes": j["likes"], "dislikes": j["dislikes"],
         "goal": aim, "goal_title": ts.GOAL_TITLES[aim],
-        "goal_hints": {g: core_buildings.goal_words(town, building_id, g) for g in ts.GOALS}  # its work's models
+        "goal_hints": {g: core_buildings.goal_words(town, building_id, g) for g in ts.GOALS}  # the retros, an Agent pool's orks
         if catalog.type_of(spec).id in steward.WORK else {},
         "level": bs.level or 0, "level_mark": growth.mark(aim, bs.level or 0),
         "next": growth.next_step(town.repo_root, building_id, bs.level or 0),

@@ -64,13 +64,17 @@ itself: it was turned off, yards.md §7).
 Five types have a view: 5 × 3 cards. First the Task board, the Calendar and the Agent pool; the others keep the
 medium.
 
-## 5. Info stays a window of its own, its settings in it
+## 5. Info stays a window of its own, its settings in it (built)
 
 Info is not folded into the window: it opens on its own, from the ⚙ in the ork's bubble (yards.md §4) as from the
-panel. It holds the building's settings, among them, for each ork that thinks:
+panel. It holds two parts, one under the other (§7):
 
-- its **harness** (the AI tool it runs on), picked from the ones this machine has;
-- its **tier**, picked by its new name (§6).
+- **the building** — what it is and what for: its name, 👍 / 👎, its runs, then its **goal** and its **Freedom**;
+- **the steward** — who works it and how: its **tier** (§6, three chevron steps), its **AI tool** (its model
+  dialog), Watch, Report, Redesign, the roads it listens to and its road rules.
+
+The ⚙ in the bubble opens Info scrolled to the steward's part (`js/visit.js` `openSteward`); the bubble no longer
+picks the AI tool in place.
 
 ## 6. Tiers say what they are (built)
 
@@ -87,10 +91,29 @@ panel. It holds the building's settings, among them, for each ork that thinks:
 - The mark is a pixel chevron (`icons/rank-1..3.png`): in Info beside the tier, and **on the ork itself when it comes
   out**, so the person sees how heavy a mind is working without opening anything.
 
+## 7. The steward's tier is its own, not the goal's (built)
+
+Asked by the owner: the steward *is* the working agent; the goal is a piece of its prompt — what the retros
+optimise the building towards. Until now the goal also chose the models of the steward's work, so 💎 Quality made
+the steward heavier and 🪙 Thrift lighter, and the two could not be set apart.
+
+- The steward has **its own tier**, Novice, Seasoned or Veteran (`OrcSpec.tier` on the lead steward,
+  `steward_models.level_of`), set in Info (`building.steward_level`).
+- Its tier picks a **column** of the work table (steward-at-work.md §2): every task keeps its own weight (a sort
+  light, a plan heavier), the tier says how heavy the whole steward is. A tier picked for one task stays first.
+- **A tight quota** still runs it on the light column for a while (`Worker.aim_now`).
+- **No change in cost on the day**: a steward with no tier of its own has the one its goal gave it (Thrift →
+  Novice, Balance → Seasoned, Quality → Veteran); the first time the goal changes, that tier is written down as
+  its own, so a new goal never moves it.
+- **The goal keeps its meaning**: the retros and Optimize aim at it, the steward's prompt says it, and an Agent
+  pool's orks follow it (realm/plans.py `GOALS`: the light tier, review, parallelism) — that is the building's
+  strategy, not its steward's mind.
+
 ## Order
 
 1. The line's buttons: Build, Questions (N), Improve (§1) — and a selected building's own (with select-a-building.md).
-2. Tiers' names and marks (§6), the ork wearing its mark; Info's harness and tier (§5).
+2. Tiers' names and marks (§6), the ork wearing its mark; Info's two parts with the steward's tier and AI tool
+   (§5, §7). **Built.**
 3. Build as a tray from the line, a double press builds at a free spot (§2).
 4. The medium card by default and three snapping sizes for the Task board, the Calendar, the Agent pool (§4).
 5. `^` in the line (§2).

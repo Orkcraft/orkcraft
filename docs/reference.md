@@ -658,8 +658,8 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   handler of kind `steward`, its words in `orders`, with no tools of its own. On every cart the
   steward carries it out on its own tool (its first harness step, else the main tool) with the
   building's purpose (the steward's role and orders) in the prompt, at its tier for **listen** —
-  the one picked in the steward's models, else the one the goal names (🪙 laborer · ⚖️ warrior ·
-  💎 elder; 🪙 while the quota is tight). Runs, spend and 👍 / 👎 stay the rule's own (its chronicle,
+  the one picked in the steward's models, else the one its own tier names (Novice · Seasoned ·
+  Veteran, set in Info; light while the quota is tight). Runs, spend and 👍 / 👎 stay the rule's own (its chronicle,
   `.orkcraft/history/handlers/`); the 🪙 budget and Stop all apply as to any agent. An `agent`
   handler of old keeps running on its own tools.
 - **👍 / 👎** sit beside the steward in the console (or `K` / `F`). 👍 keeps a building's last

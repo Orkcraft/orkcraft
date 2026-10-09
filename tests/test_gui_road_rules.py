@@ -43,7 +43,7 @@ def test_rules_are_listed_under_the_steward_and_not_drawn_as_orks(fake_repo, iso
     assert "External listeners" in rule["roads"][0] or "mail" in rule["roads"][0]
     assert ref not in [h["ref"] for h in info["others"]]
     listen = next(u for u in info["steward"]["uses"] if u["id"] == "listen")
-    assert listen["work"] and listen["by_goal"] and "$0.06" in listen["spend"]
+    assert listen["work"] and listen["by_level"] and "$0.06" in listen["spend"]
     road = next(l for l in info["listens"] if l["by"])
     assert road["by"]["kind_label"] == "road rule" and road["by"]["tier"] == "warrior"      # balance: the middle
 
