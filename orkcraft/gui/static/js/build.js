@@ -59,8 +59,8 @@ export function raised(id, type) {
 
 // Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
 // what you want done — take in what comes, work in parallel, talk a hard topic over — not which house does it
-// (tools/intent_sprites.py); where it listens or what it reads is its setup's. Ten of them, in the order people need
-// them, and ⋯ for the rest; typing in the line finds in all of them. The line's own field filters it while Build is
+// (tools/intent_sprites.py); where it listens or what it reads is its setup's. All of them, small, in one row: the ten
+// people need most first, in that order, a thin rule, then the rest. The line's own field filters it while Build is
 // on (js/warchief.js), Enter takes the first icon left or, with none, asks the Warchief what to build. One line over
 // the row says what the icon under the mouse raises. First three for you (the onboarding's role's own, not standing
 // yet), framed in gold. A press picks one and its ghost follows the mouse (`place`), a double press builds it at a free
@@ -76,7 +76,7 @@ export const INTENTS = [
   { id: "drop", word: "Drop files", type: "pit" },
   { id: "tasks", word: "Tasks", type: "fields" },
   { id: "wiki", word: "Wiki", type: "scrolls" },
-  { id: "code", word: "Code", type: "forge", more: true },
+  { id: "code", word: "Code", type: "forge", more: true },          // `more`: past the thin rule
   { id: "send", word: "Send", type: "catapult", more: true },
   { id: "route", word: "Route", type: "signpost", more: true },
   { id: "chart", word: "Chart", type: "crag", more: true },
@@ -123,7 +123,6 @@ export function buildEnter() {
 export function BuildRow({ query }) {
   const [types, setTypes] = useState(null);
   const [over, setOver] = useState(null);         // the icon under the mouse: the line over the row says it
-  const [more, setMore] = useState(false);        // ⋯: the rest of the icons too
   const timer = useRef(null);
   useEffect(() => { if (types === null) command("town.catalog").then(setTypes, () => setTypes([])); }, []);
   useEffect(() => {                              // Escape from anywhere puts it away (the field's own does too)
@@ -143,10 +142,9 @@ export function BuildRow({ query }) {
   };
   const tiles = tilesOf(types || []);
   const q = norm((query || "").trim());
-  const shown = found(q || more ? tiles : tiles.filter((x) => !x.more), q);    // typing finds in all of them
+  const shown = found(tiles, q);
   const yours = q ? [] : forYou(shown, new Set(town.value.buildings.map((b) => b.type)));
   const row = [...yours, ...shown.filter((x) => !yours.includes(x))];
-  const rest = !q && tiles.some((x) => x.more);
   enter = () => { if (!row.length) return false; pick(row[0]); return true; };
   const biome = activeBiome();
   const said = over ? `${say(over.word)} — ${say(over.t.title)}: ${over.t.summary}`
@@ -165,9 +163,6 @@ export function BuildRow({ query }) {
           : html`<img class="ok-sprite" src=${`/ds/sprites/intents/${x.id}.png`} srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`}
               width="32" height="32" alt="" draggable="false" />`}
         <span class="gui-build__word">${say(x.word)}</span></button>`)}
-      ${rest && html`<button class="gui-build__tile gui-build__more is-first" aria-expanded=${more}
-          title=${say(more ? "Fewer" : "More buildings")} aria-label=${say(more ? "Fewer" : "More buildings")}
-          onMouseEnter=${() => setOver(null)} onClick=${() => setMore(!more)}>${more ? "‹" : "⋯"}</button>`}
     </div>
   </div>`;
 }

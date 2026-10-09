@@ -40,8 +40,8 @@ window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09)
 
 - each icon says **what you want done**, not which house does it, and there are ten: take in what comes (mail, chats,
   tickets — one icon, where it listens is its setup's), work in parallel, discuss a hard topic, a calendar, process
-  data, deep research, validate a model's output, drop files fast, tasks, a wiki; ⋯ shows the rest (code, send, route,
-  chart, sound, listen), and typing finds in all of them (`design-system/sprites/intents/`, drawn by
+  data, deep research, validate a model's output, drop files fast, tasks, a wiki; then, past a thin rule, the rest
+  (code, send, route, chart, sound, listen) — all in the one row, small enough to need no ⋯ (`design-system/sprites/intents/`, drawn by
   `tools/intent_sprites.py`; which building each raises is `js/build.js` `INTENTS`). The line over the row says the
   icon under the mouse: its word, its building, its summary;
 - **For you** first, framed in gold: three of the onboarding's role's own buildings not standing yet (`builder.for_role`:

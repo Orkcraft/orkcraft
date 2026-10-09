@@ -218,7 +218,6 @@ def test_every_type_built_draws_three_ways(page, type_id):
     _line(pg, "/build")                         # the tray: an icon for what each is for
     items = pg.locator(".gui-build .gui-catalog__item")
     items.first.wait_for(state="visible", timeout=WAIT_MS)
-    pg.locator(".gui-build__more").click()            # ⋯: the rest of them too
     assert set(items.evaluate_all("els => els.map(e => e.dataset.type)")) == set(TYPES)   # every type, by its icons
     items.and_(pg.locator(f"[data-type='{type_id}']")).first.click()
     pg.locator(".gui-build").wait_for(state="hidden", timeout=WAIT_MS)
@@ -527,7 +526,7 @@ def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_onc
     row = pg.locator(".gui-warchief .gui-build")
     row.locator(".gui-build__tile").first.wait_for(state="visible", timeout=WAIT_MS)
     assert row.locator(".gui-build__tile[data-intent='incoming'] img").get_attribute("src").endswith("/intents/incoming.png")
-    assert row.locator(".gui-catalog__item").count() == 10                  # ten, ⋯ for the rest
+    assert row.locator(".gui-catalog__item").count() == len(TYPES)           # all of them, in one row
     field = pg.locator(".gui-warchief__input")
     field.fill("data")                                                       # its own word first
     assert row.locator(".gui-catalog__item").evaluate_all("els => els.map(e => e.dataset.intent)") == ["transform"]
