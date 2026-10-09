@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
-import { building as buildOpen, laying, demolishing, raised, settingUp } from "./build.js";
+import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup } from "./build.js";
 import { typeModule } from "./types.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
@@ -455,7 +455,7 @@ export function WarchiefLine() {
   useEffect(() => {
     if (!over) return undefined;
     const away = (e) => {
-      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); settingUp.value = null; }
+      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); endSetup(); }
     };
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
@@ -520,10 +520,10 @@ export function WarchiefLine() {
     ${setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
       <div class="ok-win__frame"><div class="ok-win__body">
         <p class="ok-font-status"><b>${say(name)}:</b> ${say(suMod.setupAsk ? suMod.setupAsk(suB) : `${suB.title} stands. Set it up?`)}</p>
-        <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { settingUp.value = null; }} />
+        <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { endSetup(); }} />
         <div class="gui-warchief__setup-foot">
-          <button class="gui-link ok-font-status" onClick=${() => { settingUp.value = null; openBuilding(suB.id); }}>${say("All its settings")}</button>
-          <button class="ok-btn" onClick=${() => { settingUp.value = null; }}>${say("Later")}</button></div>
+          <button class="gui-link ok-font-status" onClick=${() => { endSetup(); openBuilding(suB.id); }}>${say("All its settings")}</button>
+          <button class="ok-btn" onClick=${() => { endSetup(); }}>${say("Later")}</button></div>
       </div></div></div>`
     : focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
         onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>

@@ -7,15 +7,15 @@
 // no other hut moves to make room: where the ghost would stand on one it turns red, and a drop there is no
 // move at all (Footprint).
 import { signal } from "@preact/signals";
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
 import { opened, openBuilding, closeBuilding, panelShown, panelWidth } from "./windows.js";
 import { plan } from "./roads.js";
-import { pickedRoad, building as buildOpen } from "./build.js";
+import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
-import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER, fenced, YARD_STEP } from "./hut.js";
+import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER, fenced, bareOf, YARD_STEP } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
 import { foldQuiet, unfoldAll, quiet } from "./fold.js";
@@ -454,6 +454,33 @@ function useCamera(el, rects, here, panelW) {
   }, [active, panelW]);
 }
 
+/** A building picked in Build, placed with the mouse (js/build.js place): its ghost follows the pointer — the house
+ *  alone for a building with no card — and a press builds it there; Escape or a right click lets it go. */
+function Placing({ p }) {
+  const [at, setAt] = useState(null);
+  useEffect(() => {
+    const key = (e) => { if (e.key === "Escape") { e.preventDefault(); placing.value = null; } };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+  const spot = at && { x: at.x - 120, y: at.y - 30 };     // the ghost's middle under the pointer
+  const put = (e) => {
+    e.stopPropagation();
+    const f = free(DEFAULT_SIZE);
+    const x = e.nativeEvent.offsetX - 120, y = e.nativeEvent.offsetY - 30;
+    const hut = [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
+    const { type } = p;
+    placing.value = null;
+    command("town.build", { type, hut }).then((id) => raised(id, type), () => {});
+  };
+  return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
+      onPointerMove=${(e) => setAt({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY })}
+      onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
+    ${spot && html`<${Ghost} g=${{ id: "", type: p.type, title: p.title, state: "planned" }} spot=${spot} biome=${activeBiome()} bare=${p.bare} />`}
+    <p class="gui-town__placing-hint ok-font-status">${say(`Place ${p.title}: press where it should stand · Esc cancels`)}</p>
+  </div>`;
+}
+
 export function Town({ buildings, roads }) {
   const ref = useRef(null);
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
@@ -547,7 +574,8 @@ export function Town({ buildings, roads }) {
   numbered = buildings.map((b) => b.id);
   // Huts pushed under the fold make the room taller, so the town scrolls to them rather than hiding them under the foot.
   const tall = Math.max(room.value.h, ...Object.values(rects).map((r) => r.y + r.h + MARGIN + room.value.strip));
-  const fresh = risen();                   // raised by the onboarding: each rises into place as it appears
+  const fresh = new Set([...risen(), ...built.value]);   // raised by the onboarding or by Build: each rises into place once
+  const going = constructing.value;          // raised by Build and not standing yet: scaffolding where it will stand
   const drag = dragging.value, stretch = resizing.value;
   const auto = grow(buildings, spots, rects, new Set([drag && drag.id, stretch && stretch.id].filter(Boolean)));
   for (const b of buildings) {
@@ -568,12 +596,15 @@ export function Town({ buildings, roads }) {
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
           spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
-      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} auto=${auto[b.id] || null}
+      ${buildings.map((b, i) => going[b.id] !== undefined ? html`<${Ghost} key=${`up-${b.id}`}
+          g=${{ id: b.id, type: b.type, title: b.title, state: "raising" }} spot=${spots[b.id]} biome=${activeBiome()} bare=${bareOf(b)} />`
+        : html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} auto=${auto[b.id] || null}
           fresh=${fresh.has(b.id)} onMoved=${moved} onSized=${sized} />`)}
       ${ghost && html`<${Footprint} g=${ghost} />`}
       <${Signs} paths=${paths} roads=${here} />
       <${LooseEnds} buildings=${buildings} rects=${rects} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
+      ${placing.value && html`<${Placing} p=${placing.value} />`}
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

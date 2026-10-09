@@ -15,14 +15,47 @@ export const laying = signal(null);                // {from, to}: a road waits f
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
 export const settingUp = signal(null);             // {id, type}: a building just raised, its setup asked in the Warchief's line
+export const placing = signal(null);               // {type, title, bare}: a building picked in Build, its ghost under the mouse
+export const constructing = signal({});            // building id → until when its scaffolding stands (Infinity: its setup)
+export const built = signal(new Set());            // the buildings that just came up: they rise into place once
+const RAISE_MS = 1600;                             // a building with no questions: its construction, then it stands
 
-/** A building just raised: a type with a `Setup` of its own (js/types.js) is set up in the Warchief's line, in a
- *  question or two (docs/design/select-a-building.md §7); any other opens in its window as before. */
+// Build, as a strategy game does it (docs/design/select-a-building.md §8): pick a building, place its ghost with the
+// mouse, it goes up under scaffolding while the Warchief asks its setup (if its type has one), then it stands.
+
+/** Picked in Build: its ghost follows the mouse until a press places it (js/town.js), Escape lets it go. */
+export function place(t) {
+  placing.value = { type: t.id, title: t.title, bare: false };
+  import(`./buildings/${t.id}.js`).then((m) => {
+    if (placing.value && placing.value.type === t.id) placing.value = { ...placing.value, bare: !!m.bare };
+  }, () => {});
+}
+
+function stands(id) {
+  const { [id]: _, ...rest } = constructing.value;
+  constructing.value = rest;
+  built.value = new Set([...built.value, id]);
+  setTimeout(() => { const s = new Set(built.value); s.delete(id); built.value = s; }, 1200);
+}
+
+/** The setup in the Warchief's line is over (answered, Later, or put away): the building stands. */
+export function endSetup() {
+  const s = settingUp.value;
+  settingUp.value = null;
+  if (s && constructing.value[s.id] !== undefined) stands(s.id);
+}
+
+/** A building just raised: it goes up under scaffolding; a type with a `Setup` of its own (js/types.js) is set up
+ *  in the Warchief's line meanwhile (docs/design/select-a-building.md §7–8), and stands when that is over; any other
+ *  stands after a moment. */
 export function raised(id, type) {
   if (!id) return;
-  import(`./buildings/${type}.js`).then(
-    (m) => { if (m.Setup) settingUp.value = { id, type }; else openBuilding(id); },
-    () => openBuilding(id));
+  constructing.value = { ...constructing.value, [id]: Infinity };
+  const plain = () => {
+    constructing.value = { ...constructing.value, [id]: Date.now() + RAISE_MS };
+    setTimeout(() => stands(id), RAISE_MS);
+  };
+  import(`./buildings/${type}.js`).then((m) => { if (m.Setup) settingUp.value = { id, type }; else plain(); }, plain);
 }
 
 /** Build, in one (docs/design/building-views.md §3, Town Hall): say what you need — the Warchief points
@@ -39,6 +72,7 @@ export function BuildDialog() {
   const hut = building.value.hut;
   const raise = (t) => command("town.build", hut ? { type: t.id, hut } : { type: t.id })
     .then((id) => { close(); raised(id, t.id); }, () => {});
+  const pick = (t) => { if (hut) raise(t); else { close(); place(t); } };   // a spot given (the map's menu): built there
   const ask = () => need.trim() && act(HALL, "ask", { text: `What should I build? ${need.trim()}` })
     .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
   const groups = [];
@@ -55,7 +89,7 @@ export function BuildDialog() {
     </div>
     ${types === null ? html`<p class="ok-tone-muted">Looking…</p>` : html`<ul class="gui-catalog">
       ${groups.map(([intent, list]) => html`<li key=${intent} class="ok-font-heading ok-tone-muted">${intent}</li>
-        ${list.map((t) => html`<li key=${t.id} class="gui-catalog__item" onClick=${() => raise(t)}>
+        ${list.map((t) => html`<li key=${t.id} class="gui-catalog__item" onClick=${() => pick(t)}>
           <b>${say(t.title)}</b>${t.agentic ? html` <span class="ok-word ok-tone-muted">agents</span>` : ""}
           <div class="ok-font-status ok-tone-muted">${t.summary}</div>
           ${t.sends.length > 0 && html`<div class="ok-font-status">sends: ${t.sends.join(" · ")}</div>`}

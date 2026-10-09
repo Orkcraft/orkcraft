@@ -467,9 +467,11 @@ export function risen() {
   return new Set(r ? r.buildings.filter((b) => b.state === "standing").map((b) => b.id) : []);
 }
 
-export function Ghost({ g, spot, biome }) {
+/** A building not standing yet: planned, or going up (`g.state` "raising"). `bare`: a building with no card of its own
+ *  (js/hut.js bareOf) is its house alone, here too. */
+export function Ghost({ g, spot, biome, bare = false }) {
   const now = g.state === "raising";
-  return html`<div class=${cls("gui-onb__ghost", { "is-raising": now })} style=${`left:${spot.x}px;top:${spot.y}px`}
+  return html`<div class=${cls("gui-onb__ghost", { "is-raising": now, "is-bare": bare })} style=${`left:${spot.x}px;top:${spot.y}px`}
       aria-label=${say(now ? `${g.title}: being built` : `${g.title}: planned`)}>
     <div class="gui-onb__ghost-roof">
       <img class="ok-sprite gui-onb__ghost-plan" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
@@ -477,8 +479,9 @@ export function Ghost({ g, spot, biome }) {
       ${now && html`<img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
         <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>`}
     </div>
-    <div class="gui-onb__ghost-card"><span class="gui-onb__ghost-name">${say(g.title)}</span>
-      <span class="ok-font-status ok-tone-muted">${now ? "building…" : "planned"}</span></div>
+    ${bare ? html`<span class="gui-onb__ghost-name">${say(g.title)}</span>`
+      : html`<div class="gui-onb__ghost-card"><span class="gui-onb__ghost-name">${say(g.title)}</span>
+      <span class="ok-font-status ok-tone-muted">${now ? "building…" : "planned"}</span></div>`}
   </div>`;
 }
 
