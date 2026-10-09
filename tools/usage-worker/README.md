@@ -63,6 +63,16 @@ The list lives twice, and both must change together: `EVENTS` in `orkcraft/core/
 and deeds). Add the event to [docs/usage-stats.md](../../docs/usage-stats.md) as well, then
 `npx wrangler deploy` before the release that sends it: an event the Worker does not know is dropped.
 
+## The installer
+
+The Worker also serves [`install.sh`](../../install.sh) at `GET /install.sh`, read from `main` and
+cached 5 minutes, so the install line can be `curl -fsSL https://orkcraft-usage.<account>.workers.dev/install.sh | sh`
+(and later a domain of your own, through `routes`). Cloudflare's dashboard (Workers → this Worker →
+Metrics) counts its requests: how many fetched the installer, with no data about who. The installer's
+events (`install_started`, `install_step`, `install_finished`, [docs/install.md](../../docs/install.md))
+reach Amplitude only once a Worker that knows them is deployed: `npx wrangler deploy` after a change
+to `worker.js`.
+
 ## Rotate the key
 
 In Amplitude, create a new API key, then `npx wrangler secret put AMPLITUDE_API_KEY` again. No release of

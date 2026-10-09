@@ -15,6 +15,12 @@ const TOOLS = ["claude", "agy", "codex", "hermes", "pi", "cursor"];
 const TYPES = ["pit", "watchtower", "signpost", "mill", "horn", "fields", "barracks", "council", "war_drum",
   "forest", "scrolls", "mine", "gramophone", "lake", "forge", "loot", "crag", "catapult", "town_hall", "workshop", "custom"];
 const DEEDS = ["town", "road", "reference", "week", "learned", "mature", "trusted", "night"];
+// The installer's (install.sh, docs/install.md): its steps, a time bucket, the kind of error.
+const STEPS = ["uv", "python", "package", "version", "window", "agents"];
+const SECONDS = ["<10", "10-60", "60-300", "300+"];
+const ERRORS = ["disk_full", "permission", "tls", "network", "python_download", "resolve_failed",
+  "build_failed", "git_missing", "unknown"];
+const bool = (v) => typeof v === "boolean";
 
 const oneOf = (list) => (v) => list.includes(v);
 const EVENTS = {
@@ -30,6 +36,11 @@ const EVENTS = {
   stage_reached: { stage: oneOf([1, 2, 3, 4]) },
   autonomy_set: { level: oneOf(["chains", "clock", "free"]) },
   halted: {},
+  install_started: { method: oneOf(["sh"]), arch: oneOf(["x86_64", "arm64", "other"]), upgrade: bool },
+  install_step: { step: oneOf(STEPS), ok: bool, seconds: oneOf(SECONDS), error: oneOf(ERRORS), found: bool,
+    source: oneOf(["git", "archive", "local"]), window: oneOf(["native", "browser"]),
+    tools: (v) => Array.isArray(v) && v.length <= TOOLS.length && v.every((t) => TOOLS.includes(t)) },
+  install_finished: { ok: bool, seconds: oneOf(SECONDS), failed_step: (v) => v === "none" || STEPS.includes(v) },
 };
 
 const MAX_BODY = 64 * 1024;
@@ -49,9 +60,22 @@ function clean(e, now) {
   return { event: e.event, time, props };
 }
 
+// The installer, as `main` has it: `curl -fsSL https://<this worker>/install.sh | sh`. Cloudflare's own
+// request counts for this path are how many fetched it; nothing about the person is kept or sent.
+const INSTALLER = "https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh";
+
+async function installer() {
+  const res = await fetch(INSTALLER, { cf: { cacheTtl: 300, cacheEverything: true } });
+  if (!res.ok) return new Response("echo 'orkcraft: the installer could not be fetched; try again in a minute' >&2; exit 1\n",
+    { status: 502, headers: { "Content-Type": "text/x-shellscript; charset=utf-8" } });
+  return new Response(res.body, { headers: { "Content-Type": "text/x-shellscript; charset=utf-8",
+    "Cache-Control": "public, max-age=300" } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/install.sh") return installer();
     if (request.method !== "POST" || url.pathname !== "/v1/events") return new Response(null, { status: 404 });
     if (!(request.headers.get("user-agent") || "").startsWith("orkcraft/")) return new Response(null, { status: 403 });
     if (Number(request.headers.get("content-length") || 0) > MAX_BODY) return new Response(null, { status: 413 });

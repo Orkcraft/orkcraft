@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from orkcraft import __version__
 from orkcraft.config import NOT_A_PROJECT_HINT, default_town_root, find_project_root
 
 
@@ -47,13 +48,17 @@ def _demo_before_subcommand(argv: list[str], subcommands) -> list[str]:
     return out
 
 
-def _usage(action: str) -> int:
-    """`orkcraft usage on|off|status` (core/usage.py, docs/usage-stats.md)."""
+def _usage(action: str, install_id: str | None = None) -> int:
+    """`orkcraft usage on|off|status` (core/usage.py, docs/usage-stats.md); `on --id` keeps the id the
+    installer drew (install.sh), so the install and the app's events are one install."""
     from orkcraft import settings
     from orkcraft.core import usage
     machine = settings.load()
+    if install_id is not None and not usage.ID.fullmatch(install_id):
+        print("orkcraft usage: --id must be 32 hex digits", file=sys.stderr)
+        return 2
     if action != "status":
-        usage.share(machine, action == "on")
+        usage.share(machine, action == "on", install_id)
         settings.save(machine)
     said = {True: "on", False: "off", None: "not asked yet (off)"}[machine.usage]
     print(f"usage stats: {said}")
@@ -69,7 +74,7 @@ def _usage(action: str) -> int:
 
 def _update(action: str | None) -> int:
     """`orkcraft update [check|auto|critical|ask]` (core/updates.py, docs/updates.md)."""
-    from orkcraft import __version__, settings
+    from orkcraft import settings
     from orkcraft.core import updates
     machine = settings.load()
     if action in updates.POLICIES:
@@ -123,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="orkcraft",
         description="Many coding agents in one project, as a real-time strategy game",
     )
+    parser.add_argument("--version", action="version", version=f"orkcraft {__version__}")
     parser.add_argument("--repo", type=Path, default=None, help="Path to project root")
     parser.add_argument("--no-commit", action="store_true", help="Disable §10 per-action git commits")
     parser.add_argument("--layout", type=Path, default=None,
@@ -162,6 +168,8 @@ def main(argv: list[str] | None = None) -> int:
                                help="Leave ~/.hermes/config.yaml alone, without asking")
     usage_p = subparsers.add_parser("usage", help="Anonymous usage stats: share them, stop, or see what is set")
     usage_p.add_argument("action", choices=("on", "off", "status"))
+    usage_p.add_argument("--id", dest="install_id", default=None, metavar="HEX",
+                         help="With on: the install id the installer drew (32 hex digits)")
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
@@ -229,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.subcommand == "usage":
-        return _usage(args.action)
+        return _usage(args.action, args.install_id)
 
     if args.subcommand == "feedback":
         from orkcraft.realm import calibrate

@@ -1,8 +1,8 @@
 # Anonymous usage stats
 
 Orkcraft can share which of its features are used, so we know what to make better. It is **off until
-you say yes**: the window asks once, and Settings or `orkcraft usage on|off|status` change it at any
-time.
+you say yes**: the window asks once (or the installer, whose answer the window keeps), and Settings or
+`orkcraft usage on|off|status` change it at any time.
 
 ## What is sent
 
@@ -21,6 +21,9 @@ Each event below, with only the properties listed. Numbers go as buckets (`0`, `
 | `stage_reached` | your mascot grows | `stage`: 1–4 |
 | `autonomy_set` | you change the orks' autonomy | `level`: chains · clock · free |
 | `halted` | you press 🛑 Halt All | — |
+| `install_started` | the installer starts ([install.md](install.md)) | `method` (sh), `arch` (x86_64 · arm64 · other), `upgrade` (already installed) |
+| `install_step` | each of its steps ends | `step` (uv · python · package · version · window · agents), `ok`, `seconds` (`<10` · `10-60` · `60-300` · `300+`); when it failed `error`, a kind: disk_full · permission · tls · network · python_download · resolve_failed · build_failed · git_missing · unknown; and per step `found` (uv was there), `source` (git · archive · local), `window` (native · browser), `tools` (claude · codex · agy found) |
+| `install_finished` | the installer ends | `ok`, `seconds`, `failed_step` |
 
 Every batch also carries a random install id (drawn when you say yes, forgotten when you say no), when
 this window was opened, the Orkcraft version, the OS (darwin · linux · windows) and the Python version.

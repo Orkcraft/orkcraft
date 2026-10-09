@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import sys
 import threading
 import time
@@ -41,6 +42,12 @@ CLOSE_TIMEOUT_S = 2.0    # the window never waits longer than this for the last 
 
 COUNTS = ("0", "1", "2-5", "6-10", "11+")
 MINUTES = ("<5", "5-30", "30-120", "120+")
+# What the installer sends (install.sh, docs/install.md): its steps, how long each took, what broke.
+INSTALL_STEPS = ("uv", "python", "package", "version", "window", "agents")
+SECONDS = ("<10", "10-60", "60-300", "300+")
+INSTALL_ERRORS = ("disk_full", "permission", "tls", "network", "python_download", "resolve_failed",
+                  "build_failed", "git_missing", "unknown")
+_bool = lambda v: isinstance(v, bool)  # noqa: E731
 
 # Every event and every property it may carry; the proxy keeps the same list (tools/usage-worker/worker.js).
 EVENTS: dict[str, dict[str, Callable[[Any], bool]]] = {
@@ -56,6 +63,14 @@ EVENTS: dict[str, dict[str, Callable[[Any], bool]]] = {
     "stage_reached": {"stage": lambda v: v in (1, 2, 3, 4)},
     "autonomy_set": {"level": lambda v: v in autonomy.WORDS},
     "halted": {},
+    "install_started": {"method": lambda v: v in ("sh",), "arch": lambda v: v in ("x86_64", "arm64", "other"),
+                        "upgrade": _bool},
+    "install_step": {"step": lambda v: v in INSTALL_STEPS, "ok": _bool, "seconds": lambda v: v in SECONDS,
+                     "error": lambda v: v in INSTALL_ERRORS, "found": _bool,
+                     "source": lambda v: v in ("git", "archive", "local"), "window": lambda v: v in ("native", "browser"),
+                     "tools": lambda v: isinstance(v, list) and all(t in settings.TOOLS for t in v)},
+    "install_finished": {"ok": _bool, "seconds": lambda v: v in SECONDS,
+                         "failed_step": lambda v: v == "none" or v in INSTALL_STEPS},
 }
 
 
@@ -92,10 +107,15 @@ def debug() -> bool:
     return getenv("USAGE_DEBUG") not in ("", "0")
 
 
-def share(machine: settings.MachineSettings, on: bool) -> None:
-    """The operator's answer. Off forgets the install id, so a later yes starts as a new install."""
+ID = re.compile(r"[0-9a-f]{32}")
+
+
+def share(machine: settings.MachineSettings, on: bool, install_id: str | None = None) -> None:
+    """The operator's answer. Off forgets the install id, so a later yes starts as a new install; a yes
+    given to the installer brings the id it drew (install.sh)."""
     machine.usage = bool(on)
-    machine.install_id = (machine.install_id or uuid.uuid4().hex) if on else ""
+    given = install_id if install_id and ID.fullmatch(install_id) else ""
+    machine.install_id = (given or machine.install_id or uuid.uuid4().hex) if on else ""
 
 
 def clean(event: str, props: dict[str, Any]) -> dict[str, Any] | None:
