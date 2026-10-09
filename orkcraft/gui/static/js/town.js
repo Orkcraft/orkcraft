@@ -471,29 +471,42 @@ function useCamera(el, rects, here, panelW) {
   }, [active, panelW]);
 }
 
-/** A building picked in Build, placed with the mouse (js/build.js place): its ghost follows the pointer — the house
- *  alone for a building with no card — and a press builds it there; Escape or a right click lets it go. */
+const GHOST = "__ghost";                    // the id of the building a ghost draws while it is placed
+const keepCorner = {};                      // building id → {x, y, w?, h?, gw?, gh?}: its corner kept once its size is drawn
+
+/** A building picked in Build, placed with the mouse (js/build.js place): its ghost follows the pointer, drawn as the
+ *  building itself will be — its house, its fence and card, its size, 1:1 — and a press builds it there, where the
+ *  ghost stood; Escape or a right click lets it go. */
 function Placing({ p }) {
   const [at, setAt] = useState(null);
   useEffect(() => {
     const key = (e) => { if (e.key === "Escape") { e.preventDefault(); placing.value = null; } };
     window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("keydown", key);
+      const { [GHOST]: _, ...rest } = sizes.value;
+      sizes.value = rest;
+    };
   }, []);
-  const spot = at && { x: at.x - 120, y: at.y - 30 };     // the ghost's middle under the pointer
+  const size = sizes.value[GHOST] || DEFAULT_SIZE;
+  const corner = (pt) => ({ x: pt.x - Math.round(size.w / 2), y: pt.y - Math.min(30, Math.round(size.h / 2)) });
+  const spot = at && corner(at);                 // the ghost's middle under the pointer, its title bar near it
   const put = (e) => {
     e.stopPropagation();
-    const f = free(DEFAULT_SIZE);
-    const x = e.offsetX - 120, y = e.offsetY - 30;
-    const hut = [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
+    const f = free(size);                        // as the town places it once it stands (its real size)
+    const c = corner({ x: e.offsetX, y: e.offsetY });
+    const hut = [Math.min(Math.max((c.x - MARGIN) / f.w, 0), 1), Math.min(Math.max((c.y - MARGIN) / f.h, 0), 1)];
     const { type } = p;
     placing.value = null;
-    command("town.build", { type, hut }).then((id) => raised(id, type), () => {});
+    command("town.build", { type, hut }).then((id) => { if (id) keepCorner[id] = { ...c, gw: size.w, gh: size.h }; raised(id, type); }, () => {});
   };
+  const b = { id: GHOST, type: p.type, title: p.title, icon: "", garrison: [], rules: [], quick: [], card: null,
+              status: [], status_plain: [], state: "", yard: !!p.yard, visit: "", alert: null, pinned: true, folded: false,
+              level: 0, goal: "balance", has_worker: false, page: true, loose: [], keeper: false, hut: null, size: null };
   return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
       onPointerMove=${(e) => setAt({ x: e.offsetX, y: e.offsetY })}
       onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
-    ${spot && html`<${Ghost} g=${{ id: "", type: p.type, title: p.title, state: "planned" }} spot=${spot} biome=${activeBiome()} bare=${p.bare} />`}
+    <div class=${cls("gui-town__ghost", { "is-away": !spot })}><${Hut} b=${b} spot=${spot || { x: -9999, y: -9999 }} number=${0} /></div>
     <p class="gui-town__placing-hint ok-font-status">${say(`Place ${p.title}: press where it should stand · Esc cancels`)}</p>
   </div>`;
 }
@@ -560,8 +573,14 @@ export function Town({ buildings, roads }) {
     return footprint(b.id, { x: r.x, y: r.y, w, h: top + h }, rects);
   }
 
+  // Stretched by its corner, a card keeps its top-left where it was (its spot is a fraction of the room its size
+  // leaves, so a wider card would slide left): held there now, said again in the new size once it is drawn.
   function sized(b, w, h) {
     if (stretched(b, w, h).hits.length) return;            // over another hut: it keeps its size
+    if (spots[b.id]) {
+      keepCorner[b.id] = { ...spots[b.id], w, h };
+      dropped.value = { ...dropped.value, [b.id]: { x: full[b.id].x, y: full[b.id].y } };
+    }
     command("hut.size", { id: b.id, w, h }).catch(() => {});
   }
 
@@ -577,6 +596,27 @@ export function Town({ buildings, roads }) {
     };
     command("hut.move", { id: b.id, x: fx, y: fy }).then(() => setTimeout(forget, 300), forget);
   }
+
+  // A building placed in Build stands where its ghost stood, and a card stretched keeps its corner: its spot is a
+  // fraction of the room its size leaves, so once its real size is drawn it is put back on that corner, as a drag
+  // puts it (`moved`; over another hut the town's own place stands).
+  useEffect(() => {
+    for (const [id, at] of Object.entries(keepCorner)) {
+      const b = buildings.find((x) => x.id === id);
+      if (!b) { if (!constructing.value[id]) delete keepCorner[id]; continue; }
+      if (constructing.value[id] !== undefined || !sizes.value[id] || (!at.w && !b.hut)) continue;   // built: its spot in
+      if (at.w && !(b.size && b.size[0] === at.w && (b.size[1] || 0) === (at.h || 0))) continue;   // its new size not in yet
+      if (!rects[id] || rects[id].w !== sizes.value[id].w || rects[id].h !== sizes.value[id].h) continue;   // nor drawn yet
+      delete keepCorner[id];
+      const same = !at.w && Math.abs(sizes.value[id].w - at.gw) <= 2 && Math.abs(sizes.value[id].h - at.gh) <= 2;
+      if (same) continue;                          // built as its ghost was drawn: it already stands where it stood
+      const { [id]: _, ...rest } = dropped.value;
+      dropped.value = rest;
+      const now = spots[id];
+      // stretched: always said again (it is held in place only till now); built bigger: when it stands elsewhere
+      if (at.w || (now && (Math.abs(now.x - at.x) > 2 || Math.abs(now.y - at.y) > 2))) moved(b, at.x, at.y);
+    }
+  });
 
   // A click on the bare town lets the selected building go, as in the TUI.
   const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road, .gui-loose")) closeBuilding(); };

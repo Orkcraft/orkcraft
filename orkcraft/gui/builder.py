@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import buildings, roads
-from orkcraft.realm import catalog, intents, lake, modes, naming
+from orkcraft.realm import catalog, intents, lake, modes, naming, script_first
 
 
 class BuildError(Exception):
@@ -51,7 +51,9 @@ def catalog_types(profile: dict | None = None) -> list[dict[str, Any]]:
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
              "landscape": t.landscape, "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],
              "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else"),
-             "yours": mine.index(t.id) if t.id in mine else -1} for t in types]
+             "yours": mine.index(t.id) if t.id in mine else -1,
+             # raised as it comes, its work is code (no room for an ork: the ghost placed in Build is drawn so)
+             "yard": t.id in script_first.TYPES | script_first.WHEN_CODE} for t in types]
 
 
 def _id(args: dict, key: str) -> str:

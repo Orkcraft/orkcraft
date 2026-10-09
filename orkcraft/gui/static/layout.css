@@ -837,10 +837,12 @@ button { font: inherit; color: inherit; }
 @media (max-width: 640px) { .gui-hour { position: static; } .gui-hour__dial { width: 28px; height: 28px; border: 0; box-shadow: none; }
   .gui-hour__dial > img { width: 16px; height: 16px; } }
 
-/* Build: the ghost of a building placed with the mouse (js/town.js Placing), over the whole town; its pieces are the
-   onboarding's (onboarding.css .gui-onb__ghost). The ghost never takes the pointer, so offsets stay the room's. */
+/* Build: the ghost of a building placed with the mouse (js/town.js Placing), over the whole town: the building itself,
+   1:1, faded. The ghost never takes the pointer, so offsets stay the room's. */
 .gui-town__placing { position: absolute; inset: 0; z-index: 8; cursor: crosshair; }
-.gui-town__placing .gui-onb__ghost { pointer-events: none; }
+.gui-town__ghost { position: absolute; inset: 0; pointer-events: none; opacity: .55; }
+.gui-town__ghost * { pointer-events: none !important; }
+.gui-town__ghost.is-away { visibility: hidden; }
 .gui-town__placing-hint { position: fixed; left: 50%; top: calc(var(--bar-hud) + 56px); transform: translateX(-50%); margin: 0;
   padding: var(--space-1) var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); pointer-events: none; }
 .gui-onb__ghost.is-bare .gui-onb__ghost-name { margin-top: 2px; }

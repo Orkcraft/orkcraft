@@ -368,6 +368,10 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         if self.worktrees and not self.simulated:          # the sandbox describes worktrees, it does not make them
             maker = type(self).worktree_maker or jobs.add_worktree
             try:
+                if type(self).worktree_maker is None:       # no git here yet: started, once, and said so
+                    done = jobs.ensure_repo(self.repo_root)
+                    if done:
+                        self.toast(f"No git repository here, so the orks could not work: {done}.", title="🏕 Barracks")
                 path, _branch = maker(self.repo_root, self.building_id, name)
             except (RuntimeError, OSError) as e:
                 self.toast(f"{name}: no worktree — {e}", title="🏕 Barracks", severity="error")
