@@ -4,9 +4,9 @@ class Orkcraft < Formula
 
   desc "Run many coding agents in one project, as a real-time strategy game"
   homepage "https://github.com/Orkcraft/orkcraft"
-  url "https://github.com/Orkcraft/orkcraft/archive/91006c4911276e771129ba7a588bd26e54e25af1.tar.gz"
-  version "0.2.5"
-  sha256 "9b13acba36212b15d5b3a415a3970b85e9f989665bccf5d2373bfe5edd398214"
+  url "https://github.com/Orkcraft/orkcraft/archive/2ac6dae5ba28ccb627cd67c5487b77599e5cceaa.tar.gz"
+  version "0.2.6"
+  sha256 "98c50f9a16f78fb3b38573f92d24727f325f854c4ce2ccc3f8c0ea6859756a31"
   license "Apache-2.0"
   head "https://github.com/Orkcraft/orkcraft.git", branch: "main"
 
@@ -37,19 +37,9 @@ class Orkcraft < Formula
     sha256 "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"
   end
 
-  resource "mdit-py-plugins" do
-    url "https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl"
-    sha256 "214c82fb2ac524472ab6a5bcab1de80f73b50443e187f401bfd77efbc7c6481d"
-  end
-
   resource "mdurl" do
     url "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl"
     sha256 "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
-  end
-
-  resource "platformdirs" do
-    url "https://files.pythonhosted.org/packages/c5/9b/6ce1ead737fe496611bda600c263b9a11ae7bd8f41bb13f9bd7e0a2c37a4/platformdirs-4.12.3-py3-none-any.whl"
-    sha256 "080f3b39423b5abfca9a23d84c4e9795f54d395cd8459867a8ded44084fcd5f8"
   end
 
   resource "proxy-tools" do
@@ -60,11 +50,6 @@ class Orkcraft < Formula
   resource "pycparser" do
     url "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl"
     sha256 "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
-  end
-
-  resource "pygments" do
-    url "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl"
-    sha256 "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"
   end
 
   resource "pyte" do
@@ -82,19 +67,9 @@ class Orkcraft < Formula
     sha256 "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"
   end
 
-  resource "rich" do
-    url "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl"
-    sha256 "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb"
-  end
-
   resource "segno" do
     url "https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl"
     sha256 "28c7d081ed0cf935e0411293a465efd4d500704072cdb039778a2ab8736190c7"
-  end
-
-  resource "textual" do
-    url "https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl"
-    sha256 "267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a"
   end
 
   resource "typing-extensions" do
