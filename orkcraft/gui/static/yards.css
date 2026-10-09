@@ -113,7 +113,18 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
     var(--fence-rail) 4px 0 / 7px 100% no-repeat,
     var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card::before { display: none; }
-/* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
+/* Its corner posts: at the bottom corners and the top fence's end, over the last picket; the fence's one ornament, and
+   it grows with the building's renown (tools/fence_sprites.py corner-1..3; docs/design/yards.md §3): lashed, taller,
+   bone tusks at III. Bone at three points a card, never along the run: the run stays under the card's words. */
+[data-look="camp"] .gui-hut.is-fenced { --fence-corner: image-set(url("/ds/sprites/fence/corner-1.png") 1x, url("/ds/sprites/fence/corner-1@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --fence-corner: image-set(url("/ds/sprites/fence/corner-2.png") 1x, url("/ds/sprites/fence/corner-2@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --fence-corner: image-set(url("/ds/sprites/fence/corner-3.png") 1x, url("/ds/sprites/fence/corner-3@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: -9px; right: -9px;
+  top: calc(var(--titlebar) - 27px); bottom: 0; pointer-events: none; image-rendering: pixelated; animation: none; background:
+    var(--fence-corner) right top / 33px 27px no-repeat,
+    var(--fence-corner) left bottom / 33px 27px no-repeat,
+    var(--fence-corner) right bottom / 33px 27px no-repeat; }
+/* Selected: a gold glow round the fence and its corner posts (the posts stand where the brackets would). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }

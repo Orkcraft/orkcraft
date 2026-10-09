@@ -409,7 +409,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
-                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized,
+                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized, [`is-renown-${Math.min(Math.max(b.level || 0, 1), 3)}`]: true,
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >
