@@ -486,9 +486,9 @@ function Placing({ p }) {
     const f = free(DEFAULT_SIZE);
     const x = e.offsetX - 120, y = e.offsetY - 30;
     const hut = [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
-    const { type } = p;
+    const { type, service } = p;
     placing.value = null;
-    command("town.build", { type, hut }).then((id) => raised(id, type), () => {});
+    command("town.build", { type, hut }).then((id) => raised(id, type, service), () => {});
   };
   return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
       onPointerMove=${(e) => setAt({ x: e.offsetX, y: e.offsetY })}

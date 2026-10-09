@@ -91,7 +91,7 @@ class Host:
             "term.forget": lambda a: self.sessions.forget(self._word(a, "key")),
             "orders.answer": self._answer,
             "orders.follow": self._follow,
-            "town.catalog": lambda a: builder.catalog_types(),
+            "town.catalog": lambda a: builder.catalog_types(self.town.machine.profile),
             "town.build": lambda a: self._building(builder.build, a),
             "town.demolish": lambda a: self._building(builder.demolish, a),
             "roads.choices": lambda a: self._building(builder.road_choices, a),

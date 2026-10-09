@@ -849,3 +849,29 @@ button { font: inherit; color: inherit; }
 .gui-tier { display: inline-flex; align-items: center; gap: 3px; }
 .gui-tier__mark { image-rendering: pixelated; }
 [data-look="office"] .gui-tier__mark { display: none; }
+
+/* Build: a tray of small icons up from the Warchief's line (js/build.js, docs/design/warchief-line-and-cards.md §2), over
+   the middle of the town: what each is for (design-system/sprites/intents/), its groups side by side. */
+.gui-build { position: fixed; bottom: 76px; z-index: 30; width: min(760px, calc(var(--town-w, 100vw) - 32px));
+  left: calc(var(--town-w, 100vw) / 2 - min(760px, calc(var(--town-w, 100vw) - 32px)) / 2); }
+.gui-build .ok-win__body { max-height: min(62vh, 520px); overflow: auto; display: grid; gap: var(--space-2); }
+.gui-build__head { display: flex; gap: var(--space-2); }
+.gui-build__find.ok-input { flex: 1 1 auto; min-width: 0; }
+.gui-build__groups { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4, 16px); }
+.gui-build__set { display: grid; align-content: start; gap: 2px; min-width: 136px; }
+/* its label never widens its group: the whole of it in its tooltip */
+.gui-build__group { margin: 0; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  contain: inline-size; }
+.gui-build__set.is-yours .gui-build__group { color: var(--ink-gold); }
+.gui-build__set.is-yours .gui-build__tile { border-color: var(--ink-gold); }
+.gui-build__row { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.gui-build__tile { display: grid; justify-items: center; align-content: center; gap: 3px; width: 66px; height: 62px; padding: 2px;
+  border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); background: none; color: var(--ink); cursor: pointer;
+  font: inherit; }
+.gui-build__tile:is(:hover, :focus-visible) { background: var(--selection); }
+.gui-build__icon { image-rendering: pixelated; }
+.gui-build__house { display: grid; place-items: end center; height: 32px; overflow: hidden; }
+.gui-build__house .gui-sprite img { max-height: 32px; width: auto; image-rendering: pixelated; }
+.gui-build__name { width: 100%; text-align: center; line-height: 1.1; font-size: .85em; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }
+.gui-build__hint { margin: 0; }

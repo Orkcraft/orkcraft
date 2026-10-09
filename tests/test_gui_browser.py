@@ -215,12 +215,12 @@ def _place(pg, before: set) -> str:
 def test_every_type_built_draws_three_ways(page, type_id):
     pg = page
     before = set(pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)"))
-    _line(pg, "/build")                         # the catalog
-    items = pg.locator(".gui-catalog__item")
+    _line(pg, "/build")                         # the tray: an icon for what each is for
+    items = pg.locator(".gui-build .gui-catalog__item")
     items.first.wait_for(state="visible", timeout=WAIT_MS)
-    assert items.count() == len(TYPES)
-    items.nth(TYPES.index(type_id)).click()
-    pg.locator(".gui-modal").wait_for(state="hidden", timeout=WAIT_MS)
+    assert set(items.evaluate_all("els => els.map(e => e.dataset.type)")) == set(TYPES)   # every type, by its icons
+    items.and_(pg.locator(f"[data-type='{type_id}']")).first.click()
+    pg.locator(".gui-build").wait_for(state="hidden", timeout=WAIT_MS)
     bid = _place(pg, before)
     assert not pg.locator(".gui-panel").is_visible()        # Build no longer opens it: it stands, and waits
     _three_ways(pg, bid)
@@ -474,8 +474,9 @@ def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
     pg.locator(".gui-town").click(button="right", position={"x": 600, "y": 500})
     menu.wait_for(state="visible", timeout=WAIT_MS)
     menu.locator(".gui-menu__item", has_text="Build here").click()
-    pg.locator(".gui-modal .gui-catalog__item").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-build .gui-catalog__item").first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
+    pg.locator(".gui-build").wait_for(state="detached", timeout=WAIT_MS)
     _hut(pg, bid).locator(".gui-hut__title").click(button="right")
     menu.locator(".gui-menu__item", has_text="Demolish").click()
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
@@ -514,6 +515,32 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     _line(pg, "/demolish")                                       # about the building open
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_build_is_a_tray_of_icons_found_by_typing_and_a_double_press_builds_at_once(page):
+    """Build (docs/design/warchief-line-and-cards.md §2): small icons of what each is for, filtered by their own word
+    first; a double press raises it at a free spot, no ghost; Escape puts the tray away."""
+    pg = page
+    pg.locator(".gui-warchief__build").click()
+    tray = pg.locator(".gui-build")
+    tray.locator(".gui-build__tile").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert tray.locator(".gui-build__tile[data-intent='mail'] img").get_attribute("src").endswith("/intents/mail.png")
+    tray.locator(".gui-build__find").fill("mail")
+    assert tray.locator(".gui-build__tile").evaluate_all("els => els.map(e => e.dataset.intent)") == ["mail"]
+    tray.locator(".gui-build__find").fill("")
+    before = pg.locator(".gui-hut").count()
+    tray.locator(".gui-build__tile[data-intent='tasks']").dblclick()
+    tray.wait_for(state="detached", timeout=WAIT_MS)
+    assert pg.locator(".gui-town__placing").count() == 0                     # no ghost: it went up at once
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=before, timeout=WAIT_MS)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.town.value.buildings.filter(b => b.type === 'fields')"
+                      ".map(b => b.id).pop())")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__build").click()
+    tray.locator(".gui-build__find").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    tray.wait_for(state="detached", timeout=WAIT_MS)
 
 
 def test_a_selected_building_turns_the_line_into_its_command_card(page):
