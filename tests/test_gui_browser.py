@@ -55,7 +55,7 @@ def gui(tmp_path_factory):
     pw = playwright.sync_playwright().start()
     browser = _launch(pw)                       # before XDG_CACHE_HOME moves: Playwright finds its Chromium under it
     mp = pytest.MonkeyPatch()
-    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json",
+    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json", "ORKCRAFT_LOOK": "camp",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
                        "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1"}.items():
@@ -1549,62 +1549,64 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
     assert not errors, "\n".join(errors)
 
 
-def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
-    """The person framed over the town's top-left corner (docs/design/portrait.md): its menu heads with You, Camp
-    turns to Office (no sprites, the monogram, the office theme) and back, Do not disturb strikes the horn on its
-    toggle (never a mark on the head), and
-    Fire on the roofs turns off and on there, no longer in Town settings."""
+def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(page):
+    """The sun in the middle of the HUD (js/chrome.js Hour) answers "will the town bother me, and how does it look":
+    Do not disturb and the look (Camp, Office, by the shift); the portrait's menu heads with You and keeps what is
+    Camp's own (Fire on the roofs, gone in Office); beside the portrait the horn toggles Do not disturb and the phone
+    pairs one (docs/design/portrait.md)."""
     pg = page
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
     assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
-    portrait.click()
-    menu = pg.locator(".gui-portrait__menu")
-    menu.wait_for(state="visible", timeout=WAIT_MS)
-    assert menu.locator(".gui-you__deeds").count() == 1
-    menu.get_by_role("button", name="Office", exact=True).click()
+    pg.locator(".gui-hour__dial").click()
+    sun = pg.locator(".gui-hour__menu")
+    sun.wait_for(state="visible", timeout=WAIT_MS)
+    look = sun.get_by_role("group", name="Look", exact=True)
+    assert look.locator(".gui-steps__one").all_inner_texts() == ["By shift", "Camp", "Office"]
+    look.get_by_role("button", name="Office", exact=True).click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
     assert pg.evaluate("document.documentElement.dataset.theme") == "office"
     assert portrait.locator(".gui-portrait__mono").count() == 1 and pg.locator(".gui-warchief__mono").count() == 1
-    assert pg.locator(".gui-warchief__crowned").count() == 0
-    dnd_row = menu.get_by_role("group", name="Do not disturb", exact=True)
+    dnd_row = sun.get_by_role("group", name="Do not disturb", exact=True)
     dnd_row.get_by_role("button", name="On", exact=True).click()
     pg.get_by_role("button", name="Do not disturb", exact=True).and_(pg.locator("[aria-pressed=true]")).wait_for(
         state="visible", timeout=WAIT_MS)
-    assert "🌙" not in portrait.inner_text()
     dnd_row.get_by_role("button", name="Off", exact=True).click()
     pg.locator(".gui-warchief__news").wait_for(state="visible", timeout=WAIT_MS)   # what gathered, said once
     assert "While you were away" in pg.locator(".gui-warchief__news").inner_text()
     pg.locator(".gui-warchief__news").get_by_role("button", name="Seen").click()   # a click away closes the menu
-    menu.wait_for(state="hidden", timeout=WAIT_MS)
-    portrait.click()
-    menu.get_by_role("button", name="Camp", exact=True).click()
+    sun.wait_for(state="hidden", timeout=WAIT_MS)
+    portrait.click()                                                     # Office: no fire on the roofs to set
+    menu = pg.locator(".gui-portrait__menu")
+    menu.wait_for(state="visible", timeout=WAIT_MS)
+    assert menu.get_by_role("group", name="Fire on the roofs").count() == 0 and menu.get_by_role("group", name="Look").count() == 0
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-hour__dial").click()
+    sun.get_by_role("group", name="Look", exact=True).get_by_role("button", name="Camp", exact=True).click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
-    # Fire on the roofs is the person's now, in this menu; Town settings no longer shows it
+    pg.keyboard.press("Escape")
+    portrait.click()
+    assert menu.locator(".gui-you__deeds").count() == 1
     fire = menu.get_by_role("group", name="Fire on the roofs", exact=True)
     fire.get_by_role("button", name="Off", exact=True).click()
     fire.locator("[aria-pressed=true]", has_text="Off").wait_for(state="visible", timeout=WAIT_MS)
     fire.get_by_role("button", name="On", exact=True).click()
-    fire.locator("[aria-pressed=true]", has_text="On").wait_for(state="visible", timeout=WAIT_MS)
     menu.get_by_role("button", name="Town settings…").click()
     pg.get_by_role("dialog", name="Town settings").wait_for(state="visible", timeout=WAIT_MS)
     assert pg.get_by_role("group", name="Fire on the roofs").count() == 0
     pg.keyboard.press("Escape")
     pg.get_by_role("dialog", name="Town settings").wait_for(state="hidden", timeout=WAIT_MS)
-    menu.wait_for(state="hidden", timeout=WAIT_MS)                       # Town settings… closed the menu
-    # its quick toggles beside it: Do not disturb on and off, the look to Office and back, without the menu
-    dnd, look = pg.get_by_role("button", name="Do not disturb", exact=True), pg.get_by_role("button", name="Office look", exact=True)
-    horn = lambda: dnd.locator("img.gui-portrait__horn").get_attribute("src")
-    assert horn() == "/ds/sprites/icons/notify-on.png"                    # Camp: the horn, the town may call
+    # beside the portrait: the horn (Do not disturb on and off) and the phone (its QR code); no look toggle
+    assert pg.get_by_role("button", name="Office look").count() == 0
+    dnd = pg.get_by_role("button", name="Do not disturb", exact=True)
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-off.png')", timeout=WAIT_MS)
-    assert dnd.get_attribute("aria-pressed") == "true" and "🌙" not in portrait.inner_text()   # struck through
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-on.png')", timeout=WAIT_MS)
-    look.click()
-    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
-    look.click()
-    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Pair a phone", exact=True).click()
+    pg.get_by_role("dialog", name="Pair a phone").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.get_by_role("dialog", name="Pair a phone").wait_for(state="hidden", timeout=WAIT_MS)
 
 
 def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page):

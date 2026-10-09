@@ -830,7 +830,7 @@ button { font: inherit; color: inherit; }
 .gui-hour__dial.is-night .gui-hour__glyph { color: var(--quiet-ink); }
 [data-look="office"] .gui-hour__dial > img { display: none; }
 [data-look="office"] .gui-hour__glyph { display: inline; }
-.gui-hour__menu { position: fixed; top: 39px; left: calc(var(--town-w, 100vw) / 2 - 140px); width: 280px; z-index: 30; display: grid; gap: var(--space-2);
+.gui-hour__menu { position: fixed; top: 39px; left: calc(var(--town-w, 100vw) / 2 - 180px); width: 360px; z-index: 30; display: grid; gap: var(--space-2);
   padding: var(--space-3); white-space: normal; background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
   box-shadow: var(--shadow-window); }
 .gui-hour__menu > p { margin: 0; }

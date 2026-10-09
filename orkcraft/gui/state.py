@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from orkcraft import schedule
+from orkcraft import schedule, settings
 from orkcraft.env import getenv
 from orkcraft.core import runners
 from orkcraft.core import treasury as tr
@@ -286,7 +286,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
-        "look": town.machine.look,                 # camp | office, the person's (docs/design/portrait.md §3)
+        "look": settings.look_now(town.machine),   # camp | office now, the person's (docs/design/portrait.md §3)
         # Connect Google is put away for now (docs/design/google-account.md §3): its wizard is long. ORKCRAFT_GOOGLE=1 shows it.
         "google": getenv("GOOGLE").lower() in ("1", "true", "yes", "on"),
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},

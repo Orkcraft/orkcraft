@@ -1,12 +1,12 @@
 // The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in Warcraft III.
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
 // marks: the stage and a dot while an ork asks (the dot opens Answers); Do not disturb shows on its toggle
-// beside it, never on the head. A click
-// opens its menu: You (the head, the stage, Next, the deeds), then how the town looks and talks to you — the
-// look, Do not disturb, Fire on the roofs — and Town settings… (models, AI tools, how the town works). These
-// are the person's, per machine (gui/you.py).
+// beside it, never on the head, and a phone beside that pairs one (its QR code). A click opens its menu: You (the
+// head, the stage, Next, the deeds), then what is Camp's own — Fire on the roofs, the cards' background — and Town
+// settings… (models, AI tools, how the town works). The look and Do not disturb are the sun's (js/chrome.js `Hour`):
+// "will the town bother me now, and how does it look" is one question. These are the person's, per machine (gui/you.py).
 import { signal } from "@preact/signals";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { MascotHead, BIOMES } from "./icons.js";
@@ -14,6 +14,7 @@ import { terrainUrl } from "./terrain.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { RoleIcon } from "./roles.js";
+import { PhonePair } from "./phones.js";
 
 export const portraitOpen = signal(false);
 
@@ -46,7 +47,7 @@ function Face({ y, p, size }) {
   return html`<span class="gui-portrait__ground" style=${ground(y.home)}><${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${size} /></span>`;
 }
 
-function Steps({ label, items, value, onPick }) {
+export function Steps({ label, items, value, onPick }) {
   return html`<div class="gui-portrait__row"><span class="ok-font-label">${say(label)}</span>
     <span class="gui-steps" role="group" aria-label=${say(label)}>
       ${items.map(([v, text]) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": value === v })}
@@ -63,8 +64,8 @@ function Menu({ y, p }) {
     document.addEventListener("keydown", esc);
     return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
   }, []);
-  const d = p.dnd || {};
-  const set = (args) => command(args.look ? "you.look" : "fire" in args ? "you.fire" : "you.dnd", args).catch(() => {});
+  const set = (args) => command("you.fire", args).catch(() => {});
+  const office = p.look === "office";
   return html`<section ref=${ref} class="gui-portrait__menu" role="dialog" aria-label=${say("You")}>
     <div class="gui-you">
       <${Face} y=${y} p=${p} size=${4} />
@@ -80,17 +81,11 @@ function Menu({ y, p }) {
             </span>`}
       </div>
     </div>
-    <${Steps} label="Look" value=${p.look} onPick=${(v) => set({ look: v })}
-      items=${[["camp", "Camp"], ["office", "Office"]]} />
-    <${Steps} label="Do not disturb" value=${d.choice || "off"} onPick=${(v) => set({ dnd: v })}
-      items=${[["off", "Off"], ["1h", "1 h"], ["morning", `Until ${d.morning || "09:00"}`], ["on", "On"]]} />
-    <p class="ok-font-status ok-tone-muted">${say(d.on
-      ? `${d.label}: sounds, pushes and the Warchief's news wait; only errors show. The orks keep working.`
-      : "Do not disturb holds sounds, pushes and the Warchief's news; the orks keep working.")}</p>
-    <${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
+    ${!office && html`<${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
       items=${[[true, "On"], [false, "Off"]]} />
-    <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>
-    ${p.look !== "office" && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
+    <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>`}
+    <p class="ok-font-status ok-tone-muted">${say("The look and Do not disturb are under the sun in the middle of the top bar.")}</p>
+    ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["ground", "Ground"], ["panel", "Panel"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Ground: the cards are drawn on the town's ground itself. Panel: each card on its own dark panel. This browser only.")}</p>`}
     <div class="gui-portrait__links">
@@ -109,22 +104,22 @@ function Horn({ on }) {
       <path d="M2.5 6h2.2l6.8-3.5v11L4.7 10H2.5zM5 10l1 3.8h1.8L7.2 10.6" />${on && html`<path d="M1.5 1.5l13 13" />`}</svg>`;
 }
 
-/** The corner's quick toggles beside the big portrait: Do not disturb on or off (its menu keeps 1 h and Until),
- *  and the look, Camp or Office. */
+/** The corner's quick buttons beside the big portrait: Do not disturb on or off (the sun's menu keeps 1 h and
+ *  Until), and a phone, which pairs one with its QR code (Settings → Phones keeps the rest). */
 function Toggles({ p }) {
   const d = p.dnd || {};
-  const office = p.look === "office";
+  const [pairing, setPairing] = useState(false);
   return html`<span class="gui-portrait__toggles">
     <button class=${cls("gui-portrait__toggle", { "is-on": d.on })} aria-pressed=${!!d.on}
         title=${say(d.on ? `Do not disturb: ${d.label} — a click turns it off` : "Do not disturb: off — a click turns it on")}
         aria-label=${say("Do not disturb")} onClick=${() => command("you.dnd", { dnd: d.on ? "off" : "on" }).catch(() => {})}>
       <${Horn} on=${!!d.on} />
     </button>
-    <button class=${cls("gui-portrait__toggle", { "is-on": office })} aria-pressed=${office}
-        title=${say(office ? "Office look — a click switches to Camp" : "Camp look — a click switches to Office")}
-        aria-label=${say("Office look")} onClick=${() => command("you.look", { look: office ? "camp" : "office" }).catch(() => {})}>
-      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="8" /><path d="M6 5.5V3.5h4v2" /></svg>
+    <button class="gui-portrait__toggle" title=${say("Pair a phone: a QR code to scan")} aria-label=${say("Pair a phone")}
+        onClick=${() => setPairing(true)}>
+      <svg viewBox="0 0 16 16" width="11" height="12" aria-hidden="true"><rect x="4" y="1.5" width="8" height="13" rx="1" /><path d="M7 12.5h2" /></svg>
     </button>
+    ${pairing && html`<${PhonePair} onClose=${() => setPairing(false)} />`}
   </span>`;
 }
 

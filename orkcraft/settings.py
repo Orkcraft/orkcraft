@@ -40,7 +40,24 @@ BILLINGS = ("subscription", "api")
 PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_other", "day_other", "kin")
 PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
 UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
-LOOKS = ("camp", "office")
+LOOKS = ("camp", "office", "shift")
+# "shift": Office while the work day lasts, Camp the rest of the day (docs/design/portrait.md §3) — the default.
+SHIFT = (9 * 60, 17 * 60)                # the work day, in minutes from midnight: 09:00–17:00
+
+
+def default_look() -> str:
+    """The look of a machine that has picked none: by the shift (`ORKCRAFT_LOOK` names another: the tests' Camp)."""
+    look = getenv("LOOK")
+    return look if look in LOOKS else "shift"
+
+
+def look_now(s: "MachineSettings", now=None) -> str:
+    """The look the GUI draws now: camp | office; by the shift, Office within its hours."""
+    if s.look != "shift":
+        return s.look
+    import datetime as dt
+    t = now or dt.datetime.now()
+    return "office" if SHIFT[0] <= t.hour * 60 + t.minute < SHIFT[1] else "camp"
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
 
@@ -72,7 +89,7 @@ class MachineSettings:
     # device token (never the token), when paired and when last seen. The Town Scroll never holds them.
     phones: list = field(default_factory=list)
     phone_port: int = 0           # the phone listener's port, kept so a paired phone finds it again; 0 not chosen
-    look: str = "camp"            # how the GUI draws the town for this person: camp | office (docs/design/portrait.md)
+    look: str = field(default_factory=default_look)   # how the GUI draws the town: camp | office | shift (portrait.md §3)
     dnd_until: str = ""           # Do not disturb: "" off, "on" until turned off, else when it ends (disturb.py)
     recent_folders: list = field(default_factory=list)   # the folders last connected to a Wiki, newest first (gui/folders.py)
     # The model a tier runs on, per tool, chosen in Settings → AI tools: {"agy": {"elder": "gemini-3.1-pro-high"}}.
@@ -128,7 +145,7 @@ class MachineSettings:
         s.phones = clean_phones(data.get("phones"))
         port = data.get("phone_port")
         s.phone_port = port if isinstance(port, int) and not isinstance(port, bool) and 1024 <= port <= 65535 else 0
-        s.look = data["look"] if data.get("look") in LOOKS else "camp"
+        s.look = data["look"] if data.get("look") in LOOKS else default_look()
         s.dnd_until = clean_dnd(data.get("dnd_until"))
         recent = data.get("recent_folders")
         s.recent_folders = [str(x)[:1000] for x in recent if isinstance(x, str) and x.strip()][:RECENT_FOLDERS] \
