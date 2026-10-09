@@ -22,6 +22,19 @@ Proposed, as an RTS does it:
 
 ## 2. Who speaks: the steward instead of the Warchief
 
+**Built, first step (2026-10-09): the line is the building's command card** (`js/warchief.js`), as an RTS's bottom
+panel is the selected unit's. While a building is selected (open in the panel):
+
+- the face is its steward's (its Info on a press) and its name stands beside it (in the tooltip when the line is
+  narrow); ✕ beside it gives the Warchief's line back while the building stays selected;
+- the buttons are its quick actions (`b.quick`, three, ⋯ for the rest in its Info); Answers shrinks to ❓ N; Build
+  and Improve wait for the Warchief (the open panel leaves the line little room);
+- the field asks *about* it: "Ask Task manager about Task board…". For now what is typed goes to the Warchief with
+  the building named, as `@` does; a yard (no steward) says so: "Ask the Warchief about Calendar…".
+
+Later: the steward's own talk (its orders, "why did it fail"), a portrait per kind of building (one head with a
+role's accessory, the same on the ork that comes out), Q / W / E for the actions.
+
 While a building is selected, the Warchief's line at the foot **becomes the building's steward**: its face, its
 name ("Steward of the Calendar"), and the line asks *it*. Deselected, the Warchief comes back. One line, two
 speakers: never two chat boxes at once.
@@ -65,7 +78,7 @@ smaller button on the dial's right edge, not in the menu.
 
 1. Second click to open, or right-click to open (and the menu on a long press)? Recommended: second click, right-click
    keeps the menu with Open first.
-2. Does the steward take over the Warchief's line, or speak only in its bubble? Recommended: takes over.
+2. ~~Does the steward take over the Warchief's line, or speak only in its bubble?~~ Takes over (§2, built).
 3. Do not disturb inside the dial's menu, or as a small button on the dial?
 
 ## 7. A building just raised is set up in the Warchief's line (built 2026-10-09)

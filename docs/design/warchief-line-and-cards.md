@@ -28,7 +28,7 @@ buttons, then the field.
   - *Later, written down only:* with no 👎 the Warchief asks every building for its use (runs, failures, spend,
     what was opened, what was ignored) and looks for the problem himself.
 - **While a building is selected** the buttons are its own two or three quick actions and its steward speaks in the
-  line (select-a-building.md §2): one place, one way.
+  line (select-a-building.md §2): one place, one way. **Built** (its first step: the field still asks the Warchief).
 
 ## 2. Build from the line, not a dialog
 

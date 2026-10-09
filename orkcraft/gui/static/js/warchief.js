@@ -11,13 +11,18 @@
 // answers, Build / Cancel / Undo on them (js/buildings/town_hall.js `Card`, core/warchief.py). A press over
 // the line never takes the focus from the field, so what it shows stays put under the mouse.
 // While it is left alone the line says what wants a decision first: an ork's question (§8).
+//
+// A building selected, the line is its **command card** (docs/design/select-a-building.md §2): its steward's face
+// and name, its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
+// while it stays selected (Build and Improve with him: the open panel leaves the line little room). A yard has no steward: its actions, and the Warchief asked about it. What is typed
+// goes to the Warchief with the building named, as `@` does (a steward's own talk is a later step).
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
 import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup } from "./build.js";
-import { typeModule } from "./types.js";
+import { typeModule, runQuick } from "./types.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { portraitOpen } from "./portrait.js";
@@ -32,6 +37,9 @@ const SEEN_MS = 45_000;                    // an answer stays over the line this
 
 export const line = signal({ text: "", about: [], focus: 0 });   // about: building ids named as chips; focus: a tick
 const history = [];
+const givenBack = signal(null);            // the selected building whose card ✕ put away: the Warchief's line again
+const CARD_ACTS = 3;                       // a card's quick actions on the line; the rest in its Info (⋯)
+const STEWARD_FACE = { busy: "ork-busy", alert: "ork-waiting", frozen: "ork-frozen" };   // resting: its plain face
 
 function input() {
   return document.querySelector(".gui-warchief__input");
@@ -428,6 +436,10 @@ export function WarchiefLine() {
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
   const open = opened.value.active;
   const auto = open && open !== HALL && !l.about.includes(open) ? t.buildings.find((x) => x.id === open) : null;
+  const sel = open && open !== HALL ? t.buildings.find((x) => x.id === open) : null;
+  const card = sel && givenBack.value !== sel.id ? sel : null;      // the building's command card
+  const steward = card && !card.yard ? card.garrison.find((o) => o.lead) || null : null;
+  useEffect(() => { if (givenBack.value && givenBack.value !== open) givenBack.value = null; }, [open]);
 
   useEffect(() => { if (l.focus && ref.current) ref.current.focus(); }, [l.focus]);
   useEffect(() => { if (focused && buildTypes.value === null) command("town.catalog").then((x) => { buildTypes.value = x; }, () => {}); }, [focused]);
@@ -520,6 +532,23 @@ export function WarchiefLine() {
 
   if (!b) return null;
   const name = data ? data.warchief : say("Warchief");
+  const office = (t.portrait || {}).look === "office";
+  const acts = card ? card.quick || [] : [];
+  const ph = steward ? say(`Ask ${steward.name} about ${card.title}…`)
+    : card ? say(`Ask the ${name} about ${card.title}…`) : say(`Ask the ${name}… or / for commands`);
+  const face = card && steward
+    ? html`<button class="gui-warchief__face is-steward" title=${say(`${steward.name}, the steward of ${card.title}: its Info`)}
+        aria-label=${say(`${steward.name}: its Info`)} onClick=${() => openBuilding(card.id, "info")}>
+        ${office ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
+          : html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${STEWARD_FACE[steward.status] || "ork"}.png`}
+            srcset=${`/ds/sprites/orks/${STEWARD_FACE[steward.status] || "ork"}@2x.png 2x`} width="24" height="16" alt="" draggable="false" />`}
+        ${card.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}</button>`
+    : html`<button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
+        onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>
+        ${office ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
+          : html`<${WarchiefHead} state=${b.alert ? "waiting" : data && data.thinking ? "busy" : ""} />`}
+        ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
+      </button>`;
   const thread = !!data && (focused || !!shown || data.thinking);
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
     ${setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
@@ -538,26 +567,31 @@ export function WarchiefLine() {
         ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
     <div key="bar" class="gui-warchief__bar">
-      <button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
-        onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>
-        ${(t.portrait || {}).look === "office"
-          ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
-          : html`<${WarchiefHead} state=${b.alert ? "waiting" : data && data.thinking ? "busy" : ""} />`}
-        ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
-      </button>
-      <${Speaks} hidden=${focused || !!l.text || chips.length > 0} />
-      ${auto ? html`<span class="gui-warchief__chip is-auto ok-font-status" title=${say("The building open in the panel")}>@${say(auto.title)}</span>` : null}
+      ${face}
+      ${card && html`<span class="gui-warchief__who ok-font-status"
+          title=${steward ? say(`${steward.name}, the steward of ${card.title}`) : say(card.title)}>
+        <b>${steward ? say(steward.name) : say(card.title)}</b>
+        <button class="gui-link gui-warchief__back" title=${say(`The ${name} again (${card.title} stays selected)`)}
+          aria-label=${say(`The ${name} again`)} onMouseDown=${(e) => e.preventDefault()}
+          onClick=${() => { givenBack.value = card.id; }}>✕</button></span>`}
+      <${Speaks} hidden=${!!card || focused || !!l.text || chips.length > 0} />
+      ${auto && !card ? html`<span class="gui-warchief__chip is-auto ok-font-status" title=${say("The building open in the panel")}>@${say(auto.title)}</span>` : null}
       ${chips.map((x) => html`<${Chip} key=${x.id} b=${x} onDrop=${() => { line.value = { ...l, about: l.about.filter((id) => id !== x.id) }; }} />`)}
       <span class="gui-warchief__buttons" onMouseDown=${(e) => e.preventDefault()}>
-        <button class="ok-btn gui-warchief__build" title=${say("Raise a building")}
-          onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>
-        ${t.alerts.length > 0 && html`<button class="ok-btn gui-warchief__questions" title=${say("What the orks wait on you for")}
-          onClick=${() => openOrders()}>${say(`Answers (${t.alerts.length})`)}</button>`}
-        <button class="ok-btn gui-warchief__improve" title=${say("The Warchief goes through the latest 👎 and offers what to change")}
-          onClick=${improve}>${say("Improve")}</button>
+        ${card && acts.slice(0, CARD_ACTS).map((a) => html`<button key=${a.id} class="ok-btn gui-warchief__act"
+          title=${say(a.label)} onClick=${() => runQuick(card, a.id)}>${say(a.label)}</button>`)}
+        ${card && acts.length > CARD_ACTS && html`<button class="ok-btn gui-warchief__act" title=${say("Its other actions: its Info")}
+          aria-label=${say("Its other actions")} onClick=${() => openBuilding(card.id, "info")}>⋯</button>`}
+        ${!card && html`<button class="ok-btn gui-warchief__build" title=${say("Raise a building")}
+          onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>`}
+        ${t.alerts.length > 0 && html`<button class=${cls("ok-btn gui-warchief__questions", { "is-count": !!card })}
+          title=${say(`What the orks wait on you for (${t.alerts.length})`)} aria-label=${say(`Answers (${t.alerts.length})`)}
+          onClick=${() => openOrders()}>${card ? `❓ ${t.alerts.length}` : say(`Answers (${t.alerts.length})`)}</button>`}
+        ${!card && html`<button class="ok-btn gui-warchief__improve" title=${say("The Warchief goes through the latest 👎 and offers what to change")}
+          onClick=${improve}>${say("Improve")}</button>`}
       </span>
-      <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${say(`Ask the ${name}`)}
-        placeholder=${say(`Ask the ${name}… or / for commands`)}
+      <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${ph.replace(/…$/, "")}
+        placeholder=${ph}
         onInput=${(e) => set(e.target.value)} onKeyDown=${key}
         onFocus=${() => setFocused(true)} onBlur=${() => { setFocused(false); setSaid(""); }} />
       ${data && data.thinking && html`<span class="gui-hut__spin" role="img" title=${say(`${name} is answering`)}></span>`}
