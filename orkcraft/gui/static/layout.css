@@ -73,6 +73,10 @@ button { font: inherit; color: inherit; }
   .gui-warchief__short { display: inline; }
 }
 .gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(640px, 100%); max-height: 50vh; }
+/* A building just raised, set up in a question or two over the line (js/warchief.js, js/build.js raised). */
+.gui-warchief__setup .ok-win__body { display: grid; gap: var(--space-2); }
+.gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.gui-setup__ways { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .gui-warchief__over > .ok-win__frame { max-height: 50vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-warchief__over .ok-win__body { overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }
 .gui-warchief__thread { max-height: 32vh; overflow: auto; }

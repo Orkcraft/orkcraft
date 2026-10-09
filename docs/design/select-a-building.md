@@ -67,3 +67,18 @@ smaller button on the dial's right edge, not in the menu.
    keeps the menu with Open first.
 2. Does the steward take over the Warchief's line, or speak only in its bubble? Recommended: takes over.
 3. Do not disturb inside the dial's menu, or as a small button on the dial?
+
+## 7. A building just raised is set up in the Warchief's line (built 2026-10-09)
+
+Asked by the owner: a new building's first settings belong in the Warchief's dialog, not on its Work page, and as
+few as can be. Built for the Watchtower first; a type joins by exporting `Setup` (and `setupAsk`) from its module.
+
+- Build raises the building (one press in the catalog, as before) and **does not open its window** when its type has
+  a `Setup` (`js/build.js` `raised`): the Warchief asks over his line instead, "External listeners stands. What should
+  it listen to?", with the answers as buttons. *All its settings* opens the window; *Later*, Escape or a press
+  elsewhere puts the question away.
+- **The Watchtower's answers** are the services Claude Code has a connector for (Gmail, Slack, Jira, Confluence). One
+  press adds it through Claude's connection as it comes: every 30 min, at most $0.50 a day, its usual ask, every
+  message sorted (`act add_quick`, `watchtower_add.Adding.quick`); saved when its first look answers. With no
+  connector, the line says how to connect one, or to pick a source in its settings.
+- A type with no `Setup` opens in its window as before.

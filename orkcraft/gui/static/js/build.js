@@ -14,6 +14,16 @@ export const building = signal(false);            // the Build dialog is open: t
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
+export const settingUp = signal(null);             // {id, type}: a building just raised, its setup asked in the Warchief's line
+
+/** A building just raised: a type with a `Setup` of its own (js/types.js) is set up in the Warchief's line, in a
+ *  question or two (docs/design/select-a-building.md §7); any other opens in its window as before. */
+export function raised(id, type) {
+  if (!id) return;
+  import(`./buildings/${type}.js`).then(
+    (m) => { if (m.Setup) settingUp.value = { id, type }; else openBuilding(id); },
+    () => openBuilding(id));
+}
 
 /** Build, in one (docs/design/building-views.md §3, Town Hall): say what you need — the Warchief points
  *  at the building that does it (its chat offers to build it) — or pick one of the catalog, by what it is for. */
@@ -28,7 +38,7 @@ export function BuildDialog() {
   if (!building.value) return null;
   const hut = building.value.hut;
   const raise = (t) => command("town.build", hut ? { type: t.id, hut } : { type: t.id })
-    .then((id) => { close(); openBuilding(id); }, () => {});
+    .then((id) => { close(); raised(id, t.id); }, () => {});
   const ask = () => need.trim() && act(HALL, "ask", { text: `What should I build? ${need.trim()}` })
     .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
   const groups = [];

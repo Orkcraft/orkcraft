@@ -256,6 +256,41 @@ function Settings({ id, d }) {
   </div>`;
 }
 
+// -- set up in the Warchief's line (js/warchief.js, docs/design/select-a-building.md §7) ---------------------------
+
+/** What the Warchief asks of a tower just raised. */
+export function setupAsk(b) {
+  return `${b.title} stands. What should it listen to?`;
+}
+
+/** One press: a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most $0.50
+ *  a day, sorting each message); everything else later in the building. */
+export function Setup({ id, done }) {
+  const [s, setS] = useState(null);
+  useEffect(() => {
+    let live = true;
+    const look = () => act(id, "setup").then((x) => { if (live) setS(x); }, () => {});
+    look();
+    const t = setInterval(look, 1500);
+    return () => { live = false; clearInterval(t); };
+  }, [id]);
+  if (!s) return html`<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
+  if (s.added) {
+    return html`<p class="ok-font-status ok-tone-ok">✓ ${say(`Listening to ${s.label}. It looks every 30 min and sorts each message: how important, and whether an agent can answer it.`)}</p>
+      <span><button class="ok-btn primary" onClick=${done}>${say("Good")}</button></span>`;
+  }
+  if (s.busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
+  const ways = s.sources.filter((x) => x.status === "connected");
+  return html`${s.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(s.error)}</p>`}
+    ${ways.length ? html`<div class="gui-setup__ways">
+        ${ways.map((x) => html`<button key=${x.service} class="ok-btn" onClick=${() => act(id, "add_quick", { service: x.service }).catch(() => {})}>
+          ${say(x.label)}</button>`)}</div>
+        <p class="ok-font-status ok-tone-muted">${say("Through Claude's connector, no token. Each look is a model run you pay for (about $0.05).")}</p>`
+      : html`<p class="ok-font-status ok-tone-muted">${say(s.asked
+        ? "Claude Code has no connector for Gmail, Slack, Jira or Confluence here. Connect one with /mcp in Claude Code, or pick a source in its settings."
+        : "Asking Claude Code which connectors it has…")}</p>`}`;
+}
+
 /** The window by its UI document (design/buildings/watchtower.json): a signal and the sources & intent open
  *  over the feed, in `feed`; `item` shows nothing of its own (an older document that still has it loses
  *  nothing). */

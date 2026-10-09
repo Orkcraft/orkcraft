@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, command, town, say } from "../link.js";
 import { openBuilding } from "../windows.js";
-import { building as buildOpen } from "../build.js";
+import { building as buildOpen, raised } from "../build.js";
 import { WarTent, hallTab, HALL } from "../tent.js";
 import { fill } from "../warchief.js";
 
@@ -41,7 +41,7 @@ function AskField({ id, autofocus }) {
 
 /** Builds `type`; `asked`, the request it answers, names it (≤ 4 words, gui/builder.py). */
 function raise(type, asked = "") {
-  return command("town.build", asked ? { type, prompt: asked } : { type }).then((id) => id && openBuilding(id), () => {});
+  return command("town.build", asked ? { type, prompt: asked } : { type }).then((id) => raised(id, type), () => {});
 }
 
 // -- closed: the hut ---------------------------------------------------------------------------------

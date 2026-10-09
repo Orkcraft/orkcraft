@@ -16,7 +16,8 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding } from "./windows.js";
-import { building as buildOpen, laying, demolishing } from "./build.js";
+import { building as buildOpen, laying, demolishing, raised, settingUp } from "./build.js";
+import { typeModule } from "./types.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { portraitOpen } from "./portrait.js";
@@ -121,7 +122,7 @@ const COMMANDS = [
     run: (rest) => {
       const types = buildTypes.value;
       const t = rest && types && types.find((x) => x.id === rest.toLowerCase() || norm(x.title) === norm(rest));
-      if (t) return command("town.build", { type: t.id }).then((id) => id && openBuilding(id), () => {});
+      if (t) return command("town.build", { type: t.id }).then((id) => raised(id, t.id), () => {});
       buildOpen.value = rest ? { need: rest } : true;
       return null;
     } },
@@ -444,11 +445,18 @@ export function WarchiefLine() {
     return () => clearTimeout(id);
   }, [shown]);
 
+  // A building just raised asks its setup here (js/build.js raised): the Warchief puts its type's question.
+  const su = settingUp.value;
+  const suMod = su ? typeModule(su.type) : null;
+  const suB = su ? t.buildings.find((x) => x.id === su.id) : null;
+  const setting = !!(suB && suMod && suMod.Setup);
   // A press anywhere off the line and its thread puts the thread away: it never hangs over the town.
-  const over = !!shown || !!said;
+  const over = !!shown || !!said || setting;
   useEffect(() => {
     if (!over) return undefined;
-    const away = (e) => { if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); } };
+    const away = (e) => {
+      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); settingUp.value = null; }
+    };
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
   }, [over]);
@@ -509,7 +517,15 @@ export function WarchiefLine() {
   const name = data ? data.warchief : say("Warchief");
   const thread = !!data && (focused || !!shown || data.thinking);
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
-    ${focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
+    ${setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
+      <div class="ok-win__frame"><div class="ok-win__body">
+        <p class="ok-font-status"><b>${say(name)}:</b> ${say(suMod.setupAsk ? suMod.setupAsk(suB) : `${suB.title} stands. Set it up?`)}</p>
+        <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { settingUp.value = null; }} />
+        <div class="gui-warchief__setup-foot">
+          <button class="gui-link ok-font-status" onClick=${() => { settingUp.value = null; openBuilding(suB.id); }}>${say("All its settings")}</button>
+          <button class="ok-btn" onClick=${() => { settingUp.value = null; }}>${say("Later")}</button></div>
+      </div></div></div>`
+    : focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
         onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>
       <div class="ok-win__frame"><div class="ok-win__body">
         ${thread && html`<${Thread} data=${data} />`}
