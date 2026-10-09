@@ -110,6 +110,12 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   every card. One plain rail between the pickets, not two, so the fence reads as one calm line. The yard's
   inside is a step over the ground (the ink at 6 %, *Card background: Yard*), so inside and outside part. Five fences on a map stay quieter
   than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
+- **The orks' fence, sparingly** (2026-10-09): each picket is lashed to its rail with rope, no nails. The one
+  ornament is the **corner posts** (bottom corners and the top fence's end, `corner-<n>.png`), and they grow with the
+  building's renown (growth.md §5), as its flag and footing do: I a thick post lashed twice, II taller with a longer
+  point, III a pair of bone tusks. Bone stands at three points a card, never along the run: a bone tip on every picket
+  measured as bright as the card's text and pulled the eye round every card. A selected yard glows round its posts
+  (they stand where the selection's corner brackets would).
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
