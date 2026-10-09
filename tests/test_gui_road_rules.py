@@ -53,14 +53,14 @@ def test_a_rules_panel_says_its_words_roads_and_runs_and_its_words_change(fake_r
     fields, ref = _with_rule(host)
     panel = host.command("info", {"id": fields, "ork": ref})
     assert panel["rule"] and panel["orders"].startswith("Only my boss's mail") and panel["roads"]
-    assert [r["output"] for r in panel["recent"]][0] == "letter 2" and "Warrior" in panel["tier"]
+    assert [r["output"] for r in panel["recent"]][0] == "letter 2" and "Seasoned" in panel["tier"]
     host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss; with the deadline."})
     assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").orders == "Only the boss; with the deadline."
     assert panel["own_tier"] == "" and [t for t, _ in panel["tiers"]][-1] == ""
     host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss.", "tier": "elder"})
     assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").tier == "elder"
     panel = host.command("info", {"id": fields, "ork": ref})
-    assert panel["own_tier"] == "elder" and "Elder" in panel["tier"]                  # the rule's own, over listen's
+    assert panel["own_tier"] == "elder" and "Veteran" in panel["tier"]                  # the rule's own, over listen's
     host.command("ork.orders", {"id": fields, "ork": ref, "orders": "Only the boss.", "tier": "no such tier"})
     assert host.town.scroll.building(fields).garrison.handler("boss_s_mail").tier == ""
 
@@ -83,7 +83,7 @@ def test_hand_an_agent_to_the_steward_says_what_changes_and_revert_takes_it_back
     ref = f"{fields}/mailman"
     view = host.command("ork.hand", {"id": fields, "ork": ref, "preview": True})
     assert view["tools_now"] == view["tools_then"] == "Claude Code"
-    assert "Elder" in view["tier_now"] and "Warrior" in view["tier_then"]
+    assert "Veteran" in view["tier_now"] and "Seasoned" in view["tier_then"]
     assert view["per_run_now"] == "$0.050" and view["per_run_then"] == "≈ $0.030"
     assert host.town.scroll.building(fields).garrison.handler("mailman").kind == "agent"     # a preview changes nothing
     assert host.command("ork.hand", {"id": fields, "ork": ref}) == ref

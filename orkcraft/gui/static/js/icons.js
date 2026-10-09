@@ -178,6 +178,16 @@ export function Scheme({ scheme }) {
   })}</span>`;
 }
 
+/** A tier as a person reads it (realm/tiers.py; docs/design/warchief-line-and-cards.md §6): its chevrons and its
+ *  word — Novice, Seasoned, Veteran — never the code's `laborer`, `warrior`, `elder`. Office: the word alone. */
+const RANKS = { laborer: [1, "Novice"], warrior: [2, "Seasoned"], elder: [3, "Veteran"] };
+export function TierMark({ tier }) {
+  const r = RANKS[tier];
+  if (!r) return null;
+  return html`<span class="gui-tier" title=${r[1]}><img class="ok-sprite gui-tier__mark" src=${`/ds/sprites/icons/rank-${r[0]}.png`}
+    srcset=${`/ds/sprites/icons/rank-${r[0]}@2x.png 2x`} width="12" height="12" alt="" draggable="false" />${r[1]}</span>`;
+}
+
 export function OrkHead({ o, alert }) {
   if (o.kind === "chain" || o.kind === "script") {
     return html`<img class="ok-sprite" data-kind="chain" src="/ds/sprites/icons/chain.png" width="16" height="16" alt="" />`;

@@ -1129,11 +1129,11 @@ def test_settings_choose_a_tiers_model_and_reset_it(page):
     pg.locator(".gui-hud .gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
-    pick = modal.get_by_label("Antigravity: the 🔮 Elder model", exact=True)
+    pick = modal.get_by_label("Antigravity: the ★★★ Veteran model", exact=True)
     pick.wait_for(timeout=WAIT_MS)
     assert "Latest Gemini Pro High" in pick.locator("option:checked").inner_text()
     pick.select_option(label="Another model…")
-    modal.get_by_label("Antigravity: the 🔮 Elder model's name").fill("gemini-3.0-pro-high")
+    modal.get_by_label("Antigravity: the ★★★ Veteran model's name").fill("gemini-3.0-pro-high")
     modal.get_by_role("button", name="Use it").click()
     pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('Runs on gemini-3.0-pro-high')",
                          timeout=WAIT_MS)

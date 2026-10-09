@@ -18,7 +18,7 @@ import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels } from "./steward.js";
-import { OrkHead, HutSprite, activeBiome, Scheme } from "./icons.js";
+import { OrkHead, HutSprite, activeBiome, Scheme, TierMark } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -162,7 +162,7 @@ function OrkInfo({ b, o, i, redo, open }) {
   const runs = [i.spend_plain, i.context && `${i.context} in context`,
                 i.deployed ? "deployed" : "not deployed"].filter(Boolean).join(" · ");
   return html`<section class="gui-info">
-    <${Row} text=${html`${o.tier && html`<span class="ok-tone-muted">${o.tier} </span>`}<b>${o.lead ? "★ " : ""}${o.name}</b>
+    <${Row} text=${html`${o.tier && html`<span class="ok-tone-muted"><${TierMark} tier=${o.tier} /> </span>`}<b>${o.lead ? "★ " : ""}${o.name}</b>
         <span class="ok-tone-muted"> · ${say(b.title)}</span>`}>
       ${i.garrison && html`<${Thumb} up count=${i.likes} title=${say("Good work: noted on this ork")} onClick=${() => run("ork.like")} />
         <${Thumb} count=${i.dislikes} title=${say("Bad work: what went wrong?")} onClick=${() => open("ork-bad")} />`}
@@ -220,7 +220,7 @@ function Garrison({ garrison, b }) {
     <ul class="gui-rows">${garrison.map((o) => html`<li key=${o.name}>
       <${OrkHead} o=${o} /> <button class="gui-link ok-font-label" title=${say("The ork itself: its runs, Deploy, Halt")} onClick=${() => selectOrk(o.ref)}>${o.name}</button>
       ${o.scheme && html` <${Scheme} scheme=${o.scheme} />`}
-      <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier || o.kind} · ${o.status}</span>
+      <span class="ok-font-status ok-tone-muted"> · ${o.lead ? "steward" : o.tier ? html`<${TierMark} tier=${o.tier} />` : o.kind} · ${o.status}</span>
       ${(o.kind === "agent" || o.kind === "hybrid") && html` <button class="ok-act" onClick=${() => deploy(o.ref)}>
         <span class="ok-act__label">${o.session ? "Its session" : "Deploy"}</span></button>`}
       ${o.role && html`<div class="ok-font-status ok-tone-muted">${o.role}</div>`}

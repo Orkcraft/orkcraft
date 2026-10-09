@@ -462,6 +462,11 @@ export function WarchiefLine() {
   }, [over]);
 
   const set = (text) => { line.value = { ...line.value, text }; setSaid(""); };
+  // Improve (docs/design/warchief-line-and-cards.md §1): the latest 👎 handed to the Warchief to go through.
+  const improve = () => command("warchief.improve").then((r) => {
+    if (r.none) setSaid(say(r.none));
+    else ask(r.text, []).catch(() => {});
+  }, () => {});
   const clear = () => { line.value = { ...line.value, text: "", about: [] }; setBack(-1); };
 
   function pick(h) {
@@ -543,13 +548,19 @@ export function WarchiefLine() {
       <${Speaks} hidden=${focused || !!l.text || chips.length > 0} />
       ${auto ? html`<span class="gui-warchief__chip is-auto ok-font-status" title=${say("The building open in the panel")}>@${say(auto.title)}</span>` : null}
       ${chips.map((x) => html`<${Chip} key=${x.id} b=${x} onDrop=${() => { line.value = { ...l, about: l.about.filter((id) => id !== x.id) }; }} />`)}
+      <span class="gui-warchief__buttons" onMouseDown=${(e) => e.preventDefault()}>
+        <button class="ok-btn gui-warchief__build" title=${say("Raise a building")}
+          onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>
+        ${t.alerts.length > 0 && html`<button class="ok-btn gui-warchief__questions" title=${say("What the orks wait on you for")}
+          onClick=${() => openOrders()}>${say(`Answers (${t.alerts.length})`)}</button>`}
+        <button class="ok-btn gui-warchief__improve" title=${say("The Warchief goes through the latest 👎 and offers what to change")}
+          onClick=${improve}>${say("Improve")}</button>
+      </span>
       <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${say(`Ask the ${name}`)}
         placeholder=${say(`Ask the ${name}… or / for commands`)}
         onInput=${(e) => set(e.target.value)} onKeyDown=${key}
         onFocus=${() => setFocused(true)} onBlur=${() => { setFocused(false); setSaid(""); }} />
       ${data && data.thinking && html`<span class="gui-hut__spin" role="img" title=${say(`${name} is answering`)}></span>`}
-      <button class="ok-btn gui-warchief__build" title=${say("Raise a building: the catalog")}
-        onMouseDown=${(e) => e.preventDefault()} onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>
     </div>
   </div>`;
 }

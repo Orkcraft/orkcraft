@@ -18,6 +18,8 @@ import { ToolMark } from "./icons.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
+const RANK = { laborer: 1, warrior: 2, elder: 3 };              // the chevrons it wears (icons/rank-N.png)
+const TIER_WORD = { laborer: "Novice", warrior: "Seasoned", elder: "Veteran" };   // realm/tiers.py TIER_LABELS
 const TOOL_OF_MARK = new Set(["✻", "✦", "⌬", "☤", "π", "◆"]);
 
 const visitDialog = signal(null);  // {kind: "ork-bad" | "dislike" | "model", b, o?, i?}
@@ -91,7 +93,11 @@ export function Outside({ b, selected }) {
   };
 
   const walking = place === "out-walk" || place === "in-walk";
-  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>`;      // its frames are the stylesheet's (yards.css)
+  // its frames are the stylesheet's (yards.css); it wears its tier's chevrons, how seasoned its mind is (realm/tiers.py)
+  const rank = o && RANK[o.rank || o.tier];
+  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>${rank && html`<img class="gui-out__rank ok-sprite"
+    src=${`/ds/sprites/icons/rank-${rank}.png`} srcset=${`/ds/sprites/icons/rank-${rank}@2x.png 2x`} width="16" height="16"
+    alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}`;
   const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;
   const bubble = place !== "out" ? null
     : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">!</span>`

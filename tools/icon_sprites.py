@@ -13,6 +13,7 @@ At 1× (16×16) and 2× (`@2x`), into `design-system/sprites/icons/`:
 - `notify-on.png`, `notify-off.png`: the horn beside the portrait (js/portrait.js `Toggles`), a bone
   speaking-horn with a gold rim while the town may call, the same horn struck through while Do not
   disturb holds;
+- `rank-1.png`, `rank-2.png`, `rank-3.png`: one, two, three gold chevrons — Novice, Seasoned, Veteran (realm/tiers.py);
 - `settings.png`: an iron gear, in the ork's bubble (js/visit.js): its AI tool and model, pressed to change them;
 - `day.png`, `night.png`: the hour in the middle of the HUD (js/chrome.js `Hour`), as the day and night
   dial of an old strategy game: a gold sun while the orks work, a pale moon in quiet hours.
@@ -241,6 +242,22 @@ def struck(grid: list[str]) -> list[str]:
 
 
 GRIDS["notify-off"] = struck(GRIDS["notify-on"])
+
+
+def rank(n: int) -> list[str]:
+    """`n` gold chevrons, one over the other: how seasoned an ork's mind is (realm/tiers.py: 1 Novice, 2 Seasoned,
+    3 Veteran), on the ork that comes out (js/visit.js) and beside its tier in Info."""
+    chevron = [".......UU.......", ".....UUuuUU.....", "...UUuu..uuUU..."]
+    rows = ["." * 16] * 16
+    top = 8 - (4 * n - 1) // 2                                # centred: a chevron is 3 rows, 1 row between
+    for i in range(n):
+        for j, line in enumerate(chevron):
+            rows[top + 4 * i + j] = line
+    return rows
+
+
+for _n in (1, 2, 3):
+    GRIDS[f"rank-{_n}"] = rank(_n)
 
 
 def outlined(grid: list[str]) -> list[str]:
