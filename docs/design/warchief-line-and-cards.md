@@ -74,6 +74,12 @@ itself: it was turned off, yards.md §7).
 Five types have a view: 5 × 3 cards. First the Task board, the Calendar and the Agent pool; the others keep the
 medium.
 
+**The Agent pool's card in lanes** (built 2026-10-09, the owner's ask): under its counts, an ork a lane — its head
+saying what it does (a gear at work, Zz resting, `!` asking; Office says it in a word), its name, its AI tool and tier,
+its **topic** (the persona it was hired as — tests, frontend — the kind of work it takes for good, never the one
+request; "any work" without one) and how many tasks of that topic wait (its follow-ups too), six lanes at most
+(`gui/views/barracks.py` `_lanes`). Later: an ork that keeps a module for good (tests, FE) and new tasks sent by topic.
+
 ## 5. Info stays a window of its own, its settings in it (built)
 
 Info is not folded into the window: it opens on its own, from the ⚙ in the ork's bubble (yards.md §4) as from the

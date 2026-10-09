@@ -28,9 +28,27 @@ def _money(x: float) -> str:
     return f"${x:.2f}"
 
 
+LANES_MAX = 6            # the orks its card shows a lane for
+
+
+def _lanes(st) -> list[dict]:
+    """A lane per ork, for its card (the owner's ask: who works on what at a glance): its name, its AI tool and tier,
+    working | resting | asks, its topic — the persona it was hired as, the kind of work it takes for good, never the
+    one request — and how many tasks of that topic wait in the queue (its follow-ups first)."""
+    asking = {t.orc for t in st.asked}
+    out = []
+    for o in st.orcs[:LANES_MAX]:
+        waits = sum(1 for t in st.queue if t.wait_for == o.name
+                    or (not t.wait_for and o.persona and t.persona == o.persona))
+        out.append({"name": o.name, "harness": o.harness, "tier": o.tier or "",
+                    "state": "asks" if o.name in asking else "working" if o.status == "working" else "resting",
+                    "topic": o.persona, "queue": waits})
+    return out
+
+
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): how many orks work of how many, `queue 3`, `✓5 ✗1 · $1.20`,
-    `<keeper> asks`; who works on what (two at most), else the last task that ended."""
+    `<keeper> asks`; a lane per ork (`_lanes`); who works on what (two at most), else the last task that ended."""
     st, f = w.state, w.foreman
     ended = next((t for t in reversed(st.tasks) if t.status in ("done", "failed")), None)
     return {"asks": w.keeper if st.asked else "",
@@ -41,7 +59,8 @@ def card(w) -> dict:
             "working": [{"ork": o.name, "task": t.title, "want": lexicon.want_word(t.want)} for o in st.orcs
                         if o.status == "working"
                         and (t := st.task(o.task)) is not None][:2],
-            "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None}
+            "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None,
+            "lanes": _lanes(st), "more": max(len(st.orcs) - LANES_MAX, 0)}
 
 
 def _tier(o: bk.PoolOrc) -> str:

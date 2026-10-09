@@ -56,7 +56,8 @@ def test_barracks_closed_command_and_full(fake_repo, monkeypatch):
     bid = _raised(host, "barracks", worktrees=False, max_orcs=2)
     b = _card(host, bid)
     assert b["page"] and b["card"] == {"asks": "", "active": 0, "max": 2, "queue": 0, "done": 0, "failed": 0,
-                                       "spent": "$0.00", "paused": False, "working": [], "last": None}
+                                       "spent": "$0.00", "paused": False, "working": [], "last": None,
+                                       "lanes": [], "more": 0}
     assert host.command("info", {"id": bid})["quick"] == []      # its preview draws them
 
     task = host.command("act", {"id": bid, "act": "task", "args": {"title": " Write  the changelog ", "brief": "for v0.2"}})
