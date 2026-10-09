@@ -13,6 +13,7 @@ At 1× (16×16) and 2× (`@2x`), into `design-system/sprites/icons/`:
 - `notify-on.png`, `notify-off.png`: the horn beside the portrait (js/portrait.js `Toggles`), a bone
   speaking-horn with a gold rim while the town may call, the same horn struck through while Do not
   disturb holds;
+- `settings.png`: an iron gear, in the ork's bubble (js/visit.js): its AI tool and model, pressed to change them;
 - `day.png`, `night.png`: the hour in the middle of the HUD (js/chrome.js `Hour`), as the day and night
   dial of an old strategy game: a gold sun while the orks work, a pale moon in quiet hours.
 
@@ -170,6 +171,24 @@ GRIDS = {
         "......H....A....",
         "......H.........",
         "................",
+        "................",
+    ],
+    "settings": [
+        "................",
+        "......TTTT......",
+        "......TLLD......",
+        "..TT..TLLD..TT..",
+        "..TLLTTLLDDLLD..",
+        "...TLLLLLLLLD...",
+        "...TLLL....LDD..",
+        ".TTTLL......DDD.",
+        ".TLLLL......LDD.",
+        "..DDLL......LD..",
+        "...DLLL....LDD..",
+        "...TLLLLLLLLD...",
+        "..TLLDDLLDDLLD..",
+        "..DD..DLLD..DD..",
+        "......DDDD......",
         "................",
     ],
     "day": [

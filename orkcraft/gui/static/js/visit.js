@@ -1,6 +1,6 @@
 // The ork that comes out of its building (docs/design/yards.md §4), in Camp. Its building's plinth runs on a little
 // to the left of the house; there the ork stands. Its building selected, it walks out of the door onto it (facing
-// left, two steps), turns to you and speaks in a pixel bubble: 👍, 👎 and its AI tool, pressed to change it. The
+// left, two steps), turns to you and speaks in a pixel bubble: 👍, 👎 and a gear, its settings (its AI tool, pressed to change it). The
 // mouse over a building brings nobody out. A press anywhere else, or Escape, closes the AI tool's picker; the
 // building no longer selected, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
 // a `!` in its bubble: a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
@@ -13,7 +13,7 @@ import { command, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { ModelDialog } from "./acts.js";
 import { DislikeDialog, NoteDialog } from "./console.js";
-import { Scheme, ToolMark } from "./icons.js";
+import { ToolMark } from "./icons.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
@@ -114,8 +114,9 @@ export function Outside({ b, selected }) {
             aria-label=${say("Bad")}><img class="ok-sprite" src="/ds/sprites/icons/thumb-down.png"
             srcset="/ds/sprites/icons/thumb-down@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>
           ${tools && html`<button class="gui-out__act is-tool" onClick=${tool}
-            title=${`${say("AI tool")}: ${o.scheme} · ${say("press to change it (from its next run)")}`}
-            aria-label=${say("Change its AI tool")}><${Scheme} scheme=${o.scheme} /></button>`}`}</span>`
+            title=${`${say("Settings")} · ${say("AI tool")}: ${o.scheme} · ${say("press to change it (from its next run)")}`}
+            aria-label=${say("Its settings: AI tool and model")}><img class="ok-sprite" src="/ds/sprites/icons/settings.png"
+            srcset="/ds/sprites/icons/settings@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>`}`}</span>`
     : null;
   const at = cls("gui-out", { [`is-${place}`]: true, "is-asking": asking, "is-step": walking });
   if (asking) {

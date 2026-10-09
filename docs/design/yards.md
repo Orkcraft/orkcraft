@@ -209,7 +209,8 @@ leaves the title bar on every card, hut and yard; the building says what its ork
   - **👍 and 👎**, green pixel thumbs (`icons/thumb-up.png`, `thumb-down.png`). A hut's rate its lead ork's work
     (`ork.like`, `ork.dislike` with a note); a yard's rate the building (`building.like`, `building.dislike`: its
     steward wakes on a 👎);
-  - **its AI tool** (a hut's, its harness scheme): pressed, the bubble lists the AI tools this machine runs and a
+  - **a gear, its settings** (a hut's; until 2026-10-09 its AI tool's mark, which said little to a person — the tool
+    is in the gear's tooltip now, `icons/settings.png`): pressed, the bubble lists the AI tools this machine runs and a
     press changes it from its next run (`ork.model`); a pipeline, or one tool and no other, opens the model dialog.
   The mouse gone, it waits 0.4 s and walks back in facing right. Touch is not drawn here: it gets its own interface.
 - **The ork that asks comes out by itself** and waits on the same spot, pacing a step, a `!` in its bubble;
