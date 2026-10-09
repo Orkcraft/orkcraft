@@ -2,7 +2,8 @@
 
     python tools/intent_sprites.py [--preview FILE]
 
-A tile in the tray says what you want done — mail, Slack, Jira, tasks, a calendar — not which house does it: the
+A tile in the tray says what you want done — take in what comes, work in parallel, talk a hard topic over — not
+which house does it: the
 house comes when it is built. Drawn on the AI tools' marks' way (tools/icon_sprites.py): one letter a pixel on a
 14×14 grid set in 16×16, every empty pixel beside a drawn one becomes the dark outline. Simple signs in plain
 colours, no one's logo. At 1× (16×16) and 2× (`@2x`), into `design-system/sprites/intents/`, one `<intent>.png`
@@ -28,54 +29,32 @@ COLOURS = {
 }
 
 GRIDS = {
-    "mail": [                 # an envelope, its flap in red
-        "..............",
-        "..............",
-        "WWWWWWWWWWWWWW",
-        "WRWWWWWWWWWWRW",
-        "WWRWWWWWWWWRWW",
-        "WWWRWWWWWWRWWW",
-        "WWWWRWWWWRWWWW",
-        "WWWWWRRRRWWWWW",
-        "WWWWWWWWWWWWWW",
-        "WWWWWWWWWWWWWW",
-        "WWWWWWWWWWWWWW",
+    "incoming": [             # a letter with a new one's badge: whatever it listens to — mail, chats, tickets
+        ".........RRR..",
+        "........RRRRR.",
+        "WWWWWWWWRRWRR.",
+        "WRWWWWWWRRWRR.",
+        "WWRWWWWWRRRRR.",
+        "WWWRWWWWRRWRR.",
+        "WWWWRWWWWRRRW.",
+        "WWWWWRRRRRWWW.",
+        "WWWWWWWWWWWWW.",
+        "WWWWWWWWWWWWW.",
+        "WWWWWWWWWWWWW.",
     ],
-    "chat": [                 # a hash: a channel's messages (Slack)
-        "....PP..PP....",
-        "....PP..PP....",
-        "..PPPPPPPPPP..",
-        "..PPPPPPPPPP..",
-        "....PP..PP....",
-        "....PP..PP....",
-        "..PPPPPPPPPP..",
-        "..PPPPPPPPPP..",
-        "....PP..PP....",
-        "....PP..PP....",
-    ],
-    "tickets": [              # a ticket stub: issues (Jira)
-        "..............",
-        "BBBBBBBBBBBBBB",
-        "BBWWWWWBBBBBBB",
-        "BBBBBBBBBBBBBB",
-        ".BBWWWWWWWWBB.",
-        ".BBBBBBBBBBBB.",
-        "BBWWWWBBBBBBBB",
-        "BBBBBBBBBBBBBB",
-    ],
-    "pages": [                # a page, its corner folded: documents (Confluence)
-        "..WWWWWWWW....",
-        "..WWWWWWWWW...",
-        "..WWWWWWWWWW..",
-        "..WbbbbbbbWW..",
-        "..WWWWWWWWWW..",
-        "..WbbbbbbWWW..",
-        "..WWWWWWWWWW..",
-        "..WbbbbbbbWW..",
-        "..WWWWWWWWWW..",
-        "..WbbbbWWWWW..",
-        "..WWWWWWWWWW..",
-        "..WWWWWWWWWW..",
+    "discuss": [              # two voices: a hard topic talked over from every side
+        "BBBBBBBBB.....",
+        "BWWWWWWWB.....",
+        "BWsssssWB.....",
+        "BWWWWWWWB.....",
+        "BBBBBBBBB.....",
+        ".BB...........",
+        "....YYYYYYYYYY",
+        "....YWWWWWWWWY",
+        "....YWssssssWY",
+        "....YWWWWWWWWY",
+        "....YYYYYYYYYY",
+        "...........YY.",
     ],
     "drop": [                 # an arrow down into a tray
         "......GG......",
@@ -124,17 +103,6 @@ GRIDS = {
         "..YLLS..SLLY..",
         "..YLL....LLY..",
         ".LL........LL.",
-    ],
-    "review": [               # an eye: looked at from every side
-        "..............",
-        "....SSSSSS....",
-        "..SSWWWWWWSS..",
-        ".SWWWBBBBWWWS.",
-        "SWWWBBKKBBWWWS",
-        "SWWWBBKKBBWWWS",
-        ".SWWWBBBBWWWS.",
-        "..SSWWWWWWSS..",
-        "....SSSSSS....",
     ],
     "wiki": [                 # a book, its spine gold
         "..LLLLLLLLLL..",

@@ -820,17 +820,17 @@ button { font: inherit; color: inherit; }
 /* The hour in the middle of the HUD (js/chrome.js Hour), as an old strategy game's day and night dial: a sun while the
    orks work, a moon in quiet hours, twice an icon's size, hanging from the bar over the town on a dark plate.
    The HUD clips what leaves it, so the dial and its menu stand on the window. Camp draws the sprite, Office the glyph. */
-.gui-hour { position: fixed; top: 1px; left: calc(var(--town-w, 100vw) / 2 - 22px); z-index: 7; }
-.gui-hour__dial { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: var(--ok-stroke, 2px) solid var(--frame);
+.gui-hour { position: fixed; top: 1px; left: calc(var(--town-w, 100vw) / 2 - 15.5px); z-index: 7; }
+.gui-hour__dial { display: grid; place-items: center; width: 31px; height: 31px; padding: 0; border: var(--ok-stroke, 2px) solid var(--frame);
   background: var(--panel-raised); box-shadow: var(--bevel-raised), var(--shadow-window); cursor: pointer; line-height: 0; }
 .gui-hour__dial:hover { background: var(--selection); }
 .gui-hour__dial:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
-.gui-hour__dial > img { width: 32px; height: 32px; image-rendering: pixelated; }
-.gui-hour__glyph { display: none; font-size: 24px; line-height: 1; color: var(--ink-gold); }
+.gui-hour__dial > img { width: 24px; height: 24px; image-rendering: pixelated; }
+.gui-hour__glyph { display: none; font-size: 17px; line-height: 1; color: var(--ink-gold); }
 .gui-hour__dial.is-night .gui-hour__glyph { color: var(--quiet-ink); }
 [data-look="office"] .gui-hour__dial > img { display: none; }
 [data-look="office"] .gui-hour__glyph { display: inline; }
-.gui-hour__menu { position: fixed; top: 52px; left: calc(var(--town-w, 100vw) / 2 - 140px); width: 280px; z-index: 30; display: grid; gap: var(--space-2);
+.gui-hour__menu { position: fixed; top: 39px; left: calc(var(--town-w, 100vw) / 2 - 140px); width: 280px; z-index: 30; display: grid; gap: var(--space-2);
   padding: var(--space-3); white-space: normal; background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
   box-shadow: var(--shadow-window); }
 .gui-hour__menu > p { margin: 0; }
