@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.6",
+      "date": "2026-10-09",
+      "critical": false,
+      "notes": "The terminal interface is gone: Orkcraft's window is its one face, and orkcraft tui only says so (Textual is no longer installed). Town Hall → Limits shows what your spend went to over the last 7 days, by purpose and building. A road rule can run on its own model tier, picked in its Edit dialog; a Router rule can name the kind of work it asks for. When a Router, Transformer or other piece of land fails or gets a 👎, the ork of the next building on its road looks at it. The Build list shows buildings first and the land as its own group. Many window fixes: the phone's top bar wraps instead of running off the screen, road labels no longer cover cards, scrolling boxes show that they scroll, Answers shows each whole question, and git errors are said in plain words with what to do."
+    },
+    {
       "version": "0.2.5",
       "date": "2026-10-08",
       "critical": false,
