@@ -99,11 +99,12 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-yard.m:not(.is-sized) { width: 294px; }
 
 /* Pickets along the bottom, the plain panel inside: text never sits on wood. The lower half of the bottom row stands
-   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. */
+   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. A row holds whole
+   pickets (`round`): a card of any width ends on a full one at its corner post, never a cut one. */
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card {
   border: 0; box-shadow: none; image-rendering: pixelated; padding: 0 15px 21px;
   background:
-    var(--fence-row) left bottom / 21px 21px repeat-x,
+    var(--fence-row) left bottom / 21px 21px round no-repeat,
     linear-gradient(var(--yard-ground), var(--yard-ground)) 15px var(--titlebar) / calc(100% - 30px) calc(100% - 12px - var(--titlebar)) no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::before { content: ""; position: absolute; left: 0; right: 0;
   top: var(--titlebar); bottom: 14px; pointer-events: none; image-rendering: pixelated; animation: none; background:
@@ -121,7 +122,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* The title bar is the top fence: its pickets start where the house ends (--house-w, js/hut.js measure) and run to the
    edge; its words went over the building (§3b). Fold keeps 26 px clear of the road handle at its right. */
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 0 0 var(--house-w, 15px);
-  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x;
+  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px round no-repeat;
   background-origin: content-box; background-clip: content-box; }
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title > :is(.no, .gui-type-icon, .gui-hut__spin, .gui-hut__name) { display: none; }
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title > .gui-hut__mark { align-self: center; margin-left: 6px; padding: 2px 4px;
