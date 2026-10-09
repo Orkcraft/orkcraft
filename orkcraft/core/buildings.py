@@ -14,7 +14,7 @@ from typing import Any
 from orkcraft import autonomy, scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, workshop
+from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, tiers, workshop
 from orkcraft.design import ui as design_ui
 from orkcraft.realm.buildings import Building, custom_building
 
@@ -26,22 +26,16 @@ POOL_GOAL_WORDS = {"thrift": "its orks run on lighter models, at most 2 parts at
                              "their tests, without the steward's review",
                    "balance": "simple tasks on a light model, the parts of a plan on the plan's",
                    "quality": "its orks run on heavier models; every task is reviewed, a trivial one too"}
-TIER_WORDS = {"elder": "a heavy model", "warrior": "a middle model", "laborer": "a light model", "": "the default model"}
-WORK_NOTE = "While the quota is tight it works as Thrift. A model you pick for a steward's task stays."
+WORK_NOTE = "The steward's own tier stays as it is: set it in Info."
 
 
 def goal_words(town: Town, building_id: str, goal: str) -> str:
-    """What `goal` does to this building: the retros' aim, and the models its work runs on — an Agent pool's
-    orks, and the steward's work that the goal moves (realm/steward.py `WORK`)."""
+    """What `goal` does to this building: the retros' aim, and an Agent pool's orks (realm/plans.py GOALS). The
+    steward's own tier is its own (realm/steward_models.py `level_of`): a goal never moves it."""
     type_id = catalog.type_of(town.spec_of(building_id)).id
     words = [GOAL_WORDS[goal]]
     if type_id == "barracks":
         words.append(POOL_GOAL_WORDS[goal])
-    labels = steward.uses(type_id)
-    moved = [f"{labels.get(u, u)} on {TIER_WORDS.get(t.get(goal, ''), 'the default model')}"
-             for u, t in steward.WORK.get(type_id, {}).items() if len(set(t.values())) > 1]
-    if moved:
-        words.append("the steward: " + ", ".join(moved))
     text = "; ".join(words)
     return f"{text}. {WORK_NOTE}" if type_id in steward.WORK else text
 
@@ -170,18 +164,33 @@ def revert(town: Town, building_id: str) -> bool:
 # -- a building's goal and 👍 / 👎 -------------------------------------------------------------------
 
 def cycle_goal(town: Town, building_id: str, goal: str = "") -> str | None:
-    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards, and in an
-    Agent pool and in the steward's work the models it runs on (`goal`: that one, as the GUI's three steps pick it)."""
+    """🪙 Thrift → ⚖️ Balance → 💎 Quality → 🪙: what the retros improve the building towards, and an Agent pool's
+    orks (`goal`: that one, as the GUI's three steps pick it). Its steward's tier stays: one that only followed the
+    old goal is kept as it was, written down (realm/steward_models.py `level_of`)."""
     b = town.scroll.building(building_id)
     if b is None:
         return None
     if goal not in scroll.GOALS:
         goal = scroll.GOALS[(scroll.GOALS.index(b.aim) + 1) % len(scroll.GOALS)]
+    stew = b.garrison.steward
+    if stew is not None and stew.tier not in tiers.TIERS:
+        stew.tier = steward.level_of(b)                  # the tier it had from the old goal, now its own
     b.goal = None if goal == "balance" else goal
     town.save()
     town.toast(f"{town.title_of(building_id)}: {goal_words(town, building_id, goal)}",
                title=f"{scroll.GOAL_ICONS[goal]} {scroll.GOAL_TITLES[goal]}")
     return goal
+
+
+def set_steward_level(town: Town, building_id: str, tier: str) -> str | None:
+    """The steward's own tier (Info): Novice, Seasoned or Veteran (laborer | warrior | elder). What it is now."""
+    b = town.scroll.building(building_id)
+    if b is None or b.garrison.steward is None or tier not in tiers.TIERS:
+        return None
+    b.garrison.steward.tier = tier
+    town.save()
+    town.toast(f"{town.title_of(building_id)}: its steward is a {tiers.TIER_LABELS[tier]} now", title="Steward")
+    return tier
 
 
 def set_autonomy(town: Town, building_id: str, freedom: str | None) -> str | None:

@@ -34,8 +34,8 @@ of its own.
   the machine's main tool) and at its tier for a new task, **listen** — "Carry out the road rules".
   `roads` (finding a road, writing a rule) and `listen` (running a rule on every cart) stay separate
   tiers: one is a rare setup call, the other runs on every cart and is where the money goes.
-- **listen is the steward's work**, so the building's goal names its tier when none is picked, and a
-  tight quota runs it as 🪙 (`steward.WORK` and `steward.pick`, docs/design/steward-at-work.md §2–3).
+- **listen is the steward's work**, so the steward's own tier names its tier when none is picked, and a
+  tight quota runs it light (`steward.WORK` and `steward.pick`, docs/design/steward-at-work.md §2–3).
 - The steward runs a rule with the building's purpose in its prompt (its role and orders), so every
   rule works toward the same goal.
 - **Code stays code.** `chain` and `script` handlers keep their place: they have no head, they cost

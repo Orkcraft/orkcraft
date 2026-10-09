@@ -1,5 +1,5 @@
 """Which model each of a steward's tasks runs on: its tasks (`USES`, `TYPE_USES`), what they are for
-in the Spend window (`PURPOSE`), the tier a building's goal names for its work (`WORK`) and `pick`,
+in the Spend window (`PURPOSE`), the tier its own tier names for its work (`WORK`, `level_of`) and `pick`,
 the one order every building follows. Split out of `realm/steward.py`, which re-exports it.
 """
 from __future__ import annotations
@@ -17,8 +17,9 @@ from orkcraft.realm import builders, tiers
 #
 # Two kinds (docs/design/steward-at-work.md §2): the upkeep of the building (`USES`: watch, redesign, rules,
 # roads) runs on what is picked for it, else the default; the steward's WORK — what becomes the building's
-# results (`WORK`) — runs, when nothing is picked, on the tier its building's goal names, and on 🪙 thrift
-# while the quota is tight (the caller says which goal is in force: `Worker.aim_now`).
+# results (`WORK`) — runs, when nothing is picked, on the tier the steward's own tier names for the task (its
+# column of `WORK`), and on the light column while the quota is tight (the caller says which goal is in force:
+# `Worker.aim_now`). The building's goal no longer moves it (docs/design/warchief-line-and-cards.md §7).
 USES = {"watch": "Watch: findings and proposals", "redesign": "Redesign the window", "keeper": "Rules and settings",
         "roads": "Roads: what it listens to", "listen": "Listen: carry out the road rules"}
 TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", "answer": "Answer the orks' questions",
@@ -83,8 +84,32 @@ def is_work(type_id: str, use: str) -> bool:
     return use in WORK.get(type_id, {}) or use in WORK_ALL
 
 
+# The steward's tier is its own, not its building's goal's (docs/design/warchief-line-and-cards.md §6–7): a goal says
+# what the retros aim at; the steward says how heavy a mind it is. Its tier picks a column of `WORK` — each task keeps
+# its weight (a triage light, a plan heavier) — Novice the light one, Seasoned the middle, Veteran the heavy one.
+GOAL_LEVEL = {"thrift": "laborer", "balance": "warrior", "quality": "elder"}    # a steward set before: its goal's
+LEVEL_COLUMN = {"laborer": "thrift", "warrior": "balance", "elder": "quality"}
+
+
+def level_of(b: ts.BuildingSpec | None) -> str:
+    """The steward's own tier: the one set in Info, else the one its building's goal gave it (a town scroll written
+    before the split keeps what it spent)."""
+    stew = b.garrison.steward if b is not None else None
+    own = stew.tier if stew is not None else ""
+    return own if own in tiers.TIERS else GOAL_LEVEL.get(b.aim if b is not None else "balance", "warrior")
+
+
+def column_of(b: ts.BuildingSpec | None, goal: str | None = None, tight: bool = False) -> str:
+    """The column of `WORK` its steward works in: its tier's, the light one while the quota is tight (`tight`, or a
+    goal in force of thrift where the building's own is not: the quota's)."""
+    if tight or (goal == "thrift" and (b is None or b.aim != "thrift")):
+        return "thrift"
+    return LEVEL_COLUMN[level_of(b)]
+
+
 def goal_tier(type_id: str, use: str, goal: str) -> str:
-    """The tier `goal` names for one of the steward's work tasks, "" for the default (and for upkeep)."""
+    """The tier a column of `WORK` names for one of the steward's work tasks (`goal`: thrift | balance | quality, the
+    column — `column_of` picks it), "" for the default (and for upkeep)."""
     by_goal = WORK.get(type_id, {}).get(use) or WORK_ALL.get(use) or {}
     return by_goal.get(goal, by_goal.get("balance", ""))
 
@@ -100,18 +125,18 @@ def tier_for(b: ts.BuildingSpec | None, use: str) -> str:
 class Pick:
     model: str           # "" for the default model
     tier: str            # the tier it came from, "" when none
-    by: str              # own | picked | setting | goal | default: what decided
+    by: str              # own | picked | setting | level | default: what decided
 
 
 def pick(b: ts.BuildingSpec | None, use: str, harness: str = "", *, type_id: str = "",
-         goal: str | None = None, setting: str = "", own: str = "") -> Pick:
+         goal: str | None = None, setting: str = "", own: str = "", tight: bool = False) -> Pick:
     """The model one of its steward's calls runs on (`harness`: its tool, "" or `main` for the machine's
     main tool), in one order for every building:
 
         own       a tier set closer to the work than the steward (a road rule's own `tier`; "" for none)
         picked    the tier picked for this task in its steward's window
         setting   the model of the building's own steward setting (the Barracks' `steward`)
-        goal      for its work, the tier its goal names (`goal`: the one in force, thrift when tight)
+        level     for its work, the tier its steward's own tier names for the task (`column_of`: light while tight)
         default   the tool's own model
     """
     for tier, by in ((own, "own"), (tier_for(b, use), "picked")):
@@ -119,9 +144,9 @@ def pick(b: ts.BuildingSpec | None, use: str, harness: str = "", *, type_id: str
             return Pick(tiers.resolve(harness, tier), tier, by)
     if setting:
         return Pick(tiers.resolve(harness, setting), setting if setting in tiers.TIERS else "", "setting")
-    tier = goal_tier(type_id, use, goal or (b.aim if b is not None else "balance")) if is_work(type_id, use) else ""
+    tier = goal_tier(type_id, use, column_of(b, goal, tight)) if is_work(type_id, use) else ""
     if tier:
-        return Pick(tiers.resolve(harness, tier), tier, "goal")
+        return Pick(tiers.resolve(harness, tier), tier, "level")
     return Pick("", "", "default")
 
 

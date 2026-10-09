@@ -88,8 +88,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "status_plain": [modes.plain(x) for x in lines],
             "state": worker.status() if worker is not None else "",
             # road rules are the steward's work, not orks: listed under it (`rules`), never drawn
-            "garrison": [_ork(o, steward_models.tier_for(bs, "listen")
-                              or steward_models.goal_tier(type_id, "listen", bs.aim or "balance"))
+            "garrison": [_ork(o, steward_models.tier_for(bs, "listen") or steward_models.level_of(bs))
                          for o in garrison if o.kind != "steward"],
             "rules": [{"ref": o.ref, "name": o.name, "status": o.status} for o in garrison if o.kind == "steward"],
             "alert": {"id": asking.alert.id, "title": asking.alert.title,

@@ -1,6 +1,7 @@
 # Design — the steward at work
 
-Status: written 2026-10-07. §2 (the model of the steward's work by the goal) is implemented; §3 (the
+Status: written 2026-10-07. §2 (the model of the steward's work by its tier — by the goal until 2026-10-09,
+docs/design/warchief-line-and-cards.md §7) is implemented; §3 (the
 steward's road rules, docs/design/steward-listens.md) is implemented, a rule's own tier too (2026-10-08).
 Builds on the building goals (docs/design/retros-and-goals.md §3), the Barracks' steward
 (docs/design/barracks-planning.md) and the steward's tasks (`realm/steward.py`).
@@ -26,10 +27,11 @@ Every task a steward calls a model for is one of two kinds (`realm/steward.py`):
 
 - **upkeep** — `USES`: watch, redesign, rules, roads (finding a road, writing a rule). Runs on the tier picked for it in the steward's window,
   else the default model. The goal never moves it.
-- **work** — `WORK[type][use]`: what becomes the building's results. Each declares its tier under each
-  goal. Today:
+- **work** — `WORK[type][use]`: what becomes the building's results. Each declares its tier in three
+  columns; the steward's own tier picks the column (Novice the light one, Seasoned the middle, Veteran the heavy
+  one; a tight quota the light one). The columns keep the goals' names in code. Today:
 
-| Type | Work | 🪙 Thrift | ⚖️ Balance | 💎 Quality |
+| Type | Work | Novice (`thrift`) | Seasoned (`balance`) | Veteran (`quality`) |
 |---|---|---|---|---|
 | Agent pool | Sort the tasks (`triage`) | light | light | light |
 | | Plan the tasks (`plan`) | middle | middle | heavy |
@@ -61,16 +63,17 @@ settings as the town holds them (`Worker.steward_runner`).
 1. **own** — a tier set closer to the work than the steward: a road rule's (§3); empty for now;
 2. **picked** — the tier picked for this task in the steward's window;
 3. **setting** — the building's own steward setting (the Agent pool's `steward`, e.g. `claude:opus`);
-4. **goal** — for work only, the tier the goal in force names;
+4. **level** — for work only, the tier the steward's own tier names for the task (`level_of`; a steward
+   with none of its own has the one its goal gave it before); the light column while the quota is tight;
 5. **default** — the CLI's own model.
 
 **The goal in force** is `Worker.aim_now`: the building's goal, or 🪙 thrift while the camp's quota is
 tight (`Worker.quota`, realm/pressure.py, measured once a minute). The Agent pool used to keep this to
 itself; every worker has it now.
 
-**What the operator sees**: the goal's hint and its toast say which models the work runs on under each
-goal (`core/buildings.py` `goal_words`), and that a tight quota runs it as Thrift; in the steward's model
-picker a work task's default reads `Default — Quality: Warrior`.
+**What the operator sees**: the steward's tier in Info (three chevron steps, beside its AI tool); in the
+steward's model picker a work task's default reads `Default — Veteran: Seasoned`. The goal's hint says what the
+retros aim at, and that the steward's tier stays as it is.
 
 **Not on the steward yet** (`steward.NOT_YET`): the **Wiki** (its librarian and its review), the
 **Review gate** and the **Publisher** (its overseer's scouting, mapping and repairs). They are being

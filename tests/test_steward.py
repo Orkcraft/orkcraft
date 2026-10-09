@@ -192,9 +192,10 @@ def test_a_steward_runs_each_task_on_its_own_tier(monkeypatch, tmp_path):
     assert seen[2:] == [("claude", "opus"), ("claude", "sonnet")]   # no setting: the goal's tier
 
 
-def test_the_steward_s_work_follows_the_goal_and_its_upkeep_does_not():
+def test_the_steward_s_work_follows_its_own_tier_and_its_upkeep_does_not():
     """One order for every building (docs/design/steward-at-work.md §2): a tier set closer to the work, the
-    one picked for the task, the building's own setting, the goal's for its work, the default."""
+    one picked for the task, the building's own setting, its steward's tier for its work, the default. A steward
+    with no tier of its own has the one its goal gave it before (docs/design/warchief-line-and-cards.md §7)."""
     presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
     b = ts.default_scroll(presets, raised=["a"]).building("a")
     b.garrison.steward = ts.OrcSpec("keeper", "Grunts")
@@ -202,8 +203,16 @@ def test_the_steward_s_work_follows_the_goal_and_its_upkeep_does_not():
     pick = lambda use, **k: steward.pick(b, use, "claude", type_id="workshop", **k)          # noqa: E731
     assert pick("escalate") == steward.Pick("", "", "default")                       # ⚖️ balance: the default
     b.goal = "quality"
-    assert pick("escalate") == steward.Pick("opus", "elder", "goal")
-    assert pick("escalate", goal="thrift") == steward.Pick("sonnet", "warrior", "goal")   # tight: 🪙
+    assert steward.level_of(b) == "elder"                                             # none of its own: the goal's
+    assert pick("escalate") == steward.Pick("opus", "elder", "level")
+    assert pick("escalate", goal="thrift") == steward.Pick("sonnet", "warrior", "level")  # tight: the light column
+    assert pick("escalate", tight=True).tier == "warrior"
+    b.garrison.steward.tier = "laborer"                                               # its own tier: the goal is not asked
+    assert steward.level_of(b) == "laborer"
+    assert pick("escalate") == steward.Pick("sonnet", "warrior", "level")
+    b.garrison.steward.tier = "elder"
+    b.goal = "thrift"                                                                 # a thrifty goal is not a tight quota
+    assert pick("escalate", goal="thrift") == steward.Pick("opus", "elder", "level")
     assert pick("watch").by == "default"                                              # upkeep: no goal
     assert pick("escalate", setting="haiku") == steward.Pick("haiku", "", "setting")
     steward.set_models(b, {"escalate": "laborer"})

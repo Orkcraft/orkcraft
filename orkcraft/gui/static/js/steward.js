@@ -3,8 +3,8 @@
 // tasks, realm/steward.py USES) — and its body
 // what the steward keeps and does:
 //
-//   settings   two rows, each named: the goal its retros aim at (three steps), how freely it applies their changes
-//              (Freedom: as the town, or its own three; the Town Hall's: the Town retro's), retros-and-goals.md §3
+//   tier       how heavy a mind the steward is: Novice, Seasoned, Veteran (realm/steward_models.py level_of), and
+//              the AI tool it runs on — its own, not its building's goal (docs/design/warchief-line-and-cards.md §7)
 //   commands   one row: Watch, Report, Redesign, Revert while there is a checkpoint
 //   script     a script-first building's line: no model, its ork wakes on an error or a 👎 (or what thinks)
 //   listens    the roads into the building, one line each with its handler (an agent, a script, a chain)
@@ -16,6 +16,9 @@
 //   rules      its road rules (docs/design/steward-listens.md): what the steward itself does with a road's carts,
 //              one line each with its roads, its last run and its spend; a click opens the rule
 //
+// The building's own settings — its goal and its Freedom — are `BuildingSettings`, drawn in the building's part
+// of Info: what the building is for, apart from who works it.
+//
 // The data is the building's `info` (gui/info.py: steward, listens, others, goal, autonomy).
 import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -25,6 +28,7 @@ import { selectOrk } from "./windows.js";
 import { HALL } from "./tent.js";
 import { pickedRoad } from "./build.js";
 import { openInLake } from "./lake.js";
+import { TierMark } from "./icons.js";
 
 // Chains, a clock, broken chains: drawn, as the pin is (js/hut.js), since ⛓️‍💥 is missing from many fonts.
 const CHAIN = html`<rect x="1" y="5" width="8" height="6" rx="3" /><rect x="7" y="5" width="8" height="6" rx="3" />`;
@@ -34,6 +38,9 @@ const BROKEN = html`<rect x="0.5" y="5" width="6.5" height="6" rx="3" /><rect x=
 const FREEDOMS = [["chains", CHAIN, "In chains", "Its questions and its changes wait for you"],
                   ["clock", CLOCK, "On the clock", "A question waits for you some minutes, a change the hours you are around — then the steward decides"],
                   ["free", BROKEN, "Unchained", "Its steward decides at once and applies its changes in the next quiet hours"]];
+const RANKS = [["laborer", "Novice", "A light model: quick and cheap, for plain work"],
+               ["warrior", "Seasoned", "A middle model: most work"],
+               ["elder", "Veteran", "A heavy model: the hardest work; it costs the most"]];
 const GOALS = [["thrift", "Thrift", "Fewer tokens, keeping what was liked"],
                ["balance", "Balance", "Cheaper where it is liked, better where it is not"],
                ["quality", "Quality", "Better results; it may spend more"]];
@@ -51,12 +58,12 @@ export function StewardTitle({ i, open }) {
 }
 
 /** Which tier the steward runs each of its tasks on: every building's (watch, redesign, rules) and its
- * type's own; "" is the default — for its work (realm/steward.py WORK) the tier its goal names, else the
- * CLI's own model (or the type's setting). */
+ * type's own; "" is the default — for its work (realm/steward.py WORK) the one its own tier names for the task,
+ * else the CLI's own model (or the type's setting). */
 export function StewardModels({ b, i, onClose, onDone }) {
   const s = i.steward;
   const [picked, setPicked] = useState(Object.fromEntries(s.uses.map((u) => [u.id, u.tier])));
-  const fallback = (u) => u.work ? say(`Default — ${i.goal_title}: ${u.by_goal || "the default model"}`)
+  const fallback = (u) => u.work ? say(`Default — ${s.rank_title}: ${u.by_level || "the default model"}`)
                                   : say(`Default${s.default ? ` (${s.default})` : ""}`);
   const choices = (u) => (i.tiers || []).map(([v, label]) => [v, v ? label : fallback(u)]);
   const save = () => command("steward.models", { id: b.id, models: picked }).then(() => { onClose(); onDone(); }, () => {});
@@ -80,9 +87,8 @@ function Steps({ label, title, children }) {
 
 function Goal({ b, i, redo }) {
   const set = (value) => command("building.goal", { id: b.id, value }).then(redo, () => {});
-  const hints = i.goal_hints || {};                // core/buildings.py goal_words: the retros, and the models
-  const what = Object.keys(hints).length ? "Goal: what the retros improve it towards, and the models its work runs on"
-                                         : "Goal: what the retros improve it towards";
+  const hints = i.goal_hints || {};                // core/buildings.py goal_words: the retros, and an Agent pool's orks
+  const what = "Goal: what the retros improve it towards (its steward's tier is its own)";
   const tip = (v, name, hint) => `${say("Goal")}: ${say(name)} — ${say(hints[v] || hint)}`;
   return html`<${Steps} label=${say("Goal")} title=${say(what)}>
     ${GOALS.map(([v, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one", { "is-on": i.goal === v })}
@@ -102,6 +108,29 @@ function Freedom({ b, i, redo }) {
         onClick=${() => set(i.autonomy === v ? "" : v)}>
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">${icon}</svg></button>`)}
   </${Steps}>`;
+}
+
+/** The steward's own tier, three chevron steps, and the AI tool it runs on (its ork's model dialog). */
+function Rank({ b, i, redo, open }) {
+  const s = i.steward;
+  const set = (value) => command("building.steward_level", { id: b.id, value }).then(redo, () => {});
+  const lead = (b.garrison || []).find((o) => o.lead);
+  return html`<${Steps} label=${say("Tier")} title=${say("Tier: how heavy a model its steward thinks with. The goal never moves it; a tight quota makes it light for a while")}>
+    ${RANKS.map(([v, name, hint]) => html`<button key=${v} class=${cls("gui-steps__one is-rank", { "is-on": s.rank === v })}
+        aria-pressed=${s.rank === v} title=${`${say(name)} — ${say(hint)}`} onClick=${() => s.rank !== v && set(v)}>
+<${TierMark} tier=${v} /></button>`)}
+  </${Steps}>
+  ${lead && lead.scheme && html`<${Steps} label=${say("AI tool")} title=${say("The AI tool its steward runs on (from its next run)")}>
+    <button class="gui-steps__one gui-steward__tool" title=${say("Change its AI tool and model")}
+      onClick=${() => open("ork-model", lead.ref)}>${lead.scheme} ▾</button>
+  </${Steps}>`}`;
+}
+
+/** The building's own settings, in its part of Info: the goal its retros aim at (three steps), how freely its
+ * retro's changes apply (Freedom: as the town, or its own three; the Town Hall's: the Town retro's),
+ * retros-and-goals.md §3. */
+export function BuildingSettings({ b, i, redo }) {
+  return html`<div class="gui-steward__settings gui-building-part"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>`;
 }
 
 function Command({ label, title, onClick }) {
@@ -223,7 +252,7 @@ function Rules({ i }) {
 export function StewardWindow({ b, i, redo, open }) {
   if (!i) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
   return html`<div class="gui-steward">
-    <div class="gui-steward__settings"><${Goal} b=${b} i=${i} redo=${redo} /><${Freedom} b=${b} i=${i} redo=${redo} /></div>
+    ${i.steward && i.steward.own && html`<div class="gui-steward__settings"><${Rank} b=${b} i=${i} redo=${redo} open=${open} /></div>`}
     <${Commands} b=${b} i=${i} redo=${redo} open=${open} />
     <${ScriptFirst} i=${i} />
     <${Listens} b=${b} i=${i} open=${open} />

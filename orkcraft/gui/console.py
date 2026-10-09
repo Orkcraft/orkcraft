@@ -58,6 +58,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
             "building.dislike_context": self.dislike_context,
             "building.dislike": self.dislike,
             "building.goal": lambda a: core_buildings.cycle_goal(self.town, self._spec(a).id, str(a.get("value") or "")),
+            "building.steward_level": lambda a: core_buildings.set_steward_level(self.town, self._spec(a).id,
+                                                                                 str(a.get("value") or "")),
             "building.autonomy": lambda a: core_buildings.set_autonomy(self.town, self._spec(a).id,
                                                                        str(a.get("value") or "") or None),
             "building.waits": lambda a: core_buildings.set_waits(self.town, self._spec(a).id,

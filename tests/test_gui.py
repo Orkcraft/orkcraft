@@ -14,7 +14,7 @@ from orkcraft.core import buildings
 from orkcraft.gui import server as srv
 from orkcraft.gui.host import CommandError, Host
 from orkcraft.gui.server import Server
-from orkcraft.realm import checkpoint
+from orkcraft.realm import checkpoint, steward
 
 
 def _host(repo: Path) -> Host:
@@ -664,19 +664,25 @@ def test_a_pinned_building_keeps_its_place(fake_repo, isolated_layout_file):
     assert host.command("building.goal", {"id": "town_hall"}) == "quality"
 
 
-def test_an_agent_pool_goal_says_which_models_its_tasks_run_on(fake_repo):
+def test_an_agent_pool_goal_says_which_models_its_orks_run_on_and_never_moves_its_steward(fake_repo):
     host = _host(fake_repo)
     toasts = []
     host.on_toast = toasts.append
     pool = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
     assert host.command("building.goal", {"id": pool, "value": "quality"}) == "quality"
     said = toasts[-1]["message_plain"]
-    assert "heavier models" in said and "While the quota is tight it works as Thrift" in said
-    assert "the steward: Plan the tasks on a heavy model" in said
+    assert "heavier models" in said and "The steward's own tier stays" in said and "the steward:" not in said
     info = host.command("info", {"id": pool})
     assert set(info["goal_hints"]) == {"thrift", "balance", "quality"}
-    final = next(u for u in info["steward"]["uses"] if u["id"] == "final") if info["steward"] else None
-    assert final is None or (final["work"] and final["by_goal"])
+    b = host.town.scroll.building(pool)
+    # the goal changed from balance: the tier it had from it is kept, written down as its own
+    assert b.garrison.steward.tier == "warrior" and steward.level_of(b) == "warrior"
+    assert host.command("building.steward_level", {"id": pool, "value": "elder"}) == "elder"
+    host.command("building.goal", {"id": pool, "value": "thrift"})
+    assert steward.level_of(b) == "elder"                                  # the goal never moves it
+    assert host.command("building.steward_level", {"id": pool, "value": "laborer"}) == "laborer"
+    assert "Novice" in toasts[-1]["message_plain"] and steward.level_of(b) == "laborer"
+    assert host.command("building.steward_level", {"id": pool, "value": "boss"}) is None
     pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
     host.command("building.goal", {"id": pit, "value": "thrift"})
     assert "models" not in toasts[-1]["message_plain"]                 # its steward has no work the goal moves
