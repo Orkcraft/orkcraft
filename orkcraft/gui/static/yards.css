@@ -91,7 +91,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 
 .gui-hut__yard-name { display: none; }
 
-[data-look="camp"] .gui-hut.is-fenced { --fence-o: #0b0907; --fence-m: #262019; --fence-h: #3a3026; --yard-ground: var(--panel);
+[data-look="camp"] .gui-hut.is-fenced { --fence-o: #1a1813; --fence-m: #5a4730; --fence-h: #7a6240; --yard-ground: #262017;
   --fence-row: image-set(url("/ds/sprites/fence/row.png") 1x, url("/ds/sprites/fence/row@2x.png") 2x);
   --fence-side: image-set(url("/ds/sprites/fence/side.png") 1x, url("/ds/sprites/fence/side@2x.png") 2x);
   --fence-rail: linear-gradient(90deg, var(--fence-o) 0 1px, var(--fence-h) 1px 3px, var(--fence-m) 3px 6px, var(--fence-o) 6px 7px); }
