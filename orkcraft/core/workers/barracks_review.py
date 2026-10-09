@@ -30,7 +30,7 @@ class ReviewMixin:
         """Look (in a thread) at the pull requests of done tasks not settled yet."""
         if self.simulated or not any(t.status == "done" and t.pr and not t.pr_state for t in self.state.tasks):
             return
-        reader, repo = type(self).pr_reader or gitinfo.pull_requests, self.repo_root
+        reader, repo = type(self).pr_reader or gitinfo.pull_requests, self.code_root
 
         def work() -> None:
             prs = reader(repo)

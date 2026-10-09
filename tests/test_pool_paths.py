@@ -252,3 +252,21 @@ def test_a_publisher_asks_before_it_sends_a_reply_no_gate_let_through(host, monk
     w.receive(pipes.Payload(pipes.TEXT, "{}", "camp", "pool.done", "x", want="reply"), "x", "")
     assert w.ask_next == 1
     assert w.must_confirm() and w.ask_next == 0 and not w.must_confirm()
+
+
+def test_the_pool_works_in_a_folder_of_its_own_and_gives_it_back(fake_repo, tmp_path):
+    """Settings → Folder (the owner's ask: a pool on code that lives elsewhere): its orks' git is there, its state
+    stays in the town; a folder that is not there is refused; "" gives it back to the town's own."""
+    host = Host(fake_repo, False, fake_repo / ".orkcraft.json")
+    bid = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
+    w = host.town.worker(bid)
+    act = lambda name, args: host.command("act", {"id": bid, "act": name, "args": args})   # noqa: E731
+    code = tmp_path / "elsewhere"
+    code.mkdir()
+    assert w.code_root == fake_repo
+    assert act("repo", {"path": str(code)}) == str(code.resolve())
+    assert w.code_root == code.resolve() and w.repo_root == fake_repo        # its state stays in the town
+    assert host.town.machine.recent_folders[0] == str(code.resolve())
+    with pytest.raises(Exception):
+        act("repo", {"path": str(tmp_path / "nowhere")})
+    assert act("repo", {"path": ""}) == str(fake_repo)

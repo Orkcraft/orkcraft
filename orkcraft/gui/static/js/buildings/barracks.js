@@ -375,6 +375,41 @@ function Kinds({ id, kinds }) {
   </section>`;
 }
 
+/** The folder of code its orks work in (`repo`): the town's own, or a project of yours somewhere else — the system's
+ *  folder dialog, a path pasted, or one of the recent folders. Taken for the next ork it hires. */
+function Folder({ id, data }) {
+  const [typed, setTyped] = useState("");
+  const [waiting, setWaiting] = useState(false);
+  const [hint, setHint] = useState("");
+  const set = (path) => act(id, "repo", { path }).then(() => { setTyped(""); setHint(""); }, () => {});
+  const choose = () => {
+    setWaiting(true); setHint("");
+    act(id, "pick", { start: data.repo }).then((token) => {
+      const poll = () => act(id, "picked", { token }).then((r) => {
+        if (r.state === "open") { setTimeout(poll, 400); return; }
+        setWaiting(false);
+        if (r.state === "done") set(r.path);
+        else if (r.state === "error") setHint(say("No folder dialog here: paste the folder's path."));
+      }, () => setWaiting(false));
+      poll();
+    }, () => setWaiting(false));
+  };
+  const others = (data.recent || []).filter((f) => f !== data.repo).slice(0, 4);
+  return html`<section class="gui-section pool-folder"><h3 class="ok-font-heading">${say("Folder")}</h3>
+    <p class="ok-font-status"><code>${data.repo}</code>${!data.repo_own && html`<span class="ok-tone-muted"> · ${say("the town's own")}</span>`}</p>
+    <p class="ok-font-status ok-tone-muted">${say("Where its orks work: their branches, worktrees, tests and pull requests. A folder with no git gets one when the first ork starts. The next ork it hires takes it.")}</p>
+    <div class="gui-form__row">
+      <button class="ok-btn" disabled=${waiting} onClick=${choose}>${say(waiting ? "Choosing…" : "Choose…")}</button>
+      <input class="ok-input" value=${typed} placeholder=${say("or paste a folder's path")} aria-label=${say("Folder path")}
+        onInput=${(e) => setTyped(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && typed.trim() && set(typed.trim())} />
+      ${data.repo_own && html`<button class="ok-btn" onClick=${() => set("")}>${say("The town's own")}</button>`}
+    </div>
+    ${hint && html`<p class="ok-font-status ok-tone-wait">${hint}</p>`}
+    ${others.length > 0 && html`<p class="ok-font-status">${say("Recent")}: ${others.map((f, i) => html`${i ? " · " : ""}<button key=${f}
+        class="gui-link" onClick=${() => set(f)}>${f}</button>`)}</p>`}
+  </section>`;
+}
+
 /** Rules, settings and the foreman's decisions: one line until opened — they are read rarely. */
 function Rules({ id, data }) {
   const settings = [["Tests", data.test_cmd || "none — the review reads the diff only"], ["Steward", `${data.steward} · spent ${data.steward_cost}`],
@@ -388,6 +423,7 @@ function Rules({ id, data }) {
       ${data.rules.length ? html`<ul class="gui-rows">${data.rules.map((r, i) => html`<li key=${i}>${r.replace(/^-\s*/, "")}</li>`)}</ul>`
         : html`<p class="ok-tone-muted">None yet — answers you give can become rules.</p>`}</section>
     <${KeeperAsk} id=${id} keeper=${data.keeper} />
+    <${Folder} id=${id} data=${data} />
     <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
       <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
     <${Kinds} id=${id} kinds=${data.kinds} />
