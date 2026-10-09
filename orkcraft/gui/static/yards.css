@@ -48,10 +48,9 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
   border-image: image-set(url("/ds/sprites/icons/bubble.png") 1x, url("/ds/sprites/icons/bubble@2x.png") 2x) 8 fill / 8px; }
 .gui-out__bubble::after { content: ""; position: absolute; left: 10px; top: 100%; margin-top: 8px; width: 10px; height: 8px;
   background: image-set(url("/ds/sprites/icons/bubble-tail.png") 1x, url("/ds/sprites/icons/bubble-tail@2x.png") 2x) 0 0 / 10px 8px; }
-/* A yard's name stands over its building, where the bubble would go: there the ork speaks to its left, the tail
-   turned to it, so the bubble never covers the name or the yard's number. */
-[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-out__bubble { left: auto; right: calc(100% + 10px); bottom: -5px; }
-[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-out__bubble::after { left: 100%; top: 50%; margin: -4px 0 0 5px; transform: rotate(-90deg); }
+/* A card's name stands over its building, where the bubble would go: there the bubble rises over the name, its tail
+   reaching down to the ork, so it never covers the name nor leaves the town at its left edge. */
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-out__bubble { bottom: calc(100% + 24px); }
 .gui-out__bubble.is-ask { padding: 0 3px; font: 700 14px/16px var(--font-camp); color: var(--alert); }
 .gui-out__act { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 2px;
   border: 0; background: none; cursor: pointer; line-height: 0; }
@@ -104,6 +103,8 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
+/* Selected, its card stands over its house: the parts' tray on its top edge (layout.css .gui-parts) takes the pointer. */
+[data-look="camp"] .gui-hut.is-fenced.is-selected > .ok-hut__card { position: relative; z-index: 2; }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
@@ -144,8 +145,8 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-bare.m:not(.is-sized) { width: auto; min-width: 140px; }
 /* Its card is a clear layer over the house and the name: a press on it opens or moves the building, as a title bar does;
    the house lets presses through to it, all but its ork's. */
-[data-look="camp"] .gui-hut.is-bare > .ok-head { pointer-events: none; }
-[data-look="camp"] .gui-hut.is-bare > .ok-head .gui-out { pointer-events: auto; }
+[data-look="camp"] .gui-hut.is-bare > .ok-head, [data-look="camp"] .gui-hut.is-bare > .ok-head * { pointer-events: none; }
+[data-look="camp"] .gui-hut.is-bare > .ok-head .gui-out, [data-look="camp"] .gui-hut.is-bare > .ok-head .gui-out * { pointer-events: auto; }
 [data-look="camp"] .gui-hut.is-bare .ok-hut__card { position: absolute; inset: 0; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 [data-look="camp"] .gui-hut.is-bare .ok-hut__card::before, [data-look="camp"] .gui-hut.is-bare .ok-hut__card::after { display: none; }
 [data-look="camp"] .gui-hut.is-bare .gui-hut__title { position: absolute; inset: 0; height: auto; padding: 0; background: none; box-shadow: none; }
