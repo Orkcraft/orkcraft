@@ -12,7 +12,8 @@ into `design-system/sprites/fence/`; the page draws them at 3 CSS px a pixel (`i
 - `plinth.png` (16×8, drawn at 2× like the footing): the paved slab every building stands on in Camp, the road's tan,
   where its roads meet it (docs/design/yards.md §3f).
 
-Muted bronze wood (palette B): a step above the ground, a step below the card, never louder than one fire.
+Warm wood, its brightest pixel at about 3:1 to the town's ground: the card's shape reads from across the town,
+yet it stays under the card's muted words (about 7:1) and its text (about 15:1), and never louder than one fire.
 """
 from __future__ import annotations
 
@@ -22,25 +23,25 @@ from logo import grid_image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# o outline, d shade, m wood, l lit edge, h highlight, n knot
-# dark, low-chroma wood a step or two over the town's ground (#141210): an edge that never pulls the eye from a card
-COLOURS = {"o": "#0b0907", "d": "#1c1814", "m": "#262019", "l": "#302820", "h": "#3a3026", "n": "#0b0907"}
+# o outline, d shade, m wood, l lit edge, h highlight, n knot, p a picket's point (lit wood, never bone: bone is as
+# bright as the card's text and would pull the eye round every card)
+COLOURS = {"o": "#1a1813", "d": "#3e3122", "m": "#5a4730", "l": "#6b5538", "h": "#7a6240", "n": "#1a1813", "p": "#8a7048"}
 # the plinth's stones: the road's tan (#8f8166), its lit top, its mortar, its shadow
 STONE = {"t": "#b5a585", "s": "#8f8166", "j": "#5f5545", "k": "#2a251c"}
 
 GRIDS = {
-    "row": [                  # its rails first, its picket last, outlined both sides: a row of whole tiles ends
-        "....o..",            # on a full picket at the corner
-        "...olo.",
-        "ooolmdo",
-        "hholmdo",
-        "ooolmdo",
-        "hholmdo",
-        "ooolmdo",
+    "row": [                  # its rail first, its picket last, outlined both sides: a row of whole tiles ends
+        "....o..",            # on a full picket at the corner; one plain rail, so the fence reads as one calm line
+        "...opo.",
+        "..olmdo",
+        "..olmdo",
+        "hhhlmdo",
+        "dddlmdo",
+        "..olmdo",
     ],
     "side": [
         "..o..",
-        ".olo.",
+        ".opo.",
         "olmdo",
         "olmdo",
         "olmdo",
@@ -51,7 +52,7 @@ GRIDS = {
     ],
     "post": [
         "..o..",
-        ".olo.",
+        ".opo.",
         "olhlo",
         "olmdo",
         "ooooo",

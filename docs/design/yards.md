@@ -103,9 +103,13 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
-- **Dark, low-chroma wood** (darkened 2026-10-09, §7): outline `#0b0907`, shade `#1c1814`, wood `#262019`,
-  lit edge `#302820`, highlight `#3a3026` — a step or two above the ground, never orange:
-  five fences on a map must stay quieter than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
+- **Warm wood under the words** (lifted 2026-10-09 after the dark one read as a dull town, 1.1–1.4:1 to the
+  ground): outline `#1a1813`, shade `#3e3122`, wood `#5a4730`, lit edge `#6b5538`, highlight `#7a6240`, a
+  picket's point `#8a7048` — at most about 3:1 to the ground, under the card's muted words (about 7:1) and
+  its text (about 15:1). Points are wood, never bone: bone is as bright as the text and pulled the eye round
+  every card. One plain rail between the pickets, not two, so the fence reads as one calm line. The yard's
+  inside is a step over the ground (`#262017`), so inside and outside part. Five fences on a map stay quieter
+  than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
