@@ -595,7 +595,7 @@ export function WarchiefLine() {
     : setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
       <div class="ok-win__frame"><div class="ok-win__body">
         <p class="ok-font-status"><b>${say(name)}:</b> ${say(suMod.setupAsk ? suMod.setupAsk(suB) : `${suB.title} is going up. Set it up?`)}</p>
-        <${suMod.Setup} id=${suB.id} b=${suB} want=${su.service || ""} done=${() => { endSetup(); }} />
+        <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { endSetup(); }} />
         <div class="gui-warchief__setup-foot">
           <button class="gui-link ok-font-status" onClick=${() => { endSetup(); openBuilding(suB.id); }}>${say("All its settings")}</button>
           <button class="ok-btn" onClick=${() => { endSetup(); }}>${say("Later")}</button></div>

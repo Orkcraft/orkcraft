@@ -38,14 +38,14 @@ already where words go, so it finds in the row, and Enter that finds no icon ask
 row is one line of 34-pixel icons with a thin rule between the groups, about 70 px tall in all (the first tray, a
 window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09); a narrow line scrolls it sideways.
 
-- each icon says **what you want done**, not which house does it: mail, Slack, Jira, Confluence, tasks, a calendar,
-  agents, a review, a wiki, research, listening, code, a check, sending, a route, a transform, a chart, a sound, files
-  dropped (`design-system/sprites/intents/`, drawn by `tools/intent_sprites.py`; which building each raises is
-  `INTENTS`). The line over the row says the icon under the mouse: its word, its building, its summary. A source's icon raises External listeners
-  already listening to it when Claude has a connector for it (its setup in the Warchief's line, `want`), else that
-  setup says so;
+- each icon says **what you want done**, not which house does it, and there are ten: take in what comes (mail, chats,
+  tickets — one icon, where it listens is its setup's), work in parallel, discuss a hard topic, a calendar, process
+  data, deep research, validate a model's output, drop files fast, tasks, a wiki; ⋯ shows the rest (code, send, route,
+  chart, sound, listen), and typing finds in all of them (`design-system/sprites/intents/`, drawn by
+  `tools/intent_sprites.py`; which building each raises is `js/build.js` `INTENTS`). The line over the row says the
+  icon under the mouse: its word, its building, its summary;
 - **For you** first, framed in gold: three of the onboarding's role's own buildings not standing yet (`builder.for_role`:
-  counted over its ready towns), External listeners on a source the role reads; then the rest in the catalog's groups;
+  counted over its ready towns); then the rest;
 - typing in the line filters it by the icon's own word first ("mail" leaves Mail), else by its building's name and
   summary; Enter takes the first left, or with none asks the Warchief what to build; Escape, Build again or a press
   elsewhere puts the row away;

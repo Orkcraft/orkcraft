@@ -7,7 +7,7 @@
 // does Add source, which a tower with no source opens on (watchtower_add.js, the panel's ← Back back to the
 // list) — never a dialog. Sources but nothing in yet: a hint, Check now and Add source.
 import { signal } from "@preact/signals";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
 import { askKeeper } from "../keeper.js";
@@ -265,9 +265,8 @@ export function setupAsk(b) {
 
 /** One press: a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most $0.50
  *  a day, sorting each message); everything else later in the building. */
-export function Setup({ id, done, want = "" }) {
+export function Setup({ id, done }) {
   const [s, setS] = useState(null);
-  const took = useRef(false);                     // `want`: picked in Build by its icon (mail, Slack…): added at once
   useEffect(() => {
     let live = true;
     const look = () => act(id, "setup").then((x) => { if (live) setS(x); }, () => {});
@@ -275,21 +274,14 @@ export function Setup({ id, done, want = "" }) {
     const t = setInterval(look, 1500);
     return () => { live = false; clearInterval(t); };
   }, [id]);
-  const wanted = s && !s.added && !s.busy && want ? s.sources.find((x) => x.service === want && x.status === "connected") : null;
-  useEffect(() => {
-    if (wanted && !took.current) { took.current = true; act(id, "add_quick", { service: want }).catch(() => {}); }
-  }, [!!wanted]);
   if (!s) return html`<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
-  if (wanted && took.current) return html`<p class="ok-font-status ok-tone-muted" role="status">${say(`Adding ${wanted.label}…`)}</p>`;
   if (s.added) {
     return html`<p class="ok-font-status ok-tone-ok">✓ ${say(`Listening to ${s.label}. It looks every 30 min and sorts each message: how important, and whether an agent can answer it.`)}</p>
       <span><button class="ok-btn primary" onClick=${done}>${say("Good")}</button></span>`;
   }
   if (s.busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
   const ways = s.sources.filter((x) => x.status === "connected");
-  const missing = want && s.asked && !wanted ? (s.sources.find((x) => x.service === want) || {}).label || want : "";
   return html`${s.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(s.error)}</p>`}
-    ${missing && html`<p class="ok-font-status ok-tone-wait">${say(`Claude Code has no connector for ${missing} here: pick another, or connect it with /mcp in Claude Code.`)}</p>`}
     ${ways.length ? html`<div class="gui-setup__ways">
         ${ways.map((x) => html`<button key=${x.service} class="ok-btn" onClick=${() => act(id, "add_quick", { service: x.service }).catch(() => {})}>
           ${say(x.label)}</button>`)}</div>

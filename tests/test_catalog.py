@@ -122,11 +122,10 @@ def test_the_landscape_is_the_seven_types_that_need_no_ork():
 
 
 def test_the_build_tray_offers_the_roles_own_buildings_first():
-    """The tray's For you (docs/design/warchief-line-and-cards.md §2): the buildings the onboarding's role uses most in
-    its ready towns, and the sources it reads for External listeners."""
+    """The Build row's For you (docs/design/warchief-line-and-cards.md §2): the buildings the onboarding's role uses
+    most in its ready towns."""
     from orkcraft.gui import builder
     assert builder.for_role("engineer")[:3] == ["watchtower", "barracks", "loot"]
     listed = {t["id"]: t for t in builder.catalog_types({"role": "designer"})}
     assert listed["barracks"]["yours"] == 0 and listed["mill"]["yours"] == -1
-    assert listed["watchtower"]["role_sources"][0] == "figma" and "role_sources" not in listed["fields"]
     assert all(t["yours"] >= -1 for t in builder.catalog_types())        # no role: the catch-all's
