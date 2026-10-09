@@ -143,13 +143,19 @@ function Sources({ id, d }) {
 
 // -- open: the feed, and a signal over it -----------------------------------------------------------------
 
+/** The first sort of a message (realm/lookout.py): important, and an agent can answer it — plain words, no score. */
+function Sort({ s }) {
+  return html`${s.importance === "high" && html`<span class="gui-tower__tag ok-tone-wait" title=${say("It needs you today")}>${say("important")}</span>`}
+    ${s.answer === "agent" && html`<span class="gui-tower__tag ok-tone-ok" title=${say("An agent can answer it without a decision of yours")}>${say("an agent can answer")}</span>`}`;
+}
+
 function Row({ id, s }) {
-  return html`<li><button class=${cls("gui-tower__row", { "is-read": s.read, "is-out": s.kept === false })}
+  return html`<li><button class=${cls("gui-tower__row", { "is-read": s.read, "is-out": s.kept === false || s.importance === "low" })}
       title=${s.why || s.title} onClick=${() => read(id, s.key)}>
     <span class="gui-tower__dot">${s.read ? html`<span class="ok-tone-muted" title=${say("read")} aria-label=${say("read")}>✓</span>`
       : html`<span class="ok-tone-fire" title=${say("new")} aria-label=${say("new")}>●</span>`}</span>
     <span class="gui-tower__src" title=${s.label}><${Glyph} service=${s.source} /><span class="gui-tower__src-name">${s.label}</span></span>
-    <span class="gui-tower__what">${s.from && html`<b>${s.from}</b> · `}${s.title}</span>
+    <span class="gui-tower__what"><${Sort} s=${s} />${s.from && html`<b>${s.from}</b> · `}${s.title}</span>
     <span class="gui-tower__at">${s.at.slice(5)}</span></button></li>`;
 }
 

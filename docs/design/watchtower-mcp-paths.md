@@ -1,6 +1,7 @@
 # Design — External listeners through MCP: a look carried by a tool, then a path of its own
 
-Status: written 2026-10-07. **Stages 1–3 (§9) set aside on 2026-10-08** — see §11. Built instead:
+Status: written 2026-10-07. **Stages 1–3 (§9) set aside on 2026-10-08** — see §11. **§12 (2026-10-09): Claude's
+connection is the first way, every 30–60 min, and every message is sorted.** Built instead:
 the agent source in the quick-add's picker and the ids a look keeps for the next
 (watchtower-quick-add.md §7.2, §7.3). It is the second half of
 [watchtower-quick-add.md](watchtower-quick-add.md) §7 (*Through Claude or agy*: a look made by an agent
@@ -150,3 +151,22 @@ Weighed against what the Watchtower already has, the three stages buy little now
 
 Taken up again when carried looks prove costly in Spend (many sources, a short `every=`), starting with
 the Carrier held to one learned call (§3, §4) and nothing of Direct or Local.
+
+## 12. Taken up again (2026-10-09): Claude's connection first, every message sorted
+
+Asked by the owner: the tower's agent sorts every message first — how important it is, and whether an agent can
+answer it. With a model called on what comes in anyway, the owner chose to read through MCP first.
+
+- **Through Claude (MCP) is the picker's first way** (`js/buildings/watchtower_add.js`): no token, Claude's
+  connector, a look **every 30 to 60 minutes** (`feeds_agent.EVERY_MIN`, `EVERY_MAX`; a line written before with a
+  shorter `every=` is read as 30). A token of your own stays the second way, and sources already set up keep working.
+- **The look sorts what it reads, in the same answer** (`feeds_agent.SCHEMA`): each item's `importance`
+  (high | normal | low) and `answer` (agent | person). No second call.
+- **A source with a token is sorted by the Lookout** (`realm/lookout.py` `judge(..., triage=True)`): one call of
+  the steward's light model for up to 20 new messages, with the intent when one is asked. With no model (Fast Path
+  off) or Spend at its limit, mail is never held back: it goes on unsorted; only an intent makes it wait, as before.
+  `triage: false` on the tower turns the sort off.
+- **The sort rides on the cart**: the text sent down a road ends with `importance: high · answered by: an agent`,
+  so the next building and its agent see it first; the tower's list shows *important* and *an agent can answer*,
+  and a low one dimmed (`js/buildings/watchtower.js` `Sort`).
+- Not built: routing by the sort (a road for *an agent can answer* only). A road's rule can already read the line.

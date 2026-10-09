@@ -44,6 +44,8 @@ class Signal:
     kept: bool | None = None   # the Lookout's verdict on the intent; None: no intent asked
     why: str = ""          # … and its reason
     want: str = ""         # … and the kind of work it named, among its source's (realm/lookout.py); "": the default
+    importance: str = ""   # high | normal | low: the tower's first sort (realm/lookout.py triage, feeds_agent.py); "": none
+    answer: str = ""       # agent | person: who can answer it, the same sort
 
     @property
     def key(self) -> str:

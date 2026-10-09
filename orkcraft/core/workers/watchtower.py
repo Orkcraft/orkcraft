@@ -111,6 +111,12 @@ class WatchtowerWorker(Worker):
     def intent(self) -> str:
         return str(self.config.get("intent") or "").strip()
 
+    @property
+    def triage(self) -> bool:
+        """The first sort of what comes in: how important, and whether an agent can answer it (realm/lookout.py).
+        On unless `triage: false`."""
+        return self.config.get("triage") is not False
+
     def label(self, source: str) -> str:
         if source == "mail":
             host = str(self.config.get("host") or "").lower()
@@ -257,10 +263,11 @@ class WatchtowerWorker(Worker):
     # -- signals --------------------------------------------------------------------------------
 
     def add_signal(self, sig: watch.Signal, send: bool = True) -> None:
-        """A new signal: with an intent the Lookout looks at it first (not the schedule's)."""
+        """A new signal: with an intent, or to be sorted, the Lookout looks at it first (not the schedule's). One an
+        agent look rated already (feeds_agent.py) is not sorted again."""
         if not send:
             sig.read = True                            # the first look's: listed, not new
-        elif self.intent and sig.source != "cron":
+        elif sig.source != "cron" and (self.intent or (self.triage and not sig.importance)):
             self.pending.append(sig)
             self.judge()
             return
@@ -277,27 +284,38 @@ class WatchtowerWorker(Worker):
             body = f"{title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body
             if sig.why:
                 body += f"\n\n🎯 {sig.why}"
+            if sig.importance or sig.answer:           # the first sort rides on the cart: the next building sees it
+                body += "\n\n" + " · ".join(x for x in (sig.importance and f"importance: {sig.importance}",
+                                                          sig.answer and f"answered by: {'an agent' if sig.answer == 'agent' else 'you'}") if x)
             want = sig.want if sig.want in paths.source_wants(self.config, sig.source) else ""
             self.emit(sig.event, body, title, want=want or paths.source_want(self.config, sig.source))   # §4, §6.1
         self.changed()
 
     def judge(self) -> None:
         """The Lookout's verdict on what waits, a batch at a time, in a thread."""
-        if self._judging or not self.pending or (not self.simulated and self.out_of_gold()):
-            return                                       # out of 🪙: the signals wait, unjudged
-        self._judging = True
-        batch, self.pending = self.pending[:lookout.BATCH], self.pending[lookout.BATCH:]
-        intent = self.intent
+        if self._judging or not self.pending:
+            return
+        intent, triage = self.intent, self.triage
         # its steward judges (its `judge`: realm/steward.py WORK); the Council's light-model switch still stops it,
         # as it runs by itself on every signal
         on = fastpath.settings(self.repo_root).get("fast_llm")
         runner = None if self.simulated else (type(self).judge_runner or (self.steward_runner("judge") if on else None))
+        broke = not self.simulated and self.out_of_gold()
+        if not intent and (runner is None or broke):     # the sort alone never holds mail back: it goes on unsorted
+            waiting, self.pending = self.pending, []
+            for sig in waiting:
+                self._keep(sig, True)
+            return
+        if broke:
+            return                                       # out of 🪙: the signals wait, unjudged
+        self._judging = True
+        batch, self.pending = self.pending[:lookout.BATCH], self.pending[lookout.BATCH:]
         config = dict(self.config)
         kinds = lambda sig: paths.source_wants(config, sig.source)       # noqa: E731 — §6.1: what each may ask for
 
         def work() -> None:
             try:
-                verdicts, problem = lookout.judge(intent, batch, runner, kinds)
+                verdicts, problem = lookout.judge(intent, batch, runner, kinds, triage)
             except halt.Stopped:                         # 🛑 Halt All: the batch waits, unjudged
                 self.town.call(self._unjudged, batch)
                 return
@@ -315,7 +333,8 @@ class WatchtowerWorker(Worker):
         self._judging = False
         self.errors.pop("intent", None) if not problem else self.errors.update(intent=problem)
         for sig, v in zip(batch, verdicts):
-            sig.kept, sig.why = v.kept, v.why
+            sig.kept, sig.why = (v.kept, v.why) if self.intent else (None, sig.why or v.why)
+            sig.importance, sig.answer = sig.importance or v.importance, sig.answer or v.answer
             sig.want = v.kind if v.kind in paths.source_wants(self.config, sig.source) else ""
             sig.read = not v.kept                     # a miss is not news
             self._keep(sig, v.kept)
@@ -481,7 +500,7 @@ class WatchtowerWorker(Worker):
                 sent.add(f"{feed.kind}:{item.key}")
                 self.add_signal(watch.Signal(watch.local_iso(item.at) if item.at else watch.now_iso(), feed.kind,
                                              item.title, f"{item.body}\n\n{item.url}".strip(), item.url,
-                                             item.mention))
+                                             item.mention, importance=item.importance, answer=item.answer))
         live = {f.identity for f, _ in looks} | {f.identity for f in self.feeds}   # an agent source not due keeps its own
         self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live},
                          feeds_at={k: v for k, v in last.items() if k in live},

@@ -238,7 +238,7 @@ class Adding:
         if self.via is None:
             raise Refused("Pick Claude's connection first")
         self.ask = " ".join(ask.split())[:300] or feeds_agent.READS[self.service][2]
-        self.every, self.ceiling = max(feeds_agent.EVERY_MIN, every), max(0.0, ceiling)
+        self.every, self.ceiling = min(feeds_agent.EVERY_MAX, max(feeds_agent.EVERY_MIN, every)), max(0.0, ceiling)
         text = feeds_agent.line(self.service, self.via.server, self.ask, self.every, self.ceiling)
         feed, err = feeds.parse(text)
         if feed is None:
@@ -461,7 +461,8 @@ class Adding:
         out["claude"] = {"name": c.name, "status": c.status} if c and self.service in feeds_agent.READS else None
         out["via"] = self.via.name if self.via else ""
         if self.via:
-            out.update(ask=self.ask, every_min=self.every, ceiling=self.ceiling, every_min_least=feeds_agent.EVERY_MIN)
+            out.update(ask=self.ask, every_min=self.every, ceiling=self.ceiling, every_min_least=feeds_agent.EVERY_MIN,
+                       every_min_most=feeds_agent.EVERY_MAX)
         host = self.prefill.get("host") or (self.link.site if self.link and self.service == "gitlab" else "") or "gitlab.com"
         out.update(label=s.label, note=s.note, picks_of=s.picks, about_me_says=s.about_me,
                    fields=[asdict(f) for f in s.fields],

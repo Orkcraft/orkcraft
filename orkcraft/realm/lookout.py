@@ -10,7 +10,7 @@ the head says why.
 
 With `triage` the same answer also rates each message it keeps (every message, when no intent is asked): how
 important it is (high | normal | low) and whether an agent can answer it alone or it needs the person — no extra
-call. The tower writes both on the cart, so the next building and its agent see them first (docs/design/yards.md §8).
+call. The tower writes both on the cart, so the next building and its agent see them first (docs/design/watchtower-mcp-paths.md §12).
 
 A source may allow more than one kind of work (its `wants`, realm/paths.py `source_wants`): then the same
 answer names the kind for each kept message, chosen only among the kinds that source allows — no extra call,

@@ -140,6 +140,8 @@ class Item:
     url: str = ""
     at: str = ""
     mention: bool = False
+    importance: str = ""         # high | normal | low: an agent look rates what it reads (feeds_agent.py); "": not rated
+    answer: str = ""             # agent | person: who can answer it, rated the same way
 
 
 @dataclass

@@ -7,8 +7,8 @@
 // paid look every 30 min (§7.3); its step 2 asks what to listen for, how often and the most a day.
 // Past the picker, ← Back stands in the panel's top right corner (js/setup.js), not in a step's foot; Add
 // opens the tower's Info (§4.4); on the picker it goes back to the messages. The picker's services stand in
-// groups: Messengers, Mail, Code, Calendar, Other — and Through Claude: the services Claude Code has a
-// connector (MCP) for, each straight to Claude's connection (realm/feeds_agent.py).
+// groups: Through Claude first — the services Claude Code has a connector (MCP) for, each straight to Claude's
+// connection (realm/feeds_agent.py), no token — then Messengers, Mail, Code, Calendar, Other with a token of your own.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -53,7 +53,7 @@ function ThroughClaude({ id, a }) {
   const found = a.claude || [];
   return html`<section class="gui-add__group" aria-label=${say("Through Claude")}>
     <h4 class="gui-add__group-title">${say("Through Claude (MCP)")}</h4>
-    <p class="ok-tone-muted gui-add__sub">${say("No token: Claude reads through the connector it already has. Each look is a model run you pay for.")}</p>
+    <p class="ok-tone-muted gui-add__sub">${say("No token: Claude reads through the connector it already has, every 30 to 60 minutes, and sorts each message: how important, and whether an agent can answer it. Each look is a model run you pay for (about $0.05).")}</p>
     ${found.length ? html`<div class="gui-add__tiles">
         ${found.map((c) => html`<button key=${c.service} class="gui-add__tile" title=${c.server}
             onClick=${() => act(id, "add_via_claude", { service: c.service }).catch(() => {})}>
@@ -74,14 +74,15 @@ function Picker({ id, a }) {
       <h3 class="gui-add__title">Add a source</h3>
       <p class="ok-tone-muted gui-add__sub">Say where to listen. One paste at most, then pick what to hear.</p>
     </div>
-    <label class="gui-add__label" for=${`add-link-${id}`}>Paste a link to what you want to hear</label>
+    <${ThroughClaude} id=${id} a=${a} />
+    <label class="gui-add__label" for=${`add-link-${id}`}>Or paste a link to what you want to hear</label>
     <div class="gui-head">
       <input id=${`add-link-${id}`} class="ok-input" style="flex: 1; width: auto" value=${link}
         placeholder=${say("a repo, a Slack channel, a Jira issue, a Figma file, an e-mail address")}
         onInput=${(e) => setLink(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && go()} />
       <button class="ok-btn primary" disabled=${!link.trim()} onClick=${go}>Continue</button>
     </div>
-    <span class="gui-add__label">Or pick a service</span>
+    <span class="gui-add__label">Or pick a service, with a token of your own</span>
     ${(a.groups || []).map((g) => html`<section key=${g.id} class="gui-add__group" aria-label=${say(g.label)}>
       <h4 class="gui-add__group-title">${say(g.label)}</h4>
       <div class="gui-add__tiles">
@@ -89,7 +90,6 @@ function Picker({ id, a }) {
           <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
           <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
       </div></section>`)}
-    <${ThroughClaude} id=${id} a=${a} />
     <p class="ok-tone-muted gui-add__sub">Tokens stay on this machine, in Logins. No model sees them.</p>
   </div>`;
 }
@@ -138,7 +138,7 @@ function ViaClaude({ id, c }) {
   const ok = c.status === "connected";
   return html`<div class="gui-add__claude">
     <span class="gui-add__label">Or use Claude's connection</span>
-    ${ok ? html`<p class="gui-add__sub">No token. It looks every 30 min, and each look is a model run you pay for (about $0.05).</p>
+    ${ok ? html`<p class="gui-add__sub">No token. It looks every 30 to 60 min and sorts what it reads; each look is a model run you pay for (about $0.05).</p>
         <div class="gui-add__foot" style="justify-content: flex-start">
           <button class="ok-btn" onClick=${() => act(id, "add_claude").catch(() => {})}>Use Claude's connection</button></div>`
       : html`<p class="gui-add__sub ok-tone-wait">In Claude, ${c.status} — run /mcp in Claude Code, then open this again.</p>`}
@@ -159,7 +159,7 @@ function Ask({ id, a }) {
       <input id=${`add-ask-${id}`} class="ok-input" value=${ask} onInput=${(e) => setAsk(e.target.value)} /></div>
     <div class="gui-add__field"><label class="gui-add__label" for=${`add-every-${id}`}>How often</label>
       <select id=${`add-every-${id}`} class="ok-input" value=${every} onChange=${(e) => setEvery(parseInt(e.target.value, 10))}>
-        ${[10, 15, 30, 60, 120].filter((m) => m >= (a.every_min_least || 10)).map((m) => html`<option key=${m} value=${m}>${say(`every ${m} min`)}</option>`)}
+        ${[30, 45, 60].filter((m) => m >= (a.every_min_least || 30) && m <= (a.every_min_most || 60)).map((m) => html`<option key=${m} value=${m}>${say(`every ${m} min`)}</option>`)}
       </select></div>
     <div class="gui-add__field"><label class="gui-add__label" for=${`add-ceiling-${id}`}>The most it spends a day, in dollars</label>
       <input id=${`add-ceiling-${id}`} class="ok-input" inputmode="decimal" value=${ceiling} onInput=${(e) => setCeiling(e.target.value)} />

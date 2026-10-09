@@ -40,7 +40,8 @@ def subject(title: str) -> str:
 def _signal(w, s) -> dict:
     who, title = _who(s.title, s.source)
     return {"key": s.key, "source": s.source, "label": w.label(s.source), "at": s.at[:16].replace("T", " "),
-            "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why}
+            "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why,
+            "importance": s.importance, "answer": s.answer}     # the first sort (realm/lookout.py)
 
 
 def _fresh(at: str, now: dt.datetime) -> bool:

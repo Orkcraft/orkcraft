@@ -30,6 +30,8 @@
 .gui-tower__row.is-read { color: var(--ink-muted); }
 .gui-tower__row.is-read b { font-weight: 600; }
 .gui-tower__row.is-out { color: var(--ink-comment); }
+.gui-tower__tag { display: inline-block; margin-right: var(--space-1); padding: 0 4px; font-size: 11px; line-height: 16px;
+  border: 1px solid currentColor; }
 .gui-tower__src, .gui-tower__what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-tower__src { color: var(--ink-muted); font-size: 12px; display: flex; align-items: center; gap: var(--space-1); }
 .gui-tower__src .gui-svc { width: 18px; height: 18px; font-size: 11px; }
