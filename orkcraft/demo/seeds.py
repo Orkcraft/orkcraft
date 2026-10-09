@@ -235,7 +235,7 @@ def calendar(now: dt.datetime) -> tuple[str, list[tuple[str, str]]]:
     end_of_day = now.replace(hour=23, minute=50, second=0)
     step = max(min((end_of_day - now) / 4, dt.timedelta(minutes=75)), dt.timedelta(minutes=10))
     at = lambda t: t.strftime("%Y%m%dT%H%M%S")
-    t0 = now.replace(second=0) - dt.timedelta(minutes=20)
+    t0 = max(now.replace(second=0) - dt.timedelta(minutes=20), now.replace(hour=0, minute=0, second=0))  # today, also just after midnight
     today = [("now", t0, t0 + dt.timedelta(minutes=50), "Design sync: Town Hall", "docs/meetings/design-sync.md")]
     for i, (title, doc) in enumerate((("Standup", ""), ("1:1 with Ann", "docs/meetings/one-on-one-ann.md"),
                                       ("Release v0.2 go / no-go", "docs/handbook/releases.md")), 1):

@@ -1,7 +1,7 @@
 // Changing the town: Build (the Warchief asked, or a building raised from the catalog), laying a road
 // between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html } from "./html.js";
 import { town, command, act, say } from "./link.js";
 import { Dialog } from "./dialog.js";
@@ -64,7 +64,12 @@ export function RoadDialog() {
     setChoices(null);
     if (pair && pair.from) command("roads.choices", { from: pair.from, to: pair.to }).then(setChoices, () => setChoices([]));
   }, [pair && pair.from, pair && pair.to]);
-  useEffect(() => setWords(""), [pair && pair.to]);
+  const shownFor = useRef(null);       // cleared when the dialog closes or turns to another building, never as it
+  useEffect(() => {                    // opens: an effect run late would wipe the first words typed
+    const to = (pair && pair.to) || null;
+    if (shownFor.current && shownFor.current !== to) setWords("");
+    shownFor.current = to;
+  }, [pair && pair.to]);
   if (!pair) return null;
   const close = () => { laying.value = null; };
   const titles = Object.fromEntries(town.value.buildings.map((b) => [b.id, say(b.title)]));

@@ -97,3 +97,16 @@ def test_dashboard_seeds_the_t1108_pipeline(tmp_path):
     assert feedback.incidents(root)[0].blamed == {"days": 1.0} and feedback.scores(root)["counter"]["likes"] == 1
     assert optimize.pending(root)[0].building == "camp"
     assert [i.applicable for i in weekly.latest(root).items] == [True, True, False]
+
+
+@pytest.mark.parametrize("hm", [(0, 5), (0, 19), (12, 0), (23, 40)])
+def test_the_demo_calendar_has_a_meeting_under_way_at_any_hour(hm):
+    import datetime as dt
+    from orkcraft.demo import seeds
+    from orkcraft.realm import daybook
+    from orkcraft.sources import ics
+    now = dt.datetime(2026, 10, 9, *hm)
+    text, _ = seeds.calendar(now)
+    events = ics.parse_ics(text, "demo", now.date(), now.date() + dt.timedelta(days=7))
+    current, _, _ = daybook.now_and_next(events, now)
+    assert current is not None and current.summary == "Design sync: Town Hall"
