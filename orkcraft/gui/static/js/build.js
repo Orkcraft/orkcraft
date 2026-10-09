@@ -14,7 +14,7 @@ export const laying = signal(null);                // {from, to}: a road waits f
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
 export const settingUp = signal(null);             // {id, type}: just raised, its setup asked in the Warchief's line
-export const placing = signal(null);               // {type, title, bare}: picked in Build, its ghost under the mouse
+export const placing = signal(null);               // {type, title, bare, yard}: picked in Build, its ghost under the mouse
 export const constructing = signal({});            // building id → until when its scaffolding stands (Infinity: its setup)
 export const built = signal(new Set());            // the buildings that just came up: they rise into place once
 const RAISE_MS = 1600;                             // a building with no questions: its construction, then it stands
@@ -24,7 +24,7 @@ const RAISE_MS = 1600;                             // a building with no questio
 
 /** Picked in Build: its ghost follows the mouse until a press places it (js/town.js), Escape lets it go. */
 export function place(t) {
-  placing.value = { type: t.id, title: t.title, bare: false };
+  placing.value = { type: t.id, title: t.title, bare: false, yard: !!t.yard };
   import(`./buildings/${t.id}.js`).then((m) => {
     if (placing.value && placing.value.type === t.id) placing.value = { ...placing.value, bare: !!m.bare };
   }, () => {});
@@ -134,7 +134,8 @@ export function BuildRow({ query }) {
   const close = () => { building.value = false; };
   const raise = (x, spot) => command("town.build", spot ? { type: x.type, hut: spot } : { type: x.type })
     .then((id) => { close(); raised(id, x.type); }, () => {});
-  const pick = (x) => { if (hut) raise(x, hut); else { close(); place(x.t); } };   // a spot given: built there
+  // a spot given: built there; else its ghost, the line let go so its thread does not stand over the town
+  const pick = (x) => { if (hut) raise(x, hut); else { close(); if (document.activeElement) document.activeElement.blur(); place(x.t); } };
   const press = (x) => {
     if (hut) { raise(x, hut); return; }
     if (timer.current) { clearTimeout(timer.current); timer.current = null; raise(x); return; }   // twice: a free spot

@@ -116,9 +116,10 @@ Asked by the owner: Build → pick a building → place its ghost → it goes up
 its setup → the scaffolding comes down and it stands.
 
 1. **Pick** in Build (the catalog, as before). The dialog closes; nothing is built yet.
-2. **Place**: the building's ghost follows the mouse (`js/town.js` `Placing`; the onboarding's ghost,
-   `js/onboarding.js` `Ghost`). **A building that has a card shows a card in its ghost; a bare one (no view,
-   js/hut.js `bareOf`) is its house and name alone.** A press builds it there (`town.build` with the spot); Escape
+2. **Place**: the building's ghost follows the mouse (`js/town.js` `Placing`): **the building itself, faded, 1:1** —
+   its house, its fence or plate, its size — so it stands where and as big as the ghost was (since 2026-10-09; before,
+   the onboarding's small ghost). A card that fills with what its building finds (a Task board's tasks) can grow once
+   it stands: the ghost cannot know that yet; its corner stays where the ghost's was. A press builds it there (`town.build` with the spot); Escape
    or a right click lets it go. A spot already given (the map's menu, *Build here*) skips this step.
 3. **Scaffolding**: the building is raised at once, but drawn as scaffolding with its sprite rising
    (`js/build.js` `raised`, `constructing`), sized as a house so it stands where it was placed.

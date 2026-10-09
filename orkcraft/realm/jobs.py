@@ -222,6 +222,49 @@ def _ok(proc: subprocess.CompletedProcess) -> str:
     return proc.stdout.strip()
 
 
+# A folder with no git yet: what its first commit leaves out when it has no .gitignore of its own — secrets, the
+# town's own state, what a build or an install makes again.
+FIRST_IGNORE = """# written by Orkcraft when it started git here: what the first commit left out
+.env
+.env.*
+*.pem
+*.key
+.orkcraft/
+node_modules/
+.venv/
+venv/
+__pycache__/
+dist/
+build/
+.DS_Store
+"""
+FIRST_AUTHOR = ("-c", "user.name=Orkcraft", "-c", "user.email=orkcraft@localhost")   # when git knows nobody here
+
+
+def ensure_repo(repo_root: Path) -> str:
+    """The folder the agents work in is a git repository with a first commit, so worktrees can be made of it: "" when
+    it already was, else what was done, in a sentence (git init; a .gitignore when there was none; the files as they
+    are in a first commit, secrets and caches left out). Raises RuntimeError when git cannot (not installed)."""
+    try:
+        inside = _git(repo_root, "rev-parse", "--is-inside-work-tree")
+    except (OSError, subprocess.SubprocessError) as e:
+        raise RuntimeError(f"git is not installed or did not answer: {e}") from e
+    done = []
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        _ok(_git(repo_root, "init"))
+        done.append("started git here")
+    if _git(repo_root, "rev-parse", "--verify", "HEAD").returncode != 0:      # no commit yet: a worktree needs one
+        ignore = repo_root / ".gitignore"
+        if not ignore.exists():
+            ignore.write_text(FIRST_IGNORE, encoding="utf-8")
+            done.append("wrote a .gitignore (.env, keys, caches and .orkcraft/ left out)")
+        _ok(_git(repo_root, "add", "-A"))
+        who = () if _git(repo_root, "config", "user.email").stdout.strip() else FIRST_AUTHOR
+        _ok(_git(repo_root, *who, "commit", "--allow-empty", "-m", "Orkcraft: the first commit, so agents can work in worktrees"))
+        done.append("made a first commit of the files as they are")
+    return "; ".join(done)
+
+
 def add_worktree(repo_root: Path, building_id: str, orc: str) -> tuple[Path, str]:
     """The orc's own worktree (realm/worktrees.py: `.orkcraft/worktrees/`), detached: the branches
     belong to the tasks, not to the orc. Reused when there."""
