@@ -13,7 +13,7 @@ import { BIOMES, BIOME_ORDER } from "./icons.js";
 import { useScrollCue } from "./scrollcue.js";
 
 const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
-const FOG_ROWS = 4, CLOSED_MIN = 7, OPEN_MIN = 12;   // a closed land at least 28 px: its name never touches a border
+const FOG_ROWS = 12, CLOSED_MIN = 7, OPEN_MIN = 12;  // the fog (Add orkspace) 48 px, easy to hit; a closed land 28 px at least
 const FOG = "#221e16";
 const CALL_EVERY_MS = 30_000;              // a land calls at most this often
 
