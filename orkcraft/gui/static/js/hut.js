@@ -416,6 +416,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
+      ${bareOf(b) && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
       <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${opened.value.active === b.id} /></span></div>
     <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}

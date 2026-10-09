@@ -100,6 +100,15 @@ const BIG = { done: ["✓", "Ran", "ok-tone-ok"], alert: ["!", "Alert", "ok-tone
 
 /** Closed: the headline is how the last run went (`✓ Ran`, `✗ Failed`), running meanwhile; under it the schedule;
  *  the foot what the last run said and when (docs/design/building-views.md). */
+/** What it says first, folded or bare (js/hut.js Mark): running, or how the last run went. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.running) return { text: "running", tone: "wait" };
+  if (c.outcome === "failed") return { text: "failed", tone: "error" };
+  return c.mark ? { text: `${c.runs} ${c.runs === 1 ? "run" : "runs"}` } : null;
+}
+
 /** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
 export const bare = true;
 

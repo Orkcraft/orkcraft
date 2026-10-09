@@ -48,6 +48,8 @@ const RAISING_SIZE = { w: 140, h: 60 };     // a building under scaffolding (js/
 // A card that shows something and has no size of its own takes the free room right of it and under it
 // (docs/design/yards.md §7): the more room, the more it shows (js/hut.js levelOf). It keeps a road's gap from every
 // other card, the town's edges and its foot, and grows no bigger than a large card.
+// Off until it is proven (docs/design/yards.md §7): this browser turns it on with localStorage "orkcraft.grow" = "1".
+const GROW_ON = (() => { try { return localStorage.getItem("orkcraft.grow") === "1"; } catch { return false; } })();
 const GROW_GAP = 32;
 const GROW_MAX = { w: 560, h: 440 };
 const natural = {};                         // building id → its size as drawn while it was not grown
@@ -70,6 +72,7 @@ function steady(compute, key, town) {
 
 /** The [w, h] each growing card takes: cards taken top to bottom, each seeing the room the ones before took. */
 function grow(buildings, spots, rects, held) {
+  if (!GROW_ON) return {};
   const r = room.value;
   const camp = document.documentElement.dataset.look !== "office";
   const down = (v, by) => (camp ? Math.floor(v / by) * by : v);     // whole pickets, never past the room

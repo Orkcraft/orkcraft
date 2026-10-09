@@ -263,8 +263,12 @@ own needs no card at all.
   and stay pixel.
 - **Cards on the ground by default** (§3e): Card background is *Ground* (the default) or *Panel*; *Shade* is gone, and
   a browser that kept it draws Ground.
-- **A card takes the free room around it** (`js/town.js` `grow`): a card with a view and no size of its own grows right
+- **A card takes the free room around it** — *off by default since 2026-10-09: it twice drew the town in a loop, and a
+  layout that changes with the window costs the person where things are; a browser tries it with localStorage
+  `orkcraft.grow` = `1`* (`js/town.js` `grow`): a card with a view and no size of its own grows right
   and down into free room, a road's gap from every other card and the town's edges, up to 560 × 440. Its height steps
   to a level of building-views.md §1a (240, 400) so the room it takes shows more; else it only widens. Cards are
   placed by their natural size, so growing never moves a neighbour; a size the person gives wins.
+- **A bare building's plate**: what it says first (`js/hut.js` `Mark`: new mail, a failing source, a run that
+  failed) stands on a small plate by its house, so a building with no card is still read at a glance.
 - **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).

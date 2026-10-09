@@ -151,6 +151,15 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-bare .gui-hut__title { position: absolute; inset: 0; height: auto; padding: 0; background: none; box-shadow: none; }
 [data-look="camp"] .gui-hut.is-bare .gui-hut__title > :not(.gui-hut__pin) { display: none; }
 [data-look="camp"] .gui-hut.is-bare .gui-hut__title > .gui-hut__pin { position: absolute; right: 0; top: 0; margin: 0; background: var(--panel-raised); }
+/* What it says first (js/hut.js Mark: new mail, a failing source, a run that failed), on a small plate by its house:
+   with no card, the plate is how a bare building is read at a glance. Office keeps its card and shows none. */
+.gui-hut__badge { display: none; }
+[data-look="camp"] .gui-hut.is-bare .gui-hut__badge { display: block; position: absolute; left: calc(100% + 4px); bottom: 10px; z-index: 2;
+  pointer-events: none; white-space: nowrap; }
+[data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark { display: inline-block; padding: 1px 5px; font-size: 11px; line-height: 15px;
+  background: var(--panel-raised); border: 1px solid var(--frame); color: var(--ink); }
+[data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-error { color: var(--danger); border-color: var(--danger); }
+[data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-wait { color: var(--warning); }
 [data-look="camp"] .gui-hut.is-bare.is-selected .gui-hut__plinth { filter: drop-shadow(0 0 2px var(--frame-focus)); }
 [data-look="camp"] .gui-hut.is-bare.is-alert .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
 
