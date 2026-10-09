@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import buildings, roads
-from orkcraft.realm import catalog, lake, modes, naming
+from orkcraft.realm import catalog, intents, lake, modes, naming
 
 
 class BuildError(Exception):
@@ -22,10 +22,28 @@ class BuildError(Exception):
 LANDSCAPE_GROUP = "Landscape: works by itself, needs no ork"   # the wizard's last group (landscape.md §6)
 
 
-def catalog_types() -> list[dict[str, Any]]:
+FOR_YOU = 6               # the role's buildings the tray may offer first; it shows three not standing yet
+
+
+def for_role(role_id: str) -> list[str]:
+    """The building types the onboarding's role uses most, most first: counted over its ready towns
+    (realm/intents.py INTENTS), the order they first come in breaking a tie."""
+    count: dict[str, int] = {}
+    for i in intents.INTENTS:
+        if i.role == role_id:
+            for b in i.plan.get("buildings", []):
+                count[b["type"]] = count.get(b["type"], 0) + 1
+    return sorted(count, key=lambda t: -count[t])[:FOR_YOU]
+
+
+def catalog_types(profile: dict | None = None) -> list[dict[str, Any]]:
     """Every type a building can be raised from, as the wizard lists them, each with what it is for
     (`intent`: the catalog's "What do you need?" groups, in their order). Buildings come first;
-    the landscape (no ork, docs/design/landscape.md) is a group of its own after them."""
+    the landscape (no ork, docs/design/landscape.md) is a group of its own after them. `yours`: its place among
+    the role's own (`for_role`, the onboarding's `profile`), -1 when it is not one (the Build tray's first row); External
+    listeners also carry `role_sources`, what the role reads, so the tray offers it on the right source."""
+    role = intents.role(str((profile or {}).get("role") or ""))
+    mine = for_role(role.id)
     hidden = (catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES | lake.WINDOW_TYPES
               | {catalog.DEFAULT_TYPE})
     intent = {tid: need for need, ids in catalog.INTENTS for tid in ids}
@@ -34,7 +52,9 @@ def catalog_types() -> list[dict[str, Any]]:
                    key=lambda t: (t.landscape, order.get(t.id, len(order))))
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
              "landscape": t.landscape, "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],
-             "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else")} for t in types]
+             "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else"),
+             "yours": mine.index(t.id) if t.id in mine else -1,
+             **({"role_sources": list(role.sources)} if t.id == "watchtower" else {})} for t in types]
 
 
 def _id(args: dict, key: str) -> str:
