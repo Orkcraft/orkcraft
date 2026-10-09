@@ -63,7 +63,6 @@ button { font: inherit; color: inherit; }
 .gui-warchief__buttons .ok-btn { flex: none; }
 .gui-warchief__chip { flex: none; display: inline-flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
   border: 1px solid var(--frame); border-radius: var(--ok-radius); background: var(--selection); white-space: nowrap; }
-.gui-warchief__chip.is-auto { border-style: dashed; background: none; color: var(--ink-muted); }
 /* a selected building's command card (js/warchief.js): its steward's name, ✕ for the Warchief again */
 .gui-warchief__who { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); max-width: 16em;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

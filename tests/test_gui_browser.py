@@ -518,15 +518,22 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
 
 def test_a_selected_building_turns_the_line_into_its_command_card(page):
     """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
-    name, its quick actions, the field asking about it; ✕ gives the Warchief back while it stays selected."""
+    face under its building's hat, its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
+    while it stays selected."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
     pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
     bar = pg.locator(".gui-warchief__bar")
     bar.locator(".gui-warchief__face.is-steward").wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act", has_text="New task").count() == 1      # its quick actions
+    assert "steward-clerk" in bar.locator(".gui-warchief__face img").get_attribute("src")   # the Task board's cap
     assert bar.get_by_role("button", name="Build", exact=True).count() == 0
-    assert "about" in pg.locator(".gui-warchief__input").get_attribute("placeholder")
+    ph = pg.locator(".gui-warchief__input").get_attribute("placeholder")
+    assert ph.startswith("Tell ") or "about" in ph                    # its steward, or the Warchief about it
+    pg.locator("body").press("q")                                    # Q: its first action, a new task
+    pg.locator(".gui-modal").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-modal").wait_for(state="detached", timeout=WAIT_MS)
     bar.locator(".gui-warchief__back").click()                       # the Warchief again, it stays open
     bar.get_by_role("button", name="Build", exact=True).wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act").count() == 0
