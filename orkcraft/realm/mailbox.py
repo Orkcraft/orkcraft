@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from email.header import decode_header, make_header
 from email.utils import parseaddr, parsedate_to_datetime
 
-from orkcraft.realm import logins
+from orkcraft.realm import logins, mail_sort
 
 LOOK_LIMIT = 20
 PROVIDERS = {"gmail": "imap.gmail.com", "yandex": "imap.yandex.com", "icloud": "imap.mail.me.com"}
@@ -37,6 +37,8 @@ class Message:
     date: str = ""
     unread: bool = False
     snippet: str = ""
+    address: str = ""           # the From address, for the sort (realm/mail_sort.py)
+    tags: list = field(default_factory=list)   # its mailing headers: list-unsubscribe, list-id, precedence:…, auto-submitted:…
 
     def text(self) -> str:
         return f"From: {self.sender}\nSubject: {self.subject}\n\n{self.snippet}".rstrip()
@@ -122,7 +124,7 @@ def look(cfg: dict, factory=imaplib.IMAP4_SSL, limit: int = LOOK_LIMIT) -> Look:
         _, everything = conn.uid("search", None, "ALL")
         uids = [int(x) for x in (everything[0] or b"").split()][-limit:]
         for uid in reversed(uids):
-            _, data = conn.uid("fetch", str(uid), "(FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
+            _, data = conn.uid("fetch", str(uid), "(FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE LIST-UNSUBSCRIBE LIST-ID PRECEDENCE AUTO-SUBMITTED)])")
             header = data[0][1] if data and isinstance(data[0], tuple) else b""
             msg = email.message_from_bytes(header or b"")
             unread = uid in unseen_uids
@@ -136,8 +138,11 @@ def look(cfg: dict, factory=imaplib.IMAP4_SSL, limit: int = LOOK_LIMIT) -> Look:
                 _, body = conn.uid("fetch", str(uid), "(BODY.PEEK[TEXT]<0.1200>)")
                 if body and isinstance(body[0], tuple):
                     snippet = _snippet(body[0][1] or b"")
+            tags = [h.lower() for h in ("List-Unsubscribe", "List-Id") if msg.get(h)]
+            tags += [f"{h.lower()}:{str(msg.get(h)).strip().lower()}" for h in ("Precedence", "Auto-Submitted") if msg.get(h)]
             out.messages.append(Message(uid, _sender(msg.get("From", "")), _decode(msg.get("Subject", "")) or
-                                        "(no subject)", date, unread, snippet))
+                                        "(no subject)", date, unread, snippet, mail_sort.address(_decode(msg.get("From", ""))),
+                                        tags))
         return out
     except (imaplib.IMAP4.error, OSError) as e:
         return Look(error=f"IMAP: {e}"[:200], kind="network")

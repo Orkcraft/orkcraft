@@ -140,8 +140,8 @@ class Item:
     url: str = ""
     at: str = ""
     mention: bool = False
-    importance: str = ""         # high | normal | low: an agent look rates what it reads (feeds_agent.py); "": not rated
-    answer: str = ""             # agent | person: who can answer it, rated the same way
+    sender: str = ""             # the address it came from, for the sort (realm/mail_sort.py); "": not known
+    tags: list = field(default_factory=list)     # the service's labels, a mail's list headers: the sort's stage 1
 
 
 @dataclass

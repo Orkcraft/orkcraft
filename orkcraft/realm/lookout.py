@@ -8,9 +8,10 @@ data, and the model can only answer which numbers match — it cannot make the L
 else. With no model (the Fast Path switched off, the CLI missing, the demo) everything passes and
 the head says why.
 
-With `triage` the same answer also rates each message it keeps (every message, when no intent is asked): how
-important it is (high | normal | low) and whether an agent can answer it alone or it needs the person — no extra
-call. The tower writes both on the cart, so the next building and its agent see them first (docs/design/watchtower-mcp-paths.md §12).
+With `triage` the same answer also reads each message it keeps (every message, when no intent is asked) for the
+tower's first sort (realm/mail_sort.py, stage 2): what is asked, how fast, the risk if unanswered, the tone, and
+whether an agent could answer it — no extra call. Stage 3, code, turns that into importance and who answers; the
+tower writes it on the cart (docs/design/watchtower-mcp-paths.md §12). Automated mail never gets here (stage 1).
 
 A source may allow more than one kind of work (its `wants`, realm/paths.py `source_wants`): then the same
 answer names the kind for each kept message, chosen only among the kinds that source allows — no extra call,
@@ -22,7 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from orkcraft.realm import builders, halt
+from orkcraft.realm import builders, halt, mail_sort
 from orkcraft.sources import telemetry
 
 BATCH = 20
@@ -45,11 +46,18 @@ Which messages match the INTENT? Answer with JSON only:
 An empty list is a fine answer.{triage_rule}{kind_rule}"""
 
 KIND_FIELD = ', "kind": "<one of the kinds its line lists>"'
-TRIAGE_FIELD = ', "importance": "high|normal|low", "answer": "agent|person"'
+TRIAGE_FIELD = (', "asks": "nothing|info|reply|action|decision", "urgency": "now|today|week|none", '
+                '"risk": "high|medium|low|none", "risk_why": "<at most 8 words>", '
+                '"tone": "angry|upset|urgent|neutral|friendly", "agent": <true|false>')
 TRIAGE_RULE = """
-For each message you keep, rate it: importance "high" when it needs the operator today (a client, money, an outage,
-a deadline, a direct question waiting on them), "low" for newsletters, notifications and FYI, else "normal"; answer
-"agent" when an AI agent could reply or act on it well with no decision of the operator's, else "person"."""
+For each message you keep, read it for the operator:
+- asks: what it asks of the operator — nothing; info (it only tells them something); reply (an answer); action
+  (something to do); decision (a choice only the operator can make: money, commitments, people, priorities).
+- urgency: how fast it should be answered — now, today, this week, or none.
+- risk: what happens if no one answers — high (a client lost, money, an outage, a deadline missed, a legal or
+  security matter), medium, low, or none; risk_why says it in a few words.
+- tone: the sender's tone — angry, upset, urgent, neutral or friendly.
+- agent: true only when an AI agent could reply or act on it well with no decision of the operator's."""
 
 # No intent asked: every message is kept, and the answer only rates them.
 TRIAGE_PROMPT = """You are the Lookout of a watchtower: you sort the operator's incoming mail, chat and tracker messages.
@@ -75,11 +83,9 @@ class Verdict:
     kept: bool
     why: str = ""
     kind: str = ""         # the kind of work it asks for, one its source allows; "": the source's default
-    importance: str = ""   # high | normal | low, with `triage`; "": not rated
-    answer: str = ""       # agent | person: who can answer it, with `triage`; "": not rated
-
-IMPORTANCE = ("high", "normal", "low")
-ANSWER = ("agent", "person")
+    importance: str = ""   # high | normal | low, with `triage` (realm/mail_sort.py stage 3); "": not rated
+    answer: str = ""       # agent | person, or "" when nothing is asked
+    sort: dict | None = None   # what the model read (mail_sort.read): asks, urgency, risk, risk_why, tone, agent
 
 
 def _fence(text: str) -> str:
@@ -119,17 +125,17 @@ def judge(intent: str, signals: list, runner, kinds=None, triage: bool = False) 
             problem = f"{what}: the model failed ({e}) — these passed unchecked"[:200]
             verdicts += [Verdict(True, "unchecked") for _ in batch]
             continue
-        keep: dict[int, tuple[str, str, str, str]] = {}
-        word = lambda k, key, allowed_: (w if (w := str(k.get(key) or "").strip().lower()) in allowed_ else "")  # noqa: E731
+        keep: dict[int, tuple[str, str, dict | None]] = {}
         for k in answer.get("keep") or []:
             try:
                 keep[int(k.get("n"))] = (str(k.get("why") or "")[:120], str(k.get("kind") or "").strip().lower(),
-                                         word(k, "importance", IMPORTANCE) if triage else "",
-                                         word(k, "answer", ANSWER) if triage else "")
+                                         mail_sort.read(k) if triage else None)
             except (TypeError, ValueError, AttributeError):
                 continue
         for i in range(len(batch)):
-            why, kind, importance, who = keep.get(i + 1, ("", "", "", ""))
+            why, kind, sort = keep.get(i + 1, ("", "", None))
             kept = i + 1 in keep or not intent.strip()          # triage alone keeps every message
-            verdicts.append(Verdict(kept, why, kind if len(allowed[i]) > 1 and kind in allowed[i] else "", importance, who))
+            importance, who = mail_sort.verdict(sort) if sort else ("", "")
+            verdicts.append(Verdict(kept, why, kind if len(allowed[i]) > 1 and kind in allowed[i] else "",
+                                    importance, who, sort))
     return verdicts, problem

@@ -42,7 +42,7 @@ from dataclasses import asdict
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.watchtower_add import Adding
 from orkcraft.core.workers.watchtower_places import Desk
-from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mailbox, paths, watch
+from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout, mail_sort, mailbox, paths, watch
 
 REFRESH_S = 120.0
 CRON_S = 30.0
@@ -263,11 +263,17 @@ class WatchtowerWorker(Worker):
     # -- signals --------------------------------------------------------------------------------
 
     def add_signal(self, sig: watch.Signal, send: bool = True) -> None:
-        """A new signal: with an intent, or to be sorted, the Lookout looks at it first (not the schedule's). One an
-        agent look rated already (feeds_agent.py) is not sorted again."""
+        """A new signal: with an intent, or to be sorted, the Lookout looks at it first (not the schedule's). The
+        sort's first stage is code (realm/mail_sort.py): a mailing or a machine's message is sorted low here and never
+        costs a model call — unless an intent asks the model about it anyway."""
         if not send:
             sig.read = True                            # the first look's: listed, not new
-        elif sig.source != "cron" and (self.intent or (self.triage and not sig.importance)):
+        elif sig.source != "cron" and self.triage and (why := mail_sort.automated(sig.sender, sig.title, sig.tags)):
+            sig.sort, sig.importance, sig.answer = {"auto": why}, "low", ""
+            if not self.intent:
+                self._keep(sig, send)
+                return
+        if send and sig.source != "cron" and (self.intent or (self.triage and not sig.importance)):
             self.pending.append(sig)
             self.judge()
             return
@@ -284,9 +290,8 @@ class WatchtowerWorker(Worker):
             body = f"{title}\n\n{sig.body}".strip() if sig.source != "mail" else sig.body
             if sig.why:
                 body += f"\n\n🎯 {sig.why}"
-            if sig.importance or sig.answer:           # the first sort rides on the cart: the next building sees it
-                body += "\n\n" + " · ".join(x for x in (sig.importance and f"importance: {sig.importance}",
-                                                          sig.answer and f"answered by: {'an agent' if sig.answer == 'agent' else 'you'}") if x)
+            if sig.importance:                          # the sort rides on the cart: the next building sees it first
+                body += "\n\n" + mail_sort.line(sig.sort, sig.importance, sig.answer)
             want = sig.want if sig.want in paths.source_wants(self.config, sig.source) else ""
             self.emit(sig.event, body, title, want=want or paths.source_want(self.config, sig.source))   # §4, §6.1
         self.changed()
@@ -334,7 +339,8 @@ class WatchtowerWorker(Worker):
         self.errors.pop("intent", None) if not problem else self.errors.update(intent=problem)
         for sig, v in zip(batch, verdicts):
             sig.kept, sig.why = (v.kept, v.why) if self.intent else (None, sig.why or v.why)
-            sig.importance, sig.answer = sig.importance or v.importance, sig.answer or v.answer
+            if v.sort and not sig.sort.get("auto"):  # stage 1's verdict stands: a mailing stays low
+                sig.importance, sig.answer, sig.sort = v.importance, v.answer, dict(v.sort)
             sig.want = v.kind if v.kind in paths.source_wants(self.config, sig.source) else ""
             sig.read = not v.kept                     # a miss is not news
             self._keep(sig, v.kept)
@@ -500,7 +506,7 @@ class WatchtowerWorker(Worker):
                 sent.add(f"{feed.kind}:{item.key}")
                 self.add_signal(watch.Signal(watch.local_iso(item.at) if item.at else watch.now_iso(), feed.kind,
                                              item.title, f"{item.body}\n\n{item.url}".strip(), item.url,
-                                             item.mention, importance=item.importance, answer=item.answer))
+                                             item.mention, sender=item.sender, tags=list(item.tags)))
         live = {f.identity for f, _ in looks} | {f.identity for f in self.feeds}   # an agent source not due keeps its own
         self._save_state(feeds_seen={k: v for k, v in seen.items() if k in live},
                          feeds_at={k: v for k, v in last.items() if k in live},
@@ -523,8 +529,8 @@ class WatchtowerWorker(Worker):
             first = last is None                     # the first look: the unread are listed, not sent
             new = [m for m in reversed(look.messages) if m.unread] if first else mailbox.new_since(int(last), look)
             for m in new:
-                self.add_signal(watch.Signal(watch.now_iso(), "mail", f"{m.sender}: {m.subject}", m.text(), str(m.uid)),
-                                send=not first)
+                self.add_signal(watch.Signal(watch.now_iso(), "mail", f"{m.sender}: {m.subject}", m.text(), str(m.uid),
+                                             sender=m.address, tags=list(m.tags)), send=not first)
             self._save_state(last_uid=max(m.uid for m in look.messages))
         self.changed()
 

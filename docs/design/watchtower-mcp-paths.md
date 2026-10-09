@@ -160,13 +160,24 @@ answer it. With a model called on what comes in anyway, the owner chose to read 
 - **Through Claude (MCP) is the picker's first way** (`js/buildings/watchtower_add.js`): no token, Claude's
   connector, a look **every 30 to 60 minutes** (`feeds_agent.EVERY_MIN`, `EVERY_MAX`; a line written before with a
   shorter `every=` is read as 30). A token of your own stays the second way, and sources already set up keep working.
-- **The look sorts what it reads, in the same answer** (`feeds_agent.SCHEMA`): each item's `importance`
-  (high | normal | low) and `answer` (agent | person). No second call.
-- **A source with a token is sorted by the Lookout** (`realm/lookout.py` `judge(..., triage=True)`): one call of
-  the steward's light model for up to 20 new messages, with the intent when one is asked. With no model (Fast Path
+- **Every source is sorted by the Lookout** (`realm/lookout.py` `judge(..., triage=True)`): one call of the
+  steward's model for up to 20 new messages, with the intent when one is asked (stages below). With no model (Fast Path
   off) or Spend at its limit, mail is never held back: it goes on unsorted; only an intent makes it wait, as before.
   `triage: false` on the tower turns the sort off.
-- **The sort rides on the cart**: the text sent down a road ends with `importance: high · answered by: an agent`,
+- **The sort rides on the cart**: the text sent down a road ends with its line (`importance: high · answered by:
+  you · asks: reply · answer today · risk if unanswered: high (client may leave) · tone: upset`),
   so the next building and its agent see it first; the tower's list shows *important* and *an agent can answer*,
   and a low one dimmed (`js/buildings/watchtower.js` `Sort`).
+- **The sort is in three stages, code where it can** (`realm/mail_sort.py`, asked by the owner the same day):
+  1. *Code:* a mailing or a machine's message — list headers (`List-Unsubscribe`, `List-Id`, `Precedence`,
+     `Auto-Submitted`, read by IMAP; a service's labels such as Promotions, copied by the agent look), a robot
+     sender (`noreply@`, `notifications@`, `newsletter@`…), an automatic reply — is sorted low with its reason and
+     **never costs a model call** (unless an intent asks the model about it anyway).
+  2. *The model,* one call for the batch, the steward's `judge` (thrift laborer, balance and quality **warrior**,
+     never elder): what is asked (nothing, info, reply, action, decision), how fast (now, today, week, none), the
+     risk if no one answers (and what), the tone, and whether an agent could answer it alone.
+  3. *Code:* importance and who answers, by rules a person can read: high on a high risk, an answer due today or
+     an angry or upset sender; low when it only informs at no risk; **a decision, a high risk or an angry sender
+     always goes to the person**; nothing to answer when it asks nothing.
+  The MCP look stays on the light model and only copies (the sender, the labels): it judges nothing.
 - Not built: routing by the sort (a road for *an agent can answer* only). A road's rule can already read the line.

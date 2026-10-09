@@ -10,7 +10,7 @@ import re
 from orkcraft.core.workers import watchtower_add
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import places, quickadd, watch
+from orkcraft.realm import mail_sort, places, quickadd, watch
 
 REFRESH_S = 1.0
 CARD_ROWS = 4                   # counters on the closed card; more sources fold into `+N more`
@@ -41,7 +41,8 @@ def _signal(w, s) -> dict:
     who, title = _who(s.title, s.source)
     return {"key": s.key, "source": s.source, "label": w.label(s.source), "at": s.at[:16].replace("T", " "),
             "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why,
-            "importance": s.importance, "answer": s.answer}     # the first sort (realm/lookout.py)
+            "importance": s.importance, "answer": s.answer,     # the first sort (realm/mail_sort.py)
+            "sorted": mail_sort.line(s.sort, s.importance, s.answer) if s.importance else ""}
 
 
 def _fresh(at: str, now: dt.datetime) -> bool:
