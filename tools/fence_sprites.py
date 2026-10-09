@@ -70,11 +70,11 @@ GRIDS = {
 }
 
 
-# A yard's corners (yards.css ::after): a bone tusk curving in over the card at its bottom corners and the top fence's
+# A yard's corners (yards.css ::after): a bone tusk curving out, away from the card, at its bottom corners and the top fence's
 # end, and the building's renown adds iron, never more bone (docs/design/growth.md §5): II a spiked iron band round
 # each tusk's root, III a pair of crossed axes where the top fence meets the house (`axes.png`). The bone is old bone,
 # under the card's words; the iron is as quiet as the wood. 7 × 9, the tusk's root at the bottom left, its tip curling
-# right; the right corners wear it mirrored (`-r`).
+# right; the left corner wears it mirrored (`-r`), so every tusk curls away from its card.
 TUSK = [
     "....ooo",
     "...obbo",
