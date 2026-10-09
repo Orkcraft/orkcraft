@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; }
 /* The Warchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
    chat, what a command said, the hints or the commands and names as typed. */
 .gui-warchief { flex: 1 1 auto; position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(640px, 100%); box-sizing: border-box;
+.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(760px, 100%); box-sizing: border-box;
   padding: var(--space-1) var(--space-2); background: var(--panel); border: var(--ok-frame) solid var(--frame);
   border-radius: var(--ok-radius-lg); box-shadow: var(--shadow-window); }
 .gui-warchief.is-focused .gui-warchief__bar { border-color: var(--frame-focus); }
@@ -57,7 +57,10 @@ button { font: inherit; color: inherit; }
 .gui-warchief__ask { position: absolute; top: -4px; right: -6px; }
 /* The line itself is the house input: Camp's sunken stone well in its body type, Office's hairline field. */
 .gui-warchief__input.ok-input { flex: 1 1 auto; min-width: 80px; font-size: var(--ok-body); }
-.gui-warchief__build.ok-btn { flex: none; }      /* always there: the way to raise a building is never only a word */
+/* The line's buttons before its field (docs/design/warchief-line-and-cards.md §1): what to do, for a person who
+   would not know what to type. */
+.gui-warchief__buttons { flex: none; display: flex; gap: var(--space-1); }
+.gui-warchief__buttons .ok-btn { flex: none; }
 .gui-warchief__chip { flex: none; display: inline-flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
   border: 1px solid var(--frame); border-radius: var(--ok-radius); background: var(--selection); white-space: nowrap; }
 .gui-warchief__chip.is-auto { border-style: dashed; background: none; color: var(--ink-muted); }
@@ -72,7 +75,14 @@ button { font: inherit; color: inherit; }
   .gui-warchief__long { display: none; }
   .gui-warchief__short { display: inline; }
 }
-.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(640px, 100%); max-height: 50vh; }
+/* Squeezed further, the field keeps room to type: what the Warchief says first goes (Answers (N) counts the
+   questions already), and the buttons tighten. */
+.gui-warchief__input.ok-input { min-width: 160px; }
+@container warchief (max-width: 700px) {
+  .gui-warchief__speaks { display: none; }
+  .gui-warchief__buttons .ok-btn { padding-left: var(--space-2); padding-right: var(--space-2); }
+}
+.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(760px, 100%); max-height: 50vh; }
 /* A building just raised, set up in a question or two over the line (js/warchief.js, js/build.js raised). */
 .gui-warchief__setup .ok-win__body { display: grid; gap: var(--space-2); }
 .gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
@@ -225,14 +235,10 @@ button { font: inherit; color: inherit; }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
 /* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. On the
-   Task Fields' card it is a tray on the card's top edge instead, out while the board is selected (never under the
-   mouse alone): it takes no room, so a setting of the view never crowds what the board says,
-   and the top edge stays put when a part is hidden, so the tray stays under the mouse (the War Drum keeps
-   its row: there it is the legend). */
+   Task Fields' card it is a row at the top of its yard, as the War Drum's legend: always there, never a tray that
+   pops out over the card (the owner's call, 2026-10-09; yards.md §7). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
-.gui-hut .gui-fhut > .gui-parts { position: absolute; z-index: 2; bottom: 100%; left: 0; right: 0; padding: var(--space-1) var(--space-3);
-  background: var(--panel); border: 1px solid var(--frame); border-bottom: 0; visibility: hidden; }
-.gui-hut.is-selected .gui-fhut > .gui-parts { visibility: visible; }    /* never under the mouse alone (yards.md §7) */
+.gui-hut .gui-fhut > .gui-parts { margin-bottom: var(--space-1); }
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
@@ -831,3 +837,8 @@ button { font: inherit; color: inherit; }
 .gui-town__placing-hint { position: fixed; left: 50%; top: calc(var(--bar-hud) + 56px); transform: translateX(-50%); margin: 0;
   padding: var(--space-1) var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); pointer-events: none; }
 .gui-onb__ghost.is-bare .gui-onb__ghost-name { margin-top: 2px; }
+
+/* A tier as a person reads it (js/icons.js TierMark): its chevrons, then its word. Office: the word alone. */
+.gui-tier { display: inline-flex; align-items: center; gap: 3px; }
+.gui-tier__mark { image-rendering: pixelated; }
+[data-look="office"] .gui-tier__mark { display: none; }

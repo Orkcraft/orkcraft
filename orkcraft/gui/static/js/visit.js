@@ -1,6 +1,7 @@
 // The ork that comes out of its building (docs/design/yards.md §4), in Camp. Its building's plinth runs on a little
 // to the left of the house; there the ork stands. Its building selected, it walks out of the door onto it (facing
-// left, two steps), turns to you and speaks in a pixel bubble: 👍, 👎 and its AI tool, pressed to change it. The
+// left, two steps), turns to you and speaks in a pixel bubble: 👎 and a gear, its settings (its AI tool, pressed to change it) — a 👎
+// is what teaches it; 👍 stays in the building's Info (js/console.js). The
 // mouse over a building brings nobody out. A press anywhere else, or Escape, closes the AI tool's picker; the
 // building no longer selected, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
 // a `!` in its bubble: a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
@@ -13,10 +14,12 @@ import { command, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { ModelDialog } from "./acts.js";
 import { DislikeDialog, NoteDialog } from "./console.js";
-import { Scheme, ToolMark } from "./icons.js";
+import { ToolMark } from "./icons.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
+const RANK = { laborer: 1, warrior: 2, elder: 3 };              // the chevrons it wears (icons/rank-N.png)
+const TIER_WORD = { laborer: "Novice", warrior: "Seasoned", elder: "Veteran" };   // realm/tiers.py TIER_LABELS
 const TOOL_OF_MARK = new Set(["✻", "✦", "⌬", "☤", "π", "◆"]);
 
 const visitDialog = signal(null);  // {kind: "ork-bad" | "dislike" | "model", b, o?, i?}
@@ -59,7 +62,6 @@ function useAway(ref, on, close) {
 /** The ork outside its building, and its bubble. `selected`: its building is the one selected (js/hut.js). */
 export function Outside({ b, selected }) {
   const [picking, setPicking] = useState(null);       // the ork's models, while its AI tool is picked
-  const [done, setDone] = useState("");               // the thumb just pressed, for a nod
   const ref = useRef(null);
   const o = b.yard ? null : lead(b);
   const asking = !!b.alert;
@@ -71,12 +73,7 @@ export function Outside({ b, selected }) {
   if (place === "in" || (!o && !b.yard)) return null;
   const who = o ? o.name : say(b.title);
   const stop = (e) => e.stopPropagation();
-  const nod = (which) => { setDone(which); setTimeout(() => setDone(""), 600); };
 
-  const like = (e) => {
-    stop(e);
-    (b.yard ? command("building.like", { id: b.id }) : command("ork.like", { id: b.id, ork: o.ref })).then(() => nod("up"), () => {});
-  };
   const dislike = (e) => { stop(e); visitDialog.value = b.yard ? { kind: "dislike", b } : { kind: "ork-bad", b, o }; };
   const tool = (e) => {
     stop(e);
@@ -96,7 +93,11 @@ export function Outside({ b, selected }) {
   };
 
   const walking = place === "out-walk" || place === "in-walk";
-  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>`;      // its frames are the stylesheet's (yards.css)
+  // its frames are the stylesheet's (yards.css); it wears its tier's chevrons, how seasoned its mind is (realm/tiers.py)
+  const rank = o && RANK[o.rank || o.tier];
+  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>${rank && html`<img class="gui-out__rank ok-sprite"
+    src=${`/ds/sprites/icons/rank-${rank}.png`} srcset=${`/ds/sprites/icons/rank-${rank}@2x.png 2x`} width="16" height="16"
+    alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}`;
   const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;
   const bubble = place !== "out" ? null
     : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">!</span>`
@@ -105,17 +106,14 @@ export function Outside({ b, selected }) {
         ${picking ? picking.ready.map((h) => html`<button key=${h} class=${cls("gui-out__act", { "is-on": h === picking.steps[0].harness })}
             title=${`${say("AI tool")}: ${h}`} aria-label=${`${say("AI tool")}: ${h}`} onClick=${(e) => pick(e, h)}><${ToolMark} id=${h} /></button>`)
           : html`
-          <button class=${cls("gui-out__act", { "is-done": done === "up" })} onClick=${like}
-            title=${say(b.yard ? "Good: its last result becomes a reference" : "Good work: noted on this ork")}
-            aria-label=${say("Good")}><img class="ok-sprite" src="/ds/sprites/icons/thumb-up.png"
-            srcset="/ds/sprites/icons/thumb-up@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>
           <button class="gui-out__act" onClick=${dislike}
             title=${say(b.yard ? "Bad: what went wrong?" : "Bad work: what went wrong?")}
             aria-label=${say("Bad")}><img class="ok-sprite" src="/ds/sprites/icons/thumb-down.png"
             srcset="/ds/sprites/icons/thumb-down@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>
           ${tools && html`<button class="gui-out__act is-tool" onClick=${tool}
-            title=${`${say("AI tool")}: ${o.scheme} · ${say("press to change it (from its next run)")}`}
-            aria-label=${say("Change its AI tool")}><${Scheme} scheme=${o.scheme} /></button>`}`}</span>`
+            title=${`${say("Settings")} · ${say("AI tool")}: ${o.scheme} · ${say("press to change it (from its next run)")}`}
+            aria-label=${say("Its settings: AI tool and model")}><img class="ok-sprite" src="/ds/sprites/icons/settings.png"
+            srcset="/ds/sprites/icons/settings@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>`}`}</span>`
     : null;
   const at = cls("gui-out", { [`is-${place}`]: true, "is-asking": asking, "is-step": walking });
   if (asking) {

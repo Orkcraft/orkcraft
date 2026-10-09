@@ -5,6 +5,7 @@
 //             (the War Tent, js/tent.js), Limits.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
+import { TierMark } from "../icons.js";
 import { act, command, town, say } from "../link.js";
 import { openBuilding } from "../windows.js";
 import { building as buildOpen, raised } from "../build.js";
@@ -251,7 +252,7 @@ function Hall({ id, h }) {
         sum=${h.audit ? say(`${h.agents.reduce((n, a) => n + (a.serious || 0), 0)} to look at`) : say("not audited yet")}>
       <ul class="gui-rows">
         ${garrison.map((o) => html`<li key=${o.ref || o.name}><b>${say(o.name)}</b>
-          <span class="ok-font-status ok-tone-muted"> · ${o.lead ? say("steward") : o.tier || o.kind} · ${o.status}</span></li>`)}
+          <span class="ok-font-status ok-tone-muted"> · ${o.lead ? say("steward") : o.tier ? html`<${TierMark} tier=${o.tier} />` : o.kind} · ${o.status}</span></li>`)}
         ${h.builders.map((x) => html`<li key=${x.name}><b>${say(x.name)}</b>
           <span class="ok-font-status ok-tone-muted"> · ${x.role}</span></li>`)}
         ${h.agents.map((a) => html`<li key=${a.id}><b>${say(a.name)}</b>

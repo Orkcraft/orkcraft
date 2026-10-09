@@ -29,8 +29,10 @@ from orkcraft.gui.recruiter import RecruiterMixin
 from orkcraft.gui.road_planner import RoadPlannerMixin
 from orkcraft.gui.steward import StewardMixin
 from orkcraft.gui.views import lake as lake_view
-from orkcraft.realm import catalog, chronicles, steward, tiers
+from orkcraft.realm import catalog, chronicles, feedback, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
+
+IMPROVE_LOOK, IMPROVE_ASK = 60, 8      # Improve reads the last 60 incidents and asks about the newest 8 👎
 
 
 def tier_choices() -> list[list[str]]:
@@ -49,6 +51,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {
             "info": self.info,
+            "warchief.improve": self.improve,
             "history": lambda a: info.history(self.town, self.host.muster, self._spec(a).id, str(a.get("ork") or ""),
                                               str(a.get("tool") or "")),
             "building.like": lambda a: core_buildings.like(self.town, self._spec(a).id),
@@ -183,6 +186,24 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
     def dislike_context(self, args: dict) -> dict:
         last, cascade = core_buildings.dislike_context(self.town, self._spec(args).id)
         return {"last": plain(last)[:2000], "cascade": [[plain(title), share] for title, share in cascade]}
+
+    def improve(self, args: dict) -> dict:
+        """Improve, in the Warchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
+        as one ask for the Warchief to go through — what went wrong in each and what to change. With no 👎, nothing to
+        ask: `none` says so. (Looking through each building's use with no 👎 is written down, not built.)"""
+        rows = [r for r in feedback.incidents(self.town.repo_root, IMPROVE_LOOK) if r.source == feedback.EXPLICIT]
+        if not rows:
+            return {"none": "No 👎 yet. Press 👎 on a building whose work went wrong, then Improve goes through them."}
+        titles = {b.id: b.title for b in self.town.scroll.buildings}
+        lines = []
+        for r in reversed(rows[-IMPROVE_ASK:]):                    # newest first
+            where = titles.get(r.building, r.building)
+            what = "its inputs were broken" if r.kind == "inputs" else "it got it wrong itself"
+            note = f": “{plain(r.note)[:200]}”" if r.note.strip() else ""
+            lines.append(f"- @{where} ({r.ts[:10]}) — {what}{note}")
+        return {"text": "Go through these 👎 and, for each, say what went wrong and offer one change (a rule, a step, "
+                        "a tier, an ork) I can apply or skip:\n" + "\n".join(lines),
+                "about": sorted({r.building for r in rows[-IMPROVE_ASK:] if r.building in titles})}
 
     def dislike(self, args: dict) -> None:
         """👎: what went wrong — broken inputs (its suppliers pay) or its own logic."""

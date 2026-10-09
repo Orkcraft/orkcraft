@@ -23,7 +23,7 @@ from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first
+from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -31,9 +31,12 @@ HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office 
 PAGES = Path(__file__).parent / "static" / "js" / "buildings"     # a type's own page code: <type>.js
 
 
-def _ork(o) -> dict[str, Any]:
+def _ork(o, steward_rank: str = "") -> dict[str, Any]:
+    """`rank`: the chevrons it wears when it comes out (js/visit.js): its tier, or for the steward that keeps the
+    building, the tier its road rules run at (chosen, else its building's goal's) — how heavy a mind is at work."""
     return {"name": o.name, "kind": o.kind, "status": o.status, "lead": o.lead, "scheme": o.scheme,
-            "tier": o.tier or "", "role": o.role, "ref": o.ref, "session": o.session}
+            "tier": o.tier or "", "rank": o.tier or (steward_rank if o.lead else ""),
+            "role": o.role, "ref": o.ref, "session": o.session}
 
 
 def _hut_lines(town: Town, building_id: str) -> list[str]:
@@ -85,7 +88,9 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "status_plain": [modes.plain(x) for x in lines],
             "state": worker.status() if worker is not None else "",
             # road rules are the steward's work, not orks: listed under it (`rules`), never drawn
-            "garrison": [_ork(o) for o in garrison if o.kind != "steward"],
+            "garrison": [_ork(o, steward_models.tier_for(bs, "listen")
+                              or steward_models.goal_tier(type_id, "listen", bs.aim or "balance"))
+                         for o in garrison if o.kind != "steward"],
             "rules": [{"ref": o.ref, "name": o.name, "status": o.status} for o in garrison if o.kind == "steward"],
             "alert": {"id": asking.alert.id, "title": asking.alert.title,
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,

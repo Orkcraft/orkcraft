@@ -1,4 +1,4 @@
-"""Orc tiers: 🔮 elder · ⚔ warrior · ⛏ laborer — the model follows the tier, the icon the model,
+"""Orc tiers: ★★★ elder (Veteran) · ★★ warrior (Seasoned) · ★ laborer (Novice) — the model follows the tier, the icon the model,
 and a steward shows none."""
 from __future__ import annotations
 
@@ -34,8 +34,8 @@ def test_an_orc_shows_its_heaviest_tier_but_a_steward_none():
     steps = [{"role": "write", "harness": "agy", "tier": "laborer"},
              {"role": "review", "harness": "claude", "tier": "elder"}]
     handler = Orc("Smith", "code", RESIDENT, harness=steps)
-    assert handler.tier == "elder" and handler.tier_icon == "🔮"
-    assert handler.badge.startswith("🧌 🔮 Smith")
+    assert handler.tier == "elder" and handler.tier_icon == "★★★"
+    assert handler.badge.startswith("🧌 ★★★ Smith")
     steward = Orc("Chief", "keeps it", RESIDENT, lead=True, harness=steps)
     assert steward.tier == "elder" and steward.tier_icon == "" and steward.badge.startswith("🧌 Chief")
     assert Orc("Scribe", "", RESIDENT, kind="chain").tier_icon == ""
@@ -69,7 +69,7 @@ def test_the_engine_runs_a_step_on_its_tiers_model():
 
 def test_barracks_and_council_take_a_tier_for_a_model():
     assert barracks.parse_provider("claude:elder") == ("claude", "opus")
-    assert barracks.PoolOrc("Grok", "agy", "gemini-3.8-flash-low").tier_icon == "⛏"
+    assert barracks.PoolOrc("Grok", "agy", "gemini-3.8-flash-low").tier_icon == "★"
     member = team.parse_member("Critic:claude:elder")
-    assert member is not None and member.model == "opus" and member.tier_icon == "🔮"
+    assert member is not None and member.model == "opus" and member.tier_icon == "★★★"
     assert team.parse_member("Author:claude").tier_icon == ""

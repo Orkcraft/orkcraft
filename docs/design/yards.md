@@ -206,10 +206,11 @@ leaves the title bar on every card, hut and yard; the building says what its ork
   of its building's height. Under the mouse the ork
   walks out of the door (two steps facing left, `orks/ork-walk-a.png`, `ork-walk-b.png`), turns to you
   (`ork-stand.png`) and speaks in a pixel comic bubble (`icons/bubble.png`, a nine-slice, and its tail):
-  - **👍 and 👎**, green pixel thumbs (`icons/thumb-up.png`, `thumb-down.png`). A hut's rate its lead ork's work
-    (`ork.like`, `ork.dislike` with a note); a yard's rate the building (`building.like`, `building.dislike`: its
-    steward wakes on a 👎);
-  - **its AI tool** (a hut's, its harness scheme): pressed, the bubble lists the AI tools this machine runs and a
+  - **👎**, a green pixel thumb (`icons/thumb-down.png`): a hut's rates its lead ork's work (`ork.dislike` with a
+    note); a yard's the building (`building.dislike`: its steward wakes on it). **No 👍 in the bubble since
+    2026-10-09**: the owner's call, a 👎 is what teaches an ork; 👍 stays in the building's Info (`js/console.js`);
+  - **a gear, its settings** (a hut's; until 2026-10-09 its AI tool's mark, which said little to a person — the tool
+    is in the gear's tooltip now, `icons/settings.png`): pressed, the bubble lists the AI tools this machine runs and a
     press changes it from its next run (`ork.model`); a pipeline, or one tool and no other, opens the model dialog.
   The mouse gone, it waits 0.4 s and walks back in facing right. Touch is not drawn here: it gets its own interface.
 - **The ork that asks comes out by itself** and waits on the same spot, pacing a step, a `!` in its bubble;
@@ -272,3 +273,5 @@ own needs no card at all.
 - **A bare building's plate**: what it says first (`js/hut.js` `Mark`: new mail, a failing source, a run that
   failed) stands on a small plate by its house, so a building with no card is still read at a glance.
 - **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).
+- **The parts' checkboxes live in the yard** (Task board: Ork work, My to-dos, Notes): a row at the top of its card,
+  as the Calendar's legend, always there — no tray popping out over the card, under the mouse or when selected.

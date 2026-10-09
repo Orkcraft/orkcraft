@@ -152,7 +152,7 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
 
 def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
     """docs/design/yards.md §4, §7: the mouse over a building brings nobody out; selected, its ork walks out onto the
-    plinth's left end, beside the house, and its bubble holds 👍, 👎 and (a hut's) its AI tool; a 👎 asks what went
+    plinth's left end, beside the house, and its bubble holds 👎 and (a hut's) a gear, its settings; a 👎 asks what went
     wrong; let go, it walks back in."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
@@ -168,7 +168,7 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
     ork, plinth, house = (hut.locator(s).bounding_box() for s in (".gui-out", ".gui-hut__plinth", ".gui-hut__sprite"))
     assert plinth["x"] <= ork["x"] and ork["x"] + ork["width"] <= house["x"] + 1     # on the plinth, left of the house
     assert abs(ork["y"] + ork["height"] - (plinth["y"] + 4)) <= 1                  # its feet on the slab
-    assert bubble.locator("button").count() == 3                                   # 👍, 👎, its AI tool
+    assert bubble.locator("button").count() == 2                                   # 👎 and its settings (no 👍: Info)
     bubble.locator('button[aria-label="Bad"]').click()
     pg.locator(".ok-dialog", has_text="Bad work").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")                                                    # the note's dialog
@@ -178,7 +178,7 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
     days = pg.locator('.gui-hut[data-id="days"]')
     days.locator(".gui-hut__title").click()
     days.locator(".gui-out__bubble").wait_for(state="visible", timeout=WAIT_MS)
-    assert days.locator(".gui-out__bubble button").count() == 2                    # a yard: 👍 and 👎, on the building
+    assert days.locator(".gui-out__bubble button").count() == 1                    # a yard: 👎 alone, on the building
 
 
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):

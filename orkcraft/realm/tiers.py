@@ -1,20 +1,22 @@
-"""Orc tiers: how heavy a model an orc thinks with.
+"""Orc tiers: how heavy a model an orc thinks with. The code keeps its words; a person reads how seasoned the
+mind is, with as many chevrons (docs/design/warchief-line-and-cards.md §6; the Camp's old words in realm/lexicon.py):
 
-    🔮 elder     the heavy models: opus, gemini pro, gpt astra
-    ⚔ warrior    the middle: sonnet, gemini flash with high reasoning, gpt sol
-    ⛏ laborer    the light ones: haiku, gemini flash with low reasoning, gpt luna
+    ★★★ elder     Veteran: the heavy models: opus, gemini pro, gpt astra
+    ★★  warrior   Seasoned: the middle: sonnet, gemini flash with high reasoning, gpt sol
+    ★   laborer   Novice: the light ones: haiku, gemini flash with low reasoning, gpt luna
 
 A harness step picks its tier (`{"role": "run", "harness": "claude", "tier": "elder"}`) and the
 model follows from the harness; a step may name its `model` outright, and the tier is read from
-it. An orc's tier is its heaviest step. Stewards carry no tier icon: they keep the building.
+it. An orc's tier is its heaviest step. Stewards carry no tier of their own: they keep the building; the
+GUI shows the chevrons of the tier their road rules run at on the steward that comes out (gui/state.py `rank`).
 """
 from __future__ import annotations
 
 from orkcraft.realm import harnesses, model_families
 
 TIERS = ("elder", "warrior", "laborer")          # heaviest first
-TIER_ICONS = {"elder": "🔮", "warrior": "⚔", "laborer": "⛏"}
-TIER_LABELS = {"elder": "Elder", "warrior": "Warrior", "laborer": "Laborer"}
+TIER_ICONS = {"elder": "★★★", "warrior": "★★", "laborer": "★"}     # chevrons: icons/rank-1..3.png in Camp
+TIER_LABELS = {"elder": "Veteran", "warrior": "Seasoned", "laborer": "Novice"}
 TIER_STYLES = {"elder": "bold #c084fc", "warrior": "bold #f87171", "laborer": "#a8a29e"}
 # The model family of each tier, per harness (realm/harnesses.py holds them; a run names its newest model).
 MODELS = {h.id: dict(h.models) for h in harnesses.REGISTRY.values()}

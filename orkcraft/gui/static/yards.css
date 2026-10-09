@@ -28,6 +28,8 @@ button.gui-out { cursor: pointer; }
 button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
 .gui-out__ork { display: block; width: 24px; height: 18px; image-rendering: pixelated;
   background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 18px no-repeat; }
+/* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
+.gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
 .gui-out.is-in-walk .gui-out__ork { transform: scaleX(-1); }
 .gui-out.is-out-walk { animation: gui-out .24s steps(3) both; }
@@ -57,9 +59,6 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 .gui-out__act:hover { background: rgb(0 0 0 / .12); }
 .gui-out__act:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
 .gui-out__act.is-on { background: rgb(0 0 0 / .18); }
-.gui-out__act.is-done { animation: gui-nod .3s steps(2) 2; }
-.gui-out__act.is-tool .gui-scheme { display: inline-flex; align-items: center; }
-@keyframes gui-nod { 50% { transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__act { animation: none !important; } }
 
 /* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
@@ -103,8 +102,6 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-/* Selected, its card stands over its house: the parts' tray on its top edge (layout.css .gui-parts) takes the pointer. */
-[data-look="camp"] .gui-hut.is-fenced.is-selected > .ok-hut__card { position: relative; z-index: 2; }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 

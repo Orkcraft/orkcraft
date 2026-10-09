@@ -87,7 +87,11 @@ TERMS: tuple[Term, ...] = (
     _t("food", "ork slots", "", "food"),
     _t("treasury", "Budget", "", "Treasury"),
     _t("logins", "Login", "Logins"),
-    _t("ai_tool", "AI tool", "AI tools"),                          # a CLI an ork thinks with: Claude Code, Codex… (realm/harnesses.py)
+    _t("ai_tool", "AI tool", "AI tools"),
+    # a model's tier says how seasoned the mind is (realm/tiers.py; docs/design/warchief-line-and-cards.md §6)
+    _t("tier.laborer", "Novice", "Novices", "Laborer", "Laborers"),
+    _t("tier.warrior", "Seasoned", "", "Warrior", "Warriors"),
+    _t("tier.elder", "Veteran", "Veterans", "Elder"),                          # a CLI an ork thinks with: Claude Code, Codex… (realm/harnesses.py)
     _t("tool_error", "Tool error", "Tool errors"),                 # an AI tool failed: Switch, Retry, Details (realm/tool_errors.py)
     _t("main_tool", "Main tool", "Main tools"),                    # the AI tool decisions run on (realm/harnesses.py)                               # tokens kept on this machine (realm/logins.py)
     # screens and actions
@@ -115,7 +119,7 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    # the night's advisors were only ever "the Elders": a lone "Elder" is the heaviest model tier (realm/tiers.py)
+    # the night's advisors were only ever "the Elders": a lone "Elder" was the heaviest model tier, a Veteran now
     _t("elders", "Advisor", "Advisors", "", "Elders"),
     _t("builders", "Building designer", "", "Mason & Artisan"),
     # the Town Hall's own orks
