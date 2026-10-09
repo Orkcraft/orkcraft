@@ -197,3 +197,23 @@ def test_the_workshop_keeper_may_clear_the_schedule_and_revert_takes_the_script_
     assert host.command("building.revert", {"id": built.id})
     assert host.town.custom_specs[built.id]["config"]["schedule"] == "hourly"
     assert workshop.load_script(fake_repo, built.id, "python") == OLD_SCRIPT
+
+
+def test_the_keeper_answers_why_from_what_happened_lately(fake_repo, isolated_layout_file):
+    """Asked on its command card why it went wrong (docs/design/select-a-building.md §2), the steward reads its week,
+    what it shows now, its chronicle and the operator's 👎 with their notes; a question changes nothing."""
+    from orkcraft.realm import feedback, metrics
+    town = Town(fake_repo)
+    built = _signpost(town)
+    metrics.record_run(fake_repo, built.id, "error", 0.01, 100)
+    chronicles.record(fake_repo, town.scroll, built.id, "pinned")
+    feedback.dislike(fake_repo, town.scroll, built.id, "logic", "sent the invoice to bugs", {"value": "invoice #12"})
+    said = keeper.lately(fake_repo, built.id, ["2 sorted"])
+    assert "1 runs (0 done, 1 failed)" in said and "it shows now: 2 sorted" in said and "📌 pinned" in said
+    assert "👎 (logic): sent the invoice to bugs — on: invoice #12" in said
+    assert keeper.lately(fake_repo, "nobody").startswith("this week: 0 runs")
+    run = _answers({"value": None, "answer": "The invoice matched `bugs: contains #`; it needs its own rule."})
+    p = keeper.ask(fake_repo, town.custom_specs[built.id], town.scroll, built.id, "why did the invoice go to bugs?",
+                   runner=run)
+    assert p.error == "" and not p.changes and "its own rule" in p.answer
+    assert "sent the invoice to bugs" in run.prompts[0] and "change nothing the operator did not ask for" in run.prompts[0]
