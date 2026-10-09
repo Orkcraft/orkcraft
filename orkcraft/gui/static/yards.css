@@ -113,17 +113,20 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
     var(--fence-rail) 4px 0 / 7px 100% no-repeat,
     var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card::before { display: none; }
-/* Its corner posts: at the bottom corners and the top fence's end, over the last picket; the fence's one ornament, and
-   it grows with the building's renown (tools/fence_sprites.py corner-1..3; docs/design/yards.md §3): lashed, taller,
-   bone tusks at III. Bone at three points a card, never along the run: the run stays under the card's words. */
-[data-look="camp"] .gui-hut.is-fenced { --fence-corner: image-set(url("/ds/sprites/fence/corner-1.png") 1x, url("/ds/sprites/fence/corner-1@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --fence-corner: image-set(url("/ds/sprites/fence/corner-2.png") 1x, url("/ds/sprites/fence/corner-2@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --fence-corner: image-set(url("/ds/sprites/fence/corner-3.png") 1x, url("/ds/sprites/fence/corner-3@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: -9px; right: -9px;
+/* Its corners: a bone tusk curling in over the card at the bottom corners and the top fence's end, the fence's one
+   ornament; the building's renown adds iron, never more bone (tools/fence_sprites.py; docs/design/yards.md §3): II an
+   iron band with spikes round each tusk's root, III crossed axes where the top fence meets the house. */
+[data-look="camp"] .gui-hut.is-fenced { --tusk-l: image-set(url("/ds/sprites/fence/corner-1.png") 1x, url("/ds/sprites/fence/corner-1@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-1-r.png") 1x, url("/ds/sprites/fence/corner-1-r@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk-l: image-set(url("/ds/sprites/fence/corner-2.png") 1x, url("/ds/sprites/fence/corner-2@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-2-r.png") 1x, url("/ds/sprites/fence/corner-2-r@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk-l: image-set(url("/ds/sprites/fence/corner-3.png") 1x, url("/ds/sprites/fence/corner-3@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-3-r.png") 1x, url("/ds/sprites/fence/corner-3-r@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: 3px; right: 3px;
   top: calc(var(--titlebar) - 27px); bottom: 0; pointer-events: none; image-rendering: pixelated; animation: none; background:
-    var(--fence-corner) right top / 33px 27px no-repeat,
-    var(--fence-corner) left bottom / 33px 27px no-repeat,
-    var(--fence-corner) right bottom / 33px 27px no-repeat; }
+    var(--tusk-r) right top / 21px 27px no-repeat,
+    var(--tusk-l) left bottom / 21px 27px no-repeat,
+    var(--tusk-r) right bottom / 21px 27px no-repeat; }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3:not(.is-folded) .gui-hut__title::after { content: ""; position: absolute;
+  left: calc(var(--house-w, 15px) + 2px); bottom: 2px; width: 27px; height: 21px; pointer-events: none; image-rendering: pixelated;
+  background: image-set(url("/ds/sprites/fence/axes.png") 1x, url("/ds/sprites/fence/axes@2x.png") 2x) 0 0 / 27px 21px no-repeat; }
 /* Selected: a gold glow round the fence and its corner posts (the posts stand where the brackets would). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
