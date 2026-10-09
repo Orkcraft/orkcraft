@@ -10,7 +10,7 @@ import re
 from orkcraft.core.workers import watchtower_add
 from orkcraft.gui import markdown
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import places, quickadd, watch
+from orkcraft.realm import mail_sort, places, quickadd, watch
 
 REFRESH_S = 1.0
 CARD_ROWS = 4                   # counters on the closed card; more sources fold into `+N more`
@@ -40,7 +40,9 @@ def subject(title: str) -> str:
 def _signal(w, s) -> dict:
     who, title = _who(s.title, s.source)
     return {"key": s.key, "source": s.source, "label": w.label(s.source), "at": s.at[:16].replace("T", " "),
-            "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why}
+            "from": who, "title": title, "read": s.read, "mention": s.mention, "kept": s.kept, "why": s.why,
+            "importance": s.importance, "answer": s.answer,     # the first sort (realm/mail_sort.py)
+            "sorted": mail_sort.line(s.sort, s.importance, s.answer) if s.importance else ""}
 
 
 def _fresh(at: str, now: dt.datetime) -> bool:
@@ -214,6 +216,17 @@ def _add_via_claude(w, args: dict) -> None:
     w.adding.use_claude()
 
 
+def _setup(w, args: dict) -> dict:
+    """The Warchief's setup of a new tower: Claude's connectors and how the quick add goes (js/warchief.js Setup)."""
+    return w.adding.setup_view()
+
+
+@_adding
+def _add_quick(w, args: dict) -> None:
+    """One press in the Warchief's setup: the service through Claude's connection, as it comes, saved on its first look."""
+    w.adding.quick(text(args, "service", 40))
+
+
 @_adding
 def _add_ask(w, args: dict) -> None:
     """Step 2 through Claude: what to listen for, how often, the most a day — then one paid look."""
@@ -282,7 +295,7 @@ def _places_clear(w, args: dict) -> None:
 ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "add_login": _add_login,
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
         "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "add_claude": _add_claude,
-        "add_via_claude": _add_via_claude,
+        "add_via_claude": _add_via_claude, "add_quick": _add_quick, "setup": _setup,
         "add_ask": _add_ask, "edit": _edit, "remove": _remove,
         "places_save": _places_save, "places_clear": _places_clear,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

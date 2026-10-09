@@ -36,6 +36,9 @@ function stamp(at) {
 
 /** Closed: the headline says how the last run went; under it the steps and runs; the foot its first line
  *  (the error, failed) and when. */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;

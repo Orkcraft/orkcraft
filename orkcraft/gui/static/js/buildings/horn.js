@@ -108,6 +108,9 @@ function HornCard({ b }) {
 
 /** Closed: how many calls it sounded today, the mute toggle and the volume slider right on the card, the
  *  last call (docs/design/building-views.md). */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   return b.card ? html`<${HornCard} b=${b} />` : null;
 }

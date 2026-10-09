@@ -150,16 +150,19 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
         pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "yards-caller.png"))
 
 
-def test_under_the_mouse_an_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
-    """docs/design/yards.md §4: the mouse over a building, its ork walks out onto the plinth's left end, beside the
-    house, and its bubble holds 👍, 👎 and (a hut's) its AI tool; a 👎 asks what went wrong; the mouse gone, it walks
-    back in."""
+def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
+    """docs/design/yards.md §4, §7: the mouse over a building brings nobody out; selected, its ork walks out onto the
+    plinth's left end, beside the house, and its bubble holds 👍, 👎 and (a hut's) its AI tool; a 👎 asks what went
+    wrong; let go, it walks back in."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     hut = pg.locator('.gui-hut[data-id="todo"]')
     hut.wait_for(state="visible", timeout=WAIT_MS)
     assert hut.locator(".gui-out").count() == 0
     hut.locator(".ok-hut__card").hover()
+    pg.wait_for_timeout(400)
+    assert hut.locator(".gui-out__bubble").count() == 0                            # the mouse alone: nobody comes out
+    hut.locator(".gui-hut__title").click()                                         # selected
     bubble = hut.locator(".gui-out__bubble")
     bubble.wait_for(state="visible", timeout=WAIT_MS)
     ork, plinth, house = (hut.locator(s).bounding_box() for s in (".gui-out", ".gui-hut__plinth", ".gui-hut__sprite"))
@@ -168,27 +171,29 @@ def test_under_the_mouse_an_ork_walks_out_onto_the_plinth_and_its_bubble_rates_i
     assert bubble.locator("button").count() == 3                                   # 👍, 👎, its AI tool
     bubble.locator('button[aria-label="Bad"]').click()
     pg.locator(".ok-dialog", has_text="Bad work").wait_for(state="visible", timeout=WAIT_MS)
-    pg.keyboard.press("Escape")
-    pg.mouse.move(1, 500)
+    pg.keyboard.press("Escape")                                                    # the note's dialog
+    pg.locator(".ok-dialog", has_text="Bad work").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")                                                    # the building let go
     hut.locator(".gui-out").wait_for(state="detached", timeout=WAIT_MS)
     days = pg.locator('.gui-hut[data-id="days"]')
-    days.locator(".ok-hut__card").hover()
+    days.locator(".gui-hut__title").click()
     days.locator(".gui-out__bubble").wait_for(state="visible", timeout=WAIT_MS)
     assert days.locator(".gui-out__bubble button").count() == 2                    # a yard: 👍 and 👎, on the building
 
 
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):
     """docs/design/yards.md §3g: near a card's edge the road handle — a small gate — stands under the mouse, a road is
-    pulled out of it there; inside the card and at the corner, which resizes, it is gone."""
+    pulled out of it there; inside the card and at the corner, which resizes, it is gone. (A card: the Drop stands
+    bare since §7.)"""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
-    hut = pg.locator('.gui-hut[data-id="drop"]')
+    hut = pg.locator('.gui-hut[data-id="days"]')
     hut.wait_for(state="visible", timeout=WAIT_MS)
     card = hut.locator(".ok-hut__card").bounding_box()
     gate = hut.locator(".gui-hut__road")
     y = card["y"] + card["height"] / 2
     pg.mouse.move(card["x"] + 3, y)
-    pg.wait_for_function("() => document.querySelector('.gui-hut[data-id=\"drop\"] .gui-hut__road').classList.contains('is-at')",
+    pg.wait_for_function("() => document.querySelector('.gui-hut[data-id=\"days\"] .gui-hut__road').classList.contains('is-at')",
                          timeout=WAIT_MS)
     g = gate.bounding_box()
     assert abs(g["x"] + g["width"] / 2 - card["x"]) < 4 and abs(g["y"] + g["height"] / 2 - y) < 4   # on the left edge, here

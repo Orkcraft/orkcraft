@@ -7,15 +7,15 @@
 // no other hut moves to make room: where the ghost would stand on one it turns red, and a drop there is no
 // move at all (Footprint).
 import { signal } from "@preact/signals";
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
 import { opened, openBuilding, closeBuilding, panelShown, panelWidth } from "./windows.js";
 import { plan } from "./roads.js";
-import { pickedRoad, building as buildOpen } from "./build.js";
+import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
-import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER } from "./hut.js";
+import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER, fenced, bareOf, YARD_STEP } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
 import { foldQuiet, unfoldAll, quiet } from "./fold.js";
@@ -43,6 +43,61 @@ const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
 const STRIP = 64;                          // the town's foot (the orkspaces, the Warchief's line, layout.css .gui-foot): no hut under it
 const DEFAULT_SIZE = { w: 240, h: 64 };     // a hut not drawn yet
+const RAISING_SIZE = { w: 140, h: 60 };     // a building under scaffolding (js/build.js raised): its house, where it was placed
+
+// A card that shows something and has no size of its own takes the free room right of it and under it
+// (docs/design/yards.md §7): the more room, the more it shows (js/hut.js levelOf). It keeps a road's gap from every
+// other card, the town's edges and its foot, and grows no bigger than a large card.
+// Off until it is proven (docs/design/yards.md §7): this browser turns it on with localStorage "orkcraft.grow" = "1".
+const GROW_ON = (() => { try { return localStorage.getItem("orkcraft.grow") === "1"; } catch { return false; } })();
+const GROW_GAP = 32;
+const GROW_MAX = { w: 560, h: 440 };
+const natural = {};                         // building id → its size as drawn while it was not grown
+let grownLast = new Set();                      // the cards grown at the last draw: the town places them by their natural size
+const LEVEL_H = [400, 240];                 // the heights where a card shows more (js/hut.js levelOf: l, m), tallest first
+const LEVEL_W = [520, 360];
+
+// Growth is worked out once per layout (the room, the buildings, where each stands, their natural sizes, rounded) and
+// kept while it holds, so a card's new size never feeds the next draw's answer. A layout that still will not settle
+// (it changed more than 6 times in a second) keeps its last growth until the town itself changes.
+let held = { key: "", auto: {}, changes: [], frozen: "" };
+function steady(compute, key, town) {
+  if (held.frozen && held.frozen === town) return held.auto;
+  if (key === held.key) return held.auto;
+  const now = Date.now();
+  const changes = [...held.changes.filter((t) => now - t < 1000), now];
+  held = { key, auto: compute(), changes, frozen: changes.length > 6 ? town : "" };
+  return held.auto;
+}
+
+/** The [w, h] each growing card takes: cards taken top to bottom, each seeing the room the ones before took. */
+function grow(buildings, spots, rects, held) {
+  if (!GROW_ON) return {};
+  const r = room.value;
+  const camp = document.documentElement.dataset.look !== "office";
+  const down = (v, by) => (camp ? Math.floor(v / by) * by : v);     // whole pickets, never past the room
+  const taken = { ...rects };
+  const out = {};
+  const can = buildings.filter((b) => fenced(b) && !b.size && !b.folded && !held.has(b.id) && natural[b.id]);
+  for (const b of can) taken[b.id] = { ...spots[b.id], w: natural[b.id].w, h: natural[b.id].h };
+  can.sort((a, c) => spots[a.id].y - spots[c.id].y || spots[a.id].x - spots[c.id].x);
+  for (const b of can) {
+    const n = natural[b.id], at = spots[b.id], top = n.top || 0;
+    const others = Object.entries(taken).filter(([id]) => id !== b.id).map(([, o]) => o);
+    const right = Math.min(r.w - MARGIN, ...others.filter((o) => o.x > at.x && o.y < at.y + n.h && o.y + o.h > at.y).map((o) => o.x - GROW_GAP));
+    const w = down(Math.min(Math.max(right - at.x, n.w), GROW_MAX.w), YARD_STEP.w);
+    const bottom = Math.min(r.h - r.strip - MARGIN, ...others.filter((o) => o.y > at.y && o.x < at.x + w && o.x + o.w > at.x).map((o) => o.y - GROW_GAP));
+    // Its height steps to the tallest level that fits (or stays as it comes): room past a level shows nothing more.
+    const fits = Math.min(bottom - at.y - top, GROW_MAX.h);
+    const up = (v) => (camp ? Math.ceil(v / YARD_STEP.h) * YARD_STEP.h : v);   // whole pickets, as js/hut.js draws it
+    const lv = LEVEL_H.findIndex((lh, i) => up(lh) <= fits && w >= LEVEL_W[i]);
+    const h = lv < 0 ? 0 : up(LEVEL_H[lv]);
+    if (w <= n.w && h <= n.h - top) continue;              // no room to speak of: it stays as it comes
+    out[b.id] = [Math.max(w, n.w), h > n.h - top ? h : null];     // null: its height as it comes, only wider
+    taken[b.id] = { ...at, w: out[b.id][0], h: out[b.id][1] ? top + out[b.id][1] : n.h };
+  }
+  return out;
+}
 
 /** The room a hut's spot is a fraction of: the canvas less the hut, the margins and the foot. */
 function free(size) {
@@ -416,6 +471,33 @@ function useCamera(el, rects, here, panelW) {
   }, [active, panelW]);
 }
 
+/** A building picked in Build, placed with the mouse (js/build.js place): its ghost follows the pointer — the house
+ *  alone for a building with no card — and a press builds it there; Escape or a right click lets it go. */
+function Placing({ p }) {
+  const [at, setAt] = useState(null);
+  useEffect(() => {
+    const key = (e) => { if (e.key === "Escape") { e.preventDefault(); placing.value = null; } };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+  const spot = at && { x: at.x - 120, y: at.y - 30 };     // the ghost's middle under the pointer
+  const put = (e) => {
+    e.stopPropagation();
+    const f = free(DEFAULT_SIZE);
+    const x = e.offsetX - 120, y = e.offsetY - 30;
+    const hut = [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
+    const { type } = p;
+    placing.value = null;
+    command("town.build", { type, hut }).then((id) => raised(id, type), () => {});
+  };
+  return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
+      onPointerMove=${(e) => setAt({ x: e.offsetX, y: e.offsetY })}
+      onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
+    ${spot && html`<${Ghost} g=${{ id: "", type: p.type, title: p.title, state: "planned" }} spot=${spot} biome=${activeBiome()} bare=${p.bare} />`}
+    <p class="gui-town__placing-hint ok-font-status">${say(`Place ${p.title}: press where it should stand · Esc cancels`)}</p>
+  </div>`;
+}
+
 export function Town({ buildings, roads }) {
   const ref = useRef(null);
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
@@ -433,18 +515,21 @@ export function Town({ buildings, roads }) {
 
   // A hut stands where its full height (every part shown) would put it; the huts under one with parts
   // hidden, or folded, are lifted by what it lost.
+  // A grown card is placed by its natural size: growing never moves a neighbour.
+  const placed = (b) => (grownLast.has(b.id) && natural[b.id]) || sizes.value[b.id]
+    || (constructing.value[b.id] !== undefined ? RAISING_SIZE : { w: 240, h: 64 });
   const fullSize = (b) => {
-    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    const size = placed(b);
     return { ...size, h: size.h + lost(b.id, size.h, !!b.folded && b.id !== CORNER) };
   };
   const full = {};
   buildings.forEach((b, i) => {
     const size = fullSize(b);
-    full[b.id] = { ...place(b, i, size), w: size.w, h: size.h, lost: size.h - (sizes.value[b.id] || size).h };
+    full[b.id] = { ...place(b, i, size), w: size.w, h: size.h, lost: size.h - placed(b).h };
   });
   const up = lifts(full);
   const standing = Object.fromEntries(buildings.map((b) => {
-    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    const size = placed(b);
     return [b.id, { x: full[b.id].x, y: full[b.id].y - up[b.id], w: size.w, h: size.h }];
   }));
   const held = new Set([CORNER, "\u0000portrait"]);
@@ -452,7 +537,7 @@ export function Town({ buildings, roads }) {
   for (const b of buildings) up[b.id] -= down[b.id];   // `moved` keeps the spot unpushed, as it keeps it unlifted
   const spots = {}, rects = {}, ports = {};
   buildings.forEach((b) => {
-    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    const size = sizes.value[b.id] || (constructing.value[b.id] !== undefined ? RAISING_SIZE : { w: 240, h: 64 });
     spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
     rects[b.id] = { x: spots[b.id].x, y: spots[b.id].y, w: size.w, h: size.h };
     // A road meets the plinth the building stands on in Camp (js/hut.js measure), the card that holds the name in Office
@@ -507,8 +592,26 @@ export function Town({ buildings, roads }) {
   numbered = buildings.map((b) => b.id);
   // Huts pushed under the fold make the room taller, so the town scrolls to them rather than hiding them under the foot.
   const tall = Math.max(room.value.h, ...Object.values(rects).map((r) => r.y + r.h + MARGIN + room.value.strip));
-  const fresh = risen();                   // raised by the onboarding: each rises into place as it appears
+  const fresh = new Set([...risen(), ...built.value]);   // raised by the onboarding or by Build: each rises into place once
+  const going = constructing.value;          // raised by Build and not standing yet: scaffolding where it will stand
   const drag = dragging.value, stretch = resizing.value;
+  const still = new Set([drag && drag.id, stretch && stretch.id].filter(Boolean));
+  const r20 = (v) => Math.round((v || 0) / 20);
+  const shape = JSON.stringify([room.value, panelW, buildings.map((b) => [b.id, b.size, b.folded, b.hut])]);
+  const auto = steady(() => grow(buildings, spots, rects, still),
+    JSON.stringify([shape, [...still], buildings.map((b) => [r20(spots[b.id].x), r20(spots[b.id].y),
+      natural[b.id] ? [r20(natural[b.id].w), r20(natural[b.id].h)] : 0])]), shape);
+  for (const b of buildings) {
+    const m = sizes.value[b.id];
+    if (!m) continue;
+    if (!auto[b.id] && !grownLast.has(b.id)) natural[b.id] = m;
+    // only wider, it draws its own height: a card that grew before its card was drawn in full learns it here
+    // (taller only: a height that may also shrink can swing the growth to and fro)
+    else if (auto[b.id] && !auto[b.id][1] && grownLast.has(b.id) && natural[b.id] && m.h > natural[b.id].h) {
+      natural[b.id] = { ...natural[b.id], h: m.h, top: m.top };
+    }
+  }
+  grownLast = new Set(Object.keys(auto));
   const dragged = drag && buildings.find((b) => b.id === drag.id && rects[b.id]);
   const grown = stretch && buildings.find((b) => b.id === stretch.id && rects[b.id]);
   const ghost = dragged ? landing(dragged, spots[dragged.id].x + drag.dx, spots[dragged.id].y + drag.dy).ghost
@@ -519,12 +622,15 @@ export function Town({ buildings, roads }) {
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
           spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
-      ${buildings.map((b, i) => html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)}
+      ${buildings.map((b, i) => going[b.id] !== undefined ? html`<${Ghost} key=${`up-${b.id}`}
+          g=${{ id: b.id, type: b.type, title: b.title, state: "raising" }} spot=${spots[b.id]} biome=${activeBiome()} bare=${bareOf(b)} />`
+        : html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} auto=${auto[b.id] || null}
           fresh=${fresh.has(b.id)} onMoved=${moved} onSized=${sized} />`)}
       ${ghost && html`<${Footprint} g=${ghost} />`}
       <${Signs} paths=${paths} roads=${here} />
       <${LooseEnds} buildings=${buildings} rects=${rects} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
+      ${placing.value && html`<${Placing} p=${placing.value} />`}
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

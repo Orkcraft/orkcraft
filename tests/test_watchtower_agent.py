@@ -98,7 +98,7 @@ def test_the_line_and_when_it_looks():
     assert "minutes" in feeds.parse("agent: server=s tools=x every=soon ask=hi")[1]
     assert feed().identity == "agent|atlassian|new comments and mentions in Jira"
     f = feed(LINE.replace("every=30m", "every=2m"))
-    assert feeds_agent.every(f) == 10 and feeds_agent.ceiling(f) == 0.50          # 10 min at the fastest
+    assert feeds_agent.every(f) == 30 and feeds_agent.ceiling(f) == 0.50          # 30 min at the fastest
     now = dt.datetime(2026, 10, 7, 12, 0, tzinfo=dt.timezone.utc)
     assert feeds_agent.due(feed(), "2026-10-07T11:50:00+00:00", 0.0, now) == "not yet"
     assert feeds_agent.due(feed(), "2026-10-07T11:00:00+00:00", 0.0, now) == ""
@@ -239,32 +239,32 @@ def test_jira_through_claudes_connection_in_three_steps_and_its_first_look_count
     act("add_claude")
     a = adding()
     assert (a["step"], a["via"], a["every_min"]) == ("what", "atlassian", 30) and "Jira" in a["ask"]
-    act("add_ask", ask="mentions of me in project WEB", every=15, ceiling=0.3)
+    act("add_ask", ask="mentions of me in project WEB", every=30, ceiling=0.3)
     assert _until(lambda: adding()["step"] == "check" and not adding()["busy"])
     a = adding()
     assert a["found"] == 2 and not a["error"] and a["who"] == "Claude's atlassian connection"
-    assert a["every"] == "every 15 min, a model run each look — this one ≈ $0.03, at most $0.30 a day"
+    assert a["every"] == "every 30 min, a model run each look — this one ≈ $0.03, at most $0.30 a day"
     calls = len(WatchtowerWorker.agent_runner.argv)
     assert act("add_save") == "jira"
     line = w.config["feeds"][0]
     assert line == ("agent: tool=claude server=atlassian tools=atlassianUserInfo,getAccessibleAtlassianResources,"
-                    "searchJiraIssuesUsingJql,getJiraIssue every=15m ceiling=0.30 ask=mentions of me in project WEB")
+                    "searchJiraIssuesUsingJql,getJiraIssue every=30m ceiling=0.30 ask=mentions of me in project WEB")
     f = feed(line)
     st = w._state()
     assert len(st["feeds_seen"][f.identity]) == 2 and st["agent_keep"][f.identity] == {"cloudId": "c-1"}
     assert w.spent_today(f) == pytest.approx(0.03)
-    w.refresh_data()                                       # the first look counts: the next waits its 15 min
+    w.refresh_data()                                       # the first look counts: the next waits its 30 min
     assert _until(lambda: not w._looking) and len(WatchtowerWorker.agent_runner.argv) == calls and w.signals == []
     row = bare.detail("tower")["data"]["listed"][0]
-    assert row["editable"] and "via Claude · atlassian · every 15 min" in row["line"]
+    assert row["editable"] and "via Claude · atlassian · every 30 min" in row["line"]
     act("edit", source=row["id"])                          # Edit: what it asks, how often, the most a day
     a = adding()
     assert (a["step"], a["via"], a["ask"], a["every_min"], a["ceiling"]) == (
-        "what", "atlassian", "mentions of me in project WEB", 15, 0.3)
+        "what", "atlassian", "mentions of me in project WEB", 30, 0.3)
     act("add_ask", ask="mentions of me", every=30, ceiling=0.5)
     assert _until(lambda: adding()["step"] == "check" and not adding()["busy"])
     act("add_save")
-    assert w.config["feeds"] == [line.replace("every=15m ceiling=0.30 ask=mentions of me in project WEB",
+    assert w.config["feeds"] == [line.replace("every=30m ceiling=0.30 ask=mentions of me in project WEB",
                                               "every=30m ceiling=0.50 ask=mentions of me")]
 
 

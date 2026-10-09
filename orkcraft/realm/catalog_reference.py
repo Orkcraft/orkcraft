@@ -128,6 +128,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                  "`secret=` names a webhook's secret",
         "intent": "what to listen for, e.g. `user feedback about the app`: a light model lets only matching signals "
                   "down the roads",
+        "triage": "false turns off the first sort of each message (on by default): mailings and machines' mail are "
+                  "told by code and cost nothing; the rest is read by the steward's model, one call a batch, for how "
+                  "important it is and whether an agent can answer it (docs/design/watchtower-mcp-paths.md §12)",
         "wants": "what is wanted done with each source's carts, a source → change · reply · know (e.g. {\"mail\": "
                  "\"reply\", \"jira\": \"change\"}): it goes with each cart as its kind of work; the quick-add asks it",
         "places": "the places a paired phone reports (`watch.place`), a line each, e.g. `home autonomy=clock shelf=2 "

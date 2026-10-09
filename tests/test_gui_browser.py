@@ -58,7 +58,7 @@ def gui(tmp_path_factory):
     for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
-                       "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0"}.items():
+                       "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1"}.items():
         mp.setenv(key, str(value))
     repo = tmp / "project"
     (repo / "src").mkdir(parents=True)
@@ -183,6 +183,34 @@ def _line(pg, text: str, enter: bool = True) -> None:
         field.press("Enter")
 
 
+def _clear(pg) -> None:
+    """Every building of the open orkspace demolished but the Town Hall: what earlier tests left stands nowhere."""
+    pg.evaluate("""() => import('/static/js/link.js').then(async (m) => {
+      for (const b of m.town.value.buildings) if (b.id !== 'town_hall') await m.command('town.demolish', { id: b.id });
+    })""")
+    pg.wait_for_function("() => [...document.querySelectorAll('.gui-hut')].every(h => h.dataset.id === 'town_hall')",
+                         timeout=WAIT_MS)
+
+
+def _place(pg, before: set) -> str:
+    """Build's second half (docs/design/select-a-building.md §8): the ghost placed with a press, the scaffolding up
+    while the Warchief asks its setup (put off with Later), then the building stands. Its id."""
+    layer = pg.locator(".gui-town__placing")
+    layer.wait_for(state="visible", timeout=WAIT_MS)
+    box = layer.bounding_box()
+    layer.click(position={"x": min(box["width"] - 40, 700), "y": min(box["height"] - 40, 520)})
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut, .gui-onb__ghost.is-raising').length > n",
+                         arg=len(before), timeout=WAIT_MS)
+    later = pg.locator(".gui-warchief__setup button", has_text="Later")
+    try:
+        later.wait_for(state="visible", timeout=1500)
+        later.click()
+    except playwright.TimeoutError:
+        pass                                    # a type with no questions: it stands after a moment
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
+    return next(i for i in pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)") if i not in before)
+
+
 @pytest.mark.parametrize("type_id", TYPES)
 def test_every_type_built_draws_three_ways(page, type_id):
     pg = page
@@ -193,11 +221,8 @@ def test_every_type_built_draws_three_ways(page, type_id):
     assert items.count() == len(TYPES)
     items.nth(TYPES.index(type_id)).click()
     pg.locator(".gui-modal").wait_for(state="hidden", timeout=WAIT_MS)
-    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
-    bid = next(i for i in pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)") if i not in before)
-    _panel(pg)                                  # Build leaves the new building open
-    pg.keyboard.press("Escape")
-    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    bid = _place(pg, before)
+    assert not pg.locator(".gui-panel").is_visible()        # Build no longer opens it: it stands, and waits
     _three_ways(pg, bid)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)     # the next one stands where this one stood
@@ -216,19 +241,19 @@ def test_the_town_hall_is_the_warchiefs_line_in_office(page):
 
 
 def test_huts_move_until_the_person_pins_them(page):
-    pg = page
-    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
+    pg = page                                   # a building with a card: the Pit stands bare (yards.md §7)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'forge' }))")
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _name(hut).wait_for(state="visible", timeout=WAIT_MS)   # the Pit is built folded: its title bar
+    _name(hut).wait_for(state="visible", timeout=WAIT_MS)
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
     sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
     pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__sprite img`).complete",
                          arg=bid, timeout=WAIT_MS)
-    s, c = sprite.bounding_box(), card.bounding_box()           # Office: its building, smaller, at the card's left
-    assert s["width"] < 68 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
+    s, c = sprite.bounding_box(), card.bounding_box()           # its building at 0.9, at the card's left
+    assert s["width"] < 100 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
     pin, name = title.locator(".gui-hut__pin").bounding_box(), _name(hut).bounding_box()
     assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
     assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
@@ -236,9 +261,9 @@ def test_huts_move_until_the_person_pins_them(page):
     pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
                          arg=bid, timeout=WAIT_MS)
     start = hut.bounding_box()
-    pg.mouse.move(start["x"] + 30, start["y"] + start["height"] - 10)
+    pg.mouse.move(start["x"] + start["width"] / 2, start["y"] + start["height"] / 2)   # its middle: the edges pull roads
     pg.mouse.down()
-    pg.mouse.move(start["x"] + 130, start["y"] + start["height"] + 40, steps=5)
+    pg.mouse.move(start["x"] + start["width"] / 2 + 100, start["y"] + start["height"] / 2 + 50, steps=5)
     pg.mouse.up()
     assert hut.bounding_box()["x"] == start["x"]                 # pinned: a drag does nothing
     assert "is-warn" in hut.locator(".gui-hut__pin").get_attribute("class")    # …and its pin says why, in red
@@ -382,9 +407,10 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     hut the ghost is red and a drop there leaves the hut where it was; on a free place it goes there. A stretch
     by the corner is the same, and the size is kept."""
     pg = page
+    _clear(pg)                                  # the room free: a drop goes where the town is bare
     link = "import('/static/js/link.js')"
-    a = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
-    b = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    a = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'forge' }}))")     # cards: a bare Pit
+    b = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'forge' }}))")     # has no grips
     pg.keyboard.press("Escape")
     for bid, x, y in ((a, 0.05, 0.05), (b, 0.6, 0.05)):
         pg.evaluate(f"([id, x, y]) => {link}.then(m => m.command('hut.move', {{ id, x, y }}))", [bid, x, y])
@@ -478,7 +504,7 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     pg.keyboard.press("Escape")
     title = _hut(pg, bid).locator(".gui-hut__name").text_content().strip()
     _line(pg, f"@{title[:3]}", enter=False)
-    pg.locator(".gui-warchief__list .ok-item", has_text=title).click()
+    pg.locator(".gui-warchief__list .ok-item", has_text=title).first.click()
     assert field.input_value() == f"@{title} "
     field.fill(f"/open @{title}")
     field.press("Enter")
@@ -596,15 +622,18 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg.wait_for_timeout(500)
     before = {t: box(t) for t in ids}
     fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
-    fields.hover()                                                      # the board's tray comes out under the mouse
+    fields.hover()
+    assert not fields.locator(".gui-parts").is_visible()              # never under the mouse alone (yards.md §7)
+    fields.locator(".gui-hut__title").click()                           # selected: its tray comes out
     assert words(fields) == ["Orkwork", "Myto-dos", "Notes"]          # every part shown, in today's words
     assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
     fields.locator(".gui-parts__one", has_text="Ork work").click()
     fields.locator(".gui-parts__one", has_text="Notes").click()
     drum.locator(".gui-parts__one", has_text="meetings").click()
+    pg.keyboard.press("Escape")                                         # the building let go: its panel shuts
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
     pg.mouse.move(0, 0)
     pg.wait_for_timeout(500)
-    assert pg.locator(".gui-panel").count() == 0                      # a checkbox never opens the hut
     assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
     after = {t: box(t) for t in ids}
     shrunk = before["fields"]["height"] - after["fields"]["height"]
@@ -712,7 +741,8 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     pg = page
     hud = pg.locator(".gui-hud")
     assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1 and hud.get_by_text("Ready").count() == 0
-    assert hud.get_by_role("button", name="Answers", exact=True).count() == 1          # the orks' questions, always there
+    assert hud.get_by_role("button", name="Answers", exact=True).count() == 0          # the questions are the Warchief's line's
+    assert pg.locator(".gui-hour__dial").count() == 1                                    # the hour: the sun or the moon
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
@@ -783,6 +813,16 @@ def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, mon
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length === n", arg=before, timeout=WAIT_MS)
 
 
+def _open_tower_add(pg, bid: str) -> None:
+    """A tower stands bare, with no card (docs/design/yards.md §7): a press on it opens its window, which opens on
+    the picker while it has no source, else on its feed with + Add source."""
+    _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    _hut(pg, bid).locator(".gui-hut__title").click()
+    pg.locator(".gui-panel .gui-add__tile, .gui-panel .gui-tower__add").first.wait_for(state="visible", timeout=WAIT_MS)
+    if not pg.locator(".gui-panel .gui-add__tile").count():
+        pg.locator(".gui-panel .gui-tower__add").first.click()
+
+
 def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui, monkeypatch):
     """Build a Watchtower: its panel opens on the picker (no dialog); a pasted Jira link, the login, the projects,
     the first look and Add happen in the panel over the feed, and the new source stands in its chips
@@ -797,15 +837,13 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
-    add = _hut(pg, bid).locator(".gui-tower__add")              # the empty tower's card: the one thing to do
-    add.wait_for(state="visible", timeout=WAIT_MS)
-    add.click()
+    _open_tower_add(pg, bid)
     panel = pg.locator(".gui-panel")
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
     assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
     groups = panel.locator(".gui-add__group-title").all_inner_texts()            # in groups; Calendar has none yet
-    assert groups == ["Messengers", "Mail", "Code", "Other", "Through Claude (MCP)"]
+    assert groups == ["Through Claude (MCP)", "Messengers", "Mail", "Code", "Other"]
     panel.locator(".gui-add__group", has_text="Through Claude").get_by_text("None found").wait_for(timeout=WAIT_MS)
     assert "Slack" in panel.locator(".gui-add__group", has_text="Messengers").inner_text()
     assert panel.locator(".gui-panel__back").count() == 0                        # the first step: no ← Back
@@ -910,13 +948,12 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     shot = (lambda name: pg.locator(".gui-panel").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
-    add = _hut(pg, bid).locator(".gui-tower__add")
-    add.wait_for(state="visible", timeout=WAIT_MS)
-    add.click()
+    _open_tower_add(pg, bid)
     panel = pg.locator(".gui-panel")
-    jira = panel.locator(".gui-add__tile", has_text="Jira").first
+    token = panel.locator(".gui-add__group:not(:has-text('Through Claude')) .gui-add__tile")   # Through Claude is first
+    jira = token.filter(has_text="Jira").first
     jira.locator(".ok-tone-ok", has_text="in Claude").wait_for(timeout=WAIT_MS)
-    panel.locator(".gui-add__tile", has_text="Slack").first.locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
+    token.filter(has_text="Slack").first.locator(".gui-add__mark", has_text="needs a login").wait_for(timeout=WAIT_MS)
     claude = panel.locator(".gui-add__group", has_text="Through Claude")        # the connectors, a way of their own
     claude.locator(".gui-add__tile", has_text="Confluence").wait_for(timeout=WAIT_MS)
     assert claude.locator(".gui-add__tile").count() == 4
@@ -929,17 +966,17 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     use.click()
     panel.locator("#add-ask-" + bid).wait_for(state="visible", timeout=WAIT_MS)
     panel.locator("#add-ask-" + bid).fill("mentions of me in project WEB")
-    panel.locator("#add-every-" + bid).select_option("15")
+    panel.locator("#add-every-" + bid).select_option("45")      # every 30 to 60 min (§12)
     shot("c3-ask")
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.locator(".gui-add__verdict", has_text="It hears Jira").wait_for(state="visible", timeout=WAIT_MS)
-    assert "every 15 min, a model run each look" in panel.locator(".gui-add__verdict").inner_text()
+    assert "every 45 min, a model run each look" in panel.locator(".gui-add__verdict").inner_text()
     shot("c4-check")
     panel.get_by_role("button", name="Add Jira").click()
     panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
     panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
     panel.get_by_role("button", name="Sources & intent").click()
-    panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 15 min").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 45 min").wait_for(state="visible", timeout=WAIT_MS)
     shot("c5-sources")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
@@ -1192,44 +1229,52 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
 
 
 def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
-    """docs/design/folded-cards.md: a Pit is built folded — its title bar alone; a drag held over it peeks its card
-    over the hut under it, which does not move, and the drop goes in; ▸ unfolds it, the right click folds it back.
-    `ORKCRAFT_SHOTS` keeps screenshots."""
+    """docs/design/folded-cards.md: a folded card is its title bar alone; a drag held over it peeks its card over the
+    hut under it, which does not move; ▸ unfolds it, the right click folds it back. The Pit stands bare (yards.md
+    §7): a drop on its house goes in all the same. `ORKCRAFT_SHOTS` keeps screenshots."""
     pg = page
     shots = os.environ.get("ORKCRAFT_SHOTS", "")
     shot = (lambda name: pg.locator(".gui-town").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
     call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
-    pit, pool = call("town.build", {"type": "pit"}), call("town.build", {"type": "barracks"})
-    call("hut.move", {"id": pit, "x": 0.05, "y": 0.05})
+    pit, forge, pool = call("town.build", {"type": "pit"}), call("town.build", {"type": "forge"}), call("town.build", {"type": "barracks"})
+    call("hut.move", {"id": forge, "x": 0.05, "y": 0.05})
     call("hut.move", {"id": pool, "x": 0.05, "y": 0.2})
+    call("hut.move", {"id": pit, "x": 0.6, "y": 0.6})
+    call("building.fold", {"id": forge, "value": True})
     pg.keyboard.press("Escape")
-    hut, under = _hut(pg, pit), _hut(pg, pool)
-    pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
+    # the bare Pit: no card to see, and a drop on its house goes in
+    drop = _hut(pg, pit)
+    drop.wait_for(state="visible", timeout=WAIT_MS)
+    assert not drop.locator(".gui-pit__icon").is_visible()
+    dt = pg.evaluate_handle("() => { const d = new DataTransfer(); d.setData('text/plain', 'a bare drop'); return d; }")
+    drop.dispatch_event("dragover", {"dataTransfer": dt})
+    drop.dispatch_event("drop", {"dataTransfer": dt})
+    drop.locator(".gui-hut__badge", has_text="1 dropped").wait_for(state="visible", timeout=WAIT_MS)   # its plate says so
+    # a folded card
+    hut, under = _hut(pg, forge), _hut(pg, pool)
+    pg.locator(f'.gui-hut.is-folded[data-id="{forge}"]').wait_for(state="visible", timeout=WAIT_MS)
     assert "is-folded" not in under.get_attribute("class")              # a Barracks is built open
-    assert hut.locator(".gui-pit__icon").count() == 0 and _name(hut).inner_text().strip()
+    assert hut.locator(".gui-hut__body").count() == 0 and _name(hut).inner_text().strip()
     pg.wait_for_timeout(300)
     shot("fold-1-folded")
     below = under.bounding_box()
-    dt = pg.evaluate_handle("() => { const d = new DataTransfer(); d.setData('text/plain', 'a folded drop'); return d; }")
     hut.locator(".gui-hut__title").dispatch_event("dragenter", {"dataTransfer": dt})
-    peek = hut.locator(".gui-hut__peek .gui-pit__icon")
+    peek = hut.locator(".gui-hut__peek")
     peek.wait_for(state="visible", timeout=WAIT_MS)                     # the card peeks out…
     assert under.bounding_box() == below                                 # …over the hut under it, which stays
     shot("fold-2-peek")
-    hut.locator(".gui-pit__card").dispatch_event("dragover", {"dataTransfer": dt})
-    hut.locator(".gui-pit__card").dispatch_event("drop", {"dataTransfer": dt})
-    hut.locator(".gui-hut__mark", has_text="1 dropped").wait_for(state="visible", timeout=WAIT_MS)   # it went in
-    peek.wait_for(state="detached", timeout=WAIT_MS)                    # and the peek folds again
+    pg.evaluate("() => window.dispatchEvent(new Event('dragend'))")
+    peek.wait_for(state="detached", timeout=WAIT_MS)                    # the drag gone, it folds again
     assert pg.locator(".gui-panel").count() == 0
     hut.hover()
     hut.locator(".gui-hut__fold").click()                               # ▸ unfolds it for good
-    hut.locator(".gui-pit__icon").wait_for(state="visible", timeout=WAIT_MS)
+    hut.locator(".gui-hut__body").first.wait_for(state="visible", timeout=WAIT_MS)
     shot("fold-3-unfolded")
-    assert server_building(pg, pit)["pinned"] is False and pg.locator(".gui-panel").count() == 0
+    assert server_building(pg, forge)["pinned"] is False and pg.locator(".gui-panel").count() == 0
     hut.locator(".gui-hut__title").click(button="right")
     pg.locator(".gui-menu__item, [role=menuitem]", has_text="Fold the card").first.click()
-    pg.locator(f'.gui-hut.is-folded[data-id="{pit}"]').wait_for(state="visible", timeout=WAIT_MS)
-    for bid in (pit, pool):
+    pg.locator(f'.gui-hut.is-folded[data-id="{forge}"]').wait_for(state="visible", timeout=WAIT_MS)
+    for bid in (pit, forge, pool):
         call("town.demolish", {"id": bid})
 
 

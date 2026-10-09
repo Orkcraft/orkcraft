@@ -46,6 +46,9 @@ function Route({ data, route }) {
 
 /** Closed: the headline is how many carts it routed; under it a counter per road out in its colour; the
  *  foot the last cart and where it went. With no road out, the headline says so and what to do. */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;

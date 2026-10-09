@@ -1,13 +1,13 @@
 // The chrome around the town (docs/design/calm-town.md §1): the HUD (the portrait, js/portrait.js; the project's name opens the town's
-// settings, js/settings.js; Halt All; the orks' questions, Orders; the treasury) and the toasts. The
+// settings, js/settings.js; Halt All; the treasury; the orks' questions are the Warchief's line's, js/warchief.js) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
-import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait } from "./portrait.js";
 import { Scheme } from "./icons.js";
+import { opened, panelShown, panelWidth } from "./windows.js";
 import { narrow } from "./pocket.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
@@ -22,6 +22,40 @@ function Resource({ icon, word, value, level }) {
     <span class="ok-word">${word}</span>${value}</span>`;
 }
 
+/** The hour in the middle of the HUD, as an old strategy game's day and night dial: a sun while the orks work, a
+ *  moon in quiet hours (no fires, no sound, no push). A press opens a small menu: quiet hours on or off. */
+function Hour({ hud }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const key = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", away, true);
+    window.addEventListener("keydown", key);
+    return () => { document.removeEventListener("pointerdown", away, true); window.removeEventListener("keydown", key); };
+  }, [open]);
+  const night = !!hud.quiet;
+  const said = night ? say(`Night: ${hud.hour_plain.replace(/^🌙\s*/, "")}`) : hud.quiet_hours ? say(`Day: orks work. Quiet hours ${hud.quiet_hours}`)
+    : say("Day: orks work. No quiet hours");
+  const set = (on) => { command("you.quiet", { on }).catch(() => {}); setOpen(false); };
+  // over the middle of the town: a building's window open on the right takes its part away
+  const panel = panelShown() && !opened.value.full ? panelWidth.value : 0;
+  return html`<span ref=${ref} class="gui-hour" style=${`--town-w:calc(100vw - ${panel}px)`}>
+    <button class=${cls("gui-hour__dial", { "is-night": night })} title=${said} aria-label=${said} aria-expanded=${open}
+        onClick=${() => setOpen(!open)}>
+      <img class="ok-sprite" src=${`/ds/sprites/icons/${night ? "night" : "day"}.png`}
+        srcset=${`/ds/sprites/icons/${night ? "night" : "day"}@2x.png 2x`} width="32" height="32" alt="" draggable="false" />
+      <span class="gui-hour__glyph" aria-hidden="true">${night ? "☾" : "☀"}</span></button>
+    ${open && html`<div class="gui-hour__menu" role="menu">
+      <p class="ok-font-status">${said}</p>
+      <p class="ok-font-status ok-tone-muted">${say("In quiet hours no building burns, nothing sounds and no phone is called.")}</p>
+      ${hud.quiet_hours ? html`<button class="ok-btn" role="menuitem" onClick=${() => set(false)}>${say("Turn quiet hours off")}</button>`
+        : html`<button class="ok-btn primary" role="menuitem" onClick=${() => set(true)}>${say("Turn quiet hours on, from 23:00")}</button>`}
+    </div>`}
+  </span>`;
+}
+
 export function Hud() {
   const t = town.value;
   const hud = t.hud;
@@ -34,10 +68,8 @@ export function Hud() {
     ${online.value
       ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Stop all</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
-    <button class=${cls("gui-hud__orders gui-link", { "ok-hud__fire": hud.alerts > 0 })} title=${say("The orks' questions")}
-      onClick=${() => openOrders()}>${say("Orders")}${hud.alerts > 0 ? ` (${hud.alerts})` : ""}</button>
     <span class="ok-hud__spacer"></span>
-    ${hud.hour_plain && html`<span class=${cls("ok-res", { quiet: hud.quiet })}>${hud.hour_plain}</span>`}
+    <${Hour} hud=${hud} />
     ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />

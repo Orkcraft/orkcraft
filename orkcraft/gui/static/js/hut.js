@@ -12,7 +12,7 @@
 // Footprint). A card stretched larger shows more (docs/design/building-views.md §1a): its size is kept in the
 // Town Scroll (`hut.size`).
 import { signal } from "@preact/signals";
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { opened, openBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
@@ -33,12 +33,16 @@ export const HUT_MIN = { w: 240, h: 60 }, HUT_MAX = { w: 960, h: 900 };   // as 
 // A yard is stretched in whole pickets in Camp (docs/design/yards.md §3b′): one bottom picket and its gap across,
 // one side picket and its gap down, so no picket is cut at a corner. Office draws no fence: no step.
 export const YARD_STEP = { w: 21, h: 27 };
-const stepOf = (b) => (b.yard && document.documentElement.dataset.look !== "office" ? YARD_STEP : null);
+const stepOf = (b) => (fenced(b) && document.documentElement.dataset.look !== "office" ? YARD_STEP : null);
+/** A building with no view of its own (its type's module says `bare`: Signpost, Mill…) stands with no card in
+ *  Camp: its house, its plinth and its name over it. Every other card is a fenced plot (docs/design/yards.md §3). */
+export const bareOf = (b) => !!(b.page && typeModule(b.type) && typeModule(b.type).bare) && b.id !== CORNER;
+export const fenced = (b) => !bareOf(b) && b.id !== CORNER;
 const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
-export function levelOf(b) {
-  const [w, h] = (b && b.size) || [0, 0];
+export function levelOf(b, auto = null) {
+  const [w, h] = (b && b.size) || (auto && [auto[0], auto[1] || 0]) || [0, 0];
   return w >= 520 && h >= 400 ? "l" : w >= 360 && h >= 240 ? "m" : "s";
 }
 export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
@@ -190,7 +194,7 @@ function Doing({ b, busy }) {
     title=${say(busy ? "at work" : "idle")}></i>`;
 }
 
-/** A yard's name stands over its building, on the ground, with no plate (Camp). */
+/** A fenced card's name, or a bare building's, stands over its building, on the ground, with no plate (Camp). */
 function YardName({ b, number }) {
   return html`<span class="gui-hut__yard-name" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>
     <span class="no">${number}</span><${TypeIcon} type=${b.type} /><span class="gui-hut__yard-title">${say(b.title)}</span></span>`;
@@ -217,9 +221,9 @@ function Flames({ alert }) {
     style=${`left:${x}%;bottom:${y}%;animation-delay:${-i * 0.15}s`}></i>`)}`;
 }
 
-/** Its quick actions on the card's bottom edge, out while the mouse is on the hut, it has the focus or it is
- *  selected: a press does that one thing — a small window of its own when it asks for words, else it is
- *  done — and never opens the building. */
+/** Its quick actions as a row (js/pocket.js): a press does that one thing — a small window of its own when it asks
+ *  for words, else it is done — and never opens the building. A card on the town shows none under the mouse: they
+ *  are in its Info once it is open. */
 export function QuickTray({ b }) {
   if (!b.quick || !b.quick.length) return null;
   const keep = (e) => e.stopPropagation();
@@ -230,9 +234,9 @@ export function QuickTray({ b }) {
 }
 
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
-export function Card({ b }) {
+export function Card({ b, level = null }) {
   const mod = b.page ? typeModule(b.type) : null;
-  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b, levelOf(b))}</div>`;
+  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b, level || levelOf(b))}</div>`;
   return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
 }
@@ -296,10 +300,11 @@ function edgeAt(card, e) {
     : side === "top" ? { x: clamp(x, w), y: 0 } : { x: clamp(x, w), y: h };
 }
 
-export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSized }) {
+/** `auto`: the [w, h] the town gives a card with no size of its own, out of the free room around it (js/town.js
+ *  grow); a size the person gave wins. */
+export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, onMoved, onSized }) {
   const ref = useRef(null);
   const road = useRef(null);
-  const [near, setNear] = useState(false);   // the mouse over it: its ork comes out (js/visit.js)
   // the handle follows the mouse along the edge without drawing the hut again
   const nearEdge = (e) => {
     const btn = road.current;
@@ -326,7 +331,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       const hr = el.getBoundingClientRect(), pr = plinth.getBoundingClientRect(), k = hr.width / w || 1;
       const left = Math.round((pr.left - hr.left) / k), width = Math.round(pr.width / k);
       el.style.setProperty("--house-w", `${left + width}px`);
-      if (!b.yard) {
+      if (!fenced(b)) {
         top = Math.round((pr.top - hr.top) / k); ch = Math.round(pr.height / k); px = left; pw = width;
       }
     }
@@ -382,10 +387,11 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
   }
 
   const x = spot.x, y = spot.y;
-  const level = levelOf(b);
-  const sized = b.size && !folded;
+  const own = folded ? null : b.size || auto;
+  const level = levelOf(b, folded ? null : auto);
+  const sized = !!own;
   const step = stepOf(b);                  // a yard's size, as saved before, is drawn in whole pickets
-  const w = sized ? snap(b.size[0], step && step.w) : 0, h = sized ? snap(b.size[1], step && step.h) : 0;
+  const w = sized ? snap(own[0], step && step.w) : 0, h = sized && own[1] ? snap(own[1], step && step.h) : 0;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
   // meet that box.
@@ -399,27 +405,28 @@ export function Hut({ b, spot, number, dim = false, fresh = false, onMoved, onSi
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard,
+      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": fenced(b), "is-bare": bareOf(b),
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
                                         "is-sized": !!sized, [`is-size-${level}`]: !!sized,
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
-      onPointerEnter=${(e) => e.pointerType === "mouse" && setNear(true)} onPointerLeave=${() => setNear(false)}>
+>
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
-      <${Doing} b=${b} busy=${busy} />${b.yard && html`<${YardName} b=${b} number=${number} />`}
-      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} near=${near} /></span></div>
-    <div class="ok-hut__card" style=${sized ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
+      <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
+      ${bareOf(b) && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
+      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${opened.value.active === b.id} /></span></div>
+    <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
       <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
         srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
-      ${!folded ? html`<${Card} b=${b} /><${QuickTray} b=${b} />`
-        : peek ? html`<div class="gui-hut__peek"><${Card} b=${b} /><${QuickTray} b=${b} /></div>`
-        : html`<${QuickTray} b=${b} />`}
-      ${!folded && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
+      ${bareOf(b) && document.documentElement.dataset.look !== "office"
+        ? html`<div class="gui-hut__unseen" hidden><${Card} b=${b} /></div>`     // unseen, its card still wires the building (a drop zone)
+        : !folded ? html`<${Card} b=${b} level=${level} />` : peek && html`<div class="gui-hut__peek"><${Card} b=${b} /></div>`}
+      ${!folded && !bareOf(b) && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
     </div>
   </div>`;
 }

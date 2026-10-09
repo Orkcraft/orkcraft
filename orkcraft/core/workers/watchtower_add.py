@@ -34,6 +34,7 @@ class Adding:
         self.gh = ""                      # who gh is logged in as ("" not yet known or not logged in)
         self.claude: list[feeds_agent.Connector] = []     # the servers Claude Code has (asked when the picker opens)
         self.claude_asked = False         # Claude Code answered which servers it has (the picker says "asking…" before)
+        self.added = ""                   # the service the Warchief's quick setup added last ("" none yet)
         self.reset()
 
     def reset(self) -> None:
@@ -233,12 +234,29 @@ class Adding:
         self.ask = self.ask or feeds_agent.READS[self.service][2]
         self.w.changed()
 
-    def what_claude(self, ask: str, every: int, ceiling: float) -> None:
-        """The agent line, and its first look — one model run, paid — before anything is saved."""
+    def quick(self, service: str) -> None:
+        """The Warchief's setup in one press (docs/design/select-a-building.md §7): the service through Claude's
+        connection with what it listens for, how often and the most a day as they come; saved when its first look
+        answers. All of it changes later in the building."""
+        self.added = ""
+        self.start(service)
+        self.use_claude()
+        self.what_claude("", feeds_agent.EVERY_DEFAULT, feeds_agent.CEILING_DEFAULT, then_save=True)
+
+    def setup_view(self) -> dict:
+        """What the Warchief's setup shows: Claude's connectors, what runs, what went wrong, what was added."""
+        if not self.step and not self.added and not self.claude_asked:
+            self.open()
+        return {"asked": self.claude_asked, "sources": self.through_claude(), "busy": self.busy, "error": self.error,
+                "added": self.added, "label": quickadd.SERVICES[self.added].label if self.added in quickadd.SERVICES else ""}
+
+    def what_claude(self, ask: str, every: int, ceiling: float, then_save: bool = False) -> None:
+        """The agent line, and its first look — one model run, paid — before anything is saved (`then_save`: saved
+        as soon as that look answers)."""
         if self.via is None:
             raise Refused("Pick Claude's connection first")
         self.ask = " ".join(ask.split())[:300] or feeds_agent.READS[self.service][2]
-        self.every, self.ceiling = max(feeds_agent.EVERY_MIN, every), max(0.0, ceiling)
+        self.every, self.ceiling = min(feeds_agent.EVERY_MAX, max(feeds_agent.EVERY_MIN, every)), max(0.0, ceiling)
         text = feeds_agent.line(self.service, self.via.server, self.ask, self.every, self.ceiling)
         feed, err = feeds.parse(text)
         if feed is None:
@@ -248,6 +266,11 @@ class Adding:
         def done(got: feeds.Look) -> None:
             self.plan = quickadd.Plan({}, f"{label} through Claude's {self.via.name} — {self.ask}", text)
             self.first, self.found, self.step, self.error = got, len(got.items), "check", got.error
+            if then_save and not got.error:
+                try:
+                    self.added = self.save()
+                except Refused as e:                  # shown as the setup's error, never a broken tower
+                    self.error = str(e)
 
         self._thread("Asking Claude — about half a minute…", lambda: feeds_agent.look(feed, run=run), done)
 
@@ -461,7 +484,8 @@ class Adding:
         out["claude"] = {"name": c.name, "status": c.status} if c and self.service in feeds_agent.READS else None
         out["via"] = self.via.name if self.via else ""
         if self.via:
-            out.update(ask=self.ask, every_min=self.every, ceiling=self.ceiling, every_min_least=feeds_agent.EVERY_MIN)
+            out.update(ask=self.ask, every_min=self.every, ceiling=self.ceiling, every_min_least=feeds_agent.EVERY_MIN,
+                       every_min_most=feeds_agent.EVERY_MAX)
         host = self.prefill.get("host") or (self.link.site if self.link and self.service == "gitlab" else "") or "gitlab.com"
         out.update(label=s.label, note=s.note, picks_of=s.picks, about_me_says=s.about_me,
                    fields=[asdict(f) for f in s.fields],

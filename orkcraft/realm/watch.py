@@ -19,7 +19,7 @@ import re
 import shutil
 import subprocess
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable
 
@@ -44,6 +44,11 @@ class Signal:
     kept: bool | None = None   # the Lookout's verdict on the intent; None: no intent asked
     why: str = ""          # … and its reason
     want: str = ""         # … and the kind of work it named, among its source's (realm/lookout.py); "": the default
+    importance: str = ""   # high | normal | low: the tower's first sort (realm/mail_sort.py); "": not sorted
+    answer: str = ""       # agent | person, "" when nothing is asked: the same sort
+    sender: str = ""       # the address it came from; "": not known
+    tags: list = field(default_factory=list)     # its list headers or the service's labels (the sort's stage 1)
+    sort: dict = field(default_factory=dict)     # how it was sorted: {"auto": why} or what the model read
 
     @property
     def key(self) -> str:

@@ -113,7 +113,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "folder": (str, None, False), "port": (int, (1, 65535), False),
                 "github": (str, None, False), "cron": (str, None, False),
                 "webhook_port": (int, (1024, 65535), False), "webhook_secret_env": (str, None, False),
-                "feeds": (list, None, False), "intent": (str, None, False), "wants": (dict, None, False),
+                "feeds": (list, None, False), "intent": (str, None, False), "triage": (bool, None, False), "wants": (dict, None, False),
                 "places": (list, None, False), "places_keep_days": (int, (1, 365), False)},
         art="watchtower", orc="Lookout"),
     BuildingType(

@@ -57,6 +57,7 @@ button { font: inherit; color: inherit; }
 .gui-warchief__ask { position: absolute; top: -4px; right: -6px; }
 /* The line itself is the house input: Camp's sunken stone well in its body type, Office's hairline field. */
 .gui-warchief__input.ok-input { flex: 1 1 auto; min-width: 80px; font-size: var(--ok-body); }
+.gui-warchief__build.ok-btn { flex: none; }      /* always there: the way to raise a building is never only a word */
 .gui-warchief__chip { flex: none; display: inline-flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
   border: 1px solid var(--frame); border-radius: var(--ok-radius); background: var(--selection); white-space: nowrap; }
 .gui-warchief__chip.is-auto { border-style: dashed; background: none; color: var(--ink-muted); }
@@ -72,6 +73,10 @@ button { font: inherit; color: inherit; }
   .gui-warchief__short { display: inline; }
 }
 .gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(640px, 100%); max-height: 50vh; }
+/* A building just raised, set up in a question or two over the line (js/warchief.js, js/build.js raised). */
+.gui-warchief__setup .ok-win__body { display: grid; gap: var(--space-2); }
+.gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.gui-setup__ways { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .gui-warchief__over > .ok-win__frame { max-height: 50vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-warchief__over .ok-win__body { overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }
 .gui-warchief__thread { max-height: 32vh; overflow: auto; }
@@ -97,7 +102,7 @@ button { font: inherit; color: inherit; }
 .gui-menu__sep { border-top: 1px solid var(--frame); margin: var(--space-1) 0; }
 
 /* The town: huts where the person put them, roads under them. */
-.gui-town { grid-area: town; position: relative; overflow: auto;
+.gui-town { grid-area: town; position: relative; overflow: auto; scrollbar-gutter: stable;   /* a scrollbar coming never narrows the room (js/town.js grow) */
   background: var(--terrain-image, none) repeat; background-attachment: local; }   /* the biome's glyphs (js/terrain.js) */
 .gui-town__room { position: relative; }
 .gui-town__room > .gui-hut { position: absolute; z-index: 1; cursor: pointer; user-select: none; touch-action: none; }
@@ -150,14 +155,9 @@ button { font: inherit; color: inherit; }
   background-size: 80px 20px; z-index: 1; animation-name: gui-fire; }
 @keyframes gui-fire { from { background-position: 0 0; } to { background-position: -80px 0; } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__flame.ok-flame.is-sprite { animation: none; } }
-/* A closed card's quick actions (js/hut.js QuickTray): a row on its bottom edge, out while the mouse is on the hut
-   or it has the focus — they take no room on the town. Its building open, the panel's Info has them: one place
-   is enough, so the card's row stays in (ui.md U11). */
-.gui-hut__quick { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
-  display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: var(--panel);
-  border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window); visibility: hidden; }
-.gui-hut:hover .gui-hut__quick, .gui-hut:focus-within .gui-hut__quick { visibility: visible; }
-.gui-town .gui-hut.is-selected .gui-hut__quick { visibility: hidden; }
+/* Quick actions as a row (js/hut.js QuickTray), in a pocket's open card (js/pocket.js). A card on the town shows
+   none under the mouse: they are in its Info once it is open (ui.md U11). */
+.gui-hut__quick { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-hut__quick .gui-hut__quick-one { height: 24px; min-height: 0; padding: 0 var(--space-2); font-size: 11px; line-height: 24px; }     /* a type's card as one element whose parts are the body's own */
 .gui-town__room > .gui-hut.is-free { cursor: grab; }
 .gui-hut__pin { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -4px 0 -4px auto; padding: 0; border: 0; border-radius: var(--radius-sm, 0); background: none; color: var(--ink-muted); cursor: pointer; }
@@ -225,15 +225,14 @@ button { font: inherit; color: inherit; }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
 /* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. On the
-   Task Fields' card it is a tray on the card's top edge instead, out while the mouse is on the hut, it has
-   the focus or it is selected: it takes no room, so a setting of the view never crowds what the board says,
+   Task Fields' card it is a tray on the card's top edge instead, out while the board is selected (never under the
+   mouse alone): it takes no room, so a setting of the view never crowds what the board says,
    and the top edge stays put when a part is hidden, so the tray stays under the mouse (the War Drum keeps
    its row: there it is the legend). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
 .gui-hut .gui-fhut > .gui-parts { position: absolute; z-index: 2; bottom: 100%; left: 0; right: 0; padding: var(--space-1) var(--space-3);
   background: var(--panel); border: 1px solid var(--frame); border-bottom: 0; visibility: hidden; }
-.gui-hut:hover .gui-fhut > .gui-parts, .gui-hut:focus-within .gui-fhut > .gui-parts,
-.gui-hut.is-selected .gui-fhut > .gui-parts { visibility: visible; }
+.gui-hut.is-selected .gui-fhut > .gui-parts { visibility: visible; }    /* never under the mouse alone (yards.md §7) */
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
@@ -804,3 +803,31 @@ button { font: inherit; color: inherit; }
 .gui-portrait-slot.is-corner .gui-portrait__menu { left: var(--space-2); top: calc(var(--bar-hud) + 64px); }
 /* A role's mark in Office (js/roles.js): a line icon in the ink, the hairline's weight. */
 .gui-role-icon { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The hour in the middle of the HUD (js/chrome.js Hour), as an old strategy game's day and night dial: a sun while the
+   orks work, a moon in quiet hours, twice an icon's size, hanging from the bar over the town on a dark plate.
+   The HUD clips what leaves it, so the dial and its menu stand on the window. Camp draws the sprite, Office the glyph. */
+.gui-hour { position: fixed; top: 1px; left: calc(var(--town-w, 100vw) / 2 - 22px); z-index: 7; }
+.gui-hour__dial { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: var(--ok-stroke, 2px) solid var(--frame);
+  background: var(--panel-raised); box-shadow: var(--bevel-raised), var(--shadow-window); cursor: pointer; line-height: 0; }
+.gui-hour__dial:hover { background: var(--selection); }
+.gui-hour__dial:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.gui-hour__dial > img { width: 32px; height: 32px; image-rendering: pixelated; }
+.gui-hour__glyph { display: none; font-size: 24px; line-height: 1; color: var(--ink-gold); }
+.gui-hour__dial.is-night .gui-hour__glyph { color: var(--quiet-ink); }
+[data-look="office"] .gui-hour__dial > img { display: none; }
+[data-look="office"] .gui-hour__glyph { display: inline; }
+.gui-hour__menu { position: fixed; top: 52px; left: calc(var(--town-w, 100vw) / 2 - 140px); width: 280px; z-index: 30; display: grid; gap: var(--space-2);
+  padding: var(--space-3); white-space: normal; background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
+  box-shadow: var(--shadow-window); }
+.gui-hour__menu > p { margin: 0; }
+@media (max-width: 640px) { .gui-hour { position: static; } .gui-hour__dial { width: 28px; height: 28px; border: 0; box-shadow: none; }
+  .gui-hour__dial > img { width: 16px; height: 16px; } }
+
+/* Build: the ghost of a building placed with the mouse (js/town.js Placing), over the whole town; its pieces are the
+   onboarding's (onboarding.css .gui-onb__ghost). The ghost never takes the pointer, so offsets stay the room's. */
+.gui-town__placing { position: absolute; inset: 0; z-index: 8; cursor: crosshair; }
+.gui-town__placing .gui-onb__ghost { pointer-events: none; }
+.gui-town__placing-hint { position: fixed; left: 50%; top: calc(var(--bar-hud) + 56px); transform: translateX(-50%); margin: 0;
+  padding: var(--space-1) var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); pointer-events: none; }
+.gui-onb__ghost.is-bare .gui-onb__ghost-name { margin-top: 2px; }

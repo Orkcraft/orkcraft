@@ -57,7 +57,7 @@ WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("
         "workshop": {"escalate": _g("warrior", "", "elder")},
         "fields": {"title": _g("laborer", "laborer", "laborer"), "plan": _g("laborer", "laborer", "warrior"),
                    "news": _g("laborer", "laborer", "warrior"), "ideas": _g("laborer", "warrior", "elder")},
-        "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
+        "watchtower": {"judge": _g("laborer", "warrior", "warrior")},   # the sort reads risk and tone: warrior at most
         "mill": {"agent": _g("laborer", "", "elder")},
         "council": {"decide": _g("warrior", "", "elder")},
         "gramophone": {"script": _g("laborer", "warrior", "warrior")},

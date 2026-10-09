@@ -39,6 +39,9 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 /** Closed: the headline is how many are new; under it a counter per source — `gmail 3`, `slack 99+`,
  *  `jira ✗ ERR`; more than four fold into `+N more` — and the foot the newest message (from, subject,
  *  time), marked when it just arrived. */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;
@@ -140,13 +143,20 @@ function Sources({ id, d }) {
 
 // -- open: the feed, and a signal over it -----------------------------------------------------------------
 
+/** The first sort of a message (realm/mail_sort.py): important, and an agent can answer it — plain words, no score;
+ *  the whole sort (what is asked, how fast, the risk, the tone, or why it is a mailing) in its tooltip. */
+function Sort({ s }) {
+  return html`${s.importance === "high" && html`<span class="gui-tower__tag ok-tone-wait" title=${s.sorted}>${say("important")}</span>`}
+    ${s.answer === "agent" && html`<span class="gui-tower__tag ok-tone-ok" title=${say("An agent can answer it without a decision of yours")}>${say("an agent can answer")}</span>`}`;
+}
+
 function Row({ id, s }) {
-  return html`<li><button class=${cls("gui-tower__row", { "is-read": s.read, "is-out": s.kept === false })}
-      title=${s.why || s.title} onClick=${() => read(id, s.key)}>
+  return html`<li><button class=${cls("gui-tower__row", { "is-read": s.read, "is-out": s.kept === false || s.importance === "low" })}
+      title=${[s.sorted, s.why || s.title].filter(Boolean).join("\n")} onClick=${() => read(id, s.key)}>
     <span class="gui-tower__dot">${s.read ? html`<span class="ok-tone-muted" title=${say("read")} aria-label=${say("read")}>✓</span>`
       : html`<span class="ok-tone-fire" title=${say("new")} aria-label=${say("new")}>●</span>`}</span>
     <span class="gui-tower__src" title=${s.label}><${Glyph} service=${s.source} /><span class="gui-tower__src-name">${s.label}</span></span>
-    <span class="gui-tower__what">${s.from && html`<b>${s.from}</b> · `}${s.title}</span>
+    <span class="gui-tower__what"><${Sort} s=${s} />${s.from && html`<b>${s.from}</b> · `}${s.title}</span>
     <span class="gui-tower__at">${s.at.slice(5)}</span></button></li>`;
 }
 
@@ -244,6 +254,41 @@ function Settings({ id, d }) {
       <button class="ok-btn" disabled=${!ask.trim()} onClick=${() => askKeeper(id, ask.trim()).then(() => setAsk(""))}>${say("Ask the steward")}</button>
     </div>
   </div>`;
+}
+
+// -- set up in the Warchief's line (js/warchief.js, docs/design/select-a-building.md §7) ---------------------------
+
+/** What the Warchief asks of a tower just raised. */
+export function setupAsk(b) {
+  return `${b.title} is going up. What should it listen to?`;
+}
+
+/** One press: a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most $0.50
+ *  a day, sorting each message); everything else later in the building. */
+export function Setup({ id, done }) {
+  const [s, setS] = useState(null);
+  useEffect(() => {
+    let live = true;
+    const look = () => act(id, "setup").then((x) => { if (live) setS(x); }, () => {});
+    look();
+    const t = setInterval(look, 1500);
+    return () => { live = false; clearInterval(t); };
+  }, [id]);
+  if (!s) return html`<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
+  if (s.added) {
+    return html`<p class="ok-font-status ok-tone-ok">✓ ${say(`Listening to ${s.label}. It looks every 30 min and sorts each message: how important, and whether an agent can answer it.`)}</p>
+      <span><button class="ok-btn primary" onClick=${done}>${say("Good")}</button></span>`;
+  }
+  if (s.busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
+  const ways = s.sources.filter((x) => x.status === "connected");
+  return html`${s.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(s.error)}</p>`}
+    ${ways.length ? html`<div class="gui-setup__ways">
+        ${ways.map((x) => html`<button key=${x.service} class="ok-btn" onClick=${() => act(id, "add_quick", { service: x.service }).catch(() => {})}>
+          ${say(x.label)}</button>`)}</div>
+        <p class="ok-font-status ok-tone-muted">${say("Through Claude's connector, no token. Each look is a model run you pay for (about $0.05).")}</p>`
+      : html`<p class="ok-font-status ok-tone-muted">${say(s.asked
+        ? "Claude Code has no connector for Gmail, Slack, Jira or Confluence here. Connect one with /mcp in Claude Code, or pick a source in its settings."
+        : "Asking Claude Code which connectors it has…")}</p>`}`;
 }
 
 /** The window by its UI document (design/buildings/watchtower.json): a signal and the sources & intent open

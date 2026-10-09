@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from orkcraft import schedule
+from orkcraft.env import getenv
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
@@ -237,6 +238,8 @@ def hud(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None =
         "hour": (hour := schedule.status(town.machine)),
         "hour_plain": modes.plain(hour),
         "quiet": schedule.quiet_now(town.machine),
+        "quiet_hours": (f"{schedule.fmt(town.machine.quiet.start)}–{schedule.fmt(town.machine.quiet.end)}"
+                        if town.machine.quiet is not None else ""),     # the sun and moon's menu (js/chrome.js Hour)
         "fire": town.machine.fire,                 # flames over a building that waits (the portrait's menu; js/hut.js)
     }
 
@@ -276,6 +279,8 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
         "look": town.machine.look,                 # camp | office, the person's (docs/design/portrait.md §3)
+        # Connect Google is put away for now (docs/design/google-account.md §3): its wizard is long. ORKCRAFT_GOOGLE=1 shows it.
+        "google": getenv("GOOGLE").lower() in ("1", "true", "yes", "on"),
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
         "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,

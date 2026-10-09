@@ -80,6 +80,18 @@ const TONE = { ok: "ok-tone-ok", error: "ok-tone-error", wait: "ok-tone-wait", f
 
 /** Closed: the headline says how it stands; under it where it sends and what the schema says of the load;
  *  the foot the last shot and when (unless the headline is that shot). */
+/** What it says first, folded or bare (js/hut.js Mark): a schema problem, a shot that waits for you, what is loaded. */
+export function mark(b) {
+  const c = b.card;
+  if (!c) return null;
+  if (c.problem) return { text: "schema", tone: "error" };
+  const [big, , tone] = headline(c);
+  return big ? { text: String(big).replace(/^[?⚠]\s*/, ""), tone: tone === "fire" ? "wait" : "" } : null;
+}
+
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;

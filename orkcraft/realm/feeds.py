@@ -140,6 +140,8 @@ class Item:
     url: str = ""
     at: str = ""
     mention: bool = False
+    sender: str = ""             # the address it came from, for the sort (realm/mail_sort.py); "": not known
+    tags: list = field(default_factory=list)     # the service's labels, a mail's list headers: the sort's stage 1
 
 
 @dataclass

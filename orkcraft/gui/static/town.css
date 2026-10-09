@@ -3,9 +3,9 @@
    (the monochrome, no sprites, the system font) is office.css. */
 [data-look] { --canvas: #141210; --terrain: #141210; --road: #8f8166; --road-bright: #7a6e55;
   --road-selected: #e8b94a; --road-live: #6aa84f; }
-/* A hut keeps its building, two thirds of its sprite's size, standing at the card's left over its name. */
+/* A hut keeps its building at three quarters of its sprite's size, standing at the card's left over its name (Camp draws a fenced or bare one at .9, yards.css). */
 [data-look] .gui-hut > .ok-head { justify-content: flex-start; padding-left: var(--space-3); }
-[data-look] .gui-hut__sprite { zoom: calc(2 / 3); }
+[data-look] .gui-hut__sprite { zoom: .75; }
 /* Its garrison's lead: the ork's head alone at two thirds, no framed name (js/hut.js Keeper). */
 [data-look] .gui-hut__keeper { flex: none; display: inline-flex; align-items: center; }
 [data-look] .gui-hut__keeper img[data-kind="ork"] { zoom: calc(2 / 3); }
