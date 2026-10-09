@@ -510,9 +510,29 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     field.fill(f"/open @{title}")
     field.press("Enter")
     _panel(pg, "Work")
-    pg.locator(".gui-warchief__chip.is-auto", has_text=title).wait_for(state="visible", timeout=WAIT_MS)   # the open one
+    pg.locator(".gui-warchief__who", has_text=title).wait_for(state="visible", timeout=WAIT_MS)   # its card: the open one
     _line(pg, "/demolish")                                       # about the building open
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_a_selected_building_turns_the_line_into_its_command_card(page):
+    """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
+    name, its quick actions, the field asking about it; ✕ gives the Warchief back while it stays selected."""
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
+    bar = pg.locator(".gui-warchief__bar")
+    bar.locator(".gui-warchief__face.is-steward").wait_for(state="visible", timeout=WAIT_MS)
+    assert bar.locator(".gui-warchief__act", has_text="New task").count() == 1      # its quick actions
+    assert bar.get_by_role("button", name="Build", exact=True).count() == 0
+    assert "about" in pg.locator(".gui-warchief__input").get_attribute("placeholder")
+    bar.locator(".gui-warchief__back").click()                       # the Warchief again, it stays open
+    bar.get_by_role("button", name="Build", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    assert bar.locator(".gui-warchief__act").count() == 0
+    assert pg.evaluate("() => import('/static/js/windows.js').then(m => m.opened.value.active)") == bid
+    pg.evaluate("() => import('/static/js/windows.js').then(m => m.closeBuilding())")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
