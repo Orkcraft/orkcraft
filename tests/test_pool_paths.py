@@ -270,3 +270,22 @@ def test_the_pool_works_in_a_folder_of_its_own_and_gives_it_back(fake_repo, tmp_
     with pytest.raises(Exception):
         act("repo", {"path": str(tmp_path / "nowhere")})
     assert act("repo", {"path": ""}) == str(fake_repo)
+
+
+def test_its_card_has_a_lane_per_ork_with_its_topic_and_what_of_it_waits():
+    """The owner's ask: the card says who works on what — an ork a lane, its tool and tier, working, resting or
+    asking, its topic (the persona it is hired as) and the tasks of that topic in the queue, its follow-ups too."""
+    from types import SimpleNamespace
+    from orkcraft.gui.views import barracks as view
+    from orkcraft.realm import barracks as bk
+    tests = bk.PoolOrc("Grub", "claude", "sonnet", status="working", persona="tests")
+    front = bk.PoolOrc("Snaga", "claude", "haiku", persona="frontend")
+    anyone = bk.PoolOrc("Mogka", "agy", "")
+    queue = [bk.PoolTask("t1", "add a test", "", persona="tests"), bk.PoolTask("t2", "fix the header", "", wait_for="Snaga"),
+             bk.PoolTask("t3", "more tests", "", persona="tests"), bk.PoolTask("t4", "anything", "")]
+    st = SimpleNamespace(orcs=[tests, front, anyone], queue=queue, asked=[SimpleNamespace(orc="Snaga")])
+    lanes = {l["name"]: l for l in view._lanes(st)}
+    assert lanes["Grub"] == {"name": "Grub", "harness": "claude", "tier": "warrior", "state": "working",
+                             "topic": "tests", "queue": 2}
+    assert (lanes["Snaga"]["state"], lanes["Snaga"]["tier"], lanes["Snaga"]["queue"]) == ("asks", "laborer", 1)
+    assert (lanes["Mogka"]["state"], lanes["Mogka"]["topic"], lanes["Mogka"]["queue"]) == ("resting", "", 0)

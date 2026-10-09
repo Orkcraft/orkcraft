@@ -14,7 +14,7 @@ import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 import { usePeek } from "../windows.js";
-import { OrkHead } from "../icons.js";
+import { OrkHead, ToolMark, TierMark } from "../icons.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -121,10 +121,28 @@ const keep = (e) => e.stopPropagation();          // a press on the card's contr
 /** Closed: the headline is how many orks work of how many; under it the queue, the tally and the spend, the
  *  steward first when it asks; the foot who works on what. Paused, the headline says so with what waits and
  *  Resume in the foot: a stopped queue is the one thing to fix here. */
+const LANE_STATE = { working: "busy", resting: "idle", asks: "alert" };
+const LANE_WORD = { working: "working", resting: "resting", asks: "asks you" };
+
+/** Its orks, a lane each (the owner's ask): the head says what it does (a gear at work, Zz resting, ! asking), then
+ *  its name, its AI tool and tier, the topic it is hired for, and how many tasks of it wait. */
+function Lanes({ lanes, more }) {
+  return html`<ul class="pool-lanes">${lanes.map((l) => html`<li key=${l.name} class=${cls("pool-lane", `is-${l.state}`)}
+      title=${`${l.name} · ${say(LANE_WORD[l.state])} · ${l.topic ? say(l.topic) : say("any work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
+    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.name, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
+      class="pool-lane__state">${say(LANE_WORD[l.state])}</span></span>
+    <b class="pool-lane__name">${l.name}</b>
+    <span class="pool-lane__how"><${ToolMark} id=${l.harness} />${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
+    <span class="pool-lane__topic ok-tone-muted">${l.topic ? say(l.topic) : say("any work")}</span>
+    <span class=${cls("pool-lane__queue", { "ok-tone-muted": !l.queue })}>${l.queue ? `▸ ${l.queue}` : ""}</span>
+  </li>`)}${more > 0 && html`<li class="pool-lane is-more ok-tone-muted">+${more}</li>`}</ul>`;
+}
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   const working = c.working || [];
+  const lanes = c.lanes || [];
   return html`<div class="gui-hut__body-in">
     ${c.paused
       ? html`<div class="gui-hut__big ok-tone-wait">⚠ ${say("Paused")}<small>${c.queue ? `${c.queue} waiting` : say("nothing waits")}</small></div>`
@@ -133,10 +151,12 @@ export function card(b) {
       <span class=${c.failed ? "ok-tone-error" : ""} title=${c.failed ? say("Failed tasks: open the building to see why") : ""}>✗${c.failed}</span>
       · <b>${c.spent}</b></div>
     ${c.asks && html`<div class="gui-hut__text ok-tone-fire">? ${c.asks} ${say("asks")}</div>`}
+    ${lanes.length > 0 && html`<${Lanes} lanes=${lanes} more=${c.more || 0} />`}
     ${c.paused
       ? html`<div class="gui-hut__foot"><span>${say("Stopped: no task starts")}</span>
           <button class="ok-act gui-hut__act" onPointerDown=${keep}
             onClick=${(e) => { keep(e); act(b.id, "pause").catch(() => {}); }}><span class="ok-act__label">Resume</span></button></div>`
+      : lanes.length > 0 ? null
       : working.length > 0
         ? html`<div class="gui-hut__foot"><span>⚒ <b>${working[0].ork}</b> · ${working[0].want ? `${say(working[0].want)}: ` : ""}${working[0].task}</span>
             ${working.length > 1 && html`<span class="gui-hut__when">+${working.length - 1}</span>`}</div>`
