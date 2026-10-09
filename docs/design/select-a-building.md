@@ -43,7 +43,11 @@ listeners, the Horn and the Crag; a leather cap with goggles for the Forge, the 
 cap for the Task board, the Calendar, the Vault and the yards; a plumed helm for the Agent pool and the Review board; a
 lamp on a hard hat for the Mine. The steward that comes out of its building wears it too (js/visit.js).
 
-Later: a steward that answers from its runs and chronicle ("why did it fail"), not only its settings.
+**It answers from what happened** (built 2026-10-09): the keeper's prompt carries the building's lately
+(`core/keeper.py` `lately`, no model): its week by the ledger (runs, done, failed, results, 👍 / 👎), the status lines
+it shows now, its chronicle's newest eight events and the operator's newest three 👎 with their notes and the output
+they were on. So "why did the invoice go to bugs?" is answered from the 👎 and the rules, and a question changes
+nothing (value null); its answer opens as the keeper's dialog, Close. A wake (core/wakes.py) reads none of it: what woke it is its request.
 
 While a building is selected, the Warchief's line at the foot **becomes the building's steward**: its face, its
 name ("Steward of the Calendar"), and the line asks *it*. Deselected, the Warchief comes back. One line, two

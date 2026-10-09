@@ -9,12 +9,15 @@ import copy
 from typing import Any, Callable
 
 from orkcraft.core import keeper, runners
-from orkcraft.gui import markdown
+from orkcraft.gui import markdown, state
 from orkcraft.gui.jobs import ConsoleError, plain
 from orkcraft.gui.views import ActError
 from orkcraft.gui.views import lake as lake_view
 from orkcraft.realm import steward
 from orkcraft.realm.buildings import TOWN_HALL
+
+
+WAKE_HISTORY = "(a wake: what woke it is in the request)"
 
 
 class KeeperMixin:
@@ -77,12 +80,14 @@ class KeeperMixin:
         """Its keeper asked (a thread); its proposal comes back as a ready job: the diff, its answer, Apply."""
         repo, spec, snapshot = self.town.repo_root, copy.deepcopy(spec), copy.deepcopy(self.town.scroll)
         others = set(self.town.custom_specs) - {building_id}
+        # asked by the person, it reads what happened lately; a wake's request says what happened, only that
+        history = WAKE_HISTORY if woke else keeper.lately(repo, building_id, state._hut_lines(self.town, building_id))
 
         def work() -> keeper.Proposal:
             by = looker or building_id                 # landscape: the steward its wake names (core/wakes.py)
             return keeper.ask(repo, spec, snapshot, building_id, request, selection=selection, existing_ids=others,
                               runner=steward.runner_for(snapshot.building(by), "keeper", runners.KEEPER_RUNNER),
-                              looker=looker if looker != building_id else "")
+                              looker=looker if looker != building_id else "", history=history)
 
         def done(job: dict, p: keeper.Proposal) -> None:
             if p.error:

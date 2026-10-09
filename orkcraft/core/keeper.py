@@ -28,7 +28,7 @@ from typing import Any, Callable
 from orkcraft import scroll as ts
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import builders, catalog, evolution, masonry, signpost, workshop
+from orkcraft.realm import builders, catalog, chronicles, evolution, feedback, masonry, signpost, workshop
 
 MAX_ATTEMPTS = 3
 SELECTION_LIMIT = 20_000
@@ -237,13 +237,51 @@ ITS LANGUAGE:
 ITS ROADS:
 {roads}
 
+WHAT HAPPENED LATELY (its runs, its chronicle, the operator's 👎 — answer "why" and "how did it go" from this):
+{lately}
+
 WHAT IT IS NOW:
 {current}
 {feedback}
+A question is answered in "answer" with value null: change nothing the operator did not ask for.
 Answer with ONE JSON object and nothing else:
 {{"value": <the whole new value, or null when nothing should change>,
   "why": "<one sentence for the operator: what changes>",
   "answer": "<what you say to the operator; on a selection, your answer about it>"}}"""
+
+
+LATELY_EVENTS = 8         # the chronicle's newest events the keeper reads
+LATELY_DISLIKES = 3       # and the newest 👎 on the building
+LATELY_CHARS = 300        # of a 👎's output
+
+
+def lately(repo_root: Path, building_id: str, status: list[str] | tuple[str, ...] = ()) -> str:
+    """What happened to the building lately, in a few lines a model reads (no model here): its week by the ledger,
+    what it shows now, its chronicle's newest events and the operator's newest 👎 with their notes. Never raises."""
+    lines: list[str] = []
+    try:
+        j = feedback.journal(repo_root, building_id)
+        lines.append(f"this week: {j['runs']} runs ({j['ok']} done, {j['failed']} failed), {j['results']} results, "
+                     f"{j['likes']} 👍, {j['dislikes']} 👎" + (f", last result {j['last'][:16]}" if j["last"] else ""))
+    except Exception:          # its memory is a help, never a reason to fail
+        pass
+    if status:
+        lines.append("it shows now: " + " · ".join(str(s) for s in status))
+    try:
+        for e in chronicles.history(repo_root, building_id, limit=LATELY_EVENTS):
+            icon, sentence = chronicles.describe(e)
+            lines.append(f"{str(e.get('ts', ''))[:16].replace('T', ' ')} {icon} {sentence}")
+    except Exception:
+        pass
+    try:
+        bad = [i for i in feedback.incidents(repo_root, 200) if i.building == building_id][-LATELY_DISLIKES:]
+        for i in reversed(bad):
+            out = " ".join(i.output.split())[:LATELY_CHARS]
+            lines.append(f"{i.ts[:16].replace('T', ' ')} 👎 ({i.kind}{f', {i.tag}' if i.tag else ''}): "
+                         f"{i.note or 'no note'}" + (f" — on: {out}" if out else ""))
+    except Exception:
+        pass
+    return "\n".join(lines) or "nothing yet"
 
 
 def _roads(scroll, building_id: str) -> str:
@@ -287,10 +325,11 @@ def check(answer: Any, spec: dict, subject: Subject, repo_root: Path,
 def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, selection: Any = None,
         runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
         existing_ids: frozenset[str] | set[str] = frozenset(), max_attempts: int = MAX_ATTEMPTS,
-        looker: str = "") -> Proposal:
+        looker: str = "", history: str = "") -> Proposal:
     """The person's words → the keeper's proposal (checked against the type's contract; a rejected answer
     goes back with its problems). Never raises. `looker`: the building whose steward speaks, when it is not the
-    building's own (landscape has no ork: core/wakes.py)."""
+    building's own (landscape has no ork: core/wakes.py). `history`: what happened lately (`lately`), read when
+    "" is given."""
     subject = subject_of(spec)
     p = Proposal(building_id, subject.kind, before=subject.now(repo_root, building_id, spec))
     if not budget_ok:
@@ -301,13 +340,14 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
     who = scroll.building(looker) if scroll is not None and looker else b
     keeper = who.garrison.steward.name if who is not None and who.garrison.steward else "the keeper"
     sel = selection_of(selection)
-    feedback = ""
+    history = history or lately(repo_root, building_id)
+    rejected = ""
     for _ in range(max_attempts):
         prompt = KEEP.format(
             keeper=keeper, title=b.title if b is not None else building_id, summary=f"{t.title} — {t.summary}",
             request=request.strip()[:2000], selection=_selection_text(sel), what=subject.what,
             language=subject.language(spec), roads=_roads(scroll, building_id) if scroll is not None else "none",
-            current=json.dumps(p.before, ensure_ascii=False, indent=1), feedback=feedback)
+            lately=history, current=json.dumps(p.before, ensure_ascii=False, indent=1), feedback=rejected)
         p.attempts += 1
         try:
             text, cost = runner(prompt)
@@ -324,7 +364,7 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
             p.answer = str(answer.get("answer") or "").strip()[:8000]
             return p
         p.errors = errors
-        feedback = "\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix every problem:\n" + "\n".join(f"- {e}" for e in errors[:12])
+        rejected = "\nYOUR PREVIOUS ANSWER WAS REJECTED. Fix every problem:\n" + "\n".join(f"- {e}" for e in errors[:12])
     p.error = "; ".join(p.errors[:3]) or "no answer"
     return p
 
