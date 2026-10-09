@@ -29,14 +29,14 @@ COLOURS = {"o": "#0b0907", "d": "#1c1814", "m": "#262019", "l": "#302820", "h": 
 STONE = {"t": "#b5a585", "s": "#8f8166", "j": "#5f5545", "k": "#2a251c"}
 
 GRIDS = {
-    "row": [                  # its rails first, its picket last: a row of whole tiles ends on a picket at the corner
-        ".....o.",
-        "....olo",
-        "oooolmd",
-        "ohholmd",
-        "oooolmd",
-        "ohholmd",
-        "oooolmd",
+    "row": [                  # its rails first, its picket last, outlined both sides: a row of whole tiles ends
+        "....o..",            # on a full picket at the corner
+        "...olo.",
+        "ooolmdo",
+        "hholmdo",
+        "ooolmdo",
+        "hholmdo",
+        "ooolmdo",
     ],
     "side": [
         "..o..",
