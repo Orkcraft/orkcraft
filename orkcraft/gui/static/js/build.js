@@ -2,14 +2,12 @@
 // between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { html } from "./html.js";
-import { town, command, act, say } from "./link.js";
+import { html, cls } from "./html.js";
+import { town, command, say } from "./link.js";
 import { HutSprite, activeBiome } from "./icons.js";
 import { Dialog } from "./dialog.js";
 import { HandlerDialog } from "./acts.js";
-import { opened, openBuilding, closeBuilding, panelShown, panelWidth } from "./windows.js";
-
-const HALL = "town_hall";                          // the Warchief's hall (js/buildings/town_hall.js)
+import { closeBuilding } from "./windows.js";
 
 export const building = signal(false);            // the Build dialog is open: true, or {hut: [x, y], need}
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
@@ -59,14 +57,14 @@ export function raised(id, type, service = "") {
   import(`./buildings/${type}.js`).then((m) => { if (m.Setup) settingUp.value = { id, type, service }; else plain(); }, plain);
 }
 
-// Build is a tray of small icons up from the Warchief's line (docs/design/warchief-line-and-cards.md §2): each says
-// what you want done — mail, Slack, Jira, tasks, a calendar — not which house does it (tools/intent_sprites.py); its
-// building and summary are in its tooltip. First three for you (the onboarding's role's own, not standing yet), then
-// the rest by what they are for. Typing filters it, Enter takes the first one left (or, with none, asks the Warchief
-// what to build); a press picks one and its ghost follows the mouse (`place`), a double press builds it at a free
-// spot. From the map's menu (*Build here*) a press builds it on that spot. Escape or a press elsewhere puts it away.
-// A source's icon (mail, Slack, Jira, Confluence) raises External listeners already listening to it, when Claude
-// has a connector for it (js/buildings/watchtower.js `Setup`, `want`).
+// Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
+// what you want done — mail, Slack, Jira, tasks, a calendar — not which house does it (tools/intent_sprites.py). The
+// line's own field filters it while Build is on (js/warchief.js), Enter takes the first icon left or, with none, asks
+// the Warchief what to build. One line over the row says what the icon under the mouse raises. First three for you
+// (the onboarding's role's own, not standing yet), then the rest in the catalog's groups, a thin rule between them.
+// A press picks one and its ghost follows the mouse (`place`), a double press builds it at a free spot; from the
+// map's menu (*Build here*) a press builds it on that spot. A source's icon (mail, Slack, Jira, Confluence) raises
+// External listeners already listening to it when Claude has a connector for it (js/buildings/watchtower.js `Setup`).
 export const INTENTS = [
   { id: "mail", word: "Mail", type: "watchtower", service: "gmail" },
   { id: "chat", word: "Slack", type: "watchtower", service: "slack" },
@@ -121,40 +119,26 @@ function forYou(tiles, standing) {
     .sort((a, b) => a.t.yours - b.t.yours).slice(0, FOR_YOU);
 }
 
-function Tile({ x, onPress, biome }) {
-  return html`<button class="gui-catalog__item gui-build__tile" data-type=${x.type} data-intent=${x.id}
-      title=${`${say(x.word)}: ${say(x.t.title)} — ${x.t.summary}`} onClick=${() => onPress(x)}>
-    ${x.house ? html`<span class="gui-build__house"><${HutSprite} type=${x.type} biome=${biome} /></span>`
-      : html`<img class="ok-sprite gui-build__icon" src=${`/ds/sprites/intents/${x.id}.png`}
-          srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`} width="32" height="32" alt="" draggable="false" />`}
-    <span class="gui-build__name ok-font-status">${say(x.word)}</span>
-  </button>`;
+let enter = null;                                  // what Enter in the line does while the row stands
+
+/** Enter in the Warchief's line while Build is on: the first icon left is picked; false when none is left. */
+export function buildEnter() {
+  return enter ? enter() : false;
 }
 
-/** Build: the tray (named BuildDialog as it was: app.js mounts it). */
-export function BuildDialog() {
+/** The row over the Warchief's line: `query` is the line's text. */
+export function BuildRow({ query }) {
   const [types, setTypes] = useState(null);
-  const [find, setFind] = useState("");
-  const root = useRef(null);
-  const field = useRef(null);
+  const [over, setOver] = useState(null);         // the icon under the mouse: the line over the row says it
   const timer = useRef(null);
-  const open = !!building.value;
-  const close = () => { building.value = false; setFind(""); };
-  useEffect(() => {
-    if (open && types === null) command("town.catalog").then(setTypes, () => setTypes([]));
-    if (open && building.value.need) setFind(building.value.need);
-    if (open && field.current) field.current.focus();
-  }, [building.value]);
-  useEffect(() => {                                // a press elsewhere puts it away (Build's own button toggles it)
-    if (!open) return undefined;
-    const away = (e) => {
-      if (root.current && !root.current.contains(e.target) && !e.target.closest(".gui-warchief__build")) close();
-    };
-    document.addEventListener("pointerdown", away, true);
-    return () => document.removeEventListener("pointerdown", away, true);
-  }, [open]);
-  if (!open) return null;
-  const hut = building.value.hut;
+  useEffect(() => { if (types === null) command("town.catalog").then(setTypes, () => setTypes([])); }, []);
+  useEffect(() => {                              // Escape from anywhere puts it away (the field's own does too)
+    const key = (e) => { if (e.key === "Escape" && !document.querySelector(".gui-modal")) building.value = false; };
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("keydown", key); enter = null; };
+  }, []);
+  const hut = building.value && building.value.hut;
+  const close = () => { building.value = false; };
   const raise = (x, spot) => command("town.build", spot ? { type: x.type, hut: spot } : { type: x.type })
     .then((id) => { close(); raised(id, x.type, x.service); }, () => {});
   const pick = (x) => { if (hut) raise(x, hut); else { close(); place(x.t, x.service); } };   // a spot given: built there
@@ -163,45 +147,29 @@ export function BuildDialog() {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; raise(x); return; }   // twice: a free spot
     timer.current = setTimeout(() => { timer.current = null; pick(x); }, DOUBLE_MS);
   };
-  const ask = () => find.trim() && act(HALL, "ask", { text: `What should I build? ${find.trim()}` })
-    .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
-  const q = norm(find.trim());
   const tiles = tilesOf(types || []);
-  const shown = found(tiles, q);
-  const yours = q ? [] : forYou(shown, new Set(town.value.buildings.map((b) => b.type)));
-  const rest = shown.filter((x) => !yours.includes(x));
-  const groups = [];
-  for (const x of rest) {
-    if (!groups.length || groups[groups.length - 1][0] !== x.t.intent) groups.push([x.t.intent, []]);
-    groups[groups.length - 1][1].push(x);
-  }
+  const shown = found(tiles, norm((query || "").trim()));
+  const yours = query && query.trim() ? [] : forYou(shown, new Set(town.value.buildings.map((b) => b.type)));
+  const row = [...yours, ...shown.filter((x) => !yours.includes(x))];
+  enter = () => { if (!row.length) return false; pick(row[0]); return true; };
   const biome = activeBiome();
-  const key = (e) => {
-    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
-    else if (e.key === "Enter") { e.preventDefault(); if (shown.length) pick(yours[0] || rest[0]); else ask(); }
-  };
-  const panel = panelShown() && !opened.value.full ? panelWidth.value : 0;   // over the middle of the town, as the dial
-  const set = (label, list, cl = "") => html`<section key=${label} class=${`gui-build__set ${cl}`}>
-    <p class="ok-font-label gui-build__group" title=${say(label)}>${say(label)}</p>
-    <div class="gui-build__row">${list.map((x) => html`<${Tile} key=${x.id} x=${x} biome=${biome} onPress=${press} />`)}</div></section>`;
-  return html`<div ref=${root} class="ok-win gui-build" role="dialog" aria-label=${say("Build")} onKeyDown=${key}
-      style=${`--town-w:calc(100vw - ${panel}px)`}>
-    <div class="ok-win__frame"><div class="ok-win__body">
-      <div class="gui-build__head">
-        <input ref=${field} class="ok-input gui-build__find" value=${find} aria-label=${say("Find a building")}
-          placeholder=${say(hut ? "Build here: what for? mail, tasks, a wiki…" : "What for? mail, tasks, a wiki… or say what you need")}
-          onInput=${(e) => setFind(e.target.value)} />
-        ${find.trim() && html`<button class="ok-btn" onClick=${ask} title=${say("The Warchief points at the building that does it")}>
-          ${say("Ask the Warchief")}</button>`}
-      </div>
-      ${types === null ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
-        <div class="gui-build__groups">
-          ${yours.length > 0 && set("For you", yours, "is-yours")}
-          ${groups.map(([intent, list]) => set(intent, list))}
-        </div>
-        ${!shown.length && html`<p class="ok-font-status ok-tone-muted">${say("Nothing by that name — Enter asks the Warchief what to build.")}</p>`}
-        <p class="ok-font-status ok-tone-muted gui-build__hint">${say(hut ? "A press builds it here." : "A press places it; a double press builds it at a free spot.")}</p>`}
-    </div></div>
+  const said = over ? `${say(over.word)} — ${say(over.t.title)}: ${over.t.summary}`
+    : types === null ? say("Looking…")
+    : !row.length ? say("Nothing by that name — Enter asks the Warchief what to build.")
+    : yours.length ? say(`For you: ${yours.map((x) => x.word).join(", ")}. ${hut ? "A press builds it here." : "A press places it; twice builds it at a free spot."}`)
+    : say(hut ? "A press builds it here." : "A press places it; a double press builds it at a free spot.");
+  return html`<div class="gui-build" role="group" aria-label=${say("Build")} onMouseDown=${(e) => e.preventDefault()}>
+    <p class="ok-font-status ok-tone-muted gui-build__said" title=${said}>${said}</p>
+    <div class="gui-build__row" onMouseLeave=${() => setOver(null)}>
+      ${row.map((x, n) => html`<button key=${x.id} class=${cls("gui-catalog__item gui-build__tile", {
+          "is-yours": yours.includes(x), "is-first": n > 0 && !yours.includes(x) && (yours.includes(row[n - 1]) || row[n - 1].t.intent !== x.t.intent) })}
+          data-type=${x.type} data-intent=${x.id} aria-label=${`${say(x.word)}: ${say(x.t.title)}`} title=${say(x.word)}
+          onMouseEnter=${() => setOver(x)} onFocus=${() => setOver(x)} onClick=${() => press(x)}>
+        ${x.house ? html`<${HutSprite} type=${x.type} biome=${biome} />`
+          : html`<img class="ok-sprite" src=${`/ds/sprites/intents/${x.id}.png`} srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`}
+              width="32" height="32" alt="" draggable="false" />`}
+        <span class="gui-build__word">${say(x.word)}</span></button>`)}
+    </div>
   </div>`;
 }
 
