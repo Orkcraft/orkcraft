@@ -97,7 +97,7 @@ a commit in the camp's own git, so it can be undone.
 - **🏗 Build** — `/build` or a right click on the map: say what you need, or pick a block from the
   catalog and it stands where you clicked. No model call for a block from the catalog.
 
-  ![Build: say what you need, or pick a block](docs/img/build.png)
+  ![Build: say what you need, or pick a building; then place it on the town](docs/img/build.png)
 - **🛠 New** — ask the Warchief for what the catalog lacks: the **Builder** asks what the building
   should do and writes a **script** (a model only where a script cannot do the job). The blueprint is
   previewed, reviewed by the Council and run on mock carts in a sandbox before you approve it.
