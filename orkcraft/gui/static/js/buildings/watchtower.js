@@ -260,7 +260,7 @@ function Settings({ id, d }) {
 
 /** What the Warchief asks of a tower just raised. */
 export function setupAsk(b) {
-  return `${b.title} stands. What should it listen to?`;
+  return `${b.title} is going up. What should it listen to?`;
 }
 
 /** One press: a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most $0.50

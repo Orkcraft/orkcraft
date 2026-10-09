@@ -43,6 +43,7 @@ const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
 const STRIP = 64;                          // the town's foot (the orkspaces, the Warchief's line, layout.css .gui-foot): no hut under it
 const DEFAULT_SIZE = { w: 240, h: 64 };     // a hut not drawn yet
+const RAISING_SIZE = { w: 140, h: 60 };     // a building under scaffolding (js/build.js raised): its house, where it was placed
 
 // A card that shows something and has no size of its own takes the free room right of it and under it
 // (docs/design/yards.md §7): the more room, the more it shows (js/hut.js levelOf). It keeps a road's gap from every
@@ -53,6 +54,19 @@ const natural = {};                         // building id → its size as drawn
 let grownLast = new Set();                      // the cards grown at the last draw: the town places them by their natural size
 const LEVEL_H = [400, 240];                 // the heights where a card shows more (js/hut.js levelOf: l, m), tallest first
 const LEVEL_W = [520, 360];
+
+// Growth is worked out once per layout (the room, the buildings, where each stands, their natural sizes, rounded) and
+// kept while it holds, so a card's new size never feeds the next draw's answer. A layout that still will not settle
+// (it changed more than 6 times in a second) keeps its last growth until the town itself changes.
+let held = { key: "", auto: {}, changes: [], frozen: "" };
+function steady(compute, key, town) {
+  if (held.frozen && held.frozen === town) return held.auto;
+  if (key === held.key) return held.auto;
+  const now = Date.now();
+  const changes = [...held.changes.filter((t) => now - t < 1000), now];
+  held = { key, auto: compute(), changes, frozen: changes.length > 6 ? town : "" };
+  return held.auto;
+}
 
 /** The [w, h] each growing card takes: cards taken top to bottom, each seeing the room the ones before took. */
 function grow(buildings, spots, rects, held) {
@@ -467,14 +481,14 @@ function Placing({ p }) {
   const put = (e) => {
     e.stopPropagation();
     const f = free(DEFAULT_SIZE);
-    const x = e.nativeEvent.offsetX - 120, y = e.nativeEvent.offsetY - 30;
+    const x = e.offsetX - 120, y = e.offsetY - 30;
     const hut = [Math.min(Math.max((x - MARGIN) / f.w, 0), 1), Math.min(Math.max((y - MARGIN) / f.h, 0), 1)];
     const { type } = p;
     placing.value = null;
     command("town.build", { type, hut }).then((id) => raised(id, type), () => {});
   };
   return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
-      onPointerMove=${(e) => setAt({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY })}
+      onPointerMove=${(e) => setAt({ x: e.offsetX, y: e.offsetY })}
       onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
     ${spot && html`<${Ghost} g=${{ id: "", type: p.type, title: p.title, state: "planned" }} spot=${spot} biome=${activeBiome()} bare=${p.bare} />`}
     <p class="gui-town__placing-hint ok-font-status">${say(`Place ${p.title}: press where it should stand · Esc cancels`)}</p>
@@ -499,7 +513,8 @@ export function Town({ buildings, roads }) {
   // A hut stands where its full height (every part shown) would put it; the huts under one with parts
   // hidden, or folded, are lifted by what it lost.
   // A grown card is placed by its natural size: growing never moves a neighbour.
-  const placed = (b) => (grownLast.has(b.id) && natural[b.id]) || sizes.value[b.id] || { w: 240, h: 64 };
+  const placed = (b) => (grownLast.has(b.id) && natural[b.id]) || sizes.value[b.id]
+    || (constructing.value[b.id] !== undefined ? RAISING_SIZE : { w: 240, h: 64 });
   const fullSize = (b) => {
     const size = placed(b);
     return { ...size, h: size.h + lost(b.id, size.h, !!b.folded && b.id !== CORNER) };
@@ -519,7 +534,7 @@ export function Town({ buildings, roads }) {
   for (const b of buildings) up[b.id] -= down[b.id];   // `moved` keeps the spot unpushed, as it keeps it unlifted
   const spots = {}, rects = {}, ports = {};
   buildings.forEach((b) => {
-    const size = sizes.value[b.id] || { w: 240, h: 64 };
+    const size = sizes.value[b.id] || (constructing.value[b.id] !== undefined ? RAISING_SIZE : { w: 240, h: 64 });
     spots[b.id] = { x: full[b.id].x, y: full[b.id].y - up[b.id] };
     rects[b.id] = { x: spots[b.id].x, y: spots[b.id].y, w: size.w, h: size.h };
     // A road meets the plinth the building stands on in Camp (js/hut.js measure), the card that holds the name in Office
@@ -577,13 +592,21 @@ export function Town({ buildings, roads }) {
   const fresh = new Set([...risen(), ...built.value]);   // raised by the onboarding or by Build: each rises into place once
   const going = constructing.value;          // raised by Build and not standing yet: scaffolding where it will stand
   const drag = dragging.value, stretch = resizing.value;
-  const auto = grow(buildings, spots, rects, new Set([drag && drag.id, stretch && stretch.id].filter(Boolean)));
+  const still = new Set([drag && drag.id, stretch && stretch.id].filter(Boolean));
+  const r20 = (v) => Math.round((v || 0) / 20);
+  const shape = JSON.stringify([room.value, panelW, buildings.map((b) => [b.id, b.size, b.folded, b.hut])]);
+  const auto = steady(() => grow(buildings, spots, rects, still),
+    JSON.stringify([shape, [...still], buildings.map((b) => [r20(spots[b.id].x), r20(spots[b.id].y),
+      natural[b.id] ? [r20(natural[b.id].w), r20(natural[b.id].h)] : 0])]), shape);
   for (const b of buildings) {
     const m = sizes.value[b.id];
     if (!m) continue;
     if (!auto[b.id] && !grownLast.has(b.id)) natural[b.id] = m;
     // only wider, it draws its own height: a card that grew before its card was drawn in full learns it here
-    else if (auto[b.id] && !auto[b.id][1] && grownLast.has(b.id) && natural[b.id]) natural[b.id] = { ...natural[b.id], h: m.h, top: m.top };
+    // (taller only: a height that may also shrink can swing the growth to and fro)
+    else if (auto[b.id] && !auto[b.id][1] && grownLast.has(b.id) && natural[b.id] && m.h > natural[b.id].h) {
+      natural[b.id] = { ...natural[b.id], h: m.h, top: m.top };
+    }
   }
   grownLast = new Set(Object.keys(auto));
   const dragged = drag && buildings.find((b) => b.id === drag.id && rects[b.id]);

@@ -75,10 +75,31 @@ few as can be. Built for the Watchtower first; a type joins by exporting `Setup`
 
 - Build raises the building (one press in the catalog, as before) and **does not open its window** when its type has
   a `Setup` (`js/build.js` `raised`): the Warchief asks over his line instead, "External listeners stands. What should
-  it listen to?", with the answers as buttons. *All its settings* opens the window; *Later*, Escape or a press
+  it listen to?" (now "… is going up. What should it listen to?", §8), with the answers as buttons. *All its settings* opens the window; *Later*, Escape or a press
   elsewhere puts the question away.
 - **The Watchtower's answers** are the services Claude Code has a connector for (Gmail, Slack, Jira, Confluence). One
   press adds it through Claude's connection as it comes: every 30 min, at most $0.50 a day, its usual ask, every
   message sorted (`act add_quick`, `watchtower_add.Adding.quick`); saved when its first look answers. With no
   connector, the line says how to connect one, or to pick a source in its settings.
 - A type with no `Setup` opens in its window as before.
+
+## 8. Build as a strategy game does it (built 2026-10-09)
+
+Asked by the owner: Build → pick a building → place its ghost → it goes up under scaffolding while the Warchief asks
+its setup → the scaffolding comes down and it stands.
+
+1. **Pick** in Build (the catalog, as before). The dialog closes; nothing is built yet.
+2. **Place**: the building's ghost follows the mouse (`js/town.js` `Placing`; the onboarding's ghost,
+   `js/onboarding.js` `Ghost`). **A building that has a card shows a card in its ghost; a bare one (no view,
+   js/hut.js `bareOf`) is its house and name alone.** A press builds it there (`town.build` with the spot); Escape
+   or a right click lets it go. A spot already given (the map's menu, *Build here*) skips this step.
+3. **Scaffolding**: the building is raised at once, but drawn as scaffolding with its sprite rising
+   (`js/build.js` `raised`, `constructing`), sized as a house so it stands where it was placed.
+4. **The Warchief asks** its setup meanwhile, if its type has one (§7). The scaffolding stays up until that is
+   over: answered, *Later*, Escape or a press elsewhere (`endSetup`). A type with no questions stands after a moment
+   (1.6 s).
+5. **It stands**: the scaffolding comes down and the building rises into place once (`built`, the onboarding's
+   rise).
+
+Not built: a first prompt for a type with no setup of its own (no one setting holds "what this building is for"
+today: `prompt` only names it, `ork.orders` and `building.recruit_ask` speak to or hire an ork). To be decided per type.
