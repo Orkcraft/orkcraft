@@ -111,11 +111,12 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   inside is a step over the ground (the ink at 6 %, *Card background: Yard*), so inside and outside part. Five fences on a map stay quieter
   than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
 - **The orks' fence, sparingly** (2026-10-09): each picket is lashed to its rail with rope, no nails. The one
-  ornament is the **corner posts** (bottom corners and the top fence's end, `corner-<n>.png`), and they grow with the
-  building's renown (growth.md §5), as its flag and footing do: I a thick post lashed twice, II taller with a longer
-  point, III a pair of bone tusks. Bone stands at three points a card, never along the run: a bone tip on every picket
-  measured as bright as the card's text and pulled the eye round every card. A selected yard glows round its posts
-  (they stand where the selection's corner brackets would).
+  ornament is a **bone tusk at each corner** (the bottom corners and the top fence's end, `corner-<n>[-r].png`), its
+  tip curling in over the card. The building's renown (growth.md §5) adds iron, never more bone: II an iron band
+  with a spike out at each side round each tusk's root, III a pair of crossed axes where the top fence meets the house
+  (`axes.png`). The bone is old bone (`#b8ac90`, about 8:1 to the ground): a white one (14:1) measured as bright as
+  the card's text and pulled the eye round every card; the iron is as quiet as the wood. A selected yard glows round
+  its tusks (they stand where the selection's corner brackets would).
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the

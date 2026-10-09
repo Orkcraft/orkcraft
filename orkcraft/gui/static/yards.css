@@ -127,7 +127,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-fenced.is-renown-3:not(.is-folded) .gui-hut__title::after { content: ""; position: absolute;
   left: calc(var(--house-w, 15px) + 2px); bottom: 2px; width: 27px; height: 21px; pointer-events: none; image-rendering: pixelated;
   background: image-set(url("/ds/sprites/fence/axes.png") 1x, url("/ds/sprites/fence/axes@2x.png") 2x) 0 0 / 27px 21px no-repeat; }
-/* Selected: a gold glow round the fence and its corner posts (the posts stand where the brackets would). Asking: the inside takes the fire's ground and
+/* Selected: a gold glow round the fence and its tusks (they stand where the brackets would). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
