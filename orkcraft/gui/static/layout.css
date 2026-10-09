@@ -235,14 +235,10 @@ button { font: inherit; color: inherit; }
 .gui-counters { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
 .gui-counter { white-space: nowrap; }
 /* A closed card's parts the person may hide (js/parts.js): a row of small checkboxes over the card. On the
-   Task Fields' card it is a tray on the card's top edge instead, out while the board is selected (never under the
-   mouse alone): it takes no room, so a setting of the view never crowds what the board says,
-   and the top edge stays put when a part is hidden, so the tray stays under the mouse (the War Drum keeps
-   its row: there it is the legend). */
+   Task Fields' card it is a row at the top of its yard, as the War Drum's legend: always there, never a tray that
+   pops out over the card (the owner's call, 2026-10-09; yards.md §7). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
-.gui-hut .gui-fhut > .gui-parts { position: absolute; z-index: 2; bottom: 100%; left: 0; right: 0; padding: var(--space-1) var(--space-3);
-  background: var(--panel); border: 1px solid var(--frame); border-bottom: 0; visibility: hidden; }
-.gui-hut.is-selected .gui-fhut > .gui-parts { visibility: visible; }    /* never under the mouse alone (yards.md §7) */
+.gui-hut .gui-fhut > .gui-parts { margin-bottom: var(--space-1); }
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }

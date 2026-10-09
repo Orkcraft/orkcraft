@@ -622,18 +622,15 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg.wait_for_timeout(500)
     before = {t: box(t) for t in ids}
     fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
-    fields.hover()
-    assert not fields.locator(".gui-parts").is_visible()              # never under the mouse alone (yards.md §7)
-    fields.locator(".gui-hut__title").click()                           # selected: its tray comes out
+    assert fields.locator(".gui-parts").is_visible()                  # a row in its yard, always there (yards.md §7)
     assert words(fields) == ["Orkwork", "Myto-dos", "Notes"]          # every part shown, in today's words
     assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
     fields.locator(".gui-parts__one", has_text="Ork work").click()
     fields.locator(".gui-parts__one", has_text="Notes").click()
     drum.locator(".gui-parts__one", has_text="meetings").click()
-    pg.keyboard.press("Escape")                                         # the building let go: its panel shuts
-    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
     pg.mouse.move(0, 0)
     pg.wait_for_timeout(500)
+    assert pg.locator(".gui-panel").count() == 0                      # a checkbox never opens the hut
     assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
     after = {t: box(t) for t in ids}
     shrunk = before["fields"]["height"] - after["fields"]["height"]

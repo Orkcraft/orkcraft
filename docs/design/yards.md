@@ -273,3 +273,5 @@ own needs no card at all.
 - **A bare building's plate**: what it says first (`js/hut.js` `Mark`: new mail, a failing source, a run that
   failed) stands on a small plate by its house, so a building with no card is still read at a glance.
 - **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).
+- **The parts' checkboxes live in the yard** (Task board: Ork work, My to-dos, Notes): a row at the top of its card,
+  as the Calendar's legend, always there — no tray popping out over the card, under the mouse or when selected.

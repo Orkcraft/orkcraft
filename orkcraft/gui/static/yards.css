@@ -102,8 +102,6 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-/* Selected, its card stands over its house: the parts' tray on its top edge (layout.css .gui-parts) takes the pointer. */
-[data-look="camp"] .gui-hut.is-fenced.is-selected > .ok-hut__card { position: relative; z-index: 2; }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
