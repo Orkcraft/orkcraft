@@ -180,6 +180,18 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         return str(self.config.get("orders") or "")
 
     @property
+    def code_root(self) -> Path:
+        """The folder of code its orks work in (`repo`, chosen in its settings: a project the town does not live in),
+        else the town's own. Its branches, worktrees, tests, briefs and pull requests are there; its state stays in
+        the town."""
+        repo = str(self.config.get("repo") or "").strip()
+        if repo:
+            path = Path(repo).expanduser()
+            if path.is_dir():
+                return path
+        return self.repo_root
+
+    @property
     def uses_git(self) -> bool:
         """Task branches, the diff, the tests and the PR — only in worktrees, never in the sandbox."""
         return self.worktrees and not self.simulated
@@ -369,10 +381,10 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             maker = type(self).worktree_maker or jobs.add_worktree
             try:
                 if type(self).worktree_maker is None:       # no git here yet: started, once, and said so
-                    done = jobs.ensure_repo(self.repo_root)
+                    done = jobs.ensure_repo(self.code_root)
                     if done:
                         self.toast(f"No git repository here, so the orks could not work: {done}.", title="🏕 Barracks")
-                path, _branch = maker(self.repo_root, self.building_id, name)
+                path, _branch = maker(self.code_root, self.building_id, name)
             except (RuntimeError, OSError) as e:
                 self.toast(f"{name}: no worktree — {e}", title="🏕 Barracks", severity="error")
                 return None
@@ -418,7 +430,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         orc.status, orc.task = "working", task.id
         if (task.key or task.id) not in orc.keys:     # a rework of a task without a ticket comes back by its id
             orc.keys.append(task.key or task.id)
-        repo = self.repo_root
+        repo = self.code_root
         if self.uses_git and task.want != pipes.REPLY:      # a reply gets no branch: it changes no file
             task.branch = task.branch or bk.task_branch(self.building_id, task)
             task.base = task.base or self.task_git.base_of(repo, str(self.config.get("base") or ""))

@@ -113,7 +113,7 @@ class PlanMixin:
             from orkcraft.core.workers.barracks import RunOutcome
             out, sort = RunOutcome(), None
             try:
-                sort = plans.parse_triage(self._steward(prompt, self.repo_root, cancel, out, "triage"))
+                sort = plans.parse_triage(self._steward(prompt, self.code_root, cancel, out, "triage"))
             except InterruptedError:
                 out.error = "stopped"
             except Exception:  # a steward that cannot sort never stops the task: it is planned
@@ -165,11 +165,11 @@ class PlanMixin:
             out = RunOutcome()
             subs, errors, extra = None, [], ({}, [])
             try:
-                text = self._steward(prompt, self.repo_root, cancel, out, "plan")
+                text = self._steward(prompt, self.code_root, cancel, out, "plan")
                 subs, errors = plans.parse(text)
                 if errors:                                    # once more, with what was wrong
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
-                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan")
+                        f"- {e}" for e in errors), self.code_root, cancel, out, "plan")
                     subs, errors = plans.parse(text)
                 extra = plans.extras(text)
             except InterruptedError:
@@ -257,9 +257,9 @@ class PlanMixin:
             return
         if self.uses_git:
             task.branch = task.branch or bk.task_branch(self.building_id, task)
-            task.base = task.base or self.task_git.base_of(self.repo_root, str(self.config.get("base") or ""))
+            task.base = task.base or self.task_git.base_of(self.code_root, str(self.config.get("base") or ""))
             try:
-                self.task_git.cut(self.repo_root, task.branch, task.base)
+                self.task_git.cut(self.code_root, task.branch, task.base)
             except Exception as e:  # no branch to merge into: the task runs whole
                 self._whole(task, "warrior", f"no branch {task.branch}: {e}")
                 return
@@ -411,7 +411,7 @@ class PlanMixin:
             out = RunOutcome()
             answer = ""
             try:
-                answer = bk.steward_answer_of(self._steward(prompt, self.repo_root, cancel, out, "answer"))
+                answer = bk.steward_answer_of(self._steward(prompt, self.code_root, cancel, out, "answer"))
             except Exception:  # a steward that cannot answer closes the task, never the barracks
                 answer = ""
             self._call(self._decided, task.id, answer, why, out)
@@ -455,7 +455,7 @@ class PlanMixin:
         git = self.task_git
         with self._merge_lock:
             try:
-                ok, note = git.merge(self.repo_root, task.base, task.branch, f"Merge part `{task.sub}`: {task.title}")
+                ok, note = git.merge(self.code_root, task.base, task.branch, f"Merge part `{task.sub}`: {task.title}")
             except Exception as e:  # a merge that cannot run is the steward's to report, not a crash
                 ok, note = False, str(e)[:300]
         if not ok:
@@ -494,11 +494,11 @@ class PlanMixin:
             try:
                 diff, tests, commits = "", "", 0
                 if git is not None and parent.branch:
-                    commits, diff = git.diff(self.repo_root, parent.base, parent.branch)
+                    commits, diff = git.diff(self.code_root, parent.base, parent.branch)
                     out.files = bk.changed_files(diff)
                     if cmd and commits:
-                        where = worktrees.worktree_path(self.repo_root, f"pool-{self.building_id}-steward".replace("_", "-"))
-                        passed, tail = git.check(self.repo_root, parent.branch, cmd, cancel, where)
+                        where = worktrees.worktree_path(self.code_root, f"pool-{self.building_id}-steward".replace("_", "-"))
+                        passed, tail = git.check(self.code_root, parent.branch, cmd, cancel, where)
                         if not passed:
                             out.accepted = False
                             out.notes = f"new: the tests of the merged parts fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
@@ -507,7 +507,7 @@ class PlanMixin:
                 extra, out.clashes, met = self._review_context(parent, out.files, git, parent.branch)
                 verdict = self._steward(plans.final_prompt(self.keeper, self.orders, parent.title, parent.text,
                                                            parent.plan, reports, diff, tests, bk.DIFF_LIMIT, extra),
-                                        self.repo_root, cancel, out, "final")
+                                        self.code_root, cancel, out, "final")
                 out.accepted, out.notes = bk.verdict_of(verdict)
                 out.notes = briefs.strip(out.notes)
                 out.designs = briefs.states(met, out.files, verdict)
@@ -516,7 +516,7 @@ class PlanMixin:
                         f"### {sub}\n\n{rep.strip()[:1500]}" for sub, rep in reports) + \
                         f"\n\n_Planned and reviewed by {self.keeper}: {out.notes or 'accepted'}_" + \
                         (f"\n\n_Design brief:_ `{parent.design}`" if parent.design else "") + self.pr_notes(parent, out)
-                    out.pr, out.pr_note = git.publish(self.repo_root, parent.branch, parent.base, parent.title, body)
+                    out.pr, out.pr_note = git.publish(self.code_root, parent.branch, parent.base, parent.title, body)
             except _Done:
                 pass
             except InterruptedError:

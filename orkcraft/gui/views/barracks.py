@@ -4,7 +4,9 @@ sessions service (core/sessions.py), opened on its own worktree."""
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
+from orkcraft.gui import folders
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, tiers
@@ -130,6 +132,8 @@ def detail(w) -> dict:
         "providers": [h + (":" + m if m else "") for h, m in f.providers],
         "steward": str(w.config.get("steward") or "main"), "steward_cost": _money(st.steward_cost),
         "test_cmd": str(w.config.get("test_cmd") or ""), "worktrees": w.worktrees,
+        "repo": str(w.code_root), "repo_own": bool(str(w.config.get("repo") or "").strip()),
+        "recent": folders.recent(getattr(w.town, "machine", None)),
         "rules": [ln for ln in w.orders.splitlines() if ln.strip()],
         "orks": orks,
         "lanes": [{"id": lid, "label": label} for lid, label in LANES],
@@ -246,5 +250,31 @@ def _terminal(w, args: dict) -> str:
     return key
 
 
+def _repo(w, args: dict) -> str:
+    """The folder of code its orks work in (an existing project, its own git); "" gives it back to the town's own.
+    It takes effect for the next ork it hires: the ones at work keep their worktrees."""
+    path = text(args, "path", 2000).strip()
+    if path:
+        folder = Path(path).expanduser()
+        if not folder.is_dir():
+            raise ActError(f"No folder at {path}")
+        path = str(folder.resolve())
+        if getattr(w.town, "machine", None) is not None:
+            folders.remember(w.town.machine, path)
+    if not w.save_config({"repo": path or None}):
+        raise ActError("Not saved")
+    return str(w.code_root)
+
+
+def _pick(w, args: dict) -> str:
+    """The system's folder dialog (on a thread): a token to ask `picked` with."""
+    return folders.start(text(args, "start", 2000).strip() or str(w.code_root))
+
+
+def _picked(w, args: dict) -> dict:
+    return folders.result(text(args, "token", 40))
+
+
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal, "wants": _wants, "want_by_source": _want_by_source}
+        "diff": _diff, "terminal": _terminal, "wants": _wants, "want_by_source": _want_by_source,
+        "repo": _repo, "pick": _pick, "picked": _picked}

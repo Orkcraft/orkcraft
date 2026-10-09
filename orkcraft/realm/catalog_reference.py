@@ -197,6 +197,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
+        "repo": "the folder of code its orks work in (a project the town does not live in); empty: the town's own",
         "steward": "`harness[:model]` of the steward that plans, answers and reviews (default main, the main tool: an elder plans, "
                    "a warrior reviews a part, the building's goal picks who looks at the whole)",
         "plan": "false: every task goes whole to one ork, the steward never plans it into parts (default true)",

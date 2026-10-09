@@ -191,6 +191,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
                 "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
+                "repo": (str, None, False),       # the folder of code its orks work in; "" the town's own
                 "plan": (bool, None, False), "escalate": (bool, None, False),
                 "notes": (list, None, False), "claims": (str, ("wait", "flag", "off"), False),
                 "claim_wait": (int, (1, 1440), False), "claim_days": (int, (1, 90), False),
