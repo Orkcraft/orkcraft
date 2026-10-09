@@ -108,7 +108,7 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   picket's point `#8a7048` — at most about 3:1 to the ground, under the card's muted words (about 7:1) and
   its text (about 15:1). Points are wood, never bone: bone is as bright as the text and pulled the eye round
   every card. One plain rail between the pickets, not two, so the fence reads as one calm line. The yard's
-  inside is a step over the ground (`#262017`), so inside and outside part. Five fences on a map stay quieter
+  inside is a step over the ground (the ink at 6 %, *Card background: Yard*), so inside and outside part. Five fences on a map stay quieter
   than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
@@ -266,8 +266,10 @@ own needs no card at all.
   picker closes on a press anywhere else or on Escape, and the bubble goes when the building is no longer selected.
 - **The bubble is rounder**: its corners step over four pixels (`tools/visit_sprites.py`), so its sides read round
   and stay pixel.
-- **Cards on the ground by default** (§3e): Card background is *Ground* (the default) or *Panel*; *Shade* is gone, and
-  a browser that kept it draws Ground.
+- **A yard a step over the ground by default** (§3e; the owner's call, 2026-10-09): Card background is *Yard* (the
+  default: inside its fence a card is the ink at 6 % over the town's ground, so it keeps its biome's hue and parts
+  from the outside) or *Ground* (no backdrop, the card on the ground itself). *Panel* and *Shade* are gone; a browser
+  that kept either draws a yard.
 - **A card takes the free room around it** — *off by default since 2026-10-09: it twice drew the town in a loop, and a
   layout that changes with the window costs the person where things are; a browser tries it with localStorage
   `orkcraft.grow` = `1`* (`js/town.js` `grow`): a card with a view and no size of its own grows right

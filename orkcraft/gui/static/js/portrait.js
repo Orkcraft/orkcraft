@@ -18,12 +18,12 @@ import { PhonePair } from "./phones.js";
 
 export const portraitOpen = signal(false);
 
-// The cards' background in Camp, this browser's alone (docs/design/yards.md §3e, §7): "ground" (the default), the cards
-// drawn on the town's ground itself; or "panel", the card's own. A card that asks keeps the fire's ground. "shade" is
-// gone: a browser that kept it draws ground.
+// The cards' background in Camp, this browser's alone (docs/design/yards.md §3e, §7): "yard" (the default), each card's
+// inside a step lighter than the town's ground, in its biome's hue; or "ground", the cards drawn on the ground itself.
+// A card that asks keeps the fire's ground. "panel" and "shade" are gone: a browser that kept one draws a yard.
 const CARDS_KEY = "orkcraft.cards";
-const CARDS = ["panel", "ground"];
-const readCards = () => { try { const v = localStorage.getItem(CARDS_KEY); return CARDS.includes(v) ? v : "ground"; } catch { return "ground"; } };
+const CARDS = ["yard", "ground"];
+const readCards = () => { try { const v = localStorage.getItem(CARDS_KEY); return CARDS.includes(v) ? v : "yard"; } catch { return "yard"; } };
 const cardGround = signal(readCards());
 document.documentElement.dataset.cards = cardGround.value;
 function setCards(v) {
@@ -86,8 +86,8 @@ function Menu({ y, p }) {
     <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>`}
     <p class="ok-font-status ok-tone-muted">${say("The look and Do not disturb are under the sun in the middle of the top bar.")}</p>
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
-      items=${[["ground", "Ground"], ["panel", "Panel"]]} />
-    <p class="ok-font-status ok-tone-muted">${say("Ground: the cards are drawn on the town's ground itself. Panel: each card on its own dark panel. This browser only.")}</p>`}
+      items=${[["yard", "Yard"], ["ground", "Ground"]]} />
+    <p class="ok-font-status ok-tone-muted">${say("Yard: inside its fence each card is a step lighter than the town's ground. Ground: the cards are drawn on the ground itself. This browser only.")}</p>`}
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>
