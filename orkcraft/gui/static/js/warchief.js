@@ -17,7 +17,7 @@
 // While it is left alone the line says what wants a decision first: an ork's question (§8).
 //
 // A building selected, the line is its **command card** (docs/design/select-a-building.md §2): its steward's face
-// and name, its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
+// and name, Open (its window, until it is open), its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
 // while it stays selected (Build and Improve with him: the open panel leaves the line little room). What is typed
 // goes to its steward (js/keeper.js: it answers, or proposes a change of its rules and settings with Apply); to the
 // Warchief, with the building named as `@` does, from a yard (no steward), a building that keeps no settings, or
@@ -26,7 +26,7 @@ import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
-import { opened, openBuilding } from "./windows.js";
+import { opened, openBuilding, selected } from "./windows.js";
 import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup, BuildRow, buildEnter } from "./build.js";
 import { typeModule, runQuick } from "./types.js";
 import { openOrders } from "./orders.js";
@@ -312,7 +312,7 @@ export function hints() {
     out.push({ label: `⚠ ${say(`Resume ${pn}`)}`, run: () => act(p.id, "pause").catch(() => {}) });
     if (p.card && p.card.failed) out.push({ label: say(`Why did ${pn}'s tasks fail?`), ask: "Why did its tasks fail?", about: [p.id] });
   }
-  const b = opened.value.active && opened.value.active !== HALL && t.buildings.find((x) => x.id === opened.value.active);
+  const b = selected.value && selected.value !== HALL && t.buildings.find((x) => x.id === selected.value);
   const name = b && say(b.title);
   if (b) {
     out.push({ label: say(`Add an ork to ${name}`), text: `/recruit @${name} ` });
@@ -441,7 +441,7 @@ export function WarchiefLine() {
   const data = hall();
   const b = t.buildings.find((x) => x.id === HALL);
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
-  const open = opened.value.active;
+  const open = selected.value;                     // the selected building (open in the panel, or only selected)
   // the building open in the panel, named in what is typed — its card says so; ✕ on the card: the Warchief at large
   const auto = open && open !== HALL && !l.about.includes(open) && givenBack.value !== open
     ? t.buildings.find((x) => x.id === open) : null;
@@ -618,6 +618,8 @@ export function WarchiefLine() {
       <${Speaks} hidden=${!!card || buildOn || focused || !!l.text || chips.length > 0} />
       ${chips.map((x) => html`<${Chip} key=${x.id} b=${x} onDrop=${() => { line.value = { ...l, about: l.about.filter((id) => id !== x.id) }; }} />`)}
       <span class="gui-warchief__buttons" onMouseDown=${(e) => e.preventDefault()}>
+        ${card && opened.value.active !== card.id && html`<button class="ok-btn primary gui-warchief__open"
+          title=${say("Open its window (or click it again)")} onClick=${() => openBuilding(card.id, "work")}>${say("Open")}</button>`}
         ${cardActs.map((a, n) => html`<button key=${a.id} class="ok-btn gui-warchief__act"
           title=${`${say(a.label)} (${CARD_KEYS[n].slice(3)})`} aria-keyshortcuts=${CARD_KEYS[n].slice(3).toLowerCase()}
           onClick=${() => runQuick(card, a.id)}>${say(a.label)}</button>`)}

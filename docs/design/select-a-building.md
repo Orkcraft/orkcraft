@@ -1,6 +1,6 @@
 # Design — a click selects; the steward speaks for its building
 
-Status: proposal 2026-10-09, not built. Asked by the owner ("think through"). Builds on [yards.md](yards.md) §7 (the
+Status: proposal 2026-10-09; §1 (a click selects), §2 (the command card), §7–8 built. Asked by the owner ("think through"). Builds on [yards.md](yards.md) §7 (the
 ork comes out on selection, nothing on hover) and [calm-town.md](calm-town.md) (the Warchief's line at the foot).
 
 ## 1. What changes
@@ -9,7 +9,9 @@ Today a click on a building **opens** it: the panel slides in on the right with 
 "selected but not opened" state, so a person who wants one small thing (run it, rate it, ask its ork) pays for a
 whole window.
 
-Proposed, as an RTS does it:
+Proposed, as an RTS does it — **built 2026-10-09** (`js/windows.js` `selected`, `pickBuilding`): a click selects,
+the selected one clicked again (so a double click) or **Open** on its card in the Warchief's line opens its Work;
+Escape closes the window, and with no window up lets the building go; 1–9 select, the same number again opens:
 
 | gesture | today | proposed |
 |---|---|---|
@@ -90,8 +92,8 @@ smaller button on the dial's right edge, not in the menu.
 
 ## 6. Questions for the owner
 
-1. Second click to open, or right-click to open (and the menu on a long press)? Recommended: second click, right-click
-   keeps the menu with Open first.
+1. ~~Second click to open, or right-click to open?~~ A second click (or Open on the card); right-click keeps the menu
+   (built).
 2. ~~Does the steward take over the Warchief's line, or speak only in its bubble?~~ Takes over (§2, built).
 3. Do not disturb inside the dial's menu, or as a small button on the dial?
 
