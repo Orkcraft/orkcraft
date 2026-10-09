@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import runners, usage, wakes
+from orkcraft.core import crashes, runners, usage, wakes
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
@@ -112,6 +112,10 @@ class Host:
         self.commands.update(self.you.commands())
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
         self.usage = usage.Usage(self.town.machine, face="gui", demo=demo)
+        # Crash reports, with the same answer (core/crashes.py, docs/crash-reports.md); the window's own errors too
+        self.crashes = crashes.install(self.town.machine, face="gui", demo=demo)
+        self.commands["crash.window"] = lambda a: self.crashes.capture_window(str(a.get("message", ""))[:2000],
+                                                                              str(a.get("stack", ""))[:8000])
         self._opened()
         self.updates = updates.Updates(self)        # what is out, installed with a click (gui/updates.py)
         self.commands.update(self.updates.commands())
@@ -234,6 +238,7 @@ class Host:
                 try:
                     view.refresh(w)
                 except Exception as e:                 # one building's look never stops the clock
+                    crashes.capture(e, "clock")
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.refresh_roster()
         self._night()
@@ -254,6 +259,7 @@ class Host:
                 if self.console.keeper_wake(wake):
                     wakes.taken(self.town, wake)
         except Exception as e:                     # a wake never stops the clock
+            crashes.capture(e, "clock")
             self.town.toast(f"{type(e).__name__}: {e}", title="Wakes", severity="error")
 
     # -- 🏛 quiet hours: the Elders (core/night.py), the retros and the orks' changes (gui/nightly.py) ----
@@ -270,6 +276,7 @@ class Host:
         try:
             self.nightly.tick(quiet, morning)
         except Exception as e:                     # the night's work never stops the clock
+            crashes.capture(e, "clock")
             self.town.toast(f"{type(e).__name__}: {e}", title="Quiet hours", severity="error")
         alert = self.night.next_question(self.muster.roster.alerts, quiet, machine.autonomy,
                                          machine.autonomy_wait)
@@ -338,6 +345,7 @@ class Host:
         self.town.close()
         self.town.save()
         self.usage.close()
+        self.crashes.close()
 
     # -- the page's commands -------------------------------------------------------------------
 

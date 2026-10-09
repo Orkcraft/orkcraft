@@ -64,6 +64,7 @@ def isolated_layout_file(tmp_path: Path, tmp_path_factory: pytest.TempPathFactor
     monkeypatch.setenv("ORKCRAFT_CALENDARS_FILE", str(tmp_path / "calendars.json"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     monkeypatch.setenv("ORKCRAFT_NO_USAGE", "1")         # no usage stats leave a test (test_usage.py opts in)
+    monkeypatch.setenv("ORKCRAFT_CRASH_DIR", str(tmp_path / "crashes"))   # crash files stay the test's own
     monkeypatch.setenv("ORKCRAFT_NO_UPDATE", "1")        # no test reads the list of updates (test_updates.py opts in)
     monkeypatch.setenv("ORKCRAFT_MODEL_LIST", "0")       # no tool is asked its models (test_model_families.py fakes one)
     # No real agent CLI and no real gh, even on a machine that has them: a run a test does not fake finds

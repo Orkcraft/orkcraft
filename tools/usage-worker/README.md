@@ -1,6 +1,6 @@
 # The usage proxy
 
-A Cloudflare Worker between Orkcraft and Amplitude (what is collected: [docs/usage-stats.md](../../docs/usage-stats.md)).
+A Cloudflare Worker between Orkcraft and Amplitude (usage stats, [docs/usage-stats.md](../../docs/usage-stats.md)) and Sentry (crash reports, [docs/crash-reports.md](../../docs/crash-reports.md)).
 
 ```
 orkcraft ──POST /v1/events──▶ Worker ──▶ Amplitude HTTP API v2 (US)
@@ -62,6 +62,39 @@ The list lives twice, and both must change together: `EVENTS` in `orkcraft/core/
 `EVENTS` in `worker.js` (`tests/test_usage.py` checks that they name the same events, building types
 and deeds). Add the event to [docs/usage-stats.md](../../docs/usage-stats.md) as well, then
 `npx wrangler deploy` before the release that sends it: an event the Worker does not know is dropped.
+
+## Crash reports → Sentry
+
+`POST /v1/crash` takes the app's crash reports and run sessions ([docs/crash-reports.md](../../docs/crash-reports.md)),
+checks each field again (file paths only of Orkcraft, a library or `<other>`; identifiers only) and
+sends them to Sentry as one envelope. Without the `SENTRY_DSN` secret it answers 204 and drops them.
+
+1. **Sentry.** An account (the free Developer plan is enough; open-source projects can ask for the
+   sponsored plan). Create a project, platform **Python**. Project settings → Client Keys (DSN): copy
+   the DSN, `https://<key>@o….ingest.us.sentry.io/<project>`.
+2. In the project's **Security & Privacy**: turn on *Prevent Storing of IP Addresses* and keep
+   *Data Scrubber* on. Sentry sees only the Worker's address anyway.
+3. Put the DSN in the Worker and deploy:
+
+   ```bash
+   cd tools/usage-worker
+   npx wrangler secret put SENTRY_DSN       # paste the DSN
+   npx wrangler deploy
+   ```
+4. **Check it** with a report of your own (it shows in Sentry → Issues within a minute):
+
+   ```bash
+   curl -i https://orkcraft-usage.<account>.workers.dev/v1/crash \
+     -H 'User-Agent: orkcraft/0.0.0' -H 'Content-Type: application/json' \
+     -d '{"install_id":"0123456789abcdef0123456789abcdef","app_version":"0.0.0","os":"linux","python":"3.12","items":[{"type":"event","event_id":"0123456789abcdef0123456789abcdef","where":"command","handled":true,"exceptions":[{"type":"TestError","value":"a test from curl","frames":[{"file":"orkcraft/cli.py","function":"main","line":1,"in_app":true}]}]}]}'
+   # HTTP/2 204; x-sentry-status: 200 when Sentry took it
+   ```
+
+   Or from the app: `ORKCRAFT_USAGE_DEBUG=1` prints what would be sent; with stats on, an error in
+   the window's console (`throw new Error("test")`) is reported.
+
+Releases are `orkcraft@<version>`, so Sentry → Releases shows the crash-free sessions of each
+version. A git checkout reports as environment `checkout`, an installed copy as `production`.
 
 ## The installer
 

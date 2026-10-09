@@ -52,7 +52,7 @@ export function command(name, args = {}) {
   return new Promise((resolve, reject) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       toast("Not connected to the town", "error");
-      reject(new Error("offline"));
+      reject(Object.assign(new Error("offline"), { refused: true }));
       return;
     }
     const id = nextId++;
@@ -92,7 +92,7 @@ function receive(msg) {
     if (!p) return;
     pending.delete(msg.id);
     if (msg.ok) p.resolve(msg.result);
-    else p.reject(new Error(msg.error || "Refused"));
+    else p.reject(Object.assign(new Error(msg.error || "Refused"), { refused: true }));   // the town said no: not a crash (js/crashes.js)
   }
 }
 
@@ -104,7 +104,7 @@ export function connect() {
   ws.onclose = () => {
     online.value = false;
     socket = null;
-    for (const p of pending.values()) p.reject(new Error("The town went away"));
+    for (const p of pending.values()) p.reject(Object.assign(new Error("The town went away"), { refused: true }));
     pending.clear();
     setTimeout(connect, 1000);
   };

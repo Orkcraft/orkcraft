@@ -160,6 +160,7 @@ def share_usage(host, args: dict) -> dict[str, Any]:
     settings.save(m)
     if host.usage.enabled() and not was:
         host._opened()
+        host.crashes.start()                       # the same yes: this run's session begins now
     host.on_change()
     return read(host)
 

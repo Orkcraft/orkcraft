@@ -28,8 +28,8 @@ function Steps({ label, items, value, onPick }) {
     </span></div>`;
 }
 
-export const USAGE_WHAT = "Which features are used, as counts — never your code, prompts, paths or project names. "
-  + "The list of every event is in docs/usage-stats.md.";
+export const USAGE_WHAT = "Which features are used, as counts, and where in Orkcraft's own code something broke — "
+  + "never your code, prompts, paths or project names. Every event: docs/usage-stats.md; crash reports: docs/crash-reports.md.";
 
 const UPDATE_WHAT = {
   auto: "Every update installs when the town opens.",
@@ -51,7 +51,7 @@ function UpdatesField({ s }) {
 }
 
 function UsageField({ s, onPick }) {
-  return html`<${Steps} label=${say("Share anonymous usage stats")} value=${s.usage === true}
+  return html`<${Steps} label=${say("Share anonymous usage stats and crash reports")} value=${s.usage === true}
       items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
 }

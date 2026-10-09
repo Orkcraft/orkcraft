@@ -31,6 +31,9 @@ this window was opened, the Orkcraft version, the OS (darwin · linux · windows
 **Never sent:** your code, prompts, what the orks or you wrote, file names, paths, project or building
 names, git data, your settings' text, your email, your IP address.
 
+The same answer covers [crash reports](crash-reports.md): where in Orkcraft's code something broke,
+never what was in it.
+
 ## Where it goes
 
 To Orkcraft's own proxy, a Cloudflare Worker (its code: [tools/usage-worker/](../tools/usage-worker/)),

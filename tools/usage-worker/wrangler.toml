@@ -1,5 +1,6 @@
-# Orkcraft's usage proxy (README.md). The Amplitude key is a secret, never here:
+# Orkcraft's usage proxy (README.md). The Amplitude key and the Sentry DSN are secrets, never here:
 #   npx wrangler secret put AMPLITUDE_API_KEY
+#   npx wrangler secret put SENTRY_DSN
 name = "orkcraft-usage"
 main = "worker.js"
 compatibility_date = "2026-10-01"

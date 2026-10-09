@@ -49,6 +49,7 @@ from websockets.exceptions import ConnectionClosed
 from websockets.http11 import Request, Response
 
 from orkcraft import __version__
+from orkcraft.core import crashes
 from orkcraft.design import tokens
 from orkcraft.gui import mobile, notify, phones
 from orkcraft.gui.host import CommandError, Host
@@ -273,6 +274,8 @@ class Server:
         except CommandError as e:
             return {"t": "reply", "id": cid, "ok": False, "error": str(e)}
         except Exception as e:                            # a broken command never closes the page
+            known = str(msg.get("name", ""))
+            crashes.capture(e, "command", command=known if known in self.host.commands else "")
             return {"t": "reply", "id": cid, "ok": False, "error": f"{type(e).__name__}: {e}"}
 
     def _send_all(self, msg: dict) -> None:
@@ -313,12 +316,14 @@ class Server:
                 self.host.tick()
                 self.phones.tick()
             except Exception as e:
+                crashes.capture(e, "clock")
                 self.host.town.toast(f"{type(e).__name__}: {e}", title="Town clock", severity="error")
 
     async def run(self) -> None:
         self.loop = asyncio.get_running_loop()
         self._stop = asyncio.Event()
         self.host.town.call = lambda fn, *a: self.loop.call_soon_threadsafe(fn, *a)
+        self.loop.set_exception_handler(self.host.crashes.asyncio_handler)   # a task's error nobody awaited
         async with serve(self._client, "127.0.0.1", self.port, process_request=self._http,
                          max_size=8 * 2**20) as server:
             self.port = server.sockets[0].getsockname()[1]

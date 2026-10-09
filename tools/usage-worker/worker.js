@@ -5,6 +5,8 @@
 // sees the Worker's request.
 //
 //   POST /v1/events  {install_id, session_id, app_version, os, python, events: [{event, time, props}]}
+//   POST /v1/crash   {install_id, app_version, os, python, items: [{type: "event" | "session", …}]} → Sentry
+//   GET  /install.sh the installer, from main
 //   → 204 (kept or dropped quietly) · 400 (not a batch) · 413 (too big) · 429 (too often)
 //   X-Amplitude-Status on a 204 that reached Amplitude: its own answer (200 ok, 400 a bad key or batch,
 //   401 a key of the other data centre), so `curl -i` shows why nothing arrives.
@@ -72,23 +74,121 @@ async function installer() {
     "Cache-Control": "public, max-age=300" } });
 }
 
+/** A request from the app, checked before anything else: its User-Agent, its size, JSON with an install
+ *  id, and how often this install sends (the Rate Limiting binding of wrangler.toml). The body, or the
+ *  Response that refuses it. */
+async function batch(request, env) {
+  if (!(request.headers.get("user-agent") || "").startsWith("orkcraft/")) return new Response(null, { status: 403 });
+  if (Number(request.headers.get("content-length") || 0) > MAX_BODY) return new Response(null, { status: 413 });
+  const text = await request.text();
+  if (text.length > MAX_BODY) return new Response(null, { status: 413 });
+  let body;
+  try { body = JSON.parse(text); } catch { return new Response(null, { status: 400 }); }
+  if (!body || !HEX32.test(body.install_id)) return new Response(null, { status: 400 });
+  if (env.LIMITER) {
+    const { success } = await env.LIMITER.limit({ key: body.install_id });
+    if (!success) return new Response(null, { status: 429 });
+  }
+  return body;
+}
+
+// -- crash reports (docs/crash-reports.md): the app's own small form, checked field by field, then
+// written as a Sentry envelope with the key this Worker holds (the secret SENTRY_DSN) ---------------
+
+const WHERE = ["unhandled", "thread", "asyncio", "command", "clock", "window"];
+const STATUSES = ["ok", "exited", "crashed", "abnormal"];
+const ENVIRONMENTS = ["production", "checkout"];
+const IDENT = /^[A-Za-z_$<>?][\w.$<>]{0,99}$/;
+const FILE = /^(orkcraft\/[\w./-]{1,200}\.py|<stdlib>\/[\w./-]{1,200}|[\w.-]{1,80}\/[\w./-]{1,200}|<other>|<frozen [\w.]{1,80}>|static\/[\w./-]{1,200}\.js)$/;
+const MAX_TEXT = 300;
+
+function frames(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(-40).filter((f) => f && FILE.test(f.file) && IDENT.test(f.function)).map((f) => ({
+    filename: f.file, module: f.file.endsWith(".py") ? f.file.replace(/\.py$/, "").replaceAll("/", ".") : undefined,
+    function: f.function, lineno: Number.isInteger(f.line) && f.line > 0 ? f.line : undefined, in_app: f.in_app === true,
+  }));
+}
+
+function crashEvent(e, base) {
+  if (!e || !/^[0-9a-f]{32}$/.test(e.event_id) || !WHERE.includes(e.where) || !Array.isArray(e.exceptions)) return null;
+  const values = e.exceptions.slice(-3).filter((x) => x && IDENT.test(x.type)).map((x) => ({
+    type: x.type, value: typeof x.value === "string" ? x.value.slice(0, MAX_TEXT) : "",
+    mechanism: { type: e.where, handled: e.handled === true },
+    stacktrace: { frames: frames(x.frames) },
+  }));
+  if (!values.length) return null;
+  const now = Date.now();
+  const time = Number.isInteger(e.time) && e.time > now - 7 * 864e5 && e.time < now + 3e5 ? e.time : now;
+  return {
+    event_id: e.event_id, timestamp: time / 1000, platform: e.platform === "javascript" ? "javascript" : "python",
+    level: e.level === "fatal" ? "fatal" : "error", release: base.release,
+    environment: ENVIRONMENTS.includes(e.environment) ? e.environment : "production",
+    user: { id: base.install_id, ip_address: null }, server_name: "",
+    tags: { where: e.where, os: base.os, python: base.python, face: e.face === "gui" ? "gui" : "cli",
+      ...(typeof e.command === "string" && /^[a-z][a-z0-9_.]{0,60}$/.test(e.command) ? { command: e.command } : {}) },
+    contexts: { os: { name: base.os }, runtime: { name: "CPython", version: base.python } },
+    exception: { values },
+  };
+}
+
+function crashSession(s, base) {
+  if (!s || !/^[0-9a-f]{32}$/.test(s.sid) || !STATUSES.includes(s.status) || !Number.isInteger(s.started)) return null;
+  const now = Date.now();
+  return {
+    sid: s.sid, did: base.install_id, init: s.init === true, status: s.status,
+    started: new Date(s.started).toISOString(), timestamp: new Date(now).toISOString(),
+    duration: Number.isInteger(s.duration) && s.duration >= 0 ? s.duration : 0,
+    errors: Number.isInteger(s.errors) && s.errors >= 0 ? Math.min(s.errors, 1000) : 0,
+    attrs: { release: base.release, environment: ENVIRONMENTS.includes(s.environment) ? s.environment : "production" },
+  };
+}
+
+function dsn(text) {                       // https://<key>@<host>/<project>
+  try {
+    const u = new URL(text);
+    const project = u.pathname.replace(/^\/+|\/+$/g, "");
+    return u.username && /^\d+$/.test(project) ? { key: u.username, url: `${u.protocol}//${u.host}/api/${project}/envelope/` } : null;
+  } catch { return null; }
+}
+
+async function crash(request, env, body) {
+  const target = dsn(env.SENTRY_DSN || "");
+  if (!target || !Array.isArray(body.items)) return new Response(null, { status: target ? 400 : 204 });
+  const base = {
+    install_id: body.install_id,
+    release: `orkcraft@${VERSION.test(body.app_version || "") ? body.app_version : "unknown"}`,
+    os: OS.includes(body.os) ? body.os : "unknown",
+    python: /^3\.\d{1,2}$/.test(body.python || "") ? body.python : "unknown",
+  };
+  const lines = [JSON.stringify({ sent_at: new Date().toISOString() })];
+  for (const item of body.items.slice(0, 5)) {
+    const made = item && item.type === "event" ? crashEvent(item, base) : item && item.type === "session" ? crashSession(item, base) : null;
+    if (!made) continue;
+    lines.push(JSON.stringify({ type: item.type }), JSON.stringify(made));
+  }
+  if (lines.length === 1) return new Response(null, { status: 204 });
+  const res = await fetch(target.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-sentry-envelope",
+      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${target.key}, sentry_client=orkcraft-proxy/1` },
+    body: lines.join("\n") + "\n",
+  });
+  return new Response(null, { status: 204, headers: { "X-Sentry-Status": String(res.status) } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/install.sh") return installer();
-    if (request.method !== "POST" || url.pathname !== "/v1/events") return new Response(null, { status: 404 });
-    if (!(request.headers.get("user-agent") || "").startsWith("orkcraft/")) return new Response(null, { status: 403 });
-    if (Number(request.headers.get("content-length") || 0) > MAX_BODY) return new Response(null, { status: 413 });
-    const text = await request.text();
-    if (text.length > MAX_BODY) return new Response(null, { status: 413 });
-    let body;
-    try { body = JSON.parse(text); } catch { return new Response(null, { status: 400 }); }
-    if (!body || !HEX32.test(body.install_id) || !Array.isArray(body.events)) return new Response(null, { status: 400 });
-
-    if (env.LIMITER) {                        // the Rate Limiting binding of wrangler.toml, per install
-      const { success } = await env.LIMITER.limit({ key: body.install_id });
-      if (!success) return new Response(null, { status: 429 });
+    if (request.method === "POST" && url.pathname === "/v1/crash") {
+      const body = await batch(request, env);
+      return body instanceof Response ? body : crash(request, env, body);
     }
+    if (request.method !== "POST" || url.pathname !== "/v1/events") return new Response(null, { status: 404 });
+    const body = await batch(request, env);
+    if (body instanceof Response) return body;
+    if (!Array.isArray(body.events)) return new Response(null, { status: 400 });
 
     const now = Date.now();
     const sessionId = Number.isInteger(body.session_id) && body.session_id > 0 ? body.session_id : -1;
