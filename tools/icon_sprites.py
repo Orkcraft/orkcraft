@@ -12,7 +12,9 @@ At 1× (16×16) and 2× (`@2x`), into `design-system/sprites/icons/`:
   `>_` prompt, Hermes a purple winged staff, pi a rose tile with π, Cursor a grey cube;
 - `notify-on.png`, `notify-off.png`: the horn beside the portrait (js/portrait.js `Toggles`), a bone
   speaking-horn with a gold rim while the town may call, the same horn struck through while Do not
-  disturb holds.
+  disturb holds;
+- `day.png`, `night.png`: the hour in the middle of the HUD (js/chrome.js `Hour`), as the day and night
+  dial of an old strategy game: a gold sun while the orks work, a pale moon in quiet hours.
 
 The Office draws the same signs as small SVGs (js/icons.js `TOOL_SVG`, `HORN`), in the same colours.
 """
@@ -39,6 +41,8 @@ COLOURS = {
     "W": "#f4efe2",                                                  # the white on a tile
     "I": "#ece4cf", "S": "#b5ab92", "H": "#7a6240", "A": "#e8b94a",  # the horn: bone, shade, wood, gold
     "X": "#e0453a",                                                  # the stroke through it
+    "U": "#f2c14e", "u": "#c98a2a",                                  # the sun: gold, its shade
+    "M": "#dde3ec", "m": "#9aa5b4",                                  # the moon: pale, its shade
 }
 
 GRIDS = {
@@ -166,6 +170,42 @@ GRIDS = {
         "......H....A....",
         "......H.........",
         "................",
+        "................",
+    ],
+    "day": [
+        "................",
+        ".......UU.......",
+        "..U....UU....U..",
+        "...U........U...",
+        "......UUUU......",
+        ".....UUUUUU.....",
+        "....UUUUUUUu....",
+        ".UU.UUUUUUUu.UU.",
+        ".UU.UUUUUUUu.UU.",
+        "....UUUUUUuu....",
+        ".....UUuuuu.....",
+        "......uuuu......",
+        "...U........U...",
+        "..U....UU....U..",
+        ".......UU.......",
+        "................",
+    ],
+    "night": [
+        "................",
+        ".........MMMM...",
+        ".......MMMM.....",
+        "......MMMm....M.",
+        ".....MMMm.......",
+        ".....MMm........",
+        "....MMMm........",
+        "....MMMm........",
+        "....MMMm........",
+        "....MMMm........",
+        ".....MMm........",
+        ".....MMMm.....M.",
+        "......MMMm......",
+        ".......MMMMm....",
+        ".........MMMM...",
         "................",
     ],
 }

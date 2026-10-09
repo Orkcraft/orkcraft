@@ -1,12 +1,13 @@
 // The ork that comes out of its building (docs/design/yards.md §4), in Camp. Its building's plinth runs on a little
-// to the left of the house; there the ork stands. Under the mouse it walks out of the door onto it (facing left,
-// two steps), turns to you and speaks in a pixel bubble: 👍, 👎 and its AI tool, pressed to change it. The mouse
-// gone, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
+// to the left of the house; there the ork stands. Its building selected, it walks out of the door onto it (facing
+// left, two steps), turns to you and speaks in a pixel bubble: 👍, 👎 and its AI tool, pressed to change it. The
+// mouse over a building brings nobody out. A press anywhere else, or Escape, closes the AI tool's picker; the
+// building no longer selected, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
 // a `!` in its bubble: a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
 // A yard's 👍 / 👎 rate the building (its steward wakes on a 👎), a hut's its lead ork's work. Office draws none of
 // it (office.css): its 👍 / 👎 and models are in the building's Info (js/console.js).
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say } from "./link.js";
 import { openOrders } from "./orders.js";
@@ -43,15 +44,30 @@ function usePlace(want) {
   return place;
 }
 
-/** The ork outside its building, and its bubble. `near`: the mouse is over the building (js/hut.js). */
-export function Outside({ b, near }) {
+/** A press outside `ref`, or Escape, while `on`: `close`. A bubble left open never hangs over the town. */
+function useAway(ref, on, close) {
+  useEffect(() => {
+    if (!on) return undefined;
+    const down = (e) => { if (ref.current && !ref.current.contains(e.target)) close(); };
+    const key = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("pointerdown", down, true);
+    window.addEventListener("keydown", key);
+    return () => { document.removeEventListener("pointerdown", down, true); window.removeEventListener("keydown", key); };
+  }, [on]);
+}
+
+/** The ork outside its building, and its bubble. `selected`: its building is the one selected (js/hut.js). */
+export function Outside({ b, selected }) {
   const [picking, setPicking] = useState(null);       // the ork's models, while its AI tool is picked
   const [done, setDone] = useState("");               // the thumb just pressed, for a nod
+  const ref = useRef(null);
   const o = b.yard ? null : lead(b);
   const asking = !!b.alert;
   const visiting = !!(b.yard && b.visit);
   const rates = !asking && (b.yard || !!o);
-  const place = usePlace(asking || visiting || (rates && near) || !!picking);
+  useEffect(() => { if (!selected) setPicking(null); }, [selected]);
+  useAway(ref, !!picking, () => setPicking(null));
+  const place = usePlace(asking || visiting || (rates && selected) || !!picking);
   if (place === "in" || (!o && !b.yard)) return null;
   const who = o ? o.name : say(b.title);
   const stop = (e) => e.stopPropagation();
@@ -84,7 +100,7 @@ export function Outside({ b, near }) {
   const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;
   const bubble = place !== "out" ? null
     : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">!</span>`
-    : rates && (near || picking) ? html`<span class="gui-out__bubble" role="group" aria-label=${`${who}: ${say("rate its work")}`}
+    : rates && (selected || picking) ? html`<span ref=${ref} class="gui-out__bubble" role="group" aria-label=${`${who}: ${say("rate its work")}`}
         onPointerDown=${stop} onClick=${stop}>
         ${picking ? picking.ready.map((h) => html`<button key=${h} class=${cls("gui-out__act", { "is-on": h === picking.steps[0].harness })}
             title=${`${say("AI tool")}: ${h}`} aria-label=${`${say("AI tool")}: ${h}`} onClick=${(e) => pick(e, h)}><${ToolMark} id=${h} /></button>`)

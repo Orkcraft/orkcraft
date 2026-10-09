@@ -2,7 +2,7 @@
 // Your AI tools → who you are (every class at once, only when the landing page did not say) → the MCP servers the orks may use
 // (only when some are connected) → your first town, drawn → the town going up on the map, with the Autonomy
 // card in a corner. Every answer goes to the host at once; the host decides the next step and the page draws
-// what the snapshot's `onboarding` says. The card over the map offers Connect Google (js/accounts.js): it can wait.
+// what the snapshot's `onboarding` says. The card over the map offers Connect Google (js/accounts.js) only with ORKCRAFT_GOOGLE=1.
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -11,7 +11,7 @@ import { Dialog } from "./dialog.js";
 import { MascotHead, BIOMES, headerSprite, TypeIcon, ToolMark } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { USAGE_WHAT } from "./settings.js";
-import { googleOpen } from "./accounts.js";
+import { googleOpen, googleShown } from "./accounts.js";
 
 const asking = signal(false);          // the Request a tool dialog
 
@@ -79,14 +79,16 @@ function RequestTool() {
   </${Dialog}>`;
 }
 
-/** Check: a short request to the tool; ✓ and how long it took, or what went wrong and what to do. */
+/** Check: a short request to the tool on its lightest model; ✓ and how long it took, in seconds written out
+ *  (a button's capitals made "12.3 s" read as a price), or what went wrong and what to do. */
 function CheckCell({ r }) {
   const c = r.check;
   const run = () => send("onboarding.check", { tool: r.id });
   if (c && c.state === "running") return html`<span class="ok-font-status ok-tone-muted" aria-live="polite">Checking…</span>`;
   if (c && c.state === "ok") {
-    return html`<button class="ok-btn gui-onb__check is-ok" onClick=${run} title=${say("Check again")} aria-live="polite">
-      ${say(`✓ ${(c.ms / 1000).toFixed(1)} s`)}</button>`;
+    const secs = Math.max(1, Math.round(c.ms / 1000));
+    return html`<button class="ok-btn gui-onb__check is-ok" onClick=${run} aria-live="polite"
+        title=${say(`Answered in ${secs} sec on its lightest model. Check again`)}>${`✓ ${secs} sec`}</button>`;
   }
   return html`<button class="ok-btn gui-onb__check" onClick=${run}
     title=${say(`Send ${r.title} a short request to see that it answers`)}>${c ? "Check again" : "Check"}</button>`;
@@ -134,7 +136,7 @@ function ToolsStep({ o }) {
   return html`<section class="gui-onb__card">
     <${Head} o=${o} title=${none ? "No AI tool here yet" : "Your AI tools"}
       lead=${none ? "Nothing was found on this computer that orks can run on. Install one, or open the town without AI."
-        : "Orks run on the ones you check. Found on this machine: nothing was run and no key was read. Check sends a short request."} />
+        : "Orks run on the ones you check. Found on this machine: nothing was run and no key was read. Check sends one short request to its lightest model."} />
     ${!t.ready ? html`<p class="ok-font-body ok-tone-muted">Looking for your AI tools…</p>` : none ? html`<${NoTools} t=${t} />` : html`
       <div class="gui-onb__table" role="table">
         <div class="gui-onb__row is-head" role="row"><span></span><span class="ok-font-label">Tool</span>
@@ -416,11 +418,11 @@ function Raising({ o }) {
       </ul>`}
       ${r.error && html`<p class="ok-font-status ok-tone-error">${r.error}</p>`}
       <${Freedom} o=${o} />
-      <div class="gui-onb__google">
+      ${googleShown() && html`<div class="gui-onb__google">
         <h2 class="gui-onb__corner-title">Your Google account</h2>
         <p class="ok-font-status ok-tone-muted">Gmail for External listeners, your calendar for the Calendar, Drive for the Wiki: one sign-in of your own, about 6 minutes.</p>
         <span><button class="ok-btn" onClick=${() => { googleOpen.value = true; }}>Connect Google</button></span>
-      </div>
+      </div>`}
       ${ask && html`<label class="ok-check">
         <input type="checkbox" class="gui-onb__hide" checked=${share} onChange=${() => setShare(!share)} />
         <i>${share ? "✓" : ""}</i><span>${say("Share anonymous usage stats")}</span></label>

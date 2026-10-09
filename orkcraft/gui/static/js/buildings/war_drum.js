@@ -16,7 +16,7 @@ import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
 import { InfoSteps, openInfoPage, closeInfoPage, nextStep, stepOf } from "../infopage.js";
-import { googleOpen } from "../accounts.js";
+import { googleOpen, googleShown } from "../accounts.js";
 
 
 const sheet = new URL("./war_drum.css", import.meta.url).href;
@@ -391,9 +391,9 @@ function ImportChoice({ b }) {
     <div class="drum-import__ways">
       ${way("file", "📄", "A file (.ics)", "Exported from a calendar app. Taken in once.")}
       ${way("link", "🔗", "A link (iCal address)", "The secret address of a Google, Apple or Outlook calendar. Updated by itself.")}
-      <button class="drum-import__way" onClick=${() => { closeInfoPage(b.id); googleOpen.value = true; }}>
+      ${googleShown() && html`<button class="drum-import__way" onClick=${() => { closeInfoPage(b.id); googleOpen.value = true; }}>
         <span class="drum-import__glyph" aria-hidden="true">📅</span>
-        <span><b>${say("Your Google account")}</b><span class="ok-font-status ok-tone-muted drum-import__about">${say("Sign in once: your Google Calendar, and New event adds there. Gmail and Drive too, if you want (Settings → Accounts).")}</span></span></button>
+        <span><b>${say("Your Google account")}</b><span class="ok-font-status ok-tone-muted drum-import__about">${say("Sign in once: your Google Calendar, and New event adds there. Gmail and Drive too, if you want (Settings → Accounts).")}</span></span></button>`}
     </div>
   </${InfoSteps}>`;
 }

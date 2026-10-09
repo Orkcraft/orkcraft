@@ -53,7 +53,10 @@ sign-in, and the wizard says which ones it did not (§6).
 ## 3. The wizard
 
 Settings → Accounts → **Connect Google**, and the same from the onboarding's last card (over the map, beside
-How free are your orks?: nothing waits on it). Five steps, each with a link straight to its page of the console:
+How free are your orks?: nothing waits on it). **Put away for now (2026-10-09):** the wizard is long and opened over
+Town settings, so Connect Google shows only with `ORKCRAFT_GOOGLE=1` (the snapshot's `google`, `js/accounts.js`
+`googleShown`): in Settings, the onboarding and the Calendar's import alike. An account already connected still
+shows in Settings → Accounts, with Disconnect. Five steps, each with a link straight to its page of the console:
 
 1. **Make a project** (`console.cloud.google.com/projectcreate`): any name; free, no billing.
 2. **Turn on the APIs** (`flows/enableapi?apiid=gmail…,calendar-json…,drive…`): the three at once.

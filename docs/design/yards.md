@@ -12,6 +12,7 @@ call a model), [folded-cards.md](folded-cards.md) (a card folded to its title ba
 | 2 | the yard's card: a picket fence round its inside, the title bar a fence the building stands on, the name over it (§3) | built |
 | 2′ | every building's orks seen from outside: Zz or a wheel over its roof, the ork out on its plinth under the mouse or to ask, its bubble's 👍, 👎 and AI tool (§4) | built |
 | 3 | the ork that comes walks to the door and back (§3d) | |
+| 4 | the fence on every card with a view, no card on a building with none, no ork room at a yard, the ork out on selection (§7) | built |
 
 ## 1. Why
 
@@ -102,8 +103,8 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
-- **Muted bronze wood** (palette B on the design canvas): outline `#120d08`, shade `#2b2116`, wood `#3f3120`,
-  lit edge `#54422a`, highlight `#665233` — a step above the ground and a step below the card, never orange:
+- **Dark, low-chroma wood** (darkened 2026-10-09, §7): outline `#0b0907`, shade `#1c1814`, wood `#262019`,
+  lit edge `#302820`, highlight `#3a3026` — a step or two above the ground, never orange:
   five fences on a map must stay quieter than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
@@ -235,5 +236,35 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 
 - Taking the steward out of a yard. It writes the yard's rules (building-views.md §2: no rule editors),
   and script-first.md made it cost nothing while it sleeps.
-- A fence on a hut, or a texture inside a card.
+- A texture inside a card. (A fence on a hut is built since §7: the owner asked for it on every card with a view.)
 - A word that differs between the looks: the Office says `visiting` and `yard` too.
+
+## 7. Stage 4 — the fence on every card with a view; no card where there is none
+
+Asked by the owner on 2026-10-09 after looking at a town: the fence is the frame of every card that **shows
+something** (the Task board, the Calendar, the Wiki…), hut or yard alike, and a building that shows nothing of its
+own needs no card at all.
+
+- **A card with a view is fenced** (`js/hut.js` `fenced`, class `is-fenced`): §3a to §3c hold for it, hut or yard.
+  Its name stands over the building; the title bar is the top fence. `is-yard` keeps its meaning (no ork lives
+  there) and its width in pickets; the Town Hall keeps its frame.
+- **A bare building has no card** (`js/hut.js` `bareOf`): its type's module says `export const bare = true`.
+  Bare today: Signpost (Router), Mill (Transformer), Workshop (Script), Horn (Sound alerts), Watchtower
+  (External listeners), Catapult, Pit (Drop file here). It stands as its house on its plinth, its name over it;
+  a clear layer over both takes a press (open, move) as a title bar does, and roads meet the plinth. Its card is
+  still drawn, hidden, so what it wires stays (the Pit's drop zone takes a file dropped on the building). Office
+  draws its card as before.
+- **A yard keeps no room for an ork**: the plinth is its house's alone (no 28 px run on the left). An ork that
+  comes for a wake or to ask stands just left of it.
+- **The ork comes out when its building is selected**, not under the mouse (§4 said hover): the mouse over a
+  building brings out nothing, nor its quick actions (they are in its Info once it is open). The bubble's AI tool
+  picker closes on a press anywhere else or on Escape, and the bubble goes when the building is no longer selected.
+- **The bubble is rounder**: its corners step over four pixels (`tools/visit_sprites.py`), so its sides read round
+  and stay pixel.
+- **Cards on the ground by default** (§3e): Card background is *Ground* (the default) or *Panel*; *Shade* is gone, and
+  a browser that kept it draws Ground.
+- **A card takes the free room around it** (`js/town.js` `grow`): a card with a view and no size of its own grows right
+  and down into free room, a road's gap from every other card and the town's edges, up to 560 × 440. Its height steps
+  to a level of building-views.md §1a (240, 400) so the room it takes shows more; else it only widens. Cards are
+  placed by their natural size, so growing never moves a neighbour; a size the person gives wins.
+- **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).

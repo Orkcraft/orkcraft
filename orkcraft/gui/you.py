@@ -146,6 +146,15 @@ class You:
         self.host.on_change()
         return self.snapshot()
 
+    def _quiet(self, args: dict) -> dict[str, Any]:
+        """Quiet hours on (the ones kept, else 23:00 to the morning) or off, from the sun and moon in the HUD."""
+        if not isinstance(args.get("on"), bool):
+            raise YouError("Quiet hours are on or off")
+        self.machine.quiet = (self.machine.quiet or schedule.DEFAULT_QUIET) if args["on"] else None
+        settings.save(self.machine)
+        self.host.on_change()
+        return self.snapshot()
+
     def _dnd(self, args: dict) -> dict[str, Any]:
         what = args.get("dnd")
         if what not in disturb.CHOICES:
@@ -166,4 +175,5 @@ class You:
         self.host.on_change()
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
-        return {"you.look": self._look, "you.dnd": self._dnd, "you.fire": self._fire, "you.seen": self._seen}
+        return {"you.look": self._look, "you.dnd": self._dnd, "you.fire": self._fire, "you.seen": self._seen,
+                "you.quiet": self._quiet}

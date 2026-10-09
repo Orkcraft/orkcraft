@@ -23,7 +23,8 @@ from logo import grid_image
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # o outline, d shade, m wood, l lit edge, h highlight, n knot
-COLOURS = {"o": "#120d08", "d": "#2b2116", "m": "#3f3120", "l": "#54422a", "h": "#665233", "n": "#120d08"}
+# dark, low-chroma wood a step or two over the town's ground (#141210): an edge that never pulls the eye from a card
+COLOURS = {"o": "#0b0907", "d": "#1c1814", "m": "#262019", "l": "#302820", "h": "#3a3026", "n": "#0b0907"}
 # the plinth's stones: the road's tan (#8f8166), its lit top, its mortar, its shadow
 STONE = {"t": "#b5a585", "s": "#8f8166", "j": "#5f5545", "k": "#2a251c"}
 

@@ -6,10 +6,13 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say } from "./link.js";
+import { command, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 
 export const googleOpen = signal(false);
+/** Whether Connect Google is offered: put away for now (its wizard is long), unless ORKCRAFT_GOOGLE=1 (gui/state.py).
+ *  An account already connected still shows in Settings → Accounts, with Disconnect. */
+export const googleShown = () => !!(town.value && town.value.google);
 
 const PARTS = [["gmail", "Gmail", "External listeners hear new mail"],
   ["calendar", "Calendar", "the Calendar shows your week and adds events"],
@@ -181,12 +184,12 @@ function Account({ x, setA }) {
 export function AccountsField() {
   const [a, setA] = useState(null);
   useEffect(() => { command("accounts.list").then(setA, () => {}); }, [googleOpen.value]);
-  if (!a) return null;
+  if (!a || (!googleShown() && !a.accounts.length)) return null;
   return html`<div class="gui-field"><span class="ok-font-label">${say("Accounts")}</span>
     ${a.accounts.length > 0 && html`<ul class="gui-phones__list">${a.accounts.map((x) => html`<${Account} key=${x.email} x=${x} setA=${setA} />`)}</ul>`}
     <p class="ok-font-status ok-tone-muted">${say(a.accounts.length ? SAFETY
       : "Your own Google account: Gmail for External listeners, your calendar for the Calendar, Drive for the Wiki. One sign-in, about 6 minutes.")}</p>
-    <span><button class="ok-btn" onClick=${() => { googleOpen.value = true; }}>${say(a.accounts.length ? "Connect another Google account" : "Connect Google")}</button>
-      ${a.client && !a.accounts.length && html` <button class="ok-btn" onClick=${() => command("google.forget_client").then(setA, () => {})}>${say("Forget the Google Cloud client")}</button>`}</span>
+    ${googleShown() && html`<span><button class="ok-btn" onClick=${() => { googleOpen.value = true; }}>${say(a.accounts.length ? "Connect another Google account" : "Connect Google")}</button>
+      ${a.client && !a.accounts.length && html` <button class="ok-btn" onClick=${() => command("google.forget_client").then(setA, () => {})}>${say("Forget the Google Cloud client")}</button>`}</span>`}
   </div>`;
 }

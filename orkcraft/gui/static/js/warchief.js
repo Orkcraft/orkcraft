@@ -421,6 +421,7 @@ export function WarchiefLine() {
   const [shown, setShown] = useState(0);         // when the last answer came (it stays over the line a while)
   const [said, setSaid] = useState("");          // what a command answered (a word on how to use it)
   const [back, setBack] = useState(-1);          // where ↑ is in the history
+  const root = useRef(null);
   const data = hall();
   const b = t.buildings.find((x) => x.id === HALL);
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
@@ -442,6 +443,15 @@ export function WarchiefLine() {
     const id = setTimeout(() => setShown(0), SEEN_MS);
     return () => clearTimeout(id);
   }, [shown]);
+
+  // A press anywhere off the line and its thread puts the thread away: it never hangs over the town.
+  const over = !!shown || !!said;
+  useEffect(() => {
+    if (!over) return undefined;
+    const away = (e) => { if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); } };
+    document.addEventListener("pointerdown", away, true);
+    return () => document.removeEventListener("pointerdown", away, true);
+  }, [over]);
 
   const set = (text) => { line.value = { ...line.value, text }; setSaid(""); };
   const clear = () => { line.value = { ...line.value, text: "", about: [] }; setBack(-1); };
@@ -498,7 +508,7 @@ export function WarchiefLine() {
   if (!b) return null;
   const name = data ? data.warchief : say("Warchief");
   const thread = !!data && (focused || !!shown || data.thinking);
-  return html`<div class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
+  return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
     ${focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
         onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>
       <div class="ok-win__frame"><div class="ok-win__body">
@@ -522,6 +532,8 @@ export function WarchiefLine() {
         onInput=${(e) => set(e.target.value)} onKeyDown=${key}
         onFocus=${() => setFocused(true)} onBlur=${() => { setFocused(false); setSaid(""); }} />
       ${data && data.thinking && html`<span class="gui-hut__spin" role="img" title=${say(`${name} is answering`)}></span>`}
+      <button class="ok-btn gui-warchief__build" title=${say("Raise a building: the catalog")}
+        onMouseDown=${(e) => e.preventDefault()} onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>
     </div>
   </div>`;
 }

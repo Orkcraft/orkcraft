@@ -116,6 +116,10 @@ function DropCard({ b }) {
   </div>`;
 }
 
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf); a file
+ *  dropped on the building lands as on a card. */
+export const bare = true;
+
 export function card(b) {
   return html`<${DropCard} b=${b} />`;
 }

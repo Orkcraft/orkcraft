@@ -9,8 +9,8 @@ ork's head alone (`logo.GRID`, the same green and tusks), a third of its buildin
 - `orks/ork-walk-a.png`, `ork-walk-b.png` (12×9): two steps of its walk, its head bobbing, facing left as it walks
   out; the page mirrors them as it walks back in (yards.css);
 - `icons/thumb-up.png`, `thumb-down.png` (8×8 and its outline, 20 CSS px): a green pixel 👍 and 👎 in its bubble;
-- `icons/bubble.png` (6×6, drawn at 2×): the bubble's frame as a nine-slice (`border-image`), its corners cut a
-  pixel as a comic's are pixel; `icons/bubble-tail.png` (5×4): its tail, down to the ork's head.
+- `icons/bubble.png` (10×10, drawn at 2×): the bubble's frame as a nine-slice (`border-image`, 4 pixels a corner),
+  its corners rounded in pixel steps; `icons/bubble-tail.png` (5×4): its tail, down to the ork's head.
 """
 from __future__ import annotations
 
@@ -55,15 +55,20 @@ THUMB_UP = [
     "gg......",
 ]
 
-# the bubble: parchment inside, the camp's dark ink round it, a pixel off each corner
+# the bubble: parchment inside, the camp's dark ink round it, each corner rounded in pixel steps over four pixels,
+# so its sides read round as a comic's do, and stay pixel
 BUBBLE_COLOURS = {"W": "#efe6cc", "K": "#1a1813"}
 BUBBLE = [
-    ".KKKK.",
-    "KWWWWK",
-    "KWWWWK",
-    "KWWWWK",
-    "KWWWWK",
-    ".KKKK.",
+    "...KKKK...",
+    ".KKWWWWKK.",
+    ".KWWWWWWK.",
+    "KWWWWWWWWK",
+    "KWWWWWWWWK",
+    "KWWWWWWWWK",
+    "KWWWWWWWWK",
+    ".KWWWWWWK.",
+    ".KKWWWWKK.",
+    "...KKKK...",
 ]
 TAIL = [
     "KWWWK",

@@ -100,6 +100,9 @@ const BIG = { done: ["✓", "Ran", "ok-tone-ok"], alert: ["!", "Alert", "ok-tone
 
 /** Closed: the headline is how the last run went (`✓ Ran`, `✗ Failed`), running meanwhile; under it the schedule;
  *  the foot what the last run said and when (docs/design/building-views.md). */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;

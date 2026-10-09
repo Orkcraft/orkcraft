@@ -39,6 +39,9 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 /** Closed: the headline is how many are new; under it a counter per source — `gmail 3`, `slack 99+`,
  *  `jira ✗ ERR`; more than four fold into `+N more` — and the foot the newest message (from, subject,
  *  time), marked when it just arrived. */
+/** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
+export const bare = true;
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;
