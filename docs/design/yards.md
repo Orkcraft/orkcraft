@@ -206,9 +206,9 @@ leaves the title bar on every card, hut and yard; the building says what its ork
   of its building's height. Under the mouse the ork
   walks out of the door (two steps facing left, `orks/ork-walk-a.png`, `ork-walk-b.png`), turns to you
   (`ork-stand.png`) and speaks in a pixel comic bubble (`icons/bubble.png`, a nine-slice, and its tail):
-  - **👍 and 👎**, green pixel thumbs (`icons/thumb-up.png`, `thumb-down.png`). A hut's rate its lead ork's work
-    (`ork.like`, `ork.dislike` with a note); a yard's rate the building (`building.like`, `building.dislike`: its
-    steward wakes on a 👎);
+  - **👎**, a green pixel thumb (`icons/thumb-down.png`): a hut's rates its lead ork's work (`ork.dislike` with a
+    note); a yard's the building (`building.dislike`: its steward wakes on it). **No 👍 in the bubble since
+    2026-10-09**: the owner's call, a 👎 is what teaches an ork; 👍 stays in the building's Info (`js/console.js`);
   - **a gear, its settings** (a hut's; until 2026-10-09 its AI tool's mark, which said little to a person — the tool
     is in the gear's tooltip now, `icons/settings.png`): pressed, the bubble lists the AI tools this machine runs and a
     press changes it from its next run (`ork.model`); a pipeline, or one tool and no other, opens the model dialog.

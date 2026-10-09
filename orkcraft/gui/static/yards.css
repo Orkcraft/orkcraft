@@ -57,8 +57,6 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 .gui-out__act:hover { background: rgb(0 0 0 / .12); }
 .gui-out__act:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
 .gui-out__act.is-on { background: rgb(0 0 0 / .18); }
-.gui-out__act.is-done { animation: gui-nod .3s steps(2) 2; }
-@keyframes gui-nod { 50% { transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__act { animation: none !important; } }
 
 /* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
