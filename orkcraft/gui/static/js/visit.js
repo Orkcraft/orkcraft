@@ -13,6 +13,7 @@ import { command, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { DislikeDialog, NoteDialog } from "./console.js";
 import { openBuilding } from "./windows.js";
+import { HATS } from "./icons.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
@@ -71,7 +72,9 @@ export function Outside({ b, selected }) {
   const walking = place === "out-walk" || place === "in-walk";
   // its frames are the stylesheet's (yards.css); it wears its tier's chevrons, how seasoned its mind is (realm/tiers.py)
   const rank = o && RANK[o.rank || o.tier];
-  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>${rank && html`<img class="gui-out__rank ok-sprite"
+  const hat = o && o.lead && HATS[b.type];        // a steward wears its building's hat (tools/hat_sprites.py)
+  const body = html`<i class="gui-out__ork" aria-hidden="true"></i>${hat && html`<i class=${`gui-out__hat is-${hat}`}
+    aria-hidden="true"></i>`}${rank && html`<img class="gui-out__rank ok-sprite"
     src=${`/ds/sprites/icons/rank-${rank}.png`} srcset=${`/ds/sprites/icons/rank-${rank}@2x.png 2x`} width="16" height="16"
     alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}`;
   const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;

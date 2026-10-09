@@ -34,6 +34,8 @@ def test_the_snapshot_is_plain_data_the_page_draws(fake_repo):
     assert {"town_hall", built.id} <= ids
     fields = next(b for b in snap["buildings"] if b["id"] == built.id)
     assert fields["has_worker"] and fields["type"] == "fields" and len(fields["status_plain"]) <= 3
+    # its steward takes words on its command card: a raised building keeps its settings (core/keeper.py)
+    assert fields["keeper"] is True and next(b for b in snap["buildings"] if b["id"] == "town_hall")["keeper"] is False
     assert snap["resources"] == {"quota": "Quota", "gold": "Spend", "lumber": "Context", "supply": "Orks"}
     assert snap["hud"]["supply_max"] == host.town.scroll.budget.supply_max_workers
 

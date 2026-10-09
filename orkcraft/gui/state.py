@@ -19,6 +19,7 @@ from typing import Any
 
 from orkcraft import schedule
 from orkcraft.env import getenv
+from orkcraft.core import runners
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
@@ -99,10 +100,13 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "visit": "",
             "paused": _paused(worker),
             "card": _card(type_id, worker),
-            # its quick actions, on its closed card while the mouse is on it (js/hut.js): each opens its own small
-            # window or just does it, never the whole building
+            # its quick actions, on its command card in the Warchief's line (js/warchief.js): each opens its own
+            # small window or just does it, never the whole building
             "quick": [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else [],
             "page": (PAGES / f"{type_id}.js").is_file(),
+            # its steward takes words on its card (core/keeper.py, gui/keeper.py): it keeps settings, and a model
+            # answers (the demo's calls none)
+            "keeper": bs.id in town.custom_specs and not (town.demo and runners.KEEPER_RUNNER is None),
             "loose": _loose(worker),                       # its exits with no road yet: stubs on the map
         })
     return out

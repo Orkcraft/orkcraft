@@ -111,6 +111,25 @@ export function WarchiefHead({ state = "" }) {
     srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width=${state ? 40 : 24} height="20" alt="" />`;
 }
 
+// A steward's hat by the work of its building (tools/hat_sprites.py): its face on the Warchief's line, and the ork
+// that comes out of its building wears it (js/visit.js). A type with none (a custom one) keeps the bare head.
+export const HATS = {
+  scrolls: "scribe", mill: "scribe", gramophone: "scribe", lake: "scribe",
+  watchtower: "lookout", horn: "lookout", crag: "lookout",
+  forge: "smith", workshop: "smith", catapult: "smith",
+  fields: "clerk", war_drum: "clerk", loot: "clerk", signpost: "clerk", forest: "clerk", pit: "clerk",
+  barracks: "captain", council: "captain",
+  mine: "miner",
+};
+
+/** A building's steward, its head under its role's hat (the bare head for a type with none). */
+export function StewardHead({ type }) {
+  const hat = HATS[type];
+  const name = hat ? `steward-${hat}` : "ork";
+  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${name}.png`}
+    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width="24" height=${hat ? 20 : 16} alt="" draggable="false" />`;
+}
+
 /** The operator's mascot (docs/design/growth.md §7): its role's head at its stage. */
 export function MascotHead({ sprite, stage, size = 4 }) {  // size: screen px a pixel of its 12 × 11 grid
   return html`<img class="ok-sprite gui-mascot" src=${`/ds/sprites/mascots/${sprite}-${stage}@2x.png`}

@@ -31,6 +31,19 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
 .gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
+/* A steward wears its building's hat (tools/hat_sprites.py) over its head: two pixels over the stand's blank top row,
+   bobbing with the head as it walks. */
+.gui-out__hat { position: absolute; left: 0; top: -2px; width: 24px; height: 4px; image-rendering: pixelated; pointer-events: none;
+  background: 0 0 / 24px 4px no-repeat; }
+.gui-out__hat.is-scribe { background-image: image-set(url("/ds/sprites/orks/hat-scribe.png") 1x, url("/ds/sprites/orks/hat-scribe@2x.png") 2x); }
+.gui-out__hat.is-lookout { background-image: image-set(url("/ds/sprites/orks/hat-lookout.png") 1x, url("/ds/sprites/orks/hat-lookout@2x.png") 2x); }
+.gui-out__hat.is-smith { background-image: image-set(url("/ds/sprites/orks/hat-smith.png") 1x, url("/ds/sprites/orks/hat-smith@2x.png") 2x); }
+.gui-out__hat.is-clerk { background-image: image-set(url("/ds/sprites/orks/hat-clerk.png") 1x, url("/ds/sprites/orks/hat-clerk@2x.png") 2x); }
+.gui-out__hat.is-captain { background-image: image-set(url("/ds/sprites/orks/hat-captain.png") 1x, url("/ds/sprites/orks/hat-captain@2x.png") 2x); }
+.gui-out__hat.is-miner { background-image: image-set(url("/ds/sprites/orks/hat-miner.png") 1x, url("/ds/sprites/orks/hat-miner@2x.png") 2x); }
+.gui-out.is-step .gui-out__hat { animation: gui-hat-step .24s steps(1) infinite; }
+.gui-out.is-in-walk .gui-out__hat { transform: scaleX(-1); }
+@keyframes gui-hat-step { 0%, 100% { top: -2px; } 50% { top: -4px; } }
 .gui-out.is-in-walk .gui-out__ork { transform: scaleX(-1); }
 .gui-out.is-out-walk { animation: gui-out .24s steps(3) both; }
 .gui-out.is-in-walk { animation: gui-out .24s steps(3) reverse both; }
@@ -59,7 +72,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 .gui-out__act:hover { background: rgb(0 0 0 / .12); }
 .gui-out__act:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
 .gui-out__act.is-on { background: rgb(0 0 0 / .18); }
-@media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__act { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__hat, .gui-out__act { animation: none !important; } }
 
 /* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
 /* A paved slab in the road's tan under its sprite, a little wider: its roads meet it (js/hut.js measure, js/town.js

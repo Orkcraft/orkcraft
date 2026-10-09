@@ -25,15 +25,25 @@ Proposed, as an RTS does it:
 **Built, first step (2026-10-09): the line is the building's command card** (`js/warchief.js`), as an RTS's bottom
 panel is the selected unit's. While a building is selected (open in the panel):
 
-- the face is its steward's (its Info on a press) and its name stands beside it (in the tooltip when the line is
-  narrow); ✕ beside it gives the Warchief's line back while the building stays selected;
-- the buttons are its quick actions (`b.quick`, three, ⋯ for the rest in its Info); Answers shrinks to ❓ N; Build
-  and Improve wait for the Warchief (the open panel leaves the line little room);
-- the field asks *about* it: "Ask Task manager about Task board…". For now what is typed goes to the Warchief with
-  the building named, as `@` does; a yard (no steward) says so: "Ask the Warchief about Calendar…".
+- the face is its steward's, **under its building's hat** (its Info on a press), and its name stands beside it (in
+  the tooltip when the line is narrow); ✕ beside it gives the Warchief's line back, at large, while the building
+  stays selected;
+- the buttons are its quick actions (`b.quick`, three, ⋯ for the rest in its Info), **Q, W, E** do them from
+  anywhere but a field (by the key's place, so any keyboard layout); Answers shrinks to ❓ N; Build and Improve
+  wait for the Warchief (the open panel leaves the line little room);
+- **the field is its steward's**: "Tell Task manager or ask it…". What is typed goes to its keeper (core/keeper.py,
+  `keeper.ask`): it answers, or proposes a change of its rules and settings, line by line, with Apply (Revert takes
+  it back). To the Warchief, with the building named as `@` does, from a yard (no steward), a building that keeps no
+  settings (the snapshot's `keeper`), words that name another building too, and the demo (its keeper calls no
+  model): "Ask the Warchief about Calendar…". `/` commands stay the Warchief's.
 
-Later: the steward's own talk (its orders, "why did it fail"), a portrait per kind of building (one head with a
-role's accessory, the same on the ork that comes out), Q / W / E for the actions.
+**The hats** (`tools/hat_sprites.py`, `js/icons.js` `HATS`): one ork head, two rows of a role's hat over it as the
+Warchief's crown — a beret and quill for the Wiki, the Mill, the Gramophone and the Lake; a horned helm for External
+listeners, the Horn and the Crag; a leather cap with goggles for the Forge, the Workshop and the Catapult; a visored
+cap for the Task board, the Calendar, the Vault and the yards; a plumed helm for the Agent pool and the Review board; a
+lamp on a hard hat for the Mine. The steward that comes out of its building wears it too (js/visit.js).
+
+Later: a steward that answers from its runs and chronicle ("why did it fail"), not only its settings.
 
 While a building is selected, the Warchief's line at the foot **becomes the building's steward**: its face, its
 name ("Steward of the Calendar"), and the line asks *it*. Deselected, the Warchief comes back. One line, two
