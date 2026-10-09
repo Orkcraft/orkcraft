@@ -10,7 +10,7 @@ import { signal } from "@preact/signals";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
-import { opened, openBuilding, closeBuilding, panelShown, panelWidth } from "./windows.js";
+import { opened, closeBuilding, panelShown, panelWidth, selected, pickBuilding, letGo } from "./windows.js";
 import { plan } from "./roads.js";
 import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
@@ -25,14 +25,15 @@ import { activeBiome } from "./icons.js";
 const room = signal({ w: 1, h: 1, strip: 0 });
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
 
-// 1–9 open the building with that number on its name, from anywhere but a field, a terminal or a dialog.
+// 1–9 select the building with that number on its name (again: open it), from anywhere but a field, a terminal or
+// a dialog.
 window.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || !/^[1-9]$/.test(e.key) || document.querySelector(".gui-modal, .gui-menu")) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
   const id = numbered[Number(e.key) - 1];
   if (!id) return;
   e.preventDefault();
-  openBuilding(id);
+  pickBuilding(id);
 });
 const dropped = signal({});                // building id → {x, y}: where a hut was dropped, till the town says so
 
@@ -376,7 +377,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
   const r = room.value;
   const byId = Object.fromEntries(roads.map((x) => [x.id, x]));
   const groups = together(roads);
-  const active = opened.value.active;
+  const active = selected.value;
   // A press on a road picks all of it: its card lists every road that runs as one (js/build.js RoadBar).
   const pick = (g) => { pickedRoad.value = g[0].id; };
   const cards = Object.values(rects), taken = [];
@@ -619,13 +620,13 @@ export function Town({ buildings, roads }) {
   });
 
   // A click on the bare town lets the selected building go, as in the TUI.
-  const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road, .gui-loose")) closeBuilding(); };
+  const bare = (e) => { if (!e.target.closest(".gui-hut, .gui-road, .gui-loose")) { closeBuilding(); letGo(); } };
   const shown = new Set(buildings.map((b) => b.id));
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
   const paths = plannedPaths(rects, here, ports);
   const snap = snapshot.value;
   // With a building selected, Office dims every hut that is neither it nor at the other end of one of its roads.
-  const active = opened.value.active;
+  const active = selected.value;
   const near = new Set(active ? here.flatMap((r) => (r.from === active ? [r.to] : r.to === active ? [r.from] : [])) : []);
   const dim = (id) => !!active && shown.has(active) && id !== active && !near.has(id);
   useCamera(ref.current, rects, here, panelW);

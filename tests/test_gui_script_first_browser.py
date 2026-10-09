@@ -78,7 +78,7 @@ def _call(pg, name: str, args: dict):
 def _open_info(pg, bid: str) -> None:
     hut = pg.locator(f'.gui-hut[data-id="{bid}"]')
     hut.wait_for(state="visible", timeout=WAIT_MS)
-    hut.locator(".gui-hut__title").click()
+    hut.locator(".gui-hut__title").dblclick()
     pg.locator(".gui-panel").wait_for(state="visible", timeout=WAIT_MS)
     pg.locator(".gui-panel__tabs .ok-tab", has_text="Info").click()
     pg.locator(".gui-panel .gui-info").first.wait_for(state="visible", timeout=WAIT_MS)

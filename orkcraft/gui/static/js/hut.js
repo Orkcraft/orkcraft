@@ -14,7 +14,7 @@
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { opened, openBuilding } from "./windows.js";
+import { opened, openBuilding, selected, pickBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
 import { reasons, busy as busyOf, fold } from "./fold.js";
 import { openMenu } from "./menu.js";
@@ -155,7 +155,7 @@ export function buildingMenu(e, b) {
   const mod = b.page ? typeModule(b.type) : null;
   const own = mod && mod.infoActs ? mod.infoActs(b) : [];        // what only its type offers (Import calendar)
   openMenu(e, [
-    { label: "Open", hint: "click", run: () => openBuilding(b.id, "work") },
+    { label: "Open", hint: "double-click", run: () => openBuilding(b.id, "work") },
     { label: "Info", run: () => openBuilding(b.id, "info") },
     ...own.map((a) => ({ label: a.label, run: a.run })),
     "-",
@@ -379,7 +379,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       dragging.value = null;
       if (gone) return;
       if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
-      else openBuilding(b.id);
+      else pickBuilding(b.id);                  // selected; the selected one again: opened
     };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
@@ -405,7 +405,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
       ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": fenced(b), "is-bare": bareOf(b),
+      class=${cls("ok-hut m gui-hut", { "is-selected": selected.value === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": fenced(b), "is-bare": bareOf(b),
                                         "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
@@ -417,7 +417,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
       ${bareOf(b) && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
-      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${opened.value.active === b.id} /></span></div>
+      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
     <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
       <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}

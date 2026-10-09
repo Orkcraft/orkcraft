@@ -27,8 +27,24 @@ export const panelWidth = signal(0);       // how wide the panel stands over the
 
 // The open building; `ork`: one of its orks picked in its garrison; `tab`: work | info; `full`: the whole town.
 export const opened = signal({ active: null, ork: null, tab: "work", full: false });
+// The selected building (docs/design/select-a-building.md §1): a click selects — its ork comes out, the Warchief's
+// line is its card — and opens nothing; a second click, a double click or Open on its card opens it. An open
+// building is selected too.
+export const selected = signal(null);
+
+/** A click on a building (or its number): selected; the selected one again, opened. */
+export function pickBuilding(id) {
+  if (selected.value === id) openBuilding(id);
+  else selected.value = id;
+}
+
+/** Nothing selected (a click on the bare town, Escape with no window up). */
+export function letGo() {
+  selected.value = null;
+}
 
 function select(id, tab) {
+  selected.value = id;
   const o = opened.value;
   if (o.active !== id) command("building.open", { id }).catch(() => {});
   opened.value = { active: id, ork: o.active === id ? o.ork : null, tab: tab || (o.active === id ? o.tab : "work"),
@@ -101,11 +117,13 @@ function stepBack() {
   else closePanel();
 }
 
-// Esc on the page, unless a dialog takes it or the keys go to a field or a terminal.
+// Esc on the page, unless a dialog takes it or the keys go to a field or a terminal: the window steps back; with
+// none up, the selected building is let go.
 window.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape" || !panelShown() || document.querySelector(".gui-modal, .gui-menu")) return;
+  if (e.key !== "Escape" || document.querySelector(".gui-modal, .gui-menu")) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
-  stepBack();
+  if (panelShown()) stepBack();
+  else if (selected.value) letGo();
 });
 
 // The host sends the open building's own state, and the Town Hall's (the Warchief's line shows his chat),

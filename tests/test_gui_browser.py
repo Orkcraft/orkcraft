@@ -161,7 +161,7 @@ def _info(pg) -> None:
 
 def _three_ways(pg, bid: str, has_view: bool = True) -> None:
     _closed(pg, bid)
-    _hut(pg, bid).locator(".gui-hut__title").click()   # open: the panel on its Work
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()   # open: a click selects, a second opens its Work
     _panel(pg, "Work" if has_view else "")
     if has_view:                                # its detail came and its panes are laid out
         pg.locator(".gui-panel .gui-win__body.is-view").wait_for(state="visible", timeout=WAIT_MS)
@@ -336,7 +336,7 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
     pg.locator(".gui-panel__handle").click()
     lake.wait_for(state="visible", timeout=WAIT_MS)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")                                          # a building opened beside the documents
     assert lake.locator(".gui-lake__tabtitle").count() >= 3
     lake.locator(".gui-lake__tabtitle").first.click()
@@ -352,7 +352,7 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")
     panel = pg.locator(".gui-panel")
     box = panel.bounding_box()
@@ -548,6 +548,34 @@ def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_onc
     row.wait_for(state="detached", timeout=WAIT_MS)
 
 
+def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
+    """docs/design/select-a-building.md §1: a click selects (its card in the line, no window); Open on the card or a
+    second click opens its Work; Escape closes the window, and again lets the building go."""
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    title = _hut(pg, bid).locator(".gui-hut__title")
+    title.click()
+    bar = pg.locator(".gui-warchief__bar")
+    bar.locator(".gui-warchief__open").wait_for(state="visible", timeout=WAIT_MS)
+    assert not pg.locator(".gui-panel").is_visible()                      # selected, nothing opened
+    assert "is-selected" in _hut(pg, bid).get_attribute("class")
+    bar.locator(".gui-warchief__open").click()
+    _panel(pg, "Work")
+    assert bar.locator(".gui-warchief__open").count() == 0                 # open already
+    pg.locator("body").press("Escape")
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    assert "is-selected" in _hut(pg, bid).get_attribute("class")          # the window shut, still selected
+    title.click()                                                          # the selected one again: opened
+    _panel(pg, "Work")
+    pg.locator("body").press("Escape")
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator("body").press("Escape")
+    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id='${id}']`).classList.contains('is-selected')",
+                         arg=bid, timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
 def test_a_selected_building_turns_the_line_into_its_command_card(page):
     """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
     face under its building's hat, its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
@@ -721,7 +749,7 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     call("roads.lay", {"from": src, "to": dst, "event": by_coder["event"], "handler": by_coder["handler"]})
     _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, dst).locator(".gui-hut__title").click()
+    _hut(pg, dst).locator(".gui-hut__title").dblclick()
     _info(pg)
     roster = pg.locator(".gui-steward-part")
     roads = roster.locator(".gui-steward__road")
@@ -769,7 +797,7 @@ def test_the_stewards_road_rules_are_listed_under_it_and_an_agent_is_handed_over
         call("roads.lay", {"from": src, "to": dst, "event": pick["event"], "handler": handler})
     _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, dst).locator(".gui-hut__title").click()
+    _hut(pg, dst).locator(".gui-hut__title").dblclick()
     _info(pg)
     rules = pg.locator(".gui-steward__group", has_text="Road rules")
     rules.wait_for(state="visible", timeout=WAIT_MS)
@@ -830,7 +858,7 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
         {"from": tower, "event": "mail.received", "match": "(?i)unread", "say": "When unread mail comes, a to-do"}]}), 0.01))
     _hut(pg, fields).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, fields).locator(".gui-hut__title").click()
+    _hut(pg, fields).locator(".gui-hut__title").dblclick()
     _info(pg)
     pg.locator(".gui-steward-part .gui-steward__group summary button").first.click()    # + Listen
     modal = pg.locator(".gui-modal")
@@ -874,7 +902,7 @@ def _open_tower_add(pg, bid: str) -> None:
     """A tower stands bare, with no card (docs/design/yards.md §7): a press on it opens its window, which opens on
     the picker while it has no source, else on its feed with + Add source."""
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     pg.locator(".gui-panel .gui-add__tile, .gui-panel .gui-tower__add").first.wait_for(state="visible", timeout=WAIT_MS)
     if not pg.locator(".gui-panel .gui-add__tile").count():
         pg.locator(".gui-panel .gui-tower__add").first.click()
@@ -1257,7 +1285,7 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     cart = pipes.Payload(pipes.TEXT, "## Done\n\nthe notes", "camp", "pool.done", "The notes", (hop,), "LB-1")
     town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
     pg.keyboard.press("Escape")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     pg.locator(".gui-panel .gui-panel__full").click()
     pg.locator(".loot-card", has_text="The notes").click()
     files = pg.locator(".loot-detail .ok-file")
@@ -1375,7 +1403,7 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     w.add("New design for the CSV export: the button on the right", "todo")
     w.add("Fix the login bug", "todo")
     w.add("Login page design", "todo")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")
     panel = pg.locator(".gui-panel")
     settling = panel.locator(".fields-settle")
@@ -1586,7 +1614,7 @@ def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page)
     pg = page
     shots = os.environ.get("ORKCRAFT_SHOTS", "")
     drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
-    _hut(pg, drum).locator(".gui-hut__title").click()
+    _hut(pg, drum).locator(".gui-hut__title").dblclick()
     panel = pg.locator(".gui-panel")
     bring = panel.locator(".drum-bring")
     bring.wait_for(state="visible", timeout=WAIT_MS)
@@ -1620,7 +1648,7 @@ def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gu
     monkeypatch.setattr(calendar_imports, "fetch",
                         lambda url: "BEGIN:VCALENDAR\r\n" + event("w@x", "Team sync") + "END:VCALENDAR\r\n")
     drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
-    _hut(pg, drum).locator(".gui-hut__title").click()
+    _hut(pg, drum).locator(".gui-hut__title").dblclick()
     _info(pg)
     panel = pg.locator(".gui-panel")
     panel.get_by_role("button", name="Import calendar", exact=True).click()
