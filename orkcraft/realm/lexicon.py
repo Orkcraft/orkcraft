@@ -149,6 +149,19 @@ TERMS: tuple[Term, ...] = (
     _t("want.doc", "Document"),                                     # a design, a decision, a brief
     _t("want.routine", "Routine"),                                  # what is already scripted
     _t("want.know", "Keep"),                                        # a page or a note in the Wiki
+    _t("want.reply+change", "Reply, or a code change when it asks for one"),   # a chat's two kinds (paths.REPLY_OR_CHANGE)
+    # what a model call was for (sources/telemetry.py PURPOSES), as the Spend window's *By purpose* says it
+    _t("purpose.work", "Orks' tasks"),
+    _t("purpose.sort", "Sorting"),
+    _t("purpose.plan", "Planning"),
+    _t("purpose.review", "Review boards"),
+    _t("purpose.check", "Checks"),
+    _t("purpose.ingest", "Wiki ingest"),
+    _t("purpose.answer", "Answering orks' questions"),
+    _t("purpose.look", "Watching sources"),
+    _t("purpose.retro", "Retros"),
+    _t("purpose.build", "New buildings, orks and roads"),
+    _t("purpose.chat", "The Warchief's chat"),
     # where a source of External listeners speaks: the groups of its Add a source (realm/quickadd.py GROUPS)
     _t("source_group.messengers", "Messengers"),                    # Slack, Discord
     _t("source_group.mail", "Mail"),                                # Gmail
@@ -316,3 +329,9 @@ def want_word(want: str) -> str:
     """The kind of work in words (`reply` → Reply); "" for none or a word not known."""
     key = f"want.{want}"
     return term(key) if want and key in _BY_KEY else ""
+
+
+def purpose_word(purpose: str) -> str:
+    """What a model call was for in words (`review` → Review boards); the word itself when not known."""
+    key = f"purpose.{purpose}"
+    return term(key) if key in _BY_KEY else purpose

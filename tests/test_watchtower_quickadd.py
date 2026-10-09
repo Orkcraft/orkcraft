@@ -14,7 +14,7 @@ import pytest
 
 from orkcraft.core.workers.watchtower import WatchtowerWorker
 from orkcraft.gui.host import CommandError, Host
-from orkcraft.realm import audit, checkpoint, feeds, logins, mailbox, masonry, quickadd
+from orkcraft.realm import audit, checkpoint, feeds, lexicon, logins, mailbox, masonry, paths, quickadd
 from orkcraft.realm.sources_link import Link, recognise
 
 
@@ -277,3 +277,24 @@ def test_the_what_step_asks_what_is_wanted_done_with_the_source(host):
     assert _until(lambda: adding()["step"] == "check" and not adding()["busy"])
     act("add_save")
     assert "wants" not in w.config                                           # nothing set: the pool decides
+
+
+def test_a_chat_may_take_a_reply_or_a_code_change(host):
+    """barracks-flows.md §6.1: Slack and Discord also offer *Reply, or a code change when it asks for one*, kept as
+    the list the Lookout chooses within; a code tracker does not offer it."""
+    assert paths.source_choices("slack")[-1] == paths.REPLY_OR_CHANGE and paths.REPLY_OR_CHANGE not in paths.source_choices("github")
+    assert paths.want_setting(paths.REPLY_OR_CHANGE) == ["reply", "change"] and paths.want_setting("reply") == "reply"
+    assert paths.choice_of_setting(["reply", "change"]) == paths.REPLY_OR_CHANGE
+    assert paths.choice_of_setting(["change", "reply"]) == "" and paths.choice_of_setting("change") == "change"
+    assert paths.source_wants({"wants": {"slack": paths.want_setting(paths.REPLY_OR_CHANGE)}}, "slack") == ("reply", "change")
+    assert lexicon.want_word(paths.REPLY_OR_CHANGE) == "Reply, or a code change when it asks for one"
+    act = lambda name, **args: host.command("act", {"id": "tower", "act": name, "args": args})
+    w = host.town.worker("tower")
+    adding = lambda: host.detail("tower")["data"]["adding"]
+    act("add_open")
+    assert _until(lambda: w.adding.gh == "ann")
+    act("add_start", service="github")
+    assert _until(lambda: adding()["step"] == "what" and not adding()["busy"])
+    assert paths.REPLY_OR_CHANGE not in [x["id"] for x in adding()["wants"]]
+    with pytest.raises(CommandError, match="not offered"):
+        act("add_what", picks=["acme/orkcraft"], about_me=False, want=paths.REPLY_OR_CHANGE)

@@ -185,6 +185,6 @@ one folded line per purpose (its plain word, `$ · tokens · calls`, and how man
 first, and inside it each building by its title (*No building* for a call no building made).
 `telemetry.by_purpose(repo_root, days=7)` reads the ledger (again only when the file changed);
 `TownHallWorker.week()` serves it, and the sandbox shows a sample on its own buildings; the words are
-`gui/views/town_hall.py` `PURPOSE_WORDS`. Tests: `tests/test_telemetry.py`, `tests/test_gui.py`
+`lexicon.TERMS` (`purpose.*`, `lexicon.purpose_word`). Tests: `tests/test_telemetry.py`, `tests/test_gui.py`
 (`test_the_spend_window_shows_the_week_by_purpose`). Screenshot:
 `docs/night/2026-10-08/ui/after-B04-camp-spend.png`.
