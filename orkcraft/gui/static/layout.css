@@ -243,7 +243,7 @@ button { font: inherit; color: inherit; }
    Task Fields' card it is a row at the top of its yard, as the War Drum's legend: always there, never a tray that
    pops out over the card (the owner's call, 2026-10-09; yards.md §7). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
-.gui-hut .gui-fhut > .gui-parts { margin-bottom: var(--space-1); }
+.gui-hut .gui-fhut > .gui-parts { grid-column: 1 / -1; margin-bottom: var(--space-1); }
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }

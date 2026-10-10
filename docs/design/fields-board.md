@@ -29,8 +29,9 @@ moved. They send nothing down the roads — they are no work for the orks — un
 (moved into To Do, `tasks.created`). An idea (a note) becomes a task (`t`, *Give it to the orks*) or a
 chore (`m`, *Make it my chore*); `x` ticks a chore off.
 
-In `board` mode the screen has three parts: **Ork work** (the status lanes) on top, **My chores** and
-**Scribbles** (the lanes of notes) under it. The closed card shows all three at a glance and stands
+In `board` mode the screen has three parts: the person's own on top — **My to-dos** and **Notes** (the lanes
+of notes) side by side — and **Ork work** (the status lanes) under them (2026-10-10; the orks' work stood on top
+before). The closed card shows all three at a glance and stands
 larger than other huts (about a fifth of the screen high; 26 × 11 cells in the terminal).
 
 ## 2. Modes instead of more screens
