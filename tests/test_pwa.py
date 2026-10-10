@@ -117,6 +117,26 @@ async def test_the_apps_link_is_offered_only_on_a_tailnet_with_its_certificate(f
         listener.stop()
 
 
+@pytest.mark.asyncio
+async def test_a_new_pairing_finds_a_tailnet_that_came_after_the_listener(fake_repo, tmp_path, monkeypatch):
+    checkpoint.ensure(fake_repo)
+    listener = phones.Listener(Host(fake_repo, auto_commit=False), cert_folder=tmp_path)
+    monkeypatch.setattr(phones, "lan_ip", lambda: "127.0.0.1")               # the LAN, and no Tailscale yet
+    listener.bind, listener.tail_find = None, lambda: None
+    try:
+        first = listener.pair()
+        assert first["app_link"] == "" and listener.tail_server is None
+        listener.tail_find = lambda: tailnet.Tail("127.0.0.2", "town.tail12.ts.net")   # Tailscale came
+        listener.tail_cert = lambda tail: None                                # …without certificates
+        assert listener.pair()["app_link"] == "" and listener.tail_server is not None
+        listener.tail_cert = lambda tail: phone_tls.ensure(tmp_path)          # …and then they were turned on
+        again = listener.pair()
+        assert listener.tail_trusted and again["app_link"].startswith("https://town.tail12.ts.net:")
+        assert listener.server is not None                                    # the LAN's listener stayed
+    finally:
+        listener.stop()
+
+
 # -- Tailscale's state, for the desktop ---------------------------------------------------------------------
 
 def _ran(stdout: str, code: int = 0):
@@ -149,6 +169,7 @@ def test_the_desktop_reads_tailscale_at_most_every_few_seconds():
     t = pwa.Tailnet(L(), lambda: asked.append(1) or {"account": "a", "phones": []})
     first = t.read(now=0.0)
     assert first["running"] and first["trusted"] and first["install"] == pwa.INSTALL and first["install_qr"]
+    assert first["dns"] == pwa.DNS and first["dns_qr"] and "installed" in first
     t.read(now=1.0)
     assert len(asked) == 1
     t.read(now=pwa.TAIL_S + 0.1)

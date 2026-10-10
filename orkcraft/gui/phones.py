@@ -528,11 +528,14 @@ class Listener:
         """A new one-time code and the QR code that carries it, the address and the fingerprint."""
         code = self.pairing.new_code()
         self._said_locked = False
+        was = self.listening
         try:
             self.start(move=True)
         except PhoneError:
             self.pairing.void()
             raise
+        if was:
+            pwa.retry_tail(self)                     # Tailscale may have started, or its certificates come, since
         link = pair_link(self.address or self.tail_address, self.fingerprint, code,
                          self.tail_address if self.address else "")
         app = pwa.link(self.tail_address, code) if self.tail_trusted else ""   # a browser trusts only this one
