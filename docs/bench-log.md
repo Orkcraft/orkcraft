@@ -75,3 +75,37 @@ After (20261010-0933…):
 All pass; 2 of 5 within 10 %. The building's own calls on each: the sort ≈ 10 s and 22k tokens (agy's
 own prompt is most of it), the review 20–50 s and 5–11k tokens. The rest of the gap is the ork's own
 run against the bare tool's, on the same model (flash-high), which varies as much between runs.
+
+## 2026-10-10 — Agent pool on agy, parallel
+
+Series 1 (20261010-1026, ledger only, then stopped): passed both, building 484 s / bare 338 s. The
+steward's plan came back empty four times: in its empty folder agy tried a command and ended the turn
+(same cause as the review). **Fix:** the sort, the plan and the final look carry `plans.FROM_ABOVE`.
+Replayed: a JSON plan of four parts, twice (62–89 s).
+
+Series 2 (20261010-1048…, stopped in route):
+
+| case | building | bare |
+|---|---|---|
+| ledger | passed, 270 s, 94k tokens — but as one ork | passed, 398 s, 200k tokens |
+| gradebook | asked, 734 s, 395k tokens | passed, 290 s |
+
+- ledger: the plan was dropped, "≈240k tokens, $1.20 does not fit: $1.00 left" — priced from tier costs
+  on agy, which reports no cost and spends $0. **Fix:** `Foreman.priced`: the $ check holds only when one
+  of the pool's tools prices its runs.
+- gradebook: every part was judged by the whole test command on its own branch, where the other parts'
+  modules are missing: all four sent back with collection errors, escalated, one asked the operator
+  whether to write stubs. **Fix:** a part whose branch does not hold every other part's work
+  (`plans.holds_all`) gets the failing tail as a note for its review; the merged whole is still tested
+  strictly in the final look. Its prompt says not to write stand-ins for the other parts.
+
+Series 3 (20261010-1123, stopped in ledger) — **environment, not fixed in code:**
+
+- `/usr/local/bin/git` is git 2.33 and comes before `/usr/bin/git` (2.54) on PATH. Parts merge with
+  `git merge-tree --write-tree` (git 2.38+), so every part's merge failed with its usage line and the
+  orks were sent back to "merge the base" that had nothing to merge (also why
+  `tests/test_pool_plans.py::test_parts_merge_without_a_checkout` and
+  `tests/test_pool_claims.py::test_git_tells_a_conflict_and_commits_a_file_without_a_checkout` fail on
+  this machine). The next runs put `/usr/bin` first for the bench only; removing or upgrading
+  `/usr/local/bin/git` fixes it for the town.
+- agy's quota ran out ("Individual quota reached … Resets in 36m"): the bare side failed in 7 s.
