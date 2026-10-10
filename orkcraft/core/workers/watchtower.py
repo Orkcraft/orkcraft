@@ -47,6 +47,7 @@ from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout,
 REFRESH_S = 120.0
 CRON_S = 30.0
 DRAIN_S = 0.5
+GATHER_S = 1.5                                          # the Lookout waits this long for the rest of a burst
 KEEP = 200
 READ_KEEP = 1000                                        # read marks remembered
 RAW_KEEP = 20000                                        # a raw webhook's body, as kept
@@ -296,8 +297,9 @@ class WatchtowerWorker(Worker):
             self.emit(sig.event, body, title, want=want or paths.source_want(self.config, sig.source))   # §4, §6.1
         self.changed()
 
-    def judge(self) -> None:
-        """The Lookout's verdict on what waits, a batch at a time, in a thread."""
+    def judge(self, again: bool = False) -> None:
+        """The Lookout's verdict on what waits, a batch at a time, in a thread; a first batch waits `GATHER_S` for
+        the rest of what arrived with it (`again`: the next batch of what already waits, at once)."""
         if self._judging or not self.pending:
             return
         intent, triage = self.intent, self.triage
@@ -314,6 +316,15 @@ class WatchtowerWorker(Worker):
         if broke:
             return                                       # out of 🪙: the signals wait, unjudged
         self._judging = True
+        if type(self).judge_runner is None and GATHER_S and not again:   # mail that came at once is one call
+            def gather() -> None:
+                time.sleep(GATHER_S)
+                self.town.call(self._judge_batch, intent, triage, runner)
+            self._thread(gather, "watch-gather")
+            return
+        self._judge_batch(intent, triage, runner)
+
+    def _judge_batch(self, intent: str, triage: bool, runner) -> None:
         batch, self.pending = self.pending[:lookout.BATCH], self.pending[lookout.BATCH:]
         config = dict(self.config)
         kinds = lambda sig: paths.source_wants(config, sig.source)       # noqa: E731 — §6.1: what each may ask for
@@ -346,7 +357,7 @@ class WatchtowerWorker(Worker):
             sig.want = v.kind if v.kind in paths.source_wants(self.config, sig.source) else ""
             sig.read = not v.kept                     # a miss is not news
             self._keep(sig, v.kept)
-        self.judge()
+        self.judge(again=True)
 
     def start_webhook(self) -> None:
         port = self.config.get("webhook_port")
