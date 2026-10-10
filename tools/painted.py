@@ -105,8 +105,10 @@ def biome(img: Image.Image, which: str) -> Image.Image:
     return out
 
 
-def save(img: Image.Image, folder: pathlib.Path, scale: float, stem: str = "header") -> None:
+def save(img: Image.Image, folder: pathlib.Path, scale: float, stem: str = "header", widest: int = 0) -> None:
     folder.mkdir(parents=True, exist_ok=True)
+    if widest and img.width * scale > widest:
+        scale = widest / img.width                          # a very wide one is kept to the widest the town fits
     for k, name in ((1, f"{stem}.png"), (2, f"{stem}@2x.png")):
         size = (max(1, round(img.width * scale * k)), max(1, round(img.height * scale * k)))
         img.resize(size, Image.LANCZOS).save(folder / name)
@@ -120,6 +122,7 @@ def main() -> None:
     ap.add_argument("--split", type=int, nargs="*", default=[], help="x positions that part two buildings")
     ap.add_argument("--gap", type=float, default=22, help="parts closer than this many sheet pixels are one building")
     ap.add_argument("--open", nargs="*", default=[], help="types whose frame is open: the ground through them goes too")
+    ap.add_argument("--widest", type=int, default=96, help="no sprite wider than this many px at 1x")
     ap.add_argument("--out", type=pathlib.Path, default=OUT)
     a = ap.parse_args()
     im = Image.open(a.sheet).convert("RGB")
@@ -133,9 +136,9 @@ def main() -> None:
         raise SystemExit(f"{len(found)} buildings on the sheet, {len(a.types)} types given")
     for kind, box in zip(a.types, found):
         img = cut(im, box, ground, kind in a.open)
-        save(img, a.out / kind, a.scale)
+        save(img, a.out / kind, a.scale, widest=a.widest)
         for which in (*BIOMES, "ice"):
-            save(biome(img, which), a.out / kind, a.scale, f"header-{which}")
+            save(biome(img, which), a.out / kind, a.scale, f"header-{which}", a.widest)
         print(f"{kind}: {img.width}×{img.height} → {round(img.width * a.scale)}×{round(img.height * a.scale)}")
 
 
