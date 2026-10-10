@@ -4,6 +4,9 @@
 // minutes. The host's phones.* commands (gui/phones.py). Closing the settings voids a code not used.
 // Places (docs/design/phone-places.md §3, §7): whether Tailscale lets a phone on the road reach the town, and a
 // recipe for Shortcuts or Tasker — a token of its own, shown once, with the call that reports a place.
+// The app in the phone's browser (gui/pwa.py): with Tailscale here and its certificate, the QR code leads the
+// person through it — Tailscale's download while no phone of theirs is in the tailnet, then the app's link,
+// which opens Orkcraft in the phone's browser and pairs it at once.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html } from "./html.js";
 import { command, say } from "./link.js";
@@ -14,14 +17,45 @@ const WHAT = "A paired phone sees the town small: each building, the questions t
 
 const when = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "");
 
+/** While a code shows: Tailscale's state each few seconds, and what the QR code says now — `{qr, alt, lines}`.
+ *  Without Tailscale and its certificate here, the code for the Orkcraft app (tools/phone.py meanwhile). */
+export function useAppStep(offer, left) {
+  const [t, setT] = useState(null);
+  useEffect(() => {
+    if (!offer || !offer.app_link) { setT(null); return undefined; }
+    const read = () => command("phones.tailnet").then(setT, () => {});
+    read();
+    const timer = setInterval(read, 3000);
+    return () => clearInterval(timer);
+  }, [offer]);
+  if (!offer) return null;
+  if (!offer.app_link || !t) {
+    return { qr: offer.qr, link: offer.link, alt: say("QR code to pair a phone"),
+      lines: [say(`Scan it with the Orkcraft app on the phone. Good for ${left} s, once.`)] };
+  }
+  const phone = t.phones.find((p) => p.online);
+  if (!phone) {
+    return { qr: t.install_qr, link: t.install, alt: say("QR code to install Tailscale"), lines: [
+      say("1. Scan it with the phone's camera and install Tailscale."),
+      say(t.account ? `2. Log in to Tailscale on the phone as ${t.account} and turn it on.` : "2. Log in to Tailscale on the phone with this computer's account and turn it on."),
+      say("3. When the phone is in the tailnet, this code turns into the link that opens Orkcraft on it."),
+      say(`The pairing code is good for ${left} s; show a new one if it runs out.`)] };
+  }
+  return { qr: offer.app_qr, link: offer.app_link, alt: say("QR code to open Orkcraft on the phone"), lines: [
+    say(`${phone.name} (${phone.os}) is in the tailnet. Scan it with the phone's camera: Orkcraft opens in its browser and pairs.`),
+    say(phone.os === "iOS" ? "Then Share → Add to Home Screen." : "Then Install app (or Add to Home screen) in the browser's menu."),
+    say(`Good for ${left} s, once.`)] };
+}
+
 function Offer({ offer, left, onCancel }) {
+  const step = useAppStep(offer, left);
   return html`<div class="gui-phones__offer">
-    ${offer.qr
-      ? html`<img class="gui-phones__qr" src=${offer.qr} width="240" height="240" alt=${say("QR code to pair a phone")} />`
+    ${step.qr
+      ? html`<img class="gui-phones__qr" src=${step.qr} width="240" height="240" alt=${step.alt} />`
       : html`<div><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
-          <code class="gui-phones__link">${offer.link}</code></div>`}
+          <code class="gui-phones__link">${step.link}</code></div>`}
     <div class="gui-phones__how">
-      <span class="ok-font-status">${say(`Scan it with the Orkcraft app on the phone. Good for ${left} s, once.`)}</span>
+      ${step.lines.map((line) => html`<span class="ok-font-status">${line}</span>`)}
       <span class="ok-font-status ok-tone-muted">${say(`Address: ${offer.address}`)}</span>
       <span class="ok-font-status ok-tone-muted">${say("Certificate (the phone checks it):")}</span>
       <code class="gui-phones__fp">${offer.fingerprint}</code>
@@ -83,20 +117,21 @@ export function usePairing() {
   }, [offer]);
   const pair = () => command("phones.pair").then((r) => { setPaired(""); setLeft(Math.round(r.pairing)); setOffer(r); }, () => {});
   const cancel = () => command("phones.pair_stop").then(() => setOffer(null), () => {});
-  return { offer, left, paired, pair, cancel };
+  const step = useAppStep(offer, left);
+  return { offer, left, paired, pair, cancel, step };
 }
 
 /** The code itself, at the right of the head in the menu's top block (under it when the sheet is too narrow). */
-export function PairQr({ pairing: { offer } }) {
-  if (!offer) return null;
-  return offer.qr
-    ? html`<img class="gui-phones__qr gui-you__qr" src=${offer.qr} width="128" height="128" alt=${say("QR code to pair a phone")} />`
+export function PairQr({ pairing: { step } }) {
+  if (!step) return null;
+  return step.qr
+    ? html`<img class="gui-phones__qr gui-you__qr" src=${step.qr} width="128" height="128" alt=${step.alt} />`
     : html`<div class="gui-you__qr"><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
-      <code class="gui-phones__link">${offer.link}</code></div>`;
+      <code class="gui-phones__link">${step.link}</code></div>`;
 }
 
 /** Under the head's name: Pair a phone, or while a code shows how to scan it, the address, the fingerprint and Cancel. */
-export function PairNote({ pairing: { offer, left, paired, pair, cancel } }) {
+export function PairNote({ pairing: { offer, paired, pair, cancel, step } }) {
   if (!offer) {
     return html`<span class="gui-you__pair">
       <button class="ok-btn" title=${say("A QR code to scan with the Orkcraft app. The paired phones and Forget are in Town settings → Phones.")}
@@ -104,7 +139,7 @@ export function PairNote({ pairing: { offer, left, paired, pair, cancel } }) {
       ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}</span>`;
   }
   return html`<div class="gui-phones__how">
-    <span class="ok-font-status">${say(`Scan it with the Orkcraft app on the phone. Good for ${left} s, once.`)}</span>
+    ${step.lines.map((line) => html`<span class="ok-font-status">${line}</span>`)}
     <span class="ok-font-status ok-tone-muted">${say(`Address: ${offer.address}`)}</span>
     <span class="ok-font-status ok-tone-muted">${say("Certificate (the phone checks it):")}</span>
     <code class="gui-phones__fp">${offer.fingerprint}</code>
