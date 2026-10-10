@@ -21,6 +21,8 @@ export function benchClick(id) {
 }
 
 const TABS = [["tech", "Tech"], ["ux", "UX"], ["product", "Product"]];
+const LEVELS = [["simple", "Every simple case"], ["medium", "Every medium case"], ["parallel", "Every parallel case"]];
+const pct = (v) => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${Math.round(v * 100)}%`);
 const SIDES = [["", "Both"], ["building", "The building only"], ["bare", "The bare AI tool only"]];
 const many = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const money = (x) => `$${(x || 0).toFixed(2)}`;
@@ -80,6 +82,7 @@ function Tech({ s, call, picks, flip }) {
     ${s.can_run ? html`<${RunForm} s=${s} call=${call} />`
       : html`<p class="ok-font-status ok-tone-muted">${say(`Runs come to the ${s.word} later: the Test bench runs ${s.runs_for} so far. Its reviews below work now.`)}</p>`}
     ${s.job && html`<${JobLog} s=${s} call=${call} />`}
+    ${s.against.length > 0 && html`<${Against} s=${s} />`}
     ${s.runs.length > 0 && html`<${Runs} s=${s} />`}
     ${s.can_run && html`<${Cases} s=${s} call=${call} />`}
     <${Reviews} s=${s} tab="tech" call=${call} picks=${picks} flip=${flip} />`;
@@ -91,6 +94,7 @@ function RunForm({ s, call }) {
                                only: "", orders: s.orders });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const on = s.job && !s.job.done;
+  const series = f.case === "all" || f.case.startsWith("level:");
   const pooled = s.orders_of && s.orders_of !== s.type;
   const field = (label, control) => html`<label class="gui-field"><span class="ok-font-label">${label}</span>${control}</label>`;
   return html`<section class="gui-bench__section">
@@ -98,7 +102,11 @@ function RunForm({ s, call }) {
     <p class="ok-font-status ok-tone-muted">${say(`The same case goes to the ${s.word} and to the bare AI tool on the same model, each in a copy of the project with no remote: nothing is pushed and your town is not changed.`)}</p>
     <div class="gui-bench__form">
       ${field("Case", html`<select class="ok-input" value=${f.case} onChange=${set("case")}>
-        ${ready.map((c) => html`<option key=${c.id} value=${c.id}>${c.title}</option>`)}</select>`)}
+        ${ready.length > 1 && html`<optgroup label="One after another">
+          <option value="all">Every case (${ready.length})</option>
+          ${LEVELS.filter(([l]) => s.levels[l] > 0).map(([l, label]) => html`<option key=${l} value=${`level:${l}`}>${label} (${s.levels[l]})</option>`)}
+        </optgroup>`}
+        <optgroup label="One case">${ready.map((c) => html`<option key=${c.id} value=${c.id}>${c.title}${c.level ? ` · ${c.level}` : ""}</option>`)}</optgroup></select>`)}
       ${field("AI tool", html`<select class="ok-input" value=${f.tool} onChange=${set("tool")}>
         ${s.tools.map((t) => html`<option key=${t.id} value=${t.id}>${t.title}</option>`)}</select>`)}
       ${field(s.type === "barracks" || pooled ? "Orks' tier" : "Tier", html`<select class="ok-input" value=${f.tier} onChange=${set("tier")}>
@@ -117,7 +125,7 @@ function RunForm({ s, call }) {
     </details>`}
     <div class="gui-bench__row">
       <button class="ok-btn primary" disabled=${on || !f.case} onClick=${() => call("bench.run", f)}>Run</button>
-      <span class="ok-font-status ok-tone-muted">${say(`It runs AI tools: the building's side stops at ${money(+f.max_spend)}; the bare AI tool's run is one call.`)}</span>
+      <span class="ok-font-status ok-tone-muted">${say(`It runs AI tools: the building's side stops at ${money(+f.max_spend)}${series ? " for each case" : ""}; the bare AI tool's run is one call${series ? " a case" : ""}.`)}</span>
     </div>
   </section>`;
 }
@@ -133,6 +141,24 @@ function JobLog({ s, call }) {
     ${j.error && html`<p class="ok-font-status ok-tone-error">${j.error}</p>`}
     ${j.done && !j.error && j.what === "case" && html`<p class="ok-font-status">The case <b>${j.result}</b> is written. Read it below before it counts.</p>`}
     ${j.lines.length > 0 && html`<pre class="gui-bench__log">${j.lines.slice(-14).join("\n")}</pre>`}
+  </section>`;
+}
+
+/** The latest run of each case: how far the building is from the bare AI tool, and whether it stays within the limit. */
+function Against({ s }) {
+  const limit = Math.round(s.gap_limit * 100);
+  const ok = s.against.filter((r) => r.within).length;
+  const quality = (r) => (r.quality > 0 ? "worse" : r.quality < 0 ? "better" : "same");
+  return html`<section class="gui-bench__section">
+    <h4 class="ok-font-label gui-bench__h">${say(`The ${s.word} against the bare AI tool`)}</h4>
+    <p class="ok-font-status ok-tone-muted">${say(`The latest run of each case. Time and spend: how much more the ${s.word} took. Within ${limit}%: no worse on the check, and at most ${limit}% more time and spend. ${ok} of ${s.against.length} are.`)}</p>
+    <table class="gui-bench__table gui-bench__against">
+      <thead><tr><th>Case</th><th>Level</th><th>Time</th><th>Spend</th><th>Check</th><th>${`Within ${limit}%`}</th></tr></thead>
+      <tbody>${s.against.map((r) => html`<tr key=${r.case}><th>${r.case}</th><td>${r.level || "—"}</td>
+        <td>${pct(r.time)}</td><td>${pct(r.spend)}</td>
+        <td title=${`${say(s.word)}: ${r.building} · bare: ${r.bare}`}>${quality(r)}</td>
+        <td><span class=${cls("gui-bench__verdict", { "is-ok": r.within, "is-bad": !r.within })}>${r.within ? "yes" : "no"}</span></td></tr>`)}</tbody>
+    </table>
   </section>`;
 }
 

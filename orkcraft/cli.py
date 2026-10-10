@@ -131,15 +131,18 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
     cases = bench.cases(root, args.type)
     if args.list:
         for c in cases:
-            print(f"{c.id:16} {c.title}" + ("" if c.reviewed else "  (not read yet: it does not count)"))
+            print(f"{c.id:16} {c.level or '':9} {c.title}" + ("" if c.reviewed else "  (not read yet: it does not count)"))
         for r in bench.runs(root, args.type)[:10]:
             sides = [s for s in (r.building, r.bare) if s]
             print(f"{r.id}: " + " · ".join(f"{s.name} {bench.verdict(s)}, {s.seconds:.0f} s, ${s.cost:.2f}" for s in sides))
         return 0
-    case = bench.case(root, args.type, args.case) if args.case else next(iter(cases), None)
-    if case is None:
+    if args.level and args.level not in bench.LEVELS:
+        sys.stderr.write(f"orkcraft error: --level is {', '.join(bench.LEVELS)}\n")
+        return 2
+    picked = bench.series(cases, args.case, args.level)
+    if not picked:
         known = ", ".join(c.id for c in cases) or "none"
-        sys.stderr.write(f"orkcraft error: no case {args.case!r}; the {args.type} cases: {known}\n")
+        sys.stderr.write(f"orkcraft error: no case {args.case or args.level!r}; the {args.type} cases: {known}\n")
         return 2
     tier = TIER_WORDS.get(args.tier.lower(), args.tier.lower())
     if tier and tier not in TIER_WORDS.values():
@@ -147,19 +150,29 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         return 2
     max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
     sides = (args.only,) if args.only else ("building", "bare")
-    print(f"Test bench: {case.title}. It runs AI tools and spends up to ${max_spend:.2f} on the building's side; "
-          "nothing leaves the copies it makes.", flush=True)
-    try:
-        orders = args.orders.read_text(encoding="utf-8") if args.orders else None
-        report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
-                                            say=lambda line: print(line, flush=True), orders=orders)
-    except (ValueError, RuntimeError, OSError) as e:
-        sys.stderr.write(f"orkcraft error: {e}\n")
-        return 1
-    print()
-    print(bench.render(report, lexicon.term(args.type)))
-    print(f"\nKept in {folder}")
-    print(f"{bench.DONE}{report.id}", flush=True)
+    word = lexicon.term(args.type)
+    if len(picked) > 1:
+        print(f"Test bench: {len(picked)} cases, one after another. Each spends up to ${max_spend:.2f} on the "
+              "building's side; nothing leaves the copies it makes.", flush=True)
+    reports = []
+    for case in picked:
+        print(f"Test bench: {case.title}. It runs AI tools and spends up to ${max_spend:.2f} on the building's side; "
+              "nothing leaves the copies it makes.", flush=True)
+        try:
+            orders = args.orders.read_text(encoding="utf-8") if args.orders else None
+            report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
+                                                say=lambda line: print(line, flush=True), orders=orders)
+        except (ValueError, RuntimeError, OSError) as e:
+            sys.stderr.write(f"orkcraft error: {e}\n")
+            return 1
+        reports.append(report)
+        print()
+        print(bench.render(report, word))
+        print(f"\nKept in {folder}")
+        print(f"{bench.DONE}{report.id}", flush=True)
+    if len(reports) > 1:
+        print()
+        print(bench.summary(reports, word))
     return 0
 
 
@@ -212,7 +225,8 @@ def main(argv: list[str] | None = None) -> int:
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
     bench_p = subparsers.add_parser("bench", help="Test bench: run a building on a test case beside the bare AI tool")
     bench_p.add_argument("type", nargs="?", default="barracks", help="The building type (default: barracks)")
-    bench_p.add_argument("--case", default="", help="The case's id (default: the first); --list shows them")
+    bench_p.add_argument("--case", default="", help="The case's id, or all (default: the first); --list shows them")
+    bench_p.add_argument("--level", default="", help="Every case of a level: simple, medium or parallel")
     bench_p.add_argument("--list", action="store_true", help="List the type's cases and its last runs")
     bench_p.add_argument("--tool", default="main", help="The AI tool both sides run on (default: the main tool)")
     bench_p.add_argument("--tier", default="", help="novice, seasoned or veteran (default: the building's own)")

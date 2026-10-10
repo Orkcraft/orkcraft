@@ -12,6 +12,7 @@ import pytest
 from orkcraft import cli
 from orkcraft.core import bench as building_bench
 from orkcraft.core.workers.barracks import BarracksWorker
+from orkcraft.realm import barracks as bk
 from orkcraft.realm import bench
 from tests.pool_fakes import Steward
 
@@ -162,7 +163,8 @@ def test_the_building_runs_the_case_in_a_town_of_its_own(tmp_path, faked_pool):
     assert all(st["t"] >= 0 for st in side.steps)
     assert _git(project, "remote") == ""                         # nothing could go out
     ledger = [json.loads(ln) for ln in (project / ".orkcraft" / "ledger.jsonl").read_text().splitlines()]
-    assert ledger[-1]["tokens"] == 1200 and ledger[-1]["cost"] > 0.05   # the pool's run: its tokens, the steward's $
+    assert ledger[-1]["tokens"] == 1200 and ledger[-1]["cost"] == 0.05  # short, with tests: no steward call at all
+    assert any("its tests judge it" in h for h in side.how)
     assert not (tmp_path / ".orkcraft").exists()                 # the town it came from is untouched
 
 
@@ -205,3 +207,65 @@ def test_cli_refuses_an_unknown_case_type_or_tier(fake_repo, capsys):
     assert cli.main(["--repo", str(fake_repo), "bench", "--tier", "grandmaster"]) == 2
     err = capsys.readouterr().err
     assert "slugify" in err and "barracks, watchtower, fields, war_drum, mine, council so far" in err and "novice, seasoned or veteran" in err
+
+
+def test_the_building_feed_reads_its_decisions_oldest_first_and_folds_a_report(tmp_path, faked_pool):
+    c = _slugify_case(tmp_path)
+    project = tmp_path / "run" / "building"
+    base = bench.make_project(c, tmp_path, project)
+    heard: list[str] = []
+    side = building_bench.run_building(c, project, base, {}, timeout_s=60, say=heard.append)
+    actions = [ln.split(" ", 1)[1].split(":", 1)[0] for ln in heard]
+    assert len(actions) == len(set(heard)) and "hire" in actions and actions[-1] == "accept"   # each once, in order
+    assert side.how[-1].startswith("accept") and "\n" not in "".join(side.how)
+    long = bk.Decision("t", "x", "accept", "Grub", "I checked it.\n\n- **`json` " + "word " * 80)
+    line = building_bench._line(long)
+    assert len(line) <= 200 and line.endswith("…") and "\n" not in line
+
+
+def _report(case: str, b: tuple, t: tuple, at: str = "20261010-000000") -> bench.Report:
+    side = lambda name, x: bench.Side(name, seconds=x[0], cost=x[1], passed=x[2])  # noqa: E731
+    return bench.Report(f"{at}-barracks-{case}", "barracks", case, building=side("building", b), bare=side("bare", t))
+
+
+def test_the_gaps_say_how_far_the_building_is_from_the_bare_tool():
+    g = bench.gaps(_report("c", (33, 0.35, True), (11, 0.11, True)))
+    assert round(g["time"], 2) == 2.0 and round(g["spend"], 2) == 2.18 and g["quality"] == 0
+    assert not bench.within(g)
+    assert bench.within(bench.gaps(_report("c", (10.5, 0.11, True), (10, 0.105, True))))
+    assert bench.gaps(_report("c", (5, 0.05, False), (10, 0.1, True)))["quality"] == 1      # cheaper, but worse
+    assert not bench.within(bench.gaps(_report("c", (5, 0.05, False), (10, 0.1, True))))
+    assert bench.gaps(_report("c", (5, 0.05, True), (10, 0.1, False)))["quality"] == -1
+    text = bench.summary([_report("slugify", (11, 0.1, True), (10, 0.1, True)),
+                          _report("ledger", (60, 0.9, True), (30, 0.3, True))], "Agent pool")
+    assert "slugify  +10%   +0%" in text and "+100%" in text and text.count("yes") == 1
+
+
+def test_the_latest_run_of_each_case_is_held_against_the_bare_tool(tmp_path):
+    for r in (_report("ledger", (60, 0.9, True), (30, 0.3, True), "20261009-000000"),
+              _report("ledger", (31, 0.31, True), (30, 0.3, True), "20261010-000000"),
+              _report("slugify", (12, 0.1, True), (10, 0.1, True))):
+        r.save(tmp_path / bench.RUNS / r.id)
+    rows = bench.against(tmp_path, "barracks")
+    assert [(r["case"], r["level"], r["within"]) for r in rows] == [("slugify", "simple", False),
+                                                                   ("ledger", "parallel", True)]
+
+
+def test_a_series_picks_cases_by_id_all_or_level():
+    found = bench.cases(Path("/nonexistent"), "barracks")
+    assert [c.id for c in bench.series(found, "ledger")] == ["ledger"]
+    assert len(bench.series(found, bench.ALL)) == 15
+    assert {c.level for c in bench.series(found, level="medium")} == {"medium"}
+    assert bench.series(found)[0].id == "slugify" and bench.series(found, "nope") == []
+
+
+def test_cli_runs_a_series_and_sums_it_up(fake_repo, capsys, monkeypatch):
+    def run(root, case, *_a, say=None, **_k):
+        r = _report(case.id, (11, 0.11, True), (10, 0.1, True), "20261010-0000" + case.id[:2])
+        return r, fake_repo / "x"
+
+    monkeypatch.setattr(building_bench, "run", run)
+    assert cli.main(["--repo", str(fake_repo), "bench", "--level", "simple"]) == 0
+    out = capsys.readouterr().out
+    assert out.count(bench.DONE) == 5 and "Agent pool against the bare AI tool" in out
+    assert cli.main(["--repo", str(fake_repo), "bench", "--level", "hard"]) == 2

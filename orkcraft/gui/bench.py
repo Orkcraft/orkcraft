@@ -119,6 +119,10 @@ class Bench:
             "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
                       for c in bench.cases(self.root, type_id)],
             "runs": [asdict(r) for r in bench.runs(self.root, type_id)[:12]],
+            "against": bench.against(self.root, type_id),
+            "levels": {lvl: sum(c.level == lvl and c.reviewed for c in bench.cases(self.root, type_id))
+                       for lvl in bench.LEVELS},
+            "gap_limit": bench.GAP_LIMIT,
             "job": job.public() if job else None,
             "reviews": reviews,
             "tools": self._tools(), "tiers": [{"id": i, "title": w} for i, w in TIERS],
@@ -152,9 +156,15 @@ class Bench:
             raise BenchError(f"Runs come to {lexicon.term(type_id)} later: the Test bench runs {_runs_for()} so far")
         if (job := self.jobs.get(type_id)) and not job.done:
             raise BenchError("A run is on: stop it first")
-        case = bench.case(self.root, type_id, str(args.get("case") or ""))
-        if case is None:
+        pick = str(args.get("case") or "")
+        level = pick.partition(":")[2] if pick.startswith("level:") else ""
+        if level and level not in bench.LEVELS:
+            raise BenchError("No such level")
+        picked = bench.series(bench.cases(self.root, type_id), "" if level else pick, level) if pick else []
+        if not picked:
             raise BenchError("Pick a case")
+        label = picked[0].title if len(picked) == 1 and pick != bench.ALL else \
+            f"{'every case' if pick == bench.ALL else f'every {level} case'} ({len(picked)})"
         tier = str(args.get("tier") or "")
         if tier and tier not in tiers.TIERS:
             raise BenchError("No such tier")
@@ -165,7 +175,8 @@ class Bench:
             spend = min(max(float(args.get("max_spend") or bench.DEFAULT_MAX_SPEND), 0.1), 50.0)
         except (TypeError, ValueError):
             raise BenchError("The spend limit is a number of dollars") from None
-        argv = [sys.executable, "-m", "orkcraft", "--repo", str(self.root), "bench", type_id, "--case", case.id,
+        argv = [sys.executable, "-m", "orkcraft", "--repo", str(self.root), "bench", type_id,
+                *(("--level", level) if level else ("--case", pick)),
                 "--tool", tool, "--max-spend", str(spend), "--building", bid]
         if tier:
             argv += ["--tier", {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}[tier]]
@@ -177,7 +188,7 @@ class Bench:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(orders[:20000], encoding="utf-8")
             argv += ["--orders", str(path)]
-        job = Job("run", type_id, case.title)
+        job = Job("run", type_id, label)
         try:
             job.proc = subprocess.Popen(argv, cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         text=True, start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})

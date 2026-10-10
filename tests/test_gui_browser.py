@@ -1815,7 +1815,12 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
     dialog.wait_for(state="visible", timeout=WAIT_MS)
     assert "Test bench" in dialog.locator(".ok-dialog__title").inner_text()
     pg.wait_for_selector(".gui-bench__table", timeout=WAIT_MS)
-    assert "passed" in dialog.locator(".gui-bench__table").inner_text() and "failed" in dialog.locator(".gui-bench__table").inner_text()
+    runs = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
+    assert "passed" in runs.inner_text() and "failed" in runs.inner_text()
+    against = dialog.locator(".gui-bench__against").inner_text()      # the latest run of each case against the bare tool
+    assert "slugify" in against and "+138%" in against and "better" in against
+    case = dialog.locator(".gui-bench__form select").first
+    assert "Every parallel case (5)" in case.inner_text() and "Every case (15)" in case.inner_text()
     assert dialog.locator(".gui-bench__lane").count() == 3                # the steward and two orks
     pg.wait_for_selector(".gui-bench__finding", timeout=WAIT_MS)
     if os.environ.get("ORKCRAFT_SHOTS"):
@@ -1862,7 +1867,7 @@ def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkey
     page.evaluate("id => import('/static/js/bench.js').then(m => { m.benchOpen.value = id; })", bid)
     dialog = page.locator(".gui-bench")
     dialog.wait_for(state="visible", timeout=WAIT_MS)
-    table = dialog.locator(".gui-bench__table")
+    table = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
     table.wait_for(state="visible", timeout=WAIT_MS)
     text = table.inner_text()
     assert "8 of 9" in text and "9 of 9" not in text and "8 of 8" in text and "Novice" in text
