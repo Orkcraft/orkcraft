@@ -315,7 +315,9 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         "the building it tests and its last run: passed or not, against the bare AI tool",
         "Tech: run a case or a level of them, the runs side by side with what each side missed, the building's "
         "decisions on the clock, the cases; UX and Product: the reviewers' findings and the AHA moment; Make tasks",
-        events=(_e("lab.report", "test report", TEXT, "a run ended: the whole run as text, titled by the building "
+        events=(_e("lab.case", "test case", TEXT, "a test case's input: its road says where a chain the Test bench "
+                   "tests begins (the runs give it to a copy of the chain, never to the town's own)"),
+                _e("lab.report", "test report", TEXT, "a run ended: the whole run as text, titled by the building "
                    "and the case"),
                 _e("lab.missed", "a check missed", TEXT, "a run's building missed a check: what it missed and why"),
                 _e("lab.finding", "finding", TEXT, "a reviewer's finding sent with Make tasks: what to change and why")),

@@ -35,8 +35,10 @@ function Window({ id, data }) {
   const subjects = data.subjects || [];
   if (!subjects.length) {
     return html`<div class="lab-empty">
-      <p class="ok-font-body">${say("The Test bench tests the building whose road comes into it.")}</p>
-      <p class="ok-font-status ok-tone-muted">${say("Pull a road from a building (the Agent pool, External listeners, the Task board…) into the Test bench. A road out of it takes its reports and findings where they should go.")}</p>
+      <p class="ok-font-body">${say("The Test bench tests the building whose road comes into it, or a whole chain.")}</p>
+      <p class="ok-font-status ok-tone-muted">${say("One building: pull a road from it (the Agent pool, External listeners, the Task board…) into the Test bench.")}</p>
+      <p class="ok-font-status ok-tone-muted">${say("A chain: pull a road with “test case” from the Test bench into the chain's first building, and a road from its last building back into the Test bench.")}</p>
+      <p class="ok-font-status ok-tone-muted">${say("Any other road out of it takes its reports and findings where they should go.")}</p>
     </div>`;
   }
   const pick = data.subject || subjects[0].id;

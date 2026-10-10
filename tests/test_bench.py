@@ -206,7 +206,7 @@ def test_cli_refuses_an_unknown_case_type_or_tier(fake_repo, capsys):
     assert cli.main(["--repo", str(fake_repo), "bench", "mill"]) == 2
     assert cli.main(["--repo", str(fake_repo), "bench", "--tier", "grandmaster"]) == 2
     err = capsys.readouterr().err
-    assert "slugify" in err and "barracks, watchtower, fields, war_drum, mine, council so far" in err and "novice, seasoned or veteran" in err
+    assert "slugify" in err and "barracks, watchtower, fields, war_drum, mine, council, chain so far" in err and "novice, seasoned or veteran" in err
 
 
 def test_the_building_feed_reads_its_decisions_oldest_first_and_folds_a_report(tmp_path, faked_pool):

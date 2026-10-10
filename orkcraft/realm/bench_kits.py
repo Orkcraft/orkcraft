@@ -13,6 +13,7 @@ A result per type:
     war_drum    {"briefs": [{"n", "text"}]}
     mine        {"claims": [{"claim", "sources": [url…], "state"}]}
     council     {"verdict": "approve" | "rework" | "ask", "notes", "route"}
+    chain       {"outputs": [{"title", "text"}]}: what the chain's last building sent on
 
 A check of words matches their stem (the first `STEM` letters), case and accents aside, so "booking" finds
 "bookings"; a group of words passes when any of them is there.
@@ -345,12 +346,42 @@ def _cn_check(c: bench.Case, result: dict) -> list[dict]:
     return out
 
 
+# -- a chain of buildings ------------------------------------------------------------------------------------------
+
+def _ch_prompt(c: bench.Case) -> str:
+    cart = c.inputs.get("cart") or {}
+    about = c.inputs.get("about") or "a chain of buildings"
+    return f"""You stand in for a chain of buildings that each do one part of the work, one after another: {about}.
+Do what the whole chain would do with what comes in below, and give what its last building would send on. The
+folder you are in is the project; read it if it helps.
+
+<input title="{cart.get('title', '')}">
+{cart.get('text', '')}
+</input>
+
+Answer with what the chain would send on, as Markdown, nothing before it."""
+
+
+def _ch_parse(text: str) -> dict:
+    return {"outputs": [{"title": "", "text": text}] if (text or "").strip() else []}
+
+
+def _ch_check(c: bench.Case, result: dict) -> list[dict]:
+    outs = result.get("outputs") or []
+    text = "\n\n".join(f"{o.get('title', '')}\n{o.get('text', '')}" for o in outs)
+    out = [_ok("something came out of the chain", bool(text.strip()), f"{len(outs)} carts, {len(text)} characters")]
+    for group in c.inputs.get("expect_words") or []:
+        out.append(_ok(f"what came out says {_said(group)}", has(text, group), text[:200]))
+    return out
+
+
 KITS: dict[str, Kit] = {
     "watchtower": Kit("watchtower", _wt_prompt, _wt_parse, _wt_check, "judge"),
     "fields": Kit("fields", _fd_prompt, _fd_parse, _fd_check, "plan"),
     "war_drum": Kit("war_drum", _wd_prompt, _wd_parse, _wd_check, ""),
     "mine": Kit("mine", _mn_prompt, _mn_parse, _mn_check, "search", web=True),
     "council": Kit("council", _cn_prompt, _cn_parse, _cn_check, ""),
+    "chain": Kit("chain", _ch_prompt, _ch_parse, _ch_check, ""),
 }
 
 

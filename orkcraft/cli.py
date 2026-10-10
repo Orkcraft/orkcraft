@@ -3,6 +3,7 @@ The terminal UI is gone (docs/design/calm-town.md §9); `orkcraft tui` only says
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -129,6 +130,9 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         sys.stderr.write(f"orkcraft error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
         return 2
     cases = bench.cases(root, args.type)
+    if args.type == "chain" and args.chain_file:            # the cases that suit the chain's first building
+        first = str(json.loads(args.chain_file.read_text(encoding="utf-8")).get("first_type") or "")
+        cases = [c for c in cases if c.inputs.get("first", "") in ("", first)]
     if args.list:
         for c in cases:
             print(f"{c.id:16} {c.level or '':9} {c.title}" + ("" if c.reviewed else "  (not read yet: it does not count)"))
@@ -150,7 +154,7 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         return 2
     max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
     sides = (args.only,) if args.only else ("building", "bare")
-    word = lexicon.term(args.type)
+    word = "chain" if args.type == "chain" else lexicon.term(args.type)
     if len(picked) > 1:
         print(f"Test bench: {len(picked)} cases, one after another. Each spends up to ${max_spend:.2f} on the "
               "building's side; nothing leaves the copies it makes.", flush=True)
@@ -160,9 +164,10 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
               "nothing leaves the copies it makes.", flush=True)
         try:
             orders = args.orders.read_text(encoding="utf-8") if args.orders else None
+            chain = json.loads(args.chain_file.read_text(encoding="utf-8")) if args.chain_file else None
             report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
-                                                say=lambda line: print(line, flush=True), orders=orders)
-        except (ValueError, RuntimeError, OSError) as e:
+                                                say=lambda line: print(line, flush=True), orders=orders, chain=chain)
+        except (ValueError, RuntimeError, OSError) as e:          # a chain file that does not read is a ValueError
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
         reports.append(report)
@@ -233,6 +238,9 @@ def main(argv: list[str] | None = None) -> int:
     bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
     bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
     bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--chain-file", type=Path, default=None,
+                         help="For the chain type: a JSON file with the chain's buildings and roads (the Test bench "
+                              "writes it)")
     bench_p.add_argument("--orders", type=Path, default=None,
                          help="A file with the building's instructions for this run only (default: its own)")
     up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")

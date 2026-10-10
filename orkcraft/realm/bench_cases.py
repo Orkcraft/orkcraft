@@ -497,4 +497,6 @@ Priya
             },
         },
     ],
+    # A chain of buildings the Test bench is laid across (realm/bench_kit_cases.py `CHAIN`).
+    "chain": list(bench_kit_cases.CASES["chain"]),
 }

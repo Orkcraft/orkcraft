@@ -299,3 +299,51 @@ def test_the_quick_action_runs_the_first_case_of_the_building_it_tests(host, mon
     monkeypatch.setattr(host.bench, "run", lambda args: seen.update(args) or {})
     assert host.command("act", {"id": lab, "act": "lab.run"}) == "slugify"
     assert (seen["id"], seen["tool"], seen["max_spend"], seen["lab"]) == (pool, "agy", 0.5, lab)
+
+
+# -- a chain of buildings -----------------------------------------------------------------------------------------
+
+def _chain(h: Host):
+    """A Test bench laid across a chain: its `lab.case` road into a Review board, the board's approval into an Agent
+    pool, the pool's work back into the Test bench; and a Task board its reports go to."""
+    lab, board, pool, desk = (_raised(h, "lab"), _raised(h, "council", max_cycles=2),
+                              _raised(h, "barracks", worktrees=False, plan=False), _raised(h, "fields"))
+    _road(h, lab, board, "lab.case")
+    _road(h, board, pool, "team.approved")
+    _road(h, pool, lab, "pool.done")
+    _road(h, lab, desk, "lab.report")
+    return lab, board, pool, desk
+
+
+def test_a_test_bench_laid_across_a_chain_tests_the_chain(host):
+    lab, board, pool, desk = _chain(host)
+    w = host.town.worker(lab)
+    [s] = w.subjects()                                              # the pool ends the chain: not tested alone
+    assert s["id"] == f"chain:{board}:{pool}" and s["chain"] == [board, pool] and s["first_type"] == "council"
+    assert " → " in s["title"] and w.targets() == [desk]            # the lab.case road is no place for reports
+    spec = w.chain_spec(s)
+    assert [b["id"] for b in spec["buildings"]] == [board, pool] and spec["back_event"] == "pool.done"
+    assert spec["roads"] == [{"target": pool, "source": board, "event": "team.approved", "filter": {}, "handler": None}]
+    state = host.command("bench.open", {"id": s["id"], "lab": lab})
+    assert state["type"] == "chain" and state["can_run"] and state["word"] == "chain"
+    assert [c["id"] for c in state["cases"]] == ["board-review-route"]          # the cases that suit a Review board first
+    assert not host.bench.reviewing                                           # no reviews of a chain by themselves
+
+
+def test_the_window_runs_a_chain_with_the_chain_as_it_stands(host, monkeypatch):
+    lab, board, pool, _desk = _chain(host)
+    cid = f"chain:{board}:{pool}"
+    seen = {}
+    real = subprocess.Popen
+
+    def popen(argv, **kw):
+        seen["argv"] = argv
+        return real(["sh", "-c", f'echo "{bench.DONE}r-chain"'], **kw)
+
+    monkeypatch.setattr(gui_bench.subprocess, "Popen", popen)
+    host.command("bench.run", {"id": cid, "lab": lab, "case": "board-review-route"})
+    argv = seen["argv"]
+    assert argv[argv.index("bench") + 1] == "chain"
+    spec = json.loads(open(argv[argv.index("--chain-file") + 1]).read())
+    assert spec["first"] == board and spec["last"] == pool and spec["first_type"] == "council"
+    assert _until(lambda: host.bench.jobs["chain"].done)

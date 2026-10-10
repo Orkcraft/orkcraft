@@ -11,6 +11,7 @@ typed roads), so a face runs the bench as `orkcraft bench`, in a process of its 
 """
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 import threading
 import time
@@ -22,7 +23,7 @@ from orkcraft.core.town import Town
 from orkcraft.core import bench_kits
 from orkcraft.realm import bench, bench_kits as kits, checkpoint, masonry
 
-TYPES = ("barracks", "watchtower", "fields", "war_drum", "mine", "council")   # what the bench runs so far
+TYPES = ("barracks", "watchtower", "fields", "war_drum", "mine", "council", "chain")   # what the bench runs so far
 # A building that hands its work to an Agent pool: its instructions are the pool's (the Calendar's briefs).
 POOLED = {"war_drum": "barracks"}
 KIT_PROJECT = {"README.md": "# Test bench\n\nA copy the Test bench made for one run.\n"}
@@ -186,13 +187,21 @@ def _worktree(project: Path, where: Path, branch: str) -> None:
 def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", building_id: str = "",
         max_spend: float = bench.DEFAULT_MAX_SPEND, sides: tuple[str, ...] = ("building", "bare"),
         say: Callable[[str], None] = lambda _line: None, cancel: threading.Event | None = None,
-        bare_runner=None, orders: str | None = None) -> tuple[bench.Report, Path]:
+        bare_runner=None, orders: str | None = None, chain: dict | None = None) -> tuple[bench.Report, Path]:
     """One run of a case, the building's side then the bare tool's, each in its own copy; kept in its run folder.
-    `orders`: the building's instructions for this run only (None: its own)."""
+    `orders`: the building's instructions for this run only (None: its own). `chain`: a chain's buildings and
+    roads (core/workers/lab.py `chain_spec`) when the case is a chain's."""
     now = dt.datetime.now()
     folder = bench.run_dir(root, case, now)
     report = bench.Report(id=folder.name, type=case.type, case=case.id, tool=tool, tier=tier,
                           at=now.isoformat(timespec="seconds"), orders_changed=orders is not None)
+    if case.type == "chain":
+        if not chain:
+            raise ValueError("a chain's case needs the chain: run it from the Test bench, or give --chain-file")
+        report.subject = str(chain.get("id") or "")
+        case = dataclasses.replace(case, inputs={**case.inputs, "about": chain.get("about", "")})
+        return _run_kit(root, case, folder, report, {}, tool, tier, max_spend, sides, say, cancel, bare_runner,
+                        orders, chain)
     template = template_of(root, case.type, building_id)
     if case.type != "barracks":
         return _run_kit(root, case, folder, report, template, tool, tier, max_spend, sides, say, cancel, bare_runner,
@@ -216,7 +225,8 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
 
 
 def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, template: dict, tool: str, tier: str,
-             max_spend: float, sides: tuple[str, ...], say, cancel, bare_runner, orders) -> tuple[bench.Report, Path]:
+             max_spend: float, sides: tuple[str, ...], say, cancel, bare_runner, orders,
+             chain: dict | None = None) -> tuple[bench.Report, Path]:
     """A building whose work is not code (realm/bench_kits.py): its input given, its result read and checked; the
     bare AI tool gets the same input and, when no tier is picked, the tier the building's own call ran on."""
     if not case.files:
@@ -226,7 +236,8 @@ def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, t
         project = folder / "building"
         bench.make_project(case, root, project)
         ctx = bench_kits.Ctx(case, project, template, tool, tier, max_spend, cancel=cancel, say=say, orders=orders,
-                             pool_template=template_of(root, POOLED[case.type]) if case.type in POOLED else {})
+                             pool_template=template_of(root, POOLED[case.type]) if case.type in POOLED else {},
+                             chain=chain or {})
         report.building = bench_kits.RUNS[case.type](ctx)
         report.save(folder)
     if "bare" in sides and not (cancel is not None and cancel.is_set()):

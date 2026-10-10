@@ -242,6 +242,7 @@ class Report:
     building: Side | None = None
     bare: Side | None = None
     orders_changed: bool = False       # the building ran on instructions changed for this run
+    subject: str = ""                  # what ran: a chain's id (`chain:<first>:<last>`); "" a building of the type
 
     def save(self, run_dir: Path) -> Path:
         run_dir.mkdir(parents=True, exist_ok=True)
