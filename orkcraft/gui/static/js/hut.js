@@ -43,9 +43,11 @@ export const fenced = (b) => !bareOf(b) && b.id !== CORNER;
 const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
+// The least size of each: a card shows more as soon as it has the room.
+export const LEVEL_M = { w: 300, h: 170 }, LEVEL_L = { w: 460, h: 320 };
 export function levelOf(b, auto = null) {
   const [w, h] = (b && b.size) || (auto && [auto[0], auto[1] || 0]) || [0, 0];
-  return w >= 520 && h >= 400 ? "l" : w >= 360 && h >= 240 ? "m" : "s";
+  return w >= LEVEL_L.w && h >= LEVEL_L.h ? "l" : w >= LEVEL_M.w && h >= LEVEL_M.h ? "m" : "s";
 }
 export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
 const WARN_MS = 4000;                      // a drag on a pinned hut says why once in this long
