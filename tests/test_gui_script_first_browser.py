@@ -184,7 +184,7 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
 
 
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):
-    """docs/design/yards.md §3g: near a card's edge the road handle — a small gate — stands under the mouse, a road is
+    """docs/design/yards.md §3g: near a card's edge the road handle — a small gate — stands under the mouse on the fence, a road is
     pulled out of it there; inside the card and at the corner, which resizes, it is gone. (A card: the Drop stands
     bare since §7.)"""
     pg = demo_page
@@ -198,7 +198,7 @@ def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resiz
     pg.wait_for_function("() => document.querySelector('.gui-hut[data-id=\"days\"] .gui-hut__road').classList.contains('is-at')",
                          timeout=WAIT_MS)
     g = gate.bounding_box()
-    assert abs(g["x"] + g["width"] / 2 - card["x"]) < 4 and abs(g["y"] + g["height"] / 2 - y) < 4   # on the left edge, here
+    assert abs(g["x"] + g["width"] / 2 - (card["x"] + 7.5)) < 2 and abs(g["y"] + g["height"] / 2 - y) < 4   # on the left fence, here
     pg.mouse.move(card["x"] + card["width"] / 2, y)                                              # inside: no gate
     assert "is-at" not in (gate.get_attribute("class") or "")
     pg.mouse.move(card["x"] + card["width"] - 4, card["y"] + card["height"] - 4)                  # the corner resizes

@@ -310,3 +310,9 @@ The Info tab has two parts, each with its own label: **The building** (what it d
 roads) and **Its ork** (its face at full size, its name, and why an ork is needed here at all —
 `realm/ork_roles.py` `WHY`, one line per type; a yard says no ork lives there). The window's tabs stand in its title
 bar, after the name: no ork head and no tab row above the content.
+
+## 10. The gate on the fence, and on a bare building (built 2026-10-10)
+
+The road gate stands on the fence itself, not on the card's edge: the side pickets' middle (7.5 px in) and the bottom
+row's (10.5 px up) (js/hut.js `FENCE_IN`). A bare building has a gate too: along its plinth and at its house's left
+side, never over the house or its mark, where a press selects it (`edgeOf`).
