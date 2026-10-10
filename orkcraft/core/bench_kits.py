@@ -427,16 +427,22 @@ def run_chain(ctx: Ctx) -> bench.Side:
         for r in spec.get("roads") or []:
             ts.subscribe(town.scroll, ids[r["target"]], ids[r["source"]], r["event"], filter=r.get("filter") or None,
                          handler=r.get("handler"))
-        back = spec.get("back_event") or ""
-        if not back:
+        backs = [e for e in (spec.get("back_events") or [spec.get("back_event") or ""]) if e]
+        if not backs:
             raise ValueError("the chain's last building sends nothing back to the Test bench")
-        ts.subscribe(town.scroll, end.building_id, ids[spec["last"]], back, filter=spec.get("back_filter") or None)
+        for back in backs:                             # one road back for a chain; every event of a building alone
+            ts.subscribe(town.scroll, end.building_id, ids[spec["last"]], back, filter=spec.get("back_filter") or None)
         side.orks = len(ids)
         side.model = ctx.tier
-        first = ids[spec["first"]]
+        entry = str(ctx.case.inputs.get("entry") or "")
+        first = ids.get(entry) or ids[spec["first"]]
         title, text = str(cart.get("title") or ctx.case.title), str(cart.get("text") or "")
+        w = town.worker(first)
         with town.bench_lock:
-            town.deliver(first, pipes.Payload(pipes.TEXT, text, end.building_id, CASE_EVENT, title), title, text)
+            if (w.TYPE or w.btype.id) == "watchtower":  # it takes no carts: what comes in is a message, as from mail
+                w.add_signal(watch.Signal(since.isoformat(timespec="seconds"), "mail", title, text, ref="bench-1"))
+            else:
+                town.deliver(first, pipes.Payload(pipes.TEXT, text, end.building_id, CASE_EVENT, title), title, text)
         ctx.say(f"the case went into {town.title_of(first)}; waiting for {town.title_of(ids[spec['last']])}")
         heard = 0
 

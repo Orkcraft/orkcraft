@@ -54,6 +54,7 @@ class Job:
     result: str = ""               # the run's id, the case's id
     subject: str = ""              # the building it runs
     reported: list[str] = field(default_factory=list)   # the runs it said (a series says one a case)
+    then: Callable[[], None] | None = field(default=None, repr=False)   # on the town's thread, once it ended
     proc: subprocess.Popen | None = field(default=None, repr=False)
     cancel: threading.Event = field(default_factory=threading.Event, repr=False)
 
@@ -66,6 +67,8 @@ class Bench:
     def __init__(self, host) -> None:
         self.host = host
         self.jobs: dict[str, Job] = {}                       # type → its run or its case being written
+        from orkcraft.gui.lab_runs import LabRuns
+        self.lab = LabRuns(self)                             # a Test bench building's own cases (gui/lab_runs.py)
         self.reviewing: dict[tuple[str, str], dict[str, threading.Event]] = {}   # (type, tab) → role → cancel
         self.asked: set[str] = set()                         # types reviewed by themselves on a first open
         self._lock = threading.Lock()
@@ -274,6 +277,8 @@ class Bench:
         if code != 0 and not job.result:
             job.error = "stopped" if job.cancel.is_set() else f"the run ended with exit {code}"
         job.done = True
+        if job.then is not None and not job.error:
+            self.host.town.call(job.then)
         self.host.town.call(self.host.on_change)
 
     def labs_of(self, building_id: str) -> list:

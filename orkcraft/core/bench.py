@@ -188,7 +188,8 @@ def _worktree(project: Path, where: Path, branch: str) -> None:
 def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", building_id: str = "",
         max_spend: float = bench.DEFAULT_MAX_SPEND, sides: tuple[str, ...] = ("building", "bare"),
         say: Callable[[str], None] = lambda _line: None, cancel: threading.Event | None = None,
-        bare_runner=None, orders: str | None = None, chain: dict | None = None) -> tuple[bench.Report, Path]:
+        bare_runner=None, orders: str | None = None, chain: dict | None = None, bare_tool: str = "",
+        bare_tier: str = "", judge_runner=None) -> tuple[bench.Report, Path]:
     """One run of a case, the building's side then the bare tool's, each in its own copy; kept in its run folder.
     `orders`: the building's instructions for this run only (None: its own). `chain`: a chain's buildings and
     roads (core/workers/lab.py `chain_spec`) when the case is a chain's."""
@@ -202,7 +203,7 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
         report.subject = str(chain.get("id") or "")
         case = dataclasses.replace(case, inputs={**case.inputs, "about": chain.get("about", "")})
         return _run_kit(root, case, folder, report, {}, tool, tier, max_spend, sides, say, cancel, bare_runner,
-                        orders, chain)
+                        orders, chain, bare_tool, bare_tier, judge_runner)
     template = template_of(root, case.type, building_id)
     if case.type != "barracks":
         return _run_kit(root, case, folder, report, template, tool, tier, max_spend, sides, say, cancel, bare_runner,
@@ -227,7 +228,8 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
 
 def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, template: dict, tool: str, tier: str,
              max_spend: float, sides: tuple[str, ...], say, cancel, bare_runner, orders,
-             chain: dict | None = None) -> tuple[bench.Report, Path]:
+             chain: dict | None = None, bare_tool: str = "", bare_tier: str = "",
+             judge_runner=None) -> tuple[bench.Report, Path]:
     """A building whose work is not code (realm/bench_kits.py): its input given, its result read and checked; the
     bare AI tool gets the same input and, when no tier is picked, the tier the building's own call ran on."""
     if not case.files:
@@ -246,6 +248,29 @@ def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, t
         say(f"the bare AI tool works on the case{f' ({on})' if on else ''}…")
         project = folder / "bare"
         bench.make_project(case, root, project)
-        report.bare = kits.bare(case, project, tool, on, cancel, runner=bare_runner)
+        report.bare = kits.bare(case, project, bare_tool or tool, bare_tier or on, cancel, runner=bare_runner)
+    if case.inputs.get("judge") and report.building is not None and report.bare is not None:
+        say("a blind judge reads both results…")
+        _judge(case, report, judge_runner)
     report.save(folder)
     return report, folder
+
+
+def _judge(case: bench.Case, report: bench.Report, runner=None) -> None:
+    """Both results to one judge that is not told which is whose (their order by a coin): each side's score."""
+    import random
+    import threading as th
+    from orkcraft.realm import jobs, lab_cases
+    if report.building is None or report.bare is None:
+        return                                          # one side only: nothing to weigh it against
+    pair = [("building", report.building), ("bare", report.bare)]
+    random.shuffle(pair)
+    prompt = lab_cases.judge_prompt(str(case.inputs.get("goal") or ""), case, pair[0][1].text or pair[0][1].error,
+                                    pair[1][1].text or pair[1][1].error)
+    try:
+        text = (runner or (lambda p: jobs.run_read("main", p, Path.cwd(), th.Event(), "")[0]))(prompt)
+    except (RuntimeError, OSError):
+        return
+    got = lab_cases.parse_judge(text)
+    if got:
+        pair[0][1].score, pair[1][1].score = got["a"], got["b"]
