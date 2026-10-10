@@ -25,3 +25,21 @@ its pool unchained and the bare tool the same way.
 | 20261010-084355 | slugify | **passed**, 255 s, 147k tokens, 1 ork, no rework | passed, 146 s, 69k tokens |
 
 agy is not priced, so both sides show $0.00; tokens stand in for spend on agy.
+
+### Series simple, after the fix (20261010-0851…)
+
+| case | building | bare | time | tokens |
+|---|---|---|---|---|
+| slugify | passed, 129 s | passed, 136 s | −5 % | +19 % |
+| inventory | passed, 141 s | passed, 112 s | +25 % | +14 % |
+| roman | passed, 113 s | passed, 189 s | −40 % | −2 % |
+| chunk | passed, 97 s | passed, 122 s | −21 % | −3 % |
+| top-words | passed, 222 s | passed, 191 s | +16 % | +8 % |
+
+All pass on both sides. One ork each, no steward call, no rework. Time varies a lot between two runs of
+one case (slugify: 255 s, then 129 s), so one run decides nothing within 10 %.
+
+**Found on the way:** `agy models` (1.3.3) puts a tab between a model's id and its name;
+`model_families.parse_agy` split on a space, listed no model, and every tier ran on agy's default, so a
+rework's "retier" changed nothing. Fixed; this series still ran on the default model (the list was
+cached empty), the next ones run on the tiers' models.
