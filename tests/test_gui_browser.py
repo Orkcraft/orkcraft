@@ -198,7 +198,14 @@ def _place(pg, before: set) -> str:
     layer = pg.locator(".gui-town__placing")
     layer.wait_for(state="visible", timeout=WAIT_MS)
     box = layer.bounding_box()
-    layer.click(position={"x": min(box["width"] - 40, 700), "y": min(box["height"] - 40, 520)})
+    spots = [(x, y) for y in (520, 360, 680, 200) for x in (700, 500, 900, 300, 1100)]
+    for x, y in spots:                          # a ghost over another hut builds nothing: a free spot (§8)
+        at = {"x": min(box["width"] - 40, x), "y": min(box["height"] - 40, y)}
+        pg.mouse.move(box["x"] + at["x"], box["y"] + at["y"])
+        pg.wait_for_timeout(50)
+        if not pg.locator(".gui-town__ghost.is-blocked").count():
+            break
+    layer.click(position=at)
     pg.wait_for_function("n => document.querySelectorAll('.gui-hut, .gui-onb__ghost.is-raising').length > n",
                          arg=len(before), timeout=WAIT_MS)
     later = pg.locator(".gui-warchief__setup button", has_text="Later")

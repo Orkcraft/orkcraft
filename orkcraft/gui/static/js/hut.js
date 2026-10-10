@@ -270,16 +270,43 @@ function Grips({ b, onSized }) {
 // pulled out of it there; it leaves no gate behind, the road keeps its arrow. The corner it stays clear of resizes.
 const EDGE_PX = 12, CORNER_PX = 20;
 
-/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner). */
-function edgeAt(card, e) {
+/** A bare building's gate (Camp): along its plinth, and at its house's left side — never over the house or its
+ *  mark (a press there selects it). `b`: the box it stands in, card px, its foot at the plinth's middle. */
+function edgeOf(b, x, y) {
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo + 11), hi - 11);
+  if (y >= b.y1 - 6 && x >= b.x0 - EDGE_PX && x <= b.x1 + 4) return { x: clamp(x, b.x0, b.x1), y: b.y1 };
+  if (x <= b.x0 + 2 && x >= b.x0 - EDGE_PX && y >= b.y0) return { x: b.x0, y: clamp(y, b.y0, b.y1) };
+  return null;
+}
+
+/** The box a bare building's gate stands on, in its card's px: from its house's top to its plinth's middle. */
+function bareBox(card, hut) {
+  const p = hut.querySelector(".gui-hut__plinth"), s = hut.querySelector(".gui-hut__sprite");
+  if (!p) return null;
+  const c = card.getBoundingClientRect(), k = c.width / card.offsetWidth || 1;
+  const pr = p.getBoundingClientRect(), sr = s ? s.getBoundingClientRect() : pr;
+  return { x0: (pr.left - c.left) / k, x1: (pr.right - c.left) / k, y0: (sr.top - c.top) / k, y1: (pr.top + pr.height / 2 - c.top) / k };
+}
+
+// Where the gate stands on each side, in from the card's edge: in Camp a fenced card's on its fence — the side
+// pickets' middle, the bottom row's (tools/fence_sprites.py, 3 px a pixel) — a bare building's on its plinth.
+const FENCE_IN = { left: 7.5, right: 7.5, top: 0, bottom: 10.5 };
+const NO_IN = { left: 0, right: 0, top: 0, bottom: 0 };
+
+/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner).
+ *  `inset`: how far in from each edge the gate stands (on the fence, on the plinth). */
+function edgeAt(card, e, inset = NO_IN, box = null) {
   const r = card.getBoundingClientRect(), k = r.width / card.offsetWidth || 1;
   const w = card.offsetWidth, h = card.offsetHeight, x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k;
+  if (box) return edgeOf(box, x, y);
   const d = { left: x, right: w - x, top: y, bottom: h - y };
   const side = Object.keys(d).reduce((a, k2) => (d[k2] < d[a] ? k2 : a), "left");
-  if (d[side] > EDGE_PX || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
-  const clamp = (v, hi) => Math.min(Math.max(v, 11), hi - 11);
-  return side === "left" ? { x: 0, y: clamp(y, h) } : side === "right" ? { x: w, y: clamp(y, h) }
-    : side === "top" ? { x: clamp(x, w), y: 0 } : { x: clamp(x, w), y: h };
+  if (d[side] > EDGE_PX + inset[side] || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo + 11), hi - 11);
+  const i = inset;
+  return side === "left" ? { x: i.left, y: clamp(y, i.top, h - i.bottom) }
+    : side === "right" ? { x: w - i.right, y: clamp(y, i.top, h - i.bottom) }
+    : side === "top" ? { x: clamp(x, i.left, w - i.right), y: i.top } : { x: clamp(x, i.left, w - i.right), y: h - i.bottom };
 }
 
 /** `auto`: the [w, h] the town gives a card with no size of its own, out of the free room around it (js/town.js
@@ -291,8 +318,14 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   const nearEdge = (e) => {
     const btn = road.current;
     if (!btn || e.pointerType !== "mouse" || btn.contains(e.target)) return;
-    // never over a control, nor on the title bar: that moves the card (a yard's is its top fence)
-    const at = e.target.closest("button, a, input, select, textarea, .gui-hut__title") ? null : edgeAt(e.currentTarget, e);
+    // never over a control, nor on the title bar: that moves the card (a yard's is its top fence) — but a bare
+    // building is its title bar alone: its gate comes at its sides and on its plinth
+    const hut = ref.current, camp = document.documentElement.dataset.look === "camp";
+    const bare = !!(hut && hut.classList.contains("is-bare"));
+    const inset = !camp || bare ? NO_IN : hut && hut.classList.contains("is-fenced") && !hut.classList.contains("is-folded") ? FENCE_IN : NO_IN;
+    const off = e.target.closest(bare ? "button, a, input, select, textarea" : "button, a, input, select, textarea, .gui-hut__title");
+    const box = camp && bare ? bareBox(e.currentTarget, hut) : null;
+    const at = off ? null : edgeAt(e.currentTarget, e, inset, box);
     btn.classList.toggle("is-at", !!at);
     if (at) { btn.style.left = `${at.x}px`; btn.style.top = `${at.y}px`; }
   };
