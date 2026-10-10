@@ -79,3 +79,6 @@
 [data-look="office"] .gui-onb__badges { right: auto; left: calc(100% + 4px); top: 2px; display: grid;
   grid-template-columns: repeat(2, 18px); gap: 2px; }
 [data-look="office"] .gui-onb__badges .gui-onb__svc { width: 18px; height: 18px; font-size: 11px; }
+/* Build's icons say what each is for (js/build.js): Office keeps them, in grey, as it keeps no other sprite. */
+[data-look="office"] .gui-build__tile > .ok-sprite { display: block; filter: grayscale(1) contrast(1.15); opacity: .85; }
+[data-look="office"] .gui-build__tile:is(:hover, :focus-visible) > .ok-sprite { opacity: 1; }
