@@ -153,3 +153,77 @@ def test_a_kit_case_needs_no_task_and_its_bare_side_runs_on_the_buildings_tier(t
     assert seen[0][1] == "sonnet" or seen[0][1]                                  # the tier picked, as a model
     assert report.bare.model == "warrior"
     assert re.search(r"failed, \d+ of 9 checks", bench.verdict(report.building))
+
+
+# -- Research ---------------------------------------------------------------------------------------------------
+
+def test_research_finds_the_facts_on_the_web_and_the_bare_tool_is_judged_the_same(tmp_path, monkeypatch):
+    from orkcraft.realm import roads
+    calls = []
+
+    def agents(tool, prompt, workdir, env, cancel, model="", web=False, **_):
+        calls.append((tool, web))
+        if "Do not search" in prompt:
+            return json.dumps({"plan": [{"q": "When did it enter into force?"}, {"q": "When do the bans apply?"},
+                                        {"q": "When do the GPAI rules apply?"}]}), 0.01, 100
+        if '"groups"' in prompt:
+            return json.dumps({"groups": [[1], [2], [3]], "conflicts": []}), 0.01, 100
+        found = [("The AI Act entered into force on 1 August 2024.", "https://eur-lex.europa.eu/eli/reg/2024/1689"),
+                 ("Its bans apply from 2 February 2025.", "https://digital-strategy.ec.europa.eu/ai-act"),
+                 ("The GPAI obligations apply from 2 August 2025.", "https://artificialintelligenceact.eu/timeline")]
+        return json.dumps({"findings": [{"sub": n, "claim": c, "sources": [{"url": u, "quote": c}]}
+                                        for n, (c, u) in enumerate(found, 1)]}), 0.05, 2000
+    monkeypatch.setattr(roads, "run_agent", agents)
+    bare_runner, seen = _bare({"findings": [{"sub": 1, "claim": "It entered into force in August 2024.",
+                                             "sources": [{"url": "https://example.com/a"}]}]})
+    c = next(x for x in bench.cases(Path("/x"), "mine") if x.id == "eu-ai-act-dates")
+    report, _ = building_bench.run(tmp_path, c, tool="claude", bare_runner=bare_runner)
+    b = report.building
+    assert b.error == "" and b.passed is True, [x for x in b.checks if not x["ok"]] or b.how
+    assert ("claude", True) in calls and b.orks == 1
+    assert any(h.startswith("single: The AI Act entered") for h in b.how)          # one tool: one source, no rounds
+    assert "1 August 2024" in b.text or b.text.startswith("#")
+    assert report.bare.passed is False and "When did the EU AI Act" in seen[0][0]
+    assert {x["name"] for x in report.bare.checks if not x["ok"]} >= {"sources on at least 2 sites"}
+
+
+# -- Review board -------------------------------------------------------------------------------------------------
+
+def test_the_review_board_sends_back_the_planted_flaws(tmp_path, monkeypatch):
+    from orkcraft.core.workers.council import CouncilWorker
+    from orkcraft.realm import team as tm
+    asked = []
+
+    def board(harness, prompt, model):
+        asked.append(prompt)
+        if prompt.startswith("You are the steward"):
+            return "DECISION: REWORK\nHash with argon2, not MD5; reset links must expire; limit login attempts.", 0.02
+        role = tm._ROLE.match(prompt).group(1)
+        if role == "Security reviewer":
+            return "VETO — MD5 is broken; the reset token never expires; no rate limit on /login.", 0.03
+        return "CHANGES — backups on the same server; no feature flag.", 0.03
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(board))
+    bare_runner, _ = _bare({"verdict": "approve", "notes": "Looks fine.", "route": ""})
+    c = next(x for x in bench.cases(Path("/x"), "council") if x.id == "planted-flaws")
+    report, _ = building_bench.run(tmp_path, c, bare_runner=bare_runner)
+    b = report.building
+    assert b.error == "" and b.passed is True, [x for x in b.checks if not x["ok"]] or b.how
+    assert any(p.startswith("You are Security reviewer") for p in asked)                        # the case's roles
+    assert b.orks == 2 and any(h.startswith("steward: rework") for h in b.how)
+    assert report.bare.passed is False and len([x for x in report.bare.checks if not x["ok"]]) == 4
+
+
+def test_the_review_board_routes_a_bug_to_development(tmp_path, monkeypatch):
+    from orkcraft.core.workers.council import CouncilWorker
+
+    def board(harness, prompt, model):
+        if prompt.startswith("You are the steward"):
+            assert "`development`" in prompt                                            # the case's exits, by id
+            return "DECISION: APPROVE\nEXIT: development\nTASK: fix the CSV export error", 0.02
+        return "APPROVE — a clear bug report.", 0.02
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(board))
+    bare_runner, seen = _bare({"verdict": "approve", "notes": "", "route": "reply"})
+    c = next(x for x in bench.cases(Path("/x"), "council") if x.id == "route-a-request")
+    report, _ = building_bench.run(tmp_path, c, bare_runner=bare_runner)
+    assert report.building.passed is True, report.building.checks or report.building.how
+    assert report.bare.passed is False and "`development`" in seen[0][0]
