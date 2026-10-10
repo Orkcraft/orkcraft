@@ -9,7 +9,8 @@ ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one
 | 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done (redrawn, cut at `--cell 11 --scale 2`) |
 | 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done (redrawn, cut at `--cell 16.6 --scale 2`) |
 | 3 | File Forest, Tally Crag, Custom | done (`--cell 16.6 --scale 2`) |
-| — | Test bench (the Mechanic; drawn while it was the Alchemist's Lab, the sprite goes to the UX bench): a horned tower, a flask beside it fed by a tube, one gold bubble | done from a generated picture: `tools/sheet.py`'s cut (`--cell 24.4`) with its roof and tower joined, the ground line and the wall speckles taken out, at `--scale 2` |
+| — | Test bench (the Mechanic): a garage with tusked eaves, a cogwheel on its gable, a dark open gate and a gauge with a gold needle | done from a generated picture: `tools/sheet.py --cell 30 --scale 2`, the gear redrawn on the grid (its teeth were finer than the sheet's pixel), the gate filled dark |
+| — | UX bench (the Alchemy Lab, to come): a horned tower, a flask beside it fed by a tube, one gold bubble — the Test bench's first sprite, kept in git before the Mechanic's (commit 9d9a1ce) | drawn; it is put back under the UX bench's type when that is built |
 | — | Barracks, redrawn as a war hall (tusked roof ends, ridge spikes, a palisade, crossed gold axes) | done by hand on the grid from a generated picture (its uneven pixels did not cut cleanly) |
 
 ## Making a sheet
