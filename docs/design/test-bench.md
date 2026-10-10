@@ -273,3 +273,28 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
   report. On the summary of cases it gives the building against the bare tool, case by case.
 - **Make tasks.** The ticked findings of any tab go to the Agent pool picked, one task each, with the
   reviewer, the tab, the finding, where, its severity and Orkcraft's version.
+
+## 10. As built: the building's own goal and cases (realm/lab_cases.py, gui/lab_runs.py)
+
+The window leads with the Test bench's own work for what it tests (a building or a chain); the shipped cases
+and the reviews (§9) stay folded under it, open while it has no case of its own.
+
+- **Goal.** A line in the operator's words, on top. Its words pick the metric the window leads with
+  (`metric_of`: tokens or spend → tokens, time or speed → time, else quality). **Write cases for the goal**
+  asks one agent for 5–8 cases (an everyday one, a hard one, short and long), each a real input with the
+  words a good result says. **Run all cases** runs every case; when it ends, the proposals are written again.
+- **Settings** (folded): the scheme's AI tool and tier, the bare harness's AI tool and tier, the spend limit
+  a case, and the blind judge (one more AI call: both results in a random order, scored 0–10;
+  `core/bench.py` `_judge`).
+- **Cases.** Each one: its title, where it goes in (a chain's buildings that take a cart; External listeners
+  take it as a mail), its input, **Test this case**, ×, and its last test: time, tokens (shares of the bare
+  harness's) and quality (the judge's score minus the bare one's, else the checks), the metric's own in bold,
+  green when better. **Add a case** by hand: title, input, where it goes in, words a good result says.
+- **A run** is `orkcraft bench chain --chain-file --cases-file [--bare-tool] [--bare-tier]`: a building alone
+  is a chain of one whose every event comes back. Its terminal is four lines and Copy.
+- **What to change.** An agent reads the buildings' code, the roads and the last tests and proposes 3–8
+  changes, each `code`, `roads`, `prompt` or `settings`. The ticked ones become tasks of an Agent pool or
+  go down the Test bench's roads.
+- **Kept** in `lab.json` beside the building (goal, settings, cases, last results, proposals) until it is
+  demolished. The card: what it tests, the goal, and "N of M cases ahead on <metric>".
+- It is always in the Build row (**Check → Test**), with no flag.

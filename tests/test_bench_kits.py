@@ -324,3 +324,22 @@ def test_a_chain_runs_in_a_copy_from_its_first_building_to_what_comes_back(tmp_p
     assert report.bare.passed is False
     with pytest.raises(ValueError, match="needs the chain"):
         building_bench.run(tmp_path, c)
+
+
+def test_a_lab_case_goes_into_its_entry_and_a_blind_judge_scores_both_sides(tmp_path, monkeypatch):
+    from orkcraft.realm import lab_cases
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        return "slugify: lowercases, joins words with a dash, drops punctuation", 0.02, 300, ""
+
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(work))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    spec = {"id": "p", "first": "p", "last": "p", "back_events": ["pool.done", "pool.failed"], "back_filter": {},
+            "about": "Agent pool", "roads": [],
+            "buildings": [{"id": "p", "type": "barracks", "title": "Pool", "config": {"worktrees": False, "plan": False}}]}
+    c = lab_cases.to_case(lab_cases.new_case("Slugify", "Write slugify(text)", "p", ["dash"]), "Agent pool", True, "quality")
+    report, _ = building_bench.run(tmp_path, c, chain=spec, bare_runner=lambda *a: ("No idea.", 0.0, 0, ""),
+                                   judge_runner=lambda prompt: '{"a": 7, "b": 7}')
+    assert report.building.error == "" and report.building.passed is True
+    assert report.bare.passed is False
+    assert report.building.score == 7.0 and report.bare.score == 7.0

@@ -1916,3 +1916,46 @@ def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui
         page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-terminal.png"))
     server.host.bench.jobs.pop("fields", None)
     _lab_off(page, server, lab, bid)
+
+
+def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change(page, gui):
+    """docs/design/test-bench.md §10: the goal on top with Run all cases, every case with its last test against the
+    bare AI tool, and the proposals under them; the shipped cases and reviews folded below."""
+    from orkcraft import scroll as ts
+    from orkcraft.realm import bench as rbench
+    from orkcraft.realm import lab_cases
+    pg = page
+    server, _ = gui
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    lab, pool = call("town.build", {"type": "lab"}), call("town.build", {"type": "barracks"})
+    ts.subscribe(server.host.town.scroll, lab, pool, "pool.done")
+    w = server.host.town.worker(lab)
+    w.set_goal("Spend fewer tokens than the bare tool")
+    one, two = lab_cases.new_case("CSV parser", "Write a CSV parser", pool), lab_cases.new_case("Hard topic", "Explain CRDTs", pool)
+    w.add_cases(pool, [one, two])
+    w.reported(pool, rbench.Report(id="r1", type="chain", case=one["id"], tool="main", at="2026-10-10T10:00:00",
+                                   building=rbench.Side("building", seconds=50, tokens=600, passed=True),
+                                   bare=rbench.Side("bare", seconds=40, tokens=1000, passed=True)))
+    w.set_proposals(pool, [{"id": "p0", "area": "prompt", "title": "Shorter steward rules", "detail": "Fewer words",
+                            "where": "", "effect": ""}])
+    _hut(pg, lab).wait_for(state="visible", timeout=WAIT_MS)
+    _hut(pg, lab).locator(".gui-hut__title").dblclick()
+    _panel(pg, "Work")
+    panel = pg.locator(".gui-panel")
+    assert panel.locator(".lab-goal textarea").input_value() == "Spend fewer tokens than the bare tool"
+    panel.get_by_role("button", name="Run all cases (2)").wait_for(state="visible", timeout=WAIT_MS)
+    row = panel.locator(".lab-case", has_text="CSV parser")
+    assert "Tokens -40%" in row.inner_text() and row.locator(".lab-delta.is-lead.is-ok").count() == 1
+    assert "Not tested yet" in panel.locator(".lab-case", has_text="Hard topic").inner_text()
+    assert "1 of 1 case ahead on tokens" in panel.locator(".lab-goal").inner_text()
+    panel.locator(".lab-proposal", has_text="Shorter steward rules").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Add a case").click()
+    panel.locator(".lab-add textarea").fill("Research three vector databases")
+    panel.locator(".lab-add").get_by_role("button", name="Add").click()
+    panel.locator(".lab-case", has_text="Research three vector").wait_for(state="visible", timeout=WAIT_MS)
+    assert len(w.cases_of(pool)) == 3
+    assert panel.locator("details.lab-shipped").count() == 1
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        panel.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "lab.png"))
+    for bid in (lab, pool):
+        call("town.demolish", {"id": bid})

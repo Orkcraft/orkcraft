@@ -3,3 +3,24 @@
 .lab-pick { max-width: 360px; }
 .lab-empty { display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; }
 .lab-empty p { margin: 0; }
+.lab-own { display: flex; flex-direction: column; gap: var(--space-3); }
+.lab-goal textarea { width: 100%; }
+.lab-run-all { font-size: 1.05em; padding-inline: var(--space-4); }
+.lab-check { display: flex; align-items: flex-start; gap: var(--space-2); }
+.lab-case-list, .lab-proposal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.lab-case, .lab-proposal { border: 1px solid var(--frame); border-radius: 6px; padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+.lab-proposal p { margin: 0; }
+.lab-case__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.lab-case__head .gui-bench__acts { margin-left: auto; }
+.lab-case__body { white-space: pre-wrap; max-height: 12em; overflow: auto; margin: var(--space-1) 0; }
+.lab-case__result { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.lab-delta { font-variant-numeric: tabular-nums; }
+.lab-delta.is-lead { font-weight: 600; }
+.lab-delta.is-ok { color: var(--success); }
+.lab-delta.is-bad { color: var(--danger); }
+.lab-area { text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.05em; opacity: 0.7; }
+.lab-add { display: flex; flex-direction: column; gap: var(--space-2); }
+.lab-add textarea { width: 100%; }
+.lab-add-open { align-self: flex-start; }
+.lab-card-goal { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lab-proposals .gui-bench__row select { max-width: 320px; }

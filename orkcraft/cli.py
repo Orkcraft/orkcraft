@@ -130,7 +130,9 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         sys.stderr.write(f"orkcraft error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
         return 2
     cases = bench.cases(root, args.type)
-    if args.type == "chain" and args.chain_file:            # the cases that suit the chain's first building
+    if args.cases_file:                                     # a Test bench building's own cases (realm/lab_cases.py)
+        cases = [bench.Case.of(d, args.type) for d in json.loads(args.cases_file.read_text(encoding="utf-8"))]
+    elif args.type == "chain" and args.chain_file:            # the cases that suit the chain's first building
         first = str(json.loads(args.chain_file.read_text(encoding="utf-8")).get("first_type") or "")
         cases = [c for c in cases if c.inputs.get("first", "") in ("", first)]
     if args.list:
@@ -165,8 +167,10 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         try:
             orders = args.orders.read_text(encoding="utf-8") if args.orders else None
             chain = json.loads(args.chain_file.read_text(encoding="utf-8")) if args.chain_file else None
+            bare_tier = TIER_WORDS.get(args.bare_tier.lower(), args.bare_tier.lower())
             report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
-                                                say=lambda line: print(line, flush=True), orders=orders, chain=chain)
+                                                say=lambda line: print(line, flush=True), orders=orders, chain=chain,
+                                                bare_tool=args.bare_tool, bare_tier=bare_tier)
         except (ValueError, RuntimeError, OSError) as e:          # a chain file that does not read is a ValueError
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
@@ -238,6 +242,10 @@ def main(argv: list[str] | None = None) -> int:
     bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
     bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
     bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--cases-file", type=Path, default=None,
+                         help="A JSON list of cases to run instead of the shipped ones (a Test bench writes it)")
+    bench_p.add_argument("--bare-tool", default="", help="The AI tool the bare side runs on (default: --tool)")
+    bench_p.add_argument("--bare-tier", default="", help="Its tier: novice, seasoned or veteran (default: as --tier)")
     bench_p.add_argument("--chain-file", type=Path, default=None,
                          help="For the chain type: a JSON file with the chain's buildings and roads (the Test bench "
                               "writes it)")

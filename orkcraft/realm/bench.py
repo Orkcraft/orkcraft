@@ -211,6 +211,7 @@ class Side:
     checks: list[dict] = field(default_factory=list)  # a kit's checks (realm/bench_kits.py): {name, ok, detail}
     result: dict = field(default_factory=dict)        # what it made, as its kit reads it
     model: str = ""                                    # the tier or model it ran on, when the bench knows it
+    score: float | None = None                         # a blind judge's 0–10 for what it made (realm/lab_cases.py)
 
 
 def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: threading.Event | None = None,

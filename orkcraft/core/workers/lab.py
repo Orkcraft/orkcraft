@@ -17,7 +17,7 @@ import datetime as dt
 
 from orkcraft import scroll as ts
 from orkcraft.core.workers import Worker
-from orkcraft.realm import bench, catalog, lexicon
+from orkcraft.realm import bench, catalog, lab_cases, lexicon
 
 HEARD = 20                       # carts from the buildings it tests it remembers
 TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
@@ -33,6 +33,76 @@ class LabWorker(Worker):
         self.last: dict = {}                 # building id → its last run here: {run, case, verdict, passed, at}
         self.chosen = ""                     # the building its window shows, when it tests more than one
         self._looked: set[str] = set()       # buildings whose kept runs were read
+        self.state = lab_cases.load(self.state_dir)   # its goal, settings, cases, results, proposals (realm/lab_cases.py)
+
+    # -- its own work: a goal, its cases, what they said, what to change ------------------------------------------
+
+    def keep(self) -> None:
+        lab_cases.save(self.state_dir, self.state)
+        self.changed()
+
+    def set_goal(self, goal: str) -> None:
+        self.state["goal"] = " ".join(goal.split())[:1000]
+        self.keep()
+
+    def set_settings(self, **values) -> None:
+        self.state["settings"].update({k: v for k, v in values.items() if k in lab_cases.blank()["settings"]})
+        self.keep()
+
+    def cases_of(self, subject_id: str) -> list[dict]:
+        return list(self.state["cases"].get(subject_id) or [])
+
+    def add_cases(self, subject_id: str, cases: list[dict]) -> int:
+        have = self.state["cases"].setdefault(subject_id, [])
+        room = lab_cases.MAX_CASES - len(have)
+        have.extend(cases[:max(room, 0)])
+        self.keep()
+        return min(len(cases), max(room, 0))
+
+    def remove_case(self, subject_id: str, case_id: str) -> bool:
+        have = self.state["cases"].get(subject_id) or []
+        kept = [c for c in have if c["id"] != case_id]
+        if len(kept) == len(have):
+            return False
+        self.state["cases"][subject_id] = kept
+        self.state["results"].get(subject_id, {}).pop(case_id, None)
+        self.keep()
+        return True
+
+    def results_of(self, subject_id: str) -> dict:
+        return dict(self.state["results"].get(subject_id) or {})
+
+    def set_proposals(self, subject_id: str, items: list[dict]) -> None:
+        self.state["proposals"][subject_id] = {"at": dt.datetime.now().isoformat(timespec="seconds"),
+                                              "goal": self.state["goal"], "items": items}
+        self.keep()
+
+    def entries(self, subject: dict) -> list[dict]:
+        """Where a case's input may go in: a chain's buildings that take a cart (its first one first); a building
+        alone, itself."""
+        from orkcraft.realm import catalog_reference
+        ids = subject.get("chain") or [subject["id"]]
+        out = []
+        for n, bid in enumerate(ids):
+            kind = self._type(bid)
+            takes = catalog_reference.TAKES.get(kind, "")
+            if n == 0 or kind in catalog_reference.ACCEPTS:
+                out.append({"id": bid, "title": self.town.title_of(bid), "word": lexicon.term(kind), "type": kind,
+                            "takes": takes or ("a message, as from mail" if kind == "watchtower" else "")})
+        return out
+
+    def flow_spec(self, subject: dict) -> dict:
+        """The scheme a copy stands for a case of its own: a chain as it is; a building alone as a chain of one whose
+        every event comes back."""
+        if subject["type"] == CHAIN.rstrip(":"):
+            return self.chain_spec(subject)
+        bid, kind = subject["id"], subject["type"]
+        events = [e.id for e in catalog.TYPES[kind].events] if kind in catalog.TYPES else []
+        return {"id": bid, "buildings": [{"id": bid, "type": kind, "title": self.town.title_of(bid),
+                                          "config": dict((self.town.spec_of(bid) or {}).get("config") or {})}],
+                "roads": [], "first": bid, "last": bid, "back_events": events, "back_filter": {},
+                "about": f"{self.town.title_of(bid)} ({lexicon.term(kind)}: "
+                         f"{catalog.TYPES[kind].summary.split(';')[0] if kind in catalog.TYPES else ''})"}
 
     def last_of(self, s: dict) -> dict | None:
         """The last run of a building it tests: its own, else the latest kept of its type (a road laid after a run)."""
@@ -164,8 +234,12 @@ class LabWorker(Worker):
                 "bare": bench.verdict(r.bare) if r.bare else ""}
 
     def reported(self, building_id: str, r: bench.Report) -> None:
-        """A run of a building it tests ended: its report down its roads, and what the building missed."""
+        """A run of a building it tests ended: its report down its roads, and what the building missed; a case of
+        its own keeps what it said against the bare AI tool."""
         self.last[building_id] = self._line(r)
+        if any(c["id"] == r.case for c in self.cases_of(building_id)):
+            self.state["results"].setdefault(building_id, {})[r.case] = lab_cases.result_of(r)
+            lab_cases.save(self.state_dir, self.state)
         word = "chain" if r.type == CHAIN.rstrip(":") else lexicon.term(r.type)
         name = next((s["title"] for s in self.subjects() if s["id"] == building_id), self.town.title_of(building_id))
         title = f"{name} · {r.case} · {self._line(r)['verdict']}"
