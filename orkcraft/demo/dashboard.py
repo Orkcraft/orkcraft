@@ -238,7 +238,7 @@ LIBRARY = {
               wiki="team_wiki", limit=3.0),
         typed("lib_gramophone", "gramophone", "The Gramophone", "📻", "Bard", "the reports, spoken for the road",
               minutes=6),
-        typed("lib_lab", "lab", "Test bench", "🧪", "Brewmaster", "tests the Barracks on its cases", max_spend=1.0),
+        typed("lib_lab", "lab", "Test bench", "🧪", "Gearhead", "tests the Barracks on its cases", max_spend=1.0),
     ],
     "huts": {"lib_camp": (0.0, 0.64)},                 # the Barracks clear of the board, Camp's sprite and all
     "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
