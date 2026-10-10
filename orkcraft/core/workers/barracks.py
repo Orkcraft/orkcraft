@@ -663,7 +663,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             delivery.ran(self.town, roads.HandlerRun(self.building_id, orc.name.lower(), orc.harness, task.id, 0.0, 0.0,
                                                      outcome="done" if ok else "error", markdown=out.text,
                                                      error=out.error or ("" if ok else out.notes),
-                                                     cost_usd=out.cost or None))
+                                                     cost_usd=(out.cost + out.steward_cost) or None,
+                                                     tokens=out.tokens or None))
         if task.parent:
             self._advance(st.task(task.parent))
         self._pump()
