@@ -43,25 +43,52 @@ def off() -> bool:
     return str(env.getenv(ENV) or "").strip().lower() in ("0", "off", "no", "false")
 
 
-def find(runner=None) -> Tail | None:
-    """This machine in its tailnet while Tailscale runs and is logged in; None otherwise."""
+def status(runner=None) -> dict:
+    """`tailscale status --json` while Tailscale runs and is logged in; {} otherwise."""
     if off():
-        return None
+        return {}
     exe = command() if runner is None else "tailscale"
     if exe is None:
-        return None
+        return {}
     try:
         out = (runner or subprocess.run)([exe, "status", "--json"], capture_output=True, text=True, timeout=TIMEOUT_S)
         data = json.loads(out.stdout or "{}") if out.returncode == 0 else {}
     except (OSError, ValueError, subprocess.SubprocessError):
-        return None
-    me = data.get("Self") if isinstance(data, dict) and data.get("BackendState") == "Running" else None
+        return {}
+    ok = isinstance(data, dict) and data.get("BackendState") == "Running" and isinstance(data.get("Self"), dict)
+    return data if ok else {}
+
+
+def find(runner=None) -> Tail | None:
+    """This machine in its tailnet while Tailscale runs and is logged in; None otherwise."""
+    me = status(runner).get("Self")
     if not isinstance(me, dict):
         return None
     ips = [str(ip) for ip in me.get("TailscaleIPs") or [] if ":" not in str(ip)]
     if not ips:
         return None
     return Tail(ips[0], str(me.get("DNSName") or "").rstrip(".").lower())
+
+
+MOBILE = ("ios", "android")
+
+
+def phones(runner=None) -> dict | None:
+    """Who this machine is logged in as and the phones in its tailnet ({"account", "phones": [{"name", "os",
+    "online"}]}), so the desktop can say when a phone has joined; None while Tailscale does not run here."""
+    data = status(runner)
+    if not data:
+        return None
+    users = data.get("User") if isinstance(data.get("User"), dict) else {}
+    me = users.get(str(data["Self"].get("UserID", ""))) or {}
+    out = []
+    for peer in (data.get("Peer") or {}).values() if isinstance(data.get("Peer"), dict) else ():
+        if isinstance(peer, dict) and str(peer.get("OS", "")).lower() in MOBILE:
+            out.append({"name": str(peer.get("HostName") or peer.get("DNSName") or "").rstrip("."),
+                        "os": "iOS" if str(peer.get("OS")).lower() == "ios" else "Android",
+                        "online": bool(peer.get("Online"))})
+    return {"account": str(me.get("LoginName") or "") if isinstance(me, dict) else "",
+            "phones": sorted(out, key=lambda p: (not p["online"], p["name"]))}
 
 
 def paths(folder: Path | None = None) -> tuple[Path, Path]:
