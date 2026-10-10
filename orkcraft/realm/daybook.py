@@ -136,6 +136,16 @@ def line(e: ics.CalendarEvent) -> str:
     return f"{when(e)} {e.summary}" + (f" @ {e.location}" if e.location else "")
 
 
+def invitation(e: ics.CalendarEvent) -> str:
+    """What the invitation says beyond its line, for the brief: who comes and its description ("" when neither)."""
+    out = ""
+    if getattr(e, "attendees", ()):
+        out += "\n\nWho: " + ", ".join(e.attendees)
+    if getattr(e, "description", ""):
+        out += "\n\n" + e.description
+    return out
+
+
 def digest(events: list[ics.CalendarEvent], day: dt.date) -> str:
     today = [e for e in events if e.day == day]
     if not today:
