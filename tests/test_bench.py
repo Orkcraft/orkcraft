@@ -159,6 +159,8 @@ def test_the_building_runs_the_case_in_a_town_of_its_own(tmp_path, faked_pool):
     assert side.files == ["src/text.py"] and side.orks == 1 and side.tokens == 1200
     assert side.cost >= 0.05 and any(h.startswith("hire") for h in side.how)
     assert _git(project, "remote") == ""                         # nothing could go out
+    ledger = [json.loads(ln) for ln in (project / ".orkcraft" / "ledger.jsonl").read_text().splitlines()]
+    assert ledger[-1]["tokens"] == 1200 and ledger[-1]["cost"] > 0.05   # the pool's run: its tokens, the steward's $
     assert not (tmp_path / ".orkcraft").exists()                 # the town it came from is untouched
 
 
@@ -168,7 +170,7 @@ def test_the_bench_sets_the_tool_tier_spend_and_check_and_drops_what_points_home
                                          "codex", "elder", 1.5)
     assert "repo" not in config and config["max_orcs"] == 2 and config["orders"] == "be brief"
     assert (config["providers"], config["steward"]) == (["codex:elder"], "codex:elder")
-    assert (config["test_cmd"], config["budget_usd"], config["worktrees"]) == ("sh -c 'make test'", 1.5, True)
+    assert (config["test_cmd"], config["budget_usd"], config["worktrees"]) == ("make test", 1.5, True)
     assert "providers" not in building_bench.bench_config({}, c, "main", "", 2.0)
 
 

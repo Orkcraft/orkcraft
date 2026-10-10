@@ -97,8 +97,8 @@ As built (stage 1):
 
 - The building's side copies the config of the operator's building of the type (`--building` names
   which), drops what points at the operator's project (`repo`, `notes`, `base`), and sets
-  `worktrees`, `budget_usd` (the spend limit) and `test_cmd` (the case's check, through `sh -c`: the
-  pool splits its test command without a shell). `--tool` / `--tier` set its `providers` and `steward`.
+  `worktrees`, `budget_usd` (the spend limit) and `test_cmd` (the case's check; the
+  pool and Branches & PRs now start a test command that needs a shell through `sh -c`). `--tool` / `--tier` set its `providers` and `steward`.
 - It is done when its task is done or failed, or when the steward asks the operator (the bench says
   so and stops: nobody is there to answer), or at its spend limit or 45 minutes (*cut*).
 - Tokens are the orks' only: the pool does not count the steward's yet. Spend counts both.

@@ -12,7 +12,6 @@ typed roads), so a face runs the bench as `orkcraft bench`, in a process of its 
 from __future__ import annotations
 
 import datetime as dt
-import shlex
 import threading
 import time
 from pathlib import Path
@@ -43,7 +42,7 @@ def bench_config(template: dict, case: bench.Case, tool: str, tier: str, max_spe
     config = {k: v for k, v in template.items() if k not in _KEEP_OUT}
     config.update(worktrees=True, budget_usd=max_spend)
     if case.check:
-        config["test_cmd"] = f"sh -c {shlex.quote(case.check)}"     # the pool splits it without a shell
+        config["test_cmd"] = case.check
     if tool != "main" or tier:
         entry = f"{tool}:{tier}" if tier else tool
         config["providers"] = [entry]
