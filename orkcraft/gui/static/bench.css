@@ -1,8 +1,11 @@
-/* 🧪 The Test bench (js/bench.js): a wide dialog of three tabs. A run's numbers side by side, the building's
-   decisions on a time axis, the reviewers' findings each with a tick for Make tasks. */
-.gui-modal .ok-dialog.gui-bench { width: min(1040px, calc(100vw - 32px)); height: min(860px, calc(100vh - 48px)); display: flex; flex-direction: column; }
-.gui-bench__tabs { flex: none; margin-bottom: var(--space-2); }
-.gui-bench__body { flex: 1; gap: var(--space-4); }
+/* 🧪 The Test bench (js/bench.js), in the Test bench building's window: three tabs, a run's numbers side by side,
+   the building's decisions on a time axis, the reviewers' findings each with a tick for Make tasks. */
+.gui-bench { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
+.gui-bench__about { margin: 0; }
+.gui-bench__tabs { flex: none; }
+.gui-bench__body { display: flex; flex-direction: column; gap: var(--space-4); }
+.gui-bench__make { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  padding: var(--space-2) 0; background: var(--panel); border-top: 1px solid var(--frame); }
 .gui-bench__section { display: flex; flex-direction: column; gap: var(--space-2); }
 .gui-bench__h { margin: 0; display: inline-flex; align-items: center; gap: var(--space-2); }
 .gui-bench__row { display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; justify-content: space-between; }

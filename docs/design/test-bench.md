@@ -7,7 +7,7 @@ For the operator only: hidden behind a flag, maybe later for developers. GUI and
 | stage | what | state |
 |---|---|---|
 | 1 | Tech, the Agent pool: a test case runs in a copy of its project, in the building and in the bare AI tool; time, spend, tokens and its check side by side (`orkcraft bench`) | built |
-| 2 | the bench window: hidden behind the flag, opened by five clicks on a hut (or Test bench in its menu); the case, the AI tool, the tier, the spend limit and the instructions picked there | built |
+| 2 | the Test bench is a building (Alchemist's Lab in Camp words): a road in says what it tests, a road out where its reports and findings go; its window is the bench | built |
 | 3 | inside the run: the steward's and each ork's decisions on the run's clock, a lane each | built (decisions; the runs' own spans later) |
 | 4 | test cases written by agents, read by the operator before they count | built (Write a case) |
 | 5 | UX: two reviewers read the building's code and flow and name where a person would stop | built (reading code; the browser walk with screenshots later) |
@@ -34,10 +34,16 @@ The bench answers three questions per building, one tab each:
 
 ## 2. Who and where
 
-- **The operator only**, for now. The bench is shown only when `ORKCRAFT_BENCH=1` is set or the
-  machine setting `bench` is on. Then **five clicks on a hut** within two seconds open its bench
-  (`js/hut.js`, the click that did not move). Without the flag the clicks do nothing, so nobody
-  opens it by chance. `orkcraft bench <type>` works with or without the flag.
+- **A building of its own**, the **Test bench** (`lab`; *Alchemist's Lab* in the Camp's words, its ork
+  the *Tester*, Brewmaster of old). It is built from Build like any other (Check → Test).
+  - **A road in** from a building says *test this one*: its cases run in a copy of it with its own
+    settings. What that building sends along the road is only noted (the window lists it); a run
+    starts from the window or the quick action **Run the first case**, never by itself.
+  - **A road out** says where results go: each case's whole run as text (`lab.report`), what the
+    building missed (`lab.missed`), and the findings Make tasks sends **Down its roads**
+    (`lab.finding`). A road to an Agent pool makes them its tasks; to a Task board, cards.
+  - Several roads in: the window picks one building at a time.
+  - `orkcraft bench <type>` runs the same in a terminal.
 - **It never touches the town.** Every run is in a copy of the project
   (`.orkcraft/bench/runs/<run>/`), a clone without its `origin`: nothing is pushed, no pull request
   is opened, no road carries a cart out, and the town's ledger is not written. A changed prompt,
@@ -227,9 +233,14 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
 
 ## 9. As built: the window (gui/bench.py, js/bench.js)
 
-- `ORKCRAFT_BENCH=1` puts `bench` in the snapshot. Then the fifth click on a hut within two seconds
-  (`benchClick` in `js/hut.js`), or **Test bench** in its right-click menu, opens the bench of that
-  building. Without the flag the commands refuse.
+- The Test bench building (`core/workers/lab.py`) knows its roads: the buildings whose road comes in
+  (`subjects`), where its roads go (`targets`), what came in (`heard`) and the last run of each. Its
+  window (`gui/views/lab.py`, `js/buildings/lab.js`) is `js/bench.js` `BenchView` for the building
+  picked; each command names that building and the Test bench (`lab`), so Make tasks can offer
+  **Down its roads** and list the Agent pools its roads reach first. When a case's run ends,
+  `gui/bench.py` hands the kept run to every Test bench that tests the building, and it says it down
+  its roads. Its card: the building it tests and its last run (its own, else the latest kept of that
+  type), or *Nothing to test* with how to give it one.
 - **Tech.** *Run a case*: the case (only cases read count), the AI tool, the orks' tier, both sides or
   one, the spend limit, and the steward's instructions for this run only. A run is `orkcraft bench` in a
   process of its own (one process holds one town), registered in Stop all; its lines show as they come,

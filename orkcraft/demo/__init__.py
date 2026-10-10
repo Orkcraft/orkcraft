@@ -28,7 +28,7 @@ def default_dir(set_name: str = "main") -> Path:
 QUADRANTS = [(0.0, 0.0, 0.44, 0.46), (0.56, 0.0, 0.44, 0.46), (0.0, 0.54, 0.44, 0.46), (0.56, 0.54, 0.44, 0.46)]
 MARKER = ".orkcraft-demo"
 SAMPLES = Path(".orkcraft") / "demo-samples.json"
-VERSION = 3          # raise it when a set changes: an older sandbox is then built again
+VERSION = 4          # raise it when a set changes: an older sandbox is then built again
 
 
 def _node_md(scenario_id: str, n: dict) -> tuple[Path, str]:

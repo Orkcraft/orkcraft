@@ -1784,9 +1784,28 @@ def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, mon
     assert ran == [1]
 
 
-def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monkeypatch):
-    """docs/design/test-bench.md §2: without ORKCRAFT_BENCH the clicks only select and open; with it, the fifth opens
-    the Test bench: a kept run side by side with its timeline, reviewers' findings to tick, Make tasks."""
+def _lab_on(pg, server, subject_type: str, event: str) -> tuple[str, str]:
+    """A building of `subject_type` and a Test bench with a road from it (`event`), the Test bench's window open on
+    it: (the building's id, the Test bench's id)."""
+    from orkcraft import scroll as ts
+    bid = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", subject_type)
+    lab = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'lab' }))")
+    ts.subscribe(server.host.town.scroll, lab, bid, event)
+    server.host.on_change()
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", lab)
+    pg.locator(".gui-bench").wait_for(state="visible", timeout=WAIT_MS)
+    return bid, lab
+
+
+def _lab_off(pg, server, *ids: str) -> None:
+    pg.locator("body").press("Escape")
+    for bid in ids:
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_test_bench_building_tests_the_building_whose_road_comes_in(page, gui, monkeypatch):
+    """docs/design/test-bench.md §2: a road from the Agent pool into the Test bench; its window is the bench of the
+    pool: a kept run side by side with its timeline, the reviewers' findings to tick, Make tasks."""
     import json as _json
     from orkcraft.realm import bench, bench_review
     server, _ = gui
@@ -1804,23 +1823,10 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
     bare = bench.Side("bare", seconds=40, cost=0.12, tokens=18000, passed=False, check_tail="1 failed", files=["src/text.py"], lines=9)
     bench.Report("20261010-120000-barracks-slugify", "barracks", "slugify", at="2026-10-10T12:00:00",
                  building=side, bare=bare).save(root / bench.RUNS / "20261010-120000-barracks-slugify")
-    bid = pg_build = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
     pg = page
-    title = _hut(pg, bid).locator(".gui-hut__title")
-    for _ in range(5):
-        title.click()
-    pg.wait_for_timeout(300)
-    assert not pg.locator(".gui-bench").is_visible()                      # no flag: no bench
-    pg.locator("body").press("Escape")
-    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
-    server.host.on_change()
-    pg.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
-    pg.wait_for_timeout(1200)                                             # past the two seconds of the first clicks
-    for _ in range(5):
-        title.click()
+    bid, lab = _lab_on(pg, server, "barracks", "pool.done")
     dialog = pg.locator(".gui-bench")
-    dialog.wait_for(state="visible", timeout=WAIT_MS)
-    assert "Test bench" in dialog.locator(".ok-dialog__title").inner_text()
+    assert "Agent pool" in dialog.locator(".gui-bench__about").inner_text()
     pg.wait_for_selector(".gui-bench__table", timeout=WAIT_MS)
     runs = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
     assert "passed" in runs.inner_text() and "failed" in runs.inner_text()
@@ -1834,7 +1840,7 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
         pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-tech.png"))
     dialog.locator(".ok-tab", has_text="Product").click()
     dialog.locator(".gui-bench__aha").first.wait_for(state="visible", timeout=WAIT_MS)
-    make = dialog.locator(".ok-dialog__actions .ok-btn.primary")
+    make = dialog.locator(".gui-bench__make .ok-btn.primary")
     assert make.is_disabled()
     dialog.locator(".gui-bench__finding .ok-check").first.click()
     assert make.is_enabled() and "make 1 task" in make.inner_text().lower()
@@ -1843,13 +1849,10 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
     make.click()
     pg.wait_for_function("id => import('/static/js/link.js').then(m => m.command('bench.state', { id }))"
                          ".then(s => true)", arg=bid, timeout=WAIT_MS)
-    dialog.locator(".ok-dialog__actions .ok-btn", has_text="Close").click()
-    dialog.wait_for(state="detached", timeout=WAIT_MS)
     tasks = server.host.town.worker(bid).state
     assert any(t.title.endswith("Say what a tier costs") for t in tasks.tasks + tasks.queue)
     server.host.town.worker(bid).stop()
-    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
-    del pg_build
+    _lab_off(pg, server, lab, bid)
 
 
 def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkeypatch):
@@ -1858,7 +1861,6 @@ def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkey
     import json as _json
     from orkcraft.realm import bench, bench_review
     server, _ = gui
-    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
     monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
     root = server.host.town.repo_root
     ok = [{"name": f"#{n} kept", "ok": True, "detail": ""} for n in range(1, 9)]
@@ -1868,12 +1870,8 @@ def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkey
     bare = bench.Side("bare", seconds=12, cost=0.01, tokens=2400, passed=True, model="laborer", checks=ok)
     bench.Report("20261010-130000-watchtower-feedback-inbox", "watchtower", "feedback-inbox", at="2026-10-10T13:00:00",
                  building=side, bare=bare).save(root / bench.RUNS / "20261010-130000-watchtower-feedback-inbox")
-    bid = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
-    server.host.on_change()
-    page.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
-    page.evaluate("id => import('/static/js/bench.js').then(m => { m.benchOpen.value = id; })", bid)
+    bid, lab = _lab_on(page, server, "watchtower", "mail.received")
     dialog = page.locator(".gui-bench")
-    dialog.wait_for(state="visible", timeout=WAIT_MS)
     table = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
     table.wait_for(state="visible", timeout=WAIT_MS)
     text = table.inner_text()
@@ -1881,8 +1879,7 @@ def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkey
     assert "importance high" in dialog.locator(".gui-bench__missed").inner_text()
     if os.environ.get("ORKCRAFT_SHOTS"):
         page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-watchtower.png"))
-    dialog.locator(".ok-dialog__actions .ok-btn", has_text="Close").click()
-    page.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _lab_off(page, server, lab, bid)
 
 
 def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui, monkeypatch):
@@ -1891,18 +1888,14 @@ def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui
     from orkcraft.gui import bench as gui_bench
     from orkcraft.realm import bench, bench_review
     server, _ = gui
-    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
     monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
-    bid = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
     job = gui_bench.Job("run", "fields", "Name four long cards", lines=[f"line {n}" for n in range(1, 11)], done=True)
     server.host.bench.jobs["fields"] = job
     root = server.host.town.repo_root
     bench.Report("20261010-140000-fields-long-cards", "fields", "long-cards", at="2026-10-10T14:00:00",
                  building=bench.Side("building", seconds=9, passed=True),
                  bare=bench.Side("bare", seconds=4, passed=False)).save(root / bench.RUNS / "20261010-140000-fields-long-cards")
-    server.host.on_change()
-    page.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
-    page.evaluate("id => import('/static/js/bench.js').then(m => { m.benchOpen.value = id; })", bid)
+    bid, lab = _lab_on(page, server, "fields", "tasks.created")
     term = page.locator(".gui-bench__term")
     term.wait_for(state="visible", timeout=WAIT_MS)
     assert term.inner_text().splitlines() == ["line 7", "line 8", "line 9", "line 10"]
@@ -1921,6 +1914,5 @@ def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui
     assert copied[-1].startswith("Test bench: long-cards") and "## Bare AI tool" in copied[-1]
     if os.environ.get("ORKCRAFT_SHOTS"):
         page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-terminal.png"))
-    page.locator(".gui-bench .ok-dialog__actions .ok-btn", has_text="Close").click()
     server.host.bench.jobs.pop("fields", None)
-    page.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _lab_off(page, server, lab, bid)

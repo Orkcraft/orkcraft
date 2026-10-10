@@ -73,7 +73,6 @@ TERMS: tuple[Term, ...] = (
     _t("look", "Look", "Looks"),                                   # how the town is drawn: never its words
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
-    _t("bench", "Test bench"),                                     # one building on a test case, beside the bare AI tool (realm/bench.py)
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview", "", "ghost"),
@@ -199,7 +198,8 @@ TERMS: tuple[Term, ...] = (
     _t("forest", "File tree", "", "File Forest"),
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
-    _t("gramophone", "Audio briefing", "", "The Gramophone"),       # a result spoken (docs/design/audio-briefing.md)
+    _t("gramophone", "Audio briefing", "", "The Gramophone"),
+    _t("lab", "Test bench", "", "Alchemist's Lab"),                 # a building on its test cases (docs/design/test-bench.md)       # a result spoken (docs/design/audio-briefing.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
     _t("loot_vault", "Review gate", "", "Loot Vault"),
@@ -219,6 +219,7 @@ TERMS: tuple[Term, ...] = (
     _t("orc.forest", "File picker", "", "Woodcutter"),
     _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
     _t("orc.gramophone", "Narrator", "", "Bard"),
+    _t("orc.lab", "Tester", "Testers", "Brewmaster", "Brewmasters"),
     _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
     _t("orc.lake", "Inspector", "", "Seer"),
     _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),

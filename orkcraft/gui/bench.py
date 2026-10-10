@@ -1,6 +1,7 @@
-"""🧪 The Test bench's window (js/bench.js, docs/design/test-bench.md): one building on its own, three tabs.
+"""🧪 The Test bench's engine for the GUI (js/bench.js, docs/design/test-bench.md): one building on its own, three tabs.
 
-Shown only when `ORKCRAFT_BENCH=1` (the snapshot's `bench`): five clicks on a hut open it. Tech runs a case in
+The Test bench is a building (core/workers/lab.py): the buildings whose road comes into it are the ones it tests,
+and its window (gui/views/lab.py) draws this for the one picked; each command names that building. Tech runs a case in
 `orkcraft bench`, a process of its own (a run opens a town of its own, and one process holds one town); its
 lines are read as they come. Its reviews, UX's and Product's are agents that only read Orkcraft's source,
 each role in a thread, kept per type in `.orkcraft/bench/reviews/`. The first time a building is opened with
@@ -22,11 +23,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 import orkcraft
-from orkcraft import env
 from orkcraft.core import bench as building_bench
 from orkcraft.realm import bench, bench_review, catalog, halt, harnesses, lexicon, tiers
 
 LINES = 400                        # a run's lines kept for the window
+ROADS = "@roads"                   # Make tasks' pool: down the Test bench's own roads (`lab.finding`)
 TIERS = (("", "The building's own"), ("laborer", "Novice"), ("warrior", "Seasoned"), ("elder", "Veteran"))
 
 
@@ -39,10 +40,6 @@ def _runs_for() -> str:
     return ", ".join(words[:-1]) + " and " + words[-1] if len(words) > 1 else words[0]
 
 
-def enabled() -> bool:
-    return env.getenv("BENCH").strip().lower() in ("1", "true", "yes", "on")
-
-
 @dataclass
 class Job:
     what: str                      # run | case
@@ -53,6 +50,8 @@ class Job:
     done: bool = False
     error: str = ""
     result: str = ""               # the run's id, the case's id
+    subject: str = ""              # the building it runs
+    reported: list[str] = field(default_factory=list)   # the runs it said (a series says one a case)
     proc: subprocess.Popen | None = field(default=None, repr=False)
     cancel: threading.Event = field(default_factory=threading.Event, repr=False)
 
@@ -81,8 +80,6 @@ class Bench:
     # -- what the window sees ------------------------------------------------------------------------------
 
     def _type(self, args: dict) -> tuple[str, str]:
-        if not enabled():
-            raise BenchError("The Test bench is off: start Orkcraft with ORKCRAFT_BENCH=1")
         bid = str(args.get("id") or "")
         if self.host.town.scroll.building(bid) is None:
             raise BenchError("No such building")
@@ -130,9 +127,26 @@ class Bench:
             "tools": self._tools(), "tiers": [{"id": i, "title": w} for i, w in TIERS],
             "orders": self._orders(bid, type_id),
             "max_spend": bench.DEFAULT_MAX_SPEND,
-            "pools": [{"id": b.id, "title": b.title} for b in self.host.town.scroll.buildings
-                      if not b.demolished and self.host.type_of(b.id) == "barracks"],
+            "pools": self._pools(args),
+            "roads": self._lab_roads(args),
         }
+
+    def _lab(self, args: dict):
+        lab = str(args.get("lab") or "")
+        return self.host.town.worker(lab) if lab and self.host.type_of(lab) == "lab" else None
+
+    def _lab_roads(self, args: dict) -> list[dict]:
+        """Where the Test bench's results go: the buildings its roads reach."""
+        w = self._lab(args)
+        return [{"id": t, "title": self.host.town.title_of(t)} for t in w.targets()] if w is not None else []
+
+    def _pools(self, args: dict) -> list[dict]:
+        """The Agent pools a finding may go to: those the Test bench's roads reach first."""
+        w = self._lab(args)
+        near = set(w.targets()) if w is not None else set()
+        pools = [{"id": b.id, "title": b.title, "road": b.id in near} for b in self.host.town.scroll.buildings
+                 if not b.demolished and self.host.type_of(b.id) == "barracks"]
+        return sorted(pools, key=lambda p: not p["road"])
 
     def _against_copy(self, type_id: str, kept: list) -> str:
         """The latest run of each case side by side, as text to paste into an analysis."""
@@ -198,7 +212,7 @@ class Bench:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(orders[:20000], encoding="utf-8")
             argv += ["--orders", str(path)]
-        job = Job("run", type_id, label)
+        job = Job("run", type_id, label, subject=bid)
         try:
             job.proc = subprocess.Popen(argv, cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         text=True, start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
@@ -215,6 +229,7 @@ class Bench:
             line = line.rstrip()
             if line.startswith(bench.DONE):
                 job.result = line[len(bench.DONE):].strip()
+                self.host.town.call(self._reported, job, job.result)
             elif line:
                 job.lines = (job.lines + [line])[-LINES:]
         code = proc.wait()
@@ -223,6 +238,26 @@ class Bench:
             job.error = "stopped" if job.cancel.is_set() else f"the run ended with exit {code}"
         job.done = True
         self.host.town.call(self.host.on_change)
+
+    def labs_of(self, building_id: str) -> list:
+        """The Test bench buildings that test `building_id` (its road comes into them)."""
+        out = []
+        for b in self.host.town.scroll.buildings:
+            if not b.demolished and self.host.type_of(b.id) == "lab":
+                w = self.host.town.worker(b.id)
+                if w is not None and any(s["id"] == building_id for s in w.subjects()):
+                    out.append(w)
+        return out
+
+    def _reported(self, job: Job, run_id: str) -> None:
+        """A run ended: each Test bench that tests its building says it down its roads."""
+        if run_id in job.reported:
+            return
+        job.reported.append(run_id)
+        r = next((x for x in bench.runs(self.root, job.type) if x.id == run_id), None)
+        if r is not None:
+            for w in self.labs_of(job.subject):
+                w.reported(job.subject, r)
 
     def stop(self, args: dict) -> dict[str, Any]:
         _bid, type_id = self._type(args)
@@ -304,21 +339,26 @@ class Bench:
     def tasks(self, args: dict) -> dict[str, Any]:
         bid, type_id = self._type(args)
         pool = str(args.get("pool") or "")
-        if self.host.type_of(pool) != "barracks" or self.host.town.scroll.building(pool) is None:
+        lab = self._lab(args)
+        down_roads = pool == ROADS and lab is not None
+        if not down_roads and (self.host.type_of(pool) != "barracks" or self.host.town.scroll.building(pool) is None):
             raise BenchError("Pick an Agent pool for the tasks")
         picks = {str(x) for x in args.get("picks") or []}
         chosen = [f for f in bench_review.findings(self.root, type_id) if f["id"] in picks]
         if not chosen:
             raise BenchError("Tick the findings to make tasks of")
-        worker = self.host.town.worker(pool)
+        worker = None if down_roads else self.host.town.worker(pool)
         word = lexicon.term(type_id)
         made = 0
         for f in chosen:
             brief = (f"From the Test bench, {f['role']} ({f['tab']} review) of the {word} (`{type_id}`, building "
                      f"`{bid}`), Orkcraft {orkcraft.__version__}.\n\n{f['detail']}"
                      + (f"\n\nWhere: {f['where']}" if f.get("where") else "") + f"\n\nSeverity: {f['severity']}.")
-            if worker.new_task(f"{word}: {f['title']}", brief) is not None:
+            title = f"{word}: {f['title']}"
+            if (lab.finding(title, brief) if down_roads else worker.new_task(title, brief) is not None):
                 made += 1
-        self.host.town.toast(f"{made} task{'s' if made != 1 else ''} sent to {self.host.town.title_of(pool)}",
-                             title="Test bench")
+        where = "down the Test bench's roads" if down_roads else f"to {self.host.town.title_of(pool)}"
+        if down_roads and not made:
+            raise BenchError("No road out of the Test bench takes them: pull one to the building they should go to")
+        self.host.town.toast(f"{made} task{'s' if made != 1 else ''} sent {where}", title="Test bench")
         return {**self.state(args), "made": made}
