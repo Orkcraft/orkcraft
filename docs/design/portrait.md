@@ -27,11 +27,13 @@ you, and whether it may disturb you.
   (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of buildings (`js/pocket.js`), it is
   the 28 × 26 one in the HUD, with no toggles. Its menu is a popover under it (a sheet at the window's foot
   below 640 px, scrolling past 85 % of the height).
-- **The phone is paired in the portrait's menu** (since 2026-10-10): its **Phone** row has Pair a phone, and
-  the QR code, the address and the certificate's fingerprint show in the menu itself, no window of its own
-  (`js/phones.js` `PairHere`); Cancel or closing the menu voids a code not used, and a phone that pairs is
-  named once. The phone button beside the portrait is gone. Settings → Phones keeps the rest: the list,
-  Forget, Tailscale and Places. The sheet below 640 px has the same row.
+- **The phone is paired in the portrait's menu** (since 2026-10-10), in its top block: Pair a phone under the
+  name, and its QR code at the right of the head, 128 px (`js/phones.js` `usePairing`, `PairQr`, `PairNote`);
+  the menu widens to 440 px while it shows, and in a sheet too narrow for the head, the name and the code side
+  by side the code goes under the head. Under the block: how to scan it, the address, the certificate's
+  fingerprint and Cancel. No window of its own; Cancel or closing the menu voids a code not used, and a phone
+  that pairs is named once. The phone button beside the portrait is gone. Settings → Phones keeps the rest:
+  the list, Forget, Tailscale and Places.
 - **The sun keeps the longer choices.** The sun's menu (`js/chrome.js` `Hour`) still holds Do not disturb
   (Off, 1 h, Until, On) and the look (By shift, Camp, Office) beside quiet hours: the quick toggles are the
   on / off of the same settings, not a second copy of the menu, and below 640 px, with no toggles, the sun
@@ -86,8 +88,9 @@ A click (or Enter) opens a popover under the portrait; Esc or a click outside cl
 
 ```
 ┌──────────────────────────────────────────┐
-│ [head 4×]  The Jira Lich · stage 2       │
+│ [head 4×]  The Jira Lich · stage 2  [QR] │
 │            Next: a building at II        │
+│            [Pair a phone]                │
 │ 🏰 🛤 👍 ░ ░ ░ ░ ░   deeds, grey ahead    │
 ├──────────────────────────────────────────┤
 │ Look            [ Camp | Office ]        │

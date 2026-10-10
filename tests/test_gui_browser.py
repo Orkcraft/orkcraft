@@ -1611,7 +1611,10 @@ def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(p
     # the phone is paired in the portrait's menu: its QR code shows in the menu itself, no window of its own
     portrait.click()
     menu.get_by_role("button", name="Pair a phone", exact=True).click()
-    menu.locator(".gui-phones__qr, .gui-phones__link").first.wait_for(state="visible", timeout=WAIT_MS)
+    qr = menu.locator(".gui-you .gui-you__qr")                           # in the top block, at the right of the head
+    qr.wait_for(state="visible", timeout=WAIT_MS)
+    head, code = menu.locator(".gui-you .gui-portrait__ground").bounding_box(), qr.bounding_box()
+    assert code["x"] > head["x"] + head["width"] and code["y"] < head["y"] + head["height"]
     assert pg.get_by_role("dialog", name="Pair a phone").count() == 0
     menu.get_by_role("button", name="Cancel", exact=True).click()
     menu.get_by_role("button", name="Pair a phone", exact=True).wait_for(state="visible", timeout=WAIT_MS)
@@ -1621,7 +1624,7 @@ def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(p
 
 def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
     """Below 640 px the portrait sits in the HUD and its menu is a sheet at the window's foot: You, Phone (the QR
-    code in the sheet) and Town settings… are there too (docs/design/portrait.md)."""
+    code under the head in the sheet) and Town settings… are there too (docs/design/portrait.md)."""
     server, browser = gui
     pg = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
     errors: list[str] = []
@@ -1634,8 +1637,11 @@ def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
     assert abs(box["y"] + box["height"] - 844) < 2 and box["width"] >= 389         # at the foot, the window's width
     assert sheet.locator(".gui-you").count() == 1
     sheet.get_by_role("button", name="Pair a phone", exact=True).click()
-    qr = sheet.locator(".gui-phones__qr, .gui-phones__link").first
+    qr = sheet.locator(".gui-you .gui-you__qr")
     qr.wait_for(state="visible", timeout=WAIT_MS)
+    head, code = sheet.locator(".gui-you .gui-portrait__ground").bounding_box(), qr.bounding_box()
+    assert code["y"] >= head["y"] + head["height"]                        # too narrow beside the name: under the head
+    assert sheet.bounding_box()["width"] <= 390
     qr.scroll_into_view_if_needed()
     sheet.get_by_role("button", name="Cancel", exact=True).click()
     assert sheet.get_by_role("button", name="Town settings…").count() == 1

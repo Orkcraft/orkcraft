@@ -2,11 +2,12 @@
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
 // marks: the stage and a dot while an ork asks (the dot opens Answers). Beside the big one stand two quick
 // toggles: the horn (Do not disturb on / off, never shown on the head) and the look (Camp / Office). A click
-// opens its menu: You (the head, the stage, Next, the deeds), then what is Camp's own — Fire on the roofs, the
-// cards' background — Phone (Pair a phone: its QR code right in the menu; Settings → Phones keeps the list and
-// Forget) and Town settings… (models, AI tools, how the town works). The sun's menu (js/chrome.js `Hour`) keeps
-// the longer choices: Do not disturb for 1 h or Until, the look By shift. Below 640 px, with no corner, the
-// menu is a sheet at the window's foot. These are the person's, per machine (gui/you.py).
+// opens its menu: You (the head, the name, the stage, Next, the deeds, and Pair a phone, whose QR code stands at
+// the right of the head, under it in a narrow sheet: no window of its own; Settings → Phones keeps the list and
+// Forget), then what is Camp's own — Fire on the roofs, the cards' background — and Town settings… (models, AI
+// tools, how the town works). The sun's menu (js/chrome.js `Hour`) keeps the longer choices: Do not disturb for
+// 1 h or Until, the look By shift. Below 640 px, with no corner, the menu is a sheet at the window's foot.
+// These are the person's, per machine (gui/you.py).
 import { signal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -16,7 +17,7 @@ import { terrainUrl } from "./terrain.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { RoleIcon } from "./roles.js";
-import { PairHere } from "./phones.js";
+import { usePairing, PairQr, PairNote } from "./phones.js";
 
 export const portraitOpen = signal(false);
 
@@ -68,7 +69,8 @@ function Menu({ y, p }) {
   }, []);
   const set = (args) => command("you.fire", args).catch(() => {});
   const office = p.look === "office";
-  return html`<section ref=${ref} class="gui-portrait__menu" role="dialog" aria-label=${say("You")}>
+  const pairing = usePairing();
+  return html`<section ref=${ref} class=${cls("gui-portrait__menu", { "is-pairing": !!pairing.offer })} role="dialog" aria-label=${say("You")}>
     <div class="gui-you">
       <${Face} y=${y} p=${p} size=${4} />
       <div class="gui-you__who">
@@ -81,8 +83,11 @@ function Menu({ y, p }) {
               ${y.deeds.map((x) => html`<span key=${x.id} class=${cls("gui-you__deed", { "is-ahead": !x.done })}
                   title=${say(x.done ? `${x.title} · ${x.done}` : `${x.title}: ${x.hint}`)} aria-label=${say(x.title)}>${x.icon}</span>`)}
             </span>`}
+        ${!pairing.offer && html`<${PairNote} pairing=${pairing} />`}
       </div>
+      <${PairQr} pairing=${pairing} />
     </div>
+    ${pairing.offer && html`<${PairNote} pairing=${pairing} />`}
     ${!office && html`<${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
       items=${[[true, "On"], [false, "Off"]]} />
     <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>`}
@@ -90,7 +95,6 @@ function Menu({ y, p }) {
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["yard", "Yard"], ["ground", "Ground"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Yard: inside its fence each card is a step lighter than the town's ground. Ground: the cards are drawn on the ground itself. This browser only.")}</p>`}
-    <${PairHere} />
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>
