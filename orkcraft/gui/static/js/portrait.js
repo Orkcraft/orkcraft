@@ -1,12 +1,14 @@
 // The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in Warcraft III.
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
-// marks: the stage and a dot while an ork asks (the dot opens Answers); Do not disturb shows on its toggle
-// beside it, never on the head, and a phone beside that pairs one (its QR code). A click opens its menu: You (the
-// head, the stage, Next, the deeds), then what is Camp's own — Fire on the roofs, the cards' background — and Town
-// settings… (models, AI tools, how the town works). The look and Do not disturb are the sun's (js/chrome.js `Hour`):
-// "will the town bother me now, and how does it look" is one question. These are the person's, per machine (gui/you.py).
+// marks: the stage and a dot while an ork asks (the dot opens Answers). Beside the big one stand two quick
+// toggles: the horn (Do not disturb on / off, never shown on the head) and the look (Camp / Office). A click
+// opens its menu: You (the head, the stage, Next, the deeds), then what is Camp's own — Fire on the roofs, the
+// cards' background — Phone (Pair a phone: its QR code right in the menu; Settings → Phones keeps the list and
+// Forget) and Town settings… (models, AI tools, how the town works). The sun's menu (js/chrome.js `Hour`) keeps
+// the longer choices: Do not disturb for 1 h or Until, the look By shift. Below 640 px, with no corner, the
+// menu is a sheet at the window's foot. These are the person's, per machine (gui/you.py).
 import { signal } from "@preact/signals";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
 import { MascotHead, BIOMES } from "./icons.js";
@@ -14,7 +16,7 @@ import { terrainUrl } from "./terrain.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { RoleIcon } from "./roles.js";
-import { PhonePair } from "./phones.js";
+import { PairHere } from "./phones.js";
 
 export const portraitOpen = signal(false);
 
@@ -84,10 +86,11 @@ function Menu({ y, p }) {
     ${!office && html`<${Steps} label="Fire on the roofs" value=${p.fire !== false} onPick=${(v) => set({ fire: v })}
       items=${[[true, "On"], [false, "Off"]]} />
     <p class="ok-font-status ok-tone-muted">${say("A building whose ork has waited a minute for you burns: flames climb its roof, more each minute. Never in quiet hours.")}</p>`}
-    <p class="ok-font-status ok-tone-muted">${say("The look and Do not disturb are under the sun in the middle of the top bar.")}</p>
+    <p class="ok-font-status ok-tone-muted">${say("Do not disturb for an hour or until morning, and the look by the shift, are under the sun in the middle of the top bar.")}</p>
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["yard", "Yard"], ["ground", "Ground"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Yard: inside its fence each card is a step lighter than the town's ground. Ground: the cards are drawn on the ground itself. This browser only.")}</p>`}
+    <${PairHere} />
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>
@@ -105,21 +108,21 @@ function Horn({ on }) {
 }
 
 /** The corner's quick buttons beside the big portrait: Do not disturb on or off (the sun's menu keeps 1 h and
- *  Until), and a phone, which pairs one with its QR code (Settings → Phones keeps the rest). */
+ *  Until), and the look, Camp or Office (the sun's menu keeps By shift). A phone is paired in the menu. */
 function Toggles({ p }) {
   const d = p.dnd || {};
-  const [pairing, setPairing] = useState(false);
+  const office = p.look === "office";
   return html`<span class="gui-portrait__toggles">
     <button class=${cls("gui-portrait__toggle", { "is-on": d.on })} aria-pressed=${!!d.on}
         title=${say(d.on ? `Do not disturb: ${d.label} — a click turns it off` : "Do not disturb: off — a click turns it on")}
         aria-label=${say("Do not disturb")} onClick=${() => command("you.dnd", { dnd: d.on ? "off" : "on" }).catch(() => {})}>
       <${Horn} on=${!!d.on} />
     </button>
-    <button class="gui-portrait__toggle" title=${say("Pair a phone: a QR code to scan")} aria-label=${say("Pair a phone")}
-        onClick=${() => setPairing(true)}>
-      <svg viewBox="0 0 16 16" width="11" height="12" aria-hidden="true"><rect x="4" y="1.5" width="8" height="13" rx="1" /><path d="M7 12.5h2" /></svg>
+    <button class=${cls("gui-portrait__toggle", { "is-on": office })} aria-pressed=${office}
+        title=${say(office ? "Office look — a click switches to Camp" : "Camp look — a click switches to Office")}
+        aria-label=${say("Office look")} onClick=${() => command("you.look", { look: office ? "camp" : "office" }).catch(() => {})}>
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="8" /><path d="M6 5.5V3.5h4v2" /></svg>
     </button>
-    ${pairing && html`<${PhonePair} onClose=${() => setPairing(false)} />`}
   </span>`;
 }
 

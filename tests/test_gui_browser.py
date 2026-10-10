@@ -1552,8 +1552,8 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
 def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(page):
     """The sun in the middle of the HUD (js/chrome.js Hour) answers "will the town bother me, and how does it look":
     Do not disturb and the look (Camp, Office, by the shift); the portrait's menu heads with You and keeps what is
-    Camp's own (Fire on the roofs, gone in Office); beside the portrait the horn toggles Do not disturb and the phone
-    pairs one (docs/design/portrait.md)."""
+    Camp's own (Fire on the roofs, gone in Office) and pairs a phone, its QR code in the menu; beside the portrait the
+    horn toggles Do not disturb and a toggle the look (docs/design/portrait.md)."""
     pg = page
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
@@ -1596,17 +1596,51 @@ def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(p
     assert pg.get_by_role("group", name="Fire on the roofs").count() == 0
     pg.keyboard.press("Escape")
     pg.get_by_role("dialog", name="Town settings").wait_for(state="hidden", timeout=WAIT_MS)
-    # beside the portrait: the horn (Do not disturb on and off) and the phone (its QR code); no look toggle
-    assert pg.get_by_role("button", name="Office look").count() == 0
+    # beside the portrait: the horn (Do not disturb on and off) and the look (Camp / Office); no phone
+    assert pg.get_by_role("button", name="Pair a phone", exact=True).count() == 0
     dnd = pg.get_by_role("button", name="Do not disturb", exact=True)
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-off.png')", timeout=WAIT_MS)
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-on.png')", timeout=WAIT_MS)
-    pg.get_by_role("button", name="Pair a phone", exact=True).click()
-    pg.get_by_role("dialog", name="Pair a phone").wait_for(state="visible", timeout=WAIT_MS)
+    office = pg.get_by_role("button", name="Office look", exact=True)
+    office.click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+    office.click()
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    # the phone is paired in the portrait's menu: its QR code shows in the menu itself, no window of its own
+    portrait.click()
+    menu.get_by_role("button", name="Pair a phone", exact=True).click()
+    menu.locator(".gui-phones__qr, .gui-phones__link").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.get_by_role("dialog", name="Pair a phone").count() == 0
+    menu.get_by_role("button", name="Cancel", exact=True).click()
+    menu.get_by_role("button", name="Pair a phone", exact=True).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    pg.get_by_role("dialog", name="Pair a phone").wait_for(state="hidden", timeout=WAIT_MS)
+    menu.wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
+    """Below 640 px the portrait sits in the HUD and its menu is a sheet at the window's foot: You, Phone (the QR
+    code in the sheet) and Town settings… are there too (docs/design/portrait.md)."""
+    server, browser = gui
+    pg = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+    errors: list[str] = []
+    pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    pg.goto(server.url)
+    pg.locator(".gui-hud .gui-portrait").click()
+    sheet = pg.locator(".gui-portrait__menu")
+    sheet.wait_for(state="visible", timeout=WAIT_MS)
+    box = sheet.bounding_box()
+    assert abs(box["y"] + box["height"] - 844) < 2 and box["width"] >= 389         # at the foot, the window's width
+    assert sheet.locator(".gui-you").count() == 1
+    sheet.get_by_role("button", name="Pair a phone", exact=True).click()
+    qr = sheet.locator(".gui-phones__qr, .gui-phones__link").first
+    qr.wait_for(state="visible", timeout=WAIT_MS)
+    qr.scroll_into_view_if_needed()
+    sheet.get_by_role("button", name="Cancel", exact=True).click()
+    assert sheet.get_by_role("button", name="Town settings…").count() == 1
+    pg.close()
+    assert not errors, "\n".join(errors)
 
 
 def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page):

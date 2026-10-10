@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html } from "./html.js";
 import { command, say } from "./link.js";
-import { Dialog } from "./dialog.js";
 
 const WHAT = "A paired phone sees the town small: each building, the questions the orks wait on, spend and "
   + "quotas. It may answer a question, stop all, drop a text or a file into Drop file here and ask the Warchief. It never builds, "
@@ -60,12 +59,36 @@ function Recipe({ r, onDone }) {
   </div>`;
 }
 
-/** The phone beside the portrait (docs/design/mobile.md §2): its QR code at once, in a dialog of its own. */
-export function PhonePair({ onClose }) {
-  return html`<${Dialog} title=${say("Pair a phone")} onCancel=${onClose}
-      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Close")}</button>`}>
-    <${PhonesField} pairNow=${true} />
-  </${Dialog}>`;
+/** Pair a phone in the portrait's menu (docs/design/portrait.md): its QR code shows in the menu itself, no window
+ *  of its own; closing the menu voids a code not used. A phone that pairs is named once. Settings → Phones keeps
+ *  the list, Forget and Places. */
+export function PairHere() {
+  const [offer, setOffer] = useState(null);
+  const [left, setLeft] = useState(0);
+  const [paired, setPaired] = useState("");
+  const live = useRef(null);
+  live.current = offer;
+  useEffect(() => () => { if (live.current) command("phones.pair_stop").catch(() => {}); }, []);
+  useEffect(() => {
+    if (!offer) return undefined;
+    const known = new Set(offer.phones.map((d) => d.id));
+    const t = setInterval(() => command("phones.list").then((r) => {
+      setLeft(Math.round(r.pairing));
+      const fresh = r.phones.find((d) => !known.has(d.id));
+      if (fresh) setPaired(fresh.name);
+      if (!r.pairing || fresh) setOffer(null);
+    }, () => {}), 1000);
+    return () => clearInterval(t);
+  }, [offer]);
+  const pair = () => command("phones.pair").then((r) => { setPaired(""); setLeft(Math.round(r.pairing)); setOffer(r); }, () => {});
+  const cancel = () => command("phones.pair_stop").then(() => setOffer(null), () => {});
+  return html`<div class="gui-portrait__row gui-phones">
+    <span class="ok-font-label">${say("Phone")}</span>
+    ${offer ? html`<${Offer} offer=${offer} left=${left} onCancel=${cancel} />`
+      : html`<span><button class="ok-btn" onClick=${pair}>${say("Pair a phone")}</button></span>
+        ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}
+        <span class="ok-font-status ok-tone-muted">${say("A QR code to scan with the Orkcraft app. The paired phones and Forget are in Town settings → Phones.")}</span>`}
+  </div>`;
 }
 
 export function PhonesField({ pairNow = false }) {

@@ -690,7 +690,8 @@ button { font: inherit; color: inherit; }
 .gui-portrait__menu .gui-portrait__ground { width: 72px; height: 68px; padding-bottom: 8px; flex: none;
   box-shadow: inset 0 -6px 0 var(--land), var(--bevel-sunken); }
 .gui-portrait__row { display: flex; flex-direction: column; gap: var(--space-1); }
-.gui-portrait__menu > p { margin: 0; white-space: normal; }
+.gui-portrait__menu > p { margin: 0; }
+.gui-portrait__menu { white-space: normal; }   /* the HUD (a narrow window) keeps its own on one line */
 .gui-portrait__links { display: flex; gap: var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--frame); }
 .gui-warchief__mono { display: grid; place-items: center; width: 24px; height: 20px; color: var(--ink-muted); font: 700 18px/1 var(--ok-font); }
 @media (max-width: 640px) {

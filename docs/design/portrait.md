@@ -20,13 +20,22 @@ you, and whether it may disturb you.
 
 - **The portrait** stands out of the HUD in a wide window: framed (a bevel and 4 px of padding) over the
   town's top-left corner, the head at 3× (40 × 36), its marks inside its corners, and beside it two quick
-  toggles, Do not disturb (on / off; the menu keeps 1 h and Until) and the look (Camp / Office). Do not
-  disturb's toggle wears a speaking horn while the town may call and the horn struck through while it holds
-  (Camp's pixel sprite `icons/notify-on.png` / `notify-off.png` from `tools/icon_sprites.py`, Office's line
-  icon); the head itself never shows it. The town
-  keeps its huts out of that corner (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of
-  buildings (`js/pocket.js`), it is the 28 × 26 one in the HUD. Its menu is a popover under it (a sheet at
-  the window's foot below 640 px, scrolling past 85 % of the height).
+  toggles: Do not disturb (on / off) and the look (Camp / Office). Do not disturb's toggle wears a speaking
+  horn while the town may call and the horn struck through while it holds (Camp's pixel sprite
+  `icons/notify-on.png` / `notify-off.png` from `tools/icon_sprites.py`, Office's line icon); the head itself
+  never shows it. The look's toggle is pressed in Office. The town keeps its huts out of that corner
+  (`js/town.js` `CORNER_ROOM`). Below 640 px, where the town is a list of buildings (`js/pocket.js`), it is
+  the 28 × 26 one in the HUD, with no toggles. Its menu is a popover under it (a sheet at the window's foot
+  below 640 px, scrolling past 85 % of the height).
+- **The phone is paired in the portrait's menu** (since 2026-10-10): its **Phone** row has Pair a phone, and
+  the QR code, the address and the certificate's fingerprint show in the menu itself, no window of its own
+  (`js/phones.js` `PairHere`); Cancel or closing the menu voids a code not used, and a phone that pairs is
+  named once. The phone button beside the portrait is gone. Settings → Phones keeps the rest: the list,
+  Forget, Tailscale and Places. The sheet below 640 px has the same row.
+- **The sun keeps the longer choices.** The sun's menu (`js/chrome.js` `Hour`) still holds Do not disturb
+  (Off, 1 h, Until, On) and the look (By shift, Camp, Office) beside quiet hours: the quick toggles are the
+  on / off of the same settings, not a second copy of the menu, and below 640 px, with no toggles, the sun
+  is where they are. The portrait's menu says where to find them.
 - **Two menus, one rule.** The portrait's menu holds how the town looks and talks to you; Town settings
   (`js/settings.js`) holds the models, the AI tools and how the town works. So **Fire on the roofs**
   moved from Settings to the portrait's menu, under Do not disturb (`you.fire`, `gui/you.py`; the
@@ -123,8 +132,8 @@ as `data-look` always did; the words, the panel, the line and every action are t
 - **By the shift** (the default since 2026-10-09, the owner's call): Office while the work day lasts, 09:00–17:00
   (`settings.SHIFT`), Camp the rest of the day — calm while working, the camp after. Camp or Office picked hold all
   day. Picked in **the sun's menu** in the middle of the HUD (js/chrome.js `Hour`), with Do not disturb and quiet
-  hours: one place answers "will the town bother me now, and how does it look". The portrait's menu keeps You and
-  what is Camp's own; beside the portrait, the horn (Do not disturb) and the phone (its pairing QR code).
+  hours: one place answers "will the town bother me now, and how does it look". The portrait's menu keeps You, what is
+  Camp's own and the phone's pairing QR code; beside the portrait, the horn (Do not disturb) and the look.
 - **Stored** per machine, the person's and not the town's: `~/.config/orkcraft/settings.json` →
   `look` (`shift` | `camp` | `office`), default `shift`; the snapshot's `look` is the one drawn now
   (`settings.look_now`). Tests pin Camp (`ORKCRAFT_LOOK=camp`): a test runs at any hour.
