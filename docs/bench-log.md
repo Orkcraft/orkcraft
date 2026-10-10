@@ -227,3 +227,35 @@ card is named, each to-do planned, as it comes), so its time stays near one call
 per card: on agy every call carries ≈22k tokens of agy's own prompt, so eight cards cost eight of them.
 Naming the cards of a burst in one call would cut that, but it is a change of how the board works, not a
 fix; left as it is.
+
+## 2026-10-10 — the Calendar (war_drum) on agy
+
+Series 1 (one case, then stopped): one-to-one **failed 2/6** in 632 s, 422k tokens; bare 0/1 (empty).
+
+1. **The brief came back as a report** (building): told to "write it as your report (a commit is
+   optional)" and then to "finish with a short report: what you changed, what is left", the ork wrote
+   `briefs/1-1-alex.md`, committed it, and answered "What I changed"; the calendar got no agenda, no
+   questions. A meeting's ork is now told its answer is the document, in the sections the rules ask for,
+   with no file, commit or report.
+2. **The bare side always answered empty** (bench): its prompt says "the folder you are in is their
+   project; read it if it helps", and in read mode agy refused the command and ended its turn. An empty
+   bare answer is asked once more, and the bare tool of a non-code building now works in its copy
+   unchained, as the building's orks do (its prompt unchanged).
+3. **The steward read a brief on warrior for 160–170 s** (building), while the ork wrote it in 45–57 s.
+   Replayed on three briefs, the light tier accepted each good one and sent back each with a section cut
+   out, in 8–24 s, and sent back one warrior had accepted (its answer began with the ork's chatter). A
+   meeting's brief is reviewed on the light tier unless a tier is picked for the review.
+
+Series 4 (20261010-1952…), after all three:
+
+| case | building | bare |
+|---|---|---|
+| one-to-one | passed 6/6, 144 s | passed 6/6, 58 s |
+| an-interview | passed 7/7, 85 s | passed 7/7, 70 s |
+| investor-update | passed 7/7, 120 s | passed 7/7, 43 s |
+| two-briefs | passed 16/16, 127 s | passed 16/16, 61 s |
+| full-day | passed 28/28, 142 s (series 2: 258 s) | passed 28/28, 57 s |
+
+Every case passes. What is left is how the Calendar works: each meeting is an ork of its own with its own
+review, three at a time, where the bare tool writes every brief in one call. Closing that gap is a change
+of design (briefs of one day in one task), not a fix; left as it is.
