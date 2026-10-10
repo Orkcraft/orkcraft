@@ -70,14 +70,14 @@ export const GROUPS = [
   { id: "think", word: "Think" },
   { id: "make", word: "Make" },
   { id: "check", word: "Check" },
+  { id: "know", word: "Know" },
   { id: "plan", word: "Plan" },
   { id: "tell", word: "Tell" },
 ];
 export const INTENTS = [
   { id: "incoming", word: "Incoming", type: "watchtower", group: "in" },
   { id: "drop", word: "Drop files", type: "pit", group: "in" },
-  { id: "listen", word: "Listen", type: "gramophone", group: "in" },
-  { id: "agents", word: "In parallel", type: "barracks", group: "think" },
+    { id: "agents", word: "In parallel", type: "barracks", group: "think" },
   { id: "discuss", word: "Discuss", type: "council", group: "think" },
   { id: "research", word: "Deep research", type: "mine", group: "think" },
   { id: "code", word: "Code", type: "forge", group: "make" },
@@ -87,9 +87,10 @@ export const INTENTS = [
   { id: "chart", word: "Chart", type: "crag", group: "check" },
   { id: "tasks", word: "Tasks", type: "fields", group: "plan" },
   { id: "calendar", word: "Calendar", type: "war_drum", group: "plan" },
-  { id: "wiki", word: "Wiki", type: "scrolls", group: "plan" },
+  { id: "wiki", word: "Wiki", type: "scrolls", group: "know" },
   { id: "send", word: "Send", type: "catapult", group: "tell" },
   { id: "sound", word: "Sound", type: "horn", group: "tell" },
+  { id: "listen", word: "Podcast", type: "gramophone", group: "tell" },
 ];
 const FOR_YOU = 3;
 const DOUBLE_MS = 240;                             // a second press within this builds at a free spot
