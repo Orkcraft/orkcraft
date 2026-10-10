@@ -234,7 +234,7 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 - Under `prefers-reduced-motion`, nothing paces or floats. Office draws none of it: it keeps its words
   (`busy`, `?`, `visiting`) in the title bar.
 - What the head told — its name, its AI tool — is in Info and in the caller's tooltip.
-- **Its marks out on the plinth** (2026-10-10): its tier's chevrons over one shoulder, the AI tool it thinks with
+- **Its marks out on the plinth** (2026-10-10): its tier's chevrons over one shoulder, the AI tool it thinks with, at half size (8 px: a hint, not a badge),
   (the scheme's first tool's pixel mark, `ToolMark`) over the other; a yard's visiting steward wears its own.
 - Code: `js/hut.js` `Doing`, `js/visit.js` `Outside` and `VisitDialogs`; `yards.css`; `office.css` hides them;
   the sprites `tools/visit_sprites.py`.

@@ -31,9 +31,9 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
 .gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
 /* Its AI tool over its other shoulder (js/visit.js): the tool's pixel mark, as on the steward's line in Info. */
-.gui-out__tool { position: absolute; left: -10px; top: -10px; width: 16px; height: 16px; pointer-events: auto; }
+.gui-out__tool { position: absolute; left: -5px; top: -6px; width: 8px; height: 8px; pointer-events: auto; }
 .gui-out__tool .gui-toolmark { display: block; }
-.gui-out__tool .gui-toolmark img { display: block; image-rendering: pixelated; }
+.gui-out__tool .gui-toolmark img { display: block; width: 8px; height: 8px; image-rendering: pixelated; }   /* half its size: a hint, not a badge */
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
 /* A steward wears its building's hat (tools/hat_sprites.py) over its head: two pixels over the stand's blank top row,
    bobbing with the head as it walks. */
