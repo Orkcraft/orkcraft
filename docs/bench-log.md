@@ -43,3 +43,35 @@ one case (slugify: 255 s, then 129 s), so one run decides nothing within 10 %.
 `model_families.parse_agy` split on a space, listed no model, and every tier ran on agy's default, so a
 rework's "retier" changed nothing. Fixed; this series still ran on the default model (the list was
 cached empty), the next ones run on the tiers' models.
+
+## 2026-10-10 — Agent pool on agy, medium
+
+First series (20261010-0916…, stopped after two cases):
+
+| case | building | bare |
+|---|---|---|
+| rate-limiter | asked after one rework, 429 s, 207k tokens | passed, 122 s, 56k tokens |
+| lru-cache | the same blind rework, stopped | — |
+
+**Cause (building):** agy's steward runs in an empty folder. On a review it looked for the files, was
+denied the command and ended its turn with no answer; `verdict_of` read the empty answer as a rework
+with no notes. The ork reworked blind, then asked what was wrong, and the question went to the operator.
+Replayed by hand, the same review answers ACCEPT.
+
+**Fix:** an empty steward answer is asked once more (`BarracksWorker._steward`), and the review and the
+question prompts say that what is above is all it needs and to run no commands (`barracks.FROM_ABOVE`).
+Replayed: ACCEPT twice, the second in 25 s and 5k tokens instead of 58–80 s.
+
+After (20261010-0933…):
+
+| case | building | bare | time | tokens |
+|---|---|---|---|---|
+| rate-limiter | passed, 254 s | passed, 214 s | +19 % | +34 % |
+| lru-cache | passed, 191 s | passed, 246 s | −22 % | −3 % |
+| semver | passed, 469 s | passed, 346 s | +35 % | +35 % |
+| intervals | passed, 211 s | passed, 233 s | −10 % | +2 % |
+| dig | passed, 539 s | passed, 438 s | +23 % | +5 % |
+
+All pass; 2 of 5 within 10 %. The building's own calls on each: the sort ≈ 10 s and 22k tokens (agy's
+own prompt is most of it), the review 20–50 s and 5–11k tokens. The rest of the gap is the ork's own
+run against the bare tool's, on the same model (flash-high), which varies as much between runs.
