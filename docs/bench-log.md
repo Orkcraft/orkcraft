@@ -211,3 +211,19 @@ Series 4 (20261010-163…), after all five:
 | key-clients-burst | passed 14/14, 20 s | passed 14/14, 12 s (the run before: 13 s / 25 s) |
 
 Every case passes; the rest is a few seconds either way, within the spread of one call.
+
+## 2026-10-10 — Task board (fields) on agy
+
+| case | building | bare | time | tokens |
+|---|---|---|---|---|
+| long-cards | passed 8/8, 13 s | passed 8/8, 13 s | 0 % | +296 % |
+| titles-and-plans | passed 11/11, 11 s | failed 0/11 (empty answer), 18 s | −39 % | +198 % |
+| boiler-with-contacts | passed 4/4, 20 s | failed 2/4, 12 s | +67 % | +1 % |
+| russian-passport | passed 4/4, 12 s | failed 0/4, 16 s | −25 % | −10 % |
+| busy-board | passed 20/20, 17 s | failed 15/20, 11 s | +55 % | +688 % |
+
+The building passes every case, the bare tool one of five. No code changed. Its calls run at once (each
+card is named, each to-do planned, as it comes), so its time stays near one call's. The tokens are a call
+per card: on agy every call carries ≈22k tokens of agy's own prompt, so eight cards cost eight of them.
+Naming the cards of a burst in one call would cut that, but it is a change of how the board works, not a
+fix; left as it is.
