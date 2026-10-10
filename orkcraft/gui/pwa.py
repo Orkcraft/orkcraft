@@ -118,6 +118,7 @@ def link(address: str, code: str) -> str:
 
 
 INSTALL = "https://tailscale.com/download"
+DNS = "https://login.tailscale.com/admin/dns"   # where a tailnet's HTTPS certificates are turned on
 TAIL_S = 3.0             # `tailscale status` at most this often, while the desktop asks
 
 
@@ -134,9 +135,26 @@ class Tailnet:
             self._at, self._got = now, self.phones()
         from orkcraft.gui.phones import qr_data_uri   # phones imports this module
         got = self._got
-        return {"running": got is not None, "account": (got or {}).get("account", ""),
+        return {"running": got is not None, "installed": bool(tailnet.command()) and not tailnet.off(),
+                "account": (got or {}).get("account", ""),
                 "phones": (got or {}).get("phones", []), "trusted": bool(self.listener.tail_trusted),
-                "install": INSTALL, "install_qr": qr_data_uri(INSTALL)}
+                "install": INSTALL, "install_qr": qr_data_uri(INSTALL), "dns": DNS, "dns_qr": qr_data_uri(DNS)}
+
+
+def retry_tail(listener) -> None:
+    """A new pairing on a listener that was already up looks for the tailnet again: Tailscale started, or its
+    HTTPS certificates were turned on, since it came up. Without this the app's link waited for a restart."""
+    if listener.bind or (listener.tail_server is not None and listener.tail_trusted):
+        return
+    tail = listener.tail_find()
+    if tail is None or (listener.tail_server is not None and not tail.name):
+        return                                   # no tailnet, or no name a certificate could be for
+    if listener.tail_server is not None:         # on the tailnet without a certificate: ask for one again
+        old, listener.tail_server, listener.tail_address = listener.tail_server, None, ""
+        old.close()
+    from orkcraft.gui import phone_tls
+    cert, key = phone_tls.ensure(listener.cert_folder)
+    listener._start_tail(tail, listener.pairing.port(), phone_tls.context(cert, key), True)
 
 
 def commands(listener) -> dict[str, Callable[[dict], Any]]:

@@ -18,20 +18,30 @@ const WHAT = "A paired phone sees the town small: each building, the questions t
 const when = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "");
 
 /** While a code shows: Tailscale's state each few seconds, and what the QR code says now — `{qr, alt, lines}`.
- *  Without Tailscale and its certificate here, the code for the Orkcraft app (tools/phone.py meanwhile). */
+ *  No phone opens the `orkcraft://` link (no app takes it yet: tools/phone.py does), so without Tailscale and its
+ *  certificate here the code leads to what is missing, and Pair a phone again looks for the tailnet anew. */
 export function useAppStep(offer, left) {
   const [t, setT] = useState(null);
   useEffect(() => {
-    if (!offer || !offer.app_link) { setT(null); return undefined; }
+    if (!offer) { setT(null); return undefined; }
     const read = () => command("phones.tailnet").then(setT, () => {});
     read();
     const timer = setInterval(read, 3000);
     return () => clearInterval(timer);
   }, [offer]);
   if (!offer) return null;
-  if (!offer.app_link || !t) {
-    return { qr: offer.qr, link: offer.link, alt: say("QR code to pair a phone"),
-      lines: [say(`Scan it with the Orkcraft app on the phone. Good for ${left} s, once.`)] };
+  if (!t) return { qr: null, link: "", alt: "", lines: [say("Looking for Tailscale…")] };
+  const again = say("Then Cancel and Pair a phone again: the town looks for Tailscale anew.");
+  if (!offer.app_link && !t.running) {
+    return { qr: t.install_qr, link: t.install, alt: say("QR code to install Tailscale"), lines: [
+      say(t.installed ? "Tailscale is on this computer but not running or not logged in: start it and log in."
+        : "The phone reaches the town through Tailscale, and it is not on this computer: install it here (tailscale.com/download) and log in."),
+      say("On the phone: scan this code, install Tailscale and log in with the same account."), again] };
+  }
+  if (!offer.app_link) {
+    return { qr: t.dns_qr, link: t.dns, alt: say("QR code to the tailnet's DNS settings"), lines: [
+      say("Tailscale runs, but the tailnet gives this computer no HTTPS certificate, and the phone's browser needs one."),
+      say("Turn on MagicDNS and HTTPS Certificates in the tailnet's DNS settings (this code opens them; login.tailscale.com/admin/dns)."), again] };
   }
   const phone = t.phones.find((p) => p.online);
   if (!phone) {
@@ -52,7 +62,7 @@ function Offer({ offer, left, onCancel }) {
   return html`<div class="gui-phones__offer">
     ${step.qr
       ? html`<img class="gui-phones__qr" src=${step.qr} width="240" height="240" alt=${step.alt} />`
-      : html`<div><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
+      : step.link && html`<div><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
           <code class="gui-phones__link">${step.link}</code></div>`}
     <div class="gui-phones__how">
       ${step.lines.map((line) => html`<span class="ok-font-status">${line}</span>`)}
@@ -126,7 +136,7 @@ export function PairQr({ pairing: { step } }) {
   if (!step) return null;
   return step.qr
     ? html`<img class="gui-phones__qr gui-you__qr" src=${step.qr} width="128" height="128" alt=${step.alt} />`
-    : html`<div class="gui-you__qr"><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
+    : step.link && html`<div class="gui-you__qr"><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
       <code class="gui-phones__link">${step.link}</code></div>`;
 }
 
