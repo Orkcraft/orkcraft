@@ -55,7 +55,7 @@ from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers
 from orkcraft.sources import telemetry
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -520,13 +520,15 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             self.changed()
 
     def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome,
-                 use: str = "review") -> str:
+                 use: str = "review", light: bool = False) -> str:
         """One model call of the steward's: `use` is its task (triage | plan | answer | review | final), on the
-        model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's."""
+        model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's; `light`:
+        the goal's is the light tier (a meeting's brief is read for its sections and facts, not reasoned over)."""
         harness, setting = bk.parse_provider(str(self.config.get("steward") or "main"))
         scroll = getattr(self.town, "scroll", None)
-        model = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
-                             type_id=self.TYPE, goal=self.aim_now, setting=setting).model
+        p = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
+                         type_id=self.TYPE, goal=self.aim_now, setting=setting)
+        model = tiers.resolve(harness, "laborer") if light and p.by == "level" else p.model
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:

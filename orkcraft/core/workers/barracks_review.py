@@ -139,7 +139,7 @@ class ReviewMixin:
                 out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
             return
         verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule, extra),
-                                workdir, cancel, out)
+                                workdir, cancel, out, light=meeting)
         out.accepted, out.notes = bk.verdict_of(verdict)
         out.notes = briefs.strip(bk.SCOPE.sub("", out.notes)).strip()
         out.scope = rule or bk.scope_of(verdict)

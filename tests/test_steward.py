@@ -239,3 +239,26 @@ def test_an_empty_steward_answer_is_asked_once_more(tmp_path):
     assert BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), out) == "ACCEPT"
     assert round(out.steward_cost, 2) == 0.02
     assert BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), out) == "" and answers == []
+
+
+def test_a_meeting_s_brief_is_read_on_the_light_tier_unless_one_is_picked(tmp_path):
+    # flash-high thought 160 s over a 1:1's brief; the light tier caught a missing section in 10 s
+    import threading
+    from orkcraft.core.workers.barracks import BarracksWorker, RunOutcome
+    presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
+    s = ts.default_scroll(presets, raised=["a"])
+    s.building("a").garrison.steward = ts.OrcSpec("keeper", "Grunts")
+    seen = []
+
+    class Pool:
+        steward_runner = staticmethod(lambda h, p, w, c, m: seen.append(m) or ("ACCEPT", 0.0))
+        config = {"steward": "claude"}
+        building_id, simulated, TYPE, aim_now = "a", False, "barracks", "balance"
+
+        class town:
+            scroll = s
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), light=True)
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome())
+    steward.set_models(s.building("a"), {"review": "elder"})
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), light=True)
+    assert seen == ["haiku", "sonnet", "opus"]                     # light; its goal's; the one picked stands
