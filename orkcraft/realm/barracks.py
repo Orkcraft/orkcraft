@@ -47,7 +47,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft import scroll as ts
-from orkcraft.realm import harnesses, tiers
+from orkcraft.realm import harnesses, plans, tiers
 from orkcraft.realm.jobs import now_iso
 
 DEFAULT_PROVIDERS = (harnesses.MAIN,)        # the machine's main tool
@@ -326,9 +326,7 @@ def steward_answer_of(text: str) -> str:
     return m.group(1).strip() if m else ""
 
 
-# The steward's call may run in an empty folder (agy's does): it looked for the files, was denied the command and
-# ended its turn with no answer. What it judges is in its prompt.
-FROM_ABOVE = "What is above is all you need: judge from it and do not run commands."
+FROM_ABOVE = plans.FROM_ABOVE         # the steward judges from its prompt (realm/plans.py)
 
 
 def _rules(orders: str) -> str:
