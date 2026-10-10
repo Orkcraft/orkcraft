@@ -339,7 +339,9 @@ class WatchtowerWorker(Worker):
         self.errors.pop("intent", None) if not problem else self.errors.update(intent=problem)
         for sig, v in zip(batch, verdicts):
             sig.kept, sig.why = (v.kept, v.why) if self.intent else (None, sig.why or v.why)
-            if v.sort and not sig.sort.get("auto"):  # stage 1's verdict stands: a mailing stays low
+            # stage 1's verdict stands — a mailing stays low — unless the intent asked for it: a machine's alert that
+            # production is down is what an on-call intent listens for, and the model rates it
+            if v.sort and (not sig.sort.get("auto") or (self.intent and v.kept)):
                 sig.importance, sig.answer, sig.sort = v.importance, v.answer, dict(v.sort)
             sig.want = v.kind if v.kind in paths.source_wants(self.config, sig.source) else ""
             sig.read = not v.kept                     # a miss is not news
