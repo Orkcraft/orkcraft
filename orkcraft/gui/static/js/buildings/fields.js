@@ -20,7 +20,8 @@ import { usePeek } from "../windows.js";
 const selected = signal({});       // building id → card id
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
 // The closed card's three parts, each one the person may hide (js/parts.js).
-const PARTS = [{ key: "work", label: "Ork work" }, { key: "chores", label: "My to-dos" }, { key: "scribbles", label: "Notes" }];
+// The person's own first — their to-dos and notes side by side — the orks' work under them.
+const PARTS = [{ key: "chores", label: "My to-dos" }, { key: "scribbles", label: "Notes" }, { key: "work", label: "Ork work" }];
 
 const sheet = new URL("./fields.css", import.meta.url).href;
 if (typeof document !== "undefined" && !document.querySelector(`link[href="${sheet}"]`)) {
@@ -386,14 +387,14 @@ function Board({ id, data }) {
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
     ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki} />`}
     ${parts ? html`
-      <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
-        ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>
       <div class="gui-fields__lower">
         <section class="gui-fields__part"><h3 class="ok-font-heading">My to-dos <small>${todoOpen}/${data.todos.cards.length}</small></h3>
           <${Todos} id=${id} todos=${data.todos} sel=${sel && sel.id} onOpen=${open} onMark=${mark} /></section>
         <section class="gui-fields__part"><h3 class="ok-font-heading">Notes</h3>
           ${lanes(noteLanes(data))}</section>
-      </div>` : lanes(data.lanes)}
+      </div>
+      <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
+        ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>` : lanes(data.lanes)}
     ${dialog && dialog.remove && html`<${Confirm} title=${`Delete “${dialog.remove.title.slice(0, 60)}”?`}
       text="It goes from the file too (git keeps it)." yes="Delete"
       onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
@@ -449,14 +450,6 @@ export function card(b, level = "s") {
   const quiet = !doing.length && !next.length && !t.top.length;
   return html`<div class=${cls("gui-fhut", { "is-folded": hidden(b.id).length > 0, "is-quiet": quiet })}>
     <${PartToggles} id=${b.id} parts=${PARTS} />
-    ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
-      <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
-      ${big ? html`<div class="gui-fhut__lanes" style=${`--lanes:${open.length}`}>${open.map((l) => html`<div key=${l.id} class="gui-fhut__lane">
-          <span class="ok-tone-muted">${say(l.label)}</span>
-          ${l.top.slice(0, n.list).map((x, i) => html`<span key=${i} class="gui-fhut__card">${x}</span>`)}</div>`)}</div>`
-        : html`${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}`}
-      ${c.waiting > 0 && html`<span class="ok-tone-muted ok-font-status">⏳ ${c.waiting} waiting to go</span>`}
-    </section>`}
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My to-dos</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
       ${t.top.slice(0, n.list).map((x, i) => mark("☐", x, i))}
@@ -465,6 +458,14 @@ export function card(b, level = "s") {
     ${on("scribbles") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">Notes</span><span><b>${idea.count}</b>${idea.new ? "*" : ""}</span></div>
       ${idea.top.slice(0, n.list).map((x, i) => mark("✎", x, i))}
+    </section>`}
+    ${on("work") && html`<section class="gui-fhut__part gui-fhut__part--work">
+      <div class="gui-fhut__head"><span class="ok-font-label">Ork work</span>${c.lanes.map(counter)}</div>
+      ${big ? html`<div class="gui-fhut__lanes" style=${`--lanes:${open.length}`}>${open.map((l) => html`<div key=${l.id} class="gui-fhut__lane">
+          <span class="ok-tone-muted">${say(l.label)}</span>
+          ${l.top.slice(0, n.list).map((x, i) => html`<span key=${i} class="gui-fhut__card">${x}</span>`)}</div>`)}</div>`
+        : html`${doing.map((x, i) => mark("⚒", x, `d${i}`))}${next.map((x, i) => mark("▸", x, `n${i}`))}`}
+      ${c.waiting > 0 && html`<span class="ok-tone-muted ok-font-status">⏳ ${c.waiting} waiting to go</span>`}
     </section>`}
   </div>`;
 }

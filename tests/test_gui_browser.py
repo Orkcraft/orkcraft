@@ -717,7 +717,7 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     before = {t: box(t) for t in ids}
     fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
     assert fields.locator(".gui-parts").is_visible()                  # a row in its yard, always there (yards.md §7)
-    assert words(fields) == ["Orkwork", "Myto-dos", "Notes"]          # every part shown, in today's words
+    assert words(fields) == ["Myto-dos", "Notes", "Orkwork"]          # every part shown, in today's words, the person's first
     assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
     fields.locator(".gui-parts__one", has_text="Ork work").click()
     fields.locator(".gui-parts__one", has_text="Notes").click()
