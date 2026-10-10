@@ -21,6 +21,8 @@ from orkcraft import scroll as ts
 from orkcraft.core import buildings
 from orkcraft.core.town import Town
 from orkcraft.realm import bench, bench_kits, builders, checkpoint, steward_models, tiers, watch
+
+CASE_EVENT = "lab.case"          # the cart a chain is given (core/workers/lab.py)
 from orkcraft.sources import telemetry
 
 POLL_S = 0.5
@@ -42,6 +44,7 @@ class Ctx:
     say: Callable[[str], None] = lambda _line: None
     pool_template: dict = field(default_factory=dict)   # the operator's Agent pool, for a building that hands it work
     orders: str | None = None
+    chain: dict = field(default_factory=dict)           # a chain's buildings and roads (core/workers/lab.py chain_spec)
 
 
 def open_town(project: Path) -> Town:
@@ -393,5 +396,61 @@ def run_council(ctx: Ctx) -> bench.Side:
     return _run(ctx, work)
 
 
-RUNS: dict[str, Callable[[Ctx], bench.Side]] = {"watchtower": run_watchtower, "fields": run_fields,
+# -- a chain of buildings ------------------------------------------------------------------------------------------
+
+def run_chain(ctx: Ctx) -> bench.Side:
+    """The chain stood in a copy as it stands in the town: its buildings with their settings, the roads between
+    them, a Test bench at its end on the road its last building sends back; the case's input goes into the first
+    as a `lab.case` cart, and what reaches the end is the result."""
+    from orkcraft.core import bench as code_bench
+    from orkcraft.realm import pipes
+    spec = ctx.chain
+    cart = ctx.case.inputs.get("cart") or {}
+
+    def work(town: Town, side: bench.Side, since: dt.datetime, start: float) -> dict:
+        ids: dict[str, str] = {}
+        for b in spec.get("buildings") or []:
+            config = dict(b.get("config") or {})
+            if b["type"] == "barracks":                # its work stays in the copy, its spend under the limit
+                config = code_bench.bench_config(config, bench.Case("chain", "barracks", "", ""), ctx.tool, ctx.tier,
+                                                 ctx.max_spend)
+            w = raised(town, b["type"], config)
+            on_tool(w, ctx.tool, ctx.tier)
+            ids[b["id"]] = w.building_id
+        end = raised(town, "lab", {})
+        for r in spec.get("roads") or []:
+            ts.subscribe(town.scroll, ids[r["target"]], ids[r["source"]], r["event"], filter=r.get("filter") or None,
+                         handler=r.get("handler"))
+        back = spec.get("back_event") or ""
+        if not back:
+            raise ValueError("the chain's last building sends nothing back to the Test bench")
+        ts.subscribe(town.scroll, end.building_id, ids[spec["last"]], back, filter=spec.get("back_filter") or None)
+        side.orks = len(ids)
+        side.model = ctx.tier
+        first = ids[spec["first"]]
+        title, text = str(cart.get("title") or ctx.case.title), str(cart.get("text") or "")
+        with town.bench_lock:
+            town.deliver(first, pipes.Payload(pipes.TEXT, text, end.building_id, CASE_EVENT, title), title, text)
+        ctx.say(f"the case went into {town.title_of(first)}; waiting for {town.title_of(ids[spec['last']])}")
+        heard = 0
+
+        def done() -> bool:
+            nonlocal heard
+            for h in reversed(end.heard[: len(end.heard) - heard] if heard < len(end.heard) else []):
+                ctx.say(f"came out: {h['title']}"[:200])
+            heard = len(end.heard)
+            return bool(end.heard)
+
+        if why := wait(ctx, side, done, since, start):
+            return _stopped(side, why)
+        outputs = [{"title": h["title"], "text": h["text"]} for h in reversed(end.heard)]
+        side.how = [f"{b['title']} ({b['type']})" for b in spec.get("buildings") or []] + \
+            [f"came out: {o['title']}" for o in outputs]
+        side.text = "\n\n---\n\n".join(f"## {o['title']}\n\n{o['text']}" for o in outputs)[:6000]
+        return {"outputs": outputs}
+
+    return _run(ctx, work)
+
+
+RUNS: dict[str, Callable[[Ctx], bench.Side]] = {"chain": run_chain, "watchtower": run_watchtower, "fields": run_fields,
                                                 "war_drum": run_war_drum, "mine": run_mine, "council": run_council}

@@ -12,6 +12,7 @@ tasks sends the ticked findings to an Agent pool of the town, one task each.
 """
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
@@ -27,6 +28,7 @@ from orkcraft.core import bench as building_bench
 from orkcraft.realm import bench, bench_review, catalog, halt, harnesses, lexicon, tiers
 
 LINES = 400                        # a run's lines kept for the window
+CHAIN = "chain:"                   # a chain's id (core/workers/lab.py)
 ROADS = "@roads"                   # Make tasks' pool: down the Test bench's own roads (`lab.finding`)
 TIERS = (("", "The building's own"), ("laborer", "Novice"), ("warrior", "Seasoned"), ("elder", "Veteran"))
 
@@ -36,7 +38,7 @@ class BenchError(Exception):
 
 
 def _runs_for() -> str:
-    words = [lexicon.term(t) for t in building_bench.TYPES]
+    words = [lexicon.term(t) if t != "chain" else "a chain of them" for t in building_bench.TYPES]
     return ", ".join(words[:-1]) + " and " + words[-1] if len(words) > 1 else words[0]
 
 
@@ -81,9 +83,35 @@ class Bench:
 
     def _type(self, args: dict) -> tuple[str, str]:
         bid = str(args.get("id") or "")
+        if bid.startswith(CHAIN):
+            if self._chain(bid, args) is None:
+                raise BenchError("That chain is not laid across a Test bench any more")
+            return bid, "chain"
         if self.host.town.scroll.building(bid) is None:
             raise BenchError("No such building")
         return bid, self.host.type_of(bid)
+
+    def _chain(self, bid: str, args: dict):
+        """(the chain as its Test bench sees it, that Test bench) for a chain's id; None when no Test bench has it."""
+        lab = self._lab(args)
+        for w in ([lab] if lab is not None else []) + self.labs_of(bid):
+            found = next((s for s in w.subjects() if s["id"] == bid), None)
+            if found is not None:
+                return found, w
+        return None
+
+    def _cases(self, bid: str, type_id: str, args: dict) -> list:
+        """The cases of what is tested: a chain's, those that suit its first building."""
+        found = bench.cases(self.root, type_id)
+        if type_id == "chain":
+            chain = self._chain(bid, args)
+            first = chain[0]["first_type"] if chain else ""
+            found = [c for c in found if c.inputs.get("first", "") in ("", first)]
+        return found
+
+    @staticmethod
+    def _word(type_id: str) -> str:
+        return "chain" if type_id == "chain" else lexicon.term(type_id)
 
     def _tools(self) -> list[dict]:
         on = [t for t, c in self.host.town.machine.tools.items() if c.enabled and harnesses.get(t)]
@@ -94,7 +122,9 @@ class Bench:
         spec = self.host.town.spec_of(bid) or {}
         t = catalog.TYPES.get(type_id)
         job = self.jobs.get(type_id)
-        done_runs = bench.runs(self.root, type_id)
+        done_runs = [r for r in bench.runs(self.root, type_id) if type_id != "chain" or r.subject == bid]
+        cases = self._cases(bid, type_id, args)
+        chain = self._chain(bid, args) if type_id == "chain" else None
         reviews = {}
         for tab in bench_review.TABS:
             kept = bench_review.load(self.root, type_id, tab)
@@ -111,16 +141,16 @@ class Bench:
                             "stale": bool(kept.get("version")) and kept.get("version") != orkcraft.__version__,
                             "roles": roles}
         return {
-            "id": bid, "type": type_id, "title": spec.get("title") or bid, "word": lexicon.term(type_id),
-            "summary": t.summary if t else "", "can_run": type_id in building_bench.TYPES, "runs_for": _runs_for(),
+            "id": bid, "type": type_id, "title": chain[0]["title"] if chain else spec.get("title") or bid,
+            "word": self._word(type_id),
+            "summary": (f"a chain: {chain[1].chain_spec(chain[0])['about']}" if chain else t.summary if t else ""), "can_run": type_id in building_bench.TYPES, "runs_for": _runs_for(),
             "orders_of": building_bench.POOLED.get(type_id, type_id) if type_id in ("barracks", *building_bench.POOLED) else "",
             "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
-                      for c in bench.cases(self.root, type_id)],
-            "runs": [{**asdict(r), "copy": bench.analysis(r, lexicon.term(type_id))} for r in done_runs[:12]],
-            "against": bench.against(self.root, type_id),
+                      for c in cases],
+            "runs": [{**asdict(r), "copy": bench.analysis(r, self._word(type_id))} for r in done_runs[:12]],
+            "against": [] if chain else bench.against(self.root, type_id),
             "against_copy": self._against_copy(type_id, done_runs),
-            "levels": {lvl: sum(c.level == lvl and c.reviewed for c in bench.cases(self.root, type_id))
-                       for lvl in bench.LEVELS},
+            "levels": {lvl: sum(c.level == lvl and c.reviewed for c in cases) for lvl in bench.LEVELS},
             "gap_limit": bench.GAP_LIMIT,
             "job": job.public() if job else None,
             "reviews": reviews,
@@ -154,7 +184,7 @@ class Bench:
         for r in kept:                                     # newest first
             if r.building is not None and r.bare is not None and r.case not in latest:
                 latest[r.case] = r
-        return bench.summary(list(latest.values()), lexicon.term(type_id)) if latest else ""
+        return bench.summary(list(latest.values()), self._word(type_id)) if latest else ""
 
     def _orders(self, bid: str, type_id: str) -> str:
         """The instructions a run may change: the Agent pool's own; for a building that hands its work to one,
@@ -166,7 +196,7 @@ class Bench:
     def open(self, args: dict) -> dict[str, Any]:
         """The window opens: a building never reviewed has its three tabs reviewed now, once."""
         _bid, type_id = self._type(args)
-        if type_id not in self.asked and not any(bench_review.load(self.root, type_id, tab) for tab in bench_review.TABS):
+        if type_id != "chain" and type_id not in self.asked and not any(bench_review.load(self.root, type_id, tab) for tab in bench_review.TABS):
             self.asked.add(type_id)
             for tab in bench_review.TABS:
                 self._review(type_id, tab, "main")
@@ -184,7 +214,7 @@ class Bench:
         level = pick.partition(":")[2] if pick.startswith("level:") else ""
         if level and level not in bench.LEVELS:
             raise BenchError("No such level")
-        picked = bench.series(bench.cases(self.root, type_id), "" if level else pick, level) if pick else []
+        picked = bench.series(self._cases(bid, type_id, args), "" if level else pick, level) if pick else []
         if not picked:
             raise BenchError("Pick a case")
         label = picked[0].title if len(picked) == 1 and pick != bench.ALL else \
@@ -206,6 +236,13 @@ class Bench:
             argv += ["--tier", {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}[tier]]
         if args.get("only") in ("building", "bare"):
             argv += ["--only", str(args["only"])]
+        if type_id == "chain":                         # the chain as it stands now, for the copy to stand it the same
+            found, lab = self._chain(bid, args)
+            path = self.root / bench.BENCH / "chains" / f"{int(time.time())}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({**lab.chain_spec(found), "first_type": found["first_type"]}, ensure_ascii=False),
+                            encoding="utf-8")
+            argv += ["--chain-file", str(path)]
         orders = args.get("orders")
         if isinstance(orders, str) and orders != self._orders(bid, type_id) and (orders.strip() or type_id == "barracks"):
             path = self.root / bench.BENCH / "orders" / f"{type_id}-{int(time.time())}.md"
@@ -348,7 +385,7 @@ class Bench:
         if not chosen:
             raise BenchError("Tick the findings to make tasks of")
         worker = None if down_roads else self.host.town.worker(pool)
-        word = lexicon.term(type_id)
+        word = self._word(type_id)
         made = 0
         for f in chosen:
             brief = (f"From the Test bench, {f['role']} ({f['tab']} review) of the {word} (`{type_id}`, building "

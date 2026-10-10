@@ -42,7 +42,16 @@ The bench answers three questions per building, one tab each:
   - **A road out** says where results go: each case's whole run as text (`lab.report`), what the
     building missed (`lab.missed`), and the findings Make tasks sends **Down its roads**
     (`lab.finding`). A road to an Agent pool makes them its tasks; to a Task board, cards.
-  - Several roads in: the window picks one building at a time.
+  - **A chain**: a road out carrying `lab.case` (*test case*) into a building, and a road back in
+    from a building the first leads to. Every building on the way is tested as one: a run stands the
+    chain in a copy as it stands in the town (its buildings with their settings, the roads between
+    them, a Test bench at its end on the road back), gives the case's input to the first building as a
+    `lab.case` cart and checks what reaches the end. The bare AI tool gets the same input and what the
+    chain is made of, and is checked the same way. A chain's cases suit its first building
+    (`inputs.first`: an Agent pool takes a bug, a Review board a design, a Task board a card, Research
+    a question). The road back closes no loop: no cart ever goes down a `lab.case` road in the town
+    (`scroll_roads.CASE_EVENT`). The building that ends a chain is not tested alone.
+  - Several roads in: the window picks one building or chain at a time.
   - `orkcraft bench <type>` runs the same in a terminal.
 - **It never touches the town.** Every run is in a copy of the project
   (`.orkcraft/bench/runs/<run>/`), a clone without its `origin`: nothing is pushed, no pull request

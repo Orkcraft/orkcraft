@@ -295,4 +295,56 @@ CALENDAR = [
     },
 ]
 
-CASES: dict[str, list[dict]] = {"watchtower": WATCHTOWER, "fields": FIELDS, "war_drum": CALENDAR}
+# -- a chain of buildings ------------------------------------------------------------------------------------------
+# A chain's case suits its first building (`first`: the type a cart of it makes sense to); what comes out of the
+# last is checked by its words, whatever the buildings between did with it.
+
+CHAIN = [
+    {
+        "id": "pool-bug-to-done", "level": "simple", "title": "A bug report through a chain that starts with an Agent pool",
+        "expect": "What comes out names the fix: the CSV export and the missing header.",
+        "inputs": {
+            "first": "barracks",
+            "cart": {"title": "Export to CSV drops the header row",
+                     "text": "Since yesterday the Export to CSV on the Bookings page writes the rows without the header "
+                             "line (date, client, service, price). Accountants need the header. Find why and fix it; "
+                             "say in a line what you changed."},
+            "expect_words": [["CSV"], ["header"]],
+        },
+    },
+    {
+        "id": "board-review-route", "level": "medium", "title": "A design through a chain that starts with a Review board",
+        "expect": "The board's verdict and its notes come out naming the planted flaw: card numbers kept in the logs.",
+        "inputs": {
+            "first": "council",
+            "cart": {"title": "Payments: keep a log of every charge",
+                     "text": "# Payment log\n\nEvery charge is logged to `logs/payments.log` with the customer's name, "
+                             "the full card number and its CVV, so support can find a charge quickly. The log is kept "
+                             "for five years and anyone on the team can read it.\n"},
+            "expect_words": [["card", "PAN", "CVV"], ["log", "logs", "logging"], ["PCI", "mask", "masked", "redact",
+                                                                                  "remove", "never", "must not"]],
+        },
+    },
+    {
+        "id": "card-to-plan", "level": "simple", "title": "A card through a chain that starts with a Task board",
+        "expect": "What comes out carries the card's ask: a talk proposal by Friday.",
+        "inputs": {
+            "first": "fields",
+            "cart": {"title": "Send the conference talk proposal",
+                     "text": "Write and send the talk proposal for DevConf (title, abstract of 200 words, bio) before "
+                             "Friday's deadline."},
+            "expect_words": [["proposal", "talk"], ["DevConf", "conference"]],
+        },
+    },
+    {
+        "id": "question-to-report", "level": "parallel", "title": "A question through a chain that starts with Research",
+        "expect": "What comes out carries the facts: HTTP/3 is RFC 9114 over QUIC.",
+        "inputs": {
+            "first": "mine",
+            "cart": {"title": "Which RFC defines HTTP/3, and over what does it run?", "text": ""},
+            "expect_words": [["9114"], ["QUIC"]],
+        },
+    },
+]
+
+CASES: dict[str, list[dict]] = {"watchtower": WATCHTOWER, "fields": FIELDS, "war_drum": CALENDAR, "chain": CHAIN}

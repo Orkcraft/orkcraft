@@ -2,7 +2,10 @@
 
     a road in   from a building: that building is tested — its cases run in a copy of it with its own settings,
                 beside the bare AI tool (core/bench.py); what it sends along the road is only noted
-    a road out  to any building: each run's report goes there (`lab.report`), what its building missed
+    a chain     a road out carrying `lab.case` into a building, and a road back in from a building that the
+                first one leads to: every building on the way is tested as one — a case's input goes into the
+                first, what comes out of the last is checked (core/bench_kits.py `run_chain`)
+    a road out  carrying anything else: each run's report goes there (`lab.report`), what its building missed
                 (`lab.missed`), and the findings sent with Make tasks (`lab.finding`)
 
 The runs, the reviews and the cases are the bench's (gui/bench.py drives them, a face being needed for its
@@ -17,6 +20,9 @@ from orkcraft.core.workers import Worker
 from orkcraft.realm import bench, catalog, lexicon
 
 HEARD = 20                       # carts from the buildings it tests it remembers
+TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
+CHAIN = "chain:"                 # a chain's id: `chain:<first>:<last>`
+CASE_EVENT = "lab.case"          # the road into a chain it tests
 
 
 class LabWorker(Worker):
@@ -32,7 +38,8 @@ class LabWorker(Worker):
         """The last run of a building it tests: its own, else the latest kept of its type (a road laid after a run)."""
         if s["id"] not in self.last and s["id"] not in self._looked:
             self._looked.add(s["id"])                    # read once: a card asks on every look of the town
-            r = next(iter(bench.runs(self.repo_root, s["type"])), None)
+            r = next((x for x in bench.runs(self.repo_root, s["type"])
+                      if s["type"] != CHAIN.rstrip(":") or x.subject == s["id"]), None)
             if r is not None:
                 self.last[s["id"]] = self._line(r)
         return self.last.get(s["id"])
@@ -40,22 +47,91 @@ class LabWorker(Worker):
     # -- its roads -----------------------------------------------------------------------------------------
 
     def subjects(self) -> list[dict]:
-        """The buildings it tests: those whose road comes in, each with its type and whether its runs exist yet."""
+        """What it tests: each chain (a road out with `lab.case` to its first building, a road back from its last),
+        then each building whose road comes in and ends no chain; with its type and whether it can run yet."""
         from orkcraft.core import bench as runs
         me = self.town.scroll.building(self.building_id)
-        out, seen = [], set()
+        sources = []
         for road in (me.roads if me is not None else []):
-            src = road.source
-            if src in seen or src == self.building_id:
+            if road.source not in sources and road.source != self.building_id and self._standing(road.source):
+                sources.append(road.source)
+        out, ended = [], set()
+        for first in self.chain_starts():
+            ahead = self._ahead(first)
+            for last in sources:
+                if last not in ahead:
+                    continue
+                chain = self._between(first, last, ahead)
+                if len(chain) < 2:
+                    continue                            # a chain of one is the building itself
+                ended.add(last)
+                titles = [self.town.title_of(b).split(" ", 1)[-1] for b in chain]
+                out.append({"id": f"{CHAIN}{first}:{last}", "type": CHAIN, "chain": chain, "first": first,
+                            "last": last, "title": " → ".join(titles), "word": "chain",
+                            "first_type": self._type(first), "can_run": True})
+        for src in sources:
+            if src in ended:
                 continue
-            spec = self.town.spec_of(src)
-            if spec is None or self.town.scroll.building(src) is None:
-                continue
-            seen.add(src)
-            kind = catalog.type_of(spec).id
-            out.append({"id": src, "type": kind, "title": str(spec.get("title") or src), "word": lexicon.term(kind),
-                        "can_run": kind in runs.TYPES})
+            kind = self._type(src)
+            out.append({"id": src, "type": kind, "title": str((self.town.spec_of(src) or {}).get("title") or src),
+                        "word": lexicon.term(kind), "can_run": kind in runs.TYPES})
         return out
+
+    def _standing(self, bid: str) -> bool:
+        return self.town.spec_of(bid) is not None and self.town.scroll.building(bid) is not None
+
+    def _type(self, bid: str) -> str:
+        return catalog.type_of(self.town.spec_of(bid)).id
+
+    def chain_starts(self) -> list[str]:
+        """The buildings its `lab.case` roads go into: where a chain it tests begins."""
+        return [b.id for b, road in ts.outgoing(self.town.scroll, self.building_id)
+                if road.event == CASE_EVENT and self._standing(b.id)]
+
+    def _ahead(self, first: str) -> set[str]:
+        """Every building `first` leads to along roads, itself included, never through the Test bench."""
+        seen, todo = {first}, [first]
+        while todo:
+            for b, _road in ts.outgoing(self.town.scroll, todo.pop()):
+                if b.id not in seen and b.id != self.building_id:
+                    seen.add(b.id)
+                    todo.append(b.id)
+        return seen
+
+    def _between(self, first: str, last: str, ahead: set[str]) -> list[str]:
+        """The buildings on a way from `first` to `last`, in the order the roads reach them."""
+        behind, todo = {last}, [last]
+        while todo:
+            for road in ts.incoming(self.town.scroll, todo.pop()):
+                if road.source in ahead and road.source not in behind:
+                    behind.add(road.source)
+                    todo.append(road.source)
+        on = ahead & behind
+        order, todo, seen = [], [first], {first}
+        while todo:                                     # breadth first from the first: the order a cart goes
+            bid = todo.pop(0)
+            order.append(bid)
+            for b, _road in ts.outgoing(self.town.scroll, bid):
+                if b.id in on and b.id not in seen:
+                    seen.add(b.id)
+                    todo.append(b.id)
+        return order
+
+    def chain_spec(self, subject: dict) -> dict:
+        """What a copy needs to stand a chain: its buildings with their settings, the roads between them, and the
+        road its last building sends back to the Test bench."""
+        chain = subject["chain"]
+        buildings = [{"id": b, "type": self._type(b), "title": self.town.title_of(b),
+                      "config": dict((self.town.spec_of(b) or {}).get("config") or {})} for b in chain]
+        roads = [{"target": b, "source": r.source, "event": r.event, "filter": dict(r.filter or {}), "handler": r.handler}
+                 for b in chain for r in ts.incoming(self.town.scroll, b) if r.source in chain]
+        back = next((r for r in ts.incoming(self.town.scroll, self.building_id) if r.source == subject["last"]), None)
+        about = "; ".join(f"{self.town.title_of(b['id'])} ({lexicon.term(b['type'])}: "
+                          f"{catalog.TYPES[b['type']].summary.split(';')[0] if b['type'] in catalog.TYPES else ''})"
+                          for b in buildings)
+        return {"id": subject["id"], "buildings": buildings, "roads": roads, "first": chain[0], "last": subject["last"],
+                "back_event": back.event if back else "", "back_filter": dict(back.filter or {}) if back else {},
+                "about": about}
 
     def subject(self) -> dict | None:
         found = self.subjects()
@@ -69,15 +145,15 @@ class LabWorker(Worker):
         return True
 
     def targets(self) -> list[str]:
-        """The buildings its roads go to: where its reports and findings arrive."""
-        return [b.id for b, _road in ts.outgoing(self.town.scroll, self.building_id)]
+        """The buildings its roads go to with its results (not the `lab.case` road into a chain it tests)."""
+        return [b.id for b, road in ts.outgoing(self.town.scroll, self.building_id) if road.event != CASE_EVENT]
 
     # -- what comes and what it says ----------------------------------------------------------------------------
 
     def receive(self, payload, title: str, markdown: str) -> None:
         self.heard = ([{"from": payload.source, "title": title or payload.title,
                         "at": dt.datetime.now().isoformat(timespec="seconds"),
-                        "text": (markdown or str(payload.value))[:400]}] + self.heard)[:HEARD]
+                        "text": (markdown or str(payload.value))[:TEXT_KEPT]}] + self.heard)[:HEARD]
         self.changed()
 
     @staticmethod
@@ -90,8 +166,9 @@ class LabWorker(Worker):
     def reported(self, building_id: str, r: bench.Report) -> None:
         """A run of a building it tests ended: its report down its roads, and what the building missed."""
         self.last[building_id] = self._line(r)
-        word = lexicon.term(r.type)
-        title = f"{self.town.title_of(building_id)} · {r.case} · {self._line(r)['verdict']}"
+        word = "chain" if r.type == CHAIN.rstrip(":") else lexicon.term(r.type)
+        name = next((s["title"] for s in self.subjects() if s["id"] == building_id), self.town.title_of(building_id))
+        title = f"{name} · {r.case} · {self._line(r)['verdict']}"
         self.emit("lab.report", bench.analysis(r, word), title, ref=f"{self.building_id}:{r.id}")
         missed = [x for x in (r.building.checks if r.building else []) if not x.get("ok")]
         if r.building is not None and (missed or r.building.error or r.building.passed is False):

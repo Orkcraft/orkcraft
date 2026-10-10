@@ -287,3 +287,40 @@ def test_a_board_with_plans_only_and_a_calendar_of_one_meeting_run_too(tmp_path,
     report, _ = building_bench.run(tmp_path, bench.case(Path("/x"), "war_drum", "one-to-one"),
                                    bare_runner=_bare({"briefs": []})[0])
     assert report.building.passed is True, report.building.checks or report.building.how
+
+
+# -- a chain of buildings -------------------------------------------------------------------------------------------
+
+def test_a_chain_runs_in_a_copy_from_its_first_building_to_what_comes_back(tmp_path, monkeypatch):
+    from orkcraft.core.workers.council import CouncilWorker
+    from orkcraft.realm import team as tm
+    asked = []
+
+    def board(harness, prompt, model):
+        if prompt.startswith("You are the steward"):
+            return "DECISION: APPROVE\nGo on, but the card numbers must leave the logs.", 0.01
+        return "CHANGES — the full card number and CVV in logs breaks PCI.", 0.01
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        asked.append(prompt)
+        return "Masked the card number and dropped the CVV from the payment logs (PCI).", 0.02, 300, ""
+
+    monkeypatch.setattr(CouncilWorker, "runner", staticmethod(board))
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(work))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    spec = {"id": "chain:b:p", "first": "b", "last": "p", "back_event": "pool.done", "back_filter": {},
+            "about": "Review board, then Agent pool",
+            "buildings": [{"id": "b", "type": "council", "title": "Board", "config": {"max_cycles": 2}},
+                          {"id": "p", "type": "barracks", "title": "Pool", "config": {"worktrees": False, "plan": False}}],
+            "roads": [{"target": "p", "source": "b", "event": "team.approved", "filter": {}, "handler": None}]}
+    bare_runner, seen = _bare({})
+    c = bench.case(Path("/x"), "chain", "board-review-route")
+    report, _ = building_bench.run(tmp_path, c, chain=spec, bare_runner=lambda *a: ("Looks fine.", 0.0, 0, ""))
+    b = report.building
+    assert b.error == "" and b.passed is True, [x for x in b.checks if not x["ok"]] or b.how
+    assert report.subject == "chain:b:p" and b.orks == 2
+    assert any("logs/payments.log" in p for p in asked)                        # the case went in at the board
+    assert "Masked the card number" in b.text
+    assert report.bare.passed is False
+    with pytest.raises(ValueError, match="needs the chain"):
+        building_bench.run(tmp_path, c)
